@@ -42,15 +42,15 @@ import org.springframework.web.multipart.MultipartFile;
 @RequestMapping("/v2")
 public class ResourceController {
 
-  private final ServiceRegistry registry;
+  private final ServiceRegistry serviceRegistry;
   private final MultiTenancyConfiguration multiTenancyCfg;
   private final CamundaAuthenticationProvider authenticationProvider;
 
   public ResourceController(
-      final ServiceRegistry registry,
+      final ServiceRegistry serviceRegistry,
       final MultiTenancyConfiguration multiTenancyCfg,
       final CamundaAuthenticationProvider authenticationProvider) {
-    this.registry = registry;
+    this.serviceRegistry = serviceRegistry;
     this.multiTenancyCfg = multiTenancyCfg;
     this.authenticationProvider = authenticationProvider;
   }
@@ -65,7 +65,8 @@ public class ResourceController {
             resources, tenantId, multiTenancyCfg.isChecksEnabled())
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            request -> deployResources(registry.resourceServices(physicalTenantId), request));
+            request ->
+                deployResources(serviceRegistry.resourceServices(physicalTenantId), request));
   }
 
   @CamundaPostMapping(path = "/resources/{resourceKey}/deletion")
@@ -76,7 +77,7 @@ public class ResourceController {
     return RequestMapper.toResourceDeletion(resourceKey, deleteRequest)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            request -> delete(registry.resourceServices(physicalTenantId), request));
+            request -> delete(serviceRegistry.resourceServices(physicalTenantId), request));
   }
 
   @CamundaGetMapping(path = "/resources/{resourceKey}")
@@ -84,7 +85,10 @@ public class ResourceController {
       @PhysicalTenantId final String physicalTenantId, @PathVariable final long resourceKey) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
-        () -> registry.resourceServices(physicalTenantId).getByKey(resourceKey, authentication),
+        () ->
+            serviceRegistry
+                .resourceServices(physicalTenantId)
+                .getByKey(resourceKey, authentication),
         ResponseMapper::toGetResourceResponse,
         HttpStatus.OK);
   }
@@ -95,7 +99,7 @@ public class ResourceController {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
         () ->
-            registry
+            serviceRegistry
                 .resourceServices(physicalTenantId)
                 .getContentByKeyFilteredByType(resourceKey, "rpa", authentication),
         entity ->
@@ -110,7 +114,7 @@ public class ResourceController {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
         () ->
-            registry
+            serviceRegistry
                 .resourceServices(physicalTenantId)
                 .getContentByKey(resourceKey, authentication),
         entity ->
@@ -127,7 +131,7 @@ public class ResourceController {
     return SearchQueryRequestMapper.toDeployedResourceQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            q -> search(registry.resourceServices(physicalTenantId), q));
+            q -> search(serviceRegistry.resourceServices(physicalTenantId), q));
   }
 
   private ResponseEntity<ResourceSearchQueryResult> search(

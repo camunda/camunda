@@ -40,15 +40,15 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 @RequestMapping("/v2/documents")
 public class DocumentController {
 
-  private final ServiceRegistry registry;
+  private final ServiceRegistry serviceRegistry;
   private final ObjectMapper objectMapper;
   private final CamundaAuthenticationProvider authenticationProvider;
 
   public DocumentController(
-      final ServiceRegistry registry,
+      final ServiceRegistry serviceRegistry,
       final ObjectMapper objectMapper,
       final CamundaAuthenticationProvider authenticationProvider) {
-    this.registry = registry;
+    this.serviceRegistry = serviceRegistry;
     this.objectMapper = objectMapper;
     this.authenticationProvider = authenticationProvider;
   }
@@ -64,7 +64,7 @@ public class DocumentController {
     return RequestMapper.toDocumentCreateRequest(documentId, storeId, file, metadata)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            request -> createDocument(registry.documentServices(physicalTenantId), request));
+            request -> createDocument(serviceRegistry.documentServices(physicalTenantId), request));
   }
 
   @CamundaPostMapping(path = "/batch", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -78,7 +78,8 @@ public class DocumentController {
     return RequestMapper.toDocumentCreateRequestBatch(files, storeId, objectMapper, metadataList)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            requests -> createDocumentBatch(registry.documentServices(physicalTenantId), requests));
+            requests ->
+                createDocumentBatch(serviceRegistry.documentServices(physicalTenantId), requests));
   }
 
   private CompletableFuture<ResponseEntity<Object>> createDocument(
@@ -116,7 +117,7 @@ public class DocumentController {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     // handle the future explicitly here because a StreamingResponseBody is needed as result instead
     // of a future wrapping the stream response
-    return registry
+    return serviceRegistry
         .documentServices(physicalTenantId)
         .getDocumentContent(documentId, storeId, contentHash, authentication)
         // Any service exception that can occur is handled by the GlobalControllerExceptionHandler
@@ -146,7 +147,7 @@ public class DocumentController {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
-            registry
+            serviceRegistry
                 .documentServices(physicalTenantId)
                 .deleteDocument(documentId, storeId, authentication));
   }
@@ -164,7 +165,7 @@ public class DocumentController {
             RestErrorMapper::mapProblemToCompletedResponse,
             params ->
                 createDocumentLink(
-                    registry.documentServices(physicalTenantId),
+                    serviceRegistry.documentServices(physicalTenantId),
                     documentId,
                     storeId,
                     contentHash,

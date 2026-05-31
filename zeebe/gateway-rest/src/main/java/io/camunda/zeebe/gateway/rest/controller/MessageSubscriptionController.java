@@ -33,12 +33,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class MessageSubscriptionController {
 
   private final CamundaAuthenticationProvider authenticationProvider;
-  private final ServiceRegistry registry;
+  private final ServiceRegistry serviceRegistry;
 
   public MessageSubscriptionController(
-      final CamundaAuthenticationProvider authenticationProvider, final ServiceRegistry registry) {
+      final CamundaAuthenticationProvider authenticationProvider,
+      final ServiceRegistry serviceRegistry) {
     this.authenticationProvider = authenticationProvider;
-    this.registry = registry;
+    this.serviceRegistry = serviceRegistry;
   }
 
   @RequiresSecondaryStorage
@@ -49,7 +50,7 @@ public class MessageSubscriptionController {
     return SearchQueryRequestMapper.toMessageSubscriptionQuery(searchRequest)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            query -> search(registry.messageSubscriptionServices(physicalTenantId), query));
+            query -> search(serviceRegistry.messageSubscriptionServices(physicalTenantId), query));
   }
 
   @RequiresSecondaryStorage
@@ -64,7 +65,7 @@ public class MessageSubscriptionController {
             RestErrorMapper::mapProblemToResponse,
             query ->
                 searchCorrelatedMessageSubscriptions(
-                    registry.messageSubscriptionServices(physicalTenantId), query));
+                    serviceRegistry.messageSubscriptionServices(physicalTenantId), query));
   }
 
   private ResponseEntity<CorrelatedMessageSubscriptionSearchQueryResult>

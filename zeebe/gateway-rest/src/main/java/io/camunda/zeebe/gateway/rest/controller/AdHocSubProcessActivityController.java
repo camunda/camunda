@@ -27,12 +27,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/v2/element-instances/ad-hoc-activities")
 public class AdHocSubProcessActivityController {
 
-  private final ServiceRegistry registry;
+  private final ServiceRegistry serviceRegistry;
   private final CamundaAuthenticationProvider authenticationProvider;
 
   public AdHocSubProcessActivityController(
-      final ServiceRegistry registry, final CamundaAuthenticationProvider authenticationProvider) {
-    this.registry = registry;
+      final ServiceRegistry serviceRegistry,
+      final CamundaAuthenticationProvider authenticationProvider) {
+    this.serviceRegistry = serviceRegistry;
     this.authenticationProvider = authenticationProvider;
   }
 
@@ -47,7 +48,7 @@ public class AdHocSubProcessActivityController {
             RestErrorMapper::mapProblemToCompletedResponse,
             mapped ->
                 activateActivities(
-                    registry.adHocSubProcessActivityServices(physicalTenantId), mapped));
+                    serviceRegistry.adHocSubProcessActivityServices(physicalTenantId), mapped));
   }
 
   private CompletableFuture<ResponseEntity<Object>> activateActivities(

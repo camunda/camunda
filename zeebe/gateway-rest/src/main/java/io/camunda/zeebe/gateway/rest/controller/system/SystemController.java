@@ -45,7 +45,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 @RequestMapping("/v2/system")
 public class SystemController {
 
-  private final ServiceRegistry registry;
+  private final ServiceRegistry serviceRegistry;
   private final CamundaAuthenticationProvider authenticationProvider;
   private final GatewayRestConfiguration gatewayRestConfiguration;
   private final CamundaSecurityLibraryProperties cslProperties;
@@ -53,13 +53,13 @@ public class SystemController {
   private final long maxRequestSizeBytes;
 
   public SystemController(
-      final ServiceRegistry registry,
+      final ServiceRegistry serviceRegistry,
       final CamundaAuthenticationProvider authenticationProvider,
       final GatewayRestConfiguration gatewayRestConfiguration,
       @Autowired(required = false) final CamundaSecurityLibraryProperties cslProperties,
       @Autowired(required = false) final WebappConfiguration webappConfiguration,
       @Value("${spring.servlet.multipart.max-request-size:4MB}") final DataSize maxRequestSize) {
-    this.registry = registry;
+    this.serviceRegistry = serviceRegistry;
     this.authenticationProvider = authenticationProvider;
     this.gatewayRestConfiguration = gatewayRestConfiguration;
     this.cslProperties = cslProperties;
@@ -80,7 +80,7 @@ public class SystemController {
     return SearchQueryRequestMapper.toUsageMetricsQuery(startTime, endTime, tenantId, withTenants)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            query -> getMetrics(registry.usageMetricsServices(physicalTenantId), query));
+            query -> getMetrics(serviceRegistry.usageMetricsServices(physicalTenantId), query));
   }
 
   @CamundaGetMapping(path = "/configuration")

@@ -45,15 +45,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @CamundaRestController
 @RequestMapping("/v2/mapping-rules")
 public class MappingRuleController {
-  private final ServiceRegistry registry;
+  private final ServiceRegistry serviceRegistry;
   private final CamundaAuthenticationProvider authenticationProvider;
   private final MappingRuleMapper mappingRuleMapper;
 
   public MappingRuleController(
-      final ServiceRegistry registry,
+      final ServiceRegistry serviceRegistry,
       final CamundaAuthenticationProvider authenticationProvider,
       final IdentifierValidator identifierValidator) {
-    this.registry = registry;
+    this.serviceRegistry = serviceRegistry;
     this.authenticationProvider = authenticationProvider;
     mappingRuleMapper =
         new MappingRuleMapper(
@@ -68,7 +68,8 @@ public class MappingRuleController {
         .toMappingRuleCreateRequest(mappingRuleRequest)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            request -> createMappingRule(registry.mappingRuleServices(physicalTenantId), request));
+            request ->
+                createMappingRule(serviceRegistry.mappingRuleServices(physicalTenantId), request));
   }
 
   @CamundaPutMapping(path = "/{mappingRuleId}")
@@ -80,7 +81,8 @@ public class MappingRuleController {
         .toMappingRuleUpdateRequest(mappingRuleId, mappingRuleRequest)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            request -> updateMappingRule(registry.mappingRuleServices(physicalTenantId), request));
+            request ->
+                updateMappingRule(serviceRegistry.mappingRuleServices(physicalTenantId), request));
   }
 
   @CamundaDeleteMapping(path = "/{mappingRuleId}")
@@ -89,7 +91,7 @@ public class MappingRuleController {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
-            registry
+            serviceRegistry
                 .mappingRuleServices(physicalTenantId)
                 .deleteMappingRule(mappingRuleId, authentication));
   }
@@ -103,7 +105,7 @@ public class MappingRuleController {
       return ResponseEntity.ok()
           .body(
               SearchQueryResponseMapper.toMappingRule(
-                  registry
+                  serviceRegistry
                       .mappingRuleServices(physicalTenantId)
                       .getMappingRule(mappingRuleId, authentication)));
     } catch (final Exception exception) {
@@ -119,7 +121,7 @@ public class MappingRuleController {
     return SearchQueryRequestMapper.toMappingRuleQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            q -> search(registry.mappingRuleServices(physicalTenantId), q));
+            q -> search(serviceRegistry.mappingRuleServices(physicalTenantId), q));
   }
 
   private CompletableFuture<ResponseEntity<Object>> createMappingRule(

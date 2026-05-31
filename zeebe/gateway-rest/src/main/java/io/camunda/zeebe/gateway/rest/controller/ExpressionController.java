@@ -28,15 +28,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/v2/expression")
 public class ExpressionController {
 
-  private final ServiceRegistry registry;
+  private final ServiceRegistry serviceRegistry;
   private final CamundaAuthenticationProvider authenticationProvider;
   private final MultiTenancyConfiguration multiTenancyCfg;
 
   public ExpressionController(
-      final ServiceRegistry registry,
+      final ServiceRegistry serviceRegistry,
       final CamundaAuthenticationProvider authenticationProvider,
       final MultiTenancyConfiguration multiTenancyCfg) {
-    this.registry = registry;
+    this.serviceRegistry = serviceRegistry;
     this.authenticationProvider = authenticationProvider;
     this.multiTenancyCfg = multiTenancyCfg;
   }
@@ -61,7 +61,7 @@ public class ExpressionController {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
         () ->
-            registry
+            serviceRegistry
                 .expressionServices(physicalTenantId)
                 .evaluateExpression(request, authentication),
         ResponseMapper::toExpressionEvaluationResult,

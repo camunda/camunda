@@ -45,12 +45,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/v2/batch-operations")
 public class BatchOperationController {
 
-  private final ServiceRegistry registry;
+  private final ServiceRegistry serviceRegistry;
   private final CamundaAuthenticationProvider authenticationProvider;
 
   public BatchOperationController(
-      final ServiceRegistry registry, final CamundaAuthenticationProvider authenticationProvider) {
-    this.registry = registry;
+      final ServiceRegistry serviceRegistry,
+      final CamundaAuthenticationProvider authenticationProvider) {
+    this.serviceRegistry = serviceRegistry;
     this.authenticationProvider = authenticationProvider;
   }
 
@@ -63,7 +64,7 @@ public class BatchOperationController {
       return ResponseEntity.ok()
           .body(
               SearchQueryResponseMapper.toBatchOperation(
-                  registry
+                  serviceRegistry
                       .batchOperationServices(physicalTenantId)
                       .getById(batchOperationKey, authentication)));
     } catch (final Exception e) {
@@ -78,7 +79,7 @@ public class BatchOperationController {
     return SearchQueryRequestMapper.toBatchOperationQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            q -> search(registry.batchOperationServices(physicalTenantId), q));
+            q -> search(serviceRegistry.batchOperationServices(physicalTenantId), q));
   }
 
   @CamundaPostMapping(
@@ -90,7 +91,7 @@ public class BatchOperationController {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethodWithNoContentResult(
             () ->
-                registry
+                serviceRegistry
                     .batchOperationServices(physicalTenantId)
                     .cancel(batchOperationKey, authentication))
         .join();
@@ -105,7 +106,7 @@ public class BatchOperationController {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethodWithNoContentResult(
             () ->
-                registry
+                serviceRegistry
                     .batchOperationServices(physicalTenantId)
                     .suspend(batchOperationKey, authentication))
         .join();
@@ -120,7 +121,7 @@ public class BatchOperationController {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethodWithNoContentResult(
             () ->
-                registry
+                serviceRegistry
                     .batchOperationServices(physicalTenantId)
                     .resume(batchOperationKey, authentication))
         .join();

@@ -44,15 +44,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @CamundaRestController
 @RequestMapping("/v2/authorizations")
 public class AuthorizationController {
-  private final ServiceRegistry registry;
+  private final ServiceRegistry serviceRegistry;
   private final CamundaAuthenticationProvider authenticationProvider;
   private final AuthorizationMapper authorizationMapper;
 
   public AuthorizationController(
-      final ServiceRegistry registry,
+      final ServiceRegistry serviceRegistry,
       final CamundaAuthenticationProvider authenticationProvider,
       final IdentifierValidator identifierValidator) {
-    this.registry = registry;
+    this.serviceRegistry = serviceRegistry;
     this.authenticationProvider = authenticationProvider;
     authorizationMapper =
         new AuthorizationMapper(
@@ -67,7 +67,7 @@ public class AuthorizationController {
         .toCreateAuthorizationRequest(authorizationCreateRequest)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            request -> create(registry.authorizationServices(physicalTenantId), request));
+            request -> create(serviceRegistry.authorizationServices(physicalTenantId), request));
   }
 
   @RequiresSecondaryStorage
@@ -79,7 +79,7 @@ public class AuthorizationController {
       return ResponseEntity.ok()
           .body(
               SearchQueryResponseMapper.toAuthorization(
-                  registry
+                  serviceRegistry
                       .authorizationServices(physicalTenantId)
                       .getAuthorization(authorizationKey, authentication)));
     } catch (final Exception exception) {
@@ -93,7 +93,7 @@ public class AuthorizationController {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
-            registry
+            serviceRegistry
                 .authorizationServices(physicalTenantId)
                 .deleteAuthorization(authorizationKey, authentication));
   }
@@ -107,7 +107,7 @@ public class AuthorizationController {
         .toUpdateAuthorizationRequest(authorizationKey, authorizationUpdateRequest)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            request -> update(registry.authorizationServices(physicalTenantId), request));
+            request -> update(serviceRegistry.authorizationServices(physicalTenantId), request));
   }
 
   @RequiresSecondaryStorage
@@ -118,7 +118,7 @@ public class AuthorizationController {
     return SearchQueryRequestMapper.toAuthorizationQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            q -> search(registry.authorizationServices(physicalTenantId), q));
+            q -> search(serviceRegistry.authorizationServices(physicalTenantId), q));
   }
 
   private ResponseEntity<AuthorizationSearchResult> search(

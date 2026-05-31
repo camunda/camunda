@@ -175,7 +175,7 @@ public class CamundaServicesConfiguration {
    *
    * <p>For v1 the authorization converter and executor are cloned per-tenant from the global config
    * (no isolation yet); the process cache uses a tenant-scoped search view. See ADR {@code
-   * 0001-physical-tenant-service-registry}.
+   * 0001-physical-tenant-service-serviceRegistry}.
    */
   @Bean
   public ServiceRegistry serviceRegistry(
@@ -414,7 +414,8 @@ public class CamundaServicesConfiguration {
   //
   // Consumers that are not yet physical-tenant aware (currently the MCP gateway tools) still inject
   // individual {@code *Services} singletons. We expose the default tenant's instances from the
-  // registry so those consumers keep working until they are migrated to resolve the tenant per
+  // serviceRegistry so those consumers keep working until they are migrated to resolve the tenant
+  // per
   // request. Making the MCP gateway physical-tenant aware is tracked by
   // https://github.com/camunda/camunda/issues/52573.
 

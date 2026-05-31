@@ -45,12 +45,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/v2/element-instances")
 public class ElementInstanceController {
 
-  private final ServiceRegistry registry;
+  private final ServiceRegistry serviceRegistry;
   private final CamundaAuthenticationProvider authenticationProvider;
 
   public ElementInstanceController(
-      final ServiceRegistry registry, final CamundaAuthenticationProvider authenticationProvider) {
-    this.registry = registry;
+      final ServiceRegistry serviceRegistry,
+      final CamundaAuthenticationProvider authenticationProvider) {
+    this.serviceRegistry = serviceRegistry;
     this.authenticationProvider = authenticationProvider;
   }
 
@@ -64,7 +65,8 @@ public class ElementInstanceController {
     return RequestMapper.toVariableRequest(variableRequest, elementInstanceKey)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            mapped -> setVariables(registry.elementInstanceServices(physicalTenantId), mapped));
+            mapped ->
+                setVariables(serviceRegistry.elementInstanceServices(physicalTenantId), mapped));
   }
 
   private CompletableFuture<ResponseEntity<Object>> setVariables(
@@ -85,7 +87,7 @@ public class ElementInstanceController {
     return SearchQueryRequestMapper.toElementInstanceWaitStateQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            q -> searchWaitStates(registry.elementInstanceServices(physicalTenantId), q));
+            q -> searchWaitStates(serviceRegistry.elementInstanceServices(physicalTenantId), q));
   }
 
   private ResponseEntity<ElementInstanceWaitStateQueryResult> searchWaitStates(
@@ -112,7 +114,7 @@ public class ElementInstanceController {
     return SearchQueryRequestMapper.toElementInstanceQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            q -> search(registry.elementInstanceServices(physicalTenantId), q));
+            q -> search(serviceRegistry.elementInstanceServices(physicalTenantId), q));
   }
 
   @RequiresSecondaryStorage
@@ -122,7 +124,7 @@ public class ElementInstanceController {
       @PathVariable("elementInstanceKey") final Long elementInstanceKey) {
     try {
       final FlowNodeInstanceEntity element =
-          registry
+          serviceRegistry
               .elementInstanceServices(physicalTenantId)
               .getByKey(elementInstanceKey, authenticationProvider.getCamundaAuthentication());
 
@@ -144,7 +146,7 @@ public class ElementInstanceController {
             RestErrorMapper::mapProblemToResponse,
             incidentQuery ->
                 searchIncidents(
-                    registry.elementInstanceServices(physicalTenantId),
+                    serviceRegistry.elementInstanceServices(physicalTenantId),
                     elementInstanceKey,
                     incidentQuery));
   }

@@ -42,12 +42,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("v2/incidents")
 public class IncidentController {
 
-  private final ServiceRegistry registry;
+  private final ServiceRegistry serviceRegistry;
   private final CamundaAuthenticationProvider authenticationProvider;
 
   public IncidentController(
-      final ServiceRegistry registry, final CamundaAuthenticationProvider authenticationProvider) {
-    this.registry = registry;
+      final ServiceRegistry serviceRegistry,
+      final CamundaAuthenticationProvider authenticationProvider) {
+    this.serviceRegistry = serviceRegistry;
     this.authenticationProvider = authenticationProvider;
   }
 
@@ -62,7 +63,7 @@ public class IncidentController {
             : incidentResolutionRequest.getOperationReference();
     return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
-            registry
+            serviceRegistry
                 .incidentServices(physicalTenantId)
                 .resolveIncident(
                     incidentKey,
@@ -78,7 +79,7 @@ public class IncidentController {
     return SearchQueryRequestMapper.toIncidentQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            q -> search(registry.incidentServices(physicalTenantId), q));
+            q -> search(serviceRegistry.incidentServices(physicalTenantId), q));
   }
 
   @RequiresSecondaryStorage
@@ -90,7 +91,7 @@ public class IncidentController {
       return ResponseEntity.ok()
           .body(
               SearchQueryResponseMapper.toIncident(
-                  registry
+                  serviceRegistry
                       .incidentServices(physicalTenantId)
                       .getByKey(incidentKey, authenticationProvider.getCamundaAuthentication())));
     } catch (final Exception e) {
@@ -110,7 +111,7 @@ public class IncidentController {
             RestErrorMapper::mapProblemToResponse,
             q ->
                 getIncidentProcessInstanceStatisticsByError(
-                    registry.incidentServices(physicalTenantId), q));
+                    serviceRegistry.incidentServices(physicalTenantId), q));
   }
 
   @RequiresSecondaryStorage
@@ -124,7 +125,7 @@ public class IncidentController {
             RestErrorMapper::mapProblemToResponse,
             q ->
                 searchIncidentProcessInstanceStatisticsByDefinition(
-                    registry.incidentServices(physicalTenantId), q));
+                    serviceRegistry.incidentServices(physicalTenantId), q));
   }
 
   private ResponseEntity<IncidentSearchQueryResult> search(

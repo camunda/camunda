@@ -26,12 +26,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/v2/clock")
 public class ClockController {
 
-  private final ServiceRegistry registry;
+  private final ServiceRegistry serviceRegistry;
   private final CamundaAuthenticationProvider authenticationProvider;
 
   public ClockController(
-      final ServiceRegistry registry, final CamundaAuthenticationProvider authenticationProvider) {
-    this.registry = registry;
+      final ServiceRegistry serviceRegistry,
+      final CamundaAuthenticationProvider authenticationProvider) {
+    this.serviceRegistry = serviceRegistry;
     this.authenticationProvider = authenticationProvider;
   }
 
@@ -51,13 +52,14 @@ public class ClockController {
       @PhysicalTenantId final String physicalTenantId) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethodWithNoContentResult(
-        () -> registry.clockServices(physicalTenantId).resetClock(authentication));
+        () -> serviceRegistry.clockServices(physicalTenantId).resetClock(authentication));
   }
 
   private CompletableFuture<ResponseEntity<Object>> pinClock(
       final long pinnedEpoch, final String physicalTenantId) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethodWithNoContentResult(
-        () -> registry.clockServices(physicalTenantId).pinClock(pinnedEpoch, authentication));
+        () ->
+            serviceRegistry.clockServices(physicalTenantId).pinClock(pinnedEpoch, authentication));
   }
 }

@@ -52,12 +52,13 @@ import org.springframework.web.bind.annotation.RequestParam;
 @RequestMapping(path = {"/v1/user-tasks", "/v2/user-tasks"})
 public class UserTaskController {
 
-  private final ServiceRegistry registry;
+  private final ServiceRegistry serviceRegistry;
   private final CamundaAuthenticationProvider authenticationProvider;
 
   public UserTaskController(
-      final ServiceRegistry registry, final CamundaAuthenticationProvider authenticationProvider) {
-    this.registry = registry;
+      final ServiceRegistry serviceRegistry,
+      final CamundaAuthenticationProvider authenticationProvider) {
+    this.serviceRegistry = serviceRegistry;
     this.authenticationProvider = authenticationProvider;
   }
 
@@ -68,7 +69,7 @@ public class UserTaskController {
       @RequestBody(required = false) final UserTaskCompletionRequest completionRequest) {
 
     return completeUserTask(
-        registry.userTaskServices(physicalTenantId),
+        serviceRegistry.userTaskServices(physicalTenantId),
         RequestMapper.toUserTaskCompletionRequest(completionRequest, userTaskKey));
   }
 
@@ -81,7 +82,7 @@ public class UserTaskController {
     return RequestMapper.toUserTaskAssignmentRequest(assignmentRequest, userTaskKey)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            request -> assignUserTask(registry.userTaskServices(physicalTenantId), request));
+            request -> assignUserTask(serviceRegistry.userTaskServices(physicalTenantId), request));
   }
 
   @CamundaDeleteMapping(path = "/{userTaskKey}/assignee")
@@ -89,7 +90,7 @@ public class UserTaskController {
       @PhysicalTenantId final String physicalTenantId, @PathVariable final long userTaskKey) {
 
     return unassignUserTask(
-        registry.userTaskServices(physicalTenantId),
+        serviceRegistry.userTaskServices(physicalTenantId),
         RequestMapper.toUserTaskUnassignmentRequest(userTaskKey));
   }
 
@@ -102,7 +103,7 @@ public class UserTaskController {
     return RequestMapper.toUserTaskUpdateRequest(updateRequest, userTaskKey)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            request -> updateUserTask(registry.userTaskServices(physicalTenantId), request));
+            request -> updateUserTask(serviceRegistry.userTaskServices(physicalTenantId), request));
   }
 
   @RequiresSecondaryStorage
@@ -113,7 +114,7 @@ public class UserTaskController {
     return SearchQueryRequestMapper.toUserTaskQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            q -> search(registry.userTaskServices(physicalTenantId), q));
+            q -> search(serviceRegistry.userTaskServices(physicalTenantId), q));
   }
 
   @RequiresSecondaryStorage
@@ -123,7 +124,7 @@ public class UserTaskController {
       @PathVariable("userTaskKey") final Long userTaskKey) {
     try {
       final var userTask =
-          registry
+          serviceRegistry
               .userTaskServices(physicalTenantId)
               .getByKey(userTaskKey, authenticationProvider.getCamundaAuthentication());
 
@@ -139,7 +140,7 @@ public class UserTaskController {
       @PhysicalTenantId final String physicalTenantId,
       @PathVariable("userTaskKey") final long userTaskKey) {
     try {
-      return registry
+      return serviceRegistry
           .userTaskServices(physicalTenantId)
           .getUserTaskForm(userTaskKey, authenticationProvider.getCamundaAuthentication())
           .map(SearchQueryResponseMapper::toFormItem)
@@ -164,7 +165,7 @@ public class UserTaskController {
             RestErrorMapper::mapProblemToResponse,
             query ->
                 searchUserTaskVariableQuery(
-                    registry.userTaskServices(physicalTenantId),
+                    serviceRegistry.userTaskServices(physicalTenantId),
                     userTaskKey,
                     query,
                     truncateValues));
@@ -186,7 +187,7 @@ public class UserTaskController {
             RestErrorMapper::mapProblemToResponse,
             query ->
                 searchUserTaskEffectiveVariableQuery(
-                    registry.userTaskServices(physicalTenantId),
+                    serviceRegistry.userTaskServices(physicalTenantId),
                     userTaskKey,
                     query,
                     truncateValues));
@@ -204,7 +205,7 @@ public class UserTaskController {
             RestErrorMapper::mapProblemToResponse,
             query ->
                 searchUserTaskAuditLogQuery(
-                    registry.userTaskServices(physicalTenantId), userTaskKey, query));
+                    serviceRegistry.userTaskServices(physicalTenantId), userTaskKey, query));
   }
 
   private ResponseEntity<UserTaskSearchQueryResult> search(

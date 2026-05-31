@@ -32,12 +32,13 @@ import org.springframework.web.bind.annotation.RequestParam;
 @RequestMapping("/v2/variables")
 public class VariableController {
 
-  private final ServiceRegistry registry;
+  private final ServiceRegistry serviceRegistry;
   private final CamundaAuthenticationProvider authenticationProvider;
 
   public VariableController(
-      final ServiceRegistry registry, final CamundaAuthenticationProvider authenticationProvider) {
-    this.registry = registry;
+      final ServiceRegistry serviceRegistry,
+      final CamundaAuthenticationProvider authenticationProvider) {
+    this.serviceRegistry = serviceRegistry;
     this.authenticationProvider = authenticationProvider;
   }
 
@@ -50,7 +51,7 @@ public class VariableController {
     return SearchQueryRequestMapper.toVariableQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            q -> search(registry.variableServices(physicalTenantId), q, truncateValues));
+            q -> search(serviceRegistry.variableServices(physicalTenantId), q, truncateValues));
   }
 
   private ResponseEntity<Object> search(
@@ -76,7 +77,7 @@ public class VariableController {
       return ResponseEntity.ok()
           .body(
               SearchQueryResponseMapper.toVariableItem(
-                  registry
+                  serviceRegistry
                       .variableServices(physicalTenantId)
                       .getByKey(variableKey, authenticationProvider.getCamundaAuthentication())));
     } catch (final Exception e) {

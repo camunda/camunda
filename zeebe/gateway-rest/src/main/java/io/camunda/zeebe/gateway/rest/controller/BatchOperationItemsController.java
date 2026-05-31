@@ -30,12 +30,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/v2/batch-operation-items")
 public class BatchOperationItemsController {
 
-  private final ServiceRegistry registry;
+  private final ServiceRegistry serviceRegistry;
   private final CamundaAuthenticationProvider authenticationProvider;
 
   public BatchOperationItemsController(
-      final ServiceRegistry registry, final CamundaAuthenticationProvider authenticationProvider) {
-    this.registry = registry;
+      final ServiceRegistry serviceRegistry,
+      final CamundaAuthenticationProvider authenticationProvider) {
+    this.serviceRegistry = serviceRegistry;
     this.authenticationProvider = authenticationProvider;
   }
 
@@ -46,7 +47,7 @@ public class BatchOperationItemsController {
     return SearchQueryRequestMapper.toBatchOperationItemQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            q -> search(registry.batchOperationServices(physicalTenantId), q));
+            q -> search(serviceRegistry.batchOperationServices(physicalTenantId), q));
   }
 
   private ResponseEntity<BatchOperationItemSearchQueryResult> search(

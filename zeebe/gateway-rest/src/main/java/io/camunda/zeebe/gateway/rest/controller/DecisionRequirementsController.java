@@ -34,12 +34,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/v2/decision-requirements")
 public class DecisionRequirementsController {
 
-  private final ServiceRegistry registry;
+  private final ServiceRegistry serviceRegistry;
   private final CamundaAuthenticationProvider authenticationProvider;
 
   public DecisionRequirementsController(
-      final ServiceRegistry registry, final CamundaAuthenticationProvider authenticationProvider) {
-    this.registry = registry;
+      final ServiceRegistry serviceRegistry,
+      final CamundaAuthenticationProvider authenticationProvider) {
+    this.serviceRegistry = serviceRegistry;
     this.authenticationProvider = authenticationProvider;
   }
 
@@ -50,7 +51,7 @@ public class DecisionRequirementsController {
     return SearchQueryRequestMapper.toDecisionRequirementsQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            q -> search(registry.decisionRequirementsServices(physicalTenantId), q));
+            q -> search(serviceRegistry.decisionRequirementsServices(physicalTenantId), q));
   }
 
   private ResponseEntity<Object> search(
@@ -75,7 +76,7 @@ public class DecisionRequirementsController {
       return ResponseEntity.ok()
           .body(
               SearchQueryResponseMapper.toDecisionRequirements(
-                  registry
+                  serviceRegistry
                       .decisionRequirementsServices(physicalTenantId)
                       .getByKey(decisionRequirementsKey, authentication)));
     } catch (final Exception e) {
@@ -94,7 +95,7 @@ public class DecisionRequirementsController {
       return ResponseEntity.ok()
           .contentType(new MediaType(MediaType.TEXT_XML, StandardCharsets.UTF_8))
           .body(
-              registry
+              serviceRegistry
                   .decisionRequirementsServices(physicalTenantId)
                   .getDecisionRequirementsXml(decisionRequirementsKey, authentication));
     } catch (final Exception e) {

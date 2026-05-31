@@ -44,12 +44,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/v2/process-definitions")
 public class ProcessDefinitionController {
 
-  private final ServiceRegistry registry;
+  private final ServiceRegistry serviceRegistry;
   private final CamundaAuthenticationProvider authenticationProvider;
 
   public ProcessDefinitionController(
-      final ServiceRegistry registry, final CamundaAuthenticationProvider authenticationProvider) {
-    this.registry = registry;
+      final ServiceRegistry serviceRegistry,
+      final CamundaAuthenticationProvider authenticationProvider) {
+    this.serviceRegistry = serviceRegistry;
     this.authenticationProvider = authenticationProvider;
   }
 
@@ -61,7 +62,7 @@ public class ProcessDefinitionController {
     return SearchQueryRequestMapper.toProcessDefinitionQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            q -> search(registry.processDefinitionServices(physicalTenantId), q));
+            q -> search(serviceRegistry.processDefinitionServices(physicalTenantId), q));
   }
 
   private ResponseEntity<ProcessDefinitionSearchQueryResult> search(
@@ -89,7 +90,7 @@ public class ProcessDefinitionController {
       return ResponseEntity.ok()
           .body(
               SearchQueryResponseMapper.toProcessDefinition(
-                  registry
+                  serviceRegistry
                       .processDefinitionServices(physicalTenantId)
                       .getByKey(
                           processDefinitionKey,
@@ -107,7 +108,7 @@ public class ProcessDefinitionController {
       @PhysicalTenantId final String physicalTenantId,
       @PathVariable("processDefinitionKey") final long processDefinitionKey) {
     try {
-      return registry
+      return serviceRegistry
           .processDefinitionServices(physicalTenantId)
           .getProcessDefinitionXml(
               processDefinitionKey, authenticationProvider.getCamundaAuthentication())
@@ -128,7 +129,7 @@ public class ProcessDefinitionController {
       @PhysicalTenantId final String physicalTenantId,
       @PathVariable("processDefinitionKey") final long processDefinitionKey) {
     try {
-      return registry
+      return serviceRegistry
           .processDefinitionServices(physicalTenantId)
           .getProcessDefinitionStartForm(
               processDefinitionKey, authenticationProvider.getCamundaAuthentication())
@@ -150,7 +151,8 @@ public class ProcessDefinitionController {
         .fold(
             RestErrorMapper::mapProblemToResponse,
             filter ->
-                elementStatistics(registry.processDefinitionServices(physicalTenantId), filter));
+                elementStatistics(
+                    serviceRegistry.processDefinitionServices(physicalTenantId), filter));
   }
 
   @RequiresSecondaryStorage
@@ -166,7 +168,7 @@ public class ProcessDefinitionController {
             RestErrorMapper::mapProblemToResponse,
             query ->
                 getMessageSubscriptionStatistics(
-                    registry.processDefinitionServices(physicalTenantId), query));
+                    serviceRegistry.processDefinitionServices(physicalTenantId), query));
   }
 
   @RequiresSecondaryStorage
@@ -179,7 +181,7 @@ public class ProcessDefinitionController {
             RestErrorMapper::mapProblemToResponse,
             q ->
                 getProcessDefinitionInstanceStatistics(
-                    registry.processDefinitionServices(physicalTenantId), q));
+                    serviceRegistry.processDefinitionServices(physicalTenantId), q));
   }
 
   @RequiresSecondaryStorage
@@ -193,7 +195,7 @@ public class ProcessDefinitionController {
             RestErrorMapper::mapProblemToResponse,
             q ->
                 searchProcessDefinitionInstanceVersionStatistics(
-                    registry.processDefinitionServices(physicalTenantId), q));
+                    serviceRegistry.processDefinitionServices(physicalTenantId), q));
   }
 
   private ResponseEntity<ProcessDefinitionElementStatisticsQueryResult> elementStatistics(

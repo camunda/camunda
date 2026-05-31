@@ -31,12 +31,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/v2/audit-logs")
 public class AuditLogController {
 
-  private final ServiceRegistry registry;
+  private final ServiceRegistry serviceRegistry;
   private final CamundaAuthenticationProvider authenticationProvider;
 
   public AuditLogController(
-      final ServiceRegistry registry, final CamundaAuthenticationProvider authenticationProvider) {
-    this.registry = registry;
+      final ServiceRegistry serviceRegistry,
+      final CamundaAuthenticationProvider authenticationProvider) {
+    this.serviceRegistry = serviceRegistry;
     this.authenticationProvider = authenticationProvider;
   }
 
@@ -48,7 +49,7 @@ public class AuditLogController {
     return SearchQueryRequestMapper.toAuditLogQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            q -> search(registry.auditLogServices(physicalTenantId), q));
+            q -> search(serviceRegistry.auditLogServices(physicalTenantId), q));
   }
 
   @RequiresSecondaryStorage
@@ -59,7 +60,7 @@ public class AuditLogController {
       return ResponseEntity.ok()
           .body(
               SearchQueryResponseMapper.toAuditLog(
-                  registry
+                  serviceRegistry
                       .auditLogServices(physicalTenantId)
                       .getAuditLog(
                           auditLogKey, authenticationProvider.getCamundaAuthentication())));

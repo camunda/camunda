@@ -46,15 +46,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/v2/users")
 @ConditionalOnInternalUserManagement()
 public class UserController {
-  private final ServiceRegistry registry;
+  private final ServiceRegistry serviceRegistry;
   private final CamundaAuthenticationProvider authenticationProvider;
   private final UserMapper userMapper;
 
   public UserController(
-      final ServiceRegistry registry,
+      final ServiceRegistry serviceRegistry,
       final CamundaAuthenticationProvider authenticationProvider,
       final IdentifierValidator identifierValidator) {
-    this.registry = registry;
+    this.serviceRegistry = serviceRegistry;
     this.authenticationProvider = authenticationProvider;
     userMapper = new UserMapper(new UserRequestValidator(new UserValidator(identifierValidator)));
   }
@@ -66,7 +66,7 @@ public class UserController {
         .toUserRequest(userRequest)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            request -> createUser(registry.userServices(physicalTenantId), request));
+            request -> createUser(serviceRegistry.userServices(physicalTenantId), request));
   }
 
   @CamundaGetMapping(path = "/{username}")
@@ -78,7 +78,9 @@ public class UserController {
       return ResponseEntity.ok()
           .body(
               SearchQueryResponseMapper.toUser(
-                  registry.userServices(physicalTenantId).getUser(username, authentication)));
+                  serviceRegistry
+                      .userServices(physicalTenantId)
+                      .getUser(username, authentication)));
     } catch (final Exception exception) {
       return RestErrorMapper.mapErrorToResponse(exception);
     }
@@ -89,7 +91,7 @@ public class UserController {
       @PhysicalTenantId final String physicalTenantId, @PathVariable final String username) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethodWithNoContentResult(
-        () -> registry.userServices(physicalTenantId).deleteUser(username, authentication));
+        () -> serviceRegistry.userServices(physicalTenantId).deleteUser(username, authentication));
   }
 
   private CompletableFuture<ResponseEntity<Object>> createUser(
@@ -110,7 +112,7 @@ public class UserController {
         .toUserUpdateRequest(userUpdateRequest, username)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            request -> updateUser(registry.userServices(physicalTenantId), request));
+            request -> updateUser(serviceRegistry.userServices(physicalTenantId), request));
   }
 
   private CompletableFuture<ResponseEntity<Object>> updateUser(
@@ -130,7 +132,7 @@ public class UserController {
     return SearchQueryRequestMapper.toUserQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            q -> search(registry.userServices(physicalTenantId), q));
+            q -> search(serviceRegistry.userServices(physicalTenantId), q));
   }
 
   private ResponseEntity<UserSearchResult> search(

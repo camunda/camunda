@@ -41,13 +41,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/v2/agent-instances")
 public class AgentInstanceController {
 
-  private final ServiceRegistry registry;
+  private final ServiceRegistry serviceRegistry;
   private final CamundaAuthenticationProvider authenticationProvider;
   private final AgentInstanceMapper mapper;
 
   public AgentInstanceController(
-      final ServiceRegistry registry, final CamundaAuthenticationProvider authenticationProvider) {
-    this.registry = registry;
+      final ServiceRegistry serviceRegistry,
+      final CamundaAuthenticationProvider authenticationProvider) {
+    this.serviceRegistry = serviceRegistry;
     this.authenticationProvider = authenticationProvider;
     mapper = new AgentInstanceMapper(new AgentInstanceRequestValidator());
   }
@@ -60,7 +61,7 @@ public class AgentInstanceController {
         .toCreateAgentInstanceRecord(request)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            record -> create(registry.agentInstanceServices(physicalTenantId), record));
+            record -> create(serviceRegistry.agentInstanceServices(physicalTenantId), record));
   }
 
   @CamundaPatchMapping(path = "/{agentInstanceKey}")
@@ -72,7 +73,7 @@ public class AgentInstanceController {
         .toUpdateAgentInstanceRecord(agentInstanceKey, request)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            record -> update(registry.agentInstanceServices(physicalTenantId), record));
+            record -> update(serviceRegistry.agentInstanceServices(physicalTenantId), record));
   }
 
   @RequiresSecondaryStorage
@@ -82,7 +83,7 @@ public class AgentInstanceController {
       @PathVariable("agentInstanceKey") final long agentInstanceKey) {
     try {
       final var agentInstance =
-          registry
+          serviceRegistry
               .agentInstanceServices(physicalTenantId)
               .getByKey(agentInstanceKey, authenticationProvider.getCamundaAuthentication());
       return ResponseEntity.ok(SearchQueryResponseMapper.toAgentInstanceResult(agentInstance));
@@ -99,7 +100,7 @@ public class AgentInstanceController {
     return SearchQueryRequestMapper.toAgentInstanceQuery(request)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            query -> search(registry.agentInstanceServices(physicalTenantId), query));
+            query -> search(serviceRegistry.agentInstanceServices(physicalTenantId), query));
   }
 
   private CompletableFuture<ResponseEntity<Object>> create(

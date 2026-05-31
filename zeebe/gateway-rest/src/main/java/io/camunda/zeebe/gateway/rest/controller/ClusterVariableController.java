@@ -44,15 +44,15 @@ import org.springframework.web.bind.annotation.RequestParam;
 @RequestMapping("/v2/cluster-variables")
 public class ClusterVariableController {
 
-  private final ServiceRegistry registry;
+  private final ServiceRegistry serviceRegistry;
   private final CamundaAuthenticationProvider authenticationProvider;
   private final ClusterVariableMapper clusterVariableMapper;
 
   public ClusterVariableController(
-      final ServiceRegistry registry,
+      final ServiceRegistry serviceRegistry,
       final CamundaAuthenticationProvider authenticationProvider,
       final IdentifierValidator identifierValidator) {
-    this.registry = registry;
+    this.serviceRegistry = serviceRegistry;
     this.authenticationProvider = authenticationProvider;
     clusterVariableMapper =
         new ClusterVariableMapper(
@@ -69,7 +69,7 @@ public class ClusterVariableController {
             RestErrorMapper::mapProblemToCompletedResponse,
             mapped ->
                 createGlobalClusterVariable(
-                    registry.clusterVariableServices(physicalTenantId), mapped));
+                    serviceRegistry.clusterVariableServices(physicalTenantId), mapped));
   }
 
   @CamundaPostMapping(path = "/tenants/{tenantId}")
@@ -83,7 +83,7 @@ public class ClusterVariableController {
             RestErrorMapper::mapProblemToCompletedResponse,
             mapped ->
                 createTenantClusterVariable(
-                    registry.clusterVariableServices(physicalTenantId), mapped));
+                    serviceRegistry.clusterVariableServices(physicalTenantId), mapped));
   }
 
   @CamundaDeleteMapping(path = "/global/{name}")
@@ -95,7 +95,7 @@ public class ClusterVariableController {
             RestErrorMapper::mapProblemToCompletedResponse,
             mapped ->
                 deleteGlobalClusterVariable(
-                    registry.clusterVariableServices(physicalTenantId), mapped));
+                    serviceRegistry.clusterVariableServices(physicalTenantId), mapped));
   }
 
   @CamundaDeleteMapping(path = "/tenants/{tenantId}/{name}")
@@ -109,7 +109,7 @@ public class ClusterVariableController {
             RestErrorMapper::mapProblemToCompletedResponse,
             mapped ->
                 deleteTenantClusterVariable(
-                    registry.clusterVariableServices(physicalTenantId), mapped));
+                    serviceRegistry.clusterVariableServices(physicalTenantId), mapped));
   }
 
   @CamundaPutMapping(path = "/global/{name}")
@@ -123,7 +123,7 @@ public class ClusterVariableController {
             RestErrorMapper::mapProblemToCompletedResponse,
             mapped ->
                 updateGlobalClusterVariable(
-                    registry.clusterVariableServices(physicalTenantId), mapped));
+                    serviceRegistry.clusterVariableServices(physicalTenantId), mapped));
   }
 
   @CamundaPutMapping(path = "/tenants/{tenantId}/{name}")
@@ -138,7 +138,7 @@ public class ClusterVariableController {
             RestErrorMapper::mapProblemToCompletedResponse,
             mapped ->
                 updateTenantClusterVariable(
-                    registry.clusterVariableServices(physicalTenantId), mapped));
+                    serviceRegistry.clusterVariableServices(physicalTenantId), mapped));
   }
 
   @RequiresSecondaryStorage
@@ -151,7 +151,9 @@ public class ClusterVariableController {
     return SearchQueryRequestMapper.toClusterVariableQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            q -> search(registry.clusterVariableServices(physicalTenantId), q, truncateValues));
+            q ->
+                search(
+                    serviceRegistry.clusterVariableServices(physicalTenantId), q, truncateValues));
   }
 
   private ResponseEntity<Object> search(
@@ -178,7 +180,7 @@ public class ClusterVariableController {
             RestErrorMapper::mapProblemToResponse,
             mapped ->
                 getGlobalClusterVariable(
-                    registry.clusterVariableServices(physicalTenantId), mapped));
+                    serviceRegistry.clusterVariableServices(physicalTenantId), mapped));
   }
 
   @RequiresSecondaryStorage
@@ -193,7 +195,7 @@ public class ClusterVariableController {
             RestErrorMapper::mapProblemToResponse,
             mapped ->
                 getTenantClusterVariable(
-                    registry.clusterVariableServices(physicalTenantId), mapped));
+                    serviceRegistry.clusterVariableServices(physicalTenantId), mapped));
   }
 
   private ResponseEntity<Object> getGlobalClusterVariable(

@@ -29,15 +29,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/v2/conditionals")
 public class ConditionalController {
 
-  private final ServiceRegistry registry;
+  private final ServiceRegistry serviceRegistry;
   private final MultiTenancyConfiguration multiTenancyCfg;
   private final CamundaAuthenticationProvider authenticationProvider;
 
   public ConditionalController(
-      final ServiceRegistry registry,
+      final ServiceRegistry serviceRegistry,
       final MultiTenancyConfiguration multiTenancyCfg,
       final CamundaAuthenticationProvider authenticationProvider) {
-    this.registry = registry;
+    this.serviceRegistry = serviceRegistry;
     this.multiTenancyCfg = multiTenancyCfg;
     this.authenticationProvider = authenticationProvider;
   }
@@ -50,7 +50,8 @@ public class ConditionalController {
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
             mapped ->
-                evaluateConditionalEvent(registry.conditionalServices(physicalTenantId), mapped));
+                evaluateConditionalEvent(
+                    serviceRegistry.conditionalServices(physicalTenantId), mapped));
   }
 
   private CompletableFuture<ResponseEntity<Object>> evaluateConditionalEvent(

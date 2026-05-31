@@ -44,17 +44,17 @@ public class SetupController {
   public static final String ADMIN_EXISTS_ERROR_MESSAGE =
       "Expected to create an initial admin user, but found existing admin users. Please ask your admin to create a new user with the '%s' role."
           .formatted(DefaultRole.ADMIN.getId());
-  private final ServiceRegistry registry;
+  private final ServiceRegistry serviceRegistry;
   private final CamundaSecurityLibraryProperties cslProperties;
   private final CamundaAuthenticationProvider authenticationProvider;
   private final UserMapper userMapper;
 
   public SetupController(
-      final ServiceRegistry registry,
+      final ServiceRegistry serviceRegistry,
       final CamundaSecurityLibraryProperties cslProperties,
       final CamundaAuthenticationProvider authenticationProvider,
       final IdentifierValidator identifierValidator) {
-    this.registry = registry;
+    this.serviceRegistry = serviceRegistry;
     this.cslProperties = cslProperties;
     this.authenticationProvider = authenticationProvider;
     userMapper = new UserMapper(new UserRequestValidator(new UserValidator(identifierValidator)));
@@ -71,7 +71,7 @@ public class SetupController {
     }
 
     final var anonymousAuth = authenticationProvider.getAnonymousCamundaAuthentication();
-    if (registry
+    if (serviceRegistry
         .roleServices(physicalTenantId)
         .hasMembersOfType(DefaultRole.ADMIN.getId(), EntityType.USER, anonymousAuth)) {
       final var exception = new ServiceException(ADMIN_EXISTS_ERROR_MESSAGE, Status.FORBIDDEN);
@@ -86,7 +86,7 @@ public class SetupController {
             dto ->
                 RequestExecutor.executeServiceMethod(
                     () ->
-                        registry
+                        serviceRegistry
                             .userServices(physicalTenantId)
                             .createInitialAdminUser(dto, anonymousAuth),
                     ResponseMapper::toUserCreateResponse,

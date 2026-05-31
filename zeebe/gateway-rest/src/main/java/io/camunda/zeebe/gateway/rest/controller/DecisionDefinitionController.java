@@ -42,15 +42,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/v2/decision-definitions")
 public class DecisionDefinitionController {
 
-  private final ServiceRegistry registry;
+  private final ServiceRegistry serviceRegistry;
   private final MultiTenancyConfiguration multiTenancyCfg;
   private final CamundaAuthenticationProvider authenticationProvider;
 
   public DecisionDefinitionController(
-      final ServiceRegistry registry,
+      final ServiceRegistry serviceRegistry,
       final MultiTenancyConfiguration multiTenancyCfg,
       final CamundaAuthenticationProvider authenticationProvider) {
-    this.registry = registry;
+    this.serviceRegistry = serviceRegistry;
     this.multiTenancyCfg = multiTenancyCfg;
     this.authenticationProvider = authenticationProvider;
   }
@@ -64,7 +64,8 @@ public class DecisionDefinitionController {
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
             mapped ->
-                evaluateDecision(registry.decisionDefinitionServices(physicalTenantId), mapped));
+                evaluateDecision(
+                    serviceRegistry.decisionDefinitionServices(physicalTenantId), mapped));
   }
 
   @RequiresSecondaryStorage
@@ -75,7 +76,7 @@ public class DecisionDefinitionController {
     return SearchQueryRequestMapper.toDecisionDefinitionQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            q -> search(registry.decisionDefinitionServices(physicalTenantId), q));
+            q -> search(serviceRegistry.decisionDefinitionServices(physicalTenantId), q));
   }
 
   @RequiresSecondaryStorage
@@ -86,7 +87,7 @@ public class DecisionDefinitionController {
     try {
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toDecisionDefinition(
-              registry
+              serviceRegistry
                   .decisionDefinitionServices(physicalTenantId)
                   .getByKey(
                       decisionDefinitionKey, authenticationProvider.getCamundaAuthentication())));
@@ -106,7 +107,7 @@ public class DecisionDefinitionController {
       return ResponseEntity.ok()
           .contentType(new MediaType(MediaType.TEXT_XML, StandardCharsets.UTF_8))
           .body(
-              registry
+              serviceRegistry
                   .decisionDefinitionServices(physicalTenantId)
                   .getDecisionDefinitionXml(
                       decisionDefinitionKey, authenticationProvider.getCamundaAuthentication()));

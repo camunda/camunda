@@ -57,15 +57,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/v2/process-instances")
 public class ProcessInstanceController {
 
-  private final ServiceRegistry registry;
+  private final ServiceRegistry serviceRegistry;
   private final MultiTenancyConfiguration multiTenancyCfg;
   private final CamundaAuthenticationProvider authenticationProvider;
 
   public ProcessInstanceController(
-      final ServiceRegistry registry,
+      final ServiceRegistry serviceRegistry,
       final MultiTenancyConfiguration multiTenancyCfg,
       final CamundaAuthenticationProvider authenticationProvider) {
-    this.registry = registry;
+    this.serviceRegistry = serviceRegistry;
     this.multiTenancyCfg = multiTenancyCfg;
     this.authenticationProvider = authenticationProvider;
   }
@@ -78,7 +78,8 @@ public class ProcessInstanceController {
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
             mapped ->
-                createProcessInstance(registry.processInstanceServices(physicalTenantId), mapped));
+                createProcessInstance(
+                    serviceRegistry.processInstanceServices(physicalTenantId), mapped));
   }
 
   @CamundaPostMapping(path = "/{processInstanceKey}/cancellation")
@@ -90,7 +91,8 @@ public class ProcessInstanceController {
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
             mapped ->
-                cancelProcessInstance(registry.processInstanceServices(physicalTenantId), mapped));
+                cancelProcessInstance(
+                    serviceRegistry.processInstanceServices(physicalTenantId), mapped));
   }
 
   @CamundaPostMapping(path = "/{processInstanceKey}/migration")
@@ -102,7 +104,8 @@ public class ProcessInstanceController {
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
             mapped ->
-                migrateProcessInstance(registry.processInstanceServices(physicalTenantId), mapped));
+                migrateProcessInstance(
+                    serviceRegistry.processInstanceServices(physicalTenantId), mapped));
   }
 
   @CamundaPostMapping(path = "/{processInstanceKey}/modification")
@@ -114,7 +117,8 @@ public class ProcessInstanceController {
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
             mapped ->
-                modifyProcessInstance(registry.processInstanceServices(physicalTenantId), mapped));
+                modifyProcessInstance(
+                    serviceRegistry.processInstanceServices(physicalTenantId), mapped));
   }
 
   @RequiresSecondaryStorage
@@ -124,7 +128,7 @@ public class ProcessInstanceController {
       @PathVariable final long processInstanceKey) {
     return RequestExecutor.executeServiceMethod(
         () ->
-            registry
+            serviceRegistry
                 .processInstanceServices(physicalTenantId)
                 .resolveProcessInstanceIncidents(
                     processInstanceKey, authenticationProvider.getCamundaAuthentication()),
@@ -140,7 +144,7 @@ public class ProcessInstanceController {
     return SearchQueryRequestMapper.toProcessInstanceQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            mapped -> search(registry.processInstanceServices(physicalTenantId), mapped));
+            mapped -> search(serviceRegistry.processInstanceServices(physicalTenantId), mapped));
   }
 
   @RequiresSecondaryStorage
@@ -153,7 +157,7 @@ public class ProcessInstanceController {
       return ResponseEntity.ok()
           .body(
               SearchQueryResponseMapper.toProcessInstance(
-                  registry
+                  serviceRegistry
                       .processInstanceServices(physicalTenantId)
                       .getByKey(
                           processInstanceKey, authenticationProvider.getCamundaAuthentication())));
@@ -170,7 +174,7 @@ public class ProcessInstanceController {
       @RequestBody(required = false) final DeleteProcessInstanceRequest request) {
     return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
-            registry
+            serviceRegistry
                 .processInstanceServices(physicalTenantId)
                 .deleteProcessInstance(
                     processInstanceKey,
@@ -187,7 +191,7 @@ public class ProcessInstanceController {
       return ResponseEntity.ok()
           .body(
               SearchQueryResponseMapper.toProcessInstanceCallHierarchyEntries(
-                  registry
+                  serviceRegistry
                       .processInstanceServices(physicalTenantId)
                       .callHierarchy(
                           processInstanceKey, authenticationProvider.getCamundaAuthentication())));
@@ -206,7 +210,7 @@ public class ProcessInstanceController {
       return ResponseEntity.ok()
           .body(
               SearchQueryResponseMapper.toProcessInstanceElementStatisticsResult(
-                  registry
+                  serviceRegistry
                       .processInstanceServices(physicalTenantId)
                       .elementStatistics(
                           processInstanceKey, authenticationProvider.getCamundaAuthentication())));
@@ -224,7 +228,7 @@ public class ProcessInstanceController {
       return ResponseEntity.ok()
           .body(
               SearchQueryResponseMapper.toSequenceFlowsResult(
-                  registry
+                  serviceRegistry
                       .processInstanceServices(physicalTenantId)
                       .sequenceFlows(
                           processInstanceKey, authenticationProvider.getCamundaAuthentication())));
@@ -243,7 +247,7 @@ public class ProcessInstanceController {
             RestErrorMapper::mapProblemToCompletedResponse,
             filter ->
                 batchOperationCancellation(
-                    registry.processInstanceServices(physicalTenantId), filter));
+                    serviceRegistry.processInstanceServices(physicalTenantId), filter));
   }
 
   @RequiresSecondaryStorage
@@ -256,7 +260,7 @@ public class ProcessInstanceController {
             RestErrorMapper::mapProblemToCompletedResponse,
             filter ->
                 batchOperationResolveIncidents(
-                    registry.processInstanceServices(physicalTenantId), filter));
+                    serviceRegistry.processInstanceServices(physicalTenantId), filter));
   }
 
   @RequiresSecondaryStorage
@@ -268,7 +272,8 @@ public class ProcessInstanceController {
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
             mapped ->
-                batchOperationMigrate(registry.processInstanceServices(physicalTenantId), mapped));
+                batchOperationMigrate(
+                    serviceRegistry.processInstanceServices(physicalTenantId), mapped));
   }
 
   @RequiresSecondaryStorage
@@ -280,7 +285,8 @@ public class ProcessInstanceController {
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
             mapped ->
-                batchOperationModify(registry.processInstanceServices(physicalTenantId), mapped));
+                batchOperationModify(
+                    serviceRegistry.processInstanceServices(physicalTenantId), mapped));
   }
 
   @RequiresSecondaryStorage
@@ -292,7 +298,8 @@ public class ProcessInstanceController {
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
             filter ->
-                batchOperationDeletion(registry.processInstanceServices(physicalTenantId), filter));
+                batchOperationDeletion(
+                    serviceRegistry.processInstanceServices(physicalTenantId), filter));
   }
 
   @RequiresSecondaryStorage
@@ -306,7 +313,7 @@ public class ProcessInstanceController {
             RestErrorMapper::mapProblemToResponse,
             incidentQuery ->
                 searchIncidents(
-                    registry.processInstanceServices(physicalTenantId),
+                    serviceRegistry.processInstanceServices(physicalTenantId),
                     processInstanceKey,
                     incidentQuery));
   }

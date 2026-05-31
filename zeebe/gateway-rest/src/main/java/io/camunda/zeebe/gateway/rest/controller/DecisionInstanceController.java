@@ -39,12 +39,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/v2/decision-instances")
 public class DecisionInstanceController {
 
-  private final ServiceRegistry registry;
+  private final ServiceRegistry serviceRegistry;
   private final CamundaAuthenticationProvider authenticationProvider;
 
   public DecisionInstanceController(
-      final ServiceRegistry registry, final CamundaAuthenticationProvider authenticationProvider) {
-    this.registry = registry;
+      final ServiceRegistry serviceRegistry,
+      final CamundaAuthenticationProvider authenticationProvider) {
+    this.serviceRegistry = serviceRegistry;
     this.authenticationProvider = authenticationProvider;
   }
 
@@ -56,7 +57,7 @@ public class DecisionInstanceController {
     return SearchQueryRequestMapper.toDecisionInstanceQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            q -> search(registry.decisionInstanceServices(physicalTenantId), q));
+            q -> search(serviceRegistry.decisionInstanceServices(physicalTenantId), q));
   }
 
   @RequiresSecondaryStorage
@@ -72,7 +73,7 @@ public class DecisionInstanceController {
         .orElseGet(
             () ->
                 getDecisionInstance(
-                    registry.decisionInstanceServices(physicalTenantId),
+                    serviceRegistry.decisionInstanceServices(physicalTenantId),
                     decisionEvaluationInstanceKey));
   }
 
@@ -84,7 +85,7 @@ public class DecisionInstanceController {
       @RequestBody(required = false) final DeleteDecisionInstanceRequest request) {
     return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
-            registry
+            serviceRegistry
                 .decisionInstanceServices(physicalTenantId)
                 .deleteDecisionInstance(
                     decisionEvaluationKey,
@@ -102,7 +103,7 @@ public class DecisionInstanceController {
             RestErrorMapper::mapProblemToCompletedResponse,
             filter ->
                 batchOperationDeletion(
-                    registry.decisionInstanceServices(physicalTenantId), filter));
+                    serviceRegistry.decisionInstanceServices(physicalTenantId), filter));
   }
 
   private ResponseEntity<DecisionInstanceSearchQueryResult> search(

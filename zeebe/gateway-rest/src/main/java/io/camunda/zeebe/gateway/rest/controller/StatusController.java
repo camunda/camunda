@@ -21,17 +21,17 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/v2")
 public class StatusController {
 
-  private final ServiceRegistry registry;
+  private final ServiceRegistry serviceRegistry;
 
-  public StatusController(final ServiceRegistry registry) {
-    this.registry = registry;
+  public StatusController(final ServiceRegistry serviceRegistry) {
+    this.serviceRegistry = serviceRegistry;
   }
 
   @CamundaGetMapping(path = "/status")
   public CompletableFuture<ResponseEntity<Object>> getStatus(
       @PhysicalTenantId final String physicalTenantId) {
     return RequestExecutor.executeServiceMethod(
-        registry.topologyServices(physicalTenantId)::getStatus,
+        serviceRegistry.topologyServices(physicalTenantId)::getStatus,
         StatusController::getStatusResponse);
   }
 

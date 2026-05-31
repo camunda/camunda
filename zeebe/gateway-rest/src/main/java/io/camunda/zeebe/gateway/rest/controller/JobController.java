@@ -66,18 +66,18 @@ import org.springframework.web.bind.annotation.RequestParam;
 public class JobController {
 
   private final ResponseObserverProvider responseObserverProvider;
-  private final ServiceRegistry registry;
+  private final ServiceRegistry serviceRegistry;
   private final MultiTenancyConfiguration multiTenancyCfg;
   private final CamundaAuthenticationProvider authenticationProvider;
   private final GatewayRestConfiguration gatewayRestConfiguration;
 
   public JobController(
-      final ServiceRegistry registry,
+      final ServiceRegistry serviceRegistry,
       final ResponseObserverProvider responseObserverProvider,
       final MultiTenancyConfiguration multiTenancyCfg,
       final CamundaAuthenticationProvider authenticationProvider,
       final GatewayRestConfiguration gatewayRestConfiguration) {
-    this.registry = registry;
+    this.serviceRegistry = serviceRegistry;
     this.responseObserverProvider = responseObserverProvider;
     this.multiTenancyCfg = multiTenancyCfg;
     this.authenticationProvider = authenticationProvider;
@@ -86,7 +86,7 @@ public class JobController {
 
   @SuppressWarnings("unchecked")
   private JobServices<JobActivationResult> jobSvc(final String physicalTenantId) {
-    return (JobServices<JobActivationResult>) registry.jobServices(physicalTenantId);
+    return (JobServices<JobActivationResult>) serviceRegistry.jobServices(physicalTenantId);
   }
 
   @CamundaPostMapping(path = "/activation")

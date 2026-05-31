@@ -24,12 +24,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/v2/forms")
 public class FormController {
 
-  private final ServiceRegistry registry;
+  private final ServiceRegistry serviceRegistry;
   private final CamundaAuthenticationProvider authenticationProvider;
 
   public FormController(
-      final ServiceRegistry registry, final CamundaAuthenticationProvider authenticationProvider) {
-    this.registry = registry;
+      final ServiceRegistry serviceRegistry,
+      final CamundaAuthenticationProvider authenticationProvider) {
+    this.serviceRegistry = serviceRegistry;
     this.authenticationProvider = authenticationProvider;
   }
 
@@ -40,7 +41,7 @@ public class FormController {
       @PathVariable("formKey") final Long formKey) {
     try {
       final var form =
-          registry
+          serviceRegistry
               .formServices(physicalTenantId)
               .getByKey(formKey, authenticationProvider.getCamundaAuthentication());
 

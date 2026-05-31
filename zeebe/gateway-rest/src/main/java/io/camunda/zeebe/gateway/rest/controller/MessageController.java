@@ -32,17 +32,17 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/v2/messages")
 public class MessageController {
 
-  private final ServiceRegistry registry;
+  private final ServiceRegistry serviceRegistry;
   private final MultiTenancyConfiguration multiTenancyCfg;
   private final CamundaAuthenticationProvider authenticationProvider;
   private final int maxNameFieldLength;
 
   public MessageController(
-      final ServiceRegistry registry,
+      final ServiceRegistry serviceRegistry,
       final MultiTenancyConfiguration multiTenancyCfg,
       final CamundaAuthenticationProvider authenticationProvider,
       final GatewayRestConfiguration gatewayRestConfiguration) {
-    this.registry = registry;
+    this.serviceRegistry = serviceRegistry;
     this.multiTenancyCfg = multiTenancyCfg;
     this.authenticationProvider = authenticationProvider;
     maxNameFieldLength = gatewayRestConfiguration.getMaxNameFieldLength();
@@ -56,7 +56,7 @@ public class MessageController {
             publicationRequest, multiTenancyCfg.isChecksEnabled(), maxNameFieldLength)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            mapped -> publishMessage(registry.messageServices(physicalTenantId), mapped));
+            mapped -> publishMessage(serviceRegistry.messageServices(physicalTenantId), mapped));
   }
 
   @CamundaPostMapping(path = "/correlation")
@@ -67,7 +67,7 @@ public class MessageController {
             correlationRequest, multiTenancyCfg.isChecksEnabled(), maxNameFieldLength)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            mapped -> correlateMessage(registry.messageServices(physicalTenantId), mapped));
+            mapped -> correlateMessage(serviceRegistry.messageServices(physicalTenantId), mapped));
   }
 
   private CompletableFuture<ResponseEntity<Object>> correlateMessage(

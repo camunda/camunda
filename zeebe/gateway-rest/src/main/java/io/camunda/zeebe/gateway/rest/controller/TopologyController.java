@@ -23,17 +23,17 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping(path = {"/v1", "/v2"})
 public final class TopologyController {
 
-  private final ServiceRegistry registry;
+  private final ServiceRegistry serviceRegistry;
 
-  public TopologyController(final ServiceRegistry registry) {
-    this.registry = registry;
+  public TopologyController(final ServiceRegistry serviceRegistry) {
+    this.serviceRegistry = serviceRegistry;
   }
 
   @CamundaGetMapping(path = "/topology")
   public CompletableFuture<ResponseEntity<Object>> getTopology(
       @PhysicalTenantId final String physicalTenantId) {
     return RequestExecutor.executeServiceMethod(
-        registry.topologyServices(physicalTenantId)::getTopology,
+        serviceRegistry.topologyServices(physicalTenantId)::getTopology,
         ResponseMapper::toTopologyResponse,
         HttpStatus.OK);
   }

@@ -58,15 +58,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @CamundaRestController
 @RequestMapping("/v2/roles")
 public class RoleController {
-  private final ServiceRegistry registry;
+  private final ServiceRegistry serviceRegistry;
   private final CamundaAuthenticationProvider authenticationProvider;
   private final RoleMapper roleMapper;
 
   public RoleController(
-      final ServiceRegistry registry,
+      final ServiceRegistry serviceRegistry,
       final CamundaAuthenticationProvider authenticationProvider,
       final IdentifierValidator identifierValidator) {
-    this.registry = registry;
+    this.serviceRegistry = serviceRegistry;
     this.authenticationProvider = authenticationProvider;
     roleMapper = new RoleMapper(new RoleRequestValidator(new RoleValidator(identifierValidator)));
   }
@@ -79,7 +79,7 @@ public class RoleController {
         .toRoleCreateRequest(createRoleRequest)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            request -> createRole(registry.roleServices(physicalTenantId), request));
+            request -> createRole(serviceRegistry.roleServices(physicalTenantId), request));
   }
 
   private CompletableFuture<ResponseEntity<Object>> createRole(
@@ -100,7 +100,7 @@ public class RoleController {
         .toRoleUpdateRequest(roleUpdateRequest, roleId)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            request -> updateRole(registry.roleServices(physicalTenantId), request));
+            request -> updateRole(serviceRegistry.roleServices(physicalTenantId), request));
   }
 
   public CompletableFuture<ResponseEntity<Object>> updateRole(
@@ -117,7 +117,7 @@ public class RoleController {
       @PhysicalTenantId final String physicalTenantId, @PathVariable final String roleId) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethodWithNoContentResult(
-        () -> registry.roleServices(physicalTenantId).deleteRole(roleId, authentication));
+        () -> serviceRegistry.roleServices(physicalTenantId).deleteRole(roleId, authentication));
   }
 
   @RequiresSecondaryStorage
@@ -129,7 +129,7 @@ public class RoleController {
       return ResponseEntity.ok()
           .body(
               SearchQueryResponseMapper.toRole(
-                  registry.roleServices(physicalTenantId).getRole(roleId, authentication)));
+                  serviceRegistry.roleServices(physicalTenantId).getRole(roleId, authentication)));
     } catch (final Exception exception) {
       return RestErrorMapper.mapErrorToResponse(exception);
     }
@@ -143,7 +143,7 @@ public class RoleController {
     return SearchQueryRequestMapper.toRoleQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            q -> search(registry.roleServices(physicalTenantId), q));
+            q -> search(serviceRegistry.roleServices(physicalTenantId), q));
   }
 
   private ResponseEntity<RoleSearchQueryResult> search(
@@ -167,7 +167,8 @@ public class RoleController {
         .fold(
             RestErrorMapper::mapProblemToResponse,
             userQuery ->
-                searchUsersInRole(registry.roleServices(physicalTenantId), roleId, userQuery));
+                searchUsersInRole(
+                    serviceRegistry.roleServices(physicalTenantId), roleId, userQuery));
   }
 
   private ResponseEntity<RoleUserSearchResult> searchUsersInRole(
@@ -193,7 +194,8 @@ public class RoleController {
         .fold(
             RestErrorMapper::mapProblemToResponse,
             roleQuery ->
-                searchClientsInRole(registry.roleServices(physicalTenantId), roleId, roleQuery));
+                searchClientsInRole(
+                    serviceRegistry.roleServices(physicalTenantId), roleId, roleQuery));
   }
 
   private ResponseEntity<RoleClientSearchResult> searchClientsInRole(
@@ -227,7 +229,7 @@ public class RoleController {
             RestErrorMapper::mapProblemToResponse,
             mappingQuery ->
                 searchMappingRulesInRole(
-                    registry.mappingRuleServices(physicalTenantId), roleId, mappingQuery));
+                    serviceRegistry.mappingRuleServices(physicalTenantId), roleId, mappingQuery));
   }
 
   private ResponseEntity<MappingRuleSearchQueryResult> searchMappingRulesInRole(
@@ -260,7 +262,7 @@ public class RoleController {
         .toRoleMemberRequest(roleId, username, EntityType.USER)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            request -> addMemberToRole(registry.roleServices(physicalTenantId), request));
+            request -> addMemberToRole(serviceRegistry.roleServices(physicalTenantId), request));
   }
 
   @CamundaPutMapping(path = "/{roleId}/clients/{clientId}")
@@ -272,7 +274,7 @@ public class RoleController {
         .toRoleMemberRequest(roleId, clientId, EntityType.CLIENT)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            request -> addMemberToRole(registry.roleServices(physicalTenantId), request));
+            request -> addMemberToRole(serviceRegistry.roleServices(physicalTenantId), request));
   }
 
   @CamundaPutMapping(path = "/{roleId}/groups/{groupId}")
@@ -284,7 +286,7 @@ public class RoleController {
         .toRoleMemberRequest(roleId, groupId, EntityType.GROUP)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            request -> addMemberToRole(registry.roleServices(physicalTenantId), request));
+            request -> addMemberToRole(serviceRegistry.roleServices(physicalTenantId), request));
   }
 
   private CompletableFuture<ResponseEntity<Object>> addMemberToRole(
@@ -303,7 +305,7 @@ public class RoleController {
         .toRoleMemberRequest(roleId, mappingRuleId, EntityType.MAPPING_RULE)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            request -> addMemberToRole(registry.roleServices(physicalTenantId), request));
+            request -> addMemberToRole(serviceRegistry.roleServices(physicalTenantId), request));
   }
 
   @CamundaDeleteMapping(path = "/{roleId}/mapping-rules/{mappingRuleId}")
@@ -315,7 +317,8 @@ public class RoleController {
         .toRoleMemberRequest(roleId, mappingRuleId, EntityType.MAPPING_RULE)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            request -> removeMemberFromRole(registry.roleServices(physicalTenantId), request));
+            request ->
+                removeMemberFromRole(serviceRegistry.roleServices(physicalTenantId), request));
   }
 
   @CamundaDeleteMapping(path = "/{roleId}/users/{username}")
@@ -327,7 +330,8 @@ public class RoleController {
         .toRoleMemberRequest(roleId, username, EntityType.USER)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            request -> removeMemberFromRole(registry.roleServices(physicalTenantId), request));
+            request ->
+                removeMemberFromRole(serviceRegistry.roleServices(physicalTenantId), request));
   }
 
   @CamundaDeleteMapping(path = "/{roleId}/clients/{clientId}")
@@ -339,7 +343,8 @@ public class RoleController {
         .toRoleMemberRequest(roleId, clientId, EntityType.CLIENT)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            request -> removeMemberFromRole(registry.roleServices(physicalTenantId), request));
+            request ->
+                removeMemberFromRole(serviceRegistry.roleServices(physicalTenantId), request));
   }
 
   @CamundaDeleteMapping(path = "/{roleId}/groups/{groupId}")
@@ -351,7 +356,8 @@ public class RoleController {
         .toRoleMemberRequest(roleId, groupId, EntityType.GROUP)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            request -> removeMemberFromRole(registry.roleServices(physicalTenantId), request));
+            request ->
+                removeMemberFromRole(serviceRegistry.roleServices(physicalTenantId), request));
   }
 
   @RequiresSecondaryStorage
@@ -365,7 +371,8 @@ public class RoleController {
         .fold(
             RestErrorMapper::mapProblemToResponse,
             roleQuery ->
-                searchGroupsInRole(registry.roleServices(physicalTenantId), roleId, roleQuery));
+                searchGroupsInRole(
+                    serviceRegistry.roleServices(physicalTenantId), roleId, roleQuery));
   }
 
   private ResponseEntity<RoleGroupSearchResult> searchGroupsInRole(

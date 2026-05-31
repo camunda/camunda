@@ -66,15 +66,15 @@ import org.springframework.web.bind.annotation.*;
 @CamundaRestController
 @RequestMapping("/v2/tenants")
 public class TenantController {
-  private final ServiceRegistry registry;
+  private final ServiceRegistry serviceRegistry;
   private final CamundaAuthenticationProvider authenticationProvider;
   private final TenantMapper tenantMapper;
 
   public TenantController(
-      final ServiceRegistry registry,
+      final ServiceRegistry serviceRegistry,
       final CamundaAuthenticationProvider authenticationProvider,
       final IdentifierValidator identifierValidator) {
-    this.registry = registry;
+    this.serviceRegistry = serviceRegistry;
     this.authenticationProvider = authenticationProvider;
     tenantMapper =
         new TenantMapper(new TenantRequestValidator(new TenantValidator(identifierValidator)));
@@ -88,7 +88,7 @@ public class TenantController {
         .toTenantCreateDto(createTenantRequest)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            request -> createTenant(registry.tenantServices(physicalTenantId), request));
+            request -> createTenant(serviceRegistry.tenantServices(physicalTenantId), request));
   }
 
   @RequiresSecondaryStorage
@@ -100,7 +100,9 @@ public class TenantController {
       return ResponseEntity.ok()
           .body(
               SearchQueryResponseMapper.toTenant(
-                  registry.tenantServices(physicalTenantId).getById(tenantId, authentication)));
+                  serviceRegistry
+                      .tenantServices(physicalTenantId)
+                      .getById(tenantId, authentication)));
     } catch (final Exception exception) {
       return RestErrorMapper.mapErrorToResponse(exception);
     }
@@ -114,7 +116,7 @@ public class TenantController {
     return SearchQueryRequestMapper.toTenantQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            q -> search(registry.tenantServices(physicalTenantId), q));
+            q -> search(serviceRegistry.tenantServices(physicalTenantId), q));
   }
 
   @CamundaPutMapping(path = "/{tenantId}")
@@ -126,7 +128,7 @@ public class TenantController {
         .toTenantUpdateDto(tenantId, tenantUpdateRequest)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            request -> updateTenant(registry.tenantServices(physicalTenantId), request));
+            request -> updateTenant(serviceRegistry.tenantServices(physicalTenantId), request));
   }
 
   @CamundaPutMapping(path = "/{tenantId}/users/{username}")
@@ -138,7 +140,8 @@ public class TenantController {
         .toTenantMemberRequest(tenantId, username, EntityType.USER)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            request -> addMemberToTenant(registry.tenantServices(physicalTenantId), request));
+            request ->
+                addMemberToTenant(serviceRegistry.tenantServices(physicalTenantId), request));
   }
 
   @RequiresSecondaryStorage
@@ -152,7 +155,7 @@ public class TenantController {
             RestErrorMapper::mapProblemToResponse,
             tenantQuery ->
                 searchUsersInTenant(
-                    registry.tenantServices(physicalTenantId), tenantId, tenantQuery));
+                    serviceRegistry.tenantServices(physicalTenantId), tenantId, tenantQuery));
   }
 
   @CamundaPutMapping(path = "/{tenantId}/clients/{clientId}")
@@ -164,7 +167,8 @@ public class TenantController {
         .toTenantMemberRequest(tenantId, clientId, EntityType.CLIENT)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            request -> addMemberToTenant(registry.tenantServices(physicalTenantId), request));
+            request ->
+                addMemberToTenant(serviceRegistry.tenantServices(physicalTenantId), request));
   }
 
   @CamundaPutMapping(path = "/{tenantId}/mapping-rules/{mappingRuleId}")
@@ -176,7 +180,8 @@ public class TenantController {
         .toTenantMemberRequest(tenantId, mappingRuleId, EntityType.MAPPING_RULE)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            request -> addMemberToTenant(registry.tenantServices(physicalTenantId), request));
+            request ->
+                addMemberToTenant(serviceRegistry.tenantServices(physicalTenantId), request));
   }
 
   @CamundaPutMapping(path = "/{tenantId}/groups/{groupId}")
@@ -188,7 +193,8 @@ public class TenantController {
         .toTenantMemberRequest(tenantId, groupId, EntityType.GROUP)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            request -> addMemberToTenant(registry.tenantServices(physicalTenantId), request));
+            request ->
+                addMemberToTenant(serviceRegistry.tenantServices(physicalTenantId), request));
   }
 
   @CamundaPutMapping(path = "/{tenantId}/roles/{roleId}")
@@ -200,7 +206,8 @@ public class TenantController {
         .toTenantMemberRequest(tenantId, roleId, EntityType.ROLE)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            request -> addMemberToTenant(registry.tenantServices(physicalTenantId), request));
+            request ->
+                addMemberToTenant(serviceRegistry.tenantServices(physicalTenantId), request));
   }
 
   @CamundaDeleteMapping(path = "/{tenantId}")
@@ -208,7 +215,10 @@ public class TenantController {
       @PhysicalTenantId final String physicalTenantId, @PathVariable final String tenantId) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethodWithNoContentResult(
-        () -> registry.tenantServices(physicalTenantId).deleteTenant(tenantId, authentication));
+        () ->
+            serviceRegistry
+                .tenantServices(physicalTenantId)
+                .deleteTenant(tenantId, authentication));
   }
 
   @CamundaDeleteMapping(path = "/{tenantId}/users/{username}")
@@ -220,7 +230,8 @@ public class TenantController {
         .toTenantMemberRequest(tenantId, username, EntityType.USER)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            request -> removeMemberFromTenant(registry.tenantServices(physicalTenantId), request));
+            request ->
+                removeMemberFromTenant(serviceRegistry.tenantServices(physicalTenantId), request));
   }
 
   @CamundaDeleteMapping(path = "/{tenantId}/clients/{clientId}")
@@ -232,7 +243,8 @@ public class TenantController {
         .toTenantMemberRequest(tenantId, clientId, EntityType.CLIENT)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            request -> removeMemberFromTenant(registry.tenantServices(physicalTenantId), request));
+            request ->
+                removeMemberFromTenant(serviceRegistry.tenantServices(physicalTenantId), request));
   }
 
   @RequiresSecondaryStorage
@@ -246,7 +258,9 @@ public class TenantController {
             RestErrorMapper::mapProblemToResponse,
             mappingRuleQuery ->
                 searchMappingRulesForTenant(
-                    registry.mappingRuleServices(physicalTenantId), tenantId, mappingRuleQuery));
+                    serviceRegistry.mappingRuleServices(physicalTenantId),
+                    tenantId,
+                    mappingRuleQuery));
   }
 
   @CamundaDeleteMapping(path = "/{tenantId}/mapping-rules/{mappingRuleId}")
@@ -258,7 +272,8 @@ public class TenantController {
         .toTenantMemberRequest(tenantId, mappingRuleId, EntityType.MAPPING_RULE)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            request -> removeMemberFromTenant(registry.tenantServices(physicalTenantId), request));
+            request ->
+                removeMemberFromTenant(serviceRegistry.tenantServices(physicalTenantId), request));
   }
 
   @CamundaDeleteMapping(path = "/{tenantId}/groups/{groupId}")
@@ -270,7 +285,8 @@ public class TenantController {
         .toTenantMemberRequest(tenantId, groupId, EntityType.GROUP)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            request -> removeMemberFromTenant(registry.tenantServices(physicalTenantId), request));
+            request ->
+                removeMemberFromTenant(serviceRegistry.tenantServices(physicalTenantId), request));
   }
 
   @CamundaDeleteMapping(path = "/{tenantId}/roles/{roleId}")
@@ -282,7 +298,8 @@ public class TenantController {
         .toTenantMemberRequest(tenantId, roleId, EntityType.ROLE)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            request -> removeMemberFromTenant(registry.tenantServices(physicalTenantId), request));
+            request ->
+                removeMemberFromTenant(serviceRegistry.tenantServices(physicalTenantId), request));
   }
 
   @RequiresSecondaryStorage
@@ -296,7 +313,7 @@ public class TenantController {
             RestErrorMapper::mapProblemToResponse,
             tenantQuery ->
                 searchGroupIdsInTenant(
-                    registry.tenantServices(physicalTenantId), tenantId, tenantQuery));
+                    serviceRegistry.tenantServices(physicalTenantId), tenantId, tenantQuery));
   }
 
   private ResponseEntity<TenantGroupSearchResult> searchGroupIdsInTenant(
@@ -322,7 +339,8 @@ public class TenantController {
         .fold(
             RestErrorMapper::mapProblemToResponse,
             roleQuery ->
-                searchRolesInTenant(registry.roleServices(physicalTenantId), tenantId, roleQuery));
+                searchRolesInTenant(
+                    serviceRegistry.roleServices(physicalTenantId), tenantId, roleQuery));
   }
 
   @RequiresSecondaryStorage
@@ -336,7 +354,7 @@ public class TenantController {
             RestErrorMapper::mapProblemToResponse,
             tenantQuery ->
                 searchClientsInTenant(
-                    registry.tenantServices(physicalTenantId), tenantId, tenantQuery));
+                    serviceRegistry.tenantServices(physicalTenantId), tenantId, tenantQuery));
   }
 
   private CompletableFuture<ResponseEntity<Object>> createTenant(
