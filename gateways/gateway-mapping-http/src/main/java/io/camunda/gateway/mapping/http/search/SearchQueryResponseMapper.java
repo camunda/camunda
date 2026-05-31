@@ -2044,7 +2044,7 @@ public final class SearchQueryResponseMapper {
         .tools(tools)
         .elementId(entity.elementId())
         .processInstanceKey(keyToString(entity.processInstanceKey()))
-        .rootProcessInstanceKey(keyToStringOrNull(entity.rootProcessInstanceKey()))
+        .rootProcessInstanceKey(keyToString(entity.rootProcessInstanceKey()))
         .processDefinitionKey(keyToString(entity.processDefinitionKey()))
         .processDefinitionId(entity.processDefinitionId())
         .processDefinitionVersion(entity.processDefinitionVersion())

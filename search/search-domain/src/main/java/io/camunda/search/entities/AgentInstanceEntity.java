@@ -25,7 +25,7 @@ public record AgentInstanceEntity(
     List<AgentInstanceTool> tools,
     String elementId,
     Long processInstanceKey,
-    @Nullable Long rootProcessInstanceKey,
+    Long rootProcessInstanceKey,
     Long processDefinitionKey,
     String processDefinitionId,
     Integer processDefinitionVersion,
@@ -44,6 +44,7 @@ public record AgentInstanceEntity(
     Objects.requireNonNull(limits, "limits");
     Objects.requireNonNull(elementId, "elementId");
     Objects.requireNonNull(processInstanceKey, "processInstanceKey");
+    Objects.requireNonNull(rootProcessInstanceKey, "rootProcessInstanceKey");
     Objects.requireNonNull(processDefinitionKey, "processDefinitionKey");
     Objects.requireNonNull(processDefinitionId, "processDefinitionId");
     Objects.requireNonNull(processDefinitionVersion, "processDefinitionVersion");
