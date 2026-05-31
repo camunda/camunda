@@ -474,4 +474,71 @@ public class CamundaServicesConfiguration {
         variableByTenant,
         managementServices);
   }
+
+  // -- default-tenant service beans --
+  //
+  // Consumers that are not yet physical-tenant aware (currently the MCP gateway tools) still inject
+  // individual {@code *Services} singletons. We expose the default tenant's instances from the
+  // registry so those consumers keep working until they are migrated to resolve the tenant per
+  // request. Making the MCP gateway physical-tenant aware is tracked by
+  // https://github.com/camunda/camunda/issues/52573.
+
+  @Bean
+  public TopologyServices topologyServices(final ServiceRegistry serviceRegistry) {
+    return serviceRegistry.topologyServices(PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID);
+  }
+
+  @Bean
+  public ProcessInstanceServices processInstanceServices(final ServiceRegistry serviceRegistry) {
+    return serviceRegistry.processInstanceServices(
+        PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID);
+  }
+
+  @Bean
+  public ProcessDefinitionServices processDefinitionServices(
+      final ServiceRegistry serviceRegistry) {
+    return serviceRegistry.processDefinitionServices(
+        PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID);
+  }
+
+  @Bean
+  public UserTaskServices userTaskServices(final ServiceRegistry serviceRegistry) {
+    return serviceRegistry.userTaskServices(PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID);
+  }
+
+  @Bean
+  public IncidentServices incidentServices(final ServiceRegistry serviceRegistry) {
+    return serviceRegistry.incidentServices(PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID);
+  }
+
+  @Bean
+  @SuppressWarnings("unchecked")
+  public JobServices<JobActivationResult> jobServices(final ServiceRegistry serviceRegistry) {
+    return (JobServices<JobActivationResult>)
+        serviceRegistry.jobServices(PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID);
+  }
+
+  @Bean
+  public VariableServices variableServices(final ServiceRegistry serviceRegistry) {
+    return serviceRegistry.variableServices(PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID);
+  }
+
+  @Bean
+  public MessageServices messageServices(final ServiceRegistry serviceRegistry) {
+    return serviceRegistry.messageServices(PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID);
+  }
+
+  @Bean
+  public MessageSubscriptionServices messageSubscriptionServices(
+      final ServiceRegistry serviceRegistry) {
+    return serviceRegistry.messageSubscriptionServices(
+        PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID);
+  }
+
+  // This is required by BrokerModuleConfiguration that requires UserServices for Basic auth
+  // TODO we need to make it physical tenant awar
+  @Bean
+  public UserServices userServices(final ServiceRegistry serviceRegistry) {
+    return serviceRegistry.userServices(PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID);
+  }
 }
