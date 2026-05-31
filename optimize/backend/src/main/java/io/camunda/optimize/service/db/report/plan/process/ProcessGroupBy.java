@@ -13,6 +13,8 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.group.Durati
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.EndDateGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.FlowNodesGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessDefinitionKeyGroupByDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessDefinitionVersionGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.RunningDateGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.StartDateGroupByDto;
@@ -31,6 +33,8 @@ public enum ProcessGroupBy {
   PROCESS_GROUP_BY_PROCESS_INSTANCE_END_DATE(new EndDateGroupByDto()),
   PROCESS_GROUP_BY_PROCESS_INSTANCE_RUNNING_DATE(new RunningDateGroupByDto()),
   PROCESS_GROUP_BY_PROCESS_INSTANCE_START_DATE(new StartDateGroupByDto()),
+  PROCESS_GROUP_BY_PROCESS_DEFINITION_KEY(new ProcessDefinitionKeyGroupByDto()),
+  PROCESS_GROUP_BY_PROCESS_DEFINITION_VERSION(new ProcessDefinitionVersionGroupByDto()),
   PROCESS_GROUP_BY_NONE(new NoneGroupByDto()),
   PROCESS_INCIDENT_GROUP_BY_NONE(new NoneGroupByDto()),
   PROCESS_GROUP_BY_USER_TASK(new UserTasksGroupByDto()),

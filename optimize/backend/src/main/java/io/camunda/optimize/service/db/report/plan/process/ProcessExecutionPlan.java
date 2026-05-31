@@ -29,6 +29,8 @@ import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.
 import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.PROCESS_GROUP_BY_FLOW_NODE_START_DATE;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.PROCESS_GROUP_BY_INCIDENT_FLOW_NODE;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.PROCESS_GROUP_BY_NONE;
+import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.PROCESS_GROUP_BY_PROCESS_DEFINITION_KEY;
+import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.PROCESS_GROUP_BY_PROCESS_DEFINITION_VERSION;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.PROCESS_GROUP_BY_PROCESS_INSTANCE_END_DATE;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.PROCESS_GROUP_BY_PROCESS_INSTANCE_RUNNING_DATE;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.PROCESS_GROUP_BY_PROCESS_INSTANCE_START_DATE;
@@ -38,6 +40,10 @@ import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.
 import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.PROCESS_GROUP_BY_USER_TASK_START_DATE;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.PROCESS_GROUP_BY_VARIABLE;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.PROCESS_INCIDENT_GROUP_BY_NONE;
+import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_AGENT_INPUT_TOKENS;
+import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_AGENT_OUTPUT_TOKENS;
+import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_AGENT_TOOL_CALLS;
+import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_AGENT_TOTAL_TOKENS;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_FLOW_NODE_DURATION;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_FLOW_NODE_FREQUENCY;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_INCIDENT_DURATION;
@@ -607,7 +613,75 @@ public enum ProcessExecutionPlan implements ExecutionPlan {
       MAP),
 
   PROCESS_VARIABLE_GROUP_BY_NONE(
-      PROCESS_VIEW_VARIABLE, PROCESS_GROUP_BY_NONE, PROCESS_DISTRIBUTED_BY_NONE, NUMBER);
+      PROCESS_VIEW_VARIABLE, PROCESS_GROUP_BY_NONE, PROCESS_DISTRIBUTED_BY_NONE, NUMBER),
+
+  PROCESS_INSTANCE_FREQUENCY_GROUP_BY_PROCESS_DEFINITION_KEY(
+      PROCESS_VIEW_INSTANCE_FREQUENCY,
+      PROCESS_GROUP_BY_PROCESS_DEFINITION_KEY,
+      PROCESS_DISTRIBUTED_BY_NONE,
+      MAP),
+  PROCESS_INSTANCE_PERCENTAGE_GROUP_BY_PROCESS_DEFINITION_VERSION(
+      PROCESS_VIEW_INSTANCE_PERCENTAGE,
+      PROCESS_GROUP_BY_PROCESS_DEFINITION_VERSION,
+      PROCESS_DISTRIBUTED_BY_NONE,
+      MAP),
+
+  PROCESS_AGENT_INPUT_TOKENS_GROUP_BY_END_DATE(
+      PROCESS_VIEW_AGENT_INPUT_TOKENS,
+      PROCESS_GROUP_BY_PROCESS_INSTANCE_END_DATE,
+      PROCESS_DISTRIBUTED_BY_NONE,
+      MAP),
+  PROCESS_AGENT_INPUT_TOKENS_GROUP_BY_START_DATE(
+      PROCESS_VIEW_AGENT_INPUT_TOKENS,
+      PROCESS_GROUP_BY_PROCESS_INSTANCE_START_DATE,
+      PROCESS_DISTRIBUTED_BY_NONE,
+      MAP),
+  PROCESS_AGENT_INPUT_TOKENS_GROUP_BY_NONE(
+      PROCESS_VIEW_AGENT_INPUT_TOKENS, PROCESS_GROUP_BY_NONE, PROCESS_DISTRIBUTED_BY_NONE, NUMBER),
+
+  PROCESS_AGENT_OUTPUT_TOKENS_GROUP_BY_END_DATE(
+      PROCESS_VIEW_AGENT_OUTPUT_TOKENS,
+      PROCESS_GROUP_BY_PROCESS_INSTANCE_END_DATE,
+      PROCESS_DISTRIBUTED_BY_NONE,
+      MAP),
+  PROCESS_AGENT_OUTPUT_TOKENS_GROUP_BY_START_DATE(
+      PROCESS_VIEW_AGENT_OUTPUT_TOKENS,
+      PROCESS_GROUP_BY_PROCESS_INSTANCE_START_DATE,
+      PROCESS_DISTRIBUTED_BY_NONE,
+      MAP),
+  PROCESS_AGENT_OUTPUT_TOKENS_GROUP_BY_NONE(
+      PROCESS_VIEW_AGENT_OUTPUT_TOKENS, PROCESS_GROUP_BY_NONE, PROCESS_DISTRIBUTED_BY_NONE, NUMBER),
+
+  PROCESS_AGENT_TOOL_CALLS_GROUP_BY_END_DATE(
+      PROCESS_VIEW_AGENT_TOOL_CALLS,
+      PROCESS_GROUP_BY_PROCESS_INSTANCE_END_DATE,
+      PROCESS_DISTRIBUTED_BY_NONE,
+      MAP),
+  PROCESS_AGENT_TOOL_CALLS_GROUP_BY_START_DATE(
+      PROCESS_VIEW_AGENT_TOOL_CALLS,
+      PROCESS_GROUP_BY_PROCESS_INSTANCE_START_DATE,
+      PROCESS_DISTRIBUTED_BY_NONE,
+      MAP),
+  PROCESS_AGENT_TOOL_CALLS_GROUP_BY_NONE(
+      PROCESS_VIEW_AGENT_TOOL_CALLS, PROCESS_GROUP_BY_NONE, PROCESS_DISTRIBUTED_BY_NONE, NUMBER),
+
+  PROCESS_AGENT_TOTAL_TOKENS_GROUP_BY_END_DATE(
+      PROCESS_VIEW_AGENT_TOTAL_TOKENS,
+      PROCESS_GROUP_BY_PROCESS_INSTANCE_END_DATE,
+      PROCESS_DISTRIBUTED_BY_NONE,
+      MAP),
+  PROCESS_AGENT_TOTAL_TOKENS_GROUP_BY_START_DATE(
+      PROCESS_VIEW_AGENT_TOTAL_TOKENS,
+      PROCESS_GROUP_BY_PROCESS_INSTANCE_START_DATE,
+      PROCESS_DISTRIBUTED_BY_NONE,
+      MAP),
+  PROCESS_AGENT_TOTAL_TOKENS_GROUP_BY_PROCESS_DEFINITION_KEY(
+      PROCESS_VIEW_AGENT_TOTAL_TOKENS,
+      PROCESS_GROUP_BY_PROCESS_DEFINITION_KEY,
+      PROCESS_DISTRIBUTED_BY_NONE,
+      MAP),
+  PROCESS_AGENT_TOTAL_TOKENS_GROUP_BY_NONE(
+      PROCESS_VIEW_AGENT_TOTAL_TOKENS, PROCESS_GROUP_BY_NONE, PROCESS_DISTRIBUTED_BY_NONE, NUMBER);
 
   private final ProcessView view;
   private final ProcessGroupBy groupBy;
