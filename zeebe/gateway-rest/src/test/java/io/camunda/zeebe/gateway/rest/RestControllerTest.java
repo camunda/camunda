@@ -15,7 +15,6 @@ import io.camunda.search.filter.Operator;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.security.validation.IdentifierValidator;
-import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.interceptor.SecondaryStorageInterceptor;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -82,7 +81,6 @@ public abstract class RestControllerTest extends RestTest {
   private static final Pattern ID_PATTERN =
       Pattern.compile(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX);
   @MockitoBean protected SecondaryStorageInterceptor secondaryStorageInterceptor;
-  @MockitoBean protected ServiceRegistry serviceRegistry;
 
   @BeforeEach
   void setup() {

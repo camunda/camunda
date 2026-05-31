@@ -21,6 +21,7 @@ import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.EngineSecurityConfigurations;
 import io.camunda.service.ApiServicesExecutorProvider;
 import io.camunda.service.JobServices;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
@@ -64,16 +65,19 @@ public class JobControllerLongPollingTest extends RestControllerTest {
 
   @Autowired ActivateJobsHandler<JobActivationResult> activateJobsHandler;
   @Autowired StubbedBrokerClient stubbedBrokerClient;
+  @Autowired JobServices<JobActivationResult> jobServices;
   @MockitoSpyBean ResettableJobActivationRequestResponseObserver responseObserver;
   @MockitoBean MultiTenancyConfiguration multiTenancyCfg;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
   @MockitoBean GatewayRestConfiguration gatewayRestConfiguration;
+  @MockitoBean ServiceRegistry serviceRegistry;
 
   @BeforeEach
   void setup() {
     responseObserver.reset();
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
+    when(serviceRegistry.jobServices(any())).thenReturn((JobServices) jobServices);
   }
 
   @Test

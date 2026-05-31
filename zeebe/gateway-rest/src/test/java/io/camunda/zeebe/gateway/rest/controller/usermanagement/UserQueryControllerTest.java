@@ -25,6 +25,7 @@ import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.service.RoleServices;
 import io.camunda.service.UserServices;
 import io.camunda.service.exception.ErrorMapper;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.test.util.Strings;
 import java.util.List;
@@ -77,6 +78,7 @@ public class UserQueryControllerTest extends RestControllerTest {
   @MockitoBean PasswordEncoder passwordEncoder;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
   @MockitoBean private CamundaSecurityLibraryProperties cslProperties;
+  @MockitoBean private ServiceRegistry serviceRegistry;
 
   @BeforeEach
   void setup() {
