@@ -31,6 +31,8 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
       new ArrayProperty<>("elementInstanceKeys", LongValue::new);
   private final StringProperty elementIdProp = new StringProperty("elementId", "");
   private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey", -1L);
+  private final LongProperty rootProcessInstanceKeyProp =
+      new LongProperty("rootProcessInstanceKey", -1L);
   private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId", "");
   private final LongProperty processDefinitionKeyProp =
       new LongProperty("processDefinitionKey", -1L);
@@ -53,12 +55,13 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
       new ArrayProperty<>("changedAttributes", StringValue::new);
 
   public AgentInstanceRecord() {
-    super(16);
+    super(17);
     declareProperty(agentInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(elementInstanceKeysProp)
         .declareProperty(elementIdProp)
         .declareProperty(processInstanceKeyProp)
+        .declareProperty(rootProcessInstanceKeyProp)
         .declareProperty(bpmnProcessIdProp)
         .declareProperty(processDefinitionKeyProp)
         .declareProperty(processDefinitionVersionProp)
@@ -147,6 +150,16 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
 
   public AgentInstanceRecord setProcessDefinitionKey(final long processDefinitionKey) {
     processDefinitionKeyProp.setValue(processDefinitionKey);
+    return this;
+  }
+
+  @Override
+  public long getRootProcessInstanceKey() {
+    return rootProcessInstanceKeyProp.getValue();
+  }
+
+  public AgentInstanceRecord setRootProcessInstanceKey(final long rootProcessInstanceKey) {
+    rootProcessInstanceKeyProp.setValue(rootProcessInstanceKey);
     return this;
   }
 
