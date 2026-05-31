@@ -82,7 +82,7 @@ public abstract class RestControllerTest extends RestTest {
   private static final Pattern ID_PATTERN =
       Pattern.compile(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX);
   @MockitoBean protected SecondaryStorageInterceptor secondaryStorageInterceptor;
-  @MockitoBean private ServiceRegistry serviceRegistry;
+  @MockitoBean protected ServiceRegistry serviceRegistry;
 
   @BeforeEach
   void setup() {
