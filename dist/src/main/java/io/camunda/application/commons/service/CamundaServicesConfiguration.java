@@ -62,8 +62,6 @@ import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.micrometer.core.instrument.MeterRegistry;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
@@ -72,78 +70,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnAnyHttpGatewayEnabled
 public class CamundaServicesConfiguration {
-
-  // -- per-tenant beans --
-
-  // TODO: derive one converter per tenant from per-tenant SecurityConfiguration once available.
-  @Bean
-  public Map<String, BrokerRequestAuthorizationConverter> converterByTenant(
-      final PhysicalTenantResolver resolver, final CamundaSecurityLibraryProperties cslProperties) {
-    final var out = new LinkedHashMap<String, BrokerRequestAuthorizationConverter>();
-    resolver
-        .getAll()
-        .keySet()
-        .forEach(
-            id ->
-                out.put(
-                    id,
-                    new BrokerRequestAuthorizationConverter(
-                        new EngineSecurityConfig(
-                            cslProperties.getAuthentication(),
-                            cslProperties.getAuthorizations().isEnabled(),
-                            cslProperties.getMultiTenancy().isChecksEnabled(),
-                            cslProperties.getInitialization(),
-                            cslProperties.getCompiledIdValidationPattern(),
-                            cslProperties.getCompiledGroupIdValidationPattern()))));
-    return Map.copyOf(out);
-  }
-
-  @Bean
-  public Map<String, ApiServicesExecutorProvider> executorByTenant(
-      final PhysicalTenantResolver resolver) {
-    final var out = new LinkedHashMap<String, ApiServicesExecutorProvider>();
-    resolver
-        .getAll()
-        .forEach(
-            (id, cfg) -> {
-              final var api = cfg.getApi().getRest().getExecutor();
-              out.put(
-                  id,
-                  new ApiServicesExecutorProvider(
-                      api.getCorePoolSizeMultiplier(), api.getMaxPoolSizeMultiplier(),
-                      api.getKeepAlive().toMillis(), api.getQueueCapacity()));
-            });
-    return Map.copyOf(out);
-  }
-
-  // TODO use GatewayRestConfiguration per tenant once available
-  @Bean
-  public Map<String, ProcessCache> processCacheByTenant(
-      final PhysicalTenantResolver resolver,
-      final GatewayRestConfiguration configuration,
-      final SearchClientsProxy searchClients,
-      final BrokerTopologyManager brokerTopologyManager,
-      final MeterRegistry meterRegistry) {
-    final var out = new LinkedHashMap<String, ProcessCache>();
-    resolver
-        .getAll()
-        .keySet()
-        .forEach(
-            id -> {
-              final var cacheConfiguration =
-                  new ProcessCache.Configuration(
-                      configuration.getProcessCache().getMaxSize(),
-                      configuration.getProcessCache().getExpirationIdleMillis());
-              out.put(
-                  id,
-                  new ProcessCache(
-                      cacheConfiguration,
-                      searchClients.withPhysicalTenant(id),
-                      brokerTopologyManager,
-                      meterRegistry));
-            });
-    return Map.copyOf(out);
-  }
 
   // -- cluster-wide beans --
 
@@ -184,16 +110,17 @@ public class CamundaServicesConfiguration {
       final SecurityContextProvider securityContextProvider,
       final PasswordEncoder passwordEncoder,
       final ActivateJobsHandler<JobActivationResult> activateJobsHandler,
-      final Map<String, ApiServicesExecutorProvider> executorByTenant,
-      final Map<String, BrokerRequestAuthorizationConverter> converterByTenant,
-      final Map<String, ProcessCache> processCacheByTenant,
       final SearchClientsProxy searchClients,
       final AuthorizationChecker authorizationChecker,
       final CamundaSecurityLibraryProperties cslProperties,
       final GatewayRestConfiguration gatewayRestConfiguration,
+      final BrokerTopologyManager brokerTopologyManager,
+      final MeterRegistry meterRegistry,
       final Environment environment,
       final ManagementServices managementServices) {
 
+    // TODO check we can maxNameFieldLength per tenant. Currently, it is only set in rdbms
+    // configuration in UC
     final int maxNameFieldLength = gatewayRestConfiguration.getMaxNameFieldLength();
     final boolean secondaryStorageEnabled =
         DatabaseTypeUtils.isSecondaryStorageEnabled(environment);
@@ -203,13 +130,41 @@ public class CamundaServicesConfiguration {
 
     physicalTenantResolver
         .getAll()
-        .keySet()
         .forEach(
-            tenantId -> {
+            (tenantId, tenantConfig) -> {
               final var search = searchClients.withPhysicalTenant(tenantId);
-              final var executor = executorByTenant.get(tenantId);
-              final var converter = converterByTenant.get(tenantId);
-              final var processCache = processCacheByTenant.get(tenantId);
+
+              // -- per-tenant BrokerRequestAuthorizationConverter --
+              // TODO: derive one converter per tenant from per-tenant
+              // CamundaSecurityLibraryProperties once available.
+              final var converter =
+                  new BrokerRequestAuthorizationConverter(
+                      new EngineSecurityConfig(
+                          cslProperties.getAuthentication(),
+                          cslProperties.getAuthorizations().isEnabled(),
+                          cslProperties.getMultiTenancy().isChecksEnabled(),
+                          cslProperties.getInitialization(),
+                          cslProperties.getCompiledIdValidationPattern(),
+                          cslProperties.getCompiledGroupIdValidationPattern()));
+
+              // -- per-tenant ApiServicesExecutorProvider --
+              final var apiExecutorConfig = tenantConfig.getApi().getRest().getExecutor();
+              final var executor =
+                  new ApiServicesExecutorProvider(
+                      apiExecutorConfig.getCorePoolSizeMultiplier(),
+                      apiExecutorConfig.getMaxPoolSizeMultiplier(),
+                      apiExecutorConfig.getKeepAlive().toMillis(),
+                      apiExecutorConfig.getQueueCapacity());
+
+              // -- per-tenant process cache --
+              final var processCacheConfig = tenantConfig.getApi().getRest().getProcessCache();
+              final var cacheConfiguration =
+                  new ProcessCache.Configuration(
+                      processCacheConfig.getMaxSize(),
+                      processCacheConfig.getExpirationIdle().toMillis());
+              final var processCache =
+                  new ProcessCache(
+                      cacheConfiguration, search, brokerTopologyManager, meterRegistry);
 
               // -- leaf services (no service-to-service dependencies) --
               final var form =
@@ -472,7 +427,7 @@ public class CamundaServicesConfiguration {
   }
 
   // This is required by BrokerModuleConfiguration that requires UserServices for Basic auth
-  // TODO we need to make it physical tenant awar
+  // TODO we need to make it physical tenant aware
   @Bean
   public UserServices userServices(final ServiceRegistry serviceRegistry) {
     return serviceRegistry.userServices(PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID);
