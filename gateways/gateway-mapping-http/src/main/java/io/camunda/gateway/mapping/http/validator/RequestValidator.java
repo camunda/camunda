@@ -132,6 +132,19 @@ public final class RequestValidator {
     }
   }
 
+  public static void validatePositiveKeyFormat(
+      final @Nullable String keyValue, final String fieldName, final List<String> violations) {
+    if (keyValue != null && tryParseLong(keyValue).isEmpty()) {
+      violations.add(ERROR_MESSAGE_INVALID_KEY_FORMAT.formatted(fieldName, keyValue));
+    } else if (keyValue != null) {
+      final var parsedKey = tryParseLong(keyValue).orElse(null);
+      if (parsedKey != null && parsedKey <= 0) {
+        violations.add(
+            ERROR_MESSAGE_INVALID_KEY_FORMAT.formatted(fieldName, keyValue + " (must be > 0)"));
+      }
+    }
+  }
+
   /**
    * Validates that a {@code decisionEvaluationInstanceKey} matches the expected format produced by
    * the engine: {@code <decisionEvaluationKey>-<index>} where both parts are non-negative integers

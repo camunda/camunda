@@ -11,6 +11,7 @@ import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESS
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateKeyFormat;
+import static io.camunda.gateway.mapping.http.validator.RequestValidator.validatePositiveKeyFormat;
 
 import io.camunda.gateway.protocol.model.AgentInstanceCreationRequest;
 import io.camunda.gateway.protocol.model.AgentInstanceUpdateRequest;
@@ -36,7 +37,8 @@ public class AgentInstanceRequestValidator {
           if (request.getElementInstanceKey() == null) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("elementInstanceKey"));
           } else {
-            validateKeyFormat(request.getElementInstanceKey(), "elementInstanceKey", violations);
+            validatePositiveKeyFormat(
+                request.getElementInstanceKey(), "elementInstanceKey", violations);
           }
 
           if (request.getDefinition() == null) {
@@ -74,7 +76,7 @@ public class AgentInstanceRequestValidator {
         () -> {
           final List<String> violations = new ArrayList<>();
 
-          validateKeyFormat(agentInstanceKey, "agentInstanceKey", violations);
+          validatePositiveKeyFormat(agentInstanceKey, "agentInstanceKey", violations);
 
           if (request.getElementInstanceKey() == null) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("elementInstanceKey"));
