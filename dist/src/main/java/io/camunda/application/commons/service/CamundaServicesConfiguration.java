@@ -198,42 +198,8 @@ public class CamundaServicesConfiguration {
     final boolean secondaryStorageEnabled =
         DatabaseTypeUtils.isSecondaryStorageEnabled(environment);
 
-    final Map<String, AdHocSubProcessActivityServices> adHocByTenant = new LinkedHashMap<>();
-    final Map<String, AgentInstanceServices> agentInstanceByTenant = new LinkedHashMap<>();
-    final Map<String, AuditLogServices> auditLogByTenant = new LinkedHashMap<>();
-    final Map<String, AuthorizationServices> authorizationByTenant = new LinkedHashMap<>();
-    final Map<String, BatchOperationServices> batchOperationByTenant = new LinkedHashMap<>();
-    final Map<String, ClockServices> clockByTenant = new LinkedHashMap<>();
-    final Map<String, ClusterVariableServices> clusterVariableByTenant = new LinkedHashMap<>();
-    final Map<String, ConditionalServices> conditionalByTenant = new LinkedHashMap<>();
-    final Map<String, DecisionDefinitionServices> decisionDefinitionByTenant =
-        new LinkedHashMap<>();
-    final Map<String, DecisionInstanceServices> decisionInstanceByTenant = new LinkedHashMap<>();
-    final Map<String, DecisionRequirementsServices> decisionRequirementsByTenant =
-        new LinkedHashMap<>();
-    final Map<String, DocumentServices> documentByTenant = new LinkedHashMap<>();
-    final Map<String, ElementInstanceServices> elementInstanceByTenant = new LinkedHashMap<>();
-    final Map<String, ExpressionServices> expressionByTenant = new LinkedHashMap<>();
-    final Map<String, FormServices> formByTenant = new LinkedHashMap<>();
-    final Map<String, GlobalListenerServices> globalListenerByTenant = new LinkedHashMap<>();
-    final Map<String, GroupServices> groupByTenant = new LinkedHashMap<>();
-    final Map<String, IncidentServices> incidentByTenant = new LinkedHashMap<>();
-    final Map<String, JobServices<?>> jobByTenant = new LinkedHashMap<>();
-    final Map<String, MappingRuleServices> mappingRuleByTenant = new LinkedHashMap<>();
-    final Map<String, MessageServices> messageByTenant = new LinkedHashMap<>();
-    final Map<String, MessageSubscriptionServices> messageSubscriptionByTenant =
-        new LinkedHashMap<>();
-    final Map<String, ProcessDefinitionServices> processDefinitionByTenant = new LinkedHashMap<>();
-    final Map<String, ProcessInstanceServices> processInstanceByTenant = new LinkedHashMap<>();
-    final Map<String, ResourceServices> resourceByTenant = new LinkedHashMap<>();
-    final Map<String, RoleServices> roleByTenant = new LinkedHashMap<>();
-    final Map<String, SignalServices> signalByTenant = new LinkedHashMap<>();
-    final Map<String, TenantServices> tenantByTenant = new LinkedHashMap<>();
-    final Map<String, TopologyServices> topologyByTenant = new LinkedHashMap<>();
-    final Map<String, UsageMetricsServices> usageMetricsByTenant = new LinkedHashMap<>();
-    final Map<String, UserServices> userByTenant = new LinkedHashMap<>();
-    final Map<String, UserTaskServices> userTaskByTenant = new LinkedHashMap<>();
-    final Map<String, VariableServices> variableByTenant = new LinkedHashMap<>();
+    final var builder = new DefaultServiceRegistry.Builder();
+    builder.managementServices(managementServices);
 
     physicalTenantResolver
         .getAll()
@@ -301,178 +267,147 @@ public class CamundaServicesConfiguration {
                       converter,
                       maxNameFieldLength);
 
-              adHocByTenant.put(
-                  tenantId,
-                  new AdHocSubProcessActivityServices(
-                      brokerClient, securityContextProvider, executor, converter));
-              agentInstanceByTenant.put(
-                  tenantId,
-                  new AgentInstanceServices(
-                      brokerClient, securityContextProvider, search, executor, converter));
-              auditLogByTenant.put(tenantId, auditLog);
-              authorizationByTenant.put(
-                  tenantId,
-                  new AuthorizationServices(
-                      brokerClient, securityContextProvider, search, executor, converter));
-              batchOperationByTenant.put(
-                  tenantId,
-                  new BatchOperationServices(
-                      brokerClient, securityContextProvider, search, executor, converter));
-              clockByTenant.put(
-                  tenantId,
-                  new ClockServices(brokerClient, securityContextProvider, executor, converter));
-              clusterVariableByTenant.put(
-                  tenantId,
-                  new ClusterVariableServices(
-                      brokerClient, securityContextProvider, search, executor, converter));
-              conditionalByTenant.put(
-                  tenantId,
-                  new ConditionalServices(
-                      brokerClient, securityContextProvider, executor, converter));
-              decisionDefinitionByTenant.put(
-                  tenantId,
-                  new DecisionDefinitionServices(
-                      brokerClient,
-                      securityContextProvider,
-                      search,
-                      decisionRequirements,
-                      executor,
-                      converter));
-              decisionInstanceByTenant.put(
-                  tenantId,
-                  new DecisionInstanceServices(
-                      brokerClient, securityContextProvider, search, executor, converter));
-              decisionRequirementsByTenant.put(tenantId, decisionRequirements);
-              documentByTenant.put(
-                  tenantId,
-                  new DocumentServices(
-                      brokerClient,
-                      securityContextProvider,
-                      new SimpleDocumentStoreRegistry(new EnvironmentConfigurationLoader()),
-                      authorizationChecker,
-                      cslProperties.getAuthorizations(),
-                      executor,
-                      converter));
-              elementInstanceByTenant.put(tenantId, elementInstance);
-              expressionByTenant.put(
-                  tenantId,
-                  new ExpressionServices(
-                      brokerClient, securityContextProvider, executor, converter));
-              formByTenant.put(tenantId, form);
-              globalListenerByTenant.put(
-                  tenantId,
-                  new GlobalListenerServices(
-                      brokerClient, securityContextProvider, search, executor, converter));
-              groupByTenant.put(
-                  tenantId,
-                  new GroupServices(
-                      brokerClient, securityContextProvider, search, executor, converter));
-              incidentByTenant.put(tenantId, incident);
-              jobByTenant.put(
-                  tenantId,
-                  new JobServices<>(
-                      brokerClient,
-                      securityContextProvider,
-                      activateJobsHandler,
-                      search,
-                      executor,
-                      converter,
-                      maxNameFieldLength));
-              mappingRuleByTenant.put(
-                  tenantId,
-                  new MappingRuleServices(
-                      brokerClient, securityContextProvider, search, executor, converter));
-              messageByTenant.put(
-                  tenantId,
-                  new MessageServices(
-                      brokerClient,
-                      securityContextProvider,
-                      executor,
-                      converter,
-                      maxNameFieldLength));
-              messageSubscriptionByTenant.put(
-                  tenantId,
-                  new MessageSubscriptionServices(
-                      brokerClient, securityContextProvider, search, executor, converter));
-              processDefinitionByTenant.put(tenantId, processDefinition);
-              processInstanceByTenant.put(tenantId, processInstance);
-              resourceByTenant.put(
-                  tenantId,
-                  new ResourceServices(
-                      brokerClient,
-                      securityContextProvider,
-                      executor,
-                      converter,
-                      search,
-                      search,
-                      search,
-                      secondaryStorageEnabled));
-              roleByTenant.put(
-                  tenantId,
-                  new RoleServices(
-                      brokerClient, securityContextProvider, search, executor, converter));
-              signalByTenant.put(
-                  tenantId,
-                  new SignalServices(brokerClient, securityContextProvider, executor, converter));
-              tenantByTenant.put(
-                  tenantId,
-                  new TenantServices(
-                      brokerClient, securityContextProvider, search, executor, converter));
-              topologyByTenant.put(
-                  tenantId,
-                  new TopologyServices(brokerClient, securityContextProvider, executor, converter));
-              usageMetricsByTenant.put(
-                  tenantId,
-                  new UsageMetricsServices(
-                      brokerClient, securityContextProvider, search, executor, converter));
-              userByTenant.put(
-                  tenantId,
-                  new UserServices(
-                      brokerClient,
-                      securityContextProvider,
-                      search,
-                      passwordEncoder,
-                      executor,
-                      converter));
-              userTaskByTenant.put(tenantId, userTask);
-              variableByTenant.put(tenantId, variable);
+              builder
+                  .adHocSubProcessActivityServices(
+                      tenantId,
+                      new AdHocSubProcessActivityServices(
+                          brokerClient, securityContextProvider, executor, converter))
+                  .agentInstanceServices(
+                      tenantId,
+                      new AgentInstanceServices(
+                          brokerClient, securityContextProvider, search, executor, converter))
+                  .auditLogServices(tenantId, auditLog)
+                  .authorizationServices(
+                      tenantId,
+                      new AuthorizationServices(
+                          brokerClient, securityContextProvider, search, executor, converter))
+                  .batchOperationServices(
+                      tenantId,
+                      new BatchOperationServices(
+                          brokerClient, securityContextProvider, search, executor, converter))
+                  .clockServices(
+                      tenantId,
+                      new ClockServices(brokerClient, securityContextProvider, executor, converter))
+                  .clusterVariableServices(
+                      tenantId,
+                      new ClusterVariableServices(
+                          brokerClient, securityContextProvider, search, executor, converter))
+                  .conditionalServices(
+                      tenantId,
+                      new ConditionalServices(
+                          brokerClient, securityContextProvider, executor, converter))
+                  .decisionDefinitionServices(
+                      tenantId,
+                      new DecisionDefinitionServices(
+                          brokerClient,
+                          securityContextProvider,
+                          search,
+                          decisionRequirements,
+                          executor,
+                          converter))
+                  .decisionInstanceServices(
+                      tenantId,
+                      new DecisionInstanceServices(
+                          brokerClient, securityContextProvider, search, executor, converter))
+                  .decisionRequirementsServices(tenantId, decisionRequirements)
+                  .documentServices(
+                      tenantId,
+                      new DocumentServices(
+                          brokerClient,
+                          securityContextProvider,
+                          new SimpleDocumentStoreRegistry(new EnvironmentConfigurationLoader()),
+                          authorizationChecker,
+                          cslProperties.getAuthorizations(),
+                          executor,
+                          converter))
+                  .elementInstanceServices(tenantId, elementInstance)
+                  .expressionServices(
+                      tenantId,
+                      new ExpressionServices(
+                          brokerClient, securityContextProvider, executor, converter))
+                  .formServices(tenantId, form)
+                  .globalListenerServices(
+                      tenantId,
+                      new GlobalListenerServices(
+                          brokerClient, securityContextProvider, search, executor, converter))
+                  .groupServices(
+                      tenantId,
+                      new GroupServices(
+                          brokerClient, securityContextProvider, search, executor, converter))
+                  .incidentServices(tenantId, incident)
+                  .jobServices(
+                      tenantId,
+                      new JobServices<>(
+                          brokerClient,
+                          securityContextProvider,
+                          activateJobsHandler,
+                          search,
+                          executor,
+                          converter,
+                          maxNameFieldLength))
+                  .mappingRuleServices(
+                      tenantId,
+                      new MappingRuleServices(
+                          brokerClient, securityContextProvider, search, executor, converter))
+                  .messageServices(
+                      tenantId,
+                      new MessageServices(
+                          brokerClient,
+                          securityContextProvider,
+                          executor,
+                          converter,
+                          maxNameFieldLength))
+                  .messageSubscriptionServices(
+                      tenantId,
+                      new MessageSubscriptionServices(
+                          brokerClient, securityContextProvider, search, executor, converter))
+                  .processDefinitionServices(tenantId, processDefinition)
+                  .processInstanceServices(tenantId, processInstance)
+                  .resourceServices(
+                      tenantId,
+                      new ResourceServices(
+                          brokerClient,
+                          securityContextProvider,
+                          executor,
+                          converter,
+                          search,
+                          search,
+                          search,
+                          secondaryStorageEnabled))
+                  .roleServices(
+                      tenantId,
+                      new RoleServices(
+                          brokerClient, securityContextProvider, search, executor, converter))
+                  .signalServices(
+                      tenantId,
+                      new SignalServices(
+                          brokerClient, securityContextProvider, executor, converter))
+                  .tenantServices(
+                      tenantId,
+                      new TenantServices(
+                          brokerClient, securityContextProvider, search, executor, converter))
+                  .topologyServices(
+                      tenantId,
+                      new TopologyServices(
+                          brokerClient, securityContextProvider, executor, converter))
+                  .usageMetricsServices(
+                      tenantId,
+                      new UsageMetricsServices(
+                          brokerClient, securityContextProvider, search, executor, converter))
+                  .userServices(
+                      tenantId,
+                      new UserServices(
+                          brokerClient,
+                          securityContextProvider,
+                          search,
+                          passwordEncoder,
+                          executor,
+                          converter))
+                  .userTaskServices(tenantId, userTask)
+                  .variableServices(tenantId, variable);
             });
 
-    return new DefaultServiceRegistry(
-        adHocByTenant,
-        agentInstanceByTenant,
-        auditLogByTenant,
-        authorizationByTenant,
-        batchOperationByTenant,
-        clockByTenant,
-        clusterVariableByTenant,
-        conditionalByTenant,
-        decisionDefinitionByTenant,
-        decisionInstanceByTenant,
-        decisionRequirementsByTenant,
-        documentByTenant,
-        elementInstanceByTenant,
-        expressionByTenant,
-        formByTenant,
-        globalListenerByTenant,
-        groupByTenant,
-        incidentByTenant,
-        jobByTenant,
-        mappingRuleByTenant,
-        messageByTenant,
-        messageSubscriptionByTenant,
-        processDefinitionByTenant,
-        processInstanceByTenant,
-        resourceByTenant,
-        roleByTenant,
-        signalByTenant,
-        tenantByTenant,
-        topologyByTenant,
-        usageMetricsByTenant,
-        userByTenant,
-        userTaskByTenant,
-        variableByTenant,
-        managementServices);
+    return builder.build();
   }
 
   // -- default-tenant service beans --

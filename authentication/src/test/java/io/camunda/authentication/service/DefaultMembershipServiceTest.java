@@ -9,7 +9,6 @@ package io.camunda.authentication.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.GroupEntity;
@@ -23,7 +22,7 @@ import io.camunda.service.GroupServices;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
-import io.camunda.service.registry.ServiceRegistry;
+import io.camunda.service.registry.DefaultServiceRegistry;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -45,11 +44,13 @@ class DefaultMembershipServiceTest {
 
   @BeforeEach
   void setUp() {
-    final var serviceRegistry = mock(ServiceRegistry.class);
-    when(serviceRegistry.mappingRuleServices(any())).thenReturn(mappingRuleServices);
-    when(serviceRegistry.groupServices(any())).thenReturn(groupServices);
-    when(serviceRegistry.roleServices(any())).thenReturn(roleServices);
-    when(serviceRegistry.tenantServices(any())).thenReturn(tenantServices);
+    final var serviceRegistry =
+        DefaultServiceRegistry.of(
+            b ->
+                b.mappingRuleServices("default", mappingRuleServices)
+                    .groupServices("default", groupServices)
+                    .roleServices("default", roleServices)
+                    .tenantServices("default", tenantServices));
     service = new DefaultMembershipService(serviceRegistry, new CamundaSecurityLibraryProperties());
   }
 

@@ -24,7 +24,7 @@ import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.reader.ResourceAccess;
 import io.camunda.security.reader.ResourceAccessProvider;
 import io.camunda.service.TenantServices;
-import io.camunda.service.registry.ServiceRegistry;
+import io.camunda.service.registry.DefaultServiceRegistry;
 import jakarta.json.Json;
 import java.util.List;
 import java.util.Map;
@@ -68,8 +68,8 @@ public class OidcCamundaUserServiceTest {
     when(authenticationProvider.getCamundaAuthentication()).thenReturn(camundaAuthentication);
     when(resourceAccessProvider.resolveResourceAccess(any(), eq(COMPONENT_ACCESS_AUTHORIZATION)))
         .thenReturn(ResourceAccess.allowed(withAuthorization(COMPONENT_ACCESS_AUTHORIZATION, "*")));
-    final var serviceRegistry = mock(ServiceRegistry.class);
-    when(serviceRegistry.tenantServices(any())).thenReturn(tenantServices);
+    final var serviceRegistry =
+        DefaultServiceRegistry.of(b -> b.tenantServices("default", tenantServices));
     userService =
         new OidcCamundaUserService(
             authenticationProvider,

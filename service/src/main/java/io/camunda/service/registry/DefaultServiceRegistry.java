@@ -41,7 +41,9 @@ import io.camunda.service.UsageMetricsServices;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserTaskServices;
 import io.camunda.service.VariableServices;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Consumer;
 
 /**
  * Default {@link ServiceRegistry} backed by one {@code Map<physicalTenantId, service>} per
@@ -262,5 +264,301 @@ public record DefaultServiceRegistry(
   @Override
   public ManagementServices managementServices() {
     return managementServices;
+  }
+
+  /** Creates a {@link DefaultServiceRegistry} using the fluent {@link Builder} API. */
+  public static DefaultServiceRegistry of(final Consumer<Builder> spec) {
+    final var builder = new Builder();
+    spec.accept(builder);
+    return builder.build();
+  }
+
+  /**
+   * Fluent builder for {@link DefaultServiceRegistry}. Each service type has a registration method
+   * that takes an explicit {@code physicalTenantId} and the service instance. Multiple tenants can
+   * be registered by calling the same method repeatedly with different tenant ids.
+   *
+   * <p>Usage in tests:
+   *
+   * <pre>{@code
+   * var registry = DefaultServiceRegistry.of(b -> b
+   *     .processInstanceServices("default", processInstanceServices)
+   *     .userServices("default", userServices));
+   * }</pre>
+   *
+   * <p>Usage in production (CamundaServicesConfiguration):
+   *
+   * <pre>{@code
+   * var registry = DefaultServiceRegistry.of(b -> {
+   *   for (var tenantId : tenantIds) {
+   *     b.processInstanceServices(tenantId, buildProcessInstanceServices(tenantId));
+   *     // ... other services
+   *   }
+   *   b.managementServices(mgmt);
+   * });
+   * }</pre>
+   */
+  public static final class Builder {
+
+    private final Map<String, AdHocSubProcessActivityServices> adHocSubProcessActivityByTenant =
+        new HashMap<>();
+    private final Map<String, AgentInstanceServices> agentInstanceByTenant = new HashMap<>();
+    private final Map<String, AuditLogServices> auditLogByTenant = new HashMap<>();
+    private final Map<String, AuthorizationServices> authorizationByTenant = new HashMap<>();
+    private final Map<String, BatchOperationServices> batchOperationByTenant = new HashMap<>();
+    private final Map<String, ClockServices> clockByTenant = new HashMap<>();
+    private final Map<String, ClusterVariableServices> clusterVariableByTenant = new HashMap<>();
+    private final Map<String, ConditionalServices> conditionalByTenant = new HashMap<>();
+    private final Map<String, DecisionDefinitionServices> decisionDefinitionByTenant =
+        new HashMap<>();
+    private final Map<String, DecisionInstanceServices> decisionInstanceByTenant = new HashMap<>();
+    private final Map<String, DecisionRequirementsServices> decisionRequirementsByTenant =
+        new HashMap<>();
+    private final Map<String, DocumentServices> documentByTenant = new HashMap<>();
+    private final Map<String, ElementInstanceServices> elementInstanceByTenant = new HashMap<>();
+    private final Map<String, ExpressionServices> expressionByTenant = new HashMap<>();
+    private final Map<String, FormServices> formByTenant = new HashMap<>();
+    private final Map<String, GlobalListenerServices> globalListenerByTenant = new HashMap<>();
+    private final Map<String, GroupServices> groupByTenant = new HashMap<>();
+    private final Map<String, IncidentServices> incidentByTenant = new HashMap<>();
+    private final Map<String, JobServices<?>> jobByTenant = new HashMap<>();
+    private final Map<String, MappingRuleServices> mappingRuleByTenant = new HashMap<>();
+    private final Map<String, MessageServices> messageByTenant = new HashMap<>();
+    private final Map<String, MessageSubscriptionServices> messageSubscriptionByTenant =
+        new HashMap<>();
+    private final Map<String, ProcessDefinitionServices> processDefinitionByTenant =
+        new HashMap<>();
+    private final Map<String, ProcessInstanceServices> processInstanceByTenant = new HashMap<>();
+    private final Map<String, ResourceServices> resourceByTenant = new HashMap<>();
+    private final Map<String, RoleServices> roleByTenant = new HashMap<>();
+    private final Map<String, SignalServices> signalByTenant = new HashMap<>();
+    private final Map<String, TenantServices> tenantByTenant = new HashMap<>();
+    private final Map<String, TopologyServices> topologyByTenant = new HashMap<>();
+    private final Map<String, UsageMetricsServices> usageMetricsByTenant = new HashMap<>();
+    private final Map<String, UserServices> userByTenant = new HashMap<>();
+    private final Map<String, UserTaskServices> userTaskByTenant = new HashMap<>();
+    private final Map<String, VariableServices> variableByTenant = new HashMap<>();
+    private ManagementServices managementServices;
+
+    public Builder adHocSubProcessActivityServices(
+        final String tenantId, final AdHocSubProcessActivityServices service) {
+      adHocSubProcessActivityByTenant.put(tenantId, service);
+      return this;
+    }
+
+    public Builder agentInstanceServices(
+        final String tenantId, final AgentInstanceServices service) {
+      agentInstanceByTenant.put(tenantId, service);
+      return this;
+    }
+
+    public Builder auditLogServices(final String tenantId, final AuditLogServices service) {
+      auditLogByTenant.put(tenantId, service);
+      return this;
+    }
+
+    public Builder authorizationServices(
+        final String tenantId, final AuthorizationServices service) {
+      authorizationByTenant.put(tenantId, service);
+      return this;
+    }
+
+    public Builder batchOperationServices(
+        final String tenantId, final BatchOperationServices service) {
+      batchOperationByTenant.put(tenantId, service);
+      return this;
+    }
+
+    public Builder clockServices(final String tenantId, final ClockServices service) {
+      clockByTenant.put(tenantId, service);
+      return this;
+    }
+
+    public Builder clusterVariableServices(
+        final String tenantId, final ClusterVariableServices service) {
+      clusterVariableByTenant.put(tenantId, service);
+      return this;
+    }
+
+    public Builder conditionalServices(final String tenantId, final ConditionalServices service) {
+      conditionalByTenant.put(tenantId, service);
+      return this;
+    }
+
+    public Builder decisionDefinitionServices(
+        final String tenantId, final DecisionDefinitionServices service) {
+      decisionDefinitionByTenant.put(tenantId, service);
+      return this;
+    }
+
+    public Builder decisionInstanceServices(
+        final String tenantId, final DecisionInstanceServices service) {
+      decisionInstanceByTenant.put(tenantId, service);
+      return this;
+    }
+
+    public Builder decisionRequirementsServices(
+        final String tenantId, final DecisionRequirementsServices service) {
+      decisionRequirementsByTenant.put(tenantId, service);
+      return this;
+    }
+
+    public Builder documentServices(final String tenantId, final DocumentServices service) {
+      documentByTenant.put(tenantId, service);
+      return this;
+    }
+
+    public Builder elementInstanceServices(
+        final String tenantId, final ElementInstanceServices service) {
+      elementInstanceByTenant.put(tenantId, service);
+      return this;
+    }
+
+    public Builder expressionServices(final String tenantId, final ExpressionServices service) {
+      expressionByTenant.put(tenantId, service);
+      return this;
+    }
+
+    public Builder formServices(final String tenantId, final FormServices service) {
+      formByTenant.put(tenantId, service);
+      return this;
+    }
+
+    public Builder globalListenerServices(
+        final String tenantId, final GlobalListenerServices service) {
+      globalListenerByTenant.put(tenantId, service);
+      return this;
+    }
+
+    public Builder groupServices(final String tenantId, final GroupServices service) {
+      groupByTenant.put(tenantId, service);
+      return this;
+    }
+
+    public Builder incidentServices(final String tenantId, final IncidentServices service) {
+      incidentByTenant.put(tenantId, service);
+      return this;
+    }
+
+    public Builder jobServices(final String tenantId, final JobServices<?> service) {
+      jobByTenant.put(tenantId, service);
+      return this;
+    }
+
+    public Builder mappingRuleServices(final String tenantId, final MappingRuleServices service) {
+      mappingRuleByTenant.put(tenantId, service);
+      return this;
+    }
+
+    public Builder messageServices(final String tenantId, final MessageServices service) {
+      messageByTenant.put(tenantId, service);
+      return this;
+    }
+
+    public Builder messageSubscriptionServices(
+        final String tenantId, final MessageSubscriptionServices service) {
+      messageSubscriptionByTenant.put(tenantId, service);
+      return this;
+    }
+
+    public Builder processDefinitionServices(
+        final String tenantId, final ProcessDefinitionServices service) {
+      processDefinitionByTenant.put(tenantId, service);
+      return this;
+    }
+
+    public Builder processInstanceServices(
+        final String tenantId, final ProcessInstanceServices service) {
+      processInstanceByTenant.put(tenantId, service);
+      return this;
+    }
+
+    public Builder resourceServices(final String tenantId, final ResourceServices service) {
+      resourceByTenant.put(tenantId, service);
+      return this;
+    }
+
+    public Builder roleServices(final String tenantId, final RoleServices service) {
+      roleByTenant.put(tenantId, service);
+      return this;
+    }
+
+    public Builder signalServices(final String tenantId, final SignalServices service) {
+      signalByTenant.put(tenantId, service);
+      return this;
+    }
+
+    public Builder tenantServices(final String tenantId, final TenantServices service) {
+      tenantByTenant.put(tenantId, service);
+      return this;
+    }
+
+    public Builder topologyServices(final String tenantId, final TopologyServices service) {
+      topologyByTenant.put(tenantId, service);
+      return this;
+    }
+
+    public Builder usageMetricsServices(final String tenantId, final UsageMetricsServices service) {
+      usageMetricsByTenant.put(tenantId, service);
+      return this;
+    }
+
+    public Builder userServices(final String tenantId, final UserServices service) {
+      userByTenant.put(tenantId, service);
+      return this;
+    }
+
+    public Builder userTaskServices(final String tenantId, final UserTaskServices service) {
+      userTaskByTenant.put(tenantId, service);
+      return this;
+    }
+
+    public Builder variableServices(final String tenantId, final VariableServices service) {
+      variableByTenant.put(tenantId, service);
+      return this;
+    }
+
+    public Builder managementServices(final ManagementServices service) {
+      managementServices = service;
+      return this;
+    }
+
+    public DefaultServiceRegistry build() {
+      return new DefaultServiceRegistry(
+          Map.copyOf(adHocSubProcessActivityByTenant),
+          Map.copyOf(agentInstanceByTenant),
+          Map.copyOf(auditLogByTenant),
+          Map.copyOf(authorizationByTenant),
+          Map.copyOf(batchOperationByTenant),
+          Map.copyOf(clockByTenant),
+          Map.copyOf(clusterVariableByTenant),
+          Map.copyOf(conditionalByTenant),
+          Map.copyOf(decisionDefinitionByTenant),
+          Map.copyOf(decisionInstanceByTenant),
+          Map.copyOf(decisionRequirementsByTenant),
+          Map.copyOf(documentByTenant),
+          Map.copyOf(elementInstanceByTenant),
+          Map.copyOf(expressionByTenant),
+          Map.copyOf(formByTenant),
+          Map.copyOf(globalListenerByTenant),
+          Map.copyOf(groupByTenant),
+          Map.copyOf(incidentByTenant),
+          Map.copyOf(jobByTenant),
+          Map.copyOf(mappingRuleByTenant),
+          Map.copyOf(messageByTenant),
+          Map.copyOf(messageSubscriptionByTenant),
+          Map.copyOf(processDefinitionByTenant),
+          Map.copyOf(processInstanceByTenant),
+          Map.copyOf(resourceByTenant),
+          Map.copyOf(roleByTenant),
+          Map.copyOf(signalByTenant),
+          Map.copyOf(tenantByTenant),
+          Map.copyOf(topologyByTenant),
+          Map.copyOf(usageMetricsByTenant),
+          Map.copyOf(userByTenant),
+          Map.copyOf(userTaskByTenant),
+          Map.copyOf(variableByTenant),
+          managementServices);
+    }
   }
 }

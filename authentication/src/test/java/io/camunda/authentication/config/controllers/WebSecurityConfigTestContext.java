@@ -25,6 +25,8 @@ import io.camunda.service.ApiServicesExecutorProvider;
 import io.camunda.service.GroupServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
+import io.camunda.service.registry.DefaultServiceRegistry;
+import io.camunda.service.registry.ServiceRegistry;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.concurrent.ForkJoinPool;
 import org.springframework.boot.SpringBootConfiguration;
@@ -94,6 +96,18 @@ public class WebSecurityConfigTestContext {
   @Bean
   public TenantServices createTenantServices(final ApiServicesExecutorProvider executorProvider) {
     return new TenantServices(null, null, null, executorProvider, null);
+  }
+
+  @Bean
+  public ServiceRegistry serviceRegistry(
+      final RoleServices roleServices,
+      final GroupServices groupServices,
+      final TenantServices tenantServices) {
+    return DefaultServiceRegistry.of(
+        b ->
+            b.roleServices("default", roleServices)
+                .groupServices("default", groupServices)
+                .tenantServices("default", tenantServices));
   }
 
   @Bean

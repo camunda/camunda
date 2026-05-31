@@ -7,10 +7,6 @@
  */
 package io.camunda.authentication.config.controllers;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import io.camunda.authentication.service.DefaultMembershipService;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.service.ApiServicesExecutorProvider;
@@ -18,7 +14,7 @@ import io.camunda.service.GroupServices;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
-import io.camunda.service.registry.ServiceRegistry;
+import io.camunda.service.registry.DefaultServiceRegistry;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -40,11 +36,12 @@ public class WebSecurityOidcTestContext {
       final GroupServices groupServices,
       final CamundaSecurityLibraryProperties cslProperties) {
     final var serviceRegistry =
-        mock(ServiceRegistry.class); // TODO replace with stub for single tenant cluster
-    when(serviceRegistry.mappingRuleServices(any())).thenReturn(mappingRuleServices);
-    when(serviceRegistry.tenantServices(any())).thenReturn(tenantServices);
-    when(serviceRegistry.roleServices(any())).thenReturn(roleServices);
-    when(serviceRegistry.groupServices(any())).thenReturn(groupServices);
+        DefaultServiceRegistry.of(
+            b ->
+                b.mappingRuleServices("default", mappingRuleServices)
+                    .tenantServices("default", tenantServices)
+                    .roleServices("default", roleServices)
+                    .groupServices("default", groupServices));
     return new DefaultMembershipService(serviceRegistry, cslProperties);
   }
 }
