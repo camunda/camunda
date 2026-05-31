@@ -171,9 +171,28 @@ In the GitHub workflow, set the `enable-optimize` input to `false`.
 Shared baseline configuration is in `camunda-platform-values-defaults.yaml`; storage-specific overrides are in `camunda-platform-values-${secondaryStorage}.yaml` (both copied to your namespace folder).
 You can also modify the Makefile to pass additional Helm arguments if needed.
 
+#### Camunda image version pinning
+
+The default Camunda (orchestration) image is `docker.io/camunda/camunda:SNAPSHOT` with
+`pullPolicy: Always`. `SNAPSHOT` is a mutable tag: when a pod is rescheduled mid-test (e.g. spot-VM
+node preemption), the new node re-pulls `SNAPSHOT` and could land on a newer build, drifting the
+engine version under test.
+
+To prevent this, `make install` / `make install-stable` automatically resolve the **current**
+`SNAPSHOT` digest at deploy time and pin the orchestration image to it
+(`--set orchestration.image.digest=sha256:…`). A digest is immutable, so every re-pull during the
+run fetches identical bits regardless of `pullPolicy`. This requires `docker buildx imagetools`
+(ships with Docker) or `crane` on your machine.
+
+Auto-pinning is skipped when you specify an explicit Camunda image — either via
+`additional_platform_configuration="--set orchestration.image.tag=…"` (also how CI pins, using its
+own built tag) or by editing `orchestration.image.tag` to a non-`SNAPSHOT` value in the namespace's
+`camunda-platform-values-defaults.yaml` (see below).
+
 #### Use different Camunda Snapshot
 
 If you want to use your own or a different Camunda snapshot, then you could do the following.
+Setting an explicit tag here also disables the SNAPSHOT digest auto-pinning described above.
 
 **Build the Docker image:**
 

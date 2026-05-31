@@ -190,9 +190,12 @@ else
 	@echo "Skipping Elasticsearch Prometheus Exporter installation (secondary_storage=$(secondary_storage))"
 endif
 
-# Install/upgrade Camunda Platform helm chart
+# Install/upgrade Camunda Platform helm chart.
+# pin-camunda-image.sh resolves the SNAPSHOT tag to an immutable digest so the
+# image can't drift on a mid-test pod reschedule (see the script for details).
 .PHONY: install-platform
 install-platform: setup-leader-balancer
+	@pin=$$(bash pin-camunda-image.sh "$(additional_platform_configuration)") || exit 1; \
 	helm upgrade $(namespace) $(helm_chart_platform) \
 		--install \
 		--namespace $(namespace) \
@@ -200,11 +203,13 @@ install-platform: setup-leader-balancer
 		--render-subchart-notes \
 		$(platform_values) \
 		$(_scenario_platform_flags) \
+		$$pin \
 		$(additional_platform_configuration)
 
 # Install/upgrade Camunda Platform on stable VMs
 .PHONY: install-platform-stable
 install-platform-stable: setup-leader-balancer
+	@pin=$$(bash pin-camunda-image.sh "$(additional_platform_configuration)") || exit 1; \
 	helm upgrade $(namespace) $(helm_chart_platform) \
 		--install \
 		--namespace $(namespace) \
@@ -212,6 +217,7 @@ install-platform-stable: setup-leader-balancer
 		--render-subchart-notes \
 		$(platform_values_stable) \
 		$(_scenario_platform_flags) \
+		$$pin \
 		$(additional_platform_configuration)
 
 # Install/upgrade load test helm chart

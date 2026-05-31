@@ -96,6 +96,27 @@ Against the LDAP-protected ingress:
 
 zsh users: quote regex-looking arguments to avoid `no matches found` glob errors.
 
+## pin-camunda-image.sh
+
+**Usage:**
+Resolves the mutable `docker.io/camunda/camunda:SNAPSHOT` tag to an immutable digest so the
+orchestration image can't drift when a pod is rescheduled mid-test (e.g. spot-VM preemption). It
+prints a `--set orchestration.image.digest=sha256:...` Helm flag to stdout (empty when no pin is
+needed); diagnostics go to stderr. `newLoadTest.sh` copies it into each namespace folder, where
+`make install` runs it and splices the flag into `helm upgrade`. Needs `docker buildx imagetools`
+(ships with Docker) or `crane`.
+
+**Syntax:**
+
+```
+./pin-camunda-image.sh "<additional_platform_configuration>"
+```
+
+It is a no-op (prints nothing, exits 0) when an explicit Camunda image is already chosen — either
+via the passed Helm args (`--set orchestration.image.tag=...` / `global.image.tag`, as CI does) or
+by a non-`SNAPSHOT` `orchestration.image.tag` in the namespace's
+`camunda-platform-values-defaults.yaml` (the "use a different snapshot" flow).
+
 ## PartitionDistribution.sh
 
 **Usage:**
