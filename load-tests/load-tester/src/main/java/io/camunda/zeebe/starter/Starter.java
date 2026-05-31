@@ -23,9 +23,9 @@ import io.camunda.zeebe.config.StarterProperties;
 import io.camunda.zeebe.metrics.ConnectionMonitor;
 import io.camunda.zeebe.metrics.ProcessInstanceStartMeter;
 import io.camunda.zeebe.metrics.StarterLatencyMetricsDoc;
-import io.camunda.zeebe.optimize.OptimizeApiClient;
-import io.camunda.zeebe.optimize.OptimizeReportEvaluator;
 import io.camunda.zeebe.metrics.StarterMetricsDoc;
+import io.camunda.zeebe.optimize.OptimizeReportEvaluator;
+import io.camunda.zeebe.optimize.OptimizeReportEvaluatorFactory;
 import io.camunda.zeebe.read.DataReadMeter;
 import io.camunda.zeebe.read.DataReadMeterQueryProvider;
 import io.camunda.zeebe.util.PayloadReader;
@@ -139,7 +139,7 @@ public class Starter implements CommandLineRunner {
       setupDataReadMeter();
     }
 
-    if (properties.getOptimize().isEnabled()) {
+    if (properties.getOptimize().isReportEvaluationEnabled()) {
       setupOptimizeReportEvaluator();
     }
 
@@ -221,11 +221,9 @@ public class Starter implements CommandLineRunner {
 
   private void setupOptimizeReportEvaluator() {
     LOG.info("Starting Optimize report evaluation meter");
-    final OptimizeApiClient apiClient =
-        new OptimizeApiClient(properties.getOptimize(), webClientBuilder, objectMapper);
     optimizeReportEvaluator =
-        new OptimizeReportEvaluator(
-            properties.getOptimize(), apiClient, Executors.newScheduledThreadPool(1));
+        OptimizeReportEvaluatorFactory.create(
+            properties.getOptimize(), webClientBuilder, objectMapper, registry);
   }
 
   private void setupDataReadMeter() {

@@ -9,20 +9,23 @@ package io.camunda.zeebe.optimize;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.client.CredentialsProvider;
 import io.camunda.zeebe.config.OptimizeProperties;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.LongSupplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClient;
 
 /**
- * Optimize REST client. Authenticates against Keycloak via OAuth 2.0 client_credentials and uses
- * the JWT as a bearer token on {@code /api/**} requests.
+ * Optimize REST client. A {@link CredentialsProvider} (OAuth 2.0 client_credentials) supplies the
+ * bearer token for {@code /api/**} requests; it handles token fetching, caching, refresh and retry,
+ * so this client only issues the API calls and measures their latency.
  */
 public class OptimizeApiClient {
 
@@ -34,27 +37,27 @@ public class OptimizeApiClient {
 
   private final OptimizeProperties props;
   private final ObjectMapper objectMapper;
+  private final CredentialsProvider credentials;
   private final WebClient optimizeClient;
-  private final WebClient keycloakClient;
   private final LongSupplier nowMillis;
-
-  private String accessToken;
-  private long tokenExpiresAtMillis;
 
   public OptimizeApiClient(
       final OptimizeProperties props,
       final WebClient.Builder webClientBuilder,
-      final ObjectMapper objectMapper) {
-    this(props, webClientBuilder, objectMapper, System::currentTimeMillis);
+      final ObjectMapper objectMapper,
+      final CredentialsProvider credentials) {
+    this(props, webClientBuilder, objectMapper, credentials, System::currentTimeMillis);
   }
 
   OptimizeApiClient(
       final OptimizeProperties props,
       final WebClient.Builder webClientBuilder,
       final ObjectMapper objectMapper,
+      final CredentialsProvider credentials,
       final LongSupplier nowMillis) {
     this.props = props;
     this.objectMapper = objectMapper;
+    this.credentials = credentials;
     this.nowMillis = nowMillis;
     optimizeClient =
         webClientBuilder
@@ -63,88 +66,36 @@ public class OptimizeApiClient {
             .defaultHeader("X-Optimize-Client-Timezone", "UTC")
             .defaultHeader("X-Optimize-Client-Locale", "en")
             .build();
-    keycloakClient = webClientBuilder.clone().baseUrl(props.getKeycloakUrl()).build();
   }
 
-  public void authenticate() {
-    final String body =
-        "grant_type=client_credentials"
-            + "&client_id="
-            + URLEncoder.encode(props.getClientId(), StandardCharsets.UTF_8)
-            + "&client_secret="
-            + URLEncoder.encode(props.getClientSecret(), StandardCharsets.UTF_8)
-            + "&scope=openid";
-
-    final TimedResponse response =
-        keycloakClient
-            .post()
-            .uri("/auth/realms/{realm}/protocol/openid-connect/token", props.getRealm())
-            .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-            .bodyValue(body)
-            .exchangeToMono(
-                r ->
-                    r.bodyToMono(String.class)
-                        .defaultIfEmpty("")
-                        .map(b -> new TimedResponse(r.statusCode().value(), b, 0L)))
-            .block(props.getRequestTimeout());
-
-    if (response == null || response.statusCode != 200) {
-      final int status = response == null ? 0 : response.statusCode;
-      final String responseBody = response == null ? "<no response>" : response.body;
-      throw new OptimizeAuthException(
-          String.format("Client credentials grant failed with status %d: %s", status, responseBody),
-          status);
-    }
-
-    try {
-      final JsonNode jsonNode = objectMapper.readTree(response.body);
-      accessToken = jsonNode.get("access_token").asText();
-      final int expiresIn = jsonNode.get("expires_in").asInt();
-      tokenExpiresAtMillis = nowMillis.getAsLong() + (expiresIn * 1000L);
-    } catch (final Exception e) {
-      throw new OptimizeAuthException("Failed to parse Keycloak token response", e);
-    }
-    LOG.debug("Successfully authenticated with Keycloak via client credentials grant");
-  }
-
-  public void ensureValidToken() {
-    if (accessToken == null
-        || nowMillis.getAsLong() >= tokenExpiresAtMillis - props.getTokenRefreshSkew().toMillis()) {
-      LOG.debug("Optimize token expired or missing, re-authenticating");
-      authenticate();
-    }
-  }
-
-  public HomepageResult evaluateHomepage() {
-    ensureValidToken();
-    final TimedResponse dashboard = executeGet(API_DASHBOARD_MANAGEMENT);
-    if (dashboard.statusCode < 200 || dashboard.statusCode >= 300) {
+  public PageEvaluationResult evaluateHomepage() {
+    final TimedResponse dashboard = execute(HttpMethod.GET, API_DASHBOARD_MANAGEMENT, null);
+    if (!isSuccessful(dashboard.statusCode)) {
       throw new OptimizeApiException(
           String.format(
               "Optimize management dashboard request failed with status %d", dashboard.statusCode),
           dashboard.statusCode);
     }
-    final List<ReportEvaluationResult> reports = fetchAllReportMetrics(dashboard.body);
-    return new HomepageResult(dashboard.statusCode, dashboard.responseTimeMs, reports);
+    return new PageEvaluationResult(
+        dashboard.statusCode, dashboard.responseTimeMs, evaluateReports(dashboard.body));
   }
 
-  public DetailedPageResult evaluateDetailedPage(final String processDefinitionKey) {
-    ensureValidToken();
-    final TimedResponse dashboard = executeGet(API_DASHBOARD_INSTANT + processDefinitionKey);
-    if (dashboard.statusCode < 200 || dashboard.statusCode >= 300) {
+  public PageEvaluationResult evaluateDetailedPage(final String processDefinitionKey) {
+    final TimedResponse dashboard =
+        execute(HttpMethod.GET, API_DASHBOARD_INSTANT + processDefinitionKey, null);
+    if (!isSuccessful(dashboard.statusCode)) {
       throw new OptimizeApiException(
           String.format(
               "Optimize instant dashboard request for key %s failed with status %d",
               processDefinitionKey, dashboard.statusCode),
           dashboard.statusCode);
     }
-    final List<ReportEvaluationResult> reports = fetchAllReportMetrics(dashboard.body);
-    return new DetailedPageResult(dashboard.statusCode, dashboard.responseTimeMs, reports);
+    return new PageEvaluationResult(
+        dashboard.statusCode, dashboard.responseTimeMs, evaluateReports(dashboard.body));
   }
 
   public String fetchFirstProcessDefinitionKey() {
-    ensureValidToken();
-    final TimedResponse response = executeGet(API_PROCESS_OVERVIEW);
+    final TimedResponse response = execute(HttpMethod.GET, API_PROCESS_OVERVIEW, null);
     if (response.statusCode != 200) {
       throw new OptimizeApiException(
           String.format(
@@ -187,62 +138,49 @@ public class OptimizeApiClient {
     return reportIds;
   }
 
-  private List<ReportEvaluationResult> fetchAllReportMetrics(final String dashboardBody) {
-    final List<String> reportIds = extractReportIdsFromDashboard(dashboardBody);
+  private List<ReportEvaluationResult> evaluateReports(final String dashboardBody) {
     final List<ReportEvaluationResult> results = new ArrayList<>();
-    for (final String reportId : reportIds) {
-      results.add(fetchReportMetrics(reportId));
+    for (final String reportId : extractReportIdsFromDashboard(dashboardBody)) {
+      final TimedResponse response =
+          execute(HttpMethod.POST, "/api/report/" + reportId + "/evaluate", "{}");
+      results.add(
+          new ReportEvaluationResult(
+              reportId, response.statusCode, response.responseTimeMs, response.body));
     }
     return results;
   }
 
-  private ReportEvaluationResult fetchReportMetrics(final String reportId) {
-    ensureValidToken();
-    final TimedResponse response = executePost("/api/report/" + reportId + "/evaluate", "{}");
-    return new ReportEvaluationResult(
-        reportId, response.statusCode, response.responseTimeMs, response.body);
-  }
-
-  private TimedResponse executeGet(final String path) {
+  private TimedResponse execute(final HttpMethod method, final String path, final String body) {
     final long startMillis = nowMillis.getAsLong();
+    final WebClient.RequestBodySpec request =
+        optimizeClient.method(method).uri(path).headers(this::applyBearer);
+    final WebClient.RequestHeadersSpec<?> prepared =
+        body == null ? request : request.contentType(MediaType.APPLICATION_JSON).bodyValue(body);
     final TimedResponse response =
-        optimizeClient
-            .get()
-            .uri(path)
-            .headers(h -> h.setBearerAuth(accessToken))
+        prepared
             .exchangeToMono(
                 r ->
                     r.bodyToMono(String.class)
                         .defaultIfEmpty("")
                         .map(b -> new TimedResponse(r.statusCode().value(), b, 0L)))
             .block(props.getRequestTimeout());
-    return withElapsed(response, startMillis);
-  }
-
-  private TimedResponse executePost(final String path, final String body) {
-    final long startMillis = nowMillis.getAsLong();
-    final TimedResponse response =
-        optimizeClient
-            .post()
-            .uri(path)
-            .headers(h -> h.setBearerAuth(accessToken))
-            .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(body)
-            .exchangeToMono(
-                r ->
-                    r.bodyToMono(String.class)
-                        .defaultIfEmpty("")
-                        .map(b -> new TimedResponse(r.statusCode().value(), b, 0L)))
-            .block(props.getRequestTimeout());
-    return withElapsed(response, startMillis);
-  }
-
-  private TimedResponse withElapsed(final TimedResponse response, final long startMillis) {
     if (response == null) {
       throw new OptimizeApiException("Optimize request returned no response", 0);
     }
     return new TimedResponse(
         response.statusCode, response.body, nowMillis.getAsLong() - startMillis);
+  }
+
+  private void applyBearer(final HttpHeaders headers) {
+    try {
+      credentials.applyCredentials((key, value) -> headers.set(key, value));
+    } catch (final IOException e) {
+      throw new OptimizeApiException("Failed to obtain Optimize access token", e, 0);
+    }
+  }
+
+  private static boolean isSuccessful(final int statusCode) {
+    return statusCode >= 200 && statusCode < 300;
   }
 
   public record ReportEvaluationResult(
@@ -252,34 +190,11 @@ public class OptimizeApiClient {
     }
   }
 
-  public record HomepageResult(
+  /** Result of evaluating a dashboard page (homepage or detailed) and its per-tile reports. */
+  public record PageEvaluationResult(
       int dashboardStatusCode,
       long dashboardResponseTimeMs,
       List<ReportEvaluationResult> reportResults) {}
-
-  public record DetailedPageResult(
-      int dashboardStatusCode,
-      long dashboardResponseTimeMs,
-      List<ReportEvaluationResult> reportEvaluationResults) {}
-
-  /** Thrown when Keycloak client_credentials authentication fails. */
-  public static class OptimizeAuthException extends RuntimeException {
-    private final int statusCode;
-
-    public OptimizeAuthException(final String message, final int statusCode) {
-      super(message);
-      this.statusCode = statusCode;
-    }
-
-    public OptimizeAuthException(final String message, final Throwable cause) {
-      super(message, cause);
-      statusCode = 0;
-    }
-
-    public int getStatusCode() {
-      return statusCode;
-    }
-  }
 
   /** Thrown when an Optimize API call returns an unexpected status or unparseable body. */
   public static class OptimizeApiException extends RuntimeException {

@@ -532,7 +532,7 @@ jobs:
           git config user.name ${{ github.actor }}
           # Render the load-test folder. newLoadTest.sh no longer creates the namespace — that
           # happens on `make install` via `kubectl apply -f resources/namespace.yaml`.
-          ./newLoadTest.sh ${{ env.NAMESPACE }} ${{ inputs.secondary-storage-type }} ${{ inputs.ttl }} ${{ inputs.enable-optimize }} true ${{ inputs.enable-optimize-report-metrics }}
+          ./newLoadTest.sh ${{ env.NAMESPACE }} ${{ inputs.secondary-storage-type }} ${{ inputs.ttl }} ${{ inputs.enable-optimize }}
       - name: Install latest Camunda Platform
         run: |
           cd load-tests/setup/${{ env.NAMESPACE }}
@@ -542,6 +542,12 @@ jobs:
                             --set global.image.repository=${{ env.IMAGE_REPOSITORY }} \
                             --set global.image.pullSecrets[0].name=harbor-registry \
                             --set global.performReadBenchmarks=${{inputs.perform-read-benchmarks}}"
+
+          # Enable the load-tester Optimize report-evaluation meter via chart extraConfig
+          # (binds to the Spring property load-tester.optimize.report-evaluation-enabled; off by default).
+          if [[ "${{ inputs.enable-optimize-report-metrics }}" == "true" ]]; then
+            load_test_config="$load_test_config --set global.extraConfig.load-tester.optimize.report-evaluation-enabled=true"
+          fi
 
           # Append custom load test inputs
           load_test_config="$load_test_config ${{ inputs.load-test-load }}"

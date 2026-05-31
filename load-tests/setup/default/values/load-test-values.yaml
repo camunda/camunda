@@ -33,9 +33,7 @@ global:
       valueFrom:
         fieldRef:
           fieldPath: metadata.namespace
-    # Optimize report-evaluation meter (starter-only); see camunda-platform-values.yaml for backend setup.
-    - name: LOAD_TESTER_OPTIMIZE_ENABLED
-      value: "__ENABLE_OPTIMIZE_REPORT_METRICS__"
+    # Optimize report-evaluation meter secret (starter-only); meter is off unless enabled per-run.
     - name: OPTIMIZE_LOADTEST_CLIENT_SECRET
       valueFrom:
         secretKeyRef:

@@ -11,26 +11,24 @@ import java.time.Duration;
 
 public class OptimizeProperties {
 
-  private boolean enabled = true;
+  private boolean reportEvaluationEnabled = true;
   private String baseUrl = "http://optimize:8090";
   private String keycloakUrl = "http://keycloak:18080";
   private String realm = "camunda-platform";
   private String clientId = "optimize";
   private String clientSecret = "";
+  private String audience = "optimize-api";
   private String processDefinitionKey = "";
   private Duration evaluationInterval = Duration.ofSeconds(60);
   private Duration initialDelay = Duration.ofSeconds(10);
-  private int authRetryMaxAttempts = 30;
-  private Duration authRetryDelay = Duration.ofSeconds(10);
-  private Duration tokenRefreshSkew = Duration.ofSeconds(30);
   private Duration requestTimeout = Duration.ofSeconds(30);
 
-  public boolean isEnabled() {
-    return enabled;
+  public boolean isReportEvaluationEnabled() {
+    return reportEvaluationEnabled;
   }
 
-  public void setEnabled(final boolean enabled) {
-    this.enabled = enabled;
+  public void setReportEvaluationEnabled(final boolean reportEvaluationEnabled) {
+    this.reportEvaluationEnabled = reportEvaluationEnabled;
   }
 
   public String getBaseUrl() {
@@ -73,6 +71,14 @@ public class OptimizeProperties {
     this.clientSecret = clientSecret;
   }
 
+  public String getAudience() {
+    return audience;
+  }
+
+  public void setAudience(final String audience) {
+    this.audience = audience;
+  }
+
   public String getProcessDefinitionKey() {
     return processDefinitionKey;
   }
@@ -95,30 +101,6 @@ public class OptimizeProperties {
 
   public void setInitialDelay(final Duration initialDelay) {
     this.initialDelay = initialDelay;
-  }
-
-  public int getAuthRetryMaxAttempts() {
-    return authRetryMaxAttempts;
-  }
-
-  public void setAuthRetryMaxAttempts(final int authRetryMaxAttempts) {
-    this.authRetryMaxAttempts = authRetryMaxAttempts;
-  }
-
-  public Duration getAuthRetryDelay() {
-    return authRetryDelay;
-  }
-
-  public void setAuthRetryDelay(final Duration authRetryDelay) {
-    this.authRetryDelay = authRetryDelay;
-  }
-
-  public Duration getTokenRefreshSkew() {
-    return tokenRefreshSkew;
-  }
-
-  public void setTokenRefreshSkew(final Duration tokenRefreshSkew) {
-    this.tokenRefreshSkew = tokenRefreshSkew;
   }
 
   public Duration getRequestTimeout() {

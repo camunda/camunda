@@ -72,7 +72,7 @@
       </exclusions>
     </dependency>
 
-    <!-- Direct deps for WebClient / Mono usage in the Optimize client; satisfy dependency:analyze-only. -->
+    <!-- Direct deps for WebClient / Mono usage in the Optimize client -->
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-webflux</artifactId>

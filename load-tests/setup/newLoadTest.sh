@@ -7,7 +7,7 @@ set -eo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: newLoadTest.sh <namespace> [secondaryStorage] [ttl_days] [enable_optimize] [enable_single_zone] [enable_optimize_report_metrics]
+Usage: newLoadTest.sh <namespace> [secondaryStorage] [ttl_days] [enable_optimize] [enable_single_zone]
 
 Arguments:
   namespace                       Base namespace name. Will be prefixed with "c8-" if missing.
@@ -15,7 +15,9 @@ Arguments:
   ttl_days                        Optional. Positive integer for namespace TTL in days. Default: 1.
   enable_optimize                 Optional. true|false to enable Optimize. Default: true.
   enable_single_zone              Optional. true|false to deploy the cluster on a single zone. Default: true.
-  enable_optimize_report_metrics  Optional. true|false to enable the load-tester Optimize report-evaluation meter (requires Optimize backend). Default: false.
+
+Enable the Optimize report-evaluation meter via Helm, not this script:
+  make install additional_load_test_configuration="--set global.extraConfig.load-tester.optimize.report-evaluation-enabled=true"
 
 Options:
   -h, --help         Show this help message.
@@ -99,15 +101,6 @@ fi
 
 enable_single_zone="${5:-true}"
 enable_single_zone=$(echo "$enable_single_zone" | tr '[:upper:]' '[:lower:]')
-
-# Validate enable_optimize_report_metrics value
-enable_optimize_report_metrics="${6:-false}"
-enable_optimize_report_metrics=$(echo "$enable_optimize_report_metrics" | tr '[:upper:]' '[:lower:]')
-if [[ "$enable_optimize_report_metrics" != "true" && "$enable_optimize_report_metrics" != "false" ]]; then
-  echo "Error: Invalid enable_optimize_report_metrics value '$enable_optimize_report_metrics'"
-  echo "Allowed values are: true or false"
-  exit 1
-fi
 
 # Pick a "random" zone, selected from the input value.
 function hashmod_zone() {
@@ -248,9 +241,6 @@ fi
 
 # Bake the orchestration OIDC secret into the load-test starter values.
 sed_inplace "s|__SECRET__|$ORCHESTRATION_SECRET|" load-test-values.yaml
-
-# Toggle the load-tester's Optimize report-evaluation meter.
-sed_inplace "s/__ENABLE_OPTIMIZE_REPORT_METRICS__/$enable_optimize_report_metrics/" load-test-values.yaml
 
 # Bake the credential values into the secret manifest.
 sed_inplace "s|__IDENTITY_FIRSTUSER_PASSWORD__|$IDENTITY_FIRSTUSER_PASSWORD|"                                 resources/camunda-credentials.yaml

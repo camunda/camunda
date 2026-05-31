@@ -8,12 +8,18 @@
 package io.camunda.zeebe.optimize;
 
 import io.camunda.zeebe.config.OptimizeProperties;
-import io.camunda.zeebe.optimize.OptimizeApiClient.DetailedPageResult;
-import io.camunda.zeebe.optimize.OptimizeApiClient.HomepageResult;
+import io.camunda.zeebe.metrics.OptimizeMetricsDoc;
+import io.camunda.zeebe.metrics.OptimizeMetricsDoc.OptimizeMetricKeyNames;
+import io.camunda.zeebe.optimize.OptimizeApiClient.PageEvaluationResult;
 import io.camunda.zeebe.optimize.OptimizeApiClient.ReportEvaluationResult;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -23,7 +29,8 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Periodically evaluates Optimize dashboards and reports to exercise the Optimize REST API under
- * load. Failures are throttled-logged and the next cycle continues.
+ * load, publishing per-request latency and status metrics. Failures are throttled-logged and the
+ * next cycle continues.
  */
 public class OptimizeReportEvaluator implements AutoCloseable {
 
@@ -40,57 +47,74 @@ public class OptimizeReportEvaluator implements AutoCloseable {
   private final OptimizeProperties props;
   private final OptimizeApiClient client;
   private final ScheduledExecutorService executor;
+  private final MeterRegistry registry;
   private final AtomicReference<String> processDefinitionKey = new AtomicReference<>();
+  // Lazily registered per tag-combination.
+  private final ConcurrentHashMap<String, Timer> latencyTimers = new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<String, Counter> requestCounters = new ConcurrentHashMap<>();
   private ScheduledFuture<?> scheduledTask;
 
   public OptimizeReportEvaluator(
       final OptimizeProperties props,
       final OptimizeApiClient client,
-      final ScheduledExecutorService executor) {
+      final ScheduledExecutorService executor,
+      final MeterRegistry registry) {
     this.props = props;
     this.client = client;
     this.executor = executor;
+    this.registry = registry;
   }
 
   public void start() {
-    authenticateWithRetry();
-
     LOG.info(
         "Scheduling Optimize dashboard and report evaluations every {} (initial delay {})",
         props.getEvaluationInterval(),
         props.getInitialDelay());
+    scheduleCycle(props.getInitialDelay().toMillis());
+  }
 
-    scheduledTask =
-        executor.scheduleAtFixedRate(
-            this::runOneCycleSafely,
-            props.getInitialDelay().toMillis(),
-            props.getEvaluationInterval().toMillis(),
-            TimeUnit.MILLISECONDS);
+  /**
+   * Schedules a single evaluation cycle after {@code delayMillis}. Unlike {@code
+   * scheduleAtFixedRate}, the next cycle is only scheduled once the current one finishes (see
+   * {@link #runAndReschedule()}), so the blocking HTTP cycles never overlap or pile up.
+   */
+  private void scheduleCycle(final long delayMillis) {
+    if (executor.isShutdown()) {
+      return;
+    }
+    scheduledTask = executor.schedule(this::runAndReschedule, delayMillis, TimeUnit.MILLISECONDS);
+  }
+
+  private void runAndReschedule() {
+    final long startNanos = System.nanoTime();
+    runOneCycleSafely();
+    final long elapsedMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNanos);
+    // Only reschedule AFTER the previous cycle is done, to avoid overlapping cycles. If a cycle
+    // already took longer than the interval, run the next one immediately.
+    final long intervalMillis = props.getEvaluationInterval().toMillis();
+    final long nextDelay = elapsedMillis >= intervalMillis ? 0 : intervalMillis - elapsedMillis;
+    scheduleCycle(nextDelay);
   }
 
   void runOneCycleSafely() {
     try {
-      runOneCycle();
+      evaluateHomepage();
+      evaluateDetailedPage();
     } catch (final Exception e) {
       THROTTLED_LOGGER.error("Error during Optimize evaluation cycle", e);
     }
   }
 
-  private void runOneCycle() {
-    evaluateHomepage();
-    evaluateDetailedPage();
-  }
-
   private void evaluateHomepage() {
     try {
-      final HomepageResult result = client.evaluateHomepage();
-      logEvaluation(
+      final PageEvaluationResult result = client.evaluateHomepage();
+      recordEvaluation(
           PAGE_HOMEPAGE,
           PHASE_DASHBOARD,
           NA,
           result.dashboardStatusCode(),
           result.dashboardResponseTimeMs());
-      logReports(PAGE_HOMEPAGE, PHASE_REPORT_EVALUATE, result.reportResults());
+      recordReports(PAGE_HOMEPAGE, result.reportResults());
     } catch (final Exception e) {
       THROTTLED_LOGGER.warn("Failed to evaluate Optimize homepage", e);
     }
@@ -108,32 +132,38 @@ public class OptimizeReportEvaluator implements AutoCloseable {
       return;
     }
     try {
-      final DetailedPageResult result = client.evaluateDetailedPage(pdKey);
-      logEvaluation(
+      final PageEvaluationResult result = client.evaluateDetailedPage(pdKey);
+      recordEvaluation(
           PAGE_DETAILED,
           PHASE_DASHBOARD,
           NA,
           result.dashboardStatusCode(),
           result.dashboardResponseTimeMs());
-      logReports(PAGE_DETAILED, PHASE_REPORT_EVALUATE, result.reportEvaluationResults());
+      recordReports(PAGE_DETAILED, result.reportResults());
     } catch (final Exception e) {
       THROTTLED_LOGGER.warn("Failed to evaluate Optimize detailed page", e);
     }
   }
 
-  private void logReports(
-      final String page, final String phase, final List<ReportEvaluationResult> reports) {
+  private void recordReports(final String page, final List<ReportEvaluationResult> reports) {
     for (final ReportEvaluationResult report : reports) {
-      logEvaluation(page, phase, report.reportId(), report.statusCode(), report.responseTimeMs());
+      recordEvaluation(
+          page,
+          PHASE_REPORT_EVALUATE,
+          report.reportId(),
+          report.statusCode(),
+          report.responseTimeMs());
     }
   }
 
-  private void logEvaluation(
+  private void recordEvaluation(
       final String page,
       final String phase,
       final String reportId,
       final int statusCode,
       final long responseTimeMs) {
+    latencyTimer(page, phase, reportId).record(responseTimeMs, TimeUnit.MILLISECONDS);
+    requestCounter(page, phase, statusCode).increment();
     if (statusCode >= 200 && statusCode < 300) {
       LOG.debug(
           "Optimize {} {} report={} status={} timeMs={}",
@@ -167,41 +197,28 @@ public class OptimizeReportEvaluator implements AutoCloseable {
     return processDefinitionKey.get();
   }
 
-  void authenticateWithRetry() {
-    final int maxAttempts = props.getAuthRetryMaxAttempts();
-    final long delayMillis = props.getAuthRetryDelay().toMillis();
-
-    for (int attempt = 1; attempt <= maxAttempts; attempt++) {
-      try {
-        LOG.info("Authenticating with Optimize Keycloak (attempt {}/{})", attempt, maxAttempts);
-        client.authenticate();
-        LOG.info("Optimize successfully authenticated");
-        return;
-      } catch (final RuntimeException e) {
-        if (attempt == maxAttempts) {
-          LOG.error("Failed to authenticate with Optimize after {} attempts", maxAttempts, e);
-          throw new IllegalStateException(
-              "Optimize authentication failed after " + maxAttempts + " attempts", e);
-        }
-        THROTTLED_LOGGER.warn(
-            "Failed to authenticate with Optimize (attempt {}/{}), retrying in {}ms",
-            attempt,
-            maxAttempts,
-            delayMillis,
-            e);
-        sleep(delayMillis);
-      }
-    }
+  private Timer latencyTimer(final String page, final String phase, final String reportId) {
+    return latencyTimers.computeIfAbsent(
+        page + "|" + phase + "|" + reportId,
+        key ->
+            MicrometerUtil.buildTimer(OptimizeMetricsDoc.REPORT_EVALUATION_LATENCY)
+                .tag(OptimizeMetricKeyNames.PAGE.asString(), page)
+                .tag(OptimizeMetricKeyNames.PHASE.asString(), phase)
+                .tag(OptimizeMetricKeyNames.REPORT_ID.asString(), reportId)
+                .register(registry));
   }
 
-  private static void sleep(final long millis) {
-    try {
-      Thread.sleep(millis);
-    } catch (final InterruptedException ex) {
-      Thread.currentThread().interrupt();
-      throw new IllegalStateException(
-          "Interrupted while waiting to retry Optimize authentication", ex);
-    }
+  private Counter requestCounter(final String page, final String phase, final int statusCode) {
+    final String status = Integer.toString(statusCode);
+    return requestCounters.computeIfAbsent(
+        page + "|" + phase + "|" + status,
+        key ->
+            Counter.builder(OptimizeMetricsDoc.REPORT_EVALUATION_REQUESTS.getName())
+                .description(OptimizeMetricsDoc.REPORT_EVALUATION_REQUESTS.getDescription())
+                .tag(OptimizeMetricKeyNames.PAGE.asString(), page)
+                .tag(OptimizeMetricKeyNames.PHASE.asString(), phase)
+                .tag(OptimizeMetricKeyNames.STATUS_CODE.asString(), status)
+                .register(registry));
   }
 
   @Override
