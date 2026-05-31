@@ -139,6 +139,19 @@ public class DefaultExecutionQueue implements ExecutionQueue {
         // Record memory usage before flush
         metrics.recordQueueMemoryUsage(currentQueueMemoryBytes);
         final int numFlushedElements = transactionRunner.runInTransaction(this::doFLush);
+
+        // IMPORTANT: queue.clear() and post-flush listeners MUST run AFTER the transaction
+        // commits successfully. With SpringManagedTransactionFactory, session.commit() inside
+        // doFLush is a no-op — the real commit happens when runInTransaction() returns.
+        // If these ran inside doFLush (before the commit boundary), a commit failure would
+        // leave in-memory state advanced while the DB was rolled back, causing permanent
+        // "Exporter position mismatch" errors. See https://github.com/camunda/camunda/issues/52340
+        queue.clear();
+        if (!postFlushListeners.isEmpty()) {
+          LOG.trace("[RDBMS ExecutionQueue, Partition {}] Call post flush listeners", partitionId);
+          postFlushListeners.forEach(PostFlushListener::onPostFlush);
+        }
+
         metrics.stopFlushLatencyMeasurement();
         metrics.recordBulkSize(numFlushedElements);
         // Reset memory tracking after flush
@@ -272,11 +285,6 @@ public class DefaultExecutionQueue implements ExecutionQueue {
       }
 
       session.commit();
-      queue.clear();
-      if (!postFlushListeners.isEmpty()) {
-        LOG.trace("[RDBMS ExecutionQueue, Partition {}] Call post flush listeners", partitionId);
-        postFlushListeners.forEach(PostFlushListener::onPostFlush);
-      }
       LOG.debug(
           "[RDBMS ExecutionQueue, Partition {}] Commit queue with {} entries in {}ms",
           partitionId,

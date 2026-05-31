@@ -17,7 +17,10 @@ import io.camunda.db.rdbms.LiquibaseSchemaManager;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
+import io.camunda.db.rdbms.write.RdbmsMapperBundle;
+import io.camunda.db.rdbms.write.RdbmsWriterFactory;
 import io.camunda.db.rdbms.write.domain.ExporterPositionModel;
+import io.camunda.db.rdbms.write.queue.TransactionRunner;
 import io.camunda.exporter.rdbms.RdbmsExporterWrapper;
 import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
@@ -110,12 +113,20 @@ import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import io.camunda.zeebe.test.util.Strings;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
+import javax.sql.DataSource;
+import org.apache.ibatis.session.ExecutorType;
+import org.apache.ibatis.session.SqlSessionFactory;
+import org.apache.ibatis.session.TransactionIsolationLevel;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -125,7 +136,9 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.datasource.DataSourceUtils;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @Tag("rdbms")
 @SpringBootTest(classes = {RdbmsTestConfiguration.class})
@@ -154,6 +167,10 @@ class RdbmsExporterIT {
   @Autowired private LiquibaseSchemaManager liquibaseSchemaManager;
   @Autowired private RdbmsService rdbmsService;
   @Autowired private ExporterPositionMapper exporterPositionMapper;
+  @Autowired private TransactionRunner transactionRunner;
+  @Autowired private Map<String, RdbmsMapperBundle> rdbmsMapperBundles;
+  @Autowired private SqlSessionFactory sqlSessionFactory;
+  @Autowired private DataSource dataSource;
   private RdbmsExporterWrapper exporter;
 
   @BeforeEach
@@ -1550,6 +1567,280 @@ class RdbmsExporterIT {
             tamperedPosition,
             position.created(),
             position.lastUpdated()));
+  }
+
+  /**
+   * Proves that {@code session.commit()} inside {@code doFLush()} is a no-op when running under
+   * Spring-managed transactions, because the {@link SqlSessionFactory} uses {@code
+   * SpringManagedTransactionFactory}.
+   *
+   * <p>This validates the precondition for the bug in <a
+   * href="https://github.com/camunda/camunda/issues/52340">#52340</a>: since {@code
+   * session.commit()} does nothing, the real commit is deferred to Spring's {@code
+   * TransactionTemplate}. When that commit fails, any in-memory state changes made during the flush
+   * callback are not rolled back.
+   */
+  @Test
+  public void shouldDemonstrateSessionCommitIsNoOpUnderSpringTransaction() {
+    // Export one record through the main exporter so that tearDown's position check passes.
+    exporter.export(FIXTURES.getProcessInstanceStartedRecord());
+
+    // given — a known baseline position for partition 5
+    final int testPartitionId = 5;
+    final var initialPosition =
+        new ExporterPositionModel(
+            testPartitionId, "TestExporter", 50L, LocalDateTime.now(), LocalDateTime.now());
+    transactionRunner.runInTransaction(
+        () -> {
+          exporterPositionMapper.insert(initialPosition);
+          return null;
+        });
+    assertThat(exporterPositionMapper.findOne(testPartitionId).lastExportedPosition())
+        .isEqualTo(50L);
+
+    // when — we start a Spring transaction, open a MyBatis session from the same factory,
+    // execute an UPDATE, call session.commit(), then ROLLBACK the Spring transaction.
+    // Create a DataSourceTransactionManager explicitly from the same DataSource that the
+    // SqlSessionFactory uses. This replicates the production wiring from SpringTransactionRunner.
+    final var txManager =
+        new org.springframework.jdbc.datasource.DataSourceTransactionManager(dataSource);
+    final var transactionTemplate = new TransactionTemplate(txManager);
+    try {
+      transactionTemplate.execute(
+          status -> {
+            // Verify we can detect the transactional connection
+            final var txConnection = DataSourceUtils.getConnection(dataSource);
+            assertThat(DataSourceUtils.isConnectionTransactional(txConnection, dataSource))
+                .as("Connection obtained inside TransactionTemplate should be transactional")
+                .isTrue();
+
+            // Open a batch session, exactly like doFLush() does
+            final var session =
+                sqlSessionFactory.openSession(
+                    ExecutorType.BATCH, TransactionIsolationLevel.READ_COMMITTED);
+            try {
+              // Perform an UPDATE through the session
+              session.update(
+                  "io.camunda.db.rdbms.sql.ExporterPositionMapper.update",
+                  new ExporterPositionModel(
+                      testPartitionId,
+                      "TestExporter",
+                      999L,
+                      LocalDateTime.now(),
+                      LocalDateTime.now()));
+              session.flushStatements();
+
+              // Call session.commit() — this should be a no-op under SpringManagedTransaction
+              session.commit();
+
+              // Force rollback of the outer Spring transaction
+              status.setRollbackOnly();
+            } finally {
+              session.close();
+            }
+            return null;
+          });
+    } catch (final Exception e) {
+      // TransactionTemplate may throw on rollback, ignore
+    }
+
+    // then — the UPDATE should NOT be visible because the Spring transaction was rolled back.
+    // If session.commit() were NOT a no-op, the UPDATE would have been committed and we'd see 999.
+    final var afterRollback = exporterPositionMapper.findOne(testPartitionId);
+    assertThat(afterRollback.lastExportedPosition())
+        .as(
+            "session.commit() should be a no-op under SpringManagedTransactionFactory: "
+                + "the UPDATE to 999 should have been rolled back with the Spring transaction. "
+                + "If this fails (shows 999), it means session.commit() actually commits, "
+                + "which would mean the bug #52340 has a different root cause than assumed.")
+        .isEqualTo(50L);
+  }
+
+  /**
+   * Verifies the fix for <a href="https://github.com/camunda/camunda/issues/52340">#52340</a>:
+   * after a database commit failure (e.g., connection reset during a PostgreSQL restart), the RDBMS
+   * exporter must NOT advance its in-memory position, keeping it consistent with the database.
+   *
+   * <p>Root cause (before fix): With {@code SpringManagedTransactionFactory}, {@code
+   * session.commit()} inside {@code DefaultExecutionQueue.doFLush()} is a no-op — the actual commit
+   * is deferred to Spring's {@code TransactionTemplate}. However, {@code queue.clear()} and
+   * post-flush listeners (which advance {@code lastFlushedPosition}) fired BEFORE the real commit.
+   * If the commit failed, the in-memory state was already advanced but the database was rolled
+   * back, causing permanent "Exporter position mismatch" errors.
+   *
+   * <p>Fix: {@code queue.clear()} and post-flush listeners now run AFTER {@code
+   * transactionRunner.runInTransaction()} returns successfully, ensuring they only fire when the
+   * transaction has actually committed.
+   *
+   * <p>This test replicates the production wiring: a {@link
+   * io.camunda.application.commons.rdbms.SpringTransactionRunner} wraps the flush callback in a
+   * Spring transaction (making {@code session.commit()} a no-op). A custom {@link
+   * TransactionRunner} wraps that runner, executing the callback within the Spring transaction,
+   * then throwing BEFORE the commit — causing Spring to rollback.
+   *
+   * <p>Prerequisite: {@link #shouldDemonstrateSessionCommitIsNoOpUnderSpringTransaction} proves
+   * that {@code session.commit()} is indeed a no-op under this configuration.
+   */
+  @Test
+  public void shouldNotDivergePositionAfterCommitFailure() {
+    // Export one record through the main exporter so that tearDown's position check passes.
+    exporter.export(FIXTURES.getProcessInstanceStartedRecord());
+
+    // given - Create a SpringTransactionRunner from the same DataSource that the SqlSessionFactory
+    // uses. This replicates the production wiring where SpringManagedTransactionFactory makes
+    // session.commit() a no-op and the real commit is deferred to TransactionTemplate.
+    final var txManager =
+        new org.springframework.jdbc.datasource.DataSourceTransactionManager(dataSource);
+    final var springTransactionRunner =
+        new io.camunda.application.commons.rdbms.SpringTransactionRunner(txManager);
+    final var failingRunner = new FailOnCommitTransactionRunner(springTransactionRunner);
+    final int testPartitionId = 4;
+
+    // Create a writer factory with the failing transaction runner
+    final var testFactory =
+        new RdbmsWriterFactory(
+            rdbmsMapperBundles,
+            Mockito.mock(MeterRegistry.class, Mockito.RETURNS_DEEP_STUBS),
+            failingRunner);
+    final var testWriterConfig =
+        io.camunda.db.rdbms.write.RdbmsWriterConfig.builder()
+            .partitionId(testPartitionId)
+            .queueSize(100)
+            .build();
+    final var testWriters = testFactory.createWriter(testWriterConfig);
+
+    // Register position tracking (same as RdbmsExporter.open() does)
+    final AtomicLong lastFlushedPosition = new AtomicLong(-1);
+    final AtomicLong lastPosition = new AtomicLong(-1);
+    final var exporterRdbmsPosition = new AtomicLong(-1);
+
+    // Initialize the exporter position in the database
+    final var initialPosition =
+        new ExporterPositionModel(
+            testPartitionId, "TestExporter", -1L, LocalDateTime.now(), LocalDateTime.now());
+    testWriters.getExporterPositionService().createWithoutQueue(initialPosition);
+
+    // Register the lock position hook (validates DB position matches expected)
+    testWriters
+        .getExporterPositionService()
+        .registerLockPositionHook(testPartitionId, lastFlushedPosition::get);
+
+    // Register pre-flush listener (enqueues position update, like RdbmsExporter does)
+    testWriters
+        .getExecutionQueue()
+        .registerPreFlushListener(
+            () -> {
+              if (lastPosition.get() > exporterRdbmsPosition.get()) {
+                exporterRdbmsPosition.set(lastPosition.get());
+                testWriters
+                    .getExporterPositionService()
+                    .update(
+                        new ExporterPositionModel(
+                            testPartitionId,
+                            "TestExporter",
+                            lastPosition.get(),
+                            LocalDateTime.now(),
+                            LocalDateTime.now()));
+              }
+            });
+
+    // Register post-flush listener (advances lastFlushedPosition, like RdbmsExporter does)
+    testWriters
+        .getExecutionQueue()
+        .registerPostFlushListener(() -> lastFlushedPosition.set(lastPosition.get()));
+
+    // Step 1: Flush successfully to establish a baseline position in the database.
+    lastPosition.set(100L);
+    testWriters.flush(true);
+
+    // Verify baseline: both in-memory and DB positions are consistent
+    assertThat(lastFlushedPosition.get()).isEqualTo(100L);
+    final var baselineDbPosition = exporterPositionMapper.findOne(testPartitionId);
+    assertThat(baselineDbPosition).isNotNull();
+    assertThat(baselineDbPosition.lastExportedPosition()).isEqualTo(100L);
+
+    // Step 2: Advance lastPosition and trigger a flush that FAILS at commit time.
+    // This simulates a database connection reset during a PostgreSQL restart.
+    lastPosition.set(200L);
+    failingRunner.failOnNextTransaction();
+    assertThatThrownBy(() -> testWriters.flush(true))
+        .isInstanceOf(RuntimeException.class)
+        .hasMessageContaining("Simulated DB commit failure");
+
+    // Step 3: Verify NO divergence — the fix ensures post-flush listeners only fire
+    // AFTER the transaction commits successfully. Since the commit failed, both
+    // lastFlushedPosition and the DB should remain at the baseline value.
+    assertThat(lastFlushedPosition.get())
+        .as(
+            "lastFlushedPosition must NOT be advanced when the transaction fails — "
+                + "post-flush listeners now run after the commit boundary")
+        .isEqualTo(100L);
+    final var afterFailureDbPosition = exporterPositionMapper.findOne(testPartitionId);
+    assertThat(afterFailureDbPosition.lastExportedPosition())
+        .as("DB position stays at baseline because the Spring transaction was rolled back")
+        .isEqualTo(100L);
+
+    // Step 4: Verify the exporter can continue flushing after the failure — no permanent
+    // stuck state. The next flush should succeed because positions are still consistent.
+    lastPosition.set(300L);
+    exporterRdbmsPosition.set(100L); // Reset so pre-flush listener enqueues the update
+    testWriters.flush(true);
+    assertThat(lastFlushedPosition.get()).isEqualTo(300L);
+    final var recoveredPosition = exporterPositionMapper.findOne(testPartitionId);
+    assertThat(recoveredPosition.lastExportedPosition()).isEqualTo(300L);
+  }
+
+  /**
+   * A {@link TransactionRunner} that wraps a {@link
+   * io.camunda.application.commons.rdbms.SpringTransactionRunner} and can be toggled to simulate a
+   * commit failure. When triggered, it executes the callback within the delegate's Spring
+   * transaction (so {@code session.commit()} inside {@code doFLush} is a no-op), then throws an
+   * exception BEFORE the transaction commits — causing Spring to rollback the transaction.
+   *
+   * <p>This simulates the production scenario where a database connection is lost during a
+   * PostgreSQL restart: the flush callback ({@code doFLush}) completes but the actual transaction
+   * commit fails. Used to verify that the fix for #52340 correctly prevents position divergence.
+   */
+  private static class FailOnCommitTransactionRunner implements TransactionRunner {
+
+    private final TransactionRunner delegate;
+    private final AtomicBoolean shouldFailOnNext = new AtomicBoolean(false);
+
+    FailOnCommitTransactionRunner(final TransactionRunner delegate) {
+      this.delegate = delegate;
+    }
+
+    void failOnNextTransaction() {
+      shouldFailOnNext.set(true);
+    }
+
+    @Override
+    public <T> T runInTransaction(final Supplier<T> callback) {
+      if (shouldFailOnNext.compareAndSet(true, false)) {
+        // Execute within the delegate's Spring transaction context, so session.commit()
+        // inside doFLush is a no-op (proven by
+        // shouldDemonstrateSessionCommitIsNoOpUnderSpringTransaction).
+        // Then throw AFTER the callback completes but BEFORE the transaction commits.
+        // Spring's TransactionTemplate will catch this and rollback.
+        delegate.runInTransaction(
+            () -> {
+              final T result = callback.get(); // doFLush runs: clears queue, fires post-flush
+              // Throw AFTER the callback but BEFORE the Spring transaction commits.
+              throw new SimulatedCommitFailureException(
+                  "Simulated DB commit failure (connection reset during database restart)");
+            });
+        // unreachable — delegate.runInTransaction propagates the exception
+        return null;
+      }
+      return delegate.runInTransaction(callback);
+    }
+  }
+
+  /** Marker exception for simulated commit failures. */
+  private static class SimulatedCommitFailureException extends RuntimeException {
+    SimulatedCommitFailureException(final String message) {
+      super(message);
+    }
   }
 
   private static void verifyRootProcessInstanceKey(
