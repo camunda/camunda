@@ -24,12 +24,13 @@ public final class AgentInstanceFixtures extends CommonFixtures {
   public static AgentInstanceDbModel createRandomAgentInstance(
       final Function<Builder, Builder> builderFunction) {
     final var key = nextKey();
+    final var processInstanceKey = nextKey();
     final var builder =
         new Builder()
             .agentInstanceKey(key)
             .elementId("element-" + key)
-            .processInstanceKey(nextKey())
-            .rootProcessInstanceKey(-1L)
+            .processInstanceKey(processInstanceKey)
+            .rootProcessInstanceKey(processInstanceKey)
             .processDefinitionId("process-" + nextStringKey())
             .processDefinitionKey(nextKey())
             .processDefinitionVersion(1)
