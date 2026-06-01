@@ -281,8 +281,9 @@ jobs:
           # GraphQL auth check and never reach the workflow dispatch REST call.
           # The job already has actions:write and pull-requests:write so the
           # built-in token is sufficient for triggering workflows and patching PR bodies.
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPO:     ${{ github.repository }}
+          GH_TOKEN:   ${{ secrets.GITHUB_TOKEN }}
+          REPO:       ${{ github.repository }}
+          TARGET_REF: ${{ steps.target.outputs.ref }}
         run: |
           set -euo pipefail
           if [ ! -f /tmp/fix-meta.json ]; then
@@ -312,7 +313,7 @@ jobs:
               echo "Triggering on-demand run for PR #${pr_number} branch ${branch}..."
               dispatched_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
               gh workflow run c8-orchestration-cluster-e2e-tests-on-demand.yml \
-                --repo "$REPO" --ref "$branch" -f branch="$branch"
+                --repo "$REPO" --ref "${TARGET_REF}" -f branch="$branch"
               # Poll up to 90s for the new run to appear
               for _ in $(seq 1 18); do
                 sleep 5
