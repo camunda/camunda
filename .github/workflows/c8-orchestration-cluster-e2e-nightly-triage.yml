@@ -498,7 +498,8 @@ jobs:
               -f api_rdbms_run_id="$api_rdbms" \
               -f triage_run_url="$TRIAGE_RUN_URL" \
               -f slack_thread_ts="$SLACK_THREAD_TS" \
-              -f slack_channel="$SLACK_CHANNEL"
+              -f slack_channel="$SLACK_CHANNEL" \
+              -f send_slack_notification=true
 
             # Poll for the newly created fix-agent run (created after dispatch)
             fix_run_id=""

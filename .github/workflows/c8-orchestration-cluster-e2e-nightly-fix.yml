@@ -42,6 +42,11 @@ on:
         description: 'Slack channel ID for thread reply'
         required: false
         default: ''
+      send_slack_notification:
+        description: 'Post a Slack reply when done (true for nightly cron dispatches, false for on-demand runs)'
+        type: boolean
+        required: false
+        default: false
 
 defaults:
   run:
@@ -429,7 +434,7 @@ jobs:
           if-no-files-found: warn
 
       - name: Slack thread reply
-        if: always() && github.event.inputs.slack_thread_ts != '' && github.event.inputs.slack_channel != ''
+        if: always() && github.event.inputs.send_slack_notification == 'true'
         env:
           SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.secrets.outputs.SLACK_BOT_USER_OAUTH_TOKEN }}
           SLACK_THREAD_TS:            ${{ github.event.inputs.slack_thread_ts }}
