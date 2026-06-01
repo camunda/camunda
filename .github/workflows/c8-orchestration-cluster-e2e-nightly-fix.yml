@@ -397,16 +397,45 @@ jobs:
             else
               pr_count=$(jq '.prs | length' /tmp/fix-meta.json)
               if [ "$pr_count" -eq 0 ]; then
-                echo ":warning: **No PRs opened** — agent could not determine a safe fix."
-                echo ""
-                echo "Check the agent log above for the root-cause analysis."
+                echo ":warning: **Decision: no fix applied** — agent could not determine a safe fix."
+                # Surface root_cause from the empty-prs object if the agent wrote one
+                reason=$(jq -r '.reason // .root_cause // ""' /tmp/fix-meta.json 2>/dev/null || true)
+                if [ -n "$reason" ] && [ "$reason" != "null" ]; then
+                  echo ""
+                  echo "**Reason:** ${reason}"
+                fi
               else
-                echo "### PRs opened"
+                echo "### Decision: fix applied"
                 echo ""
-                jq -r --arg repo "$REPO" \
-                  '.prs[] | "- [PR #\(.number)](https://github.com/\($repo)/pull/\(.number)) — `\(.branch)`"' \
-                  /tmp/fix-meta.json
+                jq -r --arg repo "$REPO" '
+                  .prs[] |
+                  # Derive owner/repo safely
+                  (if .owner != null and .repo != null then "\(.owner)/\(.repo)"
+                   elif (.url // "") | test("github.com/[^/]+/[^/]+") then (.url | capture("github.com/(?P<r>[^/]+/[^/]+)/pull") | .r)
+                   else $repo end) as $full_repo |
+                  "**[PR #\(.number)](https://github.com/\($full_repo)/pull/\(.number))** — `\(.branch)`"
+                ' /tmp/fix-meta.json
                 echo ""
+
+                # Root cause + fix description per PR
+                jq -c '.prs[]' /tmp/fix-meta.json | while IFS= read -r pr; do
+                  pr_num=$(echo "$pr" | jq -r '.number')
+                  root_cause=$(echo "$pr" | jq -r '.root_cause // ""')
+                  fix_desc=$(echo "$pr" | jq -r '.fix // ""')
+                  if [ -n "$root_cause" ] && [ "$root_cause" != "null" ]; then
+                    echo "#### PR #${pr_num} — Root cause"
+                    echo ""
+                    echo "${root_cause}"
+                    echo ""
+                  fi
+                  if [ -n "$fix_desc" ] && [ "$fix_desc" != "null" ]; then
+                    echo "#### PR #${pr_num} — Fix"
+                    echo ""
+                    echo "${fix_desc}"
+                    echo ""
+                  fi
+                done
+
                 echo "### Tests covered"
                 echo ""
                 echo "| PR | E2E | API |"

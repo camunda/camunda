@@ -462,7 +462,9 @@ Always write `/tmp/fix-meta.json` before stopping:
       "repo": "camunda",
       "branch": "fix/nightly-8.9-operate-filter-wait",
       "has_e2e": true,
-      "has_api": false
+      "has_api": false,
+      "root_cause": "One-sentence explanation of why the test was failing.",
+      "fix": "One-sentence description of what was changed and why it resolves the failure."
     }
   ]
 }
@@ -470,6 +472,9 @@ Always write `/tmp/fix-meta.json` before stopping:
 
 All six fields — `number`, `owner`, `repo`, `branch`, `has_e2e`, `has_api` — are
 **mandatory**. For all PRs in this repo: `"owner": "camunda", "repo": "camunda"`.
+`root_cause` and `fix` are **strongly recommended** — they are surfaced directly
+in the GitHub job summary so reviewers understand the agent's decision without
+reading the full agent log.
 Extra fields (e.g. `url`, `title`, `tests_fixed`) are allowed but do not replace
 these six. **Never omit `owner` or `repo`** — the Slack step uses them to build
 the PR link and will produce `github.com/null/null/pull/<n>` if they are absent.
