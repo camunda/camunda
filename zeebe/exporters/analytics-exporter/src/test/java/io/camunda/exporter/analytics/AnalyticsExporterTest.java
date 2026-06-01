@@ -100,7 +100,7 @@ class AnalyticsExporterTest {
                   //                      value.getRootProcessInstanceKey())
                   .containsEntry(AnalyticsAttributes.TENANT_ID, value.getTenantId())
                   .containsEntry(AnalyticsAttributes.LOG_POSITION, record.getPosition())
-                  .containsEntry(AnalyticsAttributes.LOG_SEQUENCE_NUMBER, 1L);
+                  .containsEntry(AnalyticsAttributes.EVENT_SEQUENCE_NUMBER, 1L);
             });
   }
 
@@ -189,9 +189,13 @@ class AnalyticsExporterTest {
         .isPresent()
         .get()
         .satisfies(
-            bytes ->
-                assertThat(AnalyticsExporterMetadata.deserialize(bytes).getRawEventSequenceNumber())
-                    .isEqualTo(3L));
+            bytes -> {
+              final var metadata = AnalyticsExporterMetadata.deserialize(bytes);
+              assertThat(metadata.getEventSequenceNumber()).isEqualTo(3L);
+              // metricSequenceNumber is only incremented during metric flush (gauge callback),
+              // not during export(). Since no metric flush occurs here, it stays at 0.
+              assertThat(metadata.getMetricSequenceNumber()).isZero();
+            });
   }
 
   @Test
@@ -199,7 +203,7 @@ class AnalyticsExporterTest {
     // given — controller pre-seeded with persisted sequence number 5
     final var seededController = new ExporterTestController();
     seededController.updateLastExportedRecordPosition(
-        0L, new AnalyticsExporterMetadata(5L).serialize());
+        0L, new AnalyticsExporterMetadata(5L, 0).serialize());
     final var freshMemoryExporter = InMemoryLogRecordExporter.create();
     final var freshExporter = exporterWithInMemory(freshMemoryExporter, seededController);
 
@@ -209,7 +213,7 @@ class AnalyticsExporterTest {
     // then
     assertThat(freshMemoryExporter.getFinishedLogRecordItems())
         .singleElement()
-        .extracting(log -> log.getAttributes().get(AnalyticsAttributes.LOG_SEQUENCE_NUMBER))
+        .extracting(log -> log.getAttributes().get(AnalyticsAttributes.EVENT_SEQUENCE_NUMBER))
         .isEqualTo(6L);
   }
 

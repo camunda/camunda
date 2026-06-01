@@ -22,7 +22,7 @@ import javax.crypto.spec.SecretKeySpec;
  * Bundles auth credentials (fingerprint, HMAC signer) and partition identity (clusterId,
  * partitionId).
  */
-final class AnalyticsExporterContext {
+public final class AnalyticsExporterContext {
 
   static final String HEADER_FINGERPRINT = "x-camunda-fingerprint";
   static final String HEADER_CLUSTER_ID = "x-camunda-cluster-id";

@@ -9,7 +9,9 @@ package io.camunda.exporter.analytics;
 
 import io.opentelemetry.sdk.logs.SdkLoggerProvider;
 import io.opentelemetry.sdk.logs.export.SimpleLogRecordProcessor;
+import io.opentelemetry.sdk.metrics.SdkMeterProvider;
 import io.opentelemetry.sdk.testing.exporter.InMemoryLogRecordExporter;
+import io.opentelemetry.sdk.testing.exporter.InMemoryMetricReader;
 
 /** Test factory for {@link OtelSdkManager} with in-memory OTel transport. */
 public final class TestOtelSdkManager {
@@ -18,6 +20,12 @@ public final class TestOtelSdkManager {
 
   /** Creates an initialized OtelSdkManager that captures events in the given exporter. */
   public static OtelSdkManager inMemory(final InMemoryLogRecordExporter memoryExporter) {
+    return inMemoryWithMetrics(memoryExporter, InMemoryMetricReader.create());
+  }
+
+  /** Creates an initialized OtelSdkManager with in-memory log and metric capture. */
+  public static OtelSdkManager inMemoryWithMetrics(
+      final InMemoryLogRecordExporter logExporter, final InMemoryMetricReader metricReader) {
     final var manager =
         new OtelSdkManager() {
           @Override
@@ -25,7 +33,17 @@ public final class TestOtelSdkManager {
               final AnalyticsExporterConfig cfg, final AnalyticsExporterContext context) {
             return SdkLoggerProvider.builder()
                 .setResource(OtelSdkManager.buildResource(context))
-                .addLogRecordProcessor(SimpleLogRecordProcessor.create(memoryExporter))
+                .addLogRecordProcessor(SimpleLogRecordProcessor.create(logExporter))
+                .build();
+          }
+
+          @Override
+          protected SdkMeterProvider createMeterProvider(
+              final AnalyticsExporterContext context, final ManualMetricReader reader) {
+            // Bypass ManualMetricReader — use InMemoryMetricReader for synchronous test collection
+            return SdkMeterProvider.builder()
+                .setResource(OtelSdkManager.buildResource(context))
+                .registerMetricReader(metricReader)
                 .build();
           }
         };

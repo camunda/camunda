@@ -13,6 +13,7 @@ import io.camunda.exporter.analytics.handler.UsageMetricHandler;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
+import io.camunda.zeebe.exporter.api.context.ScheduledTask;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
@@ -39,6 +40,7 @@ public class AnalyticsExporter implements Exporter {
   private HandlerRegistry handlers;
   private AnalyticsExporterContext analyticsContext;
   private AnalyticsExporterMetadata metadata;
+  private ScheduledTask metricFlushTask;
 
   public AnalyticsExporter() {
     this(new OtelSdkManager());
@@ -88,12 +90,17 @@ public class AnalyticsExporter implements Exporter {
             .map(AnalyticsExporterMetadata::deserialize)
             .orElse(new AnalyticsExporterMetadata());
     otelSdkManager.initialize(config, analyticsContext, metadata);
+    scheduleMetricFlush();
     LOG.info("Analytics exporter opened");
   }
 
   @Override
   public void close() {
-    otelSdkManager.shutdown();
+    if (metricFlushTask != null) {
+      metricFlushTask.cancel();
+      metricFlushTask = null;
+    }
+    otelSdkManager.close();
     LOG.info("Analytics exporter closed");
   }
 
@@ -106,6 +113,22 @@ public class AnalyticsExporter implements Exporter {
     }
 
     controller.updateLastExportedRecordPosition(record.getPosition(), metadata.serialize());
+  }
+
+  private void scheduleMetricFlush() {
+    metricFlushTask =
+        controller.scheduleCancellableTask(
+            config.getPushInterval(), this::flushMetricsAndReschedule);
+  }
+
+  private void flushMetricsAndReschedule() {
+    try {
+      otelSdkManager.flushMetrics();
+    } catch (final Exception e) {
+      SAMPLED_WARN_LOG.warn("Failed to flush metrics", e);
+    } finally {
+      scheduleMetricFlush();
+    }
   }
 
   /**
