@@ -400,7 +400,7 @@ jobs:
                   .prs[] |
                   # Derive owner/repo safely
                   (if .owner != null and .repo != null then "\(.owner)/\(.repo)"
-                   elif (.url // "") | test("github.com/[^/]+/[^/]+") then (.url | capture("github.com/(?P<r>[^/]+/[^/]+)/pull") | .r)
+                   elif (.url // "") | test("github.com/[^/]+/[^/]+") then (.url | capture("github.com/(?<r>[^/]+/[^/]+)/pull") | .r)
                    else $repo end) as $full_repo |
                   "**[PR #\(.number)](https://github.com/\($full_repo)/pull/\(.number))** — `\(.branch)`"
                 ' /tmp/fix-meta.json
@@ -479,7 +479,7 @@ jobs:
               .[] |
               # use owner/repo if present, otherwise derive from url, else fall back to $repo
               (if .owner != null and .repo != null then "\(.owner)/\(.repo)"
-               elif (.url // "") | test("github.com/[^/]+/[^/]+") then (.url | capture("github.com/(?P<r>[^/]+/[^/]+)/pull") | .r)
+               elif (.url // "") | test("github.com/[^/]+/[^/]+") then (.url | capture("github.com/(?<r>[^/]+/[^/]+)/pull") | .r)
                else $repo end) as $full_repo |
               "<https://github.com/\($full_repo)/pull/\(.number)|PR #\(.number)>"' \
               | tr '\n' '  ')
