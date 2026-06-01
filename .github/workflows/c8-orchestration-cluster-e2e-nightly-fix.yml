@@ -152,6 +152,7 @@ jobs:
       - name: Install workspace-cli
         env:
           GOPRIVATE: github.com/camunda/*
+          GOTOOLCHAIN: auto
         run: |
           go install github.com/camunda/workspace-cli/cmd/workspace@latest
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
