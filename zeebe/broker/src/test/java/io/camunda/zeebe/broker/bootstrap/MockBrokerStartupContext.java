@@ -35,7 +35,6 @@ import io.camunda.zeebe.broker.system.management.CheckpointSchedulingService;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
-import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceImpl;
 import io.camunda.zeebe.broker.transport.snapshotapi.SnapshotApiRequestHandler;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
@@ -67,7 +66,6 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   private List<PartitionListener> partitionListeners = List.of();
   private List<PartitionRaftListener> partitionRaftListeners = List.of();
   private ClusterServicesImpl clusterServices = mock(ClusterServicesImpl.class, RETURNS_DEEP_STUBS);
-  private CommandApiServiceImpl commandApiService = mock(CommandApiServiceImpl.class);
   private AdminApiRequestHandler adminApiService = mock(AdminApiRequestHandler.class);
   private AtomixServerTransport gatewayBrokerTransport = mock(AtomixServerTransport.class);
   private ManagedMessagingService apiMessagingService = mock(ManagedMessagingService.class);
@@ -207,16 +205,6 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
 
   public void setClusterServices(final ClusterServicesImpl clusterServices) {
     this.clusterServices = clusterServices;
-  }
-
-  @Override
-  public CommandApiServiceImpl getCommandApiService() {
-    return commandApiService;
-  }
-
-  @Override
-  public void setCommandApiService(final CommandApiServiceImpl commandApiService) {
-    this.commandApiService = commandApiService;
   }
 
   @Override

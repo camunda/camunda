@@ -13,6 +13,7 @@ import io.atomix.cluster.MemberId;
 import io.atomix.raft.cluster.RaftMember.Type;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.broker.partitioning.startup.PartitionStartupContext;
+import io.camunda.zeebe.broker.partitioning.startup.steps.CommandApiServicePartitionStep;
 import io.camunda.zeebe.broker.partitioning.startup.steps.MetricsStep;
 import io.camunda.zeebe.broker.partitioning.startup.steps.PartitionDirectoryStep;
 import io.camunda.zeebe.broker.partitioning.startup.steps.PartitionRegistrationStep;
@@ -76,6 +77,7 @@ final class Partition {
                 new PartitionDirectoryStep(context.partitionId()),
                 new SnapshotStoreStep(context.partitionId()),
                 new RaftBootstrapStep(context.partitionId()),
+                new CommandApiServicePartitionStep(context.partitionId()),
                 new ZeebePartitionStep(context.partitionId()),
                 new PartitionRegistrationStep(context.partitionId()))));
   }
@@ -91,6 +93,7 @@ final class Partition {
                 new PartitionDirectoryStep(context.partitionId()),
                 new SnapshotStoreStep(context.partitionId()),
                 new RaftJoinStep(context.partitionId()),
+                new CommandApiServicePartitionStep(context.partitionId()),
                 new ZeebePartitionStep(context.partitionId()),
                 new PartitionRegistrationStep(context.partitionId()))));
   }
