@@ -468,9 +468,11 @@ Always write `/tmp/fix-meta.json` before stopping:
 }
 ```
 
-All four fields — `number`, `branch`, `has_e2e`, `has_api` — are **mandatory**.
+All six fields — `number`, `owner`, `repo`, `branch`, `has_e2e`, `has_api` — are
+**mandatory**. For all PRs in this repo: `"owner": "camunda", "repo": "camunda"`.
 Extra fields (e.g. `url`, `title`, `tests_fixed`) are allowed but do not replace
-these four.
+these six. **Never omit `owner` or `repo`** — the Slack step uses them to build
+the PR link and will produce `github.com/null/null/pull/<n>` if they are absent.
 
 **`branch`** must never be `null`. Set it to the exact `headRefName` of the PR:
 ```bash

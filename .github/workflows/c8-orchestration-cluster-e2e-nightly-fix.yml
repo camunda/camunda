@@ -454,8 +454,13 @@ jobs:
             icon=":information_source:"; summary="No PR opened — agent could not determine a fix"
           else
             icon=":white_check_mark:"
-            pr_links=$(echo "$prs_json" | jq -r \
-              '.[] | "<https://github.com/\(.owner)/\(.repo)/pull/\(.number)|PR #\(.number)>"' \
+            pr_links=$(echo "$prs_json" | jq -r --arg repo "${{ github.repository }}" '
+              .[] |
+              # use owner/repo if present, otherwise derive from url, else fall back to $repo
+              (if .owner != null and .repo != null then "\(.owner)/\(.repo)"
+               elif (.url // "") | test("github.com/[^/]+/[^/]+") then (.url | capture("github.com/(?P<r>[^/]+/[^/]+)/pull") | .r)
+               else $repo end) as $full_repo |
+              "<https://github.com/\($full_repo)/pull/\(.number)|PR #\(.number)>"' \
               | tr '\n' '  ')
             summary="PR(s) opened: ${pr_links}"
           fi
