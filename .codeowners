@@ -34,6 +34,7 @@ SECURITY.md                 @camunda/orchestration-cluster
 commitlint*                 @camunda/orchestration-cluster
 .dockerignore               @camunda/orchestration-cluster
 .editorconfig               @camunda/orchestration-cluster
+.gitattributes              @camunda/orchestration-cluster
 .gitignore                  @camunda/orchestration-cluster
 .suppressions.xml           @camunda/orchestration-cluster
 Dockerfile                  @camunda/orchestration-cluster
