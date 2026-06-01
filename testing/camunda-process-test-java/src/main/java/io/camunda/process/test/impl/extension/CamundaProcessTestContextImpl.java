@@ -343,7 +343,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
         client,
         jobSelector,
         job ->
-            mapOutputVariablesOnce(
+            resolveOutputVariablesFromInputVariables(
                 client,
                 jobSelector.describe(),
                 "complete job",
@@ -496,7 +496,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
         client,
         userTaskSelector,
         userTask ->
-            mapOutputVariablesOnce(
+            resolveOutputVariablesFromInputVariables(
                 client,
                 userTaskSelector.describe(),
                 "complete user task",
@@ -792,7 +792,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   }
 
   /** Resolves the output variables for a variable-mapper-based completion */
-  private Map<String, Object> mapOutputVariablesOnce(
+  private Map<String, Object> resolveOutputVariablesFromInputVariables(
       final CamundaClient client,
       final String selectorDescription,
       final String operation,
