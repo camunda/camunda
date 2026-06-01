@@ -436,6 +436,8 @@ jobs:
         run: |
           set -euo pipefail
 
+          echo '[]' > /tmp/fix_agent_runs.json
+
           echo "$DISPATCHES_JSON" | jq -c '.[]' | while read -r d; do
             version=$(echo "$d" | jq -r '.version')
             specs=$(echo "$d" | jq -c '.test_specs')
@@ -444,6 +446,7 @@ jobs:
             api_rdbms=$(echo "$d" | jq -r '.api_rdbms_run_id')
 
             echo "Dispatching fix agent: version=$version  failures=$(echo "$specs" | jq 'length')"
+            dispatched_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
             gh workflow run c8-orchestration-cluster-e2e-nightly-fix.yml \
               --repo "$REPO" --ref "${FIX_AGENT_REF}" \
@@ -455,4 +458,49 @@ jobs:
               -f triage_run_url="$TRIAGE_RUN_URL" \
               -f slack_thread_ts="$SLACK_THREAD_TS" \
               -f slack_channel="$SLACK_CHANNEL"
+
+            # Poll for the newly created fix-agent run (created after dispatch)
+            fix_run_id=""
+            for _ in $(seq 1 18); do
+              sleep 5
+              fix_run_id=$(gh run list \
+                --workflow c8-orchestration-cluster-e2e-nightly-fix.yml \
+                --repo "$REPO" --branch "${FIX_AGENT_REF}" --limit 5 \
+                --json databaseId,createdAt \
+                --jq --arg t "$dispatched_at" \
+                  '[.[] | select(.createdAt >= $t)] | first | .databaseId // ""' || echo "")
+              if [ -n "$fix_run_id" ] && [ "$fix_run_id" != "null" ]; then
+                echo "Fix agent run for $version: https://github.com/${REPO}/actions/runs/${fix_run_id}"
+                break
+              fi
+            done
+
+            jq --arg v "$version" --arg id "$fix_run_id" --arg repo "$REPO" \
+              '. += [{"version": $v, "run_id": $id, "run_url": ("https://github.com/" + $repo + "/actions/runs/" + $id)}]' \
+              /tmp/fix_agent_runs.json > /tmp/fix_agent_runs.json.tmp
+            mv /tmp/fix_agent_runs.json.tmp /tmp/fix_agent_runs.json
           done
+
+      - name: Write dispatch summary
+        if: always()
+        env:
+          REPO: ${{ github.repository }}
+          FIX_AGENT_REF: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          [ -f /tmp/fix_agent_runs.json ] || exit 0
+          count=$(jq 'length' /tmp/fix_agent_runs.json)
+          [ "$count" -eq 0 ] && exit 0
+          {
+            echo ""
+            echo "### Fix agent runs"
+            echo ""
+            echo "| Version | Run | Branch |"
+            echo "|---------|-----|--------|"
+            jq -r --arg repo "$REPO" --arg ref "$FIX_AGENT_REF" \
+              '.[] | if .run_id != "" and .run_id != null
+                then "| \(.version) | [↗](https://github.com/\($repo)/actions/runs/\(.run_id)) | `\($ref)` |"
+                else "| \(.version) | *(run ID not resolved)* | `\($ref)` |"
+                end' \
+              /tmp/fix_agent_runs.json
+          } >> "$GITHUB_STEP_SUMMARY"
