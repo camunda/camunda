@@ -436,7 +436,7 @@ jobs:
           TRIAGE_RUN_URL:  ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           SLACK_THREAD_TS: ${{ needs.triage.outputs.slack_ts }}
           SLACK_CHANNEL:   ${{ needs.triage.outputs.slack_channel }}
-          FIX_AGENT_REF:   ${{ github.event.inputs.fix_agent_ref || 'main' }}
+          FIX_AGENT_REF:   ${{ github.event.inputs.fix_agent_ref || github.ref_name }}
         run: |
           set -euo pipefail
 
