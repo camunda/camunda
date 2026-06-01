@@ -25,6 +25,9 @@ public class Data {
   /** This section allows to configure the audit log setup. */
   @NestedConfigurationProperty private AuditLog auditLog = new AuditLog();
 
+  /** This section allows to configure the wait-states tracking setup. */
+  @NestedConfigurationProperty private WaitStates waitStates = new WaitStates();
+
   /** This section allows to configure the history deletion setup. */
   @NestedConfigurationProperty private HistoryDeletion historyDeletion = new HistoryDeletion();
 
@@ -50,6 +53,14 @@ public class Data {
 
   public void setAuditLog(final AuditLog auditLog) {
     this.auditLog = auditLog;
+  }
+
+  public WaitStates getWaitStates() {
+    return waitStates;
+  }
+
+  public void setWaitStates(final WaitStates waitStates) {
+    this.waitStates = waitStates;
   }
 
   public HistoryDeletion getHistoryDeletion() {
