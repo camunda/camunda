@@ -493,10 +493,9 @@ gh pr view <number> --repo camunda/camunda --json headRefName --jq '.headRefName
 - Any fixed test with `test_type: "api"` → `"has_api": true`
 - Both can be `true` when a PR covers mixed failures.
 
-The calling workflow uses these flags to trigger the matching on-demand
-verification run (`c8-orchestration-cluster-e2e-tests-on-demand.yml` for E2E,
-`c8-orchestration-cluster-e2e-api-test-branch-on-demand.yml` for API).
-**If both are `false`, no verification run is triggered and the fix is never
-validated automatically.**
+The calling workflow uses these flags to determine scope, but only one
+on-demand verification run is triggered: `c8-orchestration-cluster-e2e-tests-on-demand.yml`
+(covers both E2E and API tests). **If `has_e2e` and `has_api` are both `false`,
+no verification run is triggered and the fix is never validated automatically.**
 
 Use `{"prs": []}` if no PR was opened (regardless of reason).
