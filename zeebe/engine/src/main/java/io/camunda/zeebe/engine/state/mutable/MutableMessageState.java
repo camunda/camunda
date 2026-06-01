@@ -24,6 +24,21 @@ public interface MutableMessageState extends MessageState, StreamProcessorLifecy
 
   void removeActiveProcessInstance(DirectBuffer bpmnProcessId, DirectBuffer correlationKey);
 
+  /**
+   * Marks a process-correlation-key lock entry as cross-partition by recording the holder's {@code
+   * businessId} in a parallel CF. Written on {@code P_K} when the STARTED reply from {@code P_B} is
+   * applied, alongside the regular {@link #putActiveProcessInstance(DirectBuffer, DirectBuffer)}
+   * call. The pull-based release loop introduced in a later increment iterates this CF to find the
+   * {@code (processId, businessId)} pairs whose lock entries can be released by querying {@code P_B
+   * = hash(businessId)}.
+   *
+   * <p>Idempotent: a repeated write for the same key with the same businessId is a no-op, which
+   * matters because the cross-partition STARTED reply can be re-delivered (the dedup on {@code P_B}
+   * re-replies the same processInstanceKey on retry).
+   */
+  void putCrossPartitionStartLockBusinessId(
+      DirectBuffer bpmnProcessId, DirectBuffer correlationKey, DirectBuffer businessId);
+
   void putProcessInstanceCorrelationKey(long processInstanceKey, DirectBuffer correlationKey);
 
   void removeProcessInstanceCorrelationKey(long processInstanceKey);

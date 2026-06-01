@@ -110,6 +110,10 @@ final class IntentEncodingDecodingTest {
         buildParameterSets(
             MessageStartEventSubscriptionIntent.class, MessageStartEventSubscriptionIntent::from));
     result.addAll(
+        buildParameterSets(
+            MessageStartProcessInstanceRequestIntent.class,
+            MessageStartProcessInstanceRequestIntent::from));
+    result.addAll(
         buildParameterSets(MessageSubscriptionIntent.class, MessageSubscriptionIntent::from));
     result.addAll(buildParameterSets(MultiInstanceIntent.class, MultiInstanceIntent::from));
     result.addAll(buildParameterSets(ProcessIntent.class, ProcessIntent::from));

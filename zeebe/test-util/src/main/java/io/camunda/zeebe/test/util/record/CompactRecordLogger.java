@@ -110,6 +110,7 @@ import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageCorrelationRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
+import io.camunda.zeebe.protocol.record.value.MessageStartProcessInstanceRequestRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.MultiInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessEventRecordValue;
@@ -264,6 +265,9 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.MESSAGE_BATCH, this::summarizeMessageBatch);
     valueLoggers.put(
         ValueType.MESSAGE_START_EVENT_SUBSCRIPTION, this::summarizeMessageStartEventSubscription);
+    valueLoggers.put(
+        ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
+        this::summarizeMessageStartProcessInstanceRequest);
     valueLoggers.put(ValueType.MESSAGE_SUBSCRIPTION, this::summarizeMessageSubscription);
     valueLoggers.put(ValueType.PROCESS_INSTANCE, this::summarizeProcessInstance);
     valueLoggers.put(ValueType.PROCESS_INSTANCE_BATCH, this::summarizeProcessInstanceBatch);
@@ -795,6 +799,50 @@ public class CompactRecordLogger {
         .append(formatId(value.getBpmnProcessId()))
         .append(formatVariables(value))
         .toString();
+  }
+
+  private String summarizeMessageStartProcessInstanceRequest(final Record<?> record) {
+    final var value = (MessageStartProcessInstanceRequestRecordValue) record.getValue();
+
+    final var result =
+        new StringBuilder()
+            .append("\"")
+            .append(value.getMessageName())
+            .append("\"")
+            .append(" msg[")
+            .append(shortenKey(value.getMessageKey()))
+            .append("]")
+            .append(" sub[")
+            .append(shortenKey(value.getMessageStartEventSubscriptionKey()))
+            .append("]");
+
+    if (!StringUtils.isEmpty(value.getCorrelationKey())) {
+      result.append(" correlationKey: ").append(value.getCorrelationKey());
+    }
+    if (!StringUtils.isEmpty(value.getBusinessId())) {
+      result.append(" businessId: ").append(formatId(value.getBusinessId()));
+    }
+    if (!StringUtils.isEmpty(value.getStartEventId())) {
+      result.append(" @").append(formatId(value.getStartEventId()));
+    }
+
+    result.append(
+        summarizeProcessInformation(value.getBpmnProcessId(), value.getProcessInstanceKey()));
+
+    final var variables = value.getVariables();
+    if (variables == null || variables.isEmpty()) {
+      result.append(" (no vars)");
+    } else {
+      result
+          .append(" vars: ")
+          .append(
+              variables.entrySet().stream()
+                  .sorted(Entry.comparingByKey())
+                  .map(e -> e.getKey() + "=" + formatVariableValue(e.getValue()))
+                  .collect(Collectors.joining(", ", "{", "}")));
+    }
+
+    return result.append(formatTenant(value)).toString();
   }
 
   private String summarizeMessageSubscription(final Record<?> record) {

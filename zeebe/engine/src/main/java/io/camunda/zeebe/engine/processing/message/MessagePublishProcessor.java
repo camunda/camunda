@@ -98,7 +98,9 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
             commandSender,
             elementInstanceState,
             bannedInstanceState,
-            businessIdUniquenessEnabled);
+            businessIdUniquenessEnabled,
+            routingInfo,
+            partitionId);
   }
 
   @Override
@@ -179,6 +181,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
         messageCorrelationRecord.getCorrelationKeyBuffer(),
         messageCorrelationRecord.getVariablesBuffer(),
         messageCorrelationRecord.getTenantId(),
-        messageCorrelationRecord.getBusinessIdBuffer());
+        messageCorrelationRecord.getBusinessIdBuffer(),
+        messageCorrelationRecord.getDeadline());
   }
 }

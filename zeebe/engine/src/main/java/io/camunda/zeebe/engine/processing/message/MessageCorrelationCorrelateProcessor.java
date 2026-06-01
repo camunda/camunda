@@ -28,6 +28,7 @@ import io.camunda.zeebe.engine.state.immutable.MessageStartEventSubscriptionStat
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.immutable.MessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
+import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -73,7 +74,9 @@ public final class MessageCorrelationCorrelateProcessor
       final AuthorizationCheckBehavior authCheckBehavior,
       final ElementInstanceState elementInstanceState,
       final BannedInstanceState bannedInstanceState,
-      final boolean businessIdUniquenessEnabled) {
+      final boolean businessIdUniquenessEnabled,
+      final RoutingInfo routingInfo,
+      final int partitionId) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
@@ -97,7 +100,9 @@ public final class MessageCorrelationCorrelateProcessor
             commandSender,
             elementInstanceState,
             bannedInstanceState,
-            businessIdUniquenessEnabled);
+            businessIdUniquenessEnabled,
+            routingInfo,
+            partitionId);
   }
 
   @Override
@@ -210,7 +215,11 @@ public final class MessageCorrelationCorrelateProcessor
         messageCorrelationRecord.getCorrelationKeyBuffer(),
         messageCorrelationRecord.getVariablesBuffer(),
         messageCorrelationRecord.getTenantId(),
-        messageCorrelationRecord.getBusinessIdBuffer());
+        messageCorrelationRecord.getBusinessIdBuffer(),
+        // Correlate commands carry no TTL and are not buffered; the cross-partition dedup row's
+        // deadline therefore defaults to -1 (already expired). This is safe because the pending-ask
+        // on P_K is cleared immediately by the message-expire hook, so no retry ever fires.
+        -1L);
   }
 
   private Optional<Rejection> isAuthorizedForAllSubscriptions(

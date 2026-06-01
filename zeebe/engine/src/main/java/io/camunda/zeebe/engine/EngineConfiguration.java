@@ -63,6 +63,21 @@ public final class EngineConfiguration {
   public static final boolean DEFAULT_ENABLE_IDENTITY_SETUP = true;
   public static final Duration DEFAULT_EXPRESSION_EVALUATION_TIMEOUT = Duration.ofSeconds(5);
   public static final boolean DEFAULT_BUSINESS_ID_UNIQUENESS_ENABLED = false;
+  public static final Duration DEFAULT_MESSAGE_START_DEDUP_EXPIRATION_SWEEP_INTERVAL =
+      Duration.ofSeconds(30);
+  public static final int DEFAULT_MESSAGE_START_DEDUP_EXPIRATION_SWEEP_BATCH_LIMIT = 100;
+
+  /**
+   * Cadence at which the pending message-start ask scheduler runs and the minimum age an ask must
+   * reach before it is re-emitted. The scheduler ticks every {@code retryInterval} and re-sends
+   * every ask whose last-sent time is older than {@code now - retryInterval}, so an ask is retried
+   * at most once per interval. Correctness does not depend on this value relative to any window:
+   * every retry re-emits the same {@code messageDeadline} carried by the original ask, so the
+   * {@code P_B} dedup row that bounds re-replies shares the buffered message's lifetime on {@code
+   * P_K}. This interval only controls retry cadence.
+   */
+  public static final Duration DEFAULT_MESSAGE_START_ASK_RETRY_INTERVAL = Duration.ofSeconds(10);
+
   public static final boolean DEFAULT_ENABLE_RPA_REEXPORT_MIGRATION = true;
 
   private int maxIdFieldLength = DEFAULT_MAX_ID_FIELD_LENGTH;
@@ -121,6 +136,12 @@ public final class EngineConfiguration {
    * </ul>
    */
   private boolean businessIdUniquenessEnabled = DEFAULT_BUSINESS_ID_UNIQUENESS_ENABLED;
+
+  private Duration messageStartDedupExpirationSweepInterval =
+      DEFAULT_MESSAGE_START_DEDUP_EXPIRATION_SWEEP_INTERVAL;
+  private int messageStartDedupExpirationSweepBatchLimit =
+      DEFAULT_MESSAGE_START_DEDUP_EXPIRATION_SWEEP_BATCH_LIMIT;
+  private Duration messageStartAskRetryInterval = DEFAULT_MESSAGE_START_ASK_RETRY_INTERVAL;
 
   public int getMessagesTtlCheckerBatchLimit() {
     return messagesTtlCheckerBatchLimit;
@@ -477,6 +498,46 @@ public final class EngineConfiguration {
   public EngineConfiguration setBusinessIdUniquenessEnabled(
       final boolean businessIdUniquenessEnabled) {
     this.businessIdUniquenessEnabled = businessIdUniquenessEnabled;
+    return this;
+  }
+
+  /**
+   * Interval between scheduled expired dedup entry sweeps of the cross-partition message-start
+   * dedup.
+   */
+  public Duration getMessageStartDedupExpirationSweepInterval() {
+    return messageStartDedupExpirationSweepInterval;
+  }
+
+  public EngineConfiguration setMessageStartDedupExpirationSweepInterval(
+      final Duration messageStartDedupExpirationSweepInterval) {
+    this.messageStartDedupExpirationSweepInterval = messageStartDedupExpirationSweepInterval;
+    return this;
+  }
+
+  /** Maximum number of dedup expired dedup entries a single sweep cycle deletes. */
+  public int getMessageStartDedupExpirationSweepBatchLimit() {
+    return messageStartDedupExpirationSweepBatchLimit;
+  }
+
+  public EngineConfiguration setMessageStartDedupExpirationSweepBatchLimit(
+      final int messageStartDedupExpirationSweepBatchLimit) {
+    this.messageStartDedupExpirationSweepBatchLimit = messageStartDedupExpirationSweepBatchLimit;
+    return this;
+  }
+
+  /**
+   * Cadence at which the pending message-start ask scheduler runs and the minimum age an ask must
+   * reach before it is re-emitted. The scheduler ticks every {@code retryInterval} and re-sends
+   * every ask whose last-sent time is older than {@code now - retryInterval}.
+   */
+  public Duration getMessageStartAskRetryInterval() {
+    return messageStartAskRetryInterval;
+  }
+
+  public EngineConfiguration setMessageStartAskRetryInterval(
+      final Duration messageStartAskRetryInterval) {
+    this.messageStartAskRetryInterval = messageStartAskRetryInterval;
     return this;
   }
 

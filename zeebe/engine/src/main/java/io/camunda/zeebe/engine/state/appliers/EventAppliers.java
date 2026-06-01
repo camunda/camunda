@@ -51,6 +51,7 @@ import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MultiInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
@@ -111,6 +112,7 @@ public final class EventAppliers implements EventApplier {
     registerMessageCorrelationAppliers(state);
     registerMessageSubscriptionAppliers(state);
     registerMessageStartEventSubscriptionAppliers(state);
+    registerMessageStartProcessInstanceRequestAppliers(state);
 
     registerJobIntentEventAppliers(state);
     registerVariableEventAppliers(state);
@@ -439,7 +441,10 @@ public final class EventAppliers implements EventApplier {
 
   private void registerMessageAppliers(final MutableProcessingState state) {
     register(MessageIntent.PUBLISHED, new MessagePublishedApplier(state.getMessageState()));
-    register(MessageIntent.EXPIRED, new MessageExpiredApplier(state.getMessageState()));
+    register(
+        MessageIntent.EXPIRED,
+        new MessageExpiredApplier(
+            state.getMessageState(), state.getMessageStartProcessInstanceAskState()));
   }
 
   private void registerMessageCorrelationAppliers(final MutableProcessingState state) {
@@ -495,6 +500,52 @@ public final class EventAppliers implements EventApplier {
         MessageStartEventSubscriptionIntent.DELETED,
         new MessageStartEventSubscriptionDeletedApplier(
             state.getMessageStartEventSubscriptionState()));
+  }
+
+  /**
+   * Appliers for the cross-partition {@code MessageStartProcessInstanceRequest} handshake. All
+   * intents are introduced together with this feature and have no prior stream history, so per the
+   * versioned-applier convention a single V1 applier per intent is sufficient (no V2 alongside).
+   *
+   * <ul>
+   *   <li>{@code REQUESTED}: acknowledgement event with no state effect.
+   *   <li>{@code STARTED}: applied on {@code P_B} on cache miss + success; records the {@code
+   *       (processDefinitionKey, messageKey) → processInstanceKey} dedup entry that lets retries
+   *       from {@code P_K} be re-replied without a second activation. Also applied on {@code P_K}
+   *       when the success reply is processed; removes the pending-ask entry so the scheduler stops
+   *       retrying.
+   *   <li>{@code UNIQUENESS_REJECTED}: applied on {@code P_K} when the rejection reply is
+   *       processed; removes the pending-ask entry.
+   *   <li>{@code NO_SUBSCRIPTION_REJECTED}: applied on {@code P_K} when the rejection reply is
+   *       processed; removes the pending-ask entry.
+   *   <li>{@code EXPIRED_DEDUP_DELETED}: removes a dedup entry after its post-completion expired
+   *       dedup entry window has passed; emitted by the scheduled sweep.
+   * </ul>
+   */
+  private void registerMessageStartProcessInstanceRequestAppliers(
+      final MutableProcessingState state) {
+    register(
+        MessageStartProcessInstanceRequestIntent.REQUESTED,
+        new MessageStartProcessInstanceRequestedV1Applier(
+            state.getPartitionId(), state.getMessageStartProcessInstanceAskState()));
+    register(
+        MessageStartProcessInstanceRequestIntent.STARTED,
+        new MessageStartProcessInstanceStartedV1Applier(
+            state.getMessageStartProcessInstanceDedupState(),
+            state.getMessageStartProcessInstanceAskState(),
+            state.getMessageState()));
+    register(
+        MessageStartProcessInstanceRequestIntent.EXPIRED_DEDUP_DELETED,
+        new MessageStartProcessInstanceExpiredDedupDeletedV1Applier(
+            state.getMessageStartProcessInstanceDedupState()));
+    register(
+        MessageStartProcessInstanceRequestIntent.UNIQUENESS_REJECTED,
+        new MessageStartProcessInstanceUniquenessRejectedV1Applier(
+            state.getMessageStartProcessInstanceAskState()));
+    register(
+        MessageStartProcessInstanceRequestIntent.NO_SUBSCRIPTION_REJECTED,
+        new MessageStartProcessInstanceNoSubscriptionRejectedV1Applier(
+            state.getMessageStartProcessInstanceAskState()));
   }
 
   private void registerIncidentEventAppliers(final MutableProcessingState state) {

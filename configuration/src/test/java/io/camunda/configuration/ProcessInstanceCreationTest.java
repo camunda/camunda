@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.zeebe.broker.system.configuration.engine.ProcessInstanceCreationCfg;
+import java.time.Duration;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,12 +40,36 @@ public class ProcessInstanceCreationTest {
       assertThat(brokerCfg.getExperimental().getEngine().getProcessInstanceCreation())
           .returns(false, ProcessInstanceCreationCfg::isBusinessIdUniquenessEnabled);
     }
+
+    @Test
+    void shouldSetDefaultMessageStartDedupExpirationSweepInterval() {
+      assertThat(brokerCfg.getExperimental().getEngine().getProcessInstanceCreation())
+          .returns(
+              Duration.ofSeconds(30),
+              ProcessInstanceCreationCfg::getMessageStartDedupExpirationSweepInterval);
+    }
+
+    @Test
+    void shouldSetDefaultMessageStartDedupExpirationSweepBatchLimit() {
+      assertThat(brokerCfg.getExperimental().getEngine().getProcessInstanceCreation())
+          .returns(100, ProcessInstanceCreationCfg::getMessageStartDedupExpirationSweepBatchLimit);
+    }
+
+    @Test
+    void shouldSetDefaultMessageStartAskRetryInterval() {
+      assertThat(brokerCfg.getExperimental().getEngine().getProcessInstanceCreation())
+          .returns(
+              Duration.ofSeconds(10), ProcessInstanceCreationCfg::getMessageStartAskRetryInterval);
+    }
   }
 
   @Nested
   @TestPropertySource(
       properties = {
         "camunda.process-instance-creation.business-id-uniqueness-enabled=true",
+        "camunda.process-instance-creation.message-start-dedup-expiration-sweep-interval=1m",
+        "camunda.process-instance-creation.message-start-dedup-expiration-sweep-batch-limit=250",
+        "camunda.process-instance-creation.message-start-ask-retry-interval=5s",
       })
   class WithOnlyUnifiedConfigSet {
     final BrokerBasedProperties brokerCfg;
@@ -56,7 +81,13 @@ public class ProcessInstanceCreationTest {
     @Test
     void shouldSetProcessInstanceCreation() {
       assertThat(brokerCfg.getExperimental().getEngine().getProcessInstanceCreation())
-          .returns(true, ProcessInstanceCreationCfg::isBusinessIdUniquenessEnabled);
+          .returns(true, ProcessInstanceCreationCfg::isBusinessIdUniquenessEnabled)
+          .returns(
+              Duration.ofMinutes(1),
+              ProcessInstanceCreationCfg::getMessageStartDedupExpirationSweepInterval)
+          .returns(250, ProcessInstanceCreationCfg::getMessageStartDedupExpirationSweepBatchLimit)
+          .returns(
+              Duration.ofSeconds(5), ProcessInstanceCreationCfg::getMessageStartAskRetryInterval);
     }
   }
 
@@ -64,6 +95,9 @@ public class ProcessInstanceCreationTest {
   @TestPropertySource(
       properties = {
         "zeebe.broker.experimental.engine.processInstanceCreation.businessIdUniquenessEnabled=true",
+        "zeebe.broker.experimental.engine.processInstanceCreation.messageStartDedupExpirationSweepInterval=1m",
+        "zeebe.broker.experimental.engine.processInstanceCreation.messageStartDedupExpirationSweepBatchLimit=250",
+        "zeebe.broker.experimental.engine.processInstanceCreation.messageStartAskRetryInterval=5s",
       })
   class WithOnlyLegacySet {
     final BrokerBasedProperties brokerCfg;
@@ -75,7 +109,13 @@ public class ProcessInstanceCreationTest {
     @Test
     void shouldSetProcessInstanceCreationFromLegacy() {
       assertThat(brokerCfg.getExperimental().getEngine().getProcessInstanceCreation())
-          .returns(true, ProcessInstanceCreationCfg::isBusinessIdUniquenessEnabled);
+          .returns(true, ProcessInstanceCreationCfg::isBusinessIdUniquenessEnabled)
+          .returns(
+              Duration.ofMinutes(1),
+              ProcessInstanceCreationCfg::getMessageStartDedupExpirationSweepInterval)
+          .returns(250, ProcessInstanceCreationCfg::getMessageStartDedupExpirationSweepBatchLimit)
+          .returns(
+              Duration.ofSeconds(5), ProcessInstanceCreationCfg::getMessageStartAskRetryInterval);
     }
   }
 
@@ -84,8 +124,14 @@ public class ProcessInstanceCreationTest {
       properties = {
         // new
         "camunda.process-instance-creation.business-id-uniqueness-enabled=true",
+        "camunda.process-instance-creation.message-start-dedup-expiration-sweep-interval=1m",
+        "camunda.process-instance-creation.message-start-dedup-expiration-sweep-batch-limit=250",
+        "camunda.process-instance-creation.message-start-ask-retry-interval=5s",
         // legacy
         "zeebe.broker.experimental.engine.processInstanceCreation.businessIdUniquenessEnabled=false",
+        "zeebe.broker.experimental.engine.processInstanceCreation.messageStartDedupExpirationSweepInterval=2m",
+        "zeebe.broker.experimental.engine.processInstanceCreation.messageStartDedupExpirationSweepBatchLimit=999",
+        "zeebe.broker.experimental.engine.processInstanceCreation.messageStartAskRetryInterval=42s",
       })
   class WithNewAndLegacySet {
     final BrokerBasedProperties brokerCfg;
@@ -97,7 +143,13 @@ public class ProcessInstanceCreationTest {
     @Test
     void shouldSetProcessInstanceCreationFromNew() {
       assertThat(brokerCfg.getExperimental().getEngine().getProcessInstanceCreation())
-          .returns(true, ProcessInstanceCreationCfg::isBusinessIdUniquenessEnabled);
+          .returns(true, ProcessInstanceCreationCfg::isBusinessIdUniquenessEnabled)
+          .returns(
+              Duration.ofMinutes(1),
+              ProcessInstanceCreationCfg::getMessageStartDedupExpirationSweepInterval)
+          .returns(250, ProcessInstanceCreationCfg::getMessageStartDedupExpirationSweepBatchLimit)
+          .returns(
+              Duration.ofSeconds(5), ProcessInstanceCreationCfg::getMessageStartAskRetryInterval);
     }
   }
 }

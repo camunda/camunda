@@ -8,12 +8,21 @@
 package io.camunda.zeebe.broker.system.configuration.engine;
 
 import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_BUSINESS_ID_UNIQUENESS_ENABLED;
+import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_MESSAGE_START_ASK_RETRY_INTERVAL;
+import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_MESSAGE_START_DEDUP_EXPIRATION_SWEEP_BATCH_LIMIT;
+import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_MESSAGE_START_DEDUP_EXPIRATION_SWEEP_INTERVAL;
 
 import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
+import java.time.Duration;
 
 public class ProcessInstanceCreationCfg implements ConfigurationEntry {
 
   private boolean businessIdUniquenessEnabled = DEFAULT_BUSINESS_ID_UNIQUENESS_ENABLED;
+  private Duration messageStartDedupExpirationSweepInterval =
+      DEFAULT_MESSAGE_START_DEDUP_EXPIRATION_SWEEP_INTERVAL;
+  private int messageStartDedupExpirationSweepBatchLimit =
+      DEFAULT_MESSAGE_START_DEDUP_EXPIRATION_SWEEP_BATCH_LIMIT;
+  private Duration messageStartAskRetryInterval = DEFAULT_MESSAGE_START_ASK_RETRY_INTERVAL;
 
   public boolean isBusinessIdUniquenessEnabled() {
     return businessIdUniquenessEnabled;
@@ -23,11 +32,43 @@ public class ProcessInstanceCreationCfg implements ConfigurationEntry {
     this.businessIdUniquenessEnabled = businessIdUniquenessEnabled;
   }
 
+  public Duration getMessageStartDedupExpirationSweepInterval() {
+    return messageStartDedupExpirationSweepInterval;
+  }
+
+  public void setMessageStartDedupExpirationSweepInterval(
+      final Duration messageStartDedupExpirationSweepInterval) {
+    this.messageStartDedupExpirationSweepInterval = messageStartDedupExpirationSweepInterval;
+  }
+
+  public int getMessageStartDedupExpirationSweepBatchLimit() {
+    return messageStartDedupExpirationSweepBatchLimit;
+  }
+
+  public void setMessageStartDedupExpirationSweepBatchLimit(
+      final int messageStartDedupExpirationSweepBatchLimit) {
+    this.messageStartDedupExpirationSweepBatchLimit = messageStartDedupExpirationSweepBatchLimit;
+  }
+
+  public Duration getMessageStartAskRetryInterval() {
+    return messageStartAskRetryInterval;
+  }
+
+  public void setMessageStartAskRetryInterval(final Duration messageStartAskRetryInterval) {
+    this.messageStartAskRetryInterval = messageStartAskRetryInterval;
+  }
+
   @Override
   public String toString() {
     return "ProcessInstanceCreationCfg{"
         + "businessIdUniquenessEnabled="
         + businessIdUniquenessEnabled
+        + ", messageStartDedupExpirationSweepInterval="
+        + messageStartDedupExpirationSweepInterval
+        + ", messageStartDedupExpirationSweepBatchLimit="
+        + messageStartDedupExpirationSweepBatchLimit
+        + ", messageStartAskRetryInterval="
+        + messageStartAskRetryInterval
         + '}';
   }
 }

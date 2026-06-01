@@ -26,6 +26,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.MessageBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.FeatureFlags;
@@ -154,7 +155,47 @@ public final class MessageEventProcessors {
                 authCheckBehavior,
                 elementInstanceState,
                 bannedInstanceState,
-                businessIdUniquenessEnabled))
+                businessIdUniquenessEnabled,
+                routingInfo,
+                partitionId))
+        .onCommand(
+            ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
+            MessageStartProcessInstanceRequestIntent.REQUEST,
+            new MessageStartProcessInstanceRequestRequestProcessor(
+                startEventSubscriptionState,
+                elementInstanceState,
+                bannedInstanceState,
+                processingState.getMessageStartProcessInstanceDedupState(),
+                eventScopeInstanceState,
+                processState,
+                bpmnBehaviors.eventTriggerBehavior(),
+                bpmnBehaviors.stateBehavior(),
+                subscriptionCommandSender,
+                keyGenerator,
+                clock,
+                writers))
+        .onCommand(
+            ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
+            MessageStartProcessInstanceRequestIntent.SWEEP_EXPIRED_DEDUPS,
+            new MessageStartProcessInstanceRequestSweepExpiredDedupsProcessor(
+                writers.state(),
+                writers.command(),
+                processingState.getMessageStartProcessInstanceDedupState(),
+                config.getMessageStartDedupExpirationSweepBatchLimit(),
+                clock))
+        // Reply command processors on P_K - these handle the cross-partition replies from P_B
+        .onCommand(
+            ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
+            MessageStartProcessInstanceRequestIntent.START,
+            new MessageStartProcessInstanceRequestStartProcessor(writers.state(), messageState))
+        .onCommand(
+            ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
+            MessageStartProcessInstanceRequestIntent.REJECT_UNIQUENESS,
+            new MessageStartProcessInstanceRequestRejectUniquenessProcessor(writers.state()))
+        .onCommand(
+            ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
+            MessageStartProcessInstanceRequestIntent.REJECT_NO_SUBSCRIPTION,
+            new MessageStartProcessInstanceRequestRejectNoSubscriptionProcessor(writers.state()))
         .withListener(
             new MessageTimeToLiveCheckScheduler(
                 config.getMessagesTtlCheckerInterval(),
@@ -163,6 +204,16 @@ public final class MessageEventProcessors {
         .withListener(
             new PendingMessageSubscriptionCheckScheduler(
                 subscriptionCommandSender,
-                scheduledTaskStateFactory.get().getPendingMessageSubscriptionState()));
+                scheduledTaskStateFactory.get().getPendingMessageSubscriptionState()))
+        .withListener(
+            new MessageStartDedupExpirationSweepScheduler(
+                config.getMessageStartDedupExpirationSweepInterval(),
+                scheduledTaskStateFactory.get().getMessageStartProcessInstanceDedupState()))
+        .withListener(
+            new PendingMessageStartAskCheckScheduler(
+                subscriptionCommandSender,
+                processingState.getMessageStartProcessInstanceAskState(),
+                routingInfo,
+                config::getMessageStartAskRetryInterval));
   }
 }

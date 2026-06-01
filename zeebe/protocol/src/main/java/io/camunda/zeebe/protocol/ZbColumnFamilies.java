@@ -282,7 +282,31 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   AGENT_INSTANCES(143, PARTITION_LOCAL),
 
   // metadata in a command distribuation record
-  COMMAND_DISTRIBUTION_METADATA(144, PARTITION_LOCAL);
+  COMMAND_DISTRIBUTION_METADATA(144, PARTITION_LOCAL),
+
+  // dedup state for the cross-partition message-start handshake on P_B; keyed by
+  // (processDefinitionKey, messageKey) and stores the resulting processInstanceKey and a deletion
+  // deadline (epoch millis) taken directly from the request's messageDeadline (= publishTime + ttl
+  // on P_K), so the dedup row on P_B and the buffered message on P_K share the same lifetime
+  // without any engine-internal time coupling. Lookups treat `deletionDeadline <= now` as a miss;
+  // a scheduled sweeper removes such rows. PI lifecycle is intentionally not a signal — the
+  // deadline bounds P_K's retry window, not the PI's lifetime.
+  CROSS_PARTITION_MESSAGE_START_DEDUP(145, PARTITION_LOCAL),
+
+  // Pending cross-partition message-start asks on P_K. Keyed by (messageKey, processDefinitionKey).
+  // Stores the full ask payload so retries can resend without re-reading the original message.
+  // Used in conjunction with a transient last-sent-timestamp tracker that is rebuilt from this CF
+  // on recovery — entries exist iff an ask is outstanding; cleared when any reply is applied.
+  CROSS_PARTITION_MESSAGE_START_ASK(146, PARTITION_LOCAL),
+
+  // BusinessId attached to a process-correlation-key lock entry on P_K when the holding PI was
+  // created via the cross-partition message-start handshake. Keyed by (bpmnProcessId,
+  // correlationKey) — the same pair as the existing local correlation-key lock — and stores the
+  // holder's businessId so the pull-based release loop (later increment) can identify which P_B
+  // partition to query. An entry is "cross-partition" iff this CF has a value for the lock; the
+  // partition P_B = hash(businessId) is derived at query time, not stored. Local-PI lock entries
+  // are absent from this CF and continue to be released by today's local completion path.
+  CROSS_PARTITION_MESSAGE_START_LOCK_BUSINESS_ID(147, PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;
