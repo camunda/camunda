@@ -8,7 +8,6 @@
 package io.camunda.application.commons.identity;
 
 import io.camunda.authentication.config.spi.SessionStoreAdapter;
-import io.camunda.authentication.session.ConditionalOnPersistentWebSessionEnabled;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.db.rdbms.read.service.PersistentWebSessionDbReader;
@@ -21,34 +20,42 @@ import io.camunda.search.clients.PersistentWebSessionClient;
 import io.camunda.search.clients.PersistentWebSessionSearchImpl;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.security.core.port.out.SessionStorePort;
-import io.camunda.security.spring.session.WebSessionDeletionTask;
-import io.camunda.security.spring.session.WebSessionMapper;
-import io.camunda.security.spring.session.WebSessionMapper.SpringBasedWebSessionAttributeConverter;
+import io.camunda.security.spring.annotation.ConditionalOnPersistentWebSessionEnabled;
+import io.camunda.security.spring.session.WebSessionConfiguration;
 import io.camunda.security.spring.session.WebSessionRepository;
 import io.camunda.webapps.schema.descriptors.index.PersistentWebSessionIndexDescriptor;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import io.camunda.zeebe.util.error.FatalErrorHandler;
-import jakarta.servlet.http.HttpServletRequest;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.lang.Thread.UncaughtExceptionHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.convert.support.GenericConversionService;
-import org.springframework.session.config.annotation.web.http.EnableSpringHttpSession;
+import org.springframework.context.annotation.Import;
 
+/**
+ * Host-side wiring for persistent web sessions. The session lifecycle beans (repository, mapper,
+ * attribute converter, deletion scheduler) live in CSL's {@link WebSessionConfiguration}, imported
+ * here so it activates only when the REST gateway is enabled. This class supplies the host-specific
+ * pieces: the secondary-storage backend clients, the {@link SessionStorePort} adapter, and a {@link
+ * FatalErrorHandler}-backed uncaught-exception handler that overrides CSL's default so a fatal
+ * error in the deletion thread still halts the JVM.
+ *
+ * <p>Enablement uses {@code camunda.security.session.persistent.enabled}; legacy keys are bridged
+ * onto it by {@link PersistentWebSessionPropertiesPostProcessor}.
+ */
 @Configuration
-@EnableSpringHttpSession
-@ConditionalOnPersistentWebSessionEnabled
 @ConditionalOnRestGatewayEnabled
+@ConditionalOnPersistentWebSessionEnabled
+@Import(WebSessionConfiguration.class)
 public class WebSessionRepositoryConfiguration {
 
-  private final GenericConversionService conversionService;
+  private static final Logger WEB_SESSION_DELETION_LOGGER =
+      LoggerFactory.getLogger(WebSessionRepository.class);
+
   private final ConnectConfiguration connectConfiguration;
 
-  public WebSessionRepositoryConfiguration(
-      final GenericConversionService conversionService,
-      final ConnectConfiguration connectConfiguration) {
-    this.conversionService = conversionService;
+  public WebSessionRepositoryConfiguration(final ConnectConfiguration connectConfiguration) {
     this.connectConfiguration = connectConfiguration;
   }
 
@@ -91,63 +98,8 @@ public class WebSessionRepositoryConfiguration {
     return new SessionStoreAdapter(persistentWebSessionClient);
   }
 
-  @Bean
-  public WebSessionRepository webSessionRepository(
-      final SessionStorePort sessionStorePort, final HttpServletRequest request) {
-    final var webSessionAttributeConverter =
-        new SpringBasedWebSessionAttributeConverter(conversionService);
-    final var webSessionMapper = new WebSessionMapper(webSessionAttributeConverter);
-    return new WebSessionRepository(sessionStorePort, webSessionMapper, request);
-  }
-
-  @Bean("persistentWebSessionDeletionTaskExecutor")
-  public ScheduledThreadPoolExecutor persistentWebSessionDeletionTaskExecutor(
-      final WebSessionRepository webSessionRepository) {
-    final var executor = createTaskExecutor();
-    executor.schedule(
-        new SelfSchedulingTask(
-            executor,
-            new WebSessionDeletionTask(webSessionRepository),
-            WebSessionDeletionTask.DELETE_EXPIRED_SESSIONS_RUN_DELAY),
-        WebSessionDeletionTask.DELETE_EXPIRED_SESSIONS_INITIAL_DELAY,
-        TimeUnit.MILLISECONDS);
-    return executor;
-  }
-
-  public ScheduledThreadPoolExecutor createTaskExecutor() {
-    final var threadFactory =
-        Thread.ofPlatform()
-            .name("camunda-web-session-deletion-", 0)
-            .uncaughtExceptionHandler(
-                FatalErrorHandler.uncaughtExceptionHandler(WebSessionRepository.LOGGER))
-            .factory();
-    final var executor = new ScheduledThreadPoolExecutor(0, threadFactory);
-    executor.setContinueExistingPeriodicTasksAfterShutdownPolicy(false);
-    executor.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
-    executor.setRemoveOnCancelPolicy(true);
-    executor.allowCoreThreadTimeOut(true);
-    executor.setKeepAliveTime(1, TimeUnit.MINUTES);
-    executor.setCorePoolSize(1);
-    return executor;
-  }
-
-  static final class SelfSchedulingTask implements Runnable {
-
-    private final ScheduledThreadPoolExecutor executor;
-    private final Runnable task;
-    private final long delay;
-
-    SelfSchedulingTask(
-        final ScheduledThreadPoolExecutor executor, final Runnable task, final long delay) {
-      this.executor = executor;
-      this.task = task;
-      this.delay = delay;
-    }
-
-    @Override
-    public void run() {
-      task.run();
-      executor.schedule(this, delay, TimeUnit.MILLISECONDS);
-    }
+  @Bean("webSessionDeletionUncaughtExceptionHandler")
+  public UncaughtExceptionHandler webSessionDeletionUncaughtExceptionHandler() {
+    return FatalErrorHandler.uncaughtExceptionHandler(WEB_SESSION_DELETION_LOGGER);
   }
 }
