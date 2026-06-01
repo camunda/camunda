@@ -120,7 +120,8 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
           JobListenerEventType.UNSPECIFIED);
   private final StringProperty elementIdProp = new StringProperty(ELEMENT_ID_KEY, EMPTY_STRING);
   private final EnumProperty<BpmnElementType> elementTypeProp =
-      new EnumProperty<>(new StringValue("elementType"), BpmnElementType.class, BpmnElementType.SERVICE_TASK);
+      new EnumProperty<>(
+          new StringValue("elementType"), BpmnElementType.class, BpmnElementType.UNSPECIFIED);
   private final LongProperty elementInstanceKeyProp =
       new LongProperty(ELEMENT_INSTANCE_KEY_KEY, -1L);
   private final StringProperty tenantIdProp =
