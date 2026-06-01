@@ -84,6 +84,7 @@ public class ResourceControllerTest extends RestControllerTest {
         .processesMetadata()
         .add()
         .setResourceName(filename)
+        .setProcessName("processName")
         .setBpmnProcessId("processId")
         .setDeploymentKey(123L)
         .setVersion(1)
@@ -125,6 +126,7 @@ public class ResourceControllerTest extends RestControllerTest {
                              "processDefinitionVersion":1,
                              "processDefinitionKey":"123456",
                              "resourceName":"process.bpmn",
+                             "processName":"processName",
                              "tenantId":"<default>"
                           },
                           "decisionDefinition": null,
@@ -152,6 +154,7 @@ public class ResourceControllerTest extends RestControllerTest {
         .processesMetadata()
         .add()
         .setResourceName(filename)
+        .setProcessName("processName")
         .setBpmnProcessId("processId")
         .setDeploymentKey(123L)
         .setVersion(1)
@@ -193,6 +196,7 @@ public class ResourceControllerTest extends RestControllerTest {
                              "processDefinitionVersion":1,
                              "processDefinitionKey":"123456",
                              "resourceName":"process.bpmn",
+                             "processName":"processName",
                              "tenantId":"<default>"
                           },
                           "decisionDefinition": null,
@@ -222,6 +226,7 @@ public class ResourceControllerTest extends RestControllerTest {
         .processesMetadata()
         .add()
         .setResourceName(filename)
+        .setProcessName("processName")
         .setBpmnProcessId("processId")
         .setDeploymentKey(123L)
         .setVersion(1)
@@ -265,6 +270,7 @@ public class ResourceControllerTest extends RestControllerTest {
                              "processDefinitionVersion":1,
                              "processDefinitionKey":"123456",
                              "resourceName":"process.bpmn",
+                             "processName":"processName",
                              "tenantId":"tenantId"
                           },
                           "decisionDefinition": null,
@@ -295,6 +301,7 @@ public class ResourceControllerTest extends RestControllerTest {
         .processesMetadata()
         .add()
         .setResourceName(filename)
+        .setProcessName("processName")
         .setBpmnProcessId("processId")
         .setDeploymentKey(123L)
         .setVersion(1)
@@ -304,6 +311,7 @@ public class ResourceControllerTest extends RestControllerTest {
         .processesMetadata()
         .add()
         .setResourceName(secondFilename)
+        .setProcessName("secondProcessName")
         .setBpmnProcessId("secondProcessId")
         .setDeploymentKey(456L)
         .setVersion(1)
@@ -362,6 +370,7 @@ public class ResourceControllerTest extends RestControllerTest {
                              "processDefinitionVersion":1,
                              "processDefinitionKey":"123456",
                              "resourceName":"process.bpmn",
+                             "processName":"processName",
                              "tenantId":"<default>"
                           },
                           "decisionDefinition": null,
@@ -375,6 +384,7 @@ public class ResourceControllerTest extends RestControllerTest {
                              "processDefinitionVersion":1,
                              "processDefinitionKey":"7890123",
                              "resourceName":"second.bpmn",
+                             "processName":"secondProcessName",
                              "tenantId":"<default>"
                           },
                           "decisionDefinition": null,

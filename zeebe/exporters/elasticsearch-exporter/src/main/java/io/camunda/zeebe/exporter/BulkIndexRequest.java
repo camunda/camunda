@@ -16,6 +16,8 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
+import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import io.camunda.zeebe.util.SemanticVersion;
 import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
@@ -42,6 +44,8 @@ final class BulkIndexRequest {
           .addMixIn(CommandDistributionRecordValue.class, CommandDistributionMixin.class)
           .addMixIn(EvaluatedDecisionValue.class, EvaluatedDecisionMixin.class)
           .addMixIn(JobRecordValue.class, JobMixin.class)
+          .addMixIn(ProcessMetadataValue.class, ProcessMetadataMixin.class)
+          .addMixIn(ProcessInstanceCreationRecordValue.class, ProcessInstanceCreationMixin.class)
           .enable(Feature.ALLOW_SINGLE_QUOTES);
 
   // The property of the ES record template to store the sequence of the record.
@@ -52,6 +56,7 @@ final class BulkIndexRequest {
       "decisionEvaluationInstanceKey";
   private static final String AUTH_INFO_PROPERTY = "authInfo";
   private static final String PRIORITY_PROPERTY = "priority";
+  private static final String PROCESS_NAME_PROPERTY = "processName";
   private final List<IndexOperation> operations = new ArrayList<>();
   private BulkIndexAction lastIndexedMetadata;
   private int memoryUsageBytes = 0;
@@ -168,4 +173,10 @@ final class BulkIndexRequest {
 
   @JsonIgnoreProperties({PRIORITY_PROPERTY})
   private static final class JobMixin {}
+
+  @JsonIgnoreProperties({PROCESS_NAME_PROPERTY})
+  private static final class ProcessMetadataMixin {}
+
+  @JsonIgnoreProperties({PROCESS_NAME_PROPERTY})
+  private static final class ProcessInstanceCreationMixin {}
 }

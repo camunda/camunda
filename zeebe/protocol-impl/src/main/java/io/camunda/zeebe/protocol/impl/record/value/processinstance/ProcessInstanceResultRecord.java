@@ -40,6 +40,7 @@ public final class ProcessInstanceResultRecord extends UnifiedRecordValue
   public static final StringValue PROCESS_INSTANCE_KEY_KEY = new StringValue("processInstanceKey");
   public static final StringValue TAGS_KEY = new StringValue("tags");
   public static final StringValue BUSINESS_ID_KEY = new StringValue("businessId");
+  public static final StringValue PROCESS_NAME_KEY = new StringValue("processName");
 
   private final StringProperty bpmnProcessIdProperty = new StringProperty(BPMN_PROCESS_ID_KEY, "");
   private final LongProperty processDefinitionKeyProperty =
@@ -53,9 +54,10 @@ public final class ProcessInstanceResultRecord extends UnifiedRecordValue
   private final ArrayProperty<StringValue> tagsProperty =
       new ArrayProperty<>(TAGS_KEY, StringValue::new);
   private final StringProperty businessIdProperty = new StringProperty(BUSINESS_ID_KEY, "");
+  private final StringProperty processNameProperty = new StringProperty(PROCESS_NAME_KEY, "");
 
   public ProcessInstanceResultRecord() {
-    super(8);
+    super(9);
     declareProperty(bpmnProcessIdProperty)
         .declareProperty(processDefinitionKeyProperty)
         .declareProperty(processInstanceKeyProperty)
@@ -63,7 +65,8 @@ public final class ProcessInstanceResultRecord extends UnifiedRecordValue
         .declareProperty(tenantIdProperty)
         .declareProperty(variablesProperty)
         .declareProperty(tagsProperty)
-        .declareProperty(businessIdProperty);
+        .declareProperty(businessIdProperty)
+        .declareProperty(processNameProperty);
   }
 
   @Override
@@ -134,6 +137,21 @@ public final class ProcessInstanceResultRecord extends UnifiedRecordValue
 
   public ProcessInstanceResultRecord setBusinessId(final DirectBuffer businessId) {
     businessIdProperty.setValue(businessId);
+    return this;
+  }
+
+  @Override
+  public String getProcessName() {
+    return bufferAsString(processNameProperty.getValue());
+  }
+
+  public ProcessInstanceResultRecord setProcessName(final String processName) {
+    processNameProperty.setValue(processName);
+    return this;
+  }
+
+  public ProcessInstanceResultRecord setProcessName(final DirectBuffer processName) {
+    processNameProperty.setValue(processName);
     return this;
   }
 

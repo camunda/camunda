@@ -325,6 +325,9 @@ message CreateProcessInstanceResponse {
   repeated string tags = 6;
   // the business id of the created process instance
   optional string businessId = 7;
+  // the name of the process which this instance was created for, as defined in the BPMN;
+  // empty if not defined
+  optional string process_name = 8;
 }
 
 message CreateProcessInstanceWithResultRequest {
@@ -358,6 +361,9 @@ message CreateProcessInstanceWithResultResponse {
   repeated string tags = 7;
   // the business id of the created process instance
   optional string businessId = 8;
+  // the name of the process which this instance was created for, as defined in the BPMN;
+  // empty if not defined
+  optional string process_name = 9;
 }
 
 message EvaluateDecisionRequest {
@@ -540,6 +546,8 @@ message ProcessMetadata {
   string resourceName = 4;
   // the tenant id of the deployed process
   string tenantId = 5;
+  // the process name as defined in BPMN; not set if not defined
+  optional string process_name = 6;
 }
 
 message DecisionMetadata {

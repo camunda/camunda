@@ -221,6 +221,7 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
           .setResourceName(deploymentResource.getResourceNameBuffer())
           .setTenantId(tenantId);
       getOptionalVersionTag(process).ifPresent(processMetadata::setVersionTag);
+      getOptionalProcessName(process).ifPresent(processMetadata::setProcessName);
 
       final var isDuplicate =
           isDuplicateOfLatest(deploymentResource, resourceDigest, lastProcess, lastDigest);
@@ -250,6 +251,10 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
   private Optional<String> getOptionalVersionTag(final Process process) {
     return Optional.ofNullable(process.getSingleExtensionElement(ZeebeVersionTag.class))
         .map(ZeebeVersionTag::getValue);
+  }
+
+  private Optional<String> getOptionalProcessName(final Process process) {
+    return Optional.ofNullable(process.getName());
   }
 
   private boolean isDuplicateOfLatest(

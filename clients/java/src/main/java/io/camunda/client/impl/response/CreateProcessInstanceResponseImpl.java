@@ -31,6 +31,7 @@ public final class CreateProcessInstanceResponseImpl implements ProcessInstanceE
   private final String tenantId;
   private final Set<String> tags;
   private final String businessId;
+  private final String processName;
 
   public CreateProcessInstanceResponseImpl(
       final GatewayOuterClass.CreateProcessInstanceResponse response) {
@@ -41,6 +42,7 @@ public final class CreateProcessInstanceResponseImpl implements ProcessInstanceE
     tenantId = response.getTenantId();
     tags = Collections.unmodifiableSet(new HashSet<>(response.getTagsList()));
     businessId = response.hasBusinessId() ? response.getBusinessId() : null;
+    processName = response.hasProcessName() ? response.getProcessName() : "";
   }
 
   public CreateProcessInstanceResponseImpl(final CreateProcessInstanceResult response) {
@@ -54,6 +56,7 @@ public final class CreateProcessInstanceResponseImpl implements ProcessInstanceE
             ? Collections.emptySet()
             : Collections.unmodifiableSet(response.getTags());
     businessId = response.getBusinessId();
+    processName = response.getProcessName() != null ? response.getProcessName() : "";
   }
 
   @Override
@@ -92,6 +95,11 @@ public final class CreateProcessInstanceResponseImpl implements ProcessInstanceE
   }
 
   @Override
+  public String getProcessName() {
+    return processName;
+  }
+
+  @Override
   public String toString() {
     return "CreateProcessInstanceResponseImpl{"
         + "processDefinitionKey="
@@ -108,6 +116,9 @@ public final class CreateProcessInstanceResponseImpl implements ProcessInstanceE
         + '\''
         + ", businessId='"
         + businessId
+        + '\''
+        + ", processName='"
+        + processName
         + '\''
         + '}';
   }

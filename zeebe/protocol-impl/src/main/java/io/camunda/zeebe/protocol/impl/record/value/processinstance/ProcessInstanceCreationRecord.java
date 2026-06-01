@@ -48,6 +48,7 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
   private static final StringValue ROOT_PROCESS_INSTANCE_KEY_KEY =
       new StringValue("rootProcessInstanceKey");
   private static final StringValue BUSINESS_ID_KEY = new StringValue("businessId");
+  private static final StringValue PROCESS_NAME_KEY = new StringValue("processName");
 
   private final StringProperty bpmnProcessIdProperty = new StringProperty(BPMN_PROCESS_ID_KEY, "");
   private final LongProperty processDefinitionKeyProperty =
@@ -72,9 +73,10 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
   private final LongProperty rootProcessInstanceKeyProperty =
       new LongProperty(ROOT_PROCESS_INSTANCE_KEY_KEY, -1);
   private final StringProperty businessIdProperty = new StringProperty(BUSINESS_ID_KEY, "");
+  private final StringProperty processNameProperty = new StringProperty(PROCESS_NAME_KEY, "");
 
   public ProcessInstanceCreationRecord() {
-    super(12);
+    super(13);
     declareProperty(bpmnProcessIdProperty)
         .declareProperty(processDefinitionKeyProperty)
         .declareProperty(processInstanceKeyProperty)
@@ -86,7 +88,8 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
         .declareProperty(tenantIdProperty)
         .declareProperty(tagsProperty)
         .declareProperty(rootProcessInstanceKeyProperty)
-        .declareProperty(businessIdProperty);
+        .declareProperty(businessIdProperty)
+        .declareProperty(processNameProperty);
   }
 
   @Override
@@ -177,6 +180,21 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
 
   public ProcessInstanceCreationRecord setBusinessId(final DirectBuffer businessId) {
     businessIdProperty.setValue(businessId);
+    return this;
+  }
+
+  @Override
+  public String getProcessName() {
+    return bufferAsString(processNameProperty.getValue());
+  }
+
+  public ProcessInstanceCreationRecord setProcessName(final String processName) {
+    processNameProperty.setValue(processName);
+    return this;
+  }
+
+  public ProcessInstanceCreationRecord setProcessName(final DirectBuffer processName) {
+    processNameProperty.setValue(processName);
     return this;
   }
 

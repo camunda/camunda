@@ -65,4 +65,13 @@ public interface ProcessInstanceResultRecordValue
    * @since 8.9
    */
   String getBusinessId();
+
+  /**
+   * Returns the name of the process which this instance was created for, as defined in the BPMN
+   * model. May be empty if no name was defined in the BPMN.
+   *
+   * @return the process name, or an empty string if not defined
+   * @since 8.10
+   */
+  String getProcessName();
 }

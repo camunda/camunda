@@ -22,6 +22,9 @@
             "bpmnProcessId": {
               "type": "keyword"
             },
+            "processName": {
+              "type": "keyword"
+            },
             "version": {
               "type": "long"
             },

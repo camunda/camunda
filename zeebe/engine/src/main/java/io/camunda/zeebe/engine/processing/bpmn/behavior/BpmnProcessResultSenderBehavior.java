@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
+import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.instance.AwaitProcessInstanceResultMetadata;
@@ -30,12 +31,14 @@ public final class BpmnProcessResultSenderBehavior {
 
   private final ElementInstanceState elementInstanceState;
   private final VariableState variableState;
+  private final ProcessState processState;
   private final TypedResponseWriter responseWriter;
 
   public BpmnProcessResultSenderBehavior(
       final ProcessingState processingState, final TypedResponseWriter responseWriter) {
     elementInstanceState = processingState.getElementInstanceState();
     variableState = processingState.getVariableState();
+    processState = processingState.getProcessState();
     this.responseWriter = responseWriter;
   }
 
@@ -69,6 +72,20 @@ public final class BpmnProcessResultSenderBehavior {
         .setTenantId(context.getTenantId())
         .setTags(context.getTags())
         .setBusinessId(context.getBusinessId());
+
+    final var deployedProcess =
+        processState.getProcessByKeyAndTenant(
+            context.getProcessDefinitionKey(), context.getTenantId());
+    if (deployedProcess != null) {
+      final DirectBuffer processName = deployedProcess.getProcess().getName();
+      if (processName != null) {
+        resultRecord.setProcessName(processName);
+      } else {
+        resultRecord.setProcessName("");
+      }
+    } else {
+      resultRecord.setProcessName("");
+    }
 
     responseWriter.writeResponse(
         context.getProcessInstanceKey(),
