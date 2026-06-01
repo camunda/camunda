@@ -23,7 +23,7 @@ import java.util.Collection;
  * caller — enabling single-threaded collection on the partition thread with zero cross-thread
  * races.
  */
-final class ManualMetricReader implements MetricReader {
+public final class ManualMetricReader implements MetricReader {
 
   private final MetricExporter exporter;
   private CollectionRegistration registration = CollectionRegistration.noop();

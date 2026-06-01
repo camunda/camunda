@@ -25,10 +25,6 @@ final class AnalyticsExporterMetadata {
   /** No-arg constructor required by Jackson. */
   AnalyticsExporterMetadata() {}
 
-  AnalyticsExporterMetadata(final long eventSequenceNumber) {
-    this(eventSequenceNumber, 0);
-  }
-
   AnalyticsExporterMetadata(final long eventSequenceNumber, final long metricSequenceNumber) {
     this.eventSequenceNumber = eventSequenceNumber;
     this.metricSequenceNumber = metricSequenceNumber;

@@ -29,7 +29,7 @@ class AnalyticsExporterMetadataTest {
   @Test
   void shouldDeserializeMetadataWithoutMetricSequenceNumber() {
     // given
-    final var oldMetadata = new AnalyticsExporterMetadata(5);
+    final var oldMetadata = new AnalyticsExporterMetadata(5, 0);
 
     // when
     final var restored = AnalyticsExporterMetadata.deserialize(oldMetadata.serialize());

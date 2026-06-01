@@ -30,9 +30,18 @@ public final class AnalyticsAttributes {
   // Log domain
   public static final AttributeKey<Long> LOG_POSITION =
       AttributeKey.longKey("camunda.log.position");
+  public static final AttributeKey<Long> LOG_POSITION_START =
+      AttributeKey.longKey("camunda.log.position_start");
+  public static final AttributeKey<Long> LOG_POSITION_END =
+      AttributeKey.longKey("camunda.log.position_end");
+
   // Event domain
   public static final AttributeKey<Long> EVENT_SEQUENCE_NUMBER =
       AttributeKey.longKey("camunda.event.sequence_number");
+  public static final AttributeKey<Long> EVENT_TIME_MIN =
+      AttributeKey.longKey("camunda.event.time_min");
+  public static final AttributeKey<Long> EVENT_TIME_MAX =
+      AttributeKey.longKey("camunda.event.time_max");
 
   // Tenant domain
   public static final AttributeKey<String> TENANT_ID = AttributeKey.stringKey("camunda.tenant.id");
@@ -53,21 +62,11 @@ public final class AnalyticsAttributes {
   public static final AttributeKey<String> ELEMENT_ID =
       AttributeKey.stringKey("camunda.element.id");
 
-  // Metric names
+  // Metric domain
   public static final String METRIC_PROCESS_INSTANCE_CREATED = "camunda.process_instance.created";
   public static final String METRIC_EXPORT_WINDOW = "camunda.metric.export_window";
-
-  // Export window gauge attributes (gauge value = event count)
   public static final AttributeKey<Long> METRIC_SEQUENCE_NUMBER =
       AttributeKey.longKey("camunda.metric.sequence_number");
-  public static final AttributeKey<Long> LOG_POSITION_START =
-      AttributeKey.longKey("camunda.log.position_start");
-  public static final AttributeKey<Long> LOG_POSITION_END =
-      AttributeKey.longKey("camunda.log.position_end");
-  public static final AttributeKey<Long> EVENT_TIME_MIN =
-      AttributeKey.longKey("camunda.event.time_min");
-  public static final AttributeKey<Long> EVENT_TIME_MAX =
-      AttributeKey.longKey("camunda.event.time_max");
 
   // Event names
   public static final String EVENT_PROCESS_INSTANCE_CREATED = "process_instance_created";
