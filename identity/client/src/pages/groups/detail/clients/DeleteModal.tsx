@@ -13,7 +13,8 @@ import {
   UseEntityModalCustomProps,
 } from "src/components/modal";
 import { useNotifications } from "src/components/notifications";
-import { useUnassignGroupClient } from "src/utility/api/groups/hooks";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { groupMutations } from "src/utility/api/groups/mutations";
 import type {
   Group,
   TenantClient,
@@ -36,7 +37,10 @@ const DeleteModal: FC<RemoveGroupClientModalProps> = ({
   const { t, Translate } = useTranslate("groups");
   const { enqueueNotification } = useNotifications();
 
-  const { mutate, isPending: loading } = useUnassignGroupClient();
+  const qc = useQueryClient();
+  const { mutate, isPending: loading } = useMutation(
+    groupMutations.unassignClient(qc),
+  );
 
   const handleSubmit = () => {
     if (groupId && client) {

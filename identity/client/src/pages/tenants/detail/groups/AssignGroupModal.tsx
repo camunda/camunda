@@ -7,8 +7,9 @@
  */
 
 import { FC, useEffect, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { UseEntityModalCustomProps } from "src/components/modal";
-import { useAssignTenantGroup } from "src/utility/api/tenants/hooks";
+import { tenantMutations } from "src/utility/api/tenants/mutations";
 import useTranslate from "src/utility/localization";
 import FormModal from "src/components/modal/FormModal";
 import TextField from "src/components/form/TextField";
@@ -22,7 +23,10 @@ const AssignGroupModal: FC<
 > = ({ entity: { tenantId }, onSuccess, open, onClose }) => {
   const { t } = useTranslate("tenants");
   const [groupId, setGroupId] = useState("");
-  const { mutate, isPending: loadingAssignGroup } = useAssignTenantGroup();
+  const qc = useQueryClient();
+  const { mutate, isPending: loadingAssignGroup } = useMutation(
+    tenantMutations.assignGroup(qc),
+  );
 
   const canSubmit = tenantId && groupId;
 

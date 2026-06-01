@@ -7,12 +7,13 @@
  */
 
 import { FC } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import useTranslate from "src/utility/localization";
 import {
   DeleteModal as Modal,
   UseEntityModalProps,
 } from "src/components/modal";
-import { useDeleteRole } from "src/utility/api/roles/hooks";
+import { roleMutations } from "src/utility/api/roles/mutations";
 import { useNotifications } from "src/components/notifications";
 import type { Role } from "@camunda/camunda-api-zod-schemas/8.10";
 
@@ -24,7 +25,8 @@ const DeleteModal: FC<UseEntityModalProps<Role>> = ({
 }) => {
   const { t, Translate } = useTranslate("roles");
   const { enqueueNotification } = useNotifications();
-  const { mutate, isPending: loading } = useDeleteRole();
+  const qc = useQueryClient();
+  const { mutate, isPending: loading } = useMutation(roleMutations.delete(qc));
 
   const handleSubmit = () => {
     mutate(

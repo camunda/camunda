@@ -13,7 +13,8 @@ import {
   UseEntityModalCustomProps,
 } from "src/components/modal";
 import { useNotifications } from "src/components/notifications";
-import { useUnassignTenantClient } from "src/utility/api/tenants/hooks";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { tenantMutations } from "src/utility/api/tenants/mutations";
 import type {
   Tenant,
   TenantClient,
@@ -36,7 +37,10 @@ const DeleteModal: FC<RemoveTenantClientModalProps> = ({
   const { t, Translate } = useTranslate("tenants");
   const { enqueueNotification } = useNotifications();
 
-  const { mutate, isPending: loading } = useUnassignTenantClient();
+  const qc = useQueryClient();
+  const { mutate, isPending: loading } = useMutation(
+    tenantMutations.unassignClient(qc),
+  );
 
   const handleSubmit = () => {
     if (tenantId && client) {

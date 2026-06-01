@@ -13,7 +13,8 @@ import {
   UseEntityModalCustomProps,
 } from "src/components/modal";
 import { useNotifications } from "src/components/notifications";
-import { useUnassignTenantMappingRule } from "src/utility/api/tenants/hooks";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { tenantMutations } from "src/utility/api/tenants/mutations";
 import type { MappingRule } from "@camunda/camunda-api-zod-schemas/8.10";
 
 type RemoveTenantMappingRuleModalProps = UseEntityModalCustomProps<
@@ -33,7 +34,10 @@ const DeleteModal: FC<RemoveTenantMappingRuleModalProps> = ({
   const { t, Translate } = useTranslate("tenants");
   const { enqueueNotification } = useNotifications();
 
-  const { mutate, isPending: loading } = useUnassignTenantMappingRule();
+  const qc = useQueryClient();
+  const { mutate, isPending: loading } = useMutation(
+    tenantMutations.unassignMappingRule(qc),
+  );
 
   const handleSubmit = () => {
     if (tenant && mappingRule) {

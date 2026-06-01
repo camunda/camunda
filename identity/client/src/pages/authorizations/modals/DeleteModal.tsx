@@ -13,7 +13,8 @@ import {
   DeleteModal as Modal,
   UseEntityModalProps,
 } from "src/components/modal";
-import { useDeleteAuthorization } from "src/utility/api/authorizations/hooks";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { authorizationMutations } from "src/utility/api/authorizations/mutations";
 import { useNotifications } from "src/components/notifications";
 import type { Authorization } from "@camunda/camunda-api-zod-schemas/8.10";
 
@@ -31,7 +32,10 @@ const DeleteAuthorizationModal: FC<UseEntityModalProps<Authorization>> = ({
 }) => {
   const { t } = useTranslate("authorizations");
   const { enqueueNotification } = useNotifications();
-  const { mutate, isPending: loading } = useDeleteAuthorization();
+  const qc = useQueryClient();
+  const { mutate, isPending: loading } = useMutation(
+    authorizationMutations.delete(qc),
+  );
 
   const handleSubmit = () => {
     mutate(

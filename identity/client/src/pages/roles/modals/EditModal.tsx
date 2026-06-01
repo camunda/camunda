@@ -7,10 +7,11 @@
  */
 
 import { FC, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { FormModal, UseEntityModalProps } from "src/components/modal";
 import useTranslate from "src/utility/localization";
 import { useNotifications } from "src/components/notifications";
-import { useUpdateRole } from "src/utility/api/roles/hooks";
+import { roleMutations } from "src/utility/api/roles/mutations";
 import TextField from "src/components/form/TextField";
 import type { Role } from "@camunda/camunda-api-zod-schemas/8.10";
 
@@ -23,7 +24,12 @@ const EditModal: FC<UseEntityModalProps<Role>> = ({
   const { t } = useTranslate("roles");
   const { enqueueNotification } = useNotifications();
 
-  const { mutate, isPending: loading, error } = useUpdateRole();
+  const qc = useQueryClient();
+  const {
+    mutate,
+    isPending: loading,
+    error,
+  } = useMutation(roleMutations.update(qc));
 
   const [roleName, setRoleName] = useState(role.name ?? "");
   const [description, setDescription] = useState(role.description ?? "");

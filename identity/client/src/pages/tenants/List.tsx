@@ -9,9 +9,10 @@
 import { FC } from "react";
 import { Edit, TrashCan } from "@carbon/react/icons";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import useTranslate from "src/utility/localization";
 import { usePagination } from "src/utility/api";
-import { useSearchTenants } from "src/utility/api/tenants/hooks";
+import { tenantQueries } from "src/utility/api/tenants/queries";
 import Page, { PageHeader } from "src/components/layout/Page";
 import EntityList from "src/components/entityList";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
@@ -38,7 +39,7 @@ const List: FC<ListProps> = ({ isOIDC }) => {
     isLoading: loading,
     isSuccess: success,
     refetch: reload,
-  } = useSearchTenants(pageParams);
+  } = useQuery(tenantQueries.search(pageParams));
 
   const [addTenant, addTenantModal] = useModal(AddModal, noop, {
     isOIDC,

@@ -11,7 +11,8 @@ import { Controller, useForm } from "react-hook-form";
 import { Dropdown, MultiSelect, NumberInput } from "@carbon/react";
 import { FormModal, UseModalProps } from "src/components/modal";
 import useTranslate from "src/utility/localization";
-import { useCreateGlobalTaskListener } from "src/utility/api/global-task-listeners/hooks";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { globalTaskListenerMutations } from "src/utility/api/global-task-listeners/mutations";
 import TextField from "src/components/form/TextField";
 import { LISTENER_EVENT_TYPES } from "src/utility/api/global-task-listeners";
 import { useNotifications } from "src/components/notifications";
@@ -28,7 +29,12 @@ import type {
 const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
   const { t } = useTranslate("globalTaskListeners");
   const { enqueueNotification } = useNotifications();
-  const { mutate, isPending: loading, error } = useCreateGlobalTaskListener();
+  const qc = useQueryClient();
+  const {
+    mutate,
+    isPending: loading,
+    error,
+  } = useMutation(globalTaskListenerMutations.create(qc));
 
   const { control, handleSubmit, watch, setValue } =
     useForm<CreateGlobalTaskListenerRequestBody>({

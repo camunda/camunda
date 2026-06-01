@@ -9,7 +9,8 @@
 import { FC, useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { Checkbox, CheckboxGroup, Dropdown } from "@carbon/react";
-import { useCreateAuthorization } from "src/utility/api/authorizations/hooks";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { authorizationMutations } from "src/utility/api/authorizations/mutations";
 import useTranslate from "src/utility/localization";
 import { FormModal, UseEntityModalCustomProps } from "src/components/modal";
 import {
@@ -59,7 +60,12 @@ export const AddModal: FC<
 }) => {
   const { t, Translate } = useTranslate("authorizations");
   const { enqueueNotification } = useNotifications();
-  const { mutate, isPending: loading, error } = useCreateAuthorization();
+  const qc = useQueryClient();
+  const {
+    mutate,
+    isPending: loading,
+    error,
+  } = useMutation(authorizationMutations.create(qc));
 
   const { DropdownAutoFocus } = useDropdownAutoFocus(open);
 

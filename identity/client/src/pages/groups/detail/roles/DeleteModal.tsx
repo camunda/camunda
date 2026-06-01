@@ -13,7 +13,8 @@ import {
   UseEntityModalCustomProps,
 } from "src/components/modal";
 import { useNotifications } from "src/components/notifications";
-import { useUnassignGroupRole } from "src/utility/api/groups/hooks";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { groupMutations } from "src/utility/api/groups/mutations";
 import type { Role } from "@camunda/camunda-api-zod-schemas/8.10";
 
 type RemoveGroupRoleModalProps = UseEntityModalCustomProps<
@@ -33,7 +34,10 @@ const DeleteModal: FC<RemoveGroupRoleModalProps> = ({
   const { t, Translate } = useTranslate("groups");
   const { enqueueNotification } = useNotifications();
 
-  const { mutate, isPending: loading } = useUnassignGroupRole();
+  const qc = useQueryClient();
+  const { mutate, isPending: loading } = useMutation(
+    groupMutations.unassignRole(qc),
+  );
 
   const handleSubmit = () => {
     if (groupId && roleId) {

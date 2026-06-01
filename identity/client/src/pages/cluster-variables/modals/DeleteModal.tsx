@@ -13,7 +13,8 @@ import {
   UseEntityModalProps,
 } from "src/components/modal";
 import useTranslate from "src/utility/localization";
-import { useDeleteClusterVariable } from "src/utility/api/cluster-variables/hooks";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { clusterVariableMutations } from "src/utility/api/cluster-variables/mutations";
 import type { ClusterVariable } from "@camunda/camunda-api-zod-schemas/8.10";
 
 const DeleteModal: FC<
@@ -21,7 +22,10 @@ const DeleteModal: FC<
 > = ({ open, onClose, onSuccess, entity: deleteClusterVariableParams }) => {
   const { t, Translate } = useTranslate("clusterVariables");
   const { enqueueNotification } = useNotifications();
-  const { mutate, isPending: loading } = useDeleteClusterVariable();
+  const qc = useQueryClient();
+  const { mutate, isPending: loading } = useMutation(
+    clusterVariableMutations.delete(qc),
+  );
 
   const handleSubmit = () => {
     mutate(deleteClusterVariableParams, {

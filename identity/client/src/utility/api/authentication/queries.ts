@@ -6,16 +6,17 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { useQuery } from "@tanstack/react-query";
+import { queryOptions } from "@tanstack/react-query";
 import { getApiBaseUrl } from "src/configuration/urlConfig";
 import { unwrap } from "../request";
 import { queryKeys } from "../queryKeys";
-import { checkLicense } from ".";
+import { getAuthentication } from ".";
 
-export const useLicense = () =>
-  useQuery({
-    queryKey: queryKeys.license,
-    queryFn: () => unwrap(checkLicense(undefined)(getApiBaseUrl())),
-    staleTime: Infinity,
-    meta: { skipErrorNotification: true },
-  });
+export const authenticationQueries = {
+  me: () =>
+    queryOptions({
+      queryKey: queryKeys.authentication.me,
+      queryFn: () => unwrap(getAuthentication(undefined)(getApiBaseUrl())),
+      meta: { skipErrorNotification: true },
+    }),
+};

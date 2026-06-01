@@ -10,7 +10,8 @@ import { FC } from "react";
 import { Edit, TrashCan } from "@carbon/react/icons";
 import useTranslate from "src/utility/localization";
 import { usePagination } from "src/utility/api";
-import { useSearchGlobalTaskListeners } from "src/utility/api/global-task-listeners/hooks";
+import { useQuery } from "@tanstack/react-query";
+import { globalTaskListenerQueries } from "src/utility/api/global-task-listeners/queries";
 import Page, { PageHeader } from "src/components/layout/Page";
 import EntityList from "src/components/entityList";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
@@ -31,7 +32,7 @@ const List: FC = () => {
     isLoading: loading,
     isSuccess: success,
     refetch: reload,
-  } = useSearchGlobalTaskListeners(pageParams);
+  } = useQuery(globalTaskListenerQueries.search(pageParams));
 
   const [addGlobalTaskListener, addGlobalTaskListenerModal] = useModal(
     AddModal,

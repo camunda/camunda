@@ -13,7 +13,8 @@ import {
   UseEntityModalCustomProps,
 } from "src/components/modal";
 import { useNotifications } from "src/components/notifications";
-import { useUnassignGroupMappingRule } from "src/utility/api/groups/hooks";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { groupMutations } from "src/utility/api/groups/mutations";
 import type { MappingRule } from "@camunda/camunda-api-zod-schemas/8.10";
 
 type RemoveGroupMappingRuleModalProps = UseEntityModalCustomProps<
@@ -33,7 +34,10 @@ const DeleteModal: FC<RemoveGroupMappingRuleModalProps> = ({
   const { t, Translate } = useTranslate("groups");
   const { enqueueNotification } = useNotifications();
 
-  const { mutate, isPending: loading } = useUnassignGroupMappingRule();
+  const qc = useQueryClient();
+  const { mutate, isPending: loading } = useMutation(
+    groupMutations.unassignMappingRule(qc),
+  );
 
   const handleSubmit = () => {
     if (groupId && mappingRule) {

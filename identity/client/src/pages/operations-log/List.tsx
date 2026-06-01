@@ -12,7 +12,8 @@ import Page, { PageHeader } from "src/components/layout/Page";
 import EntityList from "src/components/entityList";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import { usePagination, SortConfig } from "src/utility/api";
-import { useSearchAuditLogs } from "src/utility/api/audit-logs/hooks";
+import { useQuery } from "@tanstack/react-query";
+import { auditLogQueries } from "src/utility/api/audit-logs/queries";
 import { spaceAndCapitalize } from "src/utility/format/spaceAndCapitalize";
 import {
   OperationLogName,
@@ -107,33 +108,35 @@ const List: FC = () => {
     isLoading: loading,
     isSuccess: success,
     refetch: reload,
-  } = useSearchAuditLogs({
-    sort: transformedSort,
-    filter: {
-      category: {
-        $eq: "ADMIN",
-      },
-      result: filters.result,
-      operationType: filters.operationType,
-      entityType: filters.entityType,
-      relatedEntityType: filters.relatedEntityType,
-      relatedEntityKey: debouncedRelatedEntityKey
-        ? debouncedRelatedEntityKey
-        : undefined,
-      actorId: debouncedActor ? debouncedActor : undefined,
-      timestamp:
-        filters.timestampFrom && filters.timestampTo
-          ? {
-              $gte: filters.timestampFrom,
-              $lte: filters.timestampTo,
-            }
+  } = useQuery(
+    auditLogQueries.search({
+      sort: transformedSort,
+      filter: {
+        category: {
+          $eq: "ADMIN",
+        },
+        result: filters.result,
+        operationType: filters.operationType,
+        entityType: filters.entityType,
+        relatedEntityType: filters.relatedEntityType,
+        relatedEntityKey: debouncedRelatedEntityKey
+          ? debouncedRelatedEntityKey
           : undefined,
-    },
-    page: {
-      from: pageParams.page.from,
-      limit: pageParams.page.limit,
-    },
-  });
+        actorId: debouncedActor ? debouncedActor : undefined,
+        timestamp:
+          filters.timestampFrom && filters.timestampTo
+            ? {
+                $gte: filters.timestampFrom,
+                $lte: filters.timestampTo,
+              }
+            : undefined,
+      },
+      page: {
+        from: pageParams.page.from,
+        limit: pageParams.page.limit,
+      },
+    }),
+  );
 
   const handleSort = useCallback(
     (sortConfig: SortConfig[] | undefined) => {

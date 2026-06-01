@@ -8,15 +8,21 @@
 
 import { FC, useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import TextField from "src/components/form/TextField";
 import useTranslate from "src/utility/localization";
 import { FormModal, UseModalProps } from "src/components/modal";
-import { useCreateUser } from "src/utility/api/users/hooks";
+import { userMutations } from "src/utility/api/users/mutations";
 import { isValidEmail, isValidId, getIdPattern } from "src/utility/validate";
 
 const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
   const { t } = useTranslate("users");
-  const { mutate, isPending: loading, error } = useCreateUser();
+  const qc = useQueryClient();
+  const {
+    mutate,
+    isPending: loading,
+    error,
+  } = useMutation(userMutations.create(qc));
 
   type FormData = {
     username: string;

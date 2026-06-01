@@ -9,9 +9,10 @@
 import { FC, useCallback, useEffect, useState } from "react";
 import { Tag } from "@carbon/react";
 import { UseEntityModalCustomProps } from "src/components/modal";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import useTranslate from "src/utility/localization";
-import { useSearchRoles } from "src/utility/api/roles/hooks";
-import { useAssignGroupRole } from "src/utility/api/groups/hooks";
+import { roleQueries } from "src/utility/api/roles/queries";
+import { groupMutations } from "src/utility/api/groups/mutations";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import styled from "styled-components";
 import DropdownSearch from "src/components/form/DropdownSearch";
@@ -46,7 +47,7 @@ const AssignRolesModal: FC<
     isLoading: loading,
     refetch: reload,
     error,
-  } = useSearchRoles(search);
+  } = useQuery(roleQueries.search(search));
 
   const unassignedFilter = useCallback(
     ({ roleId }: Role) =>
@@ -55,7 +56,10 @@ const AssignRolesModal: FC<
     [assignedRoles, selectedRoles],
   );
 
-  const { mutateAsync: callAssignRole } = useAssignGroupRole();
+  const qc = useQueryClient();
+  const { mutateAsync: callAssignRole } = useMutation(
+    groupMutations.assignRole(qc),
+  );
 
   const onSelectRole = (role: Role) => {
     setSelectedRoles([...selectedRoles, role]);

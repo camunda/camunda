@@ -8,7 +8,8 @@
 
 import { FC } from "react";
 import type { ClusterVariableScope } from "@camunda/camunda-api-zod-schemas/8.10";
-import { useCreateClusterVariable } from "src/utility/api/cluster-variables/hooks";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { clusterVariableMutations } from "src/utility/api/cluster-variables/mutations";
 import { RadioButton, RadioButtonGroup, Stack } from "@carbon/react";
 import { Controller, useForm } from "react-hook-form";
 import { useNotifications } from "src/components/notifications";
@@ -36,7 +37,12 @@ export const AddModal: FC<AddModalProps> = ({
 }) => {
   const { t } = useTranslate("clusterVariables");
   const { enqueueNotification } = useNotifications();
-  const { mutate, isPending: loading, error } = useCreateClusterVariable();
+  const qc = useQueryClient();
+  const {
+    mutate,
+    isPending: loading,
+    error,
+  } = useMutation(clusterVariableMutations.create(qc));
 
   const { control, handleSubmit, watch } = useForm<FormData>({
     defaultValues: {

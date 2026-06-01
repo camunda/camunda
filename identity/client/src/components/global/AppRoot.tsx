@@ -11,7 +11,8 @@ import { FC, ReactNode, useEffect } from "react";
 import { styles } from "@carbon/elements";
 import AppHeader from "src/components/layout/AppHeader";
 import ErrorBoundary from "src/components/global/ErrorBoundary";
-import { useAuthentication } from "src/utility/api/authentication/hooks";
+import { useQuery } from "@tanstack/react-query";
+import { authenticationQueries } from "src/utility/api/authentication/queries";
 import ForbiddenComponent from "src/pages/forbidden/ForbiddenPage";
 import LateLoading from "src/components/layout/LateLoading";
 import { activateSession } from "src/utility/auth";
@@ -67,7 +68,9 @@ const GridMainContent = styled.div`
 `;
 
 const AppContent: FC<{ children?: ReactNode }> = ({ children }) => {
-  const { data: camundaUser, isLoading: loading } = useAuthentication();
+  const { data: camundaUser, isLoading: loading } = useQuery(
+    authenticationQueries.me(),
+  );
 
   useEffect(() => {
     if (camundaUser) {

@@ -9,9 +9,10 @@
 import { FC, useCallback, useEffect, useState } from "react";
 import { Tag } from "@carbon/react";
 import { UseEntityModalCustomProps } from "src/components/modal";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import useTranslate from "src/utility/localization";
-import { useSearchMappingRules } from "src/utility/api/mapping-rules/hooks";
-import { useAssignGroupMappingRule } from "src/utility/api/groups/hooks";
+import { mappingRuleQueries } from "src/utility/api/mapping-rules/queries";
+import { groupMutations } from "src/utility/api/groups/mutations";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import styled from "styled-components";
 import DropdownSearch from "src/components/form/DropdownSearch";
@@ -51,7 +52,7 @@ const AssignMappingRulesModal: FC<
     isLoading: loading,
     refetch: reload,
     error,
-  } = useSearchMappingRules(mappingRuleFilter);
+  } = useQuery(mappingRuleQueries.search(mappingRuleFilter));
 
   const unassignedFilter = useCallback(
     ({ mappingRuleId }: MappingRule) =>
@@ -64,7 +65,10 @@ const AssignMappingRulesModal: FC<
     [assignedMappingRules, selectedMappingRules],
   );
 
-  const { mutateAsync: callAssignMappingRule } = useAssignGroupMappingRule();
+  const qc = useQueryClient();
+  const { mutateAsync: callAssignMappingRule } = useMutation(
+    groupMutations.assignMappingRule(qc),
+  );
 
   const onSelectMappingRule = (mappingRule: MappingRule) => {
     setSelectedMappingRules([...selectedMappingRules, mappingRule]);

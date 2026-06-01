@@ -8,7 +8,8 @@
 
 import { FC, useEffect, useState } from "react";
 import { FormLabel, Tag } from "@carbon/react";
-import { useSearchUsers } from "src/utility/api/users/hooks";
+import { useQuery } from "@tanstack/react-query";
+import { userQueries } from "src/utility/api/users/queries";
 import useTranslate from "src/utility/localization";
 import DropdownSearch from "src/components/form/DropdownSearch";
 import type { User } from "@camunda/camunda-api-zod-schemas/8.10";
@@ -52,7 +53,8 @@ const OwnerSelectionSearch: FC<OwnerSelectionSearchProps> = ({
     });
   };
 
-  const { data: userSearchResults } = useSearchUsers(search, {
+  const { data: userSearchResults } = useQuery({
+    ...userQueries.search(search),
     enabled: hasSearchText,
   });
 

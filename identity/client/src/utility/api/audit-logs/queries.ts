@@ -6,22 +6,20 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { useQuery } from "@tanstack/react-query";
+import { queryOptions } from "@tanstack/react-query";
 import type { QueryAuditLogsRequestBody } from "@camunda/camunda-api-zod-schemas/8.10";
 import { getApiBaseUrl } from "src/configuration/urlConfig";
 import { unwrap } from "../request";
 import { queryKeys } from "../queryKeys";
 import { searchAuditLogs } from ".";
 
-export const useSearchAuditLogs = (
-  params?: QueryAuditLogsRequestBody | Record<string, unknown>,
-  options?: { enabled?: boolean },
-) =>
-  useQuery({
-    queryKey: queryKeys.auditLogs.search(params),
-    queryFn: () =>
-      unwrap(
-        searchAuditLogs(params as QueryAuditLogsRequestBody)(getApiBaseUrl()),
-      ),
-    enabled: options?.enabled,
-  });
+export const auditLogQueries = {
+  search: (params?: QueryAuditLogsRequestBody | Record<string, unknown>) =>
+    queryOptions({
+      queryKey: queryKeys.auditLogs.search(params),
+      queryFn: () =>
+        unwrap(
+          searchAuditLogs(params as QueryAuditLogsRequestBody)(getApiBaseUrl()),
+        ),
+    }),
+};

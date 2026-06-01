@@ -6,24 +6,24 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { useQuery } from "@tanstack/react-query";
+import { queryOptions } from "@tanstack/react-query";
 import type { QueryMessageSubscriptionsRequestBody } from "@camunda/camunda-api-zod-schemas/8.10";
 import { getApiBaseUrl } from "src/configuration/urlConfig";
 import { unwrap } from "../request";
 import { queryKeys } from "../queryKeys";
 import { searchMessageSubscriptions } from ".";
 
-export const useSearchMessageSubscriptions = (
-  params?: QueryMessageSubscriptionsRequestBody | Record<string, unknown>,
-  options?: { enabled?: boolean },
-) =>
-  useQuery({
-    queryKey: queryKeys.messageSubscriptions.search(params),
-    queryFn: () =>
-      unwrap(
-        searchMessageSubscriptions(
-          params as QueryMessageSubscriptionsRequestBody,
-        )(getApiBaseUrl()),
-      ),
-    enabled: options?.enabled,
-  });
+export const messageSubscriptionQueries = {
+  search: (
+    params?: QueryMessageSubscriptionsRequestBody | Record<string, unknown>,
+  ) =>
+    queryOptions({
+      queryKey: queryKeys.messageSubscriptions.search(params),
+      queryFn: () =>
+        unwrap(
+          searchMessageSubscriptions(
+            params as QueryMessageSubscriptionsRequestBody,
+          )(getApiBaseUrl()),
+        ),
+    }),
+};

@@ -11,7 +11,8 @@ import { Controller, useForm } from "react-hook-form";
 import { Dropdown, MultiSelect, NumberInput } from "@carbon/react";
 import { FormModal, UseEntityModalProps } from "src/components/modal";
 import useTranslate from "src/utility/localization";
-import { useUpdateGlobalTaskListener } from "src/utility/api/global-task-listeners/hooks";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { globalTaskListenerMutations } from "src/utility/api/global-task-listeners/mutations";
 import TextField from "src/components/form/TextField";
 import { LISTENER_EVENT_TYPES } from "src/utility/api/global-task-listeners";
 import { useNotifications } from "src/components/notifications";
@@ -34,7 +35,12 @@ const EditModal: FC<UseEntityModalProps<GlobalTaskListener>> = ({
 }) => {
   const { t } = useTranslate("globalTaskListeners");
   const { enqueueNotification } = useNotifications();
-  const { mutate, isPending: loading, error } = useUpdateGlobalTaskListener();
+  const qc = useQueryClient();
+  const {
+    mutate,
+    isPending: loading,
+    error,
+  } = useMutation(globalTaskListenerMutations.update(qc));
 
   const { control, handleSubmit, watch, setValue, reset } =
     useForm<CreateGlobalTaskListenerRequestBody>({

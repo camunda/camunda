@@ -9,9 +9,10 @@
 import { FC } from "react";
 import { useNavigate } from "react-router-dom";
 import { Edit, TrashCan } from "@carbon/react/icons";
+import { useQuery } from "@tanstack/react-query";
 import useTranslate from "src/utility/localization";
 import { usePagination } from "src/utility/api";
-import { useSearchUsers } from "src/utility/api/users/hooks";
+import { userQueries } from "src/utility/api/users/queries";
 import Page, { PageHeader } from "src/components/layout/Page";
 import EntityList from "src/components/entityList";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
@@ -31,7 +32,7 @@ const List: FC = () => {
     isLoading: loading,
     isSuccess: success,
     refetch: reload,
-  } = useSearchUsers(pageParams);
+  } = useQuery(userQueries.search(pageParams));
   const noop = () => {};
   const [addUser, addUserModal] = useModal(AddModal, noop);
   const [editUser, editUserModal] = useEntityModal(EditModal, noop);
