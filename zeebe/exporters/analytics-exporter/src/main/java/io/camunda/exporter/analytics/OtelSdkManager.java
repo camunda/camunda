@@ -41,7 +41,7 @@ import java.util.function.Consumer;
  * pre-aggregated metric counters via {@link #incrementMetric}. Metric collection is triggered
  * manually via {@link #flushMetrics} from the partition thread — no background reader thread.
  */
-public class OtelSdkManager {
+public class OtelSdkManager implements AutoCloseable {
 
   private static final String INSTRUMENTATION_SCOPE = "io.camunda.analytics";
   private static final String SCHEMA_URL = "https://camunda.io/schemas/analytics/v1";
@@ -117,13 +117,15 @@ public class OtelSdkManager {
     }
   }
 
-  void shutdown() {
+  @Override
+  public void close() {
     flushMetrics();
     if (sdk != null) {
       sdk.shutdown().join(10, TimeUnit.SECONDS);
     }
   }
 
+  @SuppressWarnings("resource") // gauge lifecycle is managed by sdk.shutdown(), not by us
   private void registerExportWindowGauge() {
     otelMeter
         .gaugeBuilder(METRIC_EXPORT_WINDOW)

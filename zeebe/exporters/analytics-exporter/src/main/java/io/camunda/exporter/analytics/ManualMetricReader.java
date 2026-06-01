@@ -52,7 +52,7 @@ public final class ManualMetricReader implements MetricReader {
         .getAggregationTemporality(instrumentType);
   }
 
-  /** No-op — collection is driven by explicit {@link #collectAndExport()} calls only. */
+  /** No-op — final flush is driven by {@code OtelSdkManager.close()} before sdk.shutdown(). */
   @Override
   public CompletableResultCode forceFlush() {
     return CompletableResultCode.ofSuccess();

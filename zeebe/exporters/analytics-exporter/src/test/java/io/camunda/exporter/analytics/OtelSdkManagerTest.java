@@ -83,7 +83,7 @@ class OtelSdkManagerTest {
     assertThat(received.get()).isLessThan(100);
 
     releaseLatch.countDown();
-    manager.shutdown();
+    manager.close();
   }
 
   /** Real OTLP transport to a refused port doesn't block or throw. */
@@ -103,7 +103,7 @@ class OtelSdkManagerTest {
       manager.logEvent("test", 0L, log -> {});
     }
 
-    manager.shutdown();
+    manager.close();
   }
 
   /** Events sent via logEvent() arrive at the exporter. */
@@ -125,7 +125,7 @@ class OtelSdkManagerTest {
     for (int i = 0; i < 50; i++) {
       manager.logEvent("test", 0L, log -> {});
     }
-    manager.shutdown();
+    manager.close();
 
     // then — all 50 delivered
     assertThat(received.get()).isEqualTo(50);
@@ -155,7 +155,7 @@ class OtelSdkManagerTest {
     for (int i = 0; i < 20; i++) {
       manager.logEvent("test", 0L, log -> {});
     }
-    manager.shutdown();
+    manager.close();
 
     // then — shutdown waited for the slow exporter to drain
     assertThat(received.get()).isEqualTo(20);
@@ -200,7 +200,7 @@ class OtelSdkManagerTest {
     for (int i = 0; i < 5; i++) {
       manager.logEvent("after_recovery", 0L, log -> {});
     }
-    manager.shutdown();
+    manager.close();
 
     // then — post-recovery events arrived
     assertThat(receivedEventNames).contains("after_recovery");
@@ -224,7 +224,7 @@ class OtelSdkManagerTest {
     manager.logEvent("test", 0L, log -> {});
     manager.logEvent("test", 0L, log -> {});
     manager.logEvent("test", 0L, log -> {});
-    manager.shutdown();
+    manager.close();
 
     // then
     assertThat(received).hasSize(3);
@@ -255,11 +255,11 @@ class OtelSdkManagerTest {
         }.initialize(
             new AnalyticsExporterConfig().setPushInterval("PT0.1S"),
             AnalyticsExporterContext.create("test-license", "test-cluster", 1),
-            new AnalyticsExporterMetadata(5L));
+            new AnalyticsExporterMetadata(5L, 0));
 
     // when
     manager.logEvent("test", 0L, log -> {});
-    manager.shutdown();
+    manager.close();
 
     // then — sequence continues from 5, so first event gets 6
     assertThat(received)
@@ -273,12 +273,12 @@ class OtelSdkManagerTest {
   void shouldHandlePostShutdownCallsGracefully() {
     // given
     final var manager = initManager(logs -> CompletableResultCode.ofSuccess(), 2048, 512);
-    manager.shutdown();
+    manager.close();
 
     // when / then
     assertThatCode(() -> manager.logEvent("post_shutdown", 0L, log -> {}))
         .doesNotThrowAnyException();
-    assertThatCode(manager::shutdown).doesNotThrowAnyException();
+    assertThatCode(manager::close).doesNotThrowAnyException();
   }
 
   // -- helpers --

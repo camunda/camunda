@@ -203,7 +203,7 @@ class AnalyticsExporterTest {
     // given — controller pre-seeded with persisted sequence number 5
     final var seededController = new ExporterTestController();
     seededController.updateLastExportedRecordPosition(
-        0L, new AnalyticsExporterMetadata(5L).serialize());
+        0L, new AnalyticsExporterMetadata(5L, 0).serialize());
     final var freshMemoryExporter = InMemoryLogRecordExporter.create();
     final var freshExporter = exporterWithInMemory(freshMemoryExporter, seededController);
 

@@ -103,7 +103,7 @@ class ManualMetricReaderTest {
     // when
     reader.forceFlush();
 
-    // then — forceFlush is a no-op to prevent double-flush during sdk.shutdown()
+    // then — no-op to prevent double-flush; final flush is driven by OtelSdkManager.close()
     assertThat(exported).isEmpty();
   }
 }

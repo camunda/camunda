@@ -100,7 +100,7 @@ public class AnalyticsExporter implements Exporter {
       metricFlushTask.cancel();
       metricFlushTask = null;
     }
-    otelSdkManager.shutdown();
+    otelSdkManager.close();
     LOG.info("Analytics exporter closed");
   }
 
