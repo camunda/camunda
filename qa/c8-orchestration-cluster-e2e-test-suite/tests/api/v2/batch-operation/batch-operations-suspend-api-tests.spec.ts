@@ -10,7 +10,6 @@ import {test} from '@playwright/test';
 import {deploy} from '../../../../utils/zeebeClient';
 import {
   assertBadRequest,
-  assertConflictRequest,
   assertInvalidState,
   assertNotFoundRequest,
   assertStatusCode,
@@ -66,7 +65,12 @@ test.describe('Suspend & Resume Batch Operation Tests', () => {
   }) => {
     const key =
       await test.step('Create cancelable batch operation', async () => {
-        return createCancellationBatch(request, 3, 'batch_suspension_process');
+        // Use 20 instances so the batch stays ACTIVE long enough for the
+        // suspend command to take effect before the engine finishes it. With
+        // only 3 instances the batch can reach COMPLETED before the suspend is
+        // applied, so the poll for SUSPENDED never succeeds (same race the
+        // first suspend test guards against — not an indexing lag).
+        return createCancellationBatch(request, 20, 'batch_suspension_process');
       });
 
     await test.step('Suspend batch operation once', async () => {
