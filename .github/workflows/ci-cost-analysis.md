@@ -4,6 +4,7 @@ name: CI Cost Impact Analysis
 description: Weekly report analyzing recent CI changes for potential cost increases
 on:
   schedule: weekly on monday
+  workflow_dispatch:
   skip-if-match: 'is:issue is:open in:title "[ci-cost-analysis] "'
 permissions:
   contents: read
