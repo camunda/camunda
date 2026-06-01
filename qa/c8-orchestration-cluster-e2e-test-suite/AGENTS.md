@@ -468,6 +468,12 @@ Always write `/tmp/fix-meta.json` before stopping:
 }
 ```
 
+**`branch` is mandatory and must never be `null`.** Set it to the exact
+`headRefName` of the PR you opened:
+```bash
+gh pr view <number> --repo camunda/camunda --json headRefName --jq '.headRefName'
+```
+
 Use `{"prs": []}` if no PR was opened (regardless of reason). The calling
 workflow uses `has_e2e` and `has_api` to decide which on-demand verification
 workflows to trigger.
