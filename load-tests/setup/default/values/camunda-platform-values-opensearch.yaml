@@ -56,11 +56,23 @@ config:
     # Disable deprecation logging to avoid filling up the logs with warnings about deprecated features that we might be using in our tests
     logger.org.opensearch.deprecation: "OFF"
 
+plugins:
+  enabled: true
+  installList:
+    # version needs to match the OpenSearch version - see https://github.com/opensearch-project/opensearch-prometheus-exporter/blob/main/COMPATIBILITY.md
+    - "https://github.com/opensearch-project/opensearch-prometheus-exporter/releases/download/2.19.0.0/prometheus-exporter-2.19.0.0.zip"
+
 extraEnvs:
   - name: OPENSEARCH_INITIAL_ADMIN_PASSWORD
     value: "yourStrongPassword123!"
 
 opensearchJavaOpts: "-Xms3g -Xmx3g"
+
+serviceMonitor:
+  enabled: true
+  interval: 30s
+  labels:
+    release: monitoring
 
 sysctlInit:
   enabled: true
