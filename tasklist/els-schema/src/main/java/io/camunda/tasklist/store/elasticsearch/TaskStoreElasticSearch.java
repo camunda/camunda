@@ -152,9 +152,10 @@ public class TaskStoreElasticSearch implements TaskStore {
             .source(s -> s.filter(f -> f.includes(TaskTemplate.KEY)))
             .size(tasklistProperties.getElasticsearch().getBatchSize());
 
-    try {
-      return ElasticsearchUtil.scrollAllStream(
-              esClient, searchRequestBuilder, ElasticsearchUtil.MAP_CLASS)
+    try (final var scrollStream =
+        ElasticsearchUtil.scrollAllStream(
+            esClient, searchRequestBuilder, ElasticsearchUtil.MAP_CLASS)) {
+      return scrollStream
           .flatMap(response -> response.hits().hits().stream())
           .map(hit -> hit.source())
           .filter(Objects::nonNull)
@@ -822,11 +823,9 @@ public class TaskStoreElasticSearch implements TaskStore {
 
       final var taskIds = new HashSet<String>();
 
-      try {
-        final var scrollStream =
-            ElasticsearchUtil.scrollAllStream(
-                esClient, searchRequestBuilder, ElasticsearchUtil.MAP_CLASS);
-
+      try (final var scrollStream =
+          ElasticsearchUtil.scrollAllStream(
+              esClient, searchRequestBuilder, ElasticsearchUtil.MAP_CLASS)) {
         scrollStream
             .flatMap(response -> response.hits().hits().stream())
             .forEach(

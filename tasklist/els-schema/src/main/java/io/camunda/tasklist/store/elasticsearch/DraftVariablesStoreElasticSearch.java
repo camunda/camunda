@@ -103,15 +103,15 @@ public class DraftVariablesStoreElasticSearch implements DraftVariableStore {
               .index(draftTaskVariableTemplate.getFullQualifiedName())
               .query(query);
 
-      final var scrollStream =
+      try (final var scrollStream =
           ElasticsearchUtil.scrollAllStream(
-              esClient, searchRequestBuilder, DraftTaskVariableEntity.class);
-
-      return scrollStream
-          .flatMap(response -> response.hits().hits().stream())
-          .map(Hit::source)
-          .filter(Objects::nonNull)
-          .toList();
+              esClient, searchRequestBuilder, DraftTaskVariableEntity.class)) {
+        return scrollStream
+            .flatMap(response -> response.hits().hits().stream())
+            .map(Hit::source)
+            .filter(Objects::nonNull)
+            .toList();
+      }
     } catch (final Exception e) {
       throw new TasklistRuntimeException(
           String.format(
@@ -159,12 +159,15 @@ public class DraftVariablesStoreElasticSearch implements DraftVariableStore {
               .query(query)
               .source(s -> s.filter(f -> f.includes(DraftTaskVariableTemplate.ID)));
 
-      return ElasticsearchUtil.scrollAllStream(
-              esClient, searchRequestBuilder, ElasticsearchUtil.MAP_CLASS)
-          .flatMap(response -> response.hits().hits().stream())
-          .map(Hit::id)
-          .filter(Objects::nonNull)
-          .toList();
+      try (final var scrollStream =
+          ElasticsearchUtil.scrollAllStream(
+              esClient, searchRequestBuilder, ElasticsearchUtil.MAP_CLASS)) {
+        return scrollStream
+            .flatMap(response -> response.hits().hits().stream())
+            .map(Hit::id)
+            .filter(Objects::nonNull)
+            .toList();
+      }
     } catch (final Exception e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }

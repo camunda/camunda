@@ -489,11 +489,9 @@ public class ElasticsearchChecks {
             .index(whereToSearch(flowNodeInstanceTemplate, QueryType.ALL))
             .query(query)
             .sort(sortOrder(FlowNodeInstanceTemplate.POSITION, SortOrder.Asc));
-    try {
-      return scrollAllStream(esClient, searchRequestBuilder, FlowNodeInstanceEntity.class)
-          .flatMap(res -> res.hits().hits().stream())
-          .map(Hit::source)
-          .toList();
+    try (final var resStream =
+        scrollAllStream(esClient, searchRequestBuilder, FlowNodeInstanceEntity.class)) {
+      return resStream.flatMap(res -> res.hits().hits().stream()).map(Hit::source).toList();
 
     } catch (final ScrollException e) {
       throw new RuntimeException(e);
@@ -510,11 +508,9 @@ public class ElasticsearchChecks {
             .index(whereToSearch(messageSubscriptionTemplate, QueryType.ALL))
             .query(query)
             .sort(sortOrder(FlowNodeInstanceTemplate.POSITION, SortOrder.Asc));
-    try {
-      return scrollAllStream(esClient, searchRequestBuilder, MessageSubscriptionEntity.class)
-          .flatMap(res -> res.hits().hits().stream())
-          .map(Hit::source)
-          .toList();
+    try (final var resStream =
+        scrollAllStream(esClient, searchRequestBuilder, MessageSubscriptionEntity.class)) {
+      return resStream.flatMap(res -> res.hits().hits().stream()).map(Hit::source).toList();
 
     } catch (final ScrollException e) {
       throw new RuntimeException(e);
@@ -527,11 +523,9 @@ public class ElasticsearchChecks {
             .index(whereToSearch(flowNodeInstanceTemplate, QueryType.ALL))
             .query(q -> q.matchAll(m -> m))
             .sort(sortOrder(FlowNodeInstanceTemplate.POSITION, SortOrder.Asc));
-    try {
-      return scrollAllStream(esClient, searchRequestBuilder, FlowNodeInstanceEntity.class)
-          .flatMap(res -> res.hits().hits().stream())
-          .map(Hit::source)
-          .toList();
+    try (final var resStream =
+        scrollAllStream(esClient, searchRequestBuilder, FlowNodeInstanceEntity.class)) {
+      return resStream.flatMap(res -> res.hits().hits().stream()).map(Hit::source).toList();
     } catch (final ScrollException e) {
       throw new RuntimeException(e);
     }
@@ -609,11 +603,9 @@ public class ElasticsearchChecks {
         new SearchRequest.Builder()
             .index(whereToSearch(variableTemplate, QueryType.ALL))
             .query(query);
-    try {
-      return scrollAllStream(esClient, searchRequestBuilder, VariableEntity.class)
-          .flatMap(res -> res.hits().hits().stream())
-          .map(Hit::source)
-          .toList();
+    try (final var resStream =
+        scrollAllStream(esClient, searchRequestBuilder, VariableEntity.class)) {
+      return resStream.flatMap(res -> res.hits().hits().stream()).map(Hit::source).toList();
 
     } catch (final ScrollException e) {
       throw new RuntimeException(e);

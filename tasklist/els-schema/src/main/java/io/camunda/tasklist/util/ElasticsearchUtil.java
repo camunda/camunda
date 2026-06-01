@@ -109,9 +109,11 @@ public abstract class ElasticsearchUtil {
    */
   public static Map<String, String> scrollIdsWithIndexToMap(
       final ElasticsearchClient client, final SearchRequest.Builder searchRequestBuilder) {
-    return scrollAllStream(client, searchRequestBuilder, MAP_CLASS)
-        .flatMap(response -> response.hits().hits().stream())
-        .collect(Collectors.toMap(Hit::id, Hit::index));
+    try (final var resStream = scrollAllStream(client, searchRequestBuilder, MAP_CLASS)) {
+      return resStream
+          .flatMap(response -> response.hits().hits().stream())
+          .collect(Collectors.toMap(Hit::id, Hit::index));
+    }
   }
 
   // ============ ES Query Helper Methods ============
@@ -295,13 +297,29 @@ public abstract class ElasticsearchUtil {
   // ===========================================================================================
 
   /**
-   * Scrolls through all search results using the ES client and returns a stream of response bodies.
+   * Creates a lazy stream that scrolls through all results from Elasticsearch using the scroll API.
    *
+   * <p><b>IMPORTANT:</b> The returned stream MUST be used in a try-with-resources block or
+   * explicitly closed by calling {@link Stream#close()} to ensure the scroll context is properly
+   * released on Elasticsearch. Failure to close the stream will result in the scroll context
+   * remaining open until the 60-second keep-alive expires, potentially exhausting ES resources.
+   *
+   * <p>Example usage:
+   *
+   * <pre>{@code
+   * try (var stream = ElasticsearchUtil.scrollAllStream(client, searchBuilder, MyClass.class)) {
+   *   return stream
+   *       .flatMap(res -> res.hits().hits().stream())
+   *       .map(Hit::source)
+   *       .collect(Collectors.toList());
+   * }
+   * }</pre>
+   *
+   * @param <T> the type of documents to retrieve
    * @param client ES client
    * @param searchRequestBuilder Search request builder
    * @param docClass Document class type
-   * @param <T> Type of documents
-   * @return Stream of response bodies containing hits
+   * @return a Stream of ResponseBody objects containing search results. Must be closed after use.
    * @throws ScrollException if scroll operation fails
    */
   public static <T> Stream<ResponseBody<T>> scrollAllStream(
@@ -351,7 +369,8 @@ public abstract class ElasticsearchUtil {
                 })
             .takeWhile(Objects::nonNull);
 
-    return Stream.concat(Stream.of(searchRes), scrollStream);
+    return Stream.concat(Stream.of(searchRes), scrollStream)
+        .onClose(() -> clearScrollSilently(client, lastScrollId.get()));
   }
 
   /**
@@ -384,11 +403,13 @@ public abstract class ElasticsearchUtil {
       final co.elastic.clients.elasticsearch.ElasticsearchClient client,
       final co.elastic.clients.elasticsearch.core.SearchRequest.Builder searchRequestBuilder,
       final Class<T> docClass) {
-    return scrollAllStream(client, searchRequestBuilder, docClass)
-        .flatMap(response -> response.hits().hits().stream())
-        .map(co.elastic.clients.elasticsearch.core.search.Hit::source)
-        .filter(Objects::nonNull)
-        .collect(Collectors.toList());
+    try (final var resStream = scrollAllStream(client, searchRequestBuilder, docClass)) {
+      return resStream
+          .flatMap(response -> response.hits().hits().stream())
+          .map(co.elastic.clients.elasticsearch.core.search.Hit::source)
+          .filter(Objects::nonNull)
+          .collect(Collectors.toList());
+    }
   }
 
   /**
@@ -404,14 +425,16 @@ public abstract class ElasticsearchUtil {
       final co.elastic.clients.elasticsearch.ElasticsearchClient client,
       final co.elastic.clients.elasticsearch.core.SearchRequest.Builder searchRequestBuilder,
       final String fieldName) {
-    return scrollAllStream(client, searchRequestBuilder, MAP_CLASS)
-        .flatMap(response -> response.hits().hits().stream())
-        .map(co.elastic.clients.elasticsearch.core.search.Hit::source)
-        .filter(Objects::nonNull)
-        .map(source -> source.get(fieldName))
-        .filter(Objects::nonNull)
-        .map(value -> ((Number) value).longValue())
-        .collect(Collectors.toSet());
+    try (final var resStream = scrollAllStream(client, searchRequestBuilder, MAP_CLASS)) {
+      return resStream
+          .flatMap(response -> response.hits().hits().stream())
+          .map(co.elastic.clients.elasticsearch.core.search.Hit::source)
+          .filter(Objects::nonNull)
+          .map(source -> source.get(fieldName))
+          .filter(Objects::nonNull)
+          .map(value -> ((Number) value).longValue())
+          .collect(Collectors.toSet());
+    }
   }
 
   // ===========================================================================================

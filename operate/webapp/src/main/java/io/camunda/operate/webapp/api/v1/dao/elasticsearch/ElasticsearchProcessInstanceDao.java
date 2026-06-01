@@ -77,13 +77,16 @@ public class ElasticsearchProcessInstanceDao extends ElasticsearchDao<ProcessIns
               .index(processInstanceIndex.getAlias())
               .query(tenantAwareQuery);
 
-      processInstances =
-          ElasticsearchUtil.scrollAllStream(esClient, searchReq, ProcessInstance.class)
-              .flatMap(res -> res.hits().hits().stream())
-              .map(Hit::source)
-              .filter(Objects::nonNull)
-              .map(this::postProcessProcessInstance)
-              .toList();
+      try (final var resStream =
+          ElasticsearchUtil.scrollAllStream(esClient, searchReq, ProcessInstance.class)) {
+        processInstances =
+            resStream
+                .flatMap(res -> res.hits().hits().stream())
+                .map(Hit::source)
+                .filter(Objects::nonNull)
+                .map(this::postProcessProcessInstance)
+                .toList();
+      }
     } catch (final Exception e) {
       throw new ServerException(
           String.format("Error in reading process instance for key %s", key), e);

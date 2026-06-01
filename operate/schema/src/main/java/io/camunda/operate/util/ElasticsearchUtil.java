@@ -217,6 +217,32 @@ public abstract class ElasticsearchUtil {
     return entity;
   }
 
+  /**
+   * Creates a lazy stream that scrolls through all results from Elasticsearch using the scroll API.
+   *
+   * <p><b>IMPORTANT:</b> The returned stream MUST be used in a try-with-resources block or
+   * explicitly closed by calling {@link Stream#close()} to ensure the scroll context is properly
+   * released on Elasticsearch. Failure to close the stream will result in the scroll context
+   * remaining open until the 60-second keep-alive expires, potentially exhausting ES resources.
+   *
+   * <p>Example usage:
+   *
+   * <pre>{@code
+   * try (var stream = ElasticsearchUtil.scrollAllStream(client, searchBuilder, MyClass.class)) {
+   *   return stream
+   *       .flatMap(res -> res.hits().hits().stream())
+   *       .map(Hit::source)
+   *       .collect(Collectors.toList());
+   * }
+   * }</pre>
+   *
+   * @param <T> the type of documents to retrieve
+   * @param client the Elasticsearch client
+   * @param searchRequestBuilder the search request builder (will be modified to enable scrolling)
+   * @param docClass the class type of the documents
+   * @return a Stream of ResponseBody objects containing search results. Must be closed after use.
+   * @throws ScrollException if an error occurs during scrolling
+   */
   public static <T> Stream<ResponseBody<T>> scrollAllStream(
       final ElasticsearchClient client,
       final SearchRequest.Builder searchRequestBuilder,
@@ -264,7 +290,8 @@ public abstract class ElasticsearchUtil {
                 })
             .takeWhile(Objects::nonNull);
 
-    return Stream.concat(Stream.of(searchRes), scrollStream);
+    return Stream.concat(Stream.of(searchRes), scrollStream)
+        .onClose(() -> clearScrollSilently(client, lastScrollId.get()));
   }
 
   private static void clearScrollSilently(final ElasticsearchClient client, final String scrollId) {

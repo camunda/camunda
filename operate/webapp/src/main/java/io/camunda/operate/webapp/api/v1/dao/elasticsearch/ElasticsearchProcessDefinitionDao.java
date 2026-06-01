@@ -62,12 +62,11 @@ public class ElasticsearchProcessDefinitionDao extends ElasticsearchDao<ProcessD
     try {
       final var searchReqBuilder = processDefinitionKeySearchReq(key);
 
-      processDefinitions =
-          ElasticsearchUtil.scrollAllStream(esClient, searchReqBuilder, ProcessDefinition.class)
-              .flatMap(res -> res.hits().hits().stream())
-              .map(Hit::source)
-              .toList();
-
+      try (final var resStream =
+          ElasticsearchUtil.scrollAllStream(esClient, searchReqBuilder, ProcessDefinition.class)) {
+        processDefinitions =
+            resStream.flatMap(res -> res.hits().hits().stream()).map(Hit::source).toList();
+      }
     } catch (final Exception e) {
       throw new ServerException(
           String.format("Error in reading process definition for key %s", key), e);

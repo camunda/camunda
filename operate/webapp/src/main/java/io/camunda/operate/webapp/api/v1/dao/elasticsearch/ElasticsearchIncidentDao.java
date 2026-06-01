@@ -115,14 +115,17 @@ public class ElasticsearchIncidentDao extends ElasticsearchDao<Incident> impleme
       final var searchReqBuilder =
           new SearchRequest.Builder().index(incidentIndex.getAlias()).query(tenantAwareQuery);
 
-      incidents =
-          ElasticsearchUtil.scrollAllStream(esClient, searchReqBuilder, ElasticsearchUtil.MAP_CLASS)
-              .flatMap(res -> res.hits().hits().stream())
-              .map(Hit::source)
-              .filter(Objects::nonNull)
-              .map(this::createIncidentFromIncidentMap)
-              .toList();
-
+      try (final var resStream =
+          ElasticsearchUtil.scrollAllStream(
+              esClient, searchReqBuilder, ElasticsearchUtil.MAP_CLASS)) {
+        incidents =
+            resStream
+                .flatMap(res -> res.hits().hits().stream())
+                .map(Hit::source)
+                .filter(Objects::nonNull)
+                .map(this::createIncidentFromIncidentMap)
+                .toList();
+      }
     } catch (final Exception e) {
       throw new ServerException(String.format("Error in reading incident for key %s", key), e);
     }

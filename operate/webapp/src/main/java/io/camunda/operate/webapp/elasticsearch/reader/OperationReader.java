@@ -143,8 +143,8 @@ public class OperationReader extends AbstractReader
             .query(query)
             .sort(sortOrder(PROCESS_INSTANCE_KEY, SortOrder.Asc), sortOrder(ID, SortOrder.Asc));
 
-    try {
-      final var resStream = scrollAllStream(esClient, searchRequestBuilder, OperationEntity.class);
+    try (final var resStream =
+        scrollAllStream(esClient, searchRequestBuilder, OperationEntity.class)) {
       return resStream
           .flatMap(res -> res.hits().hits().stream())
           .map(Hit::source)
@@ -178,8 +178,8 @@ public class OperationReader extends AbstractReader
             .query(query)
             .sort(sortOrder(INCIDENT_KEY, SortOrder.Asc), sortOrder(ID, SortOrder.Asc));
 
-    try {
-      final var resStream = scrollAllStream(esClient, searchRequestBuilder, OperationEntity.class);
+    try (final var resStream =
+        scrollAllStream(esClient, searchRequestBuilder, OperationEntity.class)) {
       return resStream
           .flatMap(res -> res.hits().hits().stream())
           .map(Hit::source)
@@ -215,8 +215,8 @@ public class OperationReader extends AbstractReader
             .query(query)
             .sort(ElasticsearchUtil.sortOrder(ID, SortOrder.Asc));
 
-    try {
-      final var resStream = scrollAllStream(esClient, searchRequestBuilder, OperationEntity.class);
+    try (final var resStream =
+        scrollAllStream(esClient, searchRequestBuilder, OperationEntity.class)) {
       return resStream
           .flatMap(res -> res.hits().hits().stream())
           .map(Hit::source)
@@ -249,11 +249,9 @@ public class OperationReader extends AbstractReader
             .query(query)
             .sort(ElasticsearchUtil.sortOrder(ID, SortOrder.Asc));
 
-    try {
-      return scrollAllStream(esClient, searchRequestBuilder, OperationEntity.class)
-          .flatMap(res -> res.hits().hits().stream())
-          .map(Hit::source)
-          .toList();
+    try (final var resStream =
+        scrollAllStream(esClient, searchRequestBuilder, OperationEntity.class)) {
+      return resStream.flatMap(res -> res.hits().hits().stream()).map(Hit::source).toList();
     } catch (final ScrollException e) {
       final String message =
           String.format("Exception occurred, while obtaining operations: %s", e.getMessage());
@@ -272,12 +270,10 @@ public class OperationReader extends AbstractReader
     final var searchRequestBuilder =
         new SearchRequest.Builder().index(whereToSearch(operationTemplate, ALL)).query(query);
 
-    try {
+    try (final var resStream =
+        scrollAllStream(esClient, searchRequestBuilder, OperationEntity.class)) {
       final var operationEntities =
-          scrollAllStream(esClient, searchRequestBuilder, OperationEntity.class)
-              .flatMap(res -> res.hits().hits().stream())
-              .map(Hit::source)
-              .toList();
+          resStream.flatMap(res -> res.hits().hits().stream()).map(Hit::source).toList();
       return DtoCreator.create(operationEntities, OperationDto.class);
     } catch (final ScrollException e) {
       final String message =
@@ -305,12 +301,10 @@ public class OperationReader extends AbstractReader
     final var searchRequestBuilder =
         new SearchRequest.Builder().index(whereToSearch(operationTemplate, ALL)).query(query);
 
-    try {
+    try (final var resStream =
+        scrollAllStream(esClient, searchRequestBuilder, OperationEntity.class)) {
       final var operationEntities =
-          scrollAllStream(esClient, searchRequestBuilder, OperationEntity.class)
-              .flatMap(res -> res.hits().hits().stream())
-              .map(Hit::source)
-              .toList();
+          resStream.flatMap(res -> res.hits().hits().stream()).map(Hit::source).toList();
       return DtoCreator.create(operationEntities, OperationDto.class);
     } catch (final ScrollException e) {
       final String message =

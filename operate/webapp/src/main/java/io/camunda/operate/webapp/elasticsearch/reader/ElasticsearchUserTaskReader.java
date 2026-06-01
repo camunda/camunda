@@ -55,16 +55,14 @@ public class ElasticsearchUserTaskReader extends AbstractReader implements UserT
   @Override
   public List<TaskEntity> getUserTasks() {
     LOGGER.debug("retrieve all user tasks");
-    try {
-      final var searchRequestBuilder =
-          new SearchRequest.Builder()
-              .index(whereToSearch(taskTemplate, ALL))
-              .query(constantScoreQuery(TASK_QUERY));
+    final var searchRequestBuilder =
+        new SearchRequest.Builder()
+            .index(whereToSearch(taskTemplate, ALL))
+            .query(constantScoreQuery(TASK_QUERY));
 
-      return ElasticsearchUtil.scrollAllStream(esClient, searchRequestBuilder, TaskEntity.class)
-          .flatMap(res -> res.hits().hits().stream())
-          .map(Hit::source)
-          .toList();
+    try (final var resStream =
+        ElasticsearchUtil.scrollAllStream(esClient, searchRequestBuilder, TaskEntity.class)) {
+      return resStream.flatMap(res -> res.hits().hits().stream()).map(Hit::source).toList();
     } catch (final ScrollException e) {
       final var message =
           String.format("Exception occurred, while obtaining user task list: %s", e.getMessage());
@@ -107,12 +105,10 @@ public class ElasticsearchUserTaskReader extends AbstractReader implements UserT
         new SearchRequest.Builder()
             .index(whereToSearch(snapshotTaskVariableTemplate, ALL))
             .query(query);
-    try {
-      return ElasticsearchUtil.scrollAllStream(
-              esClient, searchRequestBuilder, SnapshotTaskVariableEntity.class)
-          .flatMap(res -> res.hits().hits().stream())
-          .map(Hit::source)
-          .toList();
+    try (final var resStream =
+        ElasticsearchUtil.scrollAllStream(
+            esClient, searchRequestBuilder, SnapshotTaskVariableEntity.class)) {
+      return resStream.flatMap(res -> res.hits().hits().stream()).map(Hit::source).toList();
     } catch (final ScrollException e) {
       final var message =
           String.format("Exception occurred, while obtaining user task list: %s", e.getMessage());
