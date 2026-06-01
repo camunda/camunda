@@ -24,7 +24,6 @@ import io.camunda.zeebe.metrics.StarterLatencyMetricsDoc;
 import io.camunda.zeebe.metrics.StarterMetricsDoc;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -47,8 +46,6 @@ import org.springframework.test.context.DynamicPropertySource;
       "load-tester.worker.payload-path=bpmn/small_payload.json",
     })
 @ActiveProfiles({"starter", "worker", "it"})
-@Disabled(
-    "Temporariy disabled due to https://camunda.slack.com/archives/C071KP5BTHB/p1779098983781369")
 class StarterWorkerIT {
 
   static final CamundaContainer CAMUNDA = CamundaContainerProvider.getCamundaContainer();
