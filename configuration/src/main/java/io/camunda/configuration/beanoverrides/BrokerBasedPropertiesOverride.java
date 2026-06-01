@@ -943,6 +943,12 @@ public class BrokerBasedPropertiesOverride {
                       database.getBatchOperationItemInsertBlockSize());
                   config.setAuditLog(
                       unifiedConfiguration.getCamunda().getData().getAuditLog().toConfiguration());
+                  config.setWaitState(
+                      unifiedConfiguration
+                          .getCamunda()
+                          .getData()
+                          .getWaitStates()
+                          .toConfiguration());
                   config.setHistoryDeletion(
                       unifiedConfiguration
                           .getCamunda()
