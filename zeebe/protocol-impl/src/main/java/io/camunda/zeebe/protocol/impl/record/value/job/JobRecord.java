@@ -25,6 +25,7 @@ import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
@@ -118,6 +119,9 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
           JobListenerEventType.class,
           JobListenerEventType.UNSPECIFIED);
   private final StringProperty elementIdProp = new StringProperty(ELEMENT_ID_KEY, EMPTY_STRING);
+  private final EnumProperty<BpmnElementType> elementTypeProp =
+      new EnumProperty<>(
+          new StringValue("elementType"), BpmnElementType.class, BpmnElementType.UNSPECIFIED);
   private final LongProperty elementInstanceKeyProp =
       new LongProperty(ELEMENT_INSTANCE_KEY_KEY, -1L);
   private final StringProperty tenantIdProp =
@@ -134,7 +138,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   private final IntegerProperty priorityProp = new IntegerProperty(PRIORITY_KEY, 0);
 
   public JobRecord() {
-    super(25);
+    super(26);
     declareProperty(deadlineProp)
         .declareProperty(timeoutProp)
         .declareProperty(workerProp)
@@ -153,6 +157,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
         .declareProperty(jobKindProp)
         .declareProperty(jobListenerEventTypeProp)
         .declareProperty(elementIdProp)
+        .declareProperty(elementTypeProp)
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(tenantIdProp)
         .declareProperty(changedAttributesProp)
@@ -182,6 +187,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     jobKindProp.setValue(record.getJobKind());
     jobListenerEventTypeProp.setValue(record.getJobListenerEventType());
     elementIdProp.setValue(record.getElementIdBuffer());
+    elementTypeProp.setValue(record.getElementType());
     elementInstanceKeyProp.setValue(record.getElementInstanceKey());
     tenantIdProp.setValue(record.getTenantId());
     setChangedAttributes(record.getChangedAttributes());
@@ -279,8 +285,18 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   }
 
   @Override
+  public BpmnElementType getElementType() {
+    return elementTypeProp.getValue();
+  }
+
+  @Override
   public long getElementInstanceKey() {
     return elementInstanceKeyProp.getValue();
+  }
+
+  @Override
+  public long getRootProcessInstanceKey() {
+    return rootProcessInstanceKeyProp.getValue();
   }
 
   @Override
@@ -366,16 +382,6 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     return isJobToUserTaskMigrationProp.getValue();
   }
 
-  @Override
-  public long getRootProcessInstanceKey() {
-    return rootProcessInstanceKeyProp.getValue();
-  }
-
-  public JobRecord setRootProcessInstanceKey(final long rootProcessInstanceKey) {
-    rootProcessInstanceKeyProp.setValue(rootProcessInstanceKey);
-    return this;
-  }
-
   public JobRecord setProcessDefinitionVersion(final int version) {
     processDefinitionVersionProp.setValue(version);
     return this;
@@ -391,8 +397,18 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     return this;
   }
 
+  public JobRecord setRootProcessInstanceKey(final long rootProcessInstanceKey) {
+    rootProcessInstanceKeyProp.setValue(rootProcessInstanceKey);
+    return this;
+  }
+
   public JobRecord setElementInstanceKey(final long elementInstanceKey) {
     elementInstanceKeyProp.setValue(elementInstanceKey);
+    return this;
+  }
+
+  public JobRecord setElementType(final BpmnElementType elementType) {
+    elementTypeProp.setValue(elementType);
     return this;
   }
 

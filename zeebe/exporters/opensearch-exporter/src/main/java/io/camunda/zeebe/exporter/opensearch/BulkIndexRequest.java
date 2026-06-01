@@ -59,6 +59,7 @@ final class BulkIndexRequest {
       "decisionEvaluationInstanceKey";
   private static final String AUTH_INFO_PROPERTY = "authInfo";
   private static final String PRIORITY_PROPERTY = "priority";
+  private static final String ELEMENT_TYPE_PROPERTY = "elementType";
 
   private final List<BulkOperation> operations = new ArrayList<>();
 
@@ -189,6 +190,6 @@ final class BulkIndexRequest {
   @JsonIgnoreProperties({AUTH_INFO_PROPERTY})
   private static final class CommandDistributionMixin {}
 
-  @JsonIgnoreProperties({PRIORITY_PROPERTY})
+  @JsonIgnoreProperties({PRIORITY_PROPERTY, ELEMENT_TYPE_PROPERTY})
   private static final class JobMixin {}
 }

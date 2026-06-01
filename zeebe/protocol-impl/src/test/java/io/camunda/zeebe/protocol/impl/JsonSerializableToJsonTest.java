@@ -837,6 +837,7 @@ final class JsonSerializableToJsonTest {
                   .setProcessInstanceKey(processInstanceKey)
                   .setRootProcessInstanceKey(rootProcessInstanceKey)
                   .setElementId(wrapString(activityId))
+                  .setElementType(BpmnElementType.SERVICE_TASK)
                   .setElementInstanceKey(activityInstanceKey)
                   .setChangedAttributes(changedAttributes)
                   .setResult(result)
@@ -861,6 +862,7 @@ final class JsonSerializableToJsonTest {
                       "processDefinitionVersion": 12,
                       "processInstanceKey": 1234,
                       "elementId": "activity",
+                      "elementType": "SERVICE_TASK",
                       "elementInstanceKey": 123,
                       "type": "type",
                       "worker": "worker",
@@ -975,6 +977,7 @@ final class JsonSerializableToJsonTest {
               final int processInstanceKey = 1234;
               final int rootProcessInstanceKey = 4321;
               final String elementId = "activity";
+              final BpmnElementType elementType = BpmnElementType.SERVICE_TASK;
               final int activityInstanceKey = 123;
               final Set<String> changedAttributes = Set.of("bar", "foo");
               final JobResult result =
@@ -1029,6 +1032,7 @@ final class JsonSerializableToJsonTest {
                       .setProcessDefinitionVersion(processDefinitionVersion)
                       .setProcessInstanceKey(processInstanceKey)
                       .setElementId(wrapString(elementId))
+                      .setElementType(elementType)
                       .setElementInstanceKey(activityInstanceKey)
                       .setChangedAttributes(changedAttributes)
                       .setResult(result)
@@ -1048,6 +1052,7 @@ final class JsonSerializableToJsonTest {
                   "processInstanceKey": 1234,
                   "elementId": "activity",
                   "elementInstanceKey": 123,
+                  "elementType": "SERVICE_TASK",
                   "worker": "myWorker",
                   "type": "myType",
                   "variables": {
@@ -1129,6 +1134,7 @@ final class JsonSerializableToJsonTest {
                   "processDefinitionKey": -1,
                   "processInstanceKey": -1,
                   "elementInstanceKey": -1,
+                  "elementType": "UNSPECIFIED",
                   "variables": {},
                   "worker": "",
                   "retries": -1,
@@ -1187,6 +1193,7 @@ final class JsonSerializableToJsonTest {
                   "processDefinitionKey": -1,
                   "processInstanceKey": -1,
                   "elementId": "",
+                  "elementType": "UNSPECIFIED",
                   "elementInstanceKey": -1,
                   "variables": {
                     "foo": null

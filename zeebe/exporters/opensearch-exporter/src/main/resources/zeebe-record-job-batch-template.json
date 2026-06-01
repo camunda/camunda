@@ -50,6 +50,9 @@
                 "elementId": {
                   "type": "text"
                 },
+                "elementType": {
+                  "type": "keyword"
+                },
                 "elementInstanceKey": {
                   "type": "long"
                 },
