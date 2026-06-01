@@ -16,7 +16,6 @@ import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.zeebe.LoadTesterApplication;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -49,8 +48,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
       "load-tester.perform-read-benchmarks=false",
     })
 @ActiveProfiles({"starter", "worker", "it"})
-@Disabled(
-    "Temporariy disabled due to https://camunda.slack.com/archives/C071KP5BTHB/p1779098983781369")
 class StarterWorkerIT {
 
   @Container
