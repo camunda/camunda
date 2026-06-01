@@ -15,7 +15,8 @@ import {
 } from "src/components/notifications/InlineNotification";
 import useModal, { useEntityModal } from "src/components/modal/useModal";
 import { usePagination } from "src/utility/api";
-import { useSearchClusterVariables } from "src/utility/api/cluster-variables/hooks";
+import { useQuery } from "@tanstack/react-query";
+import { clusterVariableQueries } from "src/utility/api/cluster-variables/queries";
 import PageEmptyState from "src/components/layout/PageEmptyState";
 import { AddModal } from "./modals/add-modal";
 import DeleteModal from "./modals/DeleteModal";
@@ -33,7 +34,7 @@ export default function List({ isSaaS }: { isSaaS: boolean }) {
     isLoading: loading,
     isSuccess: success,
     refetch: reload,
-  } = useSearchClusterVariables(pageParams);
+  } = useQuery(clusterVariableQueries.search(pageParams));
 
   const compareClusterVariables = useCallback(
     (current: QueryClusterVariablesResponseBody) => {

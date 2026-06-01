@@ -10,8 +10,9 @@ import { FC } from "react";
 import { C3EmptyState } from "@camunda/camunda-composite-components";
 import { TrashCan } from "@carbon/react/icons";
 import useTranslate from "src/utility/localization";
+import { useQuery } from "@tanstack/react-query";
 import { usePagination } from "src/utility/api";
-import { useTenantMappingRules } from "src/utility/api/tenants/hooks";
+import { tenantQueries } from "src/utility/api/tenants/queries";
 import EntityList from "src/components/entityList";
 import { useEntityModal } from "src/components/modal";
 import DeleteModal from "src/pages/tenants/detail/mapping-rules/DeleteModal";
@@ -32,7 +33,7 @@ const MappingRules: FC<MappingRulesProps> = ({ tenantId }) => {
     isLoading: loading,
     isSuccess: success,
     refetch: reload,
-  } = useTenantMappingRules(tenantId, pageParams);
+  } = useQuery(tenantQueries.mappingRules(tenantId, pageParams));
 
   const isAssignedMappingRulesListEmpty =
     !mappingRules || mappingRules.items?.length === 0;

@@ -7,8 +7,9 @@
  */
 
 import { FC, useEffect, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { UseEntityModalCustomProps } from "src/components/modal";
-import { useAssignRoleGroup } from "src/utility/api/roles/hooks";
+import { roleMutations } from "src/utility/api/roles/mutations";
 import useTranslate from "src/utility/localization";
 import FormModal from "src/components/modal/FormModal";
 import TextField from "src/components/form/TextField";
@@ -22,7 +23,10 @@ const AssignGroupModal: FC<
 > = ({ entity: { roleId }, onSuccess, open, onClose }) => {
   const { t } = useTranslate("roles");
   const [groupId, setGroupId] = useState("");
-  const { mutate, isPending: loadingAssignGroup } = useAssignRoleGroup();
+  const qc = useQueryClient();
+  const { mutate, isPending: loadingAssignGroup } = useMutation(
+    roleMutations.assignGroup(qc),
+  );
 
   const canSubmit = roleId && groupId;
 

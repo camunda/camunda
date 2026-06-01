@@ -22,7 +22,8 @@ import {
   Button,
 } from "src/pages/setup/styled.ts";
 import Divider from "src/components/form/Divider";
-import { useCreateAdminUser } from "src/utility/api/setup/hooks";
+import { useMutation } from "@tanstack/react-query";
+import { setupMutations } from "src/utility/api/setup/mutations";
 import { ApiError, isDetailedError } from "src/utility/api/request";
 import { isValidEmail } from "src/utility/validate";
 
@@ -32,7 +33,9 @@ interface SetupFormProps {
 
 const SetupForm: React.FC<SetupFormProps> = ({ onSuccess }) => {
   const { t } = useTranslate();
-  const { mutateAsync: apiCall } = useCreateAdminUser();
+  const { mutateAsync: apiCall } = useMutation(
+    setupMutations.createAdminUser(),
+  );
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");

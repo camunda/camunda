@@ -9,9 +9,10 @@
 import { FC } from "react";
 import { Edit, TrashCan } from "@carbon/react/icons";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import useTranslate from "src/utility/localization";
 import { usePagination } from "src/utility/api";
-import { useSearchRoles } from "src/utility/api/roles/hooks";
+import { roleQueries } from "src/utility/api/roles/queries";
 import Page, { PageHeader } from "src/components/layout/Page";
 import EntityList from "src/components/entityList";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
@@ -37,7 +38,7 @@ const List: FC<ListProps> = ({ defaultRoleIds }) => {
     isLoading: loading,
     isSuccess: success,
     refetch: reload,
-  } = useSearchRoles(pageParams);
+  } = useQuery(roleQueries.search(pageParams));
 
   const [addRole, addRoleModal] = useModal(AddModal, noop);
   const [editRole, editRoleModal] = useEntityModal(EditModal, noop);

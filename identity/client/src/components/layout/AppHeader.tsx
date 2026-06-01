@@ -9,8 +9,9 @@
 import { C3Navigation } from "@camunda/camunda-composite-components";
 import { useGlobalRoutes } from "src/components/global/useGlobalRoutes";
 import { Link } from "react-router-dom";
-import { useLicense } from "src/utility/api/headers/hooks";
-import { useAuthentication } from "src/utility/api/authentication/hooks";
+import { useQuery } from "@tanstack/react-query";
+import { licenseQueries } from "src/utility/api/headers/queries";
+import { authenticationQueries } from "src/utility/api/authentication/queries";
 import { ArrowRight } from "@carbon/react/icons";
 import { logout } from "src/utility/auth";
 import { useState } from "react";
@@ -26,8 +27,8 @@ const LOGOUT_DELAY = 1000;
 const AppHeader = observer(
   ({ hideNavLinks = false }: { hideNavLinks?: boolean }) => {
     const routes = useGlobalRoutes();
-    const { data: license } = useLicense();
-    const { data: camundaUser } = useAuthentication();
+    const { data: license } = useQuery(licenseQueries.current());
+    const { data: camundaUser } = useQuery(authenticationQueries.me());
     const [isAppBarOpen, setIsAppBarOpen] = useState(false);
     const { enqueueNotification } = useNotifications();
     const { t } = useTranslate("authentication");

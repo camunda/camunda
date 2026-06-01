@@ -7,10 +7,11 @@
  */
 
 import { FC, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { FormModal, UseEntityModalProps } from "src/components/modal";
 import useTranslate from "src/utility/localization";
 import { useNotifications } from "src/components/notifications";
-import { useUpdateGroup } from "src/utility/api/groups/hooks";
+import { groupMutations } from "src/utility/api/groups/mutations";
 import TextField from "src/components/form/TextField";
 import { isValidId } from "src/utility/validate.ts";
 import type { Group } from "@camunda/camunda-api-zod-schemas/8.10";
@@ -24,7 +25,12 @@ const EditModal: FC<UseEntityModalProps<Group>> = ({
   const { t } = useTranslate("groups");
   const { enqueueNotification } = useNotifications();
 
-  const { mutate, isPending: loading, error } = useUpdateGroup();
+  const qc = useQueryClient();
+  const {
+    mutate,
+    isPending: loading,
+    error,
+  } = useMutation(groupMutations.update(qc));
 
   const [groupName, setGroupName] = useState(group.name);
   const [groupId, setGroupId] = useState(group.groupId);

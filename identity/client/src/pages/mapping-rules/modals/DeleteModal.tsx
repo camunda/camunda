@@ -7,7 +7,8 @@
  */
 
 import { FC } from "react";
-import { useDeleteMappingRule } from "src/utility/api/mapping-rules/hooks";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { mappingRuleMutations } from "src/utility/api/mapping-rules/mutations";
 import useTranslate from "src/utility/localization";
 import {
   DeleteModal as Modal,
@@ -24,7 +25,10 @@ const DeleteMappingRulesModal: FC<UseEntityModalProps<MappingRule>> = ({
 }) => {
   const { t, Translate } = useTranslate("mappingRules");
   const { enqueueNotification } = useNotifications();
-  const { mutate, isPending: loading } = useDeleteMappingRule();
+  const qc = useQueryClient();
+  const { mutate, isPending: loading } = useMutation(
+    mappingRuleMutations.delete(qc),
+  );
 
   const handleSubmit = () => {
     mutate(

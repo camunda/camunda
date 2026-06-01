@@ -13,7 +13,8 @@ import {
   UseEntityModalCustomProps,
 } from "src/components/modal";
 import { useNotifications } from "src/components/notifications";
-import { useUnassignTenantRole } from "src/utility/api/tenants/hooks";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { tenantMutations } from "src/utility/api/tenants/mutations";
 import type { Role } from "@camunda/camunda-api-zod-schemas/8.10";
 
 type RemoveTenantRoleModalProps = UseEntityModalCustomProps<
@@ -33,7 +34,10 @@ const DeleteModal: FC<RemoveTenantRoleModalProps> = ({
   const { t, Translate } = useTranslate("tenants");
   const { enqueueNotification } = useNotifications();
 
-  const { mutate, isPending: loading } = useUnassignTenantRole();
+  const qc = useQueryClient();
+  const { mutate, isPending: loading } = useMutation(
+    tenantMutations.unassignRole(qc),
+  );
 
   const handleSubmit = () => {
     if (tenant && roleId) {

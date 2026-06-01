@@ -10,9 +10,10 @@ import { FC, useCallback, useEffect, useState } from "react";
 import styled from "styled-components";
 import { Tag } from "@carbon/react";
 import { UseEntityModalCustomProps } from "src/components/modal";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import useTranslate from "src/utility/localization";
-import { useSearchGroups } from "src/utility/api/groups/hooks";
-import { useAssignTenantGroup } from "src/utility/api/tenants/hooks";
+import { groupQueries } from "src/utility/api/groups/queries";
+import { tenantMutations } from "src/utility/api/tenants/mutations";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import DropdownSearch from "src/components/form/DropdownSearch";
 import FormModal from "src/components/modal/FormModal";
@@ -47,9 +48,12 @@ const AssignGroupsModal: FC<
     isLoading: loading,
     refetch: reload,
     error,
-  } = useSearchGroups(search);
+  } = useQuery(groupQueries.search(search));
 
-  const { mutateAsync: callAssignGroup } = useAssignTenantGroup();
+  const qc = useQueryClient();
+  const { mutateAsync: callAssignGroup } = useMutation(
+    tenantMutations.assignGroup(qc),
+  );
 
   const unassignedFilter = useCallback(
     ({ groupId }: Group) =>

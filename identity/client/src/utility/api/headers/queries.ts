@@ -6,15 +6,18 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { useMutation } from "@tanstack/react-query";
-import type { CreateUserRequestBody } from "@camunda/camunda-api-zod-schemas/8.10";
+import { queryOptions } from "@tanstack/react-query";
 import { getApiBaseUrl } from "src/configuration/urlConfig";
 import { unwrap } from "../request";
-import { createAdminUser } from ".";
+import { queryKeys } from "../queryKeys";
+import { checkLicense } from ".";
 
-export const useCreateAdminUser = () =>
-  useMutation({
-    mutationFn: (body: CreateUserRequestBody) =>
-      unwrap(createAdminUser(body)(getApiBaseUrl())),
-    meta: { skipErrorNotification: true },
-  });
+export const licenseQueries = {
+  current: () =>
+    queryOptions({
+      queryKey: queryKeys.license,
+      queryFn: () => unwrap(checkLicense(undefined)(getApiBaseUrl())),
+      staleTime: Infinity,
+      meta: { skipErrorNotification: true },
+    }),
+};

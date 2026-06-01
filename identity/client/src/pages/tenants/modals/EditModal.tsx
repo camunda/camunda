@@ -7,10 +7,11 @@
  */
 
 import { FC, useEffect, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { FormModal, UseEntityModalProps } from "src/components/modal";
 import useTranslate from "src/utility/localization";
 import { useNotifications } from "src/components/notifications";
-import { useUpdateTenant } from "src/utility/api/tenants/hooks";
+import { tenantMutations } from "src/utility/api/tenants/mutations";
 import TextField from "src/components/form/TextField";
 import type { Tenant } from "@camunda/camunda-api-zod-schemas/8.10";
 
@@ -28,7 +29,12 @@ const EditModal: FC<UseEntityModalProps<Tenant>> = ({
   const { t } = useTranslate("tenants");
   const { enqueueNotification } = useNotifications();
 
-  const { mutate, isPending: loading, error } = useUpdateTenant();
+  const qc = useQueryClient();
+  const {
+    mutate,
+    isPending: loading,
+    error,
+  } = useMutation(tenantMutations.update(qc));
 
   const [tenantName, setTenantName] = useState(
     () => getTenantFormValues(tenant).name,

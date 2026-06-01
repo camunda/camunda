@@ -10,9 +10,10 @@ import { FC, useCallback, useEffect, useState } from "react";
 import styled from "styled-components";
 import { Tag } from "@carbon/react";
 import { UseEntityModalCustomProps } from "src/components/modal";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import useTranslate from "src/utility/localization";
-import { useSearchMappingRules } from "src/utility/api/mapping-rules/hooks";
-import { useAssignRoleMappingRule } from "src/utility/api/roles/hooks";
+import { mappingRuleQueries } from "src/utility/api/mapping-rules/queries";
+import { roleMutations } from "src/utility/api/roles/mutations";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import DropdownSearch from "src/components/form/DropdownSearch";
 import FormModal from "src/components/modal/FormModal";
@@ -49,9 +50,12 @@ const AssignMappingRulesModal: FC<
     isLoading: loading,
     refetch: reload,
     error,
-  } = useSearchMappingRules(mappingRuleFilter);
+  } = useQuery(mappingRuleQueries.search(mappingRuleFilter));
 
-  const { mutateAsync: callAssignMappingRule } = useAssignRoleMappingRule();
+  const qc = useQueryClient();
+  const { mutateAsync: callAssignMappingRule } = useMutation(
+    roleMutations.assignMappingRule(qc),
+  );
 
   const unassignedFilter = useCallback(
     ({ mappingRuleId }: MappingRule) =>

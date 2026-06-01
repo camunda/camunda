@@ -10,8 +10,9 @@ import { FC } from "react";
 import { C3EmptyState } from "@camunda/camunda-composite-components";
 import { TrashCan } from "@carbon/react/icons";
 import useTranslate from "src/utility/localization";
+import { useQuery } from "@tanstack/react-query";
 import { usePagination } from "src/utility/api";
-import { useTenantRoles } from "src/utility/api/tenants/hooks";
+import { tenantQueries } from "src/utility/api/tenants/queries";
 import EntityList from "src/components/entityList";
 import { useEntityModal } from "src/components/modal";
 import DeleteModal from "src/pages/tenants/detail/roles/DeleteModal";
@@ -32,7 +33,7 @@ const Roles: FC<RolesProps> = ({ tenantId }) => {
     isLoading: loading,
     isSuccess: success,
     refetch: reload,
-  } = useTenantRoles(tenantId, pageParams);
+  } = useQuery(tenantQueries.roles(tenantId, pageParams));
 
   const isAssignedRolesListEmpty = !roles || roles.items?.length === 0;
 

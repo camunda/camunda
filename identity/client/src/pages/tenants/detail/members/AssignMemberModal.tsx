@@ -7,8 +7,9 @@
  */
 
 import { FC, useEffect, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { UseEntityModalCustomProps } from "src/components/modal";
-import { useAssignTenantMember } from "src/utility/api/membership/hooks";
+import { membershipMutations } from "src/utility/api/membership/mutations";
 import useTranslate from "src/utility/localization";
 import FormModal from "src/components/modal/FormModal";
 import TextField from "src/components/form/TextField";
@@ -24,7 +25,10 @@ const AssignMemberModal: FC<
 > = ({ entity: { tenantId }, onSuccess, open, onClose }) => {
   const { t, Translate } = useTranslate("tenants");
   const [username, setUsername] = useState("");
-  const { mutate, isPending: loadingAssignUser } = useAssignTenantMember();
+  const qc = useQueryClient();
+  const { mutate, isPending: loadingAssignUser } = useMutation(
+    membershipMutations.assignTenantMember(qc),
+  );
 
   const canSubmit = tenantId && username;
 

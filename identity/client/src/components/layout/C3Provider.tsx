@@ -9,7 +9,8 @@
 import { C3UserConfigurationProvider } from "@camunda/camunda-composite-components";
 import { C3ThemePersister } from "src/common/theme/C3ThemePersister";
 import { useEffect } from "react";
-import { useSaasUserToken } from "src/utility/api/authentication/hooks";
+import { useMutation } from "@tanstack/react-query";
+import { authenticationMutations } from "src/utility/api/authentication/mutations";
 import { getStage } from "src/utility/getStage";
 
 const STAGE = getStage(window.location.host);
@@ -19,7 +20,11 @@ type Props = {
 };
 
 const C3Provider: React.FC<Props> = ({ children }) => {
-  const { mutate, mutateAsync, data: token } = useSaasUserToken();
+  const {
+    mutate,
+    mutateAsync,
+    data: token,
+  } = useMutation(authenticationMutations.saasUserToken());
   const organizationId = window.clientConfig?.organizationId;
   const clusterId = window.clientConfig?.clusterId;
 

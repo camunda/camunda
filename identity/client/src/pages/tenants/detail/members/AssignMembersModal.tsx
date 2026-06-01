@@ -8,10 +8,11 @@
 
 import { FC, useCallback, useEffect, useState } from "react";
 import { Tag } from "@carbon/react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { UseEntityModalCustomProps } from "src/components/modal";
-import { useAssignTenantMember } from "src/utility/api/membership/hooks";
+import { membershipMutations } from "src/utility/api/membership/mutations";
 import useTranslate from "src/utility/localization";
-import { useSearchUsers } from "src/utility/api/users/hooks";
+import { userQueries } from "src/utility/api/users/queries";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import styled from "styled-components";
 import DropdownSearch from "src/components/form/DropdownSearch";
@@ -46,9 +47,12 @@ const AssignMembersModal: FC<
     isLoading: loading,
     refetch: reload,
     error,
-  } = useSearchUsers(search);
+  } = useQuery(userQueries.search(search));
 
-  const { mutateAsync: callAssignUser } = useAssignTenantMember();
+  const qc = useQueryClient();
+  const { mutateAsync: callAssignUser } = useMutation(
+    membershipMutations.assignTenantMember(qc),
+  );
 
   const unassignedFilter = useCallback(
     ({ username }: User) =>

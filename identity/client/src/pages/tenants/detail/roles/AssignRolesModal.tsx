@@ -9,9 +9,10 @@
 import { FC, useCallback, useEffect, useState } from "react";
 import { Tag } from "@carbon/react";
 import { UseEntityModalCustomProps } from "src/components/modal";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import useTranslate from "src/utility/localization";
-import { useSearchRoles } from "src/utility/api/roles/hooks";
-import { useAssignTenantRole } from "src/utility/api/tenants/hooks";
+import { roleQueries } from "src/utility/api/roles/queries";
+import { tenantMutations } from "src/utility/api/tenants/mutations";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import styled from "styled-components";
 import DropdownSearch from "src/components/form/DropdownSearch";
@@ -46,9 +47,12 @@ const AssignRolesModal: FC<
     isLoading: loading,
     refetch: reload,
     error,
-  } = useSearchRoles(search);
+  } = useQuery(roleQueries.search(search));
 
-  const { mutateAsync: callAssignRole } = useAssignTenantRole();
+  const qc = useQueryClient();
+  const { mutateAsync: callAssignRole } = useMutation(
+    tenantMutations.assignRole(qc),
+  );
 
   const unassignedFilter = useCallback(
     ({ roleId }: Role) =>

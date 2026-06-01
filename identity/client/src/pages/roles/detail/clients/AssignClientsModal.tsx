@@ -7,9 +7,10 @@
  */
 
 import { FC, useEffect, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import useTranslate from "src/utility/localization";
 import FormModal from "src/components/modal/FormModal";
-import { useAssignRoleClient } from "src/utility/api/roles/hooks";
+import { roleMutations } from "src/utility/api/roles/mutations";
 import TextField from "src/components/form/TextField";
 import { UseEntityModalProps } from "src/components/modal";
 import type { Role, TenantClient } from "@camunda/camunda-api-zod-schemas/8.10";
@@ -22,7 +23,10 @@ const AssignClientsModal: FC<UseEntityModalProps<Role["roleId"]>> = ({
 }) => {
   const { t, Translate } = useTranslate("roles");
   const [clientId, setClientId] = useState<TenantClient["clientId"]>("");
-  const { mutate, isPending: loadingAssignClient } = useAssignRoleClient();
+  const qc = useQueryClient();
+  const { mutate, isPending: loadingAssignClient } = useMutation(
+    roleMutations.assignClient(qc),
+  );
 
   const canSubmit = roleId && clientId.length;
 

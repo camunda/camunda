@@ -10,7 +10,8 @@ import { FC } from "react";
 import { Edit, TrashCan } from "@carbon/react/icons";
 import useTranslate from "src/utility/localization";
 import { usePagination } from "src/utility/api";
-import { useSearchMappingRules } from "src/utility/api/mapping-rules/hooks";
+import { useQuery } from "@tanstack/react-query";
+import { mappingRuleQueries } from "src/utility/api/mapping-rules/queries";
 import Page, { PageHeader } from "src/components/layout/Page";
 import EntityList from "src/components/entityList";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
@@ -30,7 +31,7 @@ const List: FC = () => {
     isLoading: loading,
     isSuccess: success,
     refetch: reload,
-  } = useSearchMappingRules(pageParams);
+  } = useQuery(mappingRuleQueries.search(pageParams));
 
   const [addMappingRule, addMappingRuleModal] = useModal(AddModal, noop);
   const [editMappingRule, editMappingRuleModal] = useEntityModal(

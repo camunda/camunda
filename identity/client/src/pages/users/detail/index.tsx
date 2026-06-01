@@ -8,8 +8,9 @@
 
 import { FC } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import useTranslate from "src/utility/localization";
-import { useUserDetails } from "src/utility/api/users/hooks";
+import { userQueries } from "src/utility/api/users/queries";
 import NotFound from "src/pages/not-found";
 import { OverflowMenu, OverflowMenuItem, Section } from "@carbon/react";
 import { StackPage } from "src/components/layout/Page";
@@ -26,7 +27,9 @@ const Details: FC = () => {
   const { t } = useTranslate("users");
   const { id = "", tab = "details" } = useParams<{ id: string; tab: string }>();
   const navigate = useNavigate();
-  const { data: userSearchResults, isLoading: loading } = useUserDetails(id);
+  const { data: userSearchResults, isLoading: loading } = useQuery(
+    userQueries.detail(id),
+  );
   const [editUser, editUserModal] = useEntityModal(EditModal, () => {});
   const [deleteUser, deleteUserModal] = useEntityModal(DeleteModal, () =>
     navigate("..", { replace: true }),

@@ -9,9 +9,10 @@
 import { FC } from "react";
 import { C3EmptyState } from "@camunda/camunda-composite-components";
 import { TrashCan } from "@carbon/react/icons";
+import { useQuery } from "@tanstack/react-query";
 import useTranslate from "src/utility/localization";
 import { usePagination } from "src/utility/api";
-import { useGroupRoles } from "src/utility/api/groups/hooks";
+import { groupQueries } from "src/utility/api/groups/queries";
 import EntityList from "src/components/entityList";
 import { useEntityModal } from "src/components/modal";
 import DeleteModal from "src/pages/groups/detail/roles/DeleteModal";
@@ -32,7 +33,7 @@ const Roles: FC<RolesProps> = ({ groupId }) => {
     isLoading: loading,
     isSuccess: success,
     refetch: reload,
-  } = useGroupRoles(groupId, pageParams);
+  } = useQuery(groupQueries.roles(groupId, pageParams));
 
   const isRolesListEmpty = !roles || roles.items?.length === 0;
 

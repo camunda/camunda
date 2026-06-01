@@ -13,7 +13,8 @@ import {
   UseEntityModalCustomProps,
 } from "src/components/modal";
 import { useNotifications } from "src/components/notifications";
-import { useUnassignRoleMember } from "src/utility/api/membership/hooks";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { membershipMutations } from "src/utility/api/membership/mutations";
 import type { User } from "@camunda/camunda-api-zod-schemas/8.10";
 
 type RemoveRoleMemberModalProps = UseEntityModalCustomProps<
@@ -33,7 +34,10 @@ const DeleteModal: FC<RemoveRoleMemberModalProps> = ({
   const { t, Translate } = useTranslate("roles");
   const { enqueueNotification } = useNotifications();
 
-  const { mutate, isPending: loading } = useUnassignRoleMember();
+  const qc = useQueryClient();
+  const { mutate, isPending: loading } = useMutation(
+    membershipMutations.unassignRoleMember(qc),
+  );
 
   const handleSubmit = () => {
     if (roleId && user) {

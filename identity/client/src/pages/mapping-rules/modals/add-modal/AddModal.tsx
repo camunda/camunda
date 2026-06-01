@@ -12,7 +12,8 @@ import TextField from "src/components/form/TextField";
 import useTranslate from "src/utility/localization";
 import { FormModal, UseModalProps } from "src/components/modal";
 import { useNotifications } from "src/components/notifications";
-import { useCreateMappingRule } from "src/utility/api/mapping-rules/hooks";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { mappingRuleMutations } from "src/utility/api/mapping-rules/mutations";
 import {
   CustomStack,
   EqualSignContainer,
@@ -35,7 +36,12 @@ export const AddMappingRuleModal: FC<UseModalProps> = ({
 }) => {
   const { t } = useTranslate("mappingRules");
   const { enqueueNotification } = useNotifications();
-  const { mutate, isPending: loading, error } = useCreateMappingRule();
+  const qc = useQueryClient();
+  const {
+    mutate,
+    isPending: loading,
+    error,
+  } = useMutation(mappingRuleMutations.create(qc));
 
   const {
     control,

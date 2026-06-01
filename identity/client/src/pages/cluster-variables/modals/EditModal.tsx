@@ -12,7 +12,8 @@ import { FormModal, UseEntityModalProps } from "src/components/modal";
 import useTranslate from "src/utility/localization";
 import { beautify, isValid } from "src/utility/components/editor/jsonUtils.ts";
 import JSONEditor from "src/components/form/JSONEditor.tsx";
-import { useUpdateClusterVariable } from "src/utility/api/cluster-variables/hooks";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { clusterVariableMutations } from "src/utility/api/cluster-variables/mutations";
 import { useNotifications } from "src/components/notifications";
 import type { ClusterVariable } from "@camunda/camunda-api-zod-schemas/8.10";
 
@@ -28,7 +29,12 @@ const EditModal: FC<UseEntityModalProps<ClusterVariable>> = ({
 }) => {
   const { t } = useTranslate("clusterVariables");
   const { enqueueNotification } = useNotifications();
-  const { mutate, isPending: loading, error } = useUpdateClusterVariable();
+  const qc = useQueryClient();
+  const {
+    mutate,
+    isPending: loading,
+    error,
+  } = useMutation(clusterVariableMutations.update(qc));
   const initialValue = beautify(clusterVariable.value);
 
   const {

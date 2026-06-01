@@ -9,9 +9,10 @@
 import { FC } from "react";
 import { C3EmptyState } from "@camunda/camunda-composite-components";
 import { TrashCan } from "@carbon/react/icons";
+import { useQuery } from "@tanstack/react-query";
 import useTranslate from "src/utility/localization";
 import { usePagination } from "src/utility/api";
-import { useGroupMappingRules } from "src/utility/api/groups/hooks";
+import { groupQueries } from "src/utility/api/groups/queries";
 import EntityList from "src/components/entityList";
 import { useEntityModal } from "src/components/modal";
 import DeleteModal from "src/pages/groups/detail/mapping-rules/DeleteModal";
@@ -32,7 +33,7 @@ const MappingRules: FC<MappingRulesProps> = ({ groupId }) => {
     isLoading: loading,
     isSuccess: success,
     refetch: reload,
-  } = useGroupMappingRules(groupId, pageParams);
+  } = useQuery(groupQueries.mappingRules(groupId, pageParams));
 
   const isMappingRulesListEmpty =
     !mappingRules || mappingRules.items?.length === 0;

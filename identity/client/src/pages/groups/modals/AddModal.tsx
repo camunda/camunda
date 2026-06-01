@@ -8,17 +8,23 @@
 
 import { FC } from "react";
 import { Controller, useForm } from "react-hook-form";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { FormModal, UseModalProps } from "src/components/modal";
 import useTranslate from "src/utility/localization";
 import TextField from "src/components/form/TextField";
-import { useCreateGroup } from "src/utility/api/groups/hooks";
+import { groupMutations } from "src/utility/api/groups/mutations";
 import { useNotifications } from "src/components/notifications";
 import { getIdPattern, isValidId } from "src/utility/validate.ts";
 
 const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
   const { t } = useTranslate("groups");
   const { enqueueNotification } = useNotifications();
-  const { mutate, isPending: loading, error } = useCreateGroup();
+  const qc = useQueryClient();
+  const {
+    mutate,
+    isPending: loading,
+    error,
+  } = useMutation(groupMutations.create(qc));
   type FormData = {
     groupId: string;
     groupName: string;

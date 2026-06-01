@@ -9,9 +9,11 @@
 import { FC, useCallback, useEffect, useState } from "react";
 import { Tag } from "@carbon/react";
 import { UseEntityModalCustomProps } from "src/components/modal";
-import { useAssignRoleMember } from "src/utility/api/membership/hooks";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { membershipMutations } from "src/utility/api/membership/mutations";
 import useTranslate from "src/utility/localization";
-import { useSearchUsers } from "src/utility/api/users/hooks";
+import { useQuery } from "@tanstack/react-query";
+import { userQueries } from "src/utility/api/users/queries";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import styled from "styled-components";
 import DropdownSearch from "src/components/form/DropdownSearch";
@@ -46,9 +48,12 @@ const AssignMembersModal: FC<
     isLoading: loading,
     refetch: reload,
     error,
-  } = useSearchUsers(search);
+  } = useQuery(userQueries.search(search));
 
-  const { mutateAsync: callAssignUser } = useAssignRoleMember();
+  const qc = useQueryClient();
+  const { mutateAsync: callAssignUser } = useMutation(
+    membershipMutations.assignRoleMember(qc),
+  );
 
   const unassignedFilter = useCallback(
     ({ username }: User) =>

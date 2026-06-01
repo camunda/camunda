@@ -9,8 +9,9 @@
 import { FC } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { OverflowMenu, OverflowMenuItem, Section, Stack } from "@carbon/react";
+import { useQuery } from "@tanstack/react-query";
 import useTranslate from "src/utility/localization";
-import { useGroupDetails } from "src/utility/api/groups/hooks";
+import { groupQueries } from "src/utility/api/groups/queries";
 import NotFound from "src/pages/not-found";
 import { Breadcrumbs, StackPage } from "src/components/layout/Page";
 import { DetailPageHeaderFallback } from "src/components/fallbacks";
@@ -38,7 +39,7 @@ const Details: FC<DetailsProps> = ({ isOIDC }) => {
     tab: string;
   }>();
 
-  const { data: group, isLoading: loading } = useGroupDetails(id);
+  const { data: group, isLoading: loading } = useQuery(groupQueries.detail(id));
   const [editGroup, editModal] = useEntityModal(EditModal, () => {});
   const [deleteGroup, deleteModal] = useEntityModal(DeleteModal, () =>
     navigate("..", { replace: true }),

@@ -6,10 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { useLicense as useLicenseQuery } from "src/utility/api/headers/hooks";
+import { useQuery } from "@tanstack/react-query";
+import { licenseQueries } from "src/utility/api/headers/queries";
 import type { License } from "@camunda/camunda-api-zod-schemas/8.10";
 
 export function useLicense(): License | null {
-  const { data } = useLicenseQuery();
+  const { data } = useQuery(licenseQueries.current());
   return data ?? null;
 }

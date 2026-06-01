@@ -7,13 +7,14 @@
  */
 
 import { FC } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   DeleteModal as Modal,
   UseEntityModalProps,
 } from "src/components/modal";
 import useTranslate from "src/utility/localization";
 import { useNotifications } from "src/components/notifications";
-import { useDeleteGroup } from "src/utility/api/groups/hooks";
+import { groupMutations } from "src/utility/api/groups/mutations";
 import type { Group } from "@camunda/camunda-api-zod-schemas/8.10";
 
 const DeleteModal: FC<UseEntityModalProps<Group>> = ({
@@ -25,7 +26,8 @@ const DeleteModal: FC<UseEntityModalProps<Group>> = ({
   const { t, Translate } = useTranslate("groups");
   const { enqueueNotification } = useNotifications();
 
-  const { mutate, isPending: loading } = useDeleteGroup();
+  const qc = useQueryClient();
+  const { mutate, isPending: loading } = useMutation(groupMutations.delete(qc));
 
   const handleSubmit = () => {
     mutate(

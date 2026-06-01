@@ -8,9 +8,10 @@
 
 import { FC } from "react";
 import { Edit, TrashCan } from "@carbon/react/icons";
+import { useQuery } from "@tanstack/react-query";
 import useTranslate from "src/utility/localization";
 import { usePagination } from "src/utility/api";
-import { useSearchGroups } from "src/utility/api/groups/hooks";
+import { groupQueries } from "src/utility/api/groups/queries";
 import Page, { PageHeader } from "src/components/layout/Page";
 import EntityList from "src/components/entityList";
 import { useNavigate } from "react-router-dom";
@@ -33,7 +34,7 @@ const List: FC = () => {
     isLoading: loading,
     isSuccess: success,
     refetch: reload,
-  } = useSearchGroups(pageParams);
+  } = useQuery(groupQueries.search(pageParams));
 
   const [addGroup, addModal] = useModal(AddModal, noop);
   const [updateGroup, editModal] = useEntityModal(EditModal, noop);

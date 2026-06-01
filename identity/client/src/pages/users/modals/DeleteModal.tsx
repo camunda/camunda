@@ -7,12 +7,13 @@
  */
 
 import { FC } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import useTranslate from "src/utility/localization";
 import {
   DeleteModal as Modal,
   UseEntityModalProps,
 } from "src/components/modal";
-import { useDeleteUser } from "src/utility/api/users/hooks";
+import { userMutations } from "src/utility/api/users/mutations";
 import { useNotifications } from "src/components/notifications";
 import type { User } from "@camunda/camunda-api-zod-schemas/8.10";
 
@@ -24,7 +25,8 @@ const DeleteModal: FC<UseEntityModalProps<User>> = ({
 }) => {
   const { t, Translate } = useTranslate("users");
   const { enqueueNotification } = useNotifications();
-  const { mutate, isPending: loading } = useDeleteUser();
+  const qc = useQueryClient();
+  const { mutate, isPending: loading } = useMutation(userMutations.delete(qc));
 
   const handleSubmit = () => {
     mutate(

@@ -9,9 +9,10 @@
 import { FC, useMemo, useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { TabsVertical, Tab, TabPanels } from "@carbon/react";
+import { useQuery } from "@tanstack/react-query";
 import useTranslate from "src/utility/localization";
 import { usePagination } from "src/utility/api";
-import { useSearchAuthorizations } from "src/utility/api/authorizations/hooks";
+import { authorizationQueries } from "src/utility/api/authorizations/queries";
 import Page, { PageHeader } from "src/components/layout/Page";
 import {
   ALL_RESOURCE_TYPES,
@@ -77,10 +78,12 @@ const List: FC<ListProps> = ({
     isLoading: loading,
     isSuccess: success,
     refetch: reload,
-  } = useSearchAuthorizations({
-    ...pageParams,
-    filter: { resourceType: activeTab },
-  });
+  } = useQuery(
+    authorizationQueries.search({
+      ...pageParams,
+      filter: { resourceType: activeTab },
+    }),
+  );
   const paginationProps = {
     page: { ...page, ...data?.page },
     ...paginationCallbacks,

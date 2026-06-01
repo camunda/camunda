@@ -7,13 +7,14 @@
  */
 
 import { FC } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import useTranslate from "src/utility/localization";
 import {
   DeleteModal as Modal,
   UseEntityModalCustomProps,
 } from "src/components/modal";
 import { useNotifications } from "src/components/notifications";
-import { useUnassignTenantMember } from "src/utility/api/membership/hooks";
+import { membershipMutations } from "src/utility/api/membership/mutations";
 import type { User } from "@camunda/camunda-api-zod-schemas/8.10";
 
 type RemoveTenantMemberModalProps = UseEntityModalCustomProps<
@@ -33,7 +34,10 @@ const DeleteModal: FC<RemoveTenantMemberModalProps> = ({
   const { t, Translate } = useTranslate("tenants");
   const { enqueueNotification } = useNotifications();
 
-  const { mutate, isPending: loading } = useUnassignTenantMember();
+  const qc = useQueryClient();
+  const { mutate, isPending: loading } = useMutation(
+    membershipMutations.unassignTenantMember(qc),
+  );
 
   const handleSubmit = () => {
     if (tenant && user) {

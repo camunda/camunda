@@ -8,11 +8,12 @@
 
 import { FC, useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import TextField from "src/components/form/TextField";
 import useTranslate from "src/utility/localization";
 import Divider from "src/components/form/Divider";
 import { FormModal, UseEntityModalProps } from "src/components/modal";
-import { useUpdateUser } from "src/utility/api/users/hooks";
+import { userMutations } from "src/utility/api/users/mutations";
 import { isValidEmail } from "src/utility/validate";
 import type { User } from "@camunda/camunda-api-zod-schemas/8.10";
 
@@ -28,7 +29,12 @@ const EditModal: FC<UseEntityModalProps<User>> = ({
   entity,
 }) => {
   const { t } = useTranslate("users");
-  const { mutate, isPending: loading, error } = useUpdateUser();
+  const qc = useQueryClient();
+  const {
+    mutate,
+    isPending: loading,
+    error,
+  } = useMutation(userMutations.update(qc));
 
   const {
     control,

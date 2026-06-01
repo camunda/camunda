@@ -8,10 +8,11 @@
 
 import { FC } from "react";
 import { Controller, useForm } from "react-hook-form";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { FormModal, UseModalProps } from "src/components/modal";
 import useTranslate from "src/utility/localization";
 import TextField from "src/components/form/TextField";
-import { useCreateRole } from "src/utility/api/roles/hooks";
+import { roleMutations } from "src/utility/api/roles/mutations";
 import { useNotifications } from "src/components/notifications";
 import { isValidId, getIdPattern } from "src/utility/validate";
 
@@ -24,7 +25,12 @@ type FormData = {
 const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
   const { t } = useTranslate("roles");
   const { enqueueNotification } = useNotifications();
-  const { mutate, isPending: loading, error } = useCreateRole();
+  const qc = useQueryClient();
+  const {
+    mutate,
+    isPending: loading,
+    error,
+  } = useMutation(roleMutations.create(qc));
 
   const { control, handleSubmit } = useForm<FormData>({
     defaultValues: {

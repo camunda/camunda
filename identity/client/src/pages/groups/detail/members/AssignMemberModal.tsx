@@ -7,8 +7,9 @@
  */
 
 import { FC, useEffect, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { UseEntityModalCustomProps } from "src/components/modal";
-import { useAssignGroupMember } from "src/utility/api/membership/hooks";
+import { membershipMutations } from "src/utility/api/membership/mutations";
 import useTranslate from "src/utility/localization";
 import FormModal from "src/components/modal/FormModal";
 import TextField from "src/components/form/TextField";
@@ -26,7 +27,10 @@ const AssignMemberModal: FC<
   const { t, Translate } = useTranslate("groups");
   const { enqueueNotification } = useNotifications();
   const [username, setUsername] = useState("");
-  const { mutate, isPending: loadingAssignUser } = useAssignGroupMember();
+  const qc = useQueryClient();
+  const { mutate, isPending: loadingAssignUser } = useMutation(
+    membershipMutations.assignGroupMember(qc),
+  );
 
   const canSubmit = groupId && username;
 

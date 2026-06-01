@@ -12,7 +12,8 @@ import { Stack } from "@carbon/react";
 import TextField from "src/components/form/TextField";
 import useTranslate from "src/utility/localization";
 import { FormModal, UseEntityModalProps } from "src/components/modal";
-import { useUpdateMappingRule } from "src/utility/api/mapping-rules/hooks";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { mappingRuleMutations } from "src/utility/api/mapping-rules/mutations";
 import {
   CustomStack,
   EqualSignContainer,
@@ -29,7 +30,12 @@ const EditModal: FC<UseEntityModalProps<MappingRule>> = ({
 }) => {
   const { t } = useTranslate("mappingRules");
   const { enqueueNotification } = useNotifications();
-  const { mutate, isPending: loading, error } = useUpdateMappingRule();
+  const qc = useQueryClient();
+  const {
+    mutate,
+    isPending: loading,
+    error,
+  } = useMutation(mappingRuleMutations.update(qc));
   type FormData = Pick<
     MappingRule,
     "mappingRuleId" | "name" | "claimName" | "claimValue"

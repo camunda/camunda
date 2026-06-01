@@ -20,8 +20,9 @@ import {
 import { ArrowRight, InformationFilled } from "@carbon/react/icons";
 import { documentationHref } from "src/components/documentation";
 import TextField from "src/components/form/TextField";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import Modal, { FormModal, UseModalProps } from "src/components/modal";
-import { useCreateTenant } from "src/utility/api/tenants/hooks";
+import { tenantMutations } from "src/utility/api/tenants/mutations";
 import useTranslate from "src/utility/localization";
 import { isValidTenantId } from "src/utility/validate";
 import { InfoHint, RightAlignedButtonSet } from "src/pages/tenants/styled.ts";
@@ -72,7 +73,12 @@ const AddTenantModal: FC<AddTenantModalProps> = ({
     name: string;
     tenantId: string;
   } | null>(null);
-  const { mutate, isPending: loading, error } = useCreateTenant();
+  const qc = useQueryClient();
+  const {
+    mutate,
+    isPending: loading,
+    error,
+  } = useMutation(tenantMutations.create(qc));
 
   const { control, handleSubmit } = useForm<FormData>({
     defaultValues: {

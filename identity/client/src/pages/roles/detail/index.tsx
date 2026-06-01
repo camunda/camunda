@@ -9,8 +9,9 @@
 import { FC } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { OverflowMenu, OverflowMenuItem, Section, Stack } from "@carbon/react";
+import { useQuery } from "@tanstack/react-query";
 import useTranslate from "src/utility/localization";
-import { useRoleDetails } from "src/utility/api/roles/hooks";
+import { roleQueries } from "src/utility/api/roles/queries";
 import NotFound from "src/pages/not-found";
 import { Breadcrumbs, StackPage } from "src/components/layout/Page";
 import { DetailPageHeaderFallback } from "src/components/fallbacks";
@@ -44,7 +45,7 @@ const Details: FC<DetailsProps> = ({
     tab: string;
   }>();
 
-  const { data: role, isLoading: loading } = useRoleDetails(id);
+  const { data: role, isLoading: loading } = useQuery(roleQueries.detail(id));
 
   const [editRole, editModal] = useEntityModal(EditModal, () => {});
   const [deleteRole, deleteModal] = useEntityModal(DeleteModal, () =>
