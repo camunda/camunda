@@ -96,6 +96,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private final int partitionId;
   private final EventFilter positionsToSkipFilter;
   private final MeterRegistry meterRegistry;
+  private final String licenseKey;
   // When idle, exporter director is not exporting any records because no exporters are configured.
   // The actor is still running, but it is not actively doing any work.
   private boolean idle;
@@ -116,6 +117,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     logStream = Objects.requireNonNull(context.getLogStream());
     partitionId = logStream.getPartitionId();
     clusterId = context.getClusterId();
+    licenseKey = context.getLicenseKey();
     meterRegistry = context.getMeterRegistry();
     clock = context.getClock();
     containers =
@@ -126,6 +128,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
                         descriptorEntry.getKey(),
                         partitionId,
                         clusterId,
+                        licenseKey,
                         descriptorEntry.getValue(),
                         meterRegistry,
                         clock,
@@ -349,6 +352,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
             descriptor,
             partitionId,
             clusterId,
+            licenseKey,
             initializationInfo,
             meterRegistry,
             clock,

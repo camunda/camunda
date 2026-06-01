@@ -76,6 +76,7 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -96,12 +97,15 @@ public class BrokerBasedPropertiesOverride {
   private static final String RDBMS_EXPORTER_CLASS_NAME = "io.camunda.exporter.rdbms.RdbmsExporter";
   private final UnifiedConfiguration unifiedConfiguration;
   private final LegacyBrokerBasedProperties legacyBrokerBasedProperties;
+  private final String licenseKey;
 
   public BrokerBasedPropertiesOverride(
       final UnifiedConfiguration unifiedConfiguration,
-      final LegacyBrokerBasedProperties properties) {
+      final LegacyBrokerBasedProperties properties,
+      @Value("${camunda.license.key:}") final String licenseKey) {
     this.unifiedConfiguration = unifiedConfiguration;
     legacyBrokerBasedProperties = properties;
+    this.licenseKey = licenseKey;
   }
 
   @Bean
@@ -140,6 +144,8 @@ public class BrokerBasedPropertiesOverride {
     populateFromFlowControl(override);
 
     populateFromSecurity(override);
+
+    override.setLicenseKey(licenseKey);
 
     return override;
   }

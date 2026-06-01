@@ -22,13 +22,13 @@ import org.slf4j.Logger;
 
 public final class ExporterContext implements Context, AutoCloseable {
 
-  private static final String LICENSE_KEY_ENV_VAR = "CAMUNDA_LICENSE_KEY";
   private static final RecordFilter DEFAULT_FILTER = new AcceptAllRecordsFilter();
 
   private final Logger logger;
   private final Configuration configuration;
   private final int partitionId;
   private final String clusterId;
+  private final String licenseKey;
   private final CompositeMeterRegistry meterRegistry;
   private final InstantSource clock;
 
@@ -39,12 +39,14 @@ public final class ExporterContext implements Context, AutoCloseable {
       final Configuration configuration,
       final int partitionId,
       final String clusterId,
+      final String licenseKey,
       final MeterRegistry meterRegistry,
       final InstantSource clock) {
     this.logger = logger;
     this.configuration = configuration;
     this.partitionId = partitionId;
     this.clusterId = clusterId;
+    this.licenseKey = licenseKey;
     this.meterRegistry =
         MicrometerUtil.wrap(
             meterRegistry,
@@ -85,8 +87,7 @@ public final class ExporterContext implements Context, AutoCloseable {
 
   @Override
   public String getLicenseKey() {
-    final var fromEnv = System.getenv(LICENSE_KEY_ENV_VAR);
-    return fromEnv != null ? fromEnv : System.getProperty(LICENSE_KEY_ENV_VAR);
+    return licenseKey;
   }
 
   public RecordFilter getFilter() {

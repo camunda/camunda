@@ -126,6 +126,7 @@ public final class ClusterChangeExecutorImpl implements ClusterChangeExecutor {
             descriptor.getConfiguration(),
             1,
             "",
+            exporterRepository.getLicenseKey(),
             meterRegistry,
             StreamClock.system());
 

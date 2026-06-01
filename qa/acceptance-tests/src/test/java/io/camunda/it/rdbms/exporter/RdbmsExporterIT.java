@@ -167,6 +167,7 @@ class RdbmsExporterIT {
             new ExporterConfiguration("foo", Map.of("queueSize", 0)),
             1,
             "",
+            "",
             Mockito.mock(MeterRegistry.class, Mockito.RETURNS_DEEP_STUBS),
             null));
     exporter.open(controller);
@@ -1485,6 +1486,7 @@ class RdbmsExporterIT {
             null,
             new ExporterConfiguration("interval-flush-test", Map.of("queueSize", 100)),
             2,
+            "",
             "",
             Mockito.mock(MeterRegistry.class, Mockito.RETURNS_DEEP_STUBS),
             null));

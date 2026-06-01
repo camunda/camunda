@@ -34,6 +34,7 @@ public class ExporterContextTest {
         new ExporterTestConfiguration<>(exporterId, Collections.emptyMap()),
         partitionId,
         "",
+        null,
         underlying,
         FIXED_INSTANT_SOURCE);
   }

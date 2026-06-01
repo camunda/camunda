@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.system.configuration;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.broker.exporter.debug.DebugLogExporter;
 import io.camunda.zeebe.broker.exporter.metrics.MetricsExporter;
 import io.camunda.zeebe.broker.system.configuration.backpressure.LimitCfg;
@@ -32,6 +33,8 @@ public class BrokerCfg {
   private ExperimentalCfg experimental = new ExperimentalCfg();
 
   private boolean executionMetricsExporterEnabled;
+
+  @JsonIgnore private String licenseKey;
 
   public void init(final String brokerBase) {
     init(brokerBase, new Environment());
@@ -158,6 +161,14 @@ public class BrokerCfg {
 
   public void setExperimental(final ExperimentalCfg experimental) {
     this.experimental = experimental;
+  }
+
+  public String getLicenseKey() {
+    return licenseKey;
+  }
+
+  public void setLicenseKey(final String licenseKey) {
+    this.licenseKey = licenseKey;
   }
 
   @Override

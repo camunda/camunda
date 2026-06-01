@@ -106,6 +106,7 @@ public final class ExporterContainerRuntime implements CloseableSilently {
             descriptor,
             partitionId,
             "",
+            null,
             initializationInfo,
             meterRegistry,
             InstantSource.system(),
