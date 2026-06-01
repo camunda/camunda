@@ -613,7 +613,7 @@
 		"vite": "8.0.14",
 		"vite-plugin-circular-dependency": "0.6.0",
 		"vite-plugin-dts": "5.0.1",
-		"zod": "^4.3.6"
+		"zod": "^4.4.3"
 	},
 	"peerDependencies": {
 		"zod": "^3.25.0 || ^4.0.0"
