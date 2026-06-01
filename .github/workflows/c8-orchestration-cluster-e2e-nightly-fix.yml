@@ -320,11 +320,11 @@ jobs:
               echo "Resolved branch from PR: $branch"
             fi
 
-            e2e_run_url=""
-            api_run_url=""
+            on_demand_run_url=""
 
-            if [ "$pr_has_e2e" = "true" ] && [ -n "$branch" ] && [ "$branch" != "null" ]; then
-              echo "Triggering E2E on-demand run for branch $branch..."
+            if ([ "$pr_has_e2e" = "true" ] || [ "$pr_has_api" = "true" ]) && [ -n "$branch" ] && [ "$branch" != "null" ]; then
+              echo "Triggering on-demand run for branch $branch..."
+              dispatched_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
               gh workflow run c8-orchestration-cluster-e2e-tests-on-demand.yml \
                 --repo "$REPO" --ref "$branch" -f branch="$branch"
               # Poll up to 90s for the new run to appear
@@ -332,44 +332,28 @@ jobs:
                 sleep 5
                 run_id=$(gh run list \
                   --workflow c8-orchestration-cluster-e2e-tests-on-demand.yml \
-                  --repo "$REPO" --branch "$branch" --limit 1 \
-                  --json databaseId,createdAt --jq '.[0].databaseId' || echo "")
+                  --repo "$REPO" --branch "$branch" --limit 5 \
+                  --json databaseId,createdAt \
+                  | jq -r --arg t "$dispatched_at" \
+                    '[.[] | select(.createdAt >= $t)] | first | .databaseId // ""' || echo "")
                 if [ -n "$run_id" ] && [ "$run_id" != "null" ]; then
-                  e2e_run_url="https://github.com/${REPO}/actions/runs/${run_id}"
-                  echo "E2E on-demand run: $e2e_run_url"
+                  on_demand_run_url="https://github.com/${REPO}/actions/runs/${run_id}"
+                  echo "On-demand run: $on_demand_run_url"
                   break
                 fi
               done
             fi
 
-            if [ "$pr_has_api" = "true" ] && [ -n "$branch" ] && [ "$branch" != "null" ]; then
-              echo "Triggering API on-demand run for branch $branch..."
-              gh workflow run c8-orchestration-cluster-e2e-api-test-branch-on-demand.yml \
-                --repo "$REPO" --ref "$branch" -f branch="$branch"
-              for _ in $(seq 1 18); do
-                sleep 5
-                run_id=$(gh run list \
-                  --workflow c8-orchestration-cluster-e2e-api-test-branch-on-demand.yml \
-                  --repo "$REPO" --branch "$branch" --limit 1 \
-                  --json databaseId,createdAt --jq '.[0].databaseId' || echo "")
-                if [ -n "$run_id" ] && [ "$run_id" != "null" ]; then
-                  api_run_url="https://github.com/${REPO}/actions/runs/${run_id}"
-                  echo "API on-demand run: $api_run_url"
-                  break
-                fi
-              done
-            fi
-
-            # Patch PR body with the verification links (idempotent: strip any
+            # Patch PR body with the verification link (idempotent: strip any
             # existing "## On-demand verification runs" section before appending
             # so re-runs do not accumulate duplicate blocks)
             current_body=$(gh pr view "$pr_number" --repo "$REPO" --json body --jq '.body')
             base_body=$(printf '%s' "$current_body" | sed '/^## On-demand verification runs/,$d' | sed 's/[[:space:]]*$//')
-            verification_block=$'\n\n## On-demand verification runs\n'
-            [ -n "$e2e_run_url" ] && verification_block+="- E2E: ${e2e_run_url}"$'\n'
-            [ -n "$api_run_url" ] && verification_block+="- API: ${api_run_url}"$'\n'
-            new_body="${base_body}${verification_block}"
-            printf '%s' "$new_body" | gh pr edit "$pr_number" --repo "$REPO" --body-file - || true
+            if [ -n "$on_demand_run_url" ]; then
+              verification_block=$'\n\n## On-demand verification runs\n'"- ${on_demand_run_url}"$'\n'
+              new_body="${base_body}${verification_block}"
+              printf '%s' "$new_body" | gh pr edit "$pr_number" --repo "$REPO" --body-file - || true
+            fi
           done
 
       - name: Re-label PRs (idempotent)
@@ -443,9 +427,12 @@ jobs:
 
                 echo "### Tests covered"
                 echo ""
-                echo "| PR | E2E | API |"
-                echo "|----|-----|-----|"
-                jq -r '.prs[] | "| #\(.number) | \(if .has_e2e then ":white_check_mark:" else ":heavy_minus_sign:" end) | \(if .has_api then ":white_check_mark:" else ":heavy_minus_sign:" end) |"' \
+                echo "| PR | Types |"
+                echo "|----|-------|"
+                jq -r '.prs[] |
+                  (.has_e2e // ((.tests_fixed // []) | map(select(.test_type == "e2e")) | length > 0)) as $e2e |
+                  (.has_api // ((.tests_fixed // []) | map(select(.test_type == "api")) | length > 0)) as $api |
+                  "| #\(.number) | \([$e2e | if . then "E2E" else empty end, $api | if . then "API" else empty end] | join(", ")) |"' \
                   /tmp/fix-meta.json
               fi
             fi
