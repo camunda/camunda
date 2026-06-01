@@ -140,18 +140,32 @@ public class Starter implements CommandLineRunner {
     final ScheduledFuture<?> scheduledTask =
         scheduleProcessInstanceCreation(executorService, countDownLatch);
 
-    try {
-      countDownLatch.await();
-    } catch (final InterruptedException e) {
-      LOG.error("Awaiting of count down latch was interrupted.", e);
-    }
-
-    runFinished.set(1);
-    LOG.info(
-        "Starter finished. Total process instance start requests submitted: {}",
-        processInstancesStartedCounter == null ? 0 : (long) processInstancesStartedCounter.count());
-    scheduledTask.cancel(true);
-    shutdown();
+    // Returning from this CommandLineRunner lets Spring publish ApplicationReadyEvent, which sets
+    // ReadinessState.ACCEPTING_TRAFFIC (health UP). Broker connect + deploy above are finite and
+    // stay on this thread so readiness only flips once the starter can actually create instances
+    // (mirrors Worker's @PostConstruct). The creation loop keeps running on executorService; this
+    // watcher awaits the stop signal (duration-limit) and finalizes.
+    final Thread watcher =
+        new Thread(
+            () -> {
+              try {
+                countDownLatch.await();
+              } catch (final InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return;
+              }
+              runFinished.set(1);
+              LOG.info(
+                  "Starter finished. Total process instance start requests submitted: {}",
+                  processInstancesStartedCounter == null
+                      ? 0
+                      : (long) processInstancesStartedCounter.count());
+              scheduledTask.cancel(true);
+              shutdown();
+            },
+            "starter-completion-watcher");
+    watcher.setDaemon(true);
+    watcher.start();
   }
 
   @PreDestroy
