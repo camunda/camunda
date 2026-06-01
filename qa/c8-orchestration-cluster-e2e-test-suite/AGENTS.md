@@ -468,12 +468,24 @@ Always write `/tmp/fix-meta.json` before stopping:
 }
 ```
 
-**`branch` is mandatory and must never be `null`.** Set it to the exact
-`headRefName` of the PR you opened:
+All four fields — `number`, `branch`, `has_e2e`, `has_api` — are **mandatory**.
+Extra fields (e.g. `url`, `title`, `tests_fixed`) are allowed but do not replace
+these four.
+
+**`branch`** must never be `null`. Set it to the exact `headRefName` of the PR:
 ```bash
 gh pr view <number> --repo camunda/camunda --json headRefName --jq '.headRefName'
 ```
 
-Use `{"prs": []}` if no PR was opened (regardless of reason). The calling
-workflow uses `has_e2e` and `has_api` to decide which on-demand verification
-workflows to trigger.
+**`has_e2e` / `has_api`** — set based on the `test_type` of every test you fixed:
+- Any fixed test with `test_type: "e2e"` → `"has_e2e": true`
+- Any fixed test with `test_type: "api"` → `"has_api": true`
+- Both can be `true` when a PR covers mixed failures.
+
+The calling workflow uses these flags to trigger the matching on-demand
+verification run (`c8-orchestration-cluster-e2e-tests-on-demand.yml` for E2E,
+`c8-orchestration-cluster-e2e-api-test-branch-on-demand.yml` for API).
+**If both are `false`, no verification run is triggered and the fix is never
+validated automatically.**
+
+Use `{"prs": []}` if no PR was opened (regardless of reason).

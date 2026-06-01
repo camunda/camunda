@@ -291,8 +291,17 @@ jobs:
           jq -c '.prs[]' /tmp/fix-meta.json | while read -r pr_obj; do
             pr_number=$(echo "$pr_obj" | jq -r '.number')
             branch=$(echo    "$pr_obj" | jq -r '.branch // empty')
-            pr_has_e2e=$(echo "$pr_obj" | jq -r '.has_e2e // false')
-            pr_has_api=$(echo "$pr_obj" | jq -r '.has_api // false')
+            # has_e2e / has_api: use explicit fields when present, otherwise
+            # infer from tests_fixed so a missing field never silently skips
+            # verification (Claude sometimes omits these despite AGENTS.md).
+            pr_has_e2e=$(echo "$pr_obj" | jq -r '
+              if .has_e2e != null then .has_e2e
+              elif (.tests_fixed // []) | map(select(.test_type == "e2e")) | length > 0 then true
+              else false end')
+            pr_has_api=$(echo "$pr_obj" | jq -r '
+              if .has_api != null then .has_api
+              elif (.tests_fixed // []) | map(select(.test_type == "api")) | length > 0 then true
+              else false end')
 
             if [ -z "$branch" ] || [ "$branch" = "null" ]; then
               echo "::warning::fix-meta.json has null/empty branch for PR #$pr_number — skipping on-demand trigger, patching body only"
