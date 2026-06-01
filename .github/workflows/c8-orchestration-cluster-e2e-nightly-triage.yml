@@ -345,7 +345,8 @@ jobs:
                   # Check the actual conclusion from run_ids
                   conclusion=$(gh run view "$run_id" --repo "$REPO" --json conclusion --jq '.conclusion' 2>/dev/null || echo "unknown")
                   if [ "$conclusion" = "failure" ]; then
-                    infra_failures="${infra_failures}\n| ${version} | ${test_type} | [${run_id}](https://github.com/${REPO}/actions/runs/${run_id}) |"
+                    row="| ${version} | ${test_type} | [${run_id}](https://github.com/${REPO}/actions/runs/${run_id}) |"
+                    infra_failures="${infra_failures:+${infra_failures}$'\n'}${row}"
                   fi
                 fi
               done < <(jq -r 'to_entries[] | "\(.key)=\(.value)"' /tmp/run_ids.json)
@@ -357,7 +358,7 @@ jobs:
                 echo ""
                 echo "| Version | Type | Run |"
                 echo "|---------|------|-----|"
-                printf '%b\n' "$infra_failures"
+                echo "$infra_failures"
                 echo ""
               fi
             fi
