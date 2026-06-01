@@ -276,7 +276,12 @@ jobs:
       - name: Trigger on-demand verification runs and patch PR body
         if: always()
         env:
-          GH_TOKEN: ${{ steps.secrets.outputs.GH_TOKEN }}
+          # Use GITHUB_TOKEN (built-in) here, not the Vault GH_TOKEN.
+          # The Vault token lacks read:org, which causes gh CLI to fail its
+          # GraphQL auth check and never reach the workflow dispatch REST call.
+          # The job already has actions:write and pull-requests:write so the
+          # built-in token is sufficient for triggering workflows and patching PR bodies.
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO:     ${{ github.repository }}
           HAS_E2E:  ${{ steps.scope.outputs.has_e2e }}
           HAS_API:  ${{ steps.scope.outputs.has_api }}
