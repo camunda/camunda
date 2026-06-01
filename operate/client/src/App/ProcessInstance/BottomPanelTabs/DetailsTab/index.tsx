@@ -252,6 +252,18 @@ const DetailsTab: React.FC = () => {
       });
     }
 
+    if (job?.priority !== undefined) {
+      baseRows.push({
+        key: 'job-priority',
+        columns: [
+          {cellContent: 'Job Priority'},
+          {
+            cellContent: <span data-testid="job-priority">{job.priority}</span>,
+          },
+        ],
+      });
+    }
+
     if (job?.type !== undefined) {
       baseRows.push({
         key: 'job-type',
