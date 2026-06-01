@@ -509,7 +509,7 @@ test.describe.parallel('Multi-Instance Execution Listeners — beforeAll', () =>
         await closeAll(workers);
       });
 
-      test('E2E-10: beforeAll fires once; start/end ELs fire per inner instance (×3); process completes with 10 total jobs', async ({
+      test('E2E-10: beforeAll fires once; start/end ELs per inner instance (×3); 10 total jobs', async ({
         request,
       }) => {
         const instance = await createSingleInstance(processId, 1);
@@ -614,7 +614,7 @@ test.describe.parallel('Multi-Instance Execution Listeners — beforeAll', () =>
         });
       });
 
-      test('/v2/jobs/search returns 200 for all types after a start EL fails (FAILED state, retries > 0)', async ({
+      test('search returns 200 for all types when start EL fails (FAILED, retries > 0)', async ({
         request,
       }) => {
         const instance = await createSingleInstance(processId, 1);
