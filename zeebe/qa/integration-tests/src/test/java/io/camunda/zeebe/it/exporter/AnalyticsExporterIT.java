@@ -60,6 +60,9 @@ final class AnalyticsExporterIT {
                           logs:
                             receivers: [otlp]
                             exporters: [debug]
+                          metrics:
+                            receivers: [otlp]
+                            exporters: [debug]
                       """),
               "/etc/otelcol-contrib/config.yaml")
           .withLogConsumer(frame -> COLLECTOR_LOGS.add(frame.getUtf8String()))
@@ -124,6 +127,16 @@ final class AnalyticsExporterIT {
                   .anyMatch(line -> line.contains("camunda.cluster.id: Str(e2e-test-cluster)"));
               assertThat(COLLECTOR_LOGS)
                   .anyMatch(line -> line.contains("camunda.partition.id: Int(1)"));
+
+              // pre-aggregated metric counter
+              assertThat(COLLECTOR_LOGS)
+                  .anyMatch(line -> line.contains("Name: camunda.process_instance.created"));
+
+              // companion gauge with export window metadata
+              assertThat(COLLECTOR_LOGS)
+                  .anyMatch(line -> line.contains("Name: camunda.metric.export_window"));
+              assertThat(COLLECTOR_LOGS)
+                  .anyMatch(line -> line.contains("camunda.metric.sequence_number: Int("));
             });
   }
 }
