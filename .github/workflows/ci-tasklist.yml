@@ -292,7 +292,7 @@ jobs:
       TEST_TYPE: visual-regression
       TEST_OWNER: Core Features
     container:
-      image: mcr.microsoft.com/playwright:v1.59.1
+      image: mcr.microsoft.com/playwright:v1.60.0
       options: --user 1001:1000
     defaults:
       run:
@@ -340,7 +340,7 @@ jobs:
       TEST_TYPE: Tool
       TEST_OWNER: Core Features
     container:
-      image: mcr.microsoft.com/playwright:v1.59.1
+      image: mcr.microsoft.com/playwright:v1.60.0
       options: --user 1001:1000
     defaults:
       run:
