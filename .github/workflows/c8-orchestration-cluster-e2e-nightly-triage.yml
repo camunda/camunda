@@ -467,7 +467,7 @@ jobs:
                 --workflow c8-orchestration-cluster-e2e-nightly-fix.yml \
                 --repo "$REPO" --branch "${FIX_AGENT_REF}" --limit 5 \
                 --json databaseId,createdAt \
-                --jq --arg t "$dispatched_at" \
+                | jq -r --arg t "$dispatched_at" \
                   '[.[] | select(.createdAt >= $t)] | first | .databaseId // ""' || echo "")
               if [ -n "$fix_run_id" ] && [ "$fix_run_id" != "null" ]; then
                 echo "Fix agent run for $version: https://github.com/${REPO}/actions/runs/${fix_run_id}"
