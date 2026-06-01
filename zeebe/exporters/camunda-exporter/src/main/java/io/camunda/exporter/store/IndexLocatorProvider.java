@@ -8,7 +8,10 @@
 package io.camunda.exporter.store;
 
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.value.OrdinalKeyBased;
 
 public interface IndexLocatorProvider {
   IndexLocator createIndexLocator(Record<?> record);
+
+  IndexLocator createIndexLocator(OrdinalKeyBased ordinalKeyBased);
 }

@@ -97,7 +97,7 @@ public final class ExporterBatchWriter {
 
   private CachedEntity createCachedEntity(
       final Record<?> record, final ExportHandler handler, final String id, final long length) {
-    final var indexLocator = indexLocatorProvider.createIndexLocator(record);
+    final IndexLocator indexLocator = handler.createIndexLocator(indexLocatorProvider, record, id);
     return new CachedEntity(handler.createNewEntity(id), indexLocator, length);
   }
 

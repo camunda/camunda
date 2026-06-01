@@ -10,6 +10,7 @@ package io.camunda.exporter.handlers;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.store.IndexLocator;
+import io.camunda.exporter.store.IndexLocatorProvider;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
@@ -59,6 +60,11 @@ public interface ExportHandler<T extends ExporterEntity<T>, R extends RecordValu
    * @return the new entity
    */
   T createNewEntity(String id);
+
+  default IndexLocator createIndexLocator(
+      final IndexLocatorProvider indexLocatorProvider, final Record<R> record, final String id) {
+    return indexLocatorProvider.createIndexLocator(record);
+  }
 
   /**
    * Updates the entity from the given record

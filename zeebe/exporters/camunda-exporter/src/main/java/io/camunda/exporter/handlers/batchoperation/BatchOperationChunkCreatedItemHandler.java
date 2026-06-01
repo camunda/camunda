@@ -12,6 +12,7 @@ import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.store.IndexLocator;
+import io.camunda.exporter.store.IndexLocatorProvider;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationState;
 import io.camunda.webapps.schema.entities.operation.OperationType;
@@ -72,6 +73,19 @@ public class BatchOperationChunkCreatedItemHandler
   @Override
   public OperationEntity createNewEntity(final String id) {
     return new OperationEntity().setId(id);
+  }
+
+  @Override
+  public IndexLocator createIndexLocator(
+      final IndexLocatorProvider indexLocatorProvider,
+      final Record<BatchOperationChunkRecordValue> record,
+      final String id) {
+    final var item =
+        record.getValue().getItems().stream()
+            .filter(i -> i.getItemKey() == extractItemKey(id))
+            .findFirst()
+            .orElseThrow();
+    return indexLocatorProvider.createIndexLocator(item);
   }
 
   @Override
