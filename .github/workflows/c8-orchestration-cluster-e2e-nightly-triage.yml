@@ -58,6 +58,7 @@ jobs:
       dispatches:    ${{ steps.group.outputs.dispatches }}
       slack_ts:      ${{ steps.slack.outputs.ts }}
       slack_channel: ${{ steps.slack.outputs.channel }}
+      slack_base_text: ${{ steps.slack.outputs.base_text }}
 
     steps:
       - name: Import Vault secrets
@@ -111,6 +112,7 @@ jobs:
           run_ids_map=/tmp/run_ids.json
           : > "$all_failures"
           echo '{}' > "$run_ids_map"
+          echo '[]' > /tmp/failed_runs.json
 
           for entry in "${SCOPE[@]}"; do
             IFS='|' read -r workflow_file version test_type <<< "$entry"
@@ -148,6 +150,21 @@ jobs:
               echo "  not failed — no failures to extract"
               continue
             fi
+
+            # Record this failed run for the Slack summary
+            case "$test_type" in
+              e2e)       display_type="E2E" ;;
+              api_es)    display_type="API (ES)" ;;
+              api_rdbms) display_type="API (RDBMS)" ;;
+              *)         display_type="${test_type}" ;;
+            esac
+            run_title="Nightly ${display_type} — ${version}"
+            run_url="https://github.com/${REPO}/actions/runs/${run_id}"
+            jq --arg v "$version" --arg t "$test_type" --arg r "$run_id" \
+               --arg title "$run_title" --arg url "$run_url" \
+               '. += [{"version":$v,"test_type":$t,"run_id":$r,"title":$title,"url":$url}]' \
+               /tmp/failed_runs.json > /tmp/failed_runs.json.tmp
+            mv /tmp/failed_runs.json.tmp /tmp/failed_runs.json
 
             # Build the list of json-report artifact patterns to download
             declare -a patterns=()
@@ -393,33 +410,63 @@ jobs:
         env:
           SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.secrets.outputs.SLACK_BOT_USER_OAUTH_TOKEN }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
 
           date_str=$(date -u +%Y-%m-%d)
-          count=$(jq 'length' /tmp/failures_normalized.json 2>/dev/null || echo 0)
+          total_runs=$(jq 'length' /tmp/run_ids.json 2>/dev/null || echo 0)
+          failed_count=$(jq 'length' /tmp/failed_runs.json 2>/dev/null || echo 0)
           dispatches=$(jq 'length' /tmp/dispatches.json 2>/dev/null || echo 0)
 
-          text=":mag: *C8 Orchestration Cluster Nightly Triage — ${date_str}*"$'\n'
+          # Stats line
+          if [ "$total_runs" -gt 0 ]; then
+            passed_count=$(( total_runs - failed_count ))
+            pass_pct=$(( 100 * passed_count / total_runs ))
+            fail_pct=$(( 100 * failed_count / total_runs ))
+            stats_line=":bar_chart: *${total_runs} nightly runs — :white_check_mark: ${passed_count} passed (${pass_pct}%) | :x: ${failed_count} failed (${fail_pct}%)*"
+          else
+            stats_line=":bar_chart: *No nightly runs found*"
+          fi
 
-          if [ "$count" -gt 0 ]; then
-            text="${text}"$'\n'"*Failed tests by version:*"
-            while IFS= read -r line; do
-              version=$(echo "$line" | jq -r '.version')
-              n=$(echo "$line"       | jq -r '.count')
-              types=$(echo "$line"   | jq -r '.types')
-              text="${text}"$'\n'"• \`${version}\` — ${n} failed test(s) (${types})"
-            done < <(jq -c 'sort_by(.version) | group_by(.version)[] | {version: .[0].version, count: length, types: ([.[].test_type] | unique | join(", "))}' \
-                      /tmp/failures_normalized.json)
+          # Failing runs list (title + test count or infra label)
+          failing_list=""
+          if [ "$failed_count" -gt 0 ]; then
+            while IFS= read -r run; do
+              rtitle=$(echo "$run" | jq -r '.title')
+              rurl=$(echo "$run"   | jq -r '.url')
+              rv=$(echo "$run"     | jq -r '.version')
+              rt=$(echo "$run"     | jq -r '.test_type')
+              # api_es and api_rdbms both map to test_type "api" in failures_normalized
+              test_count=$(jq --arg v "$rv" --arg t "$rt" '[.[] | select(
+                .version == $v and (
+                  (.test_type == "e2e"  and $t == "e2e") or
+                  (.test_type == "api"  and ($t == "api_es" or $t == "api_rdbms"))
+                ))] | length' /tmp/failures_normalized.json 2>/dev/null || echo 0)
+              if [ "$test_count" -gt 0 ]; then
+                failing_list="${failing_list}"$'\n'"  :x: <${rurl}|${rtitle}> — ${test_count} test failure(s)"
+              else
+                failing_list="${failing_list}"$'\n'"  :x: <${rurl}|${rtitle}> — infra failure"
+              fi
+            done < <(jq -c '.[]' /tmp/failed_runs.json)
+          fi
+
+          # Build base text (reused by dispatch job for chat.update)
+          header=":mag: *C8 Orchestration Cluster Nightly Triage — ${date_str}*"
+          base_text="${header}"$'\n'"${stats_line}"
+          [ -n "$failing_list" ] && base_text="${base_text}"$'\n\n'"*Failing runs:*${failing_list}"
+
+          # Append dispatching status
+          if [ "$failed_count" -gt 0 ]; then
             if [ "$dispatches" -gt 0 ]; then
-              text="${text}"$'\n\n'":hourglass_flowing_sand: Dispatching ${dispatches} fix agent(s)..."
+              dispatch_status=":hourglass_flowing_sand: Dispatching ${dispatches} fix agent(s)..."
             else
-              text="${text}"$'\n\n'":information_source: No fix agents dispatched (open PRs already cover all failing versions)."
+              dispatch_status=":information_source: No fix agents dispatched (open PRs already exist)."
             fi
           else
-            text="${text}"$'\n'":white_check_mark: No test failures found — all nightly runs passed."
+            dispatch_status=":white_check_mark: All nightly runs passed."
           fi
-          text="${text}"$'\n\n'"<${RUN_URL}|Triage run ↗>"
+          text="${base_text}"$'\n\n'"${dispatch_status}"$'\n\n'"<${RUN_URL}|Triage run ↗>"
 
           payload=$(jq -nc --arg channel 'c8-orchestration-cluster-e2e-test-results' --arg text "$text" \
             '{channel: $channel, text: $text, mrkdwn: true}')
@@ -432,6 +479,13 @@ jobs:
           channel=$(echo "$response" | jq -r '.channel // ""')
           echo "ts=${ts}"           >> "$GITHUB_OUTPUT"
           echo "channel=${channel}" >> "$GITHUB_OUTPUT"
+          # Store base_text so dispatch job can append agent links and call chat.update
+          {
+            echo "base_text<<__EOF__"
+            printf '%s' "$base_text"
+            echo ""
+            echo "__EOF__"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Upload triage artifacts
         if: always()
@@ -443,6 +497,7 @@ jobs:
             /tmp/failures_normalized.json
             /tmp/dispatches.json
             /tmp/run_ids.json
+            /tmp/failed_runs.json
           retention-days: 14
           if-no-files-found: warn
 
@@ -558,50 +613,34 @@ jobs:
         if: always() && needs.triage.outputs.slack_ts != ''
         env:
           SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.secrets.outputs.SLACK_BOT_USER_OAUTH_TOKEN }}
-          SLACK_TS:      ${{ needs.triage.outputs.slack_ts }}
-          SLACK_CHANNEL: ${{ needs.triage.outputs.slack_channel }}
-          REPO:          ${{ github.repository }}
-          RUN_URL:       ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          SLACK_TS:        ${{ needs.triage.outputs.slack_ts }}
+          SLACK_CHANNEL:   ${{ needs.triage.outputs.slack_channel }}
+          SLACK_BASE_TEXT: ${{ needs.triage.outputs.slack_base_text }}
+          REPO:            ${{ github.repository }}
+          RUN_URL:         ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           set -euo pipefail
-
-          date_str=$(date -u +%Y-%m-%d)
           dispatches=$(jq 'length' /tmp/fix_agent_runs.json 2>/dev/null || echo 0)
 
-          text=":mag: *C8 Orchestration Cluster Nightly Triage — ${date_str}*"$'\n'
-
-          # Failing test summary
-          count=$(jq 'length' /tmp/failures_normalized.json 2>/dev/null || echo 0)
-          if [ "$count" -gt 0 ]; then
-            text="${text}"$'\n'"*Failed tests by version:*"
-            while IFS= read -r line; do
-              version=$(echo "$line" | jq -r '.version')
-              n=$(echo "$line"       | jq -r '.count')
-              types=$(echo "$line"   | jq -r '.types')
-              text="${text}"$'\n'"• \`${version}\` — ${n} failed test(s) (${types})"
-            done < <(jq -c 'sort_by(.version) | group_by(.version)[] | {version: .[0].version, count: length, types: ([.[].test_type] | unique | join(", "))}' \
-                      /tmp/failures_normalized.json)
-          else
-            text="${text}"$'\n'":white_check_mark: No test failures found."
-          fi
-
-          # Fix agent dispatch summary
+          # Build dispatch block
           if [ "$dispatches" -gt 0 ]; then
-            text="${text}"$'\n\n'":robot_face: *Fix agents dispatched: ${dispatches}*"
+            dispatch_line=":robot_face: *Fix agents dispatched: ${dispatches}*"
+            agent_list=""
             while IFS= read -r entry; do
               version=$(echo "$entry" | jq -r '.version')
               run_id=$(echo "$entry"  | jq -r '.run_id // ""')
               if [ -n "$run_id" ] && [ "$run_id" != "null" ]; then
-                text="${text}"$'\n'"  • \`${version}\` — <https://github.com/${REPO}/actions/runs/${run_id}|agent run ↗>"
+                agent_list="${agent_list}"$'\n'"  • \`${version}\` — <https://github.com/${REPO}/actions/runs/${run_id}|agent run ↗>"
               else
-                text="${text}"$'\n'"  • \`${version}\` — agent run pending"
+                agent_list="${agent_list}"$'\n'"  • \`${version}\` — agent run pending"
               fi
             done < <(jq -c '.[]' /tmp/fix_agent_runs.json)
+            dispatch_block="${dispatch_line}${agent_list}"
           else
-            text="${text}"$'\n\n'":information_source: No fix agents dispatched."
+            dispatch_block=":information_source: No fix agents dispatched."
           fi
 
-          text="${text}"$'\n\n'"<${RUN_URL}|Triage run ↗>"
+          text="${SLACK_BASE_TEXT}"$'\n\n'"${dispatch_block}"$'\n\n'"<${RUN_URL}|Triage run ↗>"
 
           payload=$(jq -nc \
             --arg channel "$SLACK_CHANNEL" \
