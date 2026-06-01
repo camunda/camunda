@@ -17,7 +17,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
-import static io.camunda.authentication.config.OidcAuthenticationConfigurationRepository.REGISTRATION_ID;
+import static io.camunda.security.spring.oidc.OidcAuthenticationConfigurationRepository.REGISTRATION_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.client.BasicCredentials;
