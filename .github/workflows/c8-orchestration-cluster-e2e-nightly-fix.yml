@@ -415,8 +415,9 @@ jobs:
                 echo "### Tests fixed"
                 echo ""
                 jq -r '.prs[] | .tests_fixed[]? |
-                  "- `\(.file // "")` — \(.test_name // "")"' \
-                  /tmp/fix-meta.json
+                  if type == "object" then "- `\(.file // "")` — \(.test_name // "")"
+                  else "- \(.)" end' \
+                  /tmp/fix-meta.json || true
               fi
             fi
 
