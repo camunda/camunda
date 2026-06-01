@@ -57,6 +57,7 @@ import io.camunda.db.rdbms.read.service.UsageMetricsDbReader;
 import io.camunda.db.rdbms.read.service.UserDbReader;
 import io.camunda.db.rdbms.read.service.UserTaskDbReader;
 import io.camunda.db.rdbms.read.service.VariableDbReader;
+import io.camunda.db.rdbms.read.service.WaitStateDbReader;
 import io.camunda.db.rdbms.sql.AgentInstanceMapper;
 import io.camunda.db.rdbms.sql.AuditLogMapper;
 import io.camunda.db.rdbms.sql.AuthorizationMapper;
@@ -90,6 +91,7 @@ import io.camunda.db.rdbms.sql.UsageMetricTUMapper;
 import io.camunda.db.rdbms.sql.UserMapper;
 import io.camunda.db.rdbms.sql.UserTaskMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
+import io.camunda.db.rdbms.sql.WaitStateMapper;
 import io.camunda.db.rdbms.write.RdbmsMapperBundle;
 import io.camunda.db.rdbms.write.RdbmsWriterFactory;
 import io.camunda.db.rdbms.write.queue.TransactionRunner;
@@ -139,6 +141,11 @@ public class RdbmsConfiguration {
   public ClusterVariableDbReader clusterVariableRdbmsReader(
       final ClusterVariableMapper clusterVariableMapper, final RdbmsReaderConfig readerConfig) {
     return new ClusterVariableDbReader(clusterVariableMapper, readerConfig);
+  }
+
+  @Bean
+  public WaitStateDbReader waitStateRdbmsReader(final WaitStateMapper waitStateMapper) {
+    return new WaitStateDbReader(waitStateMapper);
   }
 
   @Bean
@@ -443,6 +450,7 @@ public class RdbmsConfiguration {
       final AgentInstanceDbReader agentInstanceDbReader,
       final VariableDbReader variableReader,
       final ClusterVariableDbReader clusterVariableDbReader,
+      final WaitStateDbReader waitStateReader,
       final AuditLogDbReader auditLogReader,
       final AuthorizationDbReader authorizationReader,
       final DecisionDefinitionDbReader decisionDefinitionReader,
@@ -500,6 +508,7 @@ public class RdbmsConfiguration {
         processInstanceReader,
         variableReader,
         clusterVariableDbReader,
+        waitStateReader,
         roleReader,
         roleMemberReader,
         tenantReader,
