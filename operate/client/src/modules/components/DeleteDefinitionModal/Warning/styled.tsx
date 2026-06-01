@@ -7,11 +7,11 @@
  */
 
 import styled from 'styled-components';
-import {bodyShort01} from '@carbon/elements';
+import {styles} from '@carbon/elements';
 import {UnorderedList as BaseUnorderedList} from '@carbon/react';
 
 const UnorderedList = styled(BaseUnorderedList)`
-  ${bodyShort01};
+  ${styles.bodyShort01};
 `;
 
 export {UnorderedList};
