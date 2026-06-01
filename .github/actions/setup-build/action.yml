@@ -159,7 +159,7 @@ runs:
     if: >-
       steps.checks.outputs.is-fork != 'true' &&
       inputs.minimus == 'true'
-    uses: docker/login-action@v3
+    uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
     with:
       registry: reg.mini.dev
       username: minimus
