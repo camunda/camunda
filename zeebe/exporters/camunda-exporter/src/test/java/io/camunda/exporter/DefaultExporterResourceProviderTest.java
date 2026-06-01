@@ -156,6 +156,36 @@ public class DefaultExporterResourceProviderTest {
                 handlersExcludingAuditLog.stream().map(ExportHandler::getClass).distinct().count());
   }
 
+  // TODO: enable with #54996
+  //  @Test
+  //  void shouldNotAddWaitStateHandlersWhenDisabled() {
+  //    // given
+  //    final var config = new ExporterConfiguration();
+  //    config.getWaitState().setEnabled(false);
+  //
+  //    final var provider = new DefaultExporterResourceProvider();
+  //    provider.init(
+  //        config,
+  //        mock(ExporterEntityCacheProvider.class),
+  //        new ExporterTestContext(),
+  //        new ExporterMetadata(TestObjectMapper.objectMapper()),
+  //        TestObjectMapper.objectMapper());
+  //
+  //    // when / then
+  //    assertThat(
+  //            provider.getExportHandlers().stream()
+  //                .filter(WaitStateAddHandler.class::isInstance)
+  //                .toList())
+  //        .as("No WaitStateAddHandler should be registered when waitState is disabled")
+  //        .isEmpty();
+  //    assertThat(
+  //            provider.getExportHandlers().stream()
+  //                .filter(WaitStateRemoveHandler.class::isInstance)
+  //                .toList())
+  //        .as("No WaitStateRemoveHandler should be registered when waitState is disabled")
+  //        .isEmpty();
+  //  }
+
   @ParameterizedTest
   @MethodSource("expectedAuditLogTransformers")
   void shouldAddAuditLogHandlersFromAddAuditLogHandlersMethod(
@@ -297,7 +327,7 @@ public class DefaultExporterResourceProviderTest {
       final ExportHandler<?, ?> handler) {
     // For AuditLogHandler, extract RecordValue from the transformer instance, because the handler
     // itself uses generic RecordValue
-    if (handler instanceof AuditLogHandler<?> auditLogHandler) {
+    if (handler instanceof final AuditLogHandler<?> auditLogHandler) {
       return findRecordValueTypeParameterFromClass(auditLogHandler.getTransformer().getClass());
     }
 
