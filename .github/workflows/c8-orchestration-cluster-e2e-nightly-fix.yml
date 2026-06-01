@@ -381,15 +381,15 @@ jobs:
                   echo "**Reason:** ${reason}"
                 fi
               else
-                echo "### Decision: fix applied"
-                echo ""
+                # Print each PR as a prominent header so the link is the first thing visible
                 jq -r --arg repo "$REPO" '
                   .prs[] |
-                  # Derive owner/repo safely
                   (if .owner != null and .repo != null then "\(.owner)/\(.repo)"
                    elif (.url // "") | test("github.com/[^/]+/[^/]+") then (.url | capture("github.com/(?<r>[^/]+/[^/]+)/pull") | .r)
                    else $repo end) as $full_repo |
-                  "**[PR #\(.number)](https://github.com/\($full_repo)/pull/\(.number))** — `\(.branch)`"
+                  "### :white_check_mark: Decision: fix applied — [PR #\(.number)](https://github.com/\($full_repo)/pull/\(.number))",
+                  "",
+                  "**Branch:** `\(.branch)`"
                 ' /tmp/fix-meta.json
                 echo ""
 
@@ -452,21 +452,23 @@ jobs:
           [ -f /tmp/fix-meta.json ] && prs_json=$(jq -c '.prs // []' /tmp/fix-meta.json)
           pr_count=$(echo "$prs_json" | jq 'length')
 
-          if [ "$JOB_STATUS" = "failure" ]; then
-            icon=":x:"; summary="Agent failed (no fix applied)"
-          elif [ "$pr_count" -eq 0 ]; then
-            icon=":information_source:"; summary="No PR opened — agent could not determine a fix"
-          else
+          # Check fix-meta.json first — if a PR was opened report it even when
+          # downstream steps (on-demand trigger, summary) failed.
+          if [ "$pr_count" -gt 0 ]; then
             icon=":white_check_mark:"
             pr_links=$(echo "$prs_json" | jq -r --arg repo "${{ github.repository }}" '
               .[] |
-              # use owner/repo if present, otherwise derive from url, else fall back to $repo
               (if .owner != null and .repo != null then "\(.owner)/\(.repo)"
                elif (.url // "") | test("github.com/[^/]+/[^/]+") then (.url | capture("github.com/(?<r>[^/]+/[^/]+)/pull") | .r)
                else $repo end) as $full_repo |
               "<https://github.com/\($full_repo)/pull/\(.number)|PR #\(.number)>"' \
               | tr '\n' '  ')
             summary="PR(s) opened: ${pr_links}"
+            [ "$JOB_STATUS" = "failure" ] && summary="${summary} _(post-processing failed — see run)_"
+          elif [ "$JOB_STATUS" = "failure" ]; then
+            icon=":x:"; summary="Agent failed (no fix applied)"
+          else
+            icon=":information_source:"; summary="No PR opened — agent could not determine a fix"
           fi
 
           text="${icon} *${VERSION}* fix agent — ${summary}\n<${RUN_URL}|Agent run ↗>"
