@@ -19,7 +19,7 @@ package io.camunda.zeebe.protocol.record.value;
 public interface WaitStateRelated {
 
   /**
-   * @return the key of the root process instance
+   * @return the key of the root process instance, or {@code -1L} if not set.
    */
   long getRootProcessInstanceKey();
 
