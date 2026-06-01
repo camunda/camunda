@@ -332,10 +332,6 @@ jobs:
             echo "## C8 Orchestration Cluster Nightly Triage"
             echo ""
 
-            # Build a set of versions that have test failures
-            versions_with_failures=$(jq -r '[.[].version] | unique | sort | .[]' \
-              /tmp/failures_normalized.json 2>/dev/null || true)
-
             # Failures per version
             count=$(jq 'length' /tmp/failures_normalized.json 2>/dev/null || echo 0)
             if [ "$count" -gt 0 ]; then
@@ -477,10 +473,9 @@ jobs:
           echo "$response" | jq '.'
           ts=$(echo "$response"      | jq -r '.ts      // ""')
           channel=$(echo "$response" | jq -r '.channel // ""')
-          echo "ts=${ts}"           >> "$GITHUB_OUTPUT"
-          echo "channel=${channel}" >> "$GITHUB_OUTPUT"
-          # Store base_text so dispatch job can append agent links and call chat.update
           {
+            echo "ts=${ts}"
+            echo "channel=${channel}"
             echo "base_text<<__EOF__"
             printf '%s' "$base_text"
             echo ""

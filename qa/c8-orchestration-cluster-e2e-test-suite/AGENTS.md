@@ -483,6 +483,7 @@ these six. **Never omit `owner` or `repo`** — the Slack step uses them to buil
 the PR link and will produce `github.com/null/null/pull/<n>` if they are absent.
 
 **`branch`** must never be `null`. Set it to the exact `headRefName` of the PR:
+
 ```bash
 gh pr view <number> --repo camunda/camunda --json headRefName --jq '.headRefName'
 ```
