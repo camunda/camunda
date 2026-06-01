@@ -280,3 +280,194 @@ test: add operate batch cancel assertion for RDBMS
 fix: retry flaky identity role assignment check
 ```
 
+## Nightly Fix Agent
+
+This section is read automatically by the Claude Code agent dispatched from
+`c8-orchestration-cluster-e2e-nightly-triage.yml`. It defines the agent's
+diagnosis steps and operating constraints.
+
+### Context the agent receives
+
+The triage workflow writes `/tmp/test_specs.json` before invoking the agent.
+Each entry is one failing test:
+
+```json
+{
+  "file": "tests/operate/processInstancesFilters.spec.ts",
+  "test_name": "Filter process instances by parent key, date range, and error message",
+  "error": "TimeoutError: locator.click: Timeout 10000ms exceeded.\n  - waiting for getByRole('menuitem', { name: 'Operation Id' })\n",
+  "test_type": "e2e",
+  "tasklist_mode": "v2"
+}
+```
+
+For API entries, `test_type` is `"api"` and `tasklist_mode` is absent;
+`database` is set (`"elasticsearch"` for ES nightlies, e.g. `"Postgres 17"`
+for RDBMS).
+
+`file` is **relative to this test suite** (`qa/c8-orchestration-cluster-e2e-test-suite/`).
+To read the test code, open
+`qa/c8-orchestration-cluster-e2e-test-suite/<file>`.
+
+The agent is also given the failing nightly run IDs via env vars:
+`E2E_RUN_ID`, `API_ES_RUN_ID`, `API_RDBMS_RUN_ID`. Empty string means that
+test type did not fail (or does not exist for this version).
+
+### Diagnosis steps
+
+**Step 1 — Download nightly artifacts.** Run this block as-is (env vars are
+already exported by the calling workflow):
+
+```bash
+mkdir -p /tmp/nightly-artifacts
+
+if [ "$HAS_E2E" = "true" ] && [ -n "$E2E_RUN_ID" ]; then
+  for mode in v1 v2; do
+    # 8.7 has no v2, main has no v1 — gh silently no-ops on missing patterns
+    gh run download "$E2E_RUN_ID" --repo "$REPO" \
+      --pattern "json-report-nightly-e2e-${SAFE_VERSION}-${mode}" \
+      --dir "/tmp/nightly-artifacts/e2e-${mode}" 2>/dev/null || true
+    gh run download "$E2E_RUN_ID" --repo "$REPO" \
+      --pattern "html-report-nightly-e2e-${SAFE_VERSION}-${mode}" \
+      --dir "/tmp/nightly-artifacts/e2e-${mode}-html" 2>/dev/null || true
+  done
+fi
+
+if [ "$HAS_API_ES" = "true" ] && [ -n "$API_ES_RUN_ID" ]; then
+  gh run download "$API_ES_RUN_ID" --repo "$REPO" \
+    --pattern "json-report-nightly-api-${SAFE_VERSION}" \
+    --dir /tmp/nightly-artifacts/api-es 2>/dev/null || true
+fi
+
+if [ "$HAS_API_RDBMS" = "true" ] && [ -n "$API_RDBMS_RUN_ID" ]; then
+  # Only download the DB-specific artifacts that have failing tests
+  jq -r '[.[] | select(.test_type == "api" and .database != null
+           and .database != "" and .database != "elasticsearch")
+           | .database] | unique[]' /tmp/test_specs.json | while read -r db; do
+    gh run download "$API_RDBMS_RUN_ID" --repo "$REPO" \
+      --pattern "json-report-nightly-api-rdbms-${SAFE_VERSION}-${db}" \
+      --dir "/tmp/nightly-artifacts/api-rdbms" 2>/dev/null || true
+  done
+fi
+```
+
+Resulting layout:
+
+```
+/tmp/nightly-artifacts/
+  e2e-v1/        json-report-nightly-e2e-<safe_version>-v1/results.json
+  e2e-v1-html/   html-report-nightly-e2e-<safe_version>-v1/...   ← contains screenshots
+  e2e-v2/        json-report-nightly-e2e-<safe_version>-v2/results.json
+  e2e-v2-html/   html-report-nightly-e2e-<safe_version>-v2/...
+  api-es/        json-report-nightly-api-<safe_version>/results.json
+  api-rdbms/     json-report-nightly-api-rdbms-<safe_version>-<db>/results.json
+```
+
+Screenshots from Playwright's HTML report live under
+`html-report/.../data/*.png`. You can read PNGs directly — use them as the
+primary signal for E2E diagnosis.
+
+**Step 2 — Read the test file.** Open
+`qa/c8-orchestration-cluster-e2e-test-suite/<file>` from the test spec.
+Read any imported page objects under
+`qa/c8-orchestration-cluster-e2e-test-suite/pages/` and helpers under
+`qa/c8-orchestration-cluster-e2e-test-suite/utils/`.
+
+**Step 3 — Form a hypothesis.** Match the screenshot and/or error message to
+a specific assertion or action. Typical patterns:
+
+- **Element not found within timeout** — the previous step did not finish
+  rendering. Add a `expect(...).toBeVisible()` or `waitFor({state: 'visible'})`
+  before the click. Do NOT use `page.waitForTimeout()` — it is banned.
+- **Stale element / re-render race** — wrap the action in a retry helper if
+  one exists in `utils/`, or split into smaller steps.
+- **Auth / cookie state lost between describes** — check `beforeEach` for a
+  missing `context.clearCookies()` or login step.
+- **API response shape change** — only a test-side fix is in scope if the
+  test was asserting on a field that legitimately moved/renamed. If the
+  endpoint regressed, this is a product bug — see Step 4.
+
+**Step 4 — Decide: fix or stop.**
+
+If the failure is **clearly a product bug** (e.g., a 500 from the server, a
+panel that never renders despite correct backend response, an authorization
+regression) and no test-side change is reasonable: write `{"prs":[]}` to
+`/tmp/fix-meta.json` and stop. Do not open a PR. Do not skip the test.
+
+If a minimal test-side fix exists, apply it.
+
+### Apply the fix
+
+1. The repo is already on the correct target branch (`stable/<version>` or
+   `main`). Verify with `git status`.
+2. Create a fix branch:
+   `git checkout -b fix/nightly-${VERSION}-<short-slug>`
+3. Edit files under `qa/c8-orchestration-cluster-e2e-test-suite/` only.
+   Touch page objects when the selector itself is wrong; touch utilities
+   only when multiple tests share the same root cause.
+4. Lint changed files:
+
+   ```bash
+   cd qa/c8-orchestration-cluster-e2e-test-suite
+   npx prettier --write <changed-files>
+   npx eslint <changed-files> --fix
+   ```
+
+   Fix any remaining eslint errors before committing.
+
+5. Commit with `test:` (NOT `fix:` — see above on Conventional Commits):
+   `git commit -m "test: <one-line description> (nightly ${VERSION})"`
+
+6. Push: `git push -u origin fix/nightly-${VERSION}-<slug>`
+
+7. Check for existing open PRs before opening a new one:
+
+   ```bash
+   gh pr list --repo camunda/camunda \
+     --search "is:open label:failing-test-fix" \
+     --json number,title,baseRefName,headRefName
+   ```
+
+   If an open PR targets the same `stable/<version>` for the same root
+   cause: comment on it with your additional diagnosis; do not open a
+   second PR.
+
+8. Open a draft PR targeting the same base branch you are on, label
+   `failing-test-fix`. Body must include:
+
+   - Root cause analysis
+   - List of fixed tests (file + name)
+   - Link to the failing nightly run(s)
+   - Link to the triage run
+
+### Constraints
+
+- **Allowed tools:** `gh`, `git`, `grep`, `rg`, `cat`, `find`, `jq`, `sed`, `awk`, `unzip`, `npx prettier`, `npx eslint`.
+- **Forbidden:** `make`, `mvn`, `./mvnw`, `docker`, `kubectl`, `helm`, `npm install`, `npm run build`, `npm run test`, `npx playwright test`. The fix agent does **not** execute tests — it fixes from artifact evidence only. Verification is delegated to the on-demand workflows triggered by the calling workflow.
+- **NO skipping — EVER:** `test.skip()`, `test.fixme()`, `test.only`, and all pending variants are banned. There are no exceptions, not even for confirmed product bugs. If you cannot fix in code, write `{"prs":[]}` and stop.
+- **Minimal diff:** no refactoring, no dependency bumps, no unrelated edits, no formatting sweeps on untouched files.
+- **PR title type must be `test:`** — commitlint rejects `fix:` for test-only changes (see Commit / PR Conventions above).
+- **One PR per version** — a single PR may fix multiple tests on the same `stable/<version>` branch, including a mix of API and E2E failures, but never crosses branch boundaries.
+
+### Result manifest
+
+Always write `/tmp/fix-meta.json` before stopping:
+
+```json
+{
+  "prs": [
+    {
+      "number": 1234,
+      "owner": "camunda",
+      "repo": "camunda",
+      "branch": "fix/nightly-8.9-operate-filter-wait",
+      "has_e2e": true,
+      "has_api": false
+    }
+  ]
+}
+```
+
+Use `{"prs": []}` if no PR was opened (regardless of reason). The calling
+workflow uses `has_e2e` and `has_api` to decide which on-demand verification
+workflows to trigger.
