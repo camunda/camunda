@@ -7,12 +7,11 @@
  */
 
 import styled from "styled-components";
-import { spacing02, spacing04, spacing06 } from "@carbon/elements";
 
 const spacingOptions = {
-  small: spacing02,
-  medium: spacing04,
-  large: spacing06,
+  small: "var(--cds-spacing-02)",
+  medium: "var(--cds-spacing-04)",
+  large: "var(--cds-spacing-06)",
   none: "0px",
 };
 

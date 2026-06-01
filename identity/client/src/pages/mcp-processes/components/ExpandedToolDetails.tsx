@@ -7,16 +7,16 @@
  */
 
 import { FC } from "react";
-import { heading01, spacing06 } from "@carbon/elements";
+import { styles } from "@carbon/elements";
 import styled from "styled-components";
 import useTranslate from "src/utility/localization";
 import type { McpProcessTool } from "../useMcpProcessTools";
 
 const SectionHeading = styled.h3`
-  font-size: ${heading01.fontSize};
-  font-weight: ${heading01.fontWeight};
-  line-height: ${heading01.lineHeight};
-  letter-spacing: ${heading01.letterSpacing};
+  font-size: ${styles.heading01.fontSize};
+  font-weight: ${styles.heading01.fontWeight};
+  line-height: ${styles.heading01.lineHeight};
+  letter-spacing: ${styles.heading01.letterSpacing};
 `;
 
 const SectionBody = styled.p`
@@ -30,7 +30,7 @@ const SectionBody = styled.p`
   }
 
   &:not(:last-child) {
-    margin-block-end: ${spacing06};
+    margin-block-end: var(--cds-spacing-06);
   }
 `;
 

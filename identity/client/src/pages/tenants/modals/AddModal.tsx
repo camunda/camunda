@@ -18,7 +18,6 @@ import {
   Stack,
 } from "@carbon/react";
 import { ArrowRight, InformationFilled } from "@carbon/react/icons";
-import { spacing06 } from "@carbon/elements";
 import { documentationHref } from "src/components/documentation";
 import TextField from "src/components/form/TextField";
 import Modal, { FormModal, UseModalProps } from "src/components/modal";
@@ -181,7 +180,7 @@ const AddTenantModal: FC<AddTenantModalProps> = ({
       onClose={onClose}
       onSubmit={handleSubmit(onSubmit)}
     >
-      <Stack orientation="vertical" gap={spacing06}>
+      <Stack orientation="vertical" gap="6">
         <Controller
           name="tenantId"
           control={control}

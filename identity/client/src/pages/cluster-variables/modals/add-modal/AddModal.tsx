@@ -13,7 +13,6 @@ import { RadioButton, RadioButtonGroup, Stack } from "@carbon/react";
 import { Controller, useForm } from "react-hook-form";
 import { useNotifications } from "src/components/notifications";
 import { FormModal, UseModalProps } from "src/components/modal";
-import { spacing06 } from "@carbon/elements";
 import useTranslate from "src/utility/localization";
 import { useApiCall } from "src/utility/api";
 import TextField from "src/components/form/TextField.tsx";
@@ -89,7 +88,7 @@ export const AddModal: FC<AddModalProps> = ({
       loadingDescription={t("creatingClusterVariable")}
       confirmLabel={t("createClusterVariable")}
     >
-      <Stack orientation="vertical" gap={spacing06}>
+      <Stack orientation="vertical" gap="6">
         <Controller
           name="name"
           control={control}

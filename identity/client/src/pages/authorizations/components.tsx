@@ -8,21 +8,15 @@
 
 import styled from "styled-components";
 import { TabListVertical, TabPanel } from "@carbon/react";
-import {
-  label02,
-  sizeSmall,
-  styles,
-  spacing06,
-  spacing08,
-} from "@carbon/elements";
+import { styles } from "@carbon/elements";
 
 export const TabsTitle = styled.p`
   position: relative;
-  top: ${spacing06};
-  font-size: ${label02.fontSize};
-  font-weight: ${label02.fontWeight};
-  letter-spacing: ${label02.letterSpacing};
-  line-height: ${label02.lineHeight};
+  top: var(--cds-spacing-06);
+  font-size: ${styles.label02.fontSize};
+  font-weight: ${styles.label02.fontWeight};
+  letter-spacing: ${styles.label02.letterSpacing};
+  line-height: ${styles.label02.lineHeight};
   color: var(--cds-text-secondary);
 `;
 
@@ -37,17 +31,17 @@ export const TabsContainer = styled.div`
 export const CustomTabListVertical = styled(TabListVertical)`
   // Tab selectors container
   &.cds--tabs--vertical {
-    top: ${spacing08};
+    top: var(--cds-spacing-08);
     background: var(--cds-layer);
     border: none;
     box-shadow: none;
-    padding-right: ${spacing06};
+    padding-right: var(--cds-spacing-06);
 
     // Tab selector
     .cds--tabs__nav-item {
       background: var(--cds-layer);
-      margin-right: ${spacing06};
-      height: ${sizeSmall};
+      margin-right: var(--cds-spacing-06);
+      height: var(--cds-spacing-07);
       border: none;
       box-shadow: none;
       font-weight: ${styles.headingCompact01.fontWeight};

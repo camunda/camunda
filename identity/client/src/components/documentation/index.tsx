@@ -7,7 +7,6 @@
  */
 
 import styled from "styled-components";
-import { spacing04 } from "@carbon/elements";
 import { Link as BaseLink } from "@carbon/react";
 import { FC, ReactNode } from "react";
 import useTranslate from "../../utility/localization";
@@ -15,7 +14,7 @@ import { useDocsUrl } from "./DocsUrlContext";
 import { Launch } from "@carbon/react/icons";
 
 export const DocumentationDescription = styled.p`
-  margin-top: ${spacing04};
+  margin-top: var(--cds-spacing-04);
   max-width: none;
   text-align: left;
 `;

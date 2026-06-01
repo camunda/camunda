@@ -8,17 +8,16 @@
 
 import styled from "styled-components";
 import { Stack, Button as BaseButton } from "@carbon/react";
-import { spacing04, spacing05, spacing07 } from "@carbon/elements";
 import Page from "src/components/layout/Page.tsx";
 
 const loginPageContentWidth = "25rem";
 
 export const LoginFormContainer = styled(Stack)<{ $hasError: boolean }>`
   flex-direction: column;
-  gap: ${spacing07};
+  gap: var(--cds-spacing-07);
   width: 100%;
-  padding-top: ${({ $hasError }) => ($hasError ? 0 : spacing07)};
-  padding-bottom: ${spacing07};
+  padding-top: ${({ $hasError }) => ($hasError ? 0 : "var(--cds-spacing-07)")};
+  padding-bottom: var(--cds-spacing-07);
 `;
 
 export const LoginPageContainer = styled(Page)`
@@ -34,17 +33,17 @@ export const Content = styled.div`
 `;
 
 export const Header = styled.div`
-  margin: ${spacing07};
+  margin: var(--cds-spacing-07);
   display: flex;
   flex-direction: column;
   align-items: center;
 
   h1 {
-    font-size: ${spacing07};
+    font-size: var(--cds-spacing-07);
   }
 
   img {
-    height: ${spacing07};
+    height: var(--cds-spacing-07);
   }
 `;
 
@@ -65,10 +64,10 @@ export const LicenseInfo = styled.div`
 export const CopyrightNotice = styled.div`
   position: absolute;
   text-align: center;
-  padding: ${spacing05};
+  padding: var(--cds-spacing-05);
   display: block;
   bottom: 0;
-  font-size: ${spacing04};
+  font-size: var(--cds-spacing-04);
 `;
 
 export const Button: typeof BaseButton = styled(BaseButton)`
