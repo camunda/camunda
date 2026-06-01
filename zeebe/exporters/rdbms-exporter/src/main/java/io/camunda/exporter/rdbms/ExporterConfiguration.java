@@ -15,6 +15,7 @@ import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogConfiguration;
 import io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration;
 import io.camunda.zeebe.exporter.common.historydeletion.HistoryDeletionConfiguration;
+import io.camunda.zeebe.exporter.common.waitstate.WaitStateConfiguration;
 import java.time.Duration;
 import java.time.InstantSource;
 import java.util.ArrayList;
@@ -29,6 +30,8 @@ public class ExporterConfiguration {
   // AuditLog
   private AuditLogConfiguration auditLog = new AuditLogConfiguration();
   private HistoryDeletionConfiguration historyDeletion = new HistoryDeletionConfiguration();
+  // WaitState
+  private WaitStateConfiguration waitState = new WaitStateConfiguration();
   private Duration flushInterval = DEFAULT_FLUSH_INTERVAL;
   private int queueSize = RdbmsWriterConfig.DEFAULT_QUEUE_SIZE;
   private int queueMemoryLimit = RdbmsWriterConfig.DEFAULT_QUEUE_MEMORY_LIMIT;
@@ -53,6 +56,14 @@ public class ExporterConfiguration {
 
   public void setAuditLog(final AuditLogConfiguration auditLog) {
     this.auditLog = auditLog;
+  }
+
+  public WaitStateConfiguration getWaitState() {
+    return waitState;
+  }
+
+  public void setWaitState(final WaitStateConfiguration waitState) {
+    this.waitState = waitState;
   }
 
   public HistoryDeletionConfiguration getHistoryDeletion() {
