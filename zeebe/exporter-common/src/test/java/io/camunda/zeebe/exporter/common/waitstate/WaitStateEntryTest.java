@@ -10,8 +10,15 @@ package io.camunda.zeebe.exporter.common.waitstate;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.exporter.common.waitstate.WaitStateEntry.WaitStateType;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.ImmutableJobRecordValue;
+import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
@@ -58,6 +65,47 @@ class WaitStateEntryTest {
     // then
     assertThat(entry.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     assertThat(entry.getDetails()).isEmpty();
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void shouldExtractWaitStateFieldsFromRecord() {
+    // given
+    final ProtocolFactory factory = new ProtocolFactory();
+    final JobRecordValue value =
+        ImmutableJobRecordValue.builder()
+            .from(factory.generateObject(JobRecordValue.class))
+            .withRootProcessInstanceKey(100L)
+            .withProcessInstanceKey(200L)
+            .withElementInstanceKey(300L)
+            .withElementId("task-1")
+            .withTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+            .build();
+    final Record<JobRecordValue> record =
+        (Record<JobRecordValue>)
+            (Record<?>)
+                factory.generateRecord(
+                    ValueType.JOB,
+                    r ->
+                        r.withRecordType(RecordType.EVENT)
+                            .withIntent(JobIntent.CREATED)
+                            .withValue(value));
+
+    // when
+    final var entry = WaitStateEntry.of(record);
+
+    // then — identity fields populated from WaitStateRelated
+    assertThat(entry.getRootProcessInstanceKey()).isEqualTo(100L);
+    assertThat(entry.getProcessInstanceKey()).isEqualTo(200L);
+    assertThat(entry.getElementInstanceKey()).isEqualTo(300L);
+    assertThat(entry.getElementId()).isEqualTo("task-1");
+    assertThat(entry.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    assertThat(entry.getPartitionId()).isEqualTo(record.getPartitionId());
+
+    // then — transformer-owned fields left unset
+    assertThat(entry.getElementType()).isNull();
+    assertThat(entry.getWaitStateType()).isNull();
+    assertThat(entry.getDetails()).isNull();
   }
 
   @Test
