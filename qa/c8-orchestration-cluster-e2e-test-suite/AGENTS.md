@@ -464,7 +464,10 @@ Always write `/tmp/fix-meta.json` before stopping:
       "has_e2e": true,
       "has_api": false,
       "root_cause": "One-sentence explanation of why the test was failing.",
-      "fix": "One-sentence description of what was changed and why it resolves the failure."
+      "fix": "One-sentence description of what was changed and why it resolves the failure.",
+      "tests_fixed": [
+        {"file": "tests/api/v2/...", "test_name": "...", "test_type": "api"}
+      ]
     }
   ]
 }

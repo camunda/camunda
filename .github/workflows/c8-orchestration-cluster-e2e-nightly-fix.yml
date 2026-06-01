@@ -301,17 +301,23 @@ jobs:
           jq -c '.prs[]' /tmp/fix-meta.json | while read -r pr_obj; do
             pr_number=$(echo "$pr_obj" | jq -r '.number')
             branch=$(echo    "$pr_obj" | jq -r '.branch // empty')
-            # has_e2e / has_api: use explicit fields when present, otherwise
-            # infer from tests_fixed so a missing field never silently skips
-            # verification (Claude sometimes omits these despite AGENTS.md).
+            # has_e2e / has_api: three-tier resolution so a missing or
+            # incomplete fix-meta.json never silently skips verification:
+            # 1. explicit has_e2e/has_api field in fix-meta.json
+            # 2. infer from tests_fixed[].test_type (Claude sometimes omits test_type)
+            # 3. fall back to HAS_E2E/HAS_API env vars from scope detection
+            #    (always correct — derived from the original test_specs.json)
             pr_has_e2e=$(echo "$pr_obj" | jq -r '
               if .has_e2e != null then .has_e2e
               elif (.tests_fixed // []) | map(select(.test_type == "e2e")) | length > 0 then true
               else false end')
+            [ "$pr_has_e2e" = "false" ] && [ "${HAS_E2E:-false}" = "true" ] && pr_has_e2e="true"
             pr_has_api=$(echo "$pr_obj" | jq -r '
               if .has_api != null then .has_api
               elif (.tests_fixed // []) | map(select(.test_type == "api")) | length > 0 then true
               else false end')
+            [ "$pr_has_api" = "false" ] && [ "${HAS_API:-false}" = "true" ] && pr_has_api="true"
+            echo "PR #${pr_number}: pr_has_e2e=${pr_has_e2e} pr_has_api=${pr_has_api} branch=${branch}"
 
             if [ -z "$branch" ] || [ "$branch" = "null" ]; then
               echo "::warning::fix-meta.json has null/empty branch for PR #$pr_number — skipping on-demand trigger, patching body only"
