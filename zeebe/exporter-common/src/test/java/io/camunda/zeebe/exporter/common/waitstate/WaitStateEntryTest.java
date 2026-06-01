@@ -10,16 +10,18 @@ package io.camunda.zeebe.exporter.common.waitstate;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.exporter.common.waitstate.WaitStateEntry.WaitStateType;
+import io.camunda.zeebe.exporter.common.waitstate.transformers.JobWaitStateDetails;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ImmutableJobRecordValue;
+import io.camunda.zeebe.protocol.record.value.JobKind;
+import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
-import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 class WaitStateEntryTest {
@@ -27,7 +29,9 @@ class WaitStateEntryTest {
   @Test
   void shouldExposeAllFieldsViaAccessors() {
     // given
-    final Map<String, Object> details = Map.of("jobType", "payment", "retries", 3);
+    final var details =
+        new JobWaitStateDetails(
+            42L, "payment", JobKind.BPMN_ELEMENT, JobListenerEventType.UNSPECIFIED, 3);
     final var entry =
         new WaitStateEntry()
             .setRootProcessInstanceKey(100L)
@@ -53,18 +57,18 @@ class WaitStateEntryTest {
   }
 
   @Test
-  void shouldAcceptDefaultTenantAndEmptyDetails() {
+  void shouldAcceptDefaultTenantWithNullDetails() {
     // given / when
     final var entry =
         new WaitStateEntry()
             .setElementType(BpmnElementType.USER_TASK)
             .setWaitStateType(WaitStateType.USER_TASK)
-            .setDetails(Map.of())
+            .setDetails(null)
             .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
     // then
     assertThat(entry.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-    assertThat(entry.getDetails()).isEmpty();
+    assertThat(entry.getDetails()).isNull();
   }
 
   @Test

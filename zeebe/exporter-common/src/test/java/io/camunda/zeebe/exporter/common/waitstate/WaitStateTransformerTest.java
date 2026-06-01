@@ -18,7 +18,6 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
-import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 class WaitStateTransformerTest {
@@ -46,7 +45,7 @@ class WaitStateTransformerTest {
               .setElementId("job-element")
               .setElementType(BpmnElementType.SERVICE_TASK)
               .setWaitStateType(WaitStateType.JOB)
-              .setDetails(Map.of())
+              .setDetails(null)
               .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
               .setPartitionId(record.getPartitionId());
         }
