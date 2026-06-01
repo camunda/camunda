@@ -9,7 +9,6 @@
 import { FC } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { OverflowMenu, OverflowMenuItem, Section, Stack } from "@carbon/react";
-import { spacing01, spacing02, spacing03 } from "@carbon/elements";
 import useTranslate from "src/utility/localization";
 import { useApi } from "src/utility/api";
 import NotFound from "src/pages/not-found";
@@ -55,15 +54,15 @@ const Details: FC<DetailsProps> = ({ isOIDC }) => {
   return (
     <StackPage>
       <>
-        <Stack gap={spacing02}>
+        <Stack gap="2">
           <Breadcrumbs items={[{ href: "/groups", title: t("groups") }]} />
           {loading && !group ? (
             <DetailPageHeaderFallback hasOverflowMenu={false} />
           ) : (
             <Flex>
               {group && (
-                <Stack gap={spacing03}>
-                  <Stack orientation="horizontal" gap={spacing01}>
+                <Stack gap="3">
+                  <Stack orientation="horizontal" gap="1">
                     <PageHeadline>{group.name}</PageHeadline>
                     <OverflowMenu ariaLabel={t("openGroupContextMenu")}>
                       <OverflowMenuItem

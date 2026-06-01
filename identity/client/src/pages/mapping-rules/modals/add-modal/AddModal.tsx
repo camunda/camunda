@@ -19,7 +19,6 @@ import {
   EqualSignContainer,
   MappingRuleContainer,
 } from "../components";
-import { spacing05 } from "@carbon/elements";
 import { Stack } from "@carbon/react";
 import { isValidId, getIdPattern } from "src/utility/validate";
 
@@ -124,7 +123,7 @@ export const AddMappingRuleModal: FC<UseModalProps> = ({
         )}
       />
       <MappingRuleContainer>
-        <Stack gap={spacing05}>
+        <Stack gap="5">
           <h3>{t("mappingRule")}</h3>
           <CustomStack orientation="horizontal">
             <Controller

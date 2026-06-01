@@ -9,7 +9,6 @@
 import { FC } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { OverflowMenu, OverflowMenuItem, Section, Stack } from "@carbon/react";
-import { spacing01, spacing03 } from "@carbon/elements";
 import useTranslate from "src/utility/localization";
 import { useApi } from "src/utility/api";
 import NotFound from "src/pages/not-found";
@@ -59,15 +58,15 @@ const Details: FC<DetailsProps> = ({ isOIDC, isCamundaGroupsEnabled }) => {
   return (
     <StackPage>
       <>
-        <Stack gap={spacing03}>
+        <Stack gap="3">
           <Breadcrumbs items={[{ href: "/tenants", title: t("tenants") }]} />
           {loading && !tenant ? (
             <DetailPageHeaderFallback hasOverflowMenu={false} />
           ) : (
             <Flex>
               {tenant && (
-                <Stack gap={spacing03}>
-                  <Stack orientation="horizontal" gap={spacing01}>
+                <Stack gap="3">
+                  <Stack orientation="horizontal" gap="1">
                     <PageHeadline>{tenant.name}</PageHeadline>
                     {!isDefaultTenant(tenant.tenantId) && (
                       <OverflowMenu ariaLabel={t("openTenantContextMenu")}>

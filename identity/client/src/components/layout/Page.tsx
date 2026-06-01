@@ -9,13 +9,7 @@
 import { FC, MouseEvent, ReactNode } from "react";
 import styled from "styled-components";
 import { Breadcrumb, BreadcrumbItem, Content, Stack } from "@carbon/react";
-import {
-  spacing04,
-  spacing06,
-  spacing07,
-  spacing08,
-  styles,
-} from "@carbon/elements";
+import { styles } from "@carbon/elements";
 import { useNavigate } from "react-router-dom";
 import { DocumentationLink } from "src/components/documentation";
 import useTranslate from "src/utility/localization";
@@ -34,12 +28,12 @@ const PageSubTitle = styled.div`
 `;
 
 const StackWithMargin = styled(Stack)`
-  margin-bottom: ${spacing07};
+  margin-bottom: var(--cds-spacing-07);
 `;
 
 const Page = styled(Content)`
   height: 100%;
-  padding: ${spacing08};
+  padding: var(--cds-spacing-08);
 `;
 
 type PageHeaderProps = {
@@ -58,7 +52,7 @@ export const PageHeader: FC<PageHeaderProps> = ({
   const { Translate } = useTranslate();
 
   return (
-    <StackWithMargin gap={spacing04}>
+    <StackWithMargin gap="4">
       <PageTitle>{title}</PageTitle>
       {shouldShowDocumentationLink && (
         <PageSubTitle>
@@ -102,7 +96,7 @@ export const Breadcrumbs: FC<BreadcrumbsProps> = ({ items }) => {
 
 export const StackPage: FC<{ children?: ReactNode }> = ({ children }) => (
   <Page>
-    <Stack gap={spacing06}>{children}</Stack>
+    <Stack gap="6">{children}</Stack>
   </Page>
 );
 

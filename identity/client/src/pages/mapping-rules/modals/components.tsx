@@ -7,12 +7,11 @@
  */
 
 import styled from "styled-components";
-import { spacing06 } from "@carbon/elements";
 import { Stack } from "@carbon/react";
 
 export const MappingRuleContainer = styled.div`
   border-top: 1px solid var(--cds-border-subtle);
-  padding-top: ${spacing06};
+  padding-top: var(--cds-spacing-06);
 `;
 
 export const EqualSignContainer = styled.div`

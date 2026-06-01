@@ -8,7 +8,6 @@
 
 import { FC } from "react";
 import { Stack, UnorderedList, ListItem } from "@carbon/react";
-import { spacing04 } from "@carbon/elements";
 import { useApiCall } from "src/utility/api";
 import useTranslate from "src/utility/localization";
 import {
@@ -57,7 +56,7 @@ const DeleteAuthorizationModal: FC<UseEntityModalProps<Authorization>> = ({
       onClose={onClose}
       confirmLabel={t("deleteAuthorization")}
     >
-      <Stack gap={spacing04}>
+      <Stack gap="4">
         {t("deleteConfirmation")}
         <UnorderedList>
           <ListItem>

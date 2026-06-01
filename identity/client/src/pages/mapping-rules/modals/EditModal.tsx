@@ -9,7 +9,6 @@
 import { FC } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { Stack } from "@carbon/react";
-import { spacing05 } from "@carbon/elements";
 import TextField from "src/components/form/TextField";
 import { useApiCall } from "src/utility/api";
 import useTranslate from "src/utility/localization";
@@ -104,7 +103,7 @@ const EditModal: FC<UseEntityModalProps<MappingRule>> = ({
         )}
       />
       <MappingRuleContainer>
-        <Stack gap={spacing05}>
+        <Stack gap="5">
           <h3>{t("mappingRule")}</h3>
           <CustomStack orientation="horizontal">
             <Controller

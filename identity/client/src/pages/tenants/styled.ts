@@ -7,20 +7,19 @@
  */
 
 import styled from "styled-components";
-import { spacing03, spacing06 } from "@carbon/elements";
 
 export const RightAlignedButtonSet = styled.div`
   display: flex;
   justify-content: flex-end;
   width: 100%;
-  gap: ${spacing06};
+  gap: var(--cds-spacing-06);
 `;
 
 export const InfoHint = styled.div`
   display: flex;
   align-items: flex-start;
-  gap: ${spacing03};
-  margin-top: ${spacing03};
+  gap: var(--cds-spacing-03);
+  margin-top: var(--cds-spacing-03);
   color: var(--cds-text-primary);
   font-size: var(--cds-helper-text-01-font-size, 0.75rem);
   line-height: var(--cds-helper-text-01-line-height, 1.34);

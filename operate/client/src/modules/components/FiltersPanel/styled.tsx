@@ -7,22 +7,22 @@
  */
 
 import styled from 'styled-components';
-import {heading01, spacing05, supportError} from '@carbon/elements';
+import {styles} from '@carbon/elements';
 import {WarningFilled as BaseWarningFilled} from '@carbon/react/icons';
 
 const Title = styled.h3`
-  ${heading01};
-  padding-bottom: ${spacing05};
+  ${styles.heading01};
+  padding-bottom: var(--cds-spacing-05);
 `;
 
 const Container = styled.div`
-  padding: ${spacing05};
+  padding: var(--cds-spacing-05);
   position: absolute;
   width: 100%;
 `;
 
 const WarningFilled = styled(BaseWarningFilled)`
-  fill: ${supportError};
+  fill: var(--cds-support-error);
 `;
 
 const Footer = styled.div`
