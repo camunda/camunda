@@ -1376,29 +1376,7 @@
           "type": "array",
           "minItems": 1,
           "items": {
-            "oneOf": [
-              {
-                "$ref": "#/definitions/AssertDecisionInstruction"
-              },
-              {
-                "$ref": "#/definitions/AssertElementInstanceInstruction"
-              },
-              {
-                "$ref": "#/definitions/AssertElementInstancesInstruction"
-              },
-              {
-                "$ref": "#/definitions/AssertProcessInstanceInstruction"
-              },
-              {
-                "$ref": "#/definitions/AssertProcessInstanceMessageSubscriptionInstruction"
-              },
-              {
-                "$ref": "#/definitions/AssertUserTaskInstruction"
-              },
-              {
-                "$ref": "#/definitions/AssertVariablesInstruction"
-              }
-            ]
+            "$ref": "#/definitions/TestCaseInstruction"
           }
         },
         "actions": {
@@ -1406,38 +1384,7 @@
           "type": "array",
           "minItems": 1,
           "items": {
-            "oneOf": [
-              {
-                "$ref": "#/definitions/BroadcastSignalInstruction"
-              },
-              {
-                "$ref": "#/definitions/CompleteJobInstruction"
-              },
-              {
-                "$ref": "#/definitions/CompleteJobAdHocSubProcessInstruction"
-              },
-              {
-                "$ref": "#/definitions/CompleteJobUserTaskListenerInstruction"
-              },
-              {
-                "$ref": "#/definitions/CompleteUserTaskInstruction"
-              },
-              {
-                "$ref": "#/definitions/CorrelateMessageInstruction"
-              },
-              {
-                "$ref": "#/definitions/PublishMessageInstruction"
-              },
-              {
-                "$ref": "#/definitions/ResolveIncidentInstruction"
-              },
-              {
-                "$ref": "#/definitions/ThrowBpmnErrorFromJobInstruction"
-              },
-              {
-                "$ref": "#/definitions/UpdateVariablesInstruction"
-              }
-            ]
+            "$ref": "#/definitions/TestCaseInstruction"
           }
         }
       },
