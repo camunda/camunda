@@ -29,6 +29,11 @@ on:
         type: boolean
         default: true
         required: false
+      send_slack_notification:
+        description: 'Post triage summary and fix-agent replies to Slack (always true for scheduled runs)'
+        type: boolean
+        default: false
+        required: false
 
 # Minimal at workflow level. Triage job only needs to read; dispatch job
 # bumps actions: write to trigger the fix workflow (zizmor: excessive-permissions).
@@ -381,10 +386,10 @@ jobs:
             fi
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Post Slack triage summary
+      - name: Post initial Slack message
         id: slack
         continue-on-error: true
-        if: always()
+        if: github.event_name == 'schedule' || github.event.inputs.send_slack_notification == 'true'
         env:
           SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.secrets.outputs.SLACK_BOT_USER_OAUTH_TOKEN }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
@@ -392,9 +397,11 @@ jobs:
           set -euo pipefail
 
           date_str=$(date -u +%Y-%m-%d)
+          count=$(jq 'length' /tmp/failures_normalized.json 2>/dev/null || echo 0)
+          dispatches=$(jq 'length' /tmp/dispatches.json 2>/dev/null || echo 0)
+
           text=":mag: *C8 Orchestration Cluster Nightly Triage — ${date_str}*"$'\n'
 
-          count=$(jq 'length' /tmp/failures_normalized.json 2>/dev/null || echo 0)
           if [ "$count" -gt 0 ]; then
             text="${text}"$'\n'"*Failed tests by version:*"
             while IFS= read -r line; do
@@ -404,20 +411,18 @@ jobs:
               text="${text}"$'\n'"• \`${version}\` — ${n} failed test(s) (${types})"
             done < <(jq -c 'sort_by(.version) | group_by(.version)[] | {version: .[0].version, count: length, types: ([.[].test_type] | unique | join(", "))}' \
                       /tmp/failures_normalized.json)
-            dispatches=$(jq 'length' /tmp/dispatches.json 2>/dev/null || echo 0)
             if [ "$dispatches" -gt 0 ]; then
-              text="${text}"$'\n\n'":hourglass_flowing_sand: Dispatching fix agents..."
+              text="${text}"$'\n\n'":hourglass_flowing_sand: Dispatching ${dispatches} fix agent(s)..."
             else
               text="${text}"$'\n\n'":information_source: No fix agents dispatched (open PRs already cover all failing versions)."
             fi
           else
-            text="${text}"$'\n'":white_check_mark: No failures found — all nightly runs passed."
+            text="${text}"$'\n'":white_check_mark: No test failures found — all nightly runs passed."
           fi
           text="${text}"$'\n\n'"<${RUN_URL}|Triage run ↗>"
 
           payload=$(jq -nc --arg channel 'c8-orchestration-cluster-e2e-test-results' --arg text "$text" \
             '{channel: $channel, text: $text, mrkdwn: true}')
-          # Slack post is non-critical — a transient failure must not block dispatch.
           response=$(curl -sS -X POST https://slack.com/api/chat.postMessage \
             -H "Authorization: Bearer ${SLACK_BOT_USER_OAUTH_TOKEN}" \
             -H 'Content-Type: application/json; charset=utf-8' \
@@ -464,16 +469,18 @@ jobs:
           exportEnv: false
           secrets: |
             secret/data/products/qa/ci/common GH_TOKEN ;
+            secret/data/products/qa/ci/common SLACK_BOT_USER_OAUTH_TOKEN ;
 
       - name: Dispatch one fix-agent run per version
         env:
-          GH_TOKEN:        ${{ steps.secrets.outputs.GH_TOKEN }}
-          REPO:            ${{ github.repository }}
-          DISPATCHES_JSON: ${{ needs.triage.outputs.dispatches }}
-          TRIAGE_RUN_URL:  ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          SLACK_THREAD_TS: ${{ needs.triage.outputs.slack_ts }}
-          SLACK_CHANNEL:   ${{ needs.triage.outputs.slack_channel }}
-          FIX_AGENT_REF:   ${{ github.ref_name }}
+          GH_TOKEN:                  ${{ steps.secrets.outputs.GH_TOKEN }}
+          REPO:                      ${{ github.repository }}
+          DISPATCHES_JSON:           ${{ needs.triage.outputs.dispatches }}
+          TRIAGE_RUN_URL:            ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          SLACK_THREAD_TS:           ${{ needs.triage.outputs.slack_ts }}
+          SLACK_CHANNEL:             ${{ needs.triage.outputs.slack_channel }}
+          FIX_AGENT_REF:             ${{ github.ref_name }}
+          SEND_SLACK_NOTIFICATION:   ${{ github.event_name == 'schedule' || github.event.inputs.send_slack_notification == 'true' }}
         run: |
           set -euo pipefail
 
@@ -499,7 +506,7 @@ jobs:
               -f triage_run_url="$TRIAGE_RUN_URL" \
               -f slack_thread_ts="$SLACK_THREAD_TS" \
               -f slack_channel="$SLACK_CHANNEL" \
-              -f send_slack_notification=true
+              -f send_slack_notification="${SEND_SLACK_NOTIFICATION}"
 
             # Poll for the newly created fix-agent run (created after dispatch)
             fix_run_id=""
@@ -546,3 +553,64 @@ jobs:
                 end' \
               /tmp/fix_agent_runs.json
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Update Slack message with dispatch summary
+        if: always() && needs.triage.outputs.slack_ts != ''
+        env:
+          SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.secrets.outputs.SLACK_BOT_USER_OAUTH_TOKEN }}
+          SLACK_TS:      ${{ needs.triage.outputs.slack_ts }}
+          SLACK_CHANNEL: ${{ needs.triage.outputs.slack_channel }}
+          REPO:          ${{ github.repository }}
+          RUN_URL:       ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+
+          date_str=$(date -u +%Y-%m-%d)
+          dispatches=$(jq 'length' /tmp/fix_agent_runs.json 2>/dev/null || echo 0)
+
+          text=":mag: *C8 Orchestration Cluster Nightly Triage — ${date_str}*"$'\n'
+
+          # Failing test summary
+          count=$(jq 'length' /tmp/failures_normalized.json 2>/dev/null || echo 0)
+          if [ "$count" -gt 0 ]; then
+            text="${text}"$'\n'"*Failed tests by version:*"
+            while IFS= read -r line; do
+              version=$(echo "$line" | jq -r '.version')
+              n=$(echo "$line"       | jq -r '.count')
+              types=$(echo "$line"   | jq -r '.types')
+              text="${text}"$'\n'"• \`${version}\` — ${n} failed test(s) (${types})"
+            done < <(jq -c 'sort_by(.version) | group_by(.version)[] | {version: .[0].version, count: length, types: ([.[].test_type] | unique | join(", "))}' \
+                      /tmp/failures_normalized.json)
+          else
+            text="${text}"$'\n'":white_check_mark: No test failures found."
+          fi
+
+          # Fix agent dispatch summary
+          if [ "$dispatches" -gt 0 ]; then
+            text="${text}"$'\n\n'":robot_face: *Fix agents dispatched: ${dispatches}*"
+            while IFS= read -r entry; do
+              version=$(echo "$entry" | jq -r '.version')
+              run_id=$(echo "$entry"  | jq -r '.run_id // ""')
+              if [ -n "$run_id" ] && [ "$run_id" != "null" ]; then
+                text="${text}"$'\n'"  • \`${version}\` — <https://github.com/${REPO}/actions/runs/${run_id}|agent run ↗>"
+              else
+                text="${text}"$'\n'"  • \`${version}\` — agent run pending"
+              fi
+            done < <(jq -c '.[]' /tmp/fix_agent_runs.json)
+          else
+            text="${text}"$'\n\n'":information_source: No fix agents dispatched."
+          fi
+
+          text="${text}"$'\n\n'"<${RUN_URL}|Triage run ↗>"
+
+          payload=$(jq -nc \
+            --arg channel "$SLACK_CHANNEL" \
+            --arg ts      "$SLACK_TS" \
+            --arg text    "$text" \
+            '{channel: $channel, ts: $ts, text: $text, mrkdwn: true}')
+          response=$(curl -sS -X POST https://slack.com/api/chat.update \
+            -H "Authorization: Bearer ${SLACK_BOT_USER_OAUTH_TOKEN}" \
+            -H 'Content-Type: application/json; charset=utf-8' \
+            -d "$payload" || echo '{}')
+          echo "$response" | jq '.'
+          [ "$(echo "$response" | jq -r '.ok')" = "true" ] || echo "::warning::Slack update failed"
