@@ -15,6 +15,13 @@ const AgentDetailsContainer = styled.div`
   gap: var(--cds-spacing-03);
 `;
 
+const LoadingStatusHint = styled.span`
+  font-size: var(--cds-body-compact-01-font-size);
+  line-height: var(--cds-body-compact-01-line-height);
+  letter-spacing: var(--cds-body-compact-01-letter-spacing);
+  color: var(--cds-text-primary);
+`;
+
 const AgentHeading = styled.h5`
   font-size: var(--cds-heading-compact-01-font-size);
   font-weight: var(--cds-heading-compact-01-font-weight);
@@ -31,23 +38,6 @@ const Accordion = styled(CarbonAccordion)`
   }
 `;
 
-const StatusRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: var(--cds-spacing-03);
-  padding: var(--cds-spacing-03) 0;
-`;
-
-const StatusIconWrapper = styled.span`
-  display: flex;
-  align-items: center;
-  color: var(--cds-icon-primary);
-`;
-
-const StatusLabel = styled.span`
-  font-size: var(--cds-body-compact-01-font-size);
-`;
-
 const MetricsRow = styled.div`
   display: flex;
   gap: var(--cds-spacing-05);
@@ -57,12 +47,12 @@ const MetricsRow = styled.div`
 const ModelInfo = styled.p`
   font-size: var(--cds-body-compact-01-font-size);
   line-height: var(--cds-body-compact-01-line-height);
-  letter-spacing: var(--cds-label-01-letter-spacing);
+  letter-spacing: var(--cds-body-compact-01-letter-spacing);
   color: var(--cds-text-secondary);
 `;
 
 const ModelInfoLabel = styled.strong`
-  font-weight: 600;
+  font-weight: var(--cds-heading-compact-01-font-weight);
   color: var(--cds-text-primary);
 `;
 
@@ -70,9 +60,7 @@ export {
   AgentDetailsContainer,
   AgentHeading,
   Accordion,
-  StatusRow,
-  StatusIconWrapper,
-  StatusLabel,
+  LoadingStatusHint,
   MetricsRow,
   ModelInfo,
   ModelInfoLabel,

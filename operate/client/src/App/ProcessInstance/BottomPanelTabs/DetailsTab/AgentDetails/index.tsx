@@ -24,9 +24,7 @@ import {
   AgentDetailsContainer,
   AgentHeading,
   Accordion,
-  StatusRow,
-  StatusIconWrapper,
-  StatusLabel,
+  LoadingStatusHint,
   MetricsRow,
   ModelInfo,
   ModelInfoLabel,
@@ -77,9 +75,7 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
     return (
       <AgentDetailsContainer>
         <AgentHeading>AI Agent</AgentHeading>
-        <StatusRow>
-          <StatusLabel>Loading...</StatusLabel>
-        </StatusRow>
+        <LoadingStatusHint>Loading...</LoadingStatusHint>
       </AgentDetailsContainer>
     );
   }
@@ -88,12 +84,7 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
     return (
       <AgentDetailsContainer>
         <AgentHeading>AI Agent</AgentHeading>
-        <StatusRow>
-          <StatusIconWrapper>
-            <WarningFilled size={16} />
-          </StatusIconWrapper>
-          <StatusLabel>Unable to load agent status</StatusLabel>
-        </StatusRow>
+        <LoadingStatusHint>Unable to load agent information.</LoadingStatusHint>
       </AgentDetailsContainer>
     );
   }
@@ -105,13 +96,16 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
   return (
     <AgentDetailsContainer data-testid="agent-details">
       <AgentHeading>AI Agent</AgentHeading>
-      <StatusRow data-testid="agent-status-row">
-        <StatusIconWrapper>
-          <StatusIcon status={agentInstance.status} />
-        </StatusIconWrapper>
-        <StatusLabel>Status: {statusLabel}</StatusLabel>
-      </StatusRow>
       <Accordion align="start">
+        <AccordionItem
+          data-testid="agent-status-section"
+          disabled
+          title={
+            <SectionTitle icon={<StatusIcon status={agentInstance.status} />}>
+              Status: {statusLabel}
+            </SectionTitle>
+          }
+        ></AccordionItem>
         <AccordionItem
           data-testid="agent-usage-section"
           title={
