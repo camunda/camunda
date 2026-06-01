@@ -107,7 +107,7 @@ jobs:
         if: always()
         uses: ./.github/actions/collect-test-artifacts
         with:
-          name: 'cpt compatibility tests - branch ${{ inputs.branch }} server ${{ inputs.camunda_image_version }}'
+          name: 'cpt compatibility tests - cpt version ${{ steps.cpt-version.outputs.version }} camunda version ${{ inputs.camunda_image_version }}'
 
       - name: Observe build status
         if: always()
