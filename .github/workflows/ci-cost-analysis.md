@@ -5,7 +5,6 @@ description: Weekly report analyzing recent CI changes for potential cost increa
 on:
   schedule: weekly on monday
   workflow_dispatch:
-  skip-if-match: 'is:issue is:open in:title "[ci-cost-analysis] "'
 permissions:
   contents: read
   actions: read
@@ -17,10 +16,10 @@ tools:
     toolsets: [default]
 safe-outputs:
   create-issue:
-    title-prefix: "[ci-cost-analysis] "
+    max: 1
     labels: [ci, cost-analysis]
-    expires: 14
-    close-older-issues: true
+  update-issue:
+    max: 1
 ---
 
 # CI Cost Impact Analysis
@@ -28,6 +27,11 @@ safe-outputs:
 ## Task
 
 You are a CI/CD cost analyst. Analyze all changes made to GitHub Actions workflow files (`.github/workflows/`) in this repository during the **last 7 days** and identify changes that could potentially **increase CI costs**.
+
+Use exactly one persistent issue for reporting:
+- **Persistent issue title**: `[ci-cost-analysis] Weekly CI Cost Impact Analysis`
+- Do not create rotating weekly issues.
+- Overwrite the persistent issue body with the latest report each run.
 
 ## Steps
 
@@ -54,12 +58,18 @@ You are a CI/CD cost analyst. Analyze all changes made to GitHub Actions workflo
    - The size of the runner change
    - The number of additional minutes per run
 
-4. **Generate report**: Create a well-structured issue with:
+4. **Generate report body**: Build a well-structured report body containing:
    - A summary section with the total number of CI changes and how many are cost-relevant
    - A table of cost-impacting changes with columns: File, Change Type, Impact Level, Description
    - A detailed breakdown per change with the relevant diff snippets in collapsible sections
    - Recommendations for cost optimization where applicable
 
+5. **Upsert persistent issue**:
+   - Search for an existing issue with exact title `[ci-cost-analysis] Weekly CI Cost Impact Analysis`
+   - If it exists, replace its body with the newly generated report body using `update-issue`
+   - If it does not exist, create it once with `create-issue` using that exact title, then ensure its body is the generated report
+   - Ensure labels `ci` and `cost-analysis` are present
+
 ## Output Format
 
-Use GitHub-flavored markdown. Start nested headings at `###`. Use `<details>` and `<summary>` tags for collapsible diff sections. If no cost-impacting changes are found, create an issue stating that no cost-relevant CI changes were detected this week.
+Use GitHub-flavored markdown. Start nested headings at `###`. Use `<details>` and `<summary>` tags for collapsible diff sections. If no cost-impacting changes are found, the persistent issue body should clearly state that no cost-relevant CI changes were detected this week.
