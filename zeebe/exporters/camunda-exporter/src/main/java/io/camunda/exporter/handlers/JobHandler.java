@@ -112,6 +112,7 @@ public class JobHandler implements ExportHandler<JobEntity, JobRecordValue> {
 
     if (record.getIntent().equals(JobIntent.CREATED)) {
       entity.setCreationTime(recordTimestampAsOffsetDateTime);
+      entity.setFlowNodeType(recordValue.getElementType().name());
     }
     entity.setLastUpdateTime(recordTimestampAsOffsetDateTime);
 

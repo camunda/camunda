@@ -22,6 +22,9 @@ public class JobEntity
   @BeforeVersion880 private Long flowNodeInstanceId;
   @BeforeVersion880 private String flowNodeId;
 
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private String flowNodeType;
+
   /** Attention! This field will be filled in only for data imported after v. 8.7.0. */
   @BeforeVersion880 private Long processDefinitionKey;
 
@@ -119,6 +122,15 @@ public class JobEntity
 
   public JobEntity setFlowNodeId(final String flowNodeId) {
     this.flowNodeId = flowNodeId;
+    return this;
+  }
+
+  public String getFlowNodeType() {
+    return flowNodeType;
+  }
+
+  public JobEntity setFlowNodeType(final String flowNodeType) {
+    this.flowNodeType = flowNodeType;
     return this;
   }
 

@@ -33,6 +33,7 @@ import io.camunda.webapps.schema.entities.JobEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ImmutableJobRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableJobResultValue;
 import io.camunda.zeebe.protocol.record.value.JobKind;
@@ -163,6 +164,7 @@ final class JobHandlerTest {
             .withRootProcessInstanceKey(rootProcessInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withElementId(elementId)
+            .withElementType(BpmnElementType.SERVICE_TASK)
             .withBpmnProcessId(bpmnProcessId)
             .withProcessDefinitionKey(processDefinitionKey)
             .withType(jobType)
@@ -233,6 +235,7 @@ final class JobHandlerTest {
         ImmutableJobRecordValue.builder()
             .withRootProcessInstanceKey(-1L)
             .withJobKind(JobKind.EXECUTION_LISTENER)
+            .withElementType(BpmnElementType.SERVICE_TASK)
             .build();
     final Record<JobRecordValue> record =
         factory.generateRecord(
