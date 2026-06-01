@@ -199,7 +199,6 @@ test.describe.parallel('Search User Task Tests', () => {
   test('Search user task - filter by processDefinitionId with $like operator', async ({
     request,
   }) => {
-    let processDefinitionId = '';
     let idSuffix = '';
 
     await expect(async () => {
@@ -213,9 +212,8 @@ test.describe.parallel('Search User Task Tests', () => {
       });
       const json = await res.json();
       expect(json.items.length).toBeGreaterThan(0);
-      processDefinitionId = json.items[0].processDefinitionId;
       // Use a suffix of the ID so the pattern genuinely exercises the * wildcard
-      idSuffix = processDefinitionId.slice(-10);
+      idSuffix = json.items[0].processDefinitionId.slice(-10);
     }).toPass(defaultAssertionOptions);
 
     await expect(async () => {
