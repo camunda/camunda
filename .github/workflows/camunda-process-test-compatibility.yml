@@ -1,26 +1,22 @@
-# description: Daily compatibility tests for Camunda Process Test across runtime versions
+# description: Compatibility tests for Camunda Process Test against a selected Camunda image
 # type: CI
-# owner: @camunda/camunda-ex
+# owner: @camunda/c8-testing
 name: Camunda Process Test Compatibility Tests
 
 on:
   workflow_dispatch:
     inputs:
-      cpt_version:
-        description: 'CPT version to test (e.g., 8.8.0 or 8.9-SNAPSHOT). Leave empty to test all versions.'
-        required: false
+      branch:
+        description: 'Branch to check out for CPT tests (e.g., stable/8.8)'
+        required: true
         type: string
-      runtime_version:
-        description: 'Runtime version to test (e.g., 8.8.0 or 8.9-SNAPSHOT). Leave empty to test all versions.'
+      camunda_image_version:
+        description: 'Camunda Docker image version (e.g., 8.9-SNAPSHOT).'
         required: false
+        default: 'SNAPSHOT'
         type: string
-      skip_cache:
-        description: 'Skip version cache and retest all combinations'
-        required: false
-        type: boolean
-        default: false
 
-permissions: { }
+permissions: {}
 
 defaults:
   run:
@@ -30,132 +26,18 @@ env:
   FLAKY_TEST_RERUN_COUNT: '3'
 
 jobs:
-  prepare-versions:
-    name: Prepare Version Matrix
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      contents: read
-      actions: read
-    outputs:
-      matrix: ${{ steps.create-matrix.outputs.matrix }}
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          fetch-depth: 0  # Fetch all history for git tags
-
-      - name: Get branch information
-        id: branch-info
-        run: |
-          BRANCH_NAME="${GITHUB_REF#refs/heads/}"
-          echo "branch-name=$BRANCH_NAME" >> "$GITHUB_OUTPUT"
-
-          if [[ "$BRANCH_NAME" == "main" ]]; then
-            echo "is-main=true" >> "$GITHUB_OUTPUT"
-            echo "stable-version=" >> "$GITHUB_OUTPUT"
-          else
-            echo "is-main=false" >> "$GITHUB_OUTPUT"
-            # Extract version from stable/8.x branch name
-            if [[ "$BRANCH_NAME" =~ ^stable/([0-9]+\.[0-9]+)$ ]]; then
-              STABLE_VERSION="${BASH_REMATCH[1]}"
-              echo "stable-version=$STABLE_VERSION" >> "$GITHUB_OUTPUT"
-            else
-              echo "WARN: No main or stable branch detected"
-            fi
-          fi
-
-      - name: Get current version from pom.xml
-        id: pom-version
-        run: |
-          # Extract version from root pom.xml
-          POM_VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout)
-          echo "pom-version=$POM_VERSION" >> "$GITHUB_OUTPUT"
-          echo "Current pom.xml version: $POM_VERSION"
-
-      - name: Prepare simple test matrix
-        id: prepare-matrix-info
-        run: |
-          # For stable branches, test current snapshot against next minor version
-          POM_VERSION="${{ steps.pom-version.outputs.pom-version }}"
-          echo "Current pom version: $POM_VERSION"
-          echo "pom-snapshot=$POM_VERSION" >> "$GITHUB_OUTPUT"
-
-          # Extract major.minor from version (e.g., 8.8.2-SNAPSHOT -> 8.8)
-          if [[ "$POM_VERSION" =~ ^([0-9]+)\.([0-9]+) ]]; then
-            MAJOR="${BASH_REMATCH[1]}"
-            MINOR="${BASH_REMATCH[2]}"
-            NEXT_MINOR=$((MINOR + 1))
-            NEXT_MINOR_SNAPSHOT="${MAJOR}.${NEXT_MINOR}-SNAPSHOT"
-            echo "Next minor version snapshot: $NEXT_MINOR_SNAPSHOT"
-            echo "next-minor-snapshot=$NEXT_MINOR_SNAPSHOT" >> "$GITHUB_OUTPUT"
-          else
-            echo "ERROR: Could not parse version from $POM_VERSION"
-            exit 1
-          fi
-
-      - name: Create version matrix
-        id: create-matrix
-        run: |
-          CLIENT_VERSION="${{ inputs.cpt_version }}"
-          SERVER_VERSION="${{ inputs.runtime_version }}"
-          POM_SNAPSHOT="${{ steps.prepare-matrix-info.outputs.pom-snapshot }}"
-          NEXT_MINOR_SNAPSHOT="${{ steps.prepare-matrix-info.outputs.next-minor-snapshot }}"
-
-          # Normalize x.y.0-SNAPSHOT to x.y-SNAPSHOT (Docker tag format)
-          CLIENT_VERSION="${CLIENT_VERSION/%.0-SNAPSHOT/-SNAPSHOT}"
-          SERVER_VERSION="${SERVER_VERSION/%.0-SNAPSHOT/-SNAPSHOT}"
-
-          if [[ -n "$CLIENT_VERSION" ]] && [[ -n "$SERVER_VERSION" ]]; then
-            echo "Manual trigger: Testing specific versions - Client: $CLIENT_VERSION, Server: $SERVER_VERSION"
-            MATRIX_JSON=$(jq -nc --arg client "$CLIENT_VERSION" --arg server "$SERVER_VERSION" '{"include": [{"client": $client, "server": $server}]}')
-            echo "matrix=$MATRIX_JSON" >> "$GITHUB_OUTPUT"
-          elif [[ -n "$CLIENT_VERSION" ]]; then
-            echo "Manual trigger: Testing client version $CLIENT_VERSION against next minor snapshot ($NEXT_MINOR_SNAPSHOT)"
-            MATRIX_JSON=$(jq -nc --arg client "$CLIENT_VERSION" --arg server "$NEXT_MINOR_SNAPSHOT" '{"include": [{"client": $client, "server": $server}]}')
-            echo "matrix=$MATRIX_JSON" >> "$GITHUB_OUTPUT"
-          elif [[ -n "$SERVER_VERSION" ]]; then
-            echo "Manual trigger: Testing server version $SERVER_VERSION with current snapshot client ($POM_SNAPSHOT)"
-            MATRIX_JSON=$(jq -nc --arg client "$POM_SNAPSHOT" --arg server "$SERVER_VERSION" '{"include": [{"client": $client, "server": $server}]}')
-            echo "matrix=$MATRIX_JSON" >> "$GITHUB_OUTPUT"
-          else
-            echo "Scheduled run: Testing CPT $POM_SNAPSHOT against Camunda $NEXT_MINOR_SNAPSHOT"
-            MATRIX_JSON=$(jq -nc --arg client "$POM_SNAPSHOT" --arg server "$NEXT_MINOR_SNAPSHOT" '{"include": [{"client": $client, "server": $server}]}')
-            echo "matrix=$MATRIX_JSON" >> "$GITHUB_OUTPUT"
-            echo "Generated matrix:"
-            echo "$MATRIX_JSON" | jq '.'
-          fi
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-
   run-cpt-tests:
-    name: Test CPT ${{ matrix.client }} -> Runtime ${{ matrix.server }}
-    needs: prepare-versions
-    if: needs.prepare-versions.result == 'success' && needs.prepare-versions.outputs.matrix != '{"include":[]}'
+    name: Test CPT (${{ inputs.branch }}) -> Runtime ${{ inputs.camunda_image_version }}
     runs-on: ubuntu-latest
     timeout-minutes: 120
     permissions:
       contents: read
       id-token: write
-    strategy:
-      fail-fast: false
-      matrix: ${{ fromJson(needs.prepare-versions.outputs.matrix) }}
     steps:
-      - name: Checkout Camunda (main for SNAPSHOT)
-        if: endsWith(matrix.client, '-SNAPSHOT')
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-
-      - name: Checkout Camunda
-        if: ${{ !endsWith(matrix.client, '-SNAPSHOT') }}
+      - name: Checkout Camunda branch
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          ref: ${{ matrix.client }}
+          ref: ${{ inputs.branch }}
 
       - uses: ./.github/actions/setup-build
         with:
@@ -163,6 +45,13 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+
+      - name: Resolve CPT version from pom.xml
+        id: cpt-version
+        run: |
+          CPT_VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout)
+          echo "version=$CPT_VERSION" >> "$GITHUB_OUTPUT"
+          echo "Resolved CPT version: $CPT_VERSION"
 
       - name: Resolve connectors Docker image version
         id: connectors-version
@@ -174,7 +63,7 @@ jobs:
         #   2. Latest patch     → find the highest connectors-bundle:<major.minor.x> tag
         #   3. Fallback         → use SNAPSHOT connectors
         run: |
-          SERVER_VERSION="${{ matrix.server }}"
+          SERVER_VERSION="${{ inputs.camunda_image_version }}"
 
           # If server is SNAPSHOT, use SNAPSHOT for connectors too
           if [[ "$SERVER_VERSION" == "SNAPSHOT" || "$SERVER_VERSION" == *"-SNAPSHOT" ]]; then
@@ -277,7 +166,8 @@ jobs:
       - name: Determine Docker API version override
         id: api-version
         run: |
-          CLIENT_VERSION="${{ matrix.client }}"
+          CLIENT_VERSION="${{ steps.cpt-version.outputs.version }}"
+          CLIENT_VERSION="${CLIENT_VERSION/%.0-SNAPSHOT/-SNAPSHOT}"
           EXTRA_PROPS=""
           # For CPT versions < 8.8.5, we need to pin the API version
           if [[ "$CLIENT_VERSION" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+) ]]; then
@@ -300,7 +190,7 @@ jobs:
             verify
             -f testing/pom.xml
             -DskipUTs
-            -Dio.camunda.process.test.camundaDockerImageVersion=${{ matrix.server }}
+            -Dio.camunda.process.test.camundaDockerImageVersion=${{ inputs.camunda_image_version }}
             -Dio.camunda.process.test.connectorsDockerImageVersion=${{ steps.connectors-version.outputs.version }}
             -Dfailsafe.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }}
             -Dsurefire.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }}
@@ -311,7 +201,7 @@ jobs:
         if: always()
         uses: ./.github/actions/collect-test-artifacts
         with:
-          name: 'cpt compatibility tests - client ${{ matrix.client }} server ${{ matrix.server }}'
+          name: 'cpt compatibility tests - branch ${{ inputs.branch }} server ${{ inputs.camunda_image_version }}'
 
       - name: Observe build status
         if: always()
@@ -319,7 +209,7 @@ jobs:
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
-          job_name: run-cpt-tests (cpt=${{ matrix.client }}, runtime=${{ matrix.server }})
+          job_name: run-cpt-tests (branch=${{ inputs.branch }}, runtime=${{ inputs.camunda_image_version }})
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
@@ -328,7 +218,7 @@ jobs:
     name: Notify on failure
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: [ prepare-versions, run-cpt-tests ]
+    needs: [run-cpt-tests]
     if: always() && (contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled'))
     permissions: { }
     steps:
