@@ -92,6 +92,7 @@ const config = defineConfig(({mode}) => ({
 	},
 	test: {
 		include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+		reporters: process.env['CI'] ? ['default', 'github-actions', 'html'] : ['default'],
 		browser: {
 			enabled: true,
 			screenshotFailures: false,
