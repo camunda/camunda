@@ -19,7 +19,8 @@ import java.util.Objects;
   @JsonSubTypes.Type(value = DashboardStateFilterDto.class, name = "state"),
   @JsonSubTypes.Type(value = DashboardVariableFilterDto.class, name = "variable"),
   @JsonSubTypes.Type(value = DashboardAssigneeFilterDto.class, name = "assignee"),
-  @JsonSubTypes.Type(value = DashboardCandidateGroupFilterDto.class, name = "candidateGroup")
+  @JsonSubTypes.Type(value = DashboardCandidateGroupFilterDto.class, name = "candidateGroup"),
+  @JsonSubTypes.Type(value = DashboardProcessScopeFilterDto.class, name = "processScope")
 })
 public abstract class DashboardFilterDto<DATA extends FilterDataDto> {
 

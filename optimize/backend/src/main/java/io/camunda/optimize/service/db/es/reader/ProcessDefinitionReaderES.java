@@ -9,33 +9,43 @@ package io.camunda.optimize.service.db.es.reader;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
+import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static io.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DEFINITION_DELETED;
 import static io.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_ID;
 import static io.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_XML;
+import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.AGENT_INSTANCES;
+import static io.camunda.optimize.service.util.ExceptionUtil.isInstanceIndexNotFoundException;
 import static java.util.stream.Collectors.toSet;
 
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
 import co.elastic.clients.elasticsearch._types.aggregations.StringTermsAggregate;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.ChildScoreMode;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import io.camunda.optimize.dto.optimize.DefinitionType;
 import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.es.builders.OptimizeSearchRequestBuilderES;
 import io.camunda.optimize.service.db.reader.DefinitionReader;
 import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import io.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import io.camunda.optimize.service.util.DefinitionQueryUtilES;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 
 @Component
 @Conditional(ElasticSearchCondition.class)
@@ -113,6 +123,68 @@ public class ProcessDefinitionReaderES implements ProcessDefinitionReader {
       final String reason = "Was not able to fetch non-onboarded process definition keys.";
       LOG.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
+    }
+    final StringTermsAggregate definitionKeyTerms =
+        searchResponse.aggregations().get(defKeyAgg).sterms();
+    return definitionKeyTerms.buckets().array().stream()
+        .map(e -> e.key().stringValue())
+        .collect(toSet());
+  }
+
+  @Override
+  public Set<String> getProcessDefinitionKeysWithAgentRuns(final List<String> tenantIds) {
+    if (CollectionUtils.isEmpty(tenantIds)) {
+      return Collections.emptySet();
+    }
+
+    final String defKeyAgg = "keyAgg";
+
+    final Query tenantFilter =
+        DefinitionQueryUtilES.createTenantIdQuery(ProcessInstanceDto.Fields.tenantId, tenantIds);
+
+    final SearchRequest searchRequest =
+        OptimizeSearchRequestBuilderES.of(
+            s ->
+                s.optimizeIndex(esClient, PROCESS_INSTANCE_MULTI_ALIAS)
+                    .query(
+                        q ->
+                            q.bool(
+                                b ->
+                                    b.must(
+                                            m ->
+                                                m.nested(
+                                                    n ->
+                                                        n.path(AGENT_INSTANCES)
+                                                            .query(
+                                                                inner -> inner.matchAll(ma -> ma))
+                                                            .scoreMode(ChildScoreMode.None)))
+                                        .filter(tenantFilter)))
+                    .aggregations(
+                        defKeyAgg,
+                        Aggregation.of(
+                            a ->
+                                a.terms(
+                                    t ->
+                                        t.field(ProcessInstanceDto.Fields.processDefinitionKey)
+                                            .size(MAX_RESPONSE_SIZE_LIMIT))))
+                    .source(o -> o.fetch(false))
+                    .size(0));
+
+    final SearchResponse<?> searchResponse;
+    try {
+      searchResponse = esClient.search(searchRequest, Object.class);
+    } catch (final IOException e) {
+      final String reason = "Was not able to retrieve process definition keys with agent runs.";
+      LOG.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    } catch (final ElasticsearchException e) {
+      if (isInstanceIndexNotFoundException(DefinitionType.PROCESS, e)) {
+        LOG.info(
+            "Was not able to retrieve process definition keys with agent runs because no "
+                + "process instance indices exist. Returning empty set.");
+        return Collections.emptySet();
+      }
+      throw e;
     }
     final StringTermsAggregate definitionKeyTerms =
         searchResponse.aggregations().get(defKeyAgg).sterms();
