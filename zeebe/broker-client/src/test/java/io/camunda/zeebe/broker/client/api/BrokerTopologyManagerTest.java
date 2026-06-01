@@ -573,6 +573,72 @@ final class BrokerTopologyManagerTest {
     assertThat(capturedIds).containsExactly(zonedMemberId);
   }
 
+  @Test
+  void shouldAggregateTopologyPerPartitionGroup() {
+    // given — broker 0 publishes both a default-group and a tenant1-group BrokerInfo
+    final var brokerId = BrokerMemberId.from(0);
+    final int partitionDefault = 1;
+    final int partitionTenant1 = 1;
+
+    final BrokerInfo defaultInfo = createBroker(brokerId);
+    defaultInfo.setLeaderForPartition(partitionDefault, 1L);
+
+    final BrokerInfo tenant1Info = createBrokerWithGroup(brokerId, "tenant1");
+    tenant1Info.setFollowerForPartition(partitionTenant1);
+
+    // Write both groups into the same member properties
+    final Member member = new Member(new MemberConfig().setId(defaultInfo.brokerIdStr()));
+    defaultInfo.writeIntoProperties(member.properties());
+    tenant1Info.writeIntoProperties(member.properties());
+    members.add(member);
+
+    // when
+    notifyEvent(new ClusterMembershipEvent(Type.MEMBER_ADDED, member));
+
+    // then — default group topology reflects the default BrokerInfo
+    assertThat(topologyManager.getTopology().getLeaderForPartition(partitionDefault))
+        .isEqualTo(brokerId);
+    assertThat(topologyManager.getTopology().getFollowersForPartition(partitionDefault)).isEmpty();
+
+    // then — tenant1 group topology reflects the tenant1 BrokerInfo
+    final BrokerClusterState tenant1Topology = topologyManager.getTopology("tenant1");
+    assertThat(tenant1Topology.getFollowersForPartition(partitionTenant1)).contains(brokerId);
+    assertThat(tenant1Topology.getLeaderForPartition(partitionTenant1)).isNull();
+  }
+
+  @Test
+  void shouldRemoveBrokerFromAllGroupsOnMemberRemoved() {
+    // given — broker 0 is present in default and tenant1 groups
+    final var brokerId = BrokerMemberId.from(0);
+    final BrokerInfo defaultInfo = createBroker(brokerId);
+    defaultInfo.setFollowerForPartition(1);
+    final BrokerInfo tenant1Info = createBrokerWithGroup(brokerId, "tenant1");
+    tenant1Info.setLeaderForPartition(1, 1L);
+
+    final Member member = new Member(new MemberConfig().setId(defaultInfo.brokerIdStr()));
+    defaultInfo.writeIntoProperties(member.properties());
+    tenant1Info.writeIntoProperties(member.properties());
+    members.add(member);
+    notifyEvent(new ClusterMembershipEvent(Type.MEMBER_ADDED, member));
+
+    assertThat(topologyManager.getTopology().getBrokers()).contains(brokerId);
+    assertThat(topologyManager.getTopology("tenant1").getBrokers()).contains(brokerId);
+
+    // when
+    notifyEvent(createMemberRemoveEvent(defaultInfo));
+
+    // then — broker is gone from both groups
+    assertThat(topologyManager.getTopology().getBrokers()).doesNotContain(brokerId);
+    assertThat(topologyManager.getTopology("tenant1").getBrokers()).doesNotContain(brokerId);
+  }
+
+  @Test
+  void shouldReturnUninitializedTopologyForUnknownGroup() {
+    // given / when — no brokers added
+    // then
+    assertThat(topologyManager.getTopology("unknown-group").isInitialized()).isFalse();
+  }
+
   private void addTopologyListener(final BrokerTopologyListener listener) {
     topologyManager.addTopologyListener(listener);
     actorSchedulerRule.workUntilDone();
@@ -588,6 +654,10 @@ final class BrokerTopologyManagerTest {
     broker.setCommandApiAddress("localhost:1000");
     broker.setVersion("0.23.0-SNAPSHOT");
     return broker;
+  }
+
+  private BrokerInfo createBrokerWithGroup(final BrokerMemberId brokerId, final String group) {
+    return createBroker(brokerId).setPartitionGroup(group);
   }
 
   private ClusterMembershipEvent createMemberAddedEvent(final BrokerInfo broker) {
