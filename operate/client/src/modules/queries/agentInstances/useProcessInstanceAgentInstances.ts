@@ -31,6 +31,7 @@ const useProcessInstanceAgentInstances = () => {
     {
       enabled: IS_AI_AGENT_ENABLED && !!processInstanceId,
       refetchInterval: 5000,
+      loadAllItems: true,
     },
   );
 };

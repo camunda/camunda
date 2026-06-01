@@ -35,10 +35,10 @@ const queryKeys = {
     get: (agentInstanceKey: string) => ['agentInstance', agentInstanceKey],
   },
   agentInstances: {
-    search: (payload?: QueryAgentInstancesRequestBody) => [
-      'agentInstancesSearch',
-      payload,
-    ],
+    search: (
+      payload?: QueryAgentInstancesRequestBody,
+      options?: {loadAllItems?: boolean},
+    ) => ['agentInstancesSearch', payload, options],
   },
   variables: {
     search: () => ['searchVariables'],
