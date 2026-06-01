@@ -462,12 +462,40 @@ Always write `/tmp/fix-meta.json` before stopping:
       "repo": "camunda",
       "branch": "fix/nightly-8.9-operate-filter-wait",
       "has_e2e": true,
-      "has_api": false
+      "has_api": false,
+      "root_cause": "One-sentence explanation of why the test was failing.",
+      "fix": "One-sentence description of what was changed and why it resolves the failure.",
+      "tests_fixed": [
+        {"file": "tests/api/v2/...", "test_name": "...", "test_type": "api"}
+      ]
     }
   ]
 }
 ```
 
-Use `{"prs": []}` if no PR was opened (regardless of reason). The calling
-workflow uses `has_e2e` and `has_api` to decide which on-demand verification
-workflows to trigger.
+All six fields — `number`, `owner`, `repo`, `branch`, `has_e2e`, `has_api` — are
+**mandatory**. For all PRs in this repo: `"owner": "camunda", "repo": "camunda"`.
+`root_cause` and `fix` are **strongly recommended** — they are surfaced directly
+in the GitHub job summary so reviewers understand the agent's decision without
+reading the full agent log.
+Extra fields (e.g. `url`, `title`, `tests_fixed`) are allowed but do not replace
+these six. **Never omit `owner` or `repo`** — the Slack step uses them to build
+the PR link and will produce `github.com/null/null/pull/<n>` if they are absent.
+
+**`branch`** must never be `null`. Set it to the exact `headRefName` of the PR:
+
+```bash
+gh pr view <number> --repo camunda/camunda --json headRefName --jq '.headRefName'
+```
+
+**`has_e2e` / `has_api`** — set based on the `test_type` of every test you fixed:
+- Any fixed test with `test_type: "e2e"` → `"has_e2e": true`
+- Any fixed test with `test_type: "api"` → `"has_api": true`
+- Both can be `true` when a PR covers mixed failures.
+
+The calling workflow uses these flags to determine scope, but only one
+on-demand verification run is triggered: `c8-orchestration-cluster-e2e-tests-on-demand.yml`
+(covers both E2E and API tests). **If `has_e2e` and `has_api` are both `false`,
+no verification run is triggered and the fix is never validated automatically.**
+
+Use `{"prs": []}` if no PR was opened (regardless of reason).

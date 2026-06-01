@@ -42,6 +42,11 @@ on:
         description: 'Slack channel ID for thread reply'
         required: false
         default: ''
+      send_slack_notification:
+        description: 'Post a Slack reply when done (true for nightly cron dispatches, false for on-demand runs)'
+        type: boolean
+        required: false
+        default: false
 
 defaults:
   run:
@@ -146,15 +151,19 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
         with:
-          go-version: '>=1.23.1'
+          go-version: '1.23'
           cache: false
 
-      - name: Install workspace-cli and Claude Code CLI
+      - name: Install workspace-cli
         env:
           GOPRIVATE: github.com/camunda/*
+          GOTOOLCHAIN: auto
         run: |
-          go install github.com/camunda/workspace-cli/cmd/workspace@0d062533bd9da7e29be8974d3c34f8788fd4ef6c
+          go install github.com/camunda/workspace-cli/cmd/workspace@latest
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      - name: Install Claude Code CLI
+        run: |
           npm install -g @anthropic-ai/claude-code@2.1.156
           claude --version
 
@@ -253,6 +262,10 @@ jobs:
           Branch name to use: fix/nightly-${VERSION}-<short-slug>.
           Commit + PR title prefix: 'test:' (NEVER 'fix:' — commitlint rejects it).
 
+          CRITICAL for /tmp/fix-meta.json: the "branch" field must be the exact
+          headRefName of the PR you opened — never null, never omitted. Obtain it
+          with: gh pr view <number> --repo ${REPO} --json headRefName --jq '.headRefName'
+
           When done (or if no fix is possible), write /tmp/fix-meta.json and stop.
           EOF
           )
@@ -263,10 +276,14 @@ jobs:
       - name: Trigger on-demand verification runs and patch PR body
         if: always()
         env:
-          GH_TOKEN: ${{ steps.secrets.outputs.GH_TOKEN }}
-          REPO:     ${{ github.repository }}
-          HAS_E2E:  ${{ steps.scope.outputs.has_e2e }}
-          HAS_API:  ${{ steps.scope.outputs.has_api }}
+          # Use GITHUB_TOKEN (built-in) here, not the Vault GH_TOKEN.
+          # The Vault token lacks read:org, which causes gh CLI to fail its
+          # GraphQL auth check and never reach the workflow dispatch REST call.
+          # The job already has actions:write and pull-requests:write so the
+          # built-in token is sufficient for triggering workflows and patching PR bodies.
+          GH_TOKEN:   ${{ secrets.GITHUB_TOKEN }}
+          REPO:       ${{ github.repository }}
+          TARGET_REF: ${{ steps.target.outputs.ref }}
         run: |
           set -euo pipefail
           if [ ! -f /tmp/fix-meta.json ]; then
@@ -282,60 +299,48 @@ jobs:
 
           jq -c '.prs[]' /tmp/fix-meta.json | while read -r pr_obj; do
             pr_number=$(echo "$pr_obj" | jq -r '.number')
-            branch=$(echo    "$pr_obj" | jq -r '.branch')
-            pr_has_e2e=$(echo "$pr_obj" | jq -r '.has_e2e // false')
-            pr_has_api=$(echo "$pr_obj" | jq -r '.has_api // false')
+            branch=$(echo    "$pr_obj" | jq -r '.branch // empty')
 
-            e2e_run_url=""
-            api_run_url=""
+            if [ -z "$branch" ] || [ "$branch" = "null" ]; then
+              echo "::warning::fix-meta.json has null/empty branch for PR #$pr_number — resolving from PR"
+              branch=$(gh pr view "$pr_number" --repo "$REPO" --json headRefName --jq '.headRefName' 2>/dev/null || echo "")
+              echo "Resolved branch: $branch"
+            fi
 
-            if [ "$pr_has_e2e" = "true" ]; then
-              echo "Triggering E2E on-demand run for branch $branch..."
+            on_demand_run_url=""
+
+            if [ -n "$branch" ] && [ "$branch" != "null" ]; then
+              echo "Triggering on-demand run for PR #${pr_number} branch ${branch}..."
+              dispatched_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
               gh workflow run c8-orchestration-cluster-e2e-tests-on-demand.yml \
-                --repo "$REPO" --ref "$branch" -f branch="$branch"
+                --repo "$REPO" -f branch="$branch"
               # Poll up to 90s for the new run to appear
               for _ in $(seq 1 18); do
                 sleep 5
                 run_id=$(gh run list \
                   --workflow c8-orchestration-cluster-e2e-tests-on-demand.yml \
-                  --repo "$REPO" --branch "$branch" --limit 1 \
-                  --json databaseId,createdAt --jq '.[0].databaseId' || echo "")
+                  --repo "$REPO" --limit 5 \
+                  --json databaseId,createdAt \
+                  | jq -r --arg t "$dispatched_at" \
+                    '[.[] | select(.createdAt >= $t)] | first | .databaseId // ""' || echo "")
                 if [ -n "$run_id" ] && [ "$run_id" != "null" ]; then
-                  e2e_run_url="https://github.com/${REPO}/actions/runs/${run_id}"
-                  echo "E2E on-demand run: $e2e_run_url"
+                  on_demand_run_url="https://github.com/${REPO}/actions/runs/${run_id}"
+                  echo "On-demand run: $on_demand_run_url"
                   break
                 fi
               done
             fi
 
-            if [ "$pr_has_api" = "true" ]; then
-              echo "Triggering API on-demand run for branch $branch..."
-              gh workflow run c8-orchestration-cluster-e2e-api-test-branch-on-demand.yml \
-                --repo "$REPO" --ref "$branch" -f branch="$branch"
-              for _ in $(seq 1 18); do
-                sleep 5
-                run_id=$(gh run list \
-                  --workflow c8-orchestration-cluster-e2e-api-test-branch-on-demand.yml \
-                  --repo "$REPO" --branch "$branch" --limit 1 \
-                  --json databaseId,createdAt --jq '.[0].databaseId' || echo "")
-                if [ -n "$run_id" ] && [ "$run_id" != "null" ]; then
-                  api_run_url="https://github.com/${REPO}/actions/runs/${run_id}"
-                  echo "API on-demand run: $api_run_url"
-                  break
-                fi
-              done
-            fi
-
-            # Patch PR body with the verification links (idempotent: strip any
+            # Patch PR body with the verification link (idempotent: strip any
             # existing "## On-demand verification runs" section before appending
             # so re-runs do not accumulate duplicate blocks)
             current_body=$(gh pr view "$pr_number" --repo "$REPO" --json body --jq '.body')
             base_body=$(printf '%s' "$current_body" | sed '/^## On-demand verification runs/,$d' | sed 's/[[:space:]]*$//')
-            verification_block=$'\n\n## On-demand verification runs\n'
-            [ -n "$e2e_run_url" ] && verification_block+="- E2E: ${e2e_run_url}"$'\n'
-            [ -n "$api_run_url" ] && verification_block+="- API: ${api_run_url}"$'\n'
-            new_body="${base_body}${verification_block}"
-            printf '%s' "$new_body" | gh pr edit "$pr_number" --repo "$REPO" --body-file - || true
+            if [ -n "$on_demand_run_url" ]; then
+              verification_block=$'\n\n## On-demand verification runs\n'"- ${on_demand_run_url}"$'\n'
+              new_body="${base_body}${verification_block}"
+              printf '%s' "$new_body" | gh pr edit "$pr_number" --repo "$REPO" --body-file - || true
+            fi
           done
 
       - name: Re-label PRs (idempotent)
@@ -368,22 +373,51 @@ jobs:
             else
               pr_count=$(jq '.prs | length' /tmp/fix-meta.json)
               if [ "$pr_count" -eq 0 ]; then
-                echo ":warning: **No PRs opened** — agent could not determine a safe fix."
-                echo ""
-                echo "Check the agent log above for the root-cause analysis."
+                echo ":warning: **Decision: no fix applied** — agent could not determine a safe fix."
+                # Surface root_cause from the empty-prs object if the agent wrote one
+                reason=$(jq -r '.reason // .root_cause // ""' /tmp/fix-meta.json 2>/dev/null || true)
+                if [ -n "$reason" ] && [ "$reason" != "null" ]; then
+                  echo ""
+                  echo "**Reason:** ${reason}"
+                fi
               else
-                echo "### PRs opened"
+                # Print each PR as a prominent header so the link is the first thing visible
+                jq -r --arg repo "$REPO" '
+                  .prs[] |
+                  (if .owner != null and .repo != null then "\(.owner)/\(.repo)"
+                   elif (.url // "") | test("github.com/[^/]+/[^/]+") then (.url | capture("github.com/(?<r>[^/]+/[^/]+)/pull") | .r)
+                   else $repo end) as $full_repo |
+                  "### :white_check_mark: Decision: fix applied — [PR #\(.number)](https://github.com/\($full_repo)/pull/\(.number))",
+                  "",
+                  "**Branch:** `\(.branch)`"
+                ' /tmp/fix-meta.json
                 echo ""
-                jq -r --arg repo "$REPO" \
-                  '.prs[] | "- [PR #\(.number)](https://github.com/\($repo)/pull/\(.number)) — `\(.branch)`"' \
-                  /tmp/fix-meta.json
+
+                # Root cause + fix description per PR
+                jq -c '.prs[]' /tmp/fix-meta.json | while IFS= read -r pr; do
+                  pr_num=$(echo "$pr" | jq -r '.number')
+                  root_cause=$(echo "$pr" | jq -r '.root_cause // ""')
+                  fix_desc=$(echo "$pr" | jq -r '.fix // ""')
+                  if [ -n "$root_cause" ] && [ "$root_cause" != "null" ]; then
+                    echo "#### PR #${pr_num} — Root cause"
+                    echo ""
+                    echo "${root_cause}"
+                    echo ""
+                  fi
+                  if [ -n "$fix_desc" ] && [ "$fix_desc" != "null" ]; then
+                    echo "#### PR #${pr_num} — Fix"
+                    echo ""
+                    echo "${fix_desc}"
+                    echo ""
+                  fi
+                done
+
+                echo "### Tests fixed"
                 echo ""
-                echo "### Tests covered"
-                echo ""
-                echo "| PR | E2E | API |"
-                echo "|----|-----|-----|"
-                jq -r '.prs[] | "| #\(.number) | \(if .has_e2e then ":white_check_mark:" else ":heavy_minus_sign:" end) | \(if .has_api then ":white_check_mark:" else ":heavy_minus_sign:" end) |"' \
-                  /tmp/fix-meta.json
+                jq -r '.prs[] | .tests_fixed[]? |
+                  if type == "object" then "- `\(.file // "")` — \(.test_name // "")"
+                  else "- \(.)" end' \
+                  /tmp/fix-meta.json || true
               fi
             fi
 
@@ -405,7 +439,7 @@ jobs:
           if-no-files-found: warn
 
       - name: Slack thread reply
-        if: always() && github.event.inputs.slack_thread_ts != '' && github.event.inputs.slack_channel != ''
+        if: always() && github.event.inputs.send_slack_notification == 'true'
         env:
           SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.secrets.outputs.SLACK_BOT_USER_OAUTH_TOKEN }}
           SLACK_THREAD_TS:            ${{ github.event.inputs.slack_thread_ts }}
@@ -416,19 +450,26 @@ jobs:
         run: |
           set -euo pipefail
           prs_json="[]"
-          [ -f /tmp/fix-meta.json ] && prs_json=$(jq -c '.prs // []' /tmp/fix-meta.json)
+          [ -f /tmp/fix-meta.json ] && prs_json=$(jq -c '.prs // []' /tmp/fix-meta.json 2>/dev/null || echo '[]')
           pr_count=$(echo "$prs_json" | jq 'length')
 
-          if [ "$JOB_STATUS" = "failure" ]; then
-            icon=":x:"; summary="Agent failed (no fix applied)"
-          elif [ "$pr_count" -eq 0 ]; then
-            icon=":information_source:"; summary="No PR opened — agent could not determine a fix"
-          else
+          # Check fix-meta.json first — if a PR was opened report it even when
+          # downstream steps (on-demand trigger, summary) failed.
+          if [ "$pr_count" -gt 0 ]; then
             icon=":white_check_mark:"
-            pr_links=$(echo "$prs_json" | jq -r \
-              '.[] | "<https://github.com/\(.owner)/\(.repo)/pull/\(.number)|PR #\(.number)>"' \
+            pr_links=$(echo "$prs_json" | jq -r --arg repo "${{ github.repository }}" '
+              .[] |
+              (if .owner != null and .repo != null then "\(.owner)/\(.repo)"
+               elif (.url // "") | test("github.com/[^/]+/[^/]+") then (.url | capture("github.com/(?<r>[^/]+/[^/]+)/pull") | .r)
+               else $repo end) as $full_repo |
+              "<https://github.com/\($full_repo)/pull/\(.number)|PR #\(.number)>"' \
               | tr '\n' '  ')
             summary="PR(s) opened: ${pr_links}"
+            [ "$JOB_STATUS" = "failure" ] && summary="${summary} _(post-processing failed — see run)_"
+          elif [ "$JOB_STATUS" = "failure" ]; then
+            icon=":x:"; summary="Agent failed (no fix applied)"
+          else
+            icon=":information_source:"; summary="No PR opened — agent could not determine a fix"
           fi
 
           text="${icon} *${VERSION}* fix agent — ${summary}\n<${RUN_URL}|Agent run ↗>"
