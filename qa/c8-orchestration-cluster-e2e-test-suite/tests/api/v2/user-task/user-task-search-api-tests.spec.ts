@@ -172,7 +172,7 @@ test.describe.parallel('Search User Task Tests', () => {
         data: {
           filter: {
             processDefinitionKey: {
-              $in: [processDefinitionKey],
+              $in: [processDefinitionKey, '9999999999999'],
             },
           },
         },
@@ -200,6 +200,7 @@ test.describe.parallel('Search User Task Tests', () => {
     request,
   }) => {
     let processDefinitionId = '';
+    let idSuffix = '';
 
     await expect(async () => {
       const res = await request.post(buildUrl('/user-tasks/search'), {
@@ -213,6 +214,8 @@ test.describe.parallel('Search User Task Tests', () => {
       const json = await res.json();
       expect(json.items.length).toBeGreaterThan(0);
       processDefinitionId = json.items[0].processDefinitionId;
+      // Use a suffix of the ID so the pattern genuinely exercises the * wildcard
+      idSuffix = processDefinitionId.slice(-15);
     }).toPass(defaultAssertionOptions);
 
     await expect(async () => {
@@ -221,7 +224,7 @@ test.describe.parallel('Search User Task Tests', () => {
         data: {
           filter: {
             processDefinitionId: {
-              $like: `*${processDefinitionId}*`,
+              $like: `*${idSuffix}`,
             },
           },
         },
@@ -237,9 +240,8 @@ test.describe.parallel('Search User Task Tests', () => {
       );
       expect(json.page.totalItems).toBeGreaterThanOrEqual(3);
       expect(
-        json.items.every(
-          (item: {processDefinitionId: string}) =>
-            item.processDefinitionId === processDefinitionId,
+        json.items.every((item: {processDefinitionId: string}) =>
+          item.processDefinitionId.endsWith(idSuffix),
         ),
       ).toBe(true);
     }).toPass(defaultAssertionOptions);
