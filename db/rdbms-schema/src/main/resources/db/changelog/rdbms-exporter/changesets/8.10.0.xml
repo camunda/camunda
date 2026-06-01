@@ -256,4 +256,70 @@
     </createIndex>
   </changeSet>
 
+  <changeSet id="create_wait_state_table" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}WAIT_STATE"/>
+      </not>
+    </preConditions>
+    <createTable tableName="${prefix}WAIT_STATE">
+      <column name="WAIT_STATE_KEY" type="BIGINT">
+        <constraints primaryKey="true"/>
+      </column>
+      <column name="ROOT_PROCESS_INSTANCE_KEY" type="BIGINT"/>
+      <column name="PROCESS_INSTANCE_KEY" type="BIGINT"/>
+      <column name="ELEMENT_INSTANCE_KEY" type="BIGINT"/>
+      <column name="ELEMENT_ID" type="NVARCHAR(${userCharColumnSize})"/>
+      <column name="ELEMENT_TYPE" type="VARCHAR(50)"/>
+      <column name="WAIT_STATE_TYPE" type="VARCHAR(50)"/>
+      <column name="DETAILS" type="CLOB"/>
+      <column name="TENANT_ID" type="NVARCHAR(${userCharColumnSize})"/>
+      <column name="PARTITION_ID" type="NUMBER"/>
+    </createTable>
+  </changeSet>
+
+  <changeSet id="create_wait_state_process_instance_key_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_WAIT_STATE_PROCESS_INSTANCE_KEY"
+          tableName="${prefix}WAIT_STATE"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}WAIT_STATE"
+      indexName="${prefix}IDX_WAIT_STATE_PROCESS_INSTANCE_KEY">
+      <column name="PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="create_wait_state_element_instance_key_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_WAIT_STATE_ELEMENT_INSTANCE_KEY"
+          tableName="${prefix}WAIT_STATE"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}WAIT_STATE"
+      indexName="${prefix}IDX_WAIT_STATE_ELEMENT_INSTANCE_KEY">
+      <column name="ELEMENT_INSTANCE_KEY"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="create_wait_state_root_process_instance_key_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_WAIT_STATE_ROOT_PROCESS_INSTANCE_KEY"
+          tableName="${prefix}WAIT_STATE"/>
+      </not>
+    </preConditions>
+    <sql dbms="mysql,mariadb,h2,oracle">
+      CREATE INDEX ${prefix}IDX_WAIT_STATE_ROOT_PROCESS_INSTANCE_KEY
+      ON ${prefix}WAIT_STATE (ROOT_PROCESS_INSTANCE_KEY)
+    </sql>
+    <!-- Since the user task key is sparse, we allow Postgres and MSSQL to exclude null values -->
+    <sql dbms="postgresql,mssql">
+      CREATE INDEX ${prefix}IDX_WAIT_STATE_ROOT_PROCESS_INSTANCE_KEY
+      ON ${prefix}WAIT_STATE (ROOT_PROCESS_INSTANCE_KEY) WHERE ROOT_PROCESS_INSTANCE_KEY IS NOT NULL
+    </sql>
+  </changeSet>
+
 </databaseChangeLog>
