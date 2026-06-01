@@ -368,7 +368,7 @@ final class JobHandlerTest {
     // when
     underTest.updateEntity(record, entity);
 
-    // then - flowNodeId is null so flush() won't overwrite the stored value
+    // then - flowNodeId was not set, preserving the existing value in ES (partial update)
     assertThat(entity.getFlowNodeId()).isNull();
   }
 

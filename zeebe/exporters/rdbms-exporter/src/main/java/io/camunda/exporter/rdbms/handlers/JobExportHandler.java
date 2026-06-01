@@ -83,8 +83,14 @@ public class JobExportHandler implements RdbmsExportHandler<JobRecordValue> {
             .errorMessage(value.getErrorMessage())
             .errorCode(value.getErrorCode())
             .customHeaders(value.getCustomHeaders())
-            .kind(JobKind.valueOf(value.getJobKind().name()))
-            .elementId(value.getElementId());
+            .kind(JobKind.valueOf(value.getJobKind().name()));
+
+    // Skip setting elementId for intents that may contain NO_CATCH_EVENT_FOUND sentinel
+    // to preserve the existing value in RDBMS (partial update pattern)
+    final Intent intent = record.getIntent();
+    if (!INTENTS_RETAINING_ELEMENT_ID.contains(intent)) {
+      builder.elementId(value.getElementId());
+    }
 
     final var recordTimestampAsOffsetDateTime =
         DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp()));
@@ -98,7 +104,6 @@ public class JobExportHandler implements RdbmsExportHandler<JobRecordValue> {
       builder.endTime(recordTimestampAsOffsetDateTime);
     }
 
-    final Intent intent = record.getIntent();
     if (intent.equals(JobIntent.COMPLETED)) {
       builder
           .isDenied(value.getResult().isDenied())
@@ -110,10 +115,6 @@ public class JobExportHandler implements RdbmsExportHandler<JobRecordValue> {
 
     if (value.getDeadline() >= 0) {
       builder.deadline(DateUtil.toOffsetDateTime(value.getDeadline()));
-    }
-
-    if (INTENTS_RETAINING_ELEMENT_ID.contains(intent)) {
-      builder.elementId(null);
     }
 
     if (FAILED_JOB_EVENTS.contains(intent)) {
