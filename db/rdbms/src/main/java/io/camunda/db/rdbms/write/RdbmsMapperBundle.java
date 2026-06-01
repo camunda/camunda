@@ -31,6 +31,7 @@ import io.camunda.db.rdbms.sql.UsageMetricMapper;
 import io.camunda.db.rdbms.sql.UsageMetricTUMapper;
 import io.camunda.db.rdbms.sql.UserTaskMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
+import io.camunda.db.rdbms.sql.WaitStateMapper;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
 
@@ -59,7 +60,8 @@ public record RdbmsMapperBundle(
     CorrelatedMessageSubscriptionMapper correlatedMessageSubscriptionMapper,
     ClusterVariableMapper clusterVariableMapper,
     HistoryDeletionMapper historyDeletionMapper,
-    AgentInstanceMapper agentInstanceMapper) {
+    AgentInstanceMapper agentInstanceMapper,
+    WaitStateMapper waitStateMapper) {
 
   public static RdbmsMapperBundle from(
       final SqlSessionFactory sqlSessionFactory,
@@ -90,6 +92,7 @@ public record RdbmsMapperBundle(
         sqlSession.getMapper(CorrelatedMessageSubscriptionMapper.class),
         sqlSession.getMapper(ClusterVariableMapper.class),
         sqlSession.getMapper(HistoryDeletionMapper.class),
-        sqlSession.getMapper(AgentInstanceMapper.class));
+        sqlSession.getMapper(AgentInstanceMapper.class),
+        sqlSession.getMapper(WaitStateMapper.class));
   }
 }
