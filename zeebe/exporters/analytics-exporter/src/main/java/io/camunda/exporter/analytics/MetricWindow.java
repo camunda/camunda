@@ -7,8 +7,8 @@
  */
 package io.camunda.exporter.analytics;
 
-import static io.camunda.exporter.analytics.AnalyticsAttributes.LOG_EVENT_TIME_MAX;
-import static io.camunda.exporter.analytics.AnalyticsAttributes.LOG_EVENT_TIME_MIN;
+import static io.camunda.exporter.analytics.AnalyticsAttributes.EVENT_TIME_MAX;
+import static io.camunda.exporter.analytics.AnalyticsAttributes.EVENT_TIME_MIN;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.LOG_POSITION_END;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.LOG_POSITION_START;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.METRIC_SEQUENCE_NUMBER;
@@ -52,8 +52,8 @@ final class MetricWindow {
         METRIC_SEQUENCE_NUMBER, metricSequenceNumber,
         LOG_POSITION_START, positionStart,
         LOG_POSITION_END, positionEnd,
-        LOG_EVENT_TIME_MIN, eventTimeMin,
-        LOG_EVENT_TIME_MAX, eventTimeMax);
+        EVENT_TIME_MIN, eventTimeMin,
+        EVENT_TIME_MAX, eventTimeMax);
   }
 
   /** Resets all fields for the next window. */

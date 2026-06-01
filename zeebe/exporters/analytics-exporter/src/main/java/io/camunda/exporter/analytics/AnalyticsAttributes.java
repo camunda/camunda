@@ -64,10 +64,10 @@ public final class AnalyticsAttributes {
       AttributeKey.longKey("camunda.log.position_start");
   public static final AttributeKey<Long> LOG_POSITION_END =
       AttributeKey.longKey("camunda.log.position_end");
-  public static final AttributeKey<Long> LOG_EVENT_TIME_MIN =
-      AttributeKey.longKey("camunda.log.event_time_min");
-  public static final AttributeKey<Long> LOG_EVENT_TIME_MAX =
-      AttributeKey.longKey("camunda.log.event_time_max");
+  public static final AttributeKey<Long> EVENT_TIME_MIN =
+      AttributeKey.longKey("camunda.event.time_min");
+  public static final AttributeKey<Long> EVENT_TIME_MAX =
+      AttributeKey.longKey("camunda.event.time_max");
 
   // Event names
   public static final String EVENT_PROCESS_INSTANCE_CREATED = "process_instance_created";

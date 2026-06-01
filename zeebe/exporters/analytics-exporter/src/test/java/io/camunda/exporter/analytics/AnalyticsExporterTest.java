@@ -189,9 +189,13 @@ class AnalyticsExporterTest {
         .isPresent()
         .get()
         .satisfies(
-            bytes ->
-                assertThat(AnalyticsExporterMetadata.deserialize(bytes).getEventSequenceNumber())
-                    .isEqualTo(3L));
+            bytes -> {
+              final var metadata = AnalyticsExporterMetadata.deserialize(bytes);
+              assertThat(metadata.getEventSequenceNumber()).isEqualTo(3L);
+              // metricSequenceNumber is only incremented during metric flush (gauge callback),
+              // not during export(). Since no metric flush occurs here, it stays at 0.
+              assertThat(metadata.getMetricSequenceNumber()).isZero();
+            });
   }
 
   @Test

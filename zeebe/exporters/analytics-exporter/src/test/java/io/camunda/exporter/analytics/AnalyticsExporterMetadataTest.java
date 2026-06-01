@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
 class AnalyticsExporterMetadataTest {
 
   @Test
-  void shouldRoundTripAllSequenceNumbers() {
+  void shouldSerializeAndDeserializeAllFields() {
     // given
     final var metadata = new AnalyticsExporterMetadata(10, 42);
 

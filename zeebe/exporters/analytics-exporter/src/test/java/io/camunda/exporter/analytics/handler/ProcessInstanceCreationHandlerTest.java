@@ -50,6 +50,23 @@ class ProcessInstanceCreationHandlerTest {
     handler = new ProcessInstanceCreationHandler(manager);
   }
 
+  private static Record<?> piCreatedRecord() {
+    return FACTORY.generateRecord(
+        ValueType.PROCESS_INSTANCE_CREATION,
+        r -> r.withRecordType(RecordType.EVENT).withIntent(ProcessInstanceCreationIntent.CREATED));
+  }
+
+  @SuppressWarnings("unchecked")
+  private static <T extends RecordValue> Record<T> typed(final Record<?> record) {
+    return (Record<T>) record;
+  }
+
+  private static Optional<MetricData> findCounter(final Collection<MetricData> metrics) {
+    return metrics.stream()
+        .filter(m -> m.getName().equals(METRIC_PROCESS_INSTANCE_CREATED))
+        .findFirst();
+  }
+
   @Nested
   class LogEvent {
 
@@ -73,23 +90,7 @@ class ProcessInstanceCreationHandlerTest {
   class MetricCounter {
 
     @Test
-    void shouldIncrementCounterOnHandle() {
-      // when
-      handler.handle(typed(piCreatedRecord()));
-
-      // then
-      assertThat(findCounter(metricReader.collectAllMetrics()))
-          .isPresent()
-          .hasValueSatisfying(
-              metric ->
-                  assertThat(metric.getLongSumData().getPoints())
-                      .hasSize(1)
-                      .first()
-                      .satisfies(point -> assertThat(point.getValue()).isEqualTo(1)));
-    }
-
-    @Test
-    void shouldAggregateCounterAcrossMultipleHandles() {
+    void shouldAggregateCounterAcrossHandles() {
       // when
       handler.handle(typed(piCreatedRecord()));
       handler.handle(typed(piCreatedRecord()));
@@ -128,22 +129,5 @@ class ProcessInstanceCreationHandlerTest {
                             assertThat(attrs.get(TENANT_ID)).isNotNull();
                           }));
     }
-  }
-
-  private static Record<?> piCreatedRecord() {
-    return FACTORY.generateRecord(
-        ValueType.PROCESS_INSTANCE_CREATION,
-        r -> r.withRecordType(RecordType.EVENT).withIntent(ProcessInstanceCreationIntent.CREATED));
-  }
-
-  @SuppressWarnings("unchecked")
-  private static <T extends RecordValue> Record<T> typed(final Record<?> record) {
-    return (Record<T>) record;
-  }
-
-  private static Optional<MetricData> findCounter(final Collection<MetricData> metrics) {
-    return metrics.stream()
-        .filter(m -> m.getName().equals(METRIC_PROCESS_INSTANCE_CREATED))
-        .findFirst();
   }
 }

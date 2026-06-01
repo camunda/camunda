@@ -7,8 +7,8 @@
  */
 package io.camunda.exporter.analytics;
 
-import static io.camunda.exporter.analytics.AnalyticsAttributes.LOG_EVENT_TIME_MAX;
-import static io.camunda.exporter.analytics.AnalyticsAttributes.LOG_EVENT_TIME_MIN;
+import static io.camunda.exporter.analytics.AnalyticsAttributes.EVENT_TIME_MAX;
+import static io.camunda.exporter.analytics.AnalyticsAttributes.EVENT_TIME_MIN;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.LOG_POSITION_END;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.LOG_POSITION_START;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.METRIC_SEQUENCE_NUMBER;
@@ -34,8 +34,8 @@ class MetricWindowTest {
     // event_count is the gauge value, not an attribute
     assertThat(attrs.get(LOG_POSITION_START)).isEqualTo(100L);
     assertThat(attrs.get(LOG_POSITION_END)).isEqualTo(100L);
-    assertThat(attrs.get(LOG_EVENT_TIME_MIN)).isEqualTo(5000L);
-    assertThat(attrs.get(LOG_EVENT_TIME_MAX)).isEqualTo(5000L);
+    assertThat(attrs.get(EVENT_TIME_MIN)).isEqualTo(5000L);
+    assertThat(attrs.get(EVENT_TIME_MAX)).isEqualTo(5000L);
   }
 
   @Test
@@ -53,8 +53,8 @@ class MetricWindowTest {
     final var attrs = window.toGaugeAttributes(1L);
     assertThat(attrs.get(LOG_POSITION_START)).isEqualTo(100L);
     assertThat(attrs.get(LOG_POSITION_END)).isEqualTo(300L);
-    assertThat(attrs.get(LOG_EVENT_TIME_MIN)).isEqualTo(5000L);
-    assertThat(attrs.get(LOG_EVENT_TIME_MAX)).isEqualTo(7000L);
+    assertThat(attrs.get(EVENT_TIME_MIN)).isEqualTo(5000L);
+    assertThat(attrs.get(EVENT_TIME_MAX)).isEqualTo(7000L);
   }
 
   @Test
@@ -86,8 +86,8 @@ class MetricWindowTest {
     final var attrs = window.toGaugeAttributes(2L);
     assertThat(attrs.get(LOG_POSITION_START)).isEqualTo(500L);
     assertThat(attrs.get(LOG_POSITION_END)).isEqualTo(500L);
-    assertThat(attrs.get(LOG_EVENT_TIME_MIN)).isEqualTo(9000L);
-    assertThat(attrs.get(LOG_EVENT_TIME_MAX)).isEqualTo(9000L);
+    assertThat(attrs.get(EVENT_TIME_MIN)).isEqualTo(9000L);
+    assertThat(attrs.get(EVENT_TIME_MAX)).isEqualTo(9000L);
   }
 
   @Test
