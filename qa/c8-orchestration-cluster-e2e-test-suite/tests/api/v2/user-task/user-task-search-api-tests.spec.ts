@@ -215,7 +215,7 @@ test.describe.parallel('Search User Task Tests', () => {
       expect(json.items.length).toBeGreaterThan(0);
       processDefinitionId = json.items[0].processDefinitionId;
       // Use a suffix of the ID so the pattern genuinely exercises the * wildcard
-      idSuffix = processDefinitionId.slice(-15);
+      idSuffix = processDefinitionId.slice(-10);
     }).toPass(defaultAssertionOptions);
 
     await expect(async () => {
