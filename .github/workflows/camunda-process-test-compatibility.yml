@@ -153,14 +153,14 @@ jobs:
                    "type": "section",
                    "text": {
                      "type": "mrkdwn",
-                     "text": ":alarm: *Camunda Process Test Compatibility Tests Failed*"
+                     "text": ":alarm: *Camunda Process Test (CPT) Compatibility Tests Failed*"
                    }
                  },
                  {
                    "type": "section",
                    "text": {
                      "type": "mrkdwn",
-                     "text": "Branch: `${{ github.ref_name }}`\nPlease check: https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}"
+                     "text": "Branch: `${{ github.ref_name }}`\nCamunda image: `${{ inputs.camunda_image_version }}`\nConnectors image: `${{ inputs.connectors_image_version }}`\nPlease check: https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}"
                    }
                  }
                ]
