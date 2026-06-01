@@ -66,7 +66,12 @@ test.describe('Suspend & Resume Batch Operation Tests', () => {
   }) => {
     const key =
       await test.step('Create cancelable batch operation', async () => {
-        return createCancellationBatch(request, 3, 'batch_suspension_process');
+        // Use 20 instances so the batch takes long enough to process that the
+        // suspend command can arrive while the batch is still ACTIVE. With only
+        // 3 instances the engine finishes the batch (COMPLETED) before the
+        // suspend takes effect, so it never reaches SUSPENDED (same race as the
+        // first suspend test — not an indexing lag).
+        return createCancellationBatch(request, 20, 'batch_suspension_process');
       });
 
     await test.step('Suspend batch operation once', async () => {
