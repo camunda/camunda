@@ -29,6 +29,10 @@ on:
         type: boolean
         default: true
         required: false
+      fix_agent_ref:
+        description: 'Branch/ref to use when dispatching the fix agent workflow (default: main)'
+        default: 'main'
+        required: false
 
 # Minimal at workflow level. Triage job only needs to read; dispatch job
 # bumps actions: write to trigger the fix workflow (zizmor: excessive-permissions).
@@ -432,6 +436,7 @@ jobs:
           TRIAGE_RUN_URL:  ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           SLACK_THREAD_TS: ${{ needs.triage.outputs.slack_ts }}
           SLACK_CHANNEL:   ${{ needs.triage.outputs.slack_channel }}
+          FIX_AGENT_REF:   ${{ github.event.inputs.fix_agent_ref || 'main' }}
         run: |
           set -euo pipefail
 
@@ -445,7 +450,7 @@ jobs:
             echo "Dispatching fix agent: version=$version  failures=$(echo "$specs" | jq 'length')"
 
             gh workflow run c8-orchestration-cluster-e2e-nightly-fix.yml \
-              --repo "$REPO" --ref main \
+              --repo "$REPO" --ref "${FIX_AGENT_REF}" \
               -f version="$version" \
               -f test_specs="$specs" \
               -f e2e_run_id="$e2e" \
