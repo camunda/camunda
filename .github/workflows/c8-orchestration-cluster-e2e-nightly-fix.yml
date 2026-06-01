@@ -449,7 +449,7 @@ jobs:
         run: |
           set -euo pipefail
           prs_json="[]"
-          [ -f /tmp/fix-meta.json ] && prs_json=$(jq -c '.prs // []' /tmp/fix-meta.json)
+          [ -f /tmp/fix-meta.json ] && prs_json=$(jq -c '.prs // []' /tmp/fix-meta.json 2>/dev/null || echo '[]')
           pr_count=$(echo "$prs_json" | jq 'length')
 
           # Check fix-meta.json first — if a PR was opened report it even when

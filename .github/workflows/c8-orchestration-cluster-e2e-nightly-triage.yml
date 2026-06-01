@@ -249,6 +249,11 @@ jobs:
         run: |
           set -euo pipefail
 
+          if ! echo "${DAILY_CAP}" | grep -qE '^[0-9]+$'; then
+            echo "::error::daily_cap must be a non-negative integer, got: ${DAILY_CAP}"
+            exit 1
+          fi
+
           [ ! -s /tmp/all_failures.jsonl ] && { echo "No failures."; echo "dispatches=[]" >> "$GITHUB_OUTPUT"; exit 0; }
 
           # Normalize file paths:
