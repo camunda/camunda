@@ -15,6 +15,7 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import jakarta.servlet.ServletContext;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -33,10 +34,15 @@ public class ClientConfig {
   public boolean resourcePermissionsEnabled;
   public boolean multiTenancyEnabled;
   public String databaseType;
+  public boolean waitStatesEnabled;
   @Autowired private OperateProfileService profileService;
   @Autowired private EnvironmentService environmentService;
   @Autowired private OperateProperties operateProperties;
   @Autowired private CamundaSecurityLibraryProperties cslProperties;
+
+  @Value("${camunda.data.wait-states.enabled:true}")
+  private boolean waitStatesEnabledProperty;
+
   @Autowired private ServletContext context;
 
   public String asJson() {
@@ -53,6 +59,7 @@ public class ClientConfig {
     resourcePermissionsEnabled = cslProperties.getAuthorizations().isEnabled();
     multiTenancyEnabled = cslProperties.getMultiTenancy().isChecksEnabled();
     databaseType = environmentService.getDatabaseType();
+    waitStatesEnabled = waitStatesEnabledProperty;
     try {
       return String.format(
           "window.clientConfig = %s;", new ObjectMapper().writeValueAsString(this));
