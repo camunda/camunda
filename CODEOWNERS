@@ -37,6 +37,7 @@
 /.github/workflows/docs*                                 @camunda/monorepo-devops-team
 /.github/workflows/generate-concurrency-group.yml        @camunda/monorepo-devops-team
 /.github/workflows/generate-snapshot-docker-tag.yml      @camunda/monorepo-devops-team
+/.github/workflows/maven-dependency-snapshot.yml         @camunda/monorepo-devops-team
 /.github/workflows/issue-add-support-label.yml           @camunda/monorepo-devops-team
 /.github/workflows/labeler.yml                           @camunda/monorepo-devops-team
 /.github/workflows/preview-env*                          @camunda/monorepo-devops-team
