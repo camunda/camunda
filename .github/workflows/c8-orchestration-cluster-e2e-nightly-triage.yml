@@ -301,16 +301,23 @@ jobs:
 
       - name: Write job summary
         if: always()
+        env:
+          GH_TOKEN: ${{ steps.secrets.outputs.GH_TOKEN }}
+          REPO:     ${{ github.repository }}
         run: |
           set -euo pipefail
           {
             echo "## C8 Orchestration Cluster Nightly Triage"
             echo ""
 
+            # Build a set of versions that have test failures
+            versions_with_failures=$(jq -r '[.[].version] | unique | sort | .[]' \
+              /tmp/failures_normalized.json 2>/dev/null || true)
+
             # Failures per version
             count=$(jq 'length' /tmp/failures_normalized.json 2>/dev/null || echo 0)
             if [ "$count" -gt 0 ]; then
-              echo "### Failures found"
+              echo "### Test failures found"
               echo ""
               echo "| Version | Count | Test types |"
               echo "|---------|-------|------------|"
@@ -322,8 +329,41 @@ jobs:
                 | "| \($v) | \($n) | \($types) |"
               ' /tmp/failures_normalized.json
               echo ""
-            else
-              echo "> No failures found — all nightly runs passed or no runs exist yet."
+            fi
+
+            # Infra failures: runs marked failure but no test failures extracted
+            if [ -f /tmp/run_ids.json ]; then
+              infra_failures=""
+              while IFS='=' read -r key run_id; do
+                version=$(echo "$key" | cut -d/ -f1)
+                test_type=$(echo "$key" | cut -d/ -f2)
+                # Check if this version/type combo had test failures
+                has_test_failure=$(jq -r --arg v "$version" --arg t "$test_type" \
+                  '[.[] | select(.version == $v and .test_type == $t)] | length > 0' \
+                  /tmp/failures_normalized.json 2>/dev/null || echo false)
+                if [ "$has_test_failure" = "false" ]; then
+                  # Check the actual conclusion from run_ids
+                  conclusion=$(gh run view "$run_id" --repo "$REPO" --json conclusion --jq '.conclusion' 2>/dev/null || echo "unknown")
+                  if [ "$conclusion" = "failure" ]; then
+                    infra_failures="${infra_failures}\n| ${version} | ${test_type} | [${run_id}](https://github.com/${REPO}/actions/runs/${run_id}) |"
+                  fi
+                fi
+              done < <(jq -r 'to_entries[] | "\(.key)=\(.value)"' /tmp/run_ids.json)
+
+              if [ -n "$infra_failures" ]; then
+                echo "### Infrastructure failures (no test failures — workflow/setup issue)"
+                echo ""
+                echo "> These runs failed but all tests passed. Likely a post-test step (e.g. TestRail upload) failed."
+                echo ""
+                echo "| Version | Type | Run |"
+                echo "|---------|------|-----|"
+                printf '%b\n' "$infra_failures"
+                echo ""
+              fi
+            fi
+
+            if [ "$count" -eq 0 ] && [ -z "${infra_failures:-}" ]; then
+              echo "> All nightly runs passed or no runs exist yet."
               echo ""
             fi
 
