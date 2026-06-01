@@ -4,9 +4,6 @@
 name: Camunda Process Test Compatibility Tests
 
 on:
-  schedule:
-    # Runs at 02:00 every day https://crontab.guru/#0_2_*_*_*
-    - cron: '0 2 * * *'
   workflow_dispatch:
     inputs:
       cpt_version:
