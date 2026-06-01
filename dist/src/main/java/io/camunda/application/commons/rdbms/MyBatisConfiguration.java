@@ -10,9 +10,9 @@ package io.camunda.application.commons.rdbms;
 import static io.camunda.configuration.physicaltenants.PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID;
 
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
-import io.camunda.db.rdbms.LiquibaseSchemaManager;
-import io.camunda.db.rdbms.NoopSchemaManager;
-import io.camunda.db.rdbms.RdbmsSchemaManager;
+import io.camunda.db.rdbms.DefaultRdbmsSchemaManagerRegistry;
+import io.camunda.db.rdbms.PerTenantSchemaConfig;
+import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.sql.AgentInstanceMapper;
 import io.camunda.db.rdbms.sql.AuditLogMapper;
@@ -52,7 +52,6 @@ import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.db.rdbms.write.RdbmsMapperBundle;
 import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
-import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -68,8 +67,6 @@ import org.mybatis.spring.mapper.MapperFactoryBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.jdbc.autoconfigure.DataSourceTransactionManagerAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
@@ -81,50 +78,35 @@ public class MyBatisConfiguration {
   private static final Logger LOGGER = LoggerFactory.getLogger(MyBatisConfiguration.class);
 
   @Bean
-  @ConditionalOnProperty(
-      prefix = "camunda.data.secondary-storage.rdbms",
-      name = "auto-ddl",
-      havingValue = "true",
-      matchIfMissing = true)
-  public RdbmsSchemaManager rdbmsExporterLiquibase(
-      final DataSource dataSource,
-      final VendorDatabaseProperties vendorDatabaseProperties,
-      @Value("${camunda.data.secondary-storage.rdbms.prefix:}") final String prefix,
-      @Value("${camunda.data.secondary-storage.rdbms.ddl-lock-wait-timeout:PT15M}")
-          final Duration lockWaitTimeout) {
-    final String trimmedPrefix = StringUtils.trimToEmpty(prefix);
-    LOGGER.info(
-        "Initializing Liquibase for RDBMS with global table trimmedPrefix '{}'.", trimmedPrefix);
-
-    final var moduleConfig = new LiquibaseSchemaManager();
-    moduleConfig.setDataSource(dataSource);
-    moduleConfig.setDatabaseChangeLogTable(trimmedPrefix + "DATABASECHANGELOG");
-    moduleConfig.setDatabaseChangeLogLockTable(trimmedPrefix + "DATABASECHANGELOGLOCK");
-    moduleConfig.setParameters(
-        Map.of(
-            "prefix",
-            trimmedPrefix,
-            "userCharColumnSize",
-            Integer.toString(vendorDatabaseProperties.userCharColumnSize()),
-            "errorMessageSize",
-            Integer.toString(vendorDatabaseProperties.errorMessageSize()),
-            "treePathSize",
-            Integer.toString(vendorDatabaseProperties.treePathSize())));
-    // changelog file located in src/main/resources directly in the module
-    moduleConfig.setChangeLog("db/changelog/rdbms-exporter/changelog-master.xml");
-    moduleConfig.setDdlLockWaitTimeout(lockWaitTimeout);
-    // Inject the current application version for schema upgrade-path validation.
-    // When the version is not a valid semantic version (e.g. during local development),
-    // the version check is skipped inside LiquibaseSchemaManager.
-    moduleConfig.setApplicationVersion(VersionUtil.getVersion());
-
-    return moduleConfig;
-  }
-
-  @Bean
-  @ConditionalOnMissingBean(RdbmsSchemaManager.class)
-  public RdbmsSchemaManager rdbmsNoopSchemaManager() {
-    return new NoopSchemaManager();
+  public RdbmsSchemaManagerRegistry rdbmsSchemaManagerRegistry(
+      final RdbmsDataSources rdbmsDataSources,
+      final PhysicalTenantResolver physicalTenantResolver) {
+    final Map<String, PerTenantSchemaConfig> physicalTenantConfigs = new LinkedHashMap<>();
+    for (final String physicalTenantId : physicalTenantResolver.getAll().keySet()) {
+      final var rdbms =
+          physicalTenantResolver
+              .forPhysicalTenant(physicalTenantId)
+              .getData()
+              .getSecondaryStorage()
+              .getRdbms();
+      final var trimmedPrefix = StringUtils.trimToEmpty(rdbms.getPrefix());
+      LOGGER.info(
+          "Initializing Liquibase for physical RDBMS tenant '{}' with table prefix '{}'.",
+          physicalTenantId,
+          trimmedPrefix);
+      physicalTenantConfigs.put(
+          physicalTenantId,
+          new PerTenantSchemaConfig(
+              rdbmsDataSources.dataSourceFor(physicalTenantId),
+              rdbmsDataSources.vendorPropertiesFor(physicalTenantId),
+              trimmedPrefix,
+              rdbms.getAutoDdl(),
+              rdbms.getDdlLockWaitTimeout()));
+    }
+    // VersionUtil.getVersion() may not be a valid semantic version during local development;
+    // the schema-version check is skipped in that case.
+    return DefaultRdbmsSchemaManagerRegistry.fromConfigs(
+        physicalTenantConfigs, VersionUtil.getVersion());
   }
 
   @Bean
@@ -146,7 +128,7 @@ public class MyBatisConfiguration {
 
   // The following 2 beans expose the default physical tenant's DataSource and
   // VendorDatabaseProperties so that downstream consumers (sqlSessionFactory,
-  // rdbmsExporterLiquibase, rdbmsWriterFactory, rdbmsExporterFactory)
+  // rdbmsSchemaManagerRegistry, rdbmsWriterFactory, rdbmsExporterFactory)
   // can keep injecting them as singletons. They will be removed in future PRs.
 
   @Bean

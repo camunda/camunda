@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 
-import io.camunda.db.rdbms.LiquibaseSchemaManager;
+import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
@@ -65,7 +65,7 @@ class RdbmsExporterWrapperTest {
     final RdbmsExporterWrapper exporterWrapper =
         new RdbmsExporterWrapper(
             Mockito.mock(RdbmsService.class),
-            Mockito.mock(LiquibaseSchemaManager.class),
+            Mockito.mock(RdbmsSchemaManagerRegistry.class),
             Mockito.mock(VendorDatabaseProperties.class));
 
     // when
@@ -89,7 +89,7 @@ class RdbmsExporterWrapperTest {
     final RdbmsExporterWrapper exporterWrapper =
         new RdbmsExporterWrapper(
             rdbmsService,
-            Mockito.mock(LiquibaseSchemaManager.class),
+            Mockito.mock(RdbmsSchemaManagerRegistry.class),
             Mockito.mock(VendorDatabaseProperties.class));
 
     // when
@@ -169,7 +169,7 @@ class RdbmsExporterWrapperTest {
     final RdbmsExporterWrapper exporterWrapper =
         new RdbmsExporterWrapper(
             rdbmsService,
-            Mockito.mock(LiquibaseSchemaManager.class),
+            Mockito.mock(RdbmsSchemaManagerRegistry.class),
             Mockito.mock(VendorDatabaseProperties.class));
 
     // when
@@ -235,7 +235,7 @@ class RdbmsExporterWrapperTest {
     final RdbmsExporterWrapper exporterWrapper =
         new RdbmsExporterWrapper(
             rdbmsService,
-            Mockito.mock(LiquibaseSchemaManager.class),
+            Mockito.mock(RdbmsSchemaManagerRegistry.class),
             Mockito.mock(VendorDatabaseProperties.class));
 
     // when

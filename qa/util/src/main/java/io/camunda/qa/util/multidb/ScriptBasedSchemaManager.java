@@ -9,7 +9,7 @@ package io.camunda.qa.util.multidb;
 
 import io.camunda.db.rdbms.LiquibaseScriptGenerator;
 import io.camunda.db.rdbms.LiquibaseScriptGenerator.DatabaseVersion;
-import io.camunda.db.rdbms.RdbmsSchemaManager;
+import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.sql.DataSource;
@@ -23,7 +23,7 @@ import org.springframework.beans.factory.annotation.Value;
  * directly. Significantly faster than Liquibase for databases with expensive precondition checks
  * (e.g. Oracle).
  */
-public class ScriptBasedSchemaManager implements RdbmsSchemaManager, InitializingBean {
+public class ScriptBasedSchemaManager implements RdbmsSchemaManagerRegistry, InitializingBean {
 
   private static final ConcurrentHashMap<String, String> SCRIPT_CACHE = new ConcurrentHashMap<>();
 
@@ -86,7 +86,9 @@ public class ScriptBasedSchemaManager implements RdbmsSchemaManager, Initializin
   }
 
   @Override
-  public boolean isInitialized() {
+  public boolean isInitialized(final String physicalTenantId) {
+    // ScriptBasedSchemaManager is a test fixture that runs a single migration for the default
+    // physical tenant; #51921 will plumb real per-tenant routing when needed.
     return initialized;
   }
 }

@@ -10,7 +10,7 @@ package io.camunda.it.rdbms.exporter;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assumptions.assumeThat;
 
-import io.camunda.db.rdbms.LiquibaseSchemaManager;
+import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.exporter.rdbms.RdbmsExporterWrapper;
@@ -59,7 +59,7 @@ class RdbmsExporterBatchOperationsIT {
               setProperty("disableFkBeforeTruncate", "true");
             }
           });
-  @Autowired private LiquibaseSchemaManager liquibaseSchemaManager;
+  @Autowired private RdbmsSchemaManagerRegistry rdbmsSchemaManagerRegistry;
   @Autowired private RdbmsService rdbmsService;
   private RdbmsExporterWrapper exporter;
 
@@ -70,7 +70,8 @@ class RdbmsExporterBatchOperationsIT {
 
   private void setup(final boolean exportPendingItems) {
     exporter =
-        new RdbmsExporterWrapper(rdbmsService, liquibaseSchemaManager, vendorDatabaseProperties);
+        new RdbmsExporterWrapper(
+            rdbmsService, rdbmsSchemaManagerRegistry, vendorDatabaseProperties);
     exporter.configure(
         new ExporterContext(
             null,

@@ -7,7 +7,7 @@
  */
 package io.camunda.exporter.rdbms;
 
-import io.camunda.db.rdbms.RdbmsSchemaManager;
+import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics.FlushTrigger;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.ExporterPositionModel;
@@ -43,8 +43,7 @@ public final class RdbmsExporter {
   private final int partitionId;
   private final String physicalTenantId;
   private final RdbmsWriters rdbmsWriters;
-  private final RdbmsSchemaManager rdbmsSchemaManager;
-
+  private final RdbmsSchemaManagerRegistry rdbmsSchemaManagerRegistry;
   // services
   private final HistoryCleanupService historyCleanupService;
   private final HistoryDeletionService historyDeletionService;
@@ -74,7 +73,7 @@ public final class RdbmsExporter {
       final int queueSize,
       final RdbmsWriters rdbmsWriters,
       final Map<ValueType, List<RdbmsExportHandler>> handlers,
-      final RdbmsSchemaManager rdbmsSchemaManager,
+      final RdbmsSchemaManagerRegistry rdbmsSchemaManagerRegistry,
       final HistoryCleanupService historyCleanupService,
       final HistoryDeletionService historyDeletionService,
       final ReplicationControllerFactory replicationControllerFactory) {
@@ -86,13 +85,14 @@ public final class RdbmsExporter {
     this.physicalTenantId = physicalTenantId;
     this.flushInterval = flushInterval;
     this.queueSize = queueSize;
-    this.rdbmsSchemaManager = rdbmsSchemaManager;
+    this.rdbmsSchemaManagerRegistry = rdbmsSchemaManagerRegistry;
     this.historyDeletionService = historyDeletionService;
     this.replicationControllerFactory = replicationControllerFactory;
 
     LOG.info(
-        "[RDBMS Exporter P{}] RdbmsExporter created with Configuration: flushInterval={}, queueSize={}",
+        "[RDBMS Exporter P{} T-{}] RdbmsExporter created with Configuration: flushInterval={}, queueSize={}",
         partitionId,
+        physicalTenantId,
         flushInterval,
         queueSize);
   }
@@ -100,12 +100,16 @@ public final class RdbmsExporter {
   public void open(final Controller controller) {
     this.controller = controller;
     LOG.info(
-        "[RDBMS Exporter P{}] Opening exporter with broker position {}",
+        "[RDBMS Exporter P{} T-{}] Opening exporter with broker position {}",
         partitionId,
+        physicalTenantId,
         controller.getLastExportedRecordPosition());
 
-    if (!rdbmsSchemaManager.isInitialized()) {
-      LOG.warn("[RDBMS Exporter P{}] Schema is not yet ready for use", partitionId);
+    if (!rdbmsSchemaManagerRegistry.isInitialized(physicalTenantId)) {
+      LOG.warn(
+          "[RDBMS Exporter P{} T-{}] Schema is not yet ready for use",
+          partitionId,
+          physicalTenantId);
       throw new ExporterException("Schema is not ready for use");
     }
 
@@ -116,16 +120,18 @@ public final class RdbmsExporter {
         // This is needed since the brokers last exported position is from its last snapshot and can
         // be different from ours.
         LOG.info(
-            "[RDBMS Exporter P{}] Updating broker position {} to last exported position in rdbms {}",
+            "[RDBMS Exporter P{} T-{}] Updating broker position {} to last exported position in rdbms {}",
             partitionId,
+            physicalTenantId,
             lastPosition,
             exporterRdbmsPosition.lastExportedPosition());
         lastPosition = exporterRdbmsPosition.lastExportedPosition();
         updatePositionInBroker();
       } else if (lastPosition > exporterRdbmsPosition.lastExportedPosition()) {
         LOG.info(
-            "[RDBMS Exporter P{}] Broker position {} is more advanced than rdbms position {}. Requesting replay from {}",
+            "[RDBMS Exporter P{} T-{}] Broker position {} is more advanced than rdbms position {}. Requesting replay from {}",
             partitionId,
+            physicalTenantId,
             lastPosition,
             exporterRdbmsPosition.lastExportedPosition(),
             exporterRdbmsPosition.lastExportedPosition());
@@ -135,9 +141,9 @@ public final class RdbmsExporter {
         if (!replayInitiated) {
           throw new ExporterException(
               String.format(
-                  "[RDBMS Exporter P%d] Cannot replay records from position %d: log segments are no longer available. "
+                  "[RDBMS Exporter P%d T-%s] Cannot replay records from position %d: log segments are no longer available. "
                       + "The RDBMS secondary storage cannot be recovered automatically.",
-                  partitionId, exporterRdbmsPosition.lastExportedPosition() + 1));
+                  partitionId, physicalTenantId, exporterRdbmsPosition.lastExportedPosition() + 1));
         }
       }
     }
@@ -170,8 +176,9 @@ public final class RdbmsExporter {
     backgroundTaskManager.start();
 
     LOG.info(
-        "[RDBMS Exporter P{}] Exporter opened with last exported position {}",
+        "[RDBMS Exporter P{} T-{}] Exporter opened with last exported position {}",
         partitionId,
+        physicalTenantId,
         lastPosition);
   }
 
@@ -189,8 +196,9 @@ public final class RdbmsExporter {
         rdbmsWriters.flush(true);
       } catch (final Exception e) {
         LOG.warn(
-            "[RDBMS Exporter P{}] Failed to execute final flush on close for partition {}",
+            "[RDBMS Exporter P{} T-{}] Failed to execute final flush on close for partition {}",
             partitionId,
+            physicalTenantId,
             partitionId);
         throw e;
       }
@@ -201,12 +209,16 @@ public final class RdbmsExporter {
       }
     } catch (final Exception e) {
       LOG.warn(
-          "[RDBMS Exporter P{}] Failed to flush records before closing exporter.", partitionId, e);
+          "[RDBMS Exporter P{} T-{}] Failed to flush records before closing exporter.",
+          partitionId,
+          physicalTenantId,
+          e);
     }
 
     LOG.info(
-        "[RDBMS Exporter P{}] Exporter closed at positions Broker {}, RDBMS {}",
+        "[RDBMS Exporter P{} T-{}] Exporter closed at positions Broker {}, RDBMS {}",
         partitionId,
+        physicalTenantId,
         lastPosition,
         exporterRdbmsPosition == null ? null : exporterRdbmsPosition.lastExportedPosition());
   }
@@ -220,8 +232,9 @@ public final class RdbmsExporter {
     }
 
     LOG.trace(
-        "[RDBMS Exporter P{}] Process record {}-{} - {}:{}",
+        "[RDBMS Exporter P{} T-{}] Process record {}-{} - {}:{}",
         partitionId,
+        physicalTenantId,
         record.getPartitionId(),
         record.getPosition(),
         record.getValueType(),
@@ -233,8 +246,9 @@ public final class RdbmsExporter {
       for (final var handler : registeredHandlers.get(record.getValueType())) {
         if (handler.canExport(record)) {
           LOG.trace(
-              "[RDBMS Exporter P{}] Exporting record {} with handler {}",
+              "[RDBMS Exporter P{} T-{}] Exporting record {} with handler {}",
               partitionId,
+              physicalTenantId,
               record.getValue(),
               handler.getClass());
           handler.export(record);
@@ -242,16 +256,18 @@ public final class RdbmsExporter {
           shouldFlushAfterRecordProcessed |= handler.shouldFlushAfterRecordProcessed();
         } else {
           LOG.trace(
-              "[RDBMS Exporter P{}] Handler {} can not export record {}",
+              "[RDBMS Exporter P{} T-{}] Handler {} can not export record {}",
               partitionId,
+              physicalTenantId,
               handler.getClass(),
               record.getValueType());
         }
       }
     } else {
       LOG.trace(
-          "[RDBMS Exporter P{}] No registered handler found for {}",
+          "[RDBMS Exporter P{} T-{}] No registered handler found for {}",
           partitionId,
+          physicalTenantId,
           record.getValueType());
     }
 
@@ -275,16 +291,18 @@ public final class RdbmsExporter {
         }
       } catch (final Exception e) {
         LOG.warn(
-            "[RDBMS Exporter P{}] Failed to flush record for positions {} to {} to the database.",
+            "[RDBMS Exporter P{} T-{}] Failed to flush record for positions {} to {} to the database.",
             partitionId,
+            physicalTenantId,
             lastFlushedPosition + 1,
             lastPosition);
         throw e;
       }
     } else {
       LOG.trace(
-          "[RDBMS Exporter P{}] Record with key {} and original partitionId {} could not be exported {}.",
+          "[RDBMS Exporter P{} T-{}] Record with key {} and original partitionId {} could not be exported {}.",
           partitionId,
+          physicalTenantId,
           record.getKey(),
           Protocol.decodePartitionId(record.getKey()),
           record);
@@ -316,13 +334,21 @@ public final class RdbmsExporter {
   }
 
   private void updatePositionInBroker() {
-    LOG.trace("[RDBMS Exporter P{}] Updating position to {} in broker", partitionId, lastPosition);
+    LOG.trace(
+        "[RDBMS Exporter P{} T-{}] Updating position to {} in broker",
+        partitionId,
+        physicalTenantId,
+        lastPosition);
     controller.updateLastExportedRecordPosition(lastPosition);
   }
 
   private void updatePositionInRdbms() {
     if (lastPosition > exporterRdbmsPosition.lastExportedPosition()) {
-      LOG.trace("[RDBMS Exporter P{}] Updating position to {} in rdbms", partitionId, lastPosition);
+      LOG.trace(
+          "[RDBMS Exporter P{} T-{}] Updating position to {} in rdbms",
+          partitionId,
+          physicalTenantId,
+          lastPosition);
       exporterRdbmsPosition =
           new ExporterPositionModel(
               exporterRdbmsPosition.partitionId(),
@@ -348,8 +374,9 @@ public final class RdbmsExporter {
       exporterRdbmsPosition = rdbmsWriters.getExporterPositionService().findOne(partitionId);
     } catch (final Exception e) {
       LOG.warn(
-          "[RDBMS Exporter P{}] Failed to initialize exporter position because Database is not ready, retrying ... {}",
+          "[RDBMS Exporter P{} T-{}] Failed to initialize exporter position because Database is not ready, retrying ... {}",
           partitionId,
+          physicalTenantId,
           e.getMessage());
       throw e;
     }
@@ -363,11 +390,13 @@ public final class RdbmsExporter {
               LocalDateTime.now(),
               LocalDateTime.now());
       rdbmsWriters.getExporterPositionService().createWithoutQueue(exporterRdbmsPosition);
-      LOG.debug("[RDBMS Exporter P{}] Initialize position in rdbms", partitionId);
+      LOG.debug(
+          "[RDBMS Exporter P{} T-{}] Initialize position in rdbms", partitionId, physicalTenantId);
     } else {
       LOG.debug(
-          "[RDBMS Exporter P{}] Found position in rdbms for this exporter: {}",
+          "[RDBMS Exporter P{} T-{}] Found position in rdbms for this exporter: {}",
           partitionId,
+          physicalTenantId,
           exporterRdbmsPosition);
     }
   }
@@ -382,8 +411,9 @@ public final class RdbmsExporter {
       flushExecutionQueue();
     } catch (final Exception e) {
       LOG.warn(
-          "[RDBMS Exporter P{}] Failed to flush records for positions {} to {} to the database",
+          "[RDBMS Exporter P{} T-{}] Failed to flush records for positions {} to {} to the database",
           partitionId,
+          physicalTenantId,
           lastFlushedPosition + 1,
           lastPosition);
     } finally {
@@ -415,7 +445,7 @@ public final class RdbmsExporter {
     private Duration flushInterval;
     private int queueSize;
     private RdbmsWriters rdbmsWriters;
-    private RdbmsSchemaManager rdbmsSchemaManager;
+    private RdbmsSchemaManagerRegistry rdbmsSchemaManagerRegistry;
     private Map<ValueType, List<RdbmsExportHandler>> handlers = new EnumMap<>(ValueType.class);
     private HistoryCleanupService historyCleanupService;
     private HistoryDeletionService historyDeletionService;
@@ -451,8 +481,8 @@ public final class RdbmsExporter {
       return this;
     }
 
-    public Builder rdbmsSchemaManager(final RdbmsSchemaManager value) {
-      rdbmsSchemaManager = value;
+    public Builder rdbmsSchemaManagerRegistry(final RdbmsSchemaManagerRegistry value) {
+      rdbmsSchemaManagerRegistry = value;
       return this;
     }
 
@@ -489,7 +519,7 @@ public final class RdbmsExporter {
           queueSize,
           rdbmsWriters,
           handlers,
-          rdbmsSchemaManager,
+          rdbmsSchemaManagerRegistry,
           historyCleanupService,
           historyDeletionService,
           replicationControllerFactory);

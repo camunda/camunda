@@ -14,8 +14,10 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 public class Rdbms extends SecondaryStorageDatabase<RdbmsHistory> {
 
+  private static final boolean DEFAULT_AUTO_DDL = true;
+
   /** If true, the database schema is automatically created and updated on application startup. */
-  private Boolean autoDdl = true;
+  private boolean autoDdl = DEFAULT_AUTO_DDL;
 
   /** The prefix to use for all database artifacts like tables, indexes etc. */
   private String prefix;
@@ -84,11 +86,11 @@ public class Rdbms extends SecondaryStorageDatabase<RdbmsHistory> {
   @NestedConfigurationProperty
   private RdbmsConnectionPool connectionPool = new RdbmsConnectionPool();
 
-  public Boolean getAutoDdl() {
+  public boolean getAutoDdl() {
     return autoDdl;
   }
 
-  public void setAutoDdl(final Boolean autoDdl) {
+  public void setAutoDdl(final boolean autoDdl) {
     this.autoDdl = autoDdl;
   }
 

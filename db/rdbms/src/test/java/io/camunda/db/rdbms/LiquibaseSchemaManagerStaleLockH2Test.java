@@ -9,19 +9,19 @@ package io.camunda.db.rdbms;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.db.rdbms.config.VendorDatabasePropertiesLoader;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Map;
 import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
  * H2-based test that verifies stale Liquibase lock detection and release against a real in-memory
- * database.
+ * database via {@link LiquibaseSchemaManager}.
  */
 class LiquibaseSchemaManagerStaleLockH2Test {
 
@@ -52,7 +52,7 @@ class LiquibaseSchemaManagerStaleLockH2Test {
 
     // when - run LiquibaseSchemaManager with a 10-minute timeout (so the 1-hour-old lock is stale)
     final var schemaManager = buildSchemaManager(Duration.ofMinutes(10));
-    schemaManager.afterPropertiesSet();
+    schemaManager.initialize();
 
     // then - migration completed successfully and the stale lock was released
     assertThat(schemaManager.isInitialized()).isTrue();
@@ -64,14 +64,12 @@ class LiquibaseSchemaManagerStaleLockH2Test {
     // given - insert a recent lock (just acquired)
     insertLock(Instant.now(), "another-running-pod");
 
-    // when - configure the schema manager with a 10-minute timeout
-    // Since the lock is brand-new, it should NOT be force-released
+    // when - releaseStaleLockIfPresent with a 10-minute timeout (lock is fresh, must not be
+    // released)
     final var schemaManager = buildSchemaManager(Duration.ofMinutes(10));
-
-    // then - the stale-lock check should not release the recent lock
     schemaManager.releaseStaleLockIfPresent();
 
-    // the recent lock remains held
+    // then - the recent lock remains held
     assertThat(isLockHeld()).isTrue();
   }
 
@@ -90,20 +88,14 @@ class LiquibaseSchemaManagerStaleLockH2Test {
 
   // --- helpers ---
 
-  private LiquibaseSchemaManager buildSchemaManager(final Duration ddlLockWaitTimeout) {
-    final var manager = new LiquibaseSchemaManager();
-    manager.setDataSource(dataSource);
-    manager.setApplicationVersion("8.10.0");
-    manager.setDatabaseChangeLogLockTable(LOCK_TABLE);
-    manager.setChangeLog("db/changelog/rdbms-exporter/changelog-master.xml");
-    manager.setParameters(
-        Map.of(
-            "prefix", "",
-            "userCharColumnSize", "256",
-            "errorMessageSize", "4000",
-            "treePathSize", "8191"));
-    manager.setDdlLockWaitTimeout(ddlLockWaitTimeout);
-    return manager;
+  private LiquibaseSchemaManager buildSchemaManager(final Duration ddlLockWaitTimeout)
+      throws Exception {
+    return new LiquibaseSchemaManager(configFor(ddlLockWaitTimeout), "8.10.0");
+  }
+
+  private PerTenantSchemaConfig configFor(final Duration ddlLockWaitTimeout) throws Exception {
+    return new PerTenantSchemaConfig(
+        dataSource, VendorDatabasePropertiesLoader.load("h2"), "", true, ddlLockWaitTimeout);
   }
 
   /**
