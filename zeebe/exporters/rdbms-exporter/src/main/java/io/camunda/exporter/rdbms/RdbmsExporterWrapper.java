@@ -304,7 +304,9 @@ public class RdbmsExporterWrapper implements Exporter {
       registerAuditLogHandlers(rdbmsWriters, builder, config, partitionId);
     }
 
-    registerWaitStateHandlers(rdbmsWriters, builder);
+    if (config.getWaitState().isEnabled()) {
+      registerWaitStateHandlers(rdbmsWriters, builder);
+    }
   }
 
   private void createBatchOperationHandlers(
