@@ -100,7 +100,6 @@ import io.camunda.exporter.store.IndexLocatorProvider;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
-import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.index.AuditLogCleanupIndex;
 import io.camunda.webapps.schema.descriptors.index.AuthorizationIndex;
 import io.camunda.webapps.schema.descriptors.index.ClusterVariableIndex;
@@ -145,7 +144,6 @@ import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.cache.CaffeineCacheStatsCounter;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
@@ -425,27 +423,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName(),
             ErrorHandlers.IGNORE_DOCUMENT_DOES_NOT_EXIST);
 
-    final Set<String> ordinalBasedIndexes = new HashSet<>();
-    final var listViewName = indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName();
-    ordinalBasedIndexes.add(listViewName);
-
-    // TODO tmp exempt batch operation items from ordinal indexes - we will need to update
-    // BatchOperationUpdateTask and HistoryDeletionJob to handle ordinal suffixes if we want to use
-    // ordinal indexes for operations
-    final var operationIndexName =
-        indexDescriptors.get(OperationTemplate.class).getFullQualifiedName();
-    final var nonOrdinalIndexes = Set.of(operationIndexName);
-    for (final var indexDescriptor : indexDescriptors.templates()) {
-      final var indexName = indexDescriptor.getFullQualifiedName();
-      if (nonOrdinalIndexes.contains(indexName)) {
-        continue;
-      }
-      if (indexDescriptor instanceof ProcessInstanceDependant) {
-        ordinalBasedIndexes.add(indexName);
-      }
-    }
-
-    indexLocatorProvider = new FakeOrdinalIndexLocatorProvider(ordinalBasedIndexes);
+    indexLocatorProvider = new FakeOrdinalIndexLocatorProvider();
   }
 
   @Override

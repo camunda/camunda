@@ -61,7 +61,11 @@ public class BatchOperationChunkCreatedHandler
 
   @Override
   public List<String> generateIds(final Record<BatchOperationChunkRecordValue> record) {
-    return List.of(generateId(record.getValue()));
+    // Use a composite ID with a static suffix (batchOperationKey:chunk) so that all chunks for the
+    // same batch operation share a single cached entity in the ExporterBatchWriter, while still
+    // being separate from BatchOperationCreatedHandler (which uses just the batchOperationKey).
+    // This avoids double-counting of operationsTotalCount without inflating the batch size.
+    return List.of(record.getValue().getBatchOperationKey() + ":chunk");
   }
 
   @Override
@@ -100,13 +104,5 @@ public class BatchOperationChunkCreatedHandler
   @Override
   public String getIndexName() {
     return indexName;
-  }
-
-  public static String generateId(final BatchOperationChunkRecordValue chunk) {
-    // Use a composite ID with a static suffix (batchOperationKey:chunk) so that all chunks for the
-    // same batch operation share a single cached entity in the ExporterBatchWriter, while still
-    // being separate from BatchOperationCreatedHandler (which uses just the batchOperationKey).
-    // This avoids double-counting of operationsTotalCount without inflating the batch size.
-    return chunk.getBatchOperationKey() + ":chunk";
   }
 }

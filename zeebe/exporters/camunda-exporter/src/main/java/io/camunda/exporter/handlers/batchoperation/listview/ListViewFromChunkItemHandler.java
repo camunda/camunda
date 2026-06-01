@@ -11,6 +11,7 @@ import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.store.IndexLocator;
+import io.camunda.exporter.store.IndexLocatorProvider;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -56,6 +57,19 @@ public class ListViewFromChunkItemHandler
   @Override
   public ProcessInstanceForListViewEntity createNewEntity(final String id) {
     return new ProcessInstanceForListViewEntity().setId(id);
+  }
+
+  @Override
+  public IndexLocator createIndexLocator(
+      final IndexLocatorProvider indexLocatorProvider,
+      final Record<BatchOperationChunkRecordValue> record,
+      final String id) {
+    final var item =
+        record.getValue().getItems().stream()
+            .filter(i -> i.getProcessInstanceKey() == Long.parseLong(id.split(":")[0]))
+            .findFirst()
+            .orElseThrow();
+    return indexLocatorProvider.createIndexLocator(item);
   }
 
   @Override

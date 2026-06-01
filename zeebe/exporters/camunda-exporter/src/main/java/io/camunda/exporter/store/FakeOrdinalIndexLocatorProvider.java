@@ -8,25 +8,17 @@
 package io.camunda.exporter.store;
 
 import com.google.common.base.Strings;
-import io.camunda.exporter.handlers.batchoperation.BatchOperationChunkCreatedHandler;
-import io.camunda.exporter.handlers.batchoperation.BatchOperationChunkCreatedItemHandler;
-import io.camunda.exporter.handlers.batchoperation.listview.ListViewFromChunkItemHandler;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.value.AuditLogProcessInstanceRelated;
-import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue.BatchOperationItemValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationRelated;
 import io.camunda.zeebe.protocol.record.value.OrdinalKeyBased;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,27 +29,15 @@ public class FakeOrdinalIndexLocatorProvider implements IndexLocatorProvider {
   // aim for roughly 1 hours worth at 300 PI/s (across 3 partitions)
   private static final long IDS_PER_ORDINAL =
       100 * 60 * 60 * APPROX_IDS_BETWEEN_ROOT_PROCESS_INSTANCES;
-  private final Set<String> ordinalBasedIndexes;
   private final NoopIndexLocator noopIndexLocator = new NoopIndexLocator();
   private final Map<Integer, String> ordinalSuffixes = new ConcurrentHashMap<>();
 
-  public FakeOrdinalIndexLocatorProvider(final Set<String> ordinalBasedIndexes) {
-    this.ordinalBasedIndexes = ordinalBasedIndexes;
-  }
+  public FakeOrdinalIndexLocatorProvider() {}
 
   @Override
   public IndexLocator createIndexLocator(final Record<?> record) {
-    if (record.getValue() instanceof final BatchOperationChunkRecordValue chunks) {
-      final var ordinalsByKey = extractOrdinalsByKey(chunks);
-      final var suffixesByKey =
-          ordinalsByKey.entrySet().stream()
-              .collect(
-                  Collectors.toMap(
-                      Map.Entry::getKey, e -> getOrCreateOrdinalSuffix("ord", e.getValue())));
-      return new MultiSuffixOrdinalIndexLocator(suffixesByKey);
-    } else if (record.getValue() instanceof final OrdinalKeyBased ordinalKeyBased) {
-      final var suffix = getOrCreateOrdinalSuffix("ord", ordinalKeyBased.getOrdinalKey());
-      return new SingleSuffixOrdinalIndexLocator(suffix);
+    if (record.getValue() instanceof final OrdinalKeyBased ordinalKeyBased) {
+      return createIndexLocator(ordinalKeyBased);
     }
 
     final long ordinalBaseKey = getOrdinalBaseKey(record.getValue());
@@ -85,21 +65,10 @@ public class FakeOrdinalIndexLocatorProvider implements IndexLocatorProvider {
     return noopIndexLocator;
   }
 
-  private Map<String, Integer> extractOrdinalsByKey(final BatchOperationChunkRecordValue chunks) {
-    // TODO this is not a great approach. In the future we will want to handlers to deal with this
-    // themselves.
-    final Map<String, Integer> idsToPIs = new HashMap<>();
-    idsToPIs.put(String.valueOf(chunks.getBatchOperationKey()), chunks.getOrdinalKey());
-    idsToPIs.put(BatchOperationChunkCreatedHandler.generateId(chunks), chunks.getOrdinalKey());
-    for (final var item : chunks.getItems()) {
-      final var ordinal = item.getOrdinalKey();
-      idsToPIs.put(
-          BatchOperationChunkCreatedItemHandler.generateId(
-              chunks.getBatchOperationKey(), item.getItemKey()),
-          ordinal);
-      idsToPIs.put(ListViewFromChunkItemHandler.generateId(chunks, item), ordinal);
-    }
-    return idsToPIs;
+  @Override
+  public IndexLocator createIndexLocator(final OrdinalKeyBased ordinalKeyBased) {
+    final var suffix = getOrCreateOrdinalSuffix("ord", ordinalKeyBased.getOrdinalKey());
+    return new SingleSuffixOrdinalIndexLocator(suffix);
   }
 
   private long getOrdinalBaseKey(final RecordValue recordValue) {
@@ -142,7 +111,7 @@ public class FakeOrdinalIndexLocatorProvider implements IndexLocatorProvider {
     }
   }
 
-  class SingleSuffixOrdinalIndexLocator implements IndexLocator {
+  static class SingleSuffixOrdinalIndexLocator implements IndexLocator {
     private final String suffix;
 
     public SingleSuffixOrdinalIndexLocator(final String suffix) {
@@ -151,26 +120,7 @@ public class FakeOrdinalIndexLocatorProvider implements IndexLocatorProvider {
 
     @Override
     public String getIndexLocation(final ExporterEntity<?> entity, final String baseIndexName) {
-      if (!ordinalBasedIndexes.contains(baseIndexName)) {
-        return baseIndexName;
-      }
       return baseIndexName + suffix;
-    }
-  }
-
-  class MultiSuffixOrdinalIndexLocator implements IndexLocator {
-    private final Map<String, String> suffixesById;
-
-    public MultiSuffixOrdinalIndexLocator(final Map<String, String> suffixesById) {
-      this.suffixesById = suffixesById;
-    }
-
-    @Override
-    public String getIndexLocation(final ExporterEntity<?> entity, final String baseIndexName) {
-      if (!ordinalBasedIndexes.contains(baseIndexName)) {
-        return baseIndexName;
-      }
-      return baseIndexName + Objects.requireNonNull(suffixesById.get(entity.getId()));
     }
   }
 }
