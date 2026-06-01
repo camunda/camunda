@@ -174,34 +174,6 @@ public class CamundaProcessTestExtensionIT {
         .getProcessDefinitionKey();
   }
 
-  private BpmnModelInstance processModelWithServiceTask() {
-    return Bpmn.createExecutableProcess("test-process-with-service-task")
-        .startEvent("start-1")
-        .serviceTask("service-task-1")
-        .zeebeJobType("test")
-        .boundaryEvent("error-boundary-event")
-        .error("bpmn-error")
-        .zeebeOutputExpression("abc", "error_code")
-        .endEvent("error-end")
-        .moveToActivity("service-task-1")
-        .endEvent("success-end")
-        .done();
-  }
-
-  private BpmnModelInstance processModelWithUserTask() {
-    return Bpmn.createExecutableProcess("test-process-with-user-task")
-        .startEvent("start-1")
-        .userTask("user-task-1")
-        .name("user-task")
-        .zeebeUserTask()
-        .boundaryEvent("error-boundary-event")
-        .error("bpmn-error")
-        .endEvent("error-end")
-        .moveToActivity("user-task-1")
-        .endEvent("success-end")
-        .done();
-  }
-
   @Nested
   class TimerEventTests {
 
@@ -403,6 +375,20 @@ public class CamundaProcessTestExtensionIT {
       assertThatProcessInstance(processInstanceEvent).isCompleted();
       assertThatProcessInstance(processInstanceEvent).hasVariable("user", "Alice");
     }
+
+    private BpmnModelInstance processModelWithServiceTask() {
+      return Bpmn.createExecutableProcess("test-process-with-service-task")
+          .startEvent("start-1")
+          .serviceTask("service-task-1")
+          .zeebeJobType("test")
+          .boundaryEvent("error-boundary-event")
+          .error("bpmn-error")
+          .zeebeOutputExpression("abc", "error_code")
+          .endEvent("error-end")
+          .moveToActivity("service-task-1")
+          .endEvent("success-end")
+          .done();
+    }
   }
 
   @Nested
@@ -431,6 +417,20 @@ public class CamundaProcessTestExtensionIT {
       // then
       assertThatProcessInstance(processInstanceEvent).isCompleted();
       assertThatProcessInstance(processInstanceEvent).hasVariable("user", "Bob");
+    }
+
+    private BpmnModelInstance processModelWithUserTask() {
+      return Bpmn.createExecutableProcess("test-process-with-user-task")
+          .startEvent("start-1")
+          .userTask("user-task-1")
+          .name("user-task")
+          .zeebeUserTask()
+          .boundaryEvent("error-boundary-event")
+          .error("bpmn-error")
+          .endEvent("error-end")
+          .moveToActivity("user-task-1")
+          .endEvent("success-end")
+          .done();
     }
   }
 }
