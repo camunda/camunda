@@ -6,9 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useMemo} from 'react';
 import {Modal} from '@carbon/react';
 import type {StateProps} from 'modules/components/ModalStateManager';
+import {useVariable} from 'modules/queries/variables/useVariable';
 import {
+  parseDocumentVariable,
   toHumanReadableBytes,
   type DocumentInfo,
 } from '../DocumentValueCell/parseDocumentVariable';
@@ -27,6 +30,7 @@ import {
 type Props = {
   documents: DocumentInfo[];
   isLowerBound: boolean;
+  variableKey: string;
   variableName: string;
 };
 
@@ -35,10 +39,29 @@ const DocumentListModal: React.FC<StateProps & Props> = ({
   setOpen,
   documents,
   isLowerBound,
+  variableKey,
   variableName,
 }) => {
-  const count = documents.length;
-  const prefix = isLowerBound ? `${count}+` : `${count}`;
+  const {data, isSuccess, isError, isLoading} = useVariable(variableKey, {
+    enabled: open && isLowerBound,
+  });
+
+  const resolvedDocuments = useMemo(() => {
+    if (data?.value === undefined) {
+      return documents;
+    }
+
+    const result = parseDocumentVariable(data.value, false);
+    if (result === null) {
+      return documents;
+    }
+
+    return result.type === 'list' ? result.documents : [result.document];
+  }, [data?.value, documents]);
+
+  const isFullyLoaded = !isLowerBound || isSuccess;
+  const count = resolvedDocuments.length;
+  const prefix = isFullyLoaded ? `${count}` : `${count}+`;
   const suffix = count !== 1 ? 'documents' : 'document';
 
   return (
@@ -50,7 +73,7 @@ const DocumentListModal: React.FC<StateProps & Props> = ({
       passiveModal
     >
       <DocumentList>
-        {documents.map((document, index) => (
+        {resolvedDocuments.map((document, index) => (
           <DocumentListItem
             aria-labelledby={`document-item-${index}`}
             key={index}
@@ -80,9 +103,16 @@ const DocumentListModal: React.FC<StateProps & Props> = ({
           </DocumentListItem>
         ))}
       </DocumentList>
-      {isLowerBound && (
+      {isLoading && (
         <TruncationNotice>
-          More documents may exist for this variable.
+          Loading the full variable value... More documents may exist for this
+          variable.
+        </TruncationNotice>
+      )}
+      {isError && (
+        <TruncationNotice>
+          Failed to load the full variable value. More documents may exist for
+          this variable.
         </TruncationNotice>
       )}
     </Modal>

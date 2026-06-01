@@ -15,12 +15,14 @@ import {DocumentListModal} from './DocumentListModal';
 type Props = {
   documents: DocumentInfo[];
   isLowerBound: boolean;
+  variableKey: string;
   variableName: string;
 };
 
 const ViewDocumentListButton: React.FC<Props> = ({
   documents,
   isLowerBound,
+  variableKey,
   variableName,
 }) => {
   return (
@@ -45,6 +47,7 @@ const ViewDocumentListButton: React.FC<Props> = ({
           setOpen={setOpen}
           documents={documents}
           isLowerBound={isLowerBound}
+          variableKey={variableKey}
           variableName={variableName}
         />
       )}
