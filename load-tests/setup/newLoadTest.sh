@@ -16,9 +16,6 @@ Arguments:
   enable_optimize                 Optional. true|false to enable Optimize. Default: true.
   enable_single_zone              Optional. true|false to deploy the cluster on a single zone. Default: true.
 
-Enable the Optimize report-evaluation meter via Helm, not this script:
-  make install additional_load_test_configuration="--set global.extraConfig.load-tester.optimize.report-evaluation-enabled=true"
-
 Options:
   -h, --help         Show this help message.
 
