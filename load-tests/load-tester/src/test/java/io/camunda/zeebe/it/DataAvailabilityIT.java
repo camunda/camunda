@@ -61,7 +61,8 @@ class DataAvailabilityIT {
 
   @Test
   void shouldMeasureDataAvailabilityLatency() {
-    // given - starter has run for duration-limit seconds with data availability monitoring
+    // given - starter has run for duration-limit seconds with data availability monitoring. And
+    // also it check for various other things
 
     // then - verify that data availability latency was recorded
     final var timer =
