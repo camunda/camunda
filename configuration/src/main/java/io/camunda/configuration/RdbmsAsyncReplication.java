@@ -8,23 +8,33 @@
 package io.camunda.configuration;
 
 import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration;
+import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration.ReplicationType;
 import java.time.Duration;
 
 public class RdbmsAsyncReplication {
 
-  private boolean enabled = ReplicationConfiguration.DEFAULT_ENABLED;
+  private ReplicationType type = ReplicationConfiguration.DEFAULT_TYPE;
   private Duration pollingInterval = ReplicationConfiguration.DEFAULT_POLLING_INTERVAL;
   private int minSyncReplicas = ReplicationConfiguration.DEFAULT_MIN_SYNC_REPLICAS;
   private Duration maxLag = ReplicationConfiguration.DEFAULT_MAX_LAG;
   private boolean pauseOnMaxLagExceeded =
       ReplicationConfiguration.DEFAULT_PAUSE_ON_MAX_LAG_EXCEEDED;
+  private Duration delay = ReplicationConfiguration.DEFAULT_DELAY;
 
-  public boolean isEnabled() {
-    return enabled;
+  public ReplicationType getType() {
+    return type;
   }
 
-  public void setEnabled(final boolean enabled) {
-    this.enabled = enabled;
+  public void setType(final ReplicationType type) {
+    this.type = type;
+  }
+
+  public Duration getDelay() {
+    return delay;
+  }
+
+  public void setDelay(final Duration delay) {
+    this.delay = delay;
   }
 
   public Duration getPollingInterval() {

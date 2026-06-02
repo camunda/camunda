@@ -43,7 +43,11 @@ public class CamundaRdbmsInvocationContextProviderExtension
             .withUnifiedConfig(
                 c -> {
                   final var rdbms = c.getData().getSecondaryStorage().getRdbms();
-                  rdbms.getAsyncReplication().setEnabled(true);
+                  rdbms
+                      .getAsyncReplication()
+                      .setType(
+                          io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration
+                              .ReplicationType.LOG_SEQ);
                   rdbms.getAsyncReplication().setMinSyncReplicas(1);
                 })
             .withDatabaseContainer(new PostgresReplicationClusterContainer()));
