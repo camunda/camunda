@@ -8,9 +8,45 @@
 package io.camunda.zeebe.metrics;
 
 import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
+import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.Meter.Type;
 
 public enum StarterMetricsDoc implements ExtendedMeterDocumentation {
+
+  /**
+   * An "info"-style metric: a gauge constantly set to 1 whose tags carry static configuration — the
+   * {@code name} (load-tester component, e.g. "starter"), the {@code process_id} (BPMN process id
+   * loaded by the starter) and the {@code nb_threads} (number of starter threads). Lets dashboards
+   * surface how a load test is configured, e.g. {@code avg(client_info) by (process_id)}.
+   */
+  CLIENT_INFO {
+    private static final KeyName[] KEY_NAMES =
+        new KeyName[] {
+          StarterMetricKeyNames.NAME,
+          StarterMetricKeyNames.PROCESS_ID,
+          StarterMetricKeyNames.NB_THREADS
+        };
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return KEY_NAMES;
+    }
+
+    @Override
+    public String getDescription() {
+      return "The information about the client.";
+    }
+
+    @Override
+    public String getName() {
+      return "client.info";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.GAUGE;
+    }
+  },
 
   /**
    * Total number of process instance start requests submitted by the starter. Incremented before
@@ -58,5 +94,40 @@ public enum StarterMetricsDoc implements ExtendedMeterDocumentation {
     public Type getType() {
       return Type.GAUGE;
     }
+  };
+
+  public enum StarterMetricKeyNames implements KeyName {
+
+    /** The name of the load-tester component emitting the metric */
+    NAME {
+      @Override
+      public String asString() {
+        return "name";
+      }
+    },
+
+    /** The number of threads configured in the starter */
+    NB_THREADS {
+      @Override
+      public String asString() {
+        return "nb_threads";
+      }
+    },
+
+    /** The ID of the partition associated to the metric */
+    PARTITION {
+      @Override
+      public String asString() {
+        return "partition";
+      }
+    },
+
+    /** The BPMN process id loaded by the starter */
+    PROCESS_ID {
+      @Override
+      public String asString() {
+        return "process_id";
+      }
+    },
   }
 }
