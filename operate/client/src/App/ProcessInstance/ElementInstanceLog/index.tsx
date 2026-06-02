@@ -127,6 +127,8 @@ const ElementInstanceLog: React.FC<{isPanel?: boolean}> = observer(
       <Form<SearchFormValues>
         onSubmit={handleSearchSubmit}
         initialValues={{search: submittedSearch}}
+        reinitialize
+        keepDirtyOnReinitialize
       >
         {() => (
           <>
