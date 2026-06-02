@@ -48,18 +48,13 @@ import org.testcontainers.containers.Network;
  */
 final class SecondaryStorageRollingUpdateTest {
 
-  private static List<Arguments> cachedVersionMatrix;
-
   private static final List<StorageTestCase> STORAGE_TEST_CASES =
       List.of(
           StorageTestCase.rdbms(), StorageTestCase.elasticsearch(), StorageTestCase.opensearch());
 
   static Stream<Arguments> versionAndStorageMatrix() {
-    if (cachedVersionMatrix == null) {
-      cachedVersionMatrix = VersionCompatibilityMatrix.auto().toList();
-    }
-
-    return cachedVersionMatrix.stream()
+    return VersionCompatibilityMatrix.useCached()
+        .fromPreviousMinorToCurrent()
         .flatMap(
             versionArgs -> {
               final var arguments = versionArgs.get();
