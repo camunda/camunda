@@ -14,6 +14,7 @@
 
 elasticsearch:
   es8:
-    - &saas "8.13.4"
+    - "8.13.4"
     - "8.14.1"
+    - &saas "8.17.4"
   saas: *saas
