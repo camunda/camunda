@@ -781,6 +781,9 @@ components:
         - elementId
         - elementType
         - tenantId
+        - rootProcessInstanceKey
+        - jobDetails
+        - messageDetails
       properties:
         waitStateType:
           description: The type of waiting state an element instance is in.
@@ -862,6 +865,8 @@ components:
         - jobKey
         - jobType
         - jobKind
+        - listenerEventType
+        - retries
       properties:
         jobKey:
           allOf:
@@ -889,6 +894,7 @@ components:
       type: object
       required:
         - messageName
+        - correlationKey
       properties:
         messageName:
           description: The name of the message being awaited.

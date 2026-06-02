@@ -670,7 +670,7 @@ public final class SearchQueryResponseMapper {
     final var rootKey = keyToStringOrNull(item.rootProcessInstanceKey());
     final var elementType =
         ElementInstanceWaitStateResult.ElementTypeEnum.fromValue(item.elementType().name());
-    final var builder =
+    final var base =
         ElementInstanceWaitStateResult.Builder.create()
             .waitStateType(WaitStateTypeEnum.fromValue(item.details().waitStateType().name()))
             .processInstanceKey(keyToString(item.processInstanceKey()))
@@ -679,32 +679,35 @@ public final class SearchQueryResponseMapper {
             .elementType(elementType)
             .tenantId(item.tenantId())
             .rootProcessInstanceKey(rootKey);
-    switch (item.details()) {
+    return switch (item.details()) {
       case WaitStateJobDetails(
               final var jobKey,
               final var jobType,
               final var jobKind,
               final var listenerEventType,
               final var retries) ->
-          builder.jobDetails(
-              JobWaitStateDetails.Builder.create()
-                  .jobKey(keyToString(jobKey))
-                  .jobType(jobType)
-                  .jobKind(JobKindEnum.fromValue(jobKind.name()))
-                  .listenerEventType(
-                      listenerEventType == null
-                          ? null
-                          : JobListenerEventTypeEnum.fromValue(listenerEventType.name()))
-                  .retries(retries)
-                  .build());
+          base.jobDetails(
+                  JobWaitStateDetails.Builder.create()
+                      .jobKey(keyToString(jobKey))
+                      .jobType(jobType)
+                      .jobKind(JobKindEnum.fromValue(jobKind.name()))
+                      .listenerEventType(
+                          listenerEventType == null
+                              ? null
+                              : JobListenerEventTypeEnum.fromValue(listenerEventType.name()))
+                      .retries(retries)
+                      .build())
+              .messageDetails(null)
+              .build();
       case WaitStateMessageDetails(final var messageName, final var correlationKey) ->
-          builder.messageDetails(
-              MessageWaitStateDetails.Builder.create()
-                  .messageName(messageName)
-                  .correlationKey(correlationKey)
-                  .build());
-    }
-    return builder.build();
+          base.jobDetails(null)
+              .messageDetails(
+                  MessageWaitStateDetails.Builder.create()
+                      .messageName(messageName)
+                      .correlationKey(correlationKey)
+                      .build())
+              .build();
+    };
   }
 
   public static DecisionInstanceSearchQueryResult toDecisionInstanceSearchQueryResponse(
