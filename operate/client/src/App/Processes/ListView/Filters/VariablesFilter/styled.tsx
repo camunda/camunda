@@ -77,7 +77,7 @@ const EditorToolbar = styled.div`
 `;
 
 const ConditionRowsScroll = styled.div`
-  max-height: clamp(7.5rem, calc(100vh - 26rem), 24rem);
+  max-height: clamp(7.5rem, calc(84vh - 22rem), 24rem);
   overflow-y: auto;
   overflow-x: hidden;
   min-height: 0;
