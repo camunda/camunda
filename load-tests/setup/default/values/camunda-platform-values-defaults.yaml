@@ -64,6 +64,17 @@ identity:
     secret:
       existingSecret: camunda-credentials
       existingSecretKey: identity-firstuser-password
+  # Dedicated M2M Keycloak client for the load-tester's Optimize meter, with `write:*` on optimize-api.
+  clients:
+    - id: optimize-loadtest
+      name: Optimize Load Tester
+      type: m2m
+      secret:
+        existingSecret: camunda-credentials
+        existingSecretKey: identity-optimize-loadtest-client-secret
+      permissions:
+        - resourceServerId: optimize-api
+          definition: write:*
   env:
     # https://docs.camunda.io/docs/self-managed/components/management-identity/miscellaneous/configuration-variables/#google-stackdriver-json-logging
     - name: IDENTITY_LOG_APPENDER
@@ -89,6 +100,11 @@ optimize:
     # https://docs.camunda.io/docs/self-managed/components/optimize/configuration/logging/#google-stackdriver-json-logging
     - name: OPTIMIZE_LOG_APPENDER
       value: Stackdriver
+    # Bearer-token (JWT) auth for /api/** (camunda/camunda#46878); consumed by the load-tester meter.
+    - name: CAMUNDA_OPTIMIZE_API_JWT_AUTH_ENABLED
+      value: "true"
+    - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI
+      value: "http://keycloak/auth/realms/camunda-platform/protocol/openid-connect/certs"
   tolerations:
     - key: nodepool
       operator: Equal

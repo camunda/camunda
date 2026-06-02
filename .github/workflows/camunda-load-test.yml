@@ -74,6 +74,11 @@ on:
         type: boolean
         required: false
         default: true
+      enable-optimize-report-metrics:
+        description: 'Enable the load-tester Optimize report-evaluation meter (requires Optimize backend)'
+        type: boolean
+        required: false
+        default: false
       build-frontend:
         description: 'Build frontend assets as part of the load test image build'
         type: boolean
@@ -164,6 +169,11 @@ on:
         type: boolean
         required: false
         default: true
+      enable-optimize-report-metrics:
+        description: 'Enable the load-tester Optimize report-evaluation meter (requires Optimize backend)'
+        type: boolean
+        required: false
+        default: false
       build-frontend:
         description: 'Build the frontend as part of the load test image build'
         type: boolean
@@ -236,6 +246,7 @@ jobs:
           | TTL (days) | `${{ inputs.ttl }}` |
           | Stable VMs | `${{ inputs.stable-vms }}` |
           | Enable Optimize | `${{ inputs.enable-optimize }}` |
+          | Enable Optimize report metrics | `${{ inputs.enable-optimize-report-metrics }}` |
           | Build frontend | `${{ inputs.build-frontend }}` |
           | Perform read benchmarks | `${{ inputs.perform-read-benchmarks }}` |
           | Optimize tag | ${{ inputs.optimize-tag || '—' }} |
@@ -531,6 +542,12 @@ jobs:
                             --set global.image.repository=${{ env.IMAGE_REPOSITORY }} \
                             --set global.image.pullSecrets[0].name=harbor-registry \
                             --set global.performReadBenchmarks=${{inputs.perform-read-benchmarks}}"
+
+          # Enable the load-tester Optimize report-evaluation meter via chart extraConfig
+          # (binds to the Spring property load-tester.optimize.report-evaluation-enabled; off by default).
+          if [[ "${{ inputs.enable-optimize-report-metrics }}" == "true" ]]; then
+            load_test_config="$load_test_config --set global.extraConfig.load-tester.optimize.report-evaluation-enabled=true"
+          fi
 
           # Append custom load test inputs
           load_test_config="$load_test_config ${{ inputs.load-test-load }}"

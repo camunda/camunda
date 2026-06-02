@@ -105,6 +105,20 @@ load-tester:
     message-name: ${LOAD_TESTER_WORKER_MESSAGE_NAME:messageName}
     correlation-key-variable-name: ${LOAD_TESTER_WORKER_CORRELATION_KEY_VARIABLE_NAME:correlationKey-var}
 
+  # Optional Optimize report-evaluation meter (starter-only); requires api.jwtAuthForApiEnabled=true.
+  optimize:
+    report-evaluation-enabled: ${LOAD_TESTER_OPTIMIZE_ENABLED:false}
+    base-url: ${OPTIMIZE_BASE_URL:http://optimize}
+    keycloak-url: ${OPTIMIZE_KEYCLOAK_URL:http://keycloak}
+    realm: ${OPTIMIZE_REALM:camunda-platform}
+    client-id: ${OPTIMIZE_CLIENT_ID:optimize-loadtest}
+    client-secret: ${OPTIMIZE_LOADTEST_CLIENT_SECRET:demo-client-secret}
+    audience: ${OPTIMIZE_AUDIENCE:optimize-api}
+    process-definition-key: ${OPTIMIZE_PROCESS_DEFINITION_KEY:}
+    evaluation-interval: ${OPTIMIZE_EVALUATION_INTERVAL:60s}
+    initial-delay: ${OPTIMIZE_INITIAL_DELAY:10s}
+    request-timeout: ${OPTIMIZE_REQUEST_TIMEOUT:30s}
+
 # Worker-profile override: worker pods actually handle jobs, so they need a real
 # thread pool. Matches the old HOCON app.worker.threads=10 default.
 ---

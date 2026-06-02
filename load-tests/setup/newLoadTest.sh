@@ -10,11 +10,11 @@ usage() {
 Usage: newLoadTest.sh <namespace> [secondaryStorage] [ttl_days] [enable_optimize] [enable_single_zone]
 
 Arguments:
-  namespace          Base namespace name. Will be prefixed with "c8-" if missing.
-  secondaryStorage   Optional. One of: elasticsearch, opensearch, postgresql, mysql, mariadb, mssql, oracle, none. Default: elasticsearch.
-  ttl_days           Optional. Positive integer for namespace TTL in days. Default: 1.
-  enable_optimize    Optional. true|false to enable Optimize. Default: true.
-  enable_single_zone Optional. true|false to deploy the cluster on a single zone. Default: true
+  namespace                       Base namespace name. Will be prefixed with "c8-" if missing.
+  secondaryStorage                Optional. One of: elasticsearch, opensearch, postgresql, mysql, mariadb, mssql, oracle, none. Default: elasticsearch.
+  ttl_days                        Optional. Positive integer for namespace TTL in days. Default: 1.
+  enable_optimize                 Optional. true|false to enable Optimize. Default: true.
+  enable_single_zone              Optional. true|false to deploy the cluster on a single zone. Default: true.
 
 Options:
   -h, --help         Show this help message.
@@ -159,6 +159,7 @@ IDENTITY_POSTGRESQL_ADMIN_PASSWORD=$(gen_password)
 IDENTITY_POSTGRESQL_USER_PASSWORD=$(gen_password)
 CONNECTORS_SECRET=$(gen_password)
 ORCHESTRATION_SECRET=$(gen_password)
+IDENTITY_OPTIMIZE_LOADTEST_CLIENT_SECRET=$(gen_password)
 IDENTITY_ADMIN_CLIENT_TOKEN=$(gen_token)
 IDENTITY_OPTIMIZE_CLIENT_TOKEN=$(gen_token)
 
@@ -249,6 +250,7 @@ sed_inplace "s|__ORCHESTRATION_SECRET__|$ORCHESTRATION_SECRET|"                 
 sed_inplace "s|__CONNECTORS_SECRET__|$CONNECTORS_SECRET|"                                                     resources/camunda-credentials.yaml
 sed_inplace "s|__IDENTITY_ADMIN_CLIENT_TOKEN__|$IDENTITY_ADMIN_CLIENT_TOKEN|"                                 resources/camunda-credentials.yaml
 sed_inplace "s|__IDENTITY_OPTIMIZE_CLIENT_TOKEN__|$IDENTITY_OPTIMIZE_CLIENT_TOKEN|"                           resources/camunda-credentials.yaml
+sed_inplace "s|__IDENTITY_OPTIMIZE_LOADTEST_CLIENT_SECRET__|$IDENTITY_OPTIMIZE_LOADTEST_CLIENT_SECRET|"       resources/camunda-credentials.yaml
 
 # Add/update helm repositories
 helm repo add camunda https://helm.camunda.io/ --force-update
