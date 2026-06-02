@@ -173,11 +173,11 @@ These attributes are set on every log record:
 The `heartbeat` event carries static cluster metadata instead of the common log/sequence
 attributes (heartbeats are not tied to the log stream):
 
-|         Attribute          |  Type  |                               Description                                |
-|----------------------------|--------|--------------------------------------------------------------------------|
-| `event.name`               | string | Always `heartbeat`.                                                      |
-| `camunda.broker.version`   | string | Broker version (matches `io.camunda.zeebe.util.VersionUtil#getVersion`). |
-| `camunda.exporter.version` | string | Analytics exporter version.                                              |
+|              Attribute               |  Type  |                               Description                                |
+|--------------------------------------|--------|--------------------------------------------------------------------------|
+| `event.name`                         | string | Always `heartbeat`.                                                      |
+| `camunda.heartbeat.broker_version`   | string | Broker version (matches `io.camunda.zeebe.util.VersionUtil#getVersion`). |
+| `camunda.heartbeat.exporter_version` | string | Analytics exporter version.                                              |
 
 The analytics schema URL (`https://camunda.io/schemas/analytics/v1`) is delivered automatically via
 the OTel instrumentation scope on every record, not as a per-record attribute.
