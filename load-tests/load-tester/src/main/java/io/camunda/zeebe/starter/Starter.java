@@ -24,6 +24,7 @@ import io.camunda.zeebe.metrics.ConnectionMonitor;
 import io.camunda.zeebe.metrics.ProcessInstanceStartMeter;
 import io.camunda.zeebe.metrics.StarterLatencyMetricsDoc;
 import io.camunda.zeebe.metrics.StarterMetricsDoc;
+import io.camunda.zeebe.metrics.StarterMetricsDoc.StarterMetricKeyNames;
 import io.camunda.zeebe.optimize.OptimizeReportEvaluator;
 import io.camunda.zeebe.optimize.OptimizeReportEvaluatorFactory;
 import io.camunda.zeebe.read.DataReadMeter;
@@ -113,6 +114,17 @@ public class Starter implements CommandLineRunner {
     this.connectionMonitor = connectionMonitor;
     this.webClientBuilder = webClientBuilder;
     this.objectMapper = objectMapper;
+
+    // Expose the client information early: these are only static values which are not supposed to
+    // be affected by the current state of the client (whether it successfully connects to the
+    // brokers, etc.)
+    // Having these infos early could help to investigate the client faster.
+    Gauge.builder(StarterMetricsDoc.CLIENT_INFO.getName(), () -> 1)
+        .description(StarterMetricsDoc.CLIENT_INFO.getDescription())
+        .tag(StarterMetricKeyNames.NAME.asString(), "starter")
+        .tag(StarterMetricKeyNames.PROCESS_ID.asString(), starterCfg.getProcessId())
+        .tag(StarterMetricKeyNames.NB_THREADS.asString(), String.valueOf(starterCfg.getThreads()))
+        .register(registry);
   }
 
   @Override
