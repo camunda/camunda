@@ -229,6 +229,34 @@ class AgentInstanceControllerTest extends RestControllerTest {
                 + " Did you pass an entity id instead of an entity key?."),
         Arguments.of(
             named(
+                "zero elementInstanceKey",
+                """
+                {
+                  "elementInstanceKey": "0",
+                  "definition": {
+                    "model": "gpt-4o",
+                    "provider": "openai",
+                    "systemPrompt": "prompt"
+                  }
+                }
+                """),
+            "The value for elementInstanceKey is '0' but must be > 0."),
+        Arguments.of(
+            named(
+                "negative elementInstanceKey",
+                """
+                {
+                  "elementInstanceKey": "-1",
+                  "definition": {
+                    "model": "gpt-4o",
+                    "provider": "openai",
+                    "systemPrompt": "prompt"
+                  }
+                }
+                """),
+            "The value for elementInstanceKey is '-1' but must be > 0."),
+        Arguments.of(
+            named(
                 "missing definition",
                 """
                 {
@@ -512,14 +540,14 @@ class AgentInstanceControllerTest extends RestControllerTest {
 
   @ParameterizedTest(name = "[{index}] {0}")
   @MethodSource("invalidUpdateRequests")
-  void shouldRejectInvalidUpdateRequest(final String requestBody, final String expectedDetail) {
+  void shouldRejectInvalidUpdateRequest(final UpdateRequest update, final String expectedDetail) {
     // when / then
     webClient
         .patch()
-        .uri(AGENT_INSTANCES_URL + "/%d".formatted(AGENT_INSTANCE_KEY))
+        .uri(AGENT_INSTANCES_URL + "/%d".formatted(update.agentInstanceKey()))
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(requestBody)
+        .bodyValue(update.requestBody())
         .exchange()
         .expectStatus()
         .isBadRequest()
@@ -536,7 +564,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
               "instance": "/v2/agent-instances/%d"
             }
             """
-                .formatted(expectedDetail, AGENT_INSTANCE_KEY),
+                .formatted(expectedDetail, update.agentInstanceKey()),
             JsonCompareMode.STRICT);
 
     verifyNoInteractions(agentInstanceServices);
@@ -547,91 +575,131 @@ class AgentInstanceControllerTest extends RestControllerTest {
         Arguments.of(
             named(
                 "missing elementInstanceKey",
-                """
-                { "status": "THINKING" }
-                """),
+                new UpdateRequest(
+                    AGENT_INSTANCE_KEY,
+                    """
+                    { "status": "THINKING" }
+                    """)),
             "No elementInstanceKey provided."),
         Arguments.of(
             named(
                 "null elementInstanceKey",
-                """
-                { "elementInstanceKey": null, "status": "THINKING" }
-                """),
+                new UpdateRequest(
+                    AGENT_INSTANCE_KEY,
+                    """
+                    { "elementInstanceKey": null, "status": "THINKING" }
+                    """)),
             "No elementInstanceKey provided."),
         Arguments.of(
             named(
                 "non-numeric elementInstanceKey",
-                """
-                { "elementInstanceKey": "not-a-number", "status": "THINKING" }
-                """),
+                new UpdateRequest(
+                    AGENT_INSTANCE_KEY,
+                    """
+                    { "elementInstanceKey": "not-a-number", "status": "THINKING" }
+                    """)),
             "The provided elementInstanceKey 'not-a-number' is not a valid key."
                 + " Expected a numeric value."
                 + " Did you pass an entity id instead of an entity key?."),
         Arguments.of(
             named(
                 "negative inputTokens delta",
-                """
-                { "elementInstanceKey": "%d", "metrics": { "inputTokens": -1 } }
-                """
-                    .formatted(ELEMENT_INSTANCE_KEY)),
+                new UpdateRequest(
+                    AGENT_INSTANCE_KEY,
+                    """
+                    { "elementInstanceKey": "%d", "metrics": { "inputTokens": -1 } }
+                    """
+                        .formatted(ELEMENT_INSTANCE_KEY))),
             "The value for metrics.inputTokens is '-1' but must be >= 0."),
         Arguments.of(
             named(
                 "negative outputTokens delta",
-                """
-                { "elementInstanceKey": "%d", "metrics": { "outputTokens": -5 } }
-                """
-                    .formatted(ELEMENT_INSTANCE_KEY)),
+                new UpdateRequest(
+                    AGENT_INSTANCE_KEY,
+                    """
+                    { "elementInstanceKey": "%d", "metrics": { "outputTokens": -5 } }
+                    """
+                        .formatted(ELEMENT_INSTANCE_KEY))),
             "The value for metrics.outputTokens is '-5' but must be >= 0."),
         Arguments.of(
             named(
                 "negative modelCalls delta",
-                """
-                { "elementInstanceKey": "%d", "metrics": { "modelCalls": -1 } }
-                """
-                    .formatted(ELEMENT_INSTANCE_KEY)),
+                new UpdateRequest(
+                    AGENT_INSTANCE_KEY,
+                    """
+                    { "elementInstanceKey": "%d", "metrics": { "modelCalls": -1 } }
+                    """
+                        .formatted(ELEMENT_INSTANCE_KEY))),
             "The value for metrics.modelCalls is '-1' but must be >= 0."),
         Arguments.of(
             named(
                 "negative toolCalls delta",
-                """
-                { "elementInstanceKey": "%d", "metrics": { "toolCalls": -2 } }
-                """
-                    .formatted(ELEMENT_INSTANCE_KEY)),
+                new UpdateRequest(
+                    AGENT_INSTANCE_KEY,
+                    """
+                    { "elementInstanceKey": "%d", "metrics": { "toolCalls": -2 } }
+                    """
+                        .formatted(ELEMENT_INSTANCE_KEY))),
             "The value for metrics.toolCalls is '-2' but must be >= 0."),
         Arguments.of(
             named(
                 "tool without name",
-                """
-                {
-                  "elementInstanceKey": "%d",
-                  "tools": [{ "description": "Search database" }]
-                }
-                """
-                    .formatted(ELEMENT_INSTANCE_KEY)),
+                new UpdateRequest(
+                    AGENT_INSTANCE_KEY,
+                    """
+                    {
+                      "elementInstanceKey": "%d",
+                      "tools": [{ "description": "Search database" }]
+                    }
+                    """
+                        .formatted(ELEMENT_INSTANCE_KEY))),
             "No tools[0].name provided."),
         Arguments.of(
             named(
                 "tool with blank name",
-                """
-                {
-                  "elementInstanceKey": "%d",
-                  "tools": [{ "name": "" }]
-                }
-                """
-                    .formatted(ELEMENT_INSTANCE_KEY)),
+                new UpdateRequest(
+                    AGENT_INSTANCE_KEY,
+                    """
+                    {
+                      "elementInstanceKey": "%d",
+                      "tools": [{ "name": "" }]
+                    }
+                    """
+                        .formatted(ELEMENT_INSTANCE_KEY))),
             "No tools[0].name provided."),
         Arguments.of(
             named(
                 "tool with null name",
-                """
-                {
-                  "elementInstanceKey": "%d",
-                  "tools": [{ "name": null }]
-                }
-                """
-                    .formatted(ELEMENT_INSTANCE_KEY)),
-            "No tools[0].name provided."));
+                new UpdateRequest(
+                    AGENT_INSTANCE_KEY,
+                    """
+                    {
+                      "elementInstanceKey": "%d",
+                      "tools": [{ "name": null }]
+                    }
+                    """
+                        .formatted(ELEMENT_INSTANCE_KEY))),
+            "No tools[0].name provided."),
+        Arguments.of(
+            named(
+                "zero agentInstanceKey",
+                new UpdateRequest(
+                    0,
+                    """
+                    { "elementInstanceKey": "%d", "status": "IDLE" }
+                    """
+                        .formatted(ELEMENT_INSTANCE_KEY))),
+            "The value for agentInstanceKey is '0' but must be > 0."),
+        Arguments.of(
+            named(
+                "negative agentInstanceKey",
+                new UpdateRequest(
+                    -1,
+                    """
+                    { "elementInstanceKey": "%d", "status": "IDLE" }
+                    """
+                        .formatted(ELEMENT_INSTANCE_KEY))),
+            "The value for agentInstanceKey is '-1' but must be > 0."));
   }
 
   @Test
@@ -655,4 +723,6 @@ class AgentInstanceControllerTest extends RestControllerTest {
         .expectStatus()
         .is5xxServerError();
   }
+
+  private record UpdateRequest(long agentInstanceKey, String requestBody) {}
 }
