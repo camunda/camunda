@@ -35,7 +35,6 @@ import io.camunda.gateway.protocol.model.AuditLogResultEnum;
 import io.camunda.gateway.protocol.model.AuditLogSearchQueryResult;
 import io.camunda.gateway.protocol.model.AuthorizationResult;
 import io.camunda.gateway.protocol.model.AuthorizationSearchResult;
-import io.camunda.gateway.protocol.model.BaseElementInstanceWaitStateResult;
 import io.camunda.gateway.protocol.model.BatchOperationError;
 import io.camunda.gateway.protocol.model.BatchOperationError.TypeEnum;
 import io.camunda.gateway.protocol.model.BatchOperationItemResponse;
@@ -63,8 +62,6 @@ import io.camunda.gateway.protocol.model.DecisionRequirementsSearchQueryResult;
 import io.camunda.gateway.protocol.model.ElementInstanceResult;
 import io.camunda.gateway.protocol.model.ElementInstanceSearchQueryResult;
 import io.camunda.gateway.protocol.model.ElementInstanceStateEnum;
-import io.camunda.gateway.protocol.model.ElementInstanceWaitStateJobResult;
-import io.camunda.gateway.protocol.model.ElementInstanceWaitStateMessageResult;
 import io.camunda.gateway.protocol.model.ElementInstanceWaitStateQueryResult;
 import io.camunda.gateway.protocol.model.ElementInstanceWaitStateResult;
 import io.camunda.gateway.protocol.model.EvaluatedDecisionInputItem;
@@ -672,54 +669,42 @@ public final class SearchQueryResponseMapper {
       final WaitStateEntity item) {
     final var rootKey = keyToStringOrNull(item.rootProcessInstanceKey());
     final var elementType =
-        BaseElementInstanceWaitStateResult.ElementTypeEnum.fromValue(item.elementType().name());
-    return switch (item.details()) {
+        ElementInstanceWaitStateResult.ElementTypeEnum.fromValue(item.elementType().name());
+    final var builder =
+        ElementInstanceWaitStateResult.Builder.create()
+            .waitStateType(WaitStateTypeEnum.fromValue(item.details().waitStateType().name()))
+            .processInstanceKey(keyToString(item.processInstanceKey()))
+            .elementInstanceKey(keyToString(item.elementInstanceKey()))
+            .elementId(item.elementId())
+            .elementType(elementType)
+            .tenantId(item.tenantId())
+            .rootProcessInstanceKey(rootKey);
+    switch (item.details()) {
       case WaitStateJobDetails(
               final var jobKey,
               final var jobType,
               final var jobKind,
               final var listenerEventType,
-              final var retries) -> {
-        final var dtoDetails =
-            JobWaitStateDetails.Builder.create()
-                .jobKey(keyToString(jobKey))
-                .jobType(jobType)
-                .jobKind(JobKindEnum.fromValue(jobKind.name()))
-                .listenerEventType(
-                    listenerEventType == null
-                        ? null
-                        : JobListenerEventTypeEnum.fromValue(listenerEventType.name()))
-                .retries(retries)
-                .build();
-        yield ElementInstanceWaitStateJobResult.Builder.create()
-            .waitStateType(WaitStateTypeEnum.JOB.getValue())
-            .processInstanceKey(keyToString(item.processInstanceKey()))
-            .elementInstanceKey(keyToString(item.elementInstanceKey()))
-            .elementId(item.elementId())
-            .elementType(elementType)
-            .tenantId(item.tenantId())
-            .details(dtoDetails)
-            .rootProcessInstanceKey(rootKey)
-            .build();
-      }
-      case WaitStateMessageDetails(final var messageName, final var correlationKey) -> {
-        final var dtoDetails =
-            MessageWaitStateDetails.Builder.create()
-                .messageName(messageName)
-                .correlationKey(correlationKey)
-                .build();
-        yield ElementInstanceWaitStateMessageResult.Builder.create()
-            .waitStateType(WaitStateTypeEnum.MESSAGE.getValue())
-            .processInstanceKey(keyToString(item.processInstanceKey()))
-            .elementInstanceKey(keyToString(item.elementInstanceKey()))
-            .elementId(item.elementId())
-            .elementType(elementType)
-            .tenantId(item.tenantId())
-            .details(dtoDetails)
-            .rootProcessInstanceKey(rootKey)
-            .build();
-      }
-    };
+              final var retries) ->
+          builder.jobDetails(
+              JobWaitStateDetails.Builder.create()
+                  .jobKey(keyToString(jobKey))
+                  .jobType(jobType)
+                  .jobKind(JobKindEnum.fromValue(jobKind.name()))
+                  .listenerEventType(
+                      listenerEventType == null
+                          ? null
+                          : JobListenerEventTypeEnum.fromValue(listenerEventType.name()))
+                  .retries(retries)
+                  .build());
+      case WaitStateMessageDetails(final var messageName, final var correlationKey) ->
+          builder.messageDetails(
+              MessageWaitStateDetails.Builder.create()
+                  .messageName(messageName)
+                  .correlationKey(correlationKey)
+                  .build());
+    }
+    return builder.build();
   }
 
   public static DecisionInstanceSearchQueryResult toDecisionInstanceSearchQueryResponse(

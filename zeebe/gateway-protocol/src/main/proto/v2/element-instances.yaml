@@ -772,28 +772,7 @@ components:
             $ref: '#/components/schemas/ElementInstanceWaitStateResult'
 
     ElementInstanceWaitStateResult:
-      x-polymorphic-schema: true
-      description: >
-        An element instance waiting state. Discriminated by `waitStateType`:
-        `JOB` resolves to `ElementInstanceWaitStateJobResult`,
-        `MESSAGE` resolves to `ElementInstanceWaitStateMessageResult`.
-      oneOf:
-        - $ref: '#/components/schemas/ElementInstanceWaitStateJobResult'
-        - $ref: '#/components/schemas/ElementInstanceWaitStateMessageResult'
-      discriminator:
-        propertyName: waitStateType
-        mapping:
-          JOB: '#/components/schemas/ElementInstanceWaitStateJobResult'
-          MESSAGE: '#/components/schemas/ElementInstanceWaitStateMessageResult'
-
-    WaitStateTypeEnum:
-      description: The type of waiting state an element instance is in.
-      type: string
-      enum:
-        - JOB
-        - MESSAGE
-
-    BaseElementInstanceWaitStateResult:
+      description: An element instance waiting state.
       type: object
       required:
         - waitStateType
@@ -805,7 +784,8 @@ components:
       properties:
         waitStateType:
           description: The type of waiting state an element instance is in.
-          type: string
+          allOf:
+            - $ref: '#/components/schemas/WaitStateTypeEnum'
         rootProcessInstanceKey:
           description: Key of the root process instance.
           nullable: true
@@ -858,28 +838,23 @@ components:
           description: The tenant ID of the element instance.
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+        jobDetails:
+          description: Job details, present when waitStateType is JOB.
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/JobWaitStateDetails'
+        messageDetails:
+          description: Message details, present when waitStateType is MESSAGE.
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/MessageWaitStateDetails'
 
-    ElementInstanceWaitStateJobResult:
-      description: Inspection result for an element instance waiting on a job.
-      allOf:
-        - $ref: '#/components/schemas/BaseElementInstanceWaitStateResult'
-        - type: object
-          required:
-            - details
-          properties:
-            details:
-              $ref: '#/components/schemas/JobWaitStateDetails'
-
-    ElementInstanceWaitStateMessageResult:
-      description: Inspection result for an element instance waiting on a message.
-      allOf:
-        - $ref: '#/components/schemas/BaseElementInstanceWaitStateResult'
-        - type: object
-          required:
-            - details
-          properties:
-            details:
-              $ref: '#/components/schemas/MessageWaitStateDetails'
+    WaitStateTypeEnum:
+      description: The type of waiting state an element instance is in.
+      type: string
+      enum:
+        - JOB
+        - MESSAGE
 
     JobWaitStateDetails:
       type: object
