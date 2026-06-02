@@ -34,6 +34,10 @@ on:
         type: boolean
         default: false
         required: false
+      slack_channel:
+        description: 'Slack channel to post to (default: c8-orchestration-cluster-e2e-test-results; override for testing)'
+        required: false
+        default: ''
 
 # Minimal at workflow level. Triage job only needs to read; dispatch job
 # bumps actions: write to trigger the fix workflow (zizmor: excessive-permissions).
@@ -254,7 +258,15 @@ jobs:
             exit 1
           fi
 
-          [ ! -s /tmp/all_failures.jsonl ] && { echo "No failures."; echo "dispatches=[]" >> "$GITHUB_OUTPUT"; exit 0; }
+          # Even when there are no test failures, we still need to dispatch for runs that
+          # failed at the workflow level (no test results produced). Check if any failed
+          # runs exist before bailing early.
+          failed_run_count=$(jq 'length' /tmp/failed_runs.json 2>/dev/null || echo 0)
+          if [ ! -s /tmp/all_failures.jsonl ] && [ "$failed_run_count" -eq 0 ]; then
+            echo "No failures."
+            echo "dispatches=[]" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
 
           # Normalize file paths:
           #   - Strip absolute prefixes (anything before 'qa/c8-orchestration-cluster-e2e-test-suite/')
@@ -288,33 +300,106 @@ jobs:
             --json baseRefName --jq '[.[].baseRefName] | unique' 2>/dev/null || echo '[]')
           echo "Open failing-test-fix PR base refs: $open_pr_versions"
 
-          # Build dispatch payloads, one per version
-          # version → {test_specs, e2e_run_id, api_es_run_id, api_rdbms_run_id}
+          # Build dispatch payloads, one per version.
+          # Sources:
+          #   1. Versions with test failures (from failures_normalized.json)
+          #   2. Versions with workflow-level failures (failed run but no test failures)
+          #      → dispatched with test_specs: [] so the fix agent inspects the workflow logs
+
+          # Build a set of versions that have test failures
+          jq_failures_normalized=$([ -s /tmp/failures_normalized.json ] && cat /tmp/failures_normalized.json || echo '[]')
+
+          # Build a JSON array of workflow-level-only failed versions
+          # (failed run exists but no test failures extracted for that version/type)
+          workflow_failures='[]'
+          if [ -f /tmp/run_ids.json ]; then
+            while IFS='=' read -r key run_id; do
+              version=$(echo "$key" | cut -d/ -f1)
+              test_type=$(echo "$key" | cut -d/ -f2)
+              has_test_failure=$(echo "$jq_failures_normalized" | jq -r --arg v "$version" --arg t "$test_type" \
+                '[.[] | select(.version == $v and (
+                    (.test_type == "e2e"  and $t == "e2e") or
+                    (.test_type == "api"  and $t == "api_es"    and (.database == "elasticsearch" or .database == null or .database == "")) or
+                    (.test_type == "api"  and $t == "api_rdbms" and (.database != null and .database != "" and .database != "elasticsearch"))
+                  ))] | length > 0' 2>/dev/null || echo false)
+              if [ "$has_test_failure" = "false" ]; then
+                conclusion=$(gh run view "$run_id" --repo "$REPO" --json conclusion --jq '.conclusion' 2>/dev/null || echo "unknown")
+                if [ "$conclusion" = "failure" ]; then
+                  ref=$([ "$version" = "main" ] && echo "main" || echo "stable/${version}")
+                  workflow_failures=$(echo "$workflow_failures" | jq \
+                    --arg v "$version" --arg ref "$ref" --arg t "$test_type" \
+                    '. += [{"version": $v, "ref": $ref, "test_type": $t}]')
+                fi
+              fi
+            done < <(jq -r 'to_entries[] | "\(.key)=\(.value)"' /tmp/run_ids.json)
+            # Group workflow_failures by version, collecting all failing run types per version.
+            # Storing failing_types lets the dispatch attach only the run IDs that actually
+            # had workflow-level failures, avoiding spurious run IDs in the agent context.
+            workflow_failures=$(echo "$workflow_failures" | jq '
+              group_by(.version) | map({
+                version: .[0].version,
+                ref: .[0].ref,
+                failing_types: [.[].test_type]
+              })')
+          fi
+
+          echo "Workflow-level failures (no failing tests extracted): $(echo "$workflow_failures" | jq 'length')"
+
+          # Build dispatch payloads from test failures
+          if [ -s /tmp/failures_normalized.json ]; then
+            jq --slurpfile run_ids /tmp/run_ids.json \
+               --argjson openrefs "$open_pr_versions" \
+               --argjson cap "${DAILY_CAP}" '
+              # group failures by version
+              sort_by(.version) | group_by(.version)
+              | map({
+                  version: .[0].version,
+                  test_specs: (map(del(.version)) | .[0:50]),
+                  ref: (if .[0].version == "main" then "main" else ("stable/" + .[0].version) end)
+                })
+              | map(select(.test_specs | length > 0))
+              # dedup against open PRs
+              | map(select((.ref as $ref | $openrefs | index($ref)) == null))
+              # attach run IDs
+              | map(. + {
+                  e2e_run_id:       ($run_ids[0][(.version + "/e2e")]       // ""),
+                  api_es_run_id:    ($run_ids[0][(.version + "/api_es")]    // ""),
+                  api_rdbms_run_id: ($run_ids[0][(.version + "/api_rdbms")] // "")
+                })
+              # cap failures per version to 20 so the workflow_dispatch input
+              # stays well under the 64KB limit even with many nightly failures
+              | map(.test_specs |= .[0:20])
+              # cap dispatch count
+              | .[0:$cap]
+            ' /tmp/failures_normalized.json > /tmp/dispatches_test.json
+          else
+            echo '[]' > /tmp/dispatches_test.json
+          fi
+
+          # Merge workflow-level failures as additional dispatch entries (test_specs: [])
+          # Exclude only versions that already have an open failing-test-fix PR.
+          # Do NOT exclude versions already in test-failure dispatches — a version can
+          # have failing tests in one workflow type and a workflow-level crash in another
+          # (e.g. api_es has test failures while api_rdbms crashes before producing results).
           jq --slurpfile run_ids /tmp/run_ids.json \
+             --argjson wf_failures "$workflow_failures" \
              --argjson openrefs "$open_pr_versions" \
              --argjson cap "${DAILY_CAP}" '
-            # group failures by version
-            sort_by(.version) | group_by(.version)
-            | map({
-                version: .[0].version,
-                test_specs: (map(del(.version)) | .[0:50]),
-                ref: (if .[0].version == "main" then "main" else ("stable/" + .[0].version) end)
-              })
-            | map(select(.test_specs | length > 0))
-            # dedup against open PRs
-            | map(select((.ref as $ref | $openrefs | index($ref)) == null))
-            # attach run IDs
+            . as $test_dispatches |
+            $wf_failures
+            | map(select(
+                (.ref as $ref | $openrefs | index($ref)) == null
+              ))
             | map(. + {
-                e2e_run_id:       ($run_ids[0][(.version + "/e2e")]       // ""),
-                api_es_run_id:    ($run_ids[0][(.version + "/api_es")]    // ""),
-                api_rdbms_run_id: ($run_ids[0][(.version + "/api_rdbms")] // "")
+                test_specs: [],
+                e2e_run_id:       (if (.failing_types | index("e2e"))       != null then ($run_ids[0][(.version + "/e2e")]       // "") else "" end),
+                api_es_run_id:    (if (.failing_types | index("api_es"))    != null then ($run_ids[0][(.version + "/api_es")]    // "") else "" end),
+                api_rdbms_run_id: (if (.failing_types | index("api_rdbms")) != null then ($run_ids[0][(.version + "/api_rdbms")] // "") else "" end)
               })
-            # cap failures per version to 20 so the workflow_dispatch input
-            # stays well under the 64KB limit even with many nightly failures
-            | map(.test_specs |= .[0:20])
-            # cap dispatch count
-            | .[0:$cap]
-          ' /tmp/failures_normalized.json > /tmp/dispatches.json
+            # workflow-level dispatches get their own cap so test-failure dispatches
+            # cannot crowd them out when the daily cap is already full
+            | ($test_dispatches + .[0:$cap])
+          ' /tmp/dispatches_test.json > /tmp/dispatches.json
 
           echo "Dispatches planned: $(jq 'length' /tmp/dispatches.json)"
           jq '[.[] | {version, count: (.test_specs | length), e2e_run_id, api_es_run_id, api_rdbms_run_id}]' /tmp/dispatches.json || true
@@ -354,39 +439,7 @@ jobs:
               echo ""
             fi
 
-            # Infra failures: runs marked failure but no test failures extracted
-            if [ -f /tmp/run_ids.json ]; then
-              infra_failures=""
-              while IFS='=' read -r key run_id; do
-                version=$(echo "$key" | cut -d/ -f1)
-                test_type=$(echo "$key" | cut -d/ -f2)
-                # Check if this version/type combo had test failures
-                has_test_failure=$(jq -r --arg v "$version" --arg t "$test_type" \
-                  '[.[] | select(.version == $v and .test_type == $t)] | length > 0' \
-                  /tmp/failures_normalized.json 2>/dev/null || echo false)
-                if [ "$has_test_failure" = "false" ]; then
-                  # Check the actual conclusion from run_ids
-                  conclusion=$(gh run view "$run_id" --repo "$REPO" --json conclusion --jq '.conclusion' 2>/dev/null || echo "unknown")
-                  if [ "$conclusion" = "failure" ]; then
-                    row="| ${version} | ${test_type} | [${run_id}](https://github.com/${REPO}/actions/runs/${run_id}) |"
-                    infra_failures="${infra_failures:+${infra_failures}$'\n'}${row}"
-                  fi
-                fi
-              done < <(jq -r 'to_entries[] | "\(.key)=\(.value)"' /tmp/run_ids.json)
-
-              if [ -n "$infra_failures" ]; then
-                echo "### Infrastructure failures (no test failures — workflow/setup issue)"
-                echo ""
-                echo "> These runs failed but all tests passed. Likely a post-test step (e.g. TestRail upload) failed."
-                echo ""
-                echo "| Version | Type | Run |"
-                echo "|---------|------|-----|"
-                echo "$infra_failures"
-                echo ""
-              fi
-            fi
-
-            if [ "$count" -eq 0 ] && [ -z "${infra_failures:-}" ]; then
+            if [ "$count" -eq 0 ] && [ "$(jq 'length' /tmp/dispatches.json 2>/dev/null || echo 0)" -eq 0 ]; then
               echo "> All nightly runs passed or no runs exist yet."
               echo ""
             fi
@@ -442,12 +495,13 @@ jobs:
               test_count=$(jq --arg v "$rv" --arg t "$rt" '[.[] | select(
                 .version == $v and (
                   (.test_type == "e2e"  and $t == "e2e") or
-                  (.test_type == "api"  and ($t == "api_es" or $t == "api_rdbms"))
+                  (.test_type == "api"  and $t == "api_es"    and (.database == "elasticsearch" or .database == null or .database == "")) or
+                  (.test_type == "api"  and $t == "api_rdbms" and (.database != null and .database != "" and .database != "elasticsearch"))
                 ))] | length' /tmp/failures_normalized.json 2>/dev/null || echo 0)
               if [ "$test_count" -gt 0 ]; then
                 failing_list="${failing_list}"$'\n'"  :x: <${rurl}|${rtitle}> — ${test_count} test failure(s)"
               else
-                failing_list="${failing_list}"$'\n'"  :x: <${rurl}|${rtitle}> — infra failure"
+                failing_list="${failing_list}"$'\n'"  :x: <${rurl}|${rtitle}> — workflow-level failure (no failing tests detected)"
               fi
             done < <(jq -c '.[]' /tmp/failed_runs.json)
           fi
@@ -469,7 +523,9 @@ jobs:
           fi
           text="${base_text}"$'\n\n'"${dispatch_status}"$'\n\n'"<${RUN_URL}|Triage run ↗>"
 
-          payload=$(jq -nc --arg channel 'c8-orchestration-cluster-e2e-test-results' --arg text "$text" \
+          target_channel="${{ github.event.inputs.slack_channel }}"
+          target_channel="${target_channel:-c8-orchestration-cluster-e2e-test-results}"
+          payload=$(jq -nc --arg channel "$target_channel" --arg text "$text" \
             '{channel: $channel, text: $text, mrkdwn: true}')
           response=$(curl -sS -X POST https://slack.com/api/chat.postMessage \
             -H "Authorization: Bearer ${SLACK_BOT_USER_OAUTH_TOKEN}" \

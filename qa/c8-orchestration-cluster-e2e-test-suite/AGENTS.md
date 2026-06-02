@@ -499,3 +499,92 @@ on-demand verification run is triggered: `c8-orchestration-cluster-e2e-tests-on-
 no verification run is triggered and the fix is never validated automatically.**
 
 Use `{"prs": []}` if no PR was opened (regardless of reason).
+
+## Workflow-Level Failure Fix Agent
+
+This section is read by the fix agent when `/tmp/test_specs.json` contains an empty array — the nightly run failed without producing test results, or failed in a non-test step.
+
+The run IDs are in env vars: `E2E_RUN_ID`, `API_ES_RUN_ID`, `API_RDBMS_RUN_ID` (any may be `""`). `TRIAGE_RUN_URL` is the triage run URL for cross-linking.
+
+### Mental model
+
+A CI run is a chain of steps. Every step runs a command defined by a file in **this** repo — a workflow YAML, a shell script, a config file, a compose file, or a test. A failure means one of those files produced behaviour that ended the run.
+
+Your job is to find that file and change it so the run reaches a **correct conclusion**: either it passes, or it fails for a real product reason that surfaces as a *test result* — never as a workflow crash, and never with a "please re-run" recommendation.
+
+There is no catalogue of known failures to match against. Any step or any job can fail for any reason. You diagnose from first principles every time, using the full repository, which is entirely accessible to you.
+
+### The loop
+
+**1 — Enumerate every failed job and its failed step(s):**
+
+```bash
+for run_id in $E2E_RUN_ID $API_ES_RUN_ID $API_RDBMS_RUN_ID; do
+  [ -z "$run_id" ] && continue
+  echo "=== Run $run_id ==="
+  gh run view "$run_id" --repo camunda/camunda --json jobs \
+    --jq '.jobs[] | select(.conclusion == "failure") | {
+      job: .name,
+      failed_steps: [.steps[] | select(.conclusion == "failure") | .name]
+    }'
+done
+```
+
+**2 — Read the failing step's logs to get the exact error:**
+
+```bash
+gh run view <run_id> --repo camunda/camunda --log-failed 2>/dev/null | head -300
+```
+
+The root cause is almost always visible in the first 300 lines. Read the actual error text — do not assume.
+
+**3 — Locate the file that owns the failing step.** The step `name` from step 1 is a literal key in a workflow YAML. Find it, then follow it to the real source:
+
+```bash
+# Find which workflow defines the failed step
+grep -rn "<failed step name>" .github/workflows/
+
+# If the step runs a script, open the script. If it runs a command,
+# find the config that command reads (compose file, package.json script,
+# trcli invocation, mvn goal, etc.) and open that.
+```
+
+Keep following until you reach the concrete file whose contents determine whether that step passes — the YAML, the script, the config, the compose file, or the test.
+
+**4 — Classify the true cause, then fix it in that file.** Every failure is one of three kinds, and each has a definite fix shape:
+
+- **The step's own logic is wrong** — a bug in the workflow, script, config, compose file, or test. Fix the logic.
+- **The step depends on something flaky or external** — a registry, a network call, a remote API, a download. Encode resilience *in the file*: add a retry with backoff, pin or cache the dependency, or turn a cryptic crash into a clear, actionable failure. Recommending a human re-run is **not** a fix — the resilience must live in the repo so the next run survives the same blip on its own.
+- **A real product or test defect crashed the run instead of being reported** — the run died before the test framework could record the failure. Fix it so the defect surfaces as a normal test result, never as a workflow-level crash.
+
+Make the **minimal** change that addresses the cause. Do not refactor surrounding code, suppress the error, or widen the scope.
+
+> **Illustration of the loop (not a lookup row):** Suppose step 1 reports the failed step is `Start Camunda` and step 2 shows `context deadline exceeded` pulling an image. Step 3 greps the workflows, finds the step in a reusable workflow, and sees it runs `docker compose up` once. Step 4 classifies this as "depends on something flaky/external" → the fix is to wrap the pull in a retry-with-backoff loop *in that workflow file* so a transient registry blip no longer fails the run. You would reach the same shape of answer for a flaky `npm ci`, a flaky artifact download, or a flaky DB container start — by running the same loop, not by recognising "Docker".
+
+**5 — Open a PR.** Use `ci:` if only `.github/workflows/` files changed; `test:` if only test files changed; `fix:` if application code changed. Never use `fix:` for test-only changes — commitlint rejects it. Cross-link `TRIAGE_RUN_URL` in the PR body.
+
+Write to `/tmp/fix-meta.json`:
+
+```json
+{"prs": [{"number": 123, "owner": "camunda", "repo": "camunda", "branch": "ci/...", "has_e2e": false, "has_api": false}], "category": "workflow-fix"}
+```
+
+### When — and only when — you cannot fix
+
+`{"prs": [], "category": "not-determined"}` is a last resort, expected to be extremely rare because the whole repo is in scope. To use it you must be able to state all three: the failed step, the file that owns it, and a concrete reason why **no edit to that file or anything it touches** could change the outcome.
+
+Realistically that is limited to: the runner host itself died (out of memory or disk on the GitHub Actions runner), or a fully-down external service with no surface in our code to add a retry or fallback against. Note that even most "external service was down" cases have a fix — adding backoff so a brief outage no longer fails the run — so reach for `not-determined` only after confirming there is genuinely nothing in the repo to change.
+
+### Constraints
+
+- **Never recommend re-running the workflow as the outcome** — if flakiness is the cause, the resilience goes into the file, not into a human instruction.
+- **`continue-on-error: true` is absolutely forbidden — with no exceptions and no rationalisations.** This includes post-test reporting steps (TestRail, artifact upload, Slack notification). The reasoning "it is only reporting, not a gate" is exactly the rationalisation that must be rejected: if a post-test step fails, that failure is a defect in our code or configuration that deserves a real fix. `continue-on-error` silences the failure rather than fixing it, which means the same bug runs again tomorrow and the day after.
+  - **TestRail `add_case` failure** → the step fails because something in *our* code caused trcli to error (e.g. a test case title whose derived `custom_automation_id` exceeds 250 characters). Find the offending test title in the spec files and shorten it. That is the fix.
+  - **TestRail auth / network failure** → add a retry around the trcli call, or fix the credential configuration. Do not silence.
+  - **Any other post-test step** → find what our code does wrong and fix it. If you genuinely cannot find any code fix after thorough investigation, write `not-determined` — but `continue-on-error` is never a valid alternative.
+- **No skipping** — same absolute no-skip / no-fixme rule as the Nightly Fix Agent.
+- **`.github/workflows/` is always in scope** — the repo "Ask first" constraint applies to application libraries (`webapps-common/`, `webapp/client/`, `security/`), not to CI workflow files.
+- **Minimal diff** — fix only what is broken; no refactoring, no dependency bumps, no unrelated edits.
+- **Allowed tools**: `gh`, `git`, `grep`, `rg`, `cat`, `find`, `jq`, `sed`, `awk`, `unzip`
+- **Forbidden**: `make`, `helm`, `kubectl`, `npm run build`, `go test`, any deploy command
+

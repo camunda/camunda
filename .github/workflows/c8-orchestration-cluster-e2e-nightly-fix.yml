@@ -241,17 +241,32 @@ jobs:
           # patterns, PR rules, and constraints live in AGENTS.md (which Claude must
           # read first). This keeps the per-run prompt small and the source-of-truth
           # for behaviour in a single file the team can update without editing CI.
+
+          # Determine which AGENTS.md section to use based on whether test_specs is empty.
+          # Empty test_specs means a workflow-level failure (no test results produced).
+          test_spec_count=$(jq 'length' /tmp/test_specs.json 2>/dev/null || echo 0)
+          if [ "$test_spec_count" -eq 0 ]; then
+            agents_section="## Workflow-Level Failure Fix Agent"
+          else
+            agents_section="## Nightly Fix Agent"
+          fi
+
           prompt=$(cat <<EOF
           You are the Camunda orchestration-cluster nightly fix agent.
           Workspace: ${ws_dir} (already on branch ${TARGET_REF}).
 
           STEP 0 — read ${ws_dir}/qa/c8-orchestration-cluster-e2e-test-suite/AGENTS.md,
-          the "## Nightly Fix Agent" section. That file is your full operating manual:
+          the "${agents_section}" section. That file is your full operating manual:
           diagnosis steps, artifact-download patterns, constraints (NEVER skip/fixme),
-          PR conventions ('test:' not 'fix:'), and the /tmp/fix-meta.json schema.
+          PR conventions, and the /tmp/fix-meta.json schema.
 
-          Failing tests to fix are in /tmp/test_specs.json.
-          Fix ONLY those entries — ignore other failures visible in artifacts.
+          /tmp/test_specs.json contains the failures to address ($(jq 'length' /tmp/test_specs.json) entries).
+          $(if [ "$test_spec_count" -gt 0 ]; then
+            echo "Fix ONLY the test failures listed in that file — do not address other failures visible in artifacts."
+          else
+            echo "The array is empty: this is a workflow-level failure. Follow the AGENTS.md section above to"
+            echo "inspect the failing run logs, trace the root cause to the owning file, and open a fix PR."
+          fi)
 
           Context (env vars already exported):
             VERSION=${VERSION}  TARGET_REF=${TARGET_REF}  SAFE_VERSION=${SAFE_VERSION}
@@ -259,8 +274,11 @@ jobs:
             HAS_E2E=${HAS_E2E}  HAS_API_ES=${HAS_API_ES}  HAS_API_RDBMS=${HAS_API_RDBMS}
             TRIAGE_RUN_URL=${TRIAGE_RUN_URL}  REPO=${REPO}
 
-          Branch name to use: fix/nightly-${VERSION}-<short-slug>.
-          Commit + PR title prefix: 'test:' (NEVER 'fix:' — commitlint rejects it).
+          Branch name to use: fix/nightly-${VERSION}-<short-slug> for test fixes,
+          ci/<short-slug> for workflow-level fixes.
+          Commit + PR title prefix: 'test:' for test-only changes, 'ci:' for workflow-only
+          changes, 'fix:' for other code changes (NEVER 'fix:' for test-only changes —
+          commitlint rejects it).
 
           CRITICAL for /tmp/fix-meta.json: the "branch" field must be the exact
           headRefName of the PR you opened — never null, never omitted. Obtain it
@@ -292,8 +310,12 @@ jobs:
           fi
 
           count=$(jq '.prs | length' /tmp/fix-meta.json)
+          category=$(jq -r '.category // ""' /tmp/fix-meta.json 2>/dev/null || echo "")
           if [ "$count" -eq 0 ]; then
             echo "No PRs were opened — nothing to verify."
+            if [ "$category" = "not-determined" ]; then
+              echo "::warning::Fix agent could not determine a fix (category: not-determined)"
+            fi
             exit 0
           fi
 
@@ -450,7 +472,9 @@ jobs:
         run: |
           set -euo pipefail
           prs_json="[]"
+          category=""
           [ -f /tmp/fix-meta.json ] && prs_json=$(jq -c '.prs // []' /tmp/fix-meta.json 2>/dev/null || echo '[]')
+          [ -f /tmp/fix-meta.json ] && category=$(jq -r '.category // ""' /tmp/fix-meta.json 2>/dev/null || echo "")
           pr_count=$(echo "$prs_json" | jq 'length')
 
           # Check fix-meta.json first — if a PR was opened report it even when
@@ -468,8 +492,10 @@ jobs:
             [ "$JOB_STATUS" = "failure" ] && summary="${summary} _(post-processing failed — see run)_"
           elif [ "$JOB_STATUS" = "failure" ]; then
             icon=":x:"; summary="Agent failed (no fix applied)"
+          elif [ "$category" = "not-determined" ]; then
+            icon=":question:"; summary="Could not determine a fix — manual investigation required"
           else
-            icon=":information_source:"; summary="No PR opened — agent could not determine a fix"
+            icon=":warning:"; summary="No fix applied — manual investigation required"
           fi
 
           text="${icon} *${VERSION}* fix agent — ${summary}\n<${RUN_URL}|Agent run ↗>"
