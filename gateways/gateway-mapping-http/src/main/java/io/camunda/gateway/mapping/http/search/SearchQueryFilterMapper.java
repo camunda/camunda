@@ -927,6 +927,12 @@ public class SearchQueryFilterMapper {
       Optional.ofNullable(filter.getElementId())
           .map(mapToStringOperations())
           .ifPresent(builder::elementIdOperations);
+      Optional.ofNullable(filter.getElementType())
+          .map(mapToStringOperations())
+          .ifPresent(builder::elementTypeOperations);
+      Optional.ofNullable(filter.getWaitStateType())
+          .map(mapToStringOperations())
+          .ifPresent(builder::waitStateTypeOperations);
     }
     return validationErrors.isEmpty()
         ? Either.right(builder.build())

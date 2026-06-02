@@ -649,6 +649,114 @@ components:
           description: Filter by element ID.
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/ElementIdFilterProperty'
+        elementType:
+          description: Filter by element type.
+          allOf:
+            - $ref: '#/components/schemas/WaitStateElementTypeFilterProperty'
+        waitStateType:
+          description: Filter by wait state type.
+          allOf:
+            - $ref: '#/components/schemas/WaitStateTypeFilterProperty'
+
+    WaitStateElementTypeFilterProperty:
+      description: Element type property with full advanced search capabilities.
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: '#/components/schemas/WaitStateElementTypeEnum'
+        - $ref: '#/components/schemas/AdvancedWaitStateElementTypeFilter'
+
+    AdvancedWaitStateElementTypeFilter:
+      title: Advanced filter
+      description: Advanced element type filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/WaitStateElementTypeEnum'
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/WaitStateElementTypeEnum'
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: '#/components/schemas/WaitStateElementTypeEnum'
+        $like:
+          $ref: 'filters.yaml#/components/schemas/LikeFilter'
+
+    WaitStateElementTypeEnum:
+      description: The BPMN element type to filter wait states by.
+      type: string
+      enum:
+        - AD_HOC_SUB_PROCESS
+        - AD_HOC_SUB_PROCESS_INNER_INSTANCE
+        - BOUNDARY_EVENT
+        - BUSINESS_RULE_TASK
+        - CALL_ACTIVITY
+        - END_EVENT
+        - EVENT_BASED_GATEWAY
+        - EVENT_SUB_PROCESS
+        - EXCLUSIVE_GATEWAY
+        - INCLUSIVE_GATEWAY
+        - INTERMEDIATE_CATCH_EVENT
+        - INTERMEDIATE_THROW_EVENT
+        - MANUAL_TASK
+        - MULTI_INSTANCE_BODY
+        - PARALLEL_GATEWAY
+        - PROCESS
+        - RECEIVE_TASK
+        - SCRIPT_TASK
+        - SEND_TASK
+        - SEQUENCE_FLOW
+        - SERVICE_TASK
+        - START_EVENT
+        - SUB_PROCESS
+        - TASK
+        - UNKNOWN
+        - UNSPECIFIED
+        - USER_TASK
+
+    WaitStateTypeFilterProperty:
+      description: Wait state type property with full advanced search capabilities.
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: '#/components/schemas/WaitStateTypeEnum'
+        - $ref: '#/components/schemas/AdvancedWaitStateTypeFilter'
+
+    AdvancedWaitStateTypeFilter:
+      title: Advanced filter
+      description: Advanced wait state type filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/WaitStateTypeEnum'
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/WaitStateTypeEnum'
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: '#/components/schemas/WaitStateTypeEnum'
+        $like:
+          $ref: 'filters.yaml#/components/schemas/LikeFilter'
 
     ElementInstanceWaitStateQueryResult:
       type: object

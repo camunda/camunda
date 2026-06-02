@@ -58,7 +58,7 @@ public class ElementInstanceControllerTest extends RestControllerTest {
             "elementId": "payment-task",
             "elementType": "SERVICE_TASK",
             "waitStateType": "JOB",
-            "details": {
+            "jobDetails": {
               "jobKey": "2251799813685252",
               "jobType": "payment-service",
               "jobKind": "EXECUTION_LISTENER",
@@ -72,7 +72,7 @@ public class ElementInstanceControllerTest extends RestControllerTest {
             "elementId": "order-received",
             "elementType": "INTERMEDIATE_CATCH_EVENT",
             "waitStateType": "MESSAGE",
-            "details": {
+            "messageDetails": {
               "messageName": "order-confirmed",
               "correlationKey": "order-42"
             }
@@ -84,7 +84,7 @@ public class ElementInstanceControllerTest extends RestControllerTest {
             "elementId": "notify-task",
             "elementType": "SERVICE_TASK",
             "waitStateType": "JOB",
-            "details": {
+            "jobDetails": {
               "jobKey": "2251799813685260",
               "jobType": "notification-service",
               "jobKind": "BPMN_ELEMENT"
