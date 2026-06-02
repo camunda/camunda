@@ -23,20 +23,20 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.Either;
-import java.util.HashMap;
-import java.util.Map;
-import org.agrona.collections.Int2ObjectHashMap;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
+@NullMarked
 final class CommandApiRequestHandler
     extends AsyncApiRequestHandler<CommandApiRequestReader, CommandApiResponseWriter> {
   private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
   private static final String[] SUPPORTED_VALUE_TYPES =
       ValueTypes.userCommands().map(Enum::name).toArray(String[]::new);
 
-  private final Int2ObjectHashMap<LogStreamWriter> leadingStreams = new Int2ObjectHashMap<>();
+  private @Nullable LogStreamWriter leadingStream;
   private boolean isDiskSpaceAvailable = true;
-  private final Map<Integer, Boolean> processingPaused = new HashMap<>();
+  private boolean processingPaused;
 
   CommandApiRequestHandler() {
     super(CommandApiRequestReader::new, CommandApiResponseWriter::new);
@@ -54,15 +54,15 @@ final class CommandApiRequestHandler
   }
 
   public void onRecovered(final int partitionId) {
-    actor.run(() -> processingPaused.put(partitionId, false));
+    actor.run(() -> processingPaused = false);
   }
 
   public void onPaused(final int partitionId) {
-    actor.run(() -> processingPaused.put(partitionId, true));
+    actor.run(() -> processingPaused = true);
   }
 
   public void onResumed(final int partitionId) {
-    actor.run(() -> processingPaused.put(partitionId, false));
+    actor.run(() -> processingPaused = false);
   }
 
   private Either<ErrorResponseWriter, CommandApiResponseWriter> handle(
@@ -86,14 +86,14 @@ final class CommandApiRequestHandler
       return Either.left(errorWriter.outOfDiskSpace(partitionId));
     }
 
-    if (processingPaused.getOrDefault(partitionId, false)) {
+    if (processingPaused) {
       return Either.left(
           errorWriter.partitionUnavailable(
               String.format("Processing paused for partition '%s'", partitionId)));
     }
 
     final var command = reader.getMessageDecoder();
-    final var logStreamWriter = leadingStreams.get(partitionId);
+    final var logStreamWriter = leadingStream;
 
     final var valueType = command.valueType();
     final var intent = Intent.fromProtocolValue(valueType, command.intent());
@@ -159,11 +159,11 @@ final class CommandApiRequestHandler
   }
 
   void addPartition(final int partitionId, final LogStreamWriter logStreamWriter) {
-    actor.submit(() -> leadingStreams.put(partitionId, logStreamWriter));
+    actor.submit(() -> leadingStream = logStreamWriter);
   }
 
   void removePartition(final int partitionId) {
-    actor.submit(() -> leadingStreams.remove(partitionId));
+    actor.submit(() -> leadingStream = null);
   }
 
   void onDiskSpaceNotAvailable() {
