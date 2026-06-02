@@ -499,3 +499,67 @@ on-demand verification run is triggered: `c8-orchestration-cluster-e2e-tests-on-
 no verification run is triggered and the fix is never validated automatically.**
 
 Use `{"prs": []}` if no PR was opened (regardless of reason).
+
+## Workflow-Level Failure Fix Agent
+
+This section is read automatically by the fix agent when `/tmp/test_specs.json` is an empty array — meaning the nightly run failed before any test results were produced, or failed in a post-test step (e.g. artifact upload, TestRail sync, build step).
+
+The run IDs are available as env vars: `E2E_RUN_ID`, `API_ES_RUN_ID`, `API_RDBMS_RUN_ID` (any may be `""` if that workflow type did not run). `TRIAGE_RUN_URL` contains the triage run URL for cross-linking.
+
+### Diagnosis steps
+
+**Step 1 — Identify which run(s) failed and which step(s) caused the failure:**
+
+```bash
+for run_id in $E2E_RUN_ID $API_ES_RUN_ID $API_RDBMS_RUN_ID; do
+  [ -z "$run_id" ] && continue
+  echo "=== Run $run_id ==="
+  gh run view "$run_id" --repo camunda/camunda --json jobs \
+    --jq '.jobs[] | select(.conclusion == "failure") | {
+      job: .name,
+      failed_steps: [.steps[] | select(.conclusion == "failure") | .name]
+    }'
+done
+```
+
+**Step 2 — Fetch the failing step logs for each failed job:**
+
+```bash
+gh run view <run_id> --repo camunda/camunda --log-failed 2>/dev/null | head -300
+```
+
+Read the error output carefully — the root cause is almost always visible in the first 300 lines of the failure log.
+
+**Step 3 — Identify the root cause and locate the relevant file(s) in camunda/camunda:**
+
+- Failed step name contains `Start Camunda` or `docker` → Docker image pull issue — look at the reusable workflow that was used and add a retry loop if absent (see existing retry pattern in `c8-orchestration-cluster-reusable-api-tests.yml`)
+- Failed step name contains `TestRail` → examine the error message; fix the root cause (e.g. a test case title that is too long for the `custom_automation_id` field, a trcli version issue, an auth problem)
+- Failed step name contains `Build` or `mvn` or `Maven` → examine the Maven error; fix the compilation or dependency issue in the relevant module
+- Failed step name is something else → read the log and trace it to the workflow YAML or the script it invokes; fix whatever is broken
+
+**Step 4 — Apply the fix:**
+
+You have full access to the entire `camunda/camunda` repository. The fix may land in:
+- A reusable workflow YAML under `.github/workflows/`
+- A test file under `qa/c8-orchestration-cluster-e2e-test-suite/`
+- A configuration file under `qa/c8-orchestration-cluster-e2e-test-suite/config/`
+- A script anywhere in the repo
+
+Keep the diff minimal. Fix exactly what is broken — do not refactor or clean up surrounding code.
+
+**Step 5 — Open a PR:**
+
+Use PR type `ci:` if only workflow files changed, `fix:` if test or application code changed. Cross-link `TRIAGE_RUN_URL` in the PR body.
+
+Write the result to `/tmp/fix-meta.json`:
+```json
+{"prs": [{"number": 123, "owner": "camunda", "repo": "camunda", "branch": "ci/...", "has_e2e": false, "has_api": false}], "category": "workflow-fix"}
+```
+
+### Constraints
+
+- **No error suppression**: do NOT add `continue-on-error: true` or `|| true` to hide a failing step. Fix the root cause.
+- **No skipping**: same no-skip rule as the Nightly Fix Agent.
+- **"Not determined" is a last resort**: only write `{"prs": [], "category": "not-determined"}` to `/tmp/fix-meta.json` if you have read the logs, identified the failing step, traced it to the relevant code, and genuinely cannot write a correct fix. This should be extremely rare because the full repository is accessible.
+- **Allowed tools**: `gh`, `git`, `grep`, `rg`, `cat`, `find`, `jq`, `sed`, `awk`, `unzip`
+- **Forbidden**: `make`, `helm`, `kubectl`, `npm run build`, `go test`, any deploy command
