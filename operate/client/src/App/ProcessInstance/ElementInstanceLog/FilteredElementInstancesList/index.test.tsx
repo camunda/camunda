@@ -73,7 +73,7 @@ const Wrapper: React.FC<{children: React.ReactNode}> = ({children}) => (
             path={Paths.processInstance()}
             element={
               <ErrorBoundary
-                fallbackRender={({error}) => (
+                fallbackRender={() => (
                   <>
                     <p>{INSTANCE_HISTORY_FORBIDDEN.message}</p>
                     {INSTANCE_HISTORY_FORBIDDEN.additionalInfo && (
