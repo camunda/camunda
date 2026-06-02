@@ -424,14 +424,21 @@ public class RdbmsConfiguration {
     return new DeployedResourceDbReader(deployedResourceMapper, readerConfig);
   }
 
+  /**
+   * When a Spring transaction manager is available, we use it to provide a runInTransaction hook.
+   * If none is available, we fall back to a NoopTransactionRunner, which assumes transactions are
+   * managed manually outside this runner.
+   *
+   * @param transactionManagerProvider an optional bean providing a PlatformTransactionManager
+   * @return the transaction runner to use
+   */
   @Bean
   public TransactionRunner transactionRunner(
       final ObjectProvider<PlatformTransactionManager> transactionManagerProvider) {
     final var transactionManager = transactionManagerProvider.getIfAvailable();
     if (transactionManager == null) {
-      LOG.warn(
-          "No PlatformTransactionManager bean available — falling back to a noop TransactionRunner. "
-              + "Batched RDBMS writes will not be transactional and will not roll back on failure.");
+      LOG.info(
+          "No PlatformTransactionManager bean available — falling back to a noop TransactionRunner.");
       return TransactionRunner.noop();
     }
     return new SpringTransactionRunner(transactionManager);
