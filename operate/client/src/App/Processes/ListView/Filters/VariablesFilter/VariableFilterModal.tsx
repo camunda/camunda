@@ -271,6 +271,19 @@ const VariableFilterModal: React.FC = observer(() => {
                             ))}
                           </Stack>
                         </ConditionRowsScroll>
+                        {form
+                          .getState()
+                          .values?.conditions?.some(
+                            (c) => c.operator === 'contains',
+                          ) && (
+                          <InlineNotification
+                            kind="warning"
+                            lowContrast
+                            hideCloseButton
+                            subtitle='"contains" searches only the first ~8 000 characters of a variable value. Matches in longer values may not be returned.'
+                            role="status"
+                          />
+                        )}
                         {(fields.length ?? 0) >= SOFT_WARNING_THRESHOLD && (
                           <InlineNotification
                             kind="info"
