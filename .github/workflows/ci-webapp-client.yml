@@ -10,6 +10,8 @@ on:
 
 env:
   GHA_BEST_PRACTICES_LINTER: enabled
+  TEST_PRODUCT: Orchestration Cluster Webapp
+  TEST_OWNER: Orchestration Cluster
 
 jobs:
   typecheck:
@@ -120,6 +122,189 @@ jobs:
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  unit:
+    name: "Unit"
+    env:
+      TEST_TYPE: Unit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: {} # GITHUB_TOKEN unused in this job
+    container:
+      image: mcr.microsoft.com/playwright:v1.60.0
+      options: --user 1001:1000
+    defaults:
+      run:
+        working-directory: webapp/client
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 24
+      - name: Install dependencies
+        run: npm ci
+      - name: Unit tests
+        run: npm run test:unit -w @camunda/orchestration-cluster-webapp
+      - name: Upload blob report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: webapp-client-unit-blob-report
+          path: webapp/client/apps/orchestration-cluster-webapp/.vitest-reports/*
+          include-hidden-files: true
+          retention-days: 1
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "webapp-client/unit"
+          build_status: ${{ job.status }}
+          detailed_junit_tests: true
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  integration:
+    name: "Integration"
+    env:
+      TEST_TYPE: Integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions: {} # GITHUB_TOKEN unused in this job
+    container:
+      image: mcr.microsoft.com/playwright:v1.60.0
+      options: --user 1001:1000
+    defaults:
+      run:
+        working-directory: webapp/client
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 24
+      - name: Install dependencies
+        run: npm ci
+      - name: Build frontend
+        run: npm run build -w @camunda/orchestration-cluster-webapp
+      - name: Integration tests
+        run: npm run test:integration -w @camunda/orchestration-cluster-webapp
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: webapp-client-integration-report
+          path: webapp/client/apps/orchestration-cluster-webapp/playwright-report/
+          retention-days: 30
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "webapp-client/integration"
+          build_status: ${{ job.status }}
+          detailed_junit_tests: true
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  a11y:
+    name: "Accessibility"
+    env:
+      TEST_TYPE: Accessibility
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: {} # GITHUB_TOKEN unused in this job
+    container:
+      image: mcr.microsoft.com/playwright:v1.60.0
+      options: --user 1001:1000
+    defaults:
+      run:
+        working-directory: webapp/client
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 24
+      - name: Install dependencies
+        run: npm ci
+      - name: Build frontend
+        run: npm run build -w @camunda/orchestration-cluster-webapp
+      - name: Accessibility tests
+        run: npm run test:a11y -w @camunda/orchestration-cluster-webapp
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: webapp-client-a11y-report
+          path: webapp/client/apps/orchestration-cluster-webapp/playwright-report/
+          retention-days: 30
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "webapp-client/a11y"
+          build_status: ${{ job.status }}
+          detailed_junit_tests: true
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  visual:
+    name: "Visual Regression"
+    env:
+      TEST_TYPE: Visual Regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions: {} # GITHUB_TOKEN unused in this job
+    container:
+      image: mcr.microsoft.com/playwright:v1.60.0
+      options: --user 1001:1000
+    defaults:
+      run:
+        working-directory: webapp/client
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 24
+      - name: Install dependencies
+        run: npm ci
+      - name: Build frontend
+        run: npm run build:visual-regression -w @camunda/orchestration-cluster-webapp
+      - name: Visual regression tests
+        run: npm run test:visual -w @camunda/orchestration-cluster-webapp
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: webapp-client-visual-report
+          path: webapp/client/apps/orchestration-cluster-webapp/playwright-report/
+          retention-days: 30
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "webapp-client/visual"
+          build_status: ${{ job.status }}
+          detailed_junit_tests: true
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}

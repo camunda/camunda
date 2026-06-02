@@ -92,6 +92,8 @@ const config = defineConfig(({mode}) => ({
 	},
 	test: {
 		include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+		reporters: process.env['CI'] ? ['default', 'github-actions', 'html', 'junit'] : ['default'],
+		outputFile: process.env['CI'] ? {junit: 'TEST-unit.xml'} : undefined,
 		browser: {
 			enabled: true,
 			screenshotFailures: false,
