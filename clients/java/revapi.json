@@ -520,6 +520,13 @@
           "code": "java.class.removed",
           "old": "class io.camunda.zeebe.client.protocol.rest.UserTaskVariableFilterRequest",
           "justification": "Backport changes from 8.7: the Search Tasks by Variables experimental API was removed and will be reintroduced under different API specifications."
+        },
+        {
+          "ignore": true,
+          "code": "java.field.enumConstantOrderChanged",
+          "regex": true,
+          "old": "field io\\.camunda\\.zeebe\\.client\\.protocol\\.rest\\.(IncidentFilter|IncidentFilterRequestBase|IncidentItemBase|IncidentResult)\\.ErrorTypeEnum\\.UNKNOWN_DEFAULT_OPEN_API",
+          "justification": "Generated OpenAPI enum: UNKNOWN_DEFAULT_OPEN_API is always appended last by the OpenAPI generator, so adding new ErrorType constants shifts its ordinal. This is backward-compatible for consumers, who should not rely on enum ordinal() values."
         }
       ]
     }
