@@ -73,8 +73,7 @@ const DocumentListModal: React.FC<StateProps & Props> = ({
               variableName={variableName}
             />
             <DownloadDocumentButton
-              fileName={document.fileName}
-              documentLink={document.link}
+              document={document}
               variableName={variableName}
             />
           </DocumentListItem>

@@ -40,6 +40,7 @@ describe('parseDocumentVariable', () => {
         link: '/v2/documents/doc-123?storeId=in-memory&contentHash=sha256%3Aabc',
         fileName: 'photo.png',
         type: 'image',
+        contentType: 'image/png',
         size: 109748,
       },
     });
@@ -55,6 +56,7 @@ describe('parseDocumentVariable', () => {
         link: '/v2/documents/doc-123?storeId=in-memory&contentHash=sha256%3Aabc',
         fileName: 'photo.png',
         type: 'image',
+        contentType: 'image/png',
         size: 109748,
       },
     });
@@ -99,18 +101,21 @@ describe('parseDocumentVariable', () => {
           link: '/v2/documents/doc-123?storeId=in-memory&contentHash=sha256%3Aabc',
           fileName: 'a.pdf',
           type: 'pdf',
+          contentType: 'application/pdf',
           size: 1000,
         },
         {
           link: '/v2/documents/doc-124?storeId=in-memory&contentHash=sha256%3Aabc',
           fileName: 'b.json',
           type: 'json',
+          contentType: 'application/json',
           size: 500,
         },
         {
           link: '/v2/documents/doc-125?storeId=in-memory&contentHash=sha256%3Aabc',
           fileName: 'c.txt',
           type: 'unknown',
+          contentType: 'text/plain',
           size: 200,
         },
       ],
@@ -133,6 +138,7 @@ describe('parseDocumentVariable', () => {
         link: '/some-context/v2/documents/doc-123?storeId=in-memory&contentHash=sha256%3Aabc',
         fileName: 'photo.png',
         type: 'image',
+        contentType: 'image/png',
         size: 109748,
       },
     });
@@ -294,6 +300,7 @@ describe('parseDocumentVariable', () => {
         link: '/v2/documents/doc-no-meta?storeId=in-memory&contentHash=sha256%3Aabc',
         fileName: 'doc-no-meta',
         type: 'unknown',
+        contentType: undefined,
         size: undefined,
       },
     });
