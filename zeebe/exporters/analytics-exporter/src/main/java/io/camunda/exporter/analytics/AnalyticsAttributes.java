@@ -74,6 +74,14 @@ public final class AnalyticsAttributes {
   public static final String EVENT_USAGE_METRIC_EXPORTED = "usage_metric_exported";
   public static final String EVENT_HEARTBEAT = "heartbeat";
 
+  // Broker domain
+  public static final AttributeKey<String> BROKER_VERSION =
+      AttributeKey.stringKey("camunda.broker.version");
+
+  // Schema domain
+  public static final AttributeKey<String> SCHEMA_VERSION =
+      AttributeKey.stringKey("camunda.schema.version");
+
   // Usage metrics
   public static final AttributeKey<String> USAGE_METRIC_EVENT_TYPE =
       AttributeKey.stringKey("camunda.usage_metric.event_type");

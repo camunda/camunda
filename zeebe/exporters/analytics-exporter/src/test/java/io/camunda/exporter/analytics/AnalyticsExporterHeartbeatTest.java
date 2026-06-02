@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
+import io.camunda.zeebe.util.VersionUtil;
 import io.opentelemetry.sdk.testing.exporter.InMemoryLogRecordExporter;
 import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,7 +40,11 @@ class AnalyticsExporterHeartbeatTest {
         .satisfies(
             log -> {
               final var attrs = log.getAttributes().asMap();
-              assertThat(attrs).containsEntry(AnalyticsAttributes.EVENT_NAME, EVENT_HEARTBEAT);
+              assertThat(attrs)
+                  .containsEntry(AnalyticsAttributes.EVENT_NAME, EVENT_HEARTBEAT)
+                  .containsEntry(AnalyticsAttributes.BROKER_VERSION, VersionUtil.getVersion())
+                  .containsKey(AnalyticsAttributes.SCHEMA_VERSION);
+              assertThat(attrs.get(AnalyticsAttributes.SCHEMA_VERSION)).asString().isNotBlank();
               assertThat(attrs)
                   .doesNotContainKey(AnalyticsAttributes.LOG_POSITION)
                   .doesNotContainKey(AnalyticsAttributes.EVENT_SEQUENCE_NUMBER);

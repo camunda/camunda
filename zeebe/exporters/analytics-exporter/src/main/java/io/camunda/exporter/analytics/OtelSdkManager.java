@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.analytics;
 
+import static io.camunda.exporter.analytics.AnalyticsAttributes.BROKER_VERSION;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.CLUSTER_ID;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.EVENT_HEARTBEAT;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.EVENT_NAME;
@@ -14,8 +15,10 @@ import static io.camunda.exporter.analytics.AnalyticsAttributes.EVENT_SEQUENCE_N
 import static io.camunda.exporter.analytics.AnalyticsAttributes.LOG_POSITION;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.METRIC_EXPORT_WINDOW;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.PARTITION_ID;
+import static io.camunda.exporter.analytics.AnalyticsAttributes.SCHEMA_VERSION;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.SERVICE_NAME;
 
+import io.camunda.zeebe.util.VersionUtil;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.logs.LogRecordBuilder;
 import io.opentelemetry.api.logs.Logger;
@@ -102,6 +105,8 @@ public class OtelSdkManager implements AutoCloseable {
         .setSeverity(Severity.INFO)
         .setSeverityText("INFO")
         .setAttribute(EVENT_NAME, EVENT_HEARTBEAT)
+        .setAttribute(BROKER_VERSION, VersionUtil.getVersion())
+        .setAttribute(SCHEMA_VERSION, SCHEMA_URL)
         .emit();
   }
 
