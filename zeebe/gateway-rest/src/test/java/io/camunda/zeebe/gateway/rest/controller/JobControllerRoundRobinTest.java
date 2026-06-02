@@ -129,7 +129,8 @@ public class JobControllerRoundRobinTest extends RestControllerTest {
               "kind": "BPMN_ELEMENT",
               "listenerEventType": "UNSPECIFIED",
               "rootProcessInstanceKey": null,
-              "userTask": null
+              "userTask": null,
+              "priority": 80
             },
             {
               "jobKey": "%d",
@@ -156,7 +157,8 @@ public class JobControllerRoundRobinTest extends RestControllerTest {
               "kind": "BPMN_ELEMENT",
               "listenerEventType": "UNSPECIFIED",
               "rootProcessInstanceKey": null,
-              "userTask": null
+              "userTask": null,
+              "priority": 80
             }
           ]
         }"""

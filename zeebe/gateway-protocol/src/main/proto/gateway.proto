@@ -125,6 +125,8 @@ message ActivatedJob {
   ListenerEventType listenerEventType = 17;
   // the list of tags
   repeated string tags = 18;
+  // the priority of the job; higher values indicate higher priority
+  int32 priority = 19;
 }
 
 message UserTaskProperties {
