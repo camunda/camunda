@@ -9,7 +9,6 @@ package io.camunda.gateway.mapping.http.search;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.authentication.entity.CamundaUserDTO;
 import io.camunda.gateway.protocol.model.BatchOperationItemResponse;
 import io.camunda.gateway.protocol.model.BatchOperationItemResponse.StateEnum;
 import io.camunda.gateway.protocol.model.BatchOperationTypeEnum;
@@ -46,11 +45,12 @@ import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionS
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.entities.SequenceFlowEntity;
+import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.UserTaskEntity.UserTaskState;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.entity.ClusterMetadata.AppName;
+import io.camunda.security.api.model.user.CamundaUserDTO;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
@@ -802,54 +802,7 @@ class SearchQueryResponseMapperTest {
   }
 
   @Test
-  void shouldMapIdentityC8LinkKeyToAdmin() {
-    // given
-    final var dto =
-        new CamundaUserDTO(
-            "displayName",
-            "username",
-            "email",
-            List.of(),
-            List.of(),
-            List.of(),
-            List.of(),
-            null,
-            Map.of(AppName.IDENTITY, "https://identity.example.com"),
-            true);
-
-    // when
-    final var result = SearchQueryResponseMapper.toCamundaUser(dto);
-
-    // then
-    assertThat(result.getC8Links()).containsEntry("admin", "https://identity.example.com");
-    assertThat(result.getC8Links()).doesNotContainKey("identity");
-  }
-
-  @Test
-  void shouldMapAdminC8LinkKeyDirectly() {
-    // given
-    final var dto =
-        new CamundaUserDTO(
-            "displayName",
-            "username",
-            "email",
-            List.of(),
-            List.of(),
-            List.of(),
-            List.of(),
-            null,
-            Map.of(AppName.ADMIN, "https://admin.example.com"),
-            true);
-
-    // when
-    final var result = SearchQueryResponseMapper.toCamundaUser(dto);
-
-    // then
-    assertThat(result.getC8Links()).containsEntry("admin", "https://admin.example.com");
-  }
-
-  @Test
-  void shouldNotAffectOtherC8LinkKeys() {
+  void shouldPassThroughC8Links() {
     // given
     final var dto =
         new CamundaUserDTO(
@@ -862,17 +815,46 @@ class SearchQueryResponseMapperTest {
             List.of(),
             null,
             Map.of(
-                AppName.OPERATE, "https://operate.example.com",
-                AppName.TASKLIST, "https://tasklist.example.com"),
+                "admin", "https://identity.example.com",
+                "operate", "https://operate.example.com",
+                "tasklist", "https://tasklist.example.com"),
             true);
 
     // when
-    final var result = SearchQueryResponseMapper.toCamundaUser(dto);
+    final var result = SearchQueryResponseMapper.toCamundaUser(dto, List.of());
 
     // then
     assertThat(result.getC8Links())
+        .containsEntry("admin", "https://identity.example.com")
         .containsEntry("operate", "https://operate.example.com")
         .containsEntry("tasklist", "https://tasklist.example.com");
+  }
+
+  @Test
+  void shouldEnrichTenantsFromControllerProvidedList() {
+    // given
+    final var dto =
+        new CamundaUserDTO(
+            "displayName",
+            "username",
+            "email",
+            List.of(),
+            List.of("tenant-1"),
+            List.of(),
+            List.of(),
+            null,
+            Map.of(),
+            true);
+
+    final var tenant = new TenantEntity(1L, "tenant-1", "Tenant One", "desc");
+
+    // when
+    final var result = SearchQueryResponseMapper.toCamundaUser(dto, List.of(tenant));
+
+    // then
+    assertThat(result.getTenants()).hasSize(1);
+    assertThat(result.getTenants().get(0).getTenantId()).isEqualTo("tenant-1");
+    assertThat(result.getTenants().get(0).getName()).isEqualTo("Tenant One");
   }
 
   @Test

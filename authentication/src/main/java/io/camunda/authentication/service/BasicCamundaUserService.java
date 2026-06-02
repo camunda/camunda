@@ -9,13 +9,12 @@ package io.camunda.authentication.service;
 
 import static io.camunda.service.authorization.Authorizations.COMPONENT_ACCESS_AUTHORIZATION;
 
-import io.camunda.authentication.entity.CamundaUserDTO;
-import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.entities.UserEntity;
-import io.camunda.search.query.TenantQuery;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.config.AuthenticationMethod;
+import io.camunda.security.api.model.user.CamundaUserDTO;
+import io.camunda.security.core.port.in.CamundaUserPort;
 import io.camunda.security.reader.ResourceAccessProvider;
 import io.camunda.security.spring.annotation.ConditionalOnAuthenticationMethod;
 import io.camunda.service.registry.ServiceRegistry;
@@ -23,14 +22,16 @@ import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
 @Service
 @ConditionalOnAuthenticationMethod(AuthenticationMethod.BASIC)
 @ConditionalOnSecondaryStorageEnabled
+@ConditionalOnMissingBean(CamundaUserPort.class)
 @Profile("consolidated-auth")
-public class BasicCamundaUserService implements CamundaUserService {
+public class BasicCamundaUserService implements CamundaUserPort {
 
   private final CamundaAuthenticationProvider authenticationProvider;
   private final ResourceAccessProvider resourceAccessProvider;
@@ -64,7 +65,7 @@ public class BasicCamundaUserService implements CamundaUserService {
     final var username = authentication.authenticatedUsername();
     final var groups = authentication.authenticatedGroupIds();
     final var roles = authentication.authenticatedRoleIds();
-    final var tenants = getTenantsForCamundaAuthentication(authentication);
+    final var tenants = authentication.authenticatedTenantIds();
     final var authorizedComponents = getAuthorizedComponents(authentication);
     return new CamundaUserDTO(
         user.name(),
@@ -98,22 +99,5 @@ public class BasicCamundaUserService implements CamundaUserService {
       return List.of();
     }
     return resourceIds.stream().map(id -> "identity".equals(id) ? "admin" : id).distinct().toList();
-  }
-
-  private List<TenantEntity> getTenantsForCamundaAuthentication(
-      final CamundaAuthentication authentication) {
-    return Optional.ofNullable(authentication.authenticatedTenantIds())
-        .filter(t -> !t.isEmpty())
-        .map(this::getTenants)
-        .orElseGet(List::of);
-  }
-
-  private List<TenantEntity> getTenants(final List<String> tenantIds) {
-    return serviceRegistry
-        .tenantServices("default") // TODO replace with contextual physicalTenantId
-        .search(
-            TenantQuery.of(q -> q.filter(f -> f.tenantIds(tenantIds)).unlimited()),
-            CamundaAuthentication.anonymous())
-        .items();
   }
 }
