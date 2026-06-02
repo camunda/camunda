@@ -15,7 +15,6 @@ import io.camunda.gateway.protocol.model.BatchOperationItemSearchQuery;
 import io.camunda.gateway.protocol.model.BatchOperationItemSearchQueryResult;
 import io.camunda.search.query.BatchOperationItemQuery;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
-import io.camunda.service.BatchOperationServices;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
@@ -45,13 +44,12 @@ public class BatchOperationItemsController {
       @PhysicalTenantId final String physicalTenantId,
       @RequestBody(required = false) final BatchOperationItemSearchQuery query) {
     return SearchQueryRequestMapper.toBatchOperationItemQuery(query)
-        .fold(
-            RestErrorMapper::mapProblemToResponse,
-            q -> search(serviceRegistry.batchOperationServices(physicalTenantId), q));
+        .fold(RestErrorMapper::mapProblemToResponse, q -> search(physicalTenantId, q));
   }
 
   private ResponseEntity<BatchOperationItemSearchQueryResult> search(
-      final BatchOperationServices batchOperationServices, final BatchOperationItemQuery query) {
+      final String physicalTenantId, final BatchOperationItemQuery query) {
+    final var batchOperationServices = serviceRegistry.batchOperationServices(physicalTenantId);
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
       final var result = batchOperationServices.searchItems(query, authentication);

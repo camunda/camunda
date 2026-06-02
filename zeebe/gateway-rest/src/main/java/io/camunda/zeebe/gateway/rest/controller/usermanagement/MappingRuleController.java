@@ -23,7 +23,6 @@ import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.security.validation.MappingRuleValidator;
-import io.camunda.service.MappingRuleServices;
 import io.camunda.service.MappingRuleServices.MappingRuleDTO;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
@@ -68,8 +67,7 @@ public class MappingRuleController {
         .toMappingRuleCreateRequest(mappingRuleRequest)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            request ->
-                createMappingRule(serviceRegistry.mappingRuleServices(physicalTenantId), request));
+            request -> createMappingRule(physicalTenantId, request));
   }
 
   @CamundaPutMapping(path = "/{mappingRuleId}")
@@ -81,8 +79,7 @@ public class MappingRuleController {
         .toMappingRuleUpdateRequest(mappingRuleId, mappingRuleRequest)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            request ->
-                updateMappingRule(serviceRegistry.mappingRuleServices(physicalTenantId), request));
+            request -> updateMappingRule(physicalTenantId, request));
   }
 
   @CamundaDeleteMapping(path = "/{mappingRuleId}")
@@ -119,13 +116,12 @@ public class MappingRuleController {
       @PhysicalTenantId final String physicalTenantId,
       @RequestBody(required = false) final MappingRuleSearchQueryRequest query) {
     return SearchQueryRequestMapper.toMappingRuleQuery(query)
-        .fold(
-            RestErrorMapper::mapProblemToResponse,
-            q -> search(serviceRegistry.mappingRuleServices(physicalTenantId), q));
+        .fold(RestErrorMapper::mapProblemToResponse, q -> search(physicalTenantId, q));
   }
 
   private CompletableFuture<ResponseEntity<Object>> createMappingRule(
-      final MappingRuleServices mappingRuleServices, final MappingRuleDTO request) {
+      final String physicalTenantId, final MappingRuleDTO request) {
+    final var mappingRuleServices = serviceRegistry.mappingRuleServices(physicalTenantId);
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
         () -> mappingRuleServices.createMappingRule(request, authentication),
@@ -134,7 +130,8 @@ public class MappingRuleController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> updateMappingRule(
-      final MappingRuleServices mappingRuleServices, final MappingRuleDTO request) {
+      final String physicalTenantId, final MappingRuleDTO request) {
+    final var mappingRuleServices = serviceRegistry.mappingRuleServices(physicalTenantId);
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
         () -> mappingRuleServices.updateMappingRule(request, authentication),
@@ -143,7 +140,8 @@ public class MappingRuleController {
   }
 
   private ResponseEntity<MappingRuleSearchQueryResult> search(
-      final MappingRuleServices mappingRuleServices, final MappingRuleQuery query) {
+      final String physicalTenantId, final MappingRuleQuery query) {
+    final var mappingRuleServices = serviceRegistry.mappingRuleServices(physicalTenantId);
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
       final var result = mappingRuleServices.search(query, authentication);

@@ -14,7 +14,6 @@ import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.protocol.model.VariableSearchQuery;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
-import io.camunda.service.VariableServices;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
@@ -51,13 +50,12 @@ public class VariableController {
     return SearchQueryRequestMapper.toVariableQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            q -> search(serviceRegistry.variableServices(physicalTenantId), q, truncateValues));
+            q -> search(physicalTenantId, q, truncateValues));
   }
 
   private ResponseEntity<Object> search(
-      final VariableServices variableServices,
-      final VariableQuery query,
-      final boolean truncateValues) {
+      final String physicalTenantId, final VariableQuery query, final boolean truncateValues) {
+    final var variableServices = serviceRegistry.variableServices(physicalTenantId);
     try {
       final var result =
           variableServices.search(query, authenticationProvider.getCamundaAuthentication());

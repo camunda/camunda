@@ -18,7 +18,6 @@ import io.camunda.gateway.protocol.model.MessageSubscriptionSearchQueryResult;
 import io.camunda.search.query.CorrelatedMessageSubscriptionQuery;
 import io.camunda.search.query.MessageSubscriptionQuery;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
-import io.camunda.service.MessageSubscriptionServices;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
@@ -48,9 +47,7 @@ public class MessageSubscriptionController {
       @PhysicalTenantId final String physicalTenantId,
       @RequestBody(required = false) final MessageSubscriptionSearchQuery searchRequest) {
     return SearchQueryRequestMapper.toMessageSubscriptionQuery(searchRequest)
-        .fold(
-            RestErrorMapper::mapProblemToResponse,
-            query -> search(serviceRegistry.messageSubscriptionServices(physicalTenantId), query));
+        .fold(RestErrorMapper::mapProblemToResponse, query -> search(physicalTenantId, query));
   }
 
   @RequiresSecondaryStorage
@@ -63,15 +60,14 @@ public class MessageSubscriptionController {
     return SearchQueryRequestMapper.toCorrelatedMessageSubscriptionQuery(searchRequest)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            query ->
-                searchCorrelatedMessageSubscriptions(
-                    serviceRegistry.messageSubscriptionServices(physicalTenantId), query));
+            query -> searchCorrelatedMessageSubscriptions(physicalTenantId, query));
   }
 
   private ResponseEntity<CorrelatedMessageSubscriptionSearchQueryResult>
       searchCorrelatedMessageSubscriptions(
-          final MessageSubscriptionServices messageSubscriptionServices,
-          final CorrelatedMessageSubscriptionQuery query) {
+          final String physicalTenantId, final CorrelatedMessageSubscriptionQuery query) {
+    final var messageSubscriptionServices =
+        serviceRegistry.messageSubscriptionServices(physicalTenantId);
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
       final var result = messageSubscriptionServices.searchCorrelated(query, authentication);
@@ -83,8 +79,9 @@ public class MessageSubscriptionController {
   }
 
   private ResponseEntity<MessageSubscriptionSearchQueryResult> search(
-      final MessageSubscriptionServices messageSubscriptionServices,
-      final MessageSubscriptionQuery query) {
+      final String physicalTenantId, final MessageSubscriptionQuery query) {
+    final var messageSubscriptionServices =
+        serviceRegistry.messageSubscriptionServices(physicalTenantId);
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
       final var result = messageSubscriptionServices.search(query, authentication);

@@ -31,7 +31,6 @@ import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.config.MultiTenancyConfiguration;
-import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCancelRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateBatchOperationRequest;
@@ -77,9 +76,7 @@ public class ProcessInstanceController {
     return RequestMapper.toCreateProcessInstance(request, multiTenancyCfg.isChecksEnabled())
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            mapped ->
-                createProcessInstance(
-                    serviceRegistry.processInstanceServices(physicalTenantId), mapped));
+            mapped -> createProcessInstance(physicalTenantId, mapped));
   }
 
   @CamundaPostMapping(path = "/{processInstanceKey}/cancellation")
@@ -90,9 +87,7 @@ public class ProcessInstanceController {
     return RequestMapper.toCancelProcessInstance(processInstanceKey, cancelRequest)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            mapped ->
-                cancelProcessInstance(
-                    serviceRegistry.processInstanceServices(physicalTenantId), mapped));
+            mapped -> cancelProcessInstance(physicalTenantId, mapped));
   }
 
   @CamundaPostMapping(path = "/{processInstanceKey}/migration")
@@ -103,9 +98,7 @@ public class ProcessInstanceController {
     return RequestMapper.toMigrateProcessInstance(processInstanceKey, migrationRequest)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            mapped ->
-                migrateProcessInstance(
-                    serviceRegistry.processInstanceServices(physicalTenantId), mapped));
+            mapped -> migrateProcessInstance(physicalTenantId, mapped));
   }
 
   @CamundaPostMapping(path = "/{processInstanceKey}/modification")
@@ -116,9 +109,7 @@ public class ProcessInstanceController {
     return RequestMapper.toModifyProcessInstance(processInstanceKey, modifyRequest)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            mapped ->
-                modifyProcessInstance(
-                    serviceRegistry.processInstanceServices(physicalTenantId), mapped));
+            mapped -> modifyProcessInstance(physicalTenantId, mapped));
   }
 
   @RequiresSecondaryStorage
@@ -142,9 +133,7 @@ public class ProcessInstanceController {
       @PhysicalTenantId final String physicalTenantId,
       @RequestBody(required = false) final ProcessInstanceSearchQuery query) {
     return SearchQueryRequestMapper.toProcessInstanceQuery(query)
-        .fold(
-            RestErrorMapper::mapProblemToResponse,
-            mapped -> search(serviceRegistry.processInstanceServices(physicalTenantId), mapped));
+        .fold(RestErrorMapper::mapProblemToResponse, mapped -> search(physicalTenantId, mapped));
   }
 
   @RequiresSecondaryStorage
@@ -245,9 +234,7 @@ public class ProcessInstanceController {
     return RequestMapper.toRequiredProcessInstanceFilter(request.getFilter())
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            filter ->
-                batchOperationCancellation(
-                    serviceRegistry.processInstanceServices(physicalTenantId), filter));
+            filter -> batchOperationCancellation(physicalTenantId, filter));
   }
 
   @RequiresSecondaryStorage
@@ -258,9 +245,7 @@ public class ProcessInstanceController {
     return RequestMapper.toRequiredProcessInstanceFilter(request.getFilter())
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            filter ->
-                batchOperationResolveIncidents(
-                    serviceRegistry.processInstanceServices(physicalTenantId), filter));
+            filter -> batchOperationResolveIncidents(physicalTenantId, filter));
   }
 
   @RequiresSecondaryStorage
@@ -271,9 +256,7 @@ public class ProcessInstanceController {
     return RequestMapper.toProcessInstanceMigrationBatchOperationRequest(request)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            mapped ->
-                batchOperationMigrate(
-                    serviceRegistry.processInstanceServices(physicalTenantId), mapped));
+            mapped -> batchOperationMigrate(physicalTenantId, mapped));
   }
 
   @RequiresSecondaryStorage
@@ -284,9 +267,7 @@ public class ProcessInstanceController {
     return RequestMapper.toProcessInstanceModifyBatchOperationRequest(request)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            mapped ->
-                batchOperationModify(
-                    serviceRegistry.processInstanceServices(physicalTenantId), mapped));
+            mapped -> batchOperationModify(physicalTenantId, mapped));
   }
 
   @RequiresSecondaryStorage
@@ -297,9 +278,7 @@ public class ProcessInstanceController {
     return RequestMapper.toRequiredProcessInstanceFilter(request.getFilter())
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            filter ->
-                batchOperationDeletion(
-                    serviceRegistry.processInstanceServices(physicalTenantId), filter));
+            filter -> batchOperationDeletion(physicalTenantId, filter));
   }
 
   @RequiresSecondaryStorage
@@ -311,15 +290,12 @@ public class ProcessInstanceController {
     return SearchQueryRequestMapper.toIncidentQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            incidentQuery ->
-                searchIncidents(
-                    serviceRegistry.processInstanceServices(physicalTenantId),
-                    processInstanceKey,
-                    incidentQuery));
+            incidentQuery -> searchIncidents(physicalTenantId, processInstanceKey, incidentQuery));
   }
 
   private ResponseEntity<ProcessInstanceSearchQueryResult> search(
-      final ProcessInstanceServices processInstanceServices, final ProcessInstanceQuery query) {
+      final String physicalTenantId, final ProcessInstanceQuery query) {
+    final var processInstanceServices = serviceRegistry.processInstanceServices(physicalTenantId);
     try {
       final var result =
           processInstanceServices.search(query, authenticationProvider.getCamundaAuthentication());
@@ -331,9 +307,8 @@ public class ProcessInstanceController {
   }
 
   private ResponseEntity<IncidentSearchQueryResult> searchIncidents(
-      final ProcessInstanceServices processInstanceServices,
-      final long processInstanceKey,
-      final IncidentQuery query) {
+      final String physicalTenantId, final long processInstanceKey, final IncidentQuery query) {
+    final var processInstanceServices = serviceRegistry.processInstanceServices(physicalTenantId);
     try {
       final var result =
           processInstanceServices.searchIncidents(
@@ -345,8 +320,8 @@ public class ProcessInstanceController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> batchOperationCancellation(
-      final ProcessInstanceServices processInstanceServices,
-      final io.camunda.search.filter.ProcessInstanceFilter filter) {
+      final String physicalTenantId, final io.camunda.search.filter.ProcessInstanceFilter filter) {
+    final var processInstanceServices = serviceRegistry.processInstanceServices(physicalTenantId);
     return RequestExecutor.executeServiceMethod(
         () ->
             processInstanceServices.cancelProcessInstanceBatchOperationWithResult(
@@ -356,8 +331,8 @@ public class ProcessInstanceController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> batchOperationResolveIncidents(
-      final ProcessInstanceServices processInstanceServices,
-      final io.camunda.search.filter.ProcessInstanceFilter filter) {
+      final String physicalTenantId, final io.camunda.search.filter.ProcessInstanceFilter filter) {
+    final var processInstanceServices = serviceRegistry.processInstanceServices(physicalTenantId);
     return RequestExecutor.executeServiceMethod(
         () ->
             processInstanceServices.resolveIncidentsBatchOperationWithResult(
@@ -367,8 +342,8 @@ public class ProcessInstanceController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> batchOperationMigrate(
-      final ProcessInstanceServices processInstanceServices,
-      final ProcessInstanceMigrateBatchOperationRequest request) {
+      final String physicalTenantId, final ProcessInstanceMigrateBatchOperationRequest request) {
+    final var processInstanceServices = serviceRegistry.processInstanceServices(physicalTenantId);
     return RequestExecutor.executeServiceMethod(
         () ->
             processInstanceServices.migrateProcessInstancesBatchOperation(
@@ -378,8 +353,8 @@ public class ProcessInstanceController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> batchOperationModify(
-      final ProcessInstanceServices processInstanceServices,
-      final ProcessInstanceModifyBatchOperationRequest request) {
+      final String physicalTenantId, final ProcessInstanceModifyBatchOperationRequest request) {
+    final var processInstanceServices = serviceRegistry.processInstanceServices(physicalTenantId);
     return RequestExecutor.executeServiceMethod(
         () ->
             processInstanceServices.modifyProcessInstancesBatchOperation(
@@ -389,8 +364,8 @@ public class ProcessInstanceController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> batchOperationDeletion(
-      final ProcessInstanceServices processInstanceServices,
-      final io.camunda.search.filter.ProcessInstanceFilter filter) {
+      final String physicalTenantId, final io.camunda.search.filter.ProcessInstanceFilter filter) {
+    final var processInstanceServices = serviceRegistry.processInstanceServices(physicalTenantId);
     return RequestExecutor.executeServiceMethod(
         () ->
             processInstanceServices.deleteProcessInstancesBatchOperation(
@@ -400,8 +375,8 @@ public class ProcessInstanceController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> createProcessInstance(
-      final ProcessInstanceServices processInstanceServices,
-      final ProcessInstanceCreateRequest request) {
+      final String physicalTenantId, final ProcessInstanceCreateRequest request) {
+    final var processInstanceServices = serviceRegistry.processInstanceServices(physicalTenantId);
     if (request.awaitCompletion()) {
       return RequestExecutor.executeServiceMethod(
           () ->
@@ -419,8 +394,8 @@ public class ProcessInstanceController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> cancelProcessInstance(
-      final ProcessInstanceServices processInstanceServices,
-      final ProcessInstanceCancelRequest request) {
+      final String physicalTenantId, final ProcessInstanceCancelRequest request) {
+    final var processInstanceServices = serviceRegistry.processInstanceServices(physicalTenantId);
     return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
             processInstanceServices.cancelProcessInstance(
@@ -428,8 +403,8 @@ public class ProcessInstanceController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> migrateProcessInstance(
-      final ProcessInstanceServices processInstanceServices,
-      final ProcessInstanceMigrateRequest request) {
+      final String physicalTenantId, final ProcessInstanceMigrateRequest request) {
+    final var processInstanceServices = serviceRegistry.processInstanceServices(physicalTenantId);
     return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
             processInstanceServices.migrateProcessInstance(
@@ -437,8 +412,8 @@ public class ProcessInstanceController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> modifyProcessInstance(
-      final ProcessInstanceServices processInstanceServices,
-      final ProcessInstanceModifyRequest request) {
+      final String physicalTenantId, final ProcessInstanceModifyRequest request) {
+    final var processInstanceServices = serviceRegistry.processInstanceServices(physicalTenantId);
     return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
             processInstanceServices.modifyProcessInstance(

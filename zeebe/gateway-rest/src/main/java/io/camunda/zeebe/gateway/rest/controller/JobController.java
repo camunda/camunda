@@ -84,10 +84,6 @@ public class JobController {
     this.gatewayRestConfiguration = gatewayRestConfiguration;
   }
 
-  private JobServices<JobActivationResult> jobSvc(final String physicalTenantId) {
-    return serviceRegistry.jobServices(physicalTenantId);
-  }
-
   @CamundaPostMapping(path = "/activation")
   public CompletableFuture<ResponseEntity<Object>> activateJobs(
       @PhysicalTenantId final String physicalTenantId,
@@ -95,8 +91,7 @@ public class JobController {
     return RequestMapper.toJobsActivationRequest(
             activationRequest, multiTenancyCfg.isChecksEnabled())
         .fold(
-            RestErrorMapper::mapProblemToCompletedResponse,
-            r -> activateJobs(jobSvc(physicalTenantId), r));
+            RestErrorMapper::mapProblemToCompletedResponse, r -> activateJobs(physicalTenantId, r));
   }
 
   @CamundaPostMapping(path = "/{jobKey}/failure")
@@ -104,8 +99,7 @@ public class JobController {
       @PhysicalTenantId final String physicalTenantId,
       @PathVariable final long jobKey,
       @RequestBody(required = false) final JobFailRequest failureRequest) {
-    return failJob(
-        jobSvc(physicalTenantId), RequestMapper.toJobFailRequest(failureRequest, jobKey));
+    return failJob(physicalTenantId, RequestMapper.toJobFailRequest(failureRequest, jobKey));
   }
 
   @CamundaPostMapping(path = "/{jobKey}/error")
@@ -114,9 +108,7 @@ public class JobController {
       @PathVariable final long jobKey,
       @RequestBody final JobErrorRequest errorRequest) {
     return RequestMapper.toJobErrorRequest(errorRequest, jobKey)
-        .fold(
-            RestErrorMapper::mapProblemToCompletedResponse,
-            r -> errorJob(jobSvc(physicalTenantId), r));
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, r -> errorJob(physicalTenantId, r));
   }
 
   @CamundaPostMapping(path = "/{jobKey}/completion")
@@ -125,7 +117,7 @@ public class JobController {
       @PathVariable final long jobKey,
       @RequestBody(required = false) final JobCompletionRequest completionRequest) {
     return completeJob(
-        jobSvc(physicalTenantId), RequestMapper.toJobCompletionRequest(completionRequest, jobKey));
+        physicalTenantId, RequestMapper.toJobCompletionRequest(completionRequest, jobKey));
   }
 
   @CamundaPatchMapping(path = "/{jobKey}")
@@ -134,9 +126,7 @@ public class JobController {
       @PathVariable final long jobKey,
       @RequestBody final JobUpdateRequest jobUpdateRequest) {
     return RequestMapper.toJobUpdateRequest(jobUpdateRequest, jobKey)
-        .fold(
-            RestErrorMapper::mapProblemToCompletedResponse,
-            r -> updateJob(jobSvc(physicalTenantId), r));
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, r -> updateJob(physicalTenantId, r));
   }
 
   @RequiresSecondaryStorage
@@ -145,7 +135,7 @@ public class JobController {
       @PhysicalTenantId final String physicalTenantId,
       @RequestBody(required = false) final JobSearchQuery request) {
     return SearchQueryRequestMapper.toJobQuery(request)
-        .fold(RestErrorMapper::mapProblemToResponse, q -> search(jobSvc(physicalTenantId), q));
+        .fold(RestErrorMapper::mapProblemToResponse, q -> search(physicalTenantId, q));
   }
 
   @RequiresSecondaryStorage
@@ -158,9 +148,7 @@ public class JobController {
       final HttpServletRequest request) {
     return requireJobMetricsEnabled(request.getRequestURI())
         .flatMap(ok -> SearchQueryRequestMapper.toGlobalJobStatisticsQuery(from, to, jobType))
-        .fold(
-            RestErrorMapper::mapProblemToResponse,
-            q -> getGlobalStatistics(jobSvc(physicalTenantId), q));
+        .fold(RestErrorMapper::mapProblemToResponse, q -> getGlobalStatistics(physicalTenantId, q));
   }
 
   @RequiresSecondaryStorage
@@ -171,9 +159,7 @@ public class JobController {
       final HttpServletRequest httpRequest) {
     return requireJobMetricsEnabled(httpRequest.getRequestURI())
         .flatMap(ok -> SearchQueryRequestMapper.toJobTypeStatisticsQuery(request))
-        .fold(
-            RestErrorMapper::mapProblemToResponse,
-            q -> getTypeStatistics(jobSvc(physicalTenantId), q));
+        .fold(RestErrorMapper::mapProblemToResponse, q -> getTypeStatistics(physicalTenantId, q));
   }
 
   @RequiresSecondaryStorage
@@ -184,9 +170,7 @@ public class JobController {
       final HttpServletRequest httpRequest) {
     return requireJobMetricsEnabled(httpRequest.getRequestURI())
         .flatMap(ok -> SearchQueryRequestMapper.toJobWorkerStatisticsQuery(request))
-        .fold(
-            RestErrorMapper::mapProblemToResponse,
-            q -> getWorkerStatistics(jobSvc(physicalTenantId), q));
+        .fold(RestErrorMapper::mapProblemToResponse, q -> getWorkerStatistics(physicalTenantId, q));
   }
 
   @RequiresSecondaryStorage
@@ -199,7 +183,7 @@ public class JobController {
         .flatMap(ok -> SearchQueryRequestMapper.toJobTimeSeriesStatisticsQuery(request))
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            q -> getTimeSeriesStatistics(jobSvc(physicalTenantId), q));
+            q -> getTimeSeriesStatistics(physicalTenantId, q));
   }
 
   @RequiresSecondaryStorage
@@ -208,14 +192,13 @@ public class JobController {
       @PhysicalTenantId final String physicalTenantId,
       @RequestBody final JobErrorStatisticsQuery request) {
     return SearchQueryRequestMapper.toJobErrorStatisticsQuery(request)
-        .fold(
-            RestErrorMapper::mapProblemToResponse,
-            q -> getErrorStatistics(jobSvc(physicalTenantId), q));
+        .fold(RestErrorMapper::mapProblemToResponse, q -> getErrorStatistics(physicalTenantId, q));
   }
 
   private CompletableFuture<ResponseEntity<Object>> activateJobs(
-      final JobServices<JobActivationResult> jobServices,
-      final ActivateJobsRequest activationRequest) {
+      final String physicalTenantId, final ActivateJobsRequest activationRequest) {
+    final JobServices<JobActivationResult> jobServices =
+        serviceRegistry.jobServices(physicalTenantId);
     final var result = new CompletableFuture<ResponseEntity<Object>>();
     final var responseObserver = responseObserverProvider.apply(result);
     jobServices.activateJobs(
@@ -231,7 +214,8 @@ public class JobController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> failJob(
-      final JobServices<JobActivationResult> jobServices, final FailJobRequest failJobRequest) {
+      final String physicalTenantId, final FailJobRequest failJobRequest) {
+    final var jobServices = serviceRegistry.jobServices(physicalTenantId);
     return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
             jobServices.failJob(
@@ -244,7 +228,8 @@ public class JobController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> errorJob(
-      final JobServices<JobActivationResult> jobServices, final ErrorJobRequest errorJobRequest) {
+      final String physicalTenantId, final ErrorJobRequest errorJobRequest) {
+    final var jobServices = serviceRegistry.jobServices(physicalTenantId);
     return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
             jobServices.errorJob(
@@ -256,8 +241,8 @@ public class JobController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> completeJob(
-      final JobServices<JobActivationResult> jobServices,
-      final CompleteJobRequest completeJobRequest) {
+      final String physicalTenantId, final CompleteJobRequest completeJobRequest) {
+    final var jobServices = serviceRegistry.jobServices(physicalTenantId);
     return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
             jobServices.completeJob(
@@ -268,7 +253,8 @@ public class JobController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> updateJob(
-      final JobServices<JobActivationResult> jobServices, final UpdateJobRequest updateJobRequest) {
+      final String physicalTenantId, final UpdateJobRequest updateJobRequest) {
+    final var jobServices = serviceRegistry.jobServices(physicalTenantId);
     return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
             jobServices.updateJob(
@@ -279,7 +265,8 @@ public class JobController {
   }
 
   private ResponseEntity<JobSearchQueryResult> search(
-      final JobServices<JobActivationResult> jobServices, final JobQuery query) {
+      final String physicalTenantId, final JobQuery query) {
+    final var jobServices = serviceRegistry.jobServices(physicalTenantId);
     try {
       final var result =
           jobServices.search(query, authenticationProvider.getCamundaAuthentication());
@@ -290,8 +277,8 @@ public class JobController {
   }
 
   private ResponseEntity<GlobalJobStatisticsQueryResult> getGlobalStatistics(
-      final JobServices<JobActivationResult> jobServices,
-      final io.camunda.search.query.GlobalJobStatisticsQuery query) {
+      final String physicalTenantId, final io.camunda.search.query.GlobalJobStatisticsQuery query) {
+    final var jobServices = serviceRegistry.jobServices(physicalTenantId);
     try {
       final var result =
           jobServices.getGlobalStatistics(query, authenticationProvider.getCamundaAuthentication());
@@ -302,8 +289,8 @@ public class JobController {
   }
 
   private ResponseEntity<JobTypeStatisticsQueryResult> getTypeStatistics(
-      final JobServices<JobActivationResult> jobServices,
-      final io.camunda.search.query.JobTypeStatisticsQuery query) {
+      final String physicalTenantId, final io.camunda.search.query.JobTypeStatisticsQuery query) {
+    final var jobServices = serviceRegistry.jobServices(physicalTenantId);
     try {
       final var result =
           jobServices.getJobTypeStatistics(
@@ -315,8 +302,8 @@ public class JobController {
   }
 
   private ResponseEntity<JobWorkerStatisticsQueryResult> getWorkerStatistics(
-      final JobServices<JobActivationResult> jobServices,
-      final io.camunda.search.query.JobWorkerStatisticsQuery query) {
+      final String physicalTenantId, final io.camunda.search.query.JobWorkerStatisticsQuery query) {
+    final var jobServices = serviceRegistry.jobServices(physicalTenantId);
     try {
       final var result =
           jobServices.getJobWorkerStatistics(
@@ -328,8 +315,9 @@ public class JobController {
   }
 
   private ResponseEntity<JobTimeSeriesStatisticsQueryResult> getTimeSeriesStatistics(
-      final JobServices<JobActivationResult> jobServices,
+      final String physicalTenantId,
       final io.camunda.search.query.JobTimeSeriesStatisticsQuery query) {
+    final var jobServices = serviceRegistry.jobServices(physicalTenantId);
     try {
       final var result =
           jobServices.getJobTimeSeriesStatistics(
@@ -342,8 +330,8 @@ public class JobController {
   }
 
   private ResponseEntity<JobErrorStatisticsQueryResult> getErrorStatistics(
-      final JobServices<JobActivationResult> jobServices,
-      final io.camunda.search.query.JobErrorStatisticsQuery query) {
+      final String physicalTenantId, final io.camunda.search.query.JobErrorStatisticsQuery query) {
+    final var jobServices = serviceRegistry.jobServices(physicalTenantId);
     try {
       final var result =
           jobServices.getJobErrorStatistics(

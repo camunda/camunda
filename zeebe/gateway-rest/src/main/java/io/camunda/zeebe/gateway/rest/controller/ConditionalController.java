@@ -12,7 +12,6 @@ import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.protocol.model.ConditionalEvaluationInstruction;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.config.MultiTenancyConfiguration;
-import io.camunda.service.ConditionalServices;
 import io.camunda.service.ConditionalServices.EvaluateConditionalRequest;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
@@ -49,14 +48,12 @@ public class ConditionalController {
     return RequestMapper.toEvaluateConditionalRequest(request, multiTenancyCfg.isChecksEnabled())
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            mapped ->
-                evaluateConditionalEvent(
-                    serviceRegistry.conditionalServices(physicalTenantId), mapped));
+            mapped -> evaluateConditionalEvent(physicalTenantId, mapped));
   }
 
   private CompletableFuture<ResponseEntity<Object>> evaluateConditionalEvent(
-      final ConditionalServices conditionalServices,
-      final EvaluateConditionalRequest createRequest) {
+      final String physicalTenantId, final EvaluateConditionalRequest createRequest) {
+    final var conditionalServices = serviceRegistry.conditionalServices(physicalTenantId);
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
         () -> conditionalServices.evaluateConditional(createRequest, authentication),

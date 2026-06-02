@@ -22,7 +22,6 @@ import io.camunda.gateway.protocol.model.IncidentSearchQuery;
 import io.camunda.gateway.protocol.model.IncidentSearchQueryResult;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
-import io.camunda.service.IncidentServices;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
@@ -77,9 +76,7 @@ public class IncidentController {
       @PhysicalTenantId final String physicalTenantId,
       @RequestBody(required = false) final IncidentSearchQuery query) {
     return SearchQueryRequestMapper.toIncidentQuery(query)
-        .fold(
-            RestErrorMapper::mapProblemToResponse,
-            q -> search(serviceRegistry.incidentServices(physicalTenantId), q));
+        .fold(RestErrorMapper::mapProblemToResponse, q -> search(physicalTenantId, q));
   }
 
   @RequiresSecondaryStorage
@@ -109,9 +106,7 @@ public class IncidentController {
     return SearchQueryRequestMapper.toIncidentProcessInstanceStatisticsByErrorQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            q ->
-                getIncidentProcessInstanceStatisticsByError(
-                    serviceRegistry.incidentServices(physicalTenantId), q));
+            q -> getIncidentProcessInstanceStatisticsByError(physicalTenantId, q));
   }
 
   @RequiresSecondaryStorage
@@ -123,13 +118,12 @@ public class IncidentController {
     return SearchQueryRequestMapper.toIncidentProcessInstanceStatisticsByDefinitionQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            q ->
-                searchIncidentProcessInstanceStatisticsByDefinition(
-                    serviceRegistry.incidentServices(physicalTenantId), q));
+            q -> searchIncidentProcessInstanceStatisticsByDefinition(physicalTenantId, q));
   }
 
   private ResponseEntity<IncidentSearchQueryResult> search(
-      final IncidentServices incidentServices, final IncidentQuery query) {
+      final String physicalTenantId, final IncidentQuery query) {
+    final var incidentServices = serviceRegistry.incidentServices(physicalTenantId);
     try {
       final var result =
           incidentServices.search(query, authenticationProvider.getCamundaAuthentication());
@@ -148,8 +142,9 @@ public class IncidentController {
 
   private ResponseEntity<IncidentProcessInstanceStatisticsByErrorQueryResult>
       getIncidentProcessInstanceStatisticsByError(
-          final IncidentServices incidentServices,
+          final String physicalTenantId,
           final io.camunda.search.query.IncidentProcessInstanceStatisticsByErrorQuery query) {
+    final var incidentServices = serviceRegistry.incidentServices(physicalTenantId);
     try {
       final var result =
           incidentServices.incidentProcessInstanceStatisticsByError(
@@ -170,8 +165,9 @@ public class IncidentController {
 
   private ResponseEntity<IncidentProcessInstanceStatisticsByDefinitionQueryResult>
       searchIncidentProcessInstanceStatisticsByDefinition(
-          final IncidentServices incidentServices,
+          final String physicalTenantId,
           final io.camunda.search.query.IncidentProcessInstanceStatisticsByDefinitionQuery query) {
+    final var incidentServices = serviceRegistry.incidentServices(physicalTenantId);
     try {
       final var result =
           incidentServices.searchIncidentProcessInstanceStatisticsByDefinition(

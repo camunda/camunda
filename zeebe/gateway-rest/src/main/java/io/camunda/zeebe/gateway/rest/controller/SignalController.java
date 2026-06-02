@@ -13,7 +13,6 @@ import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.protocol.model.SignalBroadcastRequest;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.config.MultiTenancyConfiguration;
-import io.camunda.service.SignalServices;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
@@ -51,11 +50,12 @@ public class SignalController {
     return RequestMapper.toBroadcastSignalRequest(request, multiTenancyCfg.isChecksEnabled())
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            mapped -> broadcastSignal(serviceRegistry.signalServices(physicalTenantId), mapped));
+            mapped -> broadcastSignal(physicalTenantId, mapped));
   }
 
   private CompletableFuture<ResponseEntity<Object>> broadcastSignal(
-      final SignalServices signalServices, final BroadcastSignalRequest request) {
+      final String physicalTenantId, final BroadcastSignalRequest request) {
+    final var signalServices = serviceRegistry.signalServices(physicalTenantId);
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
         () ->

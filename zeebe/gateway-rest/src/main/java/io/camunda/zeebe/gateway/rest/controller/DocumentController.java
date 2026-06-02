@@ -64,7 +64,7 @@ public class DocumentController {
     return RequestMapper.toDocumentCreateRequest(documentId, storeId, file, metadata)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            request -> createDocument(serviceRegistry.documentServices(physicalTenantId), request));
+            request -> createDocument(physicalTenantId, request));
   }
 
   @CamundaPostMapping(path = "/batch", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -78,14 +78,12 @@ public class DocumentController {
     return RequestMapper.toDocumentCreateRequestBatch(files, storeId, objectMapper, metadataList)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            requests ->
-                createDocumentBatch(serviceRegistry.documentServices(physicalTenantId), requests));
+            requests -> createDocumentBatch(physicalTenantId, requests));
   }
 
   private CompletableFuture<ResponseEntity<Object>> createDocument(
-      final DocumentServices documentServices,
-      final DocumentServices.DocumentCreateRequest request) {
-
+      final String physicalTenantId, final DocumentServices.DocumentCreateRequest request) {
+    final var documentServices = serviceRegistry.documentServices(physicalTenantId);
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
         () -> documentServices.createDocument(request, authentication),
@@ -94,9 +92,8 @@ public class DocumentController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> createDocumentBatch(
-      final DocumentServices documentServices,
-      final List<DocumentServices.DocumentCreateRequest> requests) {
-
+      final String physicalTenantId, final List<DocumentServices.DocumentCreateRequest> requests) {
+    final var documentServices = serviceRegistry.documentServices(physicalTenantId);
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
         () -> documentServices.createDocumentBatch(requests, authentication),
@@ -164,21 +161,16 @@ public class DocumentController {
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
             params ->
-                createDocumentLink(
-                    serviceRegistry.documentServices(physicalTenantId),
-                    documentId,
-                    storeId,
-                    contentHash,
-                    params));
+                createDocumentLink(physicalTenantId, documentId, storeId, contentHash, params));
   }
 
   private CompletableFuture<ResponseEntity<Object>> createDocumentLink(
-      final DocumentServices documentServices,
+      final String physicalTenantId,
       final String documentId,
       final String storeId,
       final String contentHash,
       final DocumentLinkParams params) {
-
+    final var documentServices = serviceRegistry.documentServices(physicalTenantId);
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
         () -> documentServices.createLink(documentId, storeId, contentHash, params, authentication),

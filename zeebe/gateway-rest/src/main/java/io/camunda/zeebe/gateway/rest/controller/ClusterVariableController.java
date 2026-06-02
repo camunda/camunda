@@ -21,7 +21,6 @@ import io.camunda.search.query.ClusterVariableQuery;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.validation.ClusterVariableValidator;
 import io.camunda.security.validation.IdentifierValidator;
-import io.camunda.service.ClusterVariableServices;
 import io.camunda.service.ClusterVariableServices.ClusterVariableRequest;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
@@ -67,9 +66,7 @@ public class ClusterVariableController {
         .toGlobalClusterVariableCreateRequest(createClusterVariableRequest)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            mapped ->
-                createGlobalClusterVariable(
-                    serviceRegistry.clusterVariableServices(physicalTenantId), mapped));
+            mapped -> createGlobalClusterVariable(physicalTenantId, mapped));
   }
 
   @CamundaPostMapping(path = "/tenants/{tenantId}")
@@ -81,9 +78,7 @@ public class ClusterVariableController {
         .toTenantClusterVariableCreateRequest(createClusterVariableRequest, tenantId)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            mapped ->
-                createTenantClusterVariable(
-                    serviceRegistry.clusterVariableServices(physicalTenantId), mapped));
+            mapped -> createTenantClusterVariable(physicalTenantId, mapped));
   }
 
   @CamundaDeleteMapping(path = "/global/{name}")
@@ -93,9 +88,7 @@ public class ClusterVariableController {
         .toGlobalClusterVariableRequest(name)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            mapped ->
-                deleteGlobalClusterVariable(
-                    serviceRegistry.clusterVariableServices(physicalTenantId), mapped));
+            mapped -> deleteGlobalClusterVariable(physicalTenantId, mapped));
   }
 
   @CamundaDeleteMapping(path = "/tenants/{tenantId}/{name}")
@@ -107,9 +100,7 @@ public class ClusterVariableController {
         .toTenantClusterVariableRequest(name, tenantId)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            mapped ->
-                deleteTenantClusterVariable(
-                    serviceRegistry.clusterVariableServices(physicalTenantId), mapped));
+            mapped -> deleteTenantClusterVariable(physicalTenantId, mapped));
   }
 
   @CamundaPutMapping(path = "/global/{name}")
@@ -121,9 +112,7 @@ public class ClusterVariableController {
         .toGlobalClusterVariableUpdateRequest(name, updateClusterVariableRequest)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            mapped ->
-                updateGlobalClusterVariable(
-                    serviceRegistry.clusterVariableServices(physicalTenantId), mapped));
+            mapped -> updateGlobalClusterVariable(physicalTenantId, mapped));
   }
 
   @CamundaPutMapping(path = "/tenants/{tenantId}/{name}")
@@ -136,9 +125,7 @@ public class ClusterVariableController {
         .toTenantClusterVariableUpdateRequest(name, updateClusterVariableRequest, tenantId)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            mapped ->
-                updateTenantClusterVariable(
-                    serviceRegistry.clusterVariableServices(physicalTenantId), mapped));
+            mapped -> updateTenantClusterVariable(physicalTenantId, mapped));
   }
 
   @RequiresSecondaryStorage
@@ -151,15 +138,14 @@ public class ClusterVariableController {
     return SearchQueryRequestMapper.toClusterVariableQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            q ->
-                search(
-                    serviceRegistry.clusterVariableServices(physicalTenantId), q, truncateValues));
+            q -> search(physicalTenantId, q, truncateValues));
   }
 
   private ResponseEntity<Object> search(
-      final ClusterVariableServices clusterVariableServices,
+      final String physicalTenantId,
       final ClusterVariableQuery query,
       final boolean truncateValues) {
+    final var clusterVariableServices = serviceRegistry.clusterVariableServices(physicalTenantId);
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
       final var result = clusterVariableServices.search(query, authentication);
@@ -178,9 +164,7 @@ public class ClusterVariableController {
         .toGlobalClusterVariableRequest(name)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            mapped ->
-                getGlobalClusterVariable(
-                    serviceRegistry.clusterVariableServices(physicalTenantId), mapped));
+            mapped -> getGlobalClusterVariable(physicalTenantId, mapped));
   }
 
   @RequiresSecondaryStorage
@@ -193,13 +177,12 @@ public class ClusterVariableController {
         .toTenantClusterVariableRequest(name, tenantId)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            mapped ->
-                getTenantClusterVariable(
-                    serviceRegistry.clusterVariableServices(physicalTenantId), mapped));
+            mapped -> getTenantClusterVariable(physicalTenantId, mapped));
   }
 
   private ResponseEntity<Object> getGlobalClusterVariable(
-      final ClusterVariableServices clusterVariableServices, final ClusterVariableRequest request) {
+      final String physicalTenantId, final ClusterVariableRequest request) {
+    final var clusterVariableServices = serviceRegistry.clusterVariableServices(physicalTenantId);
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
       return ResponseEntity.ok()
@@ -213,7 +196,8 @@ public class ClusterVariableController {
   }
 
   private ResponseEntity<Object> getTenantClusterVariable(
-      final ClusterVariableServices clusterVariableServices, final ClusterVariableRequest request) {
+      final String physicalTenantId, final ClusterVariableRequest request) {
+    final var clusterVariableServices = serviceRegistry.clusterVariableServices(physicalTenantId);
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
       return ResponseEntity.ok()
@@ -226,7 +210,8 @@ public class ClusterVariableController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> createGlobalClusterVariable(
-      final ClusterVariableServices clusterVariableServices, final ClusterVariableRequest request) {
+      final String physicalTenantId, final ClusterVariableRequest request) {
+    final var clusterVariableServices = serviceRegistry.clusterVariableServices(physicalTenantId);
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
         () -> clusterVariableServices.createGloballyScopedClusterVariable(request, authentication),
@@ -235,7 +220,8 @@ public class ClusterVariableController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> createTenantClusterVariable(
-      final ClusterVariableServices clusterVariableServices, final ClusterVariableRequest request) {
+      final String physicalTenantId, final ClusterVariableRequest request) {
+    final var clusterVariableServices = serviceRegistry.clusterVariableServices(physicalTenantId);
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
         () -> clusterVariableServices.createTenantScopedClusterVariable(request, authentication),
@@ -244,21 +230,24 @@ public class ClusterVariableController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> deleteGlobalClusterVariable(
-      final ClusterVariableServices clusterVariableServices, final ClusterVariableRequest request) {
+      final String physicalTenantId, final ClusterVariableRequest request) {
+    final var clusterVariableServices = serviceRegistry.clusterVariableServices(physicalTenantId);
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethodWithNoContentResult(
         () -> clusterVariableServices.deleteGloballyScopedClusterVariable(request, authentication));
   }
 
   private CompletableFuture<ResponseEntity<Object>> deleteTenantClusterVariable(
-      final ClusterVariableServices clusterVariableServices, final ClusterVariableRequest request) {
+      final String physicalTenantId, final ClusterVariableRequest request) {
+    final var clusterVariableServices = serviceRegistry.clusterVariableServices(physicalTenantId);
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethodWithNoContentResult(
         () -> clusterVariableServices.deleteTenantScopedClusterVariable(request, authentication));
   }
 
   private CompletableFuture<ResponseEntity<Object>> updateGlobalClusterVariable(
-      final ClusterVariableServices clusterVariableServices, final ClusterVariableRequest request) {
+      final String physicalTenantId, final ClusterVariableRequest request) {
+    final var clusterVariableServices = serviceRegistry.clusterVariableServices(physicalTenantId);
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
         () -> clusterVariableServices.updateGloballyScopedClusterVariable(request, authentication),
@@ -267,7 +256,8 @@ public class ClusterVariableController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> updateTenantClusterVariable(
-      final ClusterVariableServices clusterVariableServices, final ClusterVariableRequest request) {
+      final String physicalTenantId, final ClusterVariableRequest request) {
+    final var clusterVariableServices = serviceRegistry.clusterVariableServices(physicalTenantId);
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
         () -> clusterVariableServices.updateTenantScopedClusterVariable(request, authentication),

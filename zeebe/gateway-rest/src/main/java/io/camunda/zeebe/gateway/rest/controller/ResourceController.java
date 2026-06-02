@@ -17,7 +17,6 @@ import io.camunda.gateway.protocol.model.ResourceSearchQueryResult;
 import io.camunda.search.query.DeployedResourceQuery;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.config.MultiTenancyConfiguration;
-import io.camunda.service.ResourceServices;
 import io.camunda.service.ResourceServices.DeployResourcesRequest;
 import io.camunda.service.ResourceServices.ResourceDeletionRequest;
 import io.camunda.service.registry.ServiceRegistry;
@@ -65,8 +64,7 @@ public class ResourceController {
             resources, tenantId, multiTenancyCfg.isChecksEnabled())
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            request ->
-                deployResources(serviceRegistry.resourceServices(physicalTenantId), request));
+            request -> deployResources(physicalTenantId, request));
   }
 
   @CamundaPostMapping(path = "/resources/{resourceKey}/deletion")
@@ -77,7 +75,7 @@ public class ResourceController {
     return RequestMapper.toResourceDeletion(resourceKey, deleteRequest)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            request -> delete(serviceRegistry.resourceServices(physicalTenantId), request));
+            request -> delete(physicalTenantId, request));
   }
 
   @CamundaGetMapping(path = "/resources/{resourceKey}")
@@ -129,13 +127,12 @@ public class ResourceController {
       @PhysicalTenantId final String physicalTenantId,
       @RequestBody(required = false) final ResourceSearchQuery query) {
     return SearchQueryRequestMapper.toDeployedResourceQuery(query)
-        .fold(
-            RestErrorMapper::mapProblemToResponse,
-            q -> search(serviceRegistry.resourceServices(physicalTenantId), q));
+        .fold(RestErrorMapper::mapProblemToResponse, q -> search(physicalTenantId, q));
   }
 
   private ResponseEntity<ResourceSearchQueryResult> search(
-      final ResourceServices resourceServices, final DeployedResourceQuery query) {
+      final String physicalTenantId, final DeployedResourceQuery query) {
+    final var resourceServices = serviceRegistry.resourceServices(physicalTenantId);
     try {
       final var result =
           resourceServices.search(query, authenticationProvider.getCamundaAuthentication());
@@ -146,7 +143,8 @@ public class ResourceController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> deployResources(
-      final ResourceServices resourceServices, final DeployResourcesRequest request) {
+      final String physicalTenantId, final DeployResourcesRequest request) {
+    final var resourceServices = serviceRegistry.resourceServices(physicalTenantId);
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
         () -> resourceServices.deployResources(request, authentication),
@@ -155,7 +153,8 @@ public class ResourceController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> delete(
-      final ResourceServices resourceServices, final ResourceDeletionRequest request) {
+      final String physicalTenantId, final ResourceDeletionRequest request) {
+    final var resourceServices = serviceRegistry.resourceServices(physicalTenantId);
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
         () -> resourceServices.deleteResource(request, authentication),

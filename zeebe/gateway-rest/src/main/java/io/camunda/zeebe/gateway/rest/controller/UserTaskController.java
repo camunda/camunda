@@ -31,7 +31,6 @@ import io.camunda.search.query.AuditLogQuery;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
-import io.camunda.service.UserTaskServices;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
@@ -69,7 +68,7 @@ public class UserTaskController {
       @RequestBody(required = false) final UserTaskCompletionRequest completionRequest) {
 
     return completeUserTask(
-        serviceRegistry.userTaskServices(physicalTenantId),
+        physicalTenantId,
         RequestMapper.toUserTaskCompletionRequest(completionRequest, userTaskKey));
   }
 
@@ -82,7 +81,7 @@ public class UserTaskController {
     return RequestMapper.toUserTaskAssignmentRequest(assignmentRequest, userTaskKey)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            request -> assignUserTask(serviceRegistry.userTaskServices(physicalTenantId), request));
+            request -> assignUserTask(physicalTenantId, request));
   }
 
   @CamundaDeleteMapping(path = "/{userTaskKey}/assignee")
@@ -90,8 +89,7 @@ public class UserTaskController {
       @PhysicalTenantId final String physicalTenantId, @PathVariable final long userTaskKey) {
 
     return unassignUserTask(
-        serviceRegistry.userTaskServices(physicalTenantId),
-        RequestMapper.toUserTaskUnassignmentRequest(userTaskKey));
+        physicalTenantId, RequestMapper.toUserTaskUnassignmentRequest(userTaskKey));
   }
 
   @CamundaPatchMapping(path = "/{userTaskKey}")
@@ -103,7 +101,7 @@ public class UserTaskController {
     return RequestMapper.toUserTaskUpdateRequest(updateRequest, userTaskKey)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            request -> updateUserTask(serviceRegistry.userTaskServices(physicalTenantId), request));
+            request -> updateUserTask(physicalTenantId, request));
   }
 
   @RequiresSecondaryStorage
@@ -112,9 +110,7 @@ public class UserTaskController {
       @PhysicalTenantId final String physicalTenantId,
       @RequestBody(required = false) final UserTaskSearchQuery query) {
     return SearchQueryRequestMapper.toUserTaskQuery(query)
-        .fold(
-            RestErrorMapper::mapProblemToResponse,
-            q -> search(serviceRegistry.userTaskServices(physicalTenantId), q));
+        .fold(RestErrorMapper::mapProblemToResponse, q -> search(physicalTenantId, q));
   }
 
   @RequiresSecondaryStorage
@@ -164,11 +160,7 @@ public class UserTaskController {
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query ->
-                searchUserTaskVariableQuery(
-                    serviceRegistry.userTaskServices(physicalTenantId),
-                    userTaskKey,
-                    query,
-                    truncateValues));
+                searchUserTaskVariableQuery(physicalTenantId, userTaskKey, query, truncateValues));
   }
 
   @RequiresSecondaryStorage
@@ -187,10 +179,7 @@ public class UserTaskController {
             RestErrorMapper::mapProblemToResponse,
             query ->
                 searchUserTaskEffectiveVariableQuery(
-                    serviceRegistry.userTaskServices(physicalTenantId),
-                    userTaskKey,
-                    query,
-                    truncateValues));
+                    physicalTenantId, userTaskKey, query, truncateValues));
   }
 
   @RequiresSecondaryStorage
@@ -203,13 +192,12 @@ public class UserTaskController {
     return SearchQueryRequestMapper.toUserTaskAuditLogQuery(auditLogSearchQueryRequest)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            query ->
-                searchUserTaskAuditLogQuery(
-                    serviceRegistry.userTaskServices(physicalTenantId), userTaskKey, query));
+            query -> searchUserTaskAuditLogQuery(physicalTenantId, userTaskKey, query));
   }
 
   private ResponseEntity<UserTaskSearchQueryResult> search(
-      final UserTaskServices userTaskServices, final UserTaskQuery query) {
+      final String physicalTenantId, final UserTaskQuery query) {
+    final var userTaskServices = serviceRegistry.userTaskServices(physicalTenantId);
     try {
       final var result =
           userTaskServices.search(query, authenticationProvider.getCamundaAuthentication());
@@ -221,10 +209,11 @@ public class UserTaskController {
   }
 
   private ResponseEntity<VariableSearchQueryResult> searchUserTaskVariableQuery(
-      final UserTaskServices userTaskServices,
+      final String physicalTenantId,
       final long userTaskKey,
       final VariableQuery query,
       final boolean truncateValues) {
+    final var userTaskServices = serviceRegistry.userTaskServices(physicalTenantId);
     try {
       final var result =
           userTaskServices.searchUserTaskVariables(
@@ -237,10 +226,11 @@ public class UserTaskController {
   }
 
   private ResponseEntity<VariableSearchQueryResult> searchUserTaskEffectiveVariableQuery(
-      final UserTaskServices userTaskServices,
+      final String physicalTenantId,
       final long userTaskKey,
       final VariableQuery query,
       final boolean truncateValues) {
+    final var userTaskServices = serviceRegistry.userTaskServices(physicalTenantId);
     try {
       final var result =
           userTaskServices.searchUserTaskEffectiveVariables(
@@ -253,7 +243,8 @@ public class UserTaskController {
   }
 
   private ResponseEntity<AuditLogSearchQueryResult> searchUserTaskAuditLogQuery(
-      final UserTaskServices userTaskServices, final long userTaskKey, final AuditLogQuery query) {
+      final String physicalTenantId, final long userTaskKey, final AuditLogQuery query) {
+    final var userTaskServices = serviceRegistry.userTaskServices(physicalTenantId);
     try {
       final var result =
           userTaskServices.searchUserTaskAuditLogs(
@@ -265,7 +256,8 @@ public class UserTaskController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> assignUserTask(
-      final UserTaskServices userTaskServices, final AssignUserTaskRequest request) {
+      final String physicalTenantId, final AssignUserTaskRequest request) {
+    final var userTaskServices = serviceRegistry.userTaskServices(physicalTenantId);
     return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
             userTaskServices.assignUserTask(
@@ -277,7 +269,8 @@ public class UserTaskController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> completeUserTask(
-      final UserTaskServices userTaskServices, final CompleteUserTaskRequest request) {
+      final String physicalTenantId, final CompleteUserTaskRequest request) {
+    final var userTaskServices = serviceRegistry.userTaskServices(physicalTenantId);
     return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
             userTaskServices.completeUserTask(
@@ -288,7 +281,8 @@ public class UserTaskController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> unassignUserTask(
-      final UserTaskServices userTaskServices, final AssignUserTaskRequest request) {
+      final String physicalTenantId, final AssignUserTaskRequest request) {
+    final var userTaskServices = serviceRegistry.userTaskServices(physicalTenantId);
     return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
             userTaskServices.unassignUserTask(
@@ -298,7 +292,8 @@ public class UserTaskController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> updateUserTask(
-      final UserTaskServices userTaskServices, final UpdateUserTaskRequest request) {
+      final String physicalTenantId, final UpdateUserTaskRequest request) {
+    final var userTaskServices = serviceRegistry.userTaskServices(physicalTenantId);
     return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
             userTaskServices.updateUserTask(

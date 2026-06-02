@@ -10,7 +10,6 @@ package io.camunda.zeebe.gateway.rest.controller;
 import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.protocol.model.AdHocSubProcessActivateActivitiesInstruction;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
-import io.camunda.service.AdHocSubProcessActivityServices;
 import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
@@ -46,14 +45,13 @@ public class AdHocSubProcessActivityController {
             adHocSubProcessInstanceKey, activationRequest)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            mapped ->
-                activateActivities(
-                    serviceRegistry.adHocSubProcessActivityServices(physicalTenantId), mapped));
+            mapped -> activateActivities(physicalTenantId, mapped));
   }
 
   private CompletableFuture<ResponseEntity<Object>> activateActivities(
-      final AdHocSubProcessActivityServices adHocSubProcessActivityServices,
-      final AdHocSubProcessActivateActivitiesRequest request) {
+      final String physicalTenantId, final AdHocSubProcessActivateActivitiesRequest request) {
+    final var adHocSubProcessActivityServices =
+        serviceRegistry.adHocSubProcessActivityServices(physicalTenantId);
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethodWithNoContentResult(
         () -> adHocSubProcessActivityServices.activateActivities(request, authentication));

@@ -21,7 +21,6 @@ import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.validation.AuthorizationValidator;
 import io.camunda.security.validation.IdentifierValidator;
-import io.camunda.service.AuthorizationServices;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
 import io.camunda.service.AuthorizationServices.UpdateAuthorizationRequest;
 import io.camunda.service.registry.ServiceRegistry;
@@ -67,7 +66,7 @@ public class AuthorizationController {
         .toCreateAuthorizationRequest(authorizationCreateRequest)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            request -> create(serviceRegistry.authorizationServices(physicalTenantId), request));
+            request -> create(physicalTenantId, request));
   }
 
   @RequiresSecondaryStorage
@@ -107,7 +106,7 @@ public class AuthorizationController {
         .toUpdateAuthorizationRequest(authorizationKey, authorizationUpdateRequest)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            request -> update(serviceRegistry.authorizationServices(physicalTenantId), request));
+            request -> update(physicalTenantId, request));
   }
 
   @RequiresSecondaryStorage
@@ -116,13 +115,12 @@ public class AuthorizationController {
       @PhysicalTenantId final String physicalTenantId,
       @RequestBody(required = false) final AuthorizationSearchQuery query) {
     return SearchQueryRequestMapper.toAuthorizationQuery(query)
-        .fold(
-            RestErrorMapper::mapProblemToResponse,
-            q -> search(serviceRegistry.authorizationServices(physicalTenantId), q));
+        .fold(RestErrorMapper::mapProblemToResponse, q -> search(physicalTenantId, q));
   }
 
   private ResponseEntity<AuthorizationSearchResult> search(
-      final AuthorizationServices authorizationServices, final AuthorizationQuery query) {
+      final String physicalTenantId, final AuthorizationQuery query) {
+    final var authorizationServices = serviceRegistry.authorizationServices(physicalTenantId);
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
       final var result = authorizationServices.search(query, authentication);
@@ -134,8 +132,8 @@ public class AuthorizationController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> create(
-      final AuthorizationServices authorizationServices,
-      final CreateAuthorizationRequest createAuthorizationRequest) {
+      final String physicalTenantId, final CreateAuthorizationRequest createAuthorizationRequest) {
+    final var authorizationServices = serviceRegistry.authorizationServices(physicalTenantId);
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
         () -> authorizationServices.createAuthorization(createAuthorizationRequest, authentication),
@@ -144,8 +142,8 @@ public class AuthorizationController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> update(
-      final AuthorizationServices authorizationServices,
-      final UpdateAuthorizationRequest authorizationRequest) {
+      final String physicalTenantId, final UpdateAuthorizationRequest authorizationRequest) {
+    final var authorizationServices = serviceRegistry.authorizationServices(physicalTenantId);
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethodWithNoContentResult(
         () -> authorizationServices.updateAuthorization(authorizationRequest, authentication));

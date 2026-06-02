@@ -24,7 +24,6 @@ import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SaasConfigurationHelper;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
-import io.camunda.service.UsageMetricsServices;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
@@ -78,9 +77,7 @@ public class SystemController {
       @RequestParam(required = false, defaultValue = "false") final boolean withTenants) {
 
     return SearchQueryRequestMapper.toUsageMetricsQuery(startTime, endTime, tenantId, withTenants)
-        .fold(
-            RestErrorMapper::mapProblemToResponse,
-            query -> getMetrics(serviceRegistry.usageMetricsServices(physicalTenantId), query));
+        .fold(RestErrorMapper::mapProblemToResponse, query -> getMetrics(physicalTenantId, query));
   }
 
   @CamundaGetMapping(path = "/configuration")
@@ -147,7 +144,8 @@ public class SystemController {
   }
 
   private ResponseEntity<UsageMetricsResponse> getMetrics(
-      final UsageMetricsServices usageMetricsServices, final UsageMetricsQuery query) {
+      final String physicalTenantId, final UsageMetricsQuery query) {
+    final var usageMetricsServices = serviceRegistry.usageMetricsServices(physicalTenantId);
     try {
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toUsageMetricsResponse(

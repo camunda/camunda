@@ -21,7 +21,6 @@ import io.camunda.gateway.protocol.model.DecisionEvaluationInstruction;
 import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.config.MultiTenancyConfiguration;
-import io.camunda.service.DecisionDefinitionServices;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
@@ -63,9 +62,7 @@ public class DecisionDefinitionController {
             evaluateDecisionRequest, multiTenancyCfg.isChecksEnabled())
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            mapped ->
-                evaluateDecision(
-                    serviceRegistry.decisionDefinitionServices(physicalTenantId), mapped));
+            mapped -> evaluateDecision(physicalTenantId, mapped));
   }
 
   @RequiresSecondaryStorage
@@ -74,9 +71,7 @@ public class DecisionDefinitionController {
       @PhysicalTenantId final String physicalTenantId,
       @RequestBody(required = false) final DecisionDefinitionSearchQuery query) {
     return SearchQueryRequestMapper.toDecisionDefinitionQuery(query)
-        .fold(
-            RestErrorMapper::mapProblemToResponse,
-            q -> search(serviceRegistry.decisionDefinitionServices(physicalTenantId), q));
+        .fold(RestErrorMapper::mapProblemToResponse, q -> search(physicalTenantId, q));
   }
 
   @RequiresSecondaryStorage
@@ -117,8 +112,9 @@ public class DecisionDefinitionController {
   }
 
   private ResponseEntity<DecisionDefinitionSearchQueryResult> search(
-      final DecisionDefinitionServices decisionDefinitionServices,
-      final DecisionDefinitionQuery query) {
+      final String physicalTenantId, final DecisionDefinitionQuery query) {
+    final var decisionDefinitionServices =
+        serviceRegistry.decisionDefinitionServices(physicalTenantId);
     try {
       final var result =
           decisionDefinitionServices.search(
@@ -131,8 +127,9 @@ public class DecisionDefinitionController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> evaluateDecision(
-      final DecisionDefinitionServices decisionDefinitionServices,
-      final DecisionEvaluationRequest request) {
+      final String physicalTenantId, final DecisionEvaluationRequest request) {
+    final var decisionDefinitionServices =
+        serviceRegistry.decisionDefinitionServices(physicalTenantId);
     return RequestExecutor.executeServiceMethod(
         () ->
             decisionDefinitionServices.evaluateDecision(

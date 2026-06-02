@@ -41,13 +41,8 @@ import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.security.validation.TenantValidator;
-import io.camunda.service.GroupServices;
-import io.camunda.service.MappingRuleServices;
-import io.camunda.service.RoleServices;
-import io.camunda.service.TenantServices;
 import io.camunda.service.TenantServices.TenantMemberRequest;
 import io.camunda.service.TenantServices.TenantRequest;
-import io.camunda.service.UserServices;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
@@ -88,7 +83,7 @@ public class TenantController {
         .toTenantCreateDto(createTenantRequest)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            request -> createTenant(serviceRegistry.tenantServices(physicalTenantId), request));
+            request -> createTenant(physicalTenantId, request));
   }
 
   @RequiresSecondaryStorage
@@ -114,9 +109,7 @@ public class TenantController {
       @PhysicalTenantId final String physicalTenantId,
       @RequestBody(required = false) final TenantSearchQueryRequest query) {
     return SearchQueryRequestMapper.toTenantQuery(query)
-        .fold(
-            RestErrorMapper::mapProblemToResponse,
-            q -> search(serviceRegistry.tenantServices(physicalTenantId), q));
+        .fold(RestErrorMapper::mapProblemToResponse, q -> search(physicalTenantId, q));
   }
 
   @CamundaPutMapping(path = "/{tenantId}")
@@ -128,7 +121,7 @@ public class TenantController {
         .toTenantUpdateDto(tenantId, tenantUpdateRequest)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            request -> updateTenant(serviceRegistry.tenantServices(physicalTenantId), request));
+            request -> updateTenant(physicalTenantId, request));
   }
 
   @CamundaPutMapping(path = "/{tenantId}/users/{username}")
@@ -140,8 +133,7 @@ public class TenantController {
         .toTenantMemberRequest(tenantId, username, EntityType.USER)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            request ->
-                addMemberToTenant(serviceRegistry.tenantServices(physicalTenantId), request));
+            request -> addMemberToTenant(physicalTenantId, request));
   }
 
   @RequiresSecondaryStorage
@@ -153,9 +145,7 @@ public class TenantController {
     return SearchQueryRequestMapper.toTenantMemberQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            tenantQuery ->
-                searchUsersInTenant(
-                    serviceRegistry.tenantServices(physicalTenantId), tenantId, tenantQuery));
+            tenantQuery -> searchUsersInTenant(physicalTenantId, tenantId, tenantQuery));
   }
 
   @CamundaPutMapping(path = "/{tenantId}/clients/{clientId}")
@@ -167,8 +157,7 @@ public class TenantController {
         .toTenantMemberRequest(tenantId, clientId, EntityType.CLIENT)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            request ->
-                addMemberToTenant(serviceRegistry.tenantServices(physicalTenantId), request));
+            request -> addMemberToTenant(physicalTenantId, request));
   }
 
   @CamundaPutMapping(path = "/{tenantId}/mapping-rules/{mappingRuleId}")
@@ -180,8 +169,7 @@ public class TenantController {
         .toTenantMemberRequest(tenantId, mappingRuleId, EntityType.MAPPING_RULE)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            request ->
-                addMemberToTenant(serviceRegistry.tenantServices(physicalTenantId), request));
+            request -> addMemberToTenant(physicalTenantId, request));
   }
 
   @CamundaPutMapping(path = "/{tenantId}/groups/{groupId}")
@@ -193,8 +181,7 @@ public class TenantController {
         .toTenantMemberRequest(tenantId, groupId, EntityType.GROUP)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            request ->
-                addMemberToTenant(serviceRegistry.tenantServices(physicalTenantId), request));
+            request -> addMemberToTenant(physicalTenantId, request));
   }
 
   @CamundaPutMapping(path = "/{tenantId}/roles/{roleId}")
@@ -206,8 +193,7 @@ public class TenantController {
         .toTenantMemberRequest(tenantId, roleId, EntityType.ROLE)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            request ->
-                addMemberToTenant(serviceRegistry.tenantServices(physicalTenantId), request));
+            request -> addMemberToTenant(physicalTenantId, request));
   }
 
   @CamundaDeleteMapping(path = "/{tenantId}")
@@ -230,8 +216,7 @@ public class TenantController {
         .toTenantMemberRequest(tenantId, username, EntityType.USER)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            request ->
-                removeMemberFromTenant(serviceRegistry.tenantServices(physicalTenantId), request));
+            request -> removeMemberFromTenant(physicalTenantId, request));
   }
 
   @CamundaDeleteMapping(path = "/{tenantId}/clients/{clientId}")
@@ -243,8 +228,7 @@ public class TenantController {
         .toTenantMemberRequest(tenantId, clientId, EntityType.CLIENT)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            request ->
-                removeMemberFromTenant(serviceRegistry.tenantServices(physicalTenantId), request));
+            request -> removeMemberFromTenant(physicalTenantId, request));
   }
 
   @RequiresSecondaryStorage
@@ -257,10 +241,7 @@ public class TenantController {
         .fold(
             RestErrorMapper::mapProblemToResponse,
             mappingRuleQuery ->
-                searchMappingRulesForTenant(
-                    serviceRegistry.mappingRuleServices(physicalTenantId),
-                    tenantId,
-                    mappingRuleQuery));
+                searchMappingRulesForTenant(physicalTenantId, tenantId, mappingRuleQuery));
   }
 
   @CamundaDeleteMapping(path = "/{tenantId}/mapping-rules/{mappingRuleId}")
@@ -272,8 +253,7 @@ public class TenantController {
         .toTenantMemberRequest(tenantId, mappingRuleId, EntityType.MAPPING_RULE)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            request ->
-                removeMemberFromTenant(serviceRegistry.tenantServices(physicalTenantId), request));
+            request -> removeMemberFromTenant(physicalTenantId, request));
   }
 
   @CamundaDeleteMapping(path = "/{tenantId}/groups/{groupId}")
@@ -285,8 +265,7 @@ public class TenantController {
         .toTenantMemberRequest(tenantId, groupId, EntityType.GROUP)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            request ->
-                removeMemberFromTenant(serviceRegistry.tenantServices(physicalTenantId), request));
+            request -> removeMemberFromTenant(physicalTenantId, request));
   }
 
   @CamundaDeleteMapping(path = "/{tenantId}/roles/{roleId}")
@@ -298,8 +277,7 @@ public class TenantController {
         .toTenantMemberRequest(tenantId, roleId, EntityType.ROLE)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            request ->
-                removeMemberFromTenant(serviceRegistry.tenantServices(physicalTenantId), request));
+            request -> removeMemberFromTenant(physicalTenantId, request));
   }
 
   @RequiresSecondaryStorage
@@ -311,13 +289,12 @@ public class TenantController {
     return SearchQueryRequestMapper.toTenantMemberQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            tenantQuery ->
-                searchGroupIdsInTenant(
-                    serviceRegistry.tenantServices(physicalTenantId), tenantId, tenantQuery));
+            tenantQuery -> searchGroupIdsInTenant(physicalTenantId, tenantId, tenantQuery));
   }
 
   private ResponseEntity<TenantGroupSearchResult> searchGroupIdsInTenant(
-      final TenantServices tenantServices, final String tenantId, final TenantMemberQuery query) {
+      final String physicalTenantId, final String tenantId, final TenantMemberQuery query) {
+    final var tenantServices = serviceRegistry.tenantServices(physicalTenantId);
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
       final var result =
@@ -338,9 +315,7 @@ public class TenantController {
     return SearchQueryRequestMapper.toRoleQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            roleQuery ->
-                searchRolesInTenant(
-                    serviceRegistry.roleServices(physicalTenantId), tenantId, roleQuery));
+            roleQuery -> searchRolesInTenant(physicalTenantId, tenantId, roleQuery));
   }
 
   @RequiresSecondaryStorage
@@ -352,13 +327,12 @@ public class TenantController {
     return SearchQueryRequestMapper.toTenantMemberQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            tenantQuery ->
-                searchClientsInTenant(
-                    serviceRegistry.tenantServices(physicalTenantId), tenantId, tenantQuery));
+            tenantQuery -> searchClientsInTenant(physicalTenantId, tenantId, tenantQuery));
   }
 
   private CompletableFuture<ResponseEntity<Object>> createTenant(
-      final TenantServices tenantServices, final TenantRequest tenantRequest) {
+      final String physicalTenantId, final TenantRequest tenantRequest) {
+    final var tenantServices = serviceRegistry.tenantServices(physicalTenantId);
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
         () -> tenantServices.createTenant(tenantRequest, authentication),
@@ -367,21 +341,24 @@ public class TenantController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> addMemberToTenant(
-      final TenantServices tenantServices, final TenantMemberRequest request) {
+      final String physicalTenantId, final TenantMemberRequest request) {
+    final var tenantServices = serviceRegistry.tenantServices(physicalTenantId);
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethodWithNoContentResult(
         () -> tenantServices.addMember(request, authentication));
   }
 
   private CompletableFuture<ResponseEntity<Object>> removeMemberFromTenant(
-      final TenantServices tenantServices, final TenantMemberRequest request) {
+      final String physicalTenantId, final TenantMemberRequest request) {
+    final var tenantServices = serviceRegistry.tenantServices(physicalTenantId);
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethodWithNoContentResult(
         () -> tenantServices.removeMember(request, authentication));
   }
 
   private ResponseEntity<TenantSearchQueryResult> search(
-      final TenantServices tenantServices, final TenantQuery query) {
+      final String physicalTenantId, final TenantQuery query) {
+    final var tenantServices = serviceRegistry.tenantServices(physicalTenantId);
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
       final var result = tenantServices.search(query, authentication);
@@ -392,9 +369,10 @@ public class TenantController {
   }
 
   private ResponseEntity<TenantUserSearchResult> searchUsersInTenant(
-      final TenantServices tenantServices,
+      final String physicalTenantId,
       final String tenantId,
       final TenantMemberQuery tenantMemberQuery) {
+    final var tenantServices = serviceRegistry.tenantServices(physicalTenantId);
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
       final var result =
@@ -407,7 +385,8 @@ public class TenantController {
   }
 
   private ResponseEntity<TenantClientSearchResult> searchClientsInTenant(
-      final TenantServices tenantServices, final String tenantId, final TenantMemberQuery query) {
+      final String physicalTenantId, final String tenantId, final TenantMemberQuery query) {
+    final var tenantServices = serviceRegistry.tenantServices(physicalTenantId);
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
       final var result =
@@ -420,9 +399,10 @@ public class TenantController {
   }
 
   private ResponseEntity<MappingRuleSearchQueryResult> searchMappingRulesForTenant(
-      final MappingRuleServices mappingRuleServices,
+      final String physicalTenantId,
       final String tenantId,
       final MappingRuleQuery mappingRuleQuery) {
+    final var mappingRuleServices = serviceRegistry.mappingRuleServices(physicalTenantId);
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
       final var composedMappingRuleQuery = buildMappingRuleQuery(tenantId, mappingRuleQuery);
@@ -434,7 +414,8 @@ public class TenantController {
   }
 
   private ResponseEntity<UserSearchResult> searchUsersInTenant(
-      final UserServices userServices, final String tenantId, final UserQuery userQuery) {
+      final String physicalTenantId, final String tenantId, final UserQuery userQuery) {
+    final var userServices = serviceRegistry.userServices(physicalTenantId);
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
       final var composedUserQuery = buildUserQuery(tenantId, userQuery);
@@ -446,7 +427,8 @@ public class TenantController {
   }
 
   private ResponseEntity<GroupSearchQueryResult> searchGroupsInTenant(
-      final GroupServices groupServices, final String tenantId, final GroupQuery groupQuery) {
+      final String physicalTenantId, final String tenantId, final GroupQuery groupQuery) {
+    final var groupServices = serviceRegistry.groupServices(physicalTenantId);
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
       final var composedGroupQuery = buildGroupQuery(tenantId, groupQuery);
@@ -458,7 +440,8 @@ public class TenantController {
   }
 
   private ResponseEntity<RoleSearchQueryResult> searchRolesInTenant(
-      final RoleServices roleServices, final String tenantId, final RoleQuery roleQuery) {
+      final String physicalTenantId, final String tenantId, final RoleQuery roleQuery) {
+    final var roleServices = serviceRegistry.roleServices(physicalTenantId);
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
       final var composedRoleQuery = buildRoleQuery(tenantId, roleQuery);
@@ -502,7 +485,8 @@ public class TenantController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> updateTenant(
-      final TenantServices tenantServices, final TenantRequest tenantRequest) {
+      final String physicalTenantId, final TenantRequest tenantRequest) {
+    final var tenantServices = serviceRegistry.tenantServices(physicalTenantId);
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
         () -> tenantServices.updateTenant(tenantRequest, authentication),

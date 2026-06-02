@@ -13,7 +13,6 @@ import io.camunda.gateway.protocol.model.MessageCorrelationRequest;
 import io.camunda.gateway.protocol.model.MessagePublicationRequest;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.config.MultiTenancyConfiguration;
-import io.camunda.service.MessageServices;
 import io.camunda.service.MessageServices.CorrelateMessageRequest;
 import io.camunda.service.MessageServices.PublicationMessageRequest;
 import io.camunda.service.registry.ServiceRegistry;
@@ -56,7 +55,7 @@ public class MessageController {
             publicationRequest, multiTenancyCfg.isChecksEnabled(), maxNameFieldLength)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            mapped -> publishMessage(serviceRegistry.messageServices(physicalTenantId), mapped));
+            mapped -> publishMessage(physicalTenantId, mapped));
   }
 
   @CamundaPostMapping(path = "/correlation")
@@ -67,11 +66,12 @@ public class MessageController {
             correlationRequest, multiTenancyCfg.isChecksEnabled(), maxNameFieldLength)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            mapped -> correlateMessage(serviceRegistry.messageServices(physicalTenantId), mapped));
+            mapped -> correlateMessage(physicalTenantId, mapped));
   }
 
   private CompletableFuture<ResponseEntity<Object>> correlateMessage(
-      final MessageServices messageServices, final CorrelateMessageRequest correlationRequest) {
+      final String physicalTenantId, final CorrelateMessageRequest correlationRequest) {
+    final var messageServices = serviceRegistry.messageServices(physicalTenantId);
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
         () -> messageServices.correlateMessage(correlationRequest, authentication),
@@ -80,7 +80,8 @@ public class MessageController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> publishMessage(
-      final MessageServices messageServices, final PublicationMessageRequest request) {
+      final String physicalTenantId, final PublicationMessageRequest request) {
+    final var messageServices = serviceRegistry.messageServices(physicalTenantId);
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
         () -> messageServices.publishMessage(request, authentication),

@@ -14,7 +14,6 @@ import io.camunda.gateway.protocol.model.AuditLogSearchQueryRequest;
 import io.camunda.gateway.protocol.model.AuditLogSearchQueryResult;
 import io.camunda.search.query.AuditLogQuery;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
-import io.camunda.service.AuditLogServices;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
@@ -47,9 +46,7 @@ public class AuditLogController {
       @PhysicalTenantId final String physicalTenantId,
       @RequestBody(required = false) final AuditLogSearchQueryRequest query) {
     return SearchQueryRequestMapper.toAuditLogQuery(query)
-        .fold(
-            RestErrorMapper::mapProblemToResponse,
-            q -> search(serviceRegistry.auditLogServices(physicalTenantId), q));
+        .fold(RestErrorMapper::mapProblemToResponse, q -> search(physicalTenantId, q));
   }
 
   @RequiresSecondaryStorage
@@ -70,7 +67,8 @@ public class AuditLogController {
   }
 
   private ResponseEntity<AuditLogSearchQueryResult> search(
-      final AuditLogServices auditLogServices, final AuditLogQuery query) {
+      final String physicalTenantId, final AuditLogQuery query) {
+    final var auditLogServices = serviceRegistry.auditLogServices(physicalTenantId);
     try {
       final var result =
           auditLogServices.search(query, authenticationProvider.getCamundaAuthentication());
