@@ -141,6 +141,7 @@ const VariablesTable: React.FC<Props> = ({
                         <ViewDocumentListButton
                           documents={documentResult.documents}
                           isLowerBound={documentResult.isLowerBound}
+                          variableKey={variableKey}
                           variableName={name}
                         />
                       )}
