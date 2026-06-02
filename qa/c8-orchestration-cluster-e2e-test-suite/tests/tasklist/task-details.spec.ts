@@ -191,8 +191,22 @@ test.describe('task details page', () => {
     await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
 
     await taskPanelPage.openTask('JobWorker_user_task');
-    await expect(taskDetailsPage.completeTaskButton).toBeDisabled({
-      timeout: 60000,
+    // After the Zeebe task is completed it drops out of the "All open tasks"
+    // list, and the resulting reflow can deselect the just-clicked JobWorker
+    // task — leaving the details panel on "Pick a task to work on" with a stale
+    // (enabled) Complete Task button from the previous panel still mounted.
+    // Re-open the task until its details actually load (Assign to me visible for
+    // the unassigned task), then assert the Complete Task button is disabled.
+    await waitForAssertion({
+      assertion: async () => {
+        await expect(taskDetailsPage.assignToMeButton).toBeVisible({
+          timeout: 60000,
+        });
+        await expect(taskDetailsPage.completeTaskButton).toBeDisabled();
+      },
+      onFailure: async () => {
+        await taskPanelPage.openTask('JobWorker_user_task');
+      },
     });
     await taskDetailsPage.clickAssignToMeButton();
     await expect(taskDetailsPage.completeTaskButton).toBeEnabled();
