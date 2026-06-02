@@ -53,6 +53,7 @@ import io.camunda.process.test.api.testCases.instructions.ImmutableCompleteJobAd
 import io.camunda.process.test.api.testCases.instructions.ImmutableCompleteJobInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableCompleteJobUserTaskListenerInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableCompleteUserTaskInstruction;
+import io.camunda.process.test.api.testCases.instructions.ImmutableConditionalBehaviorInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableCorrections;
 import io.camunda.process.test.api.testCases.instructions.ImmutableCreateProcessInstanceInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableEvaluateConditionalStartEventInstruction;
@@ -782,6 +783,63 @@ public class PojoCompatibilityTest {
             singleTestCase(
                 ImmutableSetTimeInstruction.builder()
                     .time(Instant.parse("2025-12-01T10:00:00Z"))
+                    .build())),
+        // ===== CONDITIONAL_BEHAVIOR =====
+        Arguments.of(
+            "conditional behavior: minimal",
+            singleTestCase(
+                ImmutableConditionalBehaviorInstruction.builder()
+                    .addConditions(
+                        ImmutableAssertElementInstanceInstruction.builder()
+                            .processInstanceSelector(
+                                ImmutableProcessInstanceSelector.builder()
+                                    .processDefinitionId("my-process")
+                                    .build())
+                            .elementSelector(
+                                ImmutableElementSelector.builder().elementId("task1").build())
+                            .state(ElementInstanceState.IS_ACTIVE)
+                            .build())
+                    .addActions(
+                        ImmutableCompleteUserTaskInstruction.builder()
+                            .userTaskSelector(
+                                ImmutableUserTaskSelector.builder().elementId("task1").build())
+                            .build())
+                    .build())),
+        Arguments.of(
+            "conditional behavior: chained conditions with action chain and name",
+            singleTestCase(
+                ImmutableConditionalBehaviorInstruction.builder()
+                    .name("auto-complete-review-task")
+                    .addConditions(
+                        ImmutableAssertElementInstancesInstruction.builder()
+                            .processInstanceSelector(
+                                ImmutableProcessInstanceSelector.builder()
+                                    .processDefinitionId("my-process")
+                                    .build())
+                            .addElementSelectors(
+                                ImmutableElementSelector.builder()
+                                    .elementId("Export_Happiness")
+                                    .build())
+                            .state(ElementInstancesState.IS_ACTIVE)
+                            .build())
+                    .addConditions(
+                        ImmutableAssertUserTaskInstruction.builder()
+                            .userTaskSelector(
+                                ImmutableUserTaskSelector.builder().elementId("task1").build())
+                            .state(UserTaskState.IS_CREATED)
+                            .build())
+                    .addActions(
+                        ImmutableCompleteUserTaskInstruction.builder()
+                            .userTaskSelector(
+                                ImmutableUserTaskSelector.builder().taskName("Review Task").build())
+                            .putVariables("approved", false)
+                            .build())
+                    .addActions(
+                        ImmutableCompleteUserTaskInstruction.builder()
+                            .userTaskSelector(
+                                ImmutableUserTaskSelector.builder().taskName("Review Task").build())
+                            .putVariables("approved", true)
+                            .build())
                     .build()))
         // add new instructions here
         );

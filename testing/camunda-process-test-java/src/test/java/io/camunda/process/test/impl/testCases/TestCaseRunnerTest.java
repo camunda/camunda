@@ -93,7 +93,8 @@ public class TestCaseRunnerTest {
 
     // when/then
     assertThatThrownBy(() -> runner.run(testCase))
-        .isInstanceOf(RuntimeException.class)
+        .isInstanceOf(TestCaseRunException.class)
+        .cause()
         .hasMessageContaining(
             "No handler found for instruction: %s", unknownInstruction.getClass());
   }
