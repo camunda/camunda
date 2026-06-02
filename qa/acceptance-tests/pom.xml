@@ -374,6 +374,11 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>org.mybatis</groupId>
+      <artifactId>mybatis</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-db-rdbms-schema</artifactId>
       <version>${project.version}</version>
