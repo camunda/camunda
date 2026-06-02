@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.analytics;
 
+import static io.camunda.exporter.analytics.AnalyticsAttributes.EVENT_HEARTBEAT;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.EVENT_PROCESS_INSTANCE_CREATED;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -55,6 +56,24 @@ class AnalyticsExporterOtelIT {
     COLLECTOR_LOGS.clear();
   }
 
+  /**
+   * Heartbeat fired during open() reaches the collector with the static cluster metadata attributes
+   * (broker / exporter / schema version).
+   */
+  @Test
+  void shouldDeliverHeartbeatWithVersionAttributes() {
+    // given / when — open() emits the heartbeat synchronously; close() flushes the batch
+    final var exporter = createExporter();
+    exporter.close();
+
+    // then
+    awaitCollectorLogs(
+        EVENT_HEARTBEAT,
+        AnalyticsAttributes.BROKER_VERSION.getKey(),
+        AnalyticsAttributes.EXPORTER_VERSION.getKey(),
+        AnalyticsAttributes.SCHEMA_VERSION.getKey());
+  }
+
   /** Events arrive at the collector with correct event name and attributes. */
   @Test
   void shouldDeliverEventsWithAttributes() {
@@ -101,10 +120,13 @@ class AnalyticsExporterOtelIT {
         .atMost(Duration.ofSeconds(30))
         .untilAsserted(
             () -> {
-              // Count total LogRecord entries
-              final var logRecordCount =
-                  COLLECTOR_LOGS.stream().filter(l -> l.contains("LogRecord #")).count();
-              assertThat(logRecordCount).isEqualTo(500);
+              // Count the PI-created records specifically — open() also fires a heartbeat which
+              // would otherwise inflate the total LogRecord count.
+              final var piCreatedCount =
+                  COLLECTOR_LOGS.stream()
+                      .filter(l -> l.contains("Str(" + EVENT_PROCESS_INSTANCE_CREATED + ")"))
+                      .count();
+              assertThat(piCreatedCount).isEqualTo(500);
 
               // Count export calls (each starts a "ScopeLogs" block)
               final var exportCount =
