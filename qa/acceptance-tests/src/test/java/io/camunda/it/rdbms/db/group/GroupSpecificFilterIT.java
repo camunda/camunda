@@ -44,13 +44,14 @@ public class GroupSpecificFilterIT {
 
   @Autowired private RdbmsService rdbmsService;
 
-  @Autowired private GroupDbReader groupReader;
+  private GroupDbReader groupReader;
 
   private RdbmsWriters rdbmsWriters;
 
   @BeforeEach
   public void beforeAll() {
     rdbmsWriters = rdbmsService.createWriter(0L);
+    groupReader = rdbmsService.getGroupReader();
   }
 
   @Test

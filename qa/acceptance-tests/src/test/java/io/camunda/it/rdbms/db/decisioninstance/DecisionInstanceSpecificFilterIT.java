@@ -43,13 +43,14 @@ public class DecisionInstanceSpecificFilterIT {
 
   @Autowired private RdbmsService rdbmsService;
 
-  @Autowired private DecisionInstanceDbReader decisionInstanceReader;
+  private DecisionInstanceDbReader decisionInstanceReader;
 
   private RdbmsWriters rdbmsWriters;
 
   @BeforeEach
   public void beforeAll() {
     rdbmsWriters = rdbmsService.createWriter(0L);
+    decisionInstanceReader = rdbmsService.getDecisionInstanceReader();
 
     final var decisionDefinitionKey = nextKey();
     final var decisionDefinition =

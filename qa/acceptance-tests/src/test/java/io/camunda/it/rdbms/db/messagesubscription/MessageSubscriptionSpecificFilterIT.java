@@ -50,13 +50,14 @@ public class MessageSubscriptionSpecificFilterIT {
 
   @Autowired private RdbmsService rdbmsService;
 
-  @Autowired private MessageSubscriptionDbReader messageSubscriptionDbReader;
+  private MessageSubscriptionDbReader messageSubscriptionDbReader;
 
   private RdbmsWriters rdbmsWriters;
 
   @BeforeEach
   public void beforeAll() {
     rdbmsWriters = rdbmsService.createWriter(0L);
+    messageSubscriptionDbReader = rdbmsService.getMessageSubscriptionReader();
   }
 
   @ParameterizedTest
