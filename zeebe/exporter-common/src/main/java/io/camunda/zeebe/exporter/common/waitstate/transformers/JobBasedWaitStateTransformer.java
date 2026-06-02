@@ -14,16 +14,8 @@ import io.camunda.zeebe.exporter.common.waitstate.WaitStateTransformer;
 import io.camunda.zeebe.exporter.common.waitstate.WaitStateTransformerConfig;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
-import java.util.HashMap;
-import java.util.Map;
 
 public class JobBasedWaitStateTransformer implements WaitStateTransformer<JobRecordValue> {
-
-  public static final String DETAIL_JOB_KEY = "jobKey";
-  public static final String DETAIL_JOB_TYPE = "jobType";
-  public static final String DETAIL_JOB_KIND = "jobKind";
-  public static final String DETAIL_LISTENER_EVENT_TYPE = "listenerEventType";
-  public static final String DETAIL_RETRIES = "retries";
 
   @Override
   public WaitStateTransformerConfig config() {
@@ -33,14 +25,14 @@ public class JobBasedWaitStateTransformer implements WaitStateTransformer<JobRec
   @Override
   public void extract(final Record<JobRecordValue> record, final WaitStateEntry entry) {
     final JobRecordValue value = record.getValue();
-
-    final Map<String, Object> details = new HashMap<>();
-    details.put(DETAIL_JOB_KEY, record.getKey());
-    details.put(DETAIL_JOB_TYPE, value.getType());
-    details.put(DETAIL_JOB_KIND, value.getJobKind().name());
-    details.put(DETAIL_LISTENER_EVENT_TYPE, value.getJobListenerEventType().name());
-    details.put(DETAIL_RETRIES, value.getRetries());
-
-    entry.setElementType(value.getElementType()).setDetails(details);
+    entry
+        .setElementType(value.getElementType())
+        .setDetails(
+            new JobWaitStateDetails(
+                record.getKey(),
+                value.getType(),
+                value.getJobKind(),
+                value.getJobListenerEventType(),
+                value.getRetries()));
   }
 }

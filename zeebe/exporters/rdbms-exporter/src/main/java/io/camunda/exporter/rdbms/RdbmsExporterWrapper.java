@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.rdbms;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
@@ -59,6 +60,8 @@ import io.camunda.exporter.rdbms.handlers.batchoperation.ProcessInstanceCancella
 import io.camunda.exporter.rdbms.handlers.batchoperation.ProcessInstanceHistoryDeletionBatchOperationExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.ProcessInstanceMigrationBatchOperationExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.ProcessInstanceModificationBatchOperationExportHandler;
+import io.camunda.exporter.rdbms.handlers.waitstate.WaitStateAddHandler;
+import io.camunda.exporter.rdbms.handlers.waitstate.WaitStateRemoveHandler;
 import io.camunda.exporter.rdbms.replication.LsnReplicationControllerFactory;
 import io.camunda.exporter.rdbms.replication.ReplicationControllerFactory;
 import io.camunda.search.entities.BatchOperationType;
@@ -67,6 +70,7 @@ import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformerRegistry;
+import io.camunda.zeebe.exporter.common.waitstate.transformers.WaitStateTransformerRegistry;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.VisibleForTesting;
@@ -299,6 +303,8 @@ public class RdbmsExporterWrapper implements Exporter {
     if (config.getAuditLog().isEnabled()) {
       registerAuditLogHandlers(rdbmsWriters, builder, config, partitionId);
     }
+
+    registerWaitStateHandlers(rdbmsWriters, builder);
   }
 
   private void createBatchOperationHandlers(
@@ -374,5 +380,21 @@ public class RdbmsExporterWrapper implements Exporter {
                     vendorDatabaseProperties,
                     transformer,
                     config.getAuditLog())));
+  }
+
+  private void registerWaitStateHandlers(final RdbmsWriters rdbmsWriters, final Builder builder) {
+    final var waitStateWriter = rdbmsWriters.getWaitStateWriter();
+    final var objectMapper = new ObjectMapper();
+
+    WaitStateTransformerRegistry.createAllTransformers()
+        .forEach(
+            transformer -> {
+              builder.withHandler(
+                  transformer.config().valueType(),
+                  new WaitStateAddHandler<>(waitStateWriter, transformer, objectMapper));
+              builder.withHandler(
+                  transformer.config().valueType(),
+                  new WaitStateRemoveHandler<>(waitStateWriter, transformer));
+            });
   }
 }

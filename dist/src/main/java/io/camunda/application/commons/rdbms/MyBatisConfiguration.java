@@ -49,6 +49,7 @@ import io.camunda.db.rdbms.sql.UsageMetricTUMapper;
 import io.camunda.db.rdbms.sql.UserMapper;
 import io.camunda.db.rdbms.sql.UserTaskMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
+import io.camunda.db.rdbms.sql.WaitStateMapper;
 import io.camunda.db.rdbms.write.RdbmsMapperBundle;
 import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
@@ -417,6 +418,12 @@ public class MyBatisConfiguration {
   public MapperFactoryBean<DeployedResourceMapper> resourceMapper(
       final SqlSessionFactory sqlSessionFactory) {
     return createMapperFactoryBean(sqlSessionFactory, DeployedResourceMapper.class);
+  }
+
+  @Bean
+  public MapperFactoryBean<WaitStateMapper> waitStateMapper(
+      final SqlSessionFactory sqlSessionFactory) {
+    return createMapperFactoryBean(sqlSessionFactory, WaitStateMapper.class);
   }
 
   private <T> MapperFactoryBean<T> createMapperFactoryBean(

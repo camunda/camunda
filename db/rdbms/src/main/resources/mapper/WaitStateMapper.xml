@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.camunda.db.rdbms.sql.WaitStateMapper">
+
+  <resultMap id="waitStateResultMap" type="io.camunda.db.rdbms.write.domain.WaitStateDbModel">
+    <constructor>
+      <idArg column="WAIT_STATE_KEY" javaType="java.lang.Long"/>
+      <arg column="ROOT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
+      <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
+      <arg column="ELEMENT_INSTANCE_KEY" javaType="java.lang.Long"/>
+      <arg column="ELEMENT_ID" javaType="java.lang.String"/>
+      <arg column="ELEMENT_TYPE" javaType="java.lang.String"/>
+      <arg column="WAIT_STATE_TYPE" javaType="java.lang.String"/>
+      <arg column="DETAILS" javaType="java.lang.String"/>
+      <arg column="TENANT_ID" javaType="java.lang.String"/>
+      <arg column="PARTITION_ID" javaType="java.lang.Integer"/>
+    </constructor>
+  </resultMap>
+
+  <select id="findOne" parameterType="java.lang.Long"
+    resultMap="io.camunda.db.rdbms.sql.WaitStateMapper.waitStateResultMap">
+    SELECT WAIT_STATE_KEY, ROOT_PROCESS_INSTANCE_KEY, PROCESS_INSTANCE_KEY, ELEMENT_INSTANCE_KEY,
+           ELEMENT_ID, ELEMENT_TYPE, WAIT_STATE_TYPE, DETAILS, TENANT_ID, PARTITION_ID
+    FROM ${prefix}WAIT_STATE
+    WHERE WAIT_STATE_KEY = #{waitStateKey}
+  </select>
+
+  <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.WaitStateDbModel">
+    INSERT INTO ${prefix}WAIT_STATE (WAIT_STATE_KEY, ROOT_PROCESS_INSTANCE_KEY, PROCESS_INSTANCE_KEY,
+                                     ELEMENT_INSTANCE_KEY, ELEMENT_ID, ELEMENT_TYPE, WAIT_STATE_TYPE,
+                                     DETAILS, TENANT_ID, PARTITION_ID)
+    VALUES (#{waitStateKey}, #{rootProcessInstanceKey}, #{processInstanceKey},
+            #{elementInstanceKey}, #{elementId}, #{elementType}, #{waitStateType},
+            #{details, jdbcType=CLOB}, #{tenantId}, #{partitionId})
+  </insert>
+
+  <delete id="delete" parameterType="java.lang.Long">
+    DELETE
+    FROM ${prefix}WAIT_STATE
+    WHERE WAIT_STATE_KEY = #{waitStateKey}
+  </delete>
+
+</mapper>

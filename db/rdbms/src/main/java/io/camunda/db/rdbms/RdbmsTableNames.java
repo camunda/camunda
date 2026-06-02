@@ -68,6 +68,7 @@ public final class RdbmsTableNames {
           "USER_TASK",
           "USER_",
           "VARIABLE",
+          "WAIT_STATE",
           "WEB_SESSION",
           "RDBMS_SCHEMA_VERSION");
 

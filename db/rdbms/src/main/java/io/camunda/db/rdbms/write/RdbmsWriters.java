@@ -30,6 +30,7 @@ import io.camunda.db.rdbms.sql.UsageMetricMapper;
 import io.camunda.db.rdbms.sql.UsageMetricTUMapper;
 import io.camunda.db.rdbms.sql.UserTaskMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
+import io.camunda.db.rdbms.sql.WaitStateMapper;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.service.AgentInstanceWriter;
 import io.camunda.db.rdbms.write.service.AuditLogWriter;
@@ -65,6 +66,7 @@ import io.camunda.db.rdbms.write.service.UsageMetricWriter;
 import io.camunda.db.rdbms.write.service.UserTaskWriter;
 import io.camunda.db.rdbms.write.service.UserWriter;
 import io.camunda.db.rdbms.write.service.VariableWriter;
+import io.camunda.db.rdbms.write.service.WaitStateWriter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -107,7 +109,8 @@ public class RdbmsWriters {
       final CorrelatedMessageSubscriptionMapper correlatedMessageSubscriptionMapper,
       final ClusterVariableMapper clusterVariableMapper,
       final HistoryDeletionMapper historyDeletionMapper,
-      final AgentInstanceMapper agentInstanceMapper) {
+      final AgentInstanceMapper agentInstanceMapper,
+      final WaitStateMapper waitStateMapper) {
     this.executionQueue = executionQueue;
     this.exporterPositionService = exporterPositionService;
     this.vendorDatabaseProperties = vendorDatabaseProperties;
@@ -184,6 +187,7 @@ public class RdbmsWriters {
     writers.put(
         AgentInstanceWriter.class,
         new AgentInstanceWriter(executionQueue, agentInstanceMapper, vendorDatabaseProperties));
+    writers.put(WaitStateWriter.class, new WaitStateWriter(executionQueue));
   }
 
   public AuthorizationWriter getAuthorizationWriter() {
@@ -192,6 +196,10 @@ public class RdbmsWriters {
 
   public AuditLogWriter getAuditLogWriter() {
     return getWriter(AuditLogWriter.class);
+  }
+
+  public WaitStateWriter getWaitStateWriter() {
+    return getWriter(WaitStateWriter.class);
   }
 
   public DecisionDefinitionWriter getDecisionDefinitionWriter() {

@@ -7,11 +7,6 @@
  */
 package io.camunda.zeebe.exporter.common.waitstate.transformers;
 
-import static io.camunda.zeebe.exporter.common.waitstate.transformers.JobBasedWaitStateTransformer.DETAIL_JOB_KEY;
-import static io.camunda.zeebe.exporter.common.waitstate.transformers.JobBasedWaitStateTransformer.DETAIL_JOB_KIND;
-import static io.camunda.zeebe.exporter.common.waitstate.transformers.JobBasedWaitStateTransformer.DETAIL_JOB_TYPE;
-import static io.camunda.zeebe.exporter.common.waitstate.transformers.JobBasedWaitStateTransformer.DETAIL_LISTENER_EVENT_TYPE;
-import static io.camunda.zeebe.exporter.common.waitstate.transformers.JobBasedWaitStateTransformer.DETAIL_RETRIES;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.exporter.common.waitstate.WaitStateEntry.WaitStateType;
@@ -76,12 +71,13 @@ class JobBasedWaitStateTransformerTest {
     assertThat(entry.getElementType()).isEqualTo(BpmnElementType.SERVICE_TASK);
 
     // then — job-specific details
-    assertThat(entry.getDetails())
-        .containsEntry(DETAIL_JOB_KEY, 999L)
-        .containsEntry(DETAIL_JOB_TYPE, "payment-service")
-        .containsEntry(DETAIL_JOB_KIND, JobKind.BPMN_ELEMENT.name())
-        .containsEntry(DETAIL_LISTENER_EVENT_TYPE, JobListenerEventType.UNSPECIFIED.name())
-        .containsEntry(DETAIL_RETRIES, 3);
+    assertThat(entry.getDetails()).isInstanceOf(JobWaitStateDetails.class);
+    final var details = (JobWaitStateDetails) entry.getDetails();
+    assertThat(details.jobKey()).isEqualTo(999L);
+    assertThat(details.jobType()).isEqualTo("payment-service");
+    assertThat(details.jobKind()).isEqualTo(JobKind.BPMN_ELEMENT);
+    assertThat(details.listenerEventType()).isEqualTo(JobListenerEventType.UNSPECIFIED);
+    assertThat(details.retries()).isEqualTo(3);
   }
 
   @Test

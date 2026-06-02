@@ -35,6 +35,7 @@ import io.camunda.db.rdbms.sql.UsageMetricMapper;
 import io.camunda.db.rdbms.sql.UsageMetricTUMapper;
 import io.camunda.db.rdbms.sql.UserTaskMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
+import io.camunda.db.rdbms.sql.WaitStateMapper;
 import io.camunda.db.rdbms.write.queue.TransactionRunner;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.Map;
@@ -114,6 +115,7 @@ class RdbmsWriterFactoryTenantRoutingTest {
         mock(CorrelatedMessageSubscriptionMapper.class),
         mock(ClusterVariableMapper.class),
         mock(HistoryDeletionMapper.class),
-        mock(AgentInstanceMapper.class));
+        mock(AgentInstanceMapper.class),
+        mock(WaitStateMapper.class));
   }
 }

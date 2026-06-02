@@ -11,15 +11,15 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.WaitStateRelated;
-import java.util.Map;
 
 /**
  * Represents a single waiting-state entry exported from the engine.
  *
  * <p>A waiting state captures a process element that is currently paused, awaiting an external
  * signal to continue (a job worker, message correlation, user task completion, timer firing, etc.).
- * The {@link #details} map carries wait-state-specific attributes (e.g. job type, message name, due
- * date) and is serialized by each backend exporter according to its own schema.
+ * The {@link #details} field carries a {@link WaitStateDetails} implementation whose concrete type
+ * is specific to the wait-state kind (e.g. {@code JobWaitStateDetails}). Backend exporters are
+ * responsible for serialising it into their respective storage format.
  *
  * <p>Instances are built via {@link #of(Record)} and then enriched by a {@link
  * WaitStateTransformer} which sets the remaining fields.
@@ -32,7 +32,7 @@ public class WaitStateEntry {
   private String elementId;
   private BpmnElementType elementType;
   private WaitStateType waitStateType;
-  private Map<String, Object> details;
+  private WaitStateDetails details;
   private String tenantId;
   private long partitionId;
 
@@ -90,11 +90,11 @@ public class WaitStateEntry {
     return this;
   }
 
-  public Map<String, Object> getDetails() {
+  public WaitStateDetails getDetails() {
     return details;
   }
 
-  public WaitStateEntry setDetails(final Map<String, Object> details) {
+  public WaitStateEntry setDetails(final WaitStateDetails details) {
     this.details = details;
     return this;
   }

@@ -48,6 +48,7 @@ import io.camunda.db.rdbms.read.service.UsageMetricsDbReader;
 import io.camunda.db.rdbms.read.service.UserDbReader;
 import io.camunda.db.rdbms.read.service.UserTaskDbReader;
 import io.camunda.db.rdbms.read.service.VariableDbReader;
+import io.camunda.db.rdbms.read.service.WaitStateDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig.Builder;
 import io.camunda.db.rdbms.write.RdbmsWriterFactory;
@@ -72,6 +73,7 @@ public class RdbmsService {
   private final ProcessInstanceDbReader processInstanceReader;
   private final VariableDbReader variableReader;
   private final ClusterVariableDbReader clusterVariableDbReader;
+  private final WaitStateDbReader waitStateReader;
   private final RoleDbReader roleReader;
   private final RoleMemberDbReader roleMemberReader;
   private final TenantDbReader tenantReader;
@@ -120,6 +122,7 @@ public class RdbmsService {
       final ProcessInstanceDbReader processInstanceReader,
       final VariableDbReader variableReader,
       final ClusterVariableDbReader clusterVariableDbReader,
+      final WaitStateDbReader waitStateReader,
       final RoleDbReader roleReader,
       final RoleMemberDbReader roleMemberReader,
       final TenantDbReader tenantReader,
@@ -167,6 +170,7 @@ public class RdbmsService {
     this.tenantReader = tenantReader;
     this.variableReader = variableReader;
     this.clusterVariableDbReader = clusterVariableDbReader;
+    this.waitStateReader = waitStateReader;
     this.roleReader = roleReader;
     this.tenantMemberReader = tenantMemberReader;
     this.userReader = userReader;
@@ -255,6 +259,10 @@ public class RdbmsService {
 
   public ClusterVariableDbReader getClusterVariableReader() {
     return clusterVariableDbReader;
+  }
+
+  public WaitStateDbReader getWaitStateReader() {
+    return waitStateReader;
   }
 
   public RoleDbReader getRoleReader() {
