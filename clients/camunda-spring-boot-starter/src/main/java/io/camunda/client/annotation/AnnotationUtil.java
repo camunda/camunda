@@ -17,7 +17,6 @@ package io.camunda.client.annotation;
 
 import static java.util.Optional.ofNullable;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.client.annotation.Deployment.Deployments;
 import io.camunda.client.annotation.value.DeploymentValue;
 import io.camunda.client.annotation.value.DocumentValue;
@@ -32,7 +31,6 @@ import io.camunda.client.bean.ParameterInfo;
 import io.camunda.client.jobhandling.DocumentContext;
 import io.camunda.client.jobhandling.parameter.KeyTargetType;
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Field;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -46,7 +44,6 @@ import java.util.function.Function;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.util.ReflectionUtils;
 
 public class AnnotationUtil {
   private static final Logger LOG = LoggerFactory.getLogger(AnnotationUtil.class);
@@ -107,10 +104,6 @@ public class AnnotationUtil {
         methodInfo.getParametersFilteredByAnnotation(
             io.camunda.zeebe.spring.client.annotation.Variable.class));
     return result;
-  }
-
-  public static List<ParameterInfo> getDocumentParameters(final MethodInfo methodInfo) {
-    return methodInfo.getParametersFilteredByAnnotation(Document.class);
   }
 
   public static List<ParameterInfo> getVariablesAsTypeParameters(final MethodInfo methodInfo) {
@@ -201,45 +194,6 @@ public class AnnotationUtil {
               annotation.maxRetries()));
     }
     return Optional.empty();
-  }
-
-  private static boolean usesActivatedJob(final MethodInfo methodInfo) {
-    return methodInfo.getParameters().stream()
-        .anyMatch(p -> p.getParameter().getType().isAssignableFrom(ActivatedJob.class));
-  }
-
-  public static List<String> usedVariableNames(final MethodInfo methodInfo) {
-    final List<String> result = new ArrayList<>();
-    final List<ParameterInfo> parameters = getVariablesAsTypeParameters(methodInfo);
-    parameters.forEach(
-        pi ->
-            ReflectionUtils.doWithFields(
-                pi.getParameter().getType(), f -> result.add(extractFieldName(f))));
-    result.addAll(
-        getVariableParameters(methodInfo).stream()
-            .map(AnnotationUtil::getVariableValue)
-            .filter(Optional::isPresent)
-            .map(Optional::get)
-            .map(VariableValue::getName)
-            .toList());
-    result.addAll(
-        getDocumentParameters(methodInfo).stream()
-            .map(AnnotationUtil::getDocumentValue)
-            .filter(Optional::isPresent)
-            .map(Optional::get)
-            .map(DocumentValue::getName)
-            .toList());
-    return result.stream().distinct().toList();
-  }
-
-  private static String extractFieldName(final Field field) {
-    if (field.isAnnotationPresent(JsonProperty.class)) {
-      final String value = field.getAnnotation(JsonProperty.class).value();
-      if (StringUtils.isNotBlank(value)) {
-        return value;
-      }
-    }
-    return field.getName();
   }
 
   public static Optional<VariableValue> getVariableValue(final ParameterInfo parameterInfo) {
