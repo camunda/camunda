@@ -20,7 +20,7 @@
     "eslint-config-prettier": "^10.0.2",
     "eslint-plugin-license-header": "0.9.0",
     "eslint-plugin-playwright": "2.7.1",
-    "eslint-plugin-prettier": "5.5.5",
+    "eslint-plugin-prettier": "5.5.6",
     "husky": "^9.1.7",
     "lint-staged": "^16.0.0",
     "playwright-slack-report": "1.1.110",
