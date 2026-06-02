@@ -577,7 +577,10 @@ Realistically that is limited to: the runner host itself died (out of memory or 
 ### Constraints
 
 - **Never recommend re-running the workflow as the outcome** — if flakiness is the cause, the resilience goes into the file, not into a human instruction.
-- **No `continue-on-error: true` and no `|| true`** — never suppress a failing step. Fix the root cause so the step legitimately passes or surfaces a real test result.
+- **`continue-on-error: true` is absolutely forbidden — with no exceptions and no rationalisations.** This includes post-test reporting steps (TestRail, artifact upload, Slack notification). The reasoning "it is only reporting, not a gate" is exactly the rationalisation that must be rejected: if a post-test step fails, that failure is a defect in our code or configuration that deserves a real fix. `continue-on-error` silences the failure rather than fixing it, which means the same bug runs again tomorrow and the day after.
+  - **TestRail `add_case` failure** → the step fails because something in *our* code caused trcli to error (e.g. a test case title whose derived `custom_automation_id` exceeds 250 characters). Find the offending test title in the spec files and shorten it. That is the fix.
+  - **TestRail auth / network failure** → add a retry around the trcli call, or fix the credential configuration. Do not silence.
+  - **Any other post-test step** → find what our code does wrong and fix it. If you genuinely cannot find any code fix after thorough investigation, write `not-determined` — but `continue-on-error` is never a valid alternative.
 - **No skipping** — same absolute no-skip / no-fixme rule as the Nightly Fix Agent.
 - **`.github/workflows/` is always in scope** — the repo "Ask first" constraint applies to application libraries (`webapps-common/`, `webapp/client/`, `security/`), not to CI workflow files.
 - **Minimal diff** — fix only what is broken; no refactoring, no dependency bumps, no unrelated edits.
