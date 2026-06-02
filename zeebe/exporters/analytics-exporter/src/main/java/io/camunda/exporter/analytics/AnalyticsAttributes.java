@@ -82,6 +82,10 @@ public final class AnalyticsAttributes {
   public static final AttributeKey<String> SCHEMA_VERSION =
       AttributeKey.stringKey("camunda.schema.version");
 
+  // Exporter domain
+  public static final AttributeKey<String> EXPORTER_VERSION =
+      AttributeKey.stringKey("camunda.exporter.version");
+
   // Usage metrics
   public static final AttributeKey<String> USAGE_METRIC_EVENT_TYPE =
       AttributeKey.stringKey("camunda.usage_metric.event_type");

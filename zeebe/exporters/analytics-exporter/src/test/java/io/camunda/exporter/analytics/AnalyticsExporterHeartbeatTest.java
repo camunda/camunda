@@ -43,6 +43,8 @@ class AnalyticsExporterHeartbeatTest {
               assertThat(attrs)
                   .containsEntry(AnalyticsAttributes.EVENT_NAME, EVENT_HEARTBEAT)
                   .containsEntry(AnalyticsAttributes.BROKER_VERSION, VersionUtil.getVersion())
+                  .containsEntry(
+                      AnalyticsAttributes.EXPORTER_VERSION, AnalyticsExporterVersion.get())
                   .containsKey(AnalyticsAttributes.SCHEMA_VERSION);
               assertThat(attrs.get(AnalyticsAttributes.SCHEMA_VERSION)).asString().isNotBlank();
               assertThat(attrs)
