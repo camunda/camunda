@@ -131,11 +131,15 @@ jobs:
       - name: Print Docker logs before failing
         if: failure()
         run: |
+          # DATABASE must be set: the compose file declares the camunda service's
+          # depends_on as "${DATABASE}", so an unset DATABASE makes compose reject
+          # the project ("depends on undefined service \"\"") and these diagnostic
+          # logs never print. Match the value used by the Start Camunda step.
           if [[ "${{ inputs.branch }}" == "stable/8.7" ]]; then
-            docker compose logs tasklist
-            docker compose logs operate
+            DATABASE=elasticsearch docker compose logs tasklist
+            DATABASE=elasticsearch docker compose logs operate
           else
-            docker compose logs camunda
+            DATABASE=elasticsearch docker compose logs camunda
           fi
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
