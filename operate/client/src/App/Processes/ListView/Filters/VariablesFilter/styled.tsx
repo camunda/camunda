@@ -12,12 +12,21 @@ import {styles} from '@carbon/elements';
 import {IconContainer, IconButton} from 'modules/components/IconInput/styled';
 
 const ModalContent = styled.div`
+  position: relative;
   min-height: 350px;
+  overflow: hidden;
+
+  && {
+    margin-bottom: 0;
+  }
 `;
 
 const Description = styled.p`
-  margin: 0;
   ${styles.bodyShort01};
+
+  && {
+    margin: 0;
+  }
 `;
 
 const FilterRow = styled.div`
@@ -67,6 +76,13 @@ const EditorToolbar = styled.div`
   padding-bottom: var(--cds-spacing-03);
 `;
 
+const ConditionRowsScroll = styled.div`
+  max-height: clamp(7.5rem, calc(84vh - 22rem), 24rem);
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
+`;
+
 export {
   ModalContent,
   Description,
@@ -76,4 +92,5 @@ export {
   ConditionList,
   ConditionItem,
   EditorToolbar,
+  ConditionRowsScroll,
 };

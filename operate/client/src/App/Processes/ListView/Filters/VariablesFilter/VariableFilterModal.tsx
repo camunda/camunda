@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Fragment, lazy, Suspense, useEffect, useRef, useState} from 'react';
+import {lazy, Suspense, useEffect, useRef, useState} from 'react';
 import {Button, InlineNotification, Modal, Stack} from '@carbon/react';
 import {Add} from '@carbon/react/icons';
 import {Field, Form} from 'react-final-form';
@@ -24,7 +24,12 @@ import {
   type VariableCondition,
 } from 'modules/stores/variableFilter';
 import type {DraftCondition} from './constants';
-import {Description, EditorToolbar, ModalContent} from './styled';
+import {
+  ConditionRowsScroll,
+  Description,
+  EditorToolbar,
+  ModalContent,
+} from './styled';
 import {observer} from 'mobx-react-lite';
 
 const RichTextEditor = lazy(async () => {
@@ -241,39 +246,40 @@ const VariableFilterModal: React.FC = observer(() => {
                   </Description>
                   <FieldArray<DraftCondition> name="conditions">
                     {({fields}) => (
-                      <Stack gap={4}>
-                        {fields.map((fieldName, index) => (
-                          <Fragment key={fieldName}>
-                            <VariableFilterRow
-                              fieldName={fieldName}
-                              rowIndex={index}
-                              onDelete={() => fields.remove(index)}
-                              isDeleteHidden={fields.length === 1}
-                              onEditValue={(i) => {
-                                const val =
-                                  form.getState().values?.['conditions']?.[i]
-                                    ?.value ?? '';
-                                preEditValueRef.current = val;
-                                changeField(
-                                  `conditions[${i}].value`,
-                                  beautifyJSON(val),
-                                );
-                                setEditingRowIndex(i);
-                              }}
-                            />
-                            {index === (fields.length ?? 0) - 1 &&
-                              (fields.length ?? 0) >=
-                                SOFT_WARNING_THRESHOLD && (
-                                <InlineNotification
-                                  kind="info"
-                                  lowContrast
-                                  hideCloseButton
-                                  subtitle="Filtering by many conditions can be slow. Add conditions only if you need them."
-                                  role="status"
-                                />
-                              )}
-                          </Fragment>
-                        ))}
+                      <>
+                        <ConditionRowsScroll>
+                          <Stack gap={4}>
+                            {fields.map((fieldName, index) => (
+                              <VariableFilterRow
+                                key={fieldName}
+                                fieldName={fieldName}
+                                rowIndex={index}
+                                onDelete={() => fields.remove(index)}
+                                isDeleteHidden={fields.length === 1}
+                                onEditValue={(i) => {
+                                  const val =
+                                    form.getState().values?.['conditions']?.[i]
+                                      ?.value ?? '';
+                                  preEditValueRef.current = val;
+                                  changeField(
+                                    `conditions[${i}].value`,
+                                    beautifyJSON(val),
+                                  );
+                                  setEditingRowIndex(i);
+                                }}
+                              />
+                            ))}
+                          </Stack>
+                        </ConditionRowsScroll>
+                        {(fields.length ?? 0) >= SOFT_WARNING_THRESHOLD && (
+                          <InlineNotification
+                            kind="info"
+                            lowContrast
+                            hideCloseButton
+                            subtitle="Filtering by many conditions can be slow. Add conditions only if you need them."
+                            role="status"
+                          />
+                        )}
                         <Button
                           kind="ghost"
                           size="sm"
@@ -282,7 +288,7 @@ const VariableFilterModal: React.FC = observer(() => {
                         >
                           Add condition
                         </Button>
-                      </Stack>
+                      </>
                     )}
                   </FieldArray>
                 </Stack>
