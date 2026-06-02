@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.zeebe.LoadTesterApplication;
-import io.camunda.zeebe.metrics.StarterCounterMetricsDoc;
+import io.camunda.zeebe.metrics.StarterMetricsDoc;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -62,7 +62,7 @@ class StarterDurationLimitIT {
     // then — the run-finished gauge should be 1, proving the loop exited cleanly via the
     //        deadline (not via cancellation or an error path).
     final var runFinishedGauge =
-        meterRegistry.find(StarterCounterMetricsDoc.RUN_FINISHED.getName()).gauge();
+        meterRegistry.find(StarterMetricsDoc.RUN_FINISHED.getName()).gauge();
     assertThat(runFinishedGauge)
         .describedAs("starter.run.finished gauge should be registered")
         .isNotNull();
@@ -72,7 +72,7 @@ class StarterDurationLimitIT {
 
     // and — at least one start request was submitted, ruling out an immediate stop.
     final var counter =
-        meterRegistry.find(StarterCounterMetricsDoc.PROCESS_INSTANCES_STARTED.getName()).counter();
+        meterRegistry.find(StarterMetricsDoc.PROCESS_INSTANCES_STARTED.getName()).counter();
     assertThat(counter)
         .describedAs("starter.process.instances.started counter should be registered")
         .isNotNull();
