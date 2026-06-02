@@ -791,6 +791,11 @@ components:
           description: The kind of job.
           allOf:
             - $ref: 'jobs.yaml#/components/schemas/JobKindEnum'
+        listenerEventType:
+          description: The listener event type of the job (only set for execution listener and task listener jobs).
+          nullable: true
+          allOf:
+            - $ref: 'jobs.yaml#/components/schemas/JobListenerEventTypeEnum'
         retries:
           description: The number of retries remaining for the job.
           nullable: true

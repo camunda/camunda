@@ -13,6 +13,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.search.entities.JobEntity.JobKind;
+import io.camunda.search.entities.JobEntity.ListenerEventType;
 import io.camunda.search.entities.WaitStateEntity;
 import io.camunda.search.entities.WaitStateJobDetails;
 import io.camunda.search.entities.WaitStateMessageDetails;
@@ -60,7 +61,8 @@ public class ElementInstanceControllerTest extends RestControllerTest {
             "details": {
               "jobKey": "2251799813685252",
               "jobType": "payment-service",
-              "jobKind": "BPMN_ELEMENT"
+              "jobKind": "EXECUTION_LISTENER",
+              "listenerEventType": "START"
             }
           },
           {
@@ -105,7 +107,8 @@ public class ElementInstanceControllerTest extends RestControllerTest {
                   new WaitStateJobDetails.Builder()
                       .jobKey(2251799813685252L)
                       .jobType("payment-service")
-                      .jobKind(JobKind.BPMN_ELEMENT)
+                      .jobKind(JobKind.EXECUTION_LISTENER)
+                      .listenerEventType(ListenerEventType.START)
                       .build())
               .build(),
           new WaitStateEntity.Builder()

@@ -678,12 +678,17 @@ public final class SearchQueryResponseMapper {
               final var jobKey,
               final var jobType,
               final var jobKind,
+              final var listenerEventType,
               final var retries) -> {
         final var dtoDetails =
             JobWaitStateDetails.Builder.create()
                 .jobKey(keyToString(jobKey))
                 .jobType(jobType)
                 .jobKind(JobKindEnum.fromValue(jobKind.name()))
+                .listenerEventType(
+                    listenerEventType == null
+                        ? null
+                        : JobListenerEventTypeEnum.fromValue(listenerEventType.name()))
                 .retries(retries)
                 .build();
         yield ElementInstanceWaitStateJobResult.Builder.create()
