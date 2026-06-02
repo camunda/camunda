@@ -327,16 +327,23 @@ jobs:
                 if [ "$conclusion" = "failure" ]; then
                   ref=$([ "$version" = "main" ] && echo "main" || echo "stable/${version}")
                   workflow_failures=$(echo "$workflow_failures" | jq \
-                    --arg v "$version" --arg ref "$ref" \
-                    '. += [{"version": $v, "ref": $ref}]')
+                    --arg v "$version" --arg ref "$ref" --arg t "$test_type" \
+                    '. += [{"version": $v, "ref": $ref, "test_type": $t}]')
                 fi
               fi
             done < <(jq -r 'to_entries[] | "\(.key)=\(.value)"' /tmp/run_ids.json)
-            # Deduplicate workflow_failures by version (keep unique versions)
-            workflow_failures=$(echo "$workflow_failures" | jq 'unique_by(.version)')
+            # Group workflow_failures by version, collecting all failing run types per version.
+            # Storing failing_types lets the dispatch attach only the run IDs that actually
+            # had workflow-level failures, avoiding spurious run IDs in the agent context.
+            workflow_failures=$(echo "$workflow_failures" | jq '
+              group_by(.version) | map({
+                version: .[0].version,
+                ref: .[0].ref,
+                failing_types: [.[].test_type]
+              })')
           fi
 
-          echo "Workflow-level failures (no test results): $(echo "$workflow_failures" | jq 'length')"
+          echo "Workflow-level failures (no failing tests extracted): $(echo "$workflow_failures" | jq 'length')"
 
           # Build dispatch payloads from test failures
           if [ -s /tmp/failures_normalized.json ]; then
@@ -385,11 +392,13 @@ jobs:
               ))
             | map(. + {
                 test_specs: [],
-                e2e_run_id:       ($run_ids[0][(.version + "/e2e")]       // ""),
-                api_es_run_id:    ($run_ids[0][(.version + "/api_es")]    // ""),
-                api_rdbms_run_id: ($run_ids[0][(.version + "/api_rdbms")] // "")
+                e2e_run_id:       (if (.failing_types | index("e2e"))       != null then ($run_ids[0][(.version + "/e2e")]       // "") else "" end),
+                api_es_run_id:    (if (.failing_types | index("api_es"))    != null then ($run_ids[0][(.version + "/api_es")]    // "") else "" end),
+                api_rdbms_run_id: (if (.failing_types | index("api_rdbms")) != null then ($run_ids[0][(.version + "/api_rdbms")] // "") else "" end)
               })
-            | ($test_dispatches + .) | .[0:$cap]
+            # workflow-level dispatches get their own cap so test-failure dispatches
+            # cannot crowd them out when the daily cap is already full
+            | ($test_dispatches + .[0:$cap])
           ' /tmp/dispatches_test.json > /tmp/dispatches.json
 
           echo "Dispatches planned: $(jq 'length' /tmp/dispatches.json)"
