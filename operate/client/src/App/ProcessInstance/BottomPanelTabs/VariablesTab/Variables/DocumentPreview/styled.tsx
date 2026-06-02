@@ -8,7 +8,7 @@
 
 import styled from 'styled-components';
 
-const PreviewImage = styled.img`
+const PreviewImg = styled.img`
   display: block;
   max-width: 100%;
   max-height: 80vh;
@@ -27,4 +27,4 @@ const PreviewJSONContainer = styled.div`
   min-height: 80vh;
 `;
 
-export {PreviewImage, PreviewPdf, PreviewJSONContainer};
+export {PreviewImg, PreviewPdf, PreviewJSONContainer};

@@ -59,7 +59,7 @@ const PreviewJson: React.FC<PreviewJsonProps> = ({document}) => {
       {isError && (
         <InlineNotification
           kind="error"
-          subtitle={`Failed to prepare JSON preview for document "${document.fileName}".`}
+          subtitle={`Failed to load JSON preview for "${document.fileName}".`}
           hideCloseButton
           lowContrast
         />
