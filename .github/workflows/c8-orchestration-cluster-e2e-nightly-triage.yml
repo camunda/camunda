@@ -319,7 +319,8 @@ jobs:
               has_test_failure=$(echo "$jq_failures_normalized" | jq -r --arg v "$version" --arg t "$test_type" \
                 '[.[] | select(.version == $v and (
                     (.test_type == "e2e"  and $t == "e2e") or
-                    (.test_type == "api"  and ($t == "api_es" or $t == "api_rdbms"))
+                    (.test_type == "api"  and $t == "api_es"    and (.database == "elasticsearch" or .database == null or .database == "")) or
+                    (.test_type == "api"  and $t == "api_rdbms" and (.database != null and .database != "" and .database != "elasticsearch"))
                   ))] | length > 0' 2>/dev/null || echo false)
               if [ "$has_test_failure" = "false" ]; then
                 conclusion=$(gh run view "$run_id" --repo "$REPO" --json conclusion --jq '.conclusion' 2>/dev/null || echo "unknown")
@@ -485,7 +486,8 @@ jobs:
               test_count=$(jq --arg v "$rv" --arg t "$rt" '[.[] | select(
                 .version == $v and (
                   (.test_type == "e2e"  and $t == "e2e") or
-                  (.test_type == "api"  and ($t == "api_es" or $t == "api_rdbms"))
+                  (.test_type == "api"  and $t == "api_es"    and (.database == "elasticsearch" or .database == null or .database == "")) or
+                  (.test_type == "api"  and $t == "api_rdbms" and (.database != null and .database != "" and .database != "elasticsearch"))
                 ))] | length' /tmp/failures_normalized.json 2>/dev/null || echo 0)
               if [ "$test_count" -gt 0 ]; then
                 failing_list="${failing_list}"$'\n'"  :x: <${rurl}|${rtitle}> — ${test_count} test failure(s)"

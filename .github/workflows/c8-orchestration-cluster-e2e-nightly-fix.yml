@@ -495,7 +495,7 @@ jobs:
           elif [ "$category" = "not-determined" ]; then
             icon=":question:"; summary="Could not determine a fix — manual investigation required"
           else
-            icon=":information_source:"; summary="No changes required"
+            icon=":warning:"; summary="No fix applied — manual investigation required"
           fi
 
           text="${icon} *${VERSION}* fix agent — ${summary}\n<${RUN_URL}|Agent run ↗>"
