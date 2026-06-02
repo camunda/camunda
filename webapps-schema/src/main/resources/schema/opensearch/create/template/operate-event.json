@@ -112,6 +112,10 @@
       },
       "inboundConnectorType": {
         "type": "keyword"
+      },
+      "inputSpecification": {
+        "type": "object",
+        "enabled": false
       }
 		}
 	}

@@ -16,6 +16,7 @@ import static io.camunda.webapps.schema.descriptors.template.MessageSubscription
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.INBOUND_CONNECTOR_TYPE;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.INCIDENT_ERROR_MSG;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.INCIDENT_ERROR_TYPE;
+import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.INPUT_SPECIFICATION;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.JOB_CUSTOM_HEADERS;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.JOB_KEY;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.JOB_RETRIES;
@@ -35,6 +36,7 @@ import static io.camunda.webapps.schema.descriptors.template.MessageSubscription
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.messagesubscription.EventSourceType;
 import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionEntity;
+import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionEntity.InputSpecItem;
 import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionState;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
@@ -44,6 +46,7 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.util.modelreader.ProcessModelReader;
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public abstract class AbstractEventHandler<R extends RecordValue>
@@ -106,6 +109,7 @@ public abstract class AbstractEventHandler<R extends RecordValue>
     jsonMap.put(TOOL_PROPERTIES, entity.getToolProperties());
     jsonMap.put(TOOL_NAME, entity.getToolName());
     jsonMap.put(INBOUND_CONNECTOR_TYPE, entity.getInboundConnectorType());
+    jsonMap.put(INPUT_SPECIFICATION, entity.getInputSpecification());
     jsonMap.put(positionFieldName, positionFieldValue);
     if (entity.getMetadata() != null) {
       final Map<String, Object> metadataMap = new HashMap<>();
@@ -158,6 +162,25 @@ public abstract class AbstractEventHandler<R extends RecordValue>
           .setToolProperties(
               ProcessModelReader.extractExtensionProperties(
                   ext, extensionPropertyConfig.getToolPropertiesPrefix()));
+
+      final var cachedSpecs =
+          cached
+              .map(CachedProcessEntity::elementInputSpecifications)
+              .map(m -> m.get(elementId))
+              .orElse(List.of());
+      if (!cachedSpecs.isEmpty()) {
+        entity.setInputSpecification(
+            cachedSpecs.stream()
+                .map(
+                    s ->
+                        new InputSpecItem()
+                            .setName(s.name())
+                            .setDescription(s.description())
+                            .setType(s.type())
+                            .setRequired(s.required())
+                            .setSchema(s.schema()))
+                .toList());
+      }
     }
   }
 }

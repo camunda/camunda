@@ -8,6 +8,7 @@
 package io.camunda.zeebe.exporter.common.utils;
 
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
+import io.camunda.zeebe.exporter.common.cache.process.CachedInputSpecItem;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration;
 import io.camunda.zeebe.model.bpmn.instance.CallActivity;
@@ -115,6 +116,8 @@ public final class ProcessCacheUtil {
       final var extensionProperties =
           ProcessModelReader.extractExtensionProperties(
               flowNodes, extensionPropertiesConfiguration.extensionPropertyFilter());
+      final var elementInputSpecifications =
+          toCachedInputSpecMap(reader.extractAllElementInputSpecs());
       return new CachedProcessEntity(
           name,
           version,
@@ -122,9 +125,11 @@ public final class ProcessCacheUtil {
           callActivityIds,
           flowNodesMap,
           hasUserTasks,
-          extensionProperties);
+          extensionProperties,
+          elementInputSpecifications);
     }
-    return new CachedProcessEntity(name, version, versionTag, List.of(), Map.of(), true, Map.of());
+    return new CachedProcessEntity(
+        name, version, versionTag, List.of(), Map.of(), true, Map.of(), Map.of());
   }
 
   private static List<String> sortedCallActivityIds(final Collection<CallActivity> callActivities) {
@@ -152,5 +157,21 @@ public final class ProcessCacheUtil {
   private static Map<String, String> getFlowNodesMap(final Collection<FlowNode> flowNodes) {
     return flowNodes.stream()
         .collect(HashMap::new, (map, fn) -> map.put(fn.getId(), fn.getName()), HashMap::putAll);
+  }
+
+  public static Map<String, List<CachedInputSpecItem>> toCachedInputSpecMap(
+      final Map<String, List<ProcessModelReader.InputSpecItem>> source) {
+    final Map<String, List<CachedInputSpecItem>> result = new HashMap<>();
+    source.forEach(
+        (elementId, items) ->
+            result.put(
+                elementId,
+                items.stream()
+                    .map(
+                        i ->
+                            new CachedInputSpecItem(
+                                i.name(), i.description(), i.type(), i.required(), i.schema()))
+                    .toList()));
+    return result;
   }
 }

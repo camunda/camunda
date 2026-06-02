@@ -10,6 +10,7 @@ package io.camunda.gateway.mcp.processes;
 import io.camunda.gateway.mcp.config.server.ToolRepository;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
 import io.camunda.search.entities.MessageSubscriptionEntity;
+import io.camunda.search.entities.MessageSubscriptionEntity.InputSpecItem;
 import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionState;
 import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionType;
 import io.camunda.search.filter.Operation;
@@ -25,6 +26,8 @@ import io.modelcontextprotocol.server.McpStatelessServerFeatures.SyncToolSpecifi
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -32,6 +35,8 @@ import java.util.UUID;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
 import org.jspecify.annotations.NonNull;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.json.JsonMapper;
 
 public class ProcessesToolRepository implements ToolRepository {
 
@@ -69,6 +74,8 @@ public class ProcessesToolRepository implements ToolRepository {
           Tuple.of(PROPERTY_WHEN_TO_USE, LABEL_WHEN_TO_USE),
           Tuple.of(PROPERTY_WHEN_NOT_TO_USE, LABEL_WHEN_NOT_TO_USE),
           Tuple.of(PROPERTY_RESULTS, LABEL_RESULTS));
+
+  private static final JsonMapper OBJECT_MAPPER = JsonMapper.shared();
 
   private final MessageSubscriptionServices messageSubscriptionServices;
   private final MessageServices messageServices;
@@ -174,11 +181,54 @@ public class ProcessesToolRepository implements ToolRepository {
   private static Tool buildTool(final MessageSubscriptionEntity entity) {
     final var name = buildToolName(entity);
     final var description = buildDescription(entity.toolProperties());
-    return Tool.builder(name, Map.of("type", "object"))
+    return Tool.builder(name, buildInputSchema(entity))
         .title(entity.toolName())
         .description(description)
         .outputSchema(TOOL_OUTPUT_SCHEMA)
         .build();
+  }
+
+  private static Map<String, Object> buildInputSchema(final MessageSubscriptionEntity entity) {
+    final var specs = entity.inputSpecification();
+    if (specs.isEmpty()) {
+      return Map.of("type", "object");
+    }
+
+    final Map<String, Object> properties = new HashMap<>();
+    final List<String> required = new ArrayList<>();
+
+    for (final InputSpecItem spec : specs) {
+      if (spec.name() == null || spec.name().isBlank()) {
+        continue;
+      }
+
+      final Map<String, Object> propSchema = new HashMap<>();
+
+      if (spec.schema() != null && !spec.schema().isBlank()) {
+        try {
+          final Map<String, Object> schemaOverride =
+              OBJECT_MAPPER.readValue(spec.schema(), new TypeReference<>() {});
+          propSchema.putAll(schemaOverride);
+        } catch (final Exception ignored) {
+          // invalid schema override — proceed without it
+        }
+      }
+
+      final String jsonType =
+          spec.type() != null && !spec.description().isBlank() ? spec.type() : "string";
+      propSchema.put("type", jsonType);
+
+      if (spec.description() != null && !spec.description().isBlank()) {
+        propSchema.put("description", spec.description());
+      }
+
+      properties.put(spec.name(), propSchema);
+      if (spec.required()) {
+        required.add(spec.name());
+      }
+    }
+
+    return Map.of("type", "object", "properties", properties, "required", required);
   }
 
   private static @NonNull String buildToolName(final MessageSubscriptionEntity entity) {

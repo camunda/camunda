@@ -7,15 +7,6 @@
  */
 package io.camunda.zeebe.exporter.common.cache.process;
 
-import java.util.List;
-import java.util.Map;
-
-public record CachedProcessEntity(
-    String name,
-    int version,
-    String versionTag,
-    List<String> callElementIds,
-    Map<String, String> flowNodesMap,
-    boolean hasUserTasks,
-    Map<String, Map<String, String>> elementExtensionProperties,
-    Map<String, List<CachedInputSpecItem>> elementInputSpecifications) {}
+/** A single input parameter */
+public record CachedInputSpecItem(
+    String name, String description, String type, boolean required, String schema) {}

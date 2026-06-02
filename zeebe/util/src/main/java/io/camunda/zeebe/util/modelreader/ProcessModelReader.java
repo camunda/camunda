@@ -23,6 +23,7 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeUserTaskForm;
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +31,7 @@ import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
+import org.camunda.bpm.model.xml.instance.DomElement;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -146,6 +148,40 @@ public final class ProcessModelReader {
               return map;
             })
         .orElseGet(HashMap::new);
+  }
+
+  public Map<String, List<InputSpecItem>> extractAllElementInputSpecs() {
+    final Map<String, List<InputSpecItem>> result = new HashMap<>();
+    for (final FlowNode flowNode : extractFlowNodes()) {
+      final List<InputSpecItem> specs = extractInputSpecItems(flowNode);
+      if (!specs.isEmpty()) {
+        result.put(flowNode.getId(), specs);
+      }
+    }
+    return result;
+  }
+
+  private List<InputSpecItem> extractInputSpecItems(final BaseElement element) {
+    return getExtensionElements(element)
+        .map(ext -> ext.getDomElement().getChildElements())
+        .orElse(Collections.emptyList())
+        .stream()
+        .filter(child -> "externalParameters".equals(child.getLocalName()))
+        .flatMap(
+            extParams ->
+                extParams.getChildElements().stream()
+                    .filter(specEl -> "inputSpecification".equals(specEl.getLocalName()))
+                    .map(this::domElementToInputSpecItem))
+        .toList();
+  }
+
+  private InputSpecItem domElementToInputSpecItem(final DomElement el) {
+    return new InputSpecItem(
+        el.getAttribute(null, "name"),
+        el.getAttribute(null, "description"),
+        el.getAttribute(null, "type"),
+        Boolean.parseBoolean(el.getAttribute(null, "required")),
+        el.getAttribute(null, "schema"));
   }
 
   private boolean isPublic(final ZeebeProperties properties) {
@@ -268,4 +304,7 @@ public final class ProcessModelReader {
   public record EmbeddedForm(String id, String schema) {}
 
   public record StartFormLink(String formId, String formKey) {}
+
+  public record InputSpecItem(
+      String name, String description, String type, boolean required, String schema) {}
 }

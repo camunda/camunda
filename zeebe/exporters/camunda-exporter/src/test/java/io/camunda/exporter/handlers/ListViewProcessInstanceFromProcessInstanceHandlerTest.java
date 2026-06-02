@@ -259,6 +259,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
             new ArrayList<>(),
             Map.of(),
             false,
+            Map.of(),
             Map.of()));
 
     // when
@@ -363,12 +364,19 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
     processCache.put(
         processDefinitionKey1,
         new CachedProcessEntity(
-            null, 1, null, List.of("0", "1", "2", callActivityId1), Map.of(), false, Map.of()));
+            null,
+            1,
+            null,
+            List.of("0", "1", "2", callActivityId1),
+            Map.of(),
+            false,
+            Map.of(),
+            Map.of()));
 
     processCache.put(
         processDefinitionKey2,
         new CachedProcessEntity(
-            null, 1, null, List.of("0", callActivityId2), Map.of(), false, Map.of()));
+            null, 1, null, List.of("0", callActivityId2), Map.of(), false, Map.of(), Map.of()));
 
     // when called process 3rd level
     final ProcessInstanceForListViewEntity processInstanceForListViewEntity3 =

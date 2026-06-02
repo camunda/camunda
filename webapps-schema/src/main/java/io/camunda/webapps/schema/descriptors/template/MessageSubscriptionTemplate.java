@@ -112,6 +112,7 @@ public class MessageSubscriptionTemplate extends AbstractTemplateDescriptor
   public static final String MESSAGE_SUBSCRIPTION_TYPE = "messageSubscriptionType";
   public static final String TOOL_NAME = "toolName";
   public static final String INBOUND_CONNECTOR_TYPE = "inboundConnectorType";
+  public static final String INPUT_SPECIFICATION = "inputSpecification";
 
   public MessageSubscriptionTemplate(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);
