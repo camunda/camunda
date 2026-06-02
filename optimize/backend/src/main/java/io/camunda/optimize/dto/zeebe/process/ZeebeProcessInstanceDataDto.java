@@ -13,6 +13,7 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -30,6 +31,7 @@ public class ZeebeProcessInstanceDataDto implements ProcessInstanceRecordValue {
   private String elementId;
   private long processInstanceKey;
   private String tenantId;
+  private Set<String> tags;
 
   private final BpmnEventType bpmnEventType;
   private final List<List<Long>> elementInstancePath;
@@ -41,6 +43,7 @@ public class ZeebeProcessInstanceDataDto implements ProcessInstanceRecordValue {
     elementInstancePath = new ArrayList<>();
     processDefinitionPath = new ArrayList<>();
     callingElementPath = new ArrayList<>();
+    tags = new HashSet<>();
   }
 
   @Override
@@ -119,7 +122,7 @@ public class ZeebeProcessInstanceDataDto implements ProcessInstanceRecordValue {
 
   @Override
   public Set<String> getTags() {
-    return Set.of();
+    return tags;
   }
 
   public void setParentElementInstanceKey(final long parentElementInstanceKey) {
@@ -156,6 +159,10 @@ public class ZeebeProcessInstanceDataDto implements ProcessInstanceRecordValue {
 
   public void setBpmnProcessId(final String bpmnProcessId) {
     this.bpmnProcessId = bpmnProcessId;
+  }
+
+  public void setTags(final Set<String> tags) {
+    this.tags = tags;
   }
 
   protected boolean canEqual(final Object other) {
