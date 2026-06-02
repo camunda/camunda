@@ -24,6 +24,7 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
   private List<Long> elementInstanceKeys = new ArrayList<>();
   private String elementId;
   private long processInstanceKey;
+  private long rootProcessInstanceKey;
   private String bpmnProcessId;
   private long processDefinitionKey;
   private int processDefinitionVersion;
@@ -83,6 +84,15 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
 
   public void setProcessInstanceKey(final long processInstanceKey) {
     this.processInstanceKey = processInstanceKey;
+  }
+
+  @Override
+  public long getRootProcessInstanceKey() {
+    return rootProcessInstanceKey;
+  }
+
+  public void setRootProcessInstanceKey(final long rootProcessInstanceKey) {
+    this.rootProcessInstanceKey = rootProcessInstanceKey;
   }
 
   @Override
@@ -173,6 +183,24 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(
+        agentInstanceKey,
+        elementInstanceKey,
+        elementId,
+        processInstanceKey,
+        rootProcessInstanceKey,
+        bpmnProcessId,
+        processDefinitionKey,
+        processDefinitionVersion,
+        tenantId,
+        status,
+        definition,
+        metrics,
+        tools);
+  }
+
+  @Override
   public boolean equals(final Object o) {
     if (o == null || getClass() != o.getClass()) {
       return false;
@@ -181,6 +209,7 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
     return agentInstanceKey == that.agentInstanceKey
         && elementInstanceKey == that.elementInstanceKey
         && processInstanceKey == that.processInstanceKey
+        && rootProcessInstanceKey == that.rootProcessInstanceKey
         && processDefinitionKey == that.processDefinitionKey
         && processDefinitionVersion == that.processDefinitionVersion
         && Objects.equals(elementId, that.elementId)
@@ -193,23 +222,6 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
   }
 
   @Override
-  public int hashCode() {
-    return Objects.hash(
-        agentInstanceKey,
-        elementInstanceKey,
-        elementId,
-        processInstanceKey,
-        bpmnProcessId,
-        processDefinitionKey,
-        processDefinitionVersion,
-        tenantId,
-        status,
-        definition,
-        metrics,
-        tools);
-  }
-
-  @Override
   public String toString() {
     return "ZeebeAgentInstanceDataDto(agentInstanceKey="
         + agentInstanceKey
@@ -217,6 +229,8 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
         + elementId
         + ", processInstanceKey="
         + processInstanceKey
+        + ", rootProcessInstanceKey="
+        + rootProcessInstanceKey
         + ", bpmnProcessId="
         + bpmnProcessId
         + ", processDefinitionKey="
@@ -243,6 +257,7 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
     public static final String elementInstanceKey = "elementInstanceKey";
     public static final String elementId = "elementId";
     public static final String processInstanceKey = "processInstanceKey";
+    public static final String rootProcessInstanceKey = "rootProcessInstanceKey";
     public static final String bpmnProcessId = "bpmnProcessId";
     public static final String processDefinitionKey = "processDefinitionKey";
     public static final String processDefinitionVersion = "processDefinitionVersion";
@@ -289,6 +304,11 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
     }
 
     @Override
+    public int hashCode() {
+      return Objects.hash(model, provider, systemPrompt);
+    }
+
+    @Override
     public boolean equals(final Object o) {
       if (o == null || getClass() != o.getClass()) {
         return false;
@@ -297,11 +317,6 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
       return Objects.equals(model, that.model)
           && Objects.equals(provider, that.provider)
           && Objects.equals(systemPrompt, that.systemPrompt);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(model, provider, systemPrompt);
     }
 
     @Override
@@ -356,6 +371,11 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
     }
 
     @Override
+    public int hashCode() {
+      return Objects.hash(inputTokens, outputTokens, modelCalls, toolCalls);
+    }
+
+    @Override
     public boolean equals(final Object o) {
       if (o == null || getClass() != o.getClass()) {
         return false;
@@ -365,11 +385,6 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
           && outputTokens == that.outputTokens
           && modelCalls == that.modelCalls
           && toolCalls == that.toolCalls;
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(inputTokens, outputTokens, modelCalls, toolCalls);
     }
 
     @Override
@@ -422,6 +437,11 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
     }
 
     @Override
+    public int hashCode() {
+      return Objects.hash(name, description, elementId);
+    }
+
+    @Override
     public boolean equals(final Object o) {
       if (o == null || getClass() != o.getClass()) {
         return false;
@@ -430,11 +450,6 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
       return Objects.equals(name, that.name)
           && Objects.equals(description, that.description)
           && Objects.equals(elementId, that.elementId);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(name, description, elementId);
     }
 
     @Override

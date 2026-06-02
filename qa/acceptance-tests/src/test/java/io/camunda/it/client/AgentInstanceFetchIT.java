@@ -161,7 +161,7 @@ public class AgentInstanceFetchIT {
           softly
               .assertThat(response.getRootProcessInstanceKey())
               .as("rootProcessInstanceKey")
-              .isEqualTo(-1L);
+              .isEqualTo(processInstanceKey1);
           softly
               .assertThat(response.getProcessDefinitionId())
               .as("processDefinitionId")
@@ -218,7 +218,7 @@ public class AgentInstanceFetchIT {
           softly
               .assertThat(response.getRootProcessInstanceKey())
               .as("rootProcessInstanceKey")
-              .isEqualTo(-1L);
+              .isEqualTo(processInstanceKey2);
           softly
               .assertThat(response.getProcessDefinitionId())
               .as("processDefinitionId")

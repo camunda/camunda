@@ -34,6 +34,7 @@ public class AgentInstanceCreateTest {
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
   private static final String PROCESS_ID = "process";
+  private static final String CHILD_PROCESS_ID = "child-process";
   private static final String SERVICE_TASK_ID = "service-task";
   private static final String AD_HOC_SUB_PROCESS_ID = "ad-hoc-subprocess";
 
@@ -125,12 +126,53 @@ public class AgentInstanceCreateTest {
     assertThat(created.getValue().getElementId()).isEqualTo(customElementId);
     assertThat(created.getValue().getBpmnProcessId()).isEqualTo(PROCESS_ID);
     assertThat(created.getValue().getProcessInstanceKey()).isEqualTo(processInstanceKey);
+    assertThat(created.getValue().getRootProcessInstanceKey()).isEqualTo(processInstanceKey);
     assertThat(created.getValue().getProcessDefinitionKey())
         .isEqualTo(processMetadata.getProcessDefinitionKey());
     assertThat(created.getValue().getProcessDefinitionVersion())
         .isEqualTo(processMetadata.getVersion());
     assertThat(created.getValue().getTenantId())
         .isEqualTo(elementInstance.getValue().getTenantId());
+  }
+
+  @Test
+  public void shouldSetRootProcessInstanceKeyToTopLevelParentForCallActivity() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            "parent.bpmn",
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .callActivity("call", c -> c.zeebeProcessId(CHILD_PROCESS_ID))
+                .endEvent()
+                .done())
+        .withXmlResource(
+            "child.bpmn",
+            Bpmn.createExecutableProcess(CHILD_PROCESS_ID)
+                .startEvent()
+                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .endEvent()
+                .done())
+        .deploy();
+    final var rootProcessInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var childProcessInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withParentProcessInstanceKey(rootProcessInstanceKey)
+            .withElementType(BpmnElementType.PROCESS)
+            .getFirst();
+    final var childServiceTaskInstance = awaitServiceTaskActivated(childProcessInstance.getKey());
+
+    // when
+    final var created =
+        ENGINE.agentInstances().withElementInstanceKey(childServiceTaskInstance.getKey()).create();
+
+    // then
+    assertThat(created.getValue().getProcessInstanceKey()).isEqualTo(childProcessInstance.getKey());
+    assertThat(created.getValue().getRootProcessInstanceKey()).isEqualTo(rootProcessInstanceKey);
+    assertThat(created.getValue().getRootProcessInstanceKey())
+        .isNotEqualTo(childProcessInstance.getKey());
   }
 
   @Test

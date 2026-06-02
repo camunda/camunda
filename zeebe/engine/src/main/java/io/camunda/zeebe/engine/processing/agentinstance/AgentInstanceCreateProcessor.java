@@ -155,6 +155,7 @@ public final class AgentInstanceCreateProcessor
             .setElementId(elementInstanceValue.getElementId())
             .setBpmnProcessId(elementInstanceValue.getBpmnProcessId())
             .setProcessInstanceKey(elementInstanceValue.getProcessInstanceKey())
+            .setRootProcessInstanceKey(elementInstanceValue.getRootProcessInstanceKey())
             .setProcessDefinitionKey(elementInstanceValue.getProcessDefinitionKey())
             .setProcessDefinitionVersion(elementInstanceValue.getVersion())
             .setVersionTag(deployedProcess == null ? "" : deployedProcess.getVersionTag())

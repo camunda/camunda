@@ -4696,6 +4696,7 @@ final class JsonSerializableToJsonTest {
                       .setElementInstanceKeys(List.of(2251799813685248L, 2251799813685249L))
                       .setElementId("invoice-data-extraction-agent")
                       .setProcessInstanceKey(2251799813685248L)
+                      .setRootProcessInstanceKey(2251799813685248L)
                       .setBpmnProcessId("invoice-handling-process")
                       .setProcessDefinitionKey(2251799813685100L)
                       .setProcessDefinitionVersion(3)
@@ -4733,6 +4734,7 @@ final class JsonSerializableToJsonTest {
           "elementInstanceKeys": [2251799813685248, 2251799813685249],
           "elementId": "invoice-data-extraction-agent",
           "processInstanceKey": 2251799813685248,
+          "rootProcessInstanceKey": 2251799813685248,
           "bpmnProcessId": "invoice-handling-process",
           "processDefinitionKey": 2251799813685100,
           "processDefinitionVersion": 3,
@@ -4764,6 +4766,7 @@ final class JsonSerializableToJsonTest {
           "elementInstanceKeys": [],
           "elementId": "",
           "processInstanceKey": -1,
+          "rootProcessInstanceKey": -1,
           "bpmnProcessId": "",
           "processDefinitionKey": -1,
           "processDefinitionVersion": -1,

@@ -95,6 +95,7 @@ final class AgentInstanceHandlerTest {
     final long elementInstanceKey = 200L;
     final String elementId = "elementId";
     final long processInstanceKey = 300L;
+    final long rootProcessInstanceKey = 250L;
     final String bpmnProcessId = "myProcess";
     final long processDefinitionKey = 400L;
     final int processDefinitionVersion = 2;
@@ -124,6 +125,7 @@ final class AgentInstanceHandlerTest {
             .withElementInstanceKey(elementInstanceKey)
             .withElementId(elementId)
             .withProcessInstanceKey(processInstanceKey)
+            .withRootProcessInstanceKey(rootProcessInstanceKey)
             .withBpmnProcessId(bpmnProcessId)
             .withProcessDefinitionKey(processDefinitionKey)
             .withProcessDefinitionVersion(processDefinitionVersion)
@@ -175,7 +177,7 @@ final class AgentInstanceHandlerTest {
     assertThat(entity.getPartitionId()).isEqualTo(partitionId);
     assertThat(entity.getElementId()).isEqualTo(elementId);
     assertThat(entity.getProcessInstanceKey()).isEqualTo(processInstanceKey);
-    assertThat(entity.getRootProcessInstanceKey()).isEqualTo(-1L);
+    assertThat(entity.getRootProcessInstanceKey()).isEqualTo(rootProcessInstanceKey);
     assertThat(entity.getBpmnProcessId()).isEqualTo(bpmnProcessId);
     assertThat(entity.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
     assertThat(entity.getProcessDefinitionVersion()).isEqualTo(processDefinitionVersion);
@@ -409,6 +411,7 @@ final class AgentInstanceHandlerTest {
   private AgentInstanceRecordValue buildMinimalRecordValue(final long agentInstanceKey) {
     return ImmutableAgentInstanceRecordValue.builder()
         .withAgentInstanceKey(agentInstanceKey)
+        .withRootProcessInstanceKey(50L)
         .withStatus(io.camunda.zeebe.protocol.record.value.AgentInstanceStatus.IDLE)
         .withDefinition(
             ImmutableAgentInstanceDefinitionValue.builder()

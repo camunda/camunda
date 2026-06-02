@@ -36,7 +36,7 @@ public class AgentInstanceImpl implements AgentInstance {
   private final List<Tool> tools;
   private final String elementId;
   private final long processInstanceKey;
-  private final Long rootProcessInstanceKey;
+  private final long rootProcessInstanceKey;
   private final long processDefinitionKey;
   private final String processDefinitionId;
   private final int processDefinitionVersion;
@@ -59,7 +59,7 @@ public class AgentInstanceImpl implements AgentInstance {
             : Collections.emptyList();
     elementId = result.getElementId();
     processInstanceKey = Long.parseLong(result.getProcessInstanceKey());
-    rootProcessInstanceKey = ParseUtil.parseLongOrNull(result.getRootProcessInstanceKey());
+    rootProcessInstanceKey = Long.parseLong(result.getRootProcessInstanceKey());
     processDefinitionKey = Long.parseLong(result.getProcessDefinitionKey());
     processDefinitionId = result.getProcessDefinitionId();
     processDefinitionVersion = result.getProcessDefinitionVersion();
@@ -117,7 +117,7 @@ public class AgentInstanceImpl implements AgentInstance {
   }
 
   @Override
-  public Long getRootProcessInstanceKey() {
+  public long getRootProcessInstanceKey() {
     return rootProcessInstanceKey;
   }
 

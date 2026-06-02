@@ -65,9 +65,7 @@ public class AgentInstanceExportHandler implements RdbmsExportHandler<AgentInsta
             .agentInstanceKey(record.getKey())
             .elementId(value.getElementId())
             .processInstanceKey(value.getProcessInstanceKey())
-            // `rootProcessInstanceKey` is not yet available on the record — use -1 sentinel
-            // until https://github.com/camunda/camunda/issues/53236 lands, matching PR-2.
-            .rootProcessInstanceKey(-1L)
+            .rootProcessInstanceKey(value.getRootProcessInstanceKey())
             .processDefinitionId(value.getBpmnProcessId())
             .processDefinitionKey(value.getProcessDefinitionKey())
             .processDefinitionVersion(value.getProcessDefinitionVersion())

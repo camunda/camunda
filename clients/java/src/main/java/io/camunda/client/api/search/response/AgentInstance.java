@@ -50,7 +50,7 @@ public interface AgentInstance {
   long getProcessInstanceKey();
 
   /** Returns the key of the root process instance. */
-  Long getRootProcessInstanceKey();
+  long getRootProcessInstanceKey();
 
   /** Returns the key of the process definition associated with this agent instance. */
   long getProcessDefinitionKey();

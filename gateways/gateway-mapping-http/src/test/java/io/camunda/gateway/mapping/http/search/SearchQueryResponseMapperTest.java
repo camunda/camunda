@@ -17,6 +17,7 @@ import io.camunda.gateway.protocol.model.IncidentErrorTypeEnum;
 import io.camunda.gateway.protocol.model.IncidentStateEnum;
 import io.camunda.gateway.protocol.model.JobListenerEventTypeEnum;
 import io.camunda.gateway.protocol.model.JobSearchQueryResult;
+import io.camunda.search.entities.AgentInstanceEntity;
 import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.AuditLogEntity.AuditLogActorType;
 import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
@@ -743,6 +744,38 @@ class SearchQueryResponseMapperTest {
 
     // then
     assertThat(response.getRootProcessInstanceKey()).isNull();
+  }
+
+  @Test
+  void shouldMapRootProcessInstanceKeyForAgentInstance() {
+    // given
+    final var entity =
+        new AgentInstanceEntity(
+            123L, // agentInstanceKey
+            List.of(456L), // elementInstanceKeys
+            AgentInstanceEntity.AgentInstanceStatus.IDLE,
+            new AgentInstanceEntity.AgentInstanceDefinition("gpt-4o", "openai", "You are helpful"),
+            new AgentInstanceEntity.AgentInstanceMetrics(10L, 20L, 1, 2),
+            new AgentInstanceEntity.AgentInstanceLimits(1000L, 5, 6),
+            List.of(
+                new AgentInstanceEntity.AgentInstanceTool("search", "Web search", "searchTask")),
+            "agentElement", // elementId
+            789L, // processInstanceKey
+            999L, // rootProcessInstanceKey
+            321L, // processDefinitionKey
+            "processId", // processDefinitionId
+            1, // processDefinitionVersion
+            "v1", // versionTag
+            "tenant", // tenantId
+            OffsetDateTime.now(), // creationDate
+            OffsetDateTime.now(), // lastUpdatedDate
+            null); // completionDate
+
+    // when
+    final var response = SearchQueryResponseMapper.toAgentInstanceResult(entity);
+
+    // then
+    assertThat(response.getRootProcessInstanceKey()).isEqualTo("999");
   }
 
   @Test

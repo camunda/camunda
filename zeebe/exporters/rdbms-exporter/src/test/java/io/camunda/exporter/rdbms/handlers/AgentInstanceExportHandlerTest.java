@@ -112,7 +112,7 @@ class AgentInstanceExportHandlerTest {
     assertThat(model.agentInstanceKey()).isEqualTo(agentKey);
     assertThat(model.elementId()).isEqualTo("myElement");
     assertThat(model.processInstanceKey()).isEqualTo(100L);
-    assertThat(model.rootProcessInstanceKey()).isEqualTo(-1L);
+    assertThat(model.rootProcessInstanceKey()).isEqualTo(50L);
     assertThat(model.processDefinitionId()).isEqualTo("myProcess");
     assertThat(model.processDefinitionKey()).isEqualTo(200L);
     assertThat(model.processDefinitionVersion()).isEqualTo(3);
@@ -300,6 +300,7 @@ class AgentInstanceExportHandlerTest {
         .withElementInstanceKeys(List.of(200L, 300L))
         .withElementId("myElement")
         .withProcessInstanceKey(100L)
+        .withRootProcessInstanceKey(50L)
         .withBpmnProcessId("myProcess")
         .withProcessDefinitionKey(200L)
         .withProcessDefinitionVersion(3)

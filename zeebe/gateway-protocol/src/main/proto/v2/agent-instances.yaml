@@ -342,7 +342,6 @@ components:
           description: |
             The key of the root process instance. The root process instance is the top-level
             ancestor in the process instance hierarchy.
-          nullable: true
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
         processDefinitionKey:

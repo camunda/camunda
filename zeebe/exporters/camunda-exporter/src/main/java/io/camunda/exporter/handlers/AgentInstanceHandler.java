@@ -90,10 +90,7 @@ public class AgentInstanceHandler
         .setPartitionId(record.getPartitionId())
         .setElementId(value.getElementId())
         .setProcessInstanceKey(value.getProcessInstanceKey())
-        // `value.getRootProcessInstanceKey()` is not yet available in the record, so we set it to
-        // -1 for now. Once it is available, this line should be updated to use the actual value.
-        // tracked by: https://github.com/camunda/camunda/issues/53236
-        .setRootProcessInstanceKey(-1)
+        .setRootProcessInstanceKey(value.getRootProcessInstanceKey())
         .setBpmnProcessId(value.getBpmnProcessId())
         .setProcessDefinitionKey(value.getProcessDefinitionKey())
         .setProcessDefinitionVersion(value.getProcessDefinitionVersion())
