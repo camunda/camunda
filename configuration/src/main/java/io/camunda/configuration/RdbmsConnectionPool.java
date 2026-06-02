@@ -10,7 +10,7 @@ package io.camunda.configuration;
 import java.time.Duration;
 
 /** HikariCP knobs for the RDBMS data source. */
-public class RdbmsConnectionPool {
+public class RdbmsConnectionPool implements RdbmsConnectionPoolConfiguration {
 
   /** Maximum number of connections kept by the pool. */
   private int maximumPoolSize = 10;

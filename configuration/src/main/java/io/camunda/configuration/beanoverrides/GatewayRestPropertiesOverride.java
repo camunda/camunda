@@ -10,7 +10,7 @@ package io.camunda.configuration.beanoverrides;
 import io.camunda.configuration.Executor;
 import io.camunda.configuration.JobMetricsConfig;
 import io.camunda.configuration.ProcessCache;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.SecondaryStorageType;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.beans.GatewayRestProperties;
 import io.camunda.configuration.beans.LegacyGatewayRestProperties;

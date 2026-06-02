@@ -12,7 +12,7 @@ import io.camunda.exporter.rdbms.ExporterConfiguration;
 import java.time.Duration;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
-public class Rdbms extends SecondaryStorageDatabase<RdbmsHistory> {
+public class Rdbms extends SecondaryStorageDatabase<RdbmsHistory> implements RdbmsConfiguration {
 
   private static final boolean DEFAULT_AUTO_DDL = true;
 

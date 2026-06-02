@@ -15,7 +15,7 @@ import io.camunda.configuration.InterceptorPlugin;
 import io.camunda.configuration.Opensearch;
 import io.camunda.configuration.Rdbms;
 import io.camunda.configuration.SecondaryStorage;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.SecondaryStorageType;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride.Converter;
 import io.camunda.configuration.beans.SearchEngineConnectProperties;

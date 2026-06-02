@@ -15,7 +15,7 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
  * proprietary, configurable Camunda components.
  */
 @ConfigurationProperties(prefix = Camunda.PREFIX)
-public class Camunda {
+public class Camunda implements CamundaConfiguration {
 
   public static final String PREFIX = "camunda";
 

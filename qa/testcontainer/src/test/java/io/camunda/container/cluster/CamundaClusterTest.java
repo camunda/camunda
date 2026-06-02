@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.Topology;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.SecondaryStorageType;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;

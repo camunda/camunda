@@ -13,7 +13,7 @@ import static io.camunda.zeebe.test.util.asserts.TopologyAssert.assertThat;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.Topology;
 import io.camunda.configuration.Exporter;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.SecondaryStorageType;
 import io.camunda.container.CamundaContainer;
 import io.camunda.container.CamundaContainer.BrokerContainer;
 import io.camunda.container.CamundaContainer.WebAppContainer;

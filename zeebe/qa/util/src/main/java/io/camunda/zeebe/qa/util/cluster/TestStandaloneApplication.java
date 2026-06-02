@@ -19,7 +19,7 @@ import io.camunda.configuration.Data;
 import io.camunda.configuration.EngineJob;
 import io.camunda.configuration.Monitoring;
 import io.camunda.configuration.Processing;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.SecondaryStorageType;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;

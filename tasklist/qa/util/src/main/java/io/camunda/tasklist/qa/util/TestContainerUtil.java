@@ -16,7 +16,7 @@ import co.elastic.clients.elasticsearch.cluster.HealthResponse;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.ElasticsearchTransport;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.SecondaryStorageType;
 import io.camunda.exporter.CamundaExporter;
 import io.camunda.security.api.model.config.initialization.ConfiguredUser;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;

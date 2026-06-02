@@ -34,7 +34,7 @@ import io.camunda.client.api.response.UnassignUserTaskResponse;
 import io.camunda.client.api.response.UpdateTimeoutJobResponse;
 import io.camunda.client.api.response.UpdateUserTaskResponse;
 import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.SecondaryStorageType;
 import io.camunda.security.api.model.config.initialization.ConfiguredUser;
 import io.camunda.zeebe.it.util.AuthorizationsUtil;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;

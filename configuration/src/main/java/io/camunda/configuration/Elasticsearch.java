@@ -7,7 +7,8 @@
  */
 package io.camunda.configuration;
 
-public class Elasticsearch extends DocumentBasedSecondaryStorageDatabase {
+public class Elasticsearch extends DocumentBasedSecondaryStorageDatabase
+    implements ElasticsearchConfiguration {
 
   @Override
   public String databaseName() {

@@ -11,7 +11,7 @@ import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig.HistoryConfig;
 import java.time.Duration;
 
-public class RdbmsHistory {
+public class RdbmsHistory implements RdbmsHistoryConfiguration {
 
   /**
    * The default time to live for all camunda entities that support history time to live. Specified
