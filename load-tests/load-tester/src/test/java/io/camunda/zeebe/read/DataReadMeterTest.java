@@ -16,7 +16,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.metrics.StarterLatencyMetricsDoc;
-import io.camunda.zeebe.metrics.StarterLatencyMetricsDoc.StarterMetricKeyNames;
+import io.camunda.zeebe.metrics.StarterLatencyMetricsDoc.StarterLatencyMetricKeyNames;
 import io.camunda.zeebe.read.DataReadMeter.ReadQuery;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -69,7 +69,7 @@ final class DataReadMeterTest {
                 assertThat(
                         meterRegistry
                             .get(StarterLatencyMetricsDoc.READ_BENCHMARK.getName())
-                            .tag(StarterMetricKeyNames.QUERY_NAME.asString(), "readSuccess")
+                            .tag(StarterLatencyMetricKeyNames.QUERY_NAME.asString(), "readSuccess")
                             .timer()
                             .count())
                     .isGreaterThanOrEqualTo(1));
@@ -77,7 +77,7 @@ final class DataReadMeterTest {
     final Timer timer =
         meterRegistry
             .get(StarterLatencyMetricsDoc.READ_BENCHMARK.getName())
-            .tag(StarterMetricKeyNames.QUERY_NAME.asString(), "readSuccess")
+            .tag(StarterLatencyMetricKeyNames.QUERY_NAME.asString(), "readSuccess")
             .timer();
 
     assertThat(timer.totalTime(TimeUnit.NANOSECONDS)).isPositive();
