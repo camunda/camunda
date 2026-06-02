@@ -47,7 +47,7 @@ fi
 ### First parameter is used as namespace name
 ### For a new namespace a new folder will be created
 
-helm_chart="camunda-platform-8.10"
+helm_chart="camunda-platform-8.9"
 namespace="$1"
 
 # Add c8- prefix if not present
