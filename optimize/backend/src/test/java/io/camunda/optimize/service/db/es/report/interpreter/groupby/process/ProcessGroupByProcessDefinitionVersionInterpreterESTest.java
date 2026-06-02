@@ -7,7 +7,6 @@
  */
 package io.camunda.optimize.service.db.es.report.interpreter.groupby.process;
 
-import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.PROCESS_GROUP_BY_PROCESS_DEFINITION_KEY;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.PROCESS_GROUP_BY_PROCESS_DEFINITION_VERSION;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.PROCESS_DEFINITION_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -16,6 +15,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
 import co.elastic.clients.elasticsearch._types.aggregations.StringTermsBucket;
@@ -29,6 +29,7 @@ import io.camunda.optimize.service.db.report.ExecutionContext;
 import io.camunda.optimize.service.db.report.result.CompositeCommandResult;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.ElasticSearchConfiguration;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -65,16 +66,9 @@ class ProcessGroupByProcessDefinitionVersionInterpreterESTest {
   }
 
   @Test
-  void shouldNotIncludeKeyConstantInSupportedGroupBys() {
-    assertThat(underTest.getSupportedGroupBys())
-        .doesNotContain(PROCESS_GROUP_BY_PROCESS_DEFINITION_KEY);
-  }
-
-  @Test
-  void shouldUseTermsAggregationTypeForVersionGroupBy() {
+  void shouldBuildTermsAggregationOnVersionFieldSortedByKeyAscending() {
     when(configurationService.getElasticSearchConfiguration())
         .thenReturn(elasticSearchConfiguration);
-    when(elasticSearchConfiguration.getAggregationBucketLimit()).thenReturn(10);
     when(distributedByInterpreter.createAggregations(any(), any())).thenReturn(Map.of());
 
     final Map<String, Aggregation.Builder.ContainerBuilder> result =
@@ -82,53 +76,22 @@ class ProcessGroupByProcessDefinitionVersionInterpreterESTest {
     final Aggregation aggregation = result.get("processDefinitionVersionAgg").build();
 
     assertThat(aggregation._kind()).isEqualTo(Aggregation.Kind.Terms);
-  }
-
-  @Test
-  void shouldTargetProcessDefinitionVersionFieldInAggregation() {
-    when(configurationService.getElasticSearchConfiguration())
-        .thenReturn(elasticSearchConfiguration);
-    when(elasticSearchConfiguration.getAggregationBucketLimit()).thenReturn(10);
-    when(distributedByInterpreter.createAggregations(any(), any())).thenReturn(Map.of());
-
-    final Map<String, Aggregation.Builder.ContainerBuilder> result =
-        underTest.createAggregation(mock(BoolQuery.class), context);
-    final Aggregation aggregation = result.get("processDefinitionVersionAgg").build();
-
     assertThat(aggregation.terms().field()).isEqualTo(PROCESS_DEFINITION_VERSION);
+    assertThat(aggregation.terms().order())
+        .singleElement()
+        .satisfies(
+            order -> {
+              assertThat(order.name()).isEqualTo("_key");
+              assertThat(order.value()).isEqualTo(SortOrder.Asc);
+            });
   }
 
   @Test
   @SuppressWarnings("unchecked")
   void shouldMapMultipleBucketsToGroupByResults() {
-    final Aggregate aggregate =
-        Aggregate.of(
-            a ->
-                a.sterms(
-                    st ->
-                        st.sumOtherDocCount(0L)
-                            .docCountErrorUpperBound(0L)
-                            .buckets(
-                                b ->
-                                    b.array(
-                                        List.of(
-                                            StringTermsBucket.of(
-                                                sb ->
-                                                    sb.key(FieldValue.of("1"))
-                                                        .docCount(5L)
-                                                        .aggregations(Map.of())),
-                                            StringTermsBucket.of(
-                                                sb ->
-                                                    sb.key(FieldValue.of("2"))
-                                                        .docCount(3L)
-                                                        .aggregations(Map.of())),
-                                            StringTermsBucket.of(
-                                                sb ->
-                                                    sb.key(FieldValue.of("3"))
-                                                        .docCount(1L)
-                                                        .aggregations(Map.of())))))));
     final ResponseBody<?> response = mock(ResponseBody.class);
-    when(response.aggregations()).thenReturn(Map.of("processDefinitionVersionAgg", aggregate));
+    when(response.aggregations())
+        .thenReturn(Map.of("processDefinitionVersionAgg", stringTermsAggregate("1", "2", "3")));
     when(distributedByInterpreter.retrieveResult(any(), any(), any())).thenReturn(List.of());
     when(distributedByInterpreter.isKeyOfNumericType(any())).thenReturn(false);
 
@@ -144,16 +107,9 @@ class ProcessGroupByProcessDefinitionVersionInterpreterESTest {
   @Test
   @SuppressWarnings("unchecked")
   void shouldReturnEmptyGroupsWhenNoBuckets() {
-    final Aggregate aggregate =
-        Aggregate.of(
-            a ->
-                a.sterms(
-                    st ->
-                        st.sumOtherDocCount(0L)
-                            .docCountErrorUpperBound(0L)
-                            .buckets(b -> b.array(List.of()))));
     final ResponseBody<?> response = mock(ResponseBody.class);
-    when(response.aggregations()).thenReturn(Map.of("processDefinitionVersionAgg", aggregate));
+    when(response.aggregations())
+        .thenReturn(Map.of("processDefinitionVersionAgg", stringTermsAggregate()));
     when(distributedByInterpreter.isKeyOfNumericType(any())).thenReturn(false);
 
     final CompositeCommandResult result =
@@ -166,24 +122,9 @@ class ProcessGroupByProcessDefinitionVersionInterpreterESTest {
   @Test
   @SuppressWarnings("unchecked")
   void shouldReturnSingleGroupResultForOneBucket() {
-    final Aggregate aggregate =
-        Aggregate.of(
-            a ->
-                a.sterms(
-                    st ->
-                        st.sumOtherDocCount(0L)
-                            .docCountErrorUpperBound(0L)
-                            .buckets(
-                                b ->
-                                    b.array(
-                                        List.of(
-                                            StringTermsBucket.of(
-                                                sb ->
-                                                    sb.key(FieldValue.of("42"))
-                                                        .docCount(1L)
-                                                        .aggregations(Map.of())))))));
     final ResponseBody<?> response = mock(ResponseBody.class);
-    when(response.aggregations()).thenReturn(Map.of("processDefinitionVersionAgg", aggregate));
+    when(response.aggregations())
+        .thenReturn(Map.of("processDefinitionVersionAgg", stringTermsAggregate("42")));
     when(distributedByInterpreter.retrieveResult(any(), any(), any())).thenReturn(List.of());
     when(distributedByInterpreter.isKeyOfNumericType(any())).thenReturn(false);
 
@@ -198,16 +139,9 @@ class ProcessGroupByProcessDefinitionVersionInterpreterESTest {
   @Test
   @SuppressWarnings("unchecked")
   void shouldSetGroupByKeyOfNumericTypeToTrue() {
-    final Aggregate aggregate =
-        Aggregate.of(
-            a ->
-                a.sterms(
-                    st ->
-                        st.sumOtherDocCount(0L)
-                            .docCountErrorUpperBound(0L)
-                            .buckets(b -> b.array(List.of()))));
     final ResponseBody<?> response = mock(ResponseBody.class);
-    when(response.aggregations()).thenReturn(Map.of("processDefinitionVersionAgg", aggregate));
+    when(response.aggregations())
+        .thenReturn(Map.of("processDefinitionVersionAgg", stringTermsAggregate()));
     when(distributedByInterpreter.isKeyOfNumericType(any())).thenReturn(false);
 
     final CompositeCommandResult result =
@@ -215,5 +149,26 @@ class ProcessGroupByProcessDefinitionVersionInterpreterESTest {
     underTest.addQueryResult(result, response, context);
 
     assertThat(result.isGroupByKeyOfNumericType()).isTrue();
+  }
+
+  private static Aggregate stringTermsAggregate(final String... keys) {
+    return Aggregate.of(
+        a ->
+            a.sterms(
+                st ->
+                    st.sumOtherDocCount(0L)
+                        .docCountErrorUpperBound(0L)
+                        .buckets(
+                            b ->
+                                b.array(
+                                    Arrays.stream(keys)
+                                        .map(
+                                            key ->
+                                                StringTermsBucket.of(
+                                                    sb ->
+                                                        sb.key(FieldValue.of(key))
+                                                            .docCount(1L)
+                                                            .aggregations(Map.of())))
+                                        .toList()))));
   }
 }

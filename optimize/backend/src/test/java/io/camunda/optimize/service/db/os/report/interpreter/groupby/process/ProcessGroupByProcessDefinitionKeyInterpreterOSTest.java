@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.optimize.service.db.es.report.interpreter.groupby.process;
+package io.camunda.optimize.service.db.os.report.interpreter.groupby.process;
 
 import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.PROCESS_GROUP_BY_PROCESS_DEFINITION_KEY;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.PROCESS_DEFINITION_KEY;
@@ -14,21 +14,15 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import co.elastic.clients.elasticsearch._types.FieldValue;
-import co.elastic.clients.elasticsearch._types.SortOrder;
-import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
-import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
-import co.elastic.clients.elasticsearch._types.aggregations.StringTermsBucket;
-import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
-import co.elastic.clients.elasticsearch.core.search.ResponseBody;
 import io.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import io.camunda.optimize.service.db.es.report.interpreter.distributedby.process.ProcessDistributedByInterpreterFacadeES;
-import io.camunda.optimize.service.db.es.report.interpreter.view.process.ProcessViewInterpreterFacadeES;
+import io.camunda.optimize.service.db.os.report.interpreter.RawResult;
+import io.camunda.optimize.service.db.os.report.interpreter.distributedby.process.ProcessDistributedByInterpreterFacadeOS;
+import io.camunda.optimize.service.db.os.report.interpreter.view.process.ProcessViewInterpreterFacadeOS;
 import io.camunda.optimize.service.db.report.ExecutionContext;
 import io.camunda.optimize.service.db.report.result.CompositeCommandResult;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
-import io.camunda.optimize.service.util.configuration.ElasticSearchConfiguration;
+import io.camunda.optimize.service.util.configuration.OpenSearchConfiguration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -37,25 +31,31 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.opensearch.client.opensearch._types.SortOrder;
+import org.opensearch.client.opensearch._types.aggregations.Aggregate;
+import org.opensearch.client.opensearch._types.aggregations.Aggregation;
+import org.opensearch.client.opensearch._types.aggregations.StringTermsBucket;
+import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch.core.SearchResponse;
 
 @ExtendWith(MockitoExtension.class)
-class ProcessGroupByProcessDefinitionKeyInterpreterESTest {
+class ProcessGroupByProcessDefinitionKeyInterpreterOSTest {
 
   @Mock private ConfigurationService configurationService;
-  @Mock private ElasticSearchConfiguration elasticSearchConfiguration;
-  @Mock private ProcessDistributedByInterpreterFacadeES distributedByInterpreter;
-  @Mock private ProcessViewInterpreterFacadeES viewInterpreter;
+  @Mock private OpenSearchConfiguration openSearchConfiguration;
+  @Mock private ProcessDistributedByInterpreterFacadeOS distributedByInterpreter;
+  @Mock private ProcessViewInterpreterFacadeOS viewInterpreter;
 
   @SuppressWarnings("rawtypes")
   @Mock
   private ExecutionContext context;
 
-  private ProcessGroupByProcessDefinitionKeyInterpreterES underTest;
+  private ProcessGroupByProcessDefinitionKeyInterpreterOS underTest;
 
   @BeforeEach
   void setUp() {
     underTest =
-        new ProcessGroupByProcessDefinitionKeyInterpreterES(
+        new ProcessGroupByProcessDefinitionKeyInterpreterOS(
             configurationService, distributedByInterpreter, viewInterpreter);
   }
 
@@ -67,29 +67,22 @@ class ProcessGroupByProcessDefinitionKeyInterpreterESTest {
 
   @Test
   void shouldBuildTermsAggregationOnKeyFieldSortedByKeyAscending() {
-    when(configurationService.getElasticSearchConfiguration())
-        .thenReturn(elasticSearchConfiguration);
+    when(configurationService.getOpenSearchConfiguration()).thenReturn(openSearchConfiguration);
+    when(openSearchConfiguration.getAggregationBucketLimit()).thenReturn(10);
     when(distributedByInterpreter.createAggregations(any(), any())).thenReturn(Map.of());
 
-    final Map<String, Aggregation.Builder.ContainerBuilder> result =
-        underTest.createAggregation(mock(BoolQuery.class), context);
-    final Aggregation aggregation = result.get("processDefinitionKeyAgg").build();
+    final Map<String, Aggregation> result = underTest.createAggregation(mock(Query.class), context);
+    final Aggregation aggregation = result.get("processDefinitionKeyAgg");
 
     assertThat(aggregation._kind()).isEqualTo(Aggregation.Kind.Terms);
     assertThat(aggregation.terms().field()).isEqualTo(PROCESS_DEFINITION_KEY);
-    assertThat(aggregation.terms().order())
-        .singleElement()
-        .satisfies(
-            order -> {
-              assertThat(order.name()).isEqualTo("_key");
-              assertThat(order.value()).isEqualTo(SortOrder.Asc);
-            });
+    assertThat(aggregation.terms().order()).containsExactly(Map.of("_key", SortOrder.Asc));
   }
 
   @Test
   @SuppressWarnings("unchecked")
   void shouldMapMultipleBucketsToGroupByResults() {
-    final ResponseBody<?> response = mock(ResponseBody.class);
+    final SearchResponse<RawResult> response = mock(SearchResponse.class);
     when(response.aggregations())
         .thenReturn(
             Map.of(
@@ -110,7 +103,7 @@ class ProcessGroupByProcessDefinitionKeyInterpreterESTest {
   @Test
   @SuppressWarnings("unchecked")
   void shouldReturnEmptyGroupsWhenNoBuckets() {
-    final ResponseBody<?> response = mock(ResponseBody.class);
+    final SearchResponse<RawResult> response = mock(SearchResponse.class);
     when(response.aggregations())
         .thenReturn(Map.of("processDefinitionKeyAgg", stringTermsAggregate()));
     when(distributedByInterpreter.isKeyOfNumericType(any())).thenReturn(false);
@@ -125,7 +118,7 @@ class ProcessGroupByProcessDefinitionKeyInterpreterESTest {
   @Test
   @SuppressWarnings("unchecked")
   void shouldReturnSingleGroupResultForOneBucket() {
-    final ResponseBody<?> response = mock(ResponseBody.class);
+    final SearchResponse<RawResult> response = mock(SearchResponse.class);
     when(response.aggregations())
         .thenReturn(Map.of("processDefinitionKeyAgg", stringTermsAggregate("single-process")));
     when(distributedByInterpreter.retrieveResult(any(), any(), any())).thenReturn(List.of());
@@ -154,7 +147,7 @@ class ProcessGroupByProcessDefinitionKeyInterpreterESTest {
                                             key ->
                                                 StringTermsBucket.of(
                                                     sb ->
-                                                        sb.key(FieldValue.of(key))
+                                                        sb.key(key)
                                                             .docCount(1L)
                                                             .aggregations(Map.of())))
                                         .toList()))));
