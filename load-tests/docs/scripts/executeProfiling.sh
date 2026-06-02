@@ -7,7 +7,7 @@
 #   wall  - Wall clock time profiling
 #   alloc - Memory allocation profiling
 # DATABASE can be:
-#   elasticsearch (default), opensearch, postgresql, oracle, mysql, mssql, mariadb, none
+#   elasticsearch (default), opensearch, postgresql, none
 # ADDITIONAL-OPTIONS: Optional additional flags to pass to async-profiler (e.g., "-t" to profile threads separately)
 # See https://github.com/async-profiler/async-profiler/blob/master/docs/ProfilerOptions.md for potential options
 set -oxe pipefail
