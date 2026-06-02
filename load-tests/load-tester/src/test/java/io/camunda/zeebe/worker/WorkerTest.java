@@ -1,9 +1,17 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
- * one or more contributor license agreements. See the NOTICE file distributed
- * with this work for additional information regarding copyright ownership.
- * Licensed under the Camunda License 1.0. You may not use this file
- * except in compliance with the Camunda License 1.0.
+ * Copyright © 2017 camunda services GmbH (info@camunda.com)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package io.camunda.zeebe.worker;
 
@@ -15,15 +23,15 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.client.CamundaClient;
-import io.camunda.client.api.CamundaFuture;
-import io.camunda.client.api.command.CompleteJobCommandStep1;
-import io.camunda.client.api.command.PublishMessageCommandStep1;
-import io.camunda.client.api.command.PublishMessageCommandStep1.PublishMessageCommandStep2;
-import io.camunda.client.api.command.PublishMessageCommandStep1.PublishMessageCommandStep3;
-import io.camunda.client.api.response.ActivatedJob;
-import io.camunda.client.api.response.PublishMessageResponse;
-import io.camunda.client.api.worker.JobClient;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.ZeebeFuture;
+import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
+import io.camunda.zeebe.client.api.command.PublishMessageCommandStep1;
+import io.camunda.zeebe.client.api.command.PublishMessageCommandStep1.PublishMessageCommandStep2;
+import io.camunda.zeebe.client.api.command.PublishMessageCommandStep1.PublishMessageCommandStep3;
+import io.camunda.zeebe.client.api.response.ActivatedJob;
+import io.camunda.zeebe.client.api.response.PublishMessageResponse;
+import io.camunda.zeebe.client.api.worker.JobClient;
 import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.config.WorkerProperties;
 import io.camunda.zeebe.metrics.ConnectionMonitor;
@@ -45,7 +53,7 @@ class WorkerTest {
     // given — worker configured to send a message before completing, with a publish that fails
     final var jobClient = mock(JobClient.class);
     final var job = mockJob();
-    final var client = mock(CamundaClient.class);
+    final var client = mock(ZeebeClient.class);
     mockFailingPublish(client);
     final var worker = newWorker(client, sendMessageProperties());
 
@@ -68,7 +76,7 @@ class WorkerTest {
     // given — worker configured to send a message before completing, with a publish that succeeds
     final var jobClient = mock(JobClient.class);
     final var job = mockJob();
-    final var client = mock(CamundaClient.class);
+    final var client = mock(ZeebeClient.class);
     mockSuccessfulPublish(client);
     final var completeStep = mockCompleteJob(jobClient);
     final var worker = newWorker(client, sendMessageProperties());
@@ -107,7 +115,7 @@ class WorkerTest {
     return props;
   }
 
-  private static Worker newWorker(final CamundaClient client, final WorkerProperties workerProps) {
+  private static Worker newWorker(final ZeebeClient client, final WorkerProperties workerProps) {
     final var properties = new LoadTesterProperties();
     properties.setWorker(workerProps);
     final var payloadReader = mock(PayloadReader.class);
@@ -117,11 +125,11 @@ class WorkerTest {
   }
 
   @SuppressWarnings("unchecked")
-  private static void mockFailingPublish(final CamundaClient client) throws Exception {
+  private static void mockFailingPublish(final ZeebeClient client) throws Exception {
     final var step1 = mock(PublishMessageCommandStep1.class);
     final var step2 = mock(PublishMessageCommandStep2.class);
     final var step3 = mock(PublishMessageCommandStep3.class);
-    final CamundaFuture<PublishMessageResponse> future = mock(CamundaFuture.class);
+    final ZeebeFuture<PublishMessageResponse> future = mock(ZeebeFuture.class);
     when(client.newPublishMessageCommand()).thenReturn(step1);
     when(step1.messageName(MESSAGE_NAME)).thenReturn(step2);
     when(step2.correlationKey(CORRELATION_KEY_VALUE)).thenReturn(step3);
@@ -131,11 +139,11 @@ class WorkerTest {
   }
 
   @SuppressWarnings("unchecked")
-  private static void mockSuccessfulPublish(final CamundaClient client) throws Exception {
+  private static void mockSuccessfulPublish(final ZeebeClient client) throws Exception {
     final var step1 = mock(PublishMessageCommandStep1.class);
     final var step2 = mock(PublishMessageCommandStep2.class);
     final var step3 = mock(PublishMessageCommandStep3.class);
-    final CamundaFuture<PublishMessageResponse> future = mock(CamundaFuture.class);
+    final ZeebeFuture<PublishMessageResponse> future = mock(ZeebeFuture.class);
     when(client.newPublishMessageCommand()).thenReturn(step1);
     when(step1.messageName(MESSAGE_NAME)).thenReturn(step2);
     when(step2.correlationKey(CORRELATION_KEY_VALUE)).thenReturn(step3);
@@ -147,10 +155,10 @@ class WorkerTest {
   @SuppressWarnings("unchecked")
   private static CompleteJobCommandStep1 mockCompleteJob(final JobClient jobClient) {
     final var completeStep = mock(CompleteJobCommandStep1.class);
-    final CamundaFuture<Object> future = mock(CamundaFuture.class);
+    final ZeebeFuture<Object> future = mock(ZeebeFuture.class);
     when(jobClient.newCompleteCommand(anyLong())).thenReturn(completeStep);
     when(completeStep.variables(anyString())).thenReturn(completeStep);
-    when(completeStep.send()).thenReturn((CamundaFuture) future);
+    when(completeStep.send()).thenReturn((ZeebeFuture) future);
     return completeStep;
   }
 }
