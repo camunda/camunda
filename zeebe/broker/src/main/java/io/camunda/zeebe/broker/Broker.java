@@ -169,9 +169,8 @@ public final class Broker implements AutoCloseable {
   }
 
   private ExporterRepository buildExporterRepository(final BrokerCfg cfg) {
+    exporterRepository.setLicenseKey(cfg.getLicenseKey());
     final var exporterEntries = cfg.getExporters().entrySet();
-
-    // load and validate exporters
     for (final var exporterEntry : exporterEntries) {
       final var id = exporterEntry.getKey();
       final var exporterCfg = exporterEntry.getValue();

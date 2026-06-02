@@ -141,6 +141,8 @@ public class BrokerBasedPropertiesOverride {
 
     populateFromSecurity(override);
 
+    override.setLicenseKey(unifiedConfiguration.getCamunda().getLicense().getKey());
+
     return override;
   }
 

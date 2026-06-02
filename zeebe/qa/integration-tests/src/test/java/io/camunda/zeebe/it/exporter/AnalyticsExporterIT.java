@@ -72,13 +72,13 @@ final class AnalyticsExporterIT {
   private final TestStandaloneBroker broker =
       new TestStandaloneBroker()
           .withUnauthenticatedAccess()
-          .withProperty("zeebe.broker.cluster.clusterId", "e2e-test-cluster");
+          .withProperty("camunda.cluster.cluster-id", "e2e-test-cluster")
+          .withProperty("camunda.license.key", "test-license-key-for-analytics-it");
 
   @AutoClose private CamundaClient client;
 
   @Test
   void shouldExportProcessInstanceCreatedToOtelCollector() {
-    System.setProperty("CAMUNDA_LICENSE_KEY", "test-license-key-for-analytics-it");
     COLLECTOR_LOGS.clear();
 
     // given — broker with analytics exporter pointing at the collector

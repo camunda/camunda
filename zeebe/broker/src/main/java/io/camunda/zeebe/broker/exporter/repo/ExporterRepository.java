@@ -31,6 +31,7 @@ public final class ExporterRepository {
   private static final int NULL_PARTITION_ID = Integer.MIN_VALUE;
   private final ExternalJarRepository jarRepository;
   private final Map<String, ExporterDescriptor> exporters;
+  private String licenseKey;
 
   public ExporterRepository() {
     this(new ArrayList<>());
@@ -46,6 +47,14 @@ public final class ExporterRepository {
         exporters.stream()
             .collect(Collectors.toMap(ExporterDescriptor::getId, Function.identity()));
     this.jarRepository = jarRepository;
+  }
+
+  public String getLicenseKey() {
+    return licenseKey;
+  }
+
+  public void setLicenseKey(final String licenseKey) {
+    this.licenseKey = licenseKey;
   }
 
   public Map<String, ExporterDescriptor> getExporters() {
@@ -104,6 +113,7 @@ public final class ExporterRepository {
               descriptor.getConfiguration(),
               NULL_PARTITION_ID,
               "",
+              licenseKey,
               new SimpleMeterRegistry(),
               InstantSource.system())) {
 

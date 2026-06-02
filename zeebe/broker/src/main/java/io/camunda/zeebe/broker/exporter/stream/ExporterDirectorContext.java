@@ -34,6 +34,7 @@ public final class ExporterDirectorContext {
   private MeterRegistry meterRegistry;
   private InstantSource clock;
   private String clusterId = "";
+  private String licenseKey;
   private String tenantName;
   private boolean sendOnLegacySubject = true;
   private boolean receiveOnLegacySubject = true;
@@ -84,6 +85,10 @@ public final class ExporterDirectorContext {
 
   public String getClusterId() {
     return clusterId;
+  }
+
+  public String getLicenseKey() {
+    return licenseKey;
   }
 
   public String getTenantName() {
@@ -157,6 +162,11 @@ public final class ExporterDirectorContext {
 
   public ExporterDirectorContext clusterId(final String clusterId) {
     this.clusterId = clusterId;
+    return this;
+  }
+
+  public ExporterDirectorContext licenseKey(final String licenseKey) {
+    this.licenseKey = licenseKey;
     return this;
   }
 

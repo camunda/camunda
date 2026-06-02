@@ -27,6 +27,7 @@ public class Camunda {
   @NestedConfigurationProperty private Monitoring monitoring = new Monitoring();
   @NestedConfigurationProperty private Security security = new Security();
   @NestedConfigurationProperty private Expression expression = new Expression();
+  @NestedConfigurationProperty private License license = new License();
   @NestedConfigurationProperty private Webapps webapps = new Webapps();
 
   @NestedConfigurationProperty
@@ -127,5 +128,13 @@ public class Camunda {
 
   public void setWebapps(final Webapps webapps) {
     this.webapps = webapps;
+  }
+
+  public License getLicense() {
+    return license;
+  }
+
+  public void setLicense(final License license) {
+    this.license = license;
   }
 }
