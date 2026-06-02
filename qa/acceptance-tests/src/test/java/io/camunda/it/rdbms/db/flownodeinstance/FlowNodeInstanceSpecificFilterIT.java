@@ -39,13 +39,14 @@ public class FlowNodeInstanceSpecificFilterIT {
 
   @Autowired private RdbmsService rdbmsService;
 
-  @Autowired private FlowNodeInstanceDbReader elementInstanceReader;
+  private FlowNodeInstanceDbReader elementInstanceReader;
 
   private RdbmsWriters rdbmsWriters;
 
   @BeforeEach
   public void beforeAll() {
     rdbmsWriters = rdbmsService.createWriter(0L);
+    elementInstanceReader = rdbmsService.getFlowNodeInstanceReader();
   }
 
   @ParameterizedTest
