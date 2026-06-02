@@ -8,6 +8,7 @@
 package io.camunda.exporter.analytics;
 
 import static io.camunda.exporter.analytics.AnalyticsAttributes.CLUSTER_ID;
+import static io.camunda.exporter.analytics.AnalyticsAttributes.EVENT_HEARTBEAT;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.EVENT_NAME;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.EVENT_SEQUENCE_NUMBER;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.LOG_POSITION;
@@ -93,6 +94,15 @@ public class OtelSdkManager implements AutoCloseable {
             .setAttribute(EVENT_SEQUENCE_NUMBER, metadata.incrementAndGetEventSequenceNumber());
     builder.accept(record);
     record.emit();
+  }
+
+  public void emitHeartbeat() {
+    otelLogger
+        .logRecordBuilder()
+        .setSeverity(Severity.INFO)
+        .setSeverityText("INFO")
+        .setAttribute(EVENT_NAME, EVENT_HEARTBEAT)
+        .emit();
   }
 
   /** Increments the named counter by 1 and updates the export window tracking fields. */
