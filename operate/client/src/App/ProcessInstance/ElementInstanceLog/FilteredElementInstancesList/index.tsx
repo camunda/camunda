@@ -14,6 +14,7 @@ import type {
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 import {Search} from '@carbon/react/icons';
+import {TreeView} from '@carbon/react';
 import {EmptyState} from 'modules/components/EmptyState';
 import {ErrorMessage} from 'modules/components/ErrorMessage';
 import {InfiniteScroller} from 'modules/components/InfiniteScroller';
@@ -31,9 +32,7 @@ import {isRequestError} from 'modules/request';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
 import {
   ScrollContainer,
-  List,
-  RowButton,
-  IconSlot,
+  SearchResultNode,
   StatusRegion,
   EmptyStateContainer,
 } from './styled';
@@ -52,33 +51,25 @@ const Row: React.FC<RowProps> = observer(({item, businessObjects}) => {
 
   const businessObject = businessObjects[item.elementId];
   const elementIsMultiInstanceBody = isMultiInstance(businessObject);
-  const selected = isSelected({
+  const isElementSelected = isSelected({
     elementId: item.elementId,
     elementInstanceKey: item.elementInstanceKey,
     isMultiInstanceBody: elementIsMultiInstanceBody,
   });
 
   return (
-    <li>
-      <RowButton
-        type="button"
-        $selected={selected}
-        data-testid={`search-result-${item.elementInstanceKey}`}
-        onClick={() => {
-          tracking.track({eventName: 'instance-history-item-clicked'});
-          selectElementInstance({
-            elementId: item.elementId,
-            elementInstanceKey: item.elementInstanceKey,
-            isMultiInstanceBody: elementIsMultiInstanceBody,
-          });
-        }}
-      >
-        <IconSlot>
-          <ElementInstanceIcon
-            diagramBusinessObject={businessObject}
-            isRootProcess={item.type === 'PROCESS'}
-          />
-        </IconSlot>
+    <SearchResultNode
+      id={item.elementInstanceKey}
+      value={item.elementInstanceKey}
+      data-testid={`search-result-${item.elementInstanceKey}`}
+      aria-label={item.elementName ?? item.elementId}
+      renderIcon={() => (
+        <ElementInstanceIcon
+          diagramBusinessObject={businessObject}
+          isRootProcess={item.type === 'PROCESS'}
+        />
+      )}
+      label={
         <Bar
           ref={rowRef}
           elementInstanceKey={item.elementInstanceKey}
@@ -92,8 +83,19 @@ const Row: React.FC<RowProps> = observer(({item, businessObjects}) => {
           latestMigrationDate={null}
           scopeKeyHierarchy={[]}
         />
-      </RowButton>
-    </li>
+      }
+      selected={isElementSelected ? [item.elementInstanceKey] : []}
+      active={isElementSelected ? item.elementInstanceKey : undefined}
+      isExpanded={false}
+      onSelect={() => {
+        tracking.track({eventName: 'instance-history-item-clicked'});
+        selectElementInstance({
+          elementId: item.elementId,
+          elementInstanceKey: item.elementInstanceKey,
+          isMultiInstanceBody: elementIsMultiInstanceBody,
+        });
+      }}
+    />
   );
 });
 
@@ -178,7 +180,7 @@ const FilteredElementInstancesList: React.FC<Props> = ({
           onVerticalScrollEndReach={scroll.handleScrollEndReach}
           onVerticalScrollStartReach={scroll.handleScrollStartReach}
         >
-          <List>
+          <TreeView label="Search results" hideLabel>
             {query.data?.items.map((item) => (
               <Row
                 key={item.elementInstanceKey}
@@ -186,7 +188,7 @@ const FilteredElementInstancesList: React.FC<Props> = ({
                 businessObjects={businessObjects}
               />
             ))}
-          </List>
+          </TreeView>
         </InfiniteScroller>
       </ScrollContainer>
     </>
