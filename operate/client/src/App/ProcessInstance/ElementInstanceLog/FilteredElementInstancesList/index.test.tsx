@@ -9,6 +9,7 @@
 import {render, screen, waitFor} from 'modules/testing-library';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
+import {ErrorBoundary} from 'react-error-boundary';
 import type {
   ElementInstance,
   QueryElementInstancesResponseBody,
@@ -19,6 +20,12 @@ import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {Paths} from 'modules/Routes';
+import {getForbiddenPermissionsError} from 'modules/constants/permissions';
+
+const INSTANCE_HISTORY_FORBIDDEN = getForbiddenPermissionsError(
+  'Instance History',
+  'this instance history',
+);
 
 const PROCESS_INSTANCE_KEY = '1';
 
@@ -62,7 +69,23 @@ const Wrapper: React.FC<{children: React.ReactNode}> = ({children}) => (
     <ProcessDefinitionKeyContext.Provider value="2">
       <QueryClientProvider client={getMockQueryClient()}>
         <Routes>
-          <Route path={Paths.processInstance()} element={children} />
+          <Route
+            path={Paths.processInstance()}
+            element={
+              <ErrorBoundary
+                fallbackRender={({error}) => (
+                  <>
+                    <p>{INSTANCE_HISTORY_FORBIDDEN.message}</p>
+                    {INSTANCE_HISTORY_FORBIDDEN.additionalInfo && (
+                      <p>{INSTANCE_HISTORY_FORBIDDEN.additionalInfo}</p>
+                    )}
+                  </>
+                )}
+              >
+                {children}
+              </ErrorBoundary>
+            }
+          />
         </Routes>
       </QueryClientProvider>
     </ProcessDefinitionKeyContext.Provider>

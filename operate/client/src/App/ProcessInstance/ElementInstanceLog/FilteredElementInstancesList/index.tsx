@@ -23,7 +23,6 @@ import {ElementInstanceIcon} from 'modules/components/ElementInstanceIcon';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
 import {tracking} from 'modules/tracking';
-import {getForbiddenPermissionsError} from 'modules/constants/permissions';
 import {useElementInstancesSearchPaginated} from 'modules/queries/elementInstances/useElementInstancesSearchPaginated';
 import {flattenPaginatedPages} from 'modules/queries/flattenPaginatedPages';
 import {useDashboardScrollPagination} from 'App/Dashboard/useDashboardScrollPagination';
@@ -38,11 +37,6 @@ import {
   StatusRegion,
   EmptyStateContainer,
 } from './styled';
-
-const INSTANCE_HISTORY_FORBIDDEN = getForbiddenPermissionsError(
-  'Instance History',
-  'this instance history',
-);
 
 const PAGE_LIMIT = 50;
 
@@ -140,12 +134,10 @@ const FilteredElementInstancesList: React.FC<Props> = ({
     query.error?.response?.status === HTTP_STATUS_FORBIDDEN;
 
   if (isForbiddenError) {
-    return (
-      <ErrorMessage
-        message={INSTANCE_HISTORY_FORBIDDEN.message}
-        additionalInfo={INSTANCE_HISTORY_FORBIDDEN.additionalInfo}
-      />
-    );
+    // Re-throw so the parent error boundary handles the forbidden message.
+    // This keeps the forbidden UX in a single place for both the tree and
+    // the filtered list views.
+    throw query.error;
   }
 
   if (query.status === 'error') {
