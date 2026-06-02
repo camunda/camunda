@@ -11,20 +11,16 @@ import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
-import io.camunda.search.clients.CamundaSearchClients;
 import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.clients.SearchClientBasedQueryExecutor;
-import io.camunda.search.clients.auth.ResourceAccessDelegatingController;
 import io.camunda.search.clients.cache.ProcessCache;
 import io.camunda.search.clients.reader.SearchClientReaders;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.connect.tenant.SearchClients;
 import io.camunda.search.es.clients.ElasticsearchSearchClient;
 import io.camunda.search.os.clients.OpensearchSearchClient;
-import io.camunda.security.core.authz.ResourceAccessController;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -78,7 +74,7 @@ public class PhysicalTenantSearchClientReadersConfiguration {
   }
 
   @Bean
-  public Map<String, SearchClientReaders> physicalTenantSearchClientReaders(
+  public PhysicalTenantSearchClientReaders physicalTenantSearchClientReaders(
       final Map<String, SearchClientBasedQueryExecutor> physicalTenantQueryExecutors,
       final Map<String, IndexDescriptors> physicalTenantScopedIndexDescriptors,
       final PhysicalTenantResolver physicalTenantResolver) {
@@ -103,15 +99,6 @@ public class PhysicalTenantSearchClientReadersConfiguration {
           readersByTenant.put(
               tenantId, SearchClientReadersFactory.create(executor, descriptors, cacheConfig));
         });
-    return Map.copyOf(readersByTenant);
-  }
-
-  @Bean
-  public CamundaSearchClients camundaSearchClients(
-      final Map<String, SearchClientReaders> physicalTenantSearchClientReaders,
-      final List<ResourceAccessController> resourceAccessControllers) {
-    return new CamundaSearchClients(
-        physicalTenantSearchClientReaders,
-        new ResourceAccessDelegatingController(resourceAccessControllers));
+    return new PhysicalTenantSearchClientReaders(Map.copyOf(readersByTenant));
   }
 }
