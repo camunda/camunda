@@ -18,7 +18,6 @@ import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.service.cache.ProcessDefinitionProvider.ProcessCacheData;
 import java.io.IOException;
@@ -59,8 +58,7 @@ class ProcessDefinitionProviderTest {
     processDefinitionSearchClient = mock(ProcessDefinitionSearchClient.class);
     processDefinition = mock(ProcessDefinitionEntity.class);
     final var searchClient = mock(ProcessDefinitionSearchClient.class);
-    when(searchClient.withSecurityContext(
-            SecurityContext.of(b -> b.withAuthentication(CamundaAuthentication.anonymous()))))
+    when(searchClient.withSecurityContext(any(SecurityContext.class)))
         .thenReturn(processDefinitionSearchClient);
     processDefinitionProvider = new ProcessDefinitionProvider(searchClient);
 
