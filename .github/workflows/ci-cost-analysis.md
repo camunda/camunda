@@ -5,6 +5,8 @@ description: Weekly report analyzing recent CI changes for potential cost increa
 on:
   schedule: weekly on monday
   workflow_dispatch:
+  pull_request:
+    types: [opened, synchronize]
 permissions:
   contents: read
   actions: read
