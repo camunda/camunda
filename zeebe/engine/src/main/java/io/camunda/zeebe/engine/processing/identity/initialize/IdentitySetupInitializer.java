@@ -86,6 +86,9 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
 
     // We use a timestamp of 0L to ensure this is runs immediately once the stream processor is
     // started,
+    //  YOHAN COMMENT >> THIS IS THE FIRST DISTRIBUTION
+    //  YOHAN COMMENT >> THIS IS THE FIRST DISTRIBUTION
+    //  YOHAN COMMENT >> THIS IS THE FIRST DISTRIBUTION
     context
         .getScheduleService()
         .runAtAsync(

@@ -145,9 +145,12 @@ public final class EventAppliers implements EventApplier {
     registerRoleAppliers(state);
     registerGroupAppliers(state);
     registerScalingAppliers(state);
+    // YOHAN COMMENT >> hmm ??
     registerTenantAppliers(state);
     registerMappingRuleAppliers(state);
     registerBatchOperationAppliers(state);
+
+    // YOHAN COMMENT >> NOT SURE WHAT THESE ARE, but looks interesting
     registerIdentitySetupAppliers();
     registerAsyncRequestAppliers(state);
     registerUsageMetricsAppliers(state);

@@ -130,7 +130,10 @@ public class Engine implements RecordProcessor {
     processingState = typedProcessorContext.getProcessingState();
     writers.setKeyValidator(processingState.getKeyGenerator());
 
+    // YOHAN COMMENT >> those events that getr registered
     ((EventAppliers) eventApplier).registerEventAppliers(processingState);
+
+    // YOHAN COMMENT >> this is where stream processing start
     final TypedRecordProcessors typedRecordProcessors =
         typedRecordProcessorFactory.createProcessors(typedProcessorContext);
 

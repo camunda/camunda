@@ -34,6 +34,7 @@ public final class ZeebePartitionStep implements StartupStep<PartitionStartupCon
       zeebePartition =
           context
               .zeebePartitionFactory()
+              // YOHAN COMMENT >> 1. constructing partition
               .constructPartition(
                   context.raftPartition(),
                   context.snapshotStore(),

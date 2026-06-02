@@ -100,6 +100,7 @@ public final class EngineProcessors {
 
   private EngineProcessors() {}
 
+  // YOHAN COMMENT >> 3. Creating engine proessorsc
   public static TypedRecordProcessors createEngineProcessors(
       final TypedRecordProcessorContext typedRecordProcessorContext,
       final int partitionsCount,
@@ -111,6 +112,7 @@ public final class EngineProcessors {
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
 
     final var processingState = typedRecordProcessorContext.getProcessingState();
+    // YOHAN COMMENT >> OLD key generator
     final var keyGenerator = processingState.getKeyGenerator();
     final var ordinalKeyProvider = new FakeOrdinalKeyProvider(partitionsCount);
 
@@ -147,6 +149,10 @@ public final class EngineProcessors {
     final var incidentMetrics = new IncidentMetrics(typedRecordProcessorContext.getMeterRegistry());
 
     subscriptionCommandSender.setWriters(writers);
+
+    // YOHAN COMMENT >> vvv create behaviors & processors
+    // YOHAN COMMENT >> vvv create behaviors & processors
+    // YOHAN COMMENT >> vvv create behaviors & processors
 
     final var decisionBehavior =
         new DecisionBehavior(
@@ -363,6 +369,7 @@ public final class EngineProcessors {
         writers,
         commandDistributionBehavior);
 
+    // YOHAN COMMENT >> creating default tenant & members etc
     IdentitySetupProcessors.addIdentitySetupProcessors(
         keyGenerator, typedRecordProcessors, writers, securityConfig, config);
 
