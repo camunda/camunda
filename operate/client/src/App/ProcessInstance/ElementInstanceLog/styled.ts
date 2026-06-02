@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import styled, {css} from 'styled-components';
+import styled from 'styled-components';
 import {breakpoints} from '@carbon/elements';
 import {PanelHeader as BasePanelHeader} from 'modules/components/PanelHeader';
 import {ErrorMessage as BaseErrorMessage} from 'modules/components/ErrorMessage';
@@ -45,17 +45,4 @@ const PanelBody = styled.div`
   position: relative;
 `;
 
-const HiddenTreeWrapper = styled.div<{$hidden: boolean}>`
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
-
-  ${({$hidden}) =>
-    $hidden &&
-    css`
-      display: none;
-    `}
-`;
-
-export {PanelHeader, Container, ErrorMessage, PanelBody, HiddenTreeWrapper};
+export {PanelHeader, Container, ErrorMessage, PanelBody};

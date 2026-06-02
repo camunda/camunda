@@ -8,13 +8,7 @@
 
 import {observer} from 'mobx-react';
 import {useEffect, useState} from 'react';
-import {
-  Container,
-  PanelHeader,
-  ErrorMessage,
-  PanelBody,
-  HiddenTreeWrapper,
-} from './styled';
+import {Container, PanelHeader, ErrorMessage, PanelBody} from './styled';
 import {TimeStampPill} from './TimeStampPill';
 import {modificationsStore} from 'modules/stores/modifications';
 import {Stack} from '@carbon/react';
@@ -144,20 +138,19 @@ const ElementInstanceLog: React.FC<{isPanel?: boolean}> = observer(
     return (
       <Layout isPanel={isPanel} searchInput={searchInputElement}>
         <PanelBody>
-          <HiddenTreeWrapper $hidden={isFiltered}>
+          {isFiltered ? (
+            <FilteredElementInstancesList
+              searchText={debouncedSearchText.trim()}
+              processInstanceKey={processInstance!.processInstanceKey}
+              businessObjects={businessObjects!}
+            />
+          ) : (
             <ElementInstancesTree
               processInstance={processInstance!}
               businessObjects={businessObjects!}
               errorMessage={
                 <ErrorMessage message="Instance History could not be fetched" />
               }
-            />
-          </HiddenTreeWrapper>
-          {isFiltered && (
-            <FilteredElementInstancesList
-              searchText={debouncedSearchText.trim()}
-              processInstanceKey={processInstance!.processInstanceKey}
-              businessObjects={businessObjects!}
             />
           )}
         </PanelBody>
