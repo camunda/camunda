@@ -60,8 +60,10 @@ public class SearchClientReaderConfiguration {
 
   @Bean
   public SearchClientReaders documentReaders(
-      final Map<String, SearchClientReaders> physicalTenantSearchClientReaders) {
-    return requireDefault(physicalTenantSearchClientReaders, "physicalTenantSearchClientReaders");
+      final PhysicalTenantSearchClientReaders physicalTenantSearchClientReaders) {
+    return requireDefault(
+        physicalTenantSearchClientReaders.readersByPhysicalTenant(),
+        "physicalTenantSearchClientReaders");
   }
 
   @Bean
