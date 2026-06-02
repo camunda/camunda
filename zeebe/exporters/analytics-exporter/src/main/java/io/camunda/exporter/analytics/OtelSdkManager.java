@@ -16,7 +16,6 @@ import static io.camunda.exporter.analytics.AnalyticsAttributes.EXPORTER_VERSION
 import static io.camunda.exporter.analytics.AnalyticsAttributes.LOG_POSITION;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.METRIC_EXPORT_WINDOW;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.PARTITION_ID;
-import static io.camunda.exporter.analytics.AnalyticsAttributes.SCHEMA_VERSION;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.SERVICE_NAME;
 
 import io.camunda.zeebe.util.VersionUtil;
@@ -108,7 +107,6 @@ public class OtelSdkManager implements AutoCloseable {
         .setAttribute(EVENT_NAME, EVENT_HEARTBEAT)
         .setAttribute(BROKER_VERSION, VersionUtil.getVersion())
         .setAttribute(EXPORTER_VERSION, AnalyticsExporterVersion.get())
-        .setAttribute(SCHEMA_VERSION, SCHEMA_URL)
         .emit();
   }
 

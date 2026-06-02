@@ -34,4 +34,36 @@ class AnalyticsExporterConfigTest {
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("must be positive");
   }
+
+  @Test
+  void shouldRejectInvalidPushInterval() {
+    assertThatThrownBy(
+            () -> new AnalyticsExporterConfig().setPushInterval("not-a-duration").validate())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("pushInterval");
+  }
+
+  @Test
+  void shouldRejectNonPositiveMaxQueueSize() {
+    assertThatThrownBy(() -> new AnalyticsExporterConfig().setMaxQueueSize(0).validate())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("maxQueueSize");
+  }
+
+  @Test
+  void shouldRejectNonPositiveMaxBatchSize() {
+    assertThatThrownBy(() -> new AnalyticsExporterConfig().setMaxBatchSize(0).validate())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("maxBatchSize");
+  }
+
+  @Test
+  void shouldRejectMaxBatchSizeExceedingMaxQueueSize() {
+    assertThatThrownBy(
+            () ->
+                new AnalyticsExporterConfig().setMaxQueueSize(100).setMaxBatchSize(200).validate())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("maxBatchSize")
+        .hasMessageContaining("maxQueueSize");
+  }
 }

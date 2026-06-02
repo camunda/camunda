@@ -41,9 +41,6 @@ class AnalyticsExporterTest {
     memoryExporter = InMemoryLogRecordExporter.create();
     controller = new ExporterTestController();
     exporter = exporterWithInMemory(memoryExporter, controller);
-    // Discard the heartbeat emitted synchronously during open() so tests can assert on
-    // event emissions without accounting for it.
-    memoryExporter.reset();
   }
 
   @Test
@@ -194,7 +191,6 @@ class AnalyticsExporterTest {
         0L, new AnalyticsExporterMetadata(5L, 0).serialize());
     final var freshMemoryExporter = InMemoryLogRecordExporter.create();
     final var freshExporter = exporterWithInMemory(freshMemoryExporter, seededController);
-    freshMemoryExporter.reset(); // discard heartbeat emitted during open()
 
     // when
     freshExporter.export(piCreatedEvent());
@@ -238,12 +234,6 @@ class AnalyticsExporterTest {
               final long logPosition,
               final Consumer<LogRecordBuilder> builder) {
             throw new RuntimeException("simulated failure");
-          }
-
-          @Override
-          public void emitHeartbeat() {
-            // Suppress the heartbeat fired during open() so this test stays focused on
-            // export() resilience.
           }
         },
         controller);

@@ -92,7 +92,7 @@ public class AnalyticsExporter implements Exporter {
             .orElse(new AnalyticsExporterMetadata());
     otelSdkManager.initialize(config, analyticsContext, metadata);
     scheduleMetricFlush();
-    emitHeartbeatAndReschedule();
+    scheduleHeartbeat();
     LOG.info("Analytics exporter opened");
   }
 
@@ -139,15 +139,19 @@ public class AnalyticsExporter implements Exporter {
     }
   }
 
+  private void scheduleHeartbeat() {
+    heartbeatTask =
+        controller.scheduleCancellableTask(
+            config.getHeartbeatInterval(), this::emitHeartbeatAndReschedule);
+  }
+
   private void emitHeartbeatAndReschedule() {
     try {
       otelSdkManager.emitHeartbeat();
     } catch (final Exception e) {
       SAMPLED_WARN_LOG.warn("Failed to emit heartbeat", e);
     } finally {
-      heartbeatTask =
-          controller.scheduleCancellableTask(
-              config.getHeartbeatInterval(), this::emitHeartbeatAndReschedule);
+      scheduleHeartbeat();
     }
   }
 

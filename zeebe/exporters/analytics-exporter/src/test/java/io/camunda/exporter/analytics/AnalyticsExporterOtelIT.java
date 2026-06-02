@@ -57,13 +57,23 @@ class AnalyticsExporterOtelIT {
   }
 
   /**
-   * Heartbeat fired during open() reaches the collector with the static cluster metadata attributes
-   * (broker / exporter / schema version).
+   * Heartbeat reaches the collector with the static cluster metadata attributes (broker / exporter
+   * version). The schema URL is delivered automatically via the instrumentation scope, so we don't
+   * attach it as a record attribute.
    */
   @Test
   void shouldDeliverHeartbeatWithVersionAttributes() {
-    // given / when — open() emits the heartbeat synchronously; close() flushes the batch
-    final var exporter = createExporter();
+    // given — short heartbeat interval so the scheduled task fires within the test
+    final var controller = new ExporterTestController();
+    final var exporter =
+        createExporter(
+            new AnalyticsExporterConfig()
+                .setEndpoint("http://localhost:" + OTEL_COLLECTOR.getMappedPort(OTLP_PORT))
+                .setHeartbeatInterval("PT1S"),
+            controller);
+
+    // when — fire the scheduled heartbeat task
+    controller.runScheduledTasks(Duration.ofSeconds(1));
     exporter.close();
 
     // then
@@ -71,7 +81,8 @@ class AnalyticsExporterOtelIT {
         EVENT_HEARTBEAT,
         AnalyticsAttributes.BROKER_VERSION.getKey(),
         AnalyticsAttributes.EXPORTER_VERSION.getKey(),
-        AnalyticsAttributes.SCHEMA_VERSION.getKey());
+        // schema URL is part of the instrumentation scope, not a record attribute
+        "ScopeLogs SchemaURL: https://camunda.io/schemas/analytics/v1");
   }
 
   /** Events arrive at the collector with correct event name and attributes. */
@@ -120,8 +131,7 @@ class AnalyticsExporterOtelIT {
         .atMost(Duration.ofSeconds(30))
         .untilAsserted(
             () -> {
-              // Count the PI-created records specifically — open() also fires a heartbeat which
-              // would otherwise inflate the total LogRecord count.
+              // Count the PI-created records specifically to avoid coupling to other event types.
               final var piCreatedCount =
                   COLLECTOR_LOGS.stream()
                       .filter(l -> l.contains("Str(" + EVENT_PROCESS_INSTANCE_CREATED + ")"))
@@ -146,6 +156,11 @@ class AnalyticsExporterOtelIT {
   }
 
   private AnalyticsExporter createExporter(final AnalyticsExporterConfig config) {
+    return createExporter(config, new ExporterTestController());
+  }
+
+  private AnalyticsExporter createExporter(
+      final AnalyticsExporterConfig config, final ExporterTestController controller) {
     final var context =
         new ExporterTestContext()
             .setConfiguration(new ExporterTestConfiguration<>("analytics-it", config))
@@ -154,7 +169,7 @@ class AnalyticsExporterOtelIT {
             .setLicenseKey("it-test-license-key");
     final var exporter = new AnalyticsExporter();
     exporter.configure(context);
-    exporter.open(new ExporterTestController());
+    exporter.open(controller);
     return exporter;
   }
 

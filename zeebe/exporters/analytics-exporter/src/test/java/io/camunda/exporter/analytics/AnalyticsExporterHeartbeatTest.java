@@ -30,27 +30,6 @@ class AnalyticsExporterHeartbeatTest {
     memoryExporter = InMemoryLogRecordExporter.create();
     controller = new ExporterTestController();
     exporter = openExporter(new AnalyticsExporterConfig(), memoryExporter, controller);
-    // Heartbeat is emitted during open(). The tests will use this emitted event.
-  }
-
-  @Test
-  void shouldEmitHeartbeatOnOpen() {
-    assertThat(memoryExporter.getFinishedLogRecordItems())
-        .singleElement()
-        .satisfies(
-            log -> {
-              final var attrs = log.getAttributes().asMap();
-              assertThat(attrs)
-                  .containsEntry(AnalyticsAttributes.EVENT_NAME, EVENT_HEARTBEAT)
-                  .containsEntry(AnalyticsAttributes.BROKER_VERSION, VersionUtil.getVersion())
-                  .containsEntry(
-                      AnalyticsAttributes.EXPORTER_VERSION, AnalyticsExporterVersion.get())
-                  .containsKey(AnalyticsAttributes.SCHEMA_VERSION);
-              assertThat(attrs.get(AnalyticsAttributes.SCHEMA_VERSION)).asString().isNotBlank();
-              assertThat(attrs)
-                  .doesNotContainKey(AnalyticsAttributes.LOG_POSITION)
-                  .doesNotContainKey(AnalyticsAttributes.EVENT_SEQUENCE_NUMBER);
-            });
   }
 
   @Test
@@ -61,15 +40,22 @@ class AnalyticsExporterHeartbeatTest {
   }
 
   @Test
-  void shouldEmitFollowupHeartbeatWhenScheduledTaskFires() {
+  void shouldEmitHeartbeatWhenScheduledTaskFires() {
     // when — advance time past the heartbeat interval
     controller.runScheduledTasks(new AnalyticsExporterConfig().getHeartbeatInterval());
 
-    // then — open()'s heartbeat plus one scheduled fire
+    // then — the scheduled heartbeat fired with the expected attributes
     assertThat(memoryExporter.getFinishedLogRecordItems())
-        .filteredOn(
-            log -> EVENT_HEARTBEAT.equals(log.getAttributes().get(AnalyticsAttributes.EVENT_NAME)))
-        .hasSize(2);
+        .singleElement()
+        .satisfies(
+            log -> {
+              final var attrs = log.getAttributes().asMap();
+              assertThat(attrs)
+                  .containsEntry(AnalyticsAttributes.EVENT_NAME, EVENT_HEARTBEAT)
+                  .containsEntry(AnalyticsAttributes.BROKER_VERSION, VersionUtil.getVersion())
+                  .containsEntry(
+                      AnalyticsAttributes.EXPORTER_VERSION, AnalyticsExporterVersion.get());
+            });
   }
 
   @Test
@@ -80,11 +66,11 @@ class AnalyticsExporterHeartbeatTest {
     controller.runScheduledTasks(heartbeatInterval);
     controller.runScheduledTasks(heartbeatInterval);
 
-    // then — open() + 2 scheduled fires
+    // then — two scheduled fires
     assertThat(memoryExporter.getFinishedLogRecordItems())
         .filteredOn(
             log -> EVENT_HEARTBEAT.equals(log.getAttributes().get(AnalyticsAttributes.EVENT_NAME)))
-        .hasSize(3);
+        .hasSize(2);
   }
 
   @Test

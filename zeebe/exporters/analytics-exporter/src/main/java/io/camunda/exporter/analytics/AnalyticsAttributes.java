@@ -78,10 +78,6 @@ public final class AnalyticsAttributes {
   public static final AttributeKey<String> BROKER_VERSION =
       AttributeKey.stringKey("camunda.broker.version");
 
-  // Schema domain
-  public static final AttributeKey<String> SCHEMA_VERSION =
-      AttributeKey.stringKey("camunda.schema.version");
-
   // Exporter domain
   public static final AttributeKey<String> EXPORTER_VERSION =
       AttributeKey.stringKey("camunda.exporter.version");
