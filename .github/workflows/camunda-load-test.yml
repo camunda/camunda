@@ -42,6 +42,10 @@ on:
         - elasticsearch
         - opensearch
         - postgresql
+        - mysql
+        - mariadb
+        - mssql
+        - oracle
         - none
         default: elasticsearch
       reuse-tag:
@@ -163,7 +167,7 @@ on:
         required: false
         default: false
       secondary-storage-type:
-        description: 'Specifies the type of the secondary database used by Camunda Platform, can be "elasticsearch", "opensearch", "postgresql" or "none"'
+        description: 'Specifies the type of the secondary database used by Camunda Platform, can be "elasticsearch", "opensearch", "postgresql", "mysql", "mariadb", "mssql", "oracle" or "none"'
         # type choice is invalid here
         type: string
         required: false
