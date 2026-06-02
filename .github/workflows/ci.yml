@@ -208,10 +208,9 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-      - name: Bootstrap reactor modules
-        run: ./mvnw -B -T1C --no-snapshot-updates -DskipChecks=true -DskipTests=true -Dquickly=true install
-      - name: Generate flattened POMs
-        run: ./mvnw -B -T1C --no-snapshot-updates -DskipChecks=true -Dcheckstyle.skip=true -DskipTests=true -Dquickly=false -PskipFrontendBuild process-resources
+      - name: Bootstrap reactor and generate flattened POMs
+        # quickly=false default → flatten.skip=false → flatten-maven-plugin runs during `process-resources` of `install`.
+        run: ./mvnw clean install -B -T1C --no-snapshot-updates -DskipChecks=true -DskipTests=true -PskipFrontendBuild
       - name: Validate flattened POM metadata
         uses: ./.github/actions/validate-pom-metadata
       - name: Observe build status
