@@ -18,7 +18,7 @@ import io.camunda.zeebe.dmn.MatchedRule;
 import io.camunda.zeebe.dmn.ParsedDecisionRequirementsGraph;
 import io.camunda.zeebe.dmn.impl.VariablesContext;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
-import io.camunda.zeebe.engine.processing.ordinals.OrdinalKeyProvider;
+import io.camunda.zeebe.engine.processing.ordinal.OrdinalKeyProvider;
 import io.camunda.zeebe.engine.state.deployment.DeployedDrg;
 import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
 import io.camunda.zeebe.engine.state.immutable.DecisionState;

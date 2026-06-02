@@ -20,7 +20,7 @@ import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvid
 import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvider.Item;
 import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvider.ItemPage;
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationChunkAppender.ChunkingOutcome;
-import io.camunda.zeebe.engine.processing.ordinals.OrdinalKeyProvider;
+import io.camunda.zeebe.engine.processing.ordinal.OrdinalKeyProvider;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationChunkRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationItem;

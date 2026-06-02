@@ -8,7 +8,7 @@
 package io.camunda.zeebe.engine.processing.batchoperation.scheduler;
 
 import com.google.common.base.Strings;
-import io.camunda.zeebe.engine.processing.ordinals.OrdinalKeyProvider;
+import io.camunda.zeebe.engine.processing.ordinal.OrdinalKeyProvider;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationError;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationInitializationRecord;
