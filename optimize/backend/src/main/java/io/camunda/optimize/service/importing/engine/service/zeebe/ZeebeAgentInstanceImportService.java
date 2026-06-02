@@ -15,7 +15,11 @@ import io.camunda.optimize.dto.zeebe.agentinstance.ZeebeAgentInstanceDataDto;
 import io.camunda.optimize.dto.zeebe.agentinstance.ZeebeAgentInstanceRecordDto;
 import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
+import io.camunda.optimize.service.db.writer.ProcessDefinitionWriter;
 import io.camunda.optimize.service.db.writer.ProcessInstanceWriter;
+import io.camunda.optimize.service.importing.job.AgentInstanceDatabaseImportJob;
+import io.camunda.optimize.service.importing.job.AgenticProcessFlagCache;
+import io.camunda.optimize.service.importing.job.ProcessInstanceDatabaseImportJob;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
@@ -38,12 +42,17 @@ public class ZeebeAgentInstanceImportService
   private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(ZeebeAgentInstanceImportService.class);
 
+  private final ProcessDefinitionWriter processDefinitionWriter;
+  private final AgenticProcessFlagCache agenticProcessFlagCache;
+
   public ZeebeAgentInstanceImportService(
       final ConfigurationService configurationService,
       final ProcessInstanceWriter processInstanceWriter,
       final int partitionId,
       final ProcessDefinitionReader processDefinitionReader,
-      final DatabaseClient databaseClient) {
+      final DatabaseClient databaseClient,
+      final ProcessDefinitionWriter processDefinitionWriter,
+      final AgenticProcessFlagCache agenticProcessFlagCache) {
     super(
         configurationService,
         processInstanceWriter,
@@ -51,6 +60,24 @@ public class ZeebeAgentInstanceImportService
         processDefinitionReader,
         databaseClient,
         ZEEBE_AGENT_INSTANCE_INDEX_NAME);
+    this.processDefinitionWriter = processDefinitionWriter;
+    this.agenticProcessFlagCache = agenticProcessFlagCache;
+  }
+
+  @Override
+  protected ProcessInstanceDatabaseImportJob newImportJob(
+      final Runnable importCompleteCallback,
+      final ProcessInstanceWriter processInstanceWriter,
+      final String sourceExportIndex,
+      final DatabaseClient databaseClient) {
+    return new AgentInstanceDatabaseImportJob(
+        processInstanceWriter,
+        configurationService,
+        importCompleteCallback,
+        sourceExportIndex,
+        databaseClient,
+        processDefinitionWriter,
+        agenticProcessFlagCache);
   }
 
   @Override
