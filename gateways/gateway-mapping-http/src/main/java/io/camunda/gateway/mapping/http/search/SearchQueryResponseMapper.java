@@ -158,6 +158,7 @@ import io.camunda.gateway.protocol.model.UserTaskStateEnum;
 import io.camunda.gateway.protocol.model.VariableResult;
 import io.camunda.gateway.protocol.model.VariableSearchQueryResult;
 import io.camunda.gateway.protocol.model.VariableSearchResult;
+import io.camunda.gateway.protocol.model.WaitStateElementTypeEnum;
 import io.camunda.gateway.protocol.model.WaitStateTypeEnum;
 import io.camunda.search.entities.AgentInstanceEntity;
 import io.camunda.search.entities.AuditLogEntity;
@@ -668,8 +669,7 @@ public final class SearchQueryResponseMapper {
   private static ElementInstanceWaitStateResult toElementInstanceWaitStateResult(
       final WaitStateEntity item) {
     final var rootKey = keyToStringOrNull(item.rootProcessInstanceKey());
-    final var elementType =
-        ElementInstanceWaitStateResult.ElementTypeEnum.fromValue(item.elementType().name());
+    final var elementType = WaitStateElementTypeEnum.fromValue(item.elementType().name());
     final var base =
         ElementInstanceWaitStateResult.Builder.create()
             .waitStateType(WaitStateTypeEnum.fromValue(item.details().waitStateType().name()))

@@ -693,7 +693,7 @@ components:
           $ref: 'filters.yaml#/components/schemas/LikeFilter'
 
     WaitStateElementTypeEnum:
-      description: The BPMN element type to filter wait states by.
+      description: The BPMN element type of a waiting element instance.
       type: string
       enum:
         - AD_HOC_SUB_PROCESS
@@ -808,35 +808,8 @@ components:
           description: The element ID for this element instance.
         elementType:
           description: The BPMN element type of this element instance.
-          type: string
-          enum:
-            - AD_HOC_SUB_PROCESS
-            - AD_HOC_SUB_PROCESS_INNER_INSTANCE
-            - BOUNDARY_EVENT
-            - BUSINESS_RULE_TASK
-            - CALL_ACTIVITY
-            - END_EVENT
-            - EVENT_BASED_GATEWAY
-            - EVENT_SUB_PROCESS
-            - EXCLUSIVE_GATEWAY
-            - INCLUSIVE_GATEWAY
-            - INTERMEDIATE_CATCH_EVENT
-            - INTERMEDIATE_THROW_EVENT
-            - MANUAL_TASK
-            - MULTI_INSTANCE_BODY
-            - PARALLEL_GATEWAY
-            - PROCESS
-            - RECEIVE_TASK
-            - SCRIPT_TASK
-            - SEND_TASK
-            - SEQUENCE_FLOW
-            - SERVICE_TASK
-            - START_EVENT
-            - SUB_PROCESS
-            - TASK
-            - UNKNOWN
-            - UNSPECIFIED
-            - USER_TASK
+          allOf:
+            - $ref: '#/components/schemas/WaitStateElementTypeEnum'
         tenantId:
           description: The tenant ID of the element instance.
           allOf:
