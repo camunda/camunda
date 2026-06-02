@@ -34,6 +34,8 @@ public class BrokerCfg {
 
   private boolean executionMetricsExporterEnabled;
 
+  // Safeguard: exclude from Jackson serialization to prevent accidental exposure (e.g. logging,
+  // debug endpoints). Primary sanitization is handled by ConfigSanitizingFunction.
   @JsonIgnore private String licenseKey;
 
   public void init(final String brokerBase) {

@@ -72,7 +72,7 @@ final class AnalyticsExporterIT {
   private final TestStandaloneBroker broker =
       new TestStandaloneBroker()
           .withUnauthenticatedAccess()
-          .withProperty("zeebe.broker.cluster.clusterId", "e2e-test-cluster")
+          .withProperty("camunda.cluster.cluster-id", "e2e-test-cluster")
           .withProperty("camunda.license.key", "test-license-key-for-analytics-it");
 
   @AutoClose private CamundaClient client;
