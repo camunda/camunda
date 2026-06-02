@@ -33,6 +33,7 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 /** The injected context for a process test. */
 public interface CamundaProcessTestContext {
@@ -184,6 +185,28 @@ public interface CamundaProcessTestContext {
   void completeJobWithExampleData(final JobSelector jobSelector);
 
   /**
+   * Completes a job of the specified type. The given mapper receives the job's input variables and
+   * returns the output variables used to complete the job.
+   *
+   * @param jobType the type of the job to complete, matching the {@code zeebeJobType} in the BPMN
+   *     model
+   * @param variableMapper a function mapping input variables to output variables; must not be
+   *     {@code null} and must not return {@code null}
+   */
+  void completeJob(final String jobType, final UnaryOperator<Map<String, Object>> variableMapper);
+
+  /**
+   * Completes a job matching the specified selector. The given mapper receives the job's input
+   * variables and returns the output variables used to complete the job.
+   *
+   * @param jobSelector the selector to identify the job to complete
+   * @param variableMapper a function mapping input variables to output variables; must not be
+   *     {@code null} and must not return {@code null}
+   */
+  void completeJob(
+      final JobSelector jobSelector, final UnaryOperator<Map<String, Object>> variableMapper);
+
+  /**
    * Throws a BPMN error from a job of the specified type.
    *
    * @param jobType the type of the job to throw the error from, matching the `zeebeJobType` in the
@@ -301,6 +324,29 @@ public interface CamundaProcessTestContext {
    * @param userTaskSelector the selector to identify the user task to complete
    */
   void completeUserTaskWithExampleData(final UserTaskSelector userTaskSelector);
+
+  /**
+   * Completes the user task with the given BPMN element ID. The given mapper receives the user
+   * task's input variables and returns the output variables used to complete the user task.
+   *
+   * @param elementId the BPMN element ID of the user task to complete
+   * @param variableMapper a function mapping input variables to output variables; must not be
+   *     {@code null} and must not return {@code null}
+   */
+  void completeUserTask(
+      final String elementId, final UnaryOperator<Map<String, Object>> variableMapper);
+
+  /**
+   * Completes the user task matching the specified selector. The given mapper receives the user
+   * task's input variables and returns the output variables used to complete the user task.
+   *
+   * @param userTaskSelector the selector to identify the user task to complete
+   * @param variableMapper a function mapping input variables to output variables; must not be
+   *     {@code null} and must not return {@code null}
+   */
+  void completeUserTask(
+      final UserTaskSelector userTaskSelector,
+      final UnaryOperator<Map<String, Object>> variableMapper);
 
   /**
    * Mocks a DMN decision with the specified decision ID and sets the provided variables.

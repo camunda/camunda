@@ -106,6 +106,7 @@ public class CamundaDataSource {
     return client
         .newVariableSearchRequest()
         .filter(filter)
+        .withFullValues()
         .page(DEFAULT_PAGE_REQUEST)
         .send()
         .join()

@@ -37,6 +37,7 @@ import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.Job;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.UserTask;
+import io.camunda.client.api.search.response.Variable;
 import io.camunda.process.test.api.CamundaAssertAwaitBehavior;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestContext;
@@ -61,12 +62,17 @@ import java.io.ByteArrayInputStream;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.bpm.model.dmn.instance.Decision;
@@ -283,20 +289,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   @Override
   public void completeJob(final JobSelector jobSelector, final Map<String, Object> variables) {
     final CamundaClient client = createClient();
-
-    // completing the job inside the await block to handle the eventual consistency of the API
-    awaitJob(
-        jobSelector,
-        client,
-        job -> {
-          LOGGER.debug(
-              "Mock: Complete job [{}, jobKey: '{}'] with variables {}",
-              jobSelector.describe(),
-              job.getJobKey(),
-              variables);
-
-          client.newCompleteCommand(job.getJobKey()).variables(variables).send().join();
-        });
+    doCompleteJob(client, jobSelector, job -> variables);
   }
 
   @Override
@@ -333,6 +326,30 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
             client.newCompleteCommand(job.getJobKey()).send().join();
           }
         });
+  }
+
+  @Override
+  public void completeJob(
+      final String jobType, final UnaryOperator<Map<String, Object>> variableMapper) {
+    completeJob(JobSelectors.byJobType(jobType), variableMapper);
+  }
+
+  @Override
+  public void completeJob(
+      final JobSelector jobSelector, final UnaryOperator<Map<String, Object>> variableMapper) {
+    Objects.requireNonNull(variableMapper, "variableMapper must not be null");
+    final CamundaClient client = createClient();
+    doCompleteJob(
+        client,
+        jobSelector,
+        job ->
+            resolveOutputVariablesFromInputVariables(
+                client,
+                jobSelector.describe(),
+                "complete job",
+                job.getProcessInstanceKey(),
+                job.getElementInstanceKey(),
+                variableMapper));
   }
 
   @Override
@@ -418,24 +435,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   public void completeUserTask(
       final UserTaskSelector userTaskSelector, final Map<String, Object> variables) {
     final CamundaClient client = createClient();
-
-    // completing the user task inside the await block to handle the eventual consistency of the API
-    awaitUserTask(
-        userTaskSelector,
-        client,
-        userTask -> {
-          LOGGER.debug(
-              "Mock: Complete user task [{}, userTaskKey: '{}'] with variables {}",
-              userTaskSelector.describe(),
-              userTask.getUserTaskKey(),
-              variables);
-
-          client
-              .newCompleteUserTaskCommand(userTask.getUserTaskKey())
-              .variables(variables)
-              .send()
-              .join();
-        });
+    doCompleteUserTask(client, userTaskSelector, userTask -> variables);
   }
 
   @Override
@@ -478,6 +478,31 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
             client.newCompleteUserTaskCommand(userTask.getUserTaskKey()).send().join();
           }
         });
+  }
+
+  @Override
+  public void completeUserTask(
+      final String elementId, final UnaryOperator<Map<String, Object>> variableMapper) {
+    completeUserTask(UserTaskSelectors.byElementId(elementId), variableMapper);
+  }
+
+  @Override
+  public void completeUserTask(
+      final UserTaskSelector userTaskSelector,
+      final UnaryOperator<Map<String, Object>> variableMapper) {
+    Objects.requireNonNull(variableMapper, "variableMapper must not be null");
+    final CamundaClient client = createClient();
+    doCompleteUserTask(
+        client,
+        userTaskSelector,
+        userTask ->
+            resolveOutputVariablesFromInputVariables(
+                client,
+                userTaskSelector.describe(),
+                "complete user task",
+                userTask.getProcessInstanceKey(),
+                userTask.getElementInstanceKey(),
+                variableMapper));
   }
 
   @Override
@@ -669,6 +694,48 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     return conditionalBehaviorEngine.when(condition);
   }
 
+  // completing the job inside the await block to handle the eventual consistency of the API
+  private void doCompleteJob(
+      final CamundaClient client,
+      final JobSelector jobSelector,
+      final Function<Job, Map<String, Object>> variableResolver) {
+    awaitJob(
+        jobSelector,
+        client,
+        job -> {
+          final Map<String, Object> outputVariables = variableResolver.apply(job);
+          LOGGER.debug(
+              "Mock: Complete job [{}, jobKey: '{}'] with variables {}",
+              jobSelector.describe(),
+              job.getJobKey(),
+              outputVariables);
+          client.newCompleteCommand(job.getJobKey()).variables(outputVariables).send().join();
+        });
+  }
+
+  // completing the user task inside the await block to handle the eventual consistency of the API
+  private void doCompleteUserTask(
+      final CamundaClient client,
+      final UserTaskSelector userTaskSelector,
+      final Function<UserTask, Map<String, Object>> variableResolver) {
+    awaitUserTask(
+        userTaskSelector,
+        client,
+        userTask -> {
+          final Map<String, Object> outputVariables = variableResolver.apply(userTask);
+          LOGGER.debug(
+              "Mock: Complete user task [{}, userTaskKey: '{}'] with variables {}",
+              userTaskSelector.describe(),
+              userTask.getUserTaskKey(),
+              outputVariables);
+          client
+              .newCompleteUserTaskCommand(userTask.getUserTaskKey())
+              .variables(outputVariables)
+              .send()
+              .join();
+        });
+  }
+
   private void awaitUserTask(
       final UserTaskSelector userTaskSelector,
       final CamundaClient client,
@@ -722,6 +789,83 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
 
               job.ifPresent(jobConsumer);
             });
+  }
+
+  /** Resolves the output variables for a variable-mapper-based completion */
+  private Map<String, Object> resolveOutputVariablesFromInputVariables(
+      final CamundaClient client,
+      final String selectorDescription,
+      final String operation,
+      final long processInstanceKey,
+      final long elementInstanceKey,
+      final UnaryOperator<Map<String, Object>> variableMapper) {
+    final Map<String, Object> inputVariables =
+        readInputVariables(client, processInstanceKey, elementInstanceKey);
+    final Map<String, Object> outputVariables = variableMapper.apply(inputVariables);
+    if (outputVariables == null) {
+      throw new AssertionError(
+          String.format(
+              "Expected to %s [%s] but the variableMapper returned null.",
+              operation, selectorDescription));
+    }
+    return outputVariables;
+  }
+
+  /**
+   * Reads the variables visible to an element by querying the process-instance-global and
+   * element-local scopes via the Search API and merging them, with local values shadowing global
+   * ones. Variables are requested with full values so that they can always be deserialized.
+   */
+  private Map<String, Object> readInputVariables(
+      final CamundaClient client, final long processInstanceKey, final long elementInstanceKey) {
+
+    final List<Variable> globalVariables =
+        fetchVariables(client, processInstanceKey, processInstanceKey);
+    final List<Variable> localVariables =
+        fetchVariables(client, processInstanceKey, elementInstanceKey);
+
+    // Merge by name first so that only the winning variable per name is deserialized.
+    final Map<String, Variable> mergedVariables = new HashMap<>();
+    for (final Variable variable : globalVariables) {
+      mergedVariables.put(variable.getName(), variable);
+    }
+    for (final Variable variable : localVariables) {
+      mergedVariables.put(variable.getName(), variable);
+    }
+
+    return toVariableMap(client.getConfiguration().getJsonMapper(), mergedVariables.values());
+  }
+
+  private static List<Variable> fetchVariables(
+      final CamundaClient client, final long processInstanceKey, final long scopeKey) {
+    return client
+        .newVariableSearchRequest()
+        .filter(filter -> filter.processInstanceKey(processInstanceKey).scopeKey(scopeKey))
+        .withFullValues()
+        .send()
+        .join()
+        .items();
+  }
+
+  private static Map<String, Object> toVariableMap(
+      final JsonMapper jsonMapper, final Collection<Variable> variables) {
+    final Map<String, Object> result = new HashMap<>();
+    for (final Variable variable : variables) {
+      if (variable.isTruncated()) {
+        throw new AssertionError(
+            "Expected variable '"
+                + variable.getName()
+                + "' to have a full value, but the Search API returned a truncated value.");
+      }
+
+      if (variable.getValue() == null) {
+        result.put(variable.getName(), null);
+        continue;
+      }
+
+      result.put(variable.getName(), jsonMapper.fromJson(variable.getValue(), Object.class));
+    }
+    return result;
   }
 
   private Optional<Job> findJob(final JobSelector jobSelector, final CamundaClient client) {
