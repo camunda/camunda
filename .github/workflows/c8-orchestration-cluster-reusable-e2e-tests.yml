@@ -131,6 +131,12 @@ jobs:
       - name: Print Docker logs before failing
         if: failure()
         run: |
+          # DATABASE must be set so docker compose can resolve the ${DATABASE}
+          # references in the compose file (depends_on / env_file). Without it
+          # every `docker compose logs` call aborts with "service \"camunda\"
+          # depends on undefined service \"\": invalid compose project",
+          # masking the container logs needed to diagnose the failure.
+          export DATABASE=elasticsearch
           if [[ "${{ inputs.branch }}" == "stable/8.7" ]]; then
             docker compose logs tasklist
             docker compose logs operate
