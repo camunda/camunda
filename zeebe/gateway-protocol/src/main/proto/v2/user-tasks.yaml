@@ -7,6 +7,9 @@ paths:
       tags:
         - User task
       operationId: completeUserTask
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Complete user task
       description: >
         Completes a user task with the given key. Completion waits for blocking task listeners on
@@ -59,6 +62,9 @@ paths:
       tags:
         - User task
       operationId: assignUserTask
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Assign user task
       description: >
         Assigns a user task with the given key to the given assignee. Assignment waits for
@@ -112,6 +118,9 @@ paths:
       tags:
         - User task
       operationId: getUserTask
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Get user task
       description: Get the user task by the user task key.
       parameters:
@@ -149,6 +158,9 @@ paths:
       tags:
         - User task
       operationId: updateUserTask
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Update user task
       description: >
         Update a user task with the given key. Updates wait for blocking task listeners on this
@@ -201,6 +213,9 @@ paths:
       tags:
         - User task
       operationId: getUserTaskForm
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Get user task form
       description: |
         Get the form of a user task.
@@ -243,6 +258,9 @@ paths:
       tags:
         - User task
       operationId: unassignUserTask
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Unassign user task
       description: >
         Removes the assignee of a task with the given key. Unassignment waits for blocking task
@@ -290,6 +308,9 @@ paths:
       tags:
         - User task
       operationId: searchUserTasks
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Search user tasks
       description: Search for user tasks based on given criteria.
       requestBody:
@@ -321,6 +342,9 @@ paths:
       tags:
         - User task
       operationId: searchUserTaskVariables
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Search user task variables
       description: |
         Search for user task variables based on given criteria. This endpoint returns all variable
@@ -368,6 +392,9 @@ paths:
       tags:
         - User task
       operationId: searchUserTaskEffectiveVariables
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Search user task effective variables
       description: |
         Search for the effective variables of a user task. This endpoint returns deduplicated
@@ -414,6 +441,9 @@ paths:
       tags:
         - User task
       operationId: searchUserTaskAuditLogs
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Search user task audit logs
       description: Search for user task audit logs based on given criteria.
       parameters:

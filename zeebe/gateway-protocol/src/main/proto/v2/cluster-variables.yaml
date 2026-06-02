@@ -4,6 +4,9 @@ paths:
   /cluster-variables/global:
     post:
       operationId: createGlobalClusterVariable
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       x-eventually-consistent: false
       tags:
         - Cluster Variable
@@ -44,6 +47,9 @@ paths:
   /cluster-variables/tenants/{tenantId}:
     post:
       operationId: createTenantClusterVariable
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       x-eventually-consistent: false
       tags:
         - Cluster Variable
@@ -104,6 +110,9 @@ paths:
       tags:
         - Cluster Variable
       operationId: searchClusterVariables
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       x-eventually-consistent: true
       description: Search for cluster variables based on given criteria. By default, long variable values in the response are truncated.
       parameters:
@@ -138,6 +147,9 @@ paths:
   /cluster-variables/global/{name}:
     get:
       operationId: getGlobalClusterVariable
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       x-eventually-consistent: true
       tags:
         - Cluster Variable
@@ -178,6 +190,9 @@ paths:
       x-added-in-version: "8.9"
     put:
       operationId: updateGlobalClusterVariable
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       x-eventually-consistent: false
       tags:
         - Cluster Variable
@@ -226,6 +241,9 @@ paths:
       x-added-in-version: "8.9"
     delete:
       operationId: deleteGlobalClusterVariable
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       x-eventually-consistent: false
       tags:
         - Cluster Variable
@@ -263,6 +281,9 @@ paths:
   /cluster-variables/tenants/{tenantId}/{name}:
     get:
       operationId: getTenantClusterVariable
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       x-eventually-consistent: true
       tags:
         - Cluster Variable
@@ -310,6 +331,9 @@ paths:
       x-added-in-version: "8.9"
     put:
       operationId: updateTenantClusterVariable
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       x-eventually-consistent: false
       tags:
         - Cluster Variable
@@ -365,6 +389,9 @@ paths:
       x-added-in-version: "8.9"
     delete:
       operationId: deleteTenantClusterVariable
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       x-eventually-consistent: false
       tags:
         - Cluster Variable

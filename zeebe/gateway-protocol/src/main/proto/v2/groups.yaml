@@ -6,6 +6,9 @@ paths:
       tags:
         - Group
       operationId: createGroup
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Create group
       description: |
         Create a new group.
@@ -64,6 +67,9 @@ paths:
       tags:
         - Group
       operationId: searchGroups
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Search groups
       description: Search for groups based on given criteria.
       requestBody:
@@ -95,6 +101,9 @@ paths:
       tags:
         - Group
       operationId: getGroup
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Get group
       description: Get a group by its ID.
       x-semantic-requires:
@@ -134,6 +143,9 @@ paths:
       tags:
         - Group
       operationId: updateGroup
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Update group
       description: Update a group with the given ID.
       x-semantic-requires:
@@ -181,6 +193,9 @@ paths:
       tags:
         - Group
       operationId: deleteGroup
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Delete group
       description: Deletes the group with the given ID.
       x-semantic-requires:
@@ -217,6 +232,9 @@ paths:
       tags:
         - Group
       operationId: assignUserToGroup
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Assign a user to a group
       description: |
         Assigns a user to a group, making the user a member of the group.
@@ -270,6 +288,9 @@ paths:
       tags:
         - Group
       operationId: unassignUserFromGroup
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Unassign a user from a group
       description: |
         Unassigns a user from a group.
@@ -317,6 +338,9 @@ paths:
       tags:
         - Group
       operationId: searchUsersForGroup
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Search group users
       description: Search users assigned to a group.
       x-semantic-requires:
@@ -365,6 +389,9 @@ paths:
       tags:
         - Group
       operationId: assignClientToGroup
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Assign a client to a group
       description: |
         Assigns a client to a group, making it a member of the group.
@@ -418,6 +445,9 @@ paths:
       tags:
         - Group
       operationId: unassignClientFromGroup
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Unassign a client from a group
       description: |
         Unassigns a client from a group.
@@ -465,6 +495,9 @@ paths:
       tags:
         - Group
       operationId: searchClientsForGroup
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Search group clients
       description: Search clients assigned to a group.
       x-semantic-requires:
@@ -513,6 +546,9 @@ paths:
       tags:
         - Group
       operationId: assignMappingRuleToGroup
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Assign a mapping rule to a group
       description: Assigns a mapping rule to a group.
       x-semantic-establishes:
@@ -564,6 +600,9 @@ paths:
       tags:
         - Group
       operationId: unassignMappingRuleFromGroup
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Unassign a mapping rule from a group
       description: Unassigns a mapping rule from a group.
       x-semantic-requires:
@@ -609,6 +648,9 @@ paths:
       tags:
         - Group
       operationId: searchMappingRulesForGroup
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Search group mapping rules
       description: Search mapping rules assigned to a group.
       x-semantic-requires:
@@ -657,6 +699,9 @@ paths:
       tags:
         - Group
       operationId: searchRolesForGroup
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Search group roles
       description: Search roles assigned to a group.
       x-semantic-requires:

@@ -7,6 +7,9 @@ paths:
       tags:
         - Element instance
       operationId: searchElementInstances
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Search element instances
       description: Search for element instances based on given criteria.
       requestBody:
@@ -38,6 +41,9 @@ paths:
       tags:
         - Element instance
       operationId: searchElementInstanceWaitStates
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Search element instance wait states
       description: >
         Returns the wait states for element instances matching the given filter.
@@ -70,6 +76,9 @@ paths:
       tags:
         - Element instance
       operationId: getElementInstance
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Get element instance
       description: Returns element instance as JSON.
       parameters:
@@ -110,6 +119,9 @@ paths:
       tags:
         - Element instance
       operationId: createElementInstanceVariables
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Update element instance variables
       description: |
         Updates all the variables of a particular scope (for example, process instance, element instance) with the given variable data.
@@ -153,6 +165,9 @@ paths:
       tags:
         - Element instance
       operationId: searchElementInstanceIncidents
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Search for incidents of a specific element instance
       description: |
         Search for incidents caused by the specified element instance, including incidents of any child instances created from this element instance.
@@ -204,6 +219,9 @@ paths:
       tags:
         - Ad-hoc sub-process
       operationId: activateAdHocSubProcessActivities
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Activate activities within an ad-hoc sub-process
       description: |
         Activates selected activities within an ad-hoc sub-process identified by element ID.

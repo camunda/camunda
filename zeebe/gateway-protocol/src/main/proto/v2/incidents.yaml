@@ -7,6 +7,9 @@ paths:
       tags:
         - Incident
       operationId: searchIncidents
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Search incidents
       description: |
         Search for incidents based on given criteria.
@@ -39,6 +42,9 @@ paths:
       tags:
         - Incident
       operationId: getIncident
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Get incident
       description: |
         Returns incident as JSON.
@@ -78,6 +84,9 @@ paths:
       tags:
         - Incident
       operationId: resolveIncident
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Resolve incident
       description: |
         Marks the incident as resolved; most likely a call to Update job will be necessary
@@ -126,6 +135,9 @@ paths:
       tags:
         - Incident
       operationId: getProcessInstanceStatisticsByError
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Get process instance statistics by error
       description: |
         Returns statistics for active process instances that currently have active incidents,
@@ -161,6 +173,9 @@ paths:
       tags:
         - Incident
       operationId: getProcessInstanceStatisticsByDefinition
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Get process instance statistics by definition
       description: |
         Returns statistics for active process instances with incidents, grouped by process

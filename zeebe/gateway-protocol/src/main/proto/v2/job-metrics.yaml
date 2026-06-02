@@ -7,6 +7,9 @@ paths:
       tags:
         - Job
       operationId: getGlobalJobStatistics
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Global job statistics
       description: |
         Returns global aggregated counts for jobs. Filter by the creation time window (required) and optionally by jobType.
@@ -59,6 +62,9 @@ paths:
       tags:
         - Job
       operationId: getJobTypeStatistics
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Get job statistics by type
       description: |
         Get statistics about jobs, grouped by job type.
@@ -91,6 +97,9 @@ paths:
       tags:
         - Job
       operationId: getJobWorkerStatistics
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Get job statistics by worker
       description: |
         Get statistics about jobs, grouped by worker, for a given job type.
@@ -123,6 +132,9 @@ paths:
       tags:
         - Job
       operationId: getJobTimeSeriesStatistics
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Get time-series metrics for a job type
       description: |
         Returns a list of time-bucketed metrics ordered ascending by time.
@@ -157,6 +169,9 @@ paths:
       tags:
         - Job
       operationId: getJobErrorStatistics
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Get error metrics for a job type
       description: |
         Returns aggregated metrics per error for the given jobType.

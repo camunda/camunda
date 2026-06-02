@@ -7,6 +7,9 @@ paths:
       tags:
         - Decision requirements
       operationId: searchDecisionRequirements
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Search decision requirements
       description: Search for decision requirements based on given criteria.
       requestBody:
@@ -38,6 +41,9 @@ paths:
       tags:
         - Decision requirements
       operationId: getDecisionRequirements
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Get decision requirements
       description: Returns Decision Requirements as JSON.
       parameters:
@@ -78,6 +84,9 @@ paths:
       tags:
         - Decision requirements
       operationId: getDecisionRequirementsXML
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Get decision requirements XML
       description: Returns decision requirements as XML.
       parameters:

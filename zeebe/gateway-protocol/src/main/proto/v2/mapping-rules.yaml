@@ -7,6 +7,9 @@ paths:
       tags:
         - Mapping rule
       operationId: createMappingRule
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Create mapping rule
       description: |
         Create a new mapping rule
@@ -57,6 +60,9 @@ paths:
       tags:
         - Mapping rule
       operationId: updateMappingRule
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Update mapping rule
       description: |
         Update a mapping rule.
@@ -109,6 +115,9 @@ paths:
       tags:
         - Mapping rule
       operationId: deleteMappingRule
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Delete a mapping rule
       description: |
         Deletes the mapping rule with the given ID.
@@ -144,6 +153,9 @@ paths:
       tags:
         - Mapping rule
       operationId: getMappingRule
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Get a mapping rule
       description: |
         Gets the mapping rule with the given ID.
@@ -182,6 +194,9 @@ paths:
       tags:
         - Mapping rule
       operationId: searchMappingRule
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Search mapping rules
       description: |
         Search for mapping rules based on given criteria.

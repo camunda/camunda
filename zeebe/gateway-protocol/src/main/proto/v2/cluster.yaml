@@ -7,6 +7,9 @@ paths:
       tags:
         - Cluster
       operationId: getTopology
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Get cluster topology
       description: Obtains the current topology of the cluster the gateway is part of.
       responses:
@@ -28,6 +31,10 @@ paths:
       tags:
         - Cluster
       operationId: getStatus
+      # Public health-check endpoint — declared unauthenticated at runtime
+      # via SecurityPathAdapter. `security: []` overrides the conditional
+      # enforcement on the global schemes for this operation.
+      security: []
       summary: Get cluster status
       description: Checks the health status of the cluster by verifying if there's at least one partition with a healthy leader.
       responses:

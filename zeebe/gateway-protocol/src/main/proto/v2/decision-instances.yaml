@@ -7,6 +7,9 @@ paths:
       tags:
         - Decision instance
       operationId: searchDecisionInstances
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Search decision instances
       description: Search for decision instances based on given criteria.
       requestBody:
@@ -38,6 +41,9 @@ paths:
       tags:
         - Decision instance
       operationId: getDecisionInstance
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Get decision instance
       description: Returns a decision instance.
       parameters:
@@ -78,6 +84,9 @@ paths:
       tags:
         - Decision instance
       operationId: deleteDecisionInstance
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Delete decision instance
       description: Delete all associated decision evaluations based on provided key.
       parameters:
@@ -118,6 +127,9 @@ paths:
       tags:
         - Decision instance
       operationId: deleteDecisionInstancesBatchOperation
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Delete decision instances (batch)
       description: |
         Delete multiple decision instances. This will delete the historic data from secondary storage.

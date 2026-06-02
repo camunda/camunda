@@ -7,6 +7,10 @@ paths:
       tags:
         - License
       operationId: getLicense
+      # Public license-status endpoint — declared unauthenticated at runtime
+      # via SecurityPathAdapter. `security: []` overrides the conditional
+      # enforcement on the global schemes for this operation.
+      security: []
       summary: Get license status
       description: Obtains the status of the current Camunda license.
       responses:

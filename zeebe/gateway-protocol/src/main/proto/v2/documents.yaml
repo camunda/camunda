@@ -7,6 +7,9 @@ paths:
       tags:
         - Document
       operationId: createDocument
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Upload document
       description: |
         Upload a document to the Camunda 8 cluster.
@@ -64,6 +67,9 @@ paths:
       tags:
         - Document
       operationId: createDocuments
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Upload multiple documents
       description: |
         Upload multiple documents to the Camunda 8 cluster.
@@ -147,6 +153,9 @@ paths:
       tags:
         - Document
       operationId: getDocument
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Download document
       description: |
         Download a document from the Camunda 8 cluster.
@@ -197,6 +206,9 @@ paths:
       tags:
         - Document
       operationId: deleteDocument
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Delete document
       description: |
         Delete a document from the Camunda 8 cluster.
@@ -234,6 +246,9 @@ paths:
       tags:
         - Document
       operationId: createDocumentLink
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Create document link
       description: |
         Create a link to a document in the Camunda 8 cluster.

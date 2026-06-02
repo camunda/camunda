@@ -7,6 +7,11 @@ paths:
       tags:
         - Setup
       operationId: createAdminUser
+      # Bootstrapping endpoint — declared unauthenticated at runtime via
+      # SecurityPathAdapter (uses an anonymous authentication context to
+      # create the initial admin user). `security: []` overrides the
+      # conditional enforcement on the global schemes for this operation.
+      security: []
       summary: Create admin user
       description: Creates a new user and assigns the admin role to it. This endpoint is only usable when users are managed in the Orchestration Cluster and while no user is assigned to the admin role.
       requestBody:

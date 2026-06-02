@@ -7,6 +7,9 @@ paths:
       tags:
         - Agent instance
       operationId: createAgentInstance
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Create agent instance
       description: |
         Creates a new agent instance. The returned key identifies the instance and must
@@ -50,6 +53,9 @@ paths:
       tags:
         - Agent instance
       operationId: getAgentInstance
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Get agent instance
       description: Returns agent instance as JSON.
       parameters:
@@ -91,6 +97,9 @@ paths:
       tags:
         - Agent instance
       operationId: updateAgentInstance
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Update agent instance
       description: |
         Updates the mutable fields of an agent instance: status, metric counters, and
@@ -136,6 +145,9 @@ paths:
       tags:
         - Agent instance
       operationId: searchAgentInstances
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Search agent instances
       description: Search for agent instances based on given criteria.
       requestBody:

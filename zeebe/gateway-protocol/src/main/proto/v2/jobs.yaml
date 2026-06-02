@@ -7,6 +7,9 @@ paths:
       tags:
         - Job
       operationId: activateJobs
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Activate jobs
       description: |
         Iterate through all known partitions and activate jobs up to the requested maximum.
@@ -39,6 +42,9 @@ paths:
       tags:
         - Job
       operationId: searchJobs
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Search jobs
       description: Search for jobs based on given criteria.
       requestBody:
@@ -70,6 +76,9 @@ paths:
       tags:
         - Job
       operationId: failJob
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Fail job
       description: |
         Mark the job as failed.
@@ -120,6 +129,9 @@ paths:
       tags:
         - Job
       operationId: throwJobError
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Throw error for job
       description: |
         Reports a business error (i.e. non-technical) that occurs while processing a job.
@@ -168,6 +180,9 @@ paths:
       tags:
         - Job
       operationId: completeJob
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Complete job
       description: |
         Complete a job with the given payload, which allows completing the associated service task.
@@ -215,6 +230,9 @@ paths:
       tags:
         - Job
       operationId: updateJob
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Update job
       description: Update a job with the given key.
       parameters:

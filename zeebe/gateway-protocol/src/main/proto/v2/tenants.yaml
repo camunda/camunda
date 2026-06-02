@@ -7,6 +7,9 @@ paths:
       tags:
         - Tenant
       operationId: createTenant
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Create tenant
       description: Creates a new tenant.
       x-semantic-establishes:
@@ -54,6 +57,9 @@ paths:
       tags:
         - Tenant
       operationId: searchTenants
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Search tenants
       description: Retrieves a filtered and sorted list of tenants.
       requestBody:
@@ -91,6 +97,9 @@ paths:
       tags:
         - Tenant
       operationId: getTenant
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Get tenant
       description: Retrieves a single tenant by tenant ID.
       x-semantic-requires:
@@ -132,6 +141,9 @@ paths:
       tags:
         - Tenant
       operationId: updateTenant
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Update tenant
       description: Updates an existing tenant.
       x-semantic-requires:
@@ -179,6 +191,9 @@ paths:
       tags:
         - Tenant
       operationId: deleteTenant
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Delete tenant
       description: Deletes an existing tenant.
       x-semantic-requires:
@@ -217,6 +232,9 @@ paths:
       tags:
         - Tenant
       operationId: assignUserToTenant
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Assign a user to a tenant
       description: Assign a single user to a specified tenant. The user can then access tenant data and perform authorized actions.
       x-semantic-establishes:
@@ -262,6 +280,9 @@ paths:
       tags:
         - Tenant
       operationId: unassignUserFromTenant
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Unassign a user from a tenant
       description: |
         Unassigns the user from the specified tenant.
@@ -309,6 +330,9 @@ paths:
       tags:
         - Tenant
       operationId: searchUsersForTenant
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Search users for tenant
       description: Retrieves a filtered and sorted list of users for a specified tenant.
       x-semantic-requires:
@@ -343,6 +367,9 @@ paths:
       tags:
         - Tenant
       operationId: assignClientToTenant
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Assign a client to a tenant
       description: |
         Assign the client to the specified tenant.
@@ -390,6 +417,9 @@ paths:
       tags:
         - Tenant
       operationId: unassignClientFromTenant
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Unassign a client from a tenant
       description: |
         Unassigns the client from the specified tenant.
@@ -437,6 +467,9 @@ paths:
       tags:
         - Tenant
       operationId: searchClientsForTenant
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Search clients for tenant
       description: Retrieves a filtered and sorted list of clients for a specified tenant.
       x-semantic-requires:
@@ -471,6 +504,9 @@ paths:
       tags:
         - Tenant
       operationId: assignGroupToTenant
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Assign a group to a tenant
       description: |
         Assigns a group to a specified tenant.
@@ -524,6 +560,9 @@ paths:
       tags:
         - Tenant
       operationId: unassignGroupFromTenant
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Unassign a group from a tenant
       description: |
         Unassigns a group from a specified tenant.
@@ -571,6 +610,9 @@ paths:
       tags:
         - Tenant
       operationId: searchGroupIdsForTenant
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Search groups for tenant
       description: Retrieves a filtered and sorted list of groups for a specified tenant.
       x-semantic-requires:
@@ -605,6 +647,9 @@ paths:
       tags:
         - Tenant
       operationId: searchRolesForTenant
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Search roles for tenant
       description: Retrieves a filtered and sorted list of roles for a specified tenant.
       x-semantic-requires:
@@ -639,6 +684,9 @@ paths:
       tags:
         - Tenant
       operationId: assignRoleToTenant
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Assign a role to a tenant
       description: |
         Assigns a role to a specified tenant.
@@ -686,6 +734,9 @@ paths:
       tags:
         - Tenant
       operationId: unassignRoleFromTenant
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Unassign a role from a tenant
       description: |
         Unassigns a role from a specified tenant.
@@ -734,6 +785,9 @@ paths:
       tags:
         - Tenant
       operationId: assignMappingRuleToTenant
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Assign a mapping rule to a tenant
       description: Assign a single mapping rule to a specified tenant.
       x-semantic-establishes:
@@ -779,6 +833,9 @@ paths:
       tags:
         - Tenant
       operationId: unassignMappingRuleFromTenant
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Unassign a mapping rule from a tenant
       description: Unassigns a single mapping rule from a specified tenant without deleting the rule.
       x-semantic-requires:
@@ -824,6 +881,9 @@ paths:
       tags:
         - Tenant
       operationId: searchMappingRulesForTenant
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Search mapping rules for tenant
       description: Retrieves a filtered and sorted list of MappingRules for a specified tenant.
       x-semantic-requires:

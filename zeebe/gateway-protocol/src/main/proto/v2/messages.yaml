@@ -7,6 +7,9 @@ paths:
       tags:
         - Message
       operationId: publishMessage
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Publish message
       description: |
         Publishes a single message.
@@ -41,6 +44,9 @@ paths:
       tags:
         - Message
       operationId: correlateMessage
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Correlate message
       description: |
         Publishes a message and correlates it to a subscription.
@@ -82,6 +88,9 @@ paths:
       tags:
         - Message subscription
       operationId: searchMessageSubscriptions
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Search message subscriptions
       description: |
         Search for message subscriptions based on given criteria.
@@ -126,6 +135,9 @@ paths:
       tags:
         - Message subscription
       operationId: searchCorrelatedMessageSubscriptions
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Search correlated message subscriptions
       description: Search correlated message subscriptions based on given criteria.
       requestBody:

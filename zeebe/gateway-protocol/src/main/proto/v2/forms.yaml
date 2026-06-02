@@ -7,6 +7,9 @@ paths:
       tags:
         - Form
       operationId: getFormByKey
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Get form by key
       description: |
         Get a form by its unique form key.

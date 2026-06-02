@@ -7,6 +7,9 @@ paths:
       tags:
         - Signal
       operationId: broadcastSignal
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Broadcast signal
       description: Broadcasts a signal.
       requestBody:

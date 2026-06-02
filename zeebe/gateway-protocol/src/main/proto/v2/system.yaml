@@ -7,6 +7,9 @@ paths:
       tags:
         - System
       operationId: getUsageMetrics
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       summary: Get usage metrics
       description: Retrieve the usage metrics based on given criteria.
       parameters:
@@ -83,6 +86,9 @@ paths:
       tags:
         - System
       operationId: getSystemConfiguration
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       x-eventually-consistent: false
       summary: System configuration (alpha)
       description: |

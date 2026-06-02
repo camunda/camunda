@@ -474,10 +474,20 @@ paths:
 
 components:
   securitySchemes:
-    BearerAuth:
+    bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
+      # Conditional enforcement. The scheme is enforced when the
+      # Orchestration Cluster REST API server is running in `secured` mode
+      # and bypassed when in `unsecured` mode. `x-enforcement-modes` names
+      # the deployment-mode axis (`auth`) whose values trigger enforcement.
+      x-enforcement: conditional
+      x-enforcement-modes:
+        auth: [secured]
     basicAuth:
       type: http
       scheme: basic
+      x-enforcement: conditional
+      x-enforcement-modes:
+        auth: [secured]
