@@ -78,7 +78,7 @@ public class CamundaServicesConfiguration {
     return new SecurityContextProvider();
   }
 
-  // Cluster-wide executor for JobServices and TopologyServices.
+  // Cluster-wide executor, uses the node's availableProcessors
   @Bean
   public ApiServicesExecutorProvider apiServicesExecutor(
       final GatewayRestConfiguration configuration) {
@@ -117,7 +117,8 @@ public class CamundaServicesConfiguration {
       final BrokerTopologyManager brokerTopologyManager,
       final MeterRegistry meterRegistry,
       final Environment environment,
-      final ManagementServices managementServices) {
+      final ManagementServices managementServices,
+      final ApiServicesExecutorProvider executor) {
 
     // TODO check we can maxNameFieldLength per tenant. Currently, it is only set in rdbms
     // configuration in UC
@@ -146,15 +147,6 @@ public class CamundaServicesConfiguration {
                           cslProperties.getInitialization(),
                           cslProperties.getCompiledIdValidationPattern(),
                           cslProperties.getCompiledGroupIdValidationPattern()));
-
-              // -- per-tenant ApiServicesExecutorProvider --
-              final var apiExecutorConfig = tenantConfig.getApi().getRest().getExecutor();
-              final var executor =
-                  new ApiServicesExecutorProvider(
-                      apiExecutorConfig.getCorePoolSizeMultiplier(),
-                      apiExecutorConfig.getMaxPoolSizeMultiplier(),
-                      apiExecutorConfig.getKeepAlive().toMillis(),
-                      apiExecutorConfig.getQueueCapacity());
 
               // -- per-tenant process cache --
               final var processCacheConfig = tenantConfig.getApi().getRest().getProcessCache();
