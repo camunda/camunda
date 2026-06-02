@@ -277,6 +277,7 @@ components:
         - elementInstanceKey
         - toolProperties
         - inboundConnectorType
+        - inputSpecification
         - lastUpdatedDate
         - messageName
         - messageSubscriptionKey
@@ -375,6 +376,12 @@ components:
             Null when the property is absent.
         tenantId:
           $ref: 'identifiers.yaml#/components/schemas/TenantId'
+        inputSpecification:
+          type: array
+          items:
+            $ref: '#/components/schemas/InputSpecItem'
+          description: |
+            The input specification items declared on the element this message subscription belongs to.
       x-properties-added-in-version:
         - propertyName: rootProcessInstanceKey
           addedInVersion: "8.9"
@@ -390,6 +397,35 @@ components:
           addedInVersion: "8.10"
         - propertyName: inboundConnectorType
           addedInVersion: "8.10"
+        - propertyName: inputSpecification
+          addedInVersion: "8.10"
+
+    InputSpecItem:
+      type: object
+      required:
+        - description
+        - name
+        - required
+        - schema
+        - type
+      properties:
+        name:
+          type: string
+          description: The parameter name.
+        description:
+          type: string
+          nullable: true
+          description: Human-readable description of the parameter.
+        type:
+          type: string
+          description: The data type (e.g. "string", "integer", "boolean").
+        required:
+          type: boolean
+          description: Whether the parameter is mandatory.
+        schema:
+          type: string
+          nullable: true
+          description: Optional JSON schema fragment.
 
     MessageSubscriptionSearchQuerySortRequest:
       type: object

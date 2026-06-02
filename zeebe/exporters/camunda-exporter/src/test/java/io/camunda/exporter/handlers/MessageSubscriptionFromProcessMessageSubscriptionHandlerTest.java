@@ -307,7 +307,7 @@ final class MessageSubscriptionFromProcessMessageSubscriptionHandlerTest {
         .thenReturn(
             Optional.of(
                 new CachedProcessEntity(
-                    processName, 3, "v3", List.of(), Map.of(), false, Map.of())));
+                    processName, 3, "v3", List.of(), Map.of(), false, Map.of(), Map.of())));
 
     final ImmutableProcessMessageSubscriptionRecordValue value =
         ImmutableProcessMessageSubscriptionRecordValue.builder()
@@ -347,7 +347,14 @@ final class MessageSubscriptionFromProcessMessageSubscriptionHandlerTest {
         .thenReturn(
             Optional.of(
                 new CachedProcessEntity(
-                    "Process", 1, null, List.of(), Map.of(), false, Map.of(elementId, extProps))));
+                    "Process",
+                    1,
+                    null,
+                    List.of(),
+                    Map.of(),
+                    false,
+                    Map.of(elementId, extProps),
+                    Map.of())));
 
     final ImmutableProcessMessageSubscriptionRecordValue value =
         ImmutableProcessMessageSubscriptionRecordValue.builder()
@@ -446,6 +453,7 @@ final class MessageSubscriptionFromProcessMessageSubscriptionHandlerTest {
     expectedUpdateFields.put("toolName", null);
     expectedUpdateFields.put("inboundConnectorType", null);
     expectedUpdateFields.put("toolProperties", null);
+    expectedUpdateFields.put("inputSpecification", null);
     expectedUpdateFields.put("metadata", metadataMap);
 
     final BatchRequest mockRequest = Mockito.mock(BatchRequest.class);

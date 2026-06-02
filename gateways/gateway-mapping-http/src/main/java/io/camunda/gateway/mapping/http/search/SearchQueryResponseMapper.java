@@ -89,6 +89,7 @@ import io.camunda.gateway.protocol.model.IncidentProcessInstanceStatisticsByErro
 import io.camunda.gateway.protocol.model.IncidentResult;
 import io.camunda.gateway.protocol.model.IncidentSearchQueryResult;
 import io.camunda.gateway.protocol.model.IncidentStateEnum;
+import io.camunda.gateway.protocol.model.InputSpecItem;
 import io.camunda.gateway.protocol.model.JobErrorStatisticsItem;
 import io.camunda.gateway.protocol.model.JobErrorStatisticsQueryResult;
 import io.camunda.gateway.protocol.model.JobKindEnum;
@@ -1225,6 +1226,7 @@ public final class SearchQueryResponseMapper {
         .elementInstanceKey(keyToStringOrNull(messageSubscription.flowNodeInstanceKey()))
         .toolProperties(messageSubscription.toolProperties())
         .inboundConnectorType(messageSubscription.inboundConnectorType())
+        .inputSpecification(toInputSpecItems(messageSubscription.inputSpecification()))
         // `dateTime` can be absent on subscriptions that predate the field being populated;
         // fall back to the epoch sentinel (see EPOCH_DATE_SENTINEL) rather than 500.
         .lastUpdatedDate(
@@ -1246,6 +1248,21 @@ public final class SearchQueryResponseMapper {
         .tenantId(messageSubscription.tenantId())
         .toolName(messageSubscription.toolName())
         .build();
+  }
+
+  private static List<InputSpecItem> toInputSpecItems(
+      final List<io.camunda.search.entities.MessageSubscriptionEntity.InputSpecItem> items) {
+    return items.stream()
+        .map(
+            i ->
+                InputSpecItem.Builder.create()
+                    .description(i.description())
+                    .name(i.name())
+                    .required(i.required())
+                    .schema(i.schema())
+                    .type(i.type())
+                    .build())
+        .toList();
   }
 
   private static List<CorrelatedMessageSubscriptionResult> toCorrelatedMessageSubscriptions(

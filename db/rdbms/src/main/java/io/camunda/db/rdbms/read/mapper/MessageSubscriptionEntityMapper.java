@@ -35,6 +35,7 @@ public class MessageSubscriptionEntityMapper {
         .toolProperties(messageSubscriptionDbModel.toolProperties())
         .toolName(messageSubscriptionDbModel.toolName())
         .inboundConnectorType(messageSubscriptionDbModel.inboundConnectorType())
+        .inputSpecification(messageSubscriptionDbModel.inputSpecification())
         .build();
   }
 }

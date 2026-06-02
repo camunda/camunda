@@ -87,7 +87,7 @@ class IncidentExportHandlerTest {
         .thenReturn(
             Optional.of(
                 new CachedProcessEntity(
-                    null, 1, null, List.of(callActivityId), Map.of(), false, Map.of())));
+                    null, 1, null, List.of(callActivityId), Map.of(), false, Map.of(), Map.of())));
 
     // when
     handler.export(record);

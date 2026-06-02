@@ -77,6 +77,24 @@ class ProcessesToolRepositoryTest {
         .build();
   }
 
+  private static MessageSubscriptionEntity buildEntityWithInputSpec(
+      final Long key,
+      final String toolName,
+      final List<MessageSubscriptionEntity.InputSpecItem> inputSpec) {
+    return MessageSubscriptionEntity.builder()
+        .messageSubscriptionKey(key)
+        .toolName(toolName)
+        .toolProperties(Map.of())
+        .messageName("msg")
+        .tenantId("<default>")
+        .messageSubscriptionState(MessageSubscriptionState.CREATED)
+        .messageSubscriptionType(MessageSubscriptionType.START_EVENT)
+        .processDefinitionId("myProcess_" + toolName)
+        .flowNodeId("start")
+        .inputSpecification(inputSpec)
+        .build();
+  }
+
   @Nested
   class DynamicTools {
 
@@ -395,6 +413,49 @@ class ProcessesToolRepositoryTest {
       // then
       assertThat(tools).hasSize(1);
       assertThat(tools.getFirst().name()).isEqualTo("correlatedTool_88");
+    }
+
+    @Test
+    void shouldBuildInputSchemaFromInputSpecification() {
+      // given
+      final var inputSpec =
+          List.of(
+              new MessageSubscriptionEntity.InputSpecItem(
+                  "orderId", "The order ID", "string", true, ""),
+              new MessageSubscriptionEntity.InputSpecItem(
+                  "amount", "Order amount", "integer", false, "{\"minimum\": 0}"));
+      final var entity = buildEntityWithInputSpec(42L, "createOrder", inputSpec);
+      when(messageSubscriptionServices.search(any(), any()))
+          .thenReturn(SearchQueryResult.of(entity));
+
+      // when
+      final var tools = repository.getTools(transportContext);
+
+      // then
+      assertThat(tools)
+          .singleElement()
+          .satisfies(
+              tool -> {
+                final var schema = tool.inputSchema();
+                assertThat(schema.get("type")).isEqualTo("object");
+
+                final Map<String, Object> props = (Map<String, Object>) schema.get("properties");
+                assertThat(props).containsKey("orderId");
+                assertThat(props).containsKey("amount");
+
+                @SuppressWarnings("unchecked")
+                final var orderIdProp = (Map<String, Object>) props.get("orderId");
+                assertThat(orderIdProp).containsEntry("type", "string");
+                assertThat(orderIdProp).containsEntry("description", "The order ID");
+
+                @SuppressWarnings("unchecked")
+                final var amountProp = (Map<String, Object>) props.get("amount");
+                assertThat(amountProp).containsEntry("type", "integer");
+                assertThat(amountProp).containsEntry("minimum", 0);
+
+                assertThat(schema.get("required")).isInstanceOf(List.class);
+                assertThat((List<String>) schema.get("required")).containsExactly("orderId");
+              });
     }
 
     @Test
