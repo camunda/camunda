@@ -137,13 +137,35 @@ jobs:
         run: |
           export CAMUNDA_DOCKER_IMAGE="camunda/camunda:${RESOLVED_DOCKER_TAG}"
           echo "Using CAMUNDA_DOCKER_IMAGE=${CAMUNDA_DOCKER_IMAGE}"
-          if [[ "$NON_STANDALONE" == "true" ]]; then
-            echo "Using single services for older branches (8.6/8.7)"
-            DATABASE=elasticsearch docker compose up -d operate tasklist
-          else
-            echo "Using standalone camunda container"
-            DATABASE=elasticsearch docker compose up -d camunda
-          fi
+          # Retry to absorb transient Docker Hub registry timeouts during the
+          # image pull (e.g. "Get https://registry-1.docker.io/v2/: context
+          # deadline exceeded"). docker compose up -d is idempotent, so a retry
+          # simply resumes the pull and starts the container.
+          start_camunda() {
+            if [[ "$NON_STANDALONE" == "true" ]]; then
+              echo "Using single services for older branches (8.6/8.7)"
+              DATABASE=elasticsearch docker compose up -d operate tasklist
+            else
+              echo "Using standalone camunda container"
+              DATABASE=elasticsearch docker compose up -d camunda
+            fi
+          }
+
+          attempts=3
+          for attempt in $(seq 1 "$attempts"); do
+            if start_camunda; then
+              echo "Camunda started on attempt ${attempt}."
+              exit 0
+            fi
+            echo "Attempt ${attempt}/${attempts} to start Camunda failed."
+            if [[ "$attempt" -lt "$attempts" ]]; then
+              echo "Retrying in 15s..."
+              sleep 15
+            fi
+          done
+
+          echo "Failed to start Camunda after ${attempts} attempts."
+          exit 1
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
       - name: List running Docker containers

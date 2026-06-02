@@ -151,7 +151,22 @@ jobs:
       - name: Pull server Docker image
         run: |
           echo "Pulling image: ${{ matrix.server_image }}"
-          docker pull ${{ matrix.server_image }}
+          # Retry to absorb transient Docker Hub registry timeouts
+          # (e.g. "Get https://registry-1.docker.io/v2/: context deadline exceeded").
+          attempts=3
+          for attempt in $(seq 1 "$attempts"); do
+            if docker pull "${{ matrix.server_image }}"; then
+              echo "Image pulled on attempt ${attempt}."
+              exit 0
+            fi
+            echo "Attempt ${attempt}/${attempts} to pull image failed."
+            if [[ "$attempt" -lt "$attempts" ]]; then
+              echo "Retrying in 15s..."
+              sleep 15
+            fi
+          done
+          echo "Failed to pull image after ${attempts} attempts."
+          exit 1
 
       - name: Start Camunda
         run: CAMUNDA_DOCKER_IMAGE=${{ matrix.server_image }} DATABASE=elasticsearch docker compose up -d camunda
