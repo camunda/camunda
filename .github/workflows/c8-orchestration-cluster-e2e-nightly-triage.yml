@@ -369,17 +369,18 @@ jobs:
           fi
 
           # Merge workflow-level failures as additional dispatch entries (test_specs: [])
-          # Exclude any version already covered by test-failure dispatches or open PRs
+          # Exclude only versions that already have an open failing-test-fix PR.
+          # Do NOT exclude versions already in test-failure dispatches — a version can
+          # have failing tests in one workflow type and a workflow-level crash in another
+          # (e.g. api_es has test failures while api_rdbms crashes before producing results).
           jq --slurpfile run_ids /tmp/run_ids.json \
              --argjson wf_failures "$workflow_failures" \
              --argjson openrefs "$open_pr_versions" \
              --argjson cap "${DAILY_CAP}" '
             . as $test_dispatches |
-            ($test_dispatches | map(.version)) as $covered_versions |
             $wf_failures
             | map(select(
-                (.version as $v | $covered_versions | index($v)) == null
-                and ((.ref as $ref | $openrefs | index($ref)) == null)
+                (.ref as $ref | $openrefs | index($ref)) == null
               ))
             | map(. + {
                 test_specs: [],
@@ -489,7 +490,7 @@ jobs:
               if [ "$test_count" -gt 0 ]; then
                 failing_list="${failing_list}"$'\n'"  :x: <${rurl}|${rtitle}> — ${test_count} test failure(s)"
               else
-                failing_list="${failing_list}"$'\n'"  :x: <${rurl}|${rtitle}> — workflow-level failure (no test results)"
+                failing_list="${failing_list}"$'\n'"  :x: <${rurl}|${rtitle}> — workflow-level failure (no failing tests detected)"
               fi
             done < <(jq -c '.[]' /tmp/failed_runs.json)
           fi
