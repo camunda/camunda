@@ -260,8 +260,13 @@ jobs:
           diagnosis steps, artifact-download patterns, constraints (NEVER skip/fixme),
           PR conventions, and the /tmp/fix-meta.json schema.
 
-          Failing tests to fix are in /tmp/test_specs.json (may be empty for workflow-level failures).
-          Fix ONLY those entries — ignore other failures visible in artifacts.
+          /tmp/test_specs.json contains the failures to address ($(jq 'length' /tmp/test_specs.json) entries).
+          $(if [ "$test_spec_count" -gt 0 ]; then
+            echo "Fix ONLY the test failures listed in that file — do not address other failures visible in artifacts."
+          else
+            echo "The array is empty: this is a workflow-level failure. Follow the AGENTS.md section above to"
+            echo "inspect the failing run logs, trace the root cause to the owning file, and open a fix PR."
+          fi)
 
           Context (env vars already exported):
             VERSION=${VERSION}  TARGET_REF=${TARGET_REF}  SAFE_VERSION=${SAFE_VERSION}
@@ -490,7 +495,7 @@ jobs:
           elif [ "$category" = "not-determined" ]; then
             icon=":question:"; summary="Could not determine a fix — manual investigation required"
           else
-            icon=":information_source:"; summary="No PR opened — agent could not determine a fix"
+            icon=":information_source:"; summary="No changes required"
           fi
 
           text="${icon} *${VERSION}* fix agent — ${summary}\n<${RUN_URL}|Agent run ↗>"
