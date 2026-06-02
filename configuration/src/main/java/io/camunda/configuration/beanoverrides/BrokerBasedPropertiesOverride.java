@@ -989,7 +989,7 @@ public class BrokerBasedPropertiesOverride {
 
                   if (database.getAsyncReplication() != null) {
                     final var asyncReplication = database.getAsyncReplication();
-                    config.getAsyncReplication().setEnabled(asyncReplication.isEnabled());
+                    config.getAsyncReplication().setType(asyncReplication.getType());
                     config
                         .getAsyncReplication()
                         .setPollingInterval(asyncReplication.getPollingInterval());
@@ -1000,6 +1000,7 @@ public class BrokerBasedPropertiesOverride {
                     config
                         .getAsyncReplication()
                         .setPauseOnMaxLagExceeded(asyncReplication.isPauseOnMaxLagExceeded());
+                    config.getAsyncReplication().setDelay(asyncReplication.getDelay());
                   }
 
                   applyRdbmsExtensionPropertyConfiguration(
