@@ -125,4 +125,57 @@ public class SchemaValidationTest {
                     .contains("$.testCases[0].instructions[0].conditions")
                     .containsAnyOf("must have at least 1 items", "minItems"));
   }
+
+  @Test
+  void shouldRejectConditionalBehaviorWithConditionalBehaviorConditions() throws IOException {
+    // given
+    final String json =
+        "{\"testCases\":[{\"name\":\"t\",\"instructions\":[{"
+            + "\"type\":\"CONDITIONAL_BEHAVIOR\","
+            + "\"conditions\":[{\"type\":\"CONDITIONAL_BEHAVIOR\","
+            + "\"conditions\":[{\"type\":\"ASSERT_USER_TASK\",\"userTaskSelector\":{\"elementId\":\"task1\"}}],"
+            + "\"actions\":[{\"type\":\"COMPLETE_USER_TASK\",\"userTaskSelector\":{\"elementId\":\"task1\"}}]}],"
+            + "\"actions\":[{\"type\":\"COMPLETE_USER_TASK\","
+            + "\"userTaskSelector\":{\"elementId\":\"task1\"}}]"
+            + "}]}]}";
+    final JsonNode jsonNode = objectMapper.readTree(json);
+
+    // when
+    final Set<ValidationMessage> errors = jsonSchema.validate(jsonNode);
+
+    // then
+    assertThat(errors)
+        .extracting(ValidationMessage::getMessage)
+        .anySatisfy(
+            message ->
+                assertThat(message)
+                    .contains("$.testCases[0].instructions[0].conditions[0]")
+                    .contains("must not be valid"));
+  }
+
+  @Test
+  void shouldRejectConditionalBehaviorWithConditionalBehaviorAction() throws IOException {
+    // given
+    final String json =
+        "{\"testCases\":[{\"name\":\"t\",\"instructions\":[{"
+            + "\"type\":\"CONDITIONAL_BEHAVIOR\","
+            + "\"conditions\":[{\"type\":\"ASSERT_USER_TASK\",\"userTaskSelector\":{\"elementId\":\"task1\"}}],"
+            + "\"actions\":[{\"type\":\"CONDITIONAL_BEHAVIOR\","
+            + "\"conditions\":[{\"type\":\"ASSERT_USER_TASK\",\"userTaskSelector\":{\"elementId\":\"task1\"}}],"
+            + "\"actions\":[{\"type\":\"COMPLETE_USER_TASK\",\"userTaskSelector\":{\"elementId\":\"task1\"}}]}]"
+            + "}]}]}";
+    final JsonNode jsonNode = objectMapper.readTree(json);
+
+    // when
+    final Set<ValidationMessage> errors = jsonSchema.validate(jsonNode);
+
+    // then
+    assertThat(errors)
+        .extracting(ValidationMessage::getMessage)
+        .anySatisfy(
+            message ->
+                assertThat(message)
+                    .contains("$.testCases[0].instructions[0].actions[0]")
+                    .contains("must not be valid"));
+  }
 }
