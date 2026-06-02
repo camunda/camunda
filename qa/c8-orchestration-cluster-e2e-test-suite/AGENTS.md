@@ -561,7 +561,7 @@ Make the **minimal** change that addresses the cause. Do not refactor surroundin
 
 > **Illustration of the loop (not a lookup row):** Suppose step 1 reports the failed step is `Start Camunda` and step 2 shows `context deadline exceeded` pulling an image. Step 3 greps the workflows, finds the step in a reusable workflow, and sees it runs `docker compose up` once. Step 4 classifies this as "depends on something flaky/external" → the fix is to wrap the pull in a retry-with-backoff loop *in that workflow file* so a transient registry blip no longer fails the run. You would reach the same shape of answer for a flaky `npm ci`, a flaky artifact download, or a flaky DB container start — by running the same loop, not by recognising "Docker".
 
-**5 — Open a PR.** Use `ci:` if only `.github/workflows/` changed; `fix:` if test or application code changed. Cross-link `TRIAGE_RUN_URL` in the PR body.
+**5 — Open a PR.** Use `ci:` if only `.github/workflows/` files changed; `test:` if only test files changed; `fix:` if application code changed. Never use `fix:` for test-only changes — commitlint rejects it. Cross-link `TRIAGE_RUN_URL` in the PR body.
 
 Write to `/tmp/fix-meta.json`:
 ```json
