@@ -132,11 +132,6 @@ public class ProcessDefinitionOptimizeDto extends DefinitionOptimizeResponseDto 
   }
 
   @Override
-  public int hashCode() {
-    return Objects.hash(super.hashCode(), bpmn20Xml, flowNodeData, userTaskNames, onboarded);
-  }
-
-  @Override
   public boolean equals(final Object o) {
     if (this == o) {
       return true;
@@ -152,6 +147,11 @@ public class ProcessDefinitionOptimizeDto extends DefinitionOptimizeResponseDto 
         && Objects.equals(bpmn20Xml, that.bpmn20Xml)
         && Objects.equals(flowNodeData, that.flowNodeData)
         && Objects.equals(userTaskNames, that.userTaskNames);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), bpmn20Xml, flowNodeData, userTaskNames, onboarded);
   }
 
   @Override
@@ -178,6 +178,7 @@ public class ProcessDefinitionOptimizeDto extends DefinitionOptimizeResponseDto 
     public static final String flowNodeData = "flowNodeData";
     public static final String userTaskNames = "userTaskNames";
     public static final String onboarded = "onboarded";
+    public static final String agenticProcess = "agenticProcess";
     public static final String eventBased = "eventBased";
   }
 

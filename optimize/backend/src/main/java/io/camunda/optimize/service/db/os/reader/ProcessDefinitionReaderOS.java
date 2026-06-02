@@ -9,16 +9,12 @@ package io.camunda.optimize.service.db.os.reader;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
-import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static io.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DEFINITION_DELETED;
 import static io.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_ID;
 import static io.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_XML;
-import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.AGENT_INSTANCES;
-import static io.camunda.optimize.service.util.ExceptionUtil.isInstanceIndexNotFoundException;
 
 import io.camunda.optimize.dto.optimize.DefinitionType;
 import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
-import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import io.camunda.optimize.service.db.os.client.dsl.QueryDSL;
 import io.camunda.optimize.service.db.os.util.DefinitionQueryUtilOS;
@@ -30,10 +26,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.aggregations.TermsAggregation;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
-import org.opensearch.client.opensearch._types.query_dsl.ChildScoreMode;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
@@ -108,41 +102,32 @@ public class ProcessDefinitionReaderOS implements ProcessDefinitionReader {
 
     final Query query =
         new BoolQuery.Builder()
-            .must(QueryDSL.nested(AGENT_INSTANCES, QueryDSL.matchAll(), ChildScoreMode.None))
+            .must(QueryDSL.term(ProcessDefinitionIndex.AGENTIC_PROCESS, true))
+            .must(QueryDSL.term(DEFINITION_DELETED, false))
             .filter(
                 DefinitionQueryUtilOS.createTenantIdQuery(
-                    ProcessInstanceDto.Fields.tenantId, tenantIds))
+                    ProcessDefinitionIndex.TENANT_ID, tenantIds))
             .build()
             .toQuery();
 
     final String defKeyAgg = "keyAgg";
     final SearchRequest.Builder searchRequest =
         new SearchRequest.Builder()
-            .index(PROCESS_INSTANCE_MULTI_ALIAS)
+            .index(PROCESS_DEFINITION_INDEX_NAME)
             .size(0)
             .query(query)
             .aggregations(
                 defKeyAgg,
                 new TermsAggregation.Builder()
-                    .field(ProcessInstanceDto.Fields.processDefinitionKey)
+                    .field(ProcessDefinitionIndex.PROCESS_DEFINITION_KEY)
                     .size(MAX_RESPONSE_SIZE_LIMIT)
                     .build()
                     .toAggregation())
             .source(new SourceConfig.Builder().fetch(false).build());
 
     final String errorMessage = "Was not able to retrieve process definition keys with agent runs.";
-    final SearchResponse<String> searchResponse;
-    try {
-      searchResponse = osClient.search(searchRequest, String.class, errorMessage);
-    } catch (final OpenSearchException e) {
-      if (isInstanceIndexNotFoundException(DefinitionType.PROCESS, e)) {
-        LOG.info(
-            "Was not able to retrieve process definition keys with agent runs because no "
-                + "process instance indices exist. Returning empty set.");
-        return Collections.emptySet();
-      }
-      throw e;
-    }
+    final SearchResponse<String> searchResponse =
+        osClient.search(searchRequest, String.class, errorMessage);
     return OpensearchReaderUtil.extractAggregatedResponseValues(searchResponse, defKeyAgg);
   }
 
