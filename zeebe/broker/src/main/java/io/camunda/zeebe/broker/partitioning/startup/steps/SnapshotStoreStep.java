@@ -12,7 +12,7 @@ import static io.camunda.zeebe.scheduler.AsyncClosable.closeHelper;
 import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotTransferServiceClient;
 import io.camunda.zeebe.broker.partitioning.startup.PartitionStartupContext;
 import io.camunda.zeebe.broker.partitioning.startup.SnapshotInitializationUtil;
-import io.camunda.zeebe.db.impl.rocksdb.ChecksumProviderRocksDBImpl;
+import io.camunda.zeebe.db.impl.rocksdb.RocksDbSnapshotFileInfoProvider;
 import io.camunda.zeebe.scheduler.SchedulingHints;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.startup.StartupStep;
@@ -39,7 +39,7 @@ public class SnapshotStoreStep implements StartupStep<PartitionStartupContext> {
             context.brokerConfig().getCluster().getNodeId(),
             context.partitionId(),
             context.partitionDirectory(),
-            new ChecksumProviderRocksDBImpl(),
+            new RocksDbSnapshotFileInfoProvider(),
             context.partitionMeterRegistry());
 
     var result =

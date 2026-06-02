@@ -22,7 +22,8 @@ public record FileBasedSnapshotMetadata(
     @JsonProperty("exportedPosition") long minExportedPosition,
     long maxExportedPosition,
     long lastFollowupEventPosition,
-    @JsonProperty("bootstrap") boolean isBootstrap)
+    @JsonProperty("bootstrap") boolean isBootstrap,
+    long totalSizeBytes)
     implements SnapshotMetadata {
 
   private static final ObjectMapper OBJECTMAPPER = new ObjectMapper();
@@ -34,7 +35,8 @@ public record FileBasedSnapshotMetadata(
       @JsonProperty("exportedPosition") final long minExportedPosition,
       @JsonProperty("maxExportedPosition") final Long maxExportedPosition,
       @JsonProperty("lastFollowupEventPosition") final long lastFollowupEventPosition,
-      @JsonProperty("bootstrap") final boolean isBootstrap) {
+      @JsonProperty("bootstrap") final boolean isBootstrap,
+      @JsonProperty("totalSizeBytes") final Long totalSizeBytes) {
     this(
         version,
         processedPosition,
@@ -42,11 +44,14 @@ public record FileBasedSnapshotMetadata(
         // Backwards compatibility
         maxExportedPosition == null ? Long.MAX_VALUE : maxExportedPosition,
         lastFollowupEventPosition,
-        isBootstrap);
+        isBootstrap,
+        // Backwards compatibility: legacy snapshots have no recorded total size.
+        totalSizeBytes == null ? 0L : totalSizeBytes);
   }
 
-  public static FileBasedSnapshotMetadata forBootstrap(final int version) {
-    return new FileBasedSnapshotMetadata(version, 0L, 0L, 0L, 0L, true);
+  public static FileBasedSnapshotMetadata forBootstrap(
+      final int version, final long totalSizeBytes) {
+    return new FileBasedSnapshotMetadata(version, 0L, 0L, 0L, 0L, true, totalSizeBytes);
   }
 
   public void encode(final OutputStream output) throws IOException {

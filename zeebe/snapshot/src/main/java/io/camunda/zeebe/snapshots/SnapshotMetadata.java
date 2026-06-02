@@ -46,4 +46,18 @@ public interface SnapshotMetadata {
    *     partition with the "global" data from another partition
    */
   boolean isBootstrap();
+
+  /**
+   * Returns the total bytes of the data files in this snapshot, captured at the time the snapshot
+   * was persisted. Used by replication-lag accounting to know the size of an in-flight snapshot
+   * install without walking the filesystem on the hot path.
+   *
+   * <p>Returns {@code 0} for snapshots persisted before this field was introduced; consumers that
+   * need an exact value for legacy snapshots must fall back to a one-time {@link
+   * java.nio.file.Files#size} walk.
+   *
+   * <p>Excludes the metadata file itself (which is written after the size is captured) and the
+   * checksum file (which lives outside the snapshot directory).
+   */
+  long totalSizeBytes();
 }

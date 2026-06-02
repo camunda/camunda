@@ -10,12 +10,12 @@ package io.camunda.zeebe.snapshots.impl;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import io.camunda.zeebe.snapshots.CRC32CChecksumProvider;
-import io.camunda.zeebe.snapshots.MutableChecksumsSFV;
+import io.camunda.zeebe.snapshots.MutableSnapshotManifest;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotException;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotAlreadyExistsException;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
+import io.camunda.zeebe.snapshots.SnapshotFileInfoProvider;
 import io.camunda.zeebe.snapshots.SnapshotId;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.util.FileUtil;
@@ -45,8 +45,8 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
   private final ActorFuture<Void> takenFuture = new CompletableActorFuture<>();
   private boolean isValid = false;
   private PersistedSnapshot snapshot;
-  private MutableChecksumsSFV checksum;
-  private final CRC32CChecksumProvider checksumProvider;
+  private MutableSnapshotManifest checksum;
+  private final SnapshotFileInfoProvider checksumProvider;
   private long lastFollowupEventPosition = Long.MAX_VALUE;
   private long maxExportedPosition = Long.MAX_VALUE;
   private final boolean isBootstrap;
@@ -56,7 +56,7 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
       final Path directory,
       final FileBasedSnapshotStoreImpl snapshotStore,
       final ConcurrencyControl actor,
-      final CRC32CChecksumProvider checksumProvider,
+      final SnapshotFileInfoProvider checksumProvider,
       final boolean isBootstrap) {
     this.snapshotId = snapshotId;
     this.snapshotStore = snapshotStore;
@@ -100,7 +100,7 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
                       directory)));
 
         } else {
-          checksum = SnapshotChecksum.calculateWithProvidedChecksums(directory, checksumProvider);
+          checksum = SnapshotManifests.calculateWithProvidedChecksums(directory, checksumProvider);
 
           snapshot = null;
           isValid = true;
@@ -171,16 +171,23 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
     }
 
     try {
+      // Total size is captured before the metadata file is written, so it covers exactly the data
+      // files produced by the snapshot callback. Used by replication-lag accounting on the leader
+      // to know an in-flight snapshot install's total size without filesystem I/O on the hot path.
+      final var totalSizeBytes =
+          FileUtil.directorySize(directory, SnapshotManifests::isNotMetadataFile);
       final var metadata =
           isBootstrap
-              ? FileBasedSnapshotMetadata.forBootstrap(FileBasedSnapshotStoreImpl.VERSION)
+              ? FileBasedSnapshotMetadata.forBootstrap(
+                  FileBasedSnapshotStoreImpl.VERSION, totalSizeBytes)
               : new FileBasedSnapshotMetadata(
                   FileBasedSnapshotStoreImpl.VERSION,
                   snapshotId.getProcessedPosition(),
                   snapshotId.getExportedPosition(),
                   maxExportedPosition,
                   lastFollowupEventPosition,
-                  false);
+                  false,
+                  totalSizeBytes);
 
       writeMetadataAndUpdateChecksum(metadata);
       // snapshot id and director were first provided without the checksum because we could only

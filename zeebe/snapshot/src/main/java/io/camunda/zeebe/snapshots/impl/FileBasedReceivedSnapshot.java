@@ -41,7 +41,8 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
   private FileBasedSnapshotMetadata metadata;
   private ByteBuffer metadataBuffer;
   private long writtenMetadataBytes;
-  private SfvChecksumImpl checksumCollection;
+  private long receivedDataBytes;
+  private SfvManifestImpl checksumCollection;
 
   FileBasedReceivedSnapshot(
       final FileBasedSnapshotId snapshotId,
@@ -103,7 +104,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
     writeReceivedSnapshotChunk(snapshotChunk, snapshotFile);
 
     if (checksumCollection == null) {
-      checksumCollection = new SfvChecksumImpl();
+      checksumCollection = new SfvManifestImpl();
     }
     checksumCollection.updateFromBytes(
         snapshotFile.getFileName().toString(), snapshotChunk.getContent());
@@ -114,6 +115,8 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
       } catch (final IOException e) {
         throw new SnapshotWriteException("Cannot decode snapshot metadata");
       }
+    } else {
+      receivedDataBytes += snapshotChunk.getContent().length;
     }
   }
 
@@ -266,7 +269,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
 
     try {
       if (metadata == null) {
-        // backward compatibility
+        // Backward compatibility with senders that do not include a metadata chunk.
         metadata =
             new FileBasedSnapshotMetadata(
                 FileBasedSnapshotStoreImpl.VERSION,
@@ -274,7 +277,20 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
                 snapshotId.getExportedPosition(),
                 Long.MAX_VALUE,
                 Long.MAX_VALUE,
-                false);
+                false,
+                receivedDataBytes);
+      } else if (metadata.totalSizeBytes() <= 0L) {
+        // Sender included metadata but predates totalSizeBytes. Override in memory only — the
+        // on-disk metadata is part of the SFV checksum and cannot be modified.
+        metadata =
+            new FileBasedSnapshotMetadata(
+                metadata.version(),
+                metadata.processedPosition(),
+                metadata.minExportedPosition(),
+                metadata.maxExportedPosition(),
+                metadata.lastFollowupEventPosition(),
+                metadata.isBootstrap(),
+                receivedDataBytes);
       }
       final PersistedSnapshot value =
           snapshotStore.persistNewSnapshot(directory, snapshotId, checksumCollection, metadata);

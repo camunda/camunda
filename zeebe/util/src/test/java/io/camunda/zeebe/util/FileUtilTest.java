@@ -106,6 +106,22 @@ final class FileUtilTest {
   }
 
   @Test
+  void directorySizeSumsSiblingsAndSubdirectoriesRespectingPredicate() throws IOException {
+    // given — root with two sibling files + one subdirectory containing two more files,
+    // one of which is excluded by the predicate
+    final var dir = Files.createDirectory(tmpDir.resolve("snap"));
+    final var sub = Files.createDirectory(dir.resolve("sub"));
+    Files.write(dir.resolve("a.sst"), new byte[100]);
+    Files.write(dir.resolve("b.sst"), new byte[200]);
+    Files.write(sub.resolve("c.sst"), new byte[50]);
+    Files.write(sub.resolve("excluded"), new byte[999]);
+
+    // when / then — siblings summed, subdirectory recursed, excluded file not counted
+    assertThat(FileUtil.directorySize(dir, f -> !f.getFileName().toString().equals("excluded")))
+        .isEqualTo(350L);
+  }
+
+  @Test
   void isEmptyReturnsTrueWhenDirectoryEmpty() throws IOException {
     // given
     final Path emptyDirectory = Files.createDirectory(tmpDir.resolve("src"));

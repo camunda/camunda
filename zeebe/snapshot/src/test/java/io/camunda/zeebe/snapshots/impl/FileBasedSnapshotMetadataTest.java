@@ -34,11 +34,14 @@ public class FileBasedSnapshotMetadataTest {
     assertThat(deserialized.processedPosition()).isEqualTo(71662471L);
     assertThat(deserialized.lastFollowupEventPosition()).isEqualTo(74708149L);
     assertThat(deserialized.maxExportedPosition()).isEqualTo(Long.MAX_VALUE);
+    assertThat(deserialized.totalSizeBytes())
+        .as("legacy snapshots without a recorded totalSizeBytes default to 0")
+        .isZero();
   }
 
   @Test
   void shouldSerializeDeserialize() throws IOException {
-    final var metadata = new FileBasedSnapshotMetadata(1, 100L, 200L, 300L, 350L, true);
+    final var metadata = new FileBasedSnapshotMetadata(1, 100L, 200L, 300L, 350L, true, 1024L);
     final var bos = new ByteArrayOutputStream(1024);
     metadata.encode(bos);
     final var deserialized = FileBasedSnapshotMetadata.decode(bos.toByteArray());

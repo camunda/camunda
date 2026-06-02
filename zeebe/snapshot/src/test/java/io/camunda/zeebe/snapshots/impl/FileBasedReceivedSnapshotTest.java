@@ -164,7 +164,7 @@ public class FileBasedReceivedSnapshotTest {
         new FileBasedSnapshot(
             persistedSnapshot.getDirectory(),
             persistedSnapshot.getChecksumPath(),
-            new SfvChecksumImpl(),
+            new SfvManifestImpl(),
             persistedSnapshot.getSnapshotId(),
             null,
             s -> {},

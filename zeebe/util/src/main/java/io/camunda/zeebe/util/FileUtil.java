@@ -148,6 +148,34 @@ public final class FileUtil {
   }
 
   /**
+   * Returns the total size in bytes of all files under {@code directory} that satisfy {@code
+   * include}, recursing into subdirectories. Uses {@link BasicFileAttributes#size()} which is
+   * populated by the traversal at no extra I/O cost.
+   *
+   * @param directory the root directory to measure
+   * @param include predicate applied to each visited file path; directories are always descended
+   *     into regardless of the predicate
+   * @throws IOException if the directory cannot be walked
+   */
+  public static long directorySize(final Path directory, final Predicate<Path> include)
+      throws IOException {
+    final var sizer = new DirectorySizer(include);
+    Files.walkFileTree(directory, sizer);
+    return sizer.totalBytes;
+  }
+
+  /**
+   * Returns the total size in bytes of all files under {@code directory}, recursing into
+   * subdirectories.
+   *
+   * @param directory the root directory to measure
+   * @throws IOException if the directory cannot be walked
+   */
+  public static long directorySize(final Path directory) throws IOException {
+    return directorySize(directory, path -> true);
+  }
+
+  /**
    * Return true if directory does not exists, or if it is empty. Returns false if the path is not a
    * directory
    */
@@ -188,6 +216,23 @@ public final class FileUtil {
 
     @Override
     public FileVisitResult postVisitDirectory(final Path dir, final IOException exc) {
+      return CONTINUE;
+    }
+  }
+
+  private static final class DirectorySizer extends SimpleFileVisitor<Path> {
+    private final Predicate<Path> include;
+    private long totalBytes;
+
+    private DirectorySizer(final Predicate<Path> include) {
+      this.include = include;
+    }
+
+    @Override
+    public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs) {
+      if (include.test(file)) {
+        totalBytes += attrs.size();
+      }
       return CONTINUE;
     }
   }

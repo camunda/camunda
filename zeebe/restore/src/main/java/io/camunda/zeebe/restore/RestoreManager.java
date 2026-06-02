@@ -20,7 +20,7 @@ import io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory;
 import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
 import io.camunda.zeebe.broker.partitioning.topology.StaticConfigurationGenerator;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
-import io.camunda.zeebe.db.impl.rocksdb.ChecksumProviderRocksDBImpl;
+import io.camunda.zeebe.db.impl.rocksdb.RocksDbSnapshotFileInfoProvider;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationInitializer.StaticInitializer;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationManagerService;
 import io.camunda.zeebe.dynamic.config.PersistedClusterConfiguration;
@@ -309,7 +309,7 @@ public class RestoreManager implements CloseableSilently {
             backupStore,
             partition.partition(),
             configuration.getCluster().getNodeId(),
-            new ChecksumProviderRocksDBImpl(),
+            new RocksDbSnapshotFileInfoProvider(),
             partition.registry());
     try {
       restoreService.restore(backupIds, validator);

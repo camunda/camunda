@@ -10,11 +10,11 @@ package io.camunda.zeebe.snapshots.impl;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import io.camunda.zeebe.snapshots.ImmutableChecksumsSFV;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotChunkReader;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
 import io.camunda.zeebe.snapshots.SnapshotId;
+import io.camunda.zeebe.snapshots.SnapshotManifest;
 import io.camunda.zeebe.snapshots.SnapshotMetadata;
 import io.camunda.zeebe.snapshots.SnapshotReservation;
 import io.camunda.zeebe.util.FileUtil;
@@ -35,7 +35,7 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
 
   private final Path directory;
   private final Path checksumFile;
-  private final ImmutableChecksumsSFV checksums;
+  private final SnapshotManifest checksums;
   private final FileBasedSnapshotId snapshotId;
   private final SnapshotMetadata metadata;
   private final Consumer<FileBasedSnapshot> onSnapshotDeleted;
@@ -48,7 +48,7 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
   FileBasedSnapshot(
       final Path directory,
       final Path checksumFile,
-      final ImmutableChecksumsSFV checksums,
+      final SnapshotManifest checksums,
       final FileBasedSnapshotId snapshotId,
       final SnapshotMetadata metadata,
       final Consumer<FileBasedSnapshot> onSnapshotDeleted,
@@ -120,13 +120,29 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
   }
 
   @Override
-  public ImmutableChecksumsSFV getChecksums() {
+  public SnapshotManifest getChecksums() {
     return checksums;
   }
 
   @Override
   public SnapshotMetadata getMetadata() {
     return metadata;
+  }
+
+  @Override
+  public long getTotalSizeInBytes() {
+    final var size = metadata == null ? 0L : metadata.totalSizeBytes();
+    if (size <= 0L) {
+      // Should never happen: metadata is populated at every construction site
+      // (transient persist computes from disk, store-open and receive paths compute eagerly
+      // when the on-disk metadata predates this field). If it does, something upstream is
+      // skipping the eager-compute step and the rebalance pre-check would silently under-report.
+      throw new IllegalStateException(
+          "totalSizeBytes was not populated for snapshot "
+              + getId()
+              + "; legacy snapshots must have it computed at store open or during reception");
+    }
+    return size;
   }
 
   @Override

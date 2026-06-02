@@ -10,8 +10,8 @@ package io.camunda.zeebe.snapshots;
 import java.io.IOException;
 import java.nio.file.Path;
 
-/** Mutable checksum collection in simple file verification (SFV) file format */
-public interface MutableChecksumsSFV extends ImmutableChecksumsSFV {
+/** Mutable form of {@link SnapshotManifest}; built incrementally during snapshot persistence. */
+public interface MutableSnapshotManifest extends SnapshotManifest {
 
   /**
    * Update the checksum collection, and add a new checksum from a given file path.

@@ -14,7 +14,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.snapshots.SnapshotCopyUtil;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
-import io.camunda.zeebe.snapshots.TestChecksumProvider;
+import io.camunda.zeebe.snapshots.TestSnapshotFileInfoProvider;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.test.util.asserts.DirectoryAssert;
 import io.camunda.zeebe.util.FileUtil;
@@ -131,6 +131,45 @@ public class FileBasedSnapshotStoreTest {
   }
 
   @Test
+  public void shouldComputeTotalSizeBytesForLegacySnapshotOnStoreOpen() throws IOException {
+    // given a persisted snapshot whose on-disk metadata was written before totalSizeBytes existed.
+    // We simulate by overwriting the metadata file with legacy JSON and recomputing the SFV
+    // checksum file (the metadata file is part of the snapshot's checksum, so any modification
+    // requires the SFV file to be rewritten in lockstep — exactly what we don't allow at runtime).
+    final var persistedSnapshot = takeTransientSnapshot().persist().join();
+    final var metadataFile =
+        persistedSnapshot.getPath().resolve(FileBasedSnapshotStoreImpl.METADATA_FILE_NAME);
+    final var legacyMetadataJson =
+        // language=JSON
+        """
+        {
+          "version": 1,
+          "processedPosition": 0,
+          "exportedPosition": 0,
+          "lastFollowupEventPosition": 0,
+          "bootstrap": false
+        }""";
+    Files.writeString(metadataFile, legacyMetadataJson, StandardOpenOption.TRUNCATE_EXISTING);
+    SnapshotManifests.persist(
+        persistedSnapshot.getChecksumPath(),
+        SnapshotManifests.calculate(persistedSnapshot.getPath()));
+
+    // when reopening the store
+    snapshotStore.close();
+    snapshotStore = createStore(rootDirectory);
+
+    // then totalSizeBytes is computed eagerly from disk and exposed on the loaded snapshot
+    final var loaded = snapshotStore.getLatestSnapshot().orElseThrow();
+    final long expected = SNAPSHOT_CONTENT.getBytes(StandardCharsets.UTF_8).length;
+    assertThat(loaded.getTotalSizeInBytes())
+        .as(
+            "store-open path computes totalSizeBytes for snapshots whose on-disk metadata predates"
+                + " the field, without modifying the on-disk metadata file")
+        .isEqualTo(expected);
+    assertThat(loaded.getMetadata().totalSizeBytes()).isEqualTo(expected);
+  }
+
+  @Test
   public void shouldLoadLatestSnapshotWhenMoreThanOneExistsAndDeleteOlder() throws IOException {
     // given
     final FileBasedSnapshotStore otherStore = createStore(rootDirectory);
@@ -158,7 +197,7 @@ public class FileBasedSnapshotStoreTest {
   public void shouldNotLoadCorruptedSnapshot() throws Exception {
     // given
     final var persistedSnapshot = (FileBasedSnapshot) takeTransientSnapshot().persist().join();
-    SnapshotChecksum.persist(persistedSnapshot.getChecksumPath(), new SfvChecksumImpl());
+    SnapshotManifests.persist(persistedSnapshot.getChecksumPath(), new SfvManifestImpl());
 
     // when
     snapshotStore.close();
@@ -189,7 +228,7 @@ public class FileBasedSnapshotStoreTest {
     final var otherStore = createStore(rootDirectory);
     final var corruptOlderSnapshot =
         (FileBasedSnapshot) takeTransientSnapshot(1, otherStore).persist().join();
-    SnapshotChecksum.persist(corruptOlderSnapshot.getChecksumPath(), new SfvChecksumImpl());
+    SnapshotManifests.persist(corruptOlderSnapshot.getChecksumPath(), new SfvManifestImpl());
 
     final var newerSnapshot =
         (FileBasedSnapshot) takeTransientSnapshot(2, snapshotStore).persist().join();
@@ -237,7 +276,7 @@ public class FileBasedSnapshotStoreTest {
     final var otherStore = createStore(rootDirectory);
 
     // when - corrupting old snapshot and adding new valid snapshot
-    SnapshotChecksum.persist(olderSnapshot.getChecksumPath(), new SfvChecksumImpl());
+    SnapshotManifests.persist(olderSnapshot.getChecksumPath(), new SfvManifestImpl());
     final var newerSnapshot =
         (FileBasedSnapshot) takeTransientSnapshot(2, otherStore).persist().join();
 
@@ -255,7 +294,7 @@ public class FileBasedSnapshotStoreTest {
     final var otherStore = createStore(rootDirectory);
     final var corruptSnapshot =
         (FileBasedSnapshot) takeTransientSnapshot(1, otherStore).persist().join();
-    SnapshotChecksum.persist(corruptSnapshot.getChecksumPath(), new SfvChecksumImpl());
+    SnapshotManifests.persist(corruptSnapshot.getChecksumPath(), new SfvManifestImpl());
 
     // when
     snapshotStore.close();
@@ -272,7 +311,7 @@ public class FileBasedSnapshotStoreTest {
     // given
     final Map<String, Long> badChecksums = new HashMap<>();
     badChecksums.put(SNAPSHOT_CONTENT_FILE_NAME, 123L);
-    final var testChecksumProvider = new TestChecksumProvider(badChecksums);
+    final var testChecksumProvider = new TestSnapshotFileInfoProvider(badChecksums);
 
     // when
     final var store =
@@ -282,7 +321,7 @@ public class FileBasedSnapshotStoreTest {
     final var takenSnapshot = (FileBasedSnapshot) takeTransientSnapshot(1, store).persist().join();
 
     // then
-    final var persistedChecksums = SnapshotChecksum.read(takenSnapshot.getChecksumPath());
+    final var persistedChecksums = SnapshotManifests.read(takenSnapshot.getChecksumPath());
     assertThat(persistedChecksums.getChecksums().get(SNAPSHOT_CONTENT_FILE_NAME)).isEqualTo(123L);
   }
 
@@ -391,7 +430,7 @@ public class FileBasedSnapshotStoreTest {
             0,
             PARTITION_ID,
             receiverStorePath,
-            new TestChecksumProvider(fileChecksums),
+            new TestSnapshotFileInfoProvider(fileChecksums),
             new SimpleMeterRegistry());
     scheduler.submitActor(store);
 
@@ -415,7 +454,7 @@ public class FileBasedSnapshotStoreTest {
             0,
             PARTITION_ID,
             receiverStorePath,
-            new TestChecksumProvider(fileChecksums),
+            new TestSnapshotFileInfoProvider(fileChecksums),
             new SimpleMeterRegistry());
     scheduler.submitActor(restartedStore).join();
 
@@ -436,6 +475,9 @@ public class FileBasedSnapshotStoreTest {
         snapshotStore.copyForBootstrap(persistedSnapshot, SnapshotCopyUtil::copyAllFiles).join();
 
     // then
+    // totalSizeBytes counts the 3 non-metadata files written by takeTransientSnapshotWithFiles
+    // (table-0.sst, table-1.sst, table-2.sst), each containing "test" (4 bytes).
+    final long expectedTotalSize = 3L * "test".getBytes(StandardCharsets.UTF_8).length;
     assertThat(copiedSnapshot)
         .satisfies(
             s -> {
@@ -443,7 +485,8 @@ public class FileBasedSnapshotStoreTest {
               assertThat(s.getPath().getFileName().toString()).startsWith("1-1-0-0-0-");
               assertThat(s.getMetadata())
                   .isEqualTo(
-                      FileBasedSnapshotMetadata.forBootstrap(FileBasedSnapshotStoreImpl.VERSION));
+                      FileBasedSnapshotMetadata.forBootstrap(
+                          FileBasedSnapshotStoreImpl.VERSION, expectedTotalSize));
             });
 
     assertThat(snapshotStore.getBootstrapSnapshot())
