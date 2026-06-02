@@ -109,7 +109,7 @@ const ElementInstanceLog: React.FC<{isPanel?: boolean}> = observer(
 
     const handleSearchSubmit = (values: SearchFormValues) => {
       const next = new URLSearchParams(searchParams);
-      if (values.search.trim()) {
+      if ((values.search ?? '').trim()) {
         next.set(SEARCH_PARAM_KEY, values.search);
       } else {
         next.delete(SEARCH_PARAM_KEY);
@@ -134,7 +134,7 @@ const ElementInstanceLog: React.FC<{isPanel?: boolean}> = observer(
           <>
             <AutoSubmit />
             <FormResetter shouldReset={isModificationModeEnabled} />
-            <Field<string> name="search">
+            <Field<string> name="search" parse={(v) => v ?? ''}>
               {({input}) => (
                 <SearchInput
                   value={input.value}
