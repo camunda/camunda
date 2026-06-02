@@ -147,11 +147,9 @@ public class OtelSdkManager implements AutoCloseable {
         .ofLongs()
         .buildWithCallback(
             measurement -> {
-              // Always report — acts as heartbeat even when no events occurred.
-              // Note: metricSequenceNumber is persisted piggyback on the next export(Record)
-              // call, not on flush itself (the broker only stores metadata when position
-              // strictly increases). On restart after a flush-without-export, the sequence
-              // may regress by one — the backend handles this via position-based dedup.
+              if (!metricWindow.hasEvents()) {
+                return;
+              }
               final long seq = metadata.incrementAndGetMetricSequenceNumber();
               measurement.record(metricWindow.eventCount(), metricWindow.toGaugeAttributes(seq));
               metricWindow.reset();

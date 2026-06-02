@@ -482,11 +482,28 @@ class OtelSdkManagerTest {
     }
 
     @Test
-    void shouldEmitHeartbeatGaugeWhenNoEvents() {
+    void shouldSkipExportWindowGaugeWhenNoEvents() {
       // when — no incrementMetric calls
       final var metrics = metricReader.collectAllMetrics();
 
-      // then — gauge still emitted as heartbeat with event_count=0
+      // then — gauge has no data points
+      assertThat(findMetric(metrics, METRIC_EXPORT_WINDOW))
+          .satisfiesAnyOf(
+              opt -> assertThat(opt).isEmpty(),
+              opt ->
+                  assertThat(opt)
+                      .hasValueSatisfying(
+                          metric -> assertThat(metric.getLongGaugeData().getPoints()).isEmpty()));
+    }
+
+    @Test
+    void shouldNotIncrementMetricSequenceWhenWindowIsEmpty() {
+      // when — first collection happens with no events, then a real increment, then collection
+      metricReader.collectAllMetrics(); // empty window — should not consume a sequence number
+      manager.incrementMetric("test.counter", 100L, 1000L, Attributes.empty());
+      final var metrics = metricReader.collectAllMetrics();
+
+      // then — sequence number is 1 (not 2), proving the empty window did not consume a slot
       assertThat(findMetric(metrics, METRIC_EXPORT_WINDOW))
           .isPresent()
           .hasValueSatisfying(
@@ -494,16 +511,9 @@ class OtelSdkManagerTest {
                   assertThat(metric.getLongGaugeData().getPoints())
                       .first()
                       .satisfies(
-                          point -> {
-                            assertThat(point.getValue()).isZero();
-                            final var pointAttrs = point.getAttributes();
-                            assertThat(pointAttrs.get(METRIC_SEQUENCE_NUMBER)).isEqualTo(1L);
-                            // Sentinels must not leak — only sequence_number present
-                            assertThat(pointAttrs.get(LOG_POSITION_START)).isNull();
-                            assertThat(pointAttrs.get(LOG_POSITION_END)).isNull();
-                            assertThat(pointAttrs.get(EVENT_TIME_MIN)).isNull();
-                            assertThat(pointAttrs.get(EVENT_TIME_MAX)).isNull();
-                          }));
+                          point ->
+                              assertThat(point.getAttributes().get(METRIC_SEQUENCE_NUMBER))
+                                  .isEqualTo(1L)));
     }
 
     private Optional<MetricData> findMetric(
