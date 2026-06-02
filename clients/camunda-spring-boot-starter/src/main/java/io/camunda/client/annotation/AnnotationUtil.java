@@ -17,6 +17,7 @@ package io.camunda.client.annotation;
 
 import static java.util.Optional.ofNullable;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.client.annotation.Deployment.Deployments;
 import io.camunda.client.annotation.value.DeploymentValue;
 import io.camunda.client.annotation.value.DocumentValue;
@@ -31,6 +32,7 @@ import io.camunda.client.bean.ParameterInfo;
 import io.camunda.client.jobhandling.DocumentContext;
 import io.camunda.client.jobhandling.parameter.KeyTargetType;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -44,6 +46,7 @@ import java.util.function.Function;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.ReflectionUtils;
 
 public class AnnotationUtil {
   private static final Logger LOG = LoggerFactory.getLogger(AnnotationUtil.class);
@@ -197,18 +200,7 @@ public class AnnotationUtil {
               Duration.of(annotation.streamTimeout(), ChronoUnit.MILLIS),
               annotation.maxRetries()));
     }
-    if (annotationProperty.length == 1) {
-      return new FromAnnotation<>(annotationProperty[0]);
-    }
-    throw new IllegalArgumentException(
-        String.format(
-            "Illegal configuration of boolean property '%s' on @JobWorker method '%s'",
-            propertyName, methodName));
-  }
-
-  private static SourceAware<Boolean> fromSingletonBooleanArray(
-      final boolean[] annotationProperty, final String propertyName, final String methodName) {
-    return fromSingletonBooleanArray(annotationProperty, Empty::new, propertyName, methodName);
+    return Optional.empty();
   }
 
   private static boolean usesActivatedJob(final MethodInfo methodInfo) {

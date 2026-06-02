@@ -39,7 +39,7 @@ import org.junit.jupiter.api.TestFactory;
 
 public class PropertyBasedJobWorkerValueCustomizerTest {
 
-  private static MethodInfo methodInfo(
+  public static MethodInfo methodInfo(
       final Object bean, final String beanName, final String methodName) {
     try {
       return MethodInfo.builder()
