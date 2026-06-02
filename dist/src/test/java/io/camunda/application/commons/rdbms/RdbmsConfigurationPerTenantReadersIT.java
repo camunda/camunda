@@ -10,6 +10,7 @@ package io.camunda.application.commons.rdbms;
 import static io.camunda.configuration.physicaltenants.PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.application.commons.search.SearchClientConfiguration;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
@@ -42,6 +43,7 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 @Import({
   MyBatisConfiguration.class,
   RdbmsConfiguration.class,
+  SearchClientConfiguration.class,
   RdbmsConfigurationPerTenantReadersIT.TestConfig.class
 })
 class RdbmsConfigurationPerTenantReadersIT {
