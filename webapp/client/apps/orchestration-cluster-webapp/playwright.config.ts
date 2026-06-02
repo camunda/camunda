@@ -56,7 +56,7 @@ export default defineConfig({
 				[
 					'junit',
 					{
-						outputFile: 'results.xml',
+						outputFile: 'TEST-results.xml',
 					},
 				],
 			]
