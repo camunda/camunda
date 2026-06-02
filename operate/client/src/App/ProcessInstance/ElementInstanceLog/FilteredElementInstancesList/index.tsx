@@ -27,7 +27,7 @@ import {getForbiddenPermissionsError} from 'modules/constants/permissions';
 import {useElementInstancesSearchPaginated} from 'modules/queries/elementInstances/useElementInstancesSearchPaginated';
 import {flattenPaginatedPages} from 'modules/queries/flattenPaginatedPages';
 import {useDashboardScrollPagination} from 'App/Dashboard/useDashboardScrollPagination';
-import {escapeLikePatternsForCaseInsensitive} from 'modules/utils/escapeLikePattern';
+import {escapeLikePattern} from 'modules/utils/escapeLikePattern';
 import {isRequestError} from 'modules/request';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
 import {
@@ -116,19 +116,15 @@ const FilteredElementInstancesList: React.FC<Props> = ({
 }) => {
   const scrollableContainerRef = useRef<HTMLDivElement>(null);
 
-  const payload = useMemo(() => {
-    const patterns = escapeLikePatternsForCaseInsensitive(searchText);
-    const orClauses = patterns.flatMap((pattern) => [
-      {elementName: {$like: pattern}},
-      {elementId: {$like: pattern}},
-    ]);
+  const payload = useMemo((): QueryElementInstancesRequestBody => {
+    const pattern = escapeLikePattern(searchText);
     return {
       filter: {
         processInstanceKey,
-        $or: orClauses,
+        $or: [{elementName: {$like: pattern}}, {elementId: {$like: pattern}}],
       },
-      sort: [{field: 'startDate' as const, order: 'asc' as const}],
-    } as QueryElementInstancesRequestBody;
+      sort: [{field: 'startDate', order: 'asc'}],
+    };
   }, [searchText, processInstanceKey]);
 
   const query = useElementInstancesSearchPaginated({
