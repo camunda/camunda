@@ -6,7 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import styled, {css} from 'styled-components';
+import styled from 'styled-components';
+import {TreeNode as BaseTreeNode} from '@carbon/react';
 
 const ScrollContainer = styled.div`
   overflow-y: auto;
@@ -14,61 +15,18 @@ const ScrollContainer = styled.div`
   min-height: 0;
 `;
 
-const List = styled.ul`
-  list-style: none;
-  margin: 0;
-  padding: 0;
-`;
-
-const RowButton = styled.button<{$selected: boolean}>`
-  display: flex;
-  width: 100%;
-  border: none;
-  background: transparent;
-  text-align: left;
-  cursor: pointer;
-  // Bar's StateIcon is position: absolute at left: var(--cds-spacing-05).
-  // The row needs position: relative so the icon anchors here, plus enough
-  // left padding to clear the icon column (16px offset + 16px icon + gap).
-  position: relative;
-  padding: 0 var(--cds-spacing-05) 0
-    calc(var(--cds-spacing-05) + var(--cds-spacing-07));
-  min-height: 2rem;
-  align-items: center;
-  color: inherit;
-  // Match the typography Carbon's TreeNode applies to its label
-  // (body-compact-01) so rows look identical between tree and flat views.
-  font-family: var(--cds-body-compact-01-font-family);
-  font-size: var(--cds-body-compact-01-font-size);
-  font-weight: var(--cds-body-compact-01-font-weight);
-  line-height: var(--cds-body-compact-01-line-height);
-  letter-spacing: var(--cds-body-compact-01-letter-spacing);
-
-  &:hover {
-    background-color: var(--cds-layer-hover-01);
+/**
+ * Styled wrapper for the Carbon TreeNode used in the flat filtered list.
+ * Matches the height and layout conventions of the full ElementInstancesTree.
+ */
+const SearchResultNode = styled(BaseTreeNode)`
+  .cds--tree-node__label {
+    height: 2rem;
   }
 
-  &:focus-visible {
-    outline: 2px solid var(--cds-focus);
-    outline-offset: -2px;
+  .cds--tree-node__label__details {
+    width: 100%;
   }
-
-  ${({$selected}) =>
-    $selected &&
-    css`
-      background-color: var(--cds-layer-selected-01);
-
-      &:hover {
-        background-color: var(--cds-layer-selected-hover-01);
-      }
-    `}
-`;
-
-const IconSlot = styled.span`
-  display: inline-flex;
-  align-items: center;
-  flex-shrink: 0;
-  margin-right: var(--cds-spacing-03);
 `;
 
 const StatusRegion = styled.output`
@@ -91,11 +49,4 @@ const EmptyStateContainer = styled.div`
   padding: var(--cds-spacing-06);
 `;
 
-export {
-  ScrollContainer,
-  List,
-  RowButton,
-  IconSlot,
-  StatusRegion,
-  EmptyStateContainer,
-};
+export {ScrollContainer, SearchResultNode, StatusRegion, EmptyStateContainer};
