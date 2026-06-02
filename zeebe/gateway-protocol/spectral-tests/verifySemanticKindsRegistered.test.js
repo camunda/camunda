@@ -26,7 +26,13 @@ describe('verifySemanticKindsRegistered + schema rules', () => {
 
   describe('valid: well-formed annotations matched to registry', () => {
     it('produces no violations for createWidget (single-key entity establish)', () => {
-      const v = allResults.filter((e) => e.message.includes('createWidget'));
+      const v = allResults.filter(
+        (e) =>
+          e.message.includes('createWidget') &&
+          (e.code === SHAPE_RULE ||
+            e.code === REQUIRES_SHAPE_RULE ||
+            e.code === REGISTRY_RULE),
+      );
       assert.equal(v.length, 0);
     });
 

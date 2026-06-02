@@ -13,6 +13,7 @@ functions:
   - verifyAddedInVersion
   - verifySemanticKindsRegistered
   - verifyNoAmbiguousIdentifierProperty
+  - verifySecurityDeclared
 functionsDir: ./spectral-functions
 rules:
   # Tag validation
@@ -310,3 +311,17 @@ rules:
     message: "{{error}}"
     then:
       function: verifyNoAmbiguousIdentifierProperty
+
+  # Every operation must declare its security modes (camunda/camunda#54268).
+  # See verifySecurityDeclared.js for the accepted shapes — either
+  # `security: []` for publicly unauthenticated endpoints, or a list of the
+  # conditionally-enforced schemes (`bearerAuth`, `basicAuth`) with empty
+  # scopes. The conditional-enforcement metadata on the schemes themselves is
+  # set in rest-api.yaml (camunda/camunda#53708).
+  require-security-declared:
+    description: "Every operation must declare a `security:` block."
+    severity: error
+    given: $.paths[*][*]
+    message: "{{error}}"
+    then:
+      function: verifySecurityDeclared
