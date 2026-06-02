@@ -27,18 +27,5 @@ public interface ProcessDefinitionReader {
 
   Set<String> getAllNonOnboardedProcessDefinitionKeys();
 
-  /**
-   * Returns the set of process definition keys whose {@code ProcessInstanceIndex} documents contain
-   * at least one entry in the {@code agentInstances[]} nested field, restricted to instances whose
-   * {@code tenantId} is in {@code tenantIds}. Used by {@code GET
-   * /api/definition/{type}/keys?hasAgentRuns=true} to populate the agentic dashboard's process
-   * ComboBox.
-   *
-   * @param tenantIds tenants the caller has access to. Callers should short-circuit before calling
-   *     if the user has no tenants. {@code null} entries match instances with no tenant (the {@code
-   *     TENANT_NOT_DEFINED} sentinel).
-   */
-  Set<String> getProcessDefinitionKeysWithAgentRuns(final List<String> tenantIds);
-
   DefinitionReader getDefinitionReader();
 }

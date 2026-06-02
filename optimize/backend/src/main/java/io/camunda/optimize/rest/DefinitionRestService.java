@@ -23,6 +23,7 @@ import io.camunda.optimize.dto.optimize.rest.DefinitionVersionResponseDto;
 import io.camunda.optimize.dto.optimize.rest.TenantResponseDto;
 import io.camunda.optimize.dto.optimize.rest.definition.DefinitionWithTenantsResponseDto;
 import io.camunda.optimize.dto.optimize.rest.definition.MultiDefinitionTenantsRequestDto;
+import io.camunda.optimize.rest.exceptions.BadRequestException;
 import io.camunda.optimize.rest.exceptions.NotFoundException;
 import io.camunda.optimize.rest.providers.CacheRequest;
 import io.camunda.optimize.service.DefinitionService;
@@ -35,7 +36,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
@@ -177,19 +177,16 @@ public class DefinitionRestService {
   public List<DefinitionKeyResponseDto> getDefinitionKeys(
       @PathVariable(name = "type") final DefinitionType type,
       @RequestParam(name = "filterByCollectionScope", required = false) final String collectionId,
-      @RequestParam(name = "hasAgentRuns", required = false, defaultValue = "false")
-          final boolean hasAgentRuns,
+      @RequestParam(name = "onlyWithAgentRuns", required = false, defaultValue = "false")
+          final boolean onlyWithAgentRuns,
       final HttpServletRequest request) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
 
     List<DefinitionResponseDto> definitions = getDefinitions(type, collectionId, userId);
-    if (hasAgentRuns && DefinitionType.PROCESS.equals(type)) {
-      final Set<String> keysWithAgentRuns =
-          definitionService.getProcessDefinitionKeysWithAgentRuns(userId);
-      definitions =
-          definitions.stream()
-              .filter(definition -> keysWithAgentRuns.contains(definition.getKey()))
-              .toList();
+    if (onlyWithAgentRuns && DefinitionType.PROCESS.equals(type)) {
+      definitions = definitions.stream().filter(DefinitionResponseDto::isAgenticProcess).toList();
+    } else if (onlyWithAgentRuns) {
+      throw new BadRequestException("onlyWithAgentRuns is only supported for PROCESS definitions.");
     }
     return definitions.stream()
         .map(definition -> new DefinitionKeyResponseDto(definition.getKey(), definition.getName()))

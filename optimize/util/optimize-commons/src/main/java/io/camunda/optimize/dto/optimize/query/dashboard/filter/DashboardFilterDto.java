@@ -19,8 +19,7 @@ import java.util.Objects;
   @JsonSubTypes.Type(value = DashboardStateFilterDto.class, name = "state"),
   @JsonSubTypes.Type(value = DashboardVariableFilterDto.class, name = "variable"),
   @JsonSubTypes.Type(value = DashboardAssigneeFilterDto.class, name = "assignee"),
-  @JsonSubTypes.Type(value = DashboardCandidateGroupFilterDto.class, name = "candidateGroup"),
-  @JsonSubTypes.Type(value = DashboardProcessScopeFilterDto.class, name = "processScope")
+  @JsonSubTypes.Type(value = DashboardCandidateGroupFilterDto.class, name = "candidateGroup")
 })
 public abstract class DashboardFilterDto<DATA extends FilterDataDto> {
 
@@ -45,17 +44,17 @@ public abstract class DashboardFilterDto<DATA extends FilterDataDto> {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hashCode(data);
+  }
+
+  @Override
   public boolean equals(final Object o) {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
     final DashboardFilterDto<?> that = (DashboardFilterDto<?>) o;
     return Objects.equals(data, that.data);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hashCode(data);
   }
 
   @Override

@@ -17,13 +17,10 @@ import io.camunda.optimize.dto.optimize.DefinitionType;
 import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import io.camunda.optimize.service.db.os.client.dsl.QueryDSL;
-import io.camunda.optimize.service.db.os.util.DefinitionQueryUtilOS;
 import io.camunda.optimize.service.db.reader.DefinitionReader;
 import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import io.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
-import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import org.opensearch.client.opensearch._types.aggregations.TermsAggregation;
@@ -35,7 +32,6 @@ import org.opensearch.client.opensearch.core.search.SourceConfig;
 import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
-import org.springframework.util.CollectionUtils;
 
 @Component
 @Conditional(OpenSearchCondition.class)
@@ -89,43 +85,6 @@ public class ProcessDefinitionReaderOS implements ProcessDefinitionReader {
             .source(new SourceConfig.Builder().fetch(false).build());
 
     final String errorMessage = "Was not able to fetch non-onboarded process definition keys.";
-    final SearchResponse<String> searchResponse =
-        osClient.search(searchRequest, String.class, errorMessage);
-    return OpensearchReaderUtil.extractAggregatedResponseValues(searchResponse, defKeyAgg);
-  }
-
-  @Override
-  public Set<String> getProcessDefinitionKeysWithAgentRuns(final List<String> tenantIds) {
-    if (CollectionUtils.isEmpty(tenantIds)) {
-      return Collections.emptySet();
-    }
-
-    final Query query =
-        new BoolQuery.Builder()
-            .must(QueryDSL.term(ProcessDefinitionIndex.AGENTIC_PROCESS, true))
-            .must(QueryDSL.term(DEFINITION_DELETED, false))
-            .filter(
-                DefinitionQueryUtilOS.createTenantIdQuery(
-                    ProcessDefinitionIndex.TENANT_ID, tenantIds))
-            .build()
-            .toQuery();
-
-    final String defKeyAgg = "keyAgg";
-    final SearchRequest.Builder searchRequest =
-        new SearchRequest.Builder()
-            .index(PROCESS_DEFINITION_INDEX_NAME)
-            .size(0)
-            .query(query)
-            .aggregations(
-                defKeyAgg,
-                new TermsAggregation.Builder()
-                    .field(ProcessDefinitionIndex.PROCESS_DEFINITION_KEY)
-                    .size(MAX_RESPONSE_SIZE_LIMIT)
-                    .build()
-                    .toAggregation())
-            .source(new SourceConfig.Builder().fetch(false).build());
-
-    final String errorMessage = "Was not able to retrieve process definition keys with agent runs.";
     final SearchResponse<String> searchResponse =
         osClient.search(searchRequest, String.class, errorMessage);
     return OpensearchReaderUtil.extractAggregatedResponseValues(searchResponse, defKeyAgg);

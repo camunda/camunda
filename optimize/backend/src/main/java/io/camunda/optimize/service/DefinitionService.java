@@ -28,7 +28,6 @@ import io.camunda.optimize.dto.optimize.query.definition.TenantWithDefinitionsRe
 import io.camunda.optimize.dto.optimize.rest.DefinitionVersionResponseDto;
 import io.camunda.optimize.rest.exceptions.ForbiddenException;
 import io.camunda.optimize.service.db.reader.DefinitionReader;
-import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.security.util.definition.DataSourceDefinitionAuthorizationService;
 import io.camunda.optimize.service.tenant.TenantService;
@@ -65,7 +64,6 @@ public class DefinitionService implements ConfigurationReloadable {
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(DefinitionService.class);
 
   private final DefinitionReader definitionReader;
-  private final ProcessDefinitionReader processDefinitionReader;
   private final DataSourceDefinitionAuthorizationService definitionAuthorizationService;
   private final TenantService tenantService;
 
@@ -76,12 +74,10 @@ public class DefinitionService implements ConfigurationReloadable {
 
   public DefinitionService(
       final DefinitionReader definitionReader,
-      final ProcessDefinitionReader processDefinitionReader,
       final DataSourceDefinitionAuthorizationService definitionAuthorizationService,
       final TenantService tenantService,
       final ConfigurationService configurationService) {
     this.definitionReader = definitionReader;
-    this.processDefinitionReader = processDefinitionReader;
     this.definitionAuthorizationService = definitionAuthorizationService;
     this.tenantService = tenantService;
 
@@ -220,24 +216,6 @@ public class DefinitionService implements ConfigurationReloadable {
     }
 
     return getFullyImportedDefinitions(null, null, null, userId);
-  }
-
-  /**
-   * Returns the set of process definition keys whose process-instance documents contain at least
-   * one entry in the {@code agentInstances[]} nested field, scoped to tenants the user has access
-   * to. The tenant filter is applied inside the database query (single round-trip) — definitions in
-   * tenants the user can't see never enter the aggregation. Following the convention used elsewhere
-   * in this service (e.g. {@link #getDefinitionVersions}), the shared (null) tenant is always
-   * appended to the user's tenant list so shared-tenant data remains visible to any authenticated
-   * user.
-   */
-  public Set<String> getProcessDefinitionKeysWithAgentRuns(final String userId) {
-    if (userId == null) {
-      throw new ForbiddenException("userId is null");
-    }
-    final List<String> tenantIds = new ArrayList<>(tenantService.getTenantIdsForUser(userId));
-    tenantIds.add(null); // always include shared tenant, even when not in tenantIds
-    return processDefinitionReader.getProcessDefinitionKeysWithAgentRuns(tenantIds);
   }
 
   public List<DefinitionResponseDto> getFullyImportedDefinitions(

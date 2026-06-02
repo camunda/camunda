@@ -44,6 +44,7 @@ public interface DefinitionReader {
   String DEFINITION_KEY_AND_TYPE_AGGREGATION = "definitionKeyAndType";
   String DEFINITION_KEY_AND_TYPE_AND_TENANT_AGGREGATION = "definitionKeyAndTypeAndTenant";
   String NAME_AGGREGATION = "definitionName";
+  String AGENTIC_PROCESS_AGGREGATION = "agenticProcess";
   String[] ALL_DEFINITION_INDEXES = {PROCESS_DEFINITION_INDEX_NAME, DECISION_DEFINITION_INDEX_NAME};
   String TENANT_NOT_DEFINED_VALUE = "null";
 

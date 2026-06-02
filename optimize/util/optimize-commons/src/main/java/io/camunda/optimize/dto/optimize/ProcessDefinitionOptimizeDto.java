@@ -23,6 +23,7 @@ public class ProcessDefinitionOptimizeDto extends DefinitionOptimizeResponseDto 
   private List<FlowNodeDataDto> flowNodeData = new ArrayList<>();
   private Map<String, String> userTaskNames = new HashMap<>();
   private boolean onboarded = false;
+  private boolean agenticProcess = false;
 
   public ProcessDefinitionOptimizeDto() {
     setType(DefinitionType.PROCESS);
@@ -126,6 +127,14 @@ public class ProcessDefinitionOptimizeDto extends DefinitionOptimizeResponseDto 
     this.onboarded = onboarded;
   }
 
+  public boolean isAgenticProcess() {
+    return agenticProcess;
+  }
+
+  public void setAgenticProcess(final boolean agenticProcess) {
+    this.agenticProcess = agenticProcess;
+  }
+
   @Override
   protected boolean canEqual(final Object other) {
     return other instanceof ProcessDefinitionOptimizeDto;
@@ -144,6 +153,7 @@ public class ProcessDefinitionOptimizeDto extends DefinitionOptimizeResponseDto 
     }
     final ProcessDefinitionOptimizeDto that = (ProcessDefinitionOptimizeDto) o;
     return onboarded == that.onboarded
+        && agenticProcess == that.agenticProcess
         && Objects.equals(bpmn20Xml, that.bpmn20Xml)
         && Objects.equals(flowNodeData, that.flowNodeData)
         && Objects.equals(userTaskNames, that.userTaskNames);
@@ -151,7 +161,8 @@ public class ProcessDefinitionOptimizeDto extends DefinitionOptimizeResponseDto 
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), bpmn20Xml, flowNodeData, userTaskNames, onboarded);
+    return Objects.hash(
+        super.hashCode(), bpmn20Xml, flowNodeData, userTaskNames, onboarded, agenticProcess);
   }
 
   @Override
@@ -164,6 +175,8 @@ public class ProcessDefinitionOptimizeDto extends DefinitionOptimizeResponseDto 
         + getUserTaskNames()
         + ", onboarded="
         + isOnboarded()
+        + ", agenticProcess="
+        + isAgenticProcess()
         + ")";
   }
 
