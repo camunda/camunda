@@ -17,7 +17,7 @@ import io.camunda.search.query.SearchQueryBase.AbstractQueryBuilder;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.auth.MappingRuleMatcher;
+import io.camunda.security.core.auth.MappingRuleMatcher;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
