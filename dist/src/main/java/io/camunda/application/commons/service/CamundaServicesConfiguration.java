@@ -68,6 +68,7 @@ import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.ResourceServices;
 import io.camunda.service.RoleServices;
+import io.camunda.service.SecretServices;
 import io.camunda.service.SignalServices;
 import io.camunda.service.TenantServices;
 import io.camunda.service.TopologyServices;
@@ -76,6 +77,8 @@ import io.camunda.service.UserServices;
 import io.camunda.service.UserTaskServices;
 import io.camunda.service.VariableServices;
 import io.camunda.service.cache.ProcessCache;
+import io.camunda.service.secret.EnvironmentVariableSecretStore;
+import io.camunda.service.secret.SimpleSecretStoreRegistry;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.spring.utils.DatabaseTypeUtils;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -446,6 +449,13 @@ public class CamundaServicesConfiguration {
         executorProvider,
         brokerRequestAuthorizationConverter,
         gatewayRestConfiguration.getMaxNameFieldLength());
+  }
+
+  @Bean
+  public SecretServices secretServices(final GatewayRestConfiguration gatewayRestConfiguration) {
+    return new SecretServices(
+        new SimpleSecretStoreRegistry(new EnvironmentVariableSecretStore()),
+        gatewayRestConfiguration.getSecrets().getCacheTtl());
   }
 
   @Bean

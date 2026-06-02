@@ -18,6 +18,7 @@ package io.camunda.client.spring.configuration;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.spring.configuration.condition.ConditionalOnCamundaClientEnabled;
 import io.camunda.client.spring.event.CamundaLifecycleEventProducer;
+import io.camunda.client.spring.secret.SecretsAutoConfiguration;
 import io.camunda.client.spring.testsupport.CamundaSpringProcessTestContext;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
@@ -35,7 +36,8 @@ import org.springframework.context.annotation.Bean;
   MetricsDefaultConfiguration.class,
   JsonMapperConfiguration.class,
   Jackson3JsonMapperConfiguration.class,
-  DefaultJsonMapperConfiguration.class
+  DefaultJsonMapperConfiguration.class,
+  SecretsAutoConfiguration.class
 })
 public class CamundaAutoConfiguration {
 

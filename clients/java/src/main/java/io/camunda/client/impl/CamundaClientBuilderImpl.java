@@ -62,9 +62,11 @@ import io.camunda.client.CredentialsProvider;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.CommandWithTenantStep;
 import io.camunda.client.api.command.enums.TenantFilter;
+import io.camunda.client.api.secret.SecretsClient;
 import io.camunda.client.api.worker.JobExceptionHandler;
 import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
 import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
+import io.camunda.client.impl.secret.SecretResolvingJsonMapper;
 import io.camunda.client.impl.util.DataSizeUtil;
 import io.camunda.client.impl.util.Environment;
 import io.grpc.ClientInterceptor;
@@ -78,6 +80,7 @@ import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.hc.client5.http.async.AsyncExecChainHandler;
 
 public final class CamundaClientBuilderImpl
@@ -130,6 +133,7 @@ public final class CamundaClientBuilderImpl
   private CredentialsProvider credentialsProvider;
   private Duration keepAlive = DEFAULT_KEEP_ALIVE;
   private JsonMapper jsonMapper = new CamundaObjectMapper();
+  private boolean secretResolutionEnabled = false;
   private String overrideAuthority;
   private int maxMessageSize = DEFAULT_MAX_MESSAGE_SIZE;
   private int maxMetadataSize = DEFAULT_MAX_METADATA_SIZE;
@@ -570,6 +574,12 @@ public final class CamundaClientBuilderImpl
   }
 
   @Override
+  public CamundaClientBuilder withSecretResolution() {
+    secretResolutionEnabled = true;
+    return this;
+  }
+
+  @Override
   public CamundaClientBuilder overrideAuthority(final String authority) {
     overrideAuthority = authority;
     return this;
@@ -628,6 +638,22 @@ public final class CamundaClientBuilderImpl
   public CamundaClient build() {
     if (applyEnvironmentVariableOverrides) {
       applyOverrides();
+    }
+    if (secretResolutionEnabled && !(jsonMapper instanceof SecretResolvingJsonMapper)) {
+      final AtomicReference<CamundaClient> clientHolder = new AtomicReference<>();
+      final SecretsClient secretsClient =
+          references -> {
+            final CamundaClient c = clientHolder.get();
+            if (c == null) {
+              throw new IllegalStateException(
+                  "Secret resolution invoked before the Camunda client was built");
+            }
+            return c.newSecretResolveCommand().references(references).send().join().getResolved();
+          };
+      jsonMapper = new SecretResolvingJsonMapper(jsonMapper, secretsClient);
+      final CamundaClient client = new CamundaClientImpl(this);
+      clientHolder.set(client);
+      return client;
     }
     return new CamundaClientImpl(this);
   }

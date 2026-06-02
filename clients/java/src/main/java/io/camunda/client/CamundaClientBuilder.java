@@ -245,6 +245,19 @@ public interface CamundaClientBuilder {
   CamundaClientBuilder withJsonMapper(JsonMapper jsonMapper);
 
   /**
+   * Enables transparent resolution of {@code camunda.secrets.*} references during variable
+   * deserialization.
+   *
+   * <p>When enabled, the configured {@link JsonMapper} is wrapped with a {@code
+   * SecretResolvingJsonMapper} that batches detected references into a single call to {@link
+   * CamundaClient#newSecretResolveCommand()} and splices the resolved values back. References that
+   * the gateway does not resolve are left unchanged so callers can detect them.
+   *
+   * @return this builder
+   */
+  CamundaClientBuilder withSecretResolution();
+
+  /**
    * Overrides the authority used with TLS virtual hosting. Specifically, to override hostname
    * verification in the TLS handshake. It does not change what host is actually connected to.
    *
