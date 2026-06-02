@@ -225,6 +225,8 @@ public final class CamundaExporterConfigurationApplier {
 
     exporterConfiguration.setAuditLog(
         unifiedConfiguration.getCamunda().getData().getAuditLog().toConfiguration());
+    exporterConfiguration.setWaitState(
+        unifiedConfiguration.getCamunda().getData().getWaitStates().toConfiguration());
     exporterConfiguration.setHistoryDeletion(
         unifiedConfiguration.getCamunda().getData().getHistoryDeletion().toConfiguration());
 

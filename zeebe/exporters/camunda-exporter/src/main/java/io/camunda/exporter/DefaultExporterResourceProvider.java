@@ -409,6 +409,10 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
       addAuditLogHandlers(configuration.getAuditLog(), partitionId);
     }
 
+    if (configuration.getWaitState().isEnabled()) {
+      // TODO: call addWaitStateHandlers();
+    }
+
     if (configuration.getBatchOperation().isExportItemsOnCreation()) {
       // only add this handler when the items are exported on creation
       exportHandlers.add(

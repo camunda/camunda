@@ -13,6 +13,7 @@ import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogConfiguration;
 import io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration;
 import io.camunda.zeebe.exporter.common.historydeletion.HistoryDeletionConfiguration;
+import io.camunda.zeebe.exporter.common.waitstate.WaitStateConfiguration;
 
 public class ExporterConfiguration {
 
@@ -29,6 +30,7 @@ public class ExporterConfiguration {
   private BatchOperationConfiguration batchOperation = new BatchOperationConfiguration();
   private AuditLogConfiguration auditLog = new AuditLogConfiguration();
   private HistoryDeletionConfiguration historyDeletion = new HistoryDeletionConfiguration();
+  private WaitStateConfiguration waitState = new WaitStateConfiguration();
   private boolean createSchema = true;
   private boolean skipVariableWriteWithoutUserTasks = false;
   private ExtensionPropertyConfiguration extensionProperties = new ExtensionPropertyConfiguration();
@@ -39,6 +41,14 @@ public class ExporterConfiguration {
 
   public void setAuditLog(final AuditLogConfiguration auditLog) {
     this.auditLog = auditLog;
+  }
+
+  public WaitStateConfiguration getWaitState() {
+    return waitState;
+  }
+
+  public void setWaitState(final WaitStateConfiguration waitState) {
+    this.waitState = waitState;
   }
 
   public HistoryDeletionConfiguration getHistoryDeletion() {
@@ -191,6 +201,8 @@ public class ExporterConfiguration {
         + auditLog
         + ", historyDeletion="
         + historyDeletion
+        + ", waitState="
+        + waitState
         + ", skipVariableWriteWithoutUserTasks="
         + skipVariableWriteWithoutUserTasks
         + '}';
