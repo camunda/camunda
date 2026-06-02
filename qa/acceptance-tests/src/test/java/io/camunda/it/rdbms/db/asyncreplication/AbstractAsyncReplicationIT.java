@@ -72,8 +72,8 @@ abstract class AbstractAsyncReplicationIT {
                           "PT0S",
                           "asyncReplication",
                           Map.of(
-                              "enabled",
-                              true,
+                              "type",
+                              "LOG_SEQ",
                               "pollingInterval",
                               "PT1S",
                               "maxLag",

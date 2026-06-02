@@ -156,6 +156,9 @@ public class RdbmsExporterWrapper implements Exporter {
               new DelayReplicationControllerFactory(
                   config.getAsyncReplication(), partitionId, context.clock()));
       case NONE -> builder.replicationControllerFactory(ReplicationControllerFactory.noop());
+      default ->
+          throw new IllegalArgumentException(
+              "Unknown replication type: " + config.getAsyncReplication().getType());
     }
 
     createHandlers(partitionId, rdbmsWriters, builder, config, historyCleanupService);
