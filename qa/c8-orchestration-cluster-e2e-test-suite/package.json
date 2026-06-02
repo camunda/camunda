@@ -5,8 +5,9 @@
   "scripts": {
     "test": "playwright test",
     "test:local": "node --env-file=.env ./runTest.js",
-    "lint": "tsc && eslint .",
+    "lint": "tsc && eslint . && npm run check:testrail-ids",
     "lint:fix": "eslint . --fix",
+    "check:testrail-ids": "playwright test --list --reporter=./scripts/check-automation-id-length.ts",
     "responses:regenerate": "assert-json-body extract"
   },
   "devDependencies": {

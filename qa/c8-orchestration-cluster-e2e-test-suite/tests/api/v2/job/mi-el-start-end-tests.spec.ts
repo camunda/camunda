@@ -136,7 +136,7 @@ test.describe
       });
     });
 
-    test('start EL failure with no retries raises EXECUTION_LISTENER_NO_RETRIES incident; /jobs/search returns 200 in FAILED and RETRIES_UPDATED states', async ({
+    test('start EL failure with no retries raises NO_RETRIES incident', async ({
       request,
     }) => {
       const instance = await createSingleInstance(processId, 1, {
