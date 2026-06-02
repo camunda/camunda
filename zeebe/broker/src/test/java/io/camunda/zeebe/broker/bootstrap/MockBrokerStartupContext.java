@@ -26,6 +26,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.jobstream.JobStreamService;
+import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
@@ -72,7 +73,7 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   private EmbeddedGatewayService embeddedGatewayService;
   private DiskSpaceUsageMonitor diskSpaceUsageMonitor = mock(DiskSpaceUsageMonitor.class);
   private ExporterRepository exporterRepository = mock(ExporterRepository.class);
-  private final Map<String, PartitionManagerImpl> partitionManagers = new LinkedHashMap<>();
+  private final Map<String, PartitionManager> partitionManagers = new LinkedHashMap<>();
   private RocksDbResources sharedRocksDbResources;
   private BrokerAdminServiceImpl brokerAdminService = mock(BrokerAdminServiceImpl.class);
   private JobStreamService jobStreamService = mock(JobStreamService.class);
@@ -267,13 +268,13 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   }
 
   @Override
-  public Map<String, PartitionManagerImpl> getPartitionManagers() {
+  public Map<String, PartitionManager> getPartitionManagers() {
     return Collections.unmodifiableMap(partitionManagers);
   }
 
   @Override
   public void addPartitionManager(
-      final String physicalTenantId, final PartitionManagerImpl partitionManager) {
+      final String physicalTenantId, final PartitionManager partitionManager) {
     partitionManagers.put(physicalTenantId, partitionManager);
   }
 
