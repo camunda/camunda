@@ -395,10 +395,8 @@ public class CamundaServicesConfiguration {
   }
 
   @Bean
-  @SuppressWarnings("unchecked")
   public JobServices<JobActivationResult> jobServices(final ServiceRegistry serviceRegistry) {
-    return (JobServices<JobActivationResult>)
-        serviceRegistry.jobServices(PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID);
+    return serviceRegistry.jobServices(PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID);
   }
 
   @Bean

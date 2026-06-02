@@ -48,8 +48,6 @@ import io.camunda.service.VariableServices;
  * <p>Tenant-scoped accessors take a {@code physicalTenantId} and return the service instance whose
  * collaborators (search-client view, broker-request tagging, ...) are already bound to that tenant.
  * Cluster-wide accessors are parameter-less because the underlying service has no per-tenant axis.
- *
- * <p>See ADR {@code 0001-physical-tenant-service-registry}.
  */
 public interface ServiceRegistry {
 
@@ -91,7 +89,7 @@ public interface ServiceRegistry {
 
   IncidentServices incidentServices(String physicalTenantId);
 
-  JobServices<?> jobServices(String physicalTenantId);
+  <T> JobServices<T> jobServices(String physicalTenantId);
 
   MappingRuleServices mappingRuleServices(String physicalTenantId);
 

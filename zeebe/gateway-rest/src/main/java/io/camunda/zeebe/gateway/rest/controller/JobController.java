@@ -84,9 +84,8 @@ public class JobController {
     this.gatewayRestConfiguration = gatewayRestConfiguration;
   }
 
-  @SuppressWarnings("unchecked")
   private JobServices<JobActivationResult> jobSvc(final String physicalTenantId) {
-    return (JobServices<JobActivationResult>) serviceRegistry.jobServices(physicalTenantId);
+    return serviceRegistry.jobServices(physicalTenantId);
   }
 
   @CamundaPostMapping(path = "/activation")

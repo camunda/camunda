@@ -187,8 +187,9 @@ public record DefaultServiceRegistry(
   }
 
   @Override
-  public JobServices<?> jobServices(final String physicalTenantId) {
-    return byTenant(jobByTenant, physicalTenantId);
+  @SuppressWarnings("unchecked")
+  public <T> JobServices<T> jobServices(final String physicalTenantId) {
+    return (JobServices<T>) byTenant(jobByTenant, physicalTenantId);
   }
 
   @Override

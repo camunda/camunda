@@ -73,7 +73,7 @@ public class JobControllerRoundRobinTest extends RestControllerTest {
   void setup() {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-    when(serviceRegistry.jobServices(any())).thenReturn((JobServices) jobServices);
+    Mockito.doReturn(jobServices).when(serviceRegistry).jobServices(any());
     responseObserver.reset();
   }
 
