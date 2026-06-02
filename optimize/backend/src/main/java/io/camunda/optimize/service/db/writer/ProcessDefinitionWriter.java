@@ -37,4 +37,6 @@ public interface ProcessDefinitionWriter {
       final List<ProcessDefinitionOptimizeDto> importedDefinitions);
 
   void markDefinitionKeysAsOnboarded(final Set<String> definitionKeys);
+
+  void markDefinitionsAsAgenticProcesses(final Set<String> definitionIds);
 }
