@@ -42,6 +42,7 @@ import {
   serializeConditions,
   parseConditionsJson,
   findConditionRanges,
+  apiVariablesJsonSchema,
 } from './conditionsJsonCodec';
 import {
   ConditionRowsScroll,
@@ -138,7 +139,10 @@ const VariableFilterModal: React.FC = observer(() => {
     } else {
       const result = parseConditionsJson(jsonDraft);
       if (result.ok) {
-        form.change('conditions', result.conditions);
+        form.change(
+          'conditions',
+          result.conditions.length > 0 ? result.conditions : [createDraft()],
+        );
         setJsonParseWarning(null);
       } else {
         setJsonParseWarning(
@@ -430,6 +434,7 @@ const VariableFilterModal: React.FC = observer(() => {
                         <Suspense>
                           <RichTextEditor
                             value={jsonDraft}
+                            jsonSchema={apiVariablesJsonSchema}
                             onChange={(v) => {
                               setJsonDraft(v);
                               if (jsonError !== null) {

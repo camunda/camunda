@@ -10,6 +10,7 @@ import {
   serializeConditions,
   parseConditionsJson,
   findConditionRanges,
+  apiVariablesJsonSchema,
 } from './conditionsJsonCodec';
 import type {DraftCondition} from './constants';
 
@@ -82,6 +83,42 @@ describe('conditionsJsonCodec', () => {
 
   it('should serialize empty array', () => {
     expect(serializeConditions([])).toBe('[]');
+  });
+
+  it('should drop fully-empty placeholder rows when serializing', () => {
+    const conditions: DraftCondition[] = [
+      {name: '', operator: 'equals', value: ''},
+    ];
+    expect(serializeConditions(conditions)).toBe('[]');
+  });
+
+  it('should keep rows where user typed only the name', () => {
+    const conditions: DraftCondition[] = [
+      {name: 'amount', operator: 'equals', value: ''},
+    ];
+    const json = serializeConditions(conditions);
+    expect(JSON.parse(json)).toEqual([{name: 'amount', value: ''}]);
+  });
+
+  it('should keep rows where user typed only the value', () => {
+    const conditions: DraftCondition[] = [
+      {name: '', operator: 'equals', value: '42'},
+    ];
+    const json = serializeConditions(conditions);
+    expect(JSON.parse(json)).toEqual([{name: '', value: '42'}]);
+  });
+
+  it('should mix real conditions with dropped placeholders', () => {
+    const conditions: DraftCondition[] = [
+      {name: 'amount', operator: 'equals', value: '42'},
+      {name: '', operator: 'equals', value: ''},
+      {name: 'status', operator: 'exists', value: ''},
+    ];
+    const json = serializeConditions(conditions);
+    expect(JSON.parse(json)).toEqual([
+      {name: 'amount', value: '42'},
+      {name: 'status', value: {$exists: true}},
+    ]);
   });
 
   it('should parse plain string value as equals', () => {
@@ -300,5 +337,31 @@ describe('conditionsJsonCodec', () => {
     const text = JSON.stringify([{name: 'v', value: [1, 2, 3]}]);
     const result = parseConditionsJson(text);
     expect(result.ok).toBe(false);
+  });
+
+  describe('apiVariablesJsonSchema', () => {
+    it('should expose a JSON Schema describing the variables array', () => {
+      expect(apiVariablesJsonSchema).toMatchObject({
+        type: 'array',
+        items: expect.objectContaining({
+          type: 'object',
+          required: expect.arrayContaining(['name', 'value']),
+        }),
+      });
+    });
+
+    it('should mark name with minLength 1', () => {
+      const schema = apiVariablesJsonSchema as {
+        items?: {properties?: {name?: {minLength?: number}}};
+      };
+      expect(schema.items?.properties?.name?.minLength).toBe(1);
+    });
+
+    it('should disallow additional properties on entries', () => {
+      const schema = apiVariablesJsonSchema as {
+        items?: {additionalProperties?: boolean};
+      };
+      expect(schema.items?.additionalProperties).toBe(false);
+    });
   });
 });

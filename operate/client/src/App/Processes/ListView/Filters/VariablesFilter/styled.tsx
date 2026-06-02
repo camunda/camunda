@@ -88,23 +88,19 @@ const SwitcherWrap = styled.div`
   width: fit-content;
   max-width: 100%;
 
-  .cds--content-switcher {
-    inline-size: fit-content;
-    max-inline-size: 100%;
-  }
-
+  // Carbon's ContentSwitcher children default to flex:1, stretching the
+  // switcher to fill its parent. Constrain to content width so it doesn't
+  // span the full modal body.
+  .cds--content-switcher,
   .cds--content-switcher-btn {
     flex: 0 0 auto;
-    padding-inline: var(--cds-spacing-05, 1rem);
   }
 `;
 
 const JsonEditorWrap = styled.div<{$invalid?: boolean}>`
   border: 1px solid
     ${({$invalid}) =>
-      $invalid
-        ? 'var(--cds-support-error, #da1e28)'
-        : 'var(--cds-border-subtle-01)'};
+      $invalid ? 'var(--cds-support-error)' : 'var(--cds-border-subtle-01)'};
   border-radius: 4px;
   overflow: hidden;
   min-height: 280px;

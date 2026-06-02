@@ -18,12 +18,18 @@ const ApiVariableEntrySchema = z
 
 const ApiVariablesSchema = z.array(ApiVariableEntrySchema);
 
+const apiVariablesJsonSchema = z.toJSONSchema(ApiVariablesSchema);
+
 type ParseResult =
   | {ok: true; conditions: DraftCondition[]}
   | {ok: false; error: string; kind: 'syntax' | 'validation'};
 
+const isPlaceholderRow = (c: DraftCondition): boolean =>
+  c.name === '' && c.value === '';
+
 const serializeConditions = (conditions: DraftCondition[]): string => {
-  return JSON.stringify(conditions.map(toApiEntry), null, 2);
+  const meaningful = conditions.filter((c) => !isPlaceholderRow(c));
+  return JSON.stringify(meaningful.map(toApiEntry), null, 2);
 };
 
 const toApiEntry = (condition: DraftCondition): unknown => {
@@ -256,5 +262,6 @@ export {
   serializeConditions,
   parseConditionsJson,
   findConditionRanges,
+  apiVariablesJsonSchema,
   type ParseResult,
 };
