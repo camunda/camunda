@@ -8,8 +8,6 @@ paths:
       operationId: getAuthentication
       summary: Get current user
       description: Retrieves the current authenticated user.
-      security:
-        - BearerAuth: []
       responses:
         "200":
           description: The current user is successfully returned.

@@ -78,7 +78,9 @@ tags:
   - name: User
   - name: User task
   - name: Variable
-
+security:
+  - basicAuth: []
+  - BearerAuth: []
 paths:
   # Agent instance endpoints
   /agent-instances:

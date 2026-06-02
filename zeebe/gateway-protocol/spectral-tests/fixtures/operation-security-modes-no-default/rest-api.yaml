@@ -1,0 +1,35 @@
+openapi: 3.0.3
+info:
+  title: Test API
+  version: "1.0.0"
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+    BearerAuth:
+      type: http
+      scheme: bearer
+paths:
+  /invalid/missing:
+    get:
+      operationId: invalidMissingSecurity
+      responses:
+        "200":
+          description: ok
+  /valid/explicit:
+    get:
+      operationId: validExplicitSecurityNoDefault
+      security:
+        - basicAuth: []
+        - BearerAuth: []
+      responses:
+        "200":
+          description: ok
+  /valid/public:
+    get:
+      operationId: validPublicSecurityNoDefault
+      security: []
+      responses:
+        "200":
+          description: ok
