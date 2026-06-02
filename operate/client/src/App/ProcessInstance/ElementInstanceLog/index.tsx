@@ -7,7 +7,9 @@
  */
 
 import {observer} from 'mobx-react';
-import {useEffect, useState} from 'react';
+import {useEffect, useRef} from 'react';
+import {Form, Field, useForm} from 'react-final-form';
+import {useSearchParams, useNavigate} from 'react-router-dom';
 import {Container, PanelHeader, ErrorMessage, PanelBody} from './styled';
 import {TimeStampPill} from './TimeStampPill';
 import {modificationsStore} from 'modules/stores/modifications';
@@ -22,6 +24,11 @@ import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusiness
 import {isRequestError} from 'modules/request';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
 import {getForbiddenPermissionsError} from 'modules/constants/permissions';
+import {AutoSubmit} from 'modules/components/AutoSubmit';
+
+const SEARCH_PARAM_KEY = 'elementSearch';
+
+type SearchFormValues = {search: string};
 
 type LayoutProps = {
   children: React.ReactNode;
@@ -52,6 +59,23 @@ const Layout: React.FC<LayoutProps> = observer(
   },
 );
 
+/**
+ * Resets the enclosing RFF form to empty when modification mode is enabled.
+ * Must be rendered as a child of the `<Form>` component so it can access the
+ * form API via `useForm()`.
+ */
+const FormResetter: React.FC<{shouldReset: boolean}> = ({shouldReset}) => {
+  const form = useForm<SearchFormValues>();
+  const prevShouldReset = useRef(false);
+  useEffect(() => {
+    if (shouldReset && !prevShouldReset.current) {
+      form.reset({search: ''});
+    }
+    prevShouldReset.current = shouldReset;
+  }, [shouldReset, form]);
+  return null;
+};
+
 const INSTANCE_HISTORY_FORBIDDEN = getForbiddenPermissionsError(
   'Instance History',
   'this instance history',
@@ -70,36 +94,58 @@ const ElementInstanceLog: React.FC<{isPanel?: boolean}> = observer(
       error: businessObjectsError,
     } = useBusinessObjects();
 
-    const [searchText, setSearchText] = useState('');
-    const [debouncedSearchText, setDebouncedSearchText] = useState('');
+    const [searchParams] = useSearchParams();
+    const navigate = useNavigate();
 
     const isModificationModeEnabled =
       modificationsStore.isModificationModeEnabled;
 
-    // Clear search when modification mode is enabled (modification mode is
-    // incompatible with search).
-    useEffect(() => {
-      if (isModificationModeEnabled) {
-        setSearchText('');
+    // The submitted search value lives in the URL so the filtered view is
+    // shareable. Reads the param directly so a fresh page load with
+    // ?elementSearch=foo shows the filtered list immediately.
+    const submittedSearch = searchParams.get(SEARCH_PARAM_KEY) ?? '';
+    const isFiltered = submittedSearch.trim().length > 0;
+
+    const handleSearchSubmit = (values: SearchFormValues) => {
+      const next = new URLSearchParams(searchParams);
+      if (values.search.trim()) {
+        next.set(SEARCH_PARAM_KEY, values.search);
+      } else {
+        next.delete(SEARCH_PARAM_KEY);
       }
-    }, [isModificationModeEnabled]);
+      navigate({search: next.toString()}, {replace: true});
+    };
 
-    // Debounce the search text by 300ms before triggering the API query.
-    useEffect(() => {
-      const timer = setTimeout(() => {
-        setDebouncedSearchText(searchText);
-      }, 300);
-      return () => clearTimeout(timer);
-    }, [searchText]);
-
-    const isFiltered = debouncedSearchText.trim().length > 0;
+    const handleClearSearch = () => {
+      const next = new URLSearchParams(searchParams);
+      next.delete(SEARCH_PARAM_KEY);
+      navigate({search: next.toString()}, {replace: true});
+    };
 
     const searchInputElement = (
-      <SearchInput
-        value={searchText}
-        onChange={setSearchText}
-        onClear={() => setSearchText('')}
-      />
+      <Form<SearchFormValues>
+        onSubmit={handleSearchSubmit}
+        initialValues={{search: submittedSearch}}
+      >
+        {() => (
+          <>
+            <AutoSubmit />
+            <FormResetter shouldReset={isModificationModeEnabled} />
+            <Field<string> name="search">
+              {({input}) => (
+                <SearchInput
+                  value={input.value}
+                  onChange={(value) => input.onChange(value)}
+                  onClear={() => {
+                    input.onChange('');
+                    handleClearSearch();
+                  }}
+                />
+              )}
+            </Field>
+          </>
+        )}
+      </Form>
     );
 
     if ([processInstanceStatus, businessObjectsStatus].includes('pending')) {
@@ -140,7 +186,7 @@ const ElementInstanceLog: React.FC<{isPanel?: boolean}> = observer(
         <PanelBody>
           {isFiltered ? (
             <FilteredElementInstancesList
-              searchText={debouncedSearchText.trim()}
+              searchText={submittedSearch.trim()}
               processInstanceKey={processInstance!.processInstanceKey}
               businessObjects={businessObjects!}
             />
