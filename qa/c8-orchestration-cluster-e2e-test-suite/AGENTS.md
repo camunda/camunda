@@ -502,13 +502,19 @@ Use `{"prs": []}` if no PR was opened (regardless of reason).
 
 ## Workflow-Level Failure Fix Agent
 
-This section is read automatically by the fix agent when `/tmp/test_specs.json` is an empty array — meaning the nightly run failed before any test results were produced, or failed in a post-test step (e.g. artifact upload, TestRail sync, build step).
+This section is read by the fix agent when `/tmp/test_specs.json` contains an empty array — the nightly run failed before producing any test results, or failed in a post-test step.
 
-The run IDs are available as env vars: `E2E_RUN_ID`, `API_ES_RUN_ID`, `API_RDBMS_RUN_ID` (any may be `""` if that workflow type did not run). `TRIAGE_RUN_URL` contains the triage run URL for cross-linking.
+The run IDs are in env vars: `E2E_RUN_ID`, `API_ES_RUN_ID`, `API_RDBMS_RUN_ID` (any may be `""`). `TRIAGE_RUN_URL` is the triage run URL for cross-linking.
+
+### Core principle
+
+**"Transient" is never a reason to produce no output.** Every failure pattern that can be made less likely to recur through a code or config change must result in a PR. The goal is resilience — if Docker times out, add retry; if a test name breaks TestRail, shorten the name. Only write `{"prs": [], "category": "not-determined"}` when you have read the logs, identified the failing step, and there is genuinely no code or config change that would address it (e.g. the GitHub Actions runner ran out of disk, a third-party service was fully down with nothing on our side to change).
+
+`.github/workflows/` files are always in scope. The "Ask first" constraint in the repo AGENTS.md applies to application libraries (`webapps-common/`, `webapp/client/`, `security/`), not to CI workflow files.
 
 ### Diagnosis steps
 
-**Step 1 — Identify which run(s) failed and which step(s) caused the failure:**
+**Step 1 — Identify which step(s) failed in each run:**
 
 ```bash
 for run_id in $E2E_RUN_ID $API_ES_RUN_ID $API_RDBMS_RUN_ID; do
@@ -522,44 +528,62 @@ for run_id in $E2E_RUN_ID $API_ES_RUN_ID $API_RDBMS_RUN_ID; do
 done
 ```
 
-**Step 2 — Fetch the failing step logs for each failed job:**
+**Step 2 — Read the failure logs:**
 
 ```bash
 gh run view <run_id> --repo camunda/camunda --log-failed 2>/dev/null | head -300
 ```
 
-Read the error output carefully — the root cause is almost always visible in the first 300 lines of the failure log.
+The root cause is almost always visible in the first 300 lines.
 
-**Step 3 — Identify the root cause and locate the relevant file(s) in camunda/camunda:**
+**Step 3 — Apply the fix. Known patterns:**
 
-- Failed step name contains `Start Camunda` or `docker` → Docker image pull issue — look at the reusable workflow that was used and add a retry loop if absent (see existing retry pattern in `c8-orchestration-cluster-reusable-api-tests.yml`)
-- Failed step name contains `TestRail` → examine the error message; fix the root cause (e.g. a test case title that is too long for the `custom_automation_id` field, a trcli version issue, an auth problem)
-- Failed step name contains `Build` or `mvn` or `Maven` → examine the Maven error; fix the compilation or dependency issue in the relevant module
-- Failed step name is something else → read the log and trace it to the workflow YAML or the script it invokes; fix whatever is broken
+**Docker pull timeout** (`context deadline exceeded` or `i/o timeout` pulling from `registry-1.docker.io`):
 
-**Step 4 — Apply the fix:**
+- The fix is a retry loop. First check whether the failing reusable workflow already has one:
+  ```bash
+  gh api repos/camunda/camunda/contents/.github/workflows/<reusable-workflow>.yml \
+    --jq '.content' | base64 -d | grep -A5 "attempts\|retry\|Retry"
+  ```
+- If no retry exists, add the same 3-attempt/15s-sleep pattern already present in `c8-orchestration-cluster-reusable-api-tests.yml`. Copy it exactly — do not invent a different pattern.
+- If retry already exists (3 attempts), look deeper: check whether the image tag being pulled is a SNAPSHOT that may have been garbage-collected, or whether the compose file references a service that does not exist.
+- This is NOT a transient event to ignore — it is a missing resilience measure. Add the retry.
 
-You have full access to the entire `camunda/camunda` repository. The fix may land in:
-- A reusable workflow YAML under `.github/workflows/`
-- A test file under `qa/c8-orchestration-cluster-e2e-test-suite/`
-- A configuration file under `qa/c8-orchestration-cluster-e2e-test-suite/config/`
-- A script anywhere in the repo
+**TestRail `custom_automation_id` too long** (`Field :custom_automation_id is too long (250 characters at most)`):
 
-Keep the diff minimal. Fix exactly what is broken — do not refactor or clean up surrounding code.
+- Find the test(s) with names exceeding 250 characters. The automation ID is derived from the test title. Run:
+  ```bash
+  grep -r "test\|it\|describe" qa/c8-orchestration-cluster-e2e-test-suite/tests/ \
+    | grep -v ".snap\|node_modules" \
+    | awk -F'"' '{print length($2), $2}' | sort -rn | head -20
+  ```
+- Shorten the offending test title(s) in the spec file so the full path stays under 250 characters.
+- Do NOT add `continue-on-error: true` to the TestRail step. Fix the data.
 
-**Step 5 — Open a PR:**
+**TestRail other errors** (auth failure, API down, rate limit):
 
-Use PR type `ci:` if only workflow files changed, `fix:` if test or application code changed. Cross-link `TRIAGE_RUN_URL` in the PR body.
+- Read the exact trcli error. If it is a configuration problem (wrong key, wrong suite ID), fix the workflow input. If it is a genuine third-party outage with nothing to change on our side, this is a valid `not-determined` case — but confirm the service was actually down before concluding that.
 
-Write the result to `/tmp/fix-meta.json`:
+**Maven build failure** (`BUILD FAILURE` in the log):
+
+- Read the compiler or test error. Fix the compilation or dependency issue in the relevant module. Scope the change to the affected module only.
+
+**Other failures** — read the log, identify the failing script or command, trace it to the file in the repo that owns it, fix it there.
+
+**Step 4 — Open a PR:**
+
+Use `ci:` if only `.github/workflows/` files changed; `fix:` if test or application code changed. Cross-link `TRIAGE_RUN_URL` in the PR body.
+
+Write to `/tmp/fix-meta.json`:
 ```json
 {"prs": [{"number": 123, "owner": "camunda", "repo": "camunda", "branch": "ci/...", "has_e2e": false, "has_api": false}], "category": "workflow-fix"}
 ```
 
 ### Constraints
 
-- **No error suppression**: do NOT add `continue-on-error: true` or `|| true` to hide a failing step. Fix the root cause.
-- **No skipping**: same no-skip rule as the Nightly Fix Agent.
-- **"Not determined" is a last resort**: only write `{"prs": [], "category": "not-determined"}` to `/tmp/fix-meta.json` if you have read the logs, identified the failing step, traced it to the relevant code, and genuinely cannot write a correct fix. This should be extremely rare because the full repository is accessible.
+- **No `continue-on-error: true`** — never suppress a failing step. Fix the root cause.
+- **No skipping** — same absolute no-skip/no-fixme rule as the Nightly Fix Agent.
+- **`.github/workflows/` is always in scope** — do not treat these as "Ask first" territory.
+- **"Transient" ≠ "no fix"** — if a retry, a name change, or a config tweak would prevent recurrence, make that change.
 - **Allowed tools**: `gh`, `git`, `grep`, `rg`, `cat`, `find`, `jq`, `sed`, `awk`, `unzip`
 - **Forbidden**: `make`, `helm`, `kubectl`, `npm run build`, `go test`, any deploy command
