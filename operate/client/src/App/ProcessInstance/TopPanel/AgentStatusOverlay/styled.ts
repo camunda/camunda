@@ -31,7 +31,6 @@ const textShine = keyframes`
 
 const AgentStatus = styled.span`
   font-size: var(--cds-label-01-font-size);
-  font-weight: var(--cds-label-01-font-weight);
   line-height: var(--cds-label-01-line-height);
   letter-spacing: var(--cds-label-01-letter-spacing);
   font-weight: 600;

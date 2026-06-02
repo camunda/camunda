@@ -25,17 +25,17 @@ const AgentShineOverlay: React.FC<Props> = ({container, elementId}) => {
   const [size, setSize] = useState<Size | null>(null);
 
   useLayoutEffect(() => {
-    const container = document.querySelector<SVGGraphicsElement>(
+    const hostElement = document.querySelector<SVGGraphicsElement>(
       `[data-element-id="${elementId}"] .djs-visual rect`,
     );
-    if (container === null) {
+    if (hostElement === null) {
       setSize(null);
       return;
     }
 
-    const width = Number.parseFloat(container.getAttribute('width') ?? '0');
-    const height = Number.parseFloat(container.getAttribute('height') ?? '0');
-    const radius = Number.parseFloat(container.getAttribute('rx') ?? '0');
+    const width = Number.parseFloat(hostElement.getAttribute('width') ?? '0');
+    const height = Number.parseFloat(hostElement.getAttribute('height') ?? '0');
+    const radius = Number.parseFloat(hostElement.getAttribute('rx') ?? '0');
     setSize({
       width: Number.isFinite(width) ? width : 0,
       height: Number.isFinite(height) ? height : 0,
