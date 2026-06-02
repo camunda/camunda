@@ -12,20 +12,16 @@ import {SearchInput} from './index';
 describe('<SearchInput />', () => {
   it('renders with the documented placeholder and aria-label', () => {
     render(<SearchInput value="" onChange={vi.fn()} onClear={vi.fn()} />);
-    const input = screen.getByLabelText(
-      'Search element instances by name or ID',
-    );
+    const input = screen.getByLabelText('Search element instances');
     expect(input).toBeInTheDocument();
-    expect(input).toHaveAttribute('placeholder', 'Search by name or ID');
+    expect(input).toHaveAttribute('placeholder', 'Element name or ID');
   });
 
   it('reflects the value prop in the input', () => {
     render(
       <SearchInput value="Validate" onChange={vi.fn()} onClear={vi.fn()} />,
     );
-    const input = screen.getByLabelText(
-      'Search element instances by name or ID',
-    );
+    const input = screen.getByLabelText('Search element instances');
     expect(input).toHaveValue('Validate');
   });
 
@@ -34,9 +30,7 @@ describe('<SearchInput />', () => {
     const {user} = render(
       <SearchInput value="" onChange={onChange} onClear={vi.fn()} />,
     );
-    const input = screen.getByLabelText(
-      'Search element instances by name or ID',
-    );
+    const input = screen.getByLabelText('Search element instances');
     await user.type(input, 'a');
     expect(onChange).toHaveBeenCalledWith('a');
   });
