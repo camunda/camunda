@@ -10,6 +10,7 @@ import {observer} from 'mobx-react';
 import {useEffect, useRef} from 'react';
 import {Form, Field, useForm} from 'react-final-form';
 import {useSearchParams, useNavigate} from 'react-router-dom';
+import {ErrorBoundary} from 'react-error-boundary';
 import {Container, PanelHeader, ErrorMessage, PanelBody} from './styled';
 import {TimeStampPill} from './TimeStampPill';
 import {modificationsStore} from 'modules/stores/modifications';
@@ -184,21 +185,40 @@ const ElementInstanceLog: React.FC<{isPanel?: boolean}> = observer(
     return (
       <Layout isPanel={isPanel} searchInput={searchInputElement}>
         <PanelBody>
-          {isFiltered ? (
-            <FilteredElementInstancesList
-              searchText={submittedSearch.trim()}
-              processInstanceKey={processInstance!.processInstanceKey}
-              businessObjects={businessObjects!}
-            />
-          ) : (
-            <ElementInstancesTree
-              processInstance={processInstance!}
-              businessObjects={businessObjects!}
-              errorMessage={
-                <ErrorMessage message="Instance History could not be fetched" />
-              }
-            />
-          )}
+          <ErrorBoundary
+            fallbackRender={({error}) => (
+              <ErrorMessage
+                message={
+                  isRequestError(error) &&
+                  error?.response?.status === HTTP_STATUS_FORBIDDEN
+                    ? INSTANCE_HISTORY_FORBIDDEN.message
+                    : 'Instance History could not be fetched'
+                }
+                additionalInfo={
+                  isRequestError(error) &&
+                  error?.response?.status === HTTP_STATUS_FORBIDDEN
+                    ? INSTANCE_HISTORY_FORBIDDEN.additionalInfo
+                    : 'Refresh the page to try again'
+                }
+              />
+            )}
+          >
+            {isFiltered ? (
+              <FilteredElementInstancesList
+                searchText={submittedSearch.trim()}
+                processInstanceKey={processInstance!.processInstanceKey}
+                businessObjects={businessObjects!}
+              />
+            ) : (
+              <ElementInstancesTree
+                processInstance={processInstance!}
+                businessObjects={businessObjects!}
+                errorMessage={
+                  <ErrorMessage message="Instance History could not be fetched" />
+                }
+              />
+            )}
+          </ErrorBoundary>
         </PanelBody>
       </Layout>
     );
