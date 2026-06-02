@@ -614,7 +614,7 @@ test.describe.parallel('Multi-Instance Execution Listeners — beforeAll', () =>
         });
       });
 
-      test('search returns 200 for all types when start EL fails (FAILED, retries > 0)', async ({
+      test('search returns 200 for all job states when start EL fails', async ({
         request,
       }) => {
         const instance = await createSingleInstance(processId, 1);
