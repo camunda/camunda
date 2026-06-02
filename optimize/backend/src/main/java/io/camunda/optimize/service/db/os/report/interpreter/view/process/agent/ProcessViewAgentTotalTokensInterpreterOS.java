@@ -10,8 +10,8 @@ package io.camunda.optimize.service.db.os.report.interpreter.view.process.agent;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_AGENT_TOTAL_TOKENS;
 
 import io.camunda.optimize.service.db.os.writer.OpenSearchWriterUtil;
+import io.camunda.optimize.service.db.report.interpreter.view.process.agent.AgentMetricScripts;
 import io.camunda.optimize.service.db.report.plan.process.ProcessView;
-import io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import java.util.Set;
 import org.opensearch.client.opensearch._types.Script;
@@ -23,19 +23,6 @@ import org.springframework.stereotype.Component;
 public class ProcessViewAgentTotalTokensInterpreterOS
     extends AbstractProcessViewAgentMetricInterpreterOS {
 
-  private static final String TOTAL_TOKENS_SCRIPT =
-      "long inputTokens = doc['"
-          + ProcessInstanceIndex.AGENT_TOTAL_INPUT_TOKENS
-          + "'].empty ? 0L : doc['"
-          + ProcessInstanceIndex.AGENT_TOTAL_INPUT_TOKENS
-          + "'].value;"
-          + "long outputTokens = doc['"
-          + ProcessInstanceIndex.AGENT_TOTAL_OUTPUT_TOKENS
-          + "'].empty ? 0L : doc['"
-          + ProcessInstanceIndex.AGENT_TOTAL_OUTPUT_TOKENS
-          + "'].value;"
-          + "return inputTokens + outputTokens;";
-
   @Override
   public Set<ProcessView> getSupportedViews() {
     return Set.of(PROCESS_VIEW_AGENT_TOTAL_TOKENS);
@@ -43,6 +30,6 @@ public class ProcessViewAgentTotalTokensInterpreterOS
 
   @Override
   protected Script getAggregationScript() {
-    return OpenSearchWriterUtil.createDefaultScript(TOTAL_TOKENS_SCRIPT);
+    return OpenSearchWriterUtil.createDefaultScript(AgentMetricScripts.TOTAL_TOKENS);
   }
 }

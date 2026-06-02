@@ -5,21 +5,21 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.optimize.service.db.es.report.interpreter.view.process.agent;
+package io.camunda.optimize.service.db.os.report.interpreter.view.process.agent;
 
 import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_AGENT_OUTPUT_TOKENS;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 
-class ProcessViewAgentOutputTokensInterpreterESTest {
+class ProcessViewAgentOutputTokensInterpreterOSTest {
 
-  private final ProcessViewAgentOutputTokensInterpreterES interpreter =
-      new ProcessViewAgentOutputTokensInterpreterES();
+  private final ProcessViewAgentOutputTokensInterpreterOS interpreter =
+      new ProcessViewAgentOutputTokensInterpreterOS();
 
   @Test
   void getSupportedViewsReturnsOutputTokensView() {

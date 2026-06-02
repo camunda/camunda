@@ -11,8 +11,8 @@ import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PRO
 
 import co.elastic.clients.elasticsearch._types.Script;
 import io.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil;
+import io.camunda.optimize.service.db.report.interpreter.view.process.agent.AgentMetricScripts;
 import io.camunda.optimize.service.db.report.plan.process.ProcessView;
-import io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.util.Set;
 import org.springframework.context.annotation.Conditional;
@@ -23,19 +23,6 @@ import org.springframework.stereotype.Component;
 public class ProcessViewAgentTotalTokensInterpreterES
     extends AbstractProcessViewAgentMetricInterpreterES {
 
-  private static final String TOTAL_TOKENS_SCRIPT =
-      "long inputTokens = doc['"
-          + ProcessInstanceIndex.AGENT_TOTAL_INPUT_TOKENS
-          + "'].empty ? 0L : doc['"
-          + ProcessInstanceIndex.AGENT_TOTAL_INPUT_TOKENS
-          + "'].value;"
-          + "long outputTokens = doc['"
-          + ProcessInstanceIndex.AGENT_TOTAL_OUTPUT_TOKENS
-          + "'].empty ? 0L : doc['"
-          + ProcessInstanceIndex.AGENT_TOTAL_OUTPUT_TOKENS
-          + "'].value;"
-          + "return inputTokens + outputTokens;";
-
   @Override
   public Set<ProcessView> getSupportedViews() {
     return Set.of(PROCESS_VIEW_AGENT_TOTAL_TOKENS);
@@ -43,6 +30,6 @@ public class ProcessViewAgentTotalTokensInterpreterES
 
   @Override
   protected Script getAggregationScript() {
-    return ElasticsearchWriterUtil.createDefaultScript(TOTAL_TOKENS_SCRIPT);
+    return ElasticsearchWriterUtil.createDefaultScript(AgentMetricScripts.TOTAL_TOKENS);
   }
 }

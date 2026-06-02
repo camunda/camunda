@@ -31,6 +31,13 @@ public abstract class AbstractProcessViewAgentMetricInterpreterOS
     final String aggregationFieldName = getAggregationFieldName();
     final Script aggregationScript = getAggregationScript();
 
+    // A subclass must supply a field name or a script for the metric.
+    if (aggregationFieldName == null && aggregationScript == null) {
+      throw new IllegalStateException(
+          getClass().getSimpleName()
+              + " must override getAggregationFieldName() or getAggregationScript()");
+    }
+
     return getAggregationStrategies(context.getReportData()).stream()
         .map(
             strategy ->

@@ -9,15 +9,9 @@ package io.camunda.optimize.service.db.es.report.interpreter.view.process.agent;
 
 import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_AGENT_TOOL_CALLS;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
-import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
-import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import io.camunda.optimize.service.db.report.ExecutionContext;
-import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
 import io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -40,14 +34,14 @@ class ProcessViewAgentToolCallsInterpreterESTest {
 
   @Test
   void createAggregationsWithSumTypeCreatesSumAggregationKey() {
-    final var ctx = contextWithSumAggregation();
+    final var ctx = AgentInterpreterTestSupport.contextWith(AggregationType.SUM);
     final var aggs = interpreter.createAggregations(ctx);
     assertThat(aggs).containsKey("sumAggregation");
   }
 
   @Test
   void retrieveResultHappyPathReturnsMappedValue() {
-    final var ctx = contextWithSumAggregation();
+    final var ctx = AgentInterpreterTestSupport.contextWith(AggregationType.SUM);
     final var aggs = Map.of("sumAggregation", Aggregate.of(a -> a.sum(s -> s.value(23.0))));
     final var result = interpreter.retrieveResult(null, aggs, ctx);
     assertThat(result.getViewMeasures()).hasSize(1);
@@ -56,7 +50,7 @@ class ProcessViewAgentToolCallsInterpreterESTest {
 
   @Test
   void retrieveResultZeroValueReturnsZero() {
-    final var ctx = contextWithSumAggregation();
+    final var ctx = AgentInterpreterTestSupport.contextWith(AggregationType.SUM);
     final var aggs = Map.of("sumAggregation", Aggregate.of(a -> a.sum(s -> s.value(0.0))));
     final var result = interpreter.retrieveResult(null, aggs, ctx);
     assertThat(result.getViewMeasures().get(0).getValue()).isEqualTo(0.0);
@@ -64,28 +58,18 @@ class ProcessViewAgentToolCallsInterpreterESTest {
 
   @Test
   void retrieveResultNanAggregationReturnsNull() {
-    final var ctx = contextWithSumAggregation();
+    final var ctx = AgentInterpreterTestSupport.contextWith(AggregationType.SUM);
     final var aggs = Map.of("sumAggregation", Aggregate.of(a -> a.sum(s -> s.value(Double.NaN))));
     final var result = interpreter.retrieveResult(null, aggs, ctx);
     assertThat(result.getViewMeasures().get(0).getValue()).isNull();
   }
 
   @Test
-  void retrieveResultLargeValueNoOverflow() {
-    final var ctx = contextWithSumAggregation();
+  void retrieveResultLargeValueMapsThroughUnchanged() {
+    final var ctx = AgentInterpreterTestSupport.contextWith(AggregationType.SUM);
     final var largeValue = 300_000_000.0;
     final var aggs = Map.of("sumAggregation", Aggregate.of(a -> a.sum(s -> s.value(largeValue))));
     final var result = interpreter.retrieveResult(null, aggs, ctx);
     assertThat(result.getViewMeasures().get(0).getValue()).isEqualTo(largeValue);
-  }
-
-  private ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> contextWithSumAggregation() {
-    final var reportData = new ProcessReportDataDto();
-    reportData.getConfiguration().setAggregationTypes(new AggregationDto(AggregationType.SUM));
-    @SuppressWarnings("unchecked")
-    final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> ctx =
-        mock(ExecutionContext.class);
-    when(ctx.getReportData()).thenReturn(reportData);
-    return ctx;
   }
 }

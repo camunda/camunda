@@ -5,31 +5,31 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.optimize.service.db.es.report.interpreter.view.process.agent;
+package io.camunda.optimize.service.db.os.report.interpreter.view.process.agent;
 
-import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_AGENT_OUTPUT_TOKENS;
+import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_AGENT_TOOL_CALLS;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 
-class ProcessViewAgentOutputTokensInterpreterESTest {
+class ProcessViewAgentToolCallsInterpreterOSTest {
 
-  private final ProcessViewAgentOutputTokensInterpreterES interpreter =
-      new ProcessViewAgentOutputTokensInterpreterES();
+  private final ProcessViewAgentToolCallsInterpreterOS interpreter =
+      new ProcessViewAgentToolCallsInterpreterOS();
 
   @Test
-  void getSupportedViewsReturnsOutputTokensView() {
-    assertThat(interpreter.getSupportedViews()).containsExactly(PROCESS_VIEW_AGENT_OUTPUT_TOKENS);
+  void getSupportedViewsReturnsToolCallsView() {
+    assertThat(interpreter.getSupportedViews()).containsExactly(PROCESS_VIEW_AGENT_TOOL_CALLS);
   }
 
   @Test
   void getAggregationFieldNameReturnsCorrectField() {
     assertThat(interpreter.getAggregationFieldName())
-        .isEqualTo(ProcessInstanceIndex.AGENT_TOTAL_OUTPUT_TOKENS);
+        .isEqualTo(ProcessInstanceIndex.AGENT_TOTAL_TOOL_CALLS);
   }
 
   @Test
@@ -42,10 +42,10 @@ class ProcessViewAgentOutputTokensInterpreterESTest {
   @Test
   void retrieveResultHappyPathReturnsMappedValue() {
     final var ctx = AgentInterpreterTestSupport.contextWith(AggregationType.SUM);
-    final var aggs = Map.of("sumAggregation", Aggregate.of(a -> a.sum(s -> s.value(99.0))));
+    final var aggs = Map.of("sumAggregation", Aggregate.of(a -> a.sum(s -> s.value(23.0))));
     final var result = interpreter.retrieveResult(null, aggs, ctx);
     assertThat(result.getViewMeasures()).hasSize(1);
-    assertThat(result.getViewMeasures().get(0).getValue()).isEqualTo(99.0);
+    assertThat(result.getViewMeasures().get(0).getValue()).isEqualTo(23.0);
   }
 
   @Test
@@ -67,7 +67,7 @@ class ProcessViewAgentOutputTokensInterpreterESTest {
   @Test
   void retrieveResultLargeValueMapsThroughUnchanged() {
     final var ctx = AgentInterpreterTestSupport.contextWith(AggregationType.SUM);
-    final var largeValue = 200_000_000.0;
+    final var largeValue = 300_000_000.0;
     final var aggs = Map.of("sumAggregation", Aggregate.of(a -> a.sum(s -> s.value(largeValue))));
     final var result = interpreter.retrieveResult(null, aggs, ctx);
     assertThat(result.getViewMeasures().get(0).getValue()).isEqualTo(largeValue);
