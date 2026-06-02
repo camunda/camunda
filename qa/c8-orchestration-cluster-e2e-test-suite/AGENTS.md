@@ -564,6 +564,7 @@ Make the **minimal** change that addresses the cause. Do not refactor surroundin
 **5 — Open a PR.** Use `ci:` if only `.github/workflows/` files changed; `test:` if only test files changed; `fix:` if application code changed. Never use `fix:` for test-only changes — commitlint rejects it. Cross-link `TRIAGE_RUN_URL` in the PR body.
 
 Write to `/tmp/fix-meta.json`:
+
 ```json
 {"prs": [{"number": 123, "owner": "camunda", "repo": "camunda", "branch": "ci/...", "has_e2e": false, "has_api": false}], "category": "workflow-fix"}
 ```
@@ -586,3 +587,4 @@ Realistically that is limited to: the runner host itself died (out of memory or 
 - **Minimal diff** — fix only what is broken; no refactoring, no dependency bumps, no unrelated edits.
 - **Allowed tools**: `gh`, `git`, `grep`, `rg`, `cat`, `find`, `jq`, `sed`, `awk`, `unzip`
 - **Forbidden**: `make`, `helm`, `kubectl`, `npm run build`, `go test`, any deploy command
+
