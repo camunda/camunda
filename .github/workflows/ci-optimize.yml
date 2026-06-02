@@ -392,8 +392,8 @@ jobs:
   optimize-e2e-smoke:
     name: "E2E / Self-Managed (Smoke)"
     if: inputs.runFeTests
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
+    runs-on: gcp-perf-core-8-default
+    timeout-minutes: 45
     permissions: { }
     env:
       TEST_TYPE: E2E
@@ -406,6 +406,44 @@ jobs:
 
       - name: Print metadata
         uses: ./.github/actions/print-metadata
+
+      - name: Setup CI runtime (TestCafe + Chrome + Xvfb)
+        run: |
+          set -euo pipefail
+
+          sudo apt-get update
+
+          # ----------------------------
+          # Core system dependencies
+          # ----------------------------
+          sudo apt-get install -y --no-install-recommends \
+            wget gnupg ca-certificates xdg-utils curl \
+            fonts-dejavu fonts-noto fonts-liberation \
+            xvfb ffmpeg \
+            libgbm1 libnss3 libatk1.0-0 libatk-bridge2.0-0 \
+            libgtk-3-0 libxcomposite1 libxrandr2 libxdamage1 libxfixes3 \
+            libasound2t64 libpangocairo-1.0-0
+
+          # ----------------------------
+          # Google Chrome install
+          # ----------------------------
+          if ! command -v google-chrome >/dev/null 2>&1; then
+            wget -qO- https://dl.google.com/linux/linux_signing_key.pub \
+              | sudo gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg
+
+            echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] https://dl.google.com/linux/chrome/deb/ stable main" \
+              | sudo tee /etc/apt/sources.list.d/google-chrome.list >/dev/null
+
+            sudo apt-get update
+            sudo apt-get install -y --no-install-recommends google-chrome-stable
+          fi
+
+          google-chrome --version
+
+          # ----------------------------
+          # Sanity check (CI debug safety)
+          # ----------------------------
+          xvfb-run -a google-chrome --version
 
       - name: "Parse pom.xml for versions"
         id: "pom_info"
@@ -428,10 +466,6 @@ jobs:
         with:
           directory: ./optimize/client
 
-      - name: Start frontend
-        working-directory: ./optimize/client
-        run: yarn start &
-
       - name: Start services (Camunda, Keycloak, Identity and Elasticsearch)
         uses: ./.github/actions/compose
         with:
@@ -450,12 +484,30 @@ jobs:
         run: |
           yarn run start-backend ci &> ./build/backendLogs.log &
 
+      - name: Start frontend
+        working-directory: ./optimize/client
+        run: yarn start &
+
       - name: Wait for import to complete
         run: |
           while : ; do
             count=$(curl -s -X GET "http://localhost:9200/optimize-process-definition/_count" | jq '.count')
             if [[ $count -eq 17 ]]; then
-              echo "Import Completed"
+              echo "Process definitions imported ($count). Waiting for process instance import to stabilize..."
+              prev="-1"
+              stable=0
+              while [[ $stable -lt 2 ]]; do
+                cur=$(curl -s -X GET "http://localhost:9200/optimize-process-instance/_count" | jq '.count // 0')
+                echo "Process instances: $cur"
+                if [[ "$cur" == "$prev" ]]; then
+                  stable=$((stable + 1))
+                else
+                  stable=0
+                fi
+                prev="$cur"
+                sleep 10
+              done
+              echo "Import stabilized at $cur process instances"
               break
             fi
             echo "Index has $count entities. Waiting for 17..."
@@ -474,7 +526,11 @@ jobs:
         if: always()
         with:
           name: optimize-e2e-smoke-logs
-          path: ./optimize/client/build/*.log
+          path: |
+            ./optimize/client/build/*.log
+            ./optimize/client/build/smoke-test-results.txt
+            ./optimize/client/build/screenshots/
+            ./optimize/client/build/videos/
 
       - name: Docker log dump
         uses: ./.github/actions/docker-logs
