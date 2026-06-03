@@ -23,9 +23,9 @@ public interface CoverageTestData {
 
   List<CoverageProcessInstanceData> getProcessInstanceData();
 
-  List<CoverageDecisionInstanceData> getDecisionInstanceResults();
+  List<CoverageDecisionInstanceData> getDecisionInstanceData();
 
-  List<CoverageProcessDefinitionData> getProcessDefinitionResults();
+  List<CoverageProcessDefinitionData> getProcessDefinitionData();
 
-  List<CoverageDecisionDefinitionData> getDecisionDefinitionResults();
+  List<CoverageDecisionDefinitionData> getDecisionDefinitionData();
 }

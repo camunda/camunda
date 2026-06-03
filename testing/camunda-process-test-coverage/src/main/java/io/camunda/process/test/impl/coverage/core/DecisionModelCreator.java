@@ -48,15 +48,15 @@ public class DecisionModelCreator {
    */
   public static DecisionModel createModel(
       final CoverageTestData testResults, final String decisionDefinitionId) {
-    final CoverageDecisionDefinitionData decisionDefinitionResult =
-        testResults.getDecisionDefinitionResults().stream()
+    final CoverageDecisionDefinitionData decisionDefinitionData =
+        testResults.getDecisionDefinitionData().stream()
             .filter(
-                result ->
-                    result.getDecisionDefinition().getDmnDecisionId().equals(decisionDefinitionId))
+                data ->
+                    data.getDecisionDefinition().getDmnDecisionId().equals(decisionDefinitionId))
             .findFirst()
             .orElseThrow();
 
-    final String xml = decisionDefinitionResult.getXml();
+    final String xml = decisionDefinitionData.getXml();
 
     if (xml == null || xml.isEmpty()) {
       throw new IllegalArgumentException(
@@ -71,7 +71,7 @@ public class DecisionModelCreator {
     return ImmutableDecisionModel.builder()
         .decisionDefinitionId(decisionDefinitionId)
         .totalRuleCount(ruleCount)
-        .version(String.valueOf(decisionDefinitionResult.getDecisionDefinition().getVersion()))
+        .version(String.valueOf(decisionDefinitionData.getDecisionDefinition().getVersion()))
         .xml(xml)
         .build();
   }

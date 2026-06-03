@@ -54,19 +54,18 @@ public class ModelCreator {
   public static Model createModel(
       final CoverageTestData testResults, final String processDefinitionId) {
 
-    final CoverageProcessDefinitionData processDefinitionResult =
-        testResults.getProcessDefinitionResults().stream()
+    final CoverageProcessDefinitionData processDefinitionData =
+        testResults.getProcessDefinitionData().stream()
             .filter(
-                result ->
-                    result
-                        .getProcessDefinition()
+                data ->
+                    data.getProcessDefinition()
                         .getProcessDefinitionId()
                         .equals(processDefinitionId))
             .findFirst()
             .orElseThrow();
 
     final ByteArrayInputStream inputStream =
-        new ByteArrayInputStream(processDefinitionResult.getXml().getBytes());
+        new ByteArrayInputStream(processDefinitionData.getXml().getBytes());
     final BpmnModelInstance modelInstance = Bpmn.readModelFromStream(inputStream);
 
     if (modelInstance == null) {
@@ -74,7 +73,7 @@ public class ModelCreator {
           "Cannot read model from process definition: " + processDefinitionId);
     }
 
-    final ProcessDefinition processDefinition = processDefinitionResult.getProcessDefinition();
+    final ProcessDefinition processDefinition = processDefinitionData.getProcessDefinition();
 
     final Set<FlowNode> definitionFlowNodes =
         modelInstance.getModelElementsByType(FlowNode.class).stream()

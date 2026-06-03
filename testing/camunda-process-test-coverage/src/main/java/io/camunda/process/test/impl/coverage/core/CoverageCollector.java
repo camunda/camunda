@@ -166,11 +166,11 @@ public final class CoverageCollector {
   }
 
   private List<DecisionCoverage> collectDecisionCoverages(final CoverageTestData dataSource) {
-    final List<CoverageDecisionInstanceData> decisionInstanceResults =
-        dataSource.getDecisionInstanceResults().stream()
+    final List<CoverageDecisionInstanceData> filteredDecisionInstanceData =
+        dataSource.getDecisionInstanceData().stream()
             .filter(
-                decisionInstanceResult ->
-                    decisionInstanceResult.getDecisionInstance().getDecisionDefinitionType()
+                decisionInstanceData ->
+                    decisionInstanceData.getDecisionInstance().getDecisionDefinitionType()
                         == DecisionDefinitionType.DECISION_TABLE)
             .filter(
                 decisionInstanceResult ->
@@ -178,7 +178,7 @@ public final class CoverageCollector {
                         decisionInstanceResult.getDecisionInstance().getDecisionDefinitionId()))
             .collect(Collectors.toList());
 
-    return decisionInstanceResults.stream()
+    return filteredDecisionInstanceData.stream()
         .map(
             decisionInstanceResult -> {
               try {
