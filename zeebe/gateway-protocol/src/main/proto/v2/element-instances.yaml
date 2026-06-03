@@ -649,6 +649,114 @@ components:
           description: Filter by element ID.
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/ElementIdFilterProperty'
+        elementType:
+          description: Filter by element type.
+          allOf:
+            - $ref: '#/components/schemas/WaitStateElementTypeFilterProperty'
+        waitStateType:
+          description: Filter by wait state type.
+          allOf:
+            - $ref: '#/components/schemas/WaitStateTypeFilterProperty'
+
+    WaitStateElementTypeFilterProperty:
+      description: Element type property with full advanced search capabilities.
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: '#/components/schemas/WaitStateElementTypeEnum'
+        - $ref: '#/components/schemas/AdvancedWaitStateElementTypeFilter'
+
+    AdvancedWaitStateElementTypeFilter:
+      title: Advanced filter
+      description: Advanced element type filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/WaitStateElementTypeEnum'
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/WaitStateElementTypeEnum'
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: '#/components/schemas/WaitStateElementTypeEnum'
+        $like:
+          $ref: 'filters.yaml#/components/schemas/LikeFilter'
+
+    WaitStateElementTypeEnum:
+      description: The BPMN element type of a waiting element instance.
+      type: string
+      enum:
+        - AD_HOC_SUB_PROCESS
+        - AD_HOC_SUB_PROCESS_INNER_INSTANCE
+        - BOUNDARY_EVENT
+        - BUSINESS_RULE_TASK
+        - CALL_ACTIVITY
+        - END_EVENT
+        - EVENT_BASED_GATEWAY
+        - EVENT_SUB_PROCESS
+        - EXCLUSIVE_GATEWAY
+        - INCLUSIVE_GATEWAY
+        - INTERMEDIATE_CATCH_EVENT
+        - INTERMEDIATE_THROW_EVENT
+        - MANUAL_TASK
+        - MULTI_INSTANCE_BODY
+        - PARALLEL_GATEWAY
+        - PROCESS
+        - RECEIVE_TASK
+        - SCRIPT_TASK
+        - SEND_TASK
+        - SEQUENCE_FLOW
+        - SERVICE_TASK
+        - START_EVENT
+        - SUB_PROCESS
+        - TASK
+        - UNKNOWN
+        - UNSPECIFIED
+        - USER_TASK
+
+    WaitStateTypeFilterProperty:
+      description: Wait state type property with full advanced search capabilities.
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: '#/components/schemas/WaitStateTypeEnum'
+        - $ref: '#/components/schemas/AdvancedWaitStateTypeFilter'
+
+    AdvancedWaitStateTypeFilter:
+      title: Advanced filter
+      description: Advanced wait state type filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/WaitStateTypeEnum'
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/WaitStateTypeEnum'
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: '#/components/schemas/WaitStateTypeEnum'
+        $like:
+          $ref: 'filters.yaml#/components/schemas/LikeFilter'
 
     ElementInstanceWaitStateQueryResult:
       type: object
@@ -664,28 +772,7 @@ components:
             $ref: '#/components/schemas/ElementInstanceWaitStateResult'
 
     ElementInstanceWaitStateResult:
-      x-polymorphic-schema: true
-      description: >
-        An element instance waiting state. Discriminated by `waitStateType`:
-        `JOB` resolves to `ElementInstanceWaitStateJobResult`,
-        `MESSAGE` resolves to `ElementInstanceWaitStateMessageResult`.
-      oneOf:
-        - $ref: '#/components/schemas/ElementInstanceWaitStateJobResult'
-        - $ref: '#/components/schemas/ElementInstanceWaitStateMessageResult'
-      discriminator:
-        propertyName: waitStateType
-        mapping:
-          JOB: '#/components/schemas/ElementInstanceWaitStateJobResult'
-          MESSAGE: '#/components/schemas/ElementInstanceWaitStateMessageResult'
-
-    WaitStateTypeEnum:
-      description: The type of waiting state an element instance is in.
-      type: string
-      enum:
-        - JOB
-        - MESSAGE
-
-    BaseElementInstanceWaitStateResult:
+      description: An element instance waiting state.
       type: object
       required:
         - waitStateType
@@ -694,10 +781,14 @@ components:
         - elementId
         - elementType
         - tenantId
+        - rootProcessInstanceKey
+        - jobDetails
+        - messageDetails
       properties:
         waitStateType:
           description: The type of waiting state an element instance is in.
-          type: string
+          allOf:
+            - $ref: '#/components/schemas/WaitStateTypeEnum'
         rootProcessInstanceKey:
           description: Key of the root process instance.
           nullable: true
@@ -717,61 +808,29 @@ components:
           description: The element ID for this element instance.
         elementType:
           description: The BPMN element type of this element instance.
-          type: string
-          enum:
-            - AD_HOC_SUB_PROCESS
-            - AD_HOC_SUB_PROCESS_INNER_INSTANCE
-            - BOUNDARY_EVENT
-            - BUSINESS_RULE_TASK
-            - CALL_ACTIVITY
-            - END_EVENT
-            - EVENT_BASED_GATEWAY
-            - EVENT_SUB_PROCESS
-            - EXCLUSIVE_GATEWAY
-            - INCLUSIVE_GATEWAY
-            - INTERMEDIATE_CATCH_EVENT
-            - INTERMEDIATE_THROW_EVENT
-            - MANUAL_TASK
-            - MULTI_INSTANCE_BODY
-            - PARALLEL_GATEWAY
-            - PROCESS
-            - RECEIVE_TASK
-            - SCRIPT_TASK
-            - SEND_TASK
-            - SEQUENCE_FLOW
-            - SERVICE_TASK
-            - START_EVENT
-            - SUB_PROCESS
-            - TASK
-            - UNKNOWN
-            - UNSPECIFIED
-            - USER_TASK
+          allOf:
+            - $ref: '#/components/schemas/WaitStateElementTypeEnum'
         tenantId:
           description: The tenant ID of the element instance.
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+        jobDetails:
+          description: Job details, present when waitStateType is JOB.
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/JobWaitStateDetails'
+        messageDetails:
+          description: Message details, present when waitStateType is MESSAGE.
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/MessageWaitStateDetails'
 
-    ElementInstanceWaitStateJobResult:
-      description: Inspection result for an element instance waiting on a job.
-      allOf:
-        - $ref: '#/components/schemas/BaseElementInstanceWaitStateResult'
-        - type: object
-          required:
-            - details
-          properties:
-            details:
-              $ref: '#/components/schemas/JobWaitStateDetails'
-
-    ElementInstanceWaitStateMessageResult:
-      description: Inspection result for an element instance waiting on a message.
-      allOf:
-        - $ref: '#/components/schemas/BaseElementInstanceWaitStateResult'
-        - type: object
-          required:
-            - details
-          properties:
-            details:
-              $ref: '#/components/schemas/MessageWaitStateDetails'
+    WaitStateTypeEnum:
+      description: The type of waiting state an element instance is in.
+      type: string
+      enum:
+        - JOB
+        - MESSAGE
 
     JobWaitStateDetails:
       type: object
@@ -779,6 +838,8 @@ components:
         - jobKey
         - jobType
         - jobKind
+        - listenerEventType
+        - retries
       properties:
         jobKey:
           allOf:
@@ -791,6 +852,11 @@ components:
           description: The kind of job.
           allOf:
             - $ref: 'jobs.yaml#/components/schemas/JobKindEnum'
+        listenerEventType:
+          description: The listener event type of the job (only set for execution listener and task listener jobs).
+          nullable: true
+          allOf:
+            - $ref: 'jobs.yaml#/components/schemas/JobListenerEventTypeEnum'
         retries:
           description: The number of retries remaining for the job.
           nullable: true
@@ -801,6 +867,7 @@ components:
       type: object
       required:
         - messageName
+        - correlationKey
       properties:
         messageName:
           description: The name of the message being awaited.

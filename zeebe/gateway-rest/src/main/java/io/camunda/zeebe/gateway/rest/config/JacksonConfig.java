@@ -46,6 +46,8 @@ import io.camunda.gateway.protocol.model.ProcessInstanceStateFilterProperty;
 import io.camunda.gateway.protocol.model.SearchQueryPageRequest;
 import io.camunda.gateway.protocol.model.StringFilterProperty;
 import io.camunda.gateway.protocol.model.UserTaskStateFilterProperty;
+import io.camunda.gateway.protocol.model.WaitStateElementTypeFilterProperty;
+import io.camunda.gateway.protocol.model.WaitStateTypeFilterProperty;
 import io.camunda.zeebe.gateway.rest.deserializer.AgentInstanceStatusFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.AuditLogActorTypeFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.AuditLogCategoryFilterPropertyDeserializer;
@@ -76,6 +78,8 @@ import io.camunda.zeebe.gateway.rest.deserializer.ProcessInstanceStateFilterProp
 import io.camunda.zeebe.gateway.rest.deserializer.SearchQueryPageRequestDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.StringFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.UserTaskStateFilterPropertyDeserializer;
+import io.camunda.zeebe.gateway.rest.deserializer.WaitStateElementTypeFilterPropertyDeserializer;
+import io.camunda.zeebe.gateway.rest.deserializer.WaitStateTypeFilterPropertyDeserializer;
 import java.util.function.Consumer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -152,6 +156,11 @@ public class JacksonConfig {
     module.addDeserializer(
         AgentInstanceStatusFilterProperty.class,
         new AgentInstanceStatusFilterPropertyDeserializer());
+    module.addDeserializer(
+        WaitStateElementTypeFilterProperty.class,
+        new WaitStateElementTypeFilterPropertyDeserializer());
+    module.addDeserializer(
+        WaitStateTypeFilterProperty.class, new WaitStateTypeFilterPropertyDeserializer());
     return builder -> builder.modulesToInstall(modules -> modules.add(module));
   }
 

@@ -9,6 +9,7 @@ package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.search.entities.JobEntity.JobKind;
+import io.camunda.search.entities.JobEntity.ListenerEventType;
 import io.camunda.util.ObjectBuilder;
 import org.jspecify.annotations.Nullable;
 
@@ -17,6 +18,7 @@ public record WaitStateJobDetails(
     @Nullable Long jobKey,
     @Nullable String jobType,
     @Nullable JobKind jobKind,
+    @Nullable ListenerEventType listenerEventType,
     @Nullable Integer retries)
     implements WaitStateDetails {
 
@@ -29,6 +31,7 @@ public record WaitStateJobDetails(
     private @Nullable Long jobKey;
     private @Nullable String jobType;
     private @Nullable JobKind jobKind;
+    private @Nullable ListenerEventType listenerEventType;
     private @Nullable Integer retries;
 
     public Builder jobKey(final @Nullable Long jobKey) {
@@ -46,6 +49,11 @@ public record WaitStateJobDetails(
       return this;
     }
 
+    public Builder listenerEventType(final @Nullable ListenerEventType listenerEventType) {
+      this.listenerEventType = listenerEventType;
+      return this;
+    }
+
     public Builder retries(final @Nullable Integer retries) {
       this.retries = retries;
       return this;
@@ -53,7 +61,7 @@ public record WaitStateJobDetails(
 
     @Override
     public WaitStateJobDetails build() {
-      return new WaitStateJobDetails(jobKey, jobType, jobKind, retries);
+      return new WaitStateJobDetails(jobKey, jobType, jobKind, listenerEventType, retries);
     }
   }
 }

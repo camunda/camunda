@@ -18,7 +18,9 @@ public record ElementInstanceWaitStateFilter(
     List<Operation<Long>> elementInstanceKeyOperations,
     List<Operation<Long>> processInstanceKeyOperations,
     List<Operation<Long>> rootProcessInstanceKeyOperations,
-    List<Operation<String>> elementIdOperations)
+    List<Operation<String>> elementIdOperations,
+    List<Operation<String>> elementTypeOperations,
+    List<Operation<String>> waitStateTypeOperations)
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<ElementInstanceWaitStateFilter> {
@@ -26,6 +28,8 @@ public record ElementInstanceWaitStateFilter(
     private List<Operation<Long>> processInstanceKeyOperations;
     private List<Operation<Long>> rootProcessInstanceKeyOperations;
     private List<Operation<String>> elementIdOperations;
+    private List<Operation<String>> elementTypeOperations;
+    private List<Operation<String>> waitStateTypeOperations;
 
     public Builder elementInstanceKeyOperations(final List<Operation<Long>> operations) {
       elementInstanceKeyOperations = addValuesToList(elementInstanceKeyOperations, operations);
@@ -65,13 +69,33 @@ public record ElementInstanceWaitStateFilter(
       return elementIdOperations(List.of(FilterUtil.mapDefaultToOperation(value, values)));
     }
 
+    public Builder elementTypeOperations(final List<Operation<String>> operations) {
+      elementTypeOperations = addValuesToList(elementTypeOperations, operations);
+      return this;
+    }
+
+    public Builder elementTypes(final String value, final String... values) {
+      return elementTypeOperations(List.of(FilterUtil.mapDefaultToOperation(value, values)));
+    }
+
+    public Builder waitStateTypeOperations(final List<Operation<String>> operations) {
+      waitStateTypeOperations = addValuesToList(waitStateTypeOperations, operations);
+      return this;
+    }
+
+    public Builder waitStateTypes(final String value, final String... values) {
+      return waitStateTypeOperations(List.of(FilterUtil.mapDefaultToOperation(value, values)));
+    }
+
     @Override
     public ElementInstanceWaitStateFilter build() {
       return new ElementInstanceWaitStateFilter(
           Objects.requireNonNullElse(elementInstanceKeyOperations, List.of()),
           Objects.requireNonNullElse(processInstanceKeyOperations, List.of()),
           Objects.requireNonNullElse(rootProcessInstanceKeyOperations, List.of()),
-          Objects.requireNonNullElse(elementIdOperations, List.of()));
+          Objects.requireNonNullElse(elementIdOperations, List.of()),
+          Objects.requireNonNullElse(elementTypeOperations, List.of()),
+          Objects.requireNonNullElse(waitStateTypeOperations, List.of()));
     }
   }
 }
