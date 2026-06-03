@@ -84,6 +84,14 @@ test.describe('Operate — Multi-Instance beforeAll listener visibility', () => 
       await operateProcessInstancePage.diagramHelper.clickFlowNode(
         'MI Service Task',
       );
+      // For a multi-instance element the diagram selection does not resolve to
+      // a single flow node instance, so the listeners panel stays scoped to the
+      // root process instance. Select the multi-instance body row in the
+      // instance history so the beforeAll execution listener (attached to the
+      // MI body element instance) is the one queried.
+      await operateProcessInstancePage.clickInstanceHistoryElement(
+        /MI Service Task \(Parallel\) \(Multi Instance\)/i,
+      );
     });
 
     await test.step('Listeners tab shows the beforeAll execution listener', async () => {
