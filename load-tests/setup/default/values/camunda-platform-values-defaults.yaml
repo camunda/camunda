@@ -1,12 +1,12 @@
-# Values for Camunda Platform Chart.
+# Default load test values for Camunda Platform Chart.
 # https://github.com/camunda/camunda-platform-helm
 #
 # This file is used to override the default values of the chart.
 # The values are optimized for running the load tests with a Camunda cluster on GKE.
 #
 # This is a YAML-formatted file.
-# Per default we run with the Orchestration Cluster, Optimize, Connectors, Elasticsearch as secondary
-# storage and Identity Keycloak as identity provider with OIDC authentication, but you can easily
+# Per default we run with the Orchestration Cluster, Optimize, Connectors, and Identity 
+# Keycloak as identity provider with OIDC authentication, but you can easily
 # switch to other configurations by changing the values in this file or by overriding them via the
 # command line when installing the chart.
 
@@ -17,17 +17,7 @@ global:
   commonLabels:
     camunda.io/created-by: __AUTHOR__
     camunda.io/purpose: load-test
-  # Our default is ELASTICSEARCH
-  # We need to explicitly enable ELS as per default this is disabled now
-  # THIS GETS OVERRIDDEN IN THE OTHER VALUES FILES, e.g. for OpenSearch and RDBMS
-  elasticsearch:
-    enabled: true
-    url:
-      # The Elasticsearch host value used to connect to Elasticsearch depends
-      # on the "elasticsearch.fullnameOverride" value.
-      # If you change the "elasticsearch.fullnameOverride" value, make sure to
-      # update this host value accordingly.
-      host: elastic
+
   # Disable global ingress
   ingress:
     enabled: false
@@ -214,6 +204,10 @@ orchestration:
       cpu: 3000m
       memory: 4Gi
 
+  nodeSelector:
+    component: benchmark-n2-standard-4
+    topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
+
   tolerations:
     - key: nodepool
       operator: Equal
@@ -246,11 +240,6 @@ orchestration:
     -XX:NativeMemoryTracking=summary
     -Xlog:gc*:file=/usr/local/camunda/data/gc.log:time:filecount=7,filesize=8M
 
-  # We need to explicitly set the secondary storage type to ELS
-  # THIS GETS OVERRIDDEN IN THE OTHER VALUES FILES, e.g. for OpenSearch and RDBMS
-  data:
-    secondaryStorage:
-      type: elasticsearch
   # We set extra configuration to configure additional settings for Camunda application, that are part
   # of the orchestration cluster.
   # This allows adding configurations without the need of overwriting all environment variables from the Platform chart.
@@ -332,46 +321,3 @@ prometheusServiceMonitor:
   labels:
     release: monitoring
   scrapeInterval: 30s
-
-########################################################################################
-################################################### Elasticsearch cluster configuration
-########################################################################################
-elasticsearch:
-  enabled: true
-  # Override the default name for ConfigMap, Service, etc.
-  # Changing this value also changes the name of the Kubernetes Service used by
-  # the other components to connect to Elasticsearch, make sure to update
-  # the "global.elasticsearch.url.host" value accordingly.
-  fullnameOverride: elastic
-  clusterName: elasticsearch
-  master:
-    fullnameOverride: elastic
-    nameOverride: elastic
-    ## @param elasticsearch.master.replicaCount defines number of master-elegible replicas to deploy
-    replicaCount: 3
-    pdb:
-      minAvailable: 2
-    ## @param elasticsearch.master.heapSize
-    heapSize: 3g
-    persistence:
-      ## @param elasticsearch.master.persistence.size
-      size: 512Gi
-      storageClass: benchmark-ssd-zonal-v1
-      accessModes: ["ReadWriteOnce"]
-    resources:
-      requests:
-        cpu: 7000m
-        memory: 8Gi
-      limits:
-        cpu: 7000m
-        memory: 8Gi
-    nodeSelector:
-      component: benchmark-n2-standard-8
-      topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
-    tolerations:
-      - key: nodepool
-        operator: Equal
-        value: n2-standard-8
-        effect: NoSchedule
-  extraConfig:
-    logger.org.elasticsearch.deprecation: "OFF"

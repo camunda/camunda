@@ -2,10 +2,6 @@ namespace ?= __NAMESPACE__
 secondary_storage ?= __STORAGE_TYPE__
 helm_chart ?= camunda-platform-8.9
 enable_optimize ?= __ENABLE_OPTIMIZE__
-# Deadline date baked into resources/namespace.yaml by newLoadTest.sh. The
-# `check-deadline` target compares against today's date and fails fast so we
-# don't deploy into a namespace the TTL cleanup workflow is about to delete.
-deadline_date ?= __DEADLINE_DATE__
 curl_image ?= curlimages/curl:7.87.0
 camunda_management_url ?= http://camunda:9600
 prometheus_elasticsearch_exporter_chart_version ?= 7.2.1
@@ -48,7 +44,9 @@ _scenario_platform_flags  :=
 endif
 
 # Construct platform values files based on configuration
-platform_values := -f camunda-platform-values.yaml
+# Starting with the defaults, which are always applied and set common baseline configuration for all
+# set ups. The other values files are focused and only contain the necessary overrides for each storage type.
+platform_values := -f camunda-platform-values-defaults.yaml
 
 # Makefile-side load-test flags. Separate from `additional_load_test_configuration`,
 # which CI sets on the make command line and would suppress `+=` here.
@@ -56,13 +54,11 @@ _secondary_storage_load_test_flags :=
 
 # Add secondary storage values
 ifneq ($(filter $(secondary_storage),postgresql mysql mariadb mssql oracle),)
-	platform_values += -f camunda-platform-values-rdbms.yaml -f camunda-platform-values-$(secondary_storage).yaml
-else ifeq ($(secondary_storage),opensearch)
-	platform_values += -f camunda-platform-values-opensearch.yaml
+	platform_values += -f camunda-platform-values-rdbms.yaml
 else ifeq ($(secondary_storage),none)
-platform_values += -f camunda-platform-no-secondary-storage.yaml
-_secondary_storage_load_test_flags += --set global.extraConfig.load-tester.monitor-data-availability=false
+	_secondary_storage_load_test_flags += --set global.extraConfig.load-tester.monitor-data-availability=false
 endif
+platform_values += -f camunda-platform-values-$(secondary_storage).yaml
 
 # Disable Optimize if not enabled
 ifneq ($(enable_optimize),true)
@@ -85,19 +81,23 @@ install: check-deadline create-namespace create-credentials install-storage inst
 .PHONY: install-stable
 install-stable: check-deadline create-namespace create-credentials install-storage install-platform-stable install-load-test install-elasticsearch-exporter install-optimize-cleanup
 
-# Fail fast if the namespace TTL deadline is today or in the past — the TTL
-# cleanup workflow will delete the namespace and undo the install. To extend,
-# either rerun newLoadTest.sh into a new folder or edit `deadline-date` in
-# resources/namespace.yaml and reapply.
+# Fail fast if the namespace TTL deadline (read from resources/namespace.yaml,
+# the single source of truth) is today or in the past — the TTL cleanup
+# workflow will delete the namespace and undo the install. To extend, edit
+# `deadline-date` in resources/namespace.yaml and `make create-namespace`.
 .PHONY: check-deadline
 check-deadline:
-	@today=$$(date +%Y-%m-%d); \
-	if [ "$$today" \> "$(deadline_date)" ] || [ "$$today" = "$(deadline_date)" ]; then \
-		echo "ERROR: namespace deadline-date ($(deadline_date)) is today or earlier (today: $$today)."; \
+	@deadline_date=$$(awk -F'"' '/^[[:space:]]*deadline-date:/ {print $$2; exit}' resources/namespace.yaml); \
+	if [ -z "$$deadline_date" ]; then \
+		echo "ERROR: could not parse deadline-date from resources/namespace.yaml."; \
+		exit 1; \
+	fi; \
+	today=$$(date +%Y-%m-%d); \
+	if [ "$$today" \> "$$deadline_date" ] || [ "$$today" = "$$deadline_date" ]; then \
+		echo "ERROR: namespace deadline-date ($$deadline_date) is today or earlier (today: $$today)."; \
 		echo "       The TTL cleanup workflow will delete this namespace."; \
-		echo "       To proceed, bump the deadline:"; \
-		echo "         kubectl label namespace $(namespace) deadline-date=YYYY-MM-DD --overwrite"; \
-		echo "       and update resources/namespace.yaml to match, or rerun newLoadTest.sh into a fresh folder."; \
+		echo "       To extend, edit deadline-date in resources/namespace.yaml and run:"; \
+		echo "         make create-namespace"; \
 		exit 1; \
 	fi
 
@@ -122,19 +122,19 @@ create-credentials:
 install-storage:
 ifeq ($(secondary_storage),postgresql)
 	@echo "Installing PostgreSQL database for namespace $(namespace)..."
-	# Install Postgres database - configuration provided via camunda-platform-values.yaml and camunda-platform-values-rdbms.yaml
+	# Install Postgres database - configuration provided via camunda-platform-values-defaults.yaml, camunda-platform-values-rdbms.yaml and camunda-platform-values-postgresql.yaml
 	helm upgrade --install postgresql oci://registry-1.docker.io/bitnamicharts/postgresql \
 		--namespace $(namespace) \
 		$(platform_values)
 else ifeq ($(secondary_storage),mysql)
 	@echo "Installing MySQL database for namespace $(namespace)..."
-	# Install MySQL database - configuration provided via camunda-platform-values.yaml and camunda-platform-values-mysql.yaml
+	# Install MySQL database - configuration provided via camunda-platform-values-defaults.yaml, camunda-platform-values-rdbms.yaml and camunda-platform-values-mysql.yaml
 	helm upgrade --install mysql oci://registry-1.docker.io/bitnamicharts/mysql \
 		--namespace $(namespace) \
 		$(platform_values)
 else ifeq ($(secondary_storage),mariadb)
 	@echo "Installing MariaDB database for namespace $(namespace)..."
-	# Install MariaDB database - configuration provided via camunda-platform-values.yaml and camunda-platform-values-mariadb.yaml
+	# Install MariaDB database - configuration provided via camunda-platform-values-defaults.yaml, camunda-platform-values-rdbms.yaml and camunda-platform-values-mariadb.yaml
 	helm upgrade --install mariadb oci://registry-1.docker.io/bitnamicharts/mariadb \
 		--namespace $(namespace) \
 		$(platform_values)
@@ -169,7 +169,6 @@ ifeq ($(secondary_storage),elasticsearch)
 else
 	@echo "Skipping Elasticsearch Prometheus Exporter installation (secondary_storage=$(secondary_storage))"
 endif
-
 .PHONY: install-optimize-cleanup
 install-optimize-cleanup:
 	@echo "Deploying Optimize indices cleanup job"
@@ -184,7 +183,6 @@ install-platform: setup-leader-balancer
 		--reset-then-reuse-values \
 		--render-subchart-notes \
 		$(platform_values) \
-		-f values-preemptible.yaml \
 		$(_scenario_platform_flags) \
 		$(additional_platform_configuration)
 
@@ -232,7 +230,6 @@ setup-leader-balancer:
 template:
 	helm template $(namespace) $(helm_chart_platform) \
 		$(platform_values) \
-		-f values-preemptible.yaml \
 		$(_scenario_platform_flags) \
 		$(additional_platform_configuration) \
 		--output-dir .
@@ -300,5 +297,9 @@ else ifeq ($(secondary_storage),opensearch)
 	-helm --namespace $(namespace) uninstall opensearch
 	-kubectl delete -n $(namespace) pvc -l app.kubernetes.io/name=opensearch
 endif
-	@echo "Deleting namespace $(namespace) (async, no wait)..."
-	-kubectl delete -f resources/namespace.yaml --wait=false --ignore-not-found
+	@echo "Deleting namespace $(namespace) and waiting for finalization..."
+	# `--wait` (default) blocks until the namespace is fully gone. We intentionally
+	# wait so that a subsequent `make install` (or `make clean install`) doesn't
+	# race against finalizers — applying manifests into a still-terminating
+	# namespace errors out with "namespace X is being terminated".
+	-kubectl delete -f resources/namespace.yaml --ignore-not-found
