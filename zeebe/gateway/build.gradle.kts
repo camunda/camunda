@@ -8,6 +8,7 @@ plugins {
 }
 
 dependencies {
+    implementation(project(":zeebe-auth"))
     implementation(project(":zeebe-gateway-protocol-impl"))
     implementation(project(":zeebe-util"))
     implementation(project(":zeebe-atomix-utils"))
