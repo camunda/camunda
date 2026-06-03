@@ -17,8 +17,10 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerPublishMessageRequest;
 import io.camunda.zeebe.gateway.validation.VariableNameLengthValidator;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
+import io.camunda.zeebe.protocol.record.RequestSource;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import org.jspecify.annotations.Nullable;
 
 public final class MessageServices extends ApiServices<MessageServices> {
   private final int maxVariableNameLength;
@@ -53,11 +55,21 @@ public final class MessageServices extends ApiServices<MessageServices> {
   public CompletableFuture<MessageCorrelationRecord> correlateMessage(
       final CorrelateMessageRequest correlationRequest,
       final CamundaAuthentication authentication) {
+    return correlateMessage(correlationRequest, authentication, null);
+  }
+
+  public CompletableFuture<MessageCorrelationRecord> correlateMessage(
+      final CorrelateMessageRequest correlationRequest,
+      final CamundaAuthentication authentication,
+      final @Nullable RequestSource requestSource) {
     final var brokerRequest =
         new BrokerCorrelateMessageRequest(
                 correlationRequest.name, correlationRequest.correlationKey, maxVariableNameLength)
             .setVariables(getDocumentOrEmpty(correlationRequest.variables))
             .setTenantId(correlationRequest.tenantId);
+    if (requestSource != null) {
+      brokerRequest.setRequestSource(requestSource);
+    }
     return sendBrokerRequest(brokerRequest, authentication);
   }
 

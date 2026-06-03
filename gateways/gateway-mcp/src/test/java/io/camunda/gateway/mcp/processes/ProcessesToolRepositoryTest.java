@@ -28,6 +28,7 @@ import io.camunda.service.MessageServices;
 import io.camunda.service.MessageServices.CorrelateMessageRequest;
 import io.camunda.service.MessageSubscriptionServices;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
+import io.camunda.zeebe.protocol.record.RequestSource;
 import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures.SyncToolSpecification;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
@@ -297,7 +298,7 @@ class ProcessesToolRepositoryTest {
       when(messageSubscriptionServices.getByKey(eq(77L), any())).thenReturn(entity);
 
       final var correlationRecord = new MessageCorrelationRecord();
-      when(messageServices.correlateMessage(any(), any()))
+      when(messageServices.correlateMessage(any(), any(), any()))
           .thenReturn(CompletableFuture.completedFuture(correlationRecord));
 
       final var result = repository.findTool(transportContext, "deploy_77");
@@ -311,7 +312,9 @@ class ProcessesToolRepositoryTest {
               CallToolRequest.builder("deploy_77").arguments(Map.of("foo", "bar")).build());
 
       final var reqCaptor = ArgumentCaptor.forClass(CorrelateMessageRequest.class);
-      verify(messageServices).correlateMessage(reqCaptor.capture(), any());
+      final var requestSourceCaptor = ArgumentCaptor.forClass(RequestSource.class);
+      verify(messageServices)
+          .correlateMessage(reqCaptor.capture(), any(), requestSourceCaptor.capture());
 
       assertThat(reqCaptor.getValue().name()).isEqualTo("deploy.start");
       assertThat(reqCaptor.getValue().tenantId()).isEqualTo("tenant-a");
@@ -319,6 +322,8 @@ class ProcessesToolRepositoryTest {
       assertThatCode(() -> UUID.fromString(reqCaptor.getValue().correlationKey()))
           .doesNotThrowAnyException();
       assertThat(reqCaptor.getValue().variables()).containsExactly(entry("foo", "bar"));
+      assertThat(requestSourceCaptor.getValue().getChannelType()).isEqualTo("MCP");
+      assertThat(requestSourceCaptor.getValue().getToolName()).isEqualTo("deploy");
     }
 
     @Test
@@ -409,7 +414,7 @@ class ProcessesToolRepositoryTest {
               "<default>",
               MessageSubscriptionState.CREATED);
       when(messageSubscriptionServices.getByKey(eq(88L), any())).thenReturn(entity);
-      when(messageServices.correlateMessage(any(), any()))
+      when(messageServices.correlateMessage(any(), any(), any()))
           .thenReturn(
               CompletableFuture.completedFuture(
                   new MessageCorrelationRecord().setProcessInstanceKey(12345678910L)));
@@ -435,13 +440,17 @@ class ProcessesToolRepositoryTest {
       assertThat(incident).containsExactly(entry("processInstanceKey", 12345678910L));
 
       final var captor = ArgumentCaptor.forClass(CorrelateMessageRequest.class);
-      verify(messageServices).correlateMessage(captor.capture(), any());
+      final var requestSourceCaptor = ArgumentCaptor.forClass(RequestSource.class);
+      verify(messageServices)
+          .correlateMessage(captor.capture(), any(), requestSourceCaptor.capture());
       assertThat(captor.getValue().name()).isEqualTo("message");
       assertThat(captor.getValue().tenantId()).isEqualTo("<default>");
       assertThat(captor.getValue().correlationKey()).isNotBlank();
       assertThatCode(() -> UUID.fromString(captor.getValue().correlationKey()))
           .doesNotThrowAnyException();
       assertThat(captor.getValue().variables()).isEmpty();
+      assertThat(requestSourceCaptor.getValue().getChannelType()).isEqualTo("MCP");
+      assertThat(requestSourceCaptor.getValue().getToolName()).isEqualTo("myTool");
     }
 
     @Test
@@ -456,7 +465,7 @@ class ProcessesToolRepositoryTest {
               "<default>",
               MessageSubscriptionState.CREATED);
       when(messageSubscriptionServices.getByKey(eq(88L), any())).thenReturn(entity);
-      when(messageServices.correlateMessage(any(), any()))
+      when(messageServices.correlateMessage(any(), any(), any()))
           .thenReturn(
               CompletableFuture.completedFuture(
                   new MessageCorrelationRecord().setProcessInstanceKey(12345678910L)));
@@ -467,7 +476,7 @@ class ProcessesToolRepositoryTest {
       callHandler.apply(
           transportContext, CallToolRequest.builder("myTool_88").arguments(Map.of()).build());
       final var firstCaptor = ArgumentCaptor.forClass(CorrelateMessageRequest.class);
-      verify(messageServices).correlateMessage(firstCaptor.capture(), any());
+      verify(messageServices).correlateMessage(firstCaptor.capture(), any(), any());
 
       // when
       callHandler.apply(
@@ -475,7 +484,7 @@ class ProcessesToolRepositoryTest {
 
       // then
       final var secondCaptor = ArgumentCaptor.forClass(CorrelateMessageRequest.class);
-      verify(messageServices, times(2)).correlateMessage(secondCaptor.capture(), any());
+      verify(messageServices, times(2)).correlateMessage(secondCaptor.capture(), any(), any());
       assertThat(firstCaptor.getValue().correlationKey()).isNotBlank();
       assertThat(secondCaptor.getValue().correlationKey()).isNotBlank();
       assertThat(secondCaptor.getValue().correlationKey())

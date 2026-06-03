@@ -625,6 +625,54 @@ class SearchQueryResponseMapperTest {
   }
 
   @Test
+  void shouldMapRequestSourceFieldsForAuditLog() {
+    // given
+    final var entity =
+        new AuditLogEntity.Builder()
+            .auditLogKey("audit-123")
+            .entityKey("entity-456")
+            .entityType(AuditLogEntityType.PROCESS_INSTANCE)
+            .operationType(AuditLogOperationType.CREATE)
+            .result(AuditLogOperationResult.SUCCESS)
+            .category(AuditLogOperationCategory.DEPLOYED_RESOURCES)
+            .timestamp(OffsetDateTime.now())
+            .requestSourceChannelType("MCP")
+            .requestSourceToolName("myTool")
+            .build();
+
+    // when
+    final var response = SearchQueryResponseMapper.toAuditLog(entity);
+
+    // then
+    assertThat(response.getRequestSourceChannelType()).isEqualTo("MCP");
+    assertThat(response.getRequestSourceToolName()).isEqualTo("myTool");
+  }
+
+  @Test
+  void shouldMapNullRequestSourceFieldsForAuditLog() {
+    // given
+    final var entity =
+        new AuditLogEntity.Builder()
+            .auditLogKey("audit-123")
+            .entityKey("entity-456")
+            .entityType(AuditLogEntityType.PROCESS_INSTANCE)
+            .operationType(AuditLogOperationType.CREATE)
+            .result(AuditLogOperationResult.SUCCESS)
+            .category(AuditLogOperationCategory.DEPLOYED_RESOURCES)
+            .timestamp(OffsetDateTime.now())
+            .requestSourceChannelType(null)
+            .requestSourceToolName(null)
+            .build();
+
+    // when
+    final var response = SearchQueryResponseMapper.toAuditLog(entity);
+
+    // then
+    assertThat(response.getRequestSourceChannelType()).isNull();
+    assertThat(response.getRequestSourceToolName()).isNull();
+  }
+
+  @Test
   void shouldMapNullRootProcessInstanceKeyForUserTask() {
     // given
     final var entity =

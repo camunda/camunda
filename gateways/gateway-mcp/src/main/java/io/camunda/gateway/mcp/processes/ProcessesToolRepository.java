@@ -18,6 +18,7 @@ import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.MessageServices;
 import io.camunda.service.MessageServices.CorrelateMessageRequest;
 import io.camunda.service.MessageSubscriptionServices;
+import io.camunda.zeebe.protocol.record.ImmutableRequestSource;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.collection.Tuple;
 import io.modelcontextprotocol.common.McpTransportContext;
@@ -156,6 +157,10 @@ public class ProcessesToolRepository implements ToolRepository {
 
   private @NonNull BiFunction<McpTransportContext, CallToolRequest, CallToolResult>
       buildCallHandler(final MessageSubscriptionEntity entity) {
+    final var requestSourceBuilder = ImmutableRequestSource.builder().withChannelType("MCP");
+    if (entity.toolName() != null) {
+      requestSourceBuilder.withToolName(entity.toolName());
+    }
     return (ctx, req) -> {
       final Map<String, Object> arguments = req.arguments() != null ? req.arguments() : Map.of();
       return CallToolResultMapper.from(
@@ -166,7 +171,8 @@ public class ProcessesToolRepository implements ToolRepository {
                   UUID.randomUUID().toString(),
                   arguments,
                   entity.tenantId()),
-              authenticationProvider.getCamundaAuthentication()),
+              authenticationProvider.getCamundaAuthentication(),
+              requestSourceBuilder.build()),
           record -> Map.of("processInstanceKey", record.getProcessInstanceKey()));
     };
   }

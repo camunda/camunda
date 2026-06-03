@@ -47,7 +47,9 @@ public record AuditLogEntity(
     @Nullable AuditLogEntityType relatedEntityType,
     @Nullable String relatedEntityKey,
     @Nullable String entityDescription,
-    @Nullable OffsetDateTime historyCleanupDate)
+    @Nullable OffsetDateTime historyCleanupDate,
+    @Nullable String requestSourceChannelType,
+    @Nullable String requestSourceToolName)
     implements TenantOwnedEntity {
 
   public AuditLogEntity {
@@ -99,6 +101,8 @@ public record AuditLogEntity(
     private @Nullable String relatedEntityKey;
     private @Nullable String entityDescription;
     private @Nullable OffsetDateTime historyCleanupDate;
+    private @Nullable String requestSourceChannelType;
+    private @Nullable String requestSourceToolName;
 
     public Builder auditLogKey(final String auditLogKey) {
       this.auditLogKey = auditLogKey;
@@ -265,6 +269,16 @@ public record AuditLogEntity(
       return this;
     }
 
+    public Builder requestSourceChannelType(final String requestSourceChannelType) {
+      this.requestSourceChannelType = requestSourceChannelType;
+      return this;
+    }
+
+    public Builder requestSourceToolName(final String requestSourceToolName) {
+      this.requestSourceToolName = requestSourceToolName;
+      return this;
+    }
+
     @SuppressWarnings("NullAway")
     @Override
     public AuditLogEntity build() {
@@ -301,7 +315,9 @@ public record AuditLogEntity(
           relatedEntityType,
           relatedEntityKey,
           entityDescription,
-          historyCleanupDate);
+          historyCleanupDate,
+          requestSourceChannelType,
+          requestSourceToolName);
     }
   }
 

@@ -20,6 +20,7 @@ import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransforme
 import io.camunda.zeebe.protocol.record.Agent;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.RequestSource;
 import io.camunda.zeebe.util.VisibleForTesting;
 
 public class AuditLogExportHandler<R extends RecordValue> implements RdbmsExportHandler<R> {
@@ -113,7 +114,11 @@ public class AuditLogExportHandler<R extends RecordValue> implements RdbmsExport
             .resourceKey(log.getResourceKey())
             .relatedEntityKey(log.getRelatedEntityKey())
             .relatedEntityType(log.getRelatedEntityType())
-            .partitionId(record.getPartitionId());
+            .partitionId(record.getPartitionId())
+            .requestSourceChannelType(
+                log.getRequestSource().map(RequestSource::getChannelType).orElse(null))
+            .requestSourceToolName(
+                log.getRequestSource().map(RequestSource::getToolName).orElse(null));
 
     return auditLog.build();
   }

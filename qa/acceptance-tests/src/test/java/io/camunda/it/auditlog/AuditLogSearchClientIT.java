@@ -722,6 +722,50 @@ public class AuditLogSearchClientIT {
             });
   }
 
+  @Test
+  void shouldSearchAuditLogsByRequestSourceChannelTypeNotPresent(
+      @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
+    // when - regular API calls don't set requestSourceChannelType; $exists:false matches all of
+    // them
+    final var auditLogItems =
+        client
+            .newAuditLogSearchRequest()
+            .filter(f -> f.requestSourceChannelType(p -> p.exists(false)))
+            .page(p -> p.limit(5))
+            .send()
+            .join();
+
+    // then - all returned entries carry null for both request-source fields
+    assertThat(auditLogItems.items()).isNotEmpty();
+    assertThat(auditLogItems.items())
+        .allSatisfy(
+            log -> {
+              assertThat(log.getRequestSourceChannelType()).isNull();
+            });
+  }
+
+  @Test
+  void shouldSearchAuditLogsByRequestSourceToolNameNotPresent(
+      @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
+    // when - regular API calls don't set requestSourceChannelType; $exists:false matches all of
+    // them
+    final var auditLogItems =
+        client
+            .newAuditLogSearchRequest()
+            .filter(f -> f.requestSourceToolName(p -> p.exists(false)))
+            .page(p -> p.limit(5))
+            .send()
+            .join();
+
+    // then - all returned entries carry null for both request-source fields
+    assertThat(auditLogItems.items()).isNotEmpty();
+    assertThat(auditLogItems.items())
+        .allSatisfy(
+            log -> {
+              assertThat(log.getRequestSourceToolName()).isNull();
+            });
+  }
+
   // ========================================================================================
   // Helper Methods
   // ========================================================================================

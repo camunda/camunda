@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.record.Agent;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.RequestSource;
 import io.camunda.zeebe.protocol.record.value.AuditLogProcessInstanceRelated;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;
@@ -104,6 +105,8 @@ public class AuditLogEntry {
 
   private Agent agent;
 
+  private RequestSource requestSource;
+
   public String getEntityKey() {
     return entityKey;
   }
@@ -122,8 +125,12 @@ public class AuditLogEntry {
     return this;
   }
 
-  public AuditLogEntry setAgent(final Optional<Agent> agent) {
-    this.agent = agent.orElse(null);
+  public Optional<RequestSource> getRequestSource() {
+    return Optional.ofNullable(requestSource);
+  }
+
+  public AuditLogEntry setRequestSource(final RequestSource requestSource) {
+    this.requestSource = requestSource;
     return this;
   }
 
@@ -408,6 +415,7 @@ public class AuditLogEntry {
             .setOperationType(info.operationType())
             .setActor(info.actor())
             .setAgent(record.getAgent())
+            .setRequestSource(record.getRequestSource())
             .setTenant(AuditLogTenant.of(record))
             .setBatchOperationKey(getBatchOperationKey(record))
             .setProcessInstanceKey(getProcessInstanceKey(record))
