@@ -334,23 +334,41 @@ jobs:
             if [ -n "$branch" ] && [ "$branch" != "null" ]; then
               echo "Triggering on-demand run for PR #${pr_number} branch ${branch}..."
               dispatched_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-              gh workflow run c8-orchestration-cluster-e2e-tests-on-demand.yml \
-                --repo "$REPO" -f branch="$branch"
-              # Poll up to 90s for the new run to appear
-              for _ in $(seq 1 18); do
-                sleep 5
-                run_id=$(gh run list \
-                  --workflow c8-orchestration-cluster-e2e-tests-on-demand.yml \
-                  --repo "$REPO" --limit 5 \
-                  --json databaseId,createdAt \
-                  | jq -r --arg t "$dispatched_at" \
-                    '[.[] | select(.createdAt >= $t)] | first | .databaseId // ""' || echo "")
-                if [ -n "$run_id" ] && [ "$run_id" != "null" ]; then
-                  on_demand_run_url="https://github.com/${REPO}/actions/runs/${run_id}"
-                  echo "On-demand run: $on_demand_run_url"
-                  break
-                fi
-              done
+
+              # Recent gh versions print the run URL directly to stdout/stderr.
+              # Capture it — this is race-proof because it is the exact run we triggered.
+              # Note: the GitHub API does not expose workflow_dispatch inputs in the
+              # runs list or individual run endpoints, so we cannot filter by branch
+              # input after the fact.
+              trigger_output=$(gh workflow run c8-orchestration-cluster-e2e-tests-on-demand.yml \
+                --repo "$REPO" -f branch="$branch" 2>&1)
+              dispatch_exit=$?
+              echo "$trigger_output"
+              on_demand_run_url=$(echo "$trigger_output" \
+                | grep -o 'https://github\.com/[^[:space:]]*/runs/[0-9]*' | head -1 || echo "")
+
+              # Fallback: if gh did not print a URL (older gh version), poll by
+              # creation time. Only attempt when dispatch actually succeeded —
+              # if dispatch failed, the poll could pick up a different agent's run.
+              if [ -z "$on_demand_run_url" ] && [ "$dispatch_exit" -eq 0 ]; then
+                echo "gh did not return run URL directly — falling back to time-based poll"
+                for _ in $(seq 1 18); do
+                  sleep 5
+                  run_id=$(gh api "repos/${REPO}/actions/workflows/c8-orchestration-cluster-e2e-tests-on-demand.yml/runs?per_page=10" \
+                    2>/dev/null \
+                    | jq -r --arg t "$dispatched_at" \
+                      '[.workflow_runs[] | select(.created_at >= $t)] | first | .id // ""' \
+                    || echo "")
+                  if [ -n "$run_id" ] && [ "$run_id" != "null" ]; then
+                    on_demand_run_url="https://github.com/${REPO}/actions/runs/${run_id}"
+                    break
+                  fi
+                done
+              elif [ "$dispatch_exit" -ne 0 ]; then
+                echo "::warning::on-demand dispatch failed (exit $dispatch_exit) — skipping verification link"
+              fi
+
+              [ -n "$on_demand_run_url" ] && echo "On-demand run: $on_demand_run_url"
             fi
 
             # Patch PR body with the verification link (idempotent: strip any
@@ -498,7 +516,7 @@ jobs:
             icon=":warning:"; summary="No fix applied — manual investigation required"
           fi
 
-          text="${icon} *${VERSION}* fix agent — ${summary}\n<${RUN_URL}|Agent run ↗>"
+          text="${icon} *${VERSION}* fix agent — ${summary}"$'\n'"<${RUN_URL}|Agent run ↗>"
           payload=$(jq -nc \
             --arg channel    "$SLACK_CHANNEL" \
             --arg thread_ts  "$SLACK_THREAD_TS" \

@@ -24,11 +24,6 @@ on:
         description: 'Max fix-agent dispatches this run (default: 4 — one per supported version)'
         default: '4'
         required: false
-      include_main:
-        description: 'Include main in triage scope (set false to limit to stable branches)'
-        type: boolean
-        default: true
-        required: false
       send_slack_notification:
         description: 'Post triage summary and fix-agent replies to Slack (always true for scheduled runs)'
         type: boolean
@@ -88,7 +83,6 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.secrets.outputs.GH_TOKEN }}
           REPO:     ${{ github.repository }}
-          INCLUDE_MAIN: ${{ github.event.inputs.include_main || 'true' }}
         run: |
           set -euo pipefail
 
@@ -103,13 +97,11 @@ jobs:
             "c8-orchestration-cluster-nightly-8.9-api-es.yml|8.9|api_es"
             "c8-orchestration-cluster-nightly-8.9-api-rdbms.yml|8.9|api_rdbms"
           )
-          if [ "$INCLUDE_MAIN" = "true" ]; then
-            SCOPE+=(
-              "c8-orchestration-cluster-nightly-main-e2e.yml|main|e2e"
-              "c8-orchestration-cluster-nightly-main-api-es.yml|main|api_es"
-              "c8-orchestration-cluster-nightly-main-api-rdbms.yml|main|api_rdbms"
-            )
-          fi
+          SCOPE+=(
+            "c8-orchestration-cluster-nightly-main-e2e.yml|main|e2e"
+            "c8-orchestration-cluster-nightly-main-api-es.yml|main|api_es"
+            "c8-orchestration-cluster-nightly-main-api-rdbms.yml|main|api_rdbms"
+          )
 
           # Working files
           all_failures=/tmp/all_failures.jsonl
@@ -635,8 +627,30 @@ jobs:
               fi
             done
 
+            test_count=$(echo "$specs" | jq 'length')
+            # Build a human-readable label reflecting only the types that actually failed.
+            # For test-failure dispatches (specs non-empty), derive from test_specs so we
+            # don't show types that merely have a run ID attached but passed.
+            # For workflow-level dispatches (specs empty), fall back to run IDs.
+            run_types=""
+            if [ "$test_count" -gt 0 ]; then
+              has_e2e=$(echo "$specs" | jq '[.[] | select(.test_type == "e2e")] | length > 0')
+              has_api_es=$(echo "$specs" | jq '[.[] | select(.test_type == "api" and (.database == null or .database == "" or .database == "elasticsearch"))] | length > 0')
+              has_api_rdbms=$(echo "$specs" | jq '[.[] | select(.test_type == "api" and (.database != null and .database != "" and .database != "elasticsearch"))] | length > 0')
+              [ "$has_e2e" = "true" ]        && run_types="E2E"
+              [ "$has_api_es" = "true" ]     && run_types="${run_types:+${run_types} + }API (ES)"
+              [ "$has_api_rdbms" = "true" ]  && run_types="${run_types:+${run_types} + }API (RDBMS)"
+            else
+              [ -n "$e2e"       ] && run_types="E2E"
+              [ -n "$api_es"    ] && run_types="${run_types:+${run_types} + }API (ES)"
+              [ -n "$api_rdbms" ] && run_types="${run_types:+${run_types} + }API (RDBMS)"
+            fi
+            [ -z "$run_types" ] && run_types="workflow-level"
+            run_label="Nightly ${run_types} — ${version}"
+
             jq --arg v "$version" --arg id "$fix_run_id" --arg repo "$REPO" \
-              '. += [{"version": $v, "run_id": $id, "run_url": ("https://github.com/" + $repo + "/actions/runs/" + $id)}]' \
+               --arg label "$run_label" --argjson count "$test_count" \
+              '. += [{"version": $v, "run_id": $id, "run_url": ("https://github.com/" + $repo + "/actions/runs/" + $id), "run_label": $label, "test_count": $count}]' \
               /tmp/fix_agent_runs.json > /tmp/fix_agent_runs.json.tmp
             mv /tmp/fix_agent_runs.json.tmp /tmp/fix_agent_runs.json
           done
@@ -683,15 +697,16 @@ jobs:
             dispatch_line=":robot_face: *Fix agents dispatched: ${dispatches}*"
             agent_list=""
             while IFS= read -r entry; do
-              version=$(echo "$entry" | jq -r '.version')
-              run_id=$(echo "$entry"  | jq -r '.run_id // ""')
+              run_id=$(echo "$entry"    | jq -r '.run_id // ""')
+              run_label=$(echo "$entry" | jq -r '.run_label // .version')
+              test_count=$(echo "$entry" | jq -r '.test_count // "?"')
               if [ -n "$run_id" ] && [ "$run_id" != "null" ]; then
-                agent_list="${agent_list}"$'\n'"  • \`${version}\` — <https://github.com/${REPO}/actions/runs/${run_id}|agent run ↗>"
+                agent_list="${agent_list}"$'\n'"  • ${run_label} — ${test_count} test(s) — <https://github.com/${REPO}/actions/runs/${run_id}|agent run ↗>"
               else
-                agent_list="${agent_list}"$'\n'"  • \`${version}\` — agent run pending"
+                agent_list="${agent_list}"$'\n'"  • ${run_label} — ${test_count} test(s) — agent run pending"
               fi
             done < <(jq -c '.[]' /tmp/fix_agent_runs.json)
-            dispatch_block="${dispatch_line}${agent_list}"
+            dispatch_block="${dispatch_line}"$'\n'"*Agents dispatched for:*${agent_list}"
           else
             dispatch_block=":information_source: No fix agents dispatched."
           fi
