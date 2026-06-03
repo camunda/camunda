@@ -334,25 +334,38 @@ jobs:
             if [ -n "$branch" ] && [ "$branch" != "null" ]; then
               echo "Triggering on-demand run for PR #${pr_number} branch ${branch}..."
               dispatched_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-              gh workflow run c8-orchestration-cluster-e2e-tests-on-demand.yml \
-                --repo "$REPO" -f branch="$branch"
-              # Poll up to 90s for the new run to appear.
-              # Filter by both creation time AND the branch input to avoid picking up a
-              # concurrent agent's run when multiple fix agents trigger on-demand workflows
-              # simultaneously (gh run list --limit N is not race-safe).
-              for _ in $(seq 1 18); do
-                sleep 5
-                run_id=$(gh api "repos/${REPO}/actions/workflows/c8-orchestration-cluster-e2e-tests-on-demand.yml/runs?per_page=10" \
-                  2>/dev/null \
-                  | jq -r --arg t "$dispatched_at" --arg b "$branch" \
-                    '[.workflow_runs[] | select(.created_at >= $t and .inputs.branch == $b)] | first | .id // ""' \
-                  || echo "")
-                if [ -n "$run_id" ] && [ "$run_id" != "null" ]; then
-                  on_demand_run_url="https://github.com/${REPO}/actions/runs/${run_id}"
-                  echo "On-demand run: $on_demand_run_url"
-                  break
-                fi
-              done
+
+              # Recent gh versions print the run URL directly to stdout/stderr.
+              # Capture it — this is race-proof because it is the exact run we triggered.
+              # Note: the GitHub API does not expose workflow_dispatch inputs in the
+              # runs list or individual run endpoints, so we cannot filter by branch
+              # input after the fact.
+              trigger_output=$(gh workflow run c8-orchestration-cluster-e2e-tests-on-demand.yml \
+                --repo "$REPO" -f branch="$branch" 2>&1 || true)
+              echo "$trigger_output"
+              on_demand_run_url=$(echo "$trigger_output" \
+                | grep -o 'https://github\.com/[^[:space:]]*/runs/[0-9]*' | head -1 || echo "")
+
+              # Fallback: if gh did not print a URL (older gh version), poll by
+              # creation time. This is slightly race-prone when agents run concurrently
+              # but acceptable as a secondary path.
+              if [ -z "$on_demand_run_url" ]; then
+                echo "gh did not return run URL directly — falling back to time-based poll"
+                for _ in $(seq 1 18); do
+                  sleep 5
+                  run_id=$(gh api "repos/${REPO}/actions/workflows/c8-orchestration-cluster-e2e-tests-on-demand.yml/runs?per_page=10" \
+                    2>/dev/null \
+                    | jq -r --arg t "$dispatched_at" \
+                      '[.workflow_runs[] | select(.created_at >= $t)] | first | .id // ""' \
+                    || echo "")
+                  if [ -n "$run_id" ] && [ "$run_id" != "null" ]; then
+                    on_demand_run_url="https://github.com/${REPO}/actions/runs/${run_id}"
+                    break
+                  fi
+                done
+              fi
+
+              [ -n "$on_demand_run_url" ] && echo "On-demand run: $on_demand_run_url"
             fi
 
             # Patch PR body with the verification link (idempotent: strip any
