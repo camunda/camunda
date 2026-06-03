@@ -15,6 +15,13 @@
 
   <dependencies>
 
+    <!-- TEST ONLY — DO NOT MERGE: triggers exception path (GHSA-599f-7c49-w659 in allow-ghsas) -->
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-text</artifactId>
+      <version>1.9</version>
+    </dependency>
+
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>operate-common</artifactId>
