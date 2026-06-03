@@ -20,21 +20,34 @@ import java.util.List;
 import java.util.Map;
 import org.immutables.value.Value;
 
+/**
+ * Top-level coverage report containing suite, model, and aggregated coverage data.
+ *
+ * <p>This payload is serialized for the coverage frontend and contains both summarized coverage
+ * metrics and raw model definition XML used by the viewer.
+ */
 @Value.Immutable
 @JsonDeserialize(builder = ImmutableCoverageReport.Builder.class)
 public interface CoverageReport {
 
+  /** Returns all suite-level coverage reports included in this report. */
   List<CoverageSuiteReport> getSuites();
 
+  /** Returns all process models referenced by the included process coverage entries. */
   List<ProcessModel> getProcessModels();
 
+  /** Returns all decision models referenced by the included decision coverage entries. */
   List<DecisionModel> getDecisionModels();
 
+  /** Returns process coverage aggregated across all captured suites and runs. */
   List<ProcessCoverage> getProcessCoverages();
 
+  /** Returns decision coverage aggregated across all captured suites and runs. */
   List<DecisionCoverage> getDecisionCoverages();
 
+  /** Returns process definition XML mapped by process definition id. */
   Map<String, String> getProcessDefinitions();
 
+  /** Returns decision definition XML mapped by decision definition id. */
   Map<String, String> getDecisionDefinitions();
 }

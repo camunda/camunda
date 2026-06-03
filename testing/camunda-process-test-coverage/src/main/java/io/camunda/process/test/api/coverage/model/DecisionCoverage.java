@@ -19,14 +19,23 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.List;
 import org.immutables.value.Value;
 
+/**
+ * Coverage details for one decision definition.
+ *
+ * <p>Tracks matched DMN rules and the resulting coverage ratio for the decision table.
+ */
 @Value.Immutable
 @JsonDeserialize(builder = ImmutableDecisionCoverage.Builder.class)
 public interface DecisionCoverage {
+  /** Returns the covered decision definition id. */
   String getDecisionDefinitionId();
 
+  /** Returns matched DMN rule ids. */
   List<String> getMatchedRuleIds();
 
+  /** Returns matched DMN rule indices. */
   List<Integer> getMatchedRuleIndices();
 
+  /** Returns the normalized coverage ratio for this decision definition. */
   double getCoverage();
 }

@@ -19,14 +19,23 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.List;
 import org.immutables.value.Value;
 
+/**
+ * Coverage details for one process definition.
+ *
+ * <p>Tracks visited BPMN elements, traversed sequence flows, and the resulting coverage ratio.
+ */
 @Value.Immutable
 @JsonDeserialize(builder = ImmutableProcessCoverage.Builder.class)
 public interface ProcessCoverage {
+  /** Returns the covered process definition id. */
   String getProcessDefinitionId();
 
+  /** Returns BPMN element ids that were completed at least once. */
   List<String> getCompletedElements();
 
+  /** Returns sequence flow ids that were taken at least once. */
   List<String> getTakenSequenceFlows();
 
+  /** Returns the normalized coverage ratio for this process definition. */
   double getCoverage();
 }

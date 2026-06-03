@@ -18,11 +18,19 @@ package io.camunda.process.test.api.coverage.model;
 import java.util.List;
 import org.immutables.value.Value;
 
+/**
+ * Coverage report for a single test run.
+ *
+ * <p>Represents the process and decision coverage produced by one execution of a test case.
+ */
 @Value.Immutable
 public interface CoverageRunReport {
+  /** Returns the test run name. */
   String getName();
 
+  /** Returns process coverage entries calculated for this run. */
   List<ProcessCoverage> getProcessCoverages();
 
+  /** Returns decision coverage entries calculated for this run. */
   List<DecisionCoverage> getDecisionCoverages();
 }

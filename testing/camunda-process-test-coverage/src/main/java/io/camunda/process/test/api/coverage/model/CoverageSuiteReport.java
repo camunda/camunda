@@ -19,16 +19,26 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.List;
 import org.immutables.value.Value;
 
+/**
+ * Coverage report for one test suite.
+ *
+ * <p>Contains per-run coverage breakdown and suite-level aggregated process and decision coverage.
+ */
 @Value.Immutable
 @JsonDeserialize(builder = ImmutableCoverageSuiteReport.Builder.class)
 public interface CoverageSuiteReport {
+  /** Returns the stable suite identifier. */
   String getId();
 
+  /** Returns the suite display name. */
   String getName();
 
+  /** Returns the coverage reports captured for each run in the suite. */
   List<CoverageRunReport> getRuns();
 
+  /** Returns process coverage aggregated for this suite. */
   List<ProcessCoverage> getProcessCoverages();
 
+  /** Returns decision coverage aggregated for this suite. */
   List<DecisionCoverage> getDecisionCoverages();
 }

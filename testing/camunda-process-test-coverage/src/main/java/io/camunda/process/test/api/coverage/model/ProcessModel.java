@@ -18,14 +18,23 @@ package io.camunda.process.test.api.coverage.model;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
 
+/**
+ * Process model metadata used by the coverage report.
+ *
+ * <p>Contains definition metadata and BPMN XML required by the coverage viewer.
+ */
 @Value.Immutable
 @JsonDeserialize(builder = ImmutableProcessModel.Builder.class)
 public interface ProcessModel {
+  /** Returns the process definition id. */
   String getProcessDefinitionId();
 
+  /** Returns the number of coverable BPMN elements in this model. */
   int getTotalElementCount();
 
+  /** Returns the process definition version. */
   String getVersion();
 
+  /** Returns the BPMN XML content of this model. */
   String getXml();
 }

@@ -18,14 +18,23 @@ package io.camunda.process.test.api.coverage.model;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
 
+/**
+ * Decision model metadata used by the coverage report.
+ *
+ * <p>Contains definition metadata and DMN XML required by the coverage viewer.
+ */
 @Value.Immutable
 @JsonDeserialize(builder = ImmutableDecisionModel.Builder.class)
 public interface DecisionModel {
+  /** Returns the decision definition id. */
   String getDecisionDefinitionId();
 
+  /** Returns the number of coverable rules in this model. */
   int getTotalRuleCount();
 
+  /** Returns the decision definition version. */
   String getVersion();
 
+  /** Returns the DMN XML content of this model. */
   String getXml();
 }
