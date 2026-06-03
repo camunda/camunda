@@ -151,6 +151,7 @@ dependencies {
     testImplementation(libs.com.icegreen.greenmail)
     testImplementation(libs.org.junit.platform.junit.platform.suite.api)
     testImplementation(libs.org.junit.platform.junit.platform.suite)
+    testRuntimeOnly(libs.org.junit.platform.junit.platform.suite.engine)
     testImplementation(libs.jakarta.mail.jakarta.mail.api)
     testImplementation(libs.com.sun.mail.jakarta.mail)
     testImplementation(libs.org.mock.server.mockserver.core)

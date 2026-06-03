@@ -71,6 +71,7 @@ dependencies {
     testImplementation(libs.org.springframework.spring.test)
     testImplementation(libs.org.junit.platform.junit.platform.suite.api)
     testImplementation(libs.org.junit.platform.junit.platform.suite)
+    testRuntimeOnly(libs.org.junit.platform.junit.platform.suite.engine)
     testImplementation(libs.org.mockito.mockito.junit.jupiter)
     testImplementation(libs.org.hamcrest.hamcrest)
     testImplementation(libs.org.mockito.mockito.core)

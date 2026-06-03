@@ -59,6 +59,7 @@ dependencies {
     testImplementation(libs.org.mockito.mockito.core)
     testImplementation(libs.org.junit.platform.junit.platform.suite.api)
     testImplementation(libs.org.junit.platform.junit.platform.suite)
+    testRuntimeOnly(libs.org.junit.platform.junit.platform.suite.engine)
 }
 
 description = "Tasklist Common"

@@ -32,6 +32,7 @@ dependencies {
     testImplementation(libs.org.mockito.mockito.core)
     testImplementation(libs.org.mockito.mockito.junit.jupiter)
     testImplementation(libs.org.junit.platform.junit.platform.suite.api)
+    testRuntimeOnly(libs.org.junit.platform.junit.platform.suite.engine)
 }
 
 description = "Operate schema"
