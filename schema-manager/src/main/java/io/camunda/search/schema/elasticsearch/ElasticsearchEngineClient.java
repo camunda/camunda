@@ -38,6 +38,7 @@ import co.elastic.clients.json.JsonpDeserializer;
 import co.elastic.clients.json.JsonpSerializable;
 import co.elastic.clients.json.jackson.JacksonJsonpGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.search.connect.configuration.DatabaseConfig;
 import io.camunda.search.schema.IndexMapping;
 import io.camunda.search.schema.IndexMappingProperty;
 import io.camunda.search.schema.MappingSource;
@@ -55,6 +56,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -279,6 +281,20 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
   }
 
   @Override
+  public boolean deleteIndexIfExists(final String indexName) {
+    try {
+      deleteIndex(indexName);
+      return true;
+    } catch (final ElasticsearchException e) {
+      if (e.status() == 404) {
+        return false;
+      }
+
+      throw e;
+    }
+  }
+
+  @Override
   public void truncateIndex(final String indexName) {
     final DeleteByQueryRequest deleteByQueryRequest =
         new DeleteByQueryRequest.Builder()
@@ -387,6 +403,27 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
                                 del.minAge(m -> m.time(deletionMinAge))
                                     .actions(a -> a.delete(DeleteAction.of(d -> d))))))
         .build();
+  }
+
+  @Override
+  public Set<String> getIndexNames(final String pattern) {
+    try {
+      return new HashSet<>(
+          client
+              .indices()
+              .get(req -> req.index(pattern).ignoreUnavailable(true))
+              .result()
+              .keySet());
+    } catch (final IOException | ElasticsearchException e) {
+      final var errMsg = String.format("Failed to retrieve index names for pattern '%s'", pattern);
+      LOG.error(errMsg, e);
+      throw new SearchEngineException(errMsg, e);
+    }
+  }
+
+  @Override
+  public String getEngineName() {
+    return DatabaseConfig.ELASTICSEARCH;
   }
 
   private Map<String, TypeMapping> getCurrentMappings(

@@ -14,6 +14,7 @@ import io.camunda.zeebe.util.CloseableSilently;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public interface SearchEngineClient extends CloseableSilently {
   void createIndex(final IndexDescriptor indexDescriptor, final IndexConfiguration settings);
@@ -51,6 +52,16 @@ public interface SearchEngineClient extends CloseableSilently {
 
   void deleteIndex(final String indexName);
 
+  /**
+   * Deletes the index with the given name if it exists, using a single request rather than a
+   * separate existence check followed by deletion. This avoids any potential race condition between
+   * checking and deleting.
+   *
+   * @param indexName the name of the index to delete
+   * @return {@code true} if the index was deleted, {@code false} if it did not exist
+   */
+  boolean deleteIndexIfExists(final String indexName);
+
   void truncateIndex(final String indexName);
 
   boolean isHealthy();
@@ -81,4 +92,17 @@ public interface SearchEngineClient extends CloseableSilently {
    */
   void upsertDocument(
       final String indexName, final String documentId, final Map<String, Object> document);
+
+  /**
+   * Retrieve all index names matching a given pattern
+   *
+   * @param pattern the pattern to match index names against (supports wildcards, e.g. *foo*)
+   * @return a set of matching index names
+   */
+  Set<String> getIndexNames(final String pattern);
+
+  /**
+   * @return the name of the engine.
+   */
+  String getEngineName();
 }

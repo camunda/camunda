@@ -72,6 +72,9 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   /** Whether to create the schema automatically */
   private boolean createSchema = true;
 
+  /** Whether to schedule the cleanup of legacy indexes */
+  private boolean performCleanup = false;
+
   @NestedConfigurationProperty
   private IncidentNotifier incidentNotifier = new IncidentNotifier(databaseName());
 
@@ -177,6 +180,14 @@ public abstract class DocumentBasedSecondaryStorageDatabase
 
   public void setCreateSchema(final boolean createSchema) {
     this.createSchema = createSchema;
+  }
+
+  public boolean isPerformCleanup() {
+    return performCleanup;
+  }
+
+  public void setPerformCleanup(final boolean performCleanup) {
+    this.performCleanup = performCleanup;
   }
 
   public Cache getBatchOperationCache() {
