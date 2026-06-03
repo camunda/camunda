@@ -426,12 +426,11 @@ jobs:
   build-distball:
     name: "Build / Distribution Tarball"
     needs: [ detect-changes ]
-    if: |
-      needs.detect-changes.outputs.java-code-changes == 'true'
-      || needs.detect-changes.outputs.camunda-docker-tests == 'true'
-      || github.event_name == 'merge_group'
-      || github.event_name == 'schedule'
-      || (github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/')))
+    # Gated on the same paths-filter output that docker-checks (the only current
+    # consumer) gates on, so the artifact only builds when a consumer will use
+    # it. Subsequent consumer PRs (integration-tests, deploy-camunda-docker-snapshot,
+    # reusable workflows) extend this condition as they land.
+    if: needs.detect-changes.outputs.camunda-docker-tests == 'true'
     runs-on: gcp-perf-core-8-default
     timeout-minutes: 30
     permissions: { }  # GITHUB_TOKEN unused in this job
@@ -460,6 +459,27 @@ jobs:
           path: ${{ steps.build-zeebe.outputs.distball }}
           retention-days: 1
           compression-level: 0  # tarball is already gzipped
+          if-no-files-found: error
+      # build-zeebe runs `mvn install` which populates ~/.m2/repository/installed/
+      # with this project's SNAPSHOT JARs/POMs. Downstream consumers that invoke
+      # Maven against the reactor (e.g. docker-checks `mvn -pl dist/ verify`)
+      # need this tree on their local repository because the GHA Maven cache only
+      # stores `cached/releases/` (split via aether.enhancedLocalRepository),
+      # never the locally-installed SNAPSHOTs. Archive and upload them as a second
+      # artifact so consumers can restore them into ~/.m2/ before running Maven.
+      - name: Archive local Maven SNAPSHOT artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          tar -cf m2-installed.tar -C "${HOME}/.m2/repository/installed" io/camunda
+          ls -lh m2-installed.tar
+      - name: Upload local Maven SNAPSHOT artifacts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: m2-installed-${{ github.run_id }}
+          path: m2-installed.tar
+          retention-days: 1
+          compression-level: 0  # tar is uncompressed; upload-artifact's zip compresses
           if-no-files-found: error
       - name: Observe build status
         if: always()
@@ -1334,6 +1354,21 @@ jobs:
         with:
           name: distball-${{ github.run_id }}
           path: dist/target/
+      # docker-checks's "Run Docker tests" step invokes `mvn -pl dist/ verify`,
+      # which resolves io.camunda:* SNAPSHOTs from ~/.m2/repository/installed/.
+      # Restore those SNAPSHOTs from the build-distball job since the GHA Maven
+      # cache does not propagate locally-installed artifacts between jobs.
+      - name: Download local Maven SNAPSHOT artifacts
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: m2-installed-${{ github.run_id }}
+          path: ${{ runner.temp }}
+      - name: Restore local Maven SNAPSHOT artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "${HOME}/.m2/repository/installed"
+          tar -xf "${{ runner.temp }}/m2-installed.tar" -C "${HOME}/.m2/repository/installed"
       - uses: ./.github/actions/build-platform-docker
         id: build-camunda-docker
         with:
@@ -2234,10 +2269,12 @@ jobs:
       actions: write
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@main
-      - name: Delete distball artifact
+      - name: Delete distball + m2-installed artifacts
         uses: geekyeggo/delete-artifact@176a747ab7e287e3ff4787bf8a148716375ca118 # v6.0.0
         with:
-          name: distball-${{ github.run_id }}
+          name: |
+            distball-${{ github.run_id }}
+            m2-installed-${{ github.run_id }}
           failOnError: false
       - name: Observe build status
         if: always()
