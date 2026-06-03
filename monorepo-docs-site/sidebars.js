@@ -21,7 +21,7 @@ const sidebars = {
       type: 'category',
       label: 'CI',
       link: { type: 'doc', id: 'ci' },
-      items: ['ci-runbooks', 'flaky-test-gate'],
+      items: ['ci-runbooks', 'flaky-test-gate', 'dependency-vulnerability-gate'],
     },
     'infrastructure-services',
     'processes',
