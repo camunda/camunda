@@ -52,6 +52,7 @@ import io.camunda.search.entities.UsageMetricTUStatisticsEntity;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
+import io.camunda.search.entities.WaitStateEntity;
 import io.camunda.search.exception.NoSecondaryStorageException;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.query.AgentInstanceQuery;
@@ -65,6 +66,7 @@ import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.query.DeployedResourceQuery;
+import io.camunda.search.query.ElementInstanceWaitStateQuery;
 import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.FormQuery;
 import io.camunda.search.query.GlobalJobStatisticsQuery;
@@ -487,6 +489,12 @@ public class NoDBSearchClientsProxy implements SearchClientsProxy {
   @Override
   public SearchQueryResult<DeployedResourceEntity> searchDeployedResources(
       final DeployedResourceQuery query) {
+    throw new NoSecondaryStorageException();
+  }
+
+  @Override
+  public SearchQueryResult<WaitStateEntity> searchWaitStates(
+      final ElementInstanceWaitStateQuery query) {
     throw new NoSecondaryStorageException();
   }
 }

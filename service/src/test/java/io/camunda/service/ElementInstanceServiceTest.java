@@ -15,9 +15,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.FlowNodeInstanceSearchClient;
+import io.camunda.search.clients.WaitStateSearchClient;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.IncidentEntity;
+import io.camunda.search.entities.WaitStateEntity;
 import io.camunda.search.exception.ResourceAccessDeniedException;
+import io.camunda.search.query.ElementInstanceWaitStateQuery;
 import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.SearchQueryBuilders;
@@ -44,6 +47,7 @@ public final class ElementInstanceServiceTest {
 
   private ElementInstanceServices services;
   private FlowNodeInstanceSearchClient client;
+  private WaitStateSearchClient waitStateSearchClient;
   private ProcessCache processCache;
   @Mock private IncidentServices incidentServices;
   @Mock private CamundaAuthentication authentication;
@@ -51,6 +55,7 @@ public final class ElementInstanceServiceTest {
   @BeforeEach
   public void before() {
     client = mock(FlowNodeInstanceSearchClient.class);
+    waitStateSearchClient = mock(WaitStateSearchClient.class);
     processCache = mock(ProcessCache.class);
     incidentServices = mock(IncidentServices.class);
     services =
@@ -58,13 +63,33 @@ public final class ElementInstanceServiceTest {
             mock(BrokerClient.class),
             mock(SecurityContextProvider.class),
             client,
+            waitStateSearchClient,
             processCache,
             incidentServices,
             mock(ApiServicesExecutorProvider.class),
             null);
 
     when(client.withSecurityContext(any())).thenReturn(client);
+    when(waitStateSearchClient.withSecurityContext(any())).thenReturn(waitStateSearchClient);
     when(processCache.getCacheItems(any())).thenReturn(ProcessCacheResult.EMPTY);
+  }
+
+  @Nested
+  class SearchWaitStates {
+
+    @Test
+    void shouldReturnWaitStates() {
+      // given
+      final var entity = Instancio.create(WaitStateEntity.class);
+      when(waitStateSearchClient.searchWaitStates(any())).thenReturn(SearchQueryResult.of(entity));
+
+      // when
+      final var result =
+          services.searchWaitStates(ElementInstanceWaitStateQuery.of(q -> q), authentication);
+
+      // then
+      assertThat(result.items()).containsExactly(entity);
+    }
   }
 
   @Nested

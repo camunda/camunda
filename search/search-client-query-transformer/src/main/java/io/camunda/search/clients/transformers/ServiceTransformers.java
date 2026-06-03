@@ -109,6 +109,7 @@ import io.camunda.search.clients.transformers.entity.TenantMemberEntityTransform
 import io.camunda.search.clients.transformers.entity.UserEntityTransformer;
 import io.camunda.search.clients.transformers.entity.UserTaskEntityTransformer;
 import io.camunda.search.clients.transformers.entity.VariableEntityTransformer;
+import io.camunda.search.clients.transformers.entity.WaitStateEntityTransformer;
 import io.camunda.search.clients.transformers.filter.AgentInstanceFilterTransformer;
 import io.camunda.search.clients.transformers.filter.AuditLogFilterTransformer;
 import io.camunda.search.clients.transformers.filter.AuthorizationFilterTransformer;
@@ -152,6 +153,7 @@ import io.camunda.search.clients.transformers.filter.UserFilterTransformer;
 import io.camunda.search.clients.transformers.filter.UserTaskFilterTransformer;
 import io.camunda.search.clients.transformers.filter.VariableFilterTransformer;
 import io.camunda.search.clients.transformers.filter.VariableValueFilterTransformer;
+import io.camunda.search.clients.transformers.filter.WaitStateFilterTransformer;
 import io.camunda.search.clients.transformers.query.TypedSearchQueryTransformer;
 import io.camunda.search.clients.transformers.result.DecisionInstanceResultConfigTransformer;
 import io.camunda.search.clients.transformers.result.DecisionRequirementsResultConfigTransformer;
@@ -201,6 +203,7 @@ import io.camunda.search.filter.DecisionDefinitionFilter;
 import io.camunda.search.filter.DecisionInstanceFilter;
 import io.camunda.search.filter.DecisionRequirementsFilter;
 import io.camunda.search.filter.DeployedResourceFilter;
+import io.camunda.search.filter.ElementInstanceWaitStateFilter;
 import io.camunda.search.filter.FilterBase;
 import io.camunda.search.filter.FlowNodeInstanceFilter;
 import io.camunda.search.filter.FormFilter;
@@ -243,6 +246,7 @@ import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.query.DeployedResourceQuery;
+import io.camunda.search.query.ElementInstanceWaitStateQuery;
 import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.FormQuery;
 import io.camunda.search.query.GlobalJobStatisticsQuery;
@@ -345,6 +349,7 @@ import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
+import io.camunda.webapps.schema.descriptors.template.WaitStateTemplate;
 import io.camunda.webapps.schema.entities.CorrelatedMessageSubscriptionEntity;
 import io.camunda.webapps.schema.entities.JobEntity;
 import io.camunda.webapps.schema.entities.ProcessEntity;
@@ -484,7 +489,8 @@ public final class ServiceTransformers {
             JobTimeSeriesStatisticsQuery.class,
             JobErrorStatisticsQuery.class,
             GlobalListenerQuery.class,
-            DeployedResourceQuery.class)
+            DeployedResourceQuery.class,
+            ElementInstanceWaitStateQuery.class)
         .forEach(cls -> mappers.put(cls, searchQueryTransformer));
 
     // document entity -> domain entity
@@ -499,6 +505,9 @@ public final class ServiceTransformers {
     mappers.put(DecisionInstanceEntity.class, new DecisionInstanceEntityTransformer());
     mappers.put(MessageSubscriptionEntity.class, new MessageSubscriptionEntityTransformer());
     mappers.put(FlowNodeInstanceEntity.class, new FlowNodeInstanceEntityTransformer());
+    mappers.put(
+        io.camunda.webapps.schema.entities.waitstate.WaitStateEntity.class,
+        new WaitStateEntityTransformer());
     mappers.put(FormEntity.class, new FormEntityTransformer());
     mappers.put(GroupEntity.class, new GroupEntityTransformer());
     mappers.put(GroupMemberEntity.class, new GroupMemberEntityTransformer());
@@ -691,6 +700,9 @@ public final class ServiceTransformers {
     mappers.put(
         DeployedResourceFilter.class,
         new DeployedResourceFilterTransformer(indexDescriptors.get(DeployedResourceIndex.class)));
+    mappers.put(
+        ElementInstanceWaitStateFilter.class,
+        new WaitStateFilterTransformer(indexDescriptors.get(WaitStateTemplate.class)));
     // result config -> source config
     mappers.put(
         DecisionInstanceQueryResultConfig.class, new DecisionInstanceResultConfigTransformer());

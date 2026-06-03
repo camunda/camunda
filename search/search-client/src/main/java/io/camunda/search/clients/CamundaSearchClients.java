@@ -58,6 +58,7 @@ import io.camunda.search.entities.UsageMetricTUStatisticsEntity;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
+import io.camunda.search.entities.WaitStateEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.exception.CamundaSearchException.Reason;
 import io.camunda.search.exception.ErrorMessages;
@@ -76,6 +77,7 @@ import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.query.DeployedResourceQuery;
+import io.camunda.search.query.ElementInstanceWaitStateQuery;
 import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.FormQuery;
 import io.camunda.search.query.GlobalJobStatisticsQuery;
@@ -761,6 +763,12 @@ public class CamundaSearchClients implements SearchClientsProxy {
 
   protected CamundaSearchException entityByUsernameNotFoundException(final String id) {
     return entityByIdNotFoundException("User", "username", id);
+  }
+
+  @Override
+  public SearchQueryResult<WaitStateEntity> searchWaitStates(
+      final ElementInstanceWaitStateQuery query) {
+    return doSearchWithReader(readers.waitStateReader(), query);
   }
 
   private CamundaSearchException entityByIdNotFoundException(

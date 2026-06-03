@@ -144,8 +144,9 @@ public class RdbmsConfiguration {
   }
 
   @Bean
-  public WaitStateDbReader waitStateRdbmsReader(final WaitStateMapper waitStateMapper) {
-    return new WaitStateDbReader(waitStateMapper);
+  public WaitStateDbReader waitStateRdbmsReader(
+      final WaitStateMapper waitStateMapper, final RdbmsReaderConfig readerConfig) {
+    return new WaitStateDbReader(waitStateMapper, readerConfig);
   }
 
   @Bean

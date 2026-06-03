@@ -50,6 +50,7 @@ import io.camunda.search.clients.reader.UsageMetricsTUDocumentReader;
 import io.camunda.search.clients.reader.UserDocumentReader;
 import io.camunda.search.clients.reader.UserTaskDocumentReader;
 import io.camunda.search.clients.reader.VariableDocumentReader;
+import io.camunda.search.clients.reader.WaitStateDocumentReader;
 import io.camunda.search.clients.reader.utils.IncidentErrorHashCodeNormalizer;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.index.AuthorizationIndex;
@@ -82,6 +83,7 @@ import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
+import io.camunda.webapps.schema.descriptors.template.WaitStateTemplate;
 
 /** Static factory that creates a complete set of ES/OS document readers for one physical tenant. */
 public final class SearchClientReadersFactory {
@@ -117,6 +119,8 @@ public final class SearchClientReadersFactory {
     final var flowNodeInstanceReader =
         new FlowNodeInstanceDocumentReader(
             executor, descriptors.get(FlowNodeInstanceTemplate.class));
+    final var waitStateReader =
+        new WaitStateDocumentReader(executor, descriptors.get(WaitStateTemplate.class));
     final var formReader = new FormDocumentReader(executor, descriptors.get(FormIndex.class));
     final var incidentReader =
         new IncidentDocumentReader(executor, descriptors.get(IncidentTemplate.class));
@@ -248,6 +252,7 @@ public final class SearchClientReadersFactory {
         auditLogReader,
         incidentProcessInstanceStatisticsByErrorReader,
         incidentProcessInstanceStatisticsByDefinitionReader,
-        globalListenerReader);
+        globalListenerReader,
+        waitStateReader);
   }
 }

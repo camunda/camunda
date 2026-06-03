@@ -15,8 +15,8 @@ import org.jspecify.annotations.Nullable;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record WaitStateEntity(
-    long processInstanceKey,
-    long elementInstanceKey,
+    Long processInstanceKey,
+    Long elementInstanceKey,
     String elementId,
     FlowNodeType elementType,
     @Nullable Long rootProcessInstanceKey,
@@ -24,6 +24,8 @@ public record WaitStateEntity(
     String tenantId) {
 
   public WaitStateEntity {
+    Objects.requireNonNull(processInstanceKey, "processInstanceKey");
+    Objects.requireNonNull(elementInstanceKey, "elementInstanceKey");
     Objects.requireNonNull(elementId, "elementId");
     Objects.requireNonNull(elementType, "elementType");
     Objects.requireNonNull(tenantId, "tenantId");
@@ -31,20 +33,20 @@ public record WaitStateEntity(
   }
 
   public static class Builder implements ObjectBuilder<WaitStateEntity> {
-    private long processInstanceKey;
-    private long elementInstanceKey;
+    private @Nullable Long processInstanceKey;
+    private @Nullable Long elementInstanceKey;
     private @Nullable String elementId;
     private @Nullable FlowNodeType elementType;
     private @Nullable Long rootProcessInstanceKey;
     private @Nullable WaitStateDetails details;
     private @Nullable String tenantId;
 
-    public Builder processInstanceKey(final long processInstanceKey) {
+    public Builder processInstanceKey(final Long processInstanceKey) {
       this.processInstanceKey = processInstanceKey;
       return this;
     }
 
-    public Builder elementInstanceKey(final long elementInstanceKey) {
+    public Builder elementInstanceKey(final Long elementInstanceKey) {
       this.elementInstanceKey = elementInstanceKey;
       return this;
     }
@@ -59,7 +61,7 @@ public record WaitStateEntity(
       return this;
     }
 
-    public Builder rootProcessInstanceKey(final @Nullable Long rootProcessInstanceKey) {
+    public Builder rootProcessInstanceKey(final Long rootProcessInstanceKey) {
       this.rootProcessInstanceKey = rootProcessInstanceKey;
       return this;
     }
@@ -69,7 +71,7 @@ public record WaitStateEntity(
       return this;
     }
 
-    public Builder tenantId(final @Nullable String tenantId) {
+    public Builder tenantId(final String tenantId) {
       this.tenantId = tenantId;
       return this;
     }
@@ -77,8 +79,8 @@ public record WaitStateEntity(
     @Override
     public WaitStateEntity build() {
       return new WaitStateEntity(
-          processInstanceKey,
-          elementInstanceKey,
+          Objects.requireNonNull(processInstanceKey, "processInstanceKey"),
+          Objects.requireNonNull(elementInstanceKey, "elementInstanceKey"),
           Objects.requireNonNull(elementId, "elementId"),
           Objects.requireNonNull(elementType, "elementType"),
           Objects.requireNonNull(rootProcessInstanceKey, "rootProcessInstanceKey"),
