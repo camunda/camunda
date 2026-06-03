@@ -94,7 +94,7 @@ Usage: newLoadTest.sh <namespace> [secondaryStorage] [ttl_days] [enable_optimize
 
 Arguments:
   namespace          Base namespace name. Will be prefixed with "c8-" if missing.
-  secondaryStorage   Optional. One of: elasticsearch, none. Default: elasticsearch.
+  secondaryStorage   Optional. One of: elasticsearch. Default: elasticsearch.
   ttl_days           Optional. Positive integer for namespace TTL in days. Default: 1.
   enable_optimize    Optional. true|false to enable Optimize. Default: true.
   enable_webapps     Optional. true|false to enable Operate and Tasklist. Default: true.
@@ -144,10 +144,7 @@ You can specify a secondary storage type as the second argument:
 
 ```sh
 . ./newLoadTest.sh my-load-test-name elasticsearch  # Default - uses Elasticsearch
-. ./newLoadTest.sh my-load-test-name none           # No secondary storage
 ```
-
-The `none` option runs load tests without any secondary storage, which disables Camunda exporters. This is useful for testing the core orchestration engine performance in isolation.
 
 #### Disabling Optimize
 

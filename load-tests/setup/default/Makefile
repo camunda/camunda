@@ -54,9 +54,6 @@ endif
 platform_values := -f camunda-platform-values-defaults.yaml
 
 # Add secondary storage values
-ifeq ($(secondary_storage),none)
-	_secondary_storage_load_test_flags += --set global.extraConfig.load-tester.monitor-data-availability=false
-endif
 platform_values += -f camunda-platform-values-$(secondary_storage).yaml
 
 # Disable Optimize if not enabled
