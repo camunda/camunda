@@ -26,5 +26,5 @@ public interface Suite {
 
   String getName();
 
-  List<Run> getRuns();
+  List<CoverageRunReport> getRuns();
 }
