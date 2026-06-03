@@ -38,6 +38,45 @@ There you'll find anything to get started using Camunda 8, best practices, and r
 - ChatOps commands and flaky test handling
 - Comprehensive troubleshooting guide
 
+### Flaky Test Gate
+
+**[Flaky Test Gate](./flaky-test-gate.md)** - The CI quality gate that blocks PRs from introducing new flaky tests. Covers:
+
+- The "sticky alert" model — why retry-luck no longer silences alerts
+- Clearance rules (method fix + 3 clean re-runs, or `ci:flaky-test-bypass` label)
+- Counter semantics, job matching, force-push handling
+- Comment templates developers see on PRs
+- Common scenarios: real flake, unrelated flake, retry-spam, force-push
+- BigQuery baseline query (with the LEFT-JOIN-as-INNER fix)
+- How to disable the gate temporarily
+
+### CI Runbooks
+
+**[CI Runbooks](./ci-runbooks.md)** - Runbooks for responding to CI incidents and alerts including:
+
+- Incident runbooks: checking status pages, disabling flaky tests, bypassing the merge queue
+- Alert runbooks for merge queue failures, high job runtimes, self-hosted runner disconnects
+- Snapshot artifact staleness and missing artifact alerts
+- Helm chart integration test failures and preview environment smoke test failures
+
+### Infrastructure Services
+
+**[Infrastructure Services](./infrastructure-services.md)** - Overview of the infrastructure services
+used by the monorepo, owned by the Infrastructure team (`#ask-infra`):
+
+- Secret management with Hashicorp Vault
+- Self-hosted GitHub Actions runners (GCP/AWS, autoscaled)
+- Dependency management with Renovate
+- CI analytics monitoring with BigQuery, Prometheus, and Grafana
+- Infra Global GitHub Actions reusable workflows and composite actions
+
+### Processes
+
+**[Processes](./processes.md)** - Processes we follow in the Monorepo, including:
+
+- Renovate PR Handling
+- (CI) Incident Management Process
+
 ### Release Process
 
 **[Release Process](./release)** - Complete software release procedures and guidelines including:
