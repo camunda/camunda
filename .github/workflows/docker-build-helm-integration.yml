@@ -408,6 +408,7 @@ jobs:
     continue-on-error: ${{ github.event_name == 'merge_group' }}
     outputs:
       image-tag: ${{ steps.set-image-tag.outputs.tag }}
+      image-ref: ${{ steps.resolve-digest.outputs.image-ref }}
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -486,6 +487,23 @@ jobs:
           dockerfile: camunda.Dockerfile
           push: true
 
+      - name: Resolve image digest
+        id: resolve-digest
+        env:
+          TAG: ${{ steps.set-image-tag.outputs.tag }}
+        run: |
+          set -euo pipefail
+          FULL_REF="${{ env.HARBOR_REPOSITORY }}:${TAG}"
+          DIGEST=$(docker buildx imagetools inspect "${FULL_REF}" 2>/dev/null \
+            | awk '/^Digest:/ {print $2}' | tr -d '\r')
+          if [[ -z "$DIGEST" || "$DIGEST" == "null" ]]; then
+            echo "::warning::Could not resolve digest for ${FULL_REF}; falling back to tag reference"
+            echo "image-ref=harbor/team-camunda/camunda:${TAG}" >> "$GITHUB_OUTPUT"
+          else
+            echo "image-ref=harbor/team-camunda/camunda@${DIGEST}" >> "$GITHUB_OUTPUT"
+            echo "Resolved pinned ref: harbor/team-camunda/camunda@${DIGEST}"
+          fi
+
       - name: Output image details
         run: |
           {
@@ -494,6 +512,7 @@ jobs:
             echo "**Repository:** ${{ env.HARBOR_REPOSITORY }}"
             echo "**Tag:** ${{ steps.set-image-tag.outputs.tag }}"
             echo "**Full Image:** ${{ env.HARBOR_REPOSITORY }}:${{ steps.set-image-tag.outputs.tag }}"
+            echo "**Pinned Ref:** ${{ steps.resolve-digest.outputs.image-ref }}"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Observe build status
@@ -737,7 +756,7 @@ jobs:
                       "source_sha": "${{ github.sha }}",
                       "gen_name": "'"${GEN_NAME}"'",
                       "c8Version": "8.10",
-                      "zeebeVersion": "${{ needs.build-and-push.outputs.image-tag }}",
+                      "zeebeVersion": "${{ needs.build-and-push.outputs.image-ref }}",
                       "operateVersion": "SNAPSHOT",
                       "tasklistVersion": "SNAPSHOT",
                       "connectorsVersion": "SNAPSHOT",
