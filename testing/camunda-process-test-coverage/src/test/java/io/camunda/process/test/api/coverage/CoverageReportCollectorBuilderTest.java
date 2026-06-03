@@ -30,7 +30,7 @@ import io.camunda.process.test.impl.coverage.data.ImmutableCoverageProcessInstan
 import io.camunda.process.test.impl.coverage.data.ImmutableCoverageTestData;
 import org.junit.jupiter.api.Test;
 
-class CoverageCollectorBuilderTest {
+class CoverageReportCollectorBuilderTest {
 
   @Test
   void shouldApplyExclusionConfigurationToCoverageResult() {

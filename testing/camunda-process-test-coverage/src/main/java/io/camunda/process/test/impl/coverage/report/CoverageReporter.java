@@ -23,8 +23,8 @@ import io.camunda.process.test.api.coverage.model.DecisionModel;
 import io.camunda.process.test.api.coverage.model.ProcessCoverage;
 import io.camunda.process.test.api.coverage.model.ProcessModel;
 import io.camunda.process.test.api.coverage.model.Suite;
-import io.camunda.process.test.impl.coverage.core.CoverageCollector;
 import io.camunda.process.test.impl.coverage.core.CoverageCreator;
+import io.camunda.process.test.impl.coverage.core.CoverageReportCollector;
 import io.camunda.process.test.impl.coverage.core.DecisionCoverageCreator;
 import java.io.File;
 import java.io.IOException;
@@ -84,36 +84,36 @@ public class CoverageReporter {
    * <p>Creates both a suite-specific report and updates the aggregated report that combines all
    * test runs.
    *
-   * @param coverageCollector The collector containing coverage data to report
+   * @param coverageReportCollector The collector containing coverage data to report
    */
-  public CoverageReport reportCoverage(final CoverageCollector coverageCollector) {
+  public CoverageReport reportCoverage(final CoverageReportCollector coverageReportCollector) {
     final Collection<Suite> suites =
-        CoverageCollector.collectors().stream()
-            .map(CoverageCollector::getSuite)
+        CoverageReportCollector.collectors().stream()
+            .map(CoverageReportCollector::getSuite)
             .collect(Collectors.toList());
     final Collection<ProcessModel> processModels =
-        CoverageCollector.collectors().stream()
+        CoverageReportCollector.collectors().stream()
             .flatMap(c -> c.getModels().stream())
             .distinct()
             .collect(Collectors.toList());
     final Collection<DecisionModel> decisionModels =
-        CoverageCollector.collectors().stream()
+        CoverageReportCollector.collectors().stream()
             .flatMap(c -> c.getDecisionModels().stream())
             .distinct()
             .collect(Collectors.toList());
 
     final CoverageReport suiteReport =
         CoverageReportCreator.createAggregatedCoverageReport(
-            java.util.Collections.singletonList(coverageCollector.getSuite()),
-            coverageCollector.getModels(),
-            coverageCollector.getDecisionModels());
+            java.util.Collections.singletonList(coverageReportCollector.getSuite()),
+            coverageReportCollector.getModels(),
+            coverageReportCollector.getDecisionModels());
     final CoverageReport aggregatedReport =
         CoverageReportCreator.createAggregatedCoverageReport(suites, processModels, decisionModels);
 
-    writeJsonReport(coverageCollector.getSuite().getId(), suiteReport);
+    writeJsonReport(coverageReportCollector.getSuite().getId(), suiteReport);
     writeJsonReport(aggregatedReport);
     writeHtmlReport(aggregatedReport);
-    printCoverage(coverageCollector);
+    printCoverage(coverageReportCollector);
     return aggregatedReport;
   }
 
@@ -123,23 +123,24 @@ public class CoverageReporter {
    * <p>Outputs the overall coverage percentage for each process definition and provides a reference
    * to the detailed JSON report location.
    *
-   * @param coverageCollector The collector containing coverage data to print
+   * @param coverageReportCollector The collector containing coverage data to print
    */
-  public CoverageReport createSuiteCoverageReport(final CoverageCollector coverageCollector) {
+  public CoverageReport createSuiteCoverageReport(
+      final CoverageReportCollector coverageReportCollector) {
     return CoverageReportCreator.createAggregatedCoverageReport(
-        java.util.Collections.singletonList(coverageCollector.getSuite()),
-        coverageCollector.getModels(),
-        coverageCollector.getDecisionModels());
+        java.util.Collections.singletonList(coverageReportCollector.getSuite()),
+        coverageReportCollector.getModels(),
+        coverageReportCollector.getDecisionModels());
   }
 
-  private void printCoverage(final CoverageCollector coverageCollector) {
-    final Suite suite = coverageCollector.getSuite();
+  private void printCoverage(final CoverageReportCollector coverageReportCollector) {
+    final Suite suite = coverageReportCollector.getSuite();
     final Collection<ProcessCoverage> coverages =
         CoverageCreator.aggregateCoverages(
             suite.getRuns().stream()
                 .flatMap(r -> r.getProcessCoverages().stream())
                 .collect(Collectors.toList()),
-            coverageCollector.getModels());
+            coverageReportCollector.getModels());
     final String processCoverageList =
         coverages.stream()
             .map(
@@ -154,7 +155,7 @@ public class CoverageReporter {
             suite.getRuns().stream()
                 .flatMap(r -> r.getDecisionCoverages().stream())
                 .collect(Collectors.toList()),
-            coverageCollector.getDecisionModels());
+            coverageReportCollector.getDecisionModels());
     final String decisionCoverageList =
         decisionCoverages.stream()
             .map(

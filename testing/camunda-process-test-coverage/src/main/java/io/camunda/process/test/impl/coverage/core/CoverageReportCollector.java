@@ -44,9 +44,9 @@ import org.slf4j.LoggerFactory;
  * decision instances, organizing it into test runs within a suite, and maintaining model
  * information for the processes and decisions being tested.
  */
-public final class CoverageCollector {
-  private static final Logger LOG = LoggerFactory.getLogger(CoverageCollector.class);
-  private static final List<CoverageCollector> COLLECTORS = new ArrayList<>();
+public final class CoverageReportCollector {
+  private static final Logger LOG = LoggerFactory.getLogger(CoverageReportCollector.class);
+  private static final List<CoverageReportCollector> COLLECTORS = new ArrayList<>();
   private final List<String> excludedProcessDefinitionIds;
   private final List<String> excludedDecisionDefinitionIds;
   private final Map<String, ProcessModel> models = new HashMap<>();
@@ -56,7 +56,7 @@ public final class CoverageCollector {
   private String suiteId;
   private String suiteName;
 
-  private CoverageCollector(
+  private CoverageReportCollector(
       final List<String> excludedProcessDefinitionIds,
       final List<String> excludedDecisionDefinitionIds) {
     this.excludedProcessDefinitionIds = excludedProcessDefinitionIds;
@@ -71,11 +71,11 @@ public final class CoverageCollector {
    * @param excludedDecisionDefinitionIds List of decision definition ids to exclude from coverage
    *     analysis
    */
-  public static CoverageCollector createCollector(
+  public static CoverageReportCollector createCollector(
       final List<String> excludedProcessDefinitionIds,
       final List<String> excludedDecisionDefinitionIds) {
-    final CoverageCollector collector =
-        new CoverageCollector(excludedProcessDefinitionIds, excludedDecisionDefinitionIds);
+    final CoverageReportCollector collector =
+        new CoverageReportCollector(excludedProcessDefinitionIds, excludedDecisionDefinitionIds);
     COLLECTORS.add(collector);
     return collector;
   }
@@ -89,7 +89,7 @@ public final class CoverageCollector {
    *
    * @return A collection of all active CoverageCollector instances
    */
-  public static Collection<CoverageCollector> collectors() {
+  public static Collection<CoverageReportCollector> collectors() {
     return Collections.unmodifiableList(COLLECTORS);
   }
 

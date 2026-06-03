@@ -16,6 +16,7 @@
 package io.camunda.process.test.impl.coverage;
 
 import io.camunda.process.test.api.coverage.model.CoverageReport;
+import io.camunda.process.test.impl.coverage.core.CoverageReportCollector;
 import io.camunda.process.test.impl.coverage.data.CoverageTestData;
 import io.camunda.process.test.impl.coverage.report.CoverageReporter;
 import java.util.List;
@@ -23,7 +24,7 @@ import java.util.function.Consumer;
 
 public final class CoverageCollectorImpl implements CoverageCollector {
 
-  private final io.camunda.process.test.impl.coverage.core.CoverageCollector coverageCollector;
+  private final CoverageReportCollector coverageReportCollector;
   private final CoverageReporter coverageReporter;
 
   public CoverageCollectorImpl(
@@ -31,8 +32,8 @@ public final class CoverageCollectorImpl implements CoverageCollector {
       final List<String> excludedDecisionDefinitionIds,
       final String reportDirectory,
       final Consumer<String> printStream) {
-    coverageCollector =
-        io.camunda.process.test.impl.coverage.core.CoverageCollector.createCollector(
+    coverageReportCollector =
+        CoverageReportCollector.createCollector(
             excludedProcessDefinitionIds, excludedDecisionDefinitionIds);
     coverageReporter = new CoverageReporter(reportDirectory, printStream);
   }
@@ -40,12 +41,12 @@ public final class CoverageCollectorImpl implements CoverageCollector {
   @Override
   public CoverageReport collectTestRunCoverage(
       final Class<?> testClass, final String runName, final CoverageTestData testData) {
-    coverageCollector.collectTestRunCoverage(testClass, runName, testData);
-    return coverageReporter.createSuiteCoverageReport(coverageCollector);
+    coverageReportCollector.collectTestRunCoverage(testClass, runName, testData);
+    return coverageReporter.createSuiteCoverageReport(coverageReportCollector);
   }
 
   @Override
   public CoverageReport generateReport() {
-    return coverageReporter.reportCoverage(coverageCollector);
+    return coverageReporter.reportCoverage(coverageReportCollector);
   }
 }
