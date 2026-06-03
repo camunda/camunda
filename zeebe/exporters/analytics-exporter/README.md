@@ -304,3 +304,24 @@ End-to-end tests using a real OTel Collector in Docker (Testcontainers). No mock
 overrides — uses the default `AnalyticsExporter` constructor with the production
 `BatchLogRecordProcessor` and real OTLP/HTTP transport. Tests event delivery with
 attribute verification and batching behavior.
+
+### Microbenchmarks (`AnalyticsExporterBenchmark`)
+
+JMH benchmarks measuring per-record overhead across the main hot paths. Run manually only — not
+wired into CI.
+
+```bash
+./mvnw verify -pl zeebe/exporters/analytics-exporter \
+    -Dtest=AnalyticsExporterBenchmark -DskipTests=false -Dbenchmark=true
+```
+
+To profile, add `-Dbenchmark.profiler=jfr+gc`:
+
+```bash
+./mvnw verify -pl zeebe/exporters/analytics-exporter \
+    -Dtest=AnalyticsExporterBenchmark -DskipTests=false \
+    -Dbenchmark=true -Dbenchmark.profiler=jfr+gc
+```
+
+JMH writes the `.jfr` file to `target/jmh-jfr/`. Open it in IntelliJ Ultimate
+("Open Profiler Results") or JDK Mission Control.
