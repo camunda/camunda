@@ -78,6 +78,9 @@ public interface Intent {
     map.put(
         ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
         MessageStartProcessInstanceRequestIntent.class);
+    map.put(
+        ValueType.MESSAGE_START_CORRELATION_KEY_LOCK_RELEASE,
+        MessageStartCorrelationKeyLockReleaseIntent.class);
     map.put(ValueType.MESSAGE_SUBSCRIPTION, MessageSubscriptionIntent.class);
     map.put(ValueType.MULTI_INSTANCE, MultiInstanceIntent.class);
     map.put(ValueType.PROCESS, ProcessIntent.class);

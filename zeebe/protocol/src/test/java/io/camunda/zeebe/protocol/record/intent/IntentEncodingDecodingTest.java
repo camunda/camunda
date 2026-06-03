@@ -112,6 +112,10 @@ final class IntentEncodingDecodingTest {
             MessageStartEventSubscriptionIntent.class, MessageStartEventSubscriptionIntent::from));
     result.addAll(
         buildParameterSets(
+            MessageStartCorrelationKeyLockReleaseIntent.class,
+            MessageStartCorrelationKeyLockReleaseIntent::from));
+    result.addAll(
+        buildParameterSets(
             MessageStartProcessInstanceRequestIntent.class,
             MessageStartProcessInstanceRequestIntent::from));
     result.addAll(
