@@ -293,26 +293,6 @@ public final class PartitionManagerImpl
     future.complete(null);
   }
 
-  public ActorFuture<Void> stop() {
-    final var result = concurrencyControl.<Void>createFuture();
-    final var stop =
-        partitions.values().stream()
-            .map(Partition::stop)
-            .collect(new ActorFutureCollector<>(concurrencyControl));
-    concurrencyControl.runOnCompletion(
-        stop,
-        (ok, error) -> {
-          if (error != null) {
-            LOGGER.error("Failed to stop partitions", error);
-            result.completeExceptionally(error);
-          } else {
-            partitions.clear();
-            topologyManager.closeAsync().onComplete(result);
-          }
-        });
-    return result;
-  }
-
   @Override
   public String toString() {
     return "PartitionManagerImpl{partitions=" + partitions + '}';
@@ -340,6 +320,27 @@ public final class PartitionManagerImpl
         // zeebePartition may be null before the partition is fully started
         .filter(Objects::nonNull)
         .toList();
+  }
+
+  @Override
+  public ActorFuture<Void> stop() {
+    final var result = concurrencyControl.<Void>createFuture();
+    final var stop =
+        partitions.values().stream()
+            .map(Partition::stop)
+            .collect(new ActorFutureCollector<>(concurrencyControl));
+    concurrencyControl.runOnCompletion(
+        stop,
+        (ok, error) -> {
+          if (error != null) {
+            LOGGER.error("Failed to stop partitions", error);
+            result.completeExceptionally(error);
+          } else {
+            partitions.clear();
+            topologyManager.closeAsync().onComplete(result);
+          }
+        });
+    return result;
   }
 
   @Override

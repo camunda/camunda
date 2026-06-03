@@ -11,6 +11,7 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
+import io.camunda.zeebe.broker.partitioning.RecoveryPartitionManager;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -38,6 +39,54 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
 
   @Override
   void startupInternal(
+      final BrokerStartupContext brokerStartupContext,
+      final ConcurrencyControl concurrencyControl,
+      final ActorFuture<BrokerStartupContext> startupFuture) {
+
+    final var clusterConfiguration =
+        brokerStartupContext.getClusterConfigurationService().getInitialClusterConfiguration();
+
+    if (clusterConfiguration.recovery()) {
+      LOGGER.info("Partition group in recovery, starting RecoveryPartitionManager");
+      startRecoveryPartitionManager(brokerStartupContext, concurrencyControl, startupFuture);
+    } else {
+      startPartitionManager(brokerStartupContext, concurrencyControl, startupFuture);
+    }
+  }
+
+  @Override
+  void shutdownInternal(
+      final BrokerStartupContext brokerShutdownContext,
+      final ConcurrencyControl concurrencyControl,
+      final ActorFuture<BrokerStartupContext> shutdownFuture) {
+    final var partitionManager = brokerShutdownContext.getPartitionManagers().get(physicalTenantId);
+    if (partitionManager == null) {
+      shutdownFuture.complete(brokerShutdownContext);
+      return;
+    }
+
+    if (isDefaultPhysicalTenant()) {
+      brokerShutdownContext.getClusterConfigurationService().removePartitionChangeExecutor();
+    }
+
+    concurrencyControl.runOnCompletion(
+        partitionManager.stop(),
+        (ok, error) -> {
+          brokerShutdownContext.removePartitionManager(physicalTenantId);
+          if (isDefaultPhysicalTenant()) {
+            brokerShutdownContext
+                .getClusterConfigurationService()
+                .removeInconsistentConfigurationListener();
+          }
+          if (error != null) {
+            shutdownFuture.completeExceptionally(error);
+          } else {
+            shutdownFuture.complete(brokerShutdownContext);
+          }
+        });
+  }
+
+  void startPartitionManager(
       final BrokerStartupContext brokerStartupContext,
       final ConcurrencyControl concurrencyControl,
       final ActorFuture<BrokerStartupContext> startupFuture) {
@@ -99,36 +148,47 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
         });
   }
 
-  @Override
-  void shutdownInternal(
-      final BrokerStartupContext brokerShutdownContext,
+  void startRecoveryPartitionManager(
+      final BrokerStartupContext brokerStartupContext,
       final ConcurrencyControl concurrencyControl,
-      final ActorFuture<BrokerStartupContext> shutdownFuture) {
-    final var partitionManager = brokerShutdownContext.getPartitionManagers().get(physicalTenantId);
-    if (partitionManager == null) {
-      shutdownFuture.complete(brokerShutdownContext);
-      return;
-    }
+      final ActorFuture<BrokerStartupContext> startupFuture) {
 
-    if (isDefaultPhysicalTenant()) {
-      brokerShutdownContext.getClusterConfigurationService().removePartitionChangeExecutor();
-    }
+    final var brokerCfg = brokerStartupContext.getBrokerConfiguration();
 
-    concurrencyControl.runOnCompletion(
-        partitionManager.stop(),
-        (ok, error) -> {
-          brokerShutdownContext.removePartitionManager(physicalTenantId);
-          if (isDefaultPhysicalTenant()) {
-            brokerShutdownContext
-                .getClusterConfigurationService()
-                .removeInconsistentConfigurationListener();
-          }
-          if (error != null) {
-            shutdownFuture.completeExceptionally(error);
-          } else {
-            shutdownFuture.complete(brokerShutdownContext);
-          }
-        });
+    final var partitionManager =
+        new RecoveryPartitionManager(
+            physicalTenantId,
+            brokerCfg.getData().getDirectory(),
+            brokerStartupContext.getClusterConfigurationService(),
+            brokerStartupContext.getClusterServices(),
+            brokerStartupContext.getActorSchedulingService(),
+            brokerStartupContext.getBrokerInfo(),
+            brokerStartupContext.getMeterRegistry());
+
+    final var schedulingService = brokerStartupContext.getActorSchedulingService();
+    concurrencyControl.run(
+        () ->
+            schedulingService
+                .submitActor(partitionManager)
+                .onComplete(
+                    (submitted, submitError) -> {
+                      if (submitError != null) {
+                        startupFuture.completeExceptionally(submitError);
+                        return;
+                      }
+                      partitionManager
+                          .start()
+                          .onComplete(
+                              (started, startError) -> {
+                                if (startError != null) {
+                                  startupFuture.completeExceptionally(startError);
+                                } else {
+                                  brokerStartupContext.addPartitionManager(
+                                      physicalTenantId, partitionManager);
+                                  startupFuture.complete(brokerStartupContext);
+                                }
+                              });
+                    }));
   }
 
   private void shutdownOnInconsistentTopology(

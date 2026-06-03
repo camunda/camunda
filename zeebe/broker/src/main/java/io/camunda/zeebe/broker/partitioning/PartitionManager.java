@@ -11,6 +11,7 @@ import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.util.Collection;
 import java.util.stream.Collectors;
 
@@ -45,4 +46,7 @@ public interface PartitionManager {
    * @return all Zeebe partitions that are managed by this broker.
    */
   Collection<ZeebePartition> getZeebePartitions();
+
+  /** Stops partitions managed by this partition manager. */
+  ActorFuture<Void> stop();
 }
