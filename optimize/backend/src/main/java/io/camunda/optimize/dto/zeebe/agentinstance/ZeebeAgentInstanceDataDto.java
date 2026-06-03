@@ -61,7 +61,7 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
 
   @Override
   public List<Long> getElementInstanceKeys() {
-    return elementInstanceKeys;
+    return elementInstanceKeys != null ? elementInstanceKeys : List.of();
   }
 
   public void setElementInstanceKeys(final List<Long> elementInstanceKeys) {

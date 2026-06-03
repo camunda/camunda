@@ -17,6 +17,9 @@ import io.camunda.optimize.service.importing.DatabaseImportJobExecutor;
 import io.camunda.optimize.service.importing.engine.service.ImportService;
 import io.camunda.optimize.service.importing.job.ProcessInstanceDatabaseImportJob;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import org.slf4j.Logger;
 
@@ -117,5 +120,16 @@ public abstract class ZeebeProcessInstanceSubEntityImportService<T> implements I
             databaseClient);
     processInstanceImportJob.setEntitiesToImport(processInstanceDtos);
     return processInstanceImportJob;
+  }
+
+  /**
+   * Converts a Zeebe record timestamp (epoch milliseconds) to an {@link OffsetDateTime} in the
+   * system default time zone.
+   *
+   * @param timestamp the Zeebe record timestamp in milliseconds since epoch
+   * @return the corresponding {@link OffsetDateTime}
+   */
+  protected OffsetDateTime dateForTimestamp(final long timestamp) {
+    return OffsetDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneId.systemDefault());
   }
 }
