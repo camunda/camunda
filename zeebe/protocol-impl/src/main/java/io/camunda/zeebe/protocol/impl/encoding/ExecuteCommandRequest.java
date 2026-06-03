@@ -23,7 +23,10 @@ import io.camunda.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
 
   private final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
@@ -38,6 +41,7 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
   private ValueType valueType;
   private Intent intent;
   private final AuthInfo authorization = new AuthInfo();
+  private @Nullable RequestSourceInfo requestSource;
 
   public ExecuteCommandRequest() {
     reset();
@@ -51,6 +55,7 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
     intent = Intent.UNKNOWN;
     value.wrap(0, 0);
     authorization.reset();
+    requestSource = null;
 
     return this;
   }
@@ -142,6 +147,16 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
     return this;
   }
 
+  public @Nullable RequestSourceInfo getRequestSource() {
+    return requestSource;
+  }
+
+  public ExecuteCommandRequest setRequestSource(final RequestSourceInfo rs) {
+    requestSource = new RequestSourceInfo();
+    requestSource.copyFrom(rs);
+    return this;
+  }
+
   @Override
   public void wrap(final DirectBuffer buffer, int offset, final int length) {
     reset();
@@ -174,6 +189,16 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
     authorization.wrap(buffer, offset, authorizationLength);
     offset += authorizationLength;
 
+    if (bodyDecoder.limit() < frameEnd) {
+      final int requestSourceLength = bodyDecoder.requestSourceLength();
+      offset += ExecuteCommandRequestDecoder.requestSourceHeaderLength();
+      if (requestSourceLength > 0) {
+        requestSource = new RequestSourceInfo();
+        requestSource.wrap(buffer, offset, requestSourceLength);
+      }
+      offset += requestSourceLength;
+    }
+
     bodyDecoder.limit(offset);
 
     assert bodyDecoder.limit() == frameEnd
@@ -191,7 +216,9 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
         + ExecuteCommandRequestEncoder.valueHeaderLength()
         + value.capacity()
         + ExecuteCommandRequestEncoder.authorizationHeaderLength()
-        + authorization.getLength();
+        + authorization.getLength()
+        + ExecuteCommandRequestEncoder.requestSourceHeaderLength()
+        + (requestSource != null ? requestSource.getLength() : 0);
   }
 
   @Override
@@ -205,6 +232,12 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
         .intent(intent.value())
         .putValue(value, 0, value.capacity())
         .putAuthorization(authorization.toDirectBuffer(), 0, authorization.getLength());
+
+    if (requestSource != null) {
+      bodyEncoder.putRequestSource(requestSource.toDirectBuffer(), 0, requestSource.getLength());
+    } else {
+      bodyEncoder.requestSource("");
+    }
 
     return headerEncoder.encodedLength() + bodyEncoder.encodedLength();
   }

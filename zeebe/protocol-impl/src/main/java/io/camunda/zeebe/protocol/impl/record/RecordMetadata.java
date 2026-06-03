@@ -10,6 +10,7 @@ package io.camunda.zeebe.protocol.impl.record;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.encoding.AgentInfo;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
+import io.camunda.zeebe.protocol.impl.encoding.RequestSourceInfo;
 import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
 import io.camunda.zeebe.protocol.record.MessageHeaderEncoder;
 import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
@@ -52,6 +53,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
   private RejectionType rejectionType;
   private final UnsafeBuffer rejectionReason = new UnsafeBuffer(0, 0);
   private AgentInfo agent;
+  private RequestSourceInfo requestSource;
 
   // always the current version by default
   private int protocolVersion = Protocol.PROTOCOL_VERSION;
@@ -129,6 +131,16 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     } else {
       decoder.skipAgent();
     }
+
+    final int requestSourceLength = decoder.requestSourceLength();
+    if (requestSourceLength > 0) {
+      requestSource = new RequestSourceInfo();
+      final var requestSourceBuffer = new UnsafeBuffer();
+      decoder.wrapRequestSource(requestSourceBuffer);
+      requestSource.wrap(requestSourceBuffer);
+    } else {
+      decoder.skipRequestSource();
+    }
   }
 
   @Override
@@ -139,7 +151,9 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         + RecordMetadataEncoder.authorizationHeaderLength()
         + authorization.getLength()
         + RecordMetadataEncoder.agentHeaderLength()
-        + (agent != null ? agent.getLength() : 0);
+        + (agent != null ? agent.getLength() : 0)
+        + RecordMetadataEncoder.requestSourceHeaderLength()
+        + (requestSource != null ? requestSource.getLength() : 0);
   }
 
   @Override
@@ -182,6 +196,17 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     } else {
       encoder.agent("");
     }
+
+    if (requestSource != null) {
+      BufferUtil.writeLengthPrefixed(
+          requestSource,
+          encoder,
+          RecordMetadataEncoder.requestSourceHeaderLength(),
+          RecordMetadataEncoder.BYTE_ORDER);
+    } else {
+      encoder.requestSource("");
+    }
+
     return headerEncoder.encodedLength() + encoder.encodedLength();
   }
 
@@ -287,6 +312,15 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     return this;
   }
 
+  public RequestSourceInfo getRequestSource() {
+    return requestSource;
+  }
+
+  public RecordMetadata requestSource(final RequestSourceInfo rs) {
+    this.requestSource = rs;
+    return this;
+  }
+
   public RecordMetadata brokerVersion(final VersionInfo brokerVersion) {
     this.brokerVersion = brokerVersion;
     return this;
@@ -335,6 +369,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     rejectionReason.wrap(0, 0);
     authorization.reset();
     agent = null;
+    requestSource = null;
     brokerVersion = CURRENT_BROKER_VERSION;
     recordVersion = DEFAULT_RECORD_VERSION;
     operationReference = RecordMetadataEncoder.operationReferenceNullValue();
@@ -358,7 +393,8 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         recordVersion,
         operationReference,
         batchOperationReference,
-        agent);
+        agent,
+        requestSource);
   }
 
   @Override
@@ -380,6 +416,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         && rejectionReason.equals(that.rejectionReason)
         && authorization.equals(that.authorization)
         && Objects.equals(agent, that.agent)
+        && Objects.equals(requestSource, that.requestSource)
         && brokerVersion.equals(that.brokerVersion)
         && recordVersion == that.recordVersion
         && operationReference == that.operationReference
@@ -419,6 +456,9 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     }
     if (agent != null) {
       builder.append(", agent=").append(agent);
+    }
+    if (requestSource != null) {
+      builder.append(", requestSource=").append(requestSource);
     }
 
     builder.append('}');

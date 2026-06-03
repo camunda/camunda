@@ -13,6 +13,7 @@ import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.Agent;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.RequestSource;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -89,6 +90,11 @@ public class UnwrittenRecord implements TypedRecord {
   @Override
   public Agent getAgent() {
     return metadata.getAgent();
+  }
+
+  @Override
+  public RequestSource getRequestSource() {
+    return metadata.getRequestSource();
   }
 
   @Override

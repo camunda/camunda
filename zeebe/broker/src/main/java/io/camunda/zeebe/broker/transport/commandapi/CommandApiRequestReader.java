@@ -12,6 +12,7 @@ import static io.camunda.zeebe.protocol.record.ExecuteCommandRequestDecoder.TEMP
 import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler.RequestReader;
 import io.camunda.zeebe.broker.transport.RequestReaderException;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
+import io.camunda.zeebe.protocol.impl.encoding.RequestSourceInfo;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.ExecuteCommandRequestDecoder;
@@ -69,8 +70,22 @@ public class CommandApiRequestReader implements RequestReader {
     if (commandRequestDecoder.limit() < buffer.capacity()) {
       final int authOffset =
           commandRequestDecoder.limit() + ExecuteCommandRequestDecoder.authorizationHeaderLength();
-      authInfo.wrap(buffer, authOffset, commandRequestDecoder.authorizationLength());
+      final int authLength = commandRequestDecoder.authorizationLength();
+      authInfo.wrap(buffer, authOffset, authLength);
       metadata.authorization(authInfo);
+      // advance the decoder past the authorization data
+      commandRequestDecoder.limit(authOffset + authLength);
+    }
+    if (commandRequestDecoder.limit() < buffer.capacity()) {
+      final int requestSourceLength = commandRequestDecoder.requestSourceLength();
+      if (requestSourceLength > 0) {
+        final int requestSourceOffset =
+            commandRequestDecoder.limit()
+                + ExecuteCommandRequestDecoder.requestSourceHeaderLength();
+        final var requestSourceInfo = new RequestSourceInfo();
+        requestSourceInfo.wrap(buffer, requestSourceOffset, requestSourceLength);
+        metadata.requestSource(requestSourceInfo);
+      }
     }
   }
 

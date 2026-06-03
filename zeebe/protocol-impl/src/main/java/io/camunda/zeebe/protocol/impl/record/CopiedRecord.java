@@ -10,10 +10,12 @@ package io.camunda.zeebe.protocol.impl.record;
 import io.camunda.zeebe.protocol.impl.encoding.AgentInfo;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.impl.encoding.RequestSourceInfo;
 import io.camunda.zeebe.protocol.record.Agent;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.RequestSource;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.util.StringUtil;
@@ -36,6 +38,7 @@ public final class CopiedRecord<T extends UnifiedRecordValue> implements Record<
   private final String brokerVersion;
   private final AuthInfo authorization;
   private final Agent agent;
+  private final RequestSource requestSource;
   private final int recordVersion;
   private final long operationReference;
   private final long batchOperationReference;
@@ -66,6 +69,7 @@ public final class CopiedRecord<T extends UnifiedRecordValue> implements Record<
     operationReference = metadata.getOperationReference();
     batchOperationReference = metadata.getBatchOperationReference();
     agent = AgentInfo.of(metadata.getAgent());
+    requestSource = RequestSourceInfo.of(metadata.getRequestSource());
   }
 
   private CopiedRecord(final CopiedRecord<T> copiedRecord) {
@@ -103,6 +107,7 @@ public final class CopiedRecord<T extends UnifiedRecordValue> implements Record<
     operationReference = copiedRecord.operationReference;
     batchOperationReference = copiedRecord.batchOperationReference;
     agent = AgentInfo.of(copiedRecord.agent);
+    requestSource = RequestSourceInfo.of(copiedRecord.requestSource);
   }
 
   @Override
@@ -163,6 +168,11 @@ public final class CopiedRecord<T extends UnifiedRecordValue> implements Record<
   @Override
   public Agent getAgent() {
     return agent;
+  }
+
+  @Override
+  public RequestSource getRequestSource() {
+    return requestSource;
   }
 
   @Override

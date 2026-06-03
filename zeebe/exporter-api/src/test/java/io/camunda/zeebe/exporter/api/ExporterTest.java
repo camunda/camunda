@@ -25,6 +25,7 @@ import io.camunda.zeebe.protocol.record.Agent;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.RequestSource;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
@@ -248,6 +249,11 @@ public final class ExporterTest {
 
     @Override
     public Agent getAgent() {
+      return null;
+    }
+
+    @Override
+    public RequestSource getRequestSource() {
       return null;
     }
 

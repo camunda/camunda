@@ -76,10 +76,13 @@ final class ElasticsearchExporterIT {
   private static TestClient testClient;
   private static ExporterTestContext exporterTestContext;
   private static String previousTestMethod = null;
-  // omit authorizations and agent since they are removed from the records during serialization
+  // omit authorizations, agent, and requestSource since they are removed from the records during
+  // serialization
   private final ProtocolFactory factory =
       new ProtocolFactory(b -> b.withAuthorizations(Map.of()))
-          .registerRandomizer(field -> "agent".equals(field.getName()), random -> null);
+          .registerRandomizer(
+              field -> "agent".equals(field.getName()) || "requestSource".equals(field.getName()),
+              random -> null);
 
   @BeforeEach
   public void beforeEach(final TestInfo testInfo) {

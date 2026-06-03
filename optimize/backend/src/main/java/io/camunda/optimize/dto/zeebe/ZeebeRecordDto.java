@@ -13,6 +13,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.RequestSource;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import java.time.Instant;
@@ -109,6 +110,11 @@ public abstract class ZeebeRecordDto<VALUE extends RecordValue, INTENT extends I
 
   @Override
   public Agent getAgent() {
+    return null;
+  }
+
+  @Override
+  public RequestSource getRequestSource() {
     return null;
   }
 

@@ -821,6 +821,10 @@ public final class ProcessingStateMachine {
     // e.g. to have the full agent trail in the audit log
     builder.appendAgentInfoToFollowUps(command.getAgent());
 
+    // Ensure request source is forwarded to all follow-up commands & events
+    // so the inbound channel (e.g. MCP) is visible in the audit log for each record
+    builder.appendRequestSourceToFollowUps(command.getRequestSource());
+
     return builder;
   }
 

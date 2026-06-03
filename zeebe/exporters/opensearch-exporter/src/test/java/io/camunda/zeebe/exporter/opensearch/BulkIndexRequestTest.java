@@ -84,6 +84,7 @@ final class BulkIndexRequestTest {
     recordAsMap.put("sequence", recordSequence.sequence());
     recordAsMap.remove("authorizations");
     recordAsMap.remove("agent");
+    recordAsMap.remove("requestSource");
     return MAPPER.writeValueAsBytes(recordAsMap).length;
   }
 
@@ -204,6 +205,7 @@ final class BulkIndexRequestTest {
       assertThat(doc.get("sequence")).isEqualTo(2251799813685249L);
       assertThat(doc.get("authorizations")).isNull();
       assertThat(doc.get("agent")).isNull();
+      assertThat(doc.get("requestSource")).isNull();
     }
 
     @Test
@@ -265,6 +267,9 @@ final class BulkIndexRequestTest {
           .isNull();
       assertThat(doc.get("agent"))
           .describedAs("Expect that the records are NOT serialized with agent")
+          .isNull();
+      assertThat(doc.get("requestSource"))
+          .describedAs("Expect that the records are NOT serialized with requestSource")
           .isNull();
     }
 

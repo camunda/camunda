@@ -48,6 +48,7 @@ final class BulkIndexRequest {
   private static final String RECORD_SEQUENCE_PROPERTY = "sequence";
   private static final String RECORD_AUTHORIZATIONS_PROPERTY = "authorizations";
   private static final String RECORD_AGENT_PROPERTY = "agent";
+  private static final String RECORD_REQUEST_SOURCE_PROPERTY = "requestSource";
   private static final String RECORD_DECISION_EVALUATION_INSTANCE_KEY_PROPERTY =
       "decisionEvaluationInstanceKey";
   private static final String AUTH_INFO_PROPERTY = "authInfo";
@@ -158,7 +159,11 @@ final class BulkIndexRequest {
   record IndexOperation(BulkIndexAction metadata, byte[] source) {}
 
   @JsonAppend(attrs = {@JsonAppend.Attr(value = RECORD_SEQUENCE_PROPERTY)})
-  @JsonIgnoreProperties({RECORD_AUTHORIZATIONS_PROPERTY, RECORD_AGENT_PROPERTY})
+  @JsonIgnoreProperties({
+    RECORD_AUTHORIZATIONS_PROPERTY,
+    RECORD_AGENT_PROPERTY,
+    RECORD_REQUEST_SOURCE_PROPERTY
+  })
   private static final class RecordSequenceMixin {}
 
   @JsonIgnoreProperties({RECORD_DECISION_EVALUATION_INSTANCE_KEY_PROPERTY})

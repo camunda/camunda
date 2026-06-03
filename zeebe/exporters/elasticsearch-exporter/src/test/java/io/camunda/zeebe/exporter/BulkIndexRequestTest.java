@@ -84,6 +84,7 @@ final class BulkIndexRequestTest {
     recordAsMap.put("sequence", recordSequence.sequence());
     recordAsMap.remove("authorizations");
     recordAsMap.remove("agent");
+    recordAsMap.remove("requestSource");
     return MAPPER.writeValueAsBytes(recordAsMap).length;
   }
 
@@ -246,6 +247,12 @@ final class BulkIndexRequestTest {
           .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
           .extracting(source -> source.get("agent"))
           .describedAs("Expect that the records are NOT serialized with agent")
+          .containsExactly(new Object[] {null});
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("requestSource"))
+          .describedAs("Expect that the records are NOT serialized with requestSource")
           .containsExactly(new Object[] {null});
     }
 

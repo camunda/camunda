@@ -12,8 +12,10 @@ import static io.camunda.zeebe.protocol.record.RecordMetadataDecoder.operationRe
 
 import io.camunda.zeebe.protocol.impl.encoding.AgentInfo;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
+import io.camunda.zeebe.protocol.impl.encoding.RequestSourceInfo;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.Agent;
+import io.camunda.zeebe.protocol.record.RequestSource;
 import java.util.function.Consumer;
 
 public interface ProcessingSession {
@@ -51,6 +53,14 @@ public interface ProcessingSession {
       // make a copy to rule out any side effects
       final var agent = AgentInfo.of(agentInfo);
       appendMetadataToFollowUps(metadata -> metadata.agent(agent));
+    }
+  }
+
+  default void appendRequestSourceToFollowUps(final RequestSource requestSourceInfo) {
+    if (requestSourceInfo != null) {
+      // make a copy to rule out any side effects
+      final var requestSource = RequestSourceInfo.of(requestSourceInfo);
+      appendMetadataToFollowUps(metadata -> metadata.requestSource(requestSource));
     }
   }
 }

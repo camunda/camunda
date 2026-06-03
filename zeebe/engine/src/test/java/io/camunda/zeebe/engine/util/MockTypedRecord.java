@@ -15,6 +15,7 @@ import io.camunda.zeebe.protocol.record.Agent;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.RequestSource;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -129,6 +130,11 @@ public final class MockTypedRecord<T extends UnifiedRecordValue> implements Type
   @Override
   public Agent getAgent() {
     return metadata.getAgent();
+  }
+
+  @Override
+  public RequestSource getRequestSource() {
+    return metadata.getRequestSource();
   }
 
   @Override

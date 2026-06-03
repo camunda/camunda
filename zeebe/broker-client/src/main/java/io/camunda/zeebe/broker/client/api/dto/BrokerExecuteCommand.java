@@ -11,9 +11,11 @@ import io.camunda.zeebe.broker.client.api.UnsupportedBrokerResponseException;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.encoding.ExecuteCommandRequest;
 import io.camunda.zeebe.protocol.impl.encoding.ExecuteCommandResponse;
+import io.camunda.zeebe.protocol.impl.encoding.RequestSourceInfo;
 import io.camunda.zeebe.protocol.record.ExecuteCommandRequestEncoder;
 import io.camunda.zeebe.protocol.record.ExecuteCommandResponseDecoder;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RequestSource;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.transport.RequestType;
@@ -138,5 +140,10 @@ public abstract class BrokerExecuteCommand<T> extends BrokerRequest<T> {
 
   public void setOperationReference(final long operationReference) {
     request.setOperationReference(operationReference);
+  }
+
+  public BrokerExecuteCommand<T> setRequestSource(final RequestSource requestSource) {
+    request.setRequestSource(RequestSourceInfo.of(requestSource));
+    return this;
   }
 }
