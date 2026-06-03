@@ -7,25 +7,24 @@ plugins {
     alias(libs.plugins.spring.boot)
 }
 
+// This module uses log4j-slf4j2-impl (SLF4J → Log4j). log4j-to-slf4j (Log4j → SLF4J) must not
+// be present simultaneously as it creates a circular bridge.
+configurations.all {
+    exclude(group = "org.apache.logging.log4j", module = "log4j-to-slf4j")
+}
+
 dependencies {
     implementation(project(":zeebe-protocol"))
     implementation(libs.com.google.guava.guava)
     implementation(libs.io.grpc.grpc.api)
     implementation(project(":camunda-client-java"))
-    implementation(project(":camunda-spring-boot-starter")) {
-        exclude(group = "org.springframework.boot", module = "spring-boot-starter-logging")
-    }
+    implementation(project(":camunda-spring-boot-starter"))
     implementation(libs.org.springframework.boot.spring.boot.starter.webflux)
     implementation(libs.org.springframework.spring.webflux)
     implementation(project(":zeebe-util"))
     implementation(libs.org.springframework.boot.spring.boot)
     implementation(libs.org.springframework.boot.spring.boot.autoconfigure)
-    implementation(libs.org.springframework.boot.spring.boot.starter.webflux) {
-        exclude(group = "org.springframework.boot", module = "spring-boot-starter-logging")
-    }
-    implementation(libs.org.springframework.boot.spring.boot.starter.actuator) {
-        exclude(group = "org.springframework.boot", module = "spring-boot-starter-logging")
-    }
+    implementation(libs.org.springframework.boot.spring.boot.starter.actuator)
     implementation(libs.org.springframework.spring.context)
     implementation(libs.org.springframework.spring.beans)
     implementation(libs.jakarta.annotation.jakarta.annotation.api)
