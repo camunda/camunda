@@ -77,16 +77,25 @@ public final class BpmnBufferedMessageStartEventBehavior {
       // - other messages with same correlation key are not correlated to this process until this
       // instance is ended (process-correlation-key lock)
       // - now, after the instance is ended, correlate the next buffered message
-      correlateNextBufferedMessage(correlationKey, context);
+      correlateNextBufferedMessage(
+          context.getBpmnProcessId(), correlationKey, context.getTenantId());
     }
   }
 
-  private void correlateNextBufferedMessage(
-      final DirectBuffer correlationKey, final BpmnElementContext context) {
+  /**
+   * Picks the next eligible buffered message-start message for the given {@code (process,
+   * correlationKey)} and triggers it, if any.
+   *
+   * <p>Takes {@code bpmnProcessId} and {@code tenantId} directly rather than a {@link
+   * BpmnElementContext} so it can be driven from contexts that have no completing element instance
+   * to hand. Today the local process-correlation-key lock release runs on process-instance
+   * completion (which supplies a context); the cross-partition lock release runs from a poll
+   * response on {@code P_K} (which does not). Both need the same buffer pick-up behaviour.
+   */
+  public void correlateNextBufferedMessage(
+      final DirectBuffer bpmnProcessId, final DirectBuffer correlationKey, final String tenantId) {
 
-    final var bpmnProcessId = context.getBpmnProcessId();
-    final var process =
-        processState.getLatestProcessVersionByProcessId(bpmnProcessId, context.getTenantId());
+    final var process = processState.getLatestProcessVersionByProcessId(bpmnProcessId, tenantId);
 
     findNextMessageToCorrelate(process, correlationKey)
         .ifPresent(
