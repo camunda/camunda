@@ -10,11 +10,13 @@ package io.camunda.zeebe.engine.processing.message.command;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartCorrelationKeyLockReleaseRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartProcessInstanceRequestRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.intent.MessageStartCorrelationKeyLockReleaseIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
@@ -478,6 +480,30 @@ public class SubscriptionCommandSender {
         Protocol.decodePartitionId(request.getMessageKey()),
         ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
         intent,
+        reply);
+  }
+
+  /**
+   * Sends the {@link MessageStartCorrelationKeyLockReleaseIntent#RELEASE} reply from {@code P_B}
+   * back to {@code P_K} after a holder-liveness query found the holder instance is no longer
+   * active. The target partition is derived from {@code query.getRequestKey()} — the originating
+   * partition {@code P_K} is encoded in the request key by Zeebe's key-partitioning.
+   *
+   * <p>The reply replays the query payload so the {@code P_K} handler can locate the
+   * correlation-key lock entry to release (via {@code bpmnProcessId} + {@code correlationKey}) and
+   * scope the buffered-message rescan (via {@code tenantId}) without any further cross-partition
+   * lookup. {@code P_B} sends this reply only when the holder is gone; while the holder is still
+   * active it stays silent and {@code P_K} re-polls.
+   */
+  public boolean sendCorrelationKeyLockRelease(
+      final MessageStartCorrelationKeyLockReleaseRecord query) {
+    final MessageStartCorrelationKeyLockReleaseRecord reply =
+        new MessageStartCorrelationKeyLockReleaseRecord();
+    reply.wrap(query);
+    return handleFollowUpCommandBasedOnPartition(
+        Protocol.decodePartitionId(query.getRequestKey()),
+        ValueType.MESSAGE_START_CORRELATION_KEY_LOCK_RELEASE,
+        MessageStartCorrelationKeyLockReleaseIntent.RELEASE,
         reply);
   }
 
