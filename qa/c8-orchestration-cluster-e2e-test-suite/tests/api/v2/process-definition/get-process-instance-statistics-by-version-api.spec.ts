@@ -258,7 +258,7 @@ test.describe.parallel('Process instance statistics by version', () => {
       res,
     );
     expect(body.page.totalItems).toBe(0);
-    expect(body.items.length).toEqual(0);
+    expect(body.items).toHaveLength(0);
   });
 
   test('Get process instance statistics by version without authorization - Unauthorized', async ({
@@ -306,6 +306,6 @@ test.describe.parallel('Process instance statistics by version', () => {
       res,
     );
     expect(body.page.totalItems).toBe(0);
-    expect(body.items.length).toEqual(0);
+    expect(body.items).toHaveLength(0);
   });
 });

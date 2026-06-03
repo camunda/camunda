@@ -180,7 +180,7 @@ test.describe.parallel('Get message subscription statistics API Tests', () => {
       res,
     );
     expect(body.page.totalItems).toBe(1);
-    expect(body.items.length).toBe(1);
+    expect(body.items).toHaveLength(1);
     expect(body.items[0].processDefinitionId).toBe(processDefinitionId);
   });
 
@@ -233,7 +233,7 @@ test.describe.parallel('Get message subscription statistics API Tests', () => {
         res,
       );
       expect(body.page.totalItems).toBe(1);
-      expect(body.items.length).toBe(1);
+      expect(body.items).toHaveLength(1);
       const item = body.items[0];
       expect(item.processDefinitionKey).toBe(processDefinitionKey);
       expect(item.processDefinitionId).toBe(processDefinitionId);
@@ -319,6 +319,6 @@ test.describe.parallel('Get message subscription statistics API Tests', () => {
       res,
     );
     expect(body.page.totalItems).toBe(0);
-    expect(body.items.length).toBe(0);
+    expect(body.items).toHaveLength(0);
   });
 });

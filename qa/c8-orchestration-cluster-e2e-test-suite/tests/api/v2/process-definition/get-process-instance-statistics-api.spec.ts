@@ -275,7 +275,7 @@ test.describe.parallel('Get process instance statistics API Tests', () => {
         res,
       );
       expect(body.page.totalItems).toBeGreaterThanOrEqual(1);
-      expect(body.items.length).toEqual(1);
+      expect(body.items).toHaveLength(1);
     }).toPass(defaultAssertionOptions);
   });
 
@@ -334,7 +334,7 @@ test.describe.parallel('Get process instance statistics API Tests', () => {
       res,
     );
     expect(body.page.totalItems).toEqual(0);
-    expect(body.items.length).toEqual(0);
+    expect(body.items).toHaveLength(0);
     expect(body.page.hasMoreTotalItems).toBe(false);
   });
 });
