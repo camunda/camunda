@@ -23,6 +23,10 @@ public abstract class McpServerTest {
     return List.of("cluster", "processes");
   }
 
+  protected static List<String> physicalTenantMcpServersToTest() {
+    return List.of("physical-tenants/default/cluster", "physical-tenants/default/processes");
+  }
+
   protected abstract TestCamundaApplication testInstance();
 
   protected McpSyncHttpClientRequestCustomizer createMcpClientRequestCustomizer() {
@@ -33,9 +37,30 @@ public abstract class McpServerTest {
       final String mcpServer,
       final TestCamundaApplication testInstance,
       final McpSyncHttpClientRequestCustomizer httpClientRequestCustomizer) {
+    return createMcpClientWithEndpoint(
+        "/mcp/" + mcpServer, testInstance, httpClientRequestCustomizer);
+  }
+
+  public static McpSyncClient createPhysicalTenantMcpClient(
+      final String mcpServer,
+      final TestCamundaApplication testInstance,
+      final McpSyncHttpClientRequestCustomizer httpClientRequestCustomizer) {
+    final String[] parts = mcpServer.split("/");
+    final String tenantId = parts[1];
+    final String serverName = parts[2];
+    return createMcpClientWithEndpoint(
+        "/physical-tenants/" + tenantId + "/mcp/" + serverName,
+        testInstance,
+        httpClientRequestCustomizer);
+  }
+
+  private static McpSyncClient createMcpClientWithEndpoint(
+      final String endpoint,
+      final TestCamundaApplication testInstance,
+      final McpSyncHttpClientRequestCustomizer httpClientRequestCustomizer) {
     final HttpClientStreamableHttpTransport.Builder transportBuilder =
         HttpClientStreamableHttpTransport.builder("%s".formatted(testInstance.restAddress()))
-            .endpoint("/mcp/" + mcpServer)
+            .endpoint(endpoint)
             .openConnectionOnStartup(false);
 
     if (httpClientRequestCustomizer != null) {

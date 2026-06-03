@@ -9,6 +9,7 @@ package io.camunda.it.mcp;
 
 import static io.camunda.it.mcp.McpServerTest.DEFAULT_REQUEST_CUSTOMIZER;
 import static io.camunda.it.mcp.McpServerTest.createMcpClient;
+import static io.camunda.it.mcp.McpServerTest.createPhysicalTenantMcpClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
@@ -40,6 +41,18 @@ public class McpServerConfigurationIT {
         assertThat(initializeResult).isNotNull();
       }
     }
+
+    @ParameterizedTest
+    @MethodSource("io.camunda.it.mcp.McpServerTest#physicalTenantMcpServersToTest")
+    public void physicalTenantMcpInitializeRequestReturnsInitializationResponse(
+        final String mcpServer) {
+      try (final McpSyncClient mcpClient =
+          createPhysicalTenantMcpClient(mcpServer, TEST_INSTANCE, DEFAULT_REQUEST_CUSTOMIZER)) {
+
+        final var initializeResult = mcpClient.initialize();
+        assertThat(initializeResult).isNotNull();
+      }
+    }
   }
 
   @Nested
@@ -62,6 +75,18 @@ public class McpServerConfigurationIT {
         assertThat(initializeResult).isNotNull();
       }
     }
+
+    @ParameterizedTest
+    @MethodSource("io.camunda.it.mcp.McpServerTest#physicalTenantMcpServersToTest")
+    public void physicalTenantMcpInitializeRequestReturnsInitializationResponse(
+        final String mcpServer) {
+      try (final McpSyncClient mcpClient =
+          createPhysicalTenantMcpClient(mcpServer, TEST_INSTANCE, DEFAULT_REQUEST_CUSTOMIZER)) {
+
+        final var initializeResult = mcpClient.initialize();
+        assertThat(initializeResult).isNotNull();
+      }
+    }
   }
 
   @Nested
@@ -76,6 +101,19 @@ public class McpServerConfigurationIT {
     public void mcpInitializeRequestReturnsNotFoundResponse(final String mcpServer) {
       try (final McpSyncClient mcpClient =
           createMcpClient(mcpServer, TEST_INSTANCE, DEFAULT_REQUEST_CUSTOMIZER)) {
+
+        final Throwable throwable = catchThrowable(mcpClient::initialize);
+        assertThat(throwable.getCause())
+            .hasMessageContaining("Server Not Found")
+            .hasMessageContaining("404");
+      }
+    }
+
+    @ParameterizedTest
+    @MethodSource("io.camunda.it.mcp.McpServerTest#physicalTenantMcpServersToTest")
+    public void physicalTenantMcpInitializeRequestReturnsNotFoundResponse(final String mcpServer) {
+      try (final McpSyncClient mcpClient =
+          createPhysicalTenantMcpClient(mcpServer, TEST_INSTANCE, DEFAULT_REQUEST_CUSTOMIZER)) {
 
         final Throwable throwable = catchThrowable(mcpClient::initialize);
         assertThat(throwable.getCause())
