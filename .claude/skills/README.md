@@ -43,6 +43,7 @@ When a skill exists for a recurring operation, use it rather than improvising st
 | `frontend-migrator`            | Migrate or port frontend code from `operate/client/` or `tasklist/client/` to the OC webapp   |
 | `frontend-unit-test`           | Write or debug Vitest browser-mode unit tests in the orchestration cluster webapp             |
 | `operate-frontend`             | Fix bugs or make changes in the Operate legacy frontend at `operate/client/`                  |
+| `verify-baseline`              | Automates the always-green baseline check (CI health + local build) before starting changes   |
 
 ## Adding a new skill
 
