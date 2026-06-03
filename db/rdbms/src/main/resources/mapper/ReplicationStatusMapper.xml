@@ -31,5 +31,25 @@
     WHERE pid IS NOT NULL;
   </select>
 
+  <!--
+    MSSQL: last_commit_lsn are numeric(25,0) in sys.dm_hadr_database_replica_states,
+    directly comparable as bigint for a test/dev database where LSN values stay small.
+    last_redone_time approximates lag as "time since last redo applied on replica".
+  -->
+  <select id="getCurrentLogStatus" resultType="java.lang.Long" databaseId="mssql">
+    SELECT CONVERT(bigint, last_commit_lsn) AS last_lsn
+    FROM sys.dm_hadr_database_replica_states
+    WHERE is_local = 1
+  </select>
+
+  <select id="getReplicationStatus" resultMap="replicationLogStatusResultMap" databaseId="mssql">
+    SELECT
+      CONVERT(bigint, ISNULL(last_commit_lsn, 0))                      AS logStatus,
+      CONVERT(nvarchar(36), replica_id)                                 AS replicaId,
+      ISNULL(DATEDIFF(millisecond, last_redone_time, GETDATE()), 0)    AS replicationLagMs
+    FROM sys.dm_hadr_database_replica_states
+    WHERE is_local = 0
+  </select>
+
 </mapper>
 

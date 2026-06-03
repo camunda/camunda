@@ -24,8 +24,7 @@ public class ReplicationStatusLogIT {
   @RegisterExtension
   static final CamundaRdbmsInvocationContextProviderExtension TEST_APPLICATION =
       new CamundaRdbmsInvocationContextProviderExtension(
-          "camundaWithPostgresReplicationCluster" // currently we only support PostgreSQL
-          );
+          "camundaWithPostgresReplicationCluster", "camundaWithMssqlReplicationCluster");
 
   @TestTemplate
   public void shouldQueryReplicationStatus(final CamundaRdbmsTestApplication testApplication) {
@@ -33,7 +32,7 @@ public class ReplicationStatusLogIT {
     final var replicationStatusProvider = rdbmsService.getReplicationLogStatusProvider();
 
     Awaitility.await()
-        .timeout(Duration.ofMinutes(10))
+        .timeout(Duration.ofMinutes(2))
         .untilAsserted(
             () -> {
               final var currentLsn = replicationStatusProvider.getCurrent();

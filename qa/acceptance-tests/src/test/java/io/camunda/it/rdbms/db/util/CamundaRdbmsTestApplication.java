@@ -77,12 +77,11 @@ public final class CamundaRdbmsTestApplication
                 "camunda.data.secondary-storage.rdbms.password", rdbms.getPassword(),
                 "camunda.data.secondary-storage.rdbms.auto-ddl", rdbms.getAutoDdl()));
       } else if (databaseContainer
-          instanceof
-          final PostgresReplicationClusterContainer postgresReplicationClusterContainer) {
+          instanceof final ReplicationClusterContainer replicationCluster) {
         final var rdbms = unifiedConfig.getData().getSecondaryStorage().getRdbms();
-        rdbms.setUrl(postgresReplicationClusterContainer.getJdbcUrl());
-        rdbms.setUsername(postgresReplicationClusterContainer.getUsername());
-        rdbms.setPassword(postgresReplicationClusterContainer.getPassword());
+        rdbms.setUrl(replicationCluster.getJdbcUrl());
+        rdbms.setUsername(replicationCluster.getUsername());
+        rdbms.setPassword(replicationCluster.getPassword());
         withAdditionalProperties(
             Map.of(
                 "camunda.data.secondary-storage.rdbms.url", rdbms.getUrl(),

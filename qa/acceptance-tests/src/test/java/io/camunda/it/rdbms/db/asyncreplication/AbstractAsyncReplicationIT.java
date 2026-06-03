@@ -16,7 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.google.common.collect.Iterables;
 import io.camunda.client.CamundaClient;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
-import io.camunda.it.rdbms.db.util.PostgresReplicationClusterContainer;
+import io.camunda.it.rdbms.db.util.ReplicationClusterContainer;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.zeebe.broker.exporter.stream.ExporterMetricsDoc;
 import io.micrometer.core.instrument.Measurement;
@@ -24,10 +24,9 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
-import org.agrona.CloseHelper;
 import org.assertj.core.data.Offset;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestInstance;
@@ -39,25 +38,30 @@ abstract class AbstractAsyncReplicationIT {
 
   protected static final Duration MAX_LAG = Duration.ofSeconds(3);
 
-  protected final PostgresReplicationClusterContainer postgresCluster =
-      new PostgresReplicationClusterContainer();
+  /** The replication cluster; created by {@link #createCluster()} in {@link #beforeAll()}. */
+  protected @AutoClose ReplicationClusterContainer cluster;
 
-  protected TestCamundaApplication testInstance;
-  protected CamundaClient camundaClient;
+  protected @AutoClose TestCamundaApplication testInstance;
+  protected @AutoClose CamundaClient camundaClient;
   protected MeterRegistry meterRegistry;
+
+  /**
+   * Creates the database replication cluster for this test. Called once before any test runs.
+   * Subclasses return a concrete cluster implementation (Postgres or MSSQL).
+   */
+  protected abstract ReplicationClusterContainer createCluster();
 
   @BeforeAll
   void beforeAll() {
-    postgresCluster.start();
+    cluster = createCluster();
+    cluster.start();
 
     testInstance =
         new TestCamundaApplication()
             .withSecondaryStorageType(SecondaryStorageType.rdbms)
-            .withProperty("camunda.data.secondary-storage.rdbms.url", postgresCluster.getJdbcUrl())
-            .withProperty(
-                "camunda.data.secondary-storage.rdbms.username", postgresCluster.getUsername())
-            .withProperty(
-                "camunda.data.secondary-storage.rdbms.password", postgresCluster.getPassword())
+            .withProperty("camunda.data.secondary-storage.rdbms.url", cluster.getJdbcUrl())
+            .withProperty("camunda.data.secondary-storage.rdbms.username", cluster.getUsername())
+            .withProperty("camunda.data.secondary-storage.rdbms.password", cluster.getPassword())
             .withExporter(
                 "rdbms",
                 cfg -> {
@@ -80,6 +84,10 @@ abstract class AbstractAsyncReplicationIT {
             .withBasicAuth();
 
     testInstance.start();
+    // Build the client before the topology check so the gRPC channel is already in READY state
+    // when deployResource is called. Creating a temporary client for the topology check and then
+    // closing it would force camundaClient to re-negotiate a new TCP connection at a potentially
+    // busy moment (e.g. during MSSQL AG seeding), causing CONNECTING-state failures.
     camundaClient = testInstance.newClientBuilder().build();
     meterRegistry = testInstance.bean(MeterRegistry.class);
 
@@ -90,13 +98,6 @@ abstract class AbstractAsyncReplicationIT {
     waitForProcessesToBeDeployed(camundaClient, 1);
 
     exporterAcknowledgedAll();
-  }
-
-  @AfterAll
-  void afterAll() {
-    CloseHelper.quietClose(camundaClient);
-    CloseHelper.quietClose(testInstance);
-    CloseHelper.quietClose(postgresCluster);
   }
 
   protected void startProcessInstances(final int count) {

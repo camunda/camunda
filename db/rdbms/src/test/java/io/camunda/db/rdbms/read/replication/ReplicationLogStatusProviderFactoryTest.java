@@ -31,7 +31,23 @@ class ReplicationLogStatusProviderFactoryTest {
     final var provider = factory.create();
 
     // then
-    assertThat(provider).isInstanceOf(PostgresReplicationLogStatusProvider.class);
+    assertThat(provider).isInstanceOf(DefaultReplicationLogStatusProvider.class);
+  }
+
+  @Test
+  void shouldCreateMssqlReplicationLogStatusProvider() {
+    // given
+    final var vendorDatabaseProperties = mock(VendorDatabaseProperties.class);
+    when(vendorDatabaseProperties.databaseId()).thenReturn("mssql");
+    final var factory =
+        new ReplicationLogStatusProviderFactory(
+            vendorDatabaseProperties, mock(ReplicationStatusMapper.class));
+
+    // when
+    final var provider = factory.create();
+
+    // then
+    assertThat(provider).isInstanceOf(DefaultReplicationLogStatusProvider.class);
   }
 
   @Test
