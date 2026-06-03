@@ -16,13 +16,13 @@
 package io.camunda.process.test.impl.coverage.core;
 
 import io.camunda.client.api.search.response.DecisionDefinitionType;
+import io.camunda.process.test.api.coverage.model.CoverageRunReport;
 import io.camunda.process.test.api.coverage.model.DecisionCoverage;
 import io.camunda.process.test.api.coverage.model.DecisionModel;
 import io.camunda.process.test.api.coverage.model.ImmutableRun;
 import io.camunda.process.test.api.coverage.model.ImmutableSuite;
 import io.camunda.process.test.api.coverage.model.ProcessCoverage;
 import io.camunda.process.test.api.coverage.model.ProcessModel;
-import io.camunda.process.test.api.coverage.model.Run;
 import io.camunda.process.test.api.coverage.model.Suite;
 import io.camunda.process.test.impl.coverage.data.CoverageDecisionInstanceData;
 import io.camunda.process.test.impl.coverage.data.CoverageProcessInstanceData;
@@ -53,7 +53,7 @@ public final class CoverageCollector {
   private final String suiteName;
   private final Map<String, ProcessModel> models = new HashMap<>();
   private final Map<String, DecisionModel> decisionModels = new HashMap<>();
-  private final List<Run> runs = new ArrayList<>();
+  private final List<CoverageRunReport> coverageRunReports = new ArrayList<>();
 
   private CoverageCollector(
       final Class<?> testClass,
@@ -130,7 +130,7 @@ public final class CoverageCollector {
 
     final List<DecisionCoverage> decisionCoverages = collectDecisionCoverages(testResults);
 
-    runs.add(
+    coverageRunReports.add(
         ImmutableRun.builder()
             .name(runName)
             .addAllProcessCoverages(coverages)
@@ -144,7 +144,11 @@ public final class CoverageCollector {
    * @return The test suite with coverage information
    */
   public Suite getSuite() {
-    return ImmutableSuite.builder().id(suiteId).name(suiteName).addAllRuns(runs).build();
+    return ImmutableSuite.builder()
+        .id(suiteId)
+        .name(suiteName)
+        .addAllRuns(coverageRunReports)
+        .build();
   }
 
   /**

@@ -26,7 +26,7 @@ public interface CoverageSuiteReport {
 
   String getName();
 
-  List<Run> getRuns();
+  List<CoverageRunReport> getRuns();
 
   List<ProcessCoverage> getProcessCoverages();
 

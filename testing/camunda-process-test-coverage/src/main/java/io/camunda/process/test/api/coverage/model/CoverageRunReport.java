@@ -19,13 +19,10 @@ import java.util.List;
 import org.immutables.value.Value;
 
 @Value.Immutable
-public interface Run {
+public interface CoverageRunReport {
   String getName();
 
   List<ProcessCoverage> getProcessCoverages();
 
-  @Value.Default
-  default List<DecisionCoverage> getDecisionCoverages() {
-    return java.util.Collections.emptyList();
-  }
+  List<DecisionCoverage> getDecisionCoverages();
 }
