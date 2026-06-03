@@ -124,9 +124,6 @@ The template files live under `setup/default/`:
   `camunda-platform-values-elasticsearch.yaml`,
   `camunda-platform-override-values.yaml`, `load-test-values.yaml`,
   `values-stable.yaml`, and `prometheus-elasticsearch-exporter-values.yaml`.
-- `databases/` — raw Kubernetes manifests for MSSQL and Oracle (no public
-  Helm chart). Copied into the namespace folder only when the matching
-  storage is chosen.
 - `resources/` — namespace and credentials manifests (see PR #52882). Always
   copied and rendered with random secrets.
 
