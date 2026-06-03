@@ -419,6 +419,59 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
+  # Builds the Zeebe distribution tarball once per workflow run so that
+  # downstream Docker-consuming jobs (docker-checks today; integration-tests,
+  # deploy-camunda-docker-snapshot, reusable workflows in follow-up PRs) can
+  # download it instead of running their own Maven reactor build. See #52693.
+  build-distball:
+    name: "Build / Distribution Tarball"
+    needs: [ detect-changes ]
+    if: |
+      needs.detect-changes.outputs.java-code-changes == 'true'
+      || needs.detect-changes.outputs.camunda-docker-tests == 'true'
+      || github.event_name == 'merge_group'
+      || github.event_name == 'schedule'
+      || (github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/')))
+    runs-on: gcp-perf-core-8-default
+    timeout-minutes: 30
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        timeout-minutes: 1
+      - uses: ./.github/actions/setup-build
+        with:
+          maven-cache-key-modifier: build-shared
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - uses: ./.github/actions/build-zeebe
+        id: build-zeebe
+        with:
+          maven-extra-args: -T1C -PskipFrontendBuild
+      - name: Log distball size
+        run: |
+          ls -lh "${{ steps.build-zeebe.outputs.distball }}"
+          du -h "${{ steps.build-zeebe.outputs.distball }}"
+      - name: Upload distball
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: distball-${{ github.run_id }}
+          path: ${{ steps.build-zeebe.outputs.distball }}
+          retention-days: 1
+          compression-level: 0  # tarball is already gzipped
+          if-no-files-found: error
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          user_description: "General"
+
   # Sets up test constants for both unit and integration tests. Using outputs instead of env vars so that these constants can be used in a matrix
   setup-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
@@ -1965,6 +2018,7 @@ jobs:
     needs: # BELOW LIST IS IN ALPHABETICAL ORDER
       - actionlint
       - archunit-tests
+      - build-distball
       - build-platform-frontend
       - c8-e2e-test-suite
       - codeowners-check
@@ -2155,6 +2209,36 @@ jobs:
           platforms: ${{ env.DOCKER_PLATFORMS }}
           dockerfile: camunda.Dockerfile
           push: true
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          user_description: "General"
+
+  # Deletes distball-{run_id} once all consumers finish. utils- prefix exempts
+  # this job from the check-results.needs enforcement rule and lets it run as
+  # best-effort cleanup. failOnError tolerates a missing artifact (e.g. when
+  # build-distball was cancelled mid-upload). See #52693.
+  utils-cleanup-distball:
+    name: "Cleanup / Distribution Tarball Artifact"
+    needs: [ detect-changes, build-distball, docker-checks, deploy-camunda-docker-snapshot ]
+    if: always() && needs.build-distball.result != 'skipped'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: write
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
+      - name: Delete distball artifact
+        uses: geekyeggo/delete-artifact@176a747ab7e287e3ff4787bf8a148716375ca118 # v6.0.0
+        with:
+          name: distball-${{ github.run_id }}
+          failOnError: false
       - name: Observe build status
         if: always()
         continue-on-error: true
