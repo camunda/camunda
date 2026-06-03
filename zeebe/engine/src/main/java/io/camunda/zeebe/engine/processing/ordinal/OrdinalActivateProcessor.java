@@ -47,7 +47,7 @@ public final class OrdinalActivateProcessor
 
   @Override
   public void processDistributedCommand(final TypedRecord<OrdinalRecord> command) {
-    // need to
+    // TODO: @yohanfernando >> handle activated
     stateWriter.appendFollowUpEvent(command.getKey(), OrdinalIntent.ACTIVATED, command.getValue());
     commandDistributionBehavior.acknowledgeCommand(command);
   }
