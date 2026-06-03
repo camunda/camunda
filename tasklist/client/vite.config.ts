@@ -68,7 +68,6 @@ export default defineConfig(({mode}) => ({
     exclude: ['monaco-editor'],
   },
   test: {
-    dangerouslyIgnoreUnhandledErrors: true,
     globals: true,
     environment: 'jsdom',
     include: ['./src/**/*.{test,spec}.?(c|m)[jt]s?(x)'],
