@@ -52,14 +52,6 @@ public interface CoverageCollectorBuilder {
   CoverageCollectorBuilder reportDirectory(String reportDirectory);
 
   /**
-   * Sets the test class being executed to provide context for coverage reports.
-   *
-   * @param testClass Class object representing the test class
-   * @return This builder instance for method chaining
-   */
-  CoverageCollectorBuilder testClass(Class<?> testClass);
-
-  /**
    * Sets a custom print stream consumer for coverage report output.
    *
    * <p>By default, coverage summary information is printed to System.err. This method allows

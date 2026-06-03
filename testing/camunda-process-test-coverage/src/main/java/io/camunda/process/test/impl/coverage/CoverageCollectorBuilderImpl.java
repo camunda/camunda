@@ -24,7 +24,6 @@ public final class CoverageCollectorBuilderImpl implements CoverageCollectorBuil
   private String reportDirectory;
   private List<String> excludedProcessDefinitionIds = Collections.emptyList();
   private List<String> excludedDecisionDefinitionIds = Collections.emptyList();
-  private Class<?> testClass;
   private Consumer<String> printStream;
 
   @Override
@@ -48,12 +47,6 @@ public final class CoverageCollectorBuilderImpl implements CoverageCollectorBuil
   }
 
   @Override
-  public CoverageCollectorBuilder testClass(final Class<?> testClass) {
-    this.testClass = testClass;
-    return this;
-  }
-
-  @Override
   public CoverageCollectorBuilder printStream(final Consumer<String> printStream) {
     this.printStream = printStream;
     return this;
@@ -62,10 +55,6 @@ public final class CoverageCollectorBuilderImpl implements CoverageCollectorBuil
   @Override
   public CoverageCollector build() {
     return new CoverageCollectorImpl(
-        testClass,
-        excludedProcessDefinitionIds,
-        excludedDecisionDefinitionIds,
-        reportDirectory,
-        printStream);
+        excludedProcessDefinitionIds, excludedDecisionDefinitionIds, reportDirectory, printStream);
   }
 }

@@ -49,38 +49,33 @@ public final class CoverageCollector {
   private static final List<CoverageCollector> COLLECTORS = new ArrayList<>();
   private final List<String> excludedProcessDefinitionIds;
   private final List<String> excludedDecisionDefinitionIds;
-  private final String suiteId;
-  private final String suiteName;
   private final Map<String, ProcessModel> models = new HashMap<>();
   private final Map<String, DecisionModel> decisionModels = new HashMap<>();
   private final List<CoverageRunReport> coverageRunReports = new ArrayList<>();
 
+  private String suiteId;
+  private String suiteName;
+
   private CoverageCollector(
-      final Class<?> testClass,
       final List<String> excludedProcessDefinitionIds,
       final List<String> excludedDecisionDefinitionIds) {
     this.excludedProcessDefinitionIds = excludedProcessDefinitionIds;
     this.excludedDecisionDefinitionIds = excludedDecisionDefinitionIds;
-    suiteId = testClass.getName();
-    suiteName = testClass.getSimpleName();
   }
 
   /**
-   * Creates a new coverage collector for a specific test class.
+   * Creates a new coverage collector for a specific test class. *
    *
-   * @param testClass The class for which coverage is being collected
    * @param excludedProcessDefinitionIds List of process definition ids to exclude from coverage
    *     analysis
    * @param excludedDecisionDefinitionIds List of decision definition ids to exclude from coverage
    *     analysis
    */
   public static CoverageCollector createCollector(
-      final Class<?> testClass,
       final List<String> excludedProcessDefinitionIds,
       final List<String> excludedDecisionDefinitionIds) {
     final CoverageCollector collector =
-        new CoverageCollector(
-            testClass, excludedProcessDefinitionIds, excludedDecisionDefinitionIds);
+        new CoverageCollector(excludedProcessDefinitionIds, excludedDecisionDefinitionIds);
     COLLECTORS.add(collector);
     return collector;
   }
@@ -107,7 +102,12 @@ public final class CoverageCollector {
    *
    * @param runName Identifier for the current test run
    */
-  public void collectTestRunCoverage(final String runName, final CoverageTestData testResults) {
+  public void collectTestRunCoverage(
+      final Class<?> testClass, final String runName, final CoverageTestData testResults) {
+
+    suiteId = testClass.getName();
+    suiteName = testClass.getSimpleName();
+
     final List<CoverageProcessInstanceData> filteredProcessInstanceData =
         testResults.getProcessInstanceData().stream()
             .filter(

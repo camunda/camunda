@@ -27,21 +27,20 @@ public final class CoverageCollectorImpl implements CoverageCollector {
   private final CoverageReporter coverageReporter;
 
   public CoverageCollectorImpl(
-      final Class<?> testClass,
       final List<String> excludedProcessDefinitionIds,
       final List<String> excludedDecisionDefinitionIds,
       final String reportDirectory,
       final Consumer<String> printStream) {
     coverageCollector =
         io.camunda.process.test.impl.coverage.core.CoverageCollector.createCollector(
-            testClass, excludedProcessDefinitionIds, excludedDecisionDefinitionIds);
+            excludedProcessDefinitionIds, excludedDecisionDefinitionIds);
     coverageReporter = new CoverageReporter(reportDirectory, printStream);
   }
 
   @Override
   public CoverageReport collectTestRunCoverage(
-      final String runName, final CoverageTestData testData) {
-    coverageCollector.collectTestRunCoverage(runName, testData);
+      final Class<?> testClass, final String runName, final CoverageTestData testData) {
+    coverageCollector.collectTestRunCoverage(testClass, runName, testData);
     return coverageReporter.createSuiteCoverageReport(coverageCollector);
   }
 

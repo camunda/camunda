@@ -57,13 +57,13 @@ class CoverageCollectorBuilderTest {
 
     final CoverageCollector coverageCollector =
         CoverageCollector.newBuilder()
-            .testClass(getClass())
             .excludeProcessDefinitionIds(java.util.Collections.singletonList("excluded-process"))
             .excludeDecisionDefinitionIds(java.util.Collections.singletonList("excluded-decision"))
             .build();
 
     // when
-    final CoverageReport report = coverageCollector.collectTestRunCoverage("run-1", testResults);
+    final CoverageReport report =
+        coverageCollector.collectTestRunCoverage(getClass(), "run-1", testResults);
 
     // then
     assertThat(report.getSuites())
