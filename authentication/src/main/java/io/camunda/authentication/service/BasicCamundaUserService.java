@@ -22,14 +22,12 @@ import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
 @Service
 @ConditionalOnAuthenticationMethod(AuthenticationMethod.BASIC)
 @ConditionalOnSecondaryStorageEnabled
-@ConditionalOnMissingBean(CamundaUserPort.class)
 @Profile("consolidated-auth")
 public class BasicCamundaUserService implements CamundaUserPort {
 
