@@ -11,6 +11,7 @@ dependencies {
     api(libs.org.junit.jupiter.junit.jupiter.api)
     api(libs.org.junit.jupiter.junit.jupiter.params)
     testImplementation(project(":zeebe-backup"))
+    testImplementation(project(":zeebe-atomix-cluster"))
     testImplementation(libs.org.apache.commons.commons.lang3)
     testImplementation(project(":zeebe-protocol"))
     testImplementation(project(":zeebe-util"))

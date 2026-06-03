@@ -25,6 +25,7 @@ dependencies {
     api(libs.com.fasterxml.jackson.datatype.jackson.datatype.jsr310)
     api(libs.org.reactivestreams.reactive.streams)
     implementation(project(":zeebe-util"))
+    implementation(project(":zeebe-atomix-cluster"))
     testImplementation(project(":zeebe-backup-testkit"))
     testImplementation(project(":zeebe-backup-testkit", configuration = "tests"))
     testImplementation(libs.org.apache.commons.commons.lang3)

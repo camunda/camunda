@@ -19,6 +19,7 @@ dependencies {
     api(libs.com.fasterxml.jackson.core.jackson.annotations)
     api(libs.com.fasterxml.jackson.core.jackson.core)
     api(libs.com.fasterxml.jackson.core.jackson.databind)
+    implementation(project(":zeebe-atomix-cluster"))
     implementation(libs.org.slf4j.slf4j.api)
     testImplementation(project(":zeebe-backup-testkit"))
     testImplementation(project(":zeebe-backup-testkit", configuration = "tests"))
