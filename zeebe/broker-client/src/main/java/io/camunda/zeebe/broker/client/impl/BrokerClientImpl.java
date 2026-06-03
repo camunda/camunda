@@ -19,7 +19,6 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.transport.impl.AtomixClientTransportAdapter;
-import io.camunda.zeebe.transport.impl.AtomixServerTransport.TopicSupplier;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
@@ -46,14 +45,12 @@ public final class BrokerClientImpl implements BrokerClient {
       final ClusterEventService eventService,
       final ActorSchedulingService schedulingService,
       final BrokerTopologyManager topologyManager,
-      final BrokerClientRequestMetrics metrics,
-      final TopicSupplier sendingTopicSupplier) {
+      final BrokerClientRequestMetrics metrics) {
     this.eventService = eventService;
     this.schedulingService = schedulingService;
 
     this.topologyManager = topologyManager;
-    atomixTransportAdapter =
-        new AtomixClientTransportAdapter(messagingService, sendingTopicSupplier);
+    atomixTransportAdapter = new AtomixClientTransportAdapter(messagingService);
     requestManager =
         new BrokerRequestManager(
             atomixTransportAdapter,

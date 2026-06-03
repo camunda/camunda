@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.client.api.dto;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.transport.RequestType;
@@ -37,6 +38,28 @@ class BrokerRequestTest {
 
     // then
     assertThat(request.getPartitionGroup()).isEqualTo("tenant1");
+  }
+
+  @Test
+  void shouldRejectNullPartitionGroup() {
+    // given
+    final var request = new TestBrokerRequest();
+
+    // when / then
+    assertThatThrownBy(() -> request.setPartitionGroup(null))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("partitionGroup must not be null");
+  }
+
+  @Test
+  void shouldRejectBlankPartitionGroup() {
+    // given
+    final var request = new TestBrokerRequest();
+
+    // when / then
+    assertThatThrownBy(() -> request.setPartitionGroup(" "))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("partitionGroup must not be blank");
   }
 
   /** Minimal concrete subclass for testing. */

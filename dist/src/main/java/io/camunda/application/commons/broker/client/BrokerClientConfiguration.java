@@ -14,7 +14,6 @@ import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.impl.BrokerClientImpl;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.transport.impl.AtomixServerTransport.TopicSupplier;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,11 +45,6 @@ public final class BrokerClientConfiguration {
 
   @Bean(destroyMethod = "close")
   public BrokerClient brokerClient() {
-    final TopicSupplier sendingTopicSupplier =
-        config.sendOnLegacySubject()
-            ? TopicSupplier.withLegacyTopicName()
-            : TopicSupplier.withPrefix(config.tenantName());
-
     final var brokerClient =
         new BrokerClientImpl(
             config.requestTimeout(),
@@ -58,12 +52,10 @@ public final class BrokerClientConfiguration {
             cluster.getEventService(),
             scheduler,
             topologyManager,
-            metrics,
-            sendingTopicSupplier);
+            metrics);
     brokerClient.start().forEach(ActorFuture::join);
     return brokerClient;
   }
 
-  public record BrokerClientCfg(
-      Duration requestTimeout, boolean sendOnLegacySubject, String tenantName) {}
+  public record BrokerClientCfg(Duration requestTimeout) {}
 }
