@@ -18,14 +18,24 @@ package io.camunda.process.test.impl.coverage.results;
 import java.util.List;
 import org.immutables.value.Value;
 
+/**
+ * Aggregate coverage input collected during a test run.
+ *
+ * <p>Groups process and decision instance data together with their corresponding deployed
+ * definitions so coverage can be calculated and reported.
+ */
 @Value.Immutable
 public interface CoverageTestData {
 
+  /** Returns process instance execution data captured during the test run. */
   List<CoverageProcessInstanceData> getProcessInstanceData();
 
+  /** Returns decision evaluation data captured during the test run. */
   List<CoverageDecisionInstanceData> getDecisionInstanceData();
 
+  /** Returns process definitions referenced by collected process instance data. */
   List<CoverageProcessDefinitionData> getProcessDefinitionData();
 
+  /** Returns decision definitions referenced by collected decision instance data. */
   List<CoverageDecisionDefinitionData> getDecisionDefinitionData();
 }

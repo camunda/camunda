@@ -18,8 +18,14 @@ package io.camunda.process.test.impl.coverage.results;
 import io.camunda.client.api.search.response.DecisionInstance;
 import org.immutables.value.Value;
 
+/**
+ * Coverage input data for a single decision evaluation.
+ *
+ * <p>Contains the evaluated decision instance used for decision coverage aggregation.
+ */
 @Value.Immutable
 public interface CoverageDecisionInstanceData {
 
+  /** Returns the evaluated decision instance metadata. */
   DecisionInstance getDecisionInstance();
 }

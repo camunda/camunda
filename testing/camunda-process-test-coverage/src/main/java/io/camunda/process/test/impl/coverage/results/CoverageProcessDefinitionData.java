@@ -18,10 +18,18 @@ package io.camunda.process.test.impl.coverage.results;
 import io.camunda.client.api.search.response.ProcessDefinition;
 import org.immutables.value.Value;
 
+/**
+ * Coverage input data for a deployed process definition.
+ *
+ * <p>Contains the process definition metadata and BPMN XML required to calculate and render
+ * definition-level coverage.
+ */
 @Value.Immutable
 public interface CoverageProcessDefinitionData {
 
+  /** Returns the deployed process definition metadata. */
   ProcessDefinition getProcessDefinition();
 
+  /** Returns the BPMN XML of the process definition. */
   String getXml();
 }
