@@ -45,6 +45,7 @@ import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
+import io.camunda.webapps.schema.descriptors.template.WaitStateTemplate;
 import java.util.Collection;
 import java.util.Map;
 import java.util.function.Function;
@@ -89,6 +90,7 @@ public class IndexDescriptors {
                 new UsageMetricTemplate(indexPrefix, isElasticsearch),
                 new UsageMetricTUTemplate(indexPrefix, isElasticsearch),
                 new AuditLogTemplate(indexPrefix, isElasticsearch),
+                new WaitStateTemplate(indexPrefix, isElasticsearch),
                 new HistoryDeletionIndex(indexPrefix, isElasticsearch),
                 new JobMetricsBatchTemplate(indexPrefix, isElasticsearch),
                 new AuditLogCleanupIndex(indexPrefix, isElasticsearch),
