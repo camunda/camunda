@@ -206,6 +206,19 @@ jobs:
             e2e-tests/html-report/
             e2e-tests/test-results/
           retention-days: 7
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          sparse-checkout: .github
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "test/${{ matrix.deployment.version }}"
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   teardown-8-8:
     name: Teardown 8.8 Preview Environment
@@ -275,6 +288,7 @@ jobs:
     timeout-minutes: 5
     permissions:
       actions: read
+      contents: read
     steps:
       - name: Import secrets
         id: secrets
@@ -334,4 +348,17 @@ jobs:
                 }
               ]
             }
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          sparse-checkout: .github
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 

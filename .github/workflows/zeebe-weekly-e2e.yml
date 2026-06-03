@@ -43,6 +43,15 @@ jobs:
             echo "SECOND_LAST_VERSION=${second_last}"
             echo "THIRD_LAST_VERSION=${third_last}"
           } >> "$GITHUB_ENV"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   e2e:
     needs:
@@ -73,6 +82,16 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh workflow run --ref ${{ matrix.branch }} zeebe-e2e-testbench.yaml -F generation='${{ matrix.generation_template }}' -F branch=${{ matrix.branch }} -F maxTestDuration='P5D' -F maxInstanceDuration='40m' -F clusterPlan='Production - M'
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "e2e/${{ matrix.branch }}"
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   e2e-multiregion-failover:
     name: Multi-region failover with data loss

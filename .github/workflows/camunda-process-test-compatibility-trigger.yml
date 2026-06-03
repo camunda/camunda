@@ -19,6 +19,19 @@ jobs:
           gh workflow run .github/workflows/camunda-process-test-compatibility.yml \
             --ref stable/8.8 \
             --repo ${{ github.repository }}
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          sparse-checkout: .github
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   trigger-stable-8-9:
     runs-on: ubuntu-latest
@@ -30,3 +43,16 @@ jobs:
           gh workflow run .github/workflows/camunda-process-test-compatibility.yml \
             --ref stable/8.9 \
             --repo ${{ github.repository }}
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          sparse-checkout: .github
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

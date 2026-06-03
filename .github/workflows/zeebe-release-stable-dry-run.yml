@@ -59,6 +59,15 @@ jobs:
             git push origin --force "refs/tags/${tag_name}"
             echo "Prepared ${tag_name} from stable/${version}"
           done
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   dry-run-release-89:
     name: "Release from stable/8.9"
@@ -147,6 +156,15 @@ jobs:
           branch_name="tmp-dryrun-8.7-${{ github.run_id }}"
           git push origin --delete "${branch_name}" || echo "::warning::Failed to delete ${branch_name}, it may have already been deleted"
           git push origin --delete "refs/tags/0.0.0-dryrun-87" 2>/dev/null || echo "::warning::Failed to delete 0.0.0-dryrun-87, it may have already been deleted"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
   notify-camunda:
     name: Send Slack notification for 8.7+
     runs-on: ubuntu-latest
@@ -193,3 +211,16 @@ jobs:
                 }
               ]
             }
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          sparse-checkout: .github
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

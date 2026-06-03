@@ -67,6 +67,15 @@ jobs:
           )
           echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
           echo "Matrix output: $matrix"  # Debug output for inspection
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   # Runs the qa-testbench workflow against the stable branches. It assumes that branches follow the
   # pattern of `stable/VERSION`, and generations of `Camunda VERSION`.
@@ -90,3 +99,13 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh workflow run --ref ${{ matrix.branch }} zeebe-qa-testbench.yaml -F generation='${{ matrix.generation_template }}' -F branch=${{ matrix.branch }}
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "qa/${{ matrix.branch }}"
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
