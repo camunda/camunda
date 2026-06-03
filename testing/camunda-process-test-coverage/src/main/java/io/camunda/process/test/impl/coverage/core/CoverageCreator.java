@@ -153,7 +153,7 @@ public class CoverageCreator {
       final List<ElementInstance> takenNodeElements,
       final ProcessModel processModel) {
     final BpmnModelInstance modelInstance =
-        Bpmn.readModelFromStream(new ByteArrayInputStream(processModel.xml().getBytes()));
+        Bpmn.readModelFromStream(new ByteArrayInputStream(processModel.getXml().getBytes()));
 
     for (int i = 0; i < takenNodeElements.size(); i++) {
       final ElementInstance event = takenNodeElements.get(i);

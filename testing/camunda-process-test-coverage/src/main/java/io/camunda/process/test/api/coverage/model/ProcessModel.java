@@ -27,5 +27,5 @@ public interface ProcessModel {
 
   String getVersion();
 
-  String xml();
+  String getXml();
 }

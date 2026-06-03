@@ -27,5 +27,5 @@ public interface DecisionModel {
 
   String getVersion();
 
-  String xml();
+  String getXml();
 }

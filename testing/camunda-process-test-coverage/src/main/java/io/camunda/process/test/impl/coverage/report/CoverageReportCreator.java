@@ -68,12 +68,12 @@ public class CoverageReportCreator {
         processModels.stream()
             .collect(
                 Collectors.toMap(
-                    ProcessModel::getProcessDefinitionId, ProcessModel::xml, (a, b) -> a));
+                    ProcessModel::getProcessDefinitionId, ProcessModel::getXml, (a, b) -> a));
     final Map<String, String> decisionDefinitions =
         decisionModels.stream()
             .collect(
                 Collectors.toMap(
-                    DecisionModel::getDecisionDefinitionId, DecisionModel::xml, (a, b) -> a));
+                    DecisionModel::getDecisionDefinitionId, DecisionModel::getXml, (a, b) -> a));
     return ImmutableCoverageReport.builder()
         .addAllSuites(suiteReports)
         .addAllModels(processModels)
