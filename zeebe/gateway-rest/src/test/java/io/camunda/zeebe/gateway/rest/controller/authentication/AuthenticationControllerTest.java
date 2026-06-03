@@ -18,10 +18,12 @@ import io.camunda.search.query.TenantQuery;
 import io.camunda.security.api.model.user.CamundaUserDTO;
 import io.camunda.security.core.port.in.CamundaUserPort;
 import io.camunda.service.TenantServices;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
@@ -33,7 +35,7 @@ import org.springframework.test.json.JsonCompareMode;
 public class AuthenticationControllerTest extends RestControllerTest {
 
   @MockitoBean private CamundaUserPort camundaUserPort;
-  @MockitoBean private TenantServices tenantServices;
+  @MockitoBean private ServiceRegistry serviceRegistry;
 
   @Test
   void getAuthorizationShouldReturnOk() {
@@ -51,6 +53,8 @@ public class AuthenticationControllerTest extends RestControllerTest {
             Map.of(),
             true);
 
+    final TenantServices tenantServices = Mockito.mock(TenantServices.class);
+    when(serviceRegistry.tenantServices(any())).thenReturn(tenantServices);
     when(camundaUserPort.getCurrentUser()).thenReturn(camundaUserDTO);
     when(tenantServices.search(any(TenantQuery.class), any()))
         .thenReturn(

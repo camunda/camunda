@@ -14,9 +14,10 @@ import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.core.port.in.CamundaUserPort;
-import io.camunda.service.TenantServices;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
+import io.camunda.zeebe.gateway.rest.context.PhysicalTenantContext;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import java.util.List;
 import org.springframework.context.annotation.Profile;
@@ -30,12 +31,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/v2/authentication")
 public class AuthenticationController {
   private final CamundaUserPort camundaUserPort;
-  private final TenantServices tenantServices;
+  private final ServiceRegistry serviceRegistry;
 
   public AuthenticationController(
-      final CamundaUserPort camundaUserPort, final TenantServices tenantServices) {
+      final CamundaUserPort camundaUserPort, final ServiceRegistry serviceRegistry) {
     this.camundaUserPort = camundaUserPort;
-    this.tenantServices = tenantServices;
+    this.serviceRegistry = serviceRegistry;
   }
 
   @CamundaGetMapping(path = "/me")
@@ -66,7 +67,8 @@ public class AuthenticationController {
     if (tenantIds == null || tenantIds.isEmpty()) {
       return List.of();
     }
-    return tenantServices
+    return serviceRegistry
+        .tenantServices(PhysicalTenantContext.DEFAULT_PHYSICAL_TENANT_ID)
         .search(
             TenantQuery.of(q -> q.filter(f -> f.tenantIds(tenantIds)).unlimited()),
             CamundaAuthentication.anonymous())
