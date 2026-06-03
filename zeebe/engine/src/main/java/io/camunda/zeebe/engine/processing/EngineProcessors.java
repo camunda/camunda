@@ -142,6 +142,8 @@ public final class EngineProcessors {
             interPartitionCommandSender,
             distributionMetrics);
 
+    final var config = typedRecordProcessorContext.getConfig();
+
     // TODO: @yohanfernando >> We need to get the ordinal provider and then pass it around to
     //  places that need adding ordinal
     OrdinalProcessors.addOrdinalProcessors(
@@ -149,11 +151,11 @@ public final class EngineProcessors {
         writers,
         keyGenerator,
         commandDistributionBehavior,
+        config,
         processingState.getOrdinalState());
 
     final var clock = typedRecordProcessorContext.getClock();
     final int partitionId = typedRecordProcessorContext.getPartitionId();
-    final var config = typedRecordProcessorContext.getConfig();
     final var securityConfig = typedRecordProcessorContext.getSecurityConfig();
 
     final DueDateTimerCheckScheduler timerChecker =

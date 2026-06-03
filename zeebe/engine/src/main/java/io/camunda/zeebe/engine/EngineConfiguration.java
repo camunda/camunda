@@ -65,6 +65,10 @@ public final class EngineConfiguration {
   public static final boolean DEFAULT_BUSINESS_ID_UNIQUENESS_ENABLED = false;
   public static final boolean DEFAULT_ENABLE_RPA_REEXPORT_MIGRATION = true;
 
+  // ordinal defaults
+  public static final Duration DEFAULT_ORDINAL_ROLLOVER_EVALUATION_INTERVAL =
+      Duration.ofMinutes(10);
+
   private int maxIdFieldLength = DEFAULT_MAX_ID_FIELD_LENGTH;
   private int maxNameFieldLength = DEFAULT_MAX_NAME_FIELD_LENGTH;
   private int maxWorkerTypeLength = DEFAULT_MAX_WORKER_TYPE_LENGTH;
@@ -121,6 +125,9 @@ public final class EngineConfiguration {
    * </ul>
    */
   private boolean businessIdUniquenessEnabled = DEFAULT_BUSINESS_ID_UNIQUENESS_ENABLED;
+
+  // ordinal configs
+  private Duration ordinalRolloverEvaluationInterval = DEFAULT_ORDINAL_ROLLOVER_EVALUATION_INTERVAL;
 
   public int getMessagesTtlCheckerBatchLimit() {
     return messagesTtlCheckerBatchLimit;
@@ -497,6 +504,16 @@ public final class EngineConfiguration {
   public EngineConfiguration setEnableRpaReexportMigration(
       final boolean enableRpaReexportMigration) {
     this.enableRpaReexportMigration = enableRpaReexportMigration;
+    return this;
+  }
+
+  public Duration getOrdinalRolloverEvaluationInterval() {
+    return ordinalRolloverEvaluationInterval;
+  }
+
+  public EngineConfiguration setOrdinalRolloverEvaluationInterval(
+      final Duration ordinalRolloverEvaluationInterval) {
+    this.ordinalRolloverEvaluationInterval = ordinalRolloverEvaluationInterval;
     return this;
   }
 }

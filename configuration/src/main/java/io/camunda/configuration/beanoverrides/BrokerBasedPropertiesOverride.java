@@ -219,6 +219,7 @@ public class BrokerBasedPropertiesOverride {
     populateFromExpression(override);
     populateFromProcessInstanceCreation(override);
     populateFromJobs(override);
+    populateFromOrdinal(override);
   }
 
   private void populateFromDistribution(final BrokerBasedProperties override) {
@@ -1097,5 +1098,19 @@ public class BrokerBasedPropertiesOverride {
                 .getEngine()
                 .getJob()
                 .isIncludeVariablesInJobCompletedEvent());
+  }
+
+  private void populateFromOrdinal(final BrokerBasedProperties override) {
+    override
+        .getExperimental()
+        .getEngine()
+        .getOrdinal()
+        .setRolloverEvaluationInterval(
+            unifiedConfiguration
+                .getCamunda()
+                .getProcessing()
+                .getEngine()
+                .getOrdinal()
+                .getRolloverEvaluationInterval());
   }
 }

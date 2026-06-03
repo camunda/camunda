@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.ordinal;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -24,13 +25,30 @@ public final class OrdinalProcessors {
     - Initialisation - rework?
       - Should I send initialise command
     - Implement intents
-    - Roll over
-      - strategy
+    - Roll over scheduler - DONE
+      - roll over strategy
     - Actual data structure
      - for the leader partition
      - for other partitions
      - got to think about keeping current and previous ones live
-    -
+     - PROPOSED DATA STRUCTURE
+        - Ordinal Management Record
+          - ordinal key
+          - status
+          - total
+          # FUTURE:
+          - latest completed date
+          - ILM issued date
+          - Delete pending date
+          - total created vs completed ???
+        - Ordinal Active State
+          - active => ordinalKey
+        - Ordinal State (all partitions)
+          - ordinalKey (FK) + partitionId
+          - status
+          - create counter
+          - complete counter
+          - latest completed date
 
     TODO: @yohanfernando >> Long term:
     - ILM
@@ -44,6 +62,7 @@ public final class OrdinalProcessors {
       final Writers writers,
       final KeyGenerator keyGenerator,
       final CommandDistributionBehavior commandDistributionBehavior,
+      final EngineConfiguration config,
       final OrdinalState ordinalState) {
 
     // TODO: @yohanfernando >> require command processors for
@@ -61,6 +80,9 @@ public final class OrdinalProcessors {
         //  a) initialisation
         //  b) roll over check (scheduled)
         //  c) ILM check (scheduled)
-        .withListener(new OrdinalInitializer(ordinalState));
+        .withListener(new OrdinalInitializer(ordinalState))
+        .withListener(
+            new OrdinalRolloverScheduler(
+                ordinalState, config.getOrdinalRolloverEvaluationInterval()));
   }
 }
