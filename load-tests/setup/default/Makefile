@@ -76,10 +76,10 @@ platform_values_stable := $(platform_values) -f values-stable.yaml
 all: install
 
 .PHONY: install
-install: check-deadline create-namespace create-credentials install-storage install-platform install-load-test install-elasticsearch-exporter
+install: check-deadline create-namespace create-credentials install-storage install-platform install-load-test install-elasticsearch-exporter install-optimize-cleanup
 
 .PHONY: install-stable
-install-stable: check-deadline create-namespace create-credentials install-storage install-platform-stable install-load-test install-elasticsearch-exporter
+install-stable: check-deadline create-namespace create-credentials install-storage install-platform-stable install-load-test install-elasticsearch-exporter install-optimize-cleanup
 
 # Fail fast if the namespace TTL deadline (read from resources/namespace.yaml,
 # the single source of truth) is today or in the past — the TTL cleanup
