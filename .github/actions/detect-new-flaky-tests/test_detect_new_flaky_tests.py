@@ -1,0 +1,377 @@
+"""Unit tests for the sticky-alert flaky-test detector.
+
+Run with:
+    python3 -m unittest .github/actions/detect-new-flaky-tests/test_detect_new_flaky_tests.py
+"""
+
+import json
+import os
+import sys
+import tempfile
+import unittest
+from unittest import mock
+
+sys.path.insert(0, os.path.dirname(__file__))
+
+import detect_new_flaky_tests as d  # noqa: E402
+
+
+# ---------------------------------------------------------------------------
+# Test-name parsing
+# ---------------------------------------------------------------------------
+
+class TestParse(unittest.TestCase):
+    def test_strips_params_and_index(self):
+        p = d.parse_test_name(
+            "io.camunda.it.foo.BarTest.shouldDoX(CamundaClient)[1]"
+        )
+        self.assertEqual(p["packageName"], "io.camunda.it.foo")
+        self.assertEqual(p["className"], "BarTest")
+        self.assertEqual(p["methodName"], "shouldDoX")
+
+    def test_handles_no_dot(self):
+        p = d.parse_test_name("Plain")
+        self.assertEqual(p, {"fullName": "Plain"})
+
+    def test_get_key_normalises(self):
+        # The legacy regex collapses [N](Param) into just N, so the index is
+        # preserved while parens are stripped: m[1](Param) -> m1.
+        key = d.get_test_key({
+            "packageName": "p",
+            "className": "C",
+            "methodName": "m[1](Param)",
+        })
+        self.assertEqual(key, "p.C.m1")
+
+
+# ---------------------------------------------------------------------------
+# Flaky-data deduplication
+# ---------------------------------------------------------------------------
+
+class TestProcessFlakyTestsData(unittest.TestCase):
+    def test_dedupe_and_job_merge(self):
+        raw = [
+            {"job": "j1", "flaky_tests": "p.C.foo(Cli)"},
+            {"job": "j2", "flaky_tests": "p.C.foo(Cli)"},
+        ]
+        out = d.process_flaky_tests_data(raw)
+        self.assertEqual(len(out), 1)
+        self.assertEqual(set(out[0]["jobs"]), {"j1", "j2"})
+        self.assertEqual(out[0]["currentRunFailures"], 2)
+
+    def test_lifecycle_dropped(self):
+        raw = [{"job": "j", "flaky_tests": "p.C.<beforeAll>"}]
+        out = d.process_flaky_tests_data(raw)
+        self.assertEqual(out, [])
+
+    def test_empty_input_ignored(self):
+        self.assertEqual(d.process_flaky_tests_data([]), [])
+        self.assertEqual(
+            d.process_flaky_tests_data([{"job": "j", "flaky_tests": " "}]), []
+        )
+
+
+# ---------------------------------------------------------------------------
+# Baseline boundary matching
+# ---------------------------------------------------------------------------
+
+class TestBaseline(unittest.TestCase):
+    def test_exact(self):
+        self.assertTrue(d.is_in_baseline("p.C.m", {"p.C.m"}))
+
+    def test_paren_boundary(self):
+        self.assertTrue(d.is_in_baseline("p.C.m", {"p.C.m(Cli) variant"}))
+
+    def test_index_boundary(self):
+        self.assertTrue(d.is_in_baseline("p.C.m", {"p.C.m[5]"}))
+
+    def test_prefix_of_different_method_no_match(self):
+        self.assertFalse(d.is_in_baseline("p.C.shouldFind",
+                                          {"p.C.shouldFindAll(Cli)"}))
+
+    def test_underscore_no_match(self):
+        self.assertFalse(d.is_in_baseline("p.C.m", {"p.C.m_v2(Cli)"}))
+
+
+# ---------------------------------------------------------------------------
+# State persistence
+# ---------------------------------------------------------------------------
+
+class TestStatePersistence(unittest.TestCase):
+    def test_empty_load_when_missing(self):
+        s = d.load_state("/nonexistent/path.json", 42, "abc")
+        self.assertEqual(s["pr_number"], 42)
+        self.assertEqual(s["last_known_head_sha"], "abc")
+        self.assertEqual(s["tests"], [])
+
+    def test_roundtrip(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "subdir", "state.json")
+            original = d.empty_state(99, "head1")
+            original["tests"].append({"key": "p.C.m", "status": "active"})
+            d.save_state(path, original)
+            loaded = d.load_state(path, 99, "head1")
+            self.assertEqual(loaded["pr_number"], 99)
+            self.assertEqual(loaded["tests"][0]["key"], "p.C.m")
+
+    def test_schema_mismatch_resets(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "state.json")
+            with open(path, "w") as fh:
+                json.dump({"schema_version": 999}, fh)
+            s = d.load_state(path, 1, "head")
+            self.assertEqual(s["tests"], [])
+
+
+# ---------------------------------------------------------------------------
+# Sticky-state reconciliation (mocked git)
+# ---------------------------------------------------------------------------
+
+def _make_state(*entries):
+    return {
+        "schema_version": d.SCHEMA_VERSION,
+        "pr_number": 1,
+        "last_known_head_sha": "head0",
+        "last_updated_at": "now",
+        "tests": list(entries),
+    }
+
+
+def _make_entry(**overrides):
+    base = {
+        "key": "p.C.m",
+        "package": "p",
+        "class_name": "C",
+        "method_name": "m",
+        "file_path": "p/C.java",
+        "first_flagged_sha": "head0",
+        "flagged_jobs": ["general-unit-tests/General"],
+        "method_last_modified_sha": None,
+        "clean_runs_since_modified": 0,
+        "last_observed_sha": "head0",
+        "last_observed_at": "t0",
+        "status": "active",
+        "cleared_at": None,
+    }
+    base.update(overrides)
+    return base
+
+
+class TestMergeNewFlakes(unittest.TestCase):
+    def test_brand_new_entry_added(self):
+        state = _make_state()
+        with mock.patch.object(d, "find_class_file", return_value="p/C.java"):
+            d.merge_new_flakes(
+                state,
+                [{"packageName": "p", "className": "C",
+                  "methodName": "m", "jobs": ["j1"]}],
+                "headN", repo_root=".",
+            )
+        self.assertEqual(len(state["tests"]), 1)
+        self.assertEqual(state["tests"][0]["status"], "active")
+        self.assertEqual(state["tests"][0]["first_flagged_sha"], "headN")
+
+    def test_re_flake_resets_active_counter(self):
+        state = _make_state(_make_entry(
+            method_last_modified_sha="fix1",
+            clean_runs_since_modified=2,
+        ))
+        d.merge_new_flakes(
+            state,
+            [{"packageName": "p", "className": "C",
+              "methodName": "m", "jobs": ["j1"]}],
+            "headN", repo_root=".",
+        )
+        self.assertEqual(state["tests"][0]["clean_runs_since_modified"], 0)
+
+    def test_re_flake_demotes_cleared(self):
+        state = _make_state(_make_entry(
+            status="cleared_via_fix",
+            cleared_at="earlier",
+            method_last_modified_sha="fix1",
+            clean_runs_since_modified=3,
+        ))
+        with mock.patch.object(d, "find_class_file", return_value="p/C.java"):
+            d.merge_new_flakes(
+                state,
+                [{"packageName": "p", "className": "C",
+                  "methodName": "m", "jobs": ["j1"]}],
+                "headN", repo_root=".",
+            )
+        entry = state["tests"][0]
+        self.assertEqual(entry["status"], "active")
+        self.assertEqual(entry["first_flagged_sha"], "headN")
+        self.assertIsNone(entry["method_last_modified_sha"])
+        self.assertEqual(entry["clean_runs_since_modified"], 0)
+        self.assertNotIn("cleared_at", entry)
+
+
+class TestIncrementCounters(unittest.TestCase):
+    def test_increment_when_modified_and_clean_and_job_ran(self):
+        state = _make_state(_make_entry(
+            method_last_modified_sha="fix1",
+            clean_runs_since_modified=1,
+        ))
+        d.increment_counters_if_clean(
+            state, current_flake_keys=set(),
+            ran_parent_jobs={"general-unit-tests"}, head_sha="hN",
+        )
+        self.assertEqual(state["tests"][0]["clean_runs_since_modified"], 2)
+
+    def test_no_increment_without_modification(self):
+        state = _make_state(_make_entry(method_last_modified_sha=None))
+        d.increment_counters_if_clean(
+            state, set(), {"general-unit-tests"}, "hN")
+        self.assertEqual(state["tests"][0]["clean_runs_since_modified"], 0)
+
+    def test_no_increment_when_test_reflakes(self):
+        state = _make_state(_make_entry(
+            method_last_modified_sha="fix1",
+            clean_runs_since_modified=1,
+        ))
+        d.increment_counters_if_clean(
+            state, current_flake_keys={"p.C.m"},
+            ran_parent_jobs={"general-unit-tests"}, head_sha="hN",
+        )
+        self.assertEqual(state["tests"][0]["clean_runs_since_modified"], 1)
+
+    def test_no_increment_when_job_not_in_ran(self):
+        state = _make_state(_make_entry(
+            method_last_modified_sha="fix1",
+            clean_runs_since_modified=1,
+            flagged_jobs=["identity-tests/identity-tests - elasticsearch9"],
+        ))
+        d.increment_counters_if_clean(
+            state, set(), {"general-unit-tests"}, "hN")
+        # identity-tests parent did not run; counter unchanged.
+        self.assertEqual(state["tests"][0]["clean_runs_since_modified"], 1)
+
+    def test_increment_with_matrix_job_key(self):
+        state = _make_state(_make_entry(
+            method_last_modified_sha="fix1",
+            clean_runs_since_modified=0,
+            flagged_jobs=["identity-tests/identity-tests - elasticsearch9"],
+        ))
+        d.increment_counters_if_clean(
+            state, set(), {"identity-tests"}, "hN")
+        self.assertEqual(state["tests"][0]["clean_runs_since_modified"], 1)
+
+
+class TestClearance(unittest.TestCase):
+    def test_clears_at_threshold(self):
+        state = _make_state(_make_entry(
+            method_last_modified_sha="fix1",
+            clean_runs_since_modified=d.MIN_CLEAN_RUNS,
+        ))
+        d.apply_clearance(state)
+        self.assertEqual(state["tests"][0]["status"], "cleared_via_fix")
+        self.assertIsNotNone(state["tests"][0]["cleared_at"])
+
+    def test_does_not_clear_below_threshold(self):
+        state = _make_state(_make_entry(
+            method_last_modified_sha="fix1",
+            clean_runs_since_modified=d.MIN_CLEAN_RUNS - 1,
+        ))
+        d.apply_clearance(state)
+        self.assertEqual(state["tests"][0]["status"], "active")
+
+
+class TestBypass(unittest.TestCase):
+    def test_marks_all_active_as_bypassed(self):
+        state = _make_state(
+            _make_entry(key="t1"),
+            _make_entry(key="t2", status="cleared_via_fix"),
+            _make_entry(key="t3"),
+        )
+        d.apply_bypass(state)
+        self.assertEqual(state["tests"][0]["status"], "cleared_via_bypass")
+        self.assertEqual(state["tests"][1]["status"], "cleared_via_fix")
+        self.assertEqual(state["tests"][2]["status"], "cleared_via_bypass")
+
+
+class TestReconcileForcePush(unittest.TestCase):
+    def test_drops_when_anchor_unreachable_and_not_in_run(self):
+        state = _make_state(_make_entry(first_flagged_sha="ghostSha"))
+        with mock.patch.object(d, "is_sha_reachable", return_value=False), \
+             mock.patch.object(d, "method_last_modified_in_range", return_value=None):
+            d.reconcile_state(state, set(), "headN", "baseN", ".")
+        self.assertEqual(state["tests"][0]["status"], "dropped_force_push")
+
+    def test_keeps_when_anchor_unreachable_but_still_flaking(self):
+        state = _make_state(_make_entry(first_flagged_sha="ghostSha", key="p.C.m"))
+        with mock.patch.object(d, "is_sha_reachable", return_value=False), \
+             mock.patch.object(d, "method_last_modified_in_range", return_value=None):
+            d.reconcile_state(state, {"p.C.m"}, "headN", "baseN", ".")
+        # The reconcile keeps it active (anchor unreachable check only fires when
+        # test isn't flaking); the merge step will then reset its counter.
+        self.assertEqual(state["tests"][0]["status"], "active")
+
+    def test_q4c_counter_resets_when_method_modified_again(self):
+        entry = _make_entry(
+            method_last_modified_sha="fix1",
+            clean_runs_since_modified=2,
+            _prev_last_mod="fix1",
+        )
+        state = _make_state(entry)
+        with mock.patch.object(d, "is_sha_reachable", return_value=True), \
+             mock.patch.object(d, "method_last_modified_in_range",
+                                return_value="fix2"):
+            d.reconcile_state(state, set(), "headN", "baseN", ".")
+        self.assertEqual(state["tests"][0]["method_last_modified_sha"], "fix2")
+        self.assertEqual(state["tests"][0]["clean_runs_since_modified"], 0)
+
+    def test_q4c_counter_preserved_when_modification_unchanged(self):
+        entry = _make_entry(
+            method_last_modified_sha="fix1",
+            clean_runs_since_modified=2,
+            _prev_last_mod="fix1",
+        )
+        state = _make_state(entry)
+        with mock.patch.object(d, "is_sha_reachable", return_value=True), \
+             mock.patch.object(d, "method_last_modified_in_range",
+                                return_value="fix1"):
+            d.reconcile_state(state, set(), "headN", "baseN", ".")
+        self.assertEqual(state["tests"][0]["clean_runs_since_modified"], 2)
+
+
+# ---------------------------------------------------------------------------
+# Comment rendering
+# ---------------------------------------------------------------------------
+
+class TestRenderComment(unittest.TestCase):
+    def test_active_comment_contains_state_block(self):
+        state = _make_state(_make_entry(
+            method_last_modified_sha="abcdef0",
+            clean_runs_since_modified=1,
+        ))
+        body = d.render_comment(state, "art-name")
+        self.assertIn("⚠️ New Flaky Tests Detected", body)
+        self.assertIn("Clean re-runs since fix: 1 / 3", body)
+        self.assertIn("Method last modified at: `abcdef0`", body)
+        self.assertIn("art-name", body)
+
+    def test_all_clear_template(self):
+        state = _make_state(_make_entry(
+            status="cleared_via_fix",
+            method_last_modified_sha="fix1",
+            cleared_at="t",
+        ))
+        body = d.render_comment(state, "art-name")
+        self.assertIn("✅ Cleared", body)
+        self.assertNotIn("⚠️", body)
+        self.assertIn("<details>", body)
+
+    def test_mixed_active_and_cleared(self):
+        state = _make_state(
+            _make_entry(key="t1"),
+            _make_entry(key="t2", status="cleared_via_bypass",
+                         cleared_at="t"),
+        )
+        body = d.render_comment(state, "art-name")
+        self.assertIn("⚠️", body)
+        self.assertIn("1 cleared test(s) (history)", body)
+        self.assertIn("cleared via `ci:flaky-test-bypass`", body)
+
+
+if __name__ == "__main__":
+    unittest.main()

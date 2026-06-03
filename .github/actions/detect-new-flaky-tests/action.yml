@@ -2,9 +2,11 @@
 name: Detect New Flaky Tests
 
 description: >
-  Compares flaky tests from the current PR run against known flaky tests from BigQuery.
-  Posts a PR comment if new (previously unknown) flaky tests are detected.
-  Can optionally fail the job to block the PR.
+  Compares flaky tests from the current PR run against known flaky tests from BigQuery
+  and a sticky per-PR state artifact. Once a test is flagged it stays flagged until
+  the method body is modified and 3 subsequent gate runs observe it clean, or until
+  the ci:flaky-test-bypass label is applied. Posts/updates a single PR comment that
+  renders the current state and writes the updated state JSON for upload.
 
 inputs:
   pr-flaky-tests-data:
@@ -17,13 +19,38 @@ inputs:
     description: 'Pull request number'
     required: true
   blocking:
-    description: 'If true, fail the job when new flaky tests are found. If false, only post a comment.'
+    description: 'If true, fail the job when any sticky entry is still active. If false, only post a comment.'
     required: false
     default: 'true'
+  state-file-in:
+    description: 'Path to the state JSON downloaded from the prior run artifact. Missing path is treated as fresh state.'
+    required: false
+    default: ''
+  state-file-out:
+    description: 'Path where the updated state JSON is written (then uploaded as an artifact).'
+    required: true
+  ran-jobs-json:
+    description: 'JSON array of parent job names whose result is not "skipped" in this CI run. Used to decide whether a clean run advances the per-test counter.'
+    required: false
+    default: '[]'
+  bypass-label-present:
+    description: '"true" if the PR has the ci:flaky-test-bypass label, otherwise "false".'
+    required: false
+    default: 'false'
+  head-sha:
+    description: 'Current PR head SHA. Used as the modification anchor and for git log -L.'
+    required: true
+  base-ref:
+    description: 'PR base branch (e.g. "main" or "stable/8.7"). Used as the lower bound for git log -L.'
+    required: true
+  repo-root:
+    description: 'Absolute path to the checked-out repo. Defaults to GITHUB_WORKSPACE.'
+    required: false
+    default: ''
 
 outputs:
   has-new-flaky-tests:
-    description: 'Whether new flaky tests were detected (true/false)'
+    description: 'Whether any sticky entries remain active (true/false)'
     value: ${{ steps.detect.outputs.has-new-flaky-tests }}
 
 runs:
@@ -37,5 +64,12 @@ runs:
         KNOWN_FLAKY_TESTS_FILE: ${{ inputs.known-flaky-tests-file }}
         PR_NUMBER: ${{ inputs.pr-number }}
         BLOCKING: ${{ inputs.blocking }}
+        STATE_FILE_IN: ${{ inputs.state-file-in }}
+        STATE_FILE_OUT: ${{ inputs.state-file-out }}
+        RAN_JOBS_JSON: ${{ inputs.ran-jobs-json }}
+        BYPASS_LABEL_PRESENT: ${{ inputs.bypass-label-present }}
+        HEAD_SHA: ${{ inputs.head-sha }}
+        BASE_REF: ${{ inputs.base-ref }}
+        REPO_ROOT: ${{ inputs.repo-root != '' && inputs.repo-root || github.workspace }}
         GITHUB_TOKEN: ${{ github.token }}
       run: python3 ${{ github.action_path }}/detect_new_flaky_tests.py
