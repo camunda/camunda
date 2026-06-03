@@ -217,6 +217,7 @@ dependencies {
     api(libs.jakarta.annotation.jakarta.annotation.api)
     api(libs.io.swagger.core.v3.swagger.annotations.jakarta)
     api(libs.org.jspecify.jspecify)
+    testImplementation(libs.org.assertj.assertj.core)
 }
 
 description = "Camunda Gateway Model"

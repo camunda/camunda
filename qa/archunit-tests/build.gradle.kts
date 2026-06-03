@@ -7,6 +7,9 @@ plugins {
 }
 
 dependencies {
+    testImplementation(project(":camunda-qa-util"))
+    testImplementation(libs.org.springframework.spring.test)
+    testImplementation(libs.org.springframework.spring.webflux)
     testImplementation(project(":camunda-zeebe"))
     testImplementation(project(":camunda-client-java"))
     testImplementation(project(":camunda-service"))
