@@ -105,10 +105,5 @@ public class NoopArchiverRepository implements ArchiverRepository {
   }
 
   @Override
-  public CompletableFuture<Integer> getCountOfProcessInstancesAwaitingArchival() {
-    return CompletableFuture.completedFuture(0);
-  }
-
-  @Override
   public void close() throws Exception {}
 }

@@ -56,7 +56,6 @@ import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
 import org.opensearch.client.opensearch._types.query_dsl.TermsQuery;
 import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.BulkResponse;
-import org.opensearch.client.opensearch.core.CountRequest;
 import org.opensearch.client.opensearch.core.DeleteByQueryRequest;
 import org.opensearch.client.opensearch.core.DeleteByQueryResponse;
 import org.opensearch.client.opensearch.core.ReindexRequest;
@@ -66,6 +65,8 @@ import org.opensearch.client.opensearch.core.SearchRequest.Builder;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.opensearch.client.opensearch.core.search.Hit;
+import org.opensearch.client.opensearch.core.search.TotalHits;
+import org.opensearch.client.opensearch.core.search.TotalHitsRelation;
 import org.opensearch.client.opensearch.generic.OpenSearchGenericClient;
 import org.opensearch.client.opensearch.generic.Requests;
 import org.opensearch.client.opensearch.generic.Response;
@@ -149,7 +150,21 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
 
     final var timer = Timer.start();
     return sendRequestAsync(() -> client.search(request, ProcessInstanceForListViewEntity.class))
-        .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
+        .whenCompleteAsync(
+            (response, error) -> {
+              try {
+                metrics.measureArchiverSearch(timer);
+                if (config.isTrackArchivalMetricsForProcessInstance()
+                    && response != null
+                    && response.hits().total() != null) {
+                  final var total = response.hits().total();
+                  measureProcessInstancesArchiverBacklog(total);
+                }
+              } catch (final Exception e) {
+                logger.warn("Failed to publish archival metric", e);
+              }
+            },
+            executor)
         .thenApplyAsync(
             (response) -> createProcessInstanceBatch(response, ListViewTemplate.END_DATE),
             executor);
@@ -420,23 +435,6 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
                     err);
               }
             });
-  }
-
-  @Override
-  public CompletableFuture<Integer> getCountOfProcessInstancesAwaitingArchival() {
-    final var countRequest =
-        CountRequest.of(
-            cr ->
-                cr.index(listViewTemplateDescriptor.getFullQualifiedName())
-                    .query(
-                        finishedProcessInstancesQuery(
-                            config.getArchivingTimePoint(), partitionId)));
-
-    try {
-      return client.count(countRequest).thenApplyAsync(res -> Math.toIntExact(res.count()));
-    } catch (final IOException e) {
-      return CompletableFuture.failedFuture(e);
-    }
   }
 
   @VisibleForTesting
@@ -738,6 +736,38 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
         size,
         ListViewTemplate.END_DATE,
         ListViewTemplate.ROOT_PROCESS_INSTANCE_KEY);
+  }
+
+  private void measureProcessInstancesArchiverBacklog(final TotalHits total) {
+    if (total.relation() == TotalHitsRelation.Eq) {
+      metrics.setProcessInstancesAwaitingArchival(Math.toIntExact(total.value()));
+    } else {
+      // relation is Gte (≥10 000), fire a separate _count for the exact number
+      sendRequestAsync(
+              () ->
+                  client.count(
+                      b ->
+                          b.index(listViewTemplateDescriptor.getFullQualifiedName())
+                              .query(
+                                  finishedProcessInstancesQuery(
+                                      config.getArchivingTimePoint(), partitionId))
+                              .allowNoIndices(true)
+                              .ignoreUnavailable(true)))
+          .whenCompleteAsync(
+              (countResponse, countError) -> {
+                try {
+                  if (countError != null) {
+                    logger.debug("Failed to fetch archival backlog count from _count", countError);
+                    return;
+                  }
+                  metrics.setProcessInstancesAwaitingArchival(
+                      Math.toIntExact(countResponse.count()));
+                } catch (final Exception e) {
+                  logger.warn("Failed to publish archival backlog metric from _count", e);
+                }
+              },
+              executor);
+    }
   }
 
   private SearchRequest createFinishedBatchOperationsSearchRequest() {

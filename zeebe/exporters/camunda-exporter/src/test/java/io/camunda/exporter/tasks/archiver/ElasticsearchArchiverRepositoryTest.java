@@ -47,6 +47,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
@@ -54,6 +55,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 final class ElasticsearchArchiverRepositoryTest extends AbstractArchiverRepositoryTest {
+
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ElasticsearchArchiverRepositoryTest.class);
 
@@ -195,6 +197,111 @@ final class ElasticsearchArchiverRepositoryTest extends AbstractArchiverReposito
   }
 
   @Test
+  public void shouldPublishArchivalBacklogMetricWhenTrackingEnabled() {
+    // given
+    final var config = new HistoryConfiguration();
+    config.setTrackArchivalMetricsForProcessInstance(true);
+    final var meterRegistry = new SimpleMeterRegistry();
+    final var metrics = new CamundaExporterMetrics(meterRegistry);
+    final var repository = createRepository(client, config, metrics);
+    final var hit1 = createHit("1", "2024-01-01", null);
+    final var hit2 = createHit("2", "2024-01-01", 100L);
+
+    final var response = createResponse(List.of(hit1, hit2));
+    when(client.search(any(SearchRequest.class), eq(ProcessInstanceForListViewEntity.class)))
+        .thenReturn(CompletableFuture.completedFuture(response));
+
+    // when
+    repository.getProcessInstancesNextBatch(100).join();
+
+    // then
+    final var gauge =
+        meterRegistry.get("zeebe.camunda.exporter.process.instances.awaiting.archival").gauge();
+    assertThat(gauge.value()).isEqualTo(2.0);
+  }
+
+  @Test
+  public void shouldNotPublishArchivalBacklogMetricWhenTrackingDisabled() {
+    // given
+    final var config = new HistoryConfiguration();
+    config.setTrackArchivalMetricsForProcessInstance(false);
+    final var meterRegistry = new SimpleMeterRegistry();
+    final var metrics = new CamundaExporterMetrics(meterRegistry);
+    final var repository = createRepository(client, config, metrics);
+    final var hit1 = createHit("1", "2024-01-01", null);
+
+    final var response = createResponse(List.of(hit1));
+    when(client.search(any(SearchRequest.class), eq(ProcessInstanceForListViewEntity.class)))
+        .thenReturn(CompletableFuture.completedFuture(response));
+
+    // when
+    repository.getProcessInstancesNextBatch(100).join();
+
+    // then
+    final var gauge =
+        meterRegistry.get("zeebe.camunda.exporter.process.instances.awaiting.archival").gauge();
+    assertThat(gauge.value()).isEqualTo(0.0);
+  }
+
+  @Test
+  public void shouldNotBreakFlowWhenMetricPublishingFails() {
+    // given
+    final var config = new HistoryConfiguration();
+    config.setTrackArchivalMetricsForProcessInstance(true);
+    final var metrics = mock(CamundaExporterMetrics.class);
+    Mockito.doThrow(new ArithmeticException("integer overflow"))
+        .when(metrics)
+        .setProcessInstancesAwaitingArchival(org.mockito.ArgumentMatchers.anyInt());
+    final var repository = createRepository(client, config, metrics);
+
+    final var hit1 = createHit("1", "2024-01-01", null);
+    final var response = createResponse(List.of(hit1));
+    when(client.search(any(SearchRequest.class), eq(ProcessInstanceForListViewEntity.class)))
+        .thenReturn(CompletableFuture.completedFuture(response));
+
+    // when
+    final var batch = repository.getProcessInstancesNextBatch(100).join();
+
+    // then - the batch is still returned despite the metrics exception
+    assertThat(batch).isNotNull();
+    assertThat(batch.processInstanceKeys()).containsExactly(1L);
+  }
+
+  @Test
+  public void shouldFireCountRequestWhenTotalHitsRelationIsGte() {
+    // given
+    final var config = new HistoryConfiguration();
+    config.setTrackArchivalMetricsForProcessInstance(true);
+    final var meterRegistry = new SimpleMeterRegistry();
+    final var metrics = new CamundaExporterMetrics(meterRegistry);
+    final var repository = createRepository(client, config, metrics);
+    final var hit1 = createHit("1", "2024-01-01", null);
+
+    // response with Gte relation (total is a lower bound, e.g. 10000+)
+    final var response = createResponseWithRelation(List.of(hit1), 15000, TotalHitsRelation.Gte);
+    when(client.search(any(SearchRequest.class), eq(ProcessInstanceForListViewEntity.class)))
+        .thenReturn(CompletableFuture.completedFuture(response));
+
+    // mock count response with exact value
+    final var countResponse =
+        co.elastic.clients.elasticsearch.core.CountResponse.of(
+            c -> c.count(15000L).shards(s -> s.total(1).successful(1).failed(0)));
+    when(client.count(any(Function.class)))
+        .thenReturn(CompletableFuture.completedFuture(countResponse));
+
+    // when
+    repository.getProcessInstancesNextBatch(100).join();
+
+    // then - the exact count from _count request is published
+    final var gauge =
+        meterRegistry.get("zeebe.camunda.exporter.process.instances.awaiting.archival").gauge();
+    Awaitility.await()
+        .atMost(Duration.ofMillis(200))
+        .untilAsserted(() -> assertThat(gauge.value()).isEqualTo(15000.0));
+    verify(client).count(any(Function.class));
+  }
+
+  @Test
   public void shouldNotDeleteWhenMovingIfReindexingFails() {
     // given
     when(client.reindex(any(ReindexRequest.class)))
@@ -331,6 +438,13 @@ final class ElasticsearchArchiverRepositoryTest extends AbstractArchiverReposito
 
   private ElasticsearchArchiverRepository createRepository(
       final ElasticsearchAsyncClient client, final HistoryConfiguration config) {
+    return createRepository(client, config, new CamundaExporterMetrics(new SimpleMeterRegistry()));
+  }
+
+  private ElasticsearchArchiverRepository createRepository(
+      final ElasticsearchAsyncClient client,
+      final HistoryConfiguration config,
+      final CamundaExporterMetrics metrics) {
     if (Mockito.mockingDetails(client).isMock()) {
       final var indicesClient = mock(ElasticsearchIndicesAsyncClient.class);
       when(client.indices()).thenReturn(indicesClient);
@@ -347,7 +461,7 @@ final class ElasticsearchArchiverRepositoryTest extends AbstractArchiverReposito
         new TestExporterResourceProvider("testPrefix", true),
         client,
         Runnable::run,
-        new CamundaExporterMetrics(new SimpleMeterRegistry()),
+        metrics,
         LOGGER);
   }
 
@@ -369,14 +483,18 @@ final class ElasticsearchArchiverRepositoryTest extends AbstractArchiverReposito
 
   private SearchResponse<ProcessInstanceForListViewEntity> createResponse(
       final List<Hit<ProcessInstanceForListViewEntity>> hits) {
+    return createResponseWithRelation(hits, hits.size(), TotalHitsRelation.Eq);
+  }
+
+  private SearchResponse<ProcessInstanceForListViewEntity> createResponseWithRelation(
+      final List<Hit<ProcessInstanceForListViewEntity>> hits,
+      final long totalValue,
+      final TotalHitsRelation relation) {
     return SearchResponse.of(
         r ->
             r.took(1)
                 .timedOut(false)
                 .shards(s -> s.total(1).successful(1).failed(0))
-                .hits(
-                    h ->
-                        h.total(t -> t.value(hits.size()).relation(TotalHitsRelation.Eq))
-                            .hits(hits)));
+                .hits(h -> h.total(t -> t.value(totalValue).relation(relation)).hits(hits)));
   }
 }

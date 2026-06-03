@@ -94,8 +94,6 @@ public interface ArchiverRepository extends AutoCloseable {
       final Map<String, String> exclusionFilters,
       final Executor executor);
 
-  CompletableFuture<Integer> getCountOfProcessInstancesAwaitingArchival();
-
   default String getRetentionPolicyName(
       final String indexName, final RetentionConfiguration retentionConfiguration) {
     return INDEX_TO_RETENTION_POLICY_FIELD

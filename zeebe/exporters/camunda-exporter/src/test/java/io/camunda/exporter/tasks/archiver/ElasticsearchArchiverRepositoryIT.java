@@ -548,6 +548,12 @@ final class ElasticsearchArchiverRepositoryIT {
     final var batch = result.join();
     assertThat(batch.processInstanceKeys()).containsExactly(1L);
     assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofHours(2))));
+    assertThat(
+            meterRegistry
+                .get("zeebe.camunda.exporter.process.instances.awaiting.archival")
+                .gauge()
+                .value())
+        .isEqualTo(1.0);
   }
 
   @Test
@@ -586,6 +592,12 @@ final class ElasticsearchArchiverRepositoryIT {
     assertThat(batch20.processInstanceKeys()).hasSize(10);
     final var batch5 = resultLimit5.join();
     assertThat(batch5.processInstanceKeys()).hasSize(5);
+    assertThat(
+            meterRegistry
+                .get("zeebe.camunda.exporter.process.instances.awaiting.archival")
+                .gauge()
+                .value())
+        .isEqualTo(10.0);
   }
 
   @Test

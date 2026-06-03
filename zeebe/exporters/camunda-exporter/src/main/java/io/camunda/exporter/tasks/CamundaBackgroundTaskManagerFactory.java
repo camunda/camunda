@@ -29,7 +29,6 @@ import io.camunda.exporter.tasks.archiver.OpenSearchArchiverRepository;
 import io.camunda.exporter.tasks.archiver.OpensearchAuditLogArchiverRepository;
 import io.camunda.exporter.tasks.archiver.ProcessInstanceArchiverJob;
 import io.camunda.exporter.tasks.archiver.ProcessInstanceByIdArchiverJob;
-import io.camunda.exporter.tasks.archiver.ProcessInstanceToBeArchivedCountJob;
 import io.camunda.exporter.tasks.archiver.StandaloneDecisionArchiverJob;
 import io.camunda.exporter.tasks.archiver.UsageMetricArchiverJob;
 import io.camunda.exporter.tasks.archiver.UsageMetricTUArchiverJob;
@@ -262,9 +261,6 @@ public final class CamundaBackgroundTaskManagerFactory {
     tasks.add(buildIncidentMarkerTask());
     if (config.getHistory().isProcessInstanceEnabled()) {
       tasks.add(buildProcessInstanceArchiverJob());
-      if (config.getHistory().isTrackArchivalMetricsForProcessInstance()) {
-        tasks.add(buildProcessInstanceToBeArchivedCountJob());
-      }
     }
     tasks.add(buildUsageMetricsArchiverJob());
     tasks.add(buildUsageMetricsTUArchiverJob());
@@ -349,19 +345,6 @@ public final class CamundaBackgroundTaskManagerFactory {
         config.getHistory().getRetention().getApplyPolicyJobInterval().toMillis();
     return new ReschedulingTask(
         applyRolloverPeriodJob, 0, delayBetweenRuns, delayBetweenRuns, executor, logger);
-  }
-
-  private ReschedulingTask buildProcessInstanceToBeArchivedCountJob() {
-    final var processInstanceToBeArchivedCountJob =
-        new ProcessInstanceToBeArchivedCountJob(metrics, archiverRepository, logger);
-
-    return new ReschedulingTask(
-        processInstanceToBeArchivedCountJob,
-        0,
-        ProcessInstanceToBeArchivedCountJob.DELAY_BETWEEN_RUNS,
-        ProcessInstanceToBeArchivedCountJob.MAX_DELAY_BETWEEN_RUNS,
-        executor,
-        logger);
   }
 
   private ReschedulingTask buildIncidentMarkerTask() {

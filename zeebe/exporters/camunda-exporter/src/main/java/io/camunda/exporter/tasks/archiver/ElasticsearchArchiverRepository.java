@@ -22,7 +22,6 @@ import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
 import co.elastic.clients.elasticsearch._types.query_dsl.TermsQuery;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
-import co.elastic.clients.elasticsearch.core.CountRequest;
 import co.elastic.clients.elasticsearch.core.DeleteByQueryRequest;
 import co.elastic.clients.elasticsearch.core.DeleteByQueryResponse;
 import co.elastic.clients.elasticsearch.core.ReindexRequest;
@@ -32,6 +31,8 @@ import co.elastic.clients.elasticsearch.core.SearchRequest.Builder;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import co.elastic.clients.elasticsearch.core.search.Hit;
+import co.elastic.clients.elasticsearch.core.search.TotalHits;
+import co.elastic.clients.elasticsearch.core.search.TotalHitsRelation;
 import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
 import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsResponse;
 import com.github.benmanes.caffeine.cache.Cache;
@@ -143,7 +144,21 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
     final var timer = Timer.start();
     return client
         .search(searchRequest, ProcessInstanceForListViewEntity.class)
-        .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
+        .whenCompleteAsync(
+            (response, error) -> {
+              try {
+                metrics.measureArchiverSearch(timer);
+                if (config.isTrackArchivalMetricsForProcessInstance()
+                    && response != null
+                    && response.hits().total() != null) {
+                  final var total = response.hits().total();
+                  measureProcessInstancesArchiverBacklog(total);
+                }
+              } catch (final Exception e) {
+                logger.warn("Failed to publish archival metric", e);
+              }
+            },
+            executor)
         .thenApplyAsync(
             (response) -> createProcessInstanceBatch(response, ListViewTemplate.END_DATE),
             executor);
@@ -411,19 +426,6 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
             });
   }
 
-  @Override
-  public CompletableFuture<Integer> getCountOfProcessInstancesAwaitingArchival() {
-    final var countRequest =
-        CountRequest.of(
-            cr ->
-                cr.index(listViewTemplateDescriptor.getFullQualifiedName())
-                    .query(
-                        finishedProcessInstancesQuery(
-                            config.getArchivingTimePoint(), partitionId)));
-
-    return client.count(countRequest).thenApplyAsync(res -> Math.toIntExact(res.count()));
-  }
-
   @VisibleForTesting
   CompletableFuture<ArchiveDocIdsBatch<FieldValue>> getArchiveDocIdsBatch(
       final String sourceIndexName,
@@ -597,6 +599,37 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
         size,
         ListViewTemplate.END_DATE,
         ListViewTemplate.ROOT_PROCESS_INSTANCE_KEY);
+  }
+
+  private void measureProcessInstancesArchiverBacklog(final TotalHits total) {
+    if (total.relation() == TotalHitsRelation.Eq) {
+      metrics.setProcessInstancesAwaitingArchival(Math.toIntExact(total.value()));
+    } else {
+      // relation is Gte (≥10 000), fire a separate _count for the exact number
+      client
+          .count(
+              b ->
+                  b.index(listViewTemplateDescriptor.getFullQualifiedName())
+                      .query(
+                          finishedProcessInstancesQuery(
+                              config.getArchivingTimePoint(), partitionId))
+                      .allowNoIndices(true)
+                      .ignoreUnavailable(true))
+          .whenCompleteAsync(
+              (countResponse, countError) -> {
+                try {
+                  if (countError != null) {
+                    logger.debug("Failed to fetch archival backlog count from _count", countError);
+                  } else {
+                    metrics.setProcessInstancesAwaitingArchival(
+                        Math.toIntExact(countResponse.count()));
+                  }
+                } catch (final Exception e) {
+                  logger.warn("Failed to publish archival backlog metric from _count", e);
+                }
+              },
+              executor);
+    }
   }
 
   private CompletableFuture<PutIndicesSettingsResponse> applyPolicyToIndices(

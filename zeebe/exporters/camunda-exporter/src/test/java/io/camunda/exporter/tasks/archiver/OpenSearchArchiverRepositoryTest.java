@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -112,6 +113,117 @@ final class OpenSearchArchiverRepositoryTest extends AbstractArchiverRepositoryT
         Runnable::run,
         metrics,
         LOGGER);
+  }
+
+  @Test
+  public void shouldPublishArchivalBacklogMetricWhenTrackingEnabled() throws IOException {
+    // given
+    final var config = new HistoryConfiguration();
+    config.setTrackArchivalMetricsForProcessInstance(true);
+    final var meterRegistry = new SimpleMeterRegistry();
+    final var metrics = new CamundaExporterMetrics(meterRegistry);
+    final var client = mock(OpenSearchAsyncClient.class);
+    final var repository = createRepository(client, config, metrics);
+    final var hit1 = createHit("1", "2024-01-01", null);
+    final var hit2 = createHit("2", "2024-01-01", 100L);
+
+    final var response = createResponse(List.of(hit1, hit2));
+    when(client.search(any(SearchRequest.class), eq(ProcessInstanceForListViewEntity.class)))
+        .thenReturn(CompletableFuture.completedFuture(response));
+
+    // when
+    repository.getProcessInstancesNextBatch(100).join();
+
+    // then
+    final var gauge =
+        meterRegistry.get("zeebe.camunda.exporter.process.instances.awaiting.archival").gauge();
+    assertThat(gauge.value()).isEqualTo(2.0);
+  }
+
+  @Test
+  public void shouldNotPublishArchivalBacklogMetricWhenTrackingDisabled() throws IOException {
+    // given
+    final var config = new HistoryConfiguration();
+    config.setTrackArchivalMetricsForProcessInstance(false);
+    final var meterRegistry = new SimpleMeterRegistry();
+    final var metrics = new CamundaExporterMetrics(meterRegistry);
+    final var client = mock(OpenSearchAsyncClient.class);
+    final var repository = createRepository(client, config, metrics);
+    final var hit1 = createHit("1", "2024-01-01", null);
+
+    final var response = createResponse(List.of(hit1));
+    when(client.search(any(SearchRequest.class), eq(ProcessInstanceForListViewEntity.class)))
+        .thenReturn(CompletableFuture.completedFuture(response));
+
+    // when
+    repository.getProcessInstancesNextBatch(100).join();
+
+    // then
+    final var gauge =
+        meterRegistry.get("zeebe.camunda.exporter.process.instances.awaiting.archival").gauge();
+    assertThat(gauge.value()).isEqualTo(0.0);
+  }
+
+  @Test
+  public void shouldNotBreakFlowWhenMetricPublishingFails() throws IOException {
+    // given
+    final var config = new HistoryConfiguration();
+    config.setTrackArchivalMetricsForProcessInstance(true);
+    final var metrics = mock(CamundaExporterMetrics.class);
+    Mockito.doThrow(new ArithmeticException("integer overflow"))
+        .when(metrics)
+        .setProcessInstancesAwaitingArchival(org.mockito.ArgumentMatchers.anyInt());
+    final var client = mock(OpenSearchAsyncClient.class);
+    final var repository = createRepository(client, config, metrics);
+
+    final var hit1 = createHit("1", "2024-01-01", null);
+    final var response = createResponse(List.of(hit1));
+    when(client.search(any(SearchRequest.class), eq(ProcessInstanceForListViewEntity.class)))
+        .thenReturn(CompletableFuture.completedFuture(response));
+
+    // when
+    final var batch = repository.getProcessInstancesNextBatch(100).join();
+
+    // then - the batch is still returned despite the metrics exception
+    assertThat(batch).isNotNull();
+    assertThat(batch.processInstanceKeys()).containsExactly(1L);
+  }
+
+  @Test
+  public void shouldFireCountRequestWhenTotalHitsRelationIsGte() throws IOException {
+    // given
+    final var config = new HistoryConfiguration();
+    config.setTrackArchivalMetricsForProcessInstance(true);
+    final var meterRegistry = new SimpleMeterRegistry();
+    final var metrics = new CamundaExporterMetrics(meterRegistry);
+    final var client = mock(OpenSearchAsyncClient.class);
+    final var repository = createRepository(client, config, metrics);
+    final var hit1 = createHit("1", "2024-01-01", null);
+
+    // response with Gte relation (total is a lower bound, e.g. 10000+)
+    final var response = createResponseWithRelation(List.of(hit1), 15000, TotalHitsRelation.Gte);
+    when(client.search(any(SearchRequest.class), eq(ProcessInstanceForListViewEntity.class)))
+        .thenReturn(CompletableFuture.completedFuture(response));
+
+    // mock count response with exact value
+    final var countResponse =
+        new org.opensearch.client.opensearch.core.CountResponse.Builder()
+            .count(15000L)
+            .shards(s -> s.total(1).successful(1).failed(0))
+            .build();
+    when(client.count(any(Function.class)))
+        .thenReturn(CompletableFuture.completedFuture(countResponse));
+
+    // when
+    repository.getProcessInstancesNextBatch(100).join();
+
+    // then - the exact count from _count request is published
+    final var gauge =
+        meterRegistry.get("zeebe.camunda.exporter.process.instances.awaiting.archival").gauge();
+    Awaitility.await()
+        .atMost(Duration.ofMillis(200))
+        .untilAsserted(() -> assertThat(gauge.value()).isEqualTo(15000.0));
+    verify(client).count(any(Function.class));
   }
 
   @Test
@@ -354,6 +466,14 @@ final class OpenSearchArchiverRepositoryTest extends AbstractArchiverRepositoryT
 
   private OpenSearchArchiverRepository createRepository(
       final OpenSearchAsyncClient client, final HistoryConfiguration config) throws IOException {
+    return createRepository(client, config, new CamundaExporterMetrics(new SimpleMeterRegistry()));
+  }
+
+  private OpenSearchArchiverRepository createRepository(
+      final OpenSearchAsyncClient client,
+      final HistoryConfiguration config,
+      final CamundaExporterMetrics metrics)
+      throws IOException {
     if (Mockito.mockingDetails(client).isMock()) {
       final var indicesClient = mock(OpenSearchIndicesAsyncClient.class);
       when(client.indices()).thenReturn(indicesClient);
@@ -371,7 +491,7 @@ final class OpenSearchArchiverRepositoryTest extends AbstractArchiverRepositoryT
         client,
         mock(OpenSearchGenericClient.class),
         Runnable::run,
-        new CamundaExporterMetrics(new SimpleMeterRegistry()),
+        metrics,
         LOGGER);
   }
 
@@ -393,11 +513,18 @@ final class OpenSearchArchiverRepositoryTest extends AbstractArchiverRepositoryT
 
   private SearchResponse<ProcessInstanceForListViewEntity> createResponse(
       final List<Hit<ProcessInstanceForListViewEntity>> hits) {
+    return createResponseWithRelation(hits, hits.size(), TotalHitsRelation.Eq);
+  }
+
+  private SearchResponse<ProcessInstanceForListViewEntity> createResponseWithRelation(
+      final List<Hit<ProcessInstanceForListViewEntity>> hits,
+      final long totalValue,
+      final TotalHitsRelation relation) {
     return new SearchResponse.Builder<ProcessInstanceForListViewEntity>()
         .took(1)
         .timedOut(false)
         .shards(s -> s.total(1).successful(1).failed(0))
-        .hits(h -> h.total(t -> t.value(hits.size()).relation(TotalHitsRelation.Eq)).hits(hits))
+        .hits(h -> h.total(t -> t.value(totalValue).relation(relation)).hits(hits))
         .build();
   }
 }
