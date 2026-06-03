@@ -46,11 +46,11 @@ config/
 
 Defined in `tsconfig.json`:
 
-| Alias       | Resolves to    | Use for                                         |
-|-------------|----------------|-------------------------------------------------|
-| `@fixtures` | `fixtures.ts`  | `import {test} from 'fixtures';`                |
-| `@setup`    | `test-setup.ts`| `captureScreenshot`, `captureFailureVideo`      |
-| `@pages/*`  | `pages/*`      | Page object classes                             |
+|    Alias    |   Resolves to   |                  Use for                   |
+|-------------|-----------------|--------------------------------------------|
+| `@fixtures` | `fixtures.ts`   | `import {test} from 'fixtures';`           |
+| `@setup`    | `test-setup.ts` | `captureScreenshot`, `captureFailureVideo` |
+| `@pages/*`  | `pages/*`       | Page object classes                        |
 
 Example test imports:
 
@@ -86,17 +86,17 @@ Ensure the ports in your `.env` match those used in the local stack.
 
 ### Environment variables read by the suite
 
-| Variable                  | Purpose                                                                    |
-|---------------------------|----------------------------------------------------------------------------|
-| `LOCAL_TEST`              | Required by `npm run test:local` — gates the interactive runner            |
-| `CORE_APPLICATION_TASKLIST_URL` | Base URL for Tasklist (default `http://localhost:8080`)            |
-| `CORE_APPLICATION_OPERATE_URL`  | Base URL for Operate (default `http://localhost:8081`)             |
-| `PLAYWRIGHT_BASE_URL`     | Overrides the default base URL for all projects                            |
-| `CAMUNDA_AUTH_STRATEGY`   | Auth mode: `BASIC` for local                                               |
-| `CAMUNDA_BASIC_AUTH_USERNAME` / `CAMUNDA_BASIC_AUTH_PASSWORD` | Credentials for BASIC auth |
-| `ZEEBE_REST_ADDRESS`      | Zeebe REST gateway address                                                 |
-| `VERSION`, `DB_NAME`      | Reporter labels (used in Slack title)                                      |
-| `INCLUDE_SLACK_REPORTER`  | `true` activates the Slack reporter (set by CI only)                       |
+|                           Variable                            |                             Purpose                             |
+|---------------------------------------------------------------|-----------------------------------------------------------------|
+| `LOCAL_TEST`                                                  | Required by `npm run test:local` — gates the interactive runner |
+| `CORE_APPLICATION_TASKLIST_URL`                               | Base URL for Tasklist (default `http://localhost:8080`)         |
+| `CORE_APPLICATION_OPERATE_URL`                                | Base URL for Operate (default `http://localhost:8081`)          |
+| `PLAYWRIGHT_BASE_URL`                                         | Overrides the default base URL for all projects                 |
+| `CAMUNDA_AUTH_STRATEGY`                                       | Auth mode: `BASIC` for local                                    |
+| `CAMUNDA_BASIC_AUTH_USERNAME` / `CAMUNDA_BASIC_AUTH_PASSWORD` | Credentials for BASIC auth                                      |
+| `ZEEBE_REST_ADDRESS`                                          | Zeebe REST gateway address                                      |
+| `VERSION`, `DB_NAME`                                          | Reporter labels (used in Slack title)                           |
+| `INCLUDE_SLACK_REPORTER`                                      | `true` activates the Slack reporter (set by CI only)            |
 
 ## Running Tests
 
@@ -122,28 +122,28 @@ npx playwright show-report html-report
 
 ### Output artifacts
 
-| Path                            | Contents                                                  |
-|---------------------------------|-----------------------------------------------------------|
-| `html-report/`                  | Latest Playwright HTML report (open `index.html`)         |
-| `test-results/`                 | Per-test traces (`trace.zip`), screenshots — on failure   |
-| `test-results/junit-report.xml` | JUnit XML (consumed by TestRail)                          |
-| `json-report/results.json`      | JSON results (parsed by the flakiness agent and CI)       |
+|              Path               |                        Contents                         |
+|---------------------------------|---------------------------------------------------------|
+| `html-report/`                  | Latest Playwright HTML report (open `index.html`)       |
+| `test-results/`                 | Per-test traces (`trace.zip`), screenshots — on failure |
+| `test-results/junit-report.xml` | JUnit XML (consumed by TestRail)                        |
+| `json-report/results.json`      | JSON results (parsed by the flakiness agent and CI)     |
 
 Inspect a failing test's trace with `npx playwright show-trace test-results/<test-dir>/trace.zip`,
 or upload the `.zip` to https://trace.playwright.dev.
 
 ## Playwright Projects
 
-| Project           | Test match                        | Notes                                        |
-|-------------------|-----------------------------------|----------------------------------------------|
-| `chromium`        | `tests/**/*.spec.ts`              | Excludes `task-panel.spec.ts` and `tests/api/`; teardown: `chromium-subset` |
-| `chromium-subset` | `task-panel.spec.ts`              | Teardown project of `chromium`               |
-| `firefox`         | Same as `chromium`                | Cross-browser variant; teardown: `firefox-subset` |
-| `firefox-subset`  | `task-panel.spec.ts`              | Teardown project of `firefox`                |
-| `msedge`          | Same as `chromium`                | Cross-browser variant; teardown: `msedge-subset` |
-| `msedge-subset`   | `task-panel.spec.ts`              | Teardown project of `msedge`                 |
-| `tasklist-e2e`    | `tests/tasklist/*.spec.ts`        | Tasklist-scoped run                          |
-| `api-tests`       | `tests/api/*.spec.ts`             | REST API tests                               |
+|      Project      |         Test match         |                                    Notes                                    |
+|-------------------|----------------------------|-----------------------------------------------------------------------------|
+| `chromium`        | `tests/**/*.spec.ts`       | Excludes `task-panel.spec.ts` and `tests/api/`; teardown: `chromium-subset` |
+| `chromium-subset` | `task-panel.spec.ts`       | Teardown project of `chromium`                                              |
+| `firefox`         | Same as `chromium`         | Cross-browser variant; teardown: `firefox-subset`                           |
+| `firefox-subset`  | `task-panel.spec.ts`       | Teardown project of `firefox`                                               |
+| `msedge`          | Same as `chromium`         | Cross-browser variant; teardown: `msedge-subset`                            |
+| `msedge-subset`   | `task-panel.spec.ts`       | Teardown project of `msedge`                                                |
+| `tasklist-e2e`    | `tests/tasklist/*.spec.ts` | Tasklist-scoped run                                                         |
+| `api-tests`       | `tests/api/*.spec.ts`      | REST API tests                                                              |
 
 Global settings: timeout 12 min, 4 workers, 1 retry, screenshot retained on failure.
 
@@ -168,23 +168,23 @@ Always run `npm run lint` before committing. Fix all errors — do not commit wi
 
 ## Key Utilities
 
-| File                          | Purpose                                          |
-|-------------------------------|--------------------------------------------------|
-| `utils/zeebeClient.ts`        | Zeebe gRPC/REST client wrapper                   |
-| `utils/waitForAssertion.ts`   | Retry wrapper for async assertions               |
-| `utils/apiHelpers.ts`         | HTTP helpers for REST API tests                  |
-| `utils/sleep.ts`              | Async sleep helper                               |
-| `utils/incidentsHelper.ts`    | Incident-related test helpers                    |
-| `utils/operations.helper.ts`  | Operate operations helpers                       |
-| `utils/constants.ts`          | Shared test constants                            |
-| `fixtures.ts`                 | Playwright fixture definitions extending base test |
+|             File             |                      Purpose                       |
+|------------------------------|----------------------------------------------------|
+| `utils/zeebeClient.ts`       | Zeebe gRPC/REST client wrapper                     |
+| `utils/waitForAssertion.ts`  | Retry wrapper for async assertions                 |
+| `utils/apiHelpers.ts`        | HTTP helpers for REST API tests                    |
+| `utils/sleep.ts`             | Async sleep helper                                 |
+| `utils/incidentsHelper.ts`   | Incident-related test helpers                      |
+| `utils/operations.helper.ts` | Operate operations helpers                         |
+| `utils/constants.ts`         | Shared test constants                              |
+| `fixtures.ts`                | Playwright fixture definitions extending base test |
 
 ## CI Workflows
 
-| Workflow                                             | Trigger                | Link                                                                                                                     |
-|------------------------------------------------------|------------------------|--------------------------------------------------------------------------------------------------------------------------|
-| `c8-orchestration-cluster-e2e-tests-nightly.yml`     | Nightly (all versions) | [Actions](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-nightly.yml)           |
-| `c8-orchestration-cluster-e2e-tests-on-demand.yml`   | Manual                 | [Actions](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-on-demand.yml)         |
+|                      Workflow                      |        Trigger         |                                                       Link                                                       |
+|----------------------------------------------------|------------------------|------------------------------------------------------------------------------------------------------------------|
+| `c8-orchestration-cluster-e2e-tests-nightly.yml`   | Nightly (all versions) | [Actions](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-nightly.yml)   |
+| `c8-orchestration-cluster-e2e-tests-on-demand.yml` | Manual                 | [Actions](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-on-demand.yml) |
 
 Nightly results post to Slack `#c8-orchestration-cluster-e2e-test-results` and TestRail.
 
@@ -192,7 +192,7 @@ Nightly results post to Slack `#c8-orchestration-cluster-e2e-test-results` and T
 
 This file lives on `stable/8.7`. Each supported version has its own branch:
 
-| Version | Branch                     |
+| Version |           Branch           |
 |---------|----------------------------|
 | Next    | `main`                     |
 | 8.10    | `stable/8.10`              |
@@ -229,3 +229,4 @@ Follows the monorepo standard (Conventional Commits, no scope):
 test: add operate batch cancel assertion
 fix: retry flaky identity role assignment check on stable/8.7
 ```
+
