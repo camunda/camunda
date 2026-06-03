@@ -51,6 +51,19 @@ public interface MessageState {
       final String tenantId);
 
   /**
+   * Visits every cross-partition message-start lock entry on this partition. Each entry marks a
+   * local process-correlation-key lock whose holder instance was created on another partition via
+   * the cross-partition message-start handshake. The pull-based release loop iterates these to
+   * learn which holder instances to poll {@code P_B} for.
+   *
+   * <p>The {@code bpmnProcessId} and {@code correlationKey} buffers are only valid for the duration
+   * of the callback; copy them if they must outlive it.
+   *
+   * @param visitor invoked for each lock entry
+   */
+  void visitCrossPartitionStartLocks(CrossPartitionStartLockVisitor visitor);
+
+  /**
    * Index to point to a specific position in the messages with deadline column family.
    *
    * @param key The message key
@@ -66,5 +79,14 @@ public interface MessageState {
   @FunctionalInterface
   interface ExpiredMessageVisitor {
     boolean visit(final long deadline, long messageKey);
+  }
+
+  @FunctionalInterface
+  interface CrossPartitionStartLockVisitor {
+    void visit(
+        DirectBuffer bpmnProcessId,
+        DirectBuffer correlationKey,
+        long holderProcessInstanceKey,
+        String tenantId);
   }
 }

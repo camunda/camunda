@@ -299,14 +299,15 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   // on recovery — entries exist iff an ask is outstanding; cleared when any reply is applied.
   CROSS_PARTITION_MESSAGE_START_ASK(146, PARTITION_LOCAL),
 
-  // BusinessId attached to a process-correlation-key lock entry on P_K when the holding PI was
+  // Marks a process-correlation-key lock entry on P_K as cross-partition: the holding instance was
   // created via the cross-partition message-start handshake. Keyed by (bpmnProcessId,
   // correlationKey) — the same pair as the existing local correlation-key lock — and stores the
-  // holder's businessId so the pull-based release loop (later increment) can identify which P_B
-  // partition to query. An entry is "cross-partition" iff this CF has a value for the lock; the
-  // partition P_B = hash(businessId) is derived at query time, not stored. Local-PI lock entries
-  // are absent from this CF and continue to be released by today's local completion path.
-  CROSS_PARTITION_MESSAGE_START_LOCK_BUSINESS_ID(147, PARTITION_LOCAL);
+  // holder instance's (processInstanceKey, tenantId) so the pull-based release loop can ask P_B
+  // whether that specific instance is still active (the target partition is derived from the
+  // instance key) and pick up the next buffered message for the correlation key once released. An
+  // entry is "cross-partition" iff this CF has a value for the lock; local-PI lock entries are
+  // absent from this CF and continue to be released by today's local completion path.
+  CROSS_PARTITION_MESSAGE_START_LOCK(147, PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;
