@@ -162,6 +162,7 @@ components:
         - processInstances
         - decisionInstances
         - assignees
+        - taskCompletions
       type: object
       properties:
         processInstances:
@@ -176,6 +177,13 @@ components:
           description: The amount of unique active task users.
           type: integer
           format: int64
+        taskCompletions:
+          description: The amount of completed user tasks.
+          type: integer
+          format: int64
+      x-properties-added-in-version:
+        - propertyName: "taskCompletions"
+          addedInVersion: "8.10"
 
     SystemConfigurationResponse:
       description: |
