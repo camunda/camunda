@@ -133,13 +133,13 @@ Analytics exporter configured: endpoint=https://analytics.cloud.camunda.io, clus
 All options live under `args`. Defaults are tuned for typical Self-Managed deployments and
 rarely need to be changed.
 
-|        Option        |   Type   |                                                                                              Description                                                                                              |               Default                |
-|----------------------|----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------|
-| `endpoint`           | string   | OTLP/HTTP base URL for the analytics endpoint. The OTel SDK appends `/v1/logs` automatically.                                                                                                         | `https://analytics.cloud.camunda.io` |
-| `push-interval`      | duration | Maximum time between batch pushes, as an [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations).                                                                                       | `PT5M`                               |
-| `heartbeat-interval` | duration | Interval between periodic heartbeat events carrying static cluster metadata.                                                                                                                          | `PT10M`                              |
-| `max-queue-size`     | int      | Maximum number of log records buffered in memory before new records are dropped.                                                                                                                      | `2048`                               |
-| `max-batch-size`     | int      | Maximum number of records sent in a single OTLP request. Must be less than or equal to `max-queue-size`.                                                                                              | `512`                                |
+|        Option        |   Type   |                                                   Description                                                   |               Default                |
+|----------------------|----------|-----------------------------------------------------------------------------------------------------------------|--------------------------------------|
+| `endpoint`           | string   | OTLP/HTTP base URL for the analytics endpoint. The OTel SDK appends `/v1/logs` automatically.                   | `https://analytics.cloud.camunda.io` |
+| `push-interval`      | duration | Maximum time between batch pushes, as an [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations). | `PT5M`                               |
+| `heartbeat-interval` | duration | Interval between periodic heartbeat events carrying static cluster metadata.                                    | `PT10M`                              |
+| `max-queue-size`     | int      | Maximum number of log records buffered in memory before new records are dropped.                                | `2048`                               |
+| `max-batch-size`     | int      | Maximum number of records sent in a single OTLP request. Must be less than or equal to `max-queue-size`.        | `512`                                |
 
 ## What data is exported
 
@@ -151,12 +151,12 @@ variables, or any other end-user data.
 
 ### Event types
 
-|        Source record        |       Intent        |          Event name          |                                                Notes                                                 |
-|-----------------------------|---------------------|------------------------------|------------------------------------------------------------------------------------------------------|
-| `PROCESS_INSTANCE_CREATION` | `CREATED`           | `process_instance_created`   | Emitted for every new process instance.                                                              |
-| `PROCESS_INSTANCE`          | `ELEMENT_ACTIVATED` | `adhoc_subprocess_activated` | Emitted only when the activated element is an ad-hoc sub-process.                                    |
-| `USAGE_METRIC`              | `EXPORTED`          | `usage_metric_exported`      | Emitted once per usage metric export interval. Internal reset events are skipped.                    |
-| —                           | —                   | `heartbeat`                  | Emitted periodically by the partition leader (see `heartbeat-interval`).                             |
+|        Source record        |       Intent        |          Event name          |                                       Notes                                       |
+|-----------------------------|---------------------|------------------------------|-----------------------------------------------------------------------------------|
+| `PROCESS_INSTANCE_CREATION` | `CREATED`           | `process_instance_created`   | Emitted for every new process instance.                                           |
+| `PROCESS_INSTANCE`          | `ELEMENT_ACTIVATED` | `adhoc_subprocess_activated` | Emitted only when the activated element is an ad-hoc sub-process.                 |
+| `USAGE_METRIC`              | `EXPORTED`          | `usage_metric_exported`      | Emitted once per usage metric export interval. Internal reset events are skipped. |
+| —                           | —                   | `heartbeat`                  | Emitted periodically by the partition leader (see `heartbeat-interval`).          |
 
 ### Common log record attributes
 
