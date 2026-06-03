@@ -442,7 +442,7 @@ If a minimal test-side fix exists, apply it.
 
 ### Constraints
 
-- **Allowed tools:** `gh`, `git`, `grep`, `rg`, `cat`, `find`, `jq`, `sed`, `awk`, `unzip`, `npx prettier`, `npx eslint`.
+- **Allowed tools:** `gh`, `git`, `grep`, `rg`, `cat`, `find`, `jq`, `sed`, `awk`, `unzip`, `npx prettier`, `npx eslint`, `npm run responses:regenerate`.
 - **Forbidden:** `make`, `mvn`, `./mvnw`, `docker`, `kubectl`, `helm`, `npm install`, `npm run build`, `npm run test`, `npx playwright test`. The fix agent does **not** execute tests — it fixes from artifact evidence only. Verification is delegated to the on-demand workflows triggered by the calling workflow.
 - **NO skipping — EVER:** `test.skip()`, `test.fixme()`, `test.only`, and all pending variants are banned. There are no exceptions, not even for confirmed product bugs. If you cannot fix in code, write `{"prs":[]}` and stop.
 - **Never edit `json-body-assertions/_generated/responses.json` by hand.** This file is auto-generated. If an API response changes, regenerate it with `npm run responses:regenerate` and commit the result. Manual edits will be overwritten and produce misleading diffs.

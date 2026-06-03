@@ -628,11 +628,21 @@ jobs:
             done
 
             test_count=$(echo "$specs" | jq 'length')
-            # Build a human-readable label from whichever nightly run types failed
+            # Build a human-readable label reflecting only the types that actually failed.
+            # For test-failure dispatches (specs non-empty), derive from test_specs so we
+            # don't show types that merely have a run ID attached but passed.
+            # For workflow-level dispatches (specs empty), fall back to run IDs.
             run_types=""
-            [ -n "$e2e"       ] && run_types="E2E"
-            [ -n "$api_es"    ] && run_types="${run_types:+${run_types} + }API (ES)"
-            [ -n "$api_rdbms" ] && run_types="${run_types:+${run_types} + }API (RDBMS)"
+            if [ "$test_count" -gt 0 ]; then
+              has_e2e=$(echo "$specs" | jq '[.[] | select(.test_type == "e2e")] | length > 0')
+              has_api=$(echo "$specs" | jq '[.[] | select(.test_type == "api")] | length > 0')
+              [ "$has_e2e" = "true" ] && run_types="E2E"
+              [ "$has_api" = "true" ] && run_types="${run_types:+${run_types} + }API"
+            else
+              [ -n "$e2e"       ] && run_types="E2E"
+              [ -n "$api_es"    ] && run_types="${run_types:+${run_types} + }API (ES)"
+              [ -n "$api_rdbms" ] && run_types="${run_types:+${run_types} + }API (RDBMS)"
+            fi
             [ -z "$run_types" ] && run_types="workflow-level"
             run_label="Nightly ${run_types} — ${version}"
 
