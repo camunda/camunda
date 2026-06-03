@@ -118,7 +118,7 @@ Print a clear summary and wait for explicit confirmation. Do NOT call `gh issue 
 ────────────────────────────────────────────
 Title:   <proposed title>
 Type:    <bug | feature | task | tech-debt | CVE>
-Labels:  kind/<type>, component/<component>
+Labels:  kind/<type>  (component/*, severity/*, likelihood/* applied automatically via labeler)
 Parent:  https://github.com/camunda/camunda/issues/<N>  (or "none")
 
 Body:
@@ -131,31 +131,34 @@ If the user requests changes, revise the summary and ask again before proceeding
 
 ### Step 7 — Create the issue and register the parent relationship
 
-After the user confirms, create the issue. Apply labels for all dropdown metadata:
-
-- `kind/<type>` — from the template (e.g. `kind/bug`)
-- `component/<component>` — inferred in Step 3
-- `impact/<level>` — when the user provided a severity other than Unknown (`impact/low`, `impact/medium`, `impact/high`, `impact/critical`)
+After the user confirms, create the issue. Pass only the `kind/<type>` label explicitly — all
+other labels (`component/*`, `severity/*`, `likelihood/*`, `affects/*`) are applied automatically
+by `.github/opened_issue_labeler.yml`, which scans the body for the HTML comment markers rendered
+in Step 5.
 
 ```bash
 gh issue create \
   --repo camunda/camunda \
   --title "<title>" \
   --body "<body>" \
-  --label "kind/<type>" \
-  --label "component/<component>" \
-  --label "impact/<level>"   # omit if severity is Unknown
+  --label "kind/<type>"
 ```
 
-Capture the new issue number from the returned URL. Then, if a parent was provided, register the
-native GitHub sub-issue relationship so the new issue appears as a child of the parent in the
-GitHub UI:
+Capture the new issue number from the returned URL. Then fetch its database ID (required by the
+sub-issues API — the issue number alone will return 404):
+
+```bash
+gh api repos/camunda/camunda/issues/<new-issue-number> --jq '.id'
+```
+
+If a parent was provided, register the native GitHub sub-issue relationship so the new issue
+appears as a child of the parent in the GitHub UI:
 
 ```bash
 gh api \
   --method POST \
   repos/camunda/camunda/issues/<parent-number>/sub_issues \
-  -F sub_issue_id=<new-issue-number>
+  --input - <<< "{\"sub_issue_id\": <new-issue-database-id>}"
 ```
 
 Print the URL of the created issue.
