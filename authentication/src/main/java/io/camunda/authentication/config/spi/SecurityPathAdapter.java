@@ -20,7 +20,13 @@ public class SecurityPathAdapter implements SecurityPathPort {
   public static final SecurityPathAdapter INSTANCE = new SecurityPathAdapter();
 
   private static final Set<String> API_PATHS =
-      Set.of("/api/**", "/v1/**", "/v2/**", "/mcp/**", "/.well-known/oauth-protected-resource/**");
+      Set.of(
+          "/api/**",
+          "/v1/**",
+          "/v2/**",
+          "/mcp/**",
+          "/physical-tenants/{physicalTenantId}/mcp/**",
+          "/.well-known/oauth-protected-resource/**");
 
   private static final Set<String> UNPROTECTED_API_PATHS =
       Set.of(

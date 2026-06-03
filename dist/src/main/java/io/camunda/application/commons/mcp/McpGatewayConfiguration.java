@@ -78,7 +78,7 @@ public class McpGatewayConfiguration {
             filterChain.doFilter(new ContentCachingRequestWrapper(request, 0), response);
           }
         });
-    registrationBean.addUrlPatterns("/mcp/*");
+    registrationBean.addUrlPatterns("/mcp/*", "/physical-tenants/*/mcp/*");
     registrationBean.setOrder(Ordered.HIGHEST_PRECEDENCE);
 
     return registrationBean;
