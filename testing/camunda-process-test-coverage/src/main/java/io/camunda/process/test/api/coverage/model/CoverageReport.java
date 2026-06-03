@@ -34,7 +34,7 @@ public interface CoverageReport {
 
   List<DecisionCoverage> getDecisionCoverages();
 
-  Map<String, String> getDefinitions();
+  Map<String, String> getProcessDefinitions();
 
   Map<String, String> getDecisionDefinitions();
 }

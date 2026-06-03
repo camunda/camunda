@@ -84,7 +84,7 @@ class CoverageReportCreatorTest {
     assertThat(report.getSuites()).hasSize(1);
     assertThat(report.getProcessCoverages()).hasSize(1);
     assertThat(report.getDecisionCoverages()).hasSize(1);
-    assertThat(report.getDefinitions()).containsEntry("process", "<bpmn>process</bpmn>");
+    assertThat(report.getProcessDefinitions()).containsEntry("process", "<bpmn>process</bpmn>");
     assertThat(report.getDecisionDefinitions()).containsEntry("decision", "<dmn>decision</dmn>");
   }
 }
