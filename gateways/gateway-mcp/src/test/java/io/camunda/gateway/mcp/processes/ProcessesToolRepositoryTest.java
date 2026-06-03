@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -27,6 +28,7 @@ import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.MessageServices;
 import io.camunda.service.MessageServices.CorrelateMessageRequest;
 import io.camunda.service.MessageSubscriptionServices;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
 import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures.SyncToolSpecification;
@@ -54,8 +56,17 @@ class ProcessesToolRepositoryTest {
   @Mock private CamundaAuthenticationProvider authenticationProvider;
   @Mock private MessageServices messageServices;
   @Mock private MessageSubscriptionServices messageSubscriptionServices;
+  @Mock private ServiceRegistry serviceRegistry;
 
   private final JsonMapper objectMapper = JsonMapper.shared();
+
+  @BeforeEach
+  void wireServiceRegistry() {
+    lenient()
+        .when(serviceRegistry.messageSubscriptionServices(any()))
+        .thenReturn(messageSubscriptionServices);
+    lenient().when(serviceRegistry.messageServices(any())).thenReturn(messageServices);
+  }
 
   private static MessageSubscriptionEntity buildStartSubscriptionEntity(
       final Long key,
@@ -84,9 +95,7 @@ class ProcessesToolRepositoryTest {
 
     @BeforeEach
     void setUp() {
-      repository =
-          new ProcessesToolRepository(
-              messageSubscriptionServices, messageServices, authenticationProvider, List.of());
+      repository = new ProcessesToolRepository(serviceRegistry, authenticationProvider, List.of());
     }
 
     @Test
@@ -501,10 +510,7 @@ class ProcessesToolRepositoryTest {
               .build();
       repository =
           new ProcessesToolRepository(
-              messageSubscriptionServices,
-              messageServices,
-              authenticationProvider,
-              List.of(mockStaticTool));
+              serviceRegistry, authenticationProvider, List.of(mockStaticTool));
     }
 
     @Test

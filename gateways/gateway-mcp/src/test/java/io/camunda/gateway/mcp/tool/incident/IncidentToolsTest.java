@@ -52,6 +52,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -98,6 +99,12 @@ class IncidentToolsTest extends OperationalToolsTest {
 
   @Autowired private JsonMapper objectMapper;
   @Captor private ArgumentCaptor<IncidentQuery> queryCaptor;
+
+  @BeforeEach
+  void wireServiceRegistry() {
+    when(serviceRegistry.incidentServices(any())).thenReturn(incidentServices);
+    when(serviceRegistry.<JobActivationResult>jobServices(any())).thenReturn(jobServices);
+  }
 
   private void assertExampleIncident(final IncidentResult incident) {
     assertThat(incident.getIncidentKey()).isEqualTo("5");

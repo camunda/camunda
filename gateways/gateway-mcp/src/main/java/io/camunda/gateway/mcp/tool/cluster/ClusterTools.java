@@ -8,9 +8,10 @@
 package io.camunda.gateway.mcp.tool.cluster;
 
 import io.camunda.gateway.mapping.http.ResponseMapper;
+import io.camunda.gateway.mapping.http.physicaltenants.PhysicalTenantContext;
 import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
-import io.camunda.service.TopologyServices;
+import io.camunda.service.registry.ServiceRegistry;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import org.springframework.ai.mcp.annotation.McpTool;
 import org.springframework.stereotype.Component;
@@ -20,10 +21,10 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 public class ClusterTools {
 
-  private final TopologyServices topologyServices;
+  private final ServiceRegistry serviceRegistry;
 
-  public ClusterTools(final TopologyServices topologyServices) {
-    this.topologyServices = topologyServices;
+  public ClusterTools(final ServiceRegistry serviceRegistry) {
+    this.serviceRegistry = serviceRegistry;
   }
 
   @CamundaMcpTool(
@@ -31,7 +32,8 @@ public class ClusterTools {
           "Checks the health status of the cluster by verifying if there's at least one partition with a healthy leader.",
       annotations = @McpTool.McpAnnotations(readOnlyHint = true))
   public CallToolResult getClusterStatus() {
-    return CallToolResultMapper.fromPrimitive(topologyServices.getStatus(), Enum::name);
+    return CallToolResultMapper.fromPrimitive(
+        serviceRegistry.topologyServices(PhysicalTenantContext.current()).getStatus(), Enum::name);
   }
 
   @CamundaMcpTool(
@@ -39,6 +41,7 @@ public class ClusterTools {
       annotations = @McpTool.McpAnnotations(readOnlyHint = true))
   public CallToolResult getTopology() {
     return CallToolResultMapper.from(
-        topologyServices.getTopology(), ResponseMapper::toTopologyResponse);
+        serviceRegistry.topologyServices(PhysicalTenantContext.current()).getTopology(),
+        ResponseMapper::toTopologyResponse);
   }
 }

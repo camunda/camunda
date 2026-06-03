@@ -13,6 +13,7 @@ import static io.camunda.gateway.mcp.tool.ToolDescriptions.INCIDENT_KEY_NOT_NULL
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.INCIDENT_KEY_POSITIVE_MESSAGE;
 
 import io.camunda.gateway.mapping.http.GatewayErrorMapper;
+import io.camunda.gateway.mapping.http.physicaltenants.PhysicalTenantContext;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
@@ -22,11 +23,10 @@ import io.camunda.gateway.protocol.model.JobActivationResult;
 import io.camunda.gateway.protocol.model.simple.IncidentSearchQuery;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.CamundaAuthentication;
-import io.camunda.service.IncidentServices;
-import io.camunda.service.JobServices;
 import io.camunda.service.JobServices.UpdateJobChangeset;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.util.Either;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
@@ -42,17 +42,14 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 public class IncidentTools {
 
-  private final IncidentServices incidentServices;
+  private final ServiceRegistry serviceRegistry;
   private final CamundaAuthenticationProvider authenticationProvider;
-  private final JobServices<JobActivationResult> jobServices;
 
   public IncidentTools(
-      final IncidentServices incidentServices,
-      final CamundaAuthenticationProvider authenticationProvider,
-      final JobServices<JobActivationResult> jobServices) {
-    this.incidentServices = incidentServices;
+      final ServiceRegistry serviceRegistry,
+      final CamundaAuthenticationProvider authenticationProvider) {
+    this.serviceRegistry = serviceRegistry;
     this.authenticationProvider = authenticationProvider;
-    this.jobServices = jobServices;
   }
 
   @CamundaMcpTool(
@@ -70,8 +67,11 @@ public class IncidentTools {
 
       return CallToolResultMapper.from(
           SearchQueryResponseMapper.toIncidentSearchQueryResponse(
-              incidentServices.search(
-                  incidentSearchQuery.get(), authenticationProvider.getCamundaAuthentication())));
+              serviceRegistry
+                  .incidentServices(PhysicalTenantContext.current())
+                  .search(
+                      incidentSearchQuery.get(),
+                      authenticationProvider.getCamundaAuthentication())));
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
     }
@@ -90,8 +90,9 @@ public class IncidentTools {
     try {
       return CallToolResultMapper.from(
           SearchQueryResponseMapper.toIncident(
-              incidentServices.getByKey(
-                  incidentKey, authenticationProvider.getCamundaAuthentication())));
+              serviceRegistry
+                  .incidentServices(PhysicalTenantContext.current())
+                  .getByKey(incidentKey, authenticationProvider.getCamundaAuthentication())));
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
     }
@@ -106,7 +107,9 @@ public class IncidentTools {
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
       return CallToolResultMapper.fromPrimitive(
-          incidentServices.resolveIncident(incidentKey, null, authentication),
+          serviceRegistry
+              .incidentServices(PhysicalTenantContext.current())
+              .resolveIncident(incidentKey, null, authentication),
           r -> "Incident with key %s resolved.".formatted(incidentKey),
           error ->
               isNoJobRetriesLeft(error)
@@ -126,6 +129,8 @@ public class IncidentTools {
   private CallToolResult resolveJobIncident(
       final Long incidentKey, final CamundaAuthentication authentication) {
     try {
+      final var physicalTenantId = PhysicalTenantContext.current();
+      final var incidentServices = serviceRegistry.incidentServices(physicalTenantId);
       // fetch the incident to retrieve the job key
       final var incident = incidentServices.getByKey(incidentKey, authentication);
       // incident cannot be null, service throws exception if incident not found
@@ -137,7 +142,9 @@ public class IncidentTools {
       // update retries for the job to 1
       final Either<Throwable, JobRecord> updateResult =
           CallToolResultMapper.executeServiceMethod(
-              jobServices.updateJob(jobKey, null, new UpdateJobChangeset(1, null), authentication));
+              serviceRegistry
+                  .<JobActivationResult>jobServices(physicalTenantId)
+                  .updateJob(jobKey, null, new UpdateJobChangeset(1, null), authentication));
       if (updateResult.isLeft()) {
         return CallToolResultMapper.mapErrorToResult(updateResult.getLeft());
       }

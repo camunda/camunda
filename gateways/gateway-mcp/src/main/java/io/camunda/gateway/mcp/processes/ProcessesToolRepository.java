@@ -7,6 +7,7 @@
  */
 package io.camunda.gateway.mcp.processes;
 
+import io.camunda.gateway.mapping.http.physicaltenants.PhysicalTenantContext;
 import io.camunda.gateway.mcp.config.server.ToolRepository;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
 import io.camunda.search.entities.MessageSubscriptionEntity;
@@ -15,9 +16,8 @@ import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionT
 import io.camunda.search.filter.Operation;
 import io.camunda.search.query.MessageSubscriptionQuery;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
-import io.camunda.service.MessageServices;
 import io.camunda.service.MessageServices.CorrelateMessageRequest;
-import io.camunda.service.MessageSubscriptionServices;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.collection.Tuple;
 import io.modelcontextprotocol.common.McpTransportContext;
@@ -70,18 +70,15 @@ public class ProcessesToolRepository implements ToolRepository {
           Tuple.of(PROPERTY_WHEN_NOT_TO_USE, LABEL_WHEN_NOT_TO_USE),
           Tuple.of(PROPERTY_RESULTS, LABEL_RESULTS));
 
-  private final MessageSubscriptionServices messageSubscriptionServices;
-  private final MessageServices messageServices;
+  private final ServiceRegistry serviceRegistry;
   private final CamundaAuthenticationProvider authenticationProvider;
   private final List<SyncToolSpecification> staticTools;
 
   public ProcessesToolRepository(
-      final MessageSubscriptionServices messageSubscriptionServices,
-      final MessageServices messageServices,
+      final ServiceRegistry serviceRegistry,
       final CamundaAuthenticationProvider authenticationProvider,
       final List<SyncToolSpecification> staticTools) {
-    this.messageSubscriptionServices = messageSubscriptionServices;
-    this.messageServices = messageServices;
+    this.serviceRegistry = serviceRegistry;
     this.authenticationProvider = authenticationProvider;
     this.staticTools = List.copyOf(staticTools);
   }
@@ -103,7 +100,11 @@ public class ProcessesToolRepository implements ToolRepository {
 
     // combine static and dynamic tools
     return Stream.concat(
-            messageSubscriptionServices.search(query, auth).items().stream()
+            serviceRegistry
+                .messageSubscriptionServices(PhysicalTenantContext.current())
+                .search(query, auth)
+                .items()
+                .stream()
                 .map(ProcessesToolRepository::buildTool),
             staticTools.stream().map(SyncToolSpecification::tool))
         .toList();
@@ -142,7 +143,10 @@ public class ProcessesToolRepository implements ToolRepository {
 
     // find the message subscription based on the key
     final var auth = authenticationProvider.getCamundaAuthentication();
-    final var entity = messageSubscriptionServices.getByKey(subscriptionKey, auth);
+    final var entity =
+        serviceRegistry
+            .messageSubscriptionServices(PhysicalTenantContext.current())
+            .getByKey(subscriptionKey, auth);
 
     if (entity == null) {
       return Either.left("Tool not found: " + toolName);
@@ -159,14 +163,17 @@ public class ProcessesToolRepository implements ToolRepository {
     return (ctx, req) -> {
       final Map<String, Object> arguments = req.arguments() != null ? req.arguments() : Map.of();
       return CallToolResultMapper.from(
-          messageServices.correlateMessage(
-              new CorrelateMessageRequest(
-                  entity.messageName(),
-                  // UUID: distribute messages across partitions, support parallel process instances
-                  UUID.randomUUID().toString(),
-                  arguments,
-                  entity.tenantId()),
-              authenticationProvider.getCamundaAuthentication()),
+          serviceRegistry
+              .messageServices(PhysicalTenantContext.current())
+              .correlateMessage(
+                  new CorrelateMessageRequest(
+                      entity.messageName(),
+                      // UUID: distribute messages across partitions, support parallel process
+                      // instances
+                      UUID.randomUUID().toString(),
+                      arguments,
+                      entity.tenantId()),
+                  authenticationProvider.getCamundaAuthentication()),
           record -> Map.of("processInstanceKey", record.getProcessInstanceKey()));
     };
   }
