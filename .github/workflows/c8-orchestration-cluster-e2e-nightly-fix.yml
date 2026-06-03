@@ -513,7 +513,7 @@ jobs:
             icon=":warning:"; summary="No fix applied — manual investigation required"
           fi
 
-          text="${icon} *${VERSION}* fix agent — ${summary}\n<${RUN_URL}|Agent run ↗>"
+          text="${icon} *${VERSION}* fix agent — ${summary}"$'\n'"<${RUN_URL}|Agent run ↗>"
           payload=$(jq -nc \
             --arg channel    "$SLACK_CHANNEL" \
             --arg thread_ts  "$SLACK_THREAD_TS" \
