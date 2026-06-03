@@ -65,12 +65,16 @@ test.describe('Suspend & Resume Batch Operation Tests', () => {
   }) => {
     const key =
       await test.step('Create cancelable batch operation', async () => {
-        // Use 20 instances so the batch stays ACTIVE long enough for the
-        // suspend command to take effect before the engine finishes it. With
-        // only 3 instances the batch can reach COMPLETED before the suspend is
-        // applied, so the poll for SUSPENDED never succeeds (same race the
-        // first suspend test guards against — not an indexing lag).
-        return createCancellationBatch(request, 20, 'batch_suspension_process');
+        // The cancellation batch over service-task-blocked instances finishes
+        // in milliseconds, and once it reaches COMPLETED the suspend command is
+        // rejected with a permanent NOT_FOUND (404) that the 240s retry budget
+        // can never recover from. The batch's ACTIVE window must therefore be
+        // wide enough that the first suspend lands before completion. 20
+        // instances proved too tight on the loaded ES nightly cluster (404 for
+        // the full 240s on both attempts); 50 gives a comfortable margin over
+        // the boundary — well above the sibling cancel-active test's 30, since
+        // this test must additionally reach SUSPENDED before the batch finishes.
+        return createCancellationBatch(request, 50, 'batch_suspension_process');
       });
 
     await test.step('Suspend batch operation once', async () => {
