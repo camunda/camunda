@@ -1,0 +1,360 @@
+:root {
+  --ink: #0c0c0c;
+  --paper: #fff8f4;
+  --mist: #fff2ea;
+  --accent: #fc5d0d;
+  --accent-dark: #c64605;
+  --accent-soft: rgba(252, 93, 13, 0.18);
+  --sage: #2a2a2a;
+  --plum: #111111;
+  --line: rgba(17, 17, 17, 0.12);
+  --shadow: 0 28px 60px rgba(12, 12, 12, 0.18);
+  --radius: 20px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Trebuchet MS", "Segoe UI", "DejaVu Sans", Arial, sans-serif;
+  color: var(--ink);
+  background: radial-gradient(circle at 12% 12%, #ffe7d9 0%, transparent 45%),
+    radial-gradient(circle at 90% 20%, #ffe2d2 0%, transparent 38%),
+    linear-gradient(135deg, var(--paper), var(--mist));
+  min-height: 100vh;
+}
+
+.page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 56px 28px 48px;
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  gap: 32px;
+  align-items: start;
+  margin-bottom: 56px;
+}
+
+.kicker {
+  text-transform: uppercase;
+  letter-spacing: 0.25em;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--sage);
+  margin-bottom: 16px;
+}
+
+.hero h1 {
+  font-family: "Palatino Linotype", "Book Antiqua", Georgia, serif;
+  font-size: clamp(32px, 4vw, 52px);
+  margin: 0 0 16px;
+  line-height: 1.05;
+}
+
+.lede {
+  font-size: 18px;
+  max-width: 520px;
+  margin: 0 0 28px;
+  color: #2b1a12;
+}
+
+.hero-meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  background: white;
+  padding: 18px 22px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.meta-label {
+  display: block;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #5a3b2e;
+}
+
+.meta-value {
+  font-size: 18px;
+  font-weight: 600;
+  white-space: pre-line;
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+
+.phase-line {
+  display: block;
+  position: relative;
+  padding-left: 16px;
+}
+
+.phase-line::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.55em;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.hero-card {
+  background: white;
+  padding: 28px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-card::after {
+  content: "";
+  position: absolute;
+  inset: -40% -20% auto auto;
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, var(--accent-soft), transparent 70%);
+  opacity: 0.8;
+}
+
+.hero-card h2 {
+  margin: 0 0 8px;
+  font-size: 22px;
+}
+
+.card-note {
+  margin: 0 0 20px;
+  color: #4a2f23;
+}
+
+.chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.chip {
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-dark);
+  font-weight: 600;
+  border: 1px solid rgba(252, 93, 13, 0.4);
+}
+
+.branch-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.branch-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #fff1e7;
+  border: 1px solid rgba(17, 17, 17, 0.08);
+}
+
+.branch-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-dark);
+  font-weight: 600;
+  border: 1px solid rgba(252, 93, 13, 0.4);
+}
+
+.branch-note {
+  color: #4a2f23;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.timeline-section {
+  background: white;
+  padding: 32px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.section-title {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 28px;
+}
+
+.section-title h3 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.section-title p {
+  margin: 0;
+  color: #4a2f23;
+}
+
+.toggle-button {
+  align-self: flex-start;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(17, 17, 17, 0.12);
+  background: #fff1e7;
+  color: var(--plum);
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.toggle-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px rgba(12, 12, 12, 0.12);
+}
+
+.toggle-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.timeline-section > .toggle-button {
+  margin-top: 16px;
+}
+
+.timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  position: relative;
+}
+
+.timeline::before {
+  content: "";
+  position: absolute;
+  left: 18px;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  background: var(--line);
+}
+
+.timeline-item {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  gap: 18px;
+  padding: 18px 0;
+  position: relative;
+}
+
+.timeline-item.is-hidden {
+  display: none;
+}
+
+.timeline-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--plum);
+  margin-left: 11px;
+  align-self: center;
+  position: relative;
+  z-index: 1;
+}
+
+.timeline-card {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 16px 18px;
+  background: #fff7f2;
+  display: grid;
+  gap: 6px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.timeline-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 40px rgba(12, 12, 12, 0.12);
+}
+
+.timeline-card h4 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.timeline-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: #4a2f23;
+  font-size: 14px;
+}
+
+.timeline-meta strong {
+  color: var(--ink);
+}
+
+.timeline-item.active .timeline-dot {
+  background: var(--accent);
+  box-shadow: 0 0 0 6px var(--accent-soft);
+}
+
+.timeline-item.active .timeline-card {
+  border-color: rgba(252, 93, 13, 0.45);
+  background: #ffe7d9;
+}
+
+.footer {
+  text-align: center;
+  font-size: 13px;
+  color: #5a3b2e;
+  margin-top: 40px;
+}
+
+.fade-in {
+  opacity: 0;
+  transform: translateY(12px);
+  animation: fadeUp 0.6s ease forwards;
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 900px) {
+  .hero {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .timeline-section {
+    padding: 24px;
+  }
+}
