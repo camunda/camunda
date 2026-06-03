@@ -9,7 +9,7 @@
     "@camunda/camunda-api-zod-schemas": "0.0.69",
     "@camunda/camunda-composite-components": "0.23.3",
     "@carbon/elements": "11.90.0",
-    "@carbon/react": "1.105.0",
+    "@carbon/react": "1.108.0",
     "@devbookhq/splitter": "1.4.2",
     "@floating-ui/react-dom": "2.1.8",
     "@monaco-editor/react": "4.7.0",
