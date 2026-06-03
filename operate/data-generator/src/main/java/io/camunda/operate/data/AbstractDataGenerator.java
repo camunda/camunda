@@ -13,11 +13,11 @@ import static io.camunda.webapps.schema.entities.AbstractExporterEntity.DEFAULT_
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.worker.JobWorker;
 import io.camunda.operate.data.usertest.UserTestDataGenerator;
-import io.camunda.operate.store.ProcessStore;
+import io.camunda.search.clients.ProcessDefinitionSearchClient;
+import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
-import java.io.IOException;
 import java.time.Duration;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -44,7 +44,7 @@ public abstract class AbstractDataGenerator implements DataGenerator {
   private boolean shutdown = false;
 
   @Autowired(required = false)
-  private ProcessStore processStore;
+  private ProcessDefinitionSearchClient processDefinitionSearchClient;
 
   @PostConstruct
   private void startDataGenerator() {
@@ -107,18 +107,18 @@ public abstract class AbstractDataGenerator implements DataGenerator {
   }
 
   public boolean shouldCreateData(final boolean manuallyCalled) {
-    if (processStore == null) {
-      LOGGER.warn("ProcessStore is null. Assuming no data exists and it should be created...");
+    if (processDefinitionSearchClient == null) {
+      LOGGER.warn(
+          "ProcessDefinitionSearchClient is null. Assuming no data exists and it should be created...");
       return true;
     }
     if (!manuallyCalled) { // when called manually, always create the data
       final boolean exists;
-      try {
-        exists = processStore.count() > 0;
-      } catch (final IOException e) {
-        LOGGER.warn("Error occurred when counting processes.", e);
-        return false;
-      }
+      exists =
+          processDefinitionSearchClient
+                  .searchProcessDefinitions(ProcessDefinitionQuery.of(q -> q))
+                  .total()
+              > 0;
       if (exists) {
         // data already exists
         LOGGER.debug("Data already exists in Zeebe.");
