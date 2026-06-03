@@ -32,6 +32,7 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.sort.AuditLogSort;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.AuditLogServices;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.BeforeEach;
@@ -161,9 +162,11 @@ public class AuditLogControllerTest extends RestControllerTest {
 
   @MockitoBean AuditLogServices auditLogServices;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
+  @MockitoBean ServiceRegistry serviceRegistry;
 
   @BeforeEach
   void setUp() {
+    when(serviceRegistry.auditLogServices(any())).thenReturn(auditLogServices);
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
   }

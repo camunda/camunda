@@ -14,6 +14,7 @@ import io.camunda.service.GroupServices;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
+import io.camunda.service.registry.DefaultServiceRegistry;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -34,7 +35,13 @@ public class WebSecurityOidcTestContext {
       final RoleServices roleServices,
       final GroupServices groupServices,
       final CamundaSecurityLibraryProperties cslProperties) {
-    return new DefaultMembershipService(
-        mappingRuleServices, tenantServices, roleServices, groupServices, cslProperties);
+    final var serviceRegistry =
+        DefaultServiceRegistry.of(
+            b ->
+                b.mappingRuleServices("default", mappingRuleServices)
+                    .tenantServices("default", tenantServices)
+                    .roleServices("default", roleServices)
+                    .groupServices("default", groupServices));
+    return new DefaultMembershipService(serviceRegistry, cslProperties);
   }
 }

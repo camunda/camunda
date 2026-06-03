@@ -25,6 +25,7 @@ import io.camunda.security.api.model.config.MultiTenancyConfiguration;
 import io.camunda.security.auth.Authorization;
 import io.camunda.service.DecisionDefinitionServices;
 import io.camunda.service.exception.ErrorMapper;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -84,9 +85,11 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
   @MockitoBean DecisionDefinitionServices decisionDefinitionServices;
   @MockitoBean MultiTenancyConfiguration multiTenancyCfg;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
+  @MockitoBean ServiceRegistry serviceRegistry;
 
   @BeforeEach
   void setupServices() {
+    when(serviceRegistry.decisionDefinitionServices(any())).thenReturn(decisionDefinitionServices);
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
   }

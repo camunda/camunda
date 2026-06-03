@@ -13,8 +13,9 @@ import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.protocol.model.SignalBroadcastRequest;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.config.MultiTenancyConfiguration;
-import io.camunda.service.SignalServices;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
+import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import java.util.concurrent.CompletableFuture;
@@ -28,29 +29,33 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/v2/signals")
 public class SignalController {
 
-  private final SignalServices signalServices;
+  private final ServiceRegistry serviceRegistry;
   private final MultiTenancyConfiguration multiTenancyCfg;
   private final CamundaAuthenticationProvider authenticationProvider;
 
   @Autowired
   public SignalController(
-      final SignalServices signalServices,
+      final ServiceRegistry serviceRegistry,
       final MultiTenancyConfiguration multiTenancyCfg,
       final CamundaAuthenticationProvider authenticationProvider) {
-    this.signalServices = signalServices;
+    this.serviceRegistry = serviceRegistry;
     this.multiTenancyCfg = multiTenancyCfg;
     this.authenticationProvider = authenticationProvider;
   }
 
   @CamundaPostMapping(path = "/broadcast")
   public CompletableFuture<ResponseEntity<Object>> broadcastSignal(
+      @PhysicalTenantId final String physicalTenantId,
       @RequestBody final SignalBroadcastRequest request) {
     return RequestMapper.toBroadcastSignalRequest(request, multiTenancyCfg.isChecksEnabled())
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::broadcastSignal);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            mapped -> broadcastSignal(physicalTenantId, mapped));
   }
 
   private CompletableFuture<ResponseEntity<Object>> broadcastSignal(
-      final BroadcastSignalRequest request) {
+      final String physicalTenantId, final BroadcastSignalRequest request) {
+    final var signalServices = serviceRegistry.signalServices(physicalTenantId);
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
         () ->

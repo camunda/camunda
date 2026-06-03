@@ -7,13 +7,16 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE;
 
 import io.camunda.service.TopologyServices;
 import io.camunda.service.TopologyServices.ClusterStatus;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.concurrent.CompletableFuture;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
@@ -25,6 +28,12 @@ class StatusControllerTest extends RestControllerTest {
   static final String STATUS_URL = "/v2/status";
 
   @MockitoBean TopologyServices topologyServices;
+  @MockitoBean ServiceRegistry serviceRegistry;
+
+  @BeforeEach
+  void setup() {
+    when(serviceRegistry.topologyServices(any())).thenReturn(topologyServices);
+  }
 
   @Test
   void shouldReturnNoContentWhenHealthy() {

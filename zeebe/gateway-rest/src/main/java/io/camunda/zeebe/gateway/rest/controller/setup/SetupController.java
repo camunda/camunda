@@ -19,11 +19,11 @@ import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.security.validation.UserValidator;
-import io.camunda.service.RoleServices;
-import io.camunda.service.UserServices;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
+import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
@@ -44,20 +44,17 @@ public class SetupController {
   public static final String ADMIN_EXISTS_ERROR_MESSAGE =
       "Expected to create an initial admin user, but found existing admin users. Please ask your admin to create a new user with the '%s' role."
           .formatted(DefaultRole.ADMIN.getId());
-  private final UserServices userServices;
-  private final RoleServices roleServices;
+  private final ServiceRegistry serviceRegistry;
   private final CamundaSecurityLibraryProperties cslProperties;
   private final CamundaAuthenticationProvider authenticationProvider;
   private final UserMapper userMapper;
 
   public SetupController(
-      final UserServices userServices,
-      final RoleServices roleServices,
+      final ServiceRegistry serviceRegistry,
       final CamundaSecurityLibraryProperties cslProperties,
       final CamundaAuthenticationProvider authenticationProvider,
       final IdentifierValidator identifierValidator) {
-    this.userServices = userServices;
-    this.roleServices = roleServices;
+    this.serviceRegistry = serviceRegistry;
     this.cslProperties = cslProperties;
     this.authenticationProvider = authenticationProvider;
     userMapper = new UserMapper(new UserRequestValidator(new UserValidator(identifierValidator)));
@@ -65,7 +62,7 @@ public class SetupController {
 
   @CamundaPostMapping(path = "/user")
   public CompletableFuture<ResponseEntity<Object>> createAdminUser(
-      @RequestBody final UserRequest request) {
+      @PhysicalTenantId final String physicalTenantId, @RequestBody final UserRequest request) {
     if (cslProperties.getAuthentication().getMethod() != AuthenticationMethod.BASIC) {
       final var exception =
           new ServiceException(WRONG_AUTHENTICATION_METHOD_ERROR_MESSAGE, Status.FORBIDDEN);
@@ -74,7 +71,9 @@ public class SetupController {
     }
 
     final var anonymousAuth = authenticationProvider.getAnonymousCamundaAuthentication();
-    if (roleServices.hasMembersOfType(DefaultRole.ADMIN.getId(), EntityType.USER, anonymousAuth)) {
+    if (serviceRegistry
+        .roleServices(physicalTenantId)
+        .hasMembersOfType(DefaultRole.ADMIN.getId(), EntityType.USER, anonymousAuth)) {
       final var exception = new ServiceException(ADMIN_EXISTS_ERROR_MESSAGE, Status.FORBIDDEN);
       return RestErrorMapper.mapProblemToCompletedResponse(
           GatewayErrorMapper.mapErrorToProblem(exception));
@@ -86,7 +85,10 @@ public class SetupController {
             RestErrorMapper::mapProblemToCompletedResponse,
             dto ->
                 RequestExecutor.executeServiceMethod(
-                    () -> userServices.createInitialAdminUser(dto, anonymousAuth),
+                    () ->
+                        serviceRegistry
+                            .userServices(physicalTenantId)
+                            .createInitialAdminUser(dto, anonymousAuth),
                     ResponseMapper::toUserCreateResponse,
                     HttpStatus.CREATED));
   }

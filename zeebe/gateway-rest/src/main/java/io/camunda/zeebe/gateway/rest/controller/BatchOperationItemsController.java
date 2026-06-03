@@ -15,8 +15,9 @@ import io.camunda.gateway.protocol.model.BatchOperationItemSearchQuery;
 import io.camunda.gateway.protocol.model.BatchOperationItemSearchQueryResult;
 import io.camunda.search.query.BatchOperationItemQuery;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
-import io.camunda.service.BatchOperationServices;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
+import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import org.springframework.http.ResponseEntity;
@@ -28,25 +29,27 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/v2/batch-operation-items")
 public class BatchOperationItemsController {
 
-  private final BatchOperationServices batchOperationServices;
+  private final ServiceRegistry serviceRegistry;
   private final CamundaAuthenticationProvider authenticationProvider;
 
   public BatchOperationItemsController(
-      final BatchOperationServices batchOperationServices,
+      final ServiceRegistry serviceRegistry,
       final CamundaAuthenticationProvider authenticationProvider) {
-    this.batchOperationServices = batchOperationServices;
+    this.serviceRegistry = serviceRegistry;
     this.authenticationProvider = authenticationProvider;
   }
 
   @CamundaPostMapping(path = "/search")
   public ResponseEntity<BatchOperationItemSearchQueryResult> searchBatchOperationItems(
+      @PhysicalTenantId final String physicalTenantId,
       @RequestBody(required = false) final BatchOperationItemSearchQuery query) {
     return SearchQueryRequestMapper.toBatchOperationItemQuery(query)
-        .fold(RestErrorMapper::mapProblemToResponse, this::search);
+        .fold(RestErrorMapper::mapProblemToResponse, q -> search(physicalTenantId, q));
   }
 
   private ResponseEntity<BatchOperationItemSearchQueryResult> search(
-      final BatchOperationItemQuery query) {
+      final String physicalTenantId, final BatchOperationItemQuery query) {
+    final var batchOperationServices = serviceRegistry.batchOperationServices(physicalTenantId);
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
       final var result = batchOperationServices.searchItems(query, authentication);

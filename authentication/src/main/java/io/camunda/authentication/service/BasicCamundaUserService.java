@@ -18,8 +18,7 @@ import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.reader.ResourceAccessProvider;
 import io.camunda.security.spring.annotation.ConditionalOnAuthenticationMethod;
-import io.camunda.service.TenantServices;
-import io.camunda.service.UserServices;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import java.util.List;
 import java.util.Map;
@@ -35,18 +34,15 @@ public class BasicCamundaUserService implements CamundaUserService {
 
   private final CamundaAuthenticationProvider authenticationProvider;
   private final ResourceAccessProvider resourceAccessProvider;
-  private final UserServices userServices;
-  private final TenantServices tenantServices;
+  private final ServiceRegistry serviceRegistry;
 
   public BasicCamundaUserService(
       final CamundaAuthenticationProvider authenticationProvider,
       final ResourceAccessProvider resourceAccessProvider,
-      final UserServices userServices,
-      final TenantServices tenantServices) {
+      final ServiceRegistry serviceRegistry) {
     this.authenticationProvider = authenticationProvider;
     this.resourceAccessProvider = resourceAccessProvider;
-    this.userServices = userServices;
-    this.tenantServices = tenantServices;
+    this.serviceRegistry = serviceRegistry;
   }
 
   @Override
@@ -85,7 +81,9 @@ public class BasicCamundaUserService implements CamundaUserService {
 
   protected UserEntity getUser(final CamundaAuthentication authentication) {
     final var username = authentication.authenticatedUsername();
-    return userServices.getUser(username, CamundaAuthentication.anonymous());
+    return serviceRegistry
+        .userServices("default") // TODO replace with contextual physicalTenantId
+        .getUser(username, CamundaAuthentication.anonymous());
   }
 
   protected List<String> getAuthorizedComponents(final CamundaAuthentication authentication) {
@@ -111,7 +109,8 @@ public class BasicCamundaUserService implements CamundaUserService {
   }
 
   private List<TenantEntity> getTenants(final List<String> tenantIds) {
-    return tenantServices
+    return serviceRegistry
+        .tenantServices("default") // TODO replace with contextual physicalTenantId
         .search(
             TenantQuery.of(q -> q.filter(f -> f.tenantIds(tenantIds)).unlimited()),
             CamundaAuthentication.anonymous())

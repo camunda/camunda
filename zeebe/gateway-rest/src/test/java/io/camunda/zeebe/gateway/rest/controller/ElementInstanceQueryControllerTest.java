@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -33,6 +34,7 @@ import io.camunda.search.sort.FlowNodeInstanceSort;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.ElementInstanceServices;
 import io.camunda.service.exception.ErrorMapper;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
@@ -257,6 +259,7 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
 
   @MockitoBean ElementInstanceServices elementInstanceServices;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
+  @MockitoBean ServiceRegistry serviceRegistry;
   @Captor ArgumentCaptor<FlowNodeInstanceQuery> queryCaptor;
   @Captor ArgumentCaptor<IncidentQuery> incidentQueryCaptor;
 
@@ -273,6 +276,9 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
 
   @BeforeEach
   void setupServices() {
+    lenient()
+        .when(serviceRegistry.elementInstanceServices(any()))
+        .thenReturn(elementInstanceServices);
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
   }

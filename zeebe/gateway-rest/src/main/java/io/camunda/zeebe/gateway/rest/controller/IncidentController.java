@@ -22,9 +22,10 @@ import io.camunda.gateway.protocol.model.IncidentSearchQuery;
 import io.camunda.gateway.protocol.model.IncidentSearchQueryResult;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
-import io.camunda.service.IncidentServices;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
+import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
@@ -40,18 +41,19 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("v2/incidents")
 public class IncidentController {
 
-  private final IncidentServices incidentServices;
+  private final ServiceRegistry serviceRegistry;
   private final CamundaAuthenticationProvider authenticationProvider;
 
   public IncidentController(
-      final IncidentServices incidentServices,
+      final ServiceRegistry serviceRegistry,
       final CamundaAuthenticationProvider authenticationProvider) {
-    this.incidentServices = incidentServices;
+    this.serviceRegistry = serviceRegistry;
     this.authenticationProvider = authenticationProvider;
   }
 
   @CamundaPostMapping(path = "/{incidentKey}/resolution")
   public CompletableFuture<ResponseEntity<Object>> incidentResolution(
+      @PhysicalTenantId final String physicalTenantId,
       @PathVariable final long incidentKey,
       @RequestBody(required = false) final IncidentResolutionRequest incidentResolutionRequest) {
     final Long operationReference =
@@ -60,30 +62,35 @@ public class IncidentController {
             : incidentResolutionRequest.getOperationReference();
     return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
-            incidentServices.resolveIncident(
-                incidentKey,
-                operationReference,
-                authenticationProvider.getCamundaAuthentication()));
+            serviceRegistry
+                .incidentServices(physicalTenantId)
+                .resolveIncident(
+                    incidentKey,
+                    operationReference,
+                    authenticationProvider.getCamundaAuthentication()));
   }
 
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/search")
   public ResponseEntity<IncidentSearchQueryResult> searchIncidents(
+      @PhysicalTenantId final String physicalTenantId,
       @RequestBody(required = false) final IncidentSearchQuery query) {
     return SearchQueryRequestMapper.toIncidentQuery(query)
-        .fold(RestErrorMapper::mapProblemToResponse, this::search);
+        .fold(RestErrorMapper::mapProblemToResponse, q -> search(physicalTenantId, q));
   }
 
   @RequiresSecondaryStorage
   @CamundaGetMapping(path = "/{incidentKey}")
   public ResponseEntity<IncidentResult> getByKey(
+      @PhysicalTenantId final String physicalTenantId,
       @PathVariable("incidentKey") final Long incidentKey) {
     try {
       return ResponseEntity.ok()
           .body(
               SearchQueryResponseMapper.toIncident(
-                  incidentServices.getByKey(
-                      incidentKey, authenticationProvider.getCamundaAuthentication())));
+                  serviceRegistry
+                      .incidentServices(physicalTenantId)
+                      .getByKey(incidentKey, authenticationProvider.getCamundaAuthentication())));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
@@ -93,26 +100,30 @@ public class IncidentController {
   @CamundaPostMapping(path = "/statistics/process-instances-by-error")
   public ResponseEntity<IncidentProcessInstanceStatisticsByErrorQueryResult>
       processInstanceStatisticsByError(
+          @PhysicalTenantId final String physicalTenantId,
           @RequestBody(required = false)
               final IncidentProcessInstanceStatisticsByErrorQuery query) {
     return SearchQueryRequestMapper.toIncidentProcessInstanceStatisticsByErrorQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            this::getIncidentProcessInstanceStatisticsByError);
+            q -> getIncidentProcessInstanceStatisticsByError(physicalTenantId, q));
   }
 
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/statistics/process-instances-by-definition")
   public ResponseEntity<IncidentProcessInstanceStatisticsByDefinitionQueryResult>
       incidentProcessInstanceStatisticsByDefinition(
+          @PhysicalTenantId final String physicalTenantId,
           @RequestBody() final IncidentProcessInstanceStatisticsByDefinitionQuery query) {
     return SearchQueryRequestMapper.toIncidentProcessInstanceStatisticsByDefinitionQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            this::searchIncidentProcessInstanceStatisticsByDefinition);
+            q -> searchIncidentProcessInstanceStatisticsByDefinition(physicalTenantId, q));
   }
 
-  private ResponseEntity<IncidentSearchQueryResult> search(final IncidentQuery query) {
+  private ResponseEntity<IncidentSearchQueryResult> search(
+      final String physicalTenantId, final IncidentQuery query) {
+    final var incidentServices = serviceRegistry.incidentServices(physicalTenantId);
     try {
       final var result =
           incidentServices.search(query, authenticationProvider.getCamundaAuthentication());
@@ -131,7 +142,9 @@ public class IncidentController {
 
   private ResponseEntity<IncidentProcessInstanceStatisticsByErrorQueryResult>
       getIncidentProcessInstanceStatisticsByError(
+          final String physicalTenantId,
           final io.camunda.search.query.IncidentProcessInstanceStatisticsByErrorQuery query) {
+    final var incidentServices = serviceRegistry.incidentServices(physicalTenantId);
     try {
       final var result =
           incidentServices.incidentProcessInstanceStatisticsByError(
@@ -152,7 +165,9 @@ public class IncidentController {
 
   private ResponseEntity<IncidentProcessInstanceStatisticsByDefinitionQueryResult>
       searchIncidentProcessInstanceStatisticsByDefinition(
+          final String physicalTenantId,
           final io.camunda.search.query.IncidentProcessInstanceStatisticsByDefinitionQuery query) {
+    final var incidentServices = serviceRegistry.incidentServices(physicalTenantId);
     try {
       final var result =
           incidentServices.searchIncidentProcessInstanceStatisticsByDefinition(

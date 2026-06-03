@@ -24,6 +24,7 @@ import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.security.spring.security.OidcResourceServerCustomizer;
 import io.camunda.security.spring.spi.WebAppProviderPort;
 import io.camunda.service.RoleServices;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -87,8 +88,10 @@ public class WebSecurityConfig {
       havingValue = "basic",
       matchIfMissing = true)
   public AdminUserPresencePort adminUserPresencePort(
-      final RoleServices roleServices, final CamundaSecurityLibraryProperties properties) {
-    return new AdminUserPresenceAdapter(roleServices, properties.getInitialization());
+      final ServiceRegistry serviceRegistry, final CamundaSecurityLibraryProperties properties) {
+    return new AdminUserPresenceAdapter(
+        serviceRegistry.roleServices("default"), // TODO apply this to all physical tenants
+        properties.getInitialization());
   }
 
   /**

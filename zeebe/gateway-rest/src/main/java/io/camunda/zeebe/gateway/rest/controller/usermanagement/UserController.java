@@ -23,12 +23,13 @@ import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.spring.annotation.ConditionalOnInternalUserManagement;
 import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.security.validation.UserValidator;
-import io.camunda.service.UserServices;
 import io.camunda.service.UserServices.UserDTO;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPutMapping;
+import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
@@ -44,47 +45,57 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/v2/users")
 @ConditionalOnInternalUserManagement()
 public class UserController {
-  private final UserServices userServices;
+  private final ServiceRegistry serviceRegistry;
   private final CamundaAuthenticationProvider authenticationProvider;
   private final UserMapper userMapper;
 
   public UserController(
-      final UserServices userServices,
+      final ServiceRegistry serviceRegistry,
       final CamundaAuthenticationProvider authenticationProvider,
       final IdentifierValidator identifierValidator) {
-    this.userServices = userServices;
+    this.serviceRegistry = serviceRegistry;
     this.authenticationProvider = authenticationProvider;
     userMapper = new UserMapper(new UserRequestValidator(new UserValidator(identifierValidator)));
   }
 
   @CamundaPostMapping
   public CompletableFuture<ResponseEntity<Object>> createUser(
-      @RequestBody final UserRequest userRequest) {
+      @PhysicalTenantId final String physicalTenantId, @RequestBody final UserRequest userRequest) {
     return userMapper
         .toUserRequest(userRequest)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createUser);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            request -> createUser(physicalTenantId, request));
   }
 
   @CamundaGetMapping(path = "/{username}")
   @RequiresSecondaryStorage
-  public ResponseEntity<Object> getUser(@PathVariable final String username) {
+  public ResponseEntity<Object> getUser(
+      @PhysicalTenantId final String physicalTenantId, @PathVariable final String username) {
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
       return ResponseEntity.ok()
-          .body(SearchQueryResponseMapper.toUser(userServices.getUser(username, authentication)));
+          .body(
+              SearchQueryResponseMapper.toUser(
+                  serviceRegistry
+                      .userServices(physicalTenantId)
+                      .getUser(username, authentication)));
     } catch (final Exception exception) {
       return RestErrorMapper.mapErrorToResponse(exception);
     }
   }
 
   @CamundaDeleteMapping(path = "/{username}")
-  public CompletableFuture<ResponseEntity<Object>> deleteUser(@PathVariable final String username) {
+  public CompletableFuture<ResponseEntity<Object>> deleteUser(
+      @PhysicalTenantId final String physicalTenantId, @PathVariable final String username) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethodWithNoContentResult(
-        () -> userServices.deleteUser(username, authentication));
+        () -> serviceRegistry.userServices(physicalTenantId).deleteUser(username, authentication));
   }
 
-  private CompletableFuture<ResponseEntity<Object>> createUser(final UserDTO request) {
+  private CompletableFuture<ResponseEntity<Object>> createUser(
+      final String physicalTenantId, final UserDTO request) {
+    final var userServices = serviceRegistry.userServices(physicalTenantId);
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
         () -> userServices.createUser(request, authentication),
@@ -94,13 +105,19 @@ public class UserController {
 
   @CamundaPutMapping(path = "/{username}")
   public CompletableFuture<ResponseEntity<Object>> updateUser(
-      @PathVariable final String username, @RequestBody final UserUpdateRequest userUpdateRequest) {
+      @PhysicalTenantId final String physicalTenantId,
+      @PathVariable final String username,
+      @RequestBody final UserUpdateRequest userUpdateRequest) {
     return userMapper
         .toUserUpdateRequest(userUpdateRequest, username)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::updateUser);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            request -> updateUser(physicalTenantId, request));
   }
 
-  private CompletableFuture<ResponseEntity<Object>> updateUser(final UserDTO request) {
+  private CompletableFuture<ResponseEntity<Object>> updateUser(
+      final String physicalTenantId, final UserDTO request) {
+    final var userServices = serviceRegistry.userServices(physicalTenantId);
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
         () -> userServices.updateUser(request, authentication),
@@ -111,12 +128,15 @@ public class UserController {
   @CamundaPostMapping(path = "/search")
   @RequiresSecondaryStorage
   public ResponseEntity<UserSearchResult> searchUsers(
+      @PhysicalTenantId final String physicalTenantId,
       @RequestBody(required = false) final UserSearchQueryRequest query) {
     return SearchQueryRequestMapper.toUserQuery(query)
-        .fold(RestErrorMapper::mapProblemToResponse, this::search);
+        .fold(RestErrorMapper::mapProblemToResponse, q -> search(physicalTenantId, q));
   }
 
-  private ResponseEntity<UserSearchResult> search(final UserQuery query) {
+  private ResponseEntity<UserSearchResult> search(
+      final String physicalTenantId, final UserQuery query) {
+    final var userServices = serviceRegistry.userServices(physicalTenantId);
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
       final var result = userServices.search(query, authentication);

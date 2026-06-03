@@ -19,6 +19,7 @@ import io.camunda.search.query.MessageSubscriptionQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.MessageSubscriptionServices;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -146,9 +147,11 @@ public class MessageSubscriptionQueryControllerTest extends RestControllerTest {
 
   @MockitoBean MessageSubscriptionServices services;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
+  @MockitoBean ServiceRegistry serviceRegistry;
 
   @BeforeEach
   void setUp() {
+    when(serviceRegistry.messageSubscriptionServices(any())).thenReturn(services);
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
   }

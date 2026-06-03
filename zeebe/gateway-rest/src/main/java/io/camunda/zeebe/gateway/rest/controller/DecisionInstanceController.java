@@ -19,9 +19,10 @@ import io.camunda.gateway.protocol.model.DecisionInstanceSearchQueryResult;
 import io.camunda.gateway.protocol.model.DeleteDecisionInstanceRequest;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
-import io.camunda.service.DecisionInstanceServices;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
+import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
@@ -37,59 +38,68 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/v2/decision-instances")
 public class DecisionInstanceController {
 
-  private final DecisionInstanceServices decisionInstanceServices;
+  private final ServiceRegistry serviceRegistry;
   private final CamundaAuthenticationProvider authenticationProvider;
 
   public DecisionInstanceController(
-      final DecisionInstanceServices decisionInstanceServices,
+      final ServiceRegistry serviceRegistry,
       final CamundaAuthenticationProvider authenticationProvider) {
-    this.decisionInstanceServices = decisionInstanceServices;
+    this.serviceRegistry = serviceRegistry;
     this.authenticationProvider = authenticationProvider;
   }
 
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/search")
   public ResponseEntity<DecisionInstanceSearchQueryResult> searchDecisionInstances(
+      @PhysicalTenantId final String physicalTenantId,
       @RequestBody(required = false) final DecisionInstanceSearchQuery query) {
     return SearchQueryRequestMapper.toDecisionInstanceQuery(query)
-        .fold(RestErrorMapper::mapProblemToResponse, this::search);
+        .fold(RestErrorMapper::mapProblemToResponse, q -> search(physicalTenantId, q));
   }
 
   @RequiresSecondaryStorage
   @CamundaGetMapping(path = "/{decisionEvaluationInstanceKey}")
   public ResponseEntity<DecisionInstanceGetQueryResult> getDecisionInstanceById(
+      @PhysicalTenantId final String physicalTenantId,
       @PathVariable("decisionEvaluationInstanceKey") final String decisionEvaluationInstanceKey) {
     return RequestValidator.validate(
             violations ->
                 RequestValidator.validateDecisionEvaluationInstanceKeyFormat(
                     decisionEvaluationInstanceKey, violations))
         .<ResponseEntity<DecisionInstanceGetQueryResult>>map(RestErrorMapper::mapProblemToResponse)
-        .orElseGet(() -> getDecisionInstance(decisionEvaluationInstanceKey));
+        .orElseGet(() -> getDecisionInstance(physicalTenantId, decisionEvaluationInstanceKey));
   }
 
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/{decisionEvaluationKey}/deletion")
   public CompletableFuture<ResponseEntity<Object>> deleteDecisionInstance(
+      @PhysicalTenantId final String physicalTenantId,
       @PathVariable final long decisionEvaluationKey,
       @RequestBody(required = false) final DeleteDecisionInstanceRequest request) {
     return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
-            decisionInstanceServices.deleteDecisionInstance(
-                decisionEvaluationKey,
-                Objects.nonNull(request) ? request.getOperationReference() : null,
-                authenticationProvider.getCamundaAuthentication()));
+            serviceRegistry
+                .decisionInstanceServices(physicalTenantId)
+                .deleteDecisionInstance(
+                    decisionEvaluationKey,
+                    Objects.nonNull(request) ? request.getOperationReference() : null,
+                    authenticationProvider.getCamundaAuthentication()));
   }
 
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/deletion")
   public CompletableFuture<ResponseEntity<Object>> deleteDecisionInstancesBatchOperation(
+      @PhysicalTenantId final String physicalTenantId,
       @RequestBody final DecisionInstanceDeletionBatchOperationRequest request) {
     return RequestMapper.toRequiredDecisionInstanceFilter(request.getFilter())
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::batchOperationDeletion);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            filter -> batchOperationDeletion(physicalTenantId, filter));
   }
 
   private ResponseEntity<DecisionInstanceSearchQueryResult> search(
-      final DecisionInstanceQuery query) {
+      final String physicalTenantId, final DecisionInstanceQuery query) {
+    final var decisionInstanceServices = serviceRegistry.decisionInstanceServices(physicalTenantId);
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
       final var decisionInstances = decisionInstanceServices.search(query, authentication);
@@ -101,7 +111,8 @@ public class DecisionInstanceController {
   }
 
   private ResponseEntity<DecisionInstanceGetQueryResult> getDecisionInstance(
-      final String decisionEvaluationInstanceKey) {
+      final String physicalTenantId, final String decisionEvaluationInstanceKey) {
+    final var decisionInstanceServices = serviceRegistry.decisionInstanceServices(physicalTenantId);
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
       final var decisionInstanceById =
@@ -114,7 +125,8 @@ public class DecisionInstanceController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> batchOperationDeletion(
-      final io.camunda.search.filter.DecisionInstanceFilter filter) {
+      final String physicalTenantId, final io.camunda.search.filter.DecisionInstanceFilter filter) {
+    final var decisionInstanceServices = serviceRegistry.decisionInstanceServices(physicalTenantId);
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
         () ->

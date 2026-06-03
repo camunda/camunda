@@ -24,11 +24,12 @@ import io.camunda.search.query.ElementInstanceWaitStateQuery;
 import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
-import io.camunda.service.ElementInstanceServices;
 import io.camunda.service.ElementInstanceServices.SetVariablesRequest;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPutMapping;
+import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
@@ -43,13 +44,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/v2/element-instances")
 public class ElementInstanceController {
 
-  private final ElementInstanceServices elementInstanceServices;
+  private final ServiceRegistry serviceRegistry;
   private final CamundaAuthenticationProvider authenticationProvider;
 
   public ElementInstanceController(
-      final ElementInstanceServices elementInstanceServices,
+      final ServiceRegistry serviceRegistry,
       final CamundaAuthenticationProvider authenticationProvider) {
-    this.elementInstanceServices = elementInstanceServices;
+    this.serviceRegistry = serviceRegistry;
     this.authenticationProvider = authenticationProvider;
   }
 
@@ -57,14 +58,18 @@ public class ElementInstanceController {
       path = "/{elementInstanceKey}/variables",
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public CompletableFuture<ResponseEntity<Object>> setVariables(
+      @PhysicalTenantId final String physicalTenantId,
       @PathVariable final long elementInstanceKey,
       @RequestBody final SetVariableRequest variableRequest) {
     return RequestMapper.toVariableRequest(variableRequest, elementInstanceKey)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::setVariables);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            mapped -> setVariables(physicalTenantId, mapped));
   }
 
   private CompletableFuture<ResponseEntity<Object>> setVariables(
-      final SetVariablesRequest variablesRequest) {
+      final String physicalTenantId, final SetVariablesRequest variablesRequest) {
+    final var elementInstanceServices = serviceRegistry.elementInstanceServices(physicalTenantId);
     return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
             elementInstanceServices.setVariables(
@@ -74,15 +79,16 @@ public class ElementInstanceController {
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/wait-states/search")
   public ResponseEntity<ElementInstanceWaitStateQueryResult> searchElementInstanceWaitStates(
+      @PhysicalTenantId final String physicalTenantId,
       @RequestBody(required = false)
           final io.camunda.gateway.protocol.model.ElementInstanceWaitStateQuery query) {
     return SearchQueryRequestMapper.toElementInstanceWaitStateQuery(query)
-        .fold(RestErrorMapper::mapProblemToResponse, this::searchWaitStates);
+        .fold(RestErrorMapper::mapProblemToResponse, q -> searchWaitStates(physicalTenantId, q));
   }
 
   private ResponseEntity<ElementInstanceWaitStateQueryResult> searchWaitStates(
-      final ElementInstanceWaitStateQuery query) {
-
+      final String physicalTenantId, final ElementInstanceWaitStateQuery query) {
+    final var elementInstanceServices = serviceRegistry.elementInstanceServices(physicalTenantId);
     try {
       final var result =
           elementInstanceServices.searchWaitStates(
@@ -98,19 +104,22 @@ public class ElementInstanceController {
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/search")
   public ResponseEntity<ElementInstanceSearchQueryResult> searchElementInstances(
+      @PhysicalTenantId final String physicalTenantId,
       @RequestBody(required = false) final ElementInstanceSearchQuery query) {
     return SearchQueryRequestMapper.toElementInstanceQuery(query)
-        .fold(RestErrorMapper::mapProblemToResponse, this::search);
+        .fold(RestErrorMapper::mapProblemToResponse, q -> search(physicalTenantId, q));
   }
 
   @RequiresSecondaryStorage
   @CamundaGetMapping(path = "/{elementInstanceKey}")
   public ResponseEntity<ElementInstanceResult> getByKey(
+      @PhysicalTenantId final String physicalTenantId,
       @PathVariable("elementInstanceKey") final Long elementInstanceKey) {
     try {
       final FlowNodeInstanceEntity element =
-          elementInstanceServices.getByKey(
-              elementInstanceKey, authenticationProvider.getCamundaAuthentication());
+          serviceRegistry
+              .elementInstanceServices(physicalTenantId)
+              .getByKey(elementInstanceKey, authenticationProvider.getCamundaAuthentication());
 
       return ResponseEntity.ok().body(SearchQueryResponseMapper.toElementInstance(element));
     } catch (final Exception e) {
@@ -121,17 +130,19 @@ public class ElementInstanceController {
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/{elementInstanceKey}/incidents/search")
   public ResponseEntity<IncidentSearchQueryResult> searchIncidentsForElementInstance(
+      @PhysicalTenantId final String physicalTenantId,
       @PathVariable("elementInstanceKey") final long elementInstanceKey,
       @RequestBody(required = false) final IncidentSearchQuery query) {
 
     return SearchQueryRequestMapper.toIncidentQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            incidentQuery -> searchIncidents(elementInstanceKey, incidentQuery));
+            incidentQuery -> searchIncidents(physicalTenantId, elementInstanceKey, incidentQuery));
   }
 
   private ResponseEntity<ElementInstanceSearchQueryResult> search(
-      final FlowNodeInstanceQuery query) {
+      final String physicalTenantId, final FlowNodeInstanceQuery query) {
+    final var elementInstanceServices = serviceRegistry.elementInstanceServices(physicalTenantId);
     try {
       final var result =
           elementInstanceServices.search(query, authenticationProvider.getCamundaAuthentication());
@@ -144,7 +155,8 @@ public class ElementInstanceController {
   }
 
   private ResponseEntity<IncidentSearchQueryResult> searchIncidents(
-      final long elementInstanceKey, final IncidentQuery query) {
+      final String physicalTenantId, final long elementInstanceKey, final IncidentQuery query) {
+    final var elementInstanceServices = serviceRegistry.elementInstanceServices(physicalTenantId);
     try {
       final var result =
           elementInstanceServices.searchIncidents(

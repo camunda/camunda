@@ -17,6 +17,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.UserTaskServices;
 import io.camunda.service.exception.ErrorMapper;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
@@ -52,6 +53,7 @@ public class UserTaskControllerTest extends RestControllerTest {
 
   @MockitoBean UserTaskServices userTaskServices;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
+  @MockitoBean ServiceRegistry serviceRegistry;
 
   static Stream<String> urls() {
     return Stream.of("/v1/user-tasks", "/v2/user-tasks");
@@ -85,6 +87,7 @@ public class UserTaskControllerTest extends RestControllerTest {
 
   @BeforeEach
   void setupServices() {
+    when(serviceRegistry.userTaskServices(any())).thenReturn(userTaskServices);
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
   }

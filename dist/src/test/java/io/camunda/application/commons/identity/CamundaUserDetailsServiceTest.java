@@ -16,6 +16,7 @@ import io.camunda.search.entities.UserEntity;
 import io.camunda.service.UserServices;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
+import io.camunda.service.registry.DefaultServiceRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -32,7 +33,9 @@ public class CamundaUserDetailsServiceTest {
   @BeforeEach
   public void setup() throws Exception {
     MockitoAnnotations.openMocks(this).close();
-    userDetailsService = new CamundaUserDetailsService(userService);
+    final var serviceRegistry =
+        DefaultServiceRegistry.of(b -> b.userServices("default", userService));
+    userDetailsService = new CamundaUserDetailsService(serviceRegistry);
   }
 
   @Test

@@ -22,6 +22,7 @@ import io.camunda.service.GroupServices;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
+import io.camunda.service.registry.DefaultServiceRegistry;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -43,13 +44,14 @@ class DefaultMembershipServiceTest {
 
   @BeforeEach
   void setUp() {
-    service =
-        new DefaultMembershipService(
-            mappingRuleServices,
-            tenantServices,
-            roleServices,
-            groupServices,
-            new CamundaSecurityLibraryProperties());
+    final var serviceRegistry =
+        DefaultServiceRegistry.of(
+            b ->
+                b.mappingRuleServices("default", mappingRuleServices)
+                    .groupServices("default", groupServices)
+                    .roleServices("default", roleServices)
+                    .tenantServices("default", tenantServices));
+    service = new DefaultMembershipService(serviceRegistry, new CamundaSecurityLibraryProperties());
   }
 
   private MembershipQuery baseQuery() {

@@ -10,9 +10,10 @@ package io.camunda.zeebe.gateway.rest.controller;
 import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.protocol.model.AdHocSubProcessActivateActivitiesInstruction;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
-import io.camunda.service.AdHocSubProcessActivityServices;
 import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
+import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import java.util.concurrent.CompletableFuture;
@@ -25,27 +26,32 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/v2/element-instances/ad-hoc-activities")
 public class AdHocSubProcessActivityController {
 
-  private final AdHocSubProcessActivityServices adHocSubProcessActivityServices;
+  private final ServiceRegistry serviceRegistry;
   private final CamundaAuthenticationProvider authenticationProvider;
 
   public AdHocSubProcessActivityController(
-      final AdHocSubProcessActivityServices adHocSubProcessActivityServices,
+      final ServiceRegistry serviceRegistry,
       final CamundaAuthenticationProvider authenticationProvider) {
-    this.adHocSubProcessActivityServices = adHocSubProcessActivityServices;
+    this.serviceRegistry = serviceRegistry;
     this.authenticationProvider = authenticationProvider;
   }
 
   @CamundaPostMapping(path = "/{adHocSubProcessInstanceKey}/activation")
   public CompletableFuture<ResponseEntity<Object>> activateAdHocSubProcessActivities(
+      @PhysicalTenantId final String physicalTenantId,
       @PathVariable final String adHocSubProcessInstanceKey,
       @RequestBody final AdHocSubProcessActivateActivitiesInstruction activationRequest) {
     return RequestMapper.toAdHocSubProcessActivateActivitiesRequest(
             adHocSubProcessInstanceKey, activationRequest)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::activateActivities);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            mapped -> activateActivities(physicalTenantId, mapped));
   }
 
   private CompletableFuture<ResponseEntity<Object>> activateActivities(
-      final AdHocSubProcessActivateActivitiesRequest request) {
+      final String physicalTenantId, final AdHocSubProcessActivateActivitiesRequest request) {
+    final var adHocSubProcessActivityServices =
+        serviceRegistry.adHocSubProcessActivityServices(physicalTenantId);
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethodWithNoContentResult(
         () -> adHocSubProcessActivityServices.activateActivities(request, authentication));

@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -19,6 +20,7 @@ import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.service.ClusterVariableServices;
 import io.camunda.service.ClusterVariableServices.ClusterVariableRequest;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
 import java.util.concurrent.CompletableFuture;
@@ -50,9 +52,13 @@ public class ClusterVariableControllerTest extends RestControllerTest {
   @MockitoBean ClusterVariableServices clusterVariableServices;
   @MockitoBean CamundaSecurityLibraryProperties cslProperties;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
+  @MockitoBean ServiceRegistry serviceRegistry;
 
   @BeforeEach
   void setupServices() {
+    lenient()
+        .when(serviceRegistry.clusterVariableServices(any()))
+        .thenReturn(clusterVariableServices);
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
     when(cslProperties.getCompiledIdValidationPattern()).thenReturn(ID_PATTERN);

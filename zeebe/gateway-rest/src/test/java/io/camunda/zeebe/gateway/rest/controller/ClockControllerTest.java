@@ -18,6 +18,7 @@ import io.camunda.gateway.protocol.model.CamundaProblemDetail;
 import io.camunda.gateway.protocol.model.ClockPinRequest;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.ClockServices;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
 import java.net.URI;
@@ -43,9 +44,11 @@ public class ClockControllerTest extends RestControllerTest {
 
   @MockitoBean private ClockServices clockServices;
   @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
+  @MockitoBean private ServiceRegistry serviceRegistry;
 
   @BeforeEach
   void setup() {
+    when(serviceRegistry.clockServices(any())).thenReturn(clockServices);
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
   }

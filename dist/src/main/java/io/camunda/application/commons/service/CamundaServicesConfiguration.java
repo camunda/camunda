@@ -8,35 +8,11 @@
 package io.camunda.application.commons.service;
 
 import io.camunda.application.commons.condition.ConditionalOnAnyHttpGatewayEnabled;
+import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.document.store.EnvironmentConfigurationLoader;
 import io.camunda.document.store.SimpleDocumentStoreRegistry;
 import io.camunda.gateway.protocol.model.JobActivationResult;
-import io.camunda.search.clients.AgentInstanceSearchClient;
-import io.camunda.search.clients.AuditLogSearchClient;
-import io.camunda.search.clients.AuthorizationSearchClient;
-import io.camunda.search.clients.BatchOperationSearchClient;
-import io.camunda.search.clients.ClusterVariableSearchClient;
-import io.camunda.search.clients.DecisionDefinitionSearchClient;
-import io.camunda.search.clients.DecisionInstanceSearchClient;
-import io.camunda.search.clients.DecisionRequirementSearchClient;
-import io.camunda.search.clients.DeployedResourceSearchClient;
-import io.camunda.search.clients.FlowNodeInstanceSearchClient;
-import io.camunda.search.clients.FormSearchClient;
-import io.camunda.search.clients.GlobalListenerSearchClient;
-import io.camunda.search.clients.GroupSearchClient;
-import io.camunda.search.clients.IncidentSearchClient;
-import io.camunda.search.clients.JobSearchClient;
-import io.camunda.search.clients.MappingRuleSearchClient;
-import io.camunda.search.clients.MessageSubscriptionSearchClient;
-import io.camunda.search.clients.ProcessDefinitionSearchClient;
-import io.camunda.search.clients.ProcessInstanceSearchClient;
-import io.camunda.search.clients.RoleSearchClient;
-import io.camunda.search.clients.SequenceFlowSearchClient;
-import io.camunda.search.clients.TenantSearchClient;
-import io.camunda.search.clients.UsageMetricsSearchClient;
-import io.camunda.search.clients.UserSearchClient;
-import io.camunda.search.clients.UserTaskSearchClient;
-import io.camunda.search.clients.VariableSearchClient;
+import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.security.impl.AuthorizationChecker;
@@ -61,6 +37,7 @@ import io.camunda.service.GlobalListenerServices;
 import io.camunda.service.GroupServices;
 import io.camunda.service.IncidentServices;
 import io.camunda.service.JobServices;
+import io.camunda.service.ManagementServices;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.MessageServices;
 import io.camunda.service.MessageSubscriptionServices;
@@ -76,6 +53,8 @@ import io.camunda.service.UserServices;
 import io.camunda.service.UserTaskServices;
 import io.camunda.service.VariableServices;
 import io.camunda.service.cache.ProcessCache;
+import io.camunda.service.registry.DefaultServiceRegistry;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.spring.utils.DatabaseTypeUtils;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -92,564 +71,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @ConditionalOnAnyHttpGatewayEnabled
 public class CamundaServicesConfiguration {
 
-  @Bean
-  public BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter(
-      final CamundaSecurityLibraryProperties cslProperties) {
-    return new BrokerRequestAuthorizationConverter(
-        new EngineSecurityConfig(
-            cslProperties.getAuthentication(),
-            cslProperties.getAuthorizations().isEnabled(),
-            cslProperties.getMultiTenancy().isChecksEnabled(),
-            cslProperties.getInitialization(),
-            cslProperties.getCompiledIdValidationPattern(),
-            cslProperties.getCompiledGroupIdValidationPattern()));
-  }
-
-  @Bean
-  public UsageMetricsServices usageMetricsServices(
-      final BrokerClient brokerClient,
-      final SecurityContextProvider securityContextProvider,
-      final UsageMetricsSearchClient usageMetricsSearchClient,
-      final ApiServicesExecutorProvider executorProvider,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
-    return new UsageMetricsServices(
-        brokerClient,
-        securityContextProvider,
-        usageMetricsSearchClient,
-        executorProvider,
-        brokerRequestAuthorizationConverter);
-  }
-
-  @Bean
-  public JobServices<JobActivationResult> jobServices(
-      final BrokerClient brokerClient,
-      final SecurityContextProvider securityContextProvider,
-      final ActivateJobsHandler<JobActivationResult> activateJobsHandler,
-      final JobSearchClient jobSearchClient,
-      final ApiServicesExecutorProvider executorProvider,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
-      final GatewayRestConfiguration gatewayRestConfiguration) {
-    return new JobServices<>(
-        brokerClient,
-        securityContextProvider,
-        activateJobsHandler,
-        jobSearchClient,
-        executorProvider,
-        brokerRequestAuthorizationConverter,
-        gatewayRestConfiguration.getMaxNameFieldLength());
-  }
-
-  @Bean
-  public DecisionDefinitionServices decisionDefinitionServices(
-      final BrokerClient brokerClient,
-      final SecurityContextProvider securityContextProvider,
-      final DecisionDefinitionSearchClient decisionDefinitionSearchClient,
-      final DecisionRequirementsServices decisionRequirementsServices,
-      final ApiServicesExecutorProvider executorProvider,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
-    return new DecisionDefinitionServices(
-        brokerClient,
-        securityContextProvider,
-        decisionDefinitionSearchClient,
-        decisionRequirementsServices,
-        executorProvider,
-        brokerRequestAuthorizationConverter);
-  }
-
-  @Bean
-  public DecisionInstanceServices decisionInstanceServices(
-      final BrokerClient brokerClient,
-      final SecurityContextProvider securityContextProvider,
-      final DecisionInstanceSearchClient decisionInstanceSearchClient,
-      final ApiServicesExecutorProvider executorProvider,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
-    return new DecisionInstanceServices(
-        brokerClient,
-        securityContextProvider,
-        decisionInstanceSearchClient,
-        executorProvider,
-        brokerRequestAuthorizationConverter);
-  }
-
-  @Bean
-  public ProcessDefinitionServices processDefinitionServices(
-      final BrokerClient brokerClient,
-      final SecurityContextProvider securityContextProvider,
-      final ProcessDefinitionSearchClient processDefinitionSearchClient,
-      final FormServices formServices,
-      final ApiServicesExecutorProvider executorProvider,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
-    return new ProcessDefinitionServices(
-        brokerClient,
-        securityContextProvider,
-        processDefinitionSearchClient,
-        formServices,
-        executorProvider,
-        brokerRequestAuthorizationConverter);
-  }
-
-  @Bean
-  public ProcessInstanceServices processInstanceServices(
-      final BrokerClient brokerClient,
-      final SecurityContextProvider securityContextProvider,
-      final ProcessInstanceSearchClient processInstanceSearchClient,
-      final SequenceFlowSearchClient sequenceFlowSearchClient,
-      final IncidentServices incidentServices,
-      final ApiServicesExecutorProvider executorProvider,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
-      final GatewayRestConfiguration gatewayRestConfiguration) {
-    return new ProcessInstanceServices(
-        brokerClient,
-        securityContextProvider,
-        processInstanceSearchClient,
-        sequenceFlowSearchClient,
-        incidentServices,
-        executorProvider,
-        brokerRequestAuthorizationConverter,
-        gatewayRestConfiguration.getMaxNameFieldLength());
-  }
-
-  @Bean
-  public DecisionRequirementsServices decisionRequirementsServices(
-      final BrokerClient brokerClient,
-      final SecurityContextProvider securityContextProvider,
-      final DecisionRequirementSearchClient decisionRequirementSearchClient,
-      final ApiServicesExecutorProvider executorProvider,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
-    return new DecisionRequirementsServices(
-        brokerClient,
-        securityContextProvider,
-        decisionRequirementSearchClient,
-        executorProvider,
-        brokerRequestAuthorizationConverter);
-  }
-
-  @Bean
-  public ElementInstanceServices elementInstanceServices(
-      final BrokerClient brokerClient,
-      final SecurityContextProvider securityContextProvider,
-      final FlowNodeInstanceSearchClient flowNodeInstanceSearchClient,
-      final ProcessCache processCache,
-      final IncidentServices incidentServices,
-      final ApiServicesExecutorProvider executorProvider,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
-    return new ElementInstanceServices(
-        brokerClient,
-        securityContextProvider,
-        flowNodeInstanceSearchClient,
-        processCache,
-        incidentServices,
-        executorProvider,
-        brokerRequestAuthorizationConverter);
-  }
-
-  @Bean
-  public AdHocSubProcessActivityServices adHocSubProcessActivityServices(
-      final BrokerClient brokerClient,
-      final SecurityContextProvider securityContextProvider,
-      final ApiServicesExecutorProvider executorProvider,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
-    return new AdHocSubProcessActivityServices(
-        brokerClient,
-        securityContextProvider,
-        executorProvider,
-        brokerRequestAuthorizationConverter);
-  }
-
-  @Bean
-  public AgentInstanceServices agentInstanceServices(
-      final BrokerClient brokerClient,
-      final SecurityContextProvider securityContextProvider,
-      final AgentInstanceSearchClient agentInstanceSearchClient,
-      final ApiServicesExecutorProvider executorProvider,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
-    return new AgentInstanceServices(
-        brokerClient,
-        securityContextProvider,
-        agentInstanceSearchClient,
-        executorProvider,
-        brokerRequestAuthorizationConverter);
-  }
-
-  @Bean
-  public AuditLogServices auditLogServices(
-      final BrokerClient brokerClient,
-      final SecurityContextProvider securityContextProvider,
-      final AuditLogSearchClient auditLogSearchClient,
-      final ApiServicesExecutorProvider executorProvider,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
-    return new AuditLogServices(
-        brokerClient,
-        securityContextProvider,
-        auditLogSearchClient,
-        executorProvider,
-        brokerRequestAuthorizationConverter);
-  }
-
-  @Bean
-  public IncidentServices incidentServices(
-      final BrokerClient brokerClient,
-      final SecurityContextProvider securityContextProvider,
-      final IncidentSearchClient incidentSearchClient,
-      final ApiServicesExecutorProvider executorProvider,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
-    return new IncidentServices(
-        brokerClient,
-        securityContextProvider,
-        incidentSearchClient,
-        executorProvider,
-        brokerRequestAuthorizationConverter);
-  }
-
-  @Bean
-  public RoleServices roleServices(
-      final BrokerClient brokerClient,
-      final SecurityContextProvider securityContextProvider,
-      final RoleSearchClient roleSearchClient,
-      final ApiServicesExecutorProvider executorProvider,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
-    return new RoleServices(
-        brokerClient,
-        securityContextProvider,
-        roleSearchClient,
-        executorProvider,
-        brokerRequestAuthorizationConverter);
-  }
-
-  @Bean
-  public TenantServices tenantServices(
-      final BrokerClient brokerClient,
-      final SecurityContextProvider securityContextProvider,
-      final TenantSearchClient tenantSearchClient,
-      final ApiServicesExecutorProvider executorProvider,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
-    return new TenantServices(
-        brokerClient,
-        securityContextProvider,
-        tenantSearchClient,
-        executorProvider,
-        brokerRequestAuthorizationConverter);
-  }
-
-  @Bean
-  public GroupServices groupServices(
-      final BrokerClient brokerClient,
-      final SecurityContextProvider securityContextProvider,
-      final GroupSearchClient groupSearchClient,
-      final ApiServicesExecutorProvider executorProvider,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
-    return new GroupServices(
-        brokerClient,
-        securityContextProvider,
-        groupSearchClient,
-        executorProvider,
-        brokerRequestAuthorizationConverter);
-  }
-
-  @Bean
-  public UserServices userServices(
-      final BrokerClient brokerClient,
-      final SecurityContextProvider securityContextProvider,
-      final UserSearchClient userSearchClient,
-      final PasswordEncoder passwordEncoder,
-      final ApiServicesExecutorProvider executorProvider,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
-    return new UserServices(
-        brokerClient,
-        securityContextProvider,
-        userSearchClient,
-        passwordEncoder,
-        executorProvider,
-        brokerRequestAuthorizationConverter);
-  }
-
-  @Bean
-  public UserTaskServices userTaskServices(
-      final BrokerClient brokerClient,
-      final SecurityContextProvider securityContextProvider,
-      final UserTaskSearchClient userTaskSearchClient,
-      final FormServices formServices,
-      final ElementInstanceServices elementInstanceServices,
-      final VariableServices variableServices,
-      final AuditLogServices auditLogServices,
-      final ProcessCache processCache,
-      final ApiServicesExecutorProvider executorProvider,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
-      final GatewayRestConfiguration gatewayRestConfiguration) {
-    return new UserTaskServices(
-        brokerClient,
-        securityContextProvider,
-        userTaskSearchClient,
-        formServices,
-        elementInstanceServices,
-        variableServices,
-        auditLogServices,
-        processCache,
-        executorProvider,
-        brokerRequestAuthorizationConverter,
-        gatewayRestConfiguration.getMaxNameFieldLength());
-  }
-
-  @Bean
-  public VariableServices variableServices(
-      final BrokerClient brokerClient,
-      final SecurityContextProvider securityContextProvider,
-      final VariableSearchClient variableSearchClient,
-      final ApiServicesExecutorProvider executorProvider,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
-    return new VariableServices(
-        brokerClient,
-        securityContextProvider,
-        variableSearchClient,
-        executorProvider,
-        brokerRequestAuthorizationConverter);
-  }
-
-  @Bean
-  public ClusterVariableServices clusterVariableServices(
-      final BrokerClient brokerClient,
-      final SecurityContextProvider securityContextProvider,
-      final ClusterVariableSearchClient clusterVariableSearchClient,
-      final ApiServicesExecutorProvider executorProvider,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
-    return new ClusterVariableServices(
-        brokerClient,
-        securityContextProvider,
-        clusterVariableSearchClient,
-        executorProvider,
-        brokerRequestAuthorizationConverter);
-  }
-
-  @Bean
-  public ExpressionServices expressionServices(
-      final BrokerClient brokerClient,
-      final SecurityContextProvider securityContextProvider,
-      final ApiServicesExecutorProvider executorProvider,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
-    return new ExpressionServices(
-        brokerClient,
-        securityContextProvider,
-        executorProvider,
-        brokerRequestAuthorizationConverter);
-  }
-
-  @Bean
-  public MessageServices messageServices(
-      final BrokerClient brokerClient,
-      final SecurityContextProvider securityContextProvider,
-      final ApiServicesExecutorProvider executorProvider,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
-      final GatewayRestConfiguration gatewayRestConfiguration) {
-    return new MessageServices(
-        brokerClient,
-        securityContextProvider,
-        executorProvider,
-        brokerRequestAuthorizationConverter,
-        gatewayRestConfiguration.getMaxNameFieldLength());
-  }
-
-  @Bean
-  public DocumentServices documentServices(
-      final BrokerClient brokerClient,
-      final SecurityContextProvider securityContextProvider,
-      final AuthorizationChecker authorizationChecker,
-      final CamundaSecurityLibraryProperties cslProperties,
-      final ApiServicesExecutorProvider executorProvider,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
-    return new DocumentServices(
-        brokerClient,
-        securityContextProvider,
-        new SimpleDocumentStoreRegistry(new EnvironmentConfigurationLoader()),
-        authorizationChecker,
-        cslProperties.getAuthorizations(),
-        executorProvider,
-        brokerRequestAuthorizationConverter);
-  }
-
-  @Bean
-  public AuthorizationServices authorizationServices(
-      final BrokerClient brokerClient,
-      final SecurityContextProvider securityContextProvider,
-      final AuthorizationSearchClient authorizationSearchClient,
-      final ApiServicesExecutorProvider executorProvider,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
-    return new AuthorizationServices(
-        brokerClient,
-        securityContextProvider,
-        authorizationSearchClient,
-        executorProvider,
-        brokerRequestAuthorizationConverter);
-  }
-
-  @Bean
-  public ClockServices clockServices(
-      final BrokerClient brokerClient,
-      final SecurityContextProvider securityContextProvider,
-      final ApiServicesExecutorProvider executorProvider,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
-    return new ClockServices(
-        brokerClient,
-        securityContextProvider,
-        executorProvider,
-        brokerRequestAuthorizationConverter);
-  }
-
-  @Bean
-  public ResourceServices resourceServices(
-      final BrokerClient brokerClient,
-      final SecurityContextProvider securityContextProvider,
-      final ApiServicesExecutorProvider executorProvider,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
-      final ProcessDefinitionSearchClient processDefinitionSearchClient,
-      final DecisionRequirementSearchClient decisionRequirementSearchClient,
-      final DeployedResourceSearchClient deployedResourceSearchClient,
-      final Environment environment) {
-    return new ResourceServices(
-        brokerClient,
-        securityContextProvider,
-        executorProvider,
-        brokerRequestAuthorizationConverter,
-        processDefinitionSearchClient,
-        decisionRequirementSearchClient,
-        deployedResourceSearchClient,
-        DatabaseTypeUtils.isSecondaryStorageEnabled(environment));
-  }
-
-  @Bean
-  public SignalServices signalServices(
-      final BrokerClient brokerClient,
-      final SecurityContextProvider securityContextProvider,
-      final ApiServicesExecutorProvider executorProvider,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
-    return new SignalServices(
-        brokerClient,
-        securityContextProvider,
-        executorProvider,
-        brokerRequestAuthorizationConverter);
-  }
-
-  @Bean
-  public BatchOperationServices batchOperationServices(
-      final BrokerClient brokerClient,
-      final SecurityContextProvider securityContextProvider,
-      final BatchOperationSearchClient batchOperationSearchClient,
-      final ApiServicesExecutorProvider executorProvider,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
-    return new BatchOperationServices(
-        brokerClient,
-        securityContextProvider,
-        batchOperationSearchClient,
-        executorProvider,
-        brokerRequestAuthorizationConverter);
-  }
-
-  @Bean
-  public FormServices formServices(
-      final BrokerClient brokerClient,
-      final SecurityContextProvider securityContextProvider,
-      final FormSearchClient formSearchClient,
-      final ApiServicesExecutorProvider executorProvider,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
-    return new FormServices(
-        brokerClient,
-        securityContextProvider,
-        formSearchClient,
-        executorProvider,
-        brokerRequestAuthorizationConverter);
-  }
-
-  @Bean
-  public MappingRuleServices mappingRuleServices(
-      final BrokerClient brokerClient,
-      final SecurityContextProvider securityContextProvider,
-      final MappingRuleSearchClient mappingRuleSearchClient,
-      final ApiServicesExecutorProvider executorProvider,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
-    return new MappingRuleServices(
-        brokerClient,
-        securityContextProvider,
-        mappingRuleSearchClient,
-        executorProvider,
-        brokerRequestAuthorizationConverter);
-  }
-
-  @Bean
-  public MessageSubscriptionServices messageSubscriptionServices(
-      final BrokerClient brokerClient,
-      final SecurityContextProvider securityContextProvider,
-      final MessageSubscriptionSearchClient messageSubscriptionSearchClient,
-      final ApiServicesExecutorProvider executorProvider,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
-    return new MessageSubscriptionServices(
-        brokerClient,
-        securityContextProvider,
-        messageSubscriptionSearchClient,
-        executorProvider,
-        brokerRequestAuthorizationConverter);
-  }
-
-  @Bean
-  public ConditionalServices conditionalEventServices(
-      final BrokerClient brokerClient,
-      final SecurityContextProvider securityContextProvider,
-      final ApiServicesExecutorProvider executorProvider,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
-    return new ConditionalServices(
-        brokerClient,
-        securityContextProvider,
-        executorProvider,
-        brokerRequestAuthorizationConverter);
-  }
-
-  @Bean
-  public TopologyServices topologyServices(
-      final BrokerClient brokerClient,
-      final SecurityContextProvider securityContextProvider,
-      final ApiServicesExecutorProvider executorProvider,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
-    return new TopologyServices(
-        brokerClient,
-        securityContextProvider,
-        executorProvider,
-        brokerRequestAuthorizationConverter);
-  }
-
-  @Bean
-  public GlobalListenerServices globalListenerServices(
-      final BrokerClient brokerClient,
-      final SecurityContextProvider securityContextProvider,
-      final GlobalListenerSearchClient globalListenerSearchClient,
-      final ApiServicesExecutorProvider executorProvider,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
-    return new GlobalListenerServices(
-        brokerClient,
-        securityContextProvider,
-        globalListenerSearchClient,
-        executorProvider,
-        brokerRequestAuthorizationConverter);
-  }
+  // -- cluster-wide beans --
 
   @Bean
   public SecurityContextProvider securityContextProvider() {
     return new SecurityContextProvider();
   }
 
-  @Bean
-  public ProcessCache processCache(
-      final GatewayRestConfiguration configuration,
-      final ProcessDefinitionServices processDefinitionServices,
-      final BrokerTopologyManager brokerTopologyManager,
-      final MeterRegistry meterRegistry) {
-
-    final var cacheConfiguration =
-        new ProcessCache.Configuration(
-            configuration.getProcessCache().getMaxSize(),
-            configuration.getProcessCache().getExpirationIdleMillis());
-
-    return new ProcessCache(
-        cacheConfiguration, processDefinitionServices, brokerTopologyManager, meterRegistry);
-  }
-
+  // Cluster-wide executor, uses the node's availableProcessors
   @Bean
   public ApiServicesExecutorProvider apiServicesExecutor(
       final GatewayRestConfiguration configuration) {
@@ -658,5 +87,339 @@ public class CamundaServicesConfiguration {
         configuration.getApiExecutor().getMaxPoolSizeMultiplier(),
         configuration.getApiExecutor().getKeepAliveSeconds(),
         configuration.getApiExecutor().getQueueCapacity());
+  }
+
+  /**
+   * Builds one instance of each tenant-scoped {@code io.camunda.service.*} class per physical
+   * tenant and exposes them through a typed {@link ServiceRegistry}. Each per-tenant instance is
+   * bound to its tenant's search-client view (via {@link
+   * SearchClientsProxy#withPhysicalTenant(String)}) so read queries are automatically scoped to
+   * that tenant's secondary storage.
+   *
+   * <p>Cluster-wide services ({@code TopologyServices}, {@code ManagementServices}) are shared
+   * singletons injected from their own configuration classes.
+   *
+   * <p>For v1 the authorization converter and executor are cloned per-tenant from the global config
+   * (no isolation yet); the process cache uses a tenant-scoped search view. See ADR {@code
+   * 0001-physical-tenant-service-serviceRegistry}.
+   */
+  @Bean
+  public ServiceRegistry serviceRegistry(
+      final PhysicalTenantResolver physicalTenantResolver,
+      final BrokerClient brokerClient,
+      final SecurityContextProvider securityContextProvider,
+      final PasswordEncoder passwordEncoder,
+      final ActivateJobsHandler<JobActivationResult> activateJobsHandler,
+      final SearchClientsProxy searchClients,
+      final AuthorizationChecker authorizationChecker,
+      final CamundaSecurityLibraryProperties cslProperties,
+      final GatewayRestConfiguration gatewayRestConfiguration,
+      final BrokerTopologyManager brokerTopologyManager,
+      final MeterRegistry meterRegistry,
+      final Environment environment,
+      final ManagementServices managementServices,
+      final ApiServicesExecutorProvider executor) {
+
+    // TODO check we can maxNameFieldLength per tenant. Currently, it is only set in rdbms
+    // configuration in UC
+    final int maxNameFieldLength = gatewayRestConfiguration.getMaxNameFieldLength();
+    final boolean secondaryStorageEnabled =
+        DatabaseTypeUtils.isSecondaryStorageEnabled(environment);
+
+    final var builder = new DefaultServiceRegistry.Builder();
+    builder.managementServices(managementServices);
+
+    physicalTenantResolver
+        .getAll()
+        .forEach(
+            (tenantId, tenantConfig) -> {
+              final var search = searchClients.withPhysicalTenant(tenantId);
+
+              // -- per-tenant BrokerRequestAuthorizationConverter --
+              // TODO: derive one converter per tenant from per-tenant
+              // CamundaSecurityLibraryProperties once available.
+              final var converter =
+                  new BrokerRequestAuthorizationConverter(
+                      new EngineSecurityConfig(
+                          cslProperties.getAuthentication(),
+                          cslProperties.getAuthorizations().isEnabled(),
+                          cslProperties.getMultiTenancy().isChecksEnabled(),
+                          cslProperties.getInitialization(),
+                          cslProperties.getCompiledIdValidationPattern(),
+                          cslProperties.getCompiledGroupIdValidationPattern()));
+
+              // -- per-tenant process cache --
+              final var processCacheConfig = tenantConfig.getApi().getRest().getProcessCache();
+              final var cacheConfiguration =
+                  new ProcessCache.Configuration(
+                      processCacheConfig.getMaxSize(),
+                      processCacheConfig.getExpirationIdle().toMillis());
+              final var processCache =
+                  new ProcessCache(
+                      cacheConfiguration, search, brokerTopologyManager, meterRegistry);
+
+              // -- leaf services (no service-to-service dependencies) --
+              final var form =
+                  new FormServices(
+                      brokerClient, securityContextProvider, search, executor, converter);
+              final var incident =
+                  new IncidentServices(
+                      brokerClient, securityContextProvider, search, executor, converter);
+              final var variable =
+                  new VariableServices(
+                      brokerClient, securityContextProvider, search, executor, converter);
+              final var auditLog =
+                  new AuditLogServices(
+                      brokerClient, securityContextProvider, search, executor, converter);
+              final var decisionRequirements =
+                  new DecisionRequirementsServices(
+                      brokerClient, securityContextProvider, search, executor, converter);
+
+              // -- mid-tier services (depend on leaf services) --
+              final var elementInstance =
+                  new ElementInstanceServices(
+                      brokerClient,
+                      securityContextProvider,
+                      search,
+                      processCache,
+                      incident,
+                      executor,
+                      converter);
+              final var processDefinition =
+                  new ProcessDefinitionServices(
+                      brokerClient, securityContextProvider, search, form, executor, converter);
+
+              // -- top-level services --
+              final var processInstance =
+                  new ProcessInstanceServices(
+                      brokerClient,
+                      securityContextProvider,
+                      search,
+                      search,
+                      incident,
+                      executor,
+                      converter,
+                      maxNameFieldLength);
+              final var userTask =
+                  new UserTaskServices(
+                      brokerClient,
+                      securityContextProvider,
+                      search,
+                      form,
+                      elementInstance,
+                      variable,
+                      auditLog,
+                      processCache,
+                      executor,
+                      converter,
+                      maxNameFieldLength);
+
+              builder
+                  .adHocSubProcessActivityServices(
+                      tenantId,
+                      new AdHocSubProcessActivityServices(
+                          brokerClient, securityContextProvider, executor, converter))
+                  .agentInstanceServices(
+                      tenantId,
+                      new AgentInstanceServices(
+                          brokerClient, securityContextProvider, search, executor, converter))
+                  .auditLogServices(tenantId, auditLog)
+                  .authorizationServices(
+                      tenantId,
+                      new AuthorizationServices(
+                          brokerClient, securityContextProvider, search, executor, converter))
+                  .batchOperationServices(
+                      tenantId,
+                      new BatchOperationServices(
+                          brokerClient, securityContextProvider, search, executor, converter))
+                  .clockServices(
+                      tenantId,
+                      new ClockServices(brokerClient, securityContextProvider, executor, converter))
+                  .clusterVariableServices(
+                      tenantId,
+                      new ClusterVariableServices(
+                          brokerClient, securityContextProvider, search, executor, converter))
+                  .conditionalServices(
+                      tenantId,
+                      new ConditionalServices(
+                          brokerClient, securityContextProvider, executor, converter))
+                  .decisionDefinitionServices(
+                      tenantId,
+                      new DecisionDefinitionServices(
+                          brokerClient,
+                          securityContextProvider,
+                          search,
+                          decisionRequirements,
+                          executor,
+                          converter))
+                  .decisionInstanceServices(
+                      tenantId,
+                      new DecisionInstanceServices(
+                          brokerClient, securityContextProvider, search, executor, converter))
+                  .decisionRequirementsServices(tenantId, decisionRequirements)
+                  .documentServices(
+                      tenantId,
+                      new DocumentServices(
+                          brokerClient,
+                          securityContextProvider,
+                          new SimpleDocumentStoreRegistry(new EnvironmentConfigurationLoader()),
+                          authorizationChecker,
+                          cslProperties.getAuthorizations(),
+                          executor,
+                          converter))
+                  .elementInstanceServices(tenantId, elementInstance)
+                  .expressionServices(
+                      tenantId,
+                      new ExpressionServices(
+                          brokerClient, securityContextProvider, executor, converter))
+                  .formServices(tenantId, form)
+                  .globalListenerServices(
+                      tenantId,
+                      new GlobalListenerServices(
+                          brokerClient, securityContextProvider, search, executor, converter))
+                  .groupServices(
+                      tenantId,
+                      new GroupServices(
+                          brokerClient, securityContextProvider, search, executor, converter))
+                  .incidentServices(tenantId, incident)
+                  .jobServices(
+                      tenantId,
+                      new JobServices<>(
+                          brokerClient,
+                          securityContextProvider,
+                          activateJobsHandler,
+                          search,
+                          executor,
+                          converter,
+                          maxNameFieldLength))
+                  .mappingRuleServices(
+                      tenantId,
+                      new MappingRuleServices(
+                          brokerClient, securityContextProvider, search, executor, converter))
+                  .messageServices(
+                      tenantId,
+                      new MessageServices(
+                          brokerClient,
+                          securityContextProvider,
+                          executor,
+                          converter,
+                          maxNameFieldLength))
+                  .messageSubscriptionServices(
+                      tenantId,
+                      new MessageSubscriptionServices(
+                          brokerClient, securityContextProvider, search, executor, converter))
+                  .processDefinitionServices(tenantId, processDefinition)
+                  .processInstanceServices(tenantId, processInstance)
+                  .resourceServices(
+                      tenantId,
+                      new ResourceServices(
+                          brokerClient,
+                          securityContextProvider,
+                          executor,
+                          converter,
+                          search,
+                          search,
+                          search,
+                          secondaryStorageEnabled))
+                  .roleServices(
+                      tenantId,
+                      new RoleServices(
+                          brokerClient, securityContextProvider, search, executor, converter))
+                  .signalServices(
+                      tenantId,
+                      new SignalServices(
+                          brokerClient, securityContextProvider, executor, converter))
+                  .tenantServices(
+                      tenantId,
+                      new TenantServices(
+                          brokerClient, securityContextProvider, search, executor, converter))
+                  .topologyServices(
+                      tenantId,
+                      new TopologyServices(
+                          brokerClient, securityContextProvider, executor, converter))
+                  .usageMetricsServices(
+                      tenantId,
+                      new UsageMetricsServices(
+                          brokerClient, securityContextProvider, search, executor, converter))
+                  .userServices(
+                      tenantId,
+                      new UserServices(
+                          brokerClient,
+                          securityContextProvider,
+                          search,
+                          passwordEncoder,
+                          executor,
+                          converter))
+                  .userTaskServices(tenantId, userTask)
+                  .variableServices(tenantId, variable);
+            });
+
+    return builder.build();
+  }
+
+  // -- default-tenant service beans --
+  //
+  // Consumers that are not yet physical-tenant aware (currently the MCP gateway tools) still inject
+  // individual {@code *Services} singletons. We expose the default tenant's instances from the
+  // serviceRegistry so those consumers keep working until they are migrated to resolve the tenant
+  // per
+  // request. Making the MCP gateway physical-tenant aware is tracked by
+  // https://github.com/camunda/camunda/issues/52573.
+
+  @Bean
+  public TopologyServices topologyServices(final ServiceRegistry serviceRegistry) {
+    return serviceRegistry.topologyServices(PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID);
+  }
+
+  @Bean
+  public ProcessInstanceServices processInstanceServices(final ServiceRegistry serviceRegistry) {
+    return serviceRegistry.processInstanceServices(
+        PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID);
+  }
+
+  @Bean
+  public ProcessDefinitionServices processDefinitionServices(
+      final ServiceRegistry serviceRegistry) {
+    return serviceRegistry.processDefinitionServices(
+        PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID);
+  }
+
+  @Bean
+  public UserTaskServices userTaskServices(final ServiceRegistry serviceRegistry) {
+    return serviceRegistry.userTaskServices(PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID);
+  }
+
+  @Bean
+  public IncidentServices incidentServices(final ServiceRegistry serviceRegistry) {
+    return serviceRegistry.incidentServices(PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID);
+  }
+
+  @Bean
+  public JobServices<JobActivationResult> jobServices(final ServiceRegistry serviceRegistry) {
+    return serviceRegistry.jobServices(PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID);
+  }
+
+  @Bean
+  public VariableServices variableServices(final ServiceRegistry serviceRegistry) {
+    return serviceRegistry.variableServices(PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID);
+  }
+
+  @Bean
+  public MessageServices messageServices(final ServiceRegistry serviceRegistry) {
+    return serviceRegistry.messageServices(PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID);
+  }
+
+  @Bean
+  public MessageSubscriptionServices messageSubscriptionServices(
+      final ServiceRegistry serviceRegistry) {
+    return serviceRegistry.messageSubscriptionServices(
+        PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID);
+  }
+
+  // This is required by BrokerModuleConfiguration that requires UserServices for Basic auth
+  // TODO we need to make it physical tenant aware
+  @Bean
+  public UserServices userServices(final ServiceRegistry serviceRegistry) {
+    return serviceRegistry.userServices(PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID);
   }
 }

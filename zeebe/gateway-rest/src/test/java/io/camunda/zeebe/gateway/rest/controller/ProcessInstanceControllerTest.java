@@ -33,6 +33,7 @@ import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyBatchOper
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.exception.ServiceException;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
@@ -96,11 +97,15 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   @Captor ArgumentCaptor<ProcessInstanceMigrateRequest> migrateRequestCaptor;
   @Captor ArgumentCaptor<ProcessInstanceModifyRequest> modifyRequestCaptor;
   @MockitoBean ProcessInstanceServices processInstanceServices;
+  @MockitoBean ServiceRegistry serviceRegistry;
   @MockitoBean MultiTenancyConfiguration multiTenancyCfg;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
 
   @BeforeEach
   void setupServices() {
+    Mockito.lenient()
+        .when(serviceRegistry.processInstanceServices(any()))
+        .thenReturn(processInstanceServices);
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
   }

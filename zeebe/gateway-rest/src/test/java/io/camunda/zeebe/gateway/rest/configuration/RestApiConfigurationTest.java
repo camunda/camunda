@@ -17,6 +17,7 @@ import io.camunda.security.api.model.config.MultiTenancyConfiguration;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.TopologyServices;
 import io.camunda.service.TopologyServices.Topology;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -31,9 +32,12 @@ abstract class RestApiConfigurationTest extends RestControllerTest {
   @MockitoBean MultiTenancyConfiguration multiTenancyConfiguration;
   @MockitoBean ProcessInstanceServices processInstanceServices;
   @MockitoBean TopologyServices topologyServices;
+  @MockitoBean ServiceRegistry serviceRegistry;
 
   @BeforeEach
   void setupServices() {
+    when(serviceRegistry.processInstanceServices(any())).thenReturn(processInstanceServices);
+    when(serviceRegistry.topologyServices(any())).thenReturn(topologyServices);
     when(processInstanceServices.search(any(ProcessInstanceQuery.class), any()))
         .thenReturn(new Builder<ProcessInstanceEntity>().build());
     when(topologyServices.getTopology())

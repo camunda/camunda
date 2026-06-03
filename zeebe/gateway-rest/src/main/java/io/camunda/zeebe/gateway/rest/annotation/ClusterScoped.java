@@ -19,9 +19,6 @@ import java.lang.annotation.Target;
  * /v2/physical-tenants/{physicalTenantId}/...}).
  *
  * <p>Annotated controllers keep their original path mapping only.
- *
- * <p>Examples of cluster-scoped concerns: topology, status/health, license, system endpoints,
- * authentication, error handling.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
