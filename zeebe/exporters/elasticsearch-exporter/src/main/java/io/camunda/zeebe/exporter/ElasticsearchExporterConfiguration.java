@@ -104,6 +104,8 @@ public class ElasticsearchExporterConfiguration implements FilterConfiguration {
       case TIMER -> index.timer;
       case MESSAGE_START_EVENT_SUBSCRIPTION -> index.messageStartEventSubscription;
       case MESSAGE_START_PROCESS_INSTANCE_REQUEST -> index.messageStartProcessInstanceRequest;
+      case MESSAGE_START_CORRELATION_KEY_LOCK_RELEASE ->
+          index.messageStartCorrelationKeyLockRelease;
       case PROCESS_EVENT -> index.processEvent;
       case DEPLOYMENT_DISTRIBUTION -> index.deploymentDistribution;
       case ESCALATION -> index.escalation;
@@ -224,6 +226,7 @@ public class ElasticsearchExporterConfiguration implements FilterConfiguration {
     public boolean timer = true;
     public boolean messageStartEventSubscription = true;
     public boolean messageStartProcessInstanceRequest = true;
+    public boolean messageStartCorrelationKeyLockRelease = true;
     public boolean processEvent = false;
     public boolean deploymentDistribution = true;
     public boolean escalation = true;
@@ -665,6 +668,8 @@ public class ElasticsearchExporterConfiguration implements FilterConfiguration {
           + messageStartEventSubscription
           + ", messageStartProcessInstanceRequest="
           + messageStartProcessInstanceRequest
+          + ", messageStartCorrelationKeyLockRelease="
+          + messageStartCorrelationKeyLockRelease
           + ", processEvent="
           + processEvent
           + ", deploymentDistribution="
