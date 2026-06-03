@@ -55,6 +55,7 @@ jobs:
       - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: ut-be-${{inputs.componentName}}
+          skip-maven-cache: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'gradle-build') }}
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}

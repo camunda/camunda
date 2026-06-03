@@ -205,6 +205,7 @@ jobs:
       - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: gradle-compile
+          skip-maven-cache: "true"
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
@@ -219,7 +220,7 @@ jobs:
                 !contains(github.event.pull_request.labels.*.name, 'gradle-build')
               )
             }}
-      - run: ./gradlew --no-daemon --console=plain --parallel -Pskip.fe.build classes
+      - run: ./gradlew --no-daemon --console=plain --parallel -Pskip.fe.build testClasses
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -763,6 +764,7 @@ jobs:
       - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: ut-general-unit-tests
+          skip-maven-cache: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'gradle-build') }}
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
@@ -875,6 +877,7 @@ jobs:
       - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: ut-zeebe
+          skip-maven-cache: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'gradle-build') }}
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
