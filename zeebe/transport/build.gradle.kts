@@ -7,6 +7,7 @@ import java.nio.file.Files
 
 plugins {
     id("buildlogic.sbe-conventions")
+    id("buildlogic.serial-test-conventions")
 }
 
 // Exclude stream-protocol.xml from regular resources - we handle it separately for SBE generation

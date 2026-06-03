@@ -6,6 +6,7 @@ import org.gradle.api.artifacts.VersionCatalogsExtension
 
 plugins {
     id("buildlogic.sbe-conventions")
+    id("buildlogic.serial-test-conventions")
     id("buildlogic.netty-tcnative-runtime-conventions")
     id("buildlogic.test-jar-conventions")
 }
