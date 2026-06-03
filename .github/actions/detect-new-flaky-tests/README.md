@@ -1,393 +1,371 @@
 # Detect New Flaky Tests
 
-A CI quality gate that prevents PRs from introducing **new** flaky tests.
-It compares flaky tests detected in the PR's CI run against a baseline of
-tests already known to be flaky on `main`, `stable/*`, or in any other
-pull request in the last 20 days.
+A CI quality gate that blocks PRs from introducing **new** flaky tests, with
+**sticky alerts**: once a test is flagged on a PR, the alert remains until either
+the test method is actually fixed (and proven by 3 clean re-runs) or the
+`ci:flaky-test-bypass` label is applied. A test passing on retry alone does
+**not** clear the alert.
 
-Only truly **new** flaky tests block the PR — pre-existing flaky tests are ignored.
+## Why sticky?
 
-## How It Works
+Before stickiness, the bot's "Resolved" comment was produced whenever a
+subsequent CI run found no new flakes — i.e., any retry-luck pass would
+silence the alert. Real flakes routinely got merged because authors hit
+"Re-run jobs" until CI went green. Sticky alerts close that loophole.
+
+## Clearance rules
+
+An alert entry transitions from `active` → cleared when one of:
+
+| Path | Trigger | Resulting status |
+|------|---------|------------------|
+| Method fix | The flagged test's method body is modified, AND the affected job runs clean (no Maven retries) for at least **3** subsequent gate runs. | `cleared_via_fix` |
+| Bypass label | `ci:flaky-test-bypass` is applied to the PR. | `cleared_via_bypass` |
+| Force-push drop | The PR is rewritten so the original flagging commit is no longer reachable, AND the test does not flake in the new history. | `dropped_force_push` |
+
+"Clean run" means **Def-2**: the test was actually observed in this run AND
+did not appear in `FLAKY.xml`. A cancelled or skipped job does not advance
+the counter. A retry-pass within Maven still counts as a flake (entry in
+`FLAKY.xml`), which resets the counter to 0.
+
+The counter is per-test and only counts runs in the **same parent job** as
+the original flake (matrix entries are normalised to the parent — e.g.
+`identity-tests/identity-tests - elasticsearch9` rolls up to
+`identity-tests`). Re-runs of the same SHA count just like runs on later
+commits, so authors aren't forced to push throwaway commits to bank
+evidence — but the gate is only reachable after a real modification, so
+re-run-spam-without-fix can't game it.
+
+## How it works
 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
 │                        CI pipeline (ci.yml)                          │
 │                                                                      │
-│  1. Test jobs run (unit, integration, RDBMS, etc.)                   │
-│     └─ Maven rerun count = 3 for PRs                                 │
-│     └─ Flaky tests produce FLAKY.xml via analyze-test-runs           │
+│  1. Test jobs run; FLAKY.xml extracted; collect-flaky-tests          │
+│     produces flaky_tests_data (JSON).                                │
 │                                                                      │
-│  2. utils-flaky-tests-summary                                        │
-│     └─ collect-flaky-tests gathers all FLAKY.xml results             │
-│     └─ Outputs: flaky_tests_data (JSON)                              │
-│                                                                      │
-│  3. detect-new-flaky-tests  ← THIS ACTION                            │
-│     ├─ Checks for `ci:flaky-test-bypass` label → skip if present     │
-│     ├─ Queries BigQuery for baseline (known flaky tests)             │
-│     ├─ Compares PR flaky tests against baseline                      │
-│     ├─ If new flaky tests found → posts comment + fails              │
-│     └─ If all known or bypassed → passes                             │
-│                                                                      │
-│  4. check-results                                                    │
-│     └─ Aggregates all job results including detect-new-flaky-tests   │
+│  2. detect-new-flaky-tests job                                       │
+│     ├─ Discover prior state artifact (latest non-expired)            │
+│     ├─ Download state.json (or treat as fresh)                       │
+│     ├─ Build ran-jobs JSON from needs.X.result                       │
+│     ├─ Read bypass label                                             │
+│     ├─ Query BigQuery for baseline (only if new flakes this run)     │
+│     ├─ Run detect_new_flaky_tests.py                                 │
+│     │  ├─ Bypass label?  → mark all active → cleared_via_bypass      │
+│     │  ├─ Else:                                                      │
+│     │  │    1. Reconcile force-push (drop unreachable+absent)        │
+│     │  │    2. Re-evaluate method modification via git log -L        │
+│     │  │    3. Merge new flakes / reset re-flaked entries            │
+│     │  │    4. Increment counters where job ran AND test clean       │
+│     │  │    5. Promote counter>=3 entries to cleared_via_fix         │
+│     │  └─ Render comment, write state.json                           │
+│     ├─ Upload state artifact (flaky-gate-state-pr-<N>, 30d retention)│
+│     └─ Exit non-zero if any entries remain active (blocking mode)    │
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
-## Data Flow
+## State schema
 
-### Input 1: PR flaky tests (`PR_FLAKY_TESTS_DATA`)
-
-Comes from the `collect-flaky-tests` action. This is a JSON array of objects,
-one per CI job that had flaky tests:
+Per-PR JSON written to / read from the workflow artifact
+`flaky-gate-state-pr-<PR_NUMBER>` (retention 30 days).
 
 ```json
-[
-  {
-    "job": "rdbms-integration-tests",
-    "flaky_tests": "io.camunda.it.rdbms.db.processinstance.ProcessInstanceIT.shouldSelectRootExpiredRootProcessInstances(CamundaRdbmsTestApplication)[5]"
-  }
-]
+{
+  "schema_version": 1,
+  "pr_number": 54375,
+  "last_known_head_sha": "ad7705f...",
+  "last_updated_at": "2026-06-03T11:42:00Z",
+  "tests": [
+    {
+      "key": "io.camunda.it.auth.ProcessDefinitionStatisticsAuthorizationIT.shouldAllowReadProcessInstancePermission",
+      "package": "io.camunda.it.auth",
+      "class_name": "ProcessDefinitionStatisticsAuthorizationIT",
+      "method_name": "shouldAllowReadProcessInstancePermission",
+      "file_path": "qa/integration/src/test/java/io/camunda/it/auth/ProcessDefinitionStatisticsAuthorizationIT.java",
+      "first_flagged_sha": "ad7705f447bdcb2b9f5c813e85a3ec55b4efd1ca",
+      "flagged_jobs": ["identity-tests/identity-tests - elasticsearch9"],
+      "method_last_modified_sha": null,
+      "clean_runs_since_modified": 0,
+      "last_observed_sha": "ad7705f447bdcb2b9f5c813e85a3ec55b4efd1ca",
+      "last_observed_at": "2026-06-03T11:42:00Z",
+      "status": "active",
+      "cleared_at": null
+    }
+  ]
+}
 ```
 
-### Input 2: Baseline flaky tests (`KNOWN_FLAKY_TESTS_FILE`)
+Statuses: `active`, `cleared_via_fix`, `cleared_via_bypass`,
+`dropped_force_push`.
 
-Queried from BigQuery at runtime and written to a temporary JSON file.
-The file path is passed to the action. Contains all tests that have been flaky
-on `main`, `stable/*`, or any other pull request in the last 20 days:
+## BigQuery baseline query
 
-```json
-[
-  {
-    "test_class_name": "io.camunda.it.rdbms.db.processinstance.ProcessInstanceIT",
-    "test_name": "shouldSelectRootExpiredRootProcessInstances(CamundaRdbmsTestApplication) camundaWithOracleDB"
-  }
-]
-```
+Returns every test that produced an unreliable result (`flaky`, `failure`,
+or `error`) on `main`, `stable/*`, in scheduled nightly runs, or in any
+other open PR over the last 20 days. PR runs are included but the current
+PR's own observations are excluded.
 
-### BigQuery Query
+The trigger/ref filters live in the LEFT JOIN's `ON` clause, not the
+`WHERE`. Keeping them in `WHERE` turned the LEFT JOIN into an effective
+INNER JOIN whenever `build_status_v2` ingestion lagged behind
+`test_status_v1`, dropping known flakes from the baseline and producing
+false positives. The current shape preserves rows even when the matching
+build-status row hasn't ingested yet; we then require `bs.ci_url IS NOT
+NULL` to keep only matched rows.
 
 ```sql
 SELECT DISTINCT test_class_name, test_name
-FROM `ci-30-162810.prod_ci_analytics.test_status_v1` ts
+FROM   `ci-30-162810.prod_ci_analytics.test_status_v1` ts
 LEFT OUTER JOIN `ci-30-162810.prod_ci_analytics.build_status_v2` bs
-  ON ts.ci_url = bs.ci_url AND ts.build_id = bs.build_id AND ts.job_name = bs.job_name
-WHERE ts.report_time >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 20 DAY)
-  AND ts.ci_url = "https://github.com/camunda/camunda"
-  AND test_status IN ("flaky", "failure", "error")
+  ON  ts.ci_url = bs.ci_url
+  AND ts.build_id = bs.build_id
+  AND ts.job_name = bs.job_name
   AND (
-    (build_trigger = "merge_group"
-      AND (build_base_ref = "refs/heads/main" OR build_base_ref LIKE "refs/heads/stable/%"))
-    OR
-    (build_trigger = "push"
-      AND (build_ref = "refs/heads/main" OR build_ref LIKE "refs/heads/stable/%"))
-    OR
-    (build_trigger = "schedule"
-      AND (build_ref = "refs/heads/main" OR build_ref LIKE "refs/heads/stable/%"))
-    OR
-    (build_trigger = "pull_request"
-      AND (bs.build_ref IS NULL OR bs.build_ref != @pr_ref))
+    (bs.build_trigger = "merge_group"   AND (bs.build_base_ref = "refs/heads/main" OR bs.build_base_ref LIKE "refs/heads/stable/%"))
+    OR (bs.build_trigger = "push"       AND (bs.build_ref      = "refs/heads/main" OR bs.build_ref      LIKE "refs/heads/stable/%"))
+    OR (bs.build_trigger = "schedule"   AND (bs.build_ref      = "refs/heads/main" OR bs.build_ref      LIKE "refs/heads/stable/%"))
+    OR (bs.build_trigger = "pull_request" AND bs.build_ref != @pr_ref)
   )
+WHERE  ts.report_time >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 20 DAY)
+  AND  ts.ci_url = "https://github.com/camunda/camunda"
+  AND  ts.test_status IN ("flaky","failure","error")
+  AND  bs.ci_url IS NOT NULL
 ```
 
-This returns every test that produced an unreliable result (`flaky`,
-`failure`, or `error`) on `main`, `stable/*`, in nightly scheduled runs, or
-in any other pull request in the last 20 days. The 20-day window matches the
-range of clustered BigQuery data. The status filter is broad on purpose —
-`failure`/`error` rows on `main`/`stable/*` are just as much a signal of an
-unreliable test as `flaky`, and excluding them was causing false-positive
-alerts. PR runs are included so tests that flake mostly on PRs are still
-recognised, but the current PR's own observations are excluded so a new flake
-cannot launder itself across re-runs. The current PR's ref is supplied at
-query time via `bq query --parameter='pr_ref:STRING:refs/pull/<N>/merge'`
-(see the [workflow step](../../workflows/ci.yml)). The GCP service account
-key is fetched from Vault.
+## Method modification detection
 
-## Processing Steps
-
-### Step 1: Parse PR flaky tests
-
-The raw `flaky_tests` string from each job is split into individual test names.
-Each test name is parsed into its components:
-
-|                                                        Raw test name from Maven                                                        |                                                              Parsed                                                               |
-|----------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------|
-| `io.camunda.it.rdbms.db.processinstance.ProcessInstanceIT.shouldSelectRootExpiredRootProcessInstances(CamundaRdbmsTestApplication)[5]` | package=`io.camunda.it.rdbms.db.processinstance`, class=`ProcessInstanceIT`, method=`shouldSelectRootExpiredRootProcessInstances` |
-
-The `(CamundaRdbmsTestApplication)` (parameter info) and `[5]` (index) are
-stripped during parsing. This produces a **normalized key**:
-
-```
-io.camunda.it.rdbms.db.processinstance.ProcessInstanceIT.shouldSelectRootExpiredRootProcessInstances
-```
-
-If the same test appears in multiple jobs, it's deduplicated (jobs are merged).
-
-JUnit lifecycle entries (`<beforeAll>`, `<afterAll>`, `<beforeEach>`,
-`<afterEach>`) are dropped at this stage. They represent class-level setup
-or teardown failures, not test methods, and BigQuery never records them, so
-comparing them against the baseline produces guaranteed false-positive
-alerts. A setup failure already fails the job through the normal path; the
-new-flaky gate has nothing useful to add for it.
-
-### Step 2: Parse baseline flaky tests
-
-BigQuery results are built into **baseline keys** by concatenating
-`test_class_name` + `.` + `test_name` **without any normalization**:
-
-```
-io.camunda.it.rdbms.db.processinstance.ProcessInstanceIT.shouldSelectRootExpiredRootProcessInstances(CamundaRdbmsTestApplication) camundaWithOracleDB
-```
-
-These raw keys preserve parameter info and database variant suffixes.
-
-### Step 3: Compare (boundary-aware matching)
-
-For each PR flaky test, we check if any baseline key refers to the same test
-method. The challenge is that the two sides have **different formats**:
-
-|        Side         |            Key format             |                                         Example                                          |
-|---------------------|-----------------------------------|------------------------------------------------------------------------------------------|
-| **PR** (normalized) | `pkg.Class.method`                | `...ProcessInstanceIT.shouldSelectRoot`                                                  |
-| **Baseline** (raw)  | `pkg.Class.method(Param) variant` | `...ProcessInstanceIT.shouldSelectRoot(CamundaRdbmsTestApplication) camundaWithOracleDB` |
-
-The matching function `_is_same_test(baseline_key, normalized_key)` works as
-follows:
-
-1. **Exact match?** If `baseline_key == normalized_key` → match.
-2. **Starts with?** If `baseline_key.startswith(normalized_key)` → check step 3.
-3. **Boundary check:** Look at the character immediately after the normalized
-   key ends. If it's a **non-alphanumeric, non-underscore** character (like `(`
-   or ` `), it's a boundary → match. If it's a letter, digit, or `_`, it means
-   we matched a prefix of a *different* method name → no match.
-
-### Boundary matching examples
-
-|    Normalized key     |             Baseline key             | Next char | Match? |                    Why                    |
-|-----------------------|--------------------------------------|-----------|--------|-------------------------------------------|
-| `...shouldSelectRoot` | `...shouldSelectRoot`                | *(end)*   | ✅      | Exact match                               |
-| `...shouldSelectRoot` | `...shouldSelectRoot(Param) variant` | `(`       | ✅      | `(` is a boundary                         |
-| `...shouldSelectRoot` | `...shouldSelectRoot[5]`             | `[`       | ✅      | `[` is a boundary                         |
-| `...shouldFind`       | `...shouldFindAllItems(Param)`       | `A`       | ❌      | `A` is alphanumeric → different method    |
-| `...shouldFind`       | `...shouldFind_v2(Param)`            | `_`       | ❌      | `_` is identifier char → different method |
-
-### Decision
-
-|                Scenario                 |                                       Result                                        |
-|-----------------------------------------|-------------------------------------------------------------------------------------|
-| All PR flaky tests match a baseline key | ✅ **Pass** — sets `has-new-flaky-tests=false`                                       |
-| At least one PR flaky test has no match | ❌ **Fail** — posts a PR comment, sets `has-new-flaky-tests=true`, exits with code 1 |
-
-## Bypass Label
-
-If the gate flags a flaky test that is **not caused by your changes**, you can
-skip the gate by adding the `ci:flaky-test-bypass` label to your PR and
-re-running CI.
-
-When the label is present, the `detect-new-flaky-tests` job prints a notice
-and exits successfully without querying BigQuery or comparing tests.
-
-> **Important:** Before bypassing, create a `kind/flake` issue so the flaky
-> test is tracked and eventually fixed.
-
-## PR Comment
-
-When new flaky tests are found, the action posts (or updates) a PR comment:
-
-> ## ⚠️ New Flaky Tests Detected
->
-> This PR introduces **1 new flaky test(s)** that are not currently flaky on
-> `main` or `stable/*` branches.
->
-> - **shouldDoSomething**
->   - Jobs: `rdbms-integration-tests`
->   - Package: `io.camunda.it.example`
->   - Class: `ExampleIT`
->   - Retries in this run: 1
->
-> ---
->
-> **What to do:**
-> 1. Check if the flaky test is caused by your changes and fix it
-> 2. If the test is unrelated to your changes:
-> - Contact the Monorepo DevOps team (#ask-monorepo-devops) to triage and discuss the next steps
-> - Create an issue with the `kind/flake` label documenting the test, job, and a link to this CI run
-> - Add the `ci:flaky-test-bypass` label to this PR to skip the gate and unblock merging
-> - Re-run CI after adding the label
-
-If a subsequent CI run finds **no new flaky tests**, the existing comment is
-updated to show it's resolved — the original warning is kept in a collapsed
-`<details>` block with ~~strikethrough~~ formatting:
-
-> ## ✅ Resolved — No New Flaky Tests
->
-> A previous CI run flagged new flaky tests, but the latest run found none.
->
-> <details>
-> <summary>Previous warning (resolved)</summary>
->
-> ~~⚠️ New Flaky Tests Detected~~
-> ~~This PR introduces **1 new flaky test(s)**...~~
->
-> </details>
->
-> The comment is identified by a hidden HTML marker (`<!-- new-flaky-tests-alert -->`)
-> so it is always updated in-place rather than creating duplicates.
->
-> If the comment is already resolved and another passing run occurs, it is left
-> unchanged (no double-strikethrough). If new flaky tests appear in a later run,
-> the comment is fully replaced with a fresh warning.
-
-## CI Job Configuration
-
-The `detect-new-flaky-tests` job is defined in `.github/workflows/ci.yml`:
-
-- **Runs on:** `ubuntu-latest`
-- **Timeout:** 10 minutes
-- **Condition:** Only on `pull_request` events from non-fork repos
-- **Depends on:** `utils-flaky-tests-summary` (which collects flaky test data
-  from all test jobs)
-- **Part of:** `check-results` aggregation (failures block merge)
-
-> **Note:** This gate can only detect flaky tests from CI jobs that are wired
-> into the `collect-flaky-tests` action. If a new test job is added to CI but
-> not connected to `collect-flaky-tests`, its flaky tests won't be checked.
-
-### Secrets used
-
-|      Secret       |                        Source                        |      Purpose       |
-|-------------------|------------------------------------------------------|--------------------|
-| `VAULT_ADDR`      | Repository secret                                    | Vault server URL   |
-| `VAULT_ROLE_ID`   | Repository secret                                    | Vault AppRole auth |
-| `VAULT_SECRET_ID` | Repository secret                                    | Vault AppRole auth |
-| GCP SA key        | Vault (`secret/data/products/zeebe/ci/ci-analytics`) | BigQuery access    |
-
-## Running Locally
-
-You can test the script locally if you have `bq` CLI authenticated:
+For each active entry, the detector runs:
 
 ```bash
-# 1. Query BigQuery for baseline and save to file
+git log --format=%H -L:<method_name>:<file_path> <merge-base(base, HEAD)>..HEAD
+```
+
+Git's `-L :funcname:file` matcher uses language-aware function-boundary
+detection (Java's default funcname regex). The first SHA output is the
+most-recent commit that modified the method body within the range. None
+means no modification, so the counter stays at 0.
+
+Known limitations:
+
+- **Java overloads** share a method name; they are treated as a single unit.
+  Modifying any overload of the same name counts as "fix attempted." Worth
+  noting in PR review but rarely problematic in practice.
+- **Renamed / moved tests** that change file or class are not followed.
+  Use `ci:flaky-test-bypass` for those.
+
+## Per-test counter semantics
+
+Increments happen in `increment_counters_if_clean` and follow these rules:
+
+1. The entry must be `active` and have a non-null `method_last_modified_sha`
+   (the gate believes a fix attempt exists).
+2. The test must NOT be in this run's `FLAKY.xml` (re-flake → reset to 0).
+3. At least one of the entry's `flagged_jobs` parent names must appear in
+   `RAN_JOBS_JSON` (the originally affected job actually ran).
+4. If all three hold, counter += 1.
+5. Counter `>= 3` (`MIN_CLEAN_RUNS`) promotes the entry to
+   `cleared_via_fix`.
+
+## Force-push semantics
+
+Always re-evaluated against the current branch state — no special
+detection. For each entry:
+
+- If `first_flagged_sha` is no longer reachable from `HEAD` AND the test is
+  not in the current run's flakes → entry is `dropped_force_push`.
+- Otherwise: re-run `git log -L` against
+  `merge-base(base_ref, HEAD)..HEAD`. If a modification is still findable,
+  `method_last_modified_sha` is updated (may change SHA if a new commit
+  touched the method — this resets the counter via Q4c).
+- This handles both legitimate rebases (modification preserved → counter
+  preserved) and force-push-to-silence attacks (modification not found →
+  counter stays at 0, alert stays sticky).
+
+## Comment rendering
+
+Single PR comment, identified by `<!-- new-flaky-tests-alert -->`. Carries
+a hidden pointer to the state artifact:
+
+```
+<!-- new-flaky-tests-alert -->
+<!-- flaky-gate-state-artifact: flaky-gate-state-pr-54375 -->
+```
+
+### Active alert
+
+```
+# ⚠️ New Flaky Tests Detected
+
+This PR introduces **2 new flaky test(s)** ...
+
+- **shouldFlushBatchWhenFull**
+  - Jobs: `general-unit-tests`
+  - Package: `io.camunda.exporter.appint.subscription`
+  - Class: `SubscriptionTest`
+  - State:
+    - First flagged at: `abc1234`
+    - Method last modified at: `def5678`
+    - Clean re-runs since fix: 2 / 3
+    - Last observed: 2026-06-03 09:42:00 UTC
+```
+
+### All cleared
+
+```
+# ✅ Cleared — No outstanding new flakes
+
+All previously flagged tests cleared via fix + 3 clean re-runs, or via
+`ci:flaky-test-bypass` label.
+
+<details>
+<summary>Previous warning</summary>
+... strikethrough history ...
+</details>
+```
+
+The word "Cleared" intentionally replaces the legacy "Resolved" — the old
+"Resolved" template fired on any retry-luck pass, and reusing the same
+headline would conflate the two behaviors.
+
+## Workflow integration
+
+See `.github/workflows/ci.yml` `detect-new-flaky-tests` job. Key steps:
+
+1. **`actions/checkout`** with `fetch-depth: 0` (full history required for
+   `git log -L`).
+2. **Discover and download** the latest non-expired
+   `flaky-gate-state-pr-<N>` artifact via `gh api`.
+3. **Build `ran-jobs-json`** from `needs.<job>.result` values (any value
+   other than `skipped`).
+4. **Read bypass label** from `pull_request.labels`.
+5. **Query BigQuery** only when this run produced new flakes.
+6. **Invoke the composite action** with all of the above plus
+   `head-sha`, `base-ref`, `blocking: 'true'`.
+7. **Upload** the new `state.json` as
+   `flaky-gate-state-pr-<N>` (retention 30 days, overwrite previous).
+
+## When the gate runs
+
+The job runs on `pull_request` events from non-fork repos, EXCEPT:
+
+- PRs from `monorepo-devops-automation[bot]` (backport bot).
+- PRs from `renovate[bot]` (dependency-bump bot — see PR #53683 for
+  rationale: dependency bumps don't introduce flakes; any flake hit is
+  pre-existing infra noise).
+- PRs whose `head_ref` starts with `backport` (manually-named backports).
+
+Direct fixes pushed to `stable/*` branches by humans still run the gate.
+
+## Bypass label workflow
+
+If the gate flags a flaky test that is **not caused by your changes**:
+
+1. Apply the `ci:flaky-test-bypass` label to your PR.
+2. Re-run CI — the next gate run will mark all active entries as
+   `cleared_via_bypass` and post the "Cleared" comment.
+
+> Before bypassing, create a `kind/flake` issue documenting the test, the
+> job, and the CI run URL. The bypass label is not a fix.
+
+## Inputs
+
+| Input | Required | Default | Description |
+|-------|----------|---------|-------------|
+| `pr-flaky-tests-data` | yes | — | JSON `[{job, flaky_tests}]` from `collect-flaky-tests`. |
+| `known-flaky-tests-file` | yes | — | Path to BigQuery baseline JSON. |
+| `pr-number` | yes | — | Pull request number. |
+| `blocking` | no | `true` | Fail the job if any sticky entry is still active. |
+| `state-file-in` | no | `''` | Path to the state JSON from prior run (missing = fresh). |
+| `state-file-out` | yes | — | Path where the updated state JSON is written for upload. |
+| `ran-jobs-json` | no | `[]` | JSON list of parent job names whose result is not `skipped`. |
+| `bypass-label-present` | no | `false` | `true` if `ci:flaky-test-bypass` is on the PR. |
+| `head-sha` | yes | — | Current PR head SHA. |
+| `base-ref` | yes | — | PR base branch (used for merge-base in `git log -L`). |
+| `repo-root` | no | `$GITHUB_WORKSPACE` | Absolute path to the checked-out repo. |
+
+## Outputs
+
+| Output | Description |
+|--------|-------------|
+| `has-new-flaky-tests` | `true` if any entries remain in `active` status after reconciliation. |
+
+## Secrets
+
+| Secret | Source | Purpose |
+|--------|--------|---------|
+| `VAULT_ADDR` | Repository secret | Vault server URL |
+| `VAULT_ROLE_ID` | Repository secret | Vault AppRole auth |
+| `VAULT_SECRET_ID` | Repository secret | Vault AppRole auth |
+| GCP SA key | Vault (`secret/data/products/zeebe/ci/ci-analytics`) | BigQuery access |
+| `GITHUB_TOKEN` | Auto | Comment + artifact API |
+
+## Running locally
+
+```bash
+# 1. Pull baseline from BigQuery (bq CLI must be authenticated).
 bq query --project_id=ci-30-162810 --use_legacy_sql=false --format=json \
   --parameter='pr_ref:STRING:refs/pull/12345/merge' \
   'SELECT DISTINCT test_class_name, test_name
    FROM `ci-30-162810.prod_ci_analytics.test_status_v1` ts
    LEFT OUTER JOIN `ci-30-162810.prod_ci_analytics.build_status_v2` bs
      ON ts.ci_url=bs.ci_url AND ts.build_id=bs.build_id AND ts.job_name=bs.job_name
+     AND (
+       (bs.build_trigger="merge_group" AND (bs.build_base_ref="refs/heads/main" OR bs.build_base_ref LIKE "refs/heads/stable/%"))
+       OR (bs.build_trigger="push" AND (bs.build_ref="refs/heads/main" OR bs.build_ref LIKE "refs/heads/stable/%"))
+       OR (bs.build_trigger="schedule" AND (bs.build_ref="refs/heads/main" OR bs.build_ref LIKE "refs/heads/stable/%"))
+       OR (bs.build_trigger="pull_request" AND bs.build_ref != @pr_ref)
+     )
    WHERE ts.report_time >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 20 DAY)
      AND ts.ci_url="https://github.com/camunda/camunda"
-     AND test_status IN ("flaky","failure","error")
-     AND (
-       (build_trigger="merge_group" AND (build_base_ref="refs/heads/main" OR build_base_ref LIKE "refs/heads/stable/%"))
-       OR (build_trigger="push" AND (build_ref="refs/heads/main" OR build_ref LIKE "refs/heads/stable/%"))
-       OR (build_trigger="schedule" AND (build_ref="refs/heads/main" OR build_ref LIKE "refs/heads/stable/%"))
-       OR (build_trigger="pull_request" AND (bs.build_ref IS NULL OR bs.build_ref != @pr_ref))
-     )' 2>/dev/null > /tmp/known-flaky-tests.json
+     AND ts.test_status IN ("flaky","failure","error")
+     AND bs.ci_url IS NOT NULL' > /tmp/known-flaky-tests.json
 
-# 2. Simulate PR flaky test data
-PR_DATA='[{"job":"rdbms-integration-tests","flaky_tests":"io.camunda.it.rdbms.db.processinstance.ProcessInstanceIT.shouldSelectRootExpiredRootProcessInstances(CamundaRdbmsTestApplication)[5]"}]'
+# 2. Optional: provide a prior state file.
+echo '{"schema_version":1,"pr_number":12345,"last_known_head_sha":"prev","last_updated_at":"t","tests":[]}' > /tmp/state-in.json
 
-# 3. Run (will fail at post_comment since GITHUB_TOKEN is fake — that's OK)
-PR_FLAKY_TESTS_DATA="$PR_DATA" \
+# 3. Simulate PR flaky data and run the detector.
+PR_FLAKY_TESTS_DATA='[{"job":"general-unit-tests","flaky_tests":"io.camunda.it.example.ExampleIT.shouldDoX(Param)"}]' \
 KNOWN_FLAKY_TESTS_FILE=/tmp/known-flaky-tests.json \
 PR_NUMBER=12345 \
+STATE_FILE_IN=/tmp/state-in.json \
+STATE_FILE_OUT=/tmp/state-out.json \
+RAN_JOBS_JSON='["general-unit-tests"]' \
+BYPASS_LABEL_PRESENT=false \
+HEAD_SHA=$(git rev-parse HEAD) \
+BASE_REF=main \
+BLOCKING=true \
+REPO_ROOT=$(pwd) \
 GITHUB_TOKEN=fake \
 GITHUB_REPOSITORY=camunda/camunda \
 python3 .github/actions/detect-new-flaky-tests/detect_new_flaky_tests.py
+
+# 4. Inspect the resulting state.
+cat /tmp/state-out.json | jq .
 ```
 
-The script will print all 3 steps with debug output and show whether each test
-is KNOWN or NEW. It will fail at the `post_comment` step if a test is NEW
-(since the token is fake), but the comparison output is still visible.
+## Tests
 
-## FAQ
+Unit tests live in `test_detect_new_flaky_tests.py`. Run with:
 
-<details>
-<summary><strong>Will old flaky tests be flagged as new after 20 days?</strong></summary>
+```bash
+cd .github/actions/detect-new-flaky-tests
+python3 -m unittest test_detect_new_flaky_tests -v
+```
 
-No. The 20-day window is a rolling query against `main`, `stable/*`, and
-other pull requests. Tests on those branches keep running normally (via
-`push`, `merge_group`, and `pull_request` triggers). As long as a test
-continues to flake somewhere, fresh entries keep appearing in BigQuery — it
-never falls out of the window.
+Covers: name parsing, dedup, baseline boundary matching, state persistence
+roundtrip, schema-mismatch reset, new-flake addition, re-flake reset for
+active and cleared entries, counter increment under all combinations of
+modification/job-ran/test-clean, clearance at threshold, bypass label,
+force-push drop, Q4c counter reset on additional modification, and comment
+rendering (active / mixed / all-clear).
 
-A test only drops out of the baseline if it **hasn't flaked anywhere
-(including in any other PR) for 20+ days**. That likely means it was fixed.
-If a PR triggers it again, flagging it as NEW is the correct behavior.
-
-</details>
-
-<details>
-<summary><strong>What about tests that flake very rarely (e.g., once every few months)?</strong></summary>
-
-If a test last flaked anywhere 21+ days ago and your PR hits it, it will be
-flagged as NEW. In this case:
-
-1. Add the `ci:flaky-test-bypass` label to your PR
-2. Create a `kind/flake` issue to track the test
-3. Re-run CI — the gate will be skipped
-
-</details>
-
-<details>
-<summary><strong>Does this gate run on main or stable branches?</strong></summary>
-
-No. It only runs on `pull_request` events from non-fork repos. Test jobs on
-`main` and `stable/*` continue to run normally and feed the BigQuery baseline.
-
-</details>
-
-<details>
-<summary><strong>What happens if BigQuery is down or the query fails?</strong></summary>
-
-The BigQuery query step will fail, which causes the `detect-new-flaky-tests`
-job to fail. Since this job is in the `check-results` aggregation, it would
-block merge. The `ci:flaky-test-bypass` label can be used to unblock.
-
-</details>
-
-<details>
-<summary><strong>Can the gate produce false positives?</strong></summary>
-
-The main source of false positives was mismatched test name formats between
-Maven output and BigQuery. This is handled by boundary-aware matching (see
-Step 3 above). Known cases:
-
-- **Parameterized tests**: Maven reports `shouldDoX(Param)[5]`, BigQuery stores
-  `shouldDoX(Param) variant` — both match the normalized key `shouldDoX`
-- **Different methods sharing a prefix**: `shouldFind` will NOT match
-  `shouldFindAllItems` thanks to the boundary check
-
-If you encounter a false positive, use `ci:flaky-test-bypass` and report it to @monorepo-devops-team.
-
-</details>
-
-<details>
-<summary><strong>Does the gate run on fork PRs?</strong></summary>
-
-No. Fork PRs don't have access to repository secrets (Vault credentials),
-which are required to query BigQuery for the baseline. GitHub enforces this
-restriction for security — fork PRs cannot access secrets from the base repo.
-
-This means fork PRs can potentially introduce new flaky tests without being
-blocked. However:
-
-- Fork PRs are rare in this repo
-- Once a fork PR merges and the flaky test starts appearing on `main`, it will
-  enter the BigQuery baseline and be tracked going forward
-- Reviewers can still see test failures in the CI logs
-
-A future improvement could use a `workflow_run` trigger to run the gate in the
-base repo's context after the fork PR's CI completes. This would provide secret
-access while maintaining security.
-
-</details>
-
-## File Structure
+## File structure
 
 ```
 .github/actions/detect-new-flaky-tests/
-├── action.yml                  # Composite action definition
-├── detect_new_flaky_tests.py   # Detection logic (Python, stdlib only)
-└── README.md                   # This file
+├── action.yml                       # Composite action definition
+├── detect_new_flaky_tests.py        # Sticky-alert detection logic
+├── test_detect_new_flaky_tests.py   # Unit tests (stdlib only)
+└── README.md                        # This file
 ```
-
