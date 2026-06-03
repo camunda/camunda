@@ -130,12 +130,16 @@ jobs:
 
       - name: Print Docker logs before failing
         if: failure()
+        # DATABASE must be set: docker-compose.yml interpolates it into the
+        # camunda service's depends_on / env_file, so an unset value makes the
+        # compose project invalid ("depends on undefined service") and this
+        # diagnostic step errors out instead of printing the container logs.
         run: |
           if [[ "${{ inputs.branch }}" == "stable/8.7" ]]; then
-            docker compose logs tasklist
-            docker compose logs operate
+            DATABASE=elasticsearch docker compose logs tasklist
+            DATABASE=elasticsearch docker compose logs operate
           else
-            docker compose logs camunda
+            DATABASE=elasticsearch docker compose logs camunda
           fi
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
