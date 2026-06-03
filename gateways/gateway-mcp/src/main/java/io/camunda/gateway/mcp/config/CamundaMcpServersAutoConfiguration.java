@@ -7,6 +7,8 @@
  */
 package io.camunda.gateway.mcp.config;
 
+import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
+import io.camunda.gateway.mapping.http.physicaltenants.PhysicalTenantContext;
 import io.camunda.gateway.mcp.ConditionalOnMcpGatewayEnabled;
 import io.camunda.gateway.mcp.config.server.RequestHandlerCustomizer;
 import io.camunda.gateway.mcp.config.server.ToolRepository;
@@ -19,10 +21,14 @@ import io.modelcontextprotocol.server.McpStatelessSyncServer;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpStatelessServerTransport;
 import java.util.List;
+import java.util.Set;
 import org.springframework.ai.mcp.server.webmvc.transport.WebMvcStatelessServerTransport;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.context.annotation.Bean;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.servlet.function.HandlerFilterFunction;
 import org.springframework.web.servlet.function.RouterFunction;
 import org.springframework.web.servlet.function.ServerResponse;
 import tools.jackson.databind.json.JsonMapper;
@@ -33,8 +39,12 @@ import tools.jackson.databind.json.JsonMapper;
  * <p>This configuration creates MCP servers programmatically:
  *
  * <ul>
- *   <li>{@code /mcp/cluster} - Static tools from {@link CamundaMcpTool} annotated methods
- *   <li>{@code /mcp/processes} - Process definitions as tools based on permissions and deployments
+ *   <li>{@code /mcp/cluster} — all static tools from {@link CamundaMcpTool} annotated methods
+ *   <li>{@code /physical-tenants/{physicalTenantId}/mcp/cluster} — all static tools from {@link
+ *       CamundaMcpTool} annotated methods
+ *   <li>{@code /mcp/processes} — process definitions as tools based on permissions and deployments
+ *   <li>{@code /physical-tenants/{physicalTenantId}/mcp/processes} — same as above, scoped to the
+ *       resolved physical tenant
  * </ul>
  *
  * <p>Each server has its own transport provider and tool resolution strategy, allowing independent
@@ -43,6 +53,63 @@ import tools.jackson.databind.json.JsonMapper;
 @AutoConfiguration
 @ConditionalOnMcpGatewayEnabled
 public class CamundaMcpServersAutoConfiguration {
+
+  /** Cluster MCP server endpoints. */
+  private static final String CLUSTER_ENDPOINT = "/mcp/cluster";
+
+  private static final String CLUSTER_TENANT_ENDPOINT =
+      "/physical-tenants/{"
+          + PhysicalTenantContext.PATH_VARIABLE_PHYSICAL_TENANT_ID
+          + "}/mcp/cluster";
+
+  /** Processes MCP server endpoints. */
+  private static final String PROCESSES_ENDPOINT = "/mcp/processes";
+
+  private static final String PROCESSES_TENANT_ENDPOINT =
+      "/physical-tenants/{"
+          + PhysicalTenantContext.PATH_VARIABLE_PHYSICAL_TENANT_ID
+          + "}/mcp/processes";
+
+  private static final String CLUSTER_SERVER_NAME = "Camunda 8 Orchestration API MCP Server";
+  private static final String CLUSTER_SERVER_INSTRUCTIONS =
+      """
+      This server exposes APIs of a Camunda 8 Orchestration Cluster. All operations are
+      scoped to the permissions of the authenticated user.
+
+      Most tools return eventually consistent data. Recently written data may not appear
+      immediately in subsequent reads.
+
+      Process instances, incidents, and user tasks are related. A process instance can have
+      active incidents and user tasks. Use the process instance key to correlate across
+      domains. To understand the structure of a process, retrieve its BPMN XML.
+
+      When starting a process instance with awaitCompletion, a timeout does NOT mean the
+      process failed — the instance was created and continues running. Tag each instance
+      (e.g. "mcp-tool:<operation>-<timestamp>") so you can find it later. Poll the instance
+      state: if COMPLETED, retrieve result variables; if it has an incident, investigate
+      using the process instance key. Variables can be retrieved at any time, including
+      while the instance is still running.
+      """;
+
+  private static final String PROCESSES_SERVER_NAME =
+      "Camunda 8 Orchestration API Processes MCP Server";
+  private static final String PROCESSES_SERVER_INSTRUCTIONS =
+      """
+      This server exposes Camunda 8 processes as tools. All operations are scoped to the
+      permissions of the authenticated user.
+
+      Tools are based on eventually consistent data, i.e., deployed process definitions that are
+      configured to be exposed as MCP tools. Recently written data may not appear immediately
+      in subsequent reads.
+
+      Invoking a process exposed as tool starts a new process instance of the related process
+      definition. The tool returns the internal key of the newly created instance for follow-up
+      operations.
+      """;
+
+  // ---------------------------------------------------------------------------------------------
+  // Transports
+  // ---------------------------------------------------------------------------------------------
 
   /**
    * Transport provider for the cluster MCP server at {@code /mcp/cluster}.
@@ -57,68 +124,24 @@ public class CamundaMcpServersAutoConfiguration {
   @Bean(name = "clusterTransportProvider")
   public WebMvcStatelessServerTransport clusterTransportProvider(
       @Qualifier("mcpServerJsonMapper") final JsonMapper jsonMapper) {
-    return WebMvcStatelessServerTransport.builder()
-        .jsonMapper(new JacksonMcpJsonMapper(jsonMapper))
-        .messageEndpoint("/mcp/cluster")
-        .build();
+    return webMvcTransport(jsonMapper, CLUSTER_ENDPOINT);
   }
 
   /**
-   * Router function for the cluster MCP server to tie in with the web server stack.
+   * Transport provider for the cluster MCP server at {@code
+   * /physical-tenants/:physicalTenantId/mcp/cluster}.
    *
-   * @param clusterTransportProvider the associated transport provider
-   */
-  @Bean
-  public RouterFunction<ServerResponse> clusterRouterFunction(
-      @Qualifier("clusterTransportProvider")
-          final WebMvcStatelessServerTransport clusterTransportProvider) {
-    return clusterTransportProvider.getRouterFunction();
-  }
-
-  /**
-   * MCP server for general cluster-wide operations.
+   * <p>Handles MCP protocol messages for cluster-wide operations and general Camunda API access.
    *
-   * <p>Provides static tools defined via {@link CamundaMcpTool} annotations.
+   * <p>The MCP JsonMapper is provided by Spring AI auto-configuration. We tie into that to reuse
+   * what Spring AI is using for tool schema definitions.
+   *
+   * @param jsonMapper the JSON mapper to use for MCP message serialization and deserialization
    */
-  @Bean
-  public McpStatelessSyncServer clusterMcpServer(
-      @Qualifier("clusterTransportProvider") final McpStatelessServerTransport clusterTransport,
-      @Qualifier("clusterMcpToolSpecifications")
-          final List<SyncToolSpecification> toolSpecifications) {
-
-    final var capabilities =
-        McpSchema.ServerCapabilities.builder()
-            .tools(false)
-            .resources(false, false)
-            .prompts(false)
-            .build();
-
-    return McpServer.sync(clusterTransport)
-        .serverInfo("Camunda 8 Orchestration API MCP Server", VersionUtil.getVersion())
-        .instructions(
-            """
-          This server exposes APIs of a Camunda 8 Orchestration Cluster. All operations are
-          scoped to the permissions of the authenticated user.
-
-          Most tools return eventually consistent data. Recently written data may not appear
-          immediately in subsequent reads.
-
-          Process instances, incidents, and user tasks are related. A process instance can have
-          active incidents and user tasks. Use the process instance key to correlate across
-          domains. To understand the structure of a process, retrieve its BPMN XML.
-
-          When starting a process instance with awaitCompletion, a timeout does NOT mean the
-          process failed — the instance was created and continues running. Tag each instance
-          (e.g. "mcp-tool:<operation>-<timestamp>") so you can find it later. Poll the instance
-          state: if COMPLETED, retrieve result variables; if it has an incident, investigate
-          using the process instance key. Variables can be retrieved at any time, including
-          while the instance is still running.
-          """)
-        .capabilities(capabilities)
-        .tools(toolSpecifications)
-        .immediateExecution(true)
-        .validateToolInputs(false) // covered by bean validation
-        .build();
+  @Bean(name = "clusterTenantTransportProvider")
+  public WebMvcStatelessServerTransport clusterTenantTransportProvider(
+      @Qualifier("mcpServerJsonMapper") final JsonMapper jsonMapper) {
+    return webMvcTransport(jsonMapper, CLUSTER_TENANT_ENDPOINT);
   }
 
   /**
@@ -132,10 +155,53 @@ public class CamundaMcpServersAutoConfiguration {
   @Bean(name = "processesTransportProvider")
   public WebMvcStatelessServerTransport processesTransportProvider(
       @Qualifier("mcpServerJsonMapper") final JsonMapper jsonMapper) {
-    return WebMvcStatelessServerTransport.builder()
-        .jsonMapper(new JacksonMcpJsonMapper(jsonMapper))
-        .messageEndpoint("/mcp/processes")
-        .build();
+    return webMvcTransport(jsonMapper, PROCESSES_ENDPOINT);
+  }
+
+  /**
+   * Transport provider for the processes MCP server at {@code
+   * /physical-tenants/:physicalTenantId/mcp/processes}.
+   *
+   * <p>Handles MCP protocol messages for processes exposed as tools.
+   *
+   * <p>The MCP JsonMapper is provided by Spring AI auto-configuration. We tie into that to reuse
+   * what Spring AI is using for tool schema definitions.
+   */
+  @Bean(name = "processesTenantTransportProvider")
+  public WebMvcStatelessServerTransport processesTenantTransportProvider(
+      @Qualifier("mcpServerJsonMapper") final JsonMapper jsonMapper) {
+    return webMvcTransport(jsonMapper, PROCESSES_TENANT_ENDPOINT);
+  }
+
+  // ---------------------------------------------------------------------------------------------
+  // Router functions (wire transports into the web stack and apply tenant filters)
+  // ---------------------------------------------------------------------------------------------
+
+  /**
+   * Router function for the cluster MCP server to tie in with the web server stack.
+   *
+   * @param clusterTransportProvider the associated transport provider
+   */
+  @Bean
+  public RouterFunction<ServerResponse> clusterRouterFunction(
+      @Qualifier("clusterTransportProvider")
+          final WebMvcStatelessServerTransport clusterTransportProvider) {
+    return clusterTransportProvider.getRouterFunction().filter(defaultTenantFilter());
+  }
+
+  /**
+   * Router function for the cluster tenant MCP server to tie in with the web server stack.
+   *
+   * @param clusterTenantTransportProvider the associated transport provider
+   */
+  @Bean
+  public RouterFunction<ServerResponse> clusterTenantRouterFunction(
+      @Qualifier("clusterTenantTransportProvider")
+          final WebMvcStatelessServerTransport clusterTenantTransportProvider,
+      final ObjectProvider<PhysicalTenantResolver> resolverProvider) {
+    return clusterTenantTransportProvider
+        .getRouterFunction()
+        .filter(tenantFilter(resolverProvider));
   }
 
   /**
@@ -147,7 +213,67 @@ public class CamundaMcpServersAutoConfiguration {
   public RouterFunction<ServerResponse> processesRouterFunction(
       @Qualifier("processesTransportProvider")
           final WebMvcStatelessServerTransport processesTransportProvider) {
-    return processesTransportProvider.getRouterFunction();
+    return processesTransportProvider.getRouterFunction().filter(defaultTenantFilter());
+  }
+
+  /**
+   * Router function for the processes tenant MCP server to tie in with the web server stack.
+   *
+   * @param processesTenantTransportProvider the associated transport provider
+   */
+  @Bean
+  public RouterFunction<ServerResponse> processesTenantRouterFunction(
+      @Qualifier("processesTenantTransportProvider")
+          final WebMvcStatelessServerTransport processesTenantTransportProvider,
+      final ObjectProvider<PhysicalTenantResolver> resolverProvider) {
+    return processesTenantTransportProvider
+        .getRouterFunction()
+        .filter(tenantFilter(resolverProvider));
+  }
+
+  // ---------------------------------------------------------------------------------------------
+  // MCP servers (one bean per transport)
+  // ---------------------------------------------------------------------------------------------
+
+  /**
+   * MCP server for general cluster-wide operations.
+   *
+   * <p>Provides static tools defined via {@link CamundaMcpTool} annotations.
+   */
+  @Bean
+  public McpStatelessSyncServer clusterMcpServer(
+      @Qualifier("clusterTransportProvider") final McpStatelessServerTransport clusterTransport,
+      @Qualifier("clusterMcpToolSpecifications")
+          final List<SyncToolSpecification> toolSpecifications) {
+    return McpServer.sync(clusterTransport)
+        .serverInfo(CLUSTER_SERVER_NAME, VersionUtil.getVersion())
+        .instructions(CLUSTER_SERVER_INSTRUCTIONS)
+        .capabilities(defaultCapabilities())
+        .tools(toolSpecifications)
+        .immediateExecution(true)
+        .validateToolInputs(false) // covered by bean validation
+        .build();
+  }
+
+  /**
+   * Cluster server for {@code /physical-tenants/{physicalTenantId}/mcp/cluster}.
+   *
+   * <p>Provides static tools defined via {@link CamundaMcpTool} annotations.
+   */
+  @Bean
+  public McpStatelessSyncServer clusterTenantMcpServer(
+      @Qualifier("clusterTenantTransportProvider")
+          final McpStatelessServerTransport clusterTenantTransport,
+      @Qualifier("clusterMcpToolSpecifications")
+          final List<SyncToolSpecification> tenantToolSpecifications) {
+    return McpServer.sync(clusterTenantTransport)
+        .serverInfo(CLUSTER_SERVER_NAME, VersionUtil.getVersion())
+        .instructions(CLUSTER_SERVER_INSTRUCTIONS)
+        .capabilities(defaultCapabilities())
+        .tools(tenantToolSpecifications)
+        .immediateExecution(true)
+        .validateToolInputs(false) // covered by bean validation
+        .build();
   }
 
   /**
@@ -161,38 +287,98 @@ public class CamundaMcpServersAutoConfiguration {
       @Qualifier("processesTransportProvider") final McpStatelessServerTransport processesTransport,
       @Qualifier("processesToolRepository") final ToolRepository toolRepository,
       @Qualifier("mcpServerJsonMapper") final JsonMapper jsonMapper) {
-
-    final var capabilities =
-        McpSchema.ServerCapabilities.builder()
-            .tools(false)
-            .resources(false, false)
-            .prompts(false)
-            .build();
-
     final McpStatelessSyncServer server =
         McpServer.sync(processesTransport)
-            .serverInfo(
-                "Camunda 8 Orchestration API Processes MCP Server", VersionUtil.getVersion())
-            .instructions(
-                """
-          This server exposes Camunda 8 processes as tools. All operations are scoped to the
-          permissions of the authenticated user.
-
-          Tools are based on eventually consistent data, i.e., deployed process definitions that are
-          configured to be exposed as MCP tools. Recently written data may not appear immediately
-          in subsequent reads.
-
-          Invoking a process exposed as tool starts a new process instance of the related process
-          definition. The tool returns the internal key of the newly created instance for follow-up
-          operations.
-          """)
-            .capabilities(capabilities)
+            .serverInfo(PROCESSES_SERVER_NAME, VersionUtil.getVersion())
+            .instructions(PROCESSES_SERVER_INSTRUCTIONS)
+            .capabilities(defaultCapabilities())
             .immediateExecution(true)
             .validateToolInputs(false) // covered by bean validation
             .build();
-
     RequestHandlerCustomizer.replaceToolHandlers(processesTransport, jsonMapper, toolRepository);
-
     return server;
+  }
+
+  /**
+   * Processes server for {@code /physical-tenants/{physicalTenantId}/mcp/processes}. Resolves tools
+   * dynamically per request, scoped to the resolved physical tenant.
+   */
+  @Bean
+  public McpStatelessSyncServer processesTenantMcpServer(
+      @Qualifier("processesTenantTransportProvider")
+          final McpStatelessServerTransport processesTenantTransport,
+      @Qualifier("processesToolRepository") final ToolRepository toolRepository,
+      @Qualifier("mcpServerJsonMapper") final JsonMapper jsonMapper) {
+    final McpStatelessSyncServer server =
+        McpServer.sync(processesTenantTransport)
+            .serverInfo(PROCESSES_SERVER_NAME, VersionUtil.getVersion())
+            .instructions(PROCESSES_SERVER_INSTRUCTIONS)
+            .capabilities(defaultCapabilities())
+            .immediateExecution(true)
+            .validateToolInputs(false) // covered by bean validation
+            .build();
+    RequestHandlerCustomizer.replaceToolHandlers(
+        processesTenantTransport, jsonMapper, toolRepository);
+    return server;
+  }
+
+  // ---------------------------------------------------------------------------------------------
+  // Helpers
+  // ---------------------------------------------------------------------------------------------
+
+  private static WebMvcStatelessServerTransport webMvcTransport(
+      final JsonMapper jsonMapper, final String messageEndpoint) {
+    return WebMvcStatelessServerTransport.builder()
+        .jsonMapper(new JacksonMcpJsonMapper(jsonMapper))
+        .messageEndpoint(messageEndpoint)
+        .build();
+  }
+
+  private static McpSchema.ServerCapabilities defaultCapabilities() {
+    return McpSchema.ServerCapabilities.builder()
+        .tools(false)
+        .resources(false, false)
+        .prompts(false)
+        .build();
+  }
+
+  /**
+   * {@link HandlerFilterFunction} that records the {@link
+   * PhysicalTenantContext#DEFAULT_PHYSICAL_TENANT_ID default} physical tenant id on the request, so
+   * tools can call {@link PhysicalTenantContext#current()} consistently regardless of the URL used.
+   */
+  static HandlerFilterFunction<ServerResponse, ServerResponse> defaultTenantFilter() {
+    return (request, next) -> {
+      PhysicalTenantContext.setPhysicalTenantId(
+          request.servletRequest(), PhysicalTenantContext.DEFAULT_PHYSICAL_TENANT_ID);
+      return next.handle(request);
+    };
+  }
+
+  /**
+   * {@link HandlerFilterFunction} that reads the {@code physicalTenantId} path variable from the
+   * matched route, validates it against the known physical tenants (404 on unknown), and stores the
+   * resolved id on the request via {@link PhysicalTenantContext}.
+   */
+  static HandlerFilterFunction<ServerResponse, ServerResponse> tenantFilter(
+      final ObjectProvider<PhysicalTenantResolver> resolverProvider) {
+    final PhysicalTenantResolver resolver = resolverProvider.getIfAvailable();
+    final var knownTenants =
+        resolver != null
+            ? resolver.getAll().keySet()
+            : Set.of(PhysicalTenantContext.DEFAULT_PHYSICAL_TENANT_ID);
+    return (request, next) -> {
+      final String tenantId =
+          request.pathVariable(PhysicalTenantContext.PATH_VARIABLE_PHYSICAL_TENANT_ID);
+      if (!knownTenants.contains(tenantId)) {
+        return unknownPhysicalTenantResponse(tenantId);
+      }
+      PhysicalTenantContext.setPhysicalTenantId(request.servletRequest(), tenantId);
+      return next.handle(request);
+    };
+  }
+
+  private static ServerResponse unknownPhysicalTenantResponse(final String tenantId) {
+    return ServerResponse.status(HttpStatus.NOT_FOUND).body("Unknown physical tenant: " + tenantId);
   }
 }
