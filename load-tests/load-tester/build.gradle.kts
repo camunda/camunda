@@ -12,6 +12,8 @@ dependencies {
     implementation(libs.io.grpc.grpc.api)
     implementation(project(":camunda-client-java"))
     implementation(project(":camunda-spring-boot-starter"))
+    implementation(libs.org.springframework.boot.spring.boot.starter.webflux)
+    implementation(libs.org.springframework.spring.webflux)
     implementation(project(":zeebe-util"))
     implementation(libs.jakarta.annotation.jakarta.annotation.api)
     implementation(libs.org.apache.commons.commons.lang3)
