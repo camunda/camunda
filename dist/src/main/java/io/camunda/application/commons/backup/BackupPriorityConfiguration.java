@@ -56,6 +56,7 @@ import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
+import io.camunda.webapps.schema.descriptors.template.WaitStateTemplate;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -146,7 +147,9 @@ public class BackupPriorityConfiguration {
             new ClusterVariableIndex(indexPrefix, isElasticsearch),
             new DeployedResourceIndex(indexPrefix, isElasticsearch),
             new GlobalListenerIndex(indexPrefix, isElasticsearch),
-            new JobMetricsBatchTemplate(indexPrefix, isElasticsearch));
+            new JobMetricsBatchTemplate(indexPrefix, isElasticsearch),
+            // WAIT STATE
+            new WaitStateTemplate(indexPrefix, isElasticsearch));
 
     LOG.debug("Prio1 are {}", prio1);
     LOG.debug("Prio2 are {}", prio2);

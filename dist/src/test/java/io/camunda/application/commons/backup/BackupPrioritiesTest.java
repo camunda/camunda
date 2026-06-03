@@ -184,7 +184,8 @@ class BackupPrioritiesTest {
             "camunda-cluster-variable-8.9.0_",
             "camunda-job-metrics-batch-8.9.0_",
             "camunda-global-listener-8.9.0_",
-            "camunda-deployed-resource-8.10.0_");
+            "camunda-deployed-resource-8.10.0_",
+            "camunda-wait-state-8.10.0_");
 
     // PRIO 4 dated indices
     assertThat(iterator.next().allIndices())
@@ -196,7 +197,9 @@ class BackupPrioritiesTest {
             "camunda-audit-log-8.9.0_*",
             "-camunda-audit-log-8.9.0_",
             "camunda-job-metrics-batch-8.9.0_*",
-            "-camunda-job-metrics-batch-8.9.0_");
+            "-camunda-job-metrics-batch-8.9.0_",
+            "camunda-wait-state-8.10.0_*",
+            "-camunda-wait-state-8.10.0_");
 
     for (final var indexList : indices) {
       assertThat(indexList.allIndices())

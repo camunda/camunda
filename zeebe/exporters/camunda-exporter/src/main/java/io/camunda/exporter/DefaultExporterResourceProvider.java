@@ -96,6 +96,7 @@ import io.camunda.exporter.handlers.operation.OperationFromHistoryDeletionHandle
 import io.camunda.exporter.handlers.operation.OperationFromIncidentHandler;
 import io.camunda.exporter.handlers.operation.OperationFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.operation.OperationFromVariableDocumentHandler;
+import io.camunda.exporter.handlers.waitstate.WaitStateHandlerBuilder;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
@@ -133,6 +134,7 @@ import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
+import io.camunda.webapps.schema.descriptors.template.WaitStateTemplate;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogConfiguration;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformerRegistry;
@@ -140,6 +142,7 @@ import io.camunda.zeebe.exporter.common.cache.ExporterEntityCacheImpl;
 import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
 import io.camunda.zeebe.exporter.common.cache.decisionRequirements.CachedDecisionRequirementsEntity;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
+import io.camunda.zeebe.exporter.common.waitstate.transformers.WaitStateTransformerRegistry;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.cache.CaffeineCacheStatsCounter;
 import java.util.Collection;
@@ -166,6 +169,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
   private ExporterEntityCacheImpl<String, CachedFormEntity> formCache;
   private ExporterEntityCacheImpl<Long, CachedProcessEntity> processCache;
   private ExporterEntityCacheImpl<Long, CachedDecisionRequirementsEntity> decisionRequirementsCache;
+  private ObjectMapper objectMapper;
 
   @Override
   public void init(
@@ -174,6 +178,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
       final Context context,
       final ExporterMetadata exporterMetadata,
       final ObjectMapper objectMapper) {
+    this.objectMapper = objectMapper;
     final var globalPrefix = configuration.getConnect().getIndexPrefix();
     final var isElasticsearch =
         ConnectionTypes.isElasticSearch(configuration.getConnect().getType());
@@ -410,7 +415,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
     }
 
     if (configuration.getWaitState().isEnabled()) {
-      // TODO: call addWaitStateHandlers();
+      addWaitStateHandlers();
     }
 
     if (configuration.getBatchOperation().isExportItemsOnCreation()) {
@@ -513,6 +518,14 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
   @Override
   public ExporterEntityCacheImpl<String, CachedFormEntity> getFormCache() {
     return formCache;
+  }
+
+  private void addWaitStateHandlers() {
+    final var indexName = indexDescriptors.get(WaitStateTemplate.class).getFullQualifiedName();
+    final var waitStateHandlerBuilder = WaitStateHandlerBuilder.of(indexName, objectMapper);
+    WaitStateTransformerRegistry.createAllTransformers()
+        .forEach(waitStateHandlerBuilder::addTransformer);
+    exportHandlers.addAll(waitStateHandlerBuilder.build());
   }
 
   private void addAuditLogHandlers(final AuditLogConfiguration auditLog, final int partitionId) {

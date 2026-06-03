@@ -29,6 +29,7 @@ import io.camunda.webapps.schema.descriptors.template.SequenceFlowTemplate;
 import io.camunda.webapps.schema.descriptors.template.SnapshotTaskVariableTemplate;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
+import io.camunda.webapps.schema.descriptors.template.WaitStateTemplate;
 import io.camunda.webapps.schema.entities.CorrelatedMessageSubscriptionEntity;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.JobEntity;
@@ -47,6 +48,7 @@ import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.post.PostImporterQueueEntity;
 import io.camunda.webapps.schema.entities.usertask.SnapshotTaskVariableEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
+import io.camunda.webapps.schema.entities.waitstate.WaitStateEntity;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -500,6 +502,9 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
             resourceProvider.getIndexTemplateDescriptor(AuditLogTemplate.class),
             List.of(auditLogEntity(processInstance))),
         new DependentEntities(
+            resourceProvider.getIndexTemplateDescriptor(WaitStateTemplate.class),
+            List.of(waitStateEntity(processInstance))),
+        new DependentEntities(
             resourceProvider.getIndexTemplateDescriptor(TaskTemplate.class),
             List.of(taskEntity(processInstance))),
         new DependentEntities(
@@ -635,6 +640,13 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
 
   private AuditLogEntity auditLogEntity(final ProcessInstanceForListViewEntity processInstance) {
     final AuditLogEntity entity = create(AuditLogEntity::new);
+    entity.setProcessInstanceKey(processInstance.getKey());
+    entity.setRootProcessInstanceKey(processInstance.getKey());
+    return entity;
+  }
+
+  private WaitStateEntity waitStateEntity(final ProcessInstanceForListViewEntity processInstance) {
+    final WaitStateEntity entity = create(WaitStateEntity::new);
     entity.setProcessInstanceKey(processInstance.getKey());
     entity.setRootProcessInstanceKey(processInstance.getKey());
     return entity;

@@ -21,6 +21,7 @@ import io.camunda.webapps.schema.descriptors.template.AuditLogTemplate;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.SequenceFlowTemplate;
+import io.camunda.webapps.schema.descriptors.template.WaitStateTemplate;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;
 import java.util.Map;
@@ -45,6 +46,7 @@ final class ProcessInstanceArchiverJobTest extends ArchiverJobRecordingMetricsAb
       new DecisionInstanceTemplate("", true);
   private final SequenceFlowTemplate sequenceFlowTemplate = new SequenceFlowTemplate("", true);
   private final AuditLogTemplate auditLogTemplate = new AuditLogTemplate("", true);
+  private final WaitStateTemplate waitStateTemplate = new WaitStateTemplate("", true);
 
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
   private final CamundaExporterMetrics metrics = new CamundaExporterMetrics(meterRegistry);
@@ -54,7 +56,8 @@ final class ProcessInstanceArchiverJobTest extends ArchiverJobRecordingMetricsAb
           historyConfiguration,
           repository,
           processInstanceTemplate,
-          List.of(decisionInstanceTemplate, sequenceFlowTemplate, auditLogTemplate),
+          List.of(
+              decisionInstanceTemplate, sequenceFlowTemplate, auditLogTemplate, waitStateTemplate),
           metrics,
           LOGGER,
           executor);
@@ -138,6 +141,11 @@ final class ProcessInstanceArchiverJobTest extends ArchiverJobRecordingMetricsAb
                 Map.of(auditLogTemplate.getProcessInstanceDependantField(), List.of("1", "2", "3")),
                 executor),
             new DocumentMove(
+                waitStateTemplate.getFullQualifiedName(),
+                waitStateTemplate.getFullQualifiedName() + "2024-01-01",
+                Map.of(WaitStateTemplate.PROCESS_INSTANCE_KEY, List.of("1", "2", "3")),
+                executor),
+            new DocumentMove(
                 decisionInstanceTemplate.getFullQualifiedName(),
                 decisionInstanceTemplate.getFullQualifiedName() + "2024-01-01",
                 Map.of(
@@ -173,6 +181,7 @@ final class ProcessInstanceArchiverJobTest extends ArchiverJobRecordingMetricsAb
         .map(DocumentMove::sourceIndexName)
         .containsExactly(
             auditLogTemplate.getFullQualifiedName(),
+            waitStateTemplate.getFullQualifiedName(),
             decisionInstanceTemplate.getFullQualifiedName(),
             sequenceFlowTemplate.getFullQualifiedName(),
             processInstanceTemplate.getFullQualifiedName());
