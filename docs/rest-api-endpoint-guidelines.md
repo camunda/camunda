@@ -1207,7 +1207,7 @@ TenantId:
 
 ```bash
 # Install (one-time)
-npm install -g @stoplight/spectral-cli
+npm install -g @camunda8/spectral-cli
 
 # From the repository root, run BOTH passes:
 

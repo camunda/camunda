@@ -636,6 +636,7 @@
       "description": "Disable release cooldown for trusted first-party and bpmn-io ecosystem packages.",
       "matchPackageNames": [
         "@camunda{/,}**",
+        "@camunda8{/,}**",
         "@bpmn-io{/,}**",
         "bpmn-js",
         "bpmn-js-disable-collapsed-subprocess",

@@ -151,7 +151,7 @@ paths:
               By decision definition ID:
                 summary: Evaluate the decision by decisionDefinitionId.
                 value:
-                  decisionDefinitionId: 1234-5678
+                  decisionDefinitionId: my-decision
                   variables: {}
       responses:
         "200":
