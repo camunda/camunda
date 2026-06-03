@@ -176,6 +176,9 @@ components:
           description: The amount of unique active task users.
           type: integer
           format: int64
+        taskCompletions:
+          type: integer
+          format: int64
 
     SystemConfigurationResponse:
       description: |
