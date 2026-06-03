@@ -78,6 +78,9 @@ carries a `GENERATED FILE - DO NOT EDIT MANUALLY` header. **To change behaviour,
 generator (`scripts/`, `src/`) and re-run `npm run regenerate` from the generator directory** —
 never patch the generated `.spec.ts` files directly.
 
+`json-body-assertions/_generated/responses.json` is also auto-generated — **never edit it by hand**.
+If an API response changes, regenerate it with `npm run responses:regenerate` and commit the result.
+
 ## TypeScript Path Aliases
 
 Defined in `tsconfig.json`. Use these consistently in new tests and page objects:
