@@ -18,8 +18,6 @@ package io.camunda.process.test.api;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.process.test.api.coverage.ProcessCoverage;
-import io.camunda.process.test.api.coverage.ProcessCoverageBuilder;
 import io.camunda.process.test.api.judge.JudgeConfig;
 import io.camunda.process.test.api.runtime.CamundaProcessTestContainerProvider;
 import io.camunda.process.test.api.similarity.SemanticSimilarityConfig;
@@ -27,7 +25,10 @@ import io.camunda.process.test.api.testCases.TestCaseRunner;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.assertions.util.InstantProbeAwaitBehavior;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
-import io.camunda.process.test.impl.coverage.CoverageDataSourceSnapshot;
+import io.camunda.process.test.impl.coverage.CoverageCollector;
+import io.camunda.process.test.impl.coverage.CoverageCollectorBuilder;
+import io.camunda.process.test.impl.coverage.CoverageTestDataCollector;
+import io.camunda.process.test.impl.coverage.data.CoverageTestData;
 import io.camunda.process.test.impl.deployment.TestDeploymentService;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
 import io.camunda.process.test.impl.extension.ConditionalBehaviorEngine;
@@ -113,8 +114,7 @@ public class CamundaProcessTestExtension
 
   private final CamundaProcessTestRuntimeBuilder runtimeBuilder;
   private final CamundaProcessTestResultPrinter processTestResultPrinter;
-  private final ProcessCoverageBuilder processCoverageBuilder;
-  private ProcessCoverage processCoverage;
+  private final CoverageCollector coverageCollector;
 
   private CamundaProcessTestRuntime runtime;
   private CamundaProcessTestResultCollector processTestResultCollector;
@@ -132,10 +132,16 @@ public class CamundaProcessTestExtension
 
   CamundaProcessTestExtension(
       final CamundaProcessTestRuntimeBuilder containerRuntimeBuilder,
-      final ProcessCoverageBuilder processCoverageBuilder,
+      final CoverageCollectorBuilder coverageCollectorBuilder,
       final Consumer<String> testResultPrintStream) {
     runtimeBuilder = containerRuntimeBuilder;
-    this.processCoverageBuilder = processCoverageBuilder.printStream(testResultPrintStream);
+    coverageCollector =
+        coverageCollectorBuilder
+            .reportDirectory(runtimeBuilder.getCoverageReportDirectory())
+            .excludeProcessDefinitionIds(runtimeBuilder.getCoverageExcludedProcesses())
+            .excludeDecisionDefinitionIds(runtimeBuilder.getCoverageExcludedDecisions())
+            .printStream(testResultPrintStream)
+            .build();
     processTestResultPrinter = new CamundaProcessTestResultPrinter(testResultPrintStream);
   }
 
@@ -155,7 +161,8 @@ public class CamundaProcessTestExtension
    * </pre>
    */
   public CamundaProcessTestExtension() {
-    this(CamundaProcessTestContainerRuntime.newBuilder(), ProcessCoverage.newBuilder(), LOG::info);
+    this(
+        CamundaProcessTestContainerRuntime.newBuilder(), CoverageCollector.newBuilder(), LOG::info);
   }
 
   @Override
@@ -180,15 +187,6 @@ public class CamundaProcessTestExtension
             CamundaAssert::getAwaitBehavior,
             jsonMapper,
             conditionalBehaviorEngine);
-
-    // create process coverage
-    processCoverage =
-        processCoverageBuilder
-            .testClass(context.getRequiredTestClass())
-            .reportDirectory(runtimeBuilder.getCoverageReportDirectory())
-            .excludeProcessDefinitionIds(runtimeBuilder.getCoverageExcludedProcesses())
-            .excludeDecisionDefinitionIds(runtimeBuilder.getCoverageExcludedDecisions())
-            .build();
 
     // put in store
     final Store store = context.getStore(NAMESPACE);
@@ -366,21 +364,6 @@ public class CamundaProcessTestExtension
     return !Modifier.isStatic(field.getModifiers());
   }
 
-  private CoverageDataSourceSnapshot createCoverageDataSnapshot(
-      final CamundaDataSource dataSource, final String testName) {
-    try {
-      return CoverageDataSourceSnapshot.from(dataSource);
-    } catch (final Throwable t) {
-      LOG.warn(
-          "Failed to create coverage data snapshot for '{}': {} - {}. Using empty snapshot.",
-          testName,
-          t.getClass().getSimpleName(),
-          t.getMessage(),
-          t);
-      return CoverageDataSourceSnapshot.empty();
-    }
-  }
-
   @Override
   public void afterEach(final ExtensionContext context) {
     if (runtime == null) {
@@ -392,10 +375,11 @@ public class CamundaProcessTestExtension
     conditionalBehaviorEngine.stop();
 
     try {
-      final CamundaDataSource dataSource = new CamundaDataSource(camundaProcessTestContext.createClient());
-      final CoverageDataSourceSnapshot coverageData =
-          createCoverageDataSnapshot(dataSource, getCoverageTestName(context));
-      processCoverage.collectTestRunCoverage(getCoverageTestName(context), coverageData);
+      final CamundaDataSource dataSource =
+          new CamundaDataSource(camundaProcessTestContext.createClient());
+      final CoverageTestData coverageData = CoverageTestDataCollector.collectData(dataSource);
+      coverageCollector.collectTestRunCoverage(
+          context.getRequiredTestClass(), getCoverageTestName(context), coverageData);
     } catch (final Throwable t) {
       LOG.warn("Failed to collect test process coverage, skipping.", t);
     }
@@ -475,7 +459,7 @@ public class CamundaProcessTestExtension
     }
 
     try {
-      processCoverage.reportCoverage();
+      coverageCollector.generateReport(context.getRequiredTestClass());
     } catch (final Throwable t) {
       LOG.warn("Failed to report process coverage, skipping.", t);
     }

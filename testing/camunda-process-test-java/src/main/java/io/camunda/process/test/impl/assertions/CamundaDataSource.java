@@ -36,14 +36,10 @@ import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.ProcessInstanceSequenceFlow;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.api.search.response.Variable;
-import io.camunda.process.test.api.coverage.CoverageDataSource;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
-public class CamundaDataSource implements CoverageDataSource {
+public class CamundaDataSource {
 
   private static final Consumer<AnyPage> DEFAULT_PAGE_REQUEST = page -> page.limit(100);
 
@@ -51,92 +47,6 @@ public class CamundaDataSource implements CoverageDataSource {
 
   public CamundaDataSource(final CamundaClient client) {
     this.client = client;
-  }
-
-  @Override
-  public List<ProcessInstance> getProcessInstances() {
-    return findProcessInstances();
-  }
-
-  @Override
-  public Map<Long, List<ElementInstance>> getElementInstancesByProcessInstanceKey() {
-    return findProcessInstances().stream()
-        .collect(
-            Collectors.toMap(
-                ProcessInstance::getProcessInstanceKey,
-                pi -> findElementInstancesByProcessInstanceKey(pi.getProcessInstanceKey()),
-                (a, b) -> a));
-  }
-
-  @Override
-  public Map<Long, List<ProcessInstanceSequenceFlow>> getSequenceFlowsByProcessInstanceKey() {
-    return findProcessInstances().stream()
-        .collect(
-            Collectors.toMap(
-                ProcessInstance::getProcessInstanceKey,
-                pi -> findSequenceFlowsByProcessInstanceKey(pi.getProcessInstanceKey()),
-                (a, b) -> a));
-  }
-
-  @Override
-  public Map<String, ProcessDefinition> getProcessDefinitionsByProcessDefinitionId() {
-    final Map<String, ProcessDefinition> definitions = new HashMap<>();
-    findProcessInstances()
-        .forEach(
-            pi ->
-                definitions.computeIfAbsent(
-                    pi.getProcessDefinitionId(), this::findProcessDefinitionByProcessDefinitionId));
-    return definitions;
-  }
-
-  @Override
-  public Map<String, String> getProcessDefinitionXmlByProcessDefinitionId() {
-    final Map<String, String> definitions = new HashMap<>();
-    findProcessInstances()
-        .forEach(
-            pi ->
-                definitions.computeIfAbsent(
-                    pi.getProcessDefinitionId(),
-                    this::getProcessDefinitionXmlByProcessDefinitionId));
-    return definitions;
-  }
-
-  @Override
-  public List<DecisionInstance> getDecisionInstances() {
-    return findDecisionInstances(f -> {});
-  }
-
-  @Override
-  public Map<String, DecisionInstance> getDecisionInstancesByDecisionInstanceId() {
-    return getDecisionInstances().stream()
-        .collect(
-            Collectors.toMap(
-                DecisionInstance::getDecisionInstanceId,
-                di -> getDecisionInstance(di.getDecisionInstanceId()),
-                (a, b) -> a));
-  }
-
-  @Override
-  public Map<String, DecisionDefinition> getDecisionDefinitionsByDecisionDefinitionId() {
-    final Map<String, DecisionDefinition> definitions = new HashMap<>();
-    getDecisionInstances()
-        .forEach(
-            di ->
-                definitions.computeIfAbsent(
-                    di.getDecisionDefinitionId(),
-                    this::findDecisionDefinitionByDecisionDefinitionId));
-    return definitions;
-  }
-
-  @Override
-  public Map<Long, String> getDecisionDefinitionXmlByDecisionDefinitionKey() {
-    return getDecisionDefinitionsByDecisionDefinitionId().values().stream()
-        .collect(
-            Collectors.toMap(
-                DecisionDefinition::getDecisionKey,
-                definition ->
-                    getDecisionDefinitionXmlByDecisionDefinitionKey(definition.getDecisionKey()),
-                (a, b) -> a));
   }
 
   public List<ElementInstance> findElementInstancesByProcessInstanceKey(
