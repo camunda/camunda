@@ -44,6 +44,8 @@ val generateAdvancedModel by tasks.registering(JavaExec::class) {
 
     args(openapiDir, outputDir.get().asFile.absolutePath)
 
+    outputs.cacheIf { true }
+
     doFirst {
         outputDir.get().asFile.mkdirs()
     }

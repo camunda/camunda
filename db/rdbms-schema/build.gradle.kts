@@ -16,6 +16,7 @@ plugins {
     id("buildlogic.server-conventions")
 }
 
+@CacheableTask
 abstract class GenerateLiquibaseScriptsTask : DefaultTask() {
     @get:Inject
     abstract val execOperations: ExecOperations
