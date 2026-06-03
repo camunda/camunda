@@ -1,7 +1,7 @@
 {
   "name": "orchestration-cluster-smoke-tests",
   "type": "module",
-  "packageManager": "npm@11.15.0",
+  "packageManager": "npm@11.16.0",
   "version": "0.0.0",
   "private": true,
   "scripts": {
