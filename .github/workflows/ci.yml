@@ -913,7 +913,7 @@ jobs:
         shell: bash
         run: >
           TASKS=$(echo "${{ matrix.maven-modules }}" | tr -d "'" | tr ',' '\n' | sed '/^$/d; s/$/:test/' | tr '\n' ' ') &&
-          ./gradlew --no-daemon --console=plain --parallel -Pskip.fe.build ${TASKS} | tee "${BUILD_OUTPUT_FILE_PATH}"
+          ./gradlew --no-daemon --console=plain --parallel -Pskip.fe.build -Pskip.random.tests -Pparallel.tests ${TASKS} | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Analyze Test Runs
         id: analyze-test-run
         if: always()

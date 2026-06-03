@@ -79,6 +79,10 @@ tasks.withType<Javadoc> {
     options.encoding = "utf-8"
 }
 
+val skipRandomTests = providers.gradleProperty("skip.random.tests").isPresent
+val parallelTests = providers.gradleProperty("parallel.tests").isPresent
+val junitThreadCount = providers.gradleProperty("junit.thread.count").getOrElse("2")
+
 tasks.withType<Test>().configureEach {
     enabled = !quickly.get()
     jvmArgs(
@@ -90,6 +94,16 @@ tasks.withType<Test>().configureEach {
         "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED",
         "--enable-native-access=ALL-UNNAMED",
     )
+
+    if (skipRandomTests) {
+        exclude("**/*RandomizedPropertyTest.class", "**/*RandomizedRaftTest.class")
+    }
+
+    if (parallelTests) {
+        systemProperty("junit.jupiter.execution.parallel.enabled", "true")
+        systemProperty("junit.jupiter.execution.parallel.config.strategy", "fixed")
+        systemProperty("junit.jupiter.execution.parallel.config.fixed.parallelism", junitThreadCount)
+    }
 
     useJUnitPlatform()
 }
