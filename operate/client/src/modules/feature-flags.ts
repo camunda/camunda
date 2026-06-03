@@ -6,6 +6,4 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-const IS_AI_AGENT_ENABLED = false;
-
-export {IS_AI_AGENT_ENABLED};
+export {};

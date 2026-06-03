@@ -41,7 +41,6 @@ import {
   SearchParamsUpdater,
   updateSearchParams,
 } from 'modules/testUtils/SearchParamsUpdater';
-import {IS_AI_AGENT_ENABLED} from 'modules/feature-flags';
 
 const mockSequenceFlowsV2: SequenceFlow[] = [
   {
@@ -446,40 +445,32 @@ describe('TopPanel', () => {
     });
   });
 
-  it(
-    'should render the agent status overlay for an active agent instance',
-    {skip: !IS_AI_AGENT_ENABLED},
-    async () => {
-      mockSearchAgentInstances().withSuccess(searchResult([mockAgentInstance]));
+  it('should render the agent status overlay for an active agent instance', async () => {
+    mockSearchAgentInstances().withSuccess(searchResult([mockAgentInstance]));
 
-      render(<TopPanel />, {wrapper: getWrapper()});
+    render(<TopPanel />, {wrapper: getWrapper()});
 
-      await waitForElementToBeRemoved(() =>
-        screen.queryByTestId('diagram-spinner'),
-      );
+    await waitForElementToBeRemoved(() =>
+      screen.queryByTestId('diagram-spinner'),
+    );
 
-      expect(
-        await screen.findByTestId('agent-status-overlay-THINKING'),
-      ).toHaveTextContent('Thinking');
-    },
-  );
+    expect(
+      await screen.findByTestId('agent-status-overlay-THINKING'),
+    ).toHaveTextContent('Thinking');
+  });
 
-  it(
-    'should not render any agent overlay when the search returns no items',
-    {skip: !IS_AI_AGENT_ENABLED},
-    async () => {
-      render(<TopPanel />, {wrapper: getWrapper()});
+  it('should not render any agent overlay when the search returns no items', async () => {
+    render(<TopPanel />, {wrapper: getWrapper()});
 
-      await waitForElementToBeRemoved(() =>
-        screen.queryByTestId('diagram-spinner'),
-      );
+    await waitForElementToBeRemoved(() =>
+      screen.queryByTestId('diagram-spinner'),
+    );
 
-      expect(
-        screen.queryByTestId(/^agent-status-overlay-/),
-      ).not.toBeInTheDocument();
-      expect(
-        screen.queryByTestId(/^agent-shine-overlay-/),
-      ).not.toBeInTheDocument();
-    },
-  );
+    expect(
+      screen.queryByTestId(/^agent-status-overlay-/),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId(/^agent-shine-overlay-/),
+    ).not.toBeInTheDocument();
+  });
 });
