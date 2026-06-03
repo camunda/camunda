@@ -11,6 +11,7 @@ import static io.camunda.security.auth.Authorization.withAuthorization;
 import static io.camunda.service.authorization.Authorizations.ELEMENT_INSTANCE_READ_AUTHORIZATION;
 
 import io.camunda.search.clients.FlowNodeInstanceSearchClient;
+import io.camunda.search.clients.WaitStateSearchClient;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.WaitStateEntity;
@@ -39,6 +40,7 @@ public final class ElementInstanceServices
 
   private static final String FNI_ELEMENT_INSTANCE_PATTERN = "*FNI_%d*";
   private final FlowNodeInstanceSearchClient flowNodeInstanceSearchClient;
+  private final WaitStateSearchClient waitStateSearchClient;
   private final ProcessCache processCache;
   private final IncidentServices incidentServices;
 
@@ -46,6 +48,7 @@ public final class ElementInstanceServices
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final FlowNodeInstanceSearchClient flowNodeInstanceSearchClient,
+      final WaitStateSearchClient waitStateSearchClient,
       final ProcessCache processCache,
       final IncidentServices incidentServices,
       final ApiServicesExecutorProvider executorProvider,
@@ -56,6 +59,7 @@ public final class ElementInstanceServices
         executorProvider,
         brokerRequestAuthorizationConverter);
     this.flowNodeInstanceSearchClient = flowNodeInstanceSearchClient;
+    this.waitStateSearchClient = waitStateSearchClient;
     this.processCache = processCache;
     this.incidentServices = incidentServices;
   }
@@ -168,8 +172,13 @@ public final class ElementInstanceServices
 
   public SearchQueryResult<WaitStateEntity> searchWaitStates(
       final ElementInstanceWaitStateQuery query, final CamundaAuthentication authentication) {
-    // TODO: not implemented yet
-    return SearchQueryResult.empty();
+    return executeSearchRequest(
+        () ->
+            waitStateSearchClient
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication, ELEMENT_INSTANCE_READ_AUTHORIZATION))
+                .searchWaitStates(query));
   }
 
   public record SetVariablesRequest(
