@@ -56,6 +56,7 @@ import io.camunda.zeebe.engine.processing.metrics.job.JobMetricsProcessors;
 import io.camunda.zeebe.engine.processing.metrics.usage.UsageMetricsProcessors;
 import io.camunda.zeebe.engine.processing.ordinal.FakeOrdinalKeyProvider;
 import io.camunda.zeebe.engine.processing.ordinal.OrdinalKeyProvider;
+import io.camunda.zeebe.engine.processing.ordinal.OrdinalProcessors;
 import io.camunda.zeebe.engine.processing.resource.ResourceDeletionDeleteProcessor;
 import io.camunda.zeebe.engine.processing.resource.ResourceFetchProcessor;
 import io.camunda.zeebe.engine.processing.resource.ResourceReexportReexportProcessor;
@@ -114,6 +115,8 @@ public final class EngineProcessors {
     final var processingState = typedRecordProcessorContext.getProcessingState();
     // YOHAN COMMENT >> OLD key generator
     final var keyGenerator = processingState.getKeyGenerator();
+    // TODO: @yohanfernando >> probably need to get rid of this, although it will be good to
+    //  get the key provider from processing state :think:
     final var ordinalKeyProvider = new FakeOrdinalKeyProvider(partitionsCount);
 
     final var routingInfo =
@@ -121,10 +124,28 @@ public final class EngineProcessors {
             processingState.getRoutingState(), RoutingInfo.forStaticPartitions(partitionsCount));
     final var scheduledTaskStateFactory =
         typedRecordProcessorContext.getScheduledTaskStateFactory();
-    final var writers = typedRecordProcessorContext.getWriters();
-    final var typedRecordProcessors = TypedRecordProcessors.processors();
 
+    final var writers = typedRecordProcessorContext.getWriters();
+    subscriptionCommandSender.setWriters(writers);
+
+    final var typedRecordProcessors = TypedRecordProcessors.processors();
     typedRecordProcessors.withListener(processingState);
+
+    final var distributionMetrics =
+        new DistributionMetrics(typedRecordProcessorContext.getMeterRegistry());
+    final var commandDistributionBehavior =
+        new CommandDistributionBehavior(
+            processingState.getDistributionState(),
+            writers,
+            typedRecordProcessorContext.getPartitionId(),
+            routingInfo,
+            interPartitionCommandSender,
+            distributionMetrics);
+
+    // TODO: @yohanfernando >> We need to get the ordinal provider and then pass it around to
+    //  places that need adding ordinal
+    OrdinalProcessors.addOrdinalProcessors(
+        typedRecordProcessors, writers, keyGenerator, commandDistributionBehavior);
 
     final var clock = typedRecordProcessorContext.getClock();
     final int partitionId = typedRecordProcessorContext.getPartitionId();
@@ -140,15 +161,11 @@ public final class EngineProcessors {
         new ProcessEngineMetrics(
             typedRecordProcessorContext.getMeterRegistry(),
             processingState.getElementInstanceState().getActiveProcessInstanceCount());
-    final var distributionMetrics =
-        new DistributionMetrics(typedRecordProcessorContext.getMeterRegistry());
     final var batchOperationMetrics =
         new BatchOperationMetrics(typedRecordProcessorContext.getMeterRegistry(), partitionId);
     final ExpressionLanguageMetricsImpl expressionLanguageMetrics =
         new ExpressionLanguageMetricsImpl(typedRecordProcessorContext.getMeterRegistry());
     final var incidentMetrics = new IncidentMetrics(typedRecordProcessorContext.getMeterRegistry());
-
-    subscriptionCommandSender.setWriters(writers);
 
     // YOHAN COMMENT >> vvv create behaviors & processors
     // YOHAN COMMENT >> vvv create behaviors & processors
@@ -182,17 +199,7 @@ public final class EngineProcessors {
             expressionLanguageMetrics,
             config,
             incidentMetrics);
-
     typedRecordProcessors.withListener(bpmnBehaviors.incidentBehavior());
-
-    final var commandDistributionBehavior =
-        new CommandDistributionBehavior(
-            processingState.getDistributionState(),
-            writers,
-            typedRecordProcessorContext.getPartitionId(),
-            routingInfo,
-            interPartitionCommandSender,
-            distributionMetrics);
 
     final var deploymentDistributionCommandSender =
         new DeploymentDistributionCommandSender(

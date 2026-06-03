@@ -57,6 +57,7 @@ import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRe
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.metrics.UsageMetricRecord;
 import io.camunda.zeebe.protocol.impl.record.value.multiinstance.MultiInstanceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.ordinal.OrdinalRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessEventRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
@@ -187,6 +188,7 @@ public class UnifiedRecordValue extends UnpackedObject implements RecordValue {
       case ValueType.MESSAGE_CORRELATION -> new MessageCorrelationRecord();
       case ValueType.USER -> new UserRecord();
       case ValueType.CLOCK -> new ClockRecord();
+      case ValueType.ORDINAL -> new OrdinalRecord();
       case ValueType.AUTHORIZATION -> new AuthorizationRecord();
       case ValueType.ROLE -> new RoleRecord();
       case ValueType.TENANT -> new TenantRecord();

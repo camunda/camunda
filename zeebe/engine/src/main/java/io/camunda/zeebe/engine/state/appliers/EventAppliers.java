@@ -52,6 +52,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MultiInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.OrdinalIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
@@ -142,6 +143,7 @@ public final class EventAppliers implements EventApplier {
     registerUserAppliers(state);
     registerAuthorizationAppliers(state);
     registerClockAppliers(state);
+    registerOrdinalAppliers(state);
     registerRoleAppliers(state);
     registerGroupAppliers(state);
     registerScalingAppliers(state);
@@ -719,6 +721,11 @@ public final class EventAppliers implements EventApplier {
   private void registerClockAppliers(final MutableProcessingState state) {
     register(ClockIntent.PINNED, new ClockPinnedApplier(state.getClockState()));
     register(ClockIntent.RESETTED, new ClockResettedApplier(state.getClockState()));
+  }
+
+  private void registerOrdinalAppliers(final MutableProcessingState state) {
+    // TODO: @yohanfernando >> register other ordinal events
+    register(OrdinalIntent.ACTIVATED, new OrdinalActivatedApplier(state.getOrdinalState()));
   }
 
   private void registerRoleAppliers(final MutableProcessingState state) {
