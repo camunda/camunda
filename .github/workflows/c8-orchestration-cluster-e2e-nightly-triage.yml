@@ -1,0 +1,722 @@
+# description: Discovery + classification + dispatch for C8 Orchestration Cluster nightly
+#              E2E and API test failures. Scans the latest run of each in-scope nightly
+#              workflow for every supported version (8.7 / 8.8 / 8.9 / main), extracts
+#              failing tests from json-report artifacts, groups by version, and dispatches
+#              one fix-agent run per version. Skips dispatch when an open failing-test-fix
+#              PR already exists for the same base branch.
+# type: CI
+# owner: @camunda/test-automation-team
+---
+name: C8 Orchestration Cluster Nightly Triage
+
+on:
+  schedule:
+    - cron: '0 4 * * 1-5' # 04:00 UTC Mon–Fri — after all nightlies finish (00:00–01:45 starts)
+                          # and before close-stale-fix-prs.yml runs at 05:00 UTC.
+  workflow_dispatch:
+    inputs:
+      dispatch:
+        description: 'Dispatch fix agents for grouped failures'
+        type: boolean
+        default: true
+        required: false
+      daily_cap:
+        description: 'Max fix-agent dispatches this run (default: 4 — one per supported version)'
+        default: '4'
+        required: false
+      include_main:
+        description: 'Include main in triage scope (set false to limit to stable branches)'
+        type: boolean
+        default: true
+        required: false
+      send_slack_notification:
+        description: 'Post triage summary and fix-agent replies to Slack (always true for scheduled runs)'
+        type: boolean
+        default: false
+        required: false
+      slack_channel:
+        description: 'Slack channel to post to (default: c8-orchestration-cluster-e2e-test-results; override for testing)'
+        required: false
+        default: ''
+
+# Minimal at workflow level. Triage job only needs to read; dispatch job
+# bumps actions: write to trigger the fix workflow (zizmor: excessive-permissions).
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+
+concurrency:
+  group: triage-orchestration-cluster-nightly
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      dispatches:    ${{ steps.group.outputs.dispatches }}
+      slack_ts:      ${{ steps.slack.outputs.ts }}
+      slack_channel: ${{ steps.slack.outputs.channel }}
+      slack_base_text: ${{ steps.slack.outputs.base_text }}
+
+    steps:
+      - name: Import Vault secrets
+        id: secrets
+        uses: hashicorp/vault-action@d1720f055e0635fd932a1d2a48f87a666a57906c
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/qa/ci/common GH_TOKEN ;
+            secret/data/products/qa/ci/common SLACK_BOT_USER_OAUTH_TOKEN ;
+
+      - name: Show tool versions
+        run: |
+          jq --version
+          gh --version
+
+      - name: Scan nightly workflows and extract failures
+        id: scan
+        env:
+          GH_TOKEN: ${{ steps.secrets.outputs.GH_TOKEN }}
+          REPO:     ${{ github.repository }}
+          INCLUDE_MAIN: ${{ github.event.inputs.include_main || 'true' }}
+        run: |
+          set -euo pipefail
+
+          # Allowlist of nightly workflows to scan. Each entry: workflow file | version | test_type
+          # test_type ∈ {e2e, api_es, api_rdbms}.
+          declare -a SCOPE=(
+            "c8-orchestration-cluster-nightly-8.7-e2e.yml|8.7|e2e"
+            "c8-orchestration-cluster-nightly-8.7-api-es.yml|8.7|api_es"
+            "c8-orchestration-cluster-nightly-8.8-e2e.yml|8.8|e2e"
+            "c8-orchestration-cluster-nightly-8.8-api-es.yml|8.8|api_es"
+            "c8-orchestration-cluster-nightly-8.9-e2e.yml|8.9|e2e"
+            "c8-orchestration-cluster-nightly-8.9-api-es.yml|8.9|api_es"
+            "c8-orchestration-cluster-nightly-8.9-api-rdbms.yml|8.9|api_rdbms"
+          )
+          if [ "$INCLUDE_MAIN" = "true" ]; then
+            SCOPE+=(
+              "c8-orchestration-cluster-nightly-main-e2e.yml|main|e2e"
+              "c8-orchestration-cluster-nightly-main-api-es.yml|main|api_es"
+              "c8-orchestration-cluster-nightly-main-api-rdbms.yml|main|api_rdbms"
+            )
+          fi
+
+          # Working files
+          all_failures=/tmp/all_failures.jsonl
+          run_ids_map=/tmp/run_ids.json
+          : > "$all_failures"
+          echo '{}' > "$run_ids_map"
+          echo '[]' > /tmp/failed_runs.json
+
+          for entry in "${SCOPE[@]}"; do
+            IFS='|' read -r workflow_file version test_type <<< "$entry"
+            echo ""
+            echo "──────────────────────────────────────────────────────────────"
+            echo "Scanning ${workflow_file} (version=${version}, type=${test_type})"
+
+            # safe_version follows artifact naming: stable-8.x or main
+            if [ "$version" = "main" ]; then
+              safe_version="main"
+            else
+              safe_version="stable-${version}"
+            fi
+
+            # Find the latest completed run
+            run_info=$(gh run list --workflow "$workflow_file" --repo "$REPO" \
+                        --status completed --limit 1 --json databaseId,conclusion,createdAt,event 2>/dev/null \
+                        | jq -c '.[0] // empty')
+            if [ -z "$run_info" ] || [ "$run_info" = "null" ]; then
+              echo "  no recent runs — skipping"
+              continue
+            fi
+            run_id=$(echo "$run_info" | jq -r '.databaseId')
+            conclusion=$(echo "$run_info" | jq -r '.conclusion')
+            created=$(echo "$run_info" | jq -r '.createdAt')
+            echo "  latest run: $run_id  conclusion=$conclusion  created=$created"
+
+            # Record the run ID per (version, test_type) so dispatch step can pass them through
+            jq --arg v "$version" --arg t "$test_type" --arg r "$run_id" \
+               '. + {($v + "/" + $t): $r}' "$run_ids_map" > "${run_ids_map}.tmp"
+            mv "${run_ids_map}.tmp" "$run_ids_map"
+
+            # Only continue extracting failures when conclusion is failure
+            if [ "$conclusion" != "failure" ]; then
+              echo "  not failed — no failures to extract"
+              continue
+            fi
+
+            # Record this failed run for the Slack summary
+            case "$test_type" in
+              e2e)       display_type="E2E" ;;
+              api_es)    display_type="API (ES)" ;;
+              api_rdbms) display_type="API (RDBMS)" ;;
+              *)         display_type="${test_type}" ;;
+            esac
+            run_title="Nightly ${display_type} — ${version}"
+            run_url="https://github.com/${REPO}/actions/runs/${run_id}"
+            jq --arg v "$version" --arg t "$test_type" --arg r "$run_id" \
+               --arg title "$run_title" --arg url "$run_url" \
+               '. += [{"version":$v,"test_type":$t,"run_id":$r,"title":$title,"url":$url}]' \
+               /tmp/failed_runs.json > /tmp/failed_runs.json.tmp
+            mv /tmp/failed_runs.json.tmp /tmp/failed_runs.json
+
+            # Build the list of json-report artifact patterns to download
+            declare -a patterns=()
+            if [ "$test_type" = "e2e" ]; then
+              # Each version has different modes; just attempt both — gh will silently miss
+              for mode in v1 v2; do
+                patterns+=("json-report-nightly-e2e-${safe_version}-${mode}|${mode}")
+              done
+            elif [ "$test_type" = "api_es" ]; then
+              patterns+=("json-report-nightly-api-${safe_version}|elasticsearch")
+            elif [ "$test_type" = "api_rdbms" ]; then
+              # List the per-database artifact names from the run
+              gh api "repos/${REPO}/actions/runs/${run_id}/artifacts" --paginate \
+                --jq '.artifacts[].name' > /tmp/rdbms_artifact_names.txt
+              rdbms_prefix="json-report-nightly-api-rdbms-${safe_version}-"
+              while read -r artifact_name; do
+                # Strip the prefix to extract db name; quoted to avoid pattern expansion
+                db_name="${artifact_name#"${rdbms_prefix}"}"
+                [ "$db_name" = "$artifact_name" ] && continue   # didn't match prefix → not an rdbms report
+                patterns+=("${artifact_name}|${db_name}")
+              done < /tmp/rdbms_artifact_names.txt
+            fi
+
+            # Download each artifact and extract failures (inner loop var differs from outer)
+            for pattern_entry in "${patterns[@]}"; do
+              IFS='|' read -r artifact_name dim <<< "$pattern_entry"
+              tmp_dir=$(mktemp -d)
+              if ! gh run download "$run_id" --repo "$REPO" \
+                    --pattern "$artifact_name" --dir "$tmp_dir" 2>/dev/null; then
+                rm -rf "$tmp_dir"
+                continue
+              fi
+              results=$(find "$tmp_dir" -name 'results.json' -type f | head -1)
+              if [ -z "$results" ]; then
+                rm -rf "$tmp_dir"
+                continue
+              fi
+              # Extract failing specs. tasklist_mode is non-null only for e2e; database for api.
+              if [ "$test_type" = "e2e" ]; then
+                jq -c --arg v "$version" --arg mode "$dim" '
+                  [.. | objects | select(.specs?) | .specs[]]
+                  | map(select(.ok == false))
+                  | .[] | {
+                      version: $v,
+                      file: .file,
+                      test_name: .title,
+                      error: (.tests[0].results[-1].error.message // "unknown error"),
+                      test_type: "e2e",
+                      tasklist_mode: $mode
+                    }' "$results" >> "$all_failures" || true
+              else
+                # API tests (ES or RDBMS): set database from dim
+                jq -c --arg v "$version" --arg db "$dim" '
+                  [.. | objects | select(.specs?) | .specs[]]
+                  | map(select(.ok == false))
+                  | .[] | {
+                      version: $v,
+                      file: .file,
+                      test_name: .title,
+                      error: (.tests[0].results[-1].error.message // "unknown error"),
+                      test_type: "api",
+                      database: $db
+                    }' "$results" >> "$all_failures" || true
+              fi
+              rm -rf "$tmp_dir"
+            done
+          done
+
+          echo ""
+          echo "──────────────────────────────────────────────────────────────"
+          echo "Total failure records collected: $(wc -l < $all_failures || echo 0)"
+          # First few entries for visibility
+          head -3 "$all_failures" || true
+
+
+      - name: Normalize, filter and group by version
+        id: group
+        env:
+          GH_TOKEN: ${{ steps.secrets.outputs.GH_TOKEN }}
+          REPO:     ${{ github.repository }}
+          DAILY_CAP: ${{ github.event.inputs.daily_cap || '4' }}
+        run: |
+          set -euo pipefail
+
+          if ! echo "${DAILY_CAP}" | grep -qE '^[0-9]+$'; then
+            echo "::error::daily_cap must be a non-negative integer, got: ${DAILY_CAP}"
+            exit 1
+          fi
+
+          # Even when there are no test failures, we still need to dispatch for runs that
+          # failed at the workflow level (no test results produced). Check if any failed
+          # runs exist before bailing early.
+          failed_run_count=$(jq 'length' /tmp/failed_runs.json 2>/dev/null || echo 0)
+          if [ ! -s /tmp/all_failures.jsonl ] && [ "$failed_run_count" -eq 0 ]; then
+            echo "No failures."
+            echo "dispatches=[]" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Normalize file paths:
+          #   - Strip absolute prefixes (anything before 'qa/c8-orchestration-cluster-e2e-test-suite/')
+          #   - Strip leading 'qa/c8-orchestration-cluster-e2e-test-suite/' prefix so the
+          #     value is a path relative to the test suite root (e.g. 'tests/operate/foo.spec.ts')
+          # Filter out:
+          #   - empty/malformed file fields
+
+          # Path normalization + error truncation. Errors are truncated to 600 chars
+          # because workflow_dispatch inputs cap at ~64KB total payload — long stack
+          # traces from many failures would otherwise overflow.
+          jq -s '
+            map(
+              .file as $f
+              | .file = (
+                  $f
+                  | sub("^.*/qa/c8-orchestration-cluster-e2e-test-suite/"; "")
+                  | sub("^qa/c8-orchestration-cluster-e2e-test-suite/"; "")
+                )
+              | .error = ((.error // "unknown error")[0:600])
+              | select(.file != null and .file != "")
+              | select(.file | test("\\.spec\\.[jt]s$"))
+            )
+          ' /tmp/all_failures.jsonl > /tmp/failures_normalized.json
+
+          echo "After normalization + filtering: $(jq 'length' /tmp/failures_normalized.json)"
+
+          # Determine which versions have open failing-test-fix PRs (dedup)
+          open_pr_versions=$(gh pr list --repo "$REPO" \
+            --search "label:failing-test-fix is:open" \
+            --json baseRefName --jq '[.[].baseRefName] | unique' 2>/dev/null || echo '[]')
+          echo "Open failing-test-fix PR base refs: $open_pr_versions"
+
+          # Build dispatch payloads, one per version.
+          # Sources:
+          #   1. Versions with test failures (from failures_normalized.json)
+          #   2. Versions with workflow-level failures (failed run but no test failures)
+          #      → dispatched with test_specs: [] so the fix agent inspects the workflow logs
+
+          # Build a set of versions that have test failures
+          jq_failures_normalized=$([ -s /tmp/failures_normalized.json ] && cat /tmp/failures_normalized.json || echo '[]')
+
+          # Build a JSON array of workflow-level-only failed versions
+          # (failed run exists but no test failures extracted for that version/type)
+          workflow_failures='[]'
+          if [ -f /tmp/run_ids.json ]; then
+            while IFS='=' read -r key run_id; do
+              version=$(echo "$key" | cut -d/ -f1)
+              test_type=$(echo "$key" | cut -d/ -f2)
+              has_test_failure=$(echo "$jq_failures_normalized" | jq -r --arg v "$version" --arg t "$test_type" \
+                '[.[] | select(.version == $v and (
+                    (.test_type == "e2e"  and $t == "e2e") or
+                    (.test_type == "api"  and $t == "api_es"    and (.database == "elasticsearch" or .database == null or .database == "")) or
+                    (.test_type == "api"  and $t == "api_rdbms" and (.database != null and .database != "" and .database != "elasticsearch"))
+                  ))] | length > 0' 2>/dev/null || echo false)
+              if [ "$has_test_failure" = "false" ]; then
+                conclusion=$(gh run view "$run_id" --repo "$REPO" --json conclusion --jq '.conclusion' 2>/dev/null || echo "unknown")
+                if [ "$conclusion" = "failure" ]; then
+                  ref=$([ "$version" = "main" ] && echo "main" || echo "stable/${version}")
+                  workflow_failures=$(echo "$workflow_failures" | jq \
+                    --arg v "$version" --arg ref "$ref" --arg t "$test_type" \
+                    '. += [{"version": $v, "ref": $ref, "test_type": $t}]')
+                fi
+              fi
+            done < <(jq -r 'to_entries[] | "\(.key)=\(.value)"' /tmp/run_ids.json)
+            # Group workflow_failures by version, collecting all failing run types per version.
+            # Storing failing_types lets the dispatch attach only the run IDs that actually
+            # had workflow-level failures, avoiding spurious run IDs in the agent context.
+            workflow_failures=$(echo "$workflow_failures" | jq '
+              group_by(.version) | map({
+                version: .[0].version,
+                ref: .[0].ref,
+                failing_types: [.[].test_type]
+              })')
+          fi
+
+          echo "Workflow-level failures (no failing tests extracted): $(echo "$workflow_failures" | jq 'length')"
+
+          # Build dispatch payloads from test failures
+          if [ -s /tmp/failures_normalized.json ]; then
+            jq --slurpfile run_ids /tmp/run_ids.json \
+               --argjson openrefs "$open_pr_versions" \
+               --argjson cap "${DAILY_CAP}" '
+              # group failures by version
+              sort_by(.version) | group_by(.version)
+              | map({
+                  version: .[0].version,
+                  test_specs: (map(del(.version)) | .[0:50]),
+                  ref: (if .[0].version == "main" then "main" else ("stable/" + .[0].version) end)
+                })
+              | map(select(.test_specs | length > 0))
+              # dedup against open PRs
+              | map(select((.ref as $ref | $openrefs | index($ref)) == null))
+              # attach run IDs
+              | map(. + {
+                  e2e_run_id:       ($run_ids[0][(.version + "/e2e")]       // ""),
+                  api_es_run_id:    ($run_ids[0][(.version + "/api_es")]    // ""),
+                  api_rdbms_run_id: ($run_ids[0][(.version + "/api_rdbms")] // "")
+                })
+              # cap failures per version to 20 so the workflow_dispatch input
+              # stays well under the 64KB limit even with many nightly failures
+              | map(.test_specs |= .[0:20])
+              # cap dispatch count
+              | .[0:$cap]
+            ' /tmp/failures_normalized.json > /tmp/dispatches_test.json
+          else
+            echo '[]' > /tmp/dispatches_test.json
+          fi
+
+          # Merge workflow-level failures as additional dispatch entries (test_specs: [])
+          # Exclude only versions that already have an open failing-test-fix PR.
+          # Do NOT exclude versions already in test-failure dispatches — a version can
+          # have failing tests in one workflow type and a workflow-level crash in another
+          # (e.g. api_es has test failures while api_rdbms crashes before producing results).
+          jq --slurpfile run_ids /tmp/run_ids.json \
+             --argjson wf_failures "$workflow_failures" \
+             --argjson openrefs "$open_pr_versions" \
+             --argjson cap "${DAILY_CAP}" '
+            . as $test_dispatches |
+            $wf_failures
+            | map(select(
+                (.ref as $ref | $openrefs | index($ref)) == null
+              ))
+            | map(. + {
+                test_specs: [],
+                e2e_run_id:       (if (.failing_types | index("e2e"))       != null then ($run_ids[0][(.version + "/e2e")]       // "") else "" end),
+                api_es_run_id:    (if (.failing_types | index("api_es"))    != null then ($run_ids[0][(.version + "/api_es")]    // "") else "" end),
+                api_rdbms_run_id: (if (.failing_types | index("api_rdbms")) != null then ($run_ids[0][(.version + "/api_rdbms")] // "") else "" end)
+              })
+            # workflow-level dispatches get their own cap so test-failure dispatches
+            # cannot crowd them out when the daily cap is already full
+            | ($test_dispatches + .[0:$cap])
+          ' /tmp/dispatches_test.json > /tmp/dispatches.json
+
+          echo "Dispatches planned: $(jq 'length' /tmp/dispatches.json)"
+          jq '[.[] | {version, count: (.test_specs | length), e2e_run_id, api_es_run_id, api_rdbms_run_id}]' /tmp/dispatches.json || true
+
+          # Emit as compact single-line output
+          {
+            echo "dispatches<<EOF_DISPATCH"
+            jq -c '.' /tmp/dispatches.json
+            echo "EOF_DISPATCH"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Write job summary
+        if: always()
+        env:
+          GH_TOKEN: ${{ steps.secrets.outputs.GH_TOKEN }}
+          REPO:     ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          {
+            echo "## C8 Orchestration Cluster Nightly Triage"
+            echo ""
+
+            # Failures per version
+            count=$(jq 'length' /tmp/failures_normalized.json 2>/dev/null || echo 0)
+            if [ "$count" -gt 0 ]; then
+              echo "### Test failures found"
+              echo ""
+              echo "| Version | Count | Test types |"
+              echo "|---------|-------|------------|"
+              jq -r '
+                sort_by(.version) | group_by(.version)[]
+                | (.[0].version) as $v
+                | (length) as $n
+                | ([.[].test_type] | unique | join(", ")) as $types
+                | "| \($v) | \($n) | \($types) |"
+              ' /tmp/failures_normalized.json
+              echo ""
+            fi
+
+            if [ "$count" -eq 0 ] && [ "$(jq 'length' /tmp/dispatches.json 2>/dev/null || echo 0)" -eq 0 ]; then
+              echo "> All nightly runs passed or no runs exist yet."
+              echo ""
+            fi
+
+            # Dispatch decisions
+            dispatches=$(jq 'length' /tmp/dispatches.json 2>/dev/null || echo 0)
+            if [ "$dispatches" -gt 0 ]; then
+              echo "### Fix agents dispatched"
+              echo ""
+              echo "| Version | Branch | Tests |"
+              echo "|---------|--------|-------|"
+              jq -r '.[] | "| \(.version) | `\(.ref)` | \(.test_specs | length) |"' /tmp/dispatches.json
+            else
+              echo "> No fix agents dispatched (no failures, daily cap reached, or open PRs already exist)."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Post initial Slack message
+        id: slack
+        continue-on-error: true
+        if: github.event_name == 'schedule' || github.event.inputs.send_slack_notification == 'true'
+        env:
+          SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.secrets.outputs.SLACK_BOT_USER_OAUTH_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          date_str=$(date -u +%Y-%m-%d)
+          total_runs=$(jq 'length' /tmp/run_ids.json 2>/dev/null || echo 0)
+          failed_count=$(jq 'length' /tmp/failed_runs.json 2>/dev/null || echo 0)
+          dispatches=$(jq 'length' /tmp/dispatches.json 2>/dev/null || echo 0)
+
+          # Stats line
+          if [ "$total_runs" -gt 0 ]; then
+            passed_count=$(( total_runs - failed_count ))
+            pass_pct=$(( 100 * passed_count / total_runs ))
+            fail_pct=$(( 100 * failed_count / total_runs ))
+            stats_line=":bar_chart: *${total_runs} nightly runs — :white_check_mark: ${passed_count} passed (${pass_pct}%) | :x: ${failed_count} failed (${fail_pct}%)*"
+          else
+            stats_line=":bar_chart: *No nightly runs found*"
+          fi
+
+          # Failing runs list (title + test count or infra label)
+          failing_list=""
+          if [ "$failed_count" -gt 0 ]; then
+            while IFS= read -r run; do
+              rtitle=$(echo "$run" | jq -r '.title')
+              rurl=$(echo "$run"   | jq -r '.url')
+              rv=$(echo "$run"     | jq -r '.version')
+              rt=$(echo "$run"     | jq -r '.test_type')
+              # api_es and api_rdbms both map to test_type "api" in failures_normalized
+              test_count=$(jq --arg v "$rv" --arg t "$rt" '[.[] | select(
+                .version == $v and (
+                  (.test_type == "e2e"  and $t == "e2e") or
+                  (.test_type == "api"  and $t == "api_es"    and (.database == "elasticsearch" or .database == null or .database == "")) or
+                  (.test_type == "api"  and $t == "api_rdbms" and (.database != null and .database != "" and .database != "elasticsearch"))
+                ))] | length' /tmp/failures_normalized.json 2>/dev/null || echo 0)
+              if [ "$test_count" -gt 0 ]; then
+                failing_list="${failing_list}"$'\n'"  :x: <${rurl}|${rtitle}> — ${test_count} test failure(s)"
+              else
+                failing_list="${failing_list}"$'\n'"  :x: <${rurl}|${rtitle}> — workflow-level failure (no failing tests detected)"
+              fi
+            done < <(jq -c '.[]' /tmp/failed_runs.json)
+          fi
+
+          # Build base text (reused by dispatch job for chat.update)
+          header=":mag: *C8 Orchestration Cluster Nightly Triage — ${date_str}*"
+          base_text="${header}"$'\n'"${stats_line}"
+          [ -n "$failing_list" ] && base_text="${base_text}"$'\n\n'"*Failing runs:*${failing_list}"
+
+          # Append dispatching status
+          if [ "$failed_count" -gt 0 ]; then
+            if [ "$dispatches" -gt 0 ]; then
+              dispatch_status=":hourglass_flowing_sand: Dispatching ${dispatches} fix agent(s)..."
+            else
+              dispatch_status=":information_source: No fix agents dispatched (open PRs already exist)."
+            fi
+          else
+            dispatch_status=":white_check_mark: All nightly runs passed."
+          fi
+          text="${base_text}"$'\n\n'"${dispatch_status}"$'\n\n'"<${RUN_URL}|Triage run ↗>"
+
+          target_channel="${{ github.event.inputs.slack_channel }}"
+          target_channel="${target_channel:-c8-orchestration-cluster-e2e-test-results}"
+          payload=$(jq -nc --arg channel "$target_channel" --arg text "$text" \
+            '{channel: $channel, text: $text, mrkdwn: true}')
+          response=$(curl -sS -X POST https://slack.com/api/chat.postMessage \
+            -H "Authorization: Bearer ${SLACK_BOT_USER_OAUTH_TOKEN}" \
+            -H 'Content-Type: application/json; charset=utf-8' \
+            -d "$payload" || echo '{}')
+          echo "$response" | jq '.'
+          ts=$(echo "$response"      | jq -r '.ts      // ""')
+          channel=$(echo "$response" | jq -r '.channel // ""')
+          {
+            echo "ts=${ts}"
+            echo "channel=${channel}"
+            echo "base_text<<__EOF__"
+            printf '%s' "$base_text"
+            echo ""
+            echo "__EOF__"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Upload triage artifacts
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: nightly-triage-${{ github.run_id }}
+          path: |
+            /tmp/all_failures.jsonl
+            /tmp/failures_normalized.json
+            /tmp/dispatches.json
+            /tmp/run_ids.json
+            /tmp/failed_runs.json
+          retention-days: 14
+          if-no-files-found: warn
+
+  dispatch:
+    name: Dispatch fix agents
+    needs: triage
+    if: ${{ github.event.inputs.dispatch != 'false' && needs.triage.outputs.dispatches != '[]' && needs.triage.outputs.dispatches != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: write   # required to dispatch the fix workflow
+      pull-requests: read
+
+    steps:
+      - name: Import Vault secrets
+        id: secrets
+        uses: hashicorp/vault-action@d1720f055e0635fd932a1d2a48f87a666a57906c
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/qa/ci/common GH_TOKEN ;
+            secret/data/products/qa/ci/common SLACK_BOT_USER_OAUTH_TOKEN ;
+
+      - name: Dispatch one fix-agent run per version
+        env:
+          GH_TOKEN:                  ${{ steps.secrets.outputs.GH_TOKEN }}
+          REPO:                      ${{ github.repository }}
+          DISPATCHES_JSON:           ${{ needs.triage.outputs.dispatches }}
+          TRIAGE_RUN_URL:            ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          SLACK_THREAD_TS:           ${{ needs.triage.outputs.slack_ts }}
+          SLACK_CHANNEL:             ${{ needs.triage.outputs.slack_channel }}
+          FIX_AGENT_REF:             ${{ github.ref_name }}
+          SEND_SLACK_NOTIFICATION:   ${{ github.event_name == 'schedule' || github.event.inputs.send_slack_notification == 'true' }}
+        run: |
+          set -euo pipefail
+
+          echo '[]' > /tmp/fix_agent_runs.json
+
+          echo "$DISPATCHES_JSON" | jq -c '.[]' | while read -r d; do
+            version=$(echo "$d" | jq -r '.version')
+            specs=$(echo "$d" | jq -c '.test_specs')
+            e2e=$(echo "$d"   | jq -r '.e2e_run_id')
+            api_es=$(echo "$d" | jq -r '.api_es_run_id')
+            api_rdbms=$(echo "$d" | jq -r '.api_rdbms_run_id')
+
+            echo "Dispatching fix agent: version=$version  failures=$(echo "$specs" | jq 'length')"
+            dispatched_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+            gh workflow run c8-orchestration-cluster-e2e-nightly-fix.yml \
+              --repo "$REPO" --ref "${FIX_AGENT_REF}" \
+              -f version="$version" \
+              -f test_specs="$specs" \
+              -f e2e_run_id="$e2e" \
+              -f api_es_run_id="$api_es" \
+              -f api_rdbms_run_id="$api_rdbms" \
+              -f triage_run_url="$TRIAGE_RUN_URL" \
+              -f slack_thread_ts="$SLACK_THREAD_TS" \
+              -f slack_channel="$SLACK_CHANNEL" \
+              -f send_slack_notification="${SEND_SLACK_NOTIFICATION}"
+
+            # Poll for the newly created fix-agent run (created after dispatch)
+            fix_run_id=""
+            for _ in $(seq 1 18); do
+              sleep 5
+              fix_run_id=$(gh run list \
+                --workflow c8-orchestration-cluster-e2e-nightly-fix.yml \
+                --repo "$REPO" --branch "${FIX_AGENT_REF}" --limit 5 \
+                --json databaseId,createdAt \
+                | jq -r --arg t "$dispatched_at" \
+                  '[.[] | select(.createdAt >= $t)] | first | .databaseId // ""' || echo "")
+              if [ -n "$fix_run_id" ] && [ "$fix_run_id" != "null" ]; then
+                echo "Fix agent run for $version: https://github.com/${REPO}/actions/runs/${fix_run_id}"
+                break
+              fi
+            done
+
+            test_count=$(echo "$specs" | jq 'length')
+            # Build a human-readable label from whichever nightly run types failed
+            run_types=""
+            [ -n "$e2e"       ] && run_types="E2E"
+            [ -n "$api_es"    ] && run_types="${run_types:+${run_types} + }API (ES)"
+            [ -n "$api_rdbms" ] && run_types="${run_types:+${run_types} + }API (RDBMS)"
+            [ -z "$run_types" ] && run_types="workflow-level"
+            run_label="Nightly ${run_types} — ${version}"
+
+            jq --arg v "$version" --arg id "$fix_run_id" --arg repo "$REPO" \
+               --arg label "$run_label" --argjson count "$test_count" \
+              '. += [{"version": $v, "run_id": $id, "run_url": ("https://github.com/" + $repo + "/actions/runs/" + $id), "run_label": $label, "test_count": $count}]' \
+              /tmp/fix_agent_runs.json > /tmp/fix_agent_runs.json.tmp
+            mv /tmp/fix_agent_runs.json.tmp /tmp/fix_agent_runs.json
+          done
+
+      - name: Write dispatch summary
+        if: always()
+        env:
+          REPO: ${{ github.repository }}
+          FIX_AGENT_REF: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          [ -f /tmp/fix_agent_runs.json ] || exit 0
+          count=$(jq 'length' /tmp/fix_agent_runs.json)
+          [ "$count" -eq 0 ] && exit 0
+          {
+            echo ""
+            echo "### Fix agent runs"
+            echo ""
+            echo "| Version | Run | Branch |"
+            echo "|---------|-----|--------|"
+            jq -r --arg repo "$REPO" --arg ref "$FIX_AGENT_REF" \
+              '.[] | if .run_id != "" and .run_id != null
+                then "| \(.version) | [↗](https://github.com/\($repo)/actions/runs/\(.run_id)) | `\($ref)` |"
+                else "| \(.version) | *(run ID not resolved)* | `\($ref)` |"
+                end' \
+              /tmp/fix_agent_runs.json
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Update Slack message with dispatch summary
+        if: always() && needs.triage.outputs.slack_ts != ''
+        env:
+          SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.secrets.outputs.SLACK_BOT_USER_OAUTH_TOKEN }}
+          SLACK_TS:        ${{ needs.triage.outputs.slack_ts }}
+          SLACK_CHANNEL:   ${{ needs.triage.outputs.slack_channel }}
+          SLACK_BASE_TEXT: ${{ needs.triage.outputs.slack_base_text }}
+          REPO:            ${{ github.repository }}
+          RUN_URL:         ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          dispatches=$(jq 'length' /tmp/fix_agent_runs.json 2>/dev/null || echo 0)
+
+          # Build dispatch block
+          if [ "$dispatches" -gt 0 ]; then
+            dispatch_line=":robot_face: *Fix agents dispatched: ${dispatches}*"
+            agent_list=""
+            while IFS= read -r entry; do
+              run_id=$(echo "$entry"    | jq -r '.run_id // ""')
+              run_label=$(echo "$entry" | jq -r '.run_label // .version')
+              test_count=$(echo "$entry" | jq -r '.test_count // "?"')
+              if [ -n "$run_id" ] && [ "$run_id" != "null" ]; then
+                agent_list="${agent_list}"$'\n'"  • ${run_label} — ${test_count} test(s) — <https://github.com/${REPO}/actions/runs/${run_id}|agent run ↗>"
+              else
+                agent_list="${agent_list}"$'\n'"  • ${run_label} — ${test_count} test(s) — agent run pending"
+              fi
+            done < <(jq -c '.[]' /tmp/fix_agent_runs.json)
+            dispatch_block="${dispatch_line}"$'\n'"*Agents dispatched for:*${agent_list}"
+          else
+            dispatch_block=":information_source: No fix agents dispatched."
+          fi
+
+          text="${SLACK_BASE_TEXT}"$'\n\n'"${dispatch_block}"$'\n\n'"<${RUN_URL}|Triage run ↗>"
+
+          payload=$(jq -nc \
+            --arg channel "$SLACK_CHANNEL" \
+            --arg ts      "$SLACK_TS" \
+            --arg text    "$text" \
+            '{channel: $channel, ts: $ts, text: $text, mrkdwn: true}')
+          response=$(curl -sS -X POST https://slack.com/api/chat.update \
+            -H "Authorization: Bearer ${SLACK_BOT_USER_OAUTH_TOKEN}" \
+            -H 'Content-Type: application/json; charset=utf-8' \
+            -d "$payload" || echo '{}')
+          echo "$response" | jq '.'
+          [ "$(echo "$response" | jq -r '.ok')" = "true" ] || echo "::warning::Slack update failed"

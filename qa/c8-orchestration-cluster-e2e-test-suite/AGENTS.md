@@ -230,3 +230,315 @@ test: add operate batch cancel assertion
 fix: retry flaky identity role assignment check on stable/8.7
 ```
 
+<<<<<<< HEAD
+=======
+## Nightly Fix Agent
+
+This section is read automatically by the Claude Code agent dispatched from
+`c8-orchestration-cluster-e2e-nightly-triage.yml`. It defines the agent's
+diagnosis steps and operating constraints.
+
+### Context the agent receives
+
+The triage workflow writes `/tmp/test_specs.json` before invoking the agent.
+Each entry is one failing test:
+
+```json
+{
+  "file": "tests/operate/processInstancesFilters.spec.ts",
+  "test_name": "Filter process instances by parent key, date range, and error message",
+  "error": "TimeoutError: locator.click: Timeout 10000ms exceeded.\n  - waiting for getByRole('menuitem', { name: 'Operation Id' })\n",
+  "test_type": "e2e",
+  "tasklist_mode": "v2"
+}
+```
+
+For API entries, `test_type` is `"api"` and `tasklist_mode` is absent;
+`database` is set (`"elasticsearch"` for ES nightlies, e.g. `"Postgres 17"`
+for RDBMS).
+
+`file` is **relative to this test suite** (`qa/c8-orchestration-cluster-e2e-test-suite/`).
+To read the test code, open
+`qa/c8-orchestration-cluster-e2e-test-suite/<file>`.
+
+The agent is also given the failing nightly run IDs via env vars:
+`E2E_RUN_ID`, `API_ES_RUN_ID`, `API_RDBMS_RUN_ID`. Empty string means that
+test type did not fail (or does not exist for this version).
+
+### Diagnosis steps
+
+**Step 1 — Download nightly artifacts.** Run this block as-is (env vars are
+already exported by the calling workflow):
+
+```bash
+mkdir -p /tmp/nightly-artifacts
+
+if [ "$HAS_E2E" = "true" ] && [ -n "$E2E_RUN_ID" ]; then
+  for mode in v1 v2; do
+    # 8.7 has no v2, main has no v1 — gh silently no-ops on missing patterns
+    gh run download "$E2E_RUN_ID" --repo "$REPO" \
+      --pattern "json-report-nightly-e2e-${SAFE_VERSION}-${mode}" \
+      --dir "/tmp/nightly-artifacts/e2e-${mode}" 2>/dev/null || true
+    gh run download "$E2E_RUN_ID" --repo "$REPO" \
+      --pattern "html-report-nightly-e2e-${SAFE_VERSION}-${mode}" \
+      --dir "/tmp/nightly-artifacts/e2e-${mode}-html" 2>/dev/null || true
+  done
+fi
+
+if [ "$HAS_API_ES" = "true" ] && [ -n "$API_ES_RUN_ID" ]; then
+  gh run download "$API_ES_RUN_ID" --repo "$REPO" \
+    --pattern "json-report-nightly-api-${SAFE_VERSION}" \
+    --dir /tmp/nightly-artifacts/api-es 2>/dev/null || true
+fi
+
+if [ "$HAS_API_RDBMS" = "true" ] && [ -n "$API_RDBMS_RUN_ID" ]; then
+  # Only download the DB-specific artifacts that have failing tests
+  jq -r '[.[] | select(.test_type == "api" and .database != null
+           and .database != "" and .database != "elasticsearch")
+           | .database] | unique[]' /tmp/test_specs.json | while read -r db; do
+    gh run download "$API_RDBMS_RUN_ID" --repo "$REPO" \
+      --pattern "json-report-nightly-api-rdbms-${SAFE_VERSION}-${db}" \
+      --dir "/tmp/nightly-artifacts/api-rdbms" 2>/dev/null || true
+  done
+fi
+```
+
+Resulting layout:
+
+```
+/tmp/nightly-artifacts/
+  e2e-v1/        json-report-nightly-e2e-<safe_version>-v1/results.json
+  e2e-v1-html/   html-report-nightly-e2e-<safe_version>-v1/...   ← contains screenshots
+  e2e-v2/        json-report-nightly-e2e-<safe_version>-v2/results.json
+  e2e-v2-html/   html-report-nightly-e2e-<safe_version>-v2/...
+  api-es/        json-report-nightly-api-<safe_version>/results.json
+  api-rdbms/     json-report-nightly-api-rdbms-<safe_version>-<db>/results.json
+```
+
+Screenshots from Playwright's HTML report live under
+`html-report/.../data/*.png`. You can read PNGs directly — use them as the
+primary signal for E2E diagnosis.
+
+**Step 2 — Read the test file.** Open
+`qa/c8-orchestration-cluster-e2e-test-suite/<file>` from the test spec.
+Read any imported page objects under
+`qa/c8-orchestration-cluster-e2e-test-suite/pages/` and helpers under
+`qa/c8-orchestration-cluster-e2e-test-suite/utils/`.
+
+**Step 3 — Form a hypothesis.** Match the screenshot and/or error message to
+a specific assertion or action. Typical patterns:
+
+- **Element not found within timeout** — the previous step did not finish
+  rendering. Add a `expect(...).toBeVisible()` or `waitFor({state: 'visible'})`
+  before the click. Do NOT use `page.waitForTimeout()` — it is banned.
+- **Stale element / re-render race** — wrap the action in a retry helper if
+  one exists in `utils/`, or split into smaller steps.
+- **Auth / cookie state lost between describes** — check `beforeEach` for a
+  missing `context.clearCookies()` or login step.
+- **API response shape change** — only a test-side fix is in scope if the
+  test was asserting on a field that legitimately moved/renamed. If the
+  endpoint regressed, this is a product bug — see Step 4.
+
+**Step 4 — Decide: fix or stop.**
+
+If the failure is **clearly a product bug** (e.g., a 500 from the server, a
+panel that never renders despite correct backend response, an authorization
+regression) and no test-side change is reasonable: write `{"prs":[]}` to
+`/tmp/fix-meta.json` and stop. Do not open a PR. Do not skip the test.
+
+If a minimal test-side fix exists, apply it.
+
+### Apply the fix
+
+1. The repo is already on the correct target branch (`stable/<version>` or
+   `main`). Verify with `git status`.
+2. Create a fix branch:
+   `git checkout -b fix/nightly-${VERSION}-<short-slug>`
+3. Edit files under `qa/c8-orchestration-cluster-e2e-test-suite/` only.
+   Touch page objects when the selector itself is wrong; touch utilities
+   only when multiple tests share the same root cause.
+4. Lint changed files:
+
+   ```bash
+   cd qa/c8-orchestration-cluster-e2e-test-suite
+   npx prettier --write <changed-files>
+   npx eslint <changed-files> --fix
+   ```
+
+   Fix any remaining eslint errors before committing.
+
+5. Commit with `test:` (NOT `fix:` — see above on Conventional Commits):
+   `git commit -m "test: <one-line description> (nightly ${VERSION})"`
+
+6. Push: `git push -u origin fix/nightly-${VERSION}-<slug>`
+
+7. Check for existing open PRs before opening a new one:
+
+   ```bash
+   gh pr list --repo camunda/camunda \
+     --search "is:open label:failing-test-fix" \
+     --json number,title,baseRefName,headRefName
+   ```
+
+   If an open PR targets the same `stable/<version>` for the same root
+   cause: comment on it with your additional diagnosis; do not open a
+   second PR.
+
+8. Open a draft PR targeting the same base branch you are on, label
+   `failing-test-fix`. Body must include:
+
+   - Root cause analysis
+   - List of fixed tests (file + name)
+   - Link to the failing nightly run(s)
+   - Link to the triage run
+
+### Constraints
+
+- **Allowed tools:** `gh`, `git`, `grep`, `rg`, `cat`, `find`, `jq`, `sed`, `awk`, `unzip`, `npx prettier`, `npx eslint`.
+- **Forbidden:** `make`, `mvn`, `./mvnw`, `docker`, `kubectl`, `helm`, `npm install`, `npm run build`, `npm run test`, `npx playwright test`. The fix agent does **not** execute tests — it fixes from artifact evidence only. Verification is delegated to the on-demand workflows triggered by the calling workflow.
+- **NO skipping — EVER:** `test.skip()`, `test.fixme()`, `test.only`, and all pending variants are banned. There are no exceptions, not even for confirmed product bugs. If you cannot fix in code, write `{"prs":[]}` and stop.
+- **Never edit `json-body-assertions/_generated/responses.json` by hand.** This file is auto-generated. If an API response changes, regenerate it with `npm run responses:regenerate` and commit the result. Manual edits will be overwritten and produce misleading diffs.
+- **Minimal diff:** no refactoring, no dependency bumps, no unrelated edits, no formatting sweeps on untouched files.
+- **PR title type must be `test:`** — commitlint rejects `fix:` for test-only changes (see Commit / PR Conventions above).
+- **One PR per version** — a single PR may fix multiple tests on the same `stable/<version>` branch, including a mix of API and E2E failures, but never crosses branch boundaries.
+
+### Result manifest
+
+Always write `/tmp/fix-meta.json` before stopping:
+
+```json
+{
+  "prs": [
+    {
+      "number": 1234,
+      "owner": "camunda",
+      "repo": "camunda",
+      "branch": "fix/nightly-8.9-operate-filter-wait",
+      "has_e2e": true,
+      "has_api": false,
+      "root_cause": "One-sentence explanation of why the test was failing.",
+      "fix": "One-sentence description of what was changed and why it resolves the failure.",
+      "tests_fixed": [
+        {"file": "tests/api/v2/...", "test_name": "...", "test_type": "api"}
+      ]
+    }
+  ]
+}
+```
+
+All six fields — `number`, `owner`, `repo`, `branch`, `has_e2e`, `has_api` — are
+**mandatory**. For all PRs in this repo: `"owner": "camunda", "repo": "camunda"`.
+`root_cause` and `fix` are **strongly recommended** — they are surfaced directly
+in the GitHub job summary so reviewers understand the agent's decision without
+reading the full agent log.
+Extra fields (e.g. `url`, `title`, `tests_fixed`) are allowed but do not replace
+these six. **Never omit `owner` or `repo`** — the Slack step uses them to build
+the PR link and will produce `github.com/null/null/pull/<n>` if they are absent.
+
+**`branch`** must never be `null`. Set it to the exact `headRefName` of the PR:
+
+```bash
+gh pr view <number> --repo camunda/camunda --json headRefName --jq '.headRefName'
+```
+
+**`has_e2e` / `has_api`** — set based on the `test_type` of every test you fixed:
+- Any fixed test with `test_type: "e2e"` → `"has_e2e": true`
+- Any fixed test with `test_type: "api"` → `"has_api": true`
+- Both can be `true` when a PR covers mixed failures.
+
+The calling workflow uses these flags to determine scope, but only one
+on-demand verification run is triggered: `c8-orchestration-cluster-e2e-tests-on-demand.yml`
+(covers both E2E and API tests). **If `has_e2e` and `has_api` are both `false`,
+no verification run is triggered and the fix is never validated automatically.**
+
+Use `{"prs": []}` if no PR was opened (regardless of reason).
+
+## Workflow-Level Failure Fix Agent
+
+This section is read by the fix agent when `/tmp/test_specs.json` contains an empty array — the nightly run failed without producing test results, or failed in a non-test step.
+
+The run IDs are in env vars: `E2E_RUN_ID`, `API_ES_RUN_ID`, `API_RDBMS_RUN_ID` (any may be `""`). `TRIAGE_RUN_URL` is the triage run URL for cross-linking.
+
+### Mental model
+
+A CI run is a chain of steps. Every step runs a command defined by a file in **this** repo — a workflow YAML, a shell script, a config file, a compose file, or a test. A failure means one of those files produced behaviour that ended the run.
+
+Your job is to find that file and change it so the run reaches a **correct conclusion**: either it passes, or it fails for a real product reason that surfaces as a *test result* — never as a workflow crash, and never with a "please re-run" recommendation.
+
+There is no catalogue of known failures to match against. Any step or any job can fail for any reason. You diagnose from first principles every time, using the full repository, which is entirely accessible to you.
+
+### The loop
+
+**1 — Enumerate every failed job and its failed step(s):**
+
+```bash
+for run_id in $E2E_RUN_ID $API_ES_RUN_ID $API_RDBMS_RUN_ID; do
+  [ -z "$run_id" ] && continue
+  echo "=== Run $run_id ==="
+  gh run view "$run_id" --repo camunda/camunda --json jobs \
+    --jq '.jobs[] | select(.conclusion == "failure") | {
+      job: .name,
+      failed_steps: [.steps[] | select(.conclusion == "failure") | .name]
+    }'
+done
+```
+
+**2 — Read the failing step's logs to get the exact error:**
+
+```bash
+gh run view <run_id> --repo camunda/camunda --log-failed 2>/dev/null | head -300
+```
+
+The root cause is almost always visible in the first 300 lines. Read the actual error text — do not assume.
+
+**3 — Locate the file that owns the failing step.** The step `name` from step 1 is a literal key in a workflow YAML. Find it, then follow it to the real source:
+
+```bash
+# Find which workflow defines the failed step
+grep -rn "<failed step name>" .github/workflows/
+
+# If the step runs a script, open the script. If it runs a command,
+# find the config that command reads (compose file, package.json script,
+# trcli invocation, mvn goal, etc.) and open that.
+```
+
+Keep following until you reach the concrete file whose contents determine whether that step passes — the YAML, the script, the config, the compose file, or the test.
+
+**4 — Classify the true cause, then fix it in that file.** Every failure is one of three kinds, and each has a definite fix shape:
+
+- **The step's own logic is wrong** — a bug in the workflow, script, config, compose file, or test. Fix the logic.
+- **The step depends on something flaky or external** — a registry, a network call, a remote API, a download. Encode resilience *in the file*: add a retry with backoff, pin or cache the dependency, or turn a cryptic crash into a clear, actionable failure. Recommending a human re-run is **not** a fix — the resilience must live in the repo so the next run survives the same blip on its own.
+- **A real product or test defect crashed the run instead of being reported** — the run died before the test framework could record the failure. Fix it so the defect surfaces as a normal test result, never as a workflow-level crash.
+
+Make the **minimal** change that addresses the cause. Do not refactor surrounding code, suppress the error, or widen the scope.
+
+> **Illustration of the loop (not a lookup row):** Suppose step 1 reports the failed step is `Start Camunda` and step 2 shows `context deadline exceeded` pulling an image. Step 3 greps the workflows, finds the step in a reusable workflow, and sees it runs `docker compose up` once. Step 4 classifies this as "depends on something flaky/external" → the fix is to wrap the pull in a retry-with-backoff loop *in that workflow file* so a transient registry blip no longer fails the run. You would reach the same shape of answer for a flaky `npm ci`, a flaky artifact download, or a flaky DB container start — by running the same loop, not by recognising "Docker".
+
+**5 — Open a PR.** Use `ci:` if only `.github/workflows/` files changed; `test:` if only test files changed; `fix:` if application code changed. Never use `fix:` for test-only changes — commitlint rejects it. Cross-link `TRIAGE_RUN_URL` in the PR body.
+
+Write to `/tmp/fix-meta.json`:
+
+```json
+{"prs": [{"number": 123, "owner": "camunda", "repo": "camunda", "branch": "ci/...", "has_e2e": false, "has_api": false}], "category": "workflow-fix"}
+```
+
+### When — and only when — you cannot fix
+
+`{"prs": [], "category": "not-determined"}` is a last resort, expected to be extremely rare because the whole repo is in scope. To use it you must be able to state all three: the failed step, the file that owns it, and a concrete reason why **no edit to that file or anything it touches** could change the outcome.
+
+Realistically that is limited to: the runner host itself died (out of memory or disk on the GitHub Actions runner), or a fully-down external service with no surface in our code to add a retry or fallback against. Note that even most "external service was down" cases have a fix — adding backoff so a brief outage no longer fails the run — so reach for `not-determined` only after confirming there is genuinely nothing in the repo to change.
+
+### Constraints
+
+- **Never recommend re-running the workflow as the outcome** — if flakiness is the cause, the resilience goes into the file, not into a human instruction.
+- **`continue-on-error: true` is absolutely forbidden — with no exceptions and no rationalisations.** This includes post-test reporting steps (TestRail, artifact upload, Slack notification). The reasoning "it is only reporting, not a gate" is exactly the rationalisation that must be rejected: if a post-test step fails, that failure is a defect in our code or configuration that deserves a real fix. `continue-on-error` silences the failure rather than fixing it, which means the same bug runs again tomorrow and the day after.
+  - **TestRail `add_case` failure** → the step fails because something in *our* code caused trcli to error (e.g. a test case title whose derived `custom_automation_id` exceeds 250 characters). Find the offending test title in the spec files and shorten it. That is the fix.
+  - **TestRail auth / network failure** → add a retry around the trcli call, or fix the credential configuration. Do not silence.
+  - **Any other post-test step** → find what our code does wrong and fix it. If you genuinely cannot find any code fix after thorough investigation, write `not-determined` — but `continue-on-error` is never a valid alternative.
+- **No skipping** — same absolute no-skip / no-fixme rule as the Nightly Fix Agent.
+- **`.github/workflows/` is always in scope** — the repo "Ask first" constraint applies to application libraries (`webapps-common/`, `webapp/client/`, `security/`), not to CI workflow files.
+- **Minimal diff** — fix only what is broken; no refactoring, no dependency bumps, no unrelated edits.
+- **Allowed tools**: `gh`, `git`, `grep`, `rg`, `cat`, `find`, `jq`, `sed`, `awk`, `unzip`
+- **Forbidden**: `make`, `helm`, `kubectl`, `npm run build`, `go test`, any deploy command
+
+>>>>>>> b092d0f4 (ci: improve OC nightly fix agent — race-safe run linking, richer Slack dispatch list, responses.json guard)
