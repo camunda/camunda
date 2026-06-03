@@ -16,7 +16,12 @@ const sidebars = {
   tutorialSidebar: [
     'index',
     'collaboration-guidelines',
-    'ci',
+    {
+      type: 'category',
+      label: 'CI',
+      link: { type: 'doc', id: 'ci' },
+      items: ['dependency-vulnerability-gate'],
+    },
     'release',
   ],
 };
