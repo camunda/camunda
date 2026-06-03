@@ -31,14 +31,14 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.spring.event.CamundaClientClosingSpringEvent;
 import io.camunda.client.spring.event.CamundaClientCreatedSpringEvent;
 import io.camunda.client.spring.properties.CamundaClientProperties;
-import io.camunda.process.test.api.coverage.ProcessCoverage;
-import io.camunda.process.test.api.coverage.ProcessCoverageBuilder;
 import io.camunda.process.test.api.judge.ChatModelAdapter;
 import io.camunda.process.test.api.runtime.CamundaProcessTestContainerProvider;
 import io.camunda.process.test.api.similarity.EmbeddingModelAdapter;
 import io.camunda.process.test.api.testCases.TestCaseRunner;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration;
+import io.camunda.process.test.impl.coverage.CoverageCollector;
+import io.camunda.process.test.impl.coverage.CoverageCollectorBuilder;
 import io.camunda.process.test.impl.proxy.CamundaClientProxy;
 import io.camunda.process.test.impl.proxy.CamundaProcessTestContextProxy;
 import io.camunda.process.test.impl.proxy.TestCaseRunnerProxy;
@@ -78,10 +78,10 @@ public class ExecutionListenerTest {
   private CamundaProcessTestRuntimeBuilder camundaRuntimeBuilder;
 
   @Mock(answer = Answers.RETURNS_SELF)
-  private ProcessCoverageBuilder processCoverageBuilder;
+  private CoverageCollectorBuilder processCoverageBuilder;
 
   @Mock private CamundaProcessTestContainerRuntime camundaContainerRuntime;
-  @Mock private ProcessCoverage processCoverage;
+  @Mock private CoverageCollector processCoverage;
 
   @Mock private CamundaClientProxy camundaClientProxy;
   @Mock private CamundaProcessTestContextProxy camundaProcessTestContextProxy;
@@ -383,10 +383,10 @@ public class ExecutionListenerTest {
         new CamundaProcessTestExecutionListener(
             camundaRuntimeBuilder, processCoverageBuilder, NOOP);
 
-    final Method method = mock(Method.class);
+    final Method testMethod = mock(Method.class);
     when(processCoverageBuilder.build()).thenReturn(processCoverage);
-    when(testContext.getTestMethod()).thenReturn(method);
-    when(method.getName()).thenReturn("test");
+    when(testContext.getTestMethod()).thenReturn(testMethod);
+    when(testMethod.getName()).thenReturn("test");
 
     // when
     listener.beforeTestClass(testContext);
@@ -400,8 +400,8 @@ public class ExecutionListenerTest {
 
     // then
     verify(processCoverageBuilder).build();
-    verify(processCoverage).collectTestRunCoverage(any(), any());
-    verify(processCoverage).reportCoverage();
+    verify(processCoverage).collectTestRunCoverage(any(), any(), any());
+    verify(processCoverage).generateReport(any());
   }
 
   @Test
