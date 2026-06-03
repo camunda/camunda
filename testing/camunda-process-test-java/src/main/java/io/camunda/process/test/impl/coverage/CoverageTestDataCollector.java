@@ -70,6 +70,10 @@ public class CoverageTestDataCollector {
     decisionInstances.stream()
         .map(
             decisionInstance ->
+                // Load decision instance details
+                dataSource.getDecisionInstance(decisionInstance.getDecisionInstanceId()))
+        .map(
+            decisionInstance ->
                 ImmutableCoverageDecisionInstanceData.builder()
                     .decisionInstance(decisionInstance)
                     .build())
