@@ -25,8 +25,8 @@ public class AgentInstanceDto implements Serializable, OptimizeDto {
   private OffsetDateTime lastUpdatedDate;
   private Long totalDurationInMs;
   private List<String> flowNodeInstanceIds = new ArrayList<>();
-  private AgentDefinitionDto definition = new AgentDefinitionDto();
-  private AgentMetricsDto metrics = new AgentMetricsDto();
+  private AgentDefinitionDto definition;
+  private AgentMetricsDto metrics;
   private List<AgentToolDto> tools = new ArrayList<>();
 
   public AgentInstanceDto() {}

@@ -126,11 +126,14 @@ public class ZeebeAgentInstanceImportService
 
   private void mapDefinition(
       final AgentInstanceDto agentDto, final ZeebeAgentInstanceDataDto data) {
-    final AgentInstanceDto.AgentDefinitionDto definitionDto =
-        new AgentInstanceDto.AgentDefinitionDto();
-    definitionDto.setModel(data.getDefinition().getModel());
-    definitionDto.setProvider(data.getDefinition().getProvider());
-    agentDto.setDefinition(definitionDto);
+    final ZeebeAgentInstanceDataDto.AgentDefinitionValueDto zeebeDefinition = data.getDefinition();
+    if (zeebeDefinition != null) {
+      final AgentInstanceDto.AgentDefinitionDto definitionDto =
+          new AgentInstanceDto.AgentDefinitionDto();
+      definitionDto.setModel(zeebeDefinition.getModel());
+      definitionDto.setProvider(zeebeDefinition.getProvider());
+      agentDto.setDefinition(definitionDto);
+    }
   }
 
   private void mapMetrics(final AgentInstanceDto agentDto, final ZeebeAgentInstanceDataDto data) {
