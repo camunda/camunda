@@ -18,7 +18,6 @@ import java.util.Set;
 import java.util.function.Function;
 
 public record TenantFilter(
-    Long key,
     List<String> tenantIds,
     String name,
     Set<String> memberIds,
@@ -32,7 +31,6 @@ public record TenantFilter(
 
   public Builder toBuilder() {
     return new Builder()
-        .key(key)
         .tenantIds(tenantIds)
         .name(name)
         .memberIds(memberIds)
@@ -42,17 +40,11 @@ public record TenantFilter(
 
   public static final class Builder implements ObjectBuilder<TenantFilter> {
 
-    private Long key;
     private List<String> tenantIds;
     private String name;
     private Set<String> memberIds;
     private EntityType childMemberType;
     private Map<EntityType, Set<String>> memberIdsByType;
-
-    public Builder key(final Long value) {
-      key = value;
-      return this;
-    }
 
     public Builder tenantId(final String value, final String... values) {
       return tenantIds(collectValues(value, values));
@@ -85,7 +77,7 @@ public record TenantFilter(
 
     @Override
     public TenantFilter build() {
-      return new TenantFilter(key, tenantIds, name, memberIds, childMemberType, memberIdsByType);
+      return new TenantFilter(tenantIds, name, memberIds, childMemberType, memberIdsByType);
     }
   }
 }

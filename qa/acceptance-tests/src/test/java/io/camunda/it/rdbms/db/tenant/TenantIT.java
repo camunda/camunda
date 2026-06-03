@@ -191,7 +191,6 @@ public class TenantIT {
         reader.search(
             new TenantQuery(
                 new TenantFilter.Builder()
-                    .key(instance.tenantKey())
                     .tenantId(instance.tenantId())
                     .name(instance.name())
                     .build(),

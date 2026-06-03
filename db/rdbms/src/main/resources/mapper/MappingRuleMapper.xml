@@ -84,9 +84,6 @@
       <if test="filter.mappingRuleId != null">
         AND MAPPING_RULE_ID = #{filter.mappingRuleId}
       </if>
-      <if test="filter.mappingRuleKey != null">
-        AND MAPPING_RULE_KEY = #{filter.mappingRuleKey}
-      </if>
       <if test="filter.claimName != null">
         AND CLAIM_NAME = #{filter.claimName}
       </if>

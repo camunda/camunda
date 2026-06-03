@@ -7,15 +7,16 @@
  */
 package io.camunda.it.rdbms.db.tenant;
 
-import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextKey;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextStringId;
 import static io.camunda.it.rdbms.db.fixtures.TenantFixtures.createAndSaveRandomTenants;
+import static io.camunda.it.rdbms.db.fixtures.TenantFixtures.createAndSaveTenant;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.TenantDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.TenantDbModel;
+import io.camunda.it.rdbms.db.fixtures.TenantFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.TenantEntity;
@@ -25,7 +26,9 @@ import io.camunda.search.query.TenantQuery;
 import io.camunda.search.sort.TenantSort;
 import io.camunda.search.sort.TenantSort.Builder;
 import io.camunda.util.ObjectBuilder;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.List;
 import java.util.function.Function;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
@@ -78,14 +81,32 @@ public class TenantSortIT {
 
   @TestTemplate
   public void shouldSortByNameAsc(final CamundaRdbmsTestApplication testApplication) {
-    final var aggregator = nextKey(); // Will be used to have isolated test data
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final TenantDbReader reader = rdbmsService.getTenantReader();
 
-    testSorting(
-        testApplication.getRdbmsService(),
-        b -> b.name().asc(),
-        Comparator.comparing(TenantEntity::name),
-        b -> b.tenantKey(aggregator),
-        b -> b.key(aggregator));
+    // create 20 tenants with unique, ordered names and collect their IDs for isolated filtering
+    // (aggregator approach can't be used as name is the sort field and must vary)
+    final var namePrefix = nextStringId() + "-";
+    final List<String> createdTenantIds = new ArrayList<>();
+    for (int i = 0; i < 20; i++) {
+      final var name = namePrefix + String.format("%02d", i);
+      final var tenant = TenantFixtures.createRandomized(b -> b.name(name));
+      createdTenantIds.add(tenant.tenantId());
+      createAndSaveTenant(rdbmsWriters, tenant);
+    }
+
+    final var searchResult =
+        reader
+            .search(
+                new TenantQuery(
+                    TenantFilter.of(b -> b.tenantIds(createdTenantIds)),
+                    TenantSort.of(b -> b.name().asc()),
+                    SearchQueryPage.of(b -> b)))
+            .items();
+
+    assertThat(searchResult).hasSize(20);
+    assertThat(searchResult).isSortedAccordingTo(Comparator.comparing(TenantEntity::name));
   }
 
   private void testSorting(

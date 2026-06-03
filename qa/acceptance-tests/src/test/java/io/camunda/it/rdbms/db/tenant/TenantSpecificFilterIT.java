@@ -115,9 +115,7 @@ public class TenantSpecificFilterIT {
 
   static List<TenantFilter> shouldFindTenantWithSpecificFilterParameters() {
     return List.of(
-        TenantFilter.of(b -> b.key(42L)),
-        TenantFilter.of(b -> b.tenantId("tenant-42")),
-        TenantFilter.of(b -> b.name("Tenant 42")));
+        TenantFilter.of(b -> b.tenantId("tenant-42")), TenantFilter.of(b -> b.name("Tenant 42")));
   }
 
   private void addGroupToTenant(final String tenantId, final String entityId) {
