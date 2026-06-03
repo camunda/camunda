@@ -79,7 +79,8 @@ public class ScaleUpPartitionsTest {
   private ClusterActuator clusterActuator;
   private BackupActuator backupActuator;
 
-  @TestZeebe private final TestCluster cluster;
+  @TestZeebe(awaitCompleteTopology = false)
+  private final TestCluster cluster;
 
   ScaleUpPartitionsTest(@TempDir final Path backupPath) {
     cluster =
