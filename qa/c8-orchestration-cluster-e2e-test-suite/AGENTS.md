@@ -43,7 +43,7 @@ test-setup.ts      # Shared setup helpers (captureScreenshot, captureFailureVide
 pages/             # Page Object Model classes (one file per page)
 utils/             # Helpers: zeebeClient, waitForAssertion, requestHelpers, cleanup utils, etc.
 resources/         # Test data: BPMN files, forms, connector templates
-json-body-assertions/    # OpenAPI-driven response assertions (regenerated via npx assert-json-body extract)
+json-body-assertions/    # OpenAPI-driven response assertions (regenerated via npx --yes assert-json-body@^1.7.1 extract)
 config/
   docker-compose.yml         # Local Elasticsearch + Camunda stack
   application.yaml           # RDBMS config template (copy to dist before starting)
@@ -442,10 +442,10 @@ If a minimal test-side fix exists, apply it.
 
 ### Constraints
 
-- **Allowed tools:** `gh`, `git`, `grep`, `rg`, `cat`, `find`, `jq`, `sed`, `awk`, `unzip`, `npx prettier`, `npx eslint`, `npx assert-json-body extract`.
+- **Allowed tools:** `gh`, `git`, `grep`, `rg`, `cat`, `find`, `jq`, `sed`, `awk`, `unzip`, `npx prettier`, `npx eslint`, `npx --yes assert-json-body@^1.7.1 extract`.
 - **Forbidden:** `make`, `mvn`, `./mvnw`, `docker`, `kubectl`, `helm`, `npm install`, `npm run build`, `npm run test`, `npx playwright test`. The fix agent does **not** execute tests — it fixes from artifact evidence only. Verification is delegated to the on-demand workflows triggered by the calling workflow.
 - **NO skipping — EVER:** `test.skip()`, `test.fixme()`, `test.only`, and all pending variants are banned. There are no exceptions, not even for confirmed product bugs. If you cannot fix in code, write `{"prs":[]}` and stop.
-- **Never edit `json-body-assertions/_generated/responses.json` by hand.** This file is auto-generated. If an API response changes, regenerate it with `npx assert-json-body extract` and commit the result. Manual edits will be overwritten and produce misleading diffs.
+- **Never edit `json-body-assertions/_generated/responses.json` by hand.** This file is auto-generated. If an API response changes, regenerate it with `npx --yes assert-json-body@^1.7.1 extract` and commit the result. Manual edits will be overwritten and produce misleading diffs.
 - **Minimal diff:** no refactoring, no dependency bumps, no unrelated edits, no formatting sweeps on untouched files.
 - **PR title type must be `test:`** — commitlint rejects `fix:` for test-only changes (see Commit / PR Conventions above).
 - **One PR per version** — a single PR may fix multiple tests on the same `stable/<version>` branch, including a mix of API and E2E failures, but never crosses branch boundaries.
