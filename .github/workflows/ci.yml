@@ -219,7 +219,7 @@ jobs:
                 !contains(github.event.pull_request.labels.*.name, 'gradle-build')
               )
             }}
-      - run: ./gradlew --no-daemon --console=plain --parallel -Pskip.fe.build testClasses
+      - run: ./gradlew --no-daemon --console=plain --parallel -Pskip.fe.build classes
       - name: Observe build status
         if: always()
         continue-on-error: true
