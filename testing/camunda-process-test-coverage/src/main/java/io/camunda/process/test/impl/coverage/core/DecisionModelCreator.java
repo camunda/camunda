@@ -17,8 +17,8 @@ package io.camunda.process.test.impl.coverage.core;
 
 import io.camunda.process.test.api.coverage.model.DecisionModel;
 import io.camunda.process.test.api.coverage.model.ImmutableDecisionModel;
-import io.camunda.process.test.impl.coverage.results.CoverageDecisionDefinitionData;
-import io.camunda.process.test.impl.coverage.results.CoverageTestData;
+import io.camunda.process.test.impl.coverage.data.CoverageDecisionDefinitionData;
+import io.camunda.process.test.impl.coverage.data.CoverageTestData;
 import java.io.ByteArrayInputStream;
 import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.bpm.model.dmn.DmnModelInstance;

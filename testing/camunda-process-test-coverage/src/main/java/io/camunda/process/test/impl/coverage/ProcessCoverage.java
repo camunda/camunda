@@ -16,7 +16,7 @@
 package io.camunda.process.test.impl.coverage;
 
 import io.camunda.process.test.api.coverage.model.CoverageReport;
-import io.camunda.process.test.impl.coverage.results.CoverageTestData;
+import io.camunda.process.test.impl.coverage.data.CoverageTestData;
 
 /**
  * API for process coverage collection and report generation.

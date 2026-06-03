@@ -24,7 +24,7 @@ import io.camunda.client.api.search.response.DecisionInstance;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.process.test.api.coverage.model.CoverageReport;
 import io.camunda.process.test.impl.coverage.ProcessCoverage;
-import io.camunda.process.test.impl.coverage.results.CoverageTestData;
+import io.camunda.process.test.impl.coverage.data.CoverageTestData;
 import io.camunda.process.test.impl.coverage.results.ImmutableCoverageDecisionInstanceData;
 import io.camunda.process.test.impl.coverage.results.ImmutableCoverageProcessInstanceData;
 import io.camunda.process.test.impl.coverage.results.ImmutableCoverageTestData;

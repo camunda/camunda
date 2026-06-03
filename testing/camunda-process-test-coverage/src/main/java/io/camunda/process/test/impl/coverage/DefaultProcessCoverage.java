@@ -17,8 +17,8 @@ package io.camunda.process.test.impl.coverage;
 
 import io.camunda.process.test.api.coverage.model.CoverageReport;
 import io.camunda.process.test.impl.coverage.core.CoverageCollector;
+import io.camunda.process.test.impl.coverage.data.CoverageTestData;
 import io.camunda.process.test.impl.coverage.report.CoverageReporter;
-import io.camunda.process.test.impl.coverage.results.CoverageTestData;
 import java.util.List;
 import java.util.function.Consumer;
 

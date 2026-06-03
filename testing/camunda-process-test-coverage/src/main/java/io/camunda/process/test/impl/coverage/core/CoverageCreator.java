@@ -22,7 +22,7 @@ import io.camunda.client.api.search.response.ProcessInstanceSequenceFlow;
 import io.camunda.process.test.api.coverage.model.ImmutableProcessCoverage;
 import io.camunda.process.test.api.coverage.model.Model;
 import io.camunda.process.test.api.coverage.model.ProcessCoverage;
-import io.camunda.process.test.impl.coverage.results.CoverageProcessInstanceData;
+import io.camunda.process.test.impl.coverage.data.CoverageProcessInstanceData;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.SequenceFlow;

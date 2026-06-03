@@ -22,7 +22,7 @@ import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.ProcessInstanceSequenceFlow;
 import io.camunda.process.test.impl.assertions.CamundaTestResults;
-import io.camunda.process.test.impl.coverage.results.CoverageTestData;
+import io.camunda.process.test.impl.coverage.data.CoverageTestData;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
