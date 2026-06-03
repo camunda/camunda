@@ -5,13 +5,20 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.gateway.rest.context;
+package io.camunda.gateway.mapping.http.physicaltenants;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 
-/** Carries the resolved physical tenant id for the current REST request. */
+/**
+ * Carries the resolved physical tenant id for the current request.
+ *
+ * <p>Used by both the REST gateway ({@code /physical-tenants/{physicalTenantId}/v2/...} routes) and
+ * the MCP gateway ({@code /physical-tenants/{physicalTenantId}/mcp/...} routes). The id is
+ * populated on the request by the respective interceptor and read downstream via {@link #current()}
+ * (request-bound thread) or {@link #getPhysicalTenantId(HttpServletRequest)}.
+ */
 public final class PhysicalTenantContext {
 
   /** Default physical tenant id used when no prefix is present in the request path. */
@@ -37,16 +44,19 @@ public final class PhysicalTenantContext {
 
   /**
    * @return the resolved physical tenant id for the request being processed on this thread, or
-   *     {@link #DEFAULT_PHYSICAL_TENANT_ID} when no request context is bound.
+   *     {@link #DEFAULT_PHYSICAL_TENANT_ID} when no request context is bound or the attribute is
+   *     not set.
    */
   public static String current() {
     final RequestAttributes attributes = RequestContextHolder.getRequestAttributes();
     if (attributes == null) {
       return DEFAULT_PHYSICAL_TENANT_ID;
     }
-    return asString(
-        attributes.getAttribute(
-            REQUEST_ATTRIBUTE_PHYSICAL_TENANT_ID, RequestAttributes.SCOPE_REQUEST));
+    final String value =
+        asString(
+            attributes.getAttribute(
+                REQUEST_ATTRIBUTE_PHYSICAL_TENANT_ID, RequestAttributes.SCOPE_REQUEST));
+    return value != null ? value : DEFAULT_PHYSICAL_TENANT_ID;
   }
 
   private static String asString(final Object value) {

@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.rest.controller.authentication;
 
 import static io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper.toCamundaUser;
 
+import io.camunda.gateway.mapping.http.physicaltenants.PhysicalTenantContext;
 import io.camunda.gateway.protocol.model.CamundaUserResult;
 import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.query.TenantQuery;
@@ -17,7 +18,6 @@ import io.camunda.security.core.port.in.CamundaUserPort;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
-import io.camunda.zeebe.gateway.rest.context.PhysicalTenantContext;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import java.util.List;
 import org.springframework.context.annotation.Profile;

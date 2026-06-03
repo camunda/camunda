@@ -7,11 +7,11 @@
  */
 package io.camunda.zeebe.gateway.rest.interceptor;
 
-import io.camunda.zeebe.gateway.rest.context.PhysicalTenantContext;
-import io.camunda.zeebe.gateway.rest.util.PhysicalTenantRegistry;
+import io.camunda.gateway.mapping.http.physicaltenants.PhysicalTenantContext;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.Map;
+import java.util.function.Predicate;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.HandlerMapping;
 
@@ -21,19 +21,18 @@ import org.springframework.web.servlet.HandlerMapping;
  *
  * <ul>
  *   <li>If the request matches a tenant-prefixed route ({@code
- *       /v2/physical-tenants/{physicalTenantId}/...}) and the id is unknown to the configured
- *       {@link PhysicalTenantRegistry}, the request is rejected with HTTP 404 before reaching the
- *       controller.
+ *       /v2/physical-tenants/{physicalTenantId}/...}) and the id is unknown, the request is
+ *       rejected with HTTP 404 before reaching the controller.
  *   <li>If no prefix is present, the resolved id defaults to {@link
  *       PhysicalTenantContext#DEFAULT_PHYSICAL_TENANT_ID}.
  * </ul>
  */
 public class PhysicalTenantInterceptor implements HandlerInterceptor {
 
-  private final PhysicalTenantRegistry resolver;
+  private final Predicate<String> isKnownTenant;
 
-  public PhysicalTenantInterceptor(final PhysicalTenantRegistry registry) {
-    this.resolver = registry;
+  public PhysicalTenantInterceptor(final Predicate<String> isKnownTenant) {
+    this.isKnownTenant = isKnownTenant;
   }
 
   @Override
@@ -49,7 +48,7 @@ public class PhysicalTenantInterceptor implements HandlerInterceptor {
                 PhysicalTenantContext.PATH_VARIABLE_PHYSICAL_TENANT_ID,
                 PhysicalTenantContext.DEFAULT_PHYSICAL_TENANT_ID);
 
-    if (!resolver.exists(tenantId)) {
+    if (!isKnownTenant.test(tenantId)) {
       response.sendError(HttpServletResponse.SC_NOT_FOUND, "Unknown physical tenant: " + tenantId);
       return false;
     }

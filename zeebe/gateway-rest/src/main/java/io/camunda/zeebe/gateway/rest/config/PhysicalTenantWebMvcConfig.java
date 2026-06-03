@@ -7,12 +7,12 @@
  */
 package io.camunda.zeebe.gateway.rest.config;
 
-import io.camunda.zeebe.gateway.rest.context.PhysicalTenantContext;
+import io.camunda.gateway.mapping.http.physicaltenants.PhysicalTenantContext;
 import io.camunda.zeebe.gateway.rest.interceptor.PhysicalTenantInterceptor;
 import io.camunda.zeebe.gateway.rest.mapper.PhysicalTenantRequestMappingHandlerMapping;
 import io.camunda.zeebe.gateway.rest.resolver.PhysicalTenantIdArgumentResolver;
-import io.camunda.zeebe.gateway.rest.util.PhysicalTenantRegistry;
 import java.util.List;
+import java.util.Set;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.webmvc.autoconfigure.WebMvcRegistrations;
 import org.springframework.context.annotation.Bean;
@@ -35,11 +35,13 @@ public class PhysicalTenantWebMvcConfig implements WebMvcConfigurer {
 
   private final PhysicalTenantInterceptor interceptor;
 
-  public PhysicalTenantWebMvcConfig(final ObjectProvider<PhysicalTenantRegistry> registryProvider) {
-    final PhysicalTenantRegistry registry =
-        registryProvider.getIfAvailable(
-            () -> PhysicalTenantContext.DEFAULT_PHYSICAL_TENANT_ID::equals);
-    interceptor = new PhysicalTenantInterceptor(registry);
+  public PhysicalTenantWebMvcConfig(
+      final ObjectProvider<PhysicalTenantInterceptor> interceptorProvider) {
+    interceptor =
+        interceptorProvider.getIfAvailable(
+            () ->
+                new PhysicalTenantInterceptor(
+                    Set.of(PhysicalTenantContext.DEFAULT_PHYSICAL_TENANT_ID)::contains));
   }
 
   @Bean

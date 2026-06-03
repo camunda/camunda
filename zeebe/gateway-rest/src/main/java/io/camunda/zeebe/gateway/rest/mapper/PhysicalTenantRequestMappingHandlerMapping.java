@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.gateway.rest.mapper;
 
+import io.camunda.gateway.mapping.http.physicaltenants.PhysicalTenantContext;
 import io.camunda.zeebe.gateway.rest.annotation.ClusterScoped;
-import io.camunda.zeebe.gateway.rest.context.PhysicalTenantContext;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import io.camunda.zeebe.gateway.rest.interceptor.PhysicalTenantInterceptor;
 import io.camunda.zeebe.util.VisibleForTesting;

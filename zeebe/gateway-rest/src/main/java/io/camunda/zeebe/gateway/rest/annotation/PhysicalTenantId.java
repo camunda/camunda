@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.annotation;
 
-import io.camunda.zeebe.gateway.rest.context.PhysicalTenantContext;
+import io.camunda.gateway.mapping.http.physicaltenants.PhysicalTenantContext;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
