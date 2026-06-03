@@ -25,9 +25,9 @@ import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.process.test.api.coverage.model.CoverageReport;
 import io.camunda.process.test.impl.coverage.ProcessCoverage;
 import io.camunda.process.test.impl.coverage.data.CoverageTestData;
-import io.camunda.process.test.impl.coverage.results.ImmutableCoverageDecisionInstanceData;
-import io.camunda.process.test.impl.coverage.results.ImmutableCoverageProcessInstanceData;
-import io.camunda.process.test.impl.coverage.results.ImmutableCoverageTestData;
+import io.camunda.process.test.impl.coverage.data.ImmutableCoverageDecisionInstanceData;
+import io.camunda.process.test.impl.coverage.data.ImmutableCoverageProcessInstanceData;
+import io.camunda.process.test.impl.coverage.data.ImmutableCoverageTestData;
 import org.junit.jupiter.api.Test;
 
 class ProcessCoverageBuilderTest {
@@ -45,11 +45,11 @@ class ProcessCoverageBuilderTest {
 
     final CoverageTestData testResults =
         ImmutableCoverageTestData.builder()
-            .addProcessInstanceResults(
+            .addProcessInstanceData(
                 ImmutableCoverageProcessInstanceData.builder()
                     .processInstance(processInstance)
                     .build())
-            .addDecisionInstanceResults(
+            .addDecisionInstanceData(
                 ImmutableCoverageDecisionInstanceData.builder()
                     .decisionInstance(decisionInstance)
                     .build())
