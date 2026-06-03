@@ -29,9 +29,9 @@ import io.camunda.zeebe.util.error.FatalErrorHandler;
 import java.lang.Thread.UncaughtExceptionHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
 
 /**
  * Host-side wiring for persistent web sessions. The session lifecycle beans (repository, mapper,
@@ -47,7 +47,7 @@ import org.springframework.context.annotation.Import;
 @Configuration
 @ConditionalOnRestGatewayEnabled
 @ConditionalOnPersistentWebSessionEnabled
-@Import(WebSessionConfiguration.class)
+@ImportAutoConfiguration(WebSessionConfiguration.class)
 public class WebSessionRepositoryConfiguration {
 
   private static final Logger WEB_SESSION_DELETION_LOGGER =
