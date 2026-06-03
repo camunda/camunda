@@ -19,7 +19,6 @@ import java.util.Objects;
 import java.util.Set;
 
 public record UserFilter(
-    Long key,
     List<Operation<String>> usernameOperations,
     List<Operation<String>> nameOperations,
     List<Operation<String>> emailOperations,
@@ -30,7 +29,6 @@ public record UserFilter(
 
   public Builder toBuilder() {
     return new Builder()
-        .key(key)
         .usernameOperations(usernameOperations)
         .nameOperations(nameOperations)
         .emailOperations(emailOperations)
@@ -40,18 +38,12 @@ public record UserFilter(
   }
 
   public static final class Builder implements ObjectBuilder<UserFilter> {
-    private Long key;
     private List<Operation<String>> usernameOperations;
     private List<Operation<String>> nameOperations;
     private List<Operation<String>> emailOperations;
     private String tenantId;
     private String groupId;
     private String roleId;
-
-    public Builder key(final Long value) {
-      key = value;
-      return this;
-    }
 
     public Builder usernameOperations(final List<Operation<String>> operations) {
       usernameOperations = addValuesToList(usernameOperations, operations);
@@ -128,7 +120,6 @@ public record UserFilter(
     @Override
     public UserFilter build() {
       return new UserFilter(
-          key,
           Objects.requireNonNullElse(usernameOperations, Collections.emptyList()),
           nameOperations,
           emailOperations,
