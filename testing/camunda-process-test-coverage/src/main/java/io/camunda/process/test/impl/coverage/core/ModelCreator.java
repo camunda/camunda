@@ -16,8 +16,8 @@
 package io.camunda.process.test.impl.coverage.core;
 
 import io.camunda.client.api.search.response.ProcessDefinition;
-import io.camunda.process.test.api.coverage.model.ImmutableModel;
-import io.camunda.process.test.api.coverage.model.Model;
+import io.camunda.process.test.api.coverage.model.ImmutableProcessModel;
+import io.camunda.process.test.api.coverage.model.ProcessModel;
 import io.camunda.process.test.impl.coverage.data.CoverageProcessDefinitionData;
 import io.camunda.process.test.impl.coverage.data.CoverageTestData;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -51,7 +51,7 @@ public class ModelCreator {
    * @return A Model object containing process structure information and element counts
    * @throws IllegalArgumentException if the model cannot be read from the process definition
    */
-  public static Model createModel(
+  public static ProcessModel createModel(
       final CoverageTestData testResults, final String processDefinitionId) {
 
     final CoverageProcessDefinitionData processDefinitionData =
@@ -85,7 +85,7 @@ public class ModelCreator {
             .filter(s -> definitionFlowNodes.contains(s.getSource()))
             .collect(Collectors.toSet());
 
-    return ImmutableModel.builder()
+    return ImmutableProcessModel.builder()
         .processDefinitionId(processDefinition.getProcessDefinitionId())
         .totalElementCount(definitionFlowNodes.size() + definitionSequenceFlows.size())
         .version(String.valueOf(processDefinition.getVersion()))
