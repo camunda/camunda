@@ -20,7 +20,7 @@ dependencies {
     implementation(project(":camunda-client-java"))
 
     testImplementation(project(":zeebe-bpmn-model"))
-    testImplementation(project(":camunda-spring-boot-starter"))
+    testCompileOnly(project(":camunda-spring-boot-starter"))
     testImplementation(project(":camunda-process-test-langchain4j"))
     testImplementation(libs.org.awaitility.awaitility)
     testImplementation(libs.org.mockito.mockito.core)

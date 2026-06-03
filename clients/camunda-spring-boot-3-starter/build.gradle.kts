@@ -90,18 +90,30 @@ tasks.named<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar>("shadowJ
     dependencies {
         include(project(":camunda-spring-boot-starter"))
     }
-    exclude(
-        "io/camunda/client/spring/actuator/CamundaClientHealthIndicator.class",
-        "io/camunda/client/spring/configuration/CamundaActuatorConfiguration.class",
-        "io/camunda/client/spring/configuration/CamundaAutoConfiguration.class",
-        "io/camunda/client/spring/configuration/CamundaClientAllAutoConfiguration.class",
-        "META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports",
-    )
+    // SB4-specific classes that reference spring-boot-health (SB4 only) are overridden by the
+    // SB3 starter's own source files, which have the same FQN but extend SB3 actuator types.
+    // Shadow plugin processes project classes first; shaded-dep duplicates are excluded by default.
+    // Do NOT add top-level exclude() for these class paths — that would also remove the project's
+    // own SB3 versions that have the same path.
     mergeServiceFiles()
+    // Merge AutoConfiguration.imports so SB3's registration survives; Spring Boot deduplicates
+    // the same entry if it also appears in the SB4 starter's jar on the classpath.
+    mergeServiceFiles("META-INF/spring")
 }
 
 tasks.named<Jar>("jar") {
     enabled = false
+}
+
+// Use the shadow jar as the runtime artifact for inter-project dependencies.
+// The shadow jar shades and excludes SB4-specific classes (CamundaActuatorConfiguration,
+// CamundaClientHealthIndicator) that reference spring-boot-health (SB4 only) — preventing
+// classpath conflicts when consumers force Spring Boot to 3.5.x.
+configurations {
+    named("runtimeElements") {
+        outgoing.artifacts.clear()
+        outgoing.artifact(tasks.named("shadowJar"))
+    }
 }
 
 (publishing.publications["maven"] as MavenPublication).artifact(tasks.named("shadowJar"))
