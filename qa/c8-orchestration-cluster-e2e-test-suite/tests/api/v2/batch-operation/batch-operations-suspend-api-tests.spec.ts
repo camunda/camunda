@@ -65,12 +65,15 @@ test.describe('Suspend & Resume Batch Operation Tests', () => {
   }) => {
     const key =
       await test.step('Create cancelable batch operation', async () => {
-        // Use 20 instances so the batch stays ACTIVE long enough for the
-        // suspend command to take effect before the engine finishes it. With
-        // only 3 instances the batch can reach COMPLETED before the suspend is
-        // applied, so the poll for SUSPENDED never succeeds (same race the
-        // first suspend test guards against — not an indexing lag).
-        return createCancellationBatch(request, 20, 'batch_suspension_process');
+        // Use 30 instances so the batch stays ACTIVE long enough for the
+        // suspend command to take effect before the engine finishes it.
+        // With 20 instances, the engine (warmed up by the preceding test in
+        // this serial describe) can finish cancelling every instance before
+        // the first suspend arrives, leaving the batch COMPLETED so suspend
+        // is permanently rejected with NOT_FOUND (404). 30 matches the proven
+        // cancel-active test's ACTIVE window for the same race — not an
+        // indexing lag.
+        return createCancellationBatch(request, 30, 'batch_suspension_process');
       });
 
     await test.step('Suspend batch operation once', async () => {
