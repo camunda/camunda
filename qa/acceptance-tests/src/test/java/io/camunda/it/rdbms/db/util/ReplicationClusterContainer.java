@@ -14,7 +14,7 @@ package io.camunda.it.rdbms.db.util;
  * implement this interface so that {@link CamundaRdbmsTestApplication} and the async-replication
  * test base class can treat them uniformly.
  */
-public interface ReplicationClusterContainer {
+public interface ReplicationClusterContainer extends AutoCloseable {
 
   /** Starts the cluster (primary + replica). */
   void start();

@@ -27,9 +27,8 @@ public final class ReplicationLogStatusProviderFactory {
 
   public ReplicationLogStatusProvider create() {
     return switch (vendorDatabaseProperties.databaseId()) {
-      case POSTGRESQL_DATABASE_ID ->
-          new PostgresReplicationLogStatusProvider(replicationStatusMapper);
-      case MSSQL_DATABASE_ID -> new MssqlReplicationLogStatusProvider(replicationStatusMapper);
+      case POSTGRESQL_DATABASE_ID, MSSQL_DATABASE_ID ->
+          new DefaultReplicationLogStatusProvider(replicationStatusMapper);
       case null ->
           throw new IllegalArgumentException(
               "Cannot create ReplicationLogStatusProvider for null database id");

@@ -92,6 +92,22 @@ public final class PostgresReplicationClusterContainer
     }
   }
 
+  @Override
+  public String getJdbcUrl() {
+    return "jdbc:postgresql://%s:%d/%s".formatted(getHost(), getMappedPort(5432), DATABASE_NAME);
+  }
+
+  @Override
+  public String getUsername() {
+    return USERNAME;
+  }
+
+  @Override
+  public String getPassword() {
+    return PASSWORD;
+  }
+
+  @Override
   public void stopReplica() {
     if (!replicaStopped) {
       LOG.info("Stopping PostgreSQL replica");
@@ -101,23 +117,12 @@ public final class PostgresReplicationClusterContainer
     }
   }
 
+  @Override
   public void startReplica() {
     LOG.info("Starting PostgreSQL replica");
     replicaStopped = false;
     replica.start();
     waitForReplication();
-  }
-
-  public String getJdbcUrl() {
-    return "jdbc:postgresql://%s:%d/%s".formatted(getHost(), getMappedPort(5432), DATABASE_NAME);
-  }
-
-  public String getUsername() {
-    return USERNAME;
-  }
-
-  public String getPassword() {
-    return PASSWORD;
   }
 
   private void waitForReplication() {

@@ -31,7 +31,7 @@ class ReplicationLogStatusProviderFactoryTest {
     final var provider = factory.create();
 
     // then
-    assertThat(provider).isInstanceOf(PostgresReplicationLogStatusProvider.class);
+    assertThat(provider).isInstanceOf(DefaultReplicationLogStatusProvider.class);
   }
 
   @Test
@@ -47,7 +47,7 @@ class ReplicationLogStatusProviderFactoryTest {
     final var provider = factory.create();
 
     // then
-    assertThat(provider).isInstanceOf(MssqlReplicationLogStatusProvider.class);
+    assertThat(provider).isInstanceOf(DefaultReplicationLogStatusProvider.class);
   }
 
   @Test

@@ -72,7 +72,7 @@ public final class MSSQLReplicationClusterContainer
     implements ReplicationClusterContainer {
 
   private static final DockerImageName MSSQL_IMAGE =
-      DockerImageName.parse("mcr.microsoft.com/mssql/server").withTag("2022-latest");
+      DockerImageName.parse("mcr.microsoft.com/mssql/server").withTag("2025-CU5-ubuntu-22.04");
   private static final String DATABASE_NAME = "camunda";
   private static final String SA_USER = "sa";
   private static final String SA_PASSWORD = "Strong_Pass123!";

@@ -24,10 +24,9 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
-import org.agrona.CloseHelper;
 import org.assertj.core.data.Offset;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestInstance;
@@ -40,10 +39,10 @@ abstract class AbstractAsyncReplicationIT {
   protected static final Duration MAX_LAG = Duration.ofSeconds(3);
 
   /** The replication cluster; created by {@link #createCluster()} in {@link #beforeAll()}. */
-  protected ReplicationClusterContainer cluster;
+  protected @AutoClose ReplicationClusterContainer cluster;
 
-  protected TestCamundaApplication testInstance;
-  protected CamundaClient camundaClient;
+  protected @AutoClose TestCamundaApplication testInstance;
+  protected @AutoClose CamundaClient camundaClient;
   protected MeterRegistry meterRegistry;
 
   /**
@@ -99,13 +98,6 @@ abstract class AbstractAsyncReplicationIT {
     waitForProcessesToBeDeployed(camundaClient, 1);
 
     exporterAcknowledgedAll();
-  }
-
-  @AfterAll
-  void afterAll() {
-    CloseHelper.quietClose(camundaClient);
-    CloseHelper.quietClose(testInstance);
-    cluster.stop();
   }
 
   protected void startProcessInstances(final int count) {
