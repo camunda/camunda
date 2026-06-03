@@ -28,19 +28,22 @@ public final class OrdinalInitializer implements StreamProcessorLifecycleAware {
       return;
     }
 
-    if (ordinalState.getActiveOrdinalKey() > 0) {
-      return;
-    }
-
     // TODO: @yohanfernando >> flesh out actual initialisation
-    final var record = new OrdinalRecord().setOrdinalKey(1);
-    context
-        .getScheduleService()
-        .runAtAsync(
-            0L,
-            (taskResultBuilder) -> {
-              taskResultBuilder.appendCommandRecord(OrdinalIntent.ACTIVATE, record);
-              return taskResultBuilder.build();
-            });
+    if (!ordinalState.isInitialized()) {
+      // TODO: @yohanfernando >> to support migration behaviour, add a flag to control if we
+      //  should initialize with `0` (to indicate everything is saved in main index, OR with
+      //  start ordinal of `1001`)
+
+      // ordinal allocation starts from 1001 (<=1000 are reserved ordinal keys)
+      final var record = new OrdinalRecord().setOrdinalKey(1001);
+      context
+          .getScheduleService()
+          .runAtAsync(
+              0L,
+              (taskResultBuilder) -> {
+                taskResultBuilder.appendCommandRecord(OrdinalIntent.ACTIVATE, record);
+                return taskResultBuilder.build();
+              });
+    }
   }
 }

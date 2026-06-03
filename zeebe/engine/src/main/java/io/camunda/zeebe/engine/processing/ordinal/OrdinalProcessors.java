@@ -19,6 +19,26 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 public final class OrdinalProcessors {
   private OrdinalProcessors() {}
 
+  /*
+    TODO: @yohanfernando >> Next immediate tasks
+    - Initialisation - rework?
+      - Should I send initialise command
+    - Implement intents
+    - Roll over
+      - strategy
+    - Actual data structure
+     - for the leader partition
+     - for other partitions
+     - got to think about keeping current and previous ones live
+    -
+
+    TODO: @yohanfernando >> Long term:
+    - ILM
+    - Multiple roll over strategies
+    - Report counts back
+    - record last closed PI date
+  */
+
   public static void addOrdinalProcessors(
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers,

@@ -9,5 +9,7 @@ package io.camunda.zeebe.engine.state.immutable;
 
 public interface OrdinalState {
 
+  boolean isInitialized();
+
   int getActiveOrdinalKey();
 }

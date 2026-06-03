@@ -31,11 +31,20 @@ public class DbOrdinalState implements MutableOrdinalState {
   }
 
   @Override
+  public boolean isInitialized() {
+    key.wrapString(ACTIVE_KEY);
+    final var activeOrdinalKey = columnFamily.get(key);
+    return activeOrdinalKey != null;
+  }
+
+  @Override
   public int getActiveOrdinalKey() {
     key.wrapString(ACTIVE_KEY);
     final var activeOrdinalKey = columnFamily.get(key);
     if (activeOrdinalKey == null) {
-      return 0;
+      // 0-1000 are reserved ordinal keys,
+      // using 101 as the default destination index when ordinals not initialized
+      return 101;
     }
     return activeOrdinalKey.getValue();
   }
