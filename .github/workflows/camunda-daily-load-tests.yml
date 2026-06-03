@@ -1,6 +1,11 @@
 # description: Runs a daily max-load stress test against main.
+#              After a 3-hour soak: snapshots metrics as a GitHub artifact,
+#              posts a side-by-side summary table to Slack, then immediately
+#              deletes both namespaces to reduce cost.
 #              Naming pattern: medic-daily-YYYY-MM-DD-<sha>
-# calls: camunda-load-test.yml (scenario: max)
+# calls: camunda-load-test.yml (scenario: max),
+#        camunda-load-test-metrics.yaml,
+#        camunda-delete-load-test.yml
 # type: CI
 # owner: @camunda/reliability-testing
 name: Daily Camunda Platform Load Tests
@@ -87,10 +92,132 @@ jobs:
       build-frontend: true
       load-test-load: --set global.preferRest.enabled=true
 
+  # Wait 3 hours to let both load tests reach a stable operating state before
+  # taking the metrics snapshot. Skipped if both setup jobs failed (no tests running).
+  soak:
+    name: Soak (3 hours)
+    runs-on: ubuntu-latest
+    needs: [ setup-max-load-test, setup-max-rest-load-test ]
+    if: needs.setup-max-load-test.result == 'success' || needs.setup-max-rest-load-test.result == 'success'
+    timeout-minutes: 195
+    permissions: { }
+    steps:
+      - name: Wait 3 hours for soak period
+        run: sleep 10800
+
+  # Gated on its own setup: if the gRPC setup failed, its namespace was never
+  # created, so skip metrics collection rather than query a missing namespace.
+  collect-metrics-grpc:
+    name: Collect metrics (gRPC)
+    needs: [ benchmark-data, setup-max-load-test, soak ]
+    if: needs.soak.result == 'success' && needs.setup-max-load-test.result == 'success'
+    uses: ./.github/workflows/camunda-load-test-metrics.yaml
+    secrets: inherit
+    with:
+      namespace: c8-${{ needs.benchmark-data.outputs.benchmark }}
+      duration-seconds: '10800'
+
+  collect-metrics-rest:
+    name: Collect metrics (REST)
+    needs: [ benchmark-data, setup-max-rest-load-test, soak ]
+    if: needs.soak.result == 'success' && needs.setup-max-rest-load-test.result == 'success'
+    uses: ./.github/workflows/camunda-load-test-metrics.yaml
+    secrets: inherit
+    with:
+      namespace: c8-${{ needs.benchmark-data.outputs.benchmark }}-rest
+      duration-seconds: '10800'
+
+  # Upload both metrics JSON files as a workflow artifact (90-day retention).
+  upload-metrics:
+    name: Upload metrics artifacts
+    runs-on: ubuntu-latest
+    needs: [ benchmark-data, collect-metrics-grpc, collect-metrics-rest ]
+    # Run if at least one side collected metrics; a skipped side just yields an empty file.
+    if: always() && (needs.collect-metrics-grpc.result == 'success' || needs.collect-metrics-rest.result == 'success')
+    timeout-minutes: 5
+    permissions: { }
+    steps:
+      - name: Write metrics JSON files
+        env:
+          GRPC_JSON: ${{ needs.collect-metrics-grpc.outputs.results-json }}
+          REST_JSON: ${{ needs.collect-metrics-rest.outputs.results-json }}
+        run: |
+          printf '%s' "$GRPC_JSON" > metrics-grpc.json
+          printf '%s' "$REST_JSON" > metrics-rest.json
+      - name: Upload metrics artifacts
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: daily-load-test-metrics-${{ needs.benchmark-data.outputs.benchmark }}
+          path: |
+            metrics-grpc.json
+            metrics-rest.json
+          retention-days: 90
+
+  # Post a side-by-side gRPC vs REST metrics table to Slack.
+  notify-results:
+    name: Notify Slack with results
+    runs-on: ubuntu-latest
+    needs: [ benchmark-data, collect-metrics-grpc, collect-metrics-rest ]
+    # Post if at least one side collected metrics; the skipped side renders as n/a.
+    if: always() && (needs.collect-metrics-grpc.result == 'success' || needs.collect-metrics-rest.result == 'success')
+    timeout-minutes: 5
+    permissions: { }
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Import Slack webhook from Vault
+        id: slack-secrets
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/camunda/ci/github-actions SLACK_ZEEBOT_RELIABILITY_TESTING_ALERTS_WEBHOOK_URL;
+      - name: Build and post Slack results table
+        # queries.yaml is the canonical source of metric names/labels/formats;
+        # the script reads it directly so the Slack table stays in sync.
+        env:
+          GRPC_RESULTS_JSON: ${{ needs.collect-metrics-grpc.outputs.results-json }}
+          REST_RESULTS_JSON: ${{ needs.collect-metrics-rest.outputs.results-json }}
+          BENCHMARK: ${{ needs.benchmark-data.outputs.benchmark }}
+          SLACK_WEBHOOK_URL: ${{ steps.slack-secrets.outputs.SLACK_ZEEBOT_RELIABILITY_TESTING_ALERTS_WEBHOOK_URL }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: python3 .github/scripts/post-load-test-results-to-slack.py
+
+  # Delete namespaces immediately after metrics are collected to reduce cluster cost.
+  # Runs regardless of whether metrics collection succeeded or was skipped, as long
+  # as we have a valid namespace name (benchmark-data succeeded).
+  cleanup-grpc:
+    name: Cleanup gRPC namespace
+    needs: [ benchmark-data, collect-metrics-grpc ]
+    if: always() && needs.benchmark-data.result == 'success'
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/camunda-delete-load-test.yml
+    secrets: inherit
+    with:
+      namespace: c8-${{ needs.benchmark-data.outputs.benchmark }}
+
+  cleanup-rest:
+    name: Cleanup REST namespace
+    needs: [ benchmark-data, collect-metrics-rest ]
+    if: always() && needs.benchmark-data.result == 'success'
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/camunda-delete-load-test.yml
+    secrets: inherit
+    with:
+      namespace: c8-${{ needs.benchmark-data.outputs.benchmark }}-rest
+
   notify:
     name: Notify on failure
     runs-on: ubuntu-latest
-    needs: [ setup-max-load-test, setup-max-rest-load-test ]
+    needs: [ setup-max-load-test, setup-max-rest-load-test, soak, collect-metrics-grpc, collect-metrics-rest, upload-metrics, notify-results ]
     if: failure()
     timeout-minutes: 5
     permissions: { }
