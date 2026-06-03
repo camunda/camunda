@@ -5,13 +5,10 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.test;
+package io.camunda.it.rollingupdate;
 
 import static io.camunda.application.commons.security.CamundaSecurityConfiguration.AUTHORIZATION_CHECKS_ENV_VAR;
 import static io.camunda.application.commons.security.CamundaSecurityConfiguration.UNPROTECTED_API_ENV_VAR;
-import static io.camunda.zeebe.test.ClusterHelper.createProcessInstance;
-import static io.camunda.zeebe.test.ClusterHelper.deployProcess;
-import static io.camunda.zeebe.test.ClusterHelper.newClient;
 import static io.camunda.zeebe.test.util.testcontainers.TestSearchContainers.CAMUNDA_DATABASE;
 import static io.camunda.zeebe.test.util.testcontainers.TestSearchContainers.CAMUNDA_PASSWORD;
 import static io.camunda.zeebe.test.util.testcontainers.TestSearchContainers.CAMUNDA_USER;
@@ -19,21 +16,30 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.container.ClusterHelper;
 import io.camunda.container.cluster.BrokerNode;
 import io.camunda.container.cluster.CamundaCluster;
 import io.camunda.container.cluster.GatewayNode;
 import io.camunda.container.volume.CamundaVolume;
+import io.camunda.it.schema.ExporterMigrationTestHelper;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
+import java.io.IOException;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.agrona.CloseHelper;
 import org.awaitility.Awaitility;
 import org.jspecify.annotations.NonNull;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -46,33 +52,36 @@ import org.testcontainers.containers.Network;
  * <p>The same scenario is parameterized across all supported secondary storage implementations
  * (RDBMS, Elasticsearch, and OpenSearch) to avoid duplicated test logic.
  */
-final class SecondaryStorageRollingUpdateTest {
+final class SecondaryStorageRollingUpdateIT {
 
-  private static List<Arguments> cachedVersionMatrix;
+  private static final BpmnModelInstance PROCESS =
+      Bpmn.createExecutableProcess("process")
+          .startEvent()
+          .serviceTask("task1", s -> s.zeebeJobType("firstTask"))
+          .serviceTask("task2", s -> s.zeebeJobType("secondTask"))
+          .endEvent()
+          .done();
 
   private static final List<StorageTestCase> STORAGE_TEST_CASES =
       List.of(
           StorageTestCase.rdbms(), StorageTestCase.elasticsearch(), StorageTestCase.opensearch());
 
-  static Stream<Arguments> versionAndStorageMatrix() {
-    if (cachedVersionMatrix == null) {
-      cachedVersionMatrix = VersionCompatibilityMatrix.auto().toList();
-    }
+  static Stream<Arguments> versionAndStorageMatrix() throws IOException, InterruptedException {
+    final var previousPatches = ExporterMigrationTestHelper.fetchAllPatchesFromPreviousMinor();
 
-    return cachedVersionMatrix.stream()
+    return previousPatches.stream()
         .flatMap(
-            versionArgs -> {
-              final var arguments = versionArgs.get();
-              final var from = arguments[0].toString();
-              final var to = arguments[1].toString();
-              return STORAGE_TEST_CASES.stream().map(storage -> Arguments.of(from, to, storage));
+            fromVersion -> {
+              return STORAGE_TEST_CASES.stream().map(storage -> Arguments.of(fromVersion, storage));
             });
   }
 
-  @ParameterizedTest(name = "storage={2}, from {0} to {1}", allowZeroInvocations = true)
+  @ParameterizedTest(name = "storage={1}, from {0} to CURRENT", allowZeroInvocations = true)
+  @Tag("dl-nightly")
   @MethodSource("versionAndStorageMatrix")
   void shouldPreserveProcessInstancesInSecondaryStorageDuringRollingUpdate(
-      final String from, final String to, final StorageTestCase storage) {
+      final String from, final StorageTestCase storage) {
+    final String to = "SNAPSHOT";
 
     final Network network = Network.newNetwork();
     final GenericContainer<?> storageContainer = storage.newContainer(network);
@@ -198,7 +207,7 @@ final class SecondaryStorageRollingUpdateTest {
       final List<String> initialContactPoints,
       final Collection<CamundaVolume> volumes,
       final StorageTestCase storage) {
-    ClusterHelper.configureBroker(broker, initialContactPoints, volumes);
+    io.camunda.container.ClusterHelper.configureBroker(broker, initialContactPoints, volumes);
     applySecondaryStorageEnv(broker, storage);
   }
 
@@ -220,6 +229,40 @@ final class SecondaryStorageRollingUpdateTest {
           "CAMUNDA_DATA_SECONDARYSTORAGE_%s_PASSWORD".formatted(type.toUpperCase()),
           storage.password());
     }
+  }
+
+  public static void deployProcess(final CamundaClient client) {
+    client
+        .newDeployResourceCommand()
+        .addProcessModel(PROCESS, "process.bpmn")
+        .send()
+        .join(10, TimeUnit.SECONDS);
+  }
+
+  public static CamundaClient newClient(final GatewayNode<?> gateway) {
+    return CamundaClient.newClientBuilder()
+        .preferRestOverGrpc(false)
+        .grpcAddress(gateway.getGrpcAddress())
+        .restAddress(gateway.getRestAddress())
+        .build();
+  }
+
+  public static long createProcessInstance(final CamundaClient client) {
+    return Awaitility.await("process instance creation")
+        .atMost(Duration.ofSeconds(60))
+        .pollInterval(Duration.ofMillis(100))
+        .ignoreExceptions()
+        .until(
+            () ->
+                client
+                    .newCreateInstanceCommand()
+                    .bpmnProcessId("process")
+                    .latestVersion()
+                    .variables(Map.of("foo", "bar"))
+                    .send()
+                    .join(),
+            Objects::nonNull)
+        .getProcessInstanceKey();
   }
 
   private record StorageTestCase(
