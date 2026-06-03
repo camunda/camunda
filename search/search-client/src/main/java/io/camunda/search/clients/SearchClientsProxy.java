@@ -38,6 +38,7 @@ public interface SearchClientsProxy
         ClusterVariableSearchClient,
         GlobalListenerSearchClient,
         DeployedResourceSearchClient,
+        WaitStateSearchClient,
         PhysicalTenantScoped<SearchClientsProxy> {
 
   @Override
