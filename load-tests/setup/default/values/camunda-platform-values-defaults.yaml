@@ -1,12 +1,12 @@
-# Values for Camunda Platform Chart.
+# Default load test values for Camunda Platform Chart.
 # https://github.com/camunda/camunda-platform-helm
 #
 # This file is used to override the default values of the chart.
 # The values are optimized for running the load tests with a Camunda cluster on GKE.
 #
 # This is a YAML-formatted file.
-# Per default we run with the Orchestration Cluster, Optimize, Connectors, Elasticsearch as secondary
-# storage and Identity Keycloak as identity provider with OIDC authentication, but you can easily
+# Per default we run with the Orchestration Cluster, Optimize, Connectors, and Identity 
+# Keycloak as identity provider with OIDC authentication, but you can easily
 # switch to other configurations by changing the values in this file or by overriding them via the
 # command line when installing the chart.
 
@@ -17,15 +17,7 @@ global:
   commonLabels:
     camunda.io/created-by: __AUTHOR__
     camunda.io/purpose: load-test
-  # Our default is ELASTICSEARCH
-  elasticsearch:
-    enabled: true
-    url:
-      # The Elasticsearch host value used to connect to Elasticsearch depends
-      # on the "elasticsearch.fullnameOverride" value.
-      # If you change the "elasticsearch.fullnameOverride" value, make sure to
-      # update this host value accordingly.
-      host: elastic
+
   # Disable global ingress
   ingress:
     enabled: false
@@ -283,8 +275,11 @@ zeebe:
     limits:
       cpu: 3000m
       memory: 4Gi
+
   nodeSelector:
+    component: benchmark-n2-standard-4
     topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
+
   tolerations:
     - key: nodepool
       operator: Equal
@@ -440,44 +435,3 @@ prometheusServiceMonitor:
   labels:
     release: monitoring
   scrapeInterval: 30s
-
-########################################################################################
-################################################### Elasticsearch cluster configuration
-########################################################################################
-elasticsearch:
-  enabled: true
-  imageTag: 8.9.2
-  # Override the default name for ConfigMap, Service, etc.
-  # Changing this value also changes the name of the Kubernetes Service used by
-  # the other components to connect to Elasticsearch, make sure to update
-  # the "global.elasticsearch.url.host" value accordingly.
-  fullnameOverride: elastic
-  master:
-    fullnameOverride: elastic
-    nameOverride: elastic
-    ## @param elasticsearch.master.replicaCount defines number of master-elegible replicas to deploy
-    replicaCount: 3
-    pdb:
-      minAvailable: 2
-    ## @param elasticsearch.master.heapSize
-    heapSize: 3g
-    persistence:
-      ## @param elasticsearch.master.persistence.size
-      size: 512Gi
-      storageClass: benchmark-ssd-zonal-v1
-      accessModes: ["ReadWriteOnce"]
-    resources:
-      requests:
-        cpu: 7000m
-        memory: 8Gi
-      limits:
-        cpu: 7000m
-        memory: 8Gi
-    nodeSelector:
-      component: benchmark-n2-standard-8
-      topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
-    tolerations:
-      - key: nodepool
-        operator: Equal
-        value: n2-standard-8
-        effect: NoSchedule

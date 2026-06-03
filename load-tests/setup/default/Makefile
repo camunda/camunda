@@ -49,16 +49,12 @@ _scenario_platform_flags  :=
 endif
 
 # Construct platform values files based on configuration
-platform_values := -f camunda-platform-values.yaml
+# Starting with the defaults, which are always applied and set common baseline configuration for all
+# set ups. The other values files are focused and only contain the necessary overrides for each storage type.
+platform_values := -f camunda-platform-values-defaults.yaml
 
 # Add secondary storage values
-ifeq ($(secondary_storage),postgresql)
-	platform_values += -f camunda-platform-values-rdbms.yaml
-else ifeq ($(secondary_storage),opensearch)
-	platform_values += -f camunda-platform-values-opensearch.yaml
-else ifeq ($(secondary_storage),none)
-	platform_values += -f camunda-platform-no-secondary-storage.yaml
-endif
+platform_values += -f camunda-platform-values-$(secondary_storage).yaml
 
 # Disable Optimize if not enabled
 ifneq ($(enable_optimize),true)
@@ -78,10 +74,10 @@ platform_values_stable := $(platform_values) -f values-stable.yaml
 all: install
 
 .PHONY: install
-install: check-deadline create-namespace create-credentials install-storage install-platform install-load-test install-elasticsearch-exporter install-optimize-cleanup
+install: check-deadline create-namespace create-credentials install-platform install-load-test install-elasticsearch-exporter install-optimize-cleanup
 
 .PHONY: install-stable
-install-stable: check-deadline create-namespace create-credentials install-storage install-platform-stable install-load-test install-elasticsearch-exporter install-optimize-cleanup
+install-stable: check-deadline create-namespace create-credentials install-platform-stable install-load-test install-elasticsearch-exporter install-optimize-cleanup
 
 # Fail fast if the namespace TTL deadline is today or in the past — the TTL
 # cleanup workflow will delete the namespace and undo the install. To extend,
@@ -115,19 +111,6 @@ create-credentials:
 	@echo "Applying camunda-credentials secret for namespace $(namespace)..."
 	kubectl apply -n $(namespace) -f resources/camunda-credentials.yaml
 
-# Install OpenSearch if secondary_storage is opensearch
-.PHONY: install-storage
-install-storage:
-ifeq ($(secondary_storage),opensearch)
-	@echo "Installing OpenSearch cluster for namespace $(namespace)..."
-	helm upgrade --install opensearch opensearch/opensearch \
-		--version "2.31.0" \
-		--namespace $(namespace) \
-		$(platform_values)
-else
-	@echo "Skipping secondary storage installation (secondary_storage=$(secondary_storage))"
-endif
-
 # Install Elasticsearch Prometheus exporter if secondary_storage is elasticsearch
 .PHONY: install-elasticsearch-exporter
 install-elasticsearch-exporter:
@@ -156,7 +139,6 @@ install-platform: setup-leader-balancer
 		--reset-then-reuse-values \
 		--render-subchart-notes \
 		$(platform_values) \
-		-f values-preemptible.yaml \
 		$(_scenario_platform_flags) \
 		$(additional_platform_configuration)
 
@@ -203,7 +185,6 @@ setup-leader-balancer:
 template:
 	helm template $(namespace) $(helm_chart_platform) \
 		$(platform_values) \
-		-f values-preemptible.yaml \
 		$(_scenario_platform_flags) \
 		$(additional_platform_configuration) \
 		--output-dir .
@@ -254,10 +235,5 @@ clean:
 	-kubectl delete -n $(namespace) pvc -l app.kubernetes.io/instance=$(namespace)
 	-kubectl delete -n $(namespace) pvc -l app=elasticsearch-master
 	-kubectl delete -n $(namespace) cronjob leader-balancer
-ifeq ($(secondary_storage),opensearch)
-	@echo "Cleaning up OpenSearch cluster for namespace $(namespace)..."
-	-helm --namespace $(namespace) uninstall opensearch
-	-kubectl delete -n $(namespace) pvc -l app.kubernetes.io/name=opensearch
-endif
 	@echo "Deleting namespace $(namespace) (async, no wait)..."
 	-kubectl delete -f resources/namespace.yaml --wait=false --ignore-not-found

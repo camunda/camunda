@@ -11,7 +11,7 @@ Usage: newLoadTest.sh <namespace> [secondaryStorage] [ttl_days] [enable_optimize
 
 Arguments:
   namespace          Base namespace name. Will be prefixed with "c8-" if missing.
-  secondaryStorage   Optional. One of: elasticsearch, opensearch, none. Default: elasticsearch.
+  secondaryStorage   Optional. One of: elasticsearch. Default: elasticsearch.
   ttl_days           Optional. Positive integer for namespace TTL in days. Default: 1.
   enable_optimize    Optional. true|false to enable Optimize. Default: true.
   enable_webapps     Optional. true|false to enable Operate and Tasklist. Default: true.
@@ -22,7 +22,7 @@ Options:
 
 Examples:
   ./newLoadTest.sh demo
-  ./newLoadTest.sh perf opensearch 3 true true
+  ./newLoadTest.sh perf elasticsearch 3 true true
 
 This script scaffolds the per-namespace folder including rendered Kubernetes
 manifests under resources/ (namespace + credentials). The cluster itself is
@@ -59,9 +59,9 @@ fi
 
 # Validate secondaryStorage value
 secondaryStorage="${2:-elasticsearch}"
-if [[ "$secondaryStorage" != "elasticsearch" && "$secondaryStorage" != "opensearch" && "$secondaryStorage" != "none" ]]; then
+if [[ "$secondaryStorage" != "elasticsearch" ]]; then
   echo "Error: Invalid secondary storage type '$secondaryStorage'"
-  echo "Allowed values are: elasticsearch, opensearch, postgresql, none"
+  echo "Allowed values are: elasticsearch"
   exit 1
 fi
 
@@ -155,9 +155,30 @@ IDENTITY_ADMIN_CLIENT_TOKEN=$(gen_token)
 IDENTITY_OPTIMIZE_CLIENT_TOKEN=$(gen_token)
 IDENTITY_ZEEBE_CLIENT_TOKEN=$(gen_token)
 
-# Copy default folder (incl. resources/) and the parent platform values files.
-cp -rv default/ "$namespace"
-cp -v ../*.yaml "$namespace/"
+# Scaffold the namespace folder with only the files this $secondaryStorage uses.
+# A namespace is bound to its storage at create time; to switch storage, create
+# a new namespace via ./newLoadTest.sh <new-name> <newStorage>.
+mkdir -p "$namespace"
+
+# Scaffold the always-copied files into the namespace folder root: the
+# Makefile, the resources/ manifests, four storage-agnostic values files
+# (defaults + override + load-test + stable), and the matching
+# camunda-platform-values-${secondaryStorage}.yaml. Flat layout so the
+# per-namespace Makefile's -f <file>.yaml references resolve unchanged.
+cp -v  default/Makefile                              "$namespace/"
+cp -rv default/resources/                            "$namespace/"
+cp -v  default/values/camunda-platform-override-values.yaml "$namespace/"
+cp -v  default/values/load-test-values.yaml                 "$namespace/"
+cp -v  default/values/values-stable.yaml                    "$namespace/"
+cp -v "default/values/camunda-platform-values-defaults.yaml" "$namespace/"
+cp -v "default/values/camunda-platform-values-${secondaryStorage}.yaml" "$namespace/"
+
+# Storage-specific copies. databases/ is created only for mssql/oracle.
+case "$secondaryStorage" in
+  elasticsearch)
+    cp -v default/values/prometheus-elasticsearch-exporter-values.yaml "$namespace/"
+    ;;
+esac
 
 cd "$namespace"
 
@@ -172,8 +193,9 @@ sed_inplace "s/__ENABLE_WEBAPPS__/$enable_webapps/" Makefile
 # Values shared with the chart (NAMESPACE, AVAILABILITY_ZONE, AUTHOR) flow into
 # the upstream yaml files via the same sed pass.
 sed_inplace "s/__NAMESPACE__/$namespace/"                       load-test-values.yaml resources/*.yaml
-sed_inplace "s/__AVAILABILITY_ZONE__/$availability_zone/"        *.yaml resources/namespace.yaml
-sed_inplace "s/__AUTHOR__/$git_author/"                          *.yaml resources/namespace.yaml
+sed_targets=(*.yaml resources/namespace.yaml)
+sed_inplace "s/__AVAILABILITY_ZONE__/$availability_zone/" "${sed_targets[@]}"
+sed_inplace "s/__AUTHOR__/$git_author/"                   "${sed_targets[@]}"
 sed_inplace "s/__DEADLINE_DATE__/$deadline_date/"                resources/namespace.yaml
 
 # When single-zone is disabled the topology annotation has no useful value;
@@ -208,7 +230,6 @@ sed_inplace "s|__IDENTITY_ZEEBE_CLIENT_TOKEN__|$IDENTITY_ZEEBE_CLIENT_TOKEN|"   
 # Add/update helm repositories
 helm repo add camunda https://helm.camunda.io/ --force-update
 helm repo add camunda-load-tests https://camunda.github.io/camunda-load-tests-helm/ --force-update
-helm repo add opensearch https://opensearch-project.github.io/helm-charts/ --force-update
 helm repo update
 
 # Clone Camunda Platform Helm so we can run the latest chart
