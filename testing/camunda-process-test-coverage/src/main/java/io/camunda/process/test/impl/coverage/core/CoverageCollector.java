@@ -20,8 +20,8 @@ import io.camunda.process.test.api.coverage.model.DecisionCoverage;
 import io.camunda.process.test.api.coverage.model.DecisionModel;
 import io.camunda.process.test.api.coverage.model.ImmutableRun;
 import io.camunda.process.test.api.coverage.model.ImmutableSuite;
-import io.camunda.process.test.api.coverage.model.Model;
 import io.camunda.process.test.api.coverage.model.ProcessCoverage;
+import io.camunda.process.test.api.coverage.model.ProcessModel;
 import io.camunda.process.test.api.coverage.model.Run;
 import io.camunda.process.test.api.coverage.model.Suite;
 import io.camunda.process.test.impl.coverage.data.CoverageDecisionInstanceData;
@@ -51,7 +51,7 @@ public final class CoverageCollector {
   private final List<String> excludedDecisionDefinitionIds;
   private final String suiteId;
   private final String suiteName;
-  private final Map<String, Model> models = new HashMap<>();
+  private final Map<String, ProcessModel> models = new HashMap<>();
   private final Map<String, DecisionModel> decisionModels = new HashMap<>();
   private final List<Run> runs = new ArrayList<>();
 
@@ -152,7 +152,7 @@ public final class CoverageCollector {
    *
    * @return Collection of process models
    */
-  public Collection<Model> getModels() {
+  public Collection<ProcessModel> getModels() {
     return models.values();
   }
 

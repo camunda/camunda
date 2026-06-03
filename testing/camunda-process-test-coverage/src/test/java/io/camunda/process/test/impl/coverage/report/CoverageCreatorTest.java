@@ -29,8 +29,8 @@ import io.camunda.client.api.search.response.ProcessInstanceSequenceFlow;
 import io.camunda.process.test.api.coverage.model.DecisionCoverage;
 import io.camunda.process.test.api.coverage.model.DecisionModel;
 import io.camunda.process.test.api.coverage.model.ImmutableDecisionModel;
-import io.camunda.process.test.api.coverage.model.ImmutableModel;
-import io.camunda.process.test.api.coverage.model.Model;
+import io.camunda.process.test.api.coverage.model.ImmutableProcessModel;
+import io.camunda.process.test.api.coverage.model.ProcessModel;
 import io.camunda.process.test.impl.coverage.core.CoverageCreator;
 import io.camunda.process.test.impl.coverage.core.DecisionCoverageCreator;
 import io.camunda.process.test.impl.coverage.data.ImmutableCoverageDecisionInstanceData;
@@ -47,8 +47,8 @@ class CoverageCreatorTest {
     final ProcessInstance processInstance = mock(ProcessInstance.class);
     final ElementInstance elementInstance = mock(ElementInstance.class);
     final ProcessInstanceSequenceFlow flow = mock(ProcessInstanceSequenceFlow.class);
-    final Model model =
-        ImmutableModel.builder()
+    final ProcessModel processModel =
+        ImmutableProcessModel.builder()
             .processDefinitionId("process")
             .totalElementCount(2)
             .version("1")
@@ -75,7 +75,7 @@ class CoverageCreatorTest {
             .build();
 
     // when
-    final var coverage = CoverageCreator.createCoverage(processInstanceResult, model);
+    final var coverage = CoverageCreator.createCoverage(processInstanceResult, processModel);
 
     // then
     assertThat(coverage.getProcessDefinitionId()).isEqualTo("process");

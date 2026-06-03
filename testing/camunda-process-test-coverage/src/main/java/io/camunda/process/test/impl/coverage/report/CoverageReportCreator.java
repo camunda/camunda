@@ -21,8 +21,8 @@ import io.camunda.process.test.api.coverage.model.DecisionCoverage;
 import io.camunda.process.test.api.coverage.model.DecisionModel;
 import io.camunda.process.test.api.coverage.model.ImmutableCoverageReport;
 import io.camunda.process.test.api.coverage.model.ImmutableCoverageSuiteReport;
-import io.camunda.process.test.api.coverage.model.Model;
 import io.camunda.process.test.api.coverage.model.ProcessCoverage;
+import io.camunda.process.test.api.coverage.model.ProcessModel;
 import io.camunda.process.test.api.coverage.model.Suite;
 import io.camunda.process.test.impl.coverage.core.CoverageCreator;
 import io.camunda.process.test.impl.coverage.core.DecisionCoverageCreator;
@@ -35,11 +35,11 @@ import java.util.stream.Collectors;
 public class CoverageReportCreator {
   public static CoverageSuiteReport createSuiteCoverageReport(
       final Suite suite,
-      final Collection<Model> models,
+      final Collection<ProcessModel> processModels,
       final Collection<DecisionModel> decisionModels) {
     final java.util.List<ProcessCoverage> processCoverages =
         CoverageCreator.aggregateCoverages(
-            allProcessCoverages(Collections.singletonList(suite)), models);
+            allProcessCoverages(Collections.singletonList(suite)), processModels);
     final java.util.List<DecisionCoverage> decisionCoverages =
         DecisionCoverageCreator.aggregateCoverages(
             allDecisionCoverages(Collections.singletonList(suite)), decisionModels);
@@ -54,19 +54,21 @@ public class CoverageReportCreator {
 
   public static CoverageReport createAggregatedCoverageReport(
       final Collection<Suite> suites,
-      final Collection<Model> models,
+      final Collection<ProcessModel> processModels,
       final Collection<DecisionModel> decisionModels) {
     final java.util.List<CoverageSuiteReport> suiteReports =
         suites.stream()
-            .map(suite -> createSuiteCoverageReport(suite, models, decisionModels))
+            .map(suite -> createSuiteCoverageReport(suite, processModels, decisionModels))
             .collect(Collectors.toList());
     final java.util.List<ProcessCoverage> processCoverages =
-        CoverageCreator.aggregateCoverages(allProcessCoverages(suites), models);
+        CoverageCreator.aggregateCoverages(allProcessCoverages(suites), processModels);
     final java.util.List<DecisionCoverage> decisionCoverages =
         DecisionCoverageCreator.aggregateCoverages(allDecisionCoverages(suites), decisionModels);
     final Map<String, String> definitions =
-        models.stream()
-            .collect(Collectors.toMap(Model::getProcessDefinitionId, Model::xml, (a, b) -> a));
+        processModels.stream()
+            .collect(
+                Collectors.toMap(
+                    ProcessModel::getProcessDefinitionId, ProcessModel::xml, (a, b) -> a));
     final Map<String, String> decisionDefinitions =
         decisionModels.stream()
             .collect(
@@ -74,7 +76,7 @@ public class CoverageReportCreator {
                     DecisionModel::getDecisionDefinitionId, DecisionModel::xml, (a, b) -> a));
     return ImmutableCoverageReport.builder()
         .addAllSuites(suiteReports)
-        .addAllModels(models)
+        .addAllModels(processModels)
         .addAllDecisionModels(decisionModels)
         .addAllProcessCoverages(processCoverages)
         .addAllDecisionCoverages(decisionCoverages)

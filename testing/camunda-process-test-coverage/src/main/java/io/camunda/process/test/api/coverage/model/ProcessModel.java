@@ -19,8 +19,8 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
 
 @Value.Immutable
-@JsonDeserialize(builder = ImmutableModel.Builder.class)
-public interface Model {
+@JsonDeserialize(builder = ImmutableProcessModel.Builder.class)
+public interface ProcessModel {
   String getProcessDefinitionId();
 
   int getTotalElementCount();

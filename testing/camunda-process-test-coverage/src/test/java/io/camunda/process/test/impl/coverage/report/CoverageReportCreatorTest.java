@@ -21,11 +21,11 @@ import io.camunda.process.test.api.coverage.model.CoverageReport;
 import io.camunda.process.test.api.coverage.model.DecisionModel;
 import io.camunda.process.test.api.coverage.model.ImmutableDecisionCoverage;
 import io.camunda.process.test.api.coverage.model.ImmutableDecisionModel;
-import io.camunda.process.test.api.coverage.model.ImmutableModel;
 import io.camunda.process.test.api.coverage.model.ImmutableProcessCoverage;
+import io.camunda.process.test.api.coverage.model.ImmutableProcessModel;
 import io.camunda.process.test.api.coverage.model.ImmutableRun;
 import io.camunda.process.test.api.coverage.model.ImmutableSuite;
-import io.camunda.process.test.api.coverage.model.Model;
+import io.camunda.process.test.api.coverage.model.ProcessModel;
 import io.camunda.process.test.api.coverage.model.Suite;
 import java.util.Collections;
 import org.junit.jupiter.api.Test;
@@ -35,8 +35,8 @@ class CoverageReportCreatorTest {
   @Test
   void shouldCreateAggregatedCoverageReportWithDefinitions() {
     // given
-    final Model model =
-        ImmutableModel.builder()
+    final ProcessModel processModel =
+        ImmutableProcessModel.builder()
             .processDefinitionId("process")
             .totalElementCount(2)
             .version("1")
@@ -77,7 +77,7 @@ class CoverageReportCreatorTest {
     final CoverageReport report =
         CoverageReportCreator.createAggregatedCoverageReport(
             Collections.singletonList(suite),
-            Collections.singletonList(model),
+            Collections.singletonList(processModel),
             Collections.singletonList(decisionModel));
 
     // then

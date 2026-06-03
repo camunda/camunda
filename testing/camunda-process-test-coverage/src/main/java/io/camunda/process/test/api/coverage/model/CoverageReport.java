@@ -23,9 +23,10 @@ import org.immutables.value.Value;
 @Value.Immutable
 @JsonDeserialize(builder = ImmutableCoverageReport.Builder.class)
 public interface CoverageReport {
+
   List<CoverageSuiteReport> getSuites();
 
-  List<Model> getModels();
+  List<ProcessModel> getProcessModels();
 
   List<DecisionModel> getDecisionModels();
 

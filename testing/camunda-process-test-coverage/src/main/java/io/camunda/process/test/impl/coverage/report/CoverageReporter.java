@@ -20,8 +20,8 @@ import static java.util.Optional.ofNullable;
 import io.camunda.process.test.api.coverage.model.CoverageReport;
 import io.camunda.process.test.api.coverage.model.DecisionCoverage;
 import io.camunda.process.test.api.coverage.model.DecisionModel;
-import io.camunda.process.test.api.coverage.model.Model;
 import io.camunda.process.test.api.coverage.model.ProcessCoverage;
+import io.camunda.process.test.api.coverage.model.ProcessModel;
 import io.camunda.process.test.api.coverage.model.Suite;
 import io.camunda.process.test.impl.coverage.core.CoverageCollector;
 import io.camunda.process.test.impl.coverage.core.CoverageCreator;
@@ -91,7 +91,7 @@ public class CoverageReporter {
         CoverageCollector.collectors().stream()
             .map(CoverageCollector::getSuite)
             .collect(Collectors.toList());
-    final Collection<Model> models =
+    final Collection<ProcessModel> processModels =
         CoverageCollector.collectors().stream()
             .flatMap(c -> c.getModels().stream())
             .distinct()
@@ -108,7 +108,7 @@ public class CoverageReporter {
             coverageCollector.getModels(),
             coverageCollector.getDecisionModels());
     final CoverageReport aggregatedReport =
-        CoverageReportCreator.createAggregatedCoverageReport(suites, models, decisionModels);
+        CoverageReportCreator.createAggregatedCoverageReport(suites, processModels, decisionModels);
 
     writeJsonReport(coverageCollector.getSuite().getId(), suiteReport);
     writeJsonReport(aggregatedReport);

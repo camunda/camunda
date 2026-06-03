@@ -20,8 +20,8 @@ import io.camunda.client.api.search.enums.ElementInstanceType;
 import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.ProcessInstanceSequenceFlow;
 import io.camunda.process.test.api.coverage.model.ImmutableProcessCoverage;
-import io.camunda.process.test.api.coverage.model.Model;
 import io.camunda.process.test.api.coverage.model.ProcessCoverage;
+import io.camunda.process.test.api.coverage.model.ProcessModel;
 import io.camunda.process.test.impl.coverage.data.CoverageProcessInstanceData;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -54,11 +54,11 @@ public class CoverageCreator {
    * overall coverage percentage based on the model definition.
    *
    * @param processInstanceData The process instance to analyze
-   * @param model The process model containing definition information
+   * @param processModel The process model containing definition information
    * @return A ProcessCoverage object containing the coverage details for the process instance
    */
   public static ProcessCoverage createCoverage(
-      final CoverageProcessInstanceData processInstanceData, final Model model) {
+      final CoverageProcessInstanceData processInstanceData, final ProcessModel processModel) {
 
     final List<ElementInstance> completedElementInstances =
         processInstanceData.getElementInstances().stream()
@@ -81,13 +81,14 @@ public class CoverageCreator {
     // for event based gateways we need to find out how the flow continues to get the correct
     // sequence flow and add that as an event, as sequence flows after an event based gateway are
     // not reflected in the records
-    enhanceSequenceFlowsByEventBasedGateway(takenSequenceFlowIds, completedElementInstances, model);
+    enhanceSequenceFlowsByEventBasedGateway(
+        takenSequenceFlowIds, completedElementInstances, processModel);
 
     return ImmutableProcessCoverage.builder()
         .processDefinitionId(processInstanceData.getProcessInstance().getProcessDefinitionId())
         .addAllCompletedElements(completedElementIds)
         .addAllTakenSequenceFlows(takenSequenceFlowIds)
-        .coverage(calculateCoverage(completedElementIds, takenSequenceFlowIds, model))
+        .coverage(calculateCoverage(completedElementIds, takenSequenceFlowIds, processModel))
         .build();
   }
 
@@ -98,11 +99,11 @@ public class CoverageCreator {
    * elements and sequence flows are counted only once in the aggregated result.
    *
    * @param coverages Collection of individual coverage reports to aggregate
-   * @param models Collection of process models for coverage calculation
+   * @param processModels Collection of process models for coverage calculation
    * @return List of aggregated ProcessCoverage objects, one per process definition
    */
   public static List<ProcessCoverage> aggregateCoverages(
-      final Collection<ProcessCoverage> coverages, final Collection<Model> models) {
+      final Collection<ProcessCoverage> coverages, final Collection<ProcessModel> processModels) {
     final Map<String, List<ProcessCoverage>> coveragesByProcessDefinition =
         coverages.stream().collect(Collectors.groupingBy(ProcessCoverage::getProcessDefinitionId));
     final List<ProcessCoverage> aggregatedCoverages = new ArrayList<>();
@@ -118,8 +119,8 @@ public class CoverageCreator {
                   .flatMap(c -> c.getTakenSequenceFlows().stream())
                   .distinct()
                   .collect(Collectors.toList());
-          final Model model =
-              models.stream()
+          final ProcessModel processModel =
+              processModels.stream()
                   .filter(m -> m.getProcessDefinitionId().equals(processDefinitionId))
                   .findFirst()
                   .orElseThrow(
@@ -131,7 +132,7 @@ public class CoverageCreator {
                   .processDefinitionId(processDefinitionId)
                   .addAllCompletedElements(completedElements)
                   .addAllTakenSequenceFlows(takenSequenceFlows)
-                  .coverage(calculateCoverage(completedElements, takenSequenceFlows, model))
+                  .coverage(calculateCoverage(completedElements, takenSequenceFlows, processModel))
                   .build());
         });
     return aggregatedCoverages;
@@ -145,14 +146,14 @@ public class CoverageCreator {
    *
    * @param takenSequenceFlows List of sequence flow IDs to enhance
    * @param takenNodeElements List of element instances from the process execution
-   * @param model The process model containing definition information
+   * @param processModel The process model containing definition information
    */
   private static void enhanceSequenceFlowsByEventBasedGateway(
       final List<String> takenSequenceFlows,
       final List<ElementInstance> takenNodeElements,
-      final Model model) {
+      final ProcessModel processModel) {
     final BpmnModelInstance modelInstance =
-        Bpmn.readModelFromStream(new ByteArrayInputStream(model.xml().getBytes()));
+        Bpmn.readModelFromStream(new ByteArrayInputStream(processModel.xml().getBytes()));
 
     for (int i = 0; i < takenNodeElements.size(); i++) {
       final ElementInstance event = takenNodeElements.get(i);
@@ -184,15 +185,17 @@ public class CoverageCreator {
    *
    * @param takenElements List of element IDs that were executed
    * @param takenSequenceFlows List of sequence flow IDs that were traversed
-   * @param model The process model containing definition information
+   * @param processModel The process model containing definition information
    * @return ProcessCoverage percentage as a value between 0.0 and 1.0
    */
   private static double calculateCoverage(
-      final List<String> takenElements, final List<String> takenSequenceFlows, final Model model) {
-    if (model.getTotalElementCount() == 0) {
+      final List<String> takenElements,
+      final List<String> takenSequenceFlows,
+      final ProcessModel processModel) {
+    if (processModel.getTotalElementCount() == 0) {
       return 0.0;
     }
     final double coveredElements = takenElements.size() + takenSequenceFlows.size();
-    return coveredElements / model.getTotalElementCount();
+    return coveredElements / processModel.getTotalElementCount();
   }
 }
