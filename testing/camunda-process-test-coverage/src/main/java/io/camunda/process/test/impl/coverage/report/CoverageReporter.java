@@ -84,37 +84,41 @@ public class CoverageReporter {
    * <p>Creates both a suite-specific report and updates the aggregated report that combines all
    * test runs.
    *
-   * @param coverageReportCollector The collector containing coverage data to report
+   * @param reportCollectors The collector containing coverage data to report
    */
-  public CoverageReport reportCoverage(final CoverageReportCollector coverageReportCollector) {
+  public CoverageReport createAggregatedReport(
+      final Collection<CoverageReportCollector> reportCollectors) {
     final Collection<Suite> suites =
-        CoverageReportCollector.collectors().stream()
+        reportCollectors.stream()
             .map(CoverageReportCollector::getSuite)
             .collect(Collectors.toList());
     final Collection<ProcessModel> processModels =
-        CoverageReportCollector.collectors().stream()
+        reportCollectors.stream()
             .flatMap(c -> c.getModels().stream())
             .distinct()
             .collect(Collectors.toList());
     final Collection<DecisionModel> decisionModels =
-        CoverageReportCollector.collectors().stream()
+        reportCollectors.stream()
             .flatMap(c -> c.getDecisionModels().stream())
             .distinct()
             .collect(Collectors.toList());
 
+    final CoverageReport aggregatedReport =
+        CoverageReportCreator.createAggregatedCoverageReport(suites, processModels, decisionModels);
+
+    writeJsonReport(aggregatedReport);
+    writeHtmlReport(aggregatedReport);
+    return aggregatedReport;
+  }
+
+  public void reportSuiteCoverage(final CoverageReportCollector coverageReportCollector) {
     final CoverageReport suiteReport =
         CoverageReportCreator.createAggregatedCoverageReport(
             java.util.Collections.singletonList(coverageReportCollector.getSuite()),
             coverageReportCollector.getModels(),
             coverageReportCollector.getDecisionModels());
-    final CoverageReport aggregatedReport =
-        CoverageReportCreator.createAggregatedCoverageReport(suites, processModels, decisionModels);
 
     writeJsonReport(coverageReportCollector.getSuite().getId(), suiteReport);
-    writeJsonReport(aggregatedReport);
-    writeHtmlReport(aggregatedReport);
-    printCoverage(coverageReportCollector);
-    return aggregatedReport;
   }
 
   /**
@@ -133,7 +137,7 @@ public class CoverageReporter {
         coverageReportCollector.getDecisionModels());
   }
 
-  private void printCoverage(final CoverageReportCollector coverageReportCollector) {
+  public void printCoverage(final CoverageReportCollector coverageReportCollector) {
     final Suite suite = coverageReportCollector.getSuite();
     final Collection<ProcessCoverage> coverages =
         CoverageCreator.aggregateCoverages(

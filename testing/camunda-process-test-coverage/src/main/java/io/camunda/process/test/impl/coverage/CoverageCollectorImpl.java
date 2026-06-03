@@ -19,12 +19,20 @@ import io.camunda.process.test.api.coverage.model.CoverageReport;
 import io.camunda.process.test.impl.coverage.core.CoverageReportCollector;
 import io.camunda.process.test.impl.coverage.data.CoverageTestData;
 import io.camunda.process.test.impl.coverage.report.CoverageReporter;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 public final class CoverageCollectorImpl implements CoverageCollector {
 
-  private final CoverageReportCollector coverageReportCollector;
+  private static final Map<String, CoverageReportCollector> COLLECTORS_BY_TEST_CLASS =
+      new HashMap<>();
+
+  private final List<String> excludedProcessDefinitionIds;
+  private final List<String> excludedDecisionDefinitionIds;
+
   private final CoverageReporter coverageReporter;
 
   public CoverageCollectorImpl(
@@ -32,21 +40,39 @@ public final class CoverageCollectorImpl implements CoverageCollector {
       final List<String> excludedDecisionDefinitionIds,
       final String reportDirectory,
       final Consumer<String> printStream) {
-    coverageReportCollector =
-        CoverageReportCollector.createCollector(
-            excludedProcessDefinitionIds, excludedDecisionDefinitionIds);
+    this.excludedProcessDefinitionIds = excludedProcessDefinitionIds;
+    this.excludedDecisionDefinitionIds = excludedDecisionDefinitionIds;
+
     coverageReporter = new CoverageReporter(reportDirectory, printStream);
   }
 
   @Override
   public CoverageReport collectTestRunCoverage(
       final Class<?> testClass, final String runName, final CoverageTestData testData) {
-    coverageReportCollector.collectTestRunCoverage(testClass, runName, testData);
+
+    final String testClassName = testClass.getName();
+    final CoverageReportCollector coverageReportCollector =
+        COLLECTORS_BY_TEST_CLASS.computeIfAbsent(
+            testClassName,
+            name ->
+                new CoverageReportCollector(
+                    testClass, excludedProcessDefinitionIds, excludedDecisionDefinitionIds));
+
+    coverageReportCollector.collectTestRunCoverage(runName, testData);
     return coverageReporter.createSuiteCoverageReport(coverageReportCollector);
   }
 
   @Override
-  public CoverageReport generateReport() {
-    return coverageReporter.reportCoverage(coverageReportCollector);
+  public CoverageReport generateReport(final Class<?> testClass) {
+
+    final String testClassName = testClass.getName();
+    Optional.ofNullable(COLLECTORS_BY_TEST_CLASS.get(testClassName))
+        .ifPresent(
+            coverageReportCollector -> {
+              coverageReporter.createSuiteCoverageReport(coverageReportCollector);
+              coverageReporter.printCoverage(coverageReportCollector);
+            });
+
+    return coverageReporter.createAggregatedReport(COLLECTORS_BY_TEST_CLASS.values());
   }
 }

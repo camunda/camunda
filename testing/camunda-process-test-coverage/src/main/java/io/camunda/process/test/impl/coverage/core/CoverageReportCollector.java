@@ -29,7 +29,6 @@ import io.camunda.process.test.impl.coverage.data.CoverageProcessInstanceData;
 import io.camunda.process.test.impl.coverage.data.CoverageTestData;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,51 +45,24 @@ import org.slf4j.LoggerFactory;
  */
 public final class CoverageReportCollector {
   private static final Logger LOG = LoggerFactory.getLogger(CoverageReportCollector.class);
-  private static final List<CoverageReportCollector> COLLECTORS = new ArrayList<>();
+
   private final List<String> excludedProcessDefinitionIds;
   private final List<String> excludedDecisionDefinitionIds;
   private final Map<String, ProcessModel> models = new HashMap<>();
   private final Map<String, DecisionModel> decisionModels = new HashMap<>();
   private final List<CoverageRunReport> coverageRunReports = new ArrayList<>();
 
-  private String suiteId;
-  private String suiteName;
+  private final String suiteId;
+  private final String suiteName;
 
-  private CoverageReportCollector(
+  public CoverageReportCollector(
+      final Class<?> testClass,
       final List<String> excludedProcessDefinitionIds,
       final List<String> excludedDecisionDefinitionIds) {
+    suiteId = testClass.getName();
+    suiteName = testClass.getSimpleName();
     this.excludedProcessDefinitionIds = excludedProcessDefinitionIds;
     this.excludedDecisionDefinitionIds = excludedDecisionDefinitionIds;
-  }
-
-  /**
-   * Creates a new coverage collector for a specific test class. *
-   *
-   * @param excludedProcessDefinitionIds List of process definition ids to exclude from coverage
-   *     analysis
-   * @param excludedDecisionDefinitionIds List of decision definition ids to exclude from coverage
-   *     analysis
-   */
-  public static CoverageReportCollector createCollector(
-      final List<String> excludedProcessDefinitionIds,
-      final List<String> excludedDecisionDefinitionIds) {
-    final CoverageReportCollector collector =
-        new CoverageReportCollector(excludedProcessDefinitionIds, excludedDecisionDefinitionIds);
-    COLLECTORS.add(collector);
-    return collector;
-  }
-
-  /**
-   * Returns all active coverage collectors.
-   *
-   * <p>This method provides access to all coverage collectors that have been created during the
-   * test execution. These collectors contain coverage data for each test suite and can be used to
-   * generate aggregated coverage reports across multiple test classes.
-   *
-   * @return A collection of all active CoverageCollector instances
-   */
-  public static Collection<CoverageReportCollector> collectors() {
-    return Collections.unmodifiableList(COLLECTORS);
   }
 
   /**
@@ -102,12 +74,7 @@ public final class CoverageReportCollector {
    *
    * @param runName Identifier for the current test run
    */
-  public void collectTestRunCoverage(
-      final Class<?> testClass, final String runName, final CoverageTestData testResults) {
-
-    suiteId = testClass.getName();
-    suiteName = testClass.getSimpleName();
-
+  public void collectTestRunCoverage(final String runName, final CoverageTestData testResults) {
     final List<CoverageProcessInstanceData> filteredProcessInstanceData =
         testResults.getProcessInstanceData().stream()
             .filter(

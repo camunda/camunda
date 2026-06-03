@@ -40,9 +40,10 @@ public interface CoverageCollector {
    * Generates coverage reports (JSON/HTML), prints coverage summary, and returns the aggregated
    * report.
    *
+   * @param testClass The test class to generate the report for.
    * @return Aggregated coverage report
    */
-  CoverageReport generateReport();
+  CoverageReport generateReport(Class<?> testClass);
 
   /**
    * Creates a new builder for configuring and creating ProcessCoverage instances.
