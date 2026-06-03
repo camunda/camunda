@@ -32,7 +32,7 @@ global:
 ########################################################################################
 orchestration:
   # We need to explicitly set the secondary storage type to ELS
-  # THIS GETS OVERRIDDEN IN THE OTHER VALUES FILES, e.g. for OpenSearch and RDBMS
+  # THIS GETS OVERRIDDEN IN THE OTHER VALUES FILES
   data:
     secondaryStorage:
       type: elasticsearch

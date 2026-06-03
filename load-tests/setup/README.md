@@ -123,16 +123,11 @@ The template files live under `setup/default/`:
 - `Makefile` — rendered into the namespace folder with placeholders substituted.
 - `values/` — Helm values files. All installs start from
   `camunda-platform-values-defaults.yaml` (shared baseline platform config)
-  and layer `camunda-platform-values-${secondaryStorage}.yaml` on top. RDBMS
-  storages additionally apply `camunda-platform-values-rdbms.yaml` between
-  them. For example, `elasticsearch` copies
+  and layer `camunda-platform-values-${secondaryStorage}.yaml` on top. For example, `elasticsearch` copies
   `camunda-platform-values-defaults.yaml`,
   `camunda-platform-values-elasticsearch.yaml`,
   `camunda-platform-override-values.yaml`, `load-test-values.yaml`,
   `values-stable.yaml`, and `prometheus-elasticsearch-exporter-values.yaml`.
-- `databases/` — raw Kubernetes manifests for MSSQL and Oracle (no public
-  Helm chart). Copied into the namespace folder only when the matching
-  storage is chosen.
 - `resources/` — namespace and credentials manifests (see PR #52882). Always
   copied and rendered with random secrets.
 
@@ -149,8 +144,6 @@ You can specify a secondary storage type as the second argument:
 
 ```sh
 . ./newLoadTest.sh my-load-test-name elasticsearch  # Default - uses Elasticsearch
-. ./newLoadTest.sh my-load-test-name opensearch     # Uses OpenSearch
-. ./newLoadTest.sh my-load-test-name postgresql     # Uses PostgreSQL (RDBMS)
 . ./newLoadTest.sh my-load-test-name none           # No secondary storage
 ```
 
