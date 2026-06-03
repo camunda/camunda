@@ -54,6 +54,7 @@ import io.camunda.search.clients.reader.UsageMetricsTUReader;
 import io.camunda.search.clients.reader.UserReader;
 import io.camunda.search.clients.reader.UserTaskReader;
 import io.camunda.search.clients.reader.VariableReader;
+import io.camunda.search.clients.reader.WaitStateReader;
 import io.camunda.search.clients.reader.impl.NoopAuthorizationReader;
 import io.camunda.search.es.clients.ElasticsearchSearchClient;
 import io.camunda.search.os.clients.OpensearchSearchClient;
@@ -149,7 +150,8 @@ public class SearchClientConfiguration {
       final IncidentProcessInstanceStatisticsByDefinitionReader
           incidentProcessInstanceStatisticsByDefinitionReader,
       final GlobalListenerReader globalListenerReader,
-      final DeployedResourceReader deployedResourceReader) {
+      final DeployedResourceReader deployedResourceReader,
+      final WaitStateReader waitStateReader) {
     return new SearchClientReaders(
         agentInstanceReader,
         authorizationReader,
@@ -190,6 +192,7 @@ public class SearchClientConfiguration {
         auditLogReader,
         incidentProcessInstanceStatisticsByErrorReader,
         incidentProcessInstanceStatisticsByDefinitionReader,
-        globalListenerReader);
+        globalListenerReader,
+        waitStateReader);
   }
 }

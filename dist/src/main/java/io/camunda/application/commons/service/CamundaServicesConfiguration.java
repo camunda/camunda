@@ -181,6 +181,7 @@ public class CamundaServicesConfiguration {
                       brokerClient,
                       securityContextProvider,
                       search,
+                      search,
                       processCache,
                       incident,
                       executor,
