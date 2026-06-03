@@ -166,6 +166,7 @@ import io.camunda.client.api.search.request.DecisionDefinitionSearchRequest;
 import io.camunda.client.api.search.request.DecisionInstanceSearchRequest;
 import io.camunda.client.api.search.request.DecisionRequirementsSearchRequest;
 import io.camunda.client.api.search.request.ElementInstanceSearchRequest;
+import io.camunda.client.api.search.request.ElementInstanceWaitStateSearchRequest;
 import io.camunda.client.api.search.request.GlobalTaskListenerSearchRequest;
 import io.camunda.client.api.search.request.GroupsByRoleSearchRequest;
 import io.camunda.client.api.search.request.GroupsByTenantSearchRequest;
@@ -350,6 +351,7 @@ import io.camunda.client.impl.search.request.DecisionDefinitionSearchRequestImpl
 import io.camunda.client.impl.search.request.DecisionInstanceSearchRequestImpl;
 import io.camunda.client.impl.search.request.DecisionRequirementsSearchRequestImpl;
 import io.camunda.client.impl.search.request.ElementInstanceSearchRequestImpl;
+import io.camunda.client.impl.search.request.ElementInstanceWaitStateSearchRequestImpl;
 import io.camunda.client.impl.search.request.GlobalTaskListenerSearchRequestImpl;
 import io.camunda.client.impl.search.request.GroupSearchRequestImpl;
 import io.camunda.client.impl.search.request.GroupsByRoleSearchRequestImpl;
@@ -1659,6 +1661,11 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public AuditLogSearchRequest newAuditLogSearchRequest() {
     return new AuditLogSearchRequestImpl(httpClient, jsonMapper);
+  }
+
+  @Override
+  public ElementInstanceWaitStateSearchRequest newElementInstanceWaitStateSearchRequest() {
+    return new ElementInstanceWaitStateSearchRequestImpl(httpClient, jsonMapper);
   }
 
   @Override
