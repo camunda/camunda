@@ -52,6 +52,9 @@ outputs:
   version:
     description: "The semantic version of the packaged artifact"
     value: ${{ steps.get-version.outputs.result }}
+  digest:
+    description: "The immutable manifest digest (sha256:...) of the pushed image. Empty when push is false."
+    value: ${{ steps.build-image.outputs.digest }}
 
 runs:
   using: composite
@@ -137,6 +140,7 @@ runs:
         fi
 
     - name: Build Docker image
+      id: build-image
       uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.2.0
       env:
         DOCKER_BUILD_SUMMARY: false

@@ -487,28 +487,30 @@ jobs:
           dockerfile: camunda.Dockerfile
           push: true
 
-      - name: Resolve image digest
+      - name: Build pinned image reference
         id: resolve-digest
         env:
           TAG: ${{ steps.set-image-tag.outputs.tag }}
           HARBOR_REPO: ${{ env.HARBOR_REPOSITORY }}
+          # Native digest emitted by docker/build-push-action for the manifest
+          # it just pushed to Harbor. Digests are content-addressable, so this
+          # is identical to the digest in AWS ECR after Harbor's event-based
+          # replication — the SaaS clusters can pull harbor/...@sha256:<digest>
+          # safely without any risk of a floating SNAPSHOT tag drifting.
+          DIGEST: ${{ steps.build-docker.outputs.digest }}
         run: |
           set -euo pipefail
-          FULL_REF="${HARBOR_REPO}:${TAG}"
           # Strip the registry hostname to get the short path used by the
-          # receiving workflow's harbor/ prefix convention, e.g.
+          # receiving workflow's harbor/ prefix convention (the harbor/ prefix
+          # maps to the replicated ECR namespace), e.g.
           # registry.camunda.cloud/team-camunda/camunda -> team-camunda/camunda
           SHORT_REPO="${HARBOR_REPO#*/}"
-          # Run digest lookup non-fatally so the fallback branch can execute
-          # even when imagetools inspect fails (e.g. transient registry error).
-          DIGEST=$(docker buildx imagetools inspect "${FULL_REF}" 2>/dev/null \
-            | awk '/^Digest:/ {print $2}' | tr -d '\r' || true)
           if [[ -z "$DIGEST" || "$DIGEST" == "null" ]]; then
-            echo "::warning::Could not resolve digest for ${FULL_REF}; falling back to tag reference"
+            echo "::warning::build-push-action did not return a digest; falling back to tag reference"
             echo "image-ref=harbor/${SHORT_REPO}:${TAG}" >> "$GITHUB_OUTPUT"
           else
             echo "image-ref=harbor/${SHORT_REPO}@${DIGEST}" >> "$GITHUB_OUTPUT"
-            echo "Resolved pinned ref: harbor/${SHORT_REPO}@${DIGEST}"
+            echo "Pinned ref: harbor/${SHORT_REPO}@${DIGEST}"
           fi
 
       - name: Output image details
