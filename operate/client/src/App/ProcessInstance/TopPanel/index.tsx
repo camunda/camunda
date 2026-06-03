@@ -233,6 +233,8 @@ const TopPanel: React.FC = observer(() => {
     const mappedElementIds = new Set<string>();
 
     return agentInstancesData.items.flatMap<OverlayData>((agentInstance) => {
+      // We expect only one active agent instance per element. But there *can* be multiple.
+      // For now, only add an overlay to an element for first matching agent instance.
       if (mappedElementIds.has(agentInstance.elementId)) {
         return [];
       }
