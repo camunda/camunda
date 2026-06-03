@@ -31,7 +31,7 @@
     "react-dom": "19.2.6",
     "react-error-boundary": "6.1.2",
     "react-final-form": "7.0.1",
-    "react-final-form-arrays": "4.0.0",
+    "react-final-form-arrays": "5.0.0",
     "react-i18next": "17.0.8",
     "react-router-dom": "7.16.0",
     "react-transition-group": "4.4.5",
