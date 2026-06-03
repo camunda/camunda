@@ -56,20 +56,25 @@ IFS=' '
 modules="${filtered_items[*]}"
 modules+=" $2"
 
-formatted_modules=()
+gradle_formatted_modules=()
+maven_formatted_modules=()
 declare -A seen_formatted_modules=()
 
 for module in $modules; do
-  formatted_module="-x :$module:test"
-  if [[ -z "${seen_formatted_modules[$formatted_module]:-}" ]]; then
-    formatted_modules+=("$formatted_module")
-    seen_formatted_modules["$formatted_module"]=1
+  if [[ -z "${seen_formatted_modules[$module]:-}" ]]; then
+    gradle_formatted_modules+=("-x :$module:test")
+    maven_formatted_modules+=("'-:$module'")
+    seen_formatted_modules["$module"]=1
   fi
 done
 
-ut_modules=$(IFS=' '; echo "${formatted_modules[*]}")
+gradle_ut_modules=$(IFS=' '; echo "${gradle_formatted_modules[*]}")
+maven_ut_modules=$(IFS=','; echo "${maven_formatted_modules[*]}")
 
-echo "Gradle test exclusions: $ut_modules"
+echo "Gradle test exclusions: $gradle_ut_modules"
+echo "Maven module exclusions: $maven_ut_modules"
 
 # shellcheck disable=SC2086
-echo GENERAL_UT_MODULES=$ut_modules >> "$GITHUB_ENV"
+echo "GENERAL_UT_GRADLE_MODULES=$gradle_ut_modules" >> "$GITHUB_ENV"
+# shellcheck disable=SC2086
+echo "GENERAL_UT_MAVEN_MODULES=$maven_ut_modules" >> "$GITHUB_ENV"
