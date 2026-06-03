@@ -1,0 +1,47 @@
+# description: Submits the resolved Maven dependency tree to the GitHub Dependency Submission API.
+# Runs on push to main/stable to keep the base snapshot current.
+# PR-side (head) snapshot submission is handled by the pr-maven-snapshot job in ci.yml,
+# which pr-vuln-check depends on — ensuring the snapshot is ready before the gate runs.
+# type: Security
+# owner: @camunda/monorepo-devops-team
+name: Maven Dependency Snapshot
+
+on:
+  push:
+    branches:
+      - main
+      - stable/**
+    paths:
+      - '**/pom.xml'
+      - 'bom/**'
+      - 'parent/**'
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  submit-maven-snapshot:
+    name: "Security / Submit Maven Dependency Snapshot"
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write  # required by the Dependency Submission API
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          distribution: temurin
+          java-version: '21'
+      # Scope to shipped modules only (mirrors JAVA_PROJECTS in zeebe-snyk.yml).
+      # -am resolves the full transitive tree including BOM-pinned versions.
+      - name: Submit Maven dependency snapshot
+        uses: advanced-security/maven-dependency-submission-action@b275d12641ac2d2108b2cbb7598b154ad2f2cee8 # v5.0.0
+        with:
+          token: ${{ github.token }}
+          maven-args: >-
+            -pl bom,clients/java,clients/camunda-spring-boot-starter,zeebe/bpmn-model,zeebe/exporter-api,zeebe/gateway-protocol-impl,zeebe/protocol
+            -am
+            -Dquickly
+          correlator: ${{ github.job }}-maven
