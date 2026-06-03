@@ -203,8 +203,8 @@ public class DateAggregationServiceES extends DateAggregationService {
 
       builder.extendedBounds(
           e ->
-              e.min(FieldDateMath.of(f -> f.value(context.getMinMaxStats().getMin())))
-                  .max(FieldDateMath.of(f -> f.value(context.getMinMaxStats().getMax()))));
+              e.min(FieldDateMath.of(f -> f.value((long) context.getMinMaxStats().getMin())))
+                  .max(FieldDateMath.of(f -> f.value((long) context.getMinMaxStats().getMax()))));
     }
 
     return Pair.of(context.getDateAggregationName().orElse(DATE_AGGREGATION), builder);
