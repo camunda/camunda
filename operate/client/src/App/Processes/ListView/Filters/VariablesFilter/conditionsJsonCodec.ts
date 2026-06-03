@@ -7,14 +7,17 @@
  */
 
 import {z} from 'zod';
+import {queryProcessInstancesRequestBodySchema} from '@camunda/camunda-api-zod-schemas/8.10';
 import type {DraftCondition} from './constants';
 
-const ApiVariableEntrySchema = z
-  .object({
-    name: z.string().min(1, 'Variable name is required'),
-    value: z.union([z.record(z.string(), z.unknown()), z.string()]),
-  })
-  .strict();
+const ApiVariableEntrySchema =
+  queryProcessInstancesRequestBodySchema.shape.filter
+    .unwrap()
+    .shape.variables.unwrap()
+    .def.element.extend({
+      name: z.string().min(1, 'Variable name is required'),
+    })
+    .strict();
 
 const ApiVariablesSchema = z.array(ApiVariableEntrySchema);
 
@@ -73,6 +76,15 @@ const parseConditionsJson = (text: string): ParseResult => {
     raw = JSON.parse(text.trim() || '[]');
   } catch {
     return {ok: false, error: 'Invalid JSON syntax', kind: 'syntax'};
+  }
+
+  const unknownOperatorErrors = detectUnknownOperators(raw);
+  if (unknownOperatorErrors.length > 0) {
+    return {
+      ok: false,
+      error: unknownOperatorErrors.join('; '),
+      kind: 'validation',
+    };
   }
 
   const result = ApiVariablesSchema.safeParse(raw);
@@ -181,14 +193,46 @@ const fromApiEntry = (
   }
 };
 
+const KNOWN_OPERATORS = new Set([
+  '$eq',
+  '$neq',
+  '$exists',
+  '$in',
+  '$notIn',
+  '$like',
+]);
+
+const detectUnknownOperators = (raw: unknown): string[] => {
+  if (!Array.isArray(raw)) {
+    return [];
+  }
+  const errors: string[] = [];
+  raw.forEach((entry, i) => {
+    if (typeof entry !== 'object' || entry === null || Array.isArray(entry)) {
+      return;
+    }
+    const value = (entry as Record<string, unknown>)['value'];
+    if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+      return;
+    }
+    for (const key of Object.keys(value)) {
+      if (key.startsWith('$') && !KNOWN_OPERATORS.has(key)) {
+        errors.push(`Condition #${i + 1}: Unsupported operator '${key}'`);
+      }
+    }
+  });
+  return errors;
+};
+
 const formatZodError = (error: z.ZodError): string => {
   return error.issues
     .map((issue) => {
-      const [index] = issue.path;
-      if (typeof index === 'number') {
-        return `Condition #${index + 1}: ${issue.message}`;
-      }
-      return issue.message;
+      const [index, ...rest] = issue.path;
+      const prefix =
+        typeof index === 'number' ? `Condition #${index + 1}: ` : '';
+      const suffix =
+        rest.length > 0 ? ` (at ${rest.map(String).join('.')})` : '';
+      return `${prefix}${issue.message}${suffix}`;
     })
     .join('; ');
 };

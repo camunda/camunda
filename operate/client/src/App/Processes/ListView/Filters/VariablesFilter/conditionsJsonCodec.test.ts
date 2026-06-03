@@ -259,9 +259,20 @@ describe('conditionsJsonCodec', () => {
     const text = JSON.stringify([{name: 'v', value: {$exists: 'true'}}]);
     const result = parseConditionsJson(text);
     expect(result.ok).toBe(false);
-    expect((result as {error: string}).error).toContain(
-      "'$exists' must be a boolean",
-    );
+    expect((result as {error: string}).error).toContain('Condition #1');
+    expect((result as {error: string}).error).toContain('value');
+  });
+
+  it('should reject $in with non-string elements', () => {
+    const text = JSON.stringify([{name: 'v', value: {$in: [1, 2]}}]);
+    const result = parseConditionsJson(text);
+    expect(result.ok).toBe(false);
+  });
+
+  it('should reject $like with non-string', () => {
+    const text = JSON.stringify([{name: 'v', value: {$like: 42}}]);
+    const result = parseConditionsJson(text);
+    expect(result.ok).toBe(false);
   });
 
   it('should include condition number in error messages', () => {
