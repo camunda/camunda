@@ -126,8 +126,7 @@ final class ManifestMetadata {
     // relativePath is now: {partitionId}/{checkpointId}/{memberId}/
     final var parts = relativePath.split("/");
     final var memberId = BrokerMemberId.from(parts[2]);
-    // Fall back to metadata zone for blobs written before zone was encoded in the path segment.
-    final var zone = memberId.zone() != null ? memberId.zone() : metadata.get(ZONE);
+    final var zone = memberId.zone();
     return new BackupIdentifierImpl(
         memberId.nodeIdx(), zone, Integer.parseInt(parts[0]), Long.parseLong(parts[1]));
   }
