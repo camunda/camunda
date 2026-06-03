@@ -19,9 +19,7 @@ dependencies {
     testImplementation(libs.org.testcontainers.testcontainers.elasticsearch)
     testImplementation(libs.org.opensearch.opensearch.testcontainers)
     testImplementation(libs.org.glassfish.jakarta.json)
-    testImplementation(libs.org.springframework.boot.spring.boot.starter.test) {
-        exclude(group = "org.springframework.boot", module = "spring-boot-starter-logging")
-    }
+    testImplementation(libs.org.springframework.boot.spring.boot.starter.test)
     testImplementation(libs.org.springframework.security.spring.security.test)
     testImplementation(libs.org.springframework.security.spring.security.core)
     testImplementation(libs.org.testcontainers.testcontainers)
@@ -84,12 +82,6 @@ dependencies {
 }
 
 description = "Tasklist Integration Tests"
-
-configurations.named("testRuntimeClasspath") {
-    exclude(group = "org.springframework.boot", module = "spring-boot-starter-logging")
-    exclude(group = "org.apache.logging.log4j", module = "log4j-to-slf4j")
-    exclude(group = "ch.qos.logback", module = "logback-classic")
-}
 
 tasks.withType<Test>().configureEach {
     maxHeapSize = "3g"

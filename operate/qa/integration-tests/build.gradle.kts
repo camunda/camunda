@@ -58,9 +58,7 @@ dependencies {
     testImplementation(project(":zeebe-bpmn-model"))
     testImplementation(libs.com.fasterxml.jackson.core.jackson.databind)
     testImplementation(project(":zeebe-protocol"))
-    testImplementation(libs.org.springframework.boot.spring.boot.starter.test) {
-        exclude(group = "org.springframework.boot", module = "spring-boot-starter-logging")
-    }
+    testImplementation(libs.org.springframework.boot.spring.boot.starter.test)
     testImplementation(libs.org.glassfish.jakarta.json)
     testImplementation(libs.org.apache.httpcomponents.core5.httpcore5)
     testImplementation(libs.org.apache.httpcomponents.httpasyncclient)
@@ -82,9 +80,3 @@ dependencies {
 }
 
 description = "Operate QA Integration Tests"
-
-configurations.named("testRuntimeClasspath") {
-    exclude(group = "org.springframework.boot", module = "spring-boot-starter-logging")
-    exclude(group = "org.apache.logging.log4j", module = "log4j-to-slf4j")
-    exclude(group = "ch.qos.logback", module = "logback-classic")
-}

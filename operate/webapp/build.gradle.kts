@@ -24,7 +24,6 @@ dependencies {
     implementation(project(":camunda-service"))
     implementation(project(":camunda-spring-utils"))
     api(libs.org.springframework.boot.spring.boot.starter.web) {
-        exclude(group = "org.springframework.boot", module = "spring-boot-starter-logging")
         exclude(group = "org.elasticsearch.client", module = "transport")
     }
     api(libs.org.springframework.boot.spring.boot.starter.log4j2)
@@ -35,17 +34,13 @@ dependencies {
     api(libs.org.springframework.boot.spring.boot.starter.actuator)
     api(libs.org.springframework.boot.spring.boot.starter.oauth2.resource.server)
     api(libs.org.springframework.boot.spring.boot.actuator)
-    api(libs.org.springdoc.springdoc.openapi.starter.webmvc.ui) {
-        exclude(group = "org.springframework.boot", module = "spring-boot-starter-logging")
-    }
+    api(libs.org.springdoc.springdoc.openapi.starter.webmvc.ui)
     api(libs.org.springframework.spring.beans)
     api(libs.org.springframework.spring.web)
     api(libs.org.springframework.spring.context)
     api(libs.org.springframework.spring.core)
     api(libs.org.springframework.boot.spring.boot)
-    api(libs.org.springdoc.springdoc.openapi.starter.common) {
-        exclude(group = "org.springframework.boot", module = "spring-boot-starter-logging")
-    }
+    api(libs.org.springdoc.springdoc.openapi.starter.common)
     api(libs.org.springframework.security.spring.security.web)
     api(libs.org.springframework.security.spring.security.core)
     implementation(libs.org.thymeleaf.thymeleaf)

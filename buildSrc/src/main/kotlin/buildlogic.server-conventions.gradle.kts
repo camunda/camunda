@@ -46,6 +46,11 @@ dependencies {
 // Force the POM-pinned 8.x version to win over enforced BOM constraints.
 configurations.all {
     resolutionStrategy.force("co.elastic.clients:elasticsearch-java:$esJavaVersion")
+    // server-conventions adds log4j-slf4j2-impl (SLF4J → Log4j) globally.
+    // spring-boot-starter-logging pulls in logback and log4j-to-slf4j (Log4j → SLF4J),
+    // creating a circular bridge. Exclude it globally; modules that need Logback for
+    // Spring @WebMvcTest must exclude log4j-slf4j2-impl from their testRuntimeClasspath instead.
+    exclude(group = "org.springframework.boot", module = "spring-boot-starter-logging")
 }
 
 tasks.withType<Test>().configureEach {

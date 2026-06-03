@@ -7,11 +7,6 @@ plugins {
     alias(libs.plugins.spring.boot)
 }
 
-// This module uses log4j-slf4j2-impl (SLF4J → Log4j). log4j-to-slf4j (Log4j → SLF4J) must not
-// be present simultaneously as it creates a circular bridge.
-configurations.all {
-    exclude(group = "org.apache.logging.log4j", module = "log4j-to-slf4j")
-}
 
 dependencies {
     implementation(project(":zeebe-protocol"))
