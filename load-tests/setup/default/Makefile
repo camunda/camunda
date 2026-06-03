@@ -111,7 +111,6 @@ create-credentials:
 	@echo "Applying camunda-credentials secret for namespace $(namespace)..."
 	kubectl apply -n $(namespace) -f resources/camunda-credentials.yaml
 
-# Install PostgreSQL database if secondary_storage is postgresql, or OpenSearch if secondary_storage is opensearch
 .PHONY: install-storage
 install-storage:
 ifeq ($(secondary_storage),opensearch)
@@ -250,11 +249,7 @@ clean:
 	-kubectl delete -n $(namespace) pvc -l app.kubernetes.io/instance=$(namespace)
 	-kubectl delete -n $(namespace) pvc -l app=elasticsearch-master
 	-kubectl delete -n $(namespace) cronjob leader-balancer
-ifeq ($(secondary_storage),postgresql)
-	@echo "Cleaning up $(secondary_storage) database for namespace $(namespace)..."
-	-helm --namespace $(namespace) uninstall $(secondary_storage)
-	-kubectl delete -n $(namespace) pvc -l app.kubernetes.io/name=$(secondary_storage)
-else ifeq ($(secondary_storage),opensearch)
+ifeq ($(secondary_storage),opensearch)
 	@echo "Cleaning up OpenSearch cluster for namespace $(namespace)..."
 	-helm --namespace $(namespace) uninstall opensearch
 	-kubectl delete -n $(namespace) pvc -l app.kubernetes.io/name=opensearch

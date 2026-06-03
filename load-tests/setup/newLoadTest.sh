@@ -170,14 +170,6 @@ case "$secondaryStorage" in
   elasticsearch)
     cp -v default/values/prometheus-elasticsearch-exporter-values.yaml "$namespace/"
     ;;
-  postgresql|mysql|mariadb)
-    cp -v default/values/camunda-platform-values-rdbms.yaml                 "$namespace/"
-    ;;
-  mssql|oracle)
-    cp -v default/values/camunda-platform-values-rdbms.yaml                 "$namespace/"
-    mkdir -p "$namespace/databases"
-    cp -v "default/databases/${secondaryStorage}.yaml"                       "$namespace/databases/"
-    ;;
 esac
 
 cd "$namespace"

@@ -91,7 +91,7 @@ Usage: newLoadTest.sh <namespace> [secondaryStorage] [ttl_days] [enable_optimize
 
 Arguments:
   namespace          Base namespace name. Will be prefixed with "c8-" if missing.
-  secondaryStorage   Optional. One of: elasticsearch, opensearch, postgresql, none. Default: elasticsearch.
+  secondaryStorage   Optional. One of: elasticsearch, opensearch, none. Default: elasticsearch.
   ttl_days           Optional. Positive integer for namespace TTL in days. Default: 1.
   enable_optimize    Optional. true|false to enable Optimize. Default: true.
   enable_single_zone Optional. true|false to deploy the cluster on a single zone. Default: true
@@ -119,9 +119,7 @@ The template files live under `setup/default/`:
 - `Makefile` — rendered into the namespace folder with placeholders substituted.
 - `values/` — Helm values files. All installs start from
   `camunda-platform-values-defaults.yaml` (shared baseline platform config)
-  and layer `camunda-platform-values-${secondaryStorage}.yaml` on top. RDBMS
-  storages additionally apply `camunda-platform-values-rdbms.yaml` between
-  them. For example, `elasticsearch` copies
+  and layer `camunda-platform-values-${secondaryStorage}.yaml` on top. For example, `elasticsearch` copies
   `camunda-platform-values-defaults.yaml`,
   `camunda-platform-values-elasticsearch.yaml`,
   `camunda-platform-override-values.yaml`, `load-test-values.yaml`,
@@ -146,7 +144,6 @@ You can specify a secondary storage type as the second argument:
 ```sh
 . ./newLoadTest.sh my-load-test-name elasticsearch  # Default - uses Elasticsearch
 . ./newLoadTest.sh my-load-test-name opensearch     # Uses OpenSearch
-. ./newLoadTest.sh my-load-test-name postgresql     # Uses PostgreSQL (RDBMS)
 . ./newLoadTest.sh my-load-test-name none           # No secondary storage
 ```
 
