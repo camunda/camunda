@@ -222,6 +222,10 @@ outputs:
       ${{
         steps.filter-docs.outputs.docs-change == 'true'
       }}
+  deps-changed:
+    description: Output whether dependency manifests (pom.xml, lock files) changed, triggering PR vulnerability scanning
+    value: >-
+      ${{ steps.filter-dep-manifests.outputs.dep-manifest-change == 'true' }}
   c8-e2e-test-suite-changes:
     description: Output whether the C8 Orchestration Cluster E2E test suite lint check should be run based on GitHub event and files changed
     value: >-
@@ -415,6 +419,22 @@ runs:
       filters: |
         webapp-client-change:
           - 'webapp/client/**'
+
+  - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+    id: filter-dep-manifests
+    with:
+      base: ${{ github.event.merge_group.base_ref || '' }}
+      ref: ${{ github.event.merge_group.head_ref || github.ref }}
+      filters: |
+        dep-manifest-change:
+          - '**/pom.xml'
+          - 'bom/**'
+          - 'parent/**'
+          - '**/package.json'
+          - '**/package-lock.json'
+          - '**/yarn.lock'
+          - '**/go.mod'
+          - '**/go.sum'
 
   - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
     id: filter-docs

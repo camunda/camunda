@@ -19,6 +19,7 @@ const sidebars = {
     'collaboration-guidelines',
     'ci',
     'ci-runbooks',
+    'dependency-vulnerability-gate',
     'infrastructure-services',
     'processes',
     'release',
