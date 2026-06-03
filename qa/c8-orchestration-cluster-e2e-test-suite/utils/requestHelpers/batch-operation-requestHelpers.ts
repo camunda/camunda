@@ -139,11 +139,11 @@ export async function expectBatchState(
 
 // Post-migration user-task search has to wait for the secondary-storage
 // indexer to reflect the migrated elementId. On a loaded shared cluster the
-// 180s budget proved tight (seen as flake on nightly runs), so allow up to
-// 240s with a longer tail interval.
+// 180s budget proved tight (seen as flake on nightly runs), 240s proved tight
+// too (observed in nightly runs on 2026-06-03), so allow up to 360s.
 export const postMigrationAssertionOptions = {
-  intervals: [5_000, 10_000, 15_000, 25_000, 35_000, 45_000, 60_000],
-  timeout: 240_000,
+  intervals: [5_000, 10_000, 15_000, 25_000, 35_000, 45_000, 60_000, 60_000],
+  timeout: 360_000,
 };
 
 export const notFoundDetail = (key: string) =>

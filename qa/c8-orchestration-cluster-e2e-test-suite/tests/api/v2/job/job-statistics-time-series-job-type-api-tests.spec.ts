@@ -139,11 +139,25 @@ test.describe
           extendedSearchRes,
         );
         const extendedResponseBody = await extendedSearchRes.json();
-        const extendedItem = extendedResponseBody.items[0];
-        expect(extendedItem).toBeDefined();
-        expect(extendedItem.created.count).toBe(item.created.count);
-        expect(extendedItem.completed.count).toBe(item.completed.count);
-        expect(extendedItem.failed.count).toBe(item.failed.count);
+        expect(extendedResponseBody.items.length).toBeGreaterThan(0);
+        // Sum across all time buckets: jobs on a shared cluster can be spread
+        // over multiple minute buckets, so only the aggregate matches by-types.
+        const totalCreated = extendedResponseBody.items.reduce(
+          (sum: number, i: {created: {count: number}}) => sum + i.created.count,
+          0,
+        );
+        const totalCompleted = extendedResponseBody.items.reduce(
+          (sum: number, i: {completed: {count: number}}) =>
+            sum + i.completed.count,
+          0,
+        );
+        const totalFailed = extendedResponseBody.items.reduce(
+          (sum: number, i: {failed: {count: number}}) => sum + i.failed.count,
+          0,
+        );
+        expect(totalCreated).toBe(item.created.count);
+        expect(totalCompleted).toBe(item.completed.count);
+        expect(totalFailed).toBe(item.failed.count);
       }).toPass(extendedAssertionOptions);
     });
   });
@@ -287,11 +301,25 @@ test.describe
           extendedSearchRes,
         );
         const extendedResponseBody = await extendedSearchRes.json();
-        const extendedItem = extendedResponseBody.items[0];
-        expect(extendedItem).toBeDefined();
-        expect(extendedItem.created.count).toBe(item.created.count);
-        expect(extendedItem.completed.count).toBe(item.completed.count);
-        expect(extendedItem.failed.count).toBe(item.failed.count);
+        expect(extendedResponseBody.items.length).toBeGreaterThan(0);
+        // Sum across all time buckets: jobs on a shared cluster can be spread
+        // over multiple minute buckets, so only the aggregate matches by-types.
+        const totalCreated = extendedResponseBody.items.reduce(
+          (sum: number, i: {created: {count: number}}) => sum + i.created.count,
+          0,
+        );
+        const totalCompleted = extendedResponseBody.items.reduce(
+          (sum: number, i: {completed: {count: number}}) =>
+            sum + i.completed.count,
+          0,
+        );
+        const totalFailed = extendedResponseBody.items.reduce(
+          (sum: number, i: {failed: {count: number}}) => sum + i.failed.count,
+          0,
+        );
+        expect(totalCreated).toBe(item.created.count);
+        expect(totalCompleted).toBe(item.completed.count);
+        expect(totalFailed).toBe(item.failed.count);
       }).toPass(extendedAssertionOptions);
     });
   });

@@ -1,10 +1,10 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "168e118db8d26b7283ccd36a3fef1834dc1f7c20",
-    "generatedAt": "2026-05-29T07:50:19.279Z",
+    "commit": "cda9ec35a56a71873bd9eb0daac70f21af285277",
+    "generatedAt": "2026-06-03T10:53:40.676Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "1c86dd320071c70c1cd2a97d3d29cb4aeb9e39d11b01b44dbb9e5c13f688fd02"
+    "specSha256": "993c5f0583b61f0d486171aaebc45db58771759734629e2a3f810aa822d0fecf"
   },
   "responses": [
     {
@@ -142,8 +142,7 @@
           },
           {
             "name": "rootProcessInstanceKey",
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           {
             "name": "status",
@@ -315,8 +314,7 @@
                 },
                 {
                   "name": "rootProcessInstanceKey",
-                  "type": "string",
-                  "nullable": true
+                  "type": "string"
                 },
                 {
                   "name": "status",
@@ -3073,7 +3071,125 @@
         "required": [
           {
             "name": "items",
-            "type": "array<object|0>"
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "elementId",
+                  "type": "string"
+                },
+                {
+                  "name": "elementInstanceKey",
+                  "type": "string"
+                },
+                {
+                  "name": "elementType",
+                  "type": "string",
+                  "enumValues": [
+                    "AD_HOC_SUB_PROCESS",
+                    "AD_HOC_SUB_PROCESS_INNER_INSTANCE",
+                    "BOUNDARY_EVENT",
+                    "BUSINESS_RULE_TASK",
+                    "CALL_ACTIVITY",
+                    "END_EVENT",
+                    "EVENT_BASED_GATEWAY",
+                    "EVENT_SUB_PROCESS",
+                    "EXCLUSIVE_GATEWAY",
+                    "INCLUSIVE_GATEWAY",
+                    "INTERMEDIATE_CATCH_EVENT",
+                    "INTERMEDIATE_THROW_EVENT",
+                    "MANUAL_TASK",
+                    "MULTI_INSTANCE_BODY",
+                    "PARALLEL_GATEWAY",
+                    "PROCESS",
+                    "RECEIVE_TASK",
+                    "SCRIPT_TASK",
+                    "SEND_TASK",
+                    "SEQUENCE_FLOW",
+                    "SERVICE_TASK",
+                    "START_EVENT",
+                    "SUB_PROCESS",
+                    "TASK",
+                    "UNKNOWN",
+                    "UNSPECIFIED",
+                    "USER_TASK"
+                  ]
+                },
+                {
+                  "name": "jobDetails",
+                  "type": "object",
+                  "nullable": true,
+                  "children": {
+                    "required": [
+                      {
+                        "name": "jobKey",
+                        "type": "string"
+                      },
+                      {
+                        "name": "jobKind",
+                        "type": "string"
+                      },
+                      {
+                        "name": "jobType",
+                        "type": "string"
+                      },
+                      {
+                        "name": "listenerEventType",
+                        "type": "string",
+                        "nullable": true
+                      },
+                      {
+                        "name": "retries",
+                        "type": "number",
+                        "nullable": true
+                      }
+                    ],
+                    "optional": []
+                  }
+                },
+                {
+                  "name": "messageDetails",
+                  "type": "object",
+                  "nullable": true,
+                  "children": {
+                    "required": [
+                      {
+                        "name": "correlationKey",
+                        "type": "string",
+                        "nullable": true
+                      },
+                      {
+                        "name": "messageName",
+                        "type": "string"
+                      }
+                    ],
+                    "optional": []
+                  }
+                },
+                {
+                  "name": "processInstanceKey",
+                  "type": "string"
+                },
+                {
+                  "name": "rootProcessInstanceKey",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "tenantId",
+                  "type": "string"
+                },
+                {
+                  "name": "waitStateType",
+                  "type": "string",
+                  "enumValues": [
+                    "JOB",
+                    "MESSAGE"
+                  ]
+                }
+              ],
+              "optional": []
+            }
           },
           {
             "name": "page",
@@ -4516,6 +4632,10 @@
                   "underlyingPrimitive": "string",
                   "rawRefName": "listenerEventType",
                   "wrapper": true
+                },
+                {
+                  "name": "priority",
+                  "type": "number"
                 },
                 {
                   "name": "processDefinitionId",
