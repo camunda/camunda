@@ -1,0 +1,470 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.optimize.service.importing;
+
+import static io.camunda.optimize.service.db.DatabaseConstants.ZEEBE_AGENT_INSTANCE_INDEX_NAME;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import io.camunda.optimize.AbstractBrokerlessZeebeCCSMIT;
+import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import io.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
+import io.camunda.optimize.dto.optimize.query.process.AgentInstanceDto;
+import io.camunda.optimize.dto.optimize.query.process.AgentInstanceDto.AgentMetricsDto;
+import io.camunda.optimize.dto.optimize.query.process.AgentInstanceDto.AgentToolDto;
+import io.camunda.optimize.service.db.DatabaseClient;
+import io.camunda.optimize.service.db.writer.ProcessInstanceWriter;
+import java.time.OffsetDateTime;
+import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+class ZeebeAgentInstanceScriptIT extends AbstractBrokerlessZeebeCCSMIT {
+
+  private static final String PROCESS_KEY = "testProcess";
+  private static final String INSTANCE_ID = "100";
+  private static final String AGENT_ID = "agent-a";
+  private static final String AGENT_ID_2 = "agent-b";
+  private static final OffsetDateTime START_TIME =
+      OffsetDateTime.parse("2024-01-01T10:00:00+00:00");
+  private static final OffsetDateTime END_TIME = OffsetDateTime.parse("2024-01-01T10:00:05+00:00");
+
+  private ProcessInstanceWriter processInstanceWriter;
+  private DatabaseClient databaseClient;
+
+  @BeforeEach
+  void setUp() {
+    processInstanceWriter = embeddedOptimizeExtension.getBean(ProcessInstanceWriter.class);
+    databaseClient = embeddedOptimizeExtension.getBean(DatabaseClient.class);
+  }
+
+  @Test
+  void shouldInsertCreatedAgentInstanceWithoutEndDate() {
+    // given
+    final ProcessInstanceDto dto = buildBaseInstance();
+    dto.setAgentInstances(List.of(createdAgent(AGENT_ID)));
+    computeAgentTotals(dto);
+
+    // when
+    importProcessInstances(List.of(dto));
+
+    // then
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
+        .singleElement()
+        .satisfies(
+            saved -> {
+              assertThat(saved.getAgentInstances()).hasSize(1);
+              assertThat(saved.getAgentInstances().get(0).getAgentInstanceId()).isEqualTo(AGENT_ID);
+              assertThat(saved.getAgentInstances().get(0).getEndDate()).isNull();
+              assertThat(saved.getAgentInstances().get(0).getTotalDurationInMs()).isNull();
+              assertThat(saved.getAgentTotalInputTokens()).isEqualTo(0L);
+              assertThat(saved.getAgentTotalOutputTokens()).isEqualTo(0L);
+              assertThat(saved.getAgentTotalModelCalls()).isEqualTo(0L);
+              assertThat(saved.getAgentTotalToolCalls()).isEqualTo(0L);
+              assertThat(saved.getAgentTotalTokens()).isEqualTo(0L);
+            });
+  }
+
+  @Test
+  void shouldInsertCompletedOnlyAgentWithoutDuration() {
+    // given: no prior CREATED — COMPLETED arrives first (out-of-order across batches)
+    final ProcessInstanceDto dto = buildBaseInstance();
+    dto.setAgentInstances(List.of(completedAgent(AGENT_ID)));
+    computeAgentTotals(dto);
+
+    // when
+    importProcessInstances(List.of(dto));
+
+    // then: entry inserted, duration null because startDate and endDate are not both set
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
+        .singleElement()
+        .satisfies(
+            saved -> {
+              assertThat(saved.getAgentInstances()).hasSize(1);
+              assertThat(saved.getAgentInstances().get(0).getEndDate()).isNotNull();
+              assertThat(saved.getAgentInstances().get(0).getTotalDurationInMs()).isNull();
+              assertThat(saved.getAgentTotalInputTokens()).isEqualTo(100L);
+              assertThat(saved.getAgentTotalToolCalls()).isEqualTo(7L);
+              assertThat(saved.getAgentTotalTokens()).isEqualTo(300L);
+            });
+  }
+
+  @Test
+  void shouldPersistMergedDtoOnInitialInsert() {
+    // given: import service merged CREATED + COMPLETED into one entry before calling the writer
+    final ProcessInstanceDto dto = buildBaseInstance();
+    final AgentInstanceDto merged = createdAgent(AGENT_ID);
+    merged.setEndDate(END_TIME);
+    merged.setMetrics(metrics());
+    merged.setTools(tools());
+    dto.setAgentInstances(List.of(merged));
+    dto.setAgentTotalInputTokens(100L);
+    dto.setAgentTotalOutputTokens(200L);
+    dto.setAgentTotalModelCalls(3L);
+    dto.setAgentTotalToolCalls(7L);
+
+    // when: first import → upsert creates doc from source (script not executed)
+    importProcessInstances(List.of(dto));
+
+    // then: doc persisted exactly as the merged source DTO
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
+        .singleElement()
+        .satisfies(
+            saved -> {
+              assertThat(saved.getAgentInstances()).hasSize(1);
+              final AgentInstanceDto agent = saved.getAgentInstances().get(0);
+              assertThat(agent.getAgentInstanceId()).isEqualTo(AGENT_ID);
+              assertThat(agent.getStartDate()).isEqualTo(START_TIME);
+              assertThat(agent.getEndDate()).isEqualTo(END_TIME);
+              assertThat(agent.getTools())
+                  .extracting(AgentToolDto::getName)
+                  .containsExactly("search");
+              assertThat(saved.getAgentTotalInputTokens()).isEqualTo(100L);
+              assertThat(saved.getAgentTotalOutputTokens()).isEqualTo(200L);
+              assertThat(saved.getAgentTotalModelCalls()).isEqualTo(3L);
+              assertThat(saved.getAgentTotalToolCalls()).isEqualTo(7L);
+            });
+  }
+
+  @Test
+  void shouldReAggregateAgentTotalsAfterMergingSecondAgent() {
+    // given: two agents, CREATED for both
+    final ProcessInstanceDto created = buildBaseInstance();
+    created.setAgentInstances(List.of(createdAgent(AGENT_ID), createdAgent(AGENT_ID_2)));
+    importProcessInstances(List.of(created));
+
+    // when: COMPLETED for both agents arrives
+    final ProcessInstanceDto completed = buildBaseInstance();
+    completed.setAgentInstances(List.of(completedAgent(AGENT_ID), completedAgent(AGENT_ID_2)));
+    importProcessInstances(List.of(completed));
+
+    // then: totals summed across both agents
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
+        .singleElement()
+        .satisfies(
+            saved -> {
+              assertThat(saved.getAgentInstances()).hasSize(2);
+              assertThat(saved.getAgentTotalInputTokens()).isEqualTo(200L);
+              assertThat(saved.getAgentTotalOutputTokens()).isEqualTo(400L);
+              assertThat(saved.getAgentTotalModelCalls()).isEqualTo(6L);
+              assertThat(saved.getAgentTotalToolCalls()).isEqualTo(14L);
+              assertThat(saved.getAgentTotalTokens()).isEqualTo(600L);
+            });
+  }
+
+  @Test
+  void shouldHandleDocWithNoAgentInstancesField() {
+    // given: existing process instance without any agent data (pre-feature document)
+    final ProcessInstanceDto base = buildBaseInstance();
+    base.setAgentInstances(null);
+    base.setAgentTotalInputTokens(null);
+    base.setAgentTotalOutputTokens(null);
+    base.setAgentTotalModelCalls(null);
+    base.setAgentTotalToolCalls(null);
+    importProcessInstances(List.of(base));
+
+    // when: agent CREATED import runs the script against the existing doc
+    final ProcessInstanceDto agentBatch = buildBaseInstance();
+    agentBatch.setAgentInstances(List.of(createdAgent(AGENT_ID)));
+    importProcessInstances(List.of(agentBatch));
+
+    // then: null guard in script prevents NPE; agent entry inserted with fields preserved
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
+        .singleElement()
+        .satisfies(
+            saved -> {
+              assertThat(saved.getAgentInstances()).hasSize(1);
+              final AgentInstanceDto agent = saved.getAgentInstances().get(0);
+              assertThat(agent.getAgentInstanceId()).isEqualTo(AGENT_ID);
+              assertThat(agent.getFlowNodeId()).isEqualTo("agentTask");
+              assertThat(agent.getStartDate()).isEqualTo(START_TIME);
+              assertThat(agent.getStatus()).isEqualTo("INITIALIZING");
+              // aggregates recomputed from merged agentInstances (one agent with zero metrics)
+              assertThat(saved.getAgentTotalInputTokens()).isEqualTo(0L);
+              assertThat(saved.getAgentTotalOutputTokens()).isEqualTo(0L);
+              assertThat(saved.getAgentTotalModelCalls()).isEqualTo(0L);
+              assertThat(saved.getAgentTotalToolCalls()).isEqualTo(0L);
+              assertThat(saved.getAgentTotalTokens()).isEqualTo(0L);
+            });
+  }
+
+  @Test
+  void shouldApplyUpdatedStatusAndMetrics() {
+    // given: CREATED batch
+    final ProcessInstanceDto created = buildBaseInstance();
+    created.setAgentInstances(List.of(createdAgentWithDefinition(AGENT_ID)));
+    importProcessInstances(List.of(created));
+
+    // when: UPDATED batch with new status, metrics, tools
+    final ProcessInstanceDto updated = buildBaseInstance();
+    final AgentInstanceDto updatedAgent = new AgentInstanceDto();
+    updatedAgent.setAgentInstanceId(AGENT_ID);
+    updatedAgent.setFlowNodeId("agentTask");
+    updatedAgent.setStatus("THINKING");
+    updatedAgent.setLastUpdatedDate(OffsetDateTime.parse("2024-01-01T10:00:03+00:00"));
+    updatedAgent.setMetrics(metrics());
+    updatedAgent.setTools(tools());
+    updated.setAgentInstances(List.of(updatedAgent));
+    importProcessInstances(List.of(updated));
+
+    // then
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
+        .singleElement()
+        .satisfies(
+            saved -> {
+              assertThat(saved.getAgentInstances()).hasSize(1);
+              final AgentInstanceDto agent = saved.getAgentInstances().get(0);
+              assertThat(agent.getStatus()).isEqualTo("THINKING");
+              assertThat(agent.getLastUpdatedDate()).isNotNull();
+              assertThat(agent.getStartDate()).isNotNull();
+              assertThat(agent.getEndDate()).isNull();
+              assertThat(agent.getMetrics().getInputTokens()).isEqualTo(100L);
+              assertThat(agent.getMetrics().getOutputTokens()).isEqualTo(200L);
+              assertThat(agent.getMetrics().getModelCalls()).isEqualTo(3L);
+              assertThat(agent.getMetrics().getToolCalls()).isEqualTo(7L);
+              assertThat(agent.getTools())
+                  .extracting(AgentToolDto::getName)
+                  .containsExactly("search");
+              assertThat(saved.getAgentTotalInputTokens()).isEqualTo(100L);
+              assertThat(saved.getAgentTotalOutputTokens()).isEqualTo(200L);
+              assertThat(saved.getAgentTotalModelCalls()).isEqualTo(3L);
+              assertThat(saved.getAgentTotalToolCalls()).isEqualTo(7L);
+              assertThat(saved.getAgentTotalTokens()).isEqualTo(300L);
+            });
+  }
+
+  @Test
+  void shouldNotOverwriteTerminalStatusEvenWithNewerUpdate() {
+    // given: COMPLETED sets terminal status at END_TIME (10:00:05)
+    final ProcessInstanceDto completed = buildBaseInstance();
+    completed.setAgentInstances(List.of(completedAgent(AGENT_ID)));
+    importProcessInstances(List.of(completed));
+
+    // when: an UPDATED arrives later with lastUpdatedDate 10:01:00 — NEWER than the existing
+    // COMPLETED's lastUpdatedDate. The timestamp branch alone would let the write through; only
+    // the terminal-status guard should block it.
+    final ProcessInstanceDto updated = buildBaseInstance();
+    final AgentInstanceDto updatedAgent = new AgentInstanceDto();
+    updatedAgent.setAgentInstanceId(AGENT_ID);
+    updatedAgent.setFlowNodeId("agentTask");
+    updatedAgent.setStatus("THINKING");
+    updatedAgent.setLastUpdatedDate(OffsetDateTime.parse("2024-01-01T10:01:00+00:00"));
+    updatedAgent.setMetrics(new AgentMetricsDto());
+    updated.setAgentInstances(List.of(updatedAgent));
+    importProcessInstances(List.of(updated));
+
+    // then: COMPLETED status preserved — proves the isTerminal branch blocks even when the
+    // timestamp comparison would otherwise allow the overwrite.
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
+        .singleElement()
+        .satisfies(
+            saved -> {
+              assertThat(saved.getAgentInstances()).hasSize(1);
+              assertThat(saved.getAgentInstances().get(0).getStatus()).isEqualTo("COMPLETED");
+            });
+  }
+
+  @Test
+  void shouldNotOverwriteNewerNonTerminalStateWithStaleUpdate() {
+    // given: non-terminal status THINKING at lastUpdatedDate = START_TIME (10:00:00, newer)
+    final ProcessInstanceDto fresh = buildBaseInstance();
+    final AgentInstanceDto freshAgent = createdAgent(AGENT_ID);
+    freshAgent.setStatus("THINKING");
+    freshAgent.setMetrics(metrics());
+    fresh.setAgentInstances(List.of(freshAgent));
+    importProcessInstances(List.of(fresh));
+
+    // when: stale UPDATED arrives with lastUpdatedDate 09:59:00 (older) and INITIALIZING status
+    final ProcessInstanceDto stale = buildBaseInstance();
+    final AgentInstanceDto staleAgent = new AgentInstanceDto();
+    staleAgent.setAgentInstanceId(AGENT_ID);
+    staleAgent.setFlowNodeId("agentTask");
+    staleAgent.setStatus("INITIALIZING");
+    staleAgent.setLastUpdatedDate(OffsetDateTime.parse("2024-01-01T09:59:00+00:00"));
+    staleAgent.setMetrics(new AgentMetricsDto());
+    stale.setAgentInstances(List.of(staleAgent));
+    importProcessInstances(List.of(stale));
+
+    // then: existing newer state preserved — exercises the newTs < existingTs branch
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
+        .singleElement()
+        .satisfies(
+            saved -> {
+              assertThat(saved.getAgentInstances()).hasSize(1);
+              final AgentInstanceDto agent = saved.getAgentInstances().get(0);
+              assertThat(agent.getStatus()).isEqualTo("THINKING");
+              assertThat(agent.getMetrics().getInputTokens()).isEqualTo(100L);
+            });
+  }
+
+  @Test
+  void shouldPopulateDefinitionFields() {
+    // given: CREATED event carries model/provider
+    final ProcessInstanceDto dto = buildBaseInstance();
+    dto.setAgentInstances(List.of(createdAgentWithDefinition(AGENT_ID)));
+
+    // when
+    importProcessInstances(List.of(dto));
+
+    // then: definition stored on the nested entry
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
+        .singleElement()
+        .satisfies(
+            saved -> {
+              assertThat(saved.getAgentInstances()).hasSize(1);
+              final AgentInstanceDto agent = saved.getAgentInstances().get(0);
+              assertThat(agent.getDefinition()).isNotNull();
+              assertThat(agent.getDefinition().getModel()).isEqualTo("gpt-4o");
+              assertThat(agent.getDefinition().getProvider()).isEqualTo("openai");
+            });
+  }
+
+  @Test
+  void shouldComputeDurationWhenCreatedArrivesAfterCompleted() {
+    // given: COMPLETED arrives first (out-of-order across batches)
+    final ProcessInstanceDto completed = buildBaseInstance();
+    completed.setAgentInstances(List.of(completedAgent(AGENT_ID)));
+    computeAgentTotals(completed);
+    importProcessInstances(List.of(completed));
+
+    // when: CREATED arrives later — script merges startDate
+    final ProcessInstanceDto created = buildBaseInstance();
+    created.setAgentInstances(List.of(createdAgent(AGENT_ID)));
+    importProcessInstances(List.of(created));
+
+    // then: duration computed retroactively from startDate + endDate
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
+        .singleElement()
+        .satisfies(
+            saved -> {
+              assertThat(saved.getAgentInstances()).hasSize(1);
+              final AgentInstanceDto agent = saved.getAgentInstances().get(0);
+              assertThat(agent.getStartDate()).isNotNull();
+              assertThat(agent.getEndDate()).isNotNull();
+              assertThat(agent.getTotalDurationInMs()).isEqualTo(5_000L);
+              assertThat(saved.getAgentTotalInputTokens()).isEqualTo(100L);
+              assertThat(saved.getAgentTotalToolCalls()).isEqualTo(7L);
+              assertThat(saved.getAgentTotalTokens()).isEqualTo(300L);
+            });
+  }
+
+  @Test
+  void shouldComputeDurationWhenCompletedArrivesAfterCreated() {
+    // given: CREATED batch
+    final ProcessInstanceDto created = buildBaseInstance();
+    created.setAgentInstances(List.of(createdAgent(AGENT_ID)));
+    importProcessInstances(List.of(created));
+
+    // when: COMPLETED batch — script merges endDate and computes duration
+    final ProcessInstanceDto completed = buildBaseInstance();
+    completed.setAgentInstances(List.of(completedAgent(AGENT_ID)));
+    importProcessInstances(List.of(completed));
+
+    // then
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
+        .singleElement()
+        .satisfies(
+            saved -> {
+              assertThat(saved.getAgentInstances()).hasSize(1);
+              final AgentInstanceDto agent = saved.getAgentInstances().get(0);
+              assertThat(agent.getStartDate()).isEqualTo(START_TIME);
+              assertThat(agent.getEndDate()).isEqualTo(END_TIME);
+              assertThat(agent.getTotalDurationInMs()).isEqualTo(5_000L);
+              assertThat(saved.getAgentTotalInputTokens()).isEqualTo(100L);
+              assertThat(saved.getAgentTotalOutputTokens()).isEqualTo(200L);
+              assertThat(saved.getAgentTotalModelCalls()).isEqualTo(3L);
+              assertThat(saved.getAgentTotalToolCalls()).isEqualTo(7L);
+              assertThat(saved.getAgentTotalTokens()).isEqualTo(300L);
+            });
+  }
+
+  private void computeAgentTotals(final ProcessInstanceDto dto) {
+    long totalInput = 0L, totalOutput = 0L, totalModel = 0L, totalTool = 0L;
+    for (final AgentInstanceDto agent : dto.getAgentInstances()) {
+      final AgentMetricsDto m = agent.getMetrics();
+      if (m != null) {
+        totalInput += m.getInputTokens();
+        totalOutput += m.getOutputTokens();
+        totalModel += m.getModelCalls();
+        totalTool += m.getToolCalls();
+      }
+    }
+    dto.setAgentTotalInputTokens(totalInput);
+    dto.setAgentTotalOutputTokens(totalOutput);
+    dto.setAgentTotalModelCalls(totalModel);
+    dto.setAgentTotalToolCalls(totalTool);
+    dto.setAgentTotalTokens(totalInput + totalOutput);
+  }
+
+  private void importProcessInstances(final List<ProcessInstanceDto> instances) {
+    // sourceExportIndex tells the merge script which import variant produced the batch (user-task
+    // import gets special-cased; agent-instance does not). Use the agent index name for self-doc.
+    final var requests =
+        processInstanceWriter.generateProcessInstanceImports(
+            instances, ZEEBE_AGENT_INSTANCE_INDEX_NAME);
+    databaseClient.executeImportRequestsAsBulk("agent-instance-script-test", requests, false);
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+  }
+
+  private ProcessInstanceDto buildBaseInstance() {
+    final ProcessInstanceDto dto = new ProcessInstanceDto();
+    dto.setProcessInstanceId(INSTANCE_ID);
+    dto.setProcessDefinitionKey(PROCESS_KEY);
+    dto.setProcessDefinitionId("1");
+    dto.setProcessDefinitionVersion("1");
+    dto.setDataSource(new ZeebeDataSourceDto("default", 1));
+    return dto;
+  }
+
+  private AgentInstanceDto createdAgent(final String agentId) {
+    final AgentInstanceDto dto = new AgentInstanceDto();
+    dto.setAgentInstanceId(agentId);
+    dto.setFlowNodeId("agentTask");
+    dto.setStartDate(START_TIME);
+    dto.setLastUpdatedDate(START_TIME);
+    dto.setStatus("INITIALIZING");
+    dto.setMetrics(new AgentMetricsDto());
+    return dto;
+  }
+
+  private AgentInstanceDto createdAgentWithDefinition(final String agentId) {
+    final AgentInstanceDto dto = createdAgent(agentId);
+    final AgentInstanceDto.AgentDefinitionDto definition =
+        new AgentInstanceDto.AgentDefinitionDto();
+    definition.setModel("gpt-4o");
+    definition.setProvider("openai");
+    dto.setDefinition(definition);
+    return dto;
+  }
+
+  private AgentInstanceDto completedAgent(final String agentId) {
+    final AgentInstanceDto dto = new AgentInstanceDto();
+    dto.setAgentInstanceId(agentId);
+    dto.setFlowNodeId("agentTask");
+    dto.setStatus("COMPLETED");
+    dto.setEndDate(END_TIME);
+    dto.setLastUpdatedDate(END_TIME);
+    dto.setMetrics(metrics());
+    dto.setTools(tools());
+    return dto;
+  }
+
+  private AgentMetricsDto metrics() {
+    final AgentMetricsDto m = new AgentMetricsDto();
+    m.setInputTokens(100L);
+    m.setOutputTokens(200L);
+    m.setModelCalls(3L);
+    m.setToolCalls(7L);
+    return m;
+  }
+
+  private List<AgentToolDto> tools() {
+    final AgentToolDto tool = new AgentToolDto();
+    tool.setName("search");
+    return List.of(tool);
+  }
+}

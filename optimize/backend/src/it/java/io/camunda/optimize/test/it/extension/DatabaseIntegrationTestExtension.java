@@ -218,6 +218,14 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
     databaseTestService.insertTestDocuments(amount, indexName, documentContentAsJson);
   }
 
+  /**
+   * Indexes an entry into the given raw index name (no Optimize prefix applied). Used to seed Zeebe
+   * export indices in tests.
+   */
+  public void addEntryWithRawIndex(final String rawIndexName, final String id, final Object entry) {
+    databaseTestService.addEntryWithRawIndex(rawIndexName, id, entry);
+  }
+
   public void initSchema(final DatabaseSchemaManager schemaManager) {
     databaseTestService.initSchema(schemaManager);
   }

@@ -148,6 +148,60 @@ public class ZeebePositionBasedImportIndexIT extends AbstractCCSMIT {
   }
 
   @Test
+  public void shouldResumeAgentInstanceImportFromLastPosition() {
+    // given: deploy process and import from scratch
+    deployZeebeData();
+    importAllZeebeEntitiesFromScratch();
+
+    embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    final PositionBasedImportIndexHandler agentHandler =
+        embeddedOptimizeExtension.getAllPositionBasedImportHandlers().stream()
+            .filter(
+                h ->
+                    h
+                        instanceof
+                        io.camunda.optimize.service.importing.zeebe.handler
+                            .ZeebeAgentInstanceImportIndexHandler)
+            .findFirst()
+            .orElseThrow(
+                () ->
+                    new AssertionError(
+                        "ZeebeAgentInstanceImportIndexHandler not found — handler was not registered"));
+
+    // deployZeebeData() creates process records, not agent records, so positionBeforeRestart
+    // is 0. The assertions below verify the persistence/restore round-trip is wired correctly
+    // for this handler, not that the position value itself is meaningful.
+    final long positionBeforeRestart = agentHandler.getPersistedPositionOfLastEntity();
+    final OffsetDateTime timestampBeforeRestart = agentHandler.getTimestampOfLastPersistedEntity();
+
+    // when: Optimize restarts
+    startAndUseNewOptimizeInstance();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // then: handler restored the persisted position and timestamp from the index document
+    final PositionBasedImportIndexHandler agentHandlerAfterRestart =
+        embeddedOptimizeExtension.getAllPositionBasedImportHandlers().stream()
+            .filter(
+                h ->
+                    h
+                        instanceof
+                        io.camunda.optimize.service.importing.zeebe.handler
+                            .ZeebeAgentInstanceImportIndexHandler)
+            .findFirst()
+            .orElseThrow(
+                () ->
+                    new AssertionError(
+                        "ZeebeAgentInstanceImportIndexHandler not found after restart"));
+
+    assertThat(agentHandlerAfterRestart.getPersistedPositionOfLastEntity())
+        .isEqualTo(positionBeforeRestart);
+    assertThat(agentHandlerAfterRestart.getTimestampOfLastPersistedEntity())
+        .isEqualTo(timestampBeforeRestart);
+  }
+
+  @Test
   public void recordsAreFetchedWithSequenceOrPosition() {
     // given
     embeddedOptimizeExtension

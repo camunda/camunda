@@ -213,6 +213,26 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   }
 
   @Override
+  public void addEntryWithRawIndex(final String rawIndexName, final String id, final Object entry) {
+    try {
+      final IndexRequest.Builder<Object> request =
+          new IndexRequest.Builder<>()
+              .document(entry)
+              .index(rawIndexName)
+              .id(id)
+              .refresh(Refresh.True);
+      final IndexResponse response =
+          getOptimizeOpenSearchClient().getOpenSearchClient().index(request.build());
+      if (!response.shards().failures().isEmpty()) {
+        throw new OptimizeIntegrationTestException(
+            String.format("Could not add raw entry to index %s with id %s", rawIndexName, id));
+      }
+    } catch (final IOException e) {
+      throw new OptimizeIntegrationTestException("Unable to add a raw entry to OpenSearch", e);
+    }
+  }
+
+  @Override
   public void addEntriesToDatabase(final String indexName, final Map<String, Object> idToEntryMap) {
     StreamSupport.stream(Iterables.partition(idToEntryMap.entrySet(), 10_000).spliterator(), false)
         .forEach(

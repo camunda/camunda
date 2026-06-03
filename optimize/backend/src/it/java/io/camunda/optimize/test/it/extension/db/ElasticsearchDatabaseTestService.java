@@ -42,6 +42,7 @@ import co.elastic.clients.elasticsearch.core.DeleteByQueryRequest;
 import co.elastic.clients.elasticsearch.core.DeleteRequest;
 import co.elastic.clients.elasticsearch.core.GetRequest;
 import co.elastic.clients.elasticsearch.core.GetResponse;
+import co.elastic.clients.elasticsearch.core.IndexRequest;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.UpdateByQueryRequest;
@@ -222,6 +223,19 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
                           .refresh(Refresh.True)));
     } catch (final IOException e) {
       throw new OptimizeIntegrationTestException("Unable to add an entry to elasticsearch", e);
+    }
+  }
+
+  @Override
+  public void addEntryWithRawIndex(final String rawIndexName, final String id, final Object entry) {
+    try {
+      getOptimizeElasticClient()
+          .elasticsearchClient()
+          .index(
+              IndexRequest.of(
+                  i -> i.index(rawIndexName).id(id).document(entry).refresh(Refresh.True)));
+    } catch (final IOException e) {
+      throw new OptimizeIntegrationTestException("Unable to add a raw entry to elasticsearch", e);
     }
   }
 
