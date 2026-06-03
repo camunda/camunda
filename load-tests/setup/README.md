@@ -94,7 +94,7 @@ Usage: newLoadTest.sh <namespace> [secondaryStorage] [ttl_days] [enable_optimize
 
 Arguments:
   namespace          Base namespace name. Will be prefixed with "c8-" if missing.
-  secondaryStorage   Optional. One of: elasticsearch, opensearch, none. Default: elasticsearch.
+  secondaryStorage   Optional. One of: elasticsearch, none. Default: elasticsearch.
   ttl_days           Optional. Positive integer for namespace TTL in days. Default: 1.
   enable_optimize    Optional. true|false to enable Optimize. Default: true.
   enable_webapps     Optional. true|false to enable Operate and Tasklist. Default: true.
@@ -105,7 +105,7 @@ Options:
 
 Examples:
   ./newLoadTest.sh demo
-  ./newLoadTest.sh perf opensearch 3 true true
+  ./newLoadTest.sh perf elasticsearch 3 true true
 ```
 
 As you can see, you can create a test (namespace) by passing a name; other parameters are optional. Like, secondary storage, TTL, and whether Optimize should be enabled.

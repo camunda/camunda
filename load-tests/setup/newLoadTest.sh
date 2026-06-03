@@ -11,7 +11,7 @@ Usage: newLoadTest.sh <namespace> [secondaryStorage] [ttl_days] [enable_optimize
 
 Arguments:
   namespace          Base namespace name. Will be prefixed with "c8-" if missing.
-  secondaryStorage   Optional. One of: elasticsearch, opensearch, none. Default: elasticsearch.
+  secondaryStorage   Optional. One of: elasticsearch, none. Default: elasticsearch.
   ttl_days           Optional. Positive integer for namespace TTL in days. Default: 1.
   enable_optimize    Optional. true|false to enable Optimize. Default: true.
   enable_webapps     Optional. true|false to enable Operate and Tasklist. Default: true.
@@ -22,7 +22,7 @@ Options:
 
 Examples:
   ./newLoadTest.sh demo
-  ./newLoadTest.sh perf opensearch 3 true true
+  ./newLoadTest.sh perf elasticsearch 3 true true
 
 This script scaffolds the per-namespace folder including rendered Kubernetes
 manifests under resources/ (namespace + credentials). The cluster itself is
@@ -59,9 +59,9 @@ fi
 
 # Validate secondaryStorage value
 secondaryStorage="${2:-elasticsearch}"
-if [[ "$secondaryStorage" != "elasticsearch" && "$secondaryStorage" != "opensearch" && "$secondaryStorage" != "none" ]]; then
+if [[ "$secondaryStorage" != "elasticsearch" && "$secondaryStorage" != "none" ]]; then
   echo "Error: Invalid secondary storage type '$secondaryStorage'"
-  echo "Allowed values are: elasticsearch, opensearch, none"
+  echo "Allowed values are: elasticsearch, none"
   exit 1
 fi
 
@@ -178,9 +178,6 @@ case "$secondaryStorage" in
   elasticsearch)
     cp -v default/values/prometheus-elasticsearch-exporter-values.yaml "$namespace/"
     ;;
-  opensearch|none)
-    cp -v "default/values/camunda-platform-values-${secondaryStorage}.yaml" "$namespace/"
-    ;;
 esac
 
 cd "$namespace"
@@ -233,7 +230,6 @@ sed_inplace "s|__IDENTITY_ZEEBE_CLIENT_TOKEN__|$IDENTITY_ZEEBE_CLIENT_TOKEN|"   
 # Add/update helm repositories
 helm repo add camunda https://helm.camunda.io/ --force-update
 helm repo add camunda-load-tests https://camunda.github.io/camunda-load-tests-helm/ --force-update
-helm repo add opensearch https://opensearch-project.github.io/helm-charts/ --force-update
 helm repo update
 
 # Clone Platform Helm so we can run the latest chart
