@@ -19,7 +19,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 
-public final class DefaultProcessCoverageBuilder implements ProcessCoverageBuilder {
+public final class CoverageCollectorBuilderImpl implements CoverageCollectorBuilder {
 
   private String reportDirectory;
   private List<String> excludedProcessDefinitionIds = Collections.emptyList();
@@ -28,40 +28,40 @@ public final class DefaultProcessCoverageBuilder implements ProcessCoverageBuild
   private Consumer<String> printStream;
 
   @Override
-  public ProcessCoverageBuilder excludeProcessDefinitionIds(
+  public CoverageCollectorBuilder excludeProcessDefinitionIds(
       final List<String> processDefinitionIds) {
     excludedProcessDefinitionIds = processDefinitionIds;
     return this;
   }
 
   @Override
-  public ProcessCoverageBuilder excludeDecisionDefinitionIds(
+  public CoverageCollectorBuilder excludeDecisionDefinitionIds(
       final List<String> decisionDefinitionIds) {
     excludedDecisionDefinitionIds = decisionDefinitionIds;
     return this;
   }
 
   @Override
-  public ProcessCoverageBuilder reportDirectory(final String reportDirectory) {
+  public CoverageCollectorBuilder reportDirectory(final String reportDirectory) {
     this.reportDirectory = reportDirectory;
     return this;
   }
 
   @Override
-  public ProcessCoverageBuilder testClass(final Class<?> testClass) {
+  public CoverageCollectorBuilder testClass(final Class<?> testClass) {
     this.testClass = testClass;
     return this;
   }
 
   @Override
-  public ProcessCoverageBuilder printStream(final Consumer<String> printStream) {
+  public CoverageCollectorBuilder printStream(final Consumer<String> printStream) {
     this.printStream = printStream;
     return this;
   }
 
   @Override
   public CoverageCollector build() {
-    return new DefaultCoverageCollector(
+    return new CoverageCollectorImpl(
         testClass,
         excludedProcessDefinitionIds,
         excludedDecisionDefinitionIds,

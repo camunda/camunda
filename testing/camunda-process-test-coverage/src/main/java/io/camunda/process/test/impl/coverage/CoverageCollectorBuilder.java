@@ -25,7 +25,7 @@ import java.util.function.Consumer;
  * configurations such as excluded process definitions, report directory, and test class
  * information.
  */
-public interface ProcessCoverageBuilder {
+public interface CoverageCollectorBuilder {
 
   /**
    * Specifies process definition keys to exclude from coverage analysis.
@@ -33,7 +33,7 @@ public interface ProcessCoverageBuilder {
    * @param processDefinitionIds the process definition ids to exclude
    * @return This builder instance for method chaining
    */
-  ProcessCoverageBuilder excludeProcessDefinitionIds(List<String> processDefinitionIds);
+  CoverageCollectorBuilder excludeProcessDefinitionIds(List<String> processDefinitionIds);
 
   /**
    * Specifies decision definition IDs to exclude from coverage analysis.
@@ -41,7 +41,7 @@ public interface ProcessCoverageBuilder {
    * @param decisionDefinitionIds the decision definition IDs to exclude
    * @return This builder instance for method chaining
    */
-  ProcessCoverageBuilder excludeDecisionDefinitionIds(List<String> decisionDefinitionIds);
+  CoverageCollectorBuilder excludeDecisionDefinitionIds(List<String> decisionDefinitionIds);
 
   /**
    * Sets the directory where coverage reports will be generated.
@@ -49,7 +49,7 @@ public interface ProcessCoverageBuilder {
    * @param reportDirectory Path to the directory for storing coverage reports
    * @return This builder instance for method chaining
    */
-  ProcessCoverageBuilder reportDirectory(String reportDirectory);
+  CoverageCollectorBuilder reportDirectory(String reportDirectory);
 
   /**
    * Sets the test class being executed to provide context for coverage reports.
@@ -57,7 +57,7 @@ public interface ProcessCoverageBuilder {
    * @param testClass Class object representing the test class
    * @return This builder instance for method chaining
    */
-  ProcessCoverageBuilder testClass(Class<?> testClass);
+  CoverageCollectorBuilder testClass(Class<?> testClass);
 
   /**
    * Sets a custom print stream consumer for coverage report output.
@@ -68,7 +68,7 @@ public interface ProcessCoverageBuilder {
    * @param printStream Consumer function that handles output strings
    * @return This builder instance for method chaining
    */
-  ProcessCoverageBuilder printStream(Consumer<String> printStream);
+  CoverageCollectorBuilder printStream(Consumer<String> printStream);
 
   /**
    * Builds and returns a configured ProcessCoverage instance.

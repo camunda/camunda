@@ -47,7 +47,7 @@ public interface CoverageCollector {
    *
    * @return A new ProcessCoverageBuilder instance
    */
-  static ProcessCoverageBuilder newBuilder() {
-    return new DefaultProcessCoverageBuilder();
+  static CoverageCollectorBuilder newBuilder() {
+    return new CoverageCollectorBuilderImpl();
   }
 }

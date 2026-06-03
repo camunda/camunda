@@ -21,12 +21,12 @@ import io.camunda.process.test.impl.coverage.report.CoverageReporter;
 import java.util.List;
 import java.util.function.Consumer;
 
-public final class DefaultCoverageCollector implements CoverageCollector {
+public final class CoverageCollectorImpl implements CoverageCollector {
 
   private final io.camunda.process.test.impl.coverage.core.CoverageCollector coverageCollector;
   private final CoverageReporter coverageReporter;
 
-  public DefaultCoverageCollector(
+  public CoverageCollectorImpl(
       final Class<?> testClass,
       final List<String> excludedProcessDefinitionIds,
       final List<String> excludedDecisionDefinitionIds,
