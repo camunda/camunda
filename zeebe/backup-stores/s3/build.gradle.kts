@@ -33,6 +33,7 @@ dependencies {
     testImplementation(libs.org.testcontainers.testcontainers.localstack)
     testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.mockito.mockito.core)
+    testImplementation(libs.org.mockito.mockito.junit.jupiter)
     testImplementation(libs.org.awaitility.awaitility)
     testImplementation(project(":zeebe-test-util"))
     testImplementation(project(":zeebe-protocol"))

@@ -15,6 +15,7 @@ dependencies {
     testImplementation(project(":zeebe-qa-util"))
     testImplementation(project(":configuration"))
     testImplementation(project(":zeebe-backup-store-s3"))
+    testImplementation(project(":zeebe-backup"))
     testImplementation(project(":zeebe-backup-store-gcs"))
     testImplementation(project(":camunda-testcontainer"))
     testImplementation(libs.org.slf4j.slf4j.api)

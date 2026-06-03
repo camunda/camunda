@@ -10,6 +10,7 @@ dependencies {
     api(project(":zeebe-backup"))
     api(project(":zeebe-backup-store-common"))
     api(libs.com.azure.azure.storage.blob)
+    api(libs.com.azure.azure.storage.blob.batch)
     api(libs.com.azure.azure.core)
     api(libs.com.azure.azure.storage.common)
     api(libs.com.azure.azure.identity)

@@ -25,6 +25,7 @@ dependencies {
     implementation(libs.com.fasterxml.jackson.datatype.jackson.datatype.jsr310)
     implementation(libs.com.cronutils.cron.utils)
     api(libs.org.agrona.agrona)
+    implementation(project(":zeebe-atomix-cluster"))
     implementation(project(":zeebe-transport"))
     implementation(project(":zeebe-broker-client"))
     testImplementation(libs.org.assertj.assertj.core)
