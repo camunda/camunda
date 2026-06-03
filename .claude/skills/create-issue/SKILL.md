@@ -24,13 +24,16 @@ At invocation time, list the templates from the filesystem:
 ls .github/ISSUE_TEMPLATE/*.yml
 ```
 
-Match the user's request to one of these types:
+The `ls` output from above is the authoritative list of available templates. The table below is a
+default mapping for the common cases — if a template appears in the filesystem but not here, read
+its `labels:` field to infer the `kind/` label.
 
 | User intent                    | Template file              | `kind/` label          |
-|-------------------------------|----------------------------|------------------------|
+|--------------------------------|----------------------------|------------------------|
 | Bug, defect, crash, regression | `1. bug_report.yml`        | `kind/bug`             |
 | Feature, improvement           | `2. feature_request.yml`   | `kind/feature-request` |
 | Task, activity, chore          | `3. task.yml`              | `kind/task`            |
+| Epic breakdown                 | `4. epic breakdown.yml`    | `kind/epic`            |
 | CVE, security vulnerability    | `5. CVE.yml`               | `kind/cve`             |
 | Tech debt, cleanup             | `6. tech debt.yml`         | `kind/tech-debt`       |
 
@@ -102,9 +105,16 @@ If the user says there is no parent, omit the parent link from the body.
 
 ### Step 5 — Compose the issue body
 
-Build the Markdown body directly from the template read in Step 2. Only render `type: textarea`
-items — use `attributes.label` as the `### Heading` and the user's value as the content. Skip all
-`type: dropdown` items from the body; those are metadata captured via labels (see Step 7).
+Build the Markdown body directly from the template read in Step 2, mirroring exactly what the
+GitHub form UI produces. For each item in the template's `body:` list:
+
+- Skip `type: markdown` items (display-only).
+- For `type: textarea` items: render `attributes.label` as a `### Heading` and the user's value as
+  the content.
+- For `type: dropdown` items: render `attributes.label` as a `### Heading` and the selected
+  option's text verbatim as the content (e.g. `<!-- Zeebe- -->`). These HTML comment markers are
+  what `.github/opened_issue_labeler.yml` scans on issue open to auto-apply labels.
+
 Append a **Links** section at the end with the parent issue URL if one was provided.
 
 Do not invent sections or use any structure other than what the template defines.
@@ -137,11 +147,16 @@ by `.github/opened_issue_labeler.yml`, which scans the body for the HTML comment
 in Step 5.
 
 ```bash
+body_file=$(mktemp)
+printf '%s' "<body>" > "$body_file"
+
 gh issue create \
   --repo camunda/camunda \
   --title "<title>" \
-  --body "<body>" \
+  --body-file "$body_file" \
   --label "kind/<type>"
+
+rm -f "$body_file"
 ```
 
 Capture the new issue number from the returned URL. Then fetch its database ID (required by the
