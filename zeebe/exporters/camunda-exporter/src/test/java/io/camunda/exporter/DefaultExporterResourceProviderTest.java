@@ -17,12 +17,15 @@ import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.handlers.AuditLogHandler;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationChunkCreatedItemHandler;
+import io.camunda.exporter.handlers.waitstate.WaitStateAddHandler;
+import io.camunda.exporter.handlers.waitstate.WaitStateRemoveHandler;
 import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.ComponentNames;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformerRegistry;
+import io.camunda.zeebe.exporter.common.waitstate.transformers.WaitStateTransformerRegistry;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -144,47 +147,94 @@ public class DefaultExporterResourceProviderTest {
         TestObjectMapper.objectMapper());
 
     // then
-    // AuditLogHandlers are excluded because they by design have multiple instances
-    final var handlersExcludingAuditLog =
+    // AuditLogHandlers and WaitState handlers are excluded because they by design have multiple
+    // instances (one per transformer)
+    final var handlersExcludingMultiInstance =
         provider.getExportHandlers().stream()
             .filter(handler -> !(handler instanceof AuditLogHandler))
+            .filter(handler -> !(handler instanceof WaitStateAddHandler))
+            .filter(handler -> !(handler instanceof WaitStateRemoveHandler))
             .toList();
 
-    assertThat(handlersExcludingAuditLog)
+    assertThat(handlersExcludingMultiInstance)
         .hasSize(
             (int)
-                handlersExcludingAuditLog.stream().map(ExportHandler::getClass).distinct().count());
+                handlersExcludingMultiInstance.stream()
+                    .map(ExportHandler::getClass)
+                    .distinct()
+                    .count());
   }
 
-  // TODO: enable with #54996
-  //  @Test
-  //  void shouldNotAddWaitStateHandlersWhenDisabled() {
-  //    // given
-  //    final var config = new ExporterConfiguration();
-  //    config.getWaitState().setEnabled(false);
-  //
-  //    final var provider = new DefaultExporterResourceProvider();
-  //    provider.init(
-  //        config,
-  //        mock(ExporterEntityCacheProvider.class),
-  //        new ExporterTestContext(),
-  //        new ExporterMetadata(TestObjectMapper.objectMapper()),
-  //        TestObjectMapper.objectMapper());
-  //
-  //    // when / then
-  //    assertThat(
-  //            provider.getExportHandlers().stream()
-  //                .filter(WaitStateAddHandler.class::isInstance)
-  //                .toList())
-  //        .as("No WaitStateAddHandler should be registered when waitState is disabled")
-  //        .isEmpty();
-  //    assertThat(
-  //            provider.getExportHandlers().stream()
-  //                .filter(WaitStateRemoveHandler.class::isInstance)
-  //                .toList())
-  //        .as("No WaitStateRemoveHandler should be registered when waitState is disabled")
-  //        .isEmpty();
-  //  }
+  @Test
+  void shouldAddWaitStateHandlersFromAddWaitStateHandlersMethod() {
+    // given
+    final var config = new ExporterConfiguration();
+    final var provider = new DefaultExporterResourceProvider();
+    provider.init(
+        config,
+        mock(ExporterEntityCacheProvider.class),
+        new ExporterTestContext(),
+        new ExporterMetadata(TestObjectMapper.objectMapper()),
+        TestObjectMapper.objectMapper());
+
+    // when
+    final var waitStateAddHandlers =
+        provider.getExportHandlers().stream()
+            .filter(WaitStateAddHandler.class::isInstance)
+            .map(h -> (WaitStateAddHandler<?>) h)
+            .toList();
+
+    // then — one WaitStateAddHandler per registered transformer, each with the correct ValueType
+    final Map<String, ValueType> expectedTransformers =
+        WaitStateTransformerRegistry.createAllTransformers().stream()
+            .collect(
+                Collectors.toMap(
+                    t -> t.getClass().getName(), transformer -> transformer.config().valueType()));
+
+    assertThat(
+            waitStateAddHandlers.stream()
+                .collect(
+                    Collectors.toMap(
+                        h -> h.getTransformer().getClass().getName(),
+                        ExportHandler::getHandledValueType)))
+        .containsExactlyInAnyOrderEntriesOf(expectedTransformers);
+
+    assertThat(waitStateAddHandlers)
+        .as(
+            "Should have exactly "
+                + expectedTransformers.size()
+                + " WaitStateAddHandler instances added by addWaitStateHandlers method")
+        .hasSize(expectedTransformers.size());
+  }
+
+  @Test
+  void shouldNotAddWaitStateHandlersWhenDisabled() {
+    // given
+    final var config = new ExporterConfiguration();
+    config.getWaitState().setEnabled(false);
+
+    final var provider = new DefaultExporterResourceProvider();
+    provider.init(
+        config,
+        mock(ExporterEntityCacheProvider.class),
+        new ExporterTestContext(),
+        new ExporterMetadata(TestObjectMapper.objectMapper()),
+        TestObjectMapper.objectMapper());
+
+    // when / then
+    assertThat(
+            provider.getExportHandlers().stream()
+                .filter(WaitStateAddHandler.class::isInstance)
+                .toList())
+        .as("No WaitStateAddHandler should be registered when waitState is disabled")
+        .isEmpty();
+    assertThat(
+            provider.getExportHandlers().stream()
+                .filter(WaitStateRemoveHandler.class::isInstance)
+                .toList())
+        .as("No WaitStateRemoveHandler should be registered when waitState is disabled")
+        .isEmpty();
+  }
 
   @ParameterizedTest
   @MethodSource("expectedAuditLogTransformers")
@@ -329,6 +379,15 @@ public class DefaultExporterResourceProviderTest {
     // itself uses generic RecordValue
     if (handler instanceof final AuditLogHandler<?> auditLogHandler) {
       return findRecordValueTypeParameterFromClass(auditLogHandler.getTransformer().getClass());
+    }
+
+    // For WaitState handlers, extract RecordValue from the transformer instance for the same reason
+    if (handler instanceof final WaitStateAddHandler<?> waitStateAddHandler) {
+      return findRecordValueTypeParameterFromClass(waitStateAddHandler.getTransformer().getClass());
+    }
+    if (handler instanceof final WaitStateRemoveHandler<?> waitStateRemoveHandler) {
+      return findRecordValueTypeParameterFromClass(
+          waitStateRemoveHandler.getTransformer().getClass());
     }
 
     // For regular handlers, extract from class hierarchy
