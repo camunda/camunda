@@ -206,9 +206,7 @@ public final class ManifestManager {
 
   private Path getManifestPath(final BackupIdentifier id) {
     return getManifestPath(
-        String.valueOf(id.partitionId()),
-        String.valueOf(id.checkpointId()),
-        String.valueOf(id.nodeId()));
+        String.valueOf(id.partitionId()), String.valueOf(id.checkpointId()), id.brokerId().id());
   }
 
   private boolean filterBlobsByWildcard(
@@ -218,7 +216,7 @@ public final class ManifestManager {
                 getManifestPath(
                         wildcard.partitionId().map(Number::toString).orElse("\\d+"),
                         wildcard.checkpointPattern().asRegex(),
-                        wildcard.nodeId().map(Number::toString).orElse("\\d+"))
+                        BackupIdentifierWildcard.memberIdRegex(wildcard))
                     .toString())
             .asMatchPredicate();
     return pattern.test(path);

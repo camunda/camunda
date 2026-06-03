@@ -10,6 +10,7 @@ package io.camunda.zeebe.backup.api;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.atomix.cluster.BrokerMemberId;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern.Any;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern.Exact;
@@ -48,23 +49,51 @@ class BackupIdentifierWildcardTest {
   }
 
   @Test
-  void shouldBuildPrefixWithPartitionIdAndExactCheckpointAndNodeId() {
+  void shouldIncludeBrokerIdInPrefixWhenPresent() {
     // given
     final var wildcard =
-        new BackupIdentifierWildcardImpl(Optional.of(1), Optional.of(2), new Exact(100));
+        new BackupIdentifierWildcardImpl(
+            Optional.of(BrokerMemberId.from("zone-a", 1)), Optional.of(2), new Exact(100));
 
     // when
     final var prefix = BackupIdentifierWildcard.asPrefix(wildcard);
 
     // then
-    assertThat(prefix).isEqualTo("2/100/1");
+    assertThat(prefix).isEqualTo("2/100/zone-a_1");
+  }
+
+  @Test
+  void shouldIncludeBareNodeIdInPrefixForZonelessBroker() {
+    // given
+    final var wildcard =
+        new BackupIdentifierWildcardImpl(
+            Optional.of(BrokerMemberId.from(null, 5)), Optional.of(2), new Exact(100));
+
+    // when
+    final var prefix = BackupIdentifierWildcard.asPrefix(wildcard);
+
+    // then
+    assertThat(prefix).isEqualTo("2/100/5");
+  }
+
+  @Test
+  void shouldOmitBrokerIdFromPrefixWhenAbsent() {
+    // given — broker-agnostic wildcard: matches any broker
+    final var wildcard =
+        new BackupIdentifierWildcardImpl(Optional.empty(), Optional.of(2), new Exact(100));
+
+    // when
+    final var prefix = BackupIdentifierWildcard.asPrefix(wildcard);
+
+    // then
+    assertThat(prefix).isEqualTo("2/100/");
   }
 
   @Test
   void shouldBuildPrefixWithPartitionIdAndCheckpointPrefix() {
     // given
     final var wildcard =
-        new BackupIdentifierWildcardImpl(Optional.of(1), Optional.of(2), new Prefix("10"));
+        new BackupIdentifierWildcardImpl(Optional.empty(), Optional.of(2), new Prefix("10"));
 
     // when
     final var prefix = BackupIdentifierWildcard.asPrefix(wildcard);
@@ -77,7 +106,7 @@ class BackupIdentifierWildcardTest {
   void shouldReturnEmptyPrefixWhenNoPartitionId() {
     // given
     final var wildcard =
-        new BackupIdentifierWildcardImpl(Optional.of(1), Optional.empty(), new Prefix("10"));
+        new BackupIdentifierWildcardImpl(Optional.empty(), Optional.empty(), new Prefix("10"));
 
     // when
     final var prefix = BackupIdentifierWildcard.asPrefix(wildcard);
@@ -90,7 +119,7 @@ class BackupIdentifierWildcardTest {
   void shouldBuildPrefixWithAnyCheckpoint() {
     // given
     final var wildcard =
-        new BackupIdentifierWildcardImpl(Optional.of(1), Optional.of(2), new Any());
+        new BackupIdentifierWildcardImpl(Optional.empty(), Optional.of(2), new Any());
 
     // when
     final var prefix = BackupIdentifierWildcard.asPrefix(wildcard);

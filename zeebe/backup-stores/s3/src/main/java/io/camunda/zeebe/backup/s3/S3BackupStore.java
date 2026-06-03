@@ -13,6 +13,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import io.atomix.cluster.BrokerMemberId;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
@@ -32,6 +33,7 @@ import io.camunda.zeebe.backup.s3.manifest.Manifest;
 import io.camunda.zeebe.backup.s3.manifest.NoBackupManifest;
 import io.camunda.zeebe.backup.s3.manifest.ValidBackupManifest;
 import io.camunda.zeebe.backup.s3.util.AsyncAggregatingSubscriber;
+import io.camunda.zeebe.util.MemberIdUtil;
 import io.camunda.zeebe.util.SemanticVersion;
 import java.io.IOException;
 import java.net.URI;
@@ -67,7 +69,8 @@ import software.amazon.awssdk.services.s3.model.S3Object;
  * {@link BackupStore} for S3. Stores all backups in a given bucket.
  *
  * <p>All created object keys are prefixed by the {@link BackupIdentifier}, with the following
- * scheme: {@code basePath/partitionId/checkpointId/nodeId}.
+ * scheme: {@code basePath/partitionId/checkpointId/memberId}, where {@code memberId} is {@code
+ * zone_nodeId} for zone-aware clusters or just {@code nodeId} for single-zone clusters.
  *
  * <p>Each backup contains:
  *
@@ -110,7 +113,8 @@ public final class S3BackupStore implements BackupStore {
     final var basePath = config.basePath();
     final var basePrefix = basePath.map(base -> base + "/").map(Pattern::quote).orElse("");
     final var identifierSuffix =
-        "(?:manifests/)?(?<partitionId>\\d+)/(?<checkpointId>\\d+)/(?<nodeId>\\d+).*";
+        "(?:manifests/)?(?<partitionId>\\d+)/(?<checkpointId>\\d+)/(?<memberId>(%s)).*"
+            .formatted(MemberIdUtil.regexPattern());
     backupIdentifierPattern = Pattern.compile("^" + basePrefix + identifierSuffix);
   }
 
@@ -122,11 +126,13 @@ public final class S3BackupStore implements BackupStore {
     final var matcher = backupIdentifierPattern.matcher(key);
     if (matcher.matches()) {
       try {
-        final var nodeId = Integer.parseInt(matcher.group("nodeId"));
+        final var memberId = BrokerMemberId.from(matcher.group("memberId"));
         final var partitionId = Integer.parseInt(matcher.group("partitionId"));
         final var checkpointId = Long.parseLong(matcher.group("checkpointId"));
-        return Optional.of(new BackupIdentifierImpl(nodeId, partitionId, checkpointId));
-      } catch (final NumberFormatException e) {
+        return Optional.of(
+            new BackupIdentifierImpl(
+                memberId.nodeIdx(), memberId.zone(), partitionId, checkpointId));
+      } catch (final IllegalArgumentException e) {
         LOG.warn("Tried interpreting key {} as a BackupIdentifier but failed", key, e);
       }
     }
@@ -173,21 +179,22 @@ public final class S3BackupStore implements BackupStore {
   /** Backwards compatible object path for backups generated prior to 8.9 */
   public String legacyObjectPrefix(final BackupIdentifier id) {
     final var base = config.basePath();
-    return base.map(
-            s -> "%s/%s/%s/%s/".formatted(s, id.partitionId(), id.checkpointId(), id.nodeId()))
-        .orElseGet(() -> "%s/%s/%s/".formatted(id.partitionId(), id.checkpointId(), id.nodeId()));
+    final var brokerId = id.brokerId().id();
+    return base.map(s -> "%s/%s/%s/%s/".formatted(s, id.partitionId(), id.checkpointId(), brokerId))
+        .orElseGet(() -> "%s/%s/%s/".formatted(id.partitionId(), id.checkpointId(), brokerId));
   }
 
   public String objectPrefix(final BackupIdentifier id, final Directory directory) {
     final var base = config.basePath();
+    final var brokerId = id.brokerId().id();
     return base.map(
             s ->
                 "%s/%s/%s/%s/%s/"
-                    .formatted(s, directory.name, id.partitionId(), id.checkpointId(), id.nodeId()))
+                    .formatted(s, directory.name, id.partitionId(), id.checkpointId(), brokerId))
         .orElseGet(
             () ->
                 "%s/%s/%s/%s/"
-                    .formatted(directory.name, id.partitionId(), id.checkpointId(), id.nodeId()));
+                    .formatted(directory.name, id.partitionId(), id.checkpointId(), brokerId));
   }
 
   public static void validateConfig(final S3BackupConfig config) {

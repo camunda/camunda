@@ -10,6 +10,7 @@ package io.camunda.zeebe.backup.filesystem;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.atomix.cluster.BrokerMemberId;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
@@ -155,7 +156,7 @@ class ManifestManagerTest {
             6),
         Arguments.of(
             new BackupIdentifierWildcardImpl(
-                Optional.of(1337), Optional.empty(), CheckpointPattern.any()),
+                Optional.of(BrokerMemberId.from(1337)), Optional.empty(), CheckpointPattern.any()),
             4),
         Arguments.of(
             new BackupIdentifierWildcardImpl(
@@ -163,7 +164,7 @@ class ManifestManagerTest {
             3),
         Arguments.of(
             new BackupIdentifierWildcardImpl(
-                Optional.of(1337), Optional.of(0), CheckpointPattern.of(42L)),
+                Optional.of(BrokerMemberId.from(1337)), Optional.of(0), CheckpointPattern.of(42L)),
             1));
   }
 

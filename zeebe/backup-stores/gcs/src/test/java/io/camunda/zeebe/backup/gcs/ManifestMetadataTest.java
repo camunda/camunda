@@ -286,26 +286,6 @@ final class ManifestMetadataTest {
     }
 
     @Test
-    void shouldParseZoneFromMetadata() {
-      // given
-      final var metadata =
-          Map.of(
-              ManifestMetadata.STATUS_CODE, "COMPLETED",
-              ManifestMetadata.CHECKPOINT_POSITION, "500",
-              ManifestMetadata.NUMBER_OF_PARTITIONS, "3",
-              ManifestMetadata.BROKER_VERSION, "8.5.0",
-              ManifestMetadata.ZONE, "zone-a");
-      final var blob = mockBlob(blobPath(2, 3, 1), metadata);
-
-      // when
-      final var result = ManifestMetadata.toBackupStatus(blob, BASE_PATH, MANIFEST_BLOB_NAME);
-
-      // then
-      assertThat(result).isPresent();
-      assertThat(result.orElseThrow().id().zone()).isEqualTo("zone-a");
-    }
-
-    @Test
     void shouldParseFailedStatusWithReason() {
       // given
       final var metadata =
