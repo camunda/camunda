@@ -60,7 +60,11 @@ platform_values += -f camunda-platform-values-$(secondary_storage).yaml
 ifneq ($(enable_optimize),true)
 	platform_values += --set optimize.enabled=false
 else
-	platform_values += -f camunda-platform-values-optimize-elasticsearch.yaml
+	# Optimize needs Elasticsearch or OpenSearch, so enable Elasticsearch if
+	# we are not already creating a cluster for secondary storage.
+	ifeq ($(filter $(secondary_storage),elasticsearch opensearch),)
+		platform_values += -f camunda-platform-values-optimize-elasticsearch.yaml
+	endif
 endif
 
 # Disable Operate and Tasklist if webapps not enabled
