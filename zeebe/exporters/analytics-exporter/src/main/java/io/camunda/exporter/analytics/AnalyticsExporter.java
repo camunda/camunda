@@ -41,6 +41,7 @@ public class AnalyticsExporter implements Exporter {
   private AnalyticsExporterContext analyticsContext;
   private AnalyticsExporterMetadata metadata;
   private ScheduledTask metricFlushTask;
+  private ScheduledTask heartbeatTask;
 
   public AnalyticsExporter() {
     this(new OtelSdkManager());
@@ -91,6 +92,7 @@ public class AnalyticsExporter implements Exporter {
             .orElse(new AnalyticsExporterMetadata());
     otelSdkManager.initialize(config, analyticsContext, metadata);
     scheduleMetricFlush();
+    scheduleHeartbeat();
     LOG.info("Analytics exporter opened");
   }
 
@@ -100,7 +102,13 @@ public class AnalyticsExporter implements Exporter {
       metricFlushTask.cancel();
       metricFlushTask = null;
     }
+    if (heartbeatTask != null) {
+      heartbeatTask.cancel();
+      heartbeatTask = null;
+    }
     otelSdkManager.close();
+    controller.updateLastExportedRecordPosition(
+        controller.getLastExportedRecordPosition(), metadata.serialize());
     LOG.info("Analytics exporter closed");
   }
 
@@ -128,6 +136,22 @@ public class AnalyticsExporter implements Exporter {
       SAMPLED_WARN_LOG.warn("Failed to flush metrics", e);
     } finally {
       scheduleMetricFlush();
+    }
+  }
+
+  private void scheduleHeartbeat() {
+    heartbeatTask =
+        controller.scheduleCancellableTask(
+            config.getHeartbeatInterval(), this::emitHeartbeatAndReschedule);
+  }
+
+  private void emitHeartbeatAndReschedule() {
+    try {
+      otelSdkManager.emitHeartbeat();
+    } catch (final Exception e) {
+      SAMPLED_WARN_LOG.warn("Failed to emit heartbeat", e);
+    } finally {
+      scheduleHeartbeat();
     }
   }
 

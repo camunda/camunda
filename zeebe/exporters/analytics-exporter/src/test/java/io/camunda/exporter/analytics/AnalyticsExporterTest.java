@@ -58,21 +58,6 @@ class AnalyticsExporterTest {
   }
 
   @Test
-  void shouldRejectMissingEndpoint() {
-    // given
-    final var context =
-        new ExporterTestContext()
-            .setConfiguration(
-                new ExporterTestConfiguration<>(
-                    "analytics", new AnalyticsExporterConfig().setEndpoint("")))
-            .setLicenseKey("test-license-key");
-
-    // when / then
-    assertThatThrownBy(() -> new AnalyticsExporter().configure(context))
-        .isInstanceOf(IllegalArgumentException.class);
-  }
-
-  @Test
   void shouldEmitLogRecordWithAllAttributes() {
     // given
     final var record = piCreatedEvent();

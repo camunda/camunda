@@ -7,14 +7,18 @@
  */
 package io.camunda.exporter.analytics;
 
+import static io.camunda.exporter.analytics.AnalyticsAttributes.BROKER_VERSION;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.CLUSTER_ID;
+import static io.camunda.exporter.analytics.AnalyticsAttributes.EVENT_HEARTBEAT;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.EVENT_NAME;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.EVENT_SEQUENCE_NUMBER;
+import static io.camunda.exporter.analytics.AnalyticsAttributes.EXPORTER_VERSION;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.LOG_POSITION;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.METRIC_EXPORT_WINDOW;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.PARTITION_ID;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.SERVICE_NAME;
 
+import io.camunda.zeebe.util.VersionUtil;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.logs.LogRecordBuilder;
 import io.opentelemetry.api.logs.Logger;
@@ -95,6 +99,17 @@ public class OtelSdkManager implements AutoCloseable {
     record.emit();
   }
 
+  public void emitHeartbeat() {
+    otelLogger
+        .logRecordBuilder()
+        .setSeverity(Severity.INFO)
+        .setSeverityText("INFO")
+        .setAttribute(EVENT_NAME, EVENT_HEARTBEAT)
+        .setAttribute(BROKER_VERSION, VersionUtil.getVersion())
+        .setAttribute(EXPORTER_VERSION, AnalyticsExporterVersion.get())
+        .emit();
+  }
+
   /** Increments the named counter by 1 and updates the export window tracking fields. */
   public void incrementMetric(
       final String metricName,
@@ -132,11 +147,9 @@ public class OtelSdkManager implements AutoCloseable {
         .ofLongs()
         .buildWithCallback(
             measurement -> {
-              // Always report — acts as heartbeat even when no events occurred.
-              // Note: metricSequenceNumber is persisted piggyback on the next export(Record)
-              // call, not on flush itself (the broker only stores metadata when position
-              // strictly increases). On restart after a flush-without-export, the sequence
-              // may regress by one — the backend handles this via position-based dedup.
+              if (!metricWindow.hasEvents()) {
+                return;
+              }
               final long seq = metadata.incrementAndGetMetricSequenceNumber();
               measurement.record(metricWindow.eventCount(), metricWindow.toGaugeAttributes(seq));
               metricWindow.reset();

@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.analytics;
 
+import static io.camunda.exporter.analytics.AnalyticsAttributes.EVENT_HEARTBEAT;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.EVENT_PROCESS_INSTANCE_CREATED;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -55,6 +56,35 @@ class AnalyticsExporterOtelIT {
     COLLECTOR_LOGS.clear();
   }
 
+  /**
+   * Heartbeat reaches the collector with the static cluster metadata attributes (broker / exporter
+   * version). The schema URL is delivered automatically via the instrumentation scope, so we don't
+   * attach it as a record attribute.
+   */
+  @Test
+  void shouldDeliverHeartbeatWithVersionAttributes() {
+    // given — short heartbeat interval so the scheduled task fires within the test
+    final var controller = new ExporterTestController();
+    final var exporter =
+        createExporter(
+            new AnalyticsExporterConfig()
+                .setEndpoint("http://localhost:" + OTEL_COLLECTOR.getMappedPort(OTLP_PORT))
+                .setHeartbeatInterval("PT1S"),
+            controller);
+
+    // when — fire the scheduled heartbeat task
+    controller.runScheduledTasks(Duration.ofSeconds(1));
+    exporter.close();
+
+    // then
+    awaitCollectorLogs(
+        EVENT_HEARTBEAT,
+        AnalyticsAttributes.BROKER_VERSION.getKey(),
+        AnalyticsAttributes.EXPORTER_VERSION.getKey(),
+        // schema URL is part of the instrumentation scope, not a record attribute
+        "ScopeLogs SchemaURL: https://camunda.io/schemas/analytics/v1");
+  }
+
   /** Events arrive at the collector with correct event name and attributes. */
   @Test
   void shouldDeliverEventsWithAttributes() {
@@ -101,10 +131,12 @@ class AnalyticsExporterOtelIT {
         .atMost(Duration.ofSeconds(30))
         .untilAsserted(
             () -> {
-              // Count total LogRecord entries
-              final var logRecordCount =
-                  COLLECTOR_LOGS.stream().filter(l -> l.contains("LogRecord #")).count();
-              assertThat(logRecordCount).isEqualTo(500);
+              // Count the PI-created records specifically to avoid coupling to other event types.
+              final var piCreatedCount =
+                  COLLECTOR_LOGS.stream()
+                      .filter(l -> l.contains("Str(" + EVENT_PROCESS_INSTANCE_CREATED + ")"))
+                      .count();
+              assertThat(piCreatedCount).isEqualTo(500);
 
               // Count export calls (each starts a "ScopeLogs" block)
               final var exportCount =
@@ -124,6 +156,11 @@ class AnalyticsExporterOtelIT {
   }
 
   private AnalyticsExporter createExporter(final AnalyticsExporterConfig config) {
+    return createExporter(config, new ExporterTestController());
+  }
+
+  private AnalyticsExporter createExporter(
+      final AnalyticsExporterConfig config, final ExporterTestController controller) {
     final var context =
         new ExporterTestContext()
             .setConfiguration(new ExporterTestConfiguration<>("analytics-it", config))
@@ -132,7 +169,7 @@ class AnalyticsExporterOtelIT {
             .setLicenseKey("it-test-license-key");
     final var exporter = new AnalyticsExporter();
     exporter.configure(context);
-    exporter.open(new ExporterTestController());
+    exporter.open(controller);
     return exporter;
   }
 

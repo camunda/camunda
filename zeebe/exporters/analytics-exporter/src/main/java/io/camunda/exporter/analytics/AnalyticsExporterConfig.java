@@ -16,6 +16,7 @@ public class AnalyticsExporterConfig {
   private int maxQueueSize = 2048;
   private int maxBatchSize = 512;
   private String pushInterval = "PT5M";
+  private String heartbeatInterval = "PT10M";
   private boolean signing = true;
 
   public String getEndpoint() {
@@ -54,6 +55,15 @@ public class AnalyticsExporterConfig {
     return this;
   }
 
+  public Duration getHeartbeatInterval() {
+    return Duration.parse(heartbeatInterval);
+  }
+
+  public AnalyticsExporterConfig setHeartbeatInterval(final String heartbeatInterval) {
+    this.heartbeatInterval = heartbeatInterval;
+    return this;
+  }
+
   public boolean isSigning() {
     return signing;
   }
@@ -71,6 +81,16 @@ public class AnalyticsExporterConfig {
       Duration.parse(pushInterval);
     } catch (final Exception e) {
       throw new IllegalArgumentException("Invalid pushInterval: " + pushInterval, e);
+    }
+    final Duration parsedHeartbeat;
+    try {
+      parsedHeartbeat = Duration.parse(heartbeatInterval);
+    } catch (final Exception e) {
+      throw new IllegalArgumentException("Invalid heartbeatInterval: " + heartbeatInterval, e);
+    }
+    if (parsedHeartbeat.isZero() || parsedHeartbeat.isNegative()) {
+      throw new IllegalArgumentException(
+          "heartbeatInterval must be positive, got: " + heartbeatInterval);
     }
     if (maxQueueSize <= 0) {
       throw new IllegalArgumentException("maxQueueSize must be positive, got: " + maxQueueSize);
