@@ -48,29 +48,23 @@ _scenario_platform_flags  :=
 endif
 
 # Construct platform values files based on configuration
-platform_values := -f camunda-platform-values.yaml
+# Starting with the defaults, which are always applied and set common baseline configuration for all
+# set ups. The other values files are focused and only contain the necessary overrides for each storage type.
+platform_values := -f camunda-platform-values-defaults.yaml
 
 # Makefile-side load-test flags. Separate from `additional_load_test_configuration`,
 # which CI sets on the make command line and would suppress `+=` here.
 _secondary_storage_load_test_flags :=
 
 # Add secondary storage values
-ifeq ($(secondary_storage),postgresql)
-    platform_values += -f camunda-platform-values-rdbms.yaml
-else ifeq ($(secondary_storage),opensearch)
-	platform_values += -f camunda-platform-values-opensearch.yaml
-else ifeq ($(secondary_storage),none)
-	platform_values += -f camunda-platform-no-secondary-storage.yaml
+ifeq ($(secondary_storage),none)
 	_secondary_storage_load_test_flags += --set global.extraConfig.load-tester.monitor-data-availability=false
 endif
+platform_values += -f camunda-platform-values-$(secondary_storage).yaml
 
 # Disable Optimize if not enabled
 ifneq ($(enable_optimize),true)
 	platform_values += --set optimize.enabled=false
-
-	ifeq ($(secondary_storage),postgresql)
-		platform_values += --set elasticsearch.enabled=false
-	endif
 endif
 
 # Platform values with stable configuration
@@ -117,16 +111,9 @@ create-credentials:
 	@echo "Applying camunda-credentials secret for namespace $(namespace)..."
 	kubectl apply -n $(namespace) -f resources/camunda-credentials.yaml
 
-# Install PostgreSQL database if secondary_storage is postgresql, or OpenSearch if secondary_storage is opensearch
 .PHONY: install-storage
 install-storage:
-ifeq ($(secondary_storage),postgresql)
-	@echo "Installing PostgreSQL database for namespace $(namespace)..."
-	# Install Postgres database - configuration provided via camunda-platform-values.yaml and camunda-platform-values-rdbms.yaml
-	helm upgrade --install postgresql oci://registry-1.docker.io/bitnamicharts/postgresql \
-		--namespace $(namespace) \
-		$(platform_values)
-else ifeq ($(secondary_storage),opensearch)
+ifeq ($(secondary_storage),opensearch)
 	@echo "Installing OpenSearch cluster for namespace $(namespace)..."
 	helm upgrade --install opensearch opensearch/opensearch \
 		--version "2.31.0" \
@@ -164,7 +151,6 @@ install-platform: setup-leader-balancer
 		--reset-then-reuse-values \
 		--render-subchart-notes \
 		$(platform_values) \
-		-f values-preemptible.yaml \
 		$(_scenario_platform_flags) \
 		$(additional_platform_configuration)
 
@@ -212,7 +198,6 @@ setup-leader-balancer:
 template:
 	helm template $(namespace) $(helm_chart_platform) \
 		$(platform_values) \
-		-f values-preemptible.yaml \
 		$(_scenario_platform_flags) \
 		$(additional_platform_configuration) \
 		--output-dir .
@@ -264,11 +249,7 @@ clean:
 	-kubectl delete -n $(namespace) pvc -l app.kubernetes.io/instance=$(namespace)
 	-kubectl delete -n $(namespace) pvc -l app=elasticsearch-master
 	-kubectl delete -n $(namespace) cronjob leader-balancer
-ifeq ($(secondary_storage),postgresql)
-	@echo "Cleaning up $(secondary_storage) database for namespace $(namespace)..."
-	-helm --namespace $(namespace) uninstall $(secondary_storage)
-	-kubectl delete -n $(namespace) pvc -l app.kubernetes.io/name=$(secondary_storage)
-else ifeq ($(secondary_storage),opensearch)
+ifeq ($(secondary_storage),opensearch)
 	@echo "Cleaning up OpenSearch cluster for namespace $(namespace)..."
 	-helm --namespace $(namespace) uninstall opensearch
 	-kubectl delete -n $(namespace) pvc -l app.kubernetes.io/name=opensearch
