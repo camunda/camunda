@@ -5,6 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
+// Test change — no dependency manifest touched; vuln gate should be skipped
 package io.camunda.zeebe.broker;
 
 import io.atomix.cluster.BrokerMemberId;
