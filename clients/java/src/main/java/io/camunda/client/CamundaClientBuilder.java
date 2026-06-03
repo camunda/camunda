@@ -42,6 +42,12 @@ public interface CamundaClientBuilder {
   CamundaClientBuilder withProperties(Properties properties);
 
   /**
+   * Sets the configuration from a {@link CamundaClientConfiguration} object. Can be used to
+   * configure a client from a base configuration.
+   */
+  CamundaClientBuilder withConfiguration(CamundaClientConfiguration configuration);
+
+  /**
    * Allows to disable the mechanism to override some properties by ENVIRONMENT VARIABLES. This is
    * useful if a client shall be constructed for test cases or in an environment that wants to fully
    * control properties (like Spring Boot).

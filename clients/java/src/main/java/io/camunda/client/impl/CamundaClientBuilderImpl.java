@@ -340,7 +340,11 @@ public final class CamundaClientBuilderImpl
 
     BuilderUtils.applyPropertyValueIfNotNull(
         properties,
-        value -> defaultJobWorkerTenantIds(Arrays.asList(value.split(TENANT_ID_LIST_SEPARATOR))),
+        value ->
+            defaultJobWorkerTenantIds(
+                value.isEmpty()
+                    ? Collections.emptyList()
+                    : Arrays.asList(value.split(TENANT_ID_LIST_SEPARATOR))),
         io.camunda.client.ClientProperties.DEFAULT_JOB_WORKER_TENANT_IDS);
 
     BuilderUtils.applyPropertyValueIfNotNull(
@@ -415,6 +419,40 @@ public final class CamundaClientBuilderImpl
         value -> useClientSideLoadBalancing(Boolean.parseBoolean(value)),
         USE_CLIENT_SIDE_LOAD_BALANCING);
 
+    return this;
+  }
+
+  @Override
+  public CamundaClientBuilderImpl withConfiguration(
+      final CamundaClientConfiguration configuration) {
+    final Properties properties = toProperties(configuration);
+    withProperties(properties);
+
+    // Properties not representable as string key-value pairs
+    if (configuration.getCredentialsProvider() != null) {
+      credentialsProvider(configuration.getCredentialsProvider());
+    }
+    if (configuration.getJsonMapper() != null) {
+      withJsonMapper(configuration.getJsonMapper());
+    }
+    if (configuration.getInterceptors() != null) {
+      configuration.getInterceptors().forEach(this::withInterceptors);
+    }
+    if (configuration.getChainHandlers() != null) {
+      configuration.getChainHandlers().forEach(this::withChainHandlers);
+    }
+    if (configuration.jobWorkerSchedulingExecutor() != null) {
+      jobWorkerSchedulingExecutor(
+          configuration.jobWorkerSchedulingExecutor(),
+          configuration.ownsJobWorkerSchedulingExecutor());
+    }
+    if (configuration.jobHandlingExecutor() != null) {
+      jobHandlingExecutor(
+          configuration.jobHandlingExecutor(), configuration.ownsJobHandlingExecutor());
+    }
+    if (configuration.getDefaultJobWorkerExceptionHandler() != null) {
+      defaultJobWorkerExceptionHandler(configuration.getDefaultJobWorkerExceptionHandler());
+    }
     return this;
   }
 
@@ -654,7 +692,11 @@ public final class CamundaClientBuilderImpl
         value -> maxHttpConnections(Integer.parseInt(value)), MAX_HTTP_CONNECTIONS);
     applyEnvironmentValueIfNotNull(this::defaultTenantId, DEFAULT_TENANT_ID_VAR);
     applyEnvironmentValueIfNotNull(
-        value -> defaultJobWorkerTenantIds(Arrays.asList(value.split(TENANT_ID_LIST_SEPARATOR))),
+        value ->
+            defaultJobWorkerTenantIds(
+                value.isEmpty()
+                    ? Collections.emptyList()
+                    : Arrays.asList(value.split(TENANT_ID_LIST_SEPARATOR))),
         DEFAULT_JOB_WORKER_TENANT_IDS_VAR);
     applyEnvironmentValueIfNotNull(
         value -> defaultJobWorkerTenantFilter(TenantFilter.from(value)),
@@ -720,6 +762,74 @@ public final class CamundaClientBuilderImpl
     final BasicAuthCredentialsProviderBuilder builder =
         CredentialsProvider.newBasicAuthCredentialsProviderBuilder();
     return builder.build();
+  }
+
+  private static Properties toProperties(final CamundaClientConfiguration configuration) {
+    final Properties properties = new Properties();
+    setIfNotNull(properties, GRPC_ADDRESS, configuration.getGrpcAddress());
+    setIfNotNull(properties, REST_ADDRESS, configuration.getRestAddress());
+    setIfNotNull(properties, DEFAULT_TENANT_ID, configuration.getDefaultTenantId());
+    if (configuration.getDefaultJobWorkerTenantIds() != null) {
+      properties.setProperty(
+          ClientProperties.DEFAULT_JOB_WORKER_TENANT_IDS,
+          String.join(TENANT_ID_LIST_SEPARATOR, configuration.getDefaultJobWorkerTenantIds()));
+    }
+    if (configuration.getDefaultJobWorkerTenantFilter() != null) {
+      properties.setProperty(
+          ClientProperties.DEFAULT_JOB_WORKER_TENANT_FILTER_MODE,
+          configuration.getDefaultJobWorkerTenantFilter().name());
+    }
+    setIfNotNull(
+        properties, JOB_WORKER_EXECUTION_THREADS, configuration.getNumJobWorkerExecutionThreads());
+    setIfNotNull(
+        properties, JOB_WORKER_MAX_JOBS_ACTIVE, configuration.getDefaultJobWorkerMaxJobsActive());
+    setIfNotNull(properties, DEFAULT_JOB_WORKER_NAME, configuration.getDefaultJobWorkerName());
+    setDurationMillis(
+        properties, ClientProperties.DEFAULT_JOB_TIMEOUT, configuration.getDefaultJobTimeout());
+    setDurationMillis(
+        properties,
+        ClientProperties.DEFAULT_JOB_POLL_INTERVAL,
+        configuration.getDefaultJobPollInterval());
+    setDurationMillis(
+        properties, DEFAULT_MESSAGE_TIME_TO_LIVE, configuration.getDefaultMessageTimeToLive());
+    setDurationMillis(
+        properties,
+        ClientProperties.DEFAULT_REQUEST_TIMEOUT,
+        configuration.getDefaultRequestTimeout());
+    setDurationMillis(
+        properties,
+        ClientProperties.DEFAULT_REQUEST_TIMEOUT_OFFSET,
+        configuration.getDefaultRequestTimeoutOffset());
+    setIfNotNull(properties, CA_CERTIFICATE_PATH, configuration.getCaCertificatePath());
+    setDurationMillis(properties, KEEP_ALIVE, configuration.getKeepAlive());
+    setIfNotNull(properties, OVERRIDE_AUTHORITY, configuration.getOverrideAuthority());
+    setIfNotNull(properties, MAX_MESSAGE_SIZE, configuration.getMaxMessageSize());
+    setIfNotNull(properties, MAX_METADATA_SIZE, configuration.getMaxMetadataSize());
+    setIfNotNull(
+        properties, ClientProperties.MAX_HTTP_CONNECTIONS, configuration.getMaxHttpConnections());
+    properties.setProperty(
+        PREFER_REST_OVER_GRPC, String.valueOf(configuration.preferRestOverGrpc()));
+    properties.setProperty(
+        STREAM_ENABLED, String.valueOf(configuration.getDefaultJobWorkerStreamEnabled()));
+    properties.setProperty(
+        USE_DEFAULT_RETRY_POLICY, String.valueOf(configuration.useDefaultRetryPolicy()));
+    properties.setProperty(
+        USE_CLIENT_SIDE_LOAD_BALANCING, String.valueOf(configuration.useClientSideLoadBalancing()));
+    return properties;
+  }
+
+  private static void setIfNotNull(
+      final Properties properties, final String key, final Object value) {
+    if (value != null) {
+      properties.setProperty(key, String.valueOf(value));
+    }
+  }
+
+  private static void setDurationMillis(
+      final Properties properties, final String key, final Duration value) {
+    if (value != null) {
+      properties.setProperty(key, String.valueOf(value.toMillis()));
+    }
   }
 
   private static URI getURIFromString(final String uri) {
