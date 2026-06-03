@@ -20,4 +20,12 @@ public interface ClientRequest extends BufferWriter {
    * @return the type of this request
    */
   RequestType getRequestType();
+
+  /**
+   * @return the partition group (physical tenant) this request targets; defaults to {@code
+   *     "default"} for backward compatibility
+   */
+  default String getPartitionGroup() {
+    return "default";
+  }
 }
