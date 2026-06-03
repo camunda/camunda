@@ -15,6 +15,7 @@ public class SchemaManagerConfiguration {
   private boolean isCreateSchema = true;
   private SchemaManagerRetryConfiguration retry = new SchemaManagerRetryConfiguration();
   private boolean versionCheckRestrictionEnabled = true;
+  private boolean performCleanup = false;
 
   public boolean isCreateSchema() {
     return isCreateSchema;
@@ -38,6 +39,14 @@ public class SchemaManagerConfiguration {
 
   public void setVersionCheckRestrictionEnabled(final boolean versionCheckRestrictionEnabled) {
     this.versionCheckRestrictionEnabled = versionCheckRestrictionEnabled;
+  }
+
+  public boolean isPerformCleanup() {
+    return performCleanup;
+  }
+
+  public void setPerformCleanup(final boolean performCleanup) {
+    this.performCleanup = performCleanup;
   }
 
   public static class SchemaManagerRetryConfiguration extends RetryConfiguration {

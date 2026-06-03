@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.camunda.search.connect.configuration.DatabaseConfig;
 import io.camunda.search.schema.IndexMapping;
 import io.camunda.search.schema.IndexMappingProperty;
 import io.camunda.search.schema.MappingSource;
@@ -32,6 +33,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -304,6 +306,20 @@ public class OpensearchEngineClient implements SearchEngineClient {
     } catch (final IOException ioe) {
       final var errMsg = String.format("Index [%s] was not deleted", indexName);
       throw new SearchEngineException(errMsg, ioe);
+    }
+  }
+
+  @Override
+  public boolean deleteIndexIfExists(final String indexName) {
+    try {
+      deleteIndex(indexName);
+      return true;
+    } catch (final OpenSearchException e) {
+      if (e.status() == 404) {
+        return false;
+      }
+
+      throw e;
     }
   }
 
@@ -732,6 +748,27 @@ public class OpensearchEngineClient implements SearchEngineClient {
         throw new RuntimeException(e);
       }
     }
+  }
+
+  @Override
+  public Set<String> getIndexNames(final String pattern) {
+    try {
+      return new HashSet<>(
+          client
+              .indices()
+              .get(req -> req.index(pattern).ignoreUnavailable(true))
+              .result()
+              .keySet());
+    } catch (final IOException | OpenSearchException e) {
+      final var errMsg = String.format("Failed to retrieve index names for pattern [%s]", pattern);
+      LOG.error(errMsg, e);
+      throw new SearchEngineException(errMsg, e);
+    }
+  }
+
+  @Override
+  public String getEngineName() {
+    return DatabaseConfig.OPENSEARCH;
   }
 
   record ISMPolicyState(boolean exists, int seqNo, int primaryTerm) {

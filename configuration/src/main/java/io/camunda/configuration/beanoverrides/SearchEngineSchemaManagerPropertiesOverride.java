@@ -50,6 +50,17 @@ public class SearchEngineSchemaManagerPropertiesOverride {
     override.setVersionCheckRestrictionEnabled(
         unifiedConfiguration.getCamunda().getSystem().getUpgrade().getEnableVersionCheck());
 
+    /* Clean-up properties */
+    unifiedConfiguration
+        .getCamunda()
+        .getData()
+        .getSecondaryStorage()
+        .getElasticsearchOrOpensearch()
+        .ifPresent(
+            secondaryStorage -> {
+              override.setPerformCleanup(secondaryStorage.isPerformCleanup());
+            });
+
     return override;
   }
 }

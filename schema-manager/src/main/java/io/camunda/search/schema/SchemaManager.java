@@ -129,6 +129,9 @@ public class SchemaManager implements CloseableSilently {
           "Will not make any changes to indices and index templates as [createSchema] is false");
       return;
     }
+
+    startSchemaCleanup();
+
     final var timer =
         ofNullable(schemaManagerMetrics)
             .map(SchemaManagerMetrics::startSchemaInitTimer)
@@ -250,6 +253,13 @@ public class SchemaManager implements CloseableSilently {
       searchEngineClient.putIndexLifeCyclePolicy(
           retention.getUsageMetricsPolicyName(), retention.getUsageMetricsMinimumAge());
     }
+  }
+
+  private void startSchemaCleanup() {
+    LOG.debug("Starting legacy indexes cleanup...");
+    final boolean performCleanup = config.schemaManager().isPerformCleanup();
+    final SchemaCleanup schemaCleanup = new SchemaCleanup(performCleanup, searchEngineClient);
+    CompletableFuture.runAsync(schemaCleanup::performCleanup, virtualThreadExecutor);
   }
 
   private void updateSchemaSettings() {

@@ -33,6 +33,8 @@ public class SchemaManagerPropertiesTest {
   @TestPropertySource(
       properties = {
         "camunda.system.upgrade.enable-version-check=false",
+        /* clean-up config */
+        "camunda.data.secondary-storage.elasticsearch.perform-cleanup=true"
       })
   class WithUnifiedConfigSet {
     final BrokerBasedProperties brokerBasedProperties;
@@ -54,6 +56,11 @@ public class SchemaManagerPropertiesTest {
     void shouldSetBrokerVersionCheckRestrictionEnabled() {
       assertThat(brokerBasedProperties.getExperimental().isVersionCheckRestrictionEnabled())
           .isFalse();
+    }
+
+    @Test
+    void shouldSetCleanupProperties() {
+      assertThat(searchEngineSchemaManagerProperties.isPerformCleanup()).isTrue();
     }
   }
 
