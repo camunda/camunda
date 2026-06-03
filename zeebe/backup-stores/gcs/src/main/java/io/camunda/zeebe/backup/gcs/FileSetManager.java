@@ -21,6 +21,7 @@ import io.camunda.zeebe.backup.api.NamedFileSet;
 import io.camunda.zeebe.backup.common.FileSet;
 import io.camunda.zeebe.backup.common.FileSet.NamedFile;
 import io.camunda.zeebe.backup.common.NamedFileSetImpl;
+import io.camunda.zeebe.backup.common.SemaphoreLeasedScheduler;
 import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.BatchOperationException;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -34,7 +35,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Semaphore;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 final class FileSetManager {
@@ -93,38 +93,17 @@ final class FileSetManager {
         fileSet.namedFiles().entrySet().stream()
             .map(
                 namedFile ->
-                    schedule(
+                    SemaphoreLeasedScheduler.schedule(
                         () -> {
                           uploadFile(id, fileSetName, namedFile.getKey(), namedFile.getValue());
                           return null;
-                        }))
+                        },
+                        executor,
+                        concurrencyLimit))
             .toList();
 
     // Wait for all uploads to complete
     CompletableFuture.allOf(uploadFutures.toArray(new CompletableFuture[0])).join();
-  }
-
-  /**
-   * Schedules a task to be executed asynchronously using virtual threads, respecting the
-   * concurrency limit imposed by the semaphore.
-   */
-  private <T> CompletableFuture<T> schedule(final Supplier<T> task) {
-    final var result = new CompletableFuture<T>();
-    executor.execute(
-        () -> {
-          try {
-            concurrencyLimit.acquire();
-            result.complete(task.get());
-          } catch (final InterruptedException e) {
-            Thread.currentThread().interrupt();
-            result.completeExceptionally(e);
-          } catch (final Exception e) {
-            result.completeExceptionally(e);
-          } finally {
-            concurrencyLimit.release();
-          }
-        });
-    return result;
   }
 
   private void uploadFile(
@@ -186,8 +165,10 @@ final class FileSetManager {
                 Collectors.toMap(
                     NamedFile::name,
                     namedFile ->
-                        schedule(
-                            () -> downloadFile(id, filesetName, namedFile.name(), targetFolder))));
+                        SemaphoreLeasedScheduler.schedule(
+                            () -> downloadFile(id, filesetName, namedFile.name(), targetFolder),
+                            executor,
+                            concurrencyLimit)));
 
     // Wait for all downloads to complete
     CompletableFuture.allOf(downloadFutures.values().toArray(new CompletableFuture[0])).join();

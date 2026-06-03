@@ -9,6 +9,7 @@ package io.camunda.zeebe.backup.s3;
 
 import io.camunda.zeebe.backup.api.NamedFileSet;
 import io.camunda.zeebe.backup.common.NamedFileSetImpl;
+import io.camunda.zeebe.backup.common.SemaphoreLeasedScheduler;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupCompressionFailed;
 import io.camunda.zeebe.backup.s3.manifest.FileSet;
 import io.camunda.zeebe.backup.s3.manifest.FileSet.FileMetadata;
@@ -21,9 +22,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
-import java.util.function.Supplier;
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,17 +46,14 @@ final class FileSetManager {
   private final S3BackupConfig config;
   private final Semaphore concurrencyLimit;
   private final Thread.Builder threadBuilder;
+  private final Executor schedulerExecutor;
 
   public FileSetManager(final S3AsyncClient client, final S3BackupConfig config) {
     this.client = client;
     this.config = config;
-
-    // We try not to exhaust the available connections by restricting the number of
-    // concurrent uploads to half of the number of available connections.
-    // This should prevent ConnectionAcquisitionTimeout for backups with many and/or large files
-    // where we would otherwise occupy all connections, preventing some uploads from starting.
     concurrencyLimit = new Semaphore(Math.max(1, config.maxConcurrentConnections() / 2));
     threadBuilder = Thread.ofVirtual().name("zeebe-backup-s3", 0);
+    schedulerExecutor = threadBuilder::start;
   }
 
   CompletableFuture<FileSet> save(final String prefix, final NamedFileSet files) {
@@ -63,29 +61,12 @@ final class FileSetManager {
     return CompletableFutureUtils.mapAsync(
             files.namedFiles().entrySet(),
             Entry::getKey,
-            namedFile -> schedule(() -> saveFile(prefix, namedFile.getKey(), namedFile.getValue())))
+            namedFile ->
+                SemaphoreLeasedScheduler.schedule(
+                    () -> saveFile(prefix, namedFile.getKey(), namedFile.getValue()),
+                    schedulerExecutor,
+                    concurrencyLimit))
         .thenApply(FileSet::new);
-  }
-
-  /** Schedules a task to be executed asynchronously, respecting the concurrency limit. */
-  private <T> CompletableFuture<T> schedule(final Supplier<T> task) {
-    final var result = new CompletableFuture<T>();
-    threadBuilder.start(
-        () -> {
-          try {
-            concurrencyLimit.acquire();
-            result.complete(task.get());
-          } catch (final InterruptedException e) {
-            Thread.currentThread().interrupt();
-            LOG.warn("Backup operation failed due to interruption", e);
-            result.completeExceptionally(e);
-          } catch (final Exception e) {
-            result.completeExceptionally(e);
-          } finally {
-            concurrencyLimit.release();
-          }
-        });
-    return result;
   }
 
   private FileSet.FileMetadata saveFile(
@@ -178,10 +159,12 @@ final class FileSetManager {
             fileSet.files().entrySet(),
             Entry::getKey,
             namedFile ->
-                schedule(
+                SemaphoreLeasedScheduler.schedule(
                     () ->
                         restoreFile(
-                            sourcePrefix, targetFolder, namedFile.getKey(), namedFile.getValue())))
+                            sourcePrefix, targetFolder, namedFile.getKey(), namedFile.getValue()),
+                    schedulerExecutor,
+                    concurrencyLimit))
         .thenApply(NamedFileSetImpl::new);
   }
 

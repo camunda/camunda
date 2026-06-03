@@ -28,6 +28,7 @@ import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import io.camunda.zeebe.backup.common.BackupStoreException.UnexpectedManifestState;
 import io.camunda.zeebe.backup.common.Manifest;
 import io.camunda.zeebe.backup.common.Manifest.StatusCode;
+import io.camunda.zeebe.backup.common.SemaphoreLeasedScheduler;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -146,55 +147,50 @@ public final class AzureBackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<Void> save(final Backup backup) {
-    return CompletableFuture.runAsync(
-            () -> {
-              try {
-                saveSemaphore.acquire();
-              } catch (final InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new RuntimeException("Interrupted while waiting to save backup", e);
-              }
-            },
-            executor)
-        .thenApplyAsync(ignored -> manifestManager.createInitialManifest(backup), executor)
-        .thenComposeAsync(
-            persistedManifest -> {
-              final var snapshotFuture =
-                  CompletableFuture.runAsync(
-                      () ->
-                          fileSetManager.save(
-                              backup.id(), SNAPSHOT_FILESET_NAME, backup.snapshot()),
-                      executor);
-              final var segmentsFuture =
-                  CompletableFuture.runAsync(
-                      () ->
-                          fileSetManager.save(
-                              backup.id(), SEGMENTS_FILESET_NAME, backup.segments()),
-                      executor);
+    return SemaphoreLeasedScheduler.scheduleAsync(
+        () ->
+            CompletableFuture.supplyAsync(
+                    () -> manifestManager.createInitialManifest(backup), executor)
+                .thenComposeAsync(
+                    persistedManifest -> {
+                      final var snapshotFuture =
+                          CompletableFuture.runAsync(
+                              () ->
+                                  fileSetManager.save(
+                                      backup.id(), SNAPSHOT_FILESET_NAME, backup.snapshot()),
+                              executor);
+                      final var segmentsFuture =
+                          CompletableFuture.runAsync(
+                              () ->
+                                  fileSetManager.save(
+                                      backup.id(), SEGMENTS_FILESET_NAME, backup.segments()),
+                              executor);
 
-              return CompletableFuture.allOf(snapshotFuture, segmentsFuture)
-                  .whenCompleteAsync(
-                      (ignored, error) -> {
-                        if (error != null) {
-                          manifestManager.markAsFailed(
-                              persistedManifest.manifest().id(), error.getMessage());
-                        }
-                      },
-                      executor)
-                  .thenApplyAsync(ignored -> persistedManifest, executor);
-            },
-            executor)
-        .thenAcceptAsync(
-            persistedManifest -> {
-              try {
-                manifestManager.completeManifest(persistedManifest);
-              } catch (final Exception e) {
-                manifestManager.markAsFailed(persistedManifest.manifest().id(), e.getMessage());
-                throw e;
-              }
-            },
-            executor)
-        .whenComplete((ignored, error) -> saveSemaphore.release());
+                      return CompletableFuture.allOf(snapshotFuture, segmentsFuture)
+                          .whenCompleteAsync(
+                              (ignored, error) -> {
+                                if (error != null) {
+                                  manifestManager.markAsFailed(
+                                      persistedManifest.manifest().id(), error.getMessage());
+                                }
+                              },
+                              executor)
+                          .thenApplyAsync(ignored -> persistedManifest, executor);
+                    },
+                    executor)
+                .thenAcceptAsync(
+                    persistedManifest -> {
+                      try {
+                        manifestManager.completeManifest(persistedManifest);
+                      } catch (final Exception e) {
+                        manifestManager.markAsFailed(
+                            persistedManifest.manifest().id(), e.getMessage());
+                        throw e;
+                      }
+                    },
+                    executor),
+        executor,
+        saveSemaphore);
   }
 
   @Override
