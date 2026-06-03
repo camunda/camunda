@@ -169,6 +169,10 @@ ifeq ($(secondary_storage),elasticsearch)
 else
 	@echo "Skipping Elasticsearch Prometheus Exporter installation (secondary_storage=$(secondary_storage))"
 endif
+.PHONY: install-optimize-cleanup
+install-optimize-cleanup:
+	@echo "Deploying Optimize indices cleanup job"
+	kubectl apply --namespace $(namespace) -f resources/optimize-indices-cleanup.yaml
 
 # Install/upgrade Camunda Platform helm chart
 .PHONY: install-platform
