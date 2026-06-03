@@ -17,7 +17,7 @@
     "@typescript-eslint/eslint-plugin": "8.59.3",
     "@typescript-eslint/parser": "8.59.3",
     "assert-json-body": "^1.7.1",
-    "eslint": "9.39.4",
+    "eslint": "10.4.1",
     "eslint-config-prettier": "^10.0.2",
     "eslint-plugin-license-header": "0.9.0",
     "eslint-plugin-playwright": "2.10.2",
