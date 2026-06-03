@@ -25,6 +25,7 @@ import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinit
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchProcessSequenceFlows} from 'modules/mocks/api/v2/elementInstances/elementInstancesStatistics/sequenceFlows';
 import type {
+  AgentInstance,
   ElementInstance,
   ProcessInstance,
   SequenceFlow,
@@ -35,10 +36,12 @@ import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 import {mockSearchDecisionInstances} from 'modules/mocks/api/v2/decisionInstances/searchDecisionInstances';
 import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';
 import {mockSearchMessageSubscriptions} from 'modules/mocks/api/v2/messageSubscriptions/searchMessageSubscriptions';
+import {mockSearchAgentInstances} from 'modules/mocks/api/v2/agentInstances/searchAgentInstances';
 import {
   SearchParamsUpdater,
   updateSearchParams,
 } from 'modules/testUtils/SearchParamsUpdater';
+import {IS_AI_AGENT_ENABLED} from 'modules/feature-flags';
 
 const mockSequenceFlowsV2: SequenceFlow[] = [
   {
@@ -111,6 +114,26 @@ const mockProcessInstance: ProcessInstance = {
   rootProcessInstanceKey: null,
   tags: [],
   businessId: null,
+};
+
+const mockAgentInstance: AgentInstance = {
+  agentInstanceKey: 'agent-key-1',
+  status: 'THINKING',
+  definition: {
+    model: 'gpt-4',
+    provider: 'openai',
+    systemPrompt: 'you are a helpful agent',
+  },
+  metrics: {inputTokens: 0, outputTokens: 0, modelCalls: 0, toolCalls: 0},
+  limits: {maxModelCalls: 10, maxToolCalls: 10, maxTokens: 1000},
+  elementId: 'service-task-1',
+  processInstanceKey: 'instance_id',
+  processDefinitionKey: '2',
+  tenantId: '<default>',
+  creationDate: '2026-05-28',
+  lastUpdatedDate: '2026-05-28',
+  completionDate: null,
+  elementInstanceKeys: [],
 };
 
 const mockElementInstance: ElementInstance = {
@@ -207,6 +230,8 @@ describe('TopPanel', () => {
     mockSearchMessageSubscriptions().withSuccess(searchResult([]));
 
     mockSearchElementInstances().withSuccess(searchResult([]));
+
+    mockSearchAgentInstances().withSuccess(searchResult([]));
   });
 
   afterEach(() => {
@@ -420,4 +445,41 @@ describe('TopPanel', () => {
       ancestorScopeType: 'sourceParent',
     });
   });
+
+  it(
+    'should render the agent status overlay for an active agent instance',
+    {skip: !IS_AI_AGENT_ENABLED},
+    async () => {
+      mockSearchAgentInstances().withSuccess(searchResult([mockAgentInstance]));
+
+      render(<TopPanel />, {wrapper: getWrapper()});
+
+      await waitForElementToBeRemoved(() =>
+        screen.queryByTestId('diagram-spinner'),
+      );
+
+      expect(
+        await screen.findByTestId('agent-status-overlay-THINKING'),
+      ).toHaveTextContent('Thinking');
+    },
+  );
+
+  it(
+    'should not render any agent overlay when the search returns no items',
+    {skip: !IS_AI_AGENT_ENABLED},
+    async () => {
+      render(<TopPanel />, {wrapper: getWrapper()});
+
+      await waitForElementToBeRemoved(() =>
+        screen.queryByTestId('diagram-spinner'),
+      );
+
+      expect(
+        screen.queryByTestId(/^agent-status-overlay-/),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId(/^agent-shine-overlay-/),
+      ).not.toBeInTheDocument();
+    },
+  );
 });

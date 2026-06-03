@@ -16,16 +16,42 @@ const useAgentInstancesSearch = (
   options?: {
     enabled?: boolean;
     refetchInterval?: number | false;
+    loadAllItems?: boolean;
   },
 ) => {
   return useQuery({
-    queryKey: queryKeys.agentInstances.search(payload),
+    queryKey: queryKeys.agentInstances.search(payload, {
+      loadAllItems: options?.loadAllItems,
+    }),
     queryFn: async ({signal}) => {
       const {response, error} = await searchAgentInstances(payload, signal);
-      if (response !== null) {
+      if (response === null) {
+        throw error;
+      }
+
+      if (
+        !options?.loadAllItems ||
+        response.page.totalItems <= response.items.length
+      ) {
         return response;
       }
-      throw error;
+
+      const {response: remaining, error: remainingError} =
+        await searchAgentInstances(
+          {
+            ...payload,
+            page: {
+              from: response.items.length,
+              limit: response.page.totalItems,
+            },
+          },
+          signal,
+        );
+      if (remainingError) {
+        throw remainingError;
+      }
+
+      return {...response, items: response.items.concat(remaining.items)};
     },
     enabled: options?.enabled,
     refetchInterval: options?.refetchInterval,

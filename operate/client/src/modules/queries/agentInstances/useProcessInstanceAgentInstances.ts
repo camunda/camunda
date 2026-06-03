@@ -16,7 +16,6 @@ const ACTIVE_STATUSES: AgentInstance['status'][] = [
   'TOOL_DISCOVERY',
   'THINKING',
   'TOOL_CALLING',
-  'IDLE',
 ];
 
 const useProcessInstanceAgentInstances = () => {
@@ -32,6 +31,7 @@ const useProcessInstanceAgentInstances = () => {
     {
       enabled: IS_AI_AGENT_ENABLED && !!processInstanceId,
       refetchInterval: 5000,
+      loadAllItems: true,
     },
   );
 };
