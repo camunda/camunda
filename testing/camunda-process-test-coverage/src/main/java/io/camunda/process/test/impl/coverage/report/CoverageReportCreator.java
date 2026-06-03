@@ -64,7 +64,7 @@ public class CoverageReportCreator {
         CoverageCreator.aggregateCoverages(allProcessCoverages(suites), processModels);
     final java.util.List<DecisionCoverage> decisionCoverages =
         DecisionCoverageCreator.aggregateCoverages(allDecisionCoverages(suites), decisionModels);
-    final Map<String, String> definitions =
+    final Map<String, String> processDefinitions =
         processModels.stream()
             .collect(
                 Collectors.toMap(
@@ -76,11 +76,11 @@ public class CoverageReportCreator {
                     DecisionModel::getDecisionDefinitionId, DecisionModel::getXml, (a, b) -> a));
     return ImmutableCoverageReport.builder()
         .addAllSuites(suiteReports)
-        .addAllModels(processModels)
+        .addAllProcessModels(processModels)
         .addAllDecisionModels(decisionModels)
         .addAllProcessCoverages(processCoverages)
         .addAllDecisionCoverages(decisionCoverages)
-        .putAllDefinitions(definitions)
+        .putAllProcessDefinitions(processDefinitions)
         .putAllDecisionDefinitions(decisionDefinitions)
         .build();
   }

@@ -19,11 +19,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.process.test.api.coverage.model.CoverageReport;
 import io.camunda.process.test.api.coverage.model.DecisionModel;
+import io.camunda.process.test.api.coverage.model.ImmutableCoverageRunReport;
 import io.camunda.process.test.api.coverage.model.ImmutableDecisionCoverage;
 import io.camunda.process.test.api.coverage.model.ImmutableDecisionModel;
 import io.camunda.process.test.api.coverage.model.ImmutableProcessCoverage;
 import io.camunda.process.test.api.coverage.model.ImmutableProcessModel;
-import io.camunda.process.test.api.coverage.model.ImmutableRun;
 import io.camunda.process.test.api.coverage.model.ImmutableSuite;
 import io.camunda.process.test.api.coverage.model.ProcessModel;
 import io.camunda.process.test.api.coverage.model.Suite;
@@ -54,7 +54,7 @@ class CoverageReportCreatorTest {
             .id("suite")
             .name("Suite")
             .addRuns(
-                ImmutableRun.builder()
+                ImmutableCoverageRunReport.builder()
                     .name("run")
                     .addProcessCoverages(
                         ImmutableProcessCoverage.builder()

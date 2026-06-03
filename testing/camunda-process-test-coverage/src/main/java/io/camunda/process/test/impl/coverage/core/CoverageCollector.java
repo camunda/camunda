@@ -19,7 +19,7 @@ import io.camunda.client.api.search.response.DecisionDefinitionType;
 import io.camunda.process.test.api.coverage.model.CoverageRunReport;
 import io.camunda.process.test.api.coverage.model.DecisionCoverage;
 import io.camunda.process.test.api.coverage.model.DecisionModel;
-import io.camunda.process.test.api.coverage.model.ImmutableRun;
+import io.camunda.process.test.api.coverage.model.ImmutableCoverageRunReport;
 import io.camunda.process.test.api.coverage.model.ImmutableSuite;
 import io.camunda.process.test.api.coverage.model.ProcessCoverage;
 import io.camunda.process.test.api.coverage.model.ProcessModel;
@@ -73,7 +73,6 @@ public final class CoverageCollector {
    *     analysis
    * @param excludedDecisionDefinitionIds List of decision definition ids to exclude from coverage
    *     analysis
-   * @param dataSourceSupplier Supplier for the Camunda data source used to access process data
    */
   public static CoverageCollector createCollector(
       final Class<?> testClass,
@@ -131,7 +130,7 @@ public final class CoverageCollector {
     final List<DecisionCoverage> decisionCoverages = collectDecisionCoverages(testResults);
 
     coverageRunReports.add(
-        ImmutableRun.builder()
+        ImmutableCoverageRunReport.builder()
             .name(runName)
             .addAllProcessCoverages(coverages)
             .addAllDecisionCoverages(decisionCoverages)
