@@ -19,10 +19,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.process.test.api.coverage.model.CoverageReport;
 import io.camunda.process.test.api.coverage.model.DecisionModel;
-import io.camunda.process.test.api.coverage.model.ImmutableProcessCoverage;
 import io.camunda.process.test.api.coverage.model.ImmutableDecisionCoverage;
 import io.camunda.process.test.api.coverage.model.ImmutableDecisionModel;
 import io.camunda.process.test.api.coverage.model.ImmutableModel;
+import io.camunda.process.test.api.coverage.model.ImmutableProcessCoverage;
 import io.camunda.process.test.api.coverage.model.ImmutableRun;
 import io.camunda.process.test.api.coverage.model.ImmutableSuite;
 import io.camunda.process.test.api.coverage.model.Model;

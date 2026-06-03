@@ -24,9 +24,9 @@ import io.camunda.process.test.api.coverage.model.Model;
 import io.camunda.process.test.api.coverage.model.ProcessCoverage;
 import io.camunda.process.test.api.coverage.model.Run;
 import io.camunda.process.test.api.coverage.model.Suite;
-import io.camunda.process.test.impl.coverage.results.CoverageDecisionInstanceResult;
-import io.camunda.process.test.impl.coverage.results.CoverageProcessInstanceResult;
-import io.camunda.process.test.impl.coverage.results.CoverageTestResults;
+import io.camunda.process.test.impl.coverage.results.CoverageDecisionInstanceData;
+import io.camunda.process.test.impl.coverage.results.CoverageProcessInstanceData;
+import io.camunda.process.test.impl.coverage.results.CoverageTestData;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -108,17 +108,17 @@ public final class CoverageCollector {
    *
    * @param runName Identifier for the current test run
    */
-  public void collectTestRunCoverage(final String runName, final CoverageTestResults testResults) {
-    final List<CoverageProcessInstanceResult> processInstanceResults =
-        testResults.getProcessInstanceResults().stream()
+  public void collectTestRunCoverage(final String runName, final CoverageTestData testResults) {
+    final List<CoverageProcessInstanceData> filteredProcessInstanceData =
+        testResults.getProcessInstanceData().stream()
             .filter(
-                processInstanceResult ->
+                processInstanceData ->
                     !excludedProcessDefinitionIds.contains(
-                        processInstanceResult.getProcessInstance().getProcessDefinitionId()))
+                        processInstanceData.getProcessInstance().getProcessDefinitionId()))
             .collect(Collectors.toList());
 
     final List<ProcessCoverage> coverages =
-        processInstanceResults.stream()
+        filteredProcessInstanceData.stream()
             .map(
                 processInstanceResult ->
                     CoverageCreator.createCoverage(
@@ -165,8 +165,8 @@ public final class CoverageCollector {
     return decisionModels.values();
   }
 
-  private List<DecisionCoverage> collectDecisionCoverages(final CoverageTestResults dataSource) {
-    final List<CoverageDecisionInstanceResult> decisionInstanceResults =
+  private List<DecisionCoverage> collectDecisionCoverages(final CoverageTestData dataSource) {
+    final List<CoverageDecisionInstanceData> decisionInstanceResults =
         dataSource.getDecisionInstanceResults().stream()
             .filter(
                 decisionInstanceResult ->

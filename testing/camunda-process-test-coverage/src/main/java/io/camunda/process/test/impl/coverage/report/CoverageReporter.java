@@ -17,11 +17,11 @@ package io.camunda.process.test.impl.coverage.report;
 
 import static java.util.Optional.ofNullable;
 
-import io.camunda.process.test.api.coverage.model.ProcessCoverage;
 import io.camunda.process.test.api.coverage.model.CoverageReport;
 import io.camunda.process.test.api.coverage.model.DecisionCoverage;
 import io.camunda.process.test.api.coverage.model.DecisionModel;
 import io.camunda.process.test.api.coverage.model.Model;
+import io.camunda.process.test.api.coverage.model.ProcessCoverage;
 import io.camunda.process.test.api.coverage.model.Suite;
 import io.camunda.process.test.impl.coverage.core.CoverageCollector;
 import io.camunda.process.test.impl.coverage.core.CoverageCreator;

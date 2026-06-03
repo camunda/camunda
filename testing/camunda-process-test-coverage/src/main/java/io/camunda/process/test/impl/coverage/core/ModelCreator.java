@@ -18,8 +18,8 @@ package io.camunda.process.test.impl.coverage.core;
 import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.process.test.api.coverage.model.ImmutableModel;
 import io.camunda.process.test.api.coverage.model.Model;
-import io.camunda.process.test.impl.coverage.results.CoverageProcessDefinitionResult;
-import io.camunda.process.test.impl.coverage.results.CoverageTestResults;
+import io.camunda.process.test.impl.coverage.results.CoverageProcessDefinitionData;
+import io.camunda.process.test.impl.coverage.results.CoverageTestData;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.FlowNode;
@@ -52,9 +52,9 @@ public class ModelCreator {
    * @throws IllegalArgumentException if the model cannot be read from the process definition
    */
   public static Model createModel(
-      final CoverageTestResults testResults, final String processDefinitionId) {
+      final CoverageTestData testResults, final String processDefinitionId) {
 
-    final CoverageProcessDefinitionResult processDefinitionResult =
+    final CoverageProcessDefinitionData processDefinitionResult =
         testResults.getProcessDefinitionResults().stream()
             .filter(
                 result ->

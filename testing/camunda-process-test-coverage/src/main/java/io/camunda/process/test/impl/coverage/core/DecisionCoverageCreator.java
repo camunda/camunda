@@ -19,7 +19,7 @@ import io.camunda.client.api.search.response.DecisionInstance;
 import io.camunda.process.test.api.coverage.model.DecisionCoverage;
 import io.camunda.process.test.api.coverage.model.DecisionModel;
 import io.camunda.process.test.api.coverage.model.ImmutableDecisionCoverage;
-import io.camunda.process.test.impl.coverage.results.CoverageDecisionInstanceResult;
+import io.camunda.process.test.impl.coverage.results.CoverageDecisionInstanceData;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -46,7 +46,7 @@ public class DecisionCoverageCreator {
    * @return A DecisionCoverage object containing the coverage details
    */
   public static DecisionCoverage createCoverage(
-      final CoverageDecisionInstanceResult decisionInstanceResult, final DecisionModel model) {
+      final CoverageDecisionInstanceData decisionInstanceResult, final DecisionModel model) {
     final DecisionInstance decisionInstance = decisionInstanceResult.getDecisionInstance();
 
     final List<String> matchedRuleIds =

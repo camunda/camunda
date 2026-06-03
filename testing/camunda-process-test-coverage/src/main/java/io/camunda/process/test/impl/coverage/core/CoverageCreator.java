@@ -22,7 +22,7 @@ import io.camunda.client.api.search.response.ProcessInstanceSequenceFlow;
 import io.camunda.process.test.api.coverage.model.ImmutableProcessCoverage;
 import io.camunda.process.test.api.coverage.model.Model;
 import io.camunda.process.test.api.coverage.model.ProcessCoverage;
-import io.camunda.process.test.impl.coverage.results.CoverageProcessInstanceResult;
+import io.camunda.process.test.impl.coverage.results.CoverageProcessInstanceData;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.SequenceFlow;
@@ -53,15 +53,15 @@ public class CoverageCreator {
    * <p>Analyzes the elements and sequence flows taken in the process instance and calculates the
    * overall coverage percentage based on the model definition.
    *
-   * @param processInstanceResult The process instance to analyze
+   * @param processInstanceData The process instance to analyze
    * @param model The process model containing definition information
    * @return A ProcessCoverage object containing the coverage details for the process instance
    */
   public static ProcessCoverage createCoverage(
-      final CoverageProcessInstanceResult processInstanceResult, final Model model) {
+      final CoverageProcessInstanceData processInstanceData, final Model model) {
 
     final List<ElementInstance> completedElementInstances =
-        processInstanceResult.getElementInstances().stream()
+        processInstanceData.getElementInstances().stream()
             .filter(elementInstance -> !EXCLUDED_ELEMENT_TYPES.contains(elementInstance.getType()))
             .filter(elementInstance -> elementInstance.getState() == ElementInstanceState.COMPLETED)
             .collect(Collectors.toList());
@@ -73,7 +73,7 @@ public class CoverageCreator {
             .collect(Collectors.toList());
 
     final List<String> takenSequenceFlowIds =
-        processInstanceResult.getSequenceFlows().stream()
+        processInstanceData.getSequenceFlows().stream()
             .map(ProcessInstanceSequenceFlow::getElementId)
             .distinct()
             .collect(Collectors.toList());
@@ -84,7 +84,7 @@ public class CoverageCreator {
     enhanceSequenceFlowsByEventBasedGateway(takenSequenceFlowIds, completedElementInstances, model);
 
     return ImmutableProcessCoverage.builder()
-        .processDefinitionId(processInstanceResult.getProcessInstance().getProcessDefinitionId())
+        .processDefinitionId(processInstanceData.getProcessInstance().getProcessDefinitionId())
         .addAllCompletedElements(completedElementIds)
         .addAllTakenSequenceFlows(takenSequenceFlowIds)
         .coverage(calculateCoverage(completedElementIds, takenSequenceFlowIds, model))

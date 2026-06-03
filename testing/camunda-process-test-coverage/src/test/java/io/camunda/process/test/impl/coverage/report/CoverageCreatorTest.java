@@ -33,8 +33,8 @@ import io.camunda.process.test.api.coverage.model.ImmutableModel;
 import io.camunda.process.test.api.coverage.model.Model;
 import io.camunda.process.test.impl.coverage.core.CoverageCreator;
 import io.camunda.process.test.impl.coverage.core.DecisionCoverageCreator;
-import io.camunda.process.test.impl.coverage.results.ImmutableCoverageDecisionInstanceResult;
-import io.camunda.process.test.impl.coverage.results.ImmutableCoverageProcessInstanceResult;
+import io.camunda.process.test.impl.coverage.results.ImmutableCoverageDecisionInstanceData;
+import io.camunda.process.test.impl.coverage.results.ImmutableCoverageProcessInstanceData;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import java.util.Arrays;
 import org.junit.jupiter.api.Test;
@@ -67,8 +67,8 @@ class CoverageCreatorTest {
     when(elementInstance.getState()).thenReturn(ElementInstanceState.COMPLETED);
     when(flow.getElementId()).thenReturn("flow");
 
-    final ImmutableCoverageProcessInstanceResult processInstanceResult =
-        ImmutableCoverageProcessInstanceResult.builder()
+    final ImmutableCoverageProcessInstanceData processInstanceResult =
+        ImmutableCoverageProcessInstanceData.builder()
             .processInstance(processInstance)
             .addElementInstances(elementInstance)
             .addSequenceFlows(flow)
@@ -106,10 +106,8 @@ class CoverageCreatorTest {
     when(rule2.getRuleIndex()).thenReturn(2);
     when(decisionInstance.getMatchedRules()).thenReturn(Arrays.asList(rule1, rule2));
 
-    final ImmutableCoverageDecisionInstanceResult decisionInstanceResult =
-        ImmutableCoverageDecisionInstanceResult.builder()
-            .decisionInstance(decisionInstance)
-            .build();
+    final ImmutableCoverageDecisionInstanceData decisionInstanceResult =
+        ImmutableCoverageDecisionInstanceData.builder().decisionInstance(decisionInstance).build();
 
     // when
     final DecisionCoverage coverage =

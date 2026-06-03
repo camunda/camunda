@@ -17,8 +17,8 @@ package io.camunda.process.test.impl.coverage.core;
 
 import io.camunda.process.test.api.coverage.model.DecisionModel;
 import io.camunda.process.test.api.coverage.model.ImmutableDecisionModel;
-import io.camunda.process.test.impl.coverage.results.CoverageDecisionDefinitionResult;
-import io.camunda.process.test.impl.coverage.results.CoverageTestResults;
+import io.camunda.process.test.impl.coverage.results.CoverageDecisionDefinitionData;
+import io.camunda.process.test.impl.coverage.results.CoverageTestData;
 import java.io.ByteArrayInputStream;
 import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
@@ -47,8 +47,8 @@ public class DecisionModelCreator {
    * @throws IllegalArgumentException if the model cannot be read from the decision definition
    */
   public static DecisionModel createModel(
-      final CoverageTestResults testResults, final String decisionDefinitionId) {
-    final CoverageDecisionDefinitionResult decisionDefinitionResult =
+      final CoverageTestData testResults, final String decisionDefinitionId) {
+    final CoverageDecisionDefinitionData decisionDefinitionResult =
         testResults.getDecisionDefinitionResults().stream()
             .filter(
                 result ->

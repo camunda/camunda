@@ -15,7 +15,6 @@
  */
 package io.camunda.process.test.impl.coverage.report;
 
-import io.camunda.process.test.api.coverage.model.ProcessCoverage;
 import io.camunda.process.test.api.coverage.model.CoverageReport;
 import io.camunda.process.test.api.coverage.model.CoverageSuiteReport;
 import io.camunda.process.test.api.coverage.model.DecisionCoverage;
@@ -23,6 +22,7 @@ import io.camunda.process.test.api.coverage.model.DecisionModel;
 import io.camunda.process.test.api.coverage.model.ImmutableCoverageReport;
 import io.camunda.process.test.api.coverage.model.ImmutableCoverageSuiteReport;
 import io.camunda.process.test.api.coverage.model.Model;
+import io.camunda.process.test.api.coverage.model.ProcessCoverage;
 import io.camunda.process.test.api.coverage.model.Suite;
 import io.camunda.process.test.impl.coverage.core.CoverageCreator;
 import io.camunda.process.test.impl.coverage.core.DecisionCoverageCreator;

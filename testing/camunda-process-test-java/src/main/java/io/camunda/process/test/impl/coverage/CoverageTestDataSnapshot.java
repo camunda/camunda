@@ -22,13 +22,13 @@ import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.ProcessInstanceSequenceFlow;
 import io.camunda.process.test.impl.assertions.CamundaTestResults;
-import io.camunda.process.test.impl.coverage.results.CoverageTestResults;
+import io.camunda.process.test.impl.coverage.results.CoverageTestData;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public final class CoverageTestResultsSnapshot implements CoverageTestResults {
+public final class CoverageTestDataSnapshot implements CoverageTestData {
 
   private final List<ProcessInstance> processInstances;
   private final Map<Long, List<ElementInstance>> elementInstancesByProcessInstanceKey;
@@ -40,7 +40,7 @@ public final class CoverageTestResultsSnapshot implements CoverageTestResults {
   private final Map<String, DecisionDefinition> decisionDefinitionsByDecisionDefinitionId;
   private final Map<Long, String> decisionDefinitionXmlByDecisionDefinitionKey;
 
-  private CoverageTestResultsSnapshot(
+  private CoverageTestDataSnapshot(
       final List<ProcessInstance> processInstances,
       final Map<Long, List<ElementInstance>> elementInstancesByProcessInstanceKey,
       final Map<Long, List<ProcessInstanceSequenceFlow>> sequenceFlowsByProcessInstanceKey,
@@ -62,7 +62,7 @@ public final class CoverageTestResultsSnapshot implements CoverageTestResults {
         decisionDefinitionXmlByDecisionDefinitionKey;
   }
 
-  public static CoverageTestResultsSnapshot from(final CamundaTestResults dataSource) {
+  public static CoverageTestDataSnapshot from(final CamundaTestResults dataSource) {
     final List<ProcessInstance> processInstances = dataSource.findProcessInstances();
     final Map<Long, List<ElementInstance>> elementInstancesByProcessInstanceKey =
         processInstances.stream()
@@ -116,7 +116,7 @@ public final class CoverageTestResultsSnapshot implements CoverageTestResults {
               dataSource::getDecisionDefinitionXmlByDecisionDefinitionKey);
         });
 
-    return new CoverageTestResultsSnapshot(
+    return new CoverageTestDataSnapshot(
         processInstances,
         elementInstancesByProcessInstanceKey,
         sequenceFlowsByProcessInstanceKey,
@@ -128,8 +128,8 @@ public final class CoverageTestResultsSnapshot implements CoverageTestResults {
         decisionDefinitionXmlByDecisionDefinitionKey);
   }
 
-  public static CoverageTestResultsSnapshot empty() {
-    return new CoverageTestResultsSnapshot(
+  public static CoverageTestDataSnapshot empty() {
+    return new CoverageTestDataSnapshot(
         java.util.Collections.emptyList(),
         java.util.Collections.emptyMap(),
         java.util.Collections.emptyMap(),

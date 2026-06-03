@@ -24,10 +24,10 @@ import io.camunda.client.api.search.response.DecisionInstance;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.process.test.api.coverage.model.CoverageReport;
 import io.camunda.process.test.impl.coverage.ProcessCoverage;
-import io.camunda.process.test.impl.coverage.results.CoverageTestResults;
-import io.camunda.process.test.impl.coverage.results.ImmutableCoverageDecisionInstanceResult;
-import io.camunda.process.test.impl.coverage.results.ImmutableCoverageProcessInstanceResult;
-import io.camunda.process.test.impl.coverage.results.ImmutableCoverageTestResults;
+import io.camunda.process.test.impl.coverage.results.CoverageTestData;
+import io.camunda.process.test.impl.coverage.results.ImmutableCoverageDecisionInstanceData;
+import io.camunda.process.test.impl.coverage.results.ImmutableCoverageProcessInstanceData;
+import io.camunda.process.test.impl.coverage.results.ImmutableCoverageTestData;
 import org.junit.jupiter.api.Test;
 
 class ProcessCoverageBuilderTest {
@@ -43,14 +43,14 @@ class ProcessCoverageBuilderTest {
     when(decisionInstance.getDecisionDefinitionType())
         .thenReturn(DecisionDefinitionType.DECISION_TABLE);
 
-    final CoverageTestResults testResults =
-        ImmutableCoverageTestResults.builder()
+    final CoverageTestData testResults =
+        ImmutableCoverageTestData.builder()
             .addProcessInstanceResults(
-                ImmutableCoverageProcessInstanceResult.builder()
+                ImmutableCoverageProcessInstanceData.builder()
                     .processInstance(processInstance)
                     .build())
             .addDecisionInstanceResults(
-                ImmutableCoverageDecisionInstanceResult.builder()
+                ImmutableCoverageDecisionInstanceData.builder()
                     .decisionInstance(decisionInstance)
                     .build())
             .build();
