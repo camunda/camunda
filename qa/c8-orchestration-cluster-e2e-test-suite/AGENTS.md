@@ -75,6 +75,9 @@ Unlike 8.9 and 8.10, this branch's `v2-stateless-tests/` only contains the **gen
 no generated `request-validation` specs are committed, and there is **no
 `request-validation-tests` Playwright project**. Do not assume that command works here.
 
+`json-body-assertions/_generated/responses.json` is also auto-generated — **never edit it by hand**.
+If an API response changes, regenerate it with `npm run responses:regenerate` and commit the result.
+
 ## TypeScript Path Aliases
 
 Defined in `tsconfig.json`. Use these consistently in new tests and page objects:
