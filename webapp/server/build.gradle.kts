@@ -7,6 +7,10 @@ plugins {
 }
 
 dependencies {
+    implementation(libs.io.camunda.security.library.spring.boot.starter)
+    implementation(libs.io.camunda.security.library.api)
+    implementation(project(":camunda-security-core"))
+    implementation(project(":zeebe-gateway-rest"))
     implementation(project(":webapps-common"))
     implementation(project(":camunda-spring-utils"))
     runtimeOnly(project(":webapp-webjar"))

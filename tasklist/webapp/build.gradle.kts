@@ -11,6 +11,8 @@ dependencies {
     implementation(project(":tasklist-common"))
     implementation(project(":tasklist-webjar"))
     implementation(project(":tasklist-els-schema"))
+    implementation(libs.io.camunda.security.library.spring.boot.starter)
+    implementation(libs.io.camunda.security.library.api)
     implementation(project(":camunda-security-core"))
     implementation(project(":camunda-gateway-mapping-http"))
     api(libs.io.grpc.grpc.api)

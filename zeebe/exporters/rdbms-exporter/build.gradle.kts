@@ -12,6 +12,7 @@ dependencies {
     implementation(project(":camunda-db-rdbms"))
     implementation(project(":camunda-search-domain"))
     implementation(project(":zeebe-protocol"))
+    implementation(libs.io.camunda.security.library.api)
     implementation(project(":camunda-security-protocol"))
     implementation(project(":zeebe-broker"))
     implementation(project(":camunda-db-rdbms-schema"))

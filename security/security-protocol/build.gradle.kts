@@ -7,6 +7,7 @@ plugins {
 }
 
 dependencies {
+    implementation(libs.io.camunda.security.library.api)
     testImplementation(libs.org.assertj.assertj.core)
 }
 

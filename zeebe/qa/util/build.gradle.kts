@@ -36,6 +36,8 @@ dependencies {
     implementation(project(":zeebe-protocol"))
     implementation(project(":zeebe-util"))
     implementation(project(":zeebe-atomix-cluster"))
+    implementation(libs.io.camunda.security.library.api)
+    implementation(libs.io.camunda.security.library.spring.boot.starter)
     implementation(project(":camunda-security-core"))
     implementation(project(":camunda-security-protocol"))
     implementation(project(":webapps-schema"))

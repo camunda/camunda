@@ -30,6 +30,8 @@ dependencies {
     testImplementation(project(":zeebe-broker-client"))
     testImplementation(project(":zeebe-protocol"))
     testImplementation(project(":zeebe-protocol-jackson"))
+    testImplementation(libs.io.camunda.security.library.api)
+    testImplementation(libs.io.camunda.security.library.spring.boot.starter)
     testImplementation(project(":camunda-security-core"))
     testImplementation(project(":camunda-security-protocol"))
     testImplementation(libs.com.fasterxml.jackson.core.jackson.databind)

@@ -39,6 +39,8 @@ dependencies {
     implementation(libs.org.springframework.spring.core)
     implementation(project(":zeebe-qa-util"))
     implementation(project(":camunda-exporter"))
+    implementation(libs.io.camunda.security.library.api)
+    implementation(libs.io.camunda.security.library.spring.boot.starter)
     implementation(project(":camunda-security-core"))
     implementation(project(":zeebe-broker"))
     implementation(project(":camunda-zeebe"))

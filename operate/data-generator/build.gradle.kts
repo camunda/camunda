@@ -10,6 +10,8 @@ dependencies {
     implementation(project(":operate-common"))
     implementation(project(":operate-schema"))
     implementation(project(":webapps-schema"))
+    implementation(libs.io.camunda.security.library.spring.boot.starter)
+    implementation(libs.io.camunda.security.library.api)
     implementation(project(":camunda-security-core"))
     implementation(project(":camunda-spring-utils"))
     api(libs.org.springframework.spring.context)
