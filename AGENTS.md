@@ -122,7 +122,8 @@ processes (e.g., an IDE, Docker containers, or other concurrent builds).
 
 #### Always-green policy
 
-Before every AI-assisted session, establish a green baseline in two steps:
+Before every AI-assisted session, invoke the `verify-baseline` skill to establish a green
+baseline automatically. The steps below describe what the skill runs:
 
 **Step 1 — Check that `main` CI is healthy** (before pulling or branching):
 
