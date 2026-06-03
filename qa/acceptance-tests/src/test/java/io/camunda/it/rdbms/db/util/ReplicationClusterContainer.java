@@ -7,6 +7,8 @@
  */
 package io.camunda.it.rdbms.db.util;
 
+import org.testcontainers.lifecycle.Startable;
+
 /**
  * Abstraction over a containerised database replication cluster used in acceptance tests.
  *
@@ -14,13 +16,7 @@ package io.camunda.it.rdbms.db.util;
  * implement this interface so that {@link CamundaRdbmsTestApplication} and the async-replication
  * test base class can treat them uniformly.
  */
-public interface ReplicationClusterContainer extends AutoCloseable {
-
-  /** Starts the cluster (primary + replica). */
-  void start();
-
-  /** Stops the cluster. */
-  void stop();
+public interface ReplicationClusterContainer extends Startable {
 
   /** JDBC URL pointing at the primary database. */
   String getJdbcUrl();
