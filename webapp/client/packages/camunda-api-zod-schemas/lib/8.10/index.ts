@@ -756,6 +756,8 @@ export {
 	processInstanceSchema,
 	sequenceFlowSchema,
 	callHierarchySchema,
+	processInstanceVariableFilterSchema,
+	processInstanceVariableValueFilterSchema,
 	type CreateProcessInstanceRequestBody,
 	type CreateProcessInstanceResponseBody,
 	type QueryProcessInstancesRequestBody,
@@ -782,6 +784,8 @@ export {
 	type CreateModificationBatchOperationRequestBody,
 	type CreateModificationBatchOperationResponseBody,
 	type ResolveProcessInstanceIncidentsResponseBody,
+	type ProcessInstanceVariableFilter,
+	type ProcessInstanceVariableValueFilter,
 } from './process-instance';
 export {
 	userTaskSchema,

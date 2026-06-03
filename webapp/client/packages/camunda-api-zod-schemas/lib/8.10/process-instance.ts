@@ -36,10 +36,24 @@ const processInstanceBatchOperationTypeSchema = z.union([
 	z.literal('DELETE_DECISION_INSTANCE'),
 ]);
 
-const processInstanceVariableFilterSchema = z.object({
-	name: z.string(),
-	value: advancedStringFilterSchema,
-});
+const processInstanceVariableValueFilterSchema = z.union([
+	z.string(),
+	z.object({$eq: z.string()}).strict(),
+	z.object({$neq: z.string()}).strict(),
+	z.object({$like: z.string()}).strict(),
+	z.object({$in: z.array(z.string())}).strict(),
+	z.object({$notIn: z.array(z.string())}).strict(),
+	z.object({$exists: z.boolean()}).strict(),
+]);
+type ProcessInstanceVariableValueFilter = z.infer<typeof processInstanceVariableValueFilterSchema>;
+
+const processInstanceVariableFilterSchema = z
+	.object({
+		name: z.string(),
+		value: processInstanceVariableValueFilterSchema,
+	})
+	.strict();
+type ProcessInstanceVariableFilter = z.infer<typeof processInstanceVariableFilterSchema>;
 
 const advancedProcessInstanceStateFilterSchema = z
 	.object({
@@ -421,6 +435,8 @@ export {
 	processInstanceSchema,
 	sequenceFlowSchema,
 	callHierarchySchema,
+	processInstanceVariableFilterSchema,
+	processInstanceVariableValueFilterSchema,
 };
 export type {
 	CreateProcessInstanceRequestBody,
@@ -450,4 +466,6 @@ export type {
 	CreateModificationBatchOperationResponseBody,
 	ModifyProcessInstanceRequestBody,
 	ResolveProcessInstanceIncidentsResponseBody,
+	ProcessInstanceVariableFilter,
+	ProcessInstanceVariableValueFilter,
 };
