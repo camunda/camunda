@@ -51,6 +51,7 @@ val openApiGenerateCluster by tasks.registering(org.openapitools.generator.gradl
     inputSpec.set("$projectDir/src/main/resources/api/cluster/cluster-api.yaml")
     outputDir.set(openApiClusterOutputDir)
     modelPackage.set("io.camunda.zeebe.management.cluster")
+    ignoreFileOverride.set("$projectDir/src/main/resources/api/cluster/.openapi-generator-ignore")
 
     globalProperties.set(
         mapOf(
@@ -77,6 +78,7 @@ val openApiGenerateExporter by tasks.registering(org.openapitools.generator.grad
     inputSpec.set("$projectDir/src/main/resources/api/cluster/exporter-api.yaml")
     outputDir.set(openApiExporterOutputDir)
     modelPackage.set("io.camunda.zeebe.management.cluster")
+    ignoreFileOverride.set("$projectDir/src/main/resources/api/cluster/.openapi-generator-ignore")
 
     globalProperties.set(
         mapOf(
@@ -100,7 +102,7 @@ val openApiGenerateExporter by tasks.registering(org.openapitools.generator.grad
 
 val syncOpenApiGeneratedSources by tasks.registering(Sync::class) {
     dependsOn(openApiGenerateBackups, openApiGenerateCluster, openApiGenerateExporter)
-    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     into(mergedOpenApiJavaDir)
     from("$openApiBackupsOutputDir/src/main/java")
     from("$openApiClusterOutputDir/src/main/java")
