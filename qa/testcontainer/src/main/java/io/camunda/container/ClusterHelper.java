@@ -5,42 +5,26 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.test;
+package io.camunda.container;
 
-import io.camunda.client.CamundaClient;
 import io.camunda.container.cluster.BrokerNode;
 import io.camunda.container.cluster.CamundaClusterBuilder;
-import io.camunda.container.cluster.GatewayNode;
 import io.camunda.container.volume.CamundaVolume;
-import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.camunda.zeebe.util.SemanticVersion;
 import io.camunda.zeebe.util.VersionUtil;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.TimeUnit;
-import org.awaitility.Awaitility;
 import org.testcontainers.DockerClientFactory;
 import org.testcontainers.utility.DockerImageName;
 
-final class ClusterHelper {
-  private static final BpmnModelInstance PROCESS =
-      Bpmn.createExecutableProcess("process")
-          .startEvent()
-          .serviceTask("task1", s -> s.zeebeJobType("firstTask"))
-          .serviceTask("task2", s -> s.zeebeJobType("secondTask"))
-          .endEvent()
-          .done();
+public final class ClusterHelper {
+  public static final String DEFAULT_TEST_IMAGE = "camunda/camunda:current-test";
 
-  static void updateBroker(final BrokerNode<?> broker, final int id, final String version) {
+  public static void updateBroker(final BrokerNode<?> broker, final int id, final String version) {
     if ("CURRENT".equals(version)) {
-      broker.setDockerImageName(
-          ZeebeTestContainerDefaults.defaultTestImage().asCanonicalNameString());
+      broker.setDockerImageName(DEFAULT_TEST_IMAGE);
       broker.withEnv(VersionUtil.VERSION_OVERRIDE_ENV_NAME, currentVersion());
     } else {
       broker.setDockerImageName(
@@ -73,7 +57,7 @@ final class ClusterHelper {
     }
   }
 
-  static void configureBroker(
+  public static void configureBroker(
       final BrokerNode<?> broker,
       final List<String> initialContactPoints,
       final Collection<CamundaVolume> volumes) {
@@ -128,44 +112,10 @@ final class ClusterHelper {
             createContainerCmd -> createContainerCmd.withUser("1001:0"));
   }
 
-  static String currentVersion() {
+  public static String currentVersion() {
     // Act as if the current in-development version were released already.
     // Otherwise, updates will be rejected because we don't allow upgrading to
     // pre-release versions.
     return VersionUtil.getVersion().replace("-SNAPSHOT", "");
-  }
-
-  static void deployProcess(final CamundaClient client) {
-    client
-        .newDeployResourceCommand()
-        .addProcessModel(PROCESS, "process.bpmn")
-        .send()
-        .join(10, TimeUnit.SECONDS);
-  }
-
-  static CamundaClient newClient(final GatewayNode<?> gateway) {
-    return CamundaClient.newClientBuilder()
-        .preferRestOverGrpc(false)
-        .grpcAddress(gateway.getGrpcAddress())
-        .restAddress(gateway.getRestAddress())
-        .build();
-  }
-
-  static long createProcessInstance(final CamundaClient client) {
-    return Awaitility.await("process instance creation")
-        .atMost(Duration.ofSeconds(60))
-        .pollInterval(Duration.ofMillis(100))
-        .ignoreExceptions()
-        .until(
-            () ->
-                client
-                    .newCreateInstanceCommand()
-                    .bpmnProcessId("process")
-                    .latestVersion()
-                    .variables(Map.of("foo", "bar"))
-                    .send()
-                    .join(),
-            Objects::nonNull)
-        .getProcessInstanceKey();
   }
 }

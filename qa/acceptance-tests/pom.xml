@@ -655,6 +655,11 @@
       <artifactId>guava</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-testcontainer</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <repositories>
