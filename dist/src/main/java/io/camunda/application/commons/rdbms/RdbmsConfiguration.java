@@ -94,7 +94,6 @@ import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.db.rdbms.sql.WaitStateMapper;
 import io.camunda.db.rdbms.write.RdbmsMapperBundle;
 import io.camunda.db.rdbms.write.RdbmsWriterFactory;
-import io.camunda.db.rdbms.write.queue.TransactionRunner;
 import io.camunda.db.rdbms.write.service.PersistentWebSessionWriter;
 import io.camunda.search.clients.reader.ProcessDefinitionMessageSubscriptionStatisticsReader;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -104,14 +103,12 @@ import java.util.Map;
 import javax.sql.DataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.health.contributor.HealthContributor;
 import org.springframework.boot.jdbc.health.DataSourceHealthIndicator;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
-import org.springframework.transaction.PlatformTransactionManager;
 
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnSecondaryStorageType(SecondaryStorageType.rdbms)
@@ -424,32 +421,10 @@ public class RdbmsConfiguration {
     return new DeployedResourceDbReader(deployedResourceMapper, readerConfig);
   }
 
-  /**
-   * When a Spring transaction manager is available, we use it to provide a runInTransaction hook.
-   * If none is available, we fall back to a NoopTransactionRunner, which assumes transactions are
-   * managed manually outside this runner.
-   *
-   * @param transactionManagerProvider an optional bean providing a PlatformTransactionManager
-   * @return the transaction runner to use
-   */
-  @Bean
-  public TransactionRunner transactionRunner(
-      final ObjectProvider<PlatformTransactionManager> transactionManagerProvider) {
-    final var transactionManager = transactionManagerProvider.getIfAvailable();
-    if (transactionManager == null) {
-      LOG.info(
-          "No PlatformTransactionManager bean available — falling back to a noop TransactionRunner.");
-      return TransactionRunner.noop();
-    }
-    return new SpringTransactionRunner(transactionManager);
-  }
-
   @Bean
   public RdbmsWriterFactory rdbmsWriterFactory(
-      final Map<String, RdbmsMapperBundle> rdbmsMapperBundles,
-      final MeterRegistry meterRegistry,
-      final TransactionRunner transactionRunner) {
-    return new RdbmsWriterFactory(rdbmsMapperBundles, meterRegistry, transactionRunner);
+      final Map<String, RdbmsMapperBundle> rdbmsMapperBundles, final MeterRegistry meterRegistry) {
+    return new RdbmsWriterFactory(rdbmsMapperBundles, meterRegistry);
   }
 
   @Bean

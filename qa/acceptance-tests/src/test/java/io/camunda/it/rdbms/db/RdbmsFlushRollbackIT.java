@@ -16,7 +16,6 @@ import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.FlowNodeInstanceDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.ExporterPositionModel;
-import io.camunda.db.rdbms.write.queue.TransactionRunner;
 import io.camunda.db.rdbms.write.service.ExporterPositionService;
 import io.camunda.it.rdbms.db.fixtures.FlowNodeInstanceFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
@@ -29,13 +28,13 @@ import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 /**
- * Integration test to verify that DefaultExecutionQueue with a TransactionRunner ensures atomic
- * batch flush behavior. When statements are batched and flushed, they should either all commit or
- * all rollback to maintain data integrity.
+ * Integration test to verify that {@code DefaultExecutionQueue} ensures atomic batch flush
+ * behavior. When statements are batched and flushed, they should either all commit or all rollback
+ * to maintain data integrity.
  *
- * <p>This test uses the actual RDBMS infrastructure (H2 by default) to verify that the
- * SpringTransactionRunner correctly provides transaction isolation for batch operations in the
- * execution queue.
+ * <p>This test uses the actual RDBMS infrastructure (H2) with no Spring transaction manager, so the
+ * queue manages its own JDBC transaction directly via MyBatis {@code session.commit()} / {@code
+ * session.rollback()} — matching the production deployment.
  */
 @Tag("rdbms")
 public class RdbmsFlushRollbackIT {
@@ -50,13 +49,6 @@ public class RdbmsFlushRollbackIT {
   private static final int PARTITION_ID_POST_FLUSH = 3;
   private static final int PARTITION_ID_HOOK = 4;
   private static final int PARTITION_ID_FULL_SCENARIO = 5;
-
-  @TestTemplate
-  void shouldUseNoopTransactionRunner(final CamundaRdbmsTestApplication testApplication) {
-    final TransactionRunner transactionRunner = testApplication.bean(TransactionRunner.class);
-
-    assertThat(transactionRunner).isInstanceOf(TransactionRunner.NoopTransactionRunner.class);
-  }
 
   @TestTemplate
   void shouldRollbackAllStatementsWhenSecondStatementFails(

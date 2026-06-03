@@ -26,6 +26,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 @PropertySource("classpath:rdbms-test-defaults.properties")
 public class RdbmsTestConfiguration {
 
+  /** Support for transactional tests with @RdbmsDataJdbcTest or @DataJdbcTest */
   @Bean
   public PlatformTransactionManager platformTransactionManager(final DataSource dataSource) {
     return new DataSourceTransactionManager(dataSource);

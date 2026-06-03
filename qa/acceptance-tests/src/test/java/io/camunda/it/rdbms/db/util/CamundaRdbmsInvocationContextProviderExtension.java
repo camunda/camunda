@@ -189,6 +189,6 @@ public class CamundaRdbmsInvocationContextProviderExtension
   }
 
   private static CamundaRdbmsTestApplication createCamundaRdbmsTestApplication() {
-    return new CamundaRdbmsTestApplication(RdbmsIntegrationTestConfiguration.class).withRdbms();
+    return new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class).withRdbms();
   }
 }

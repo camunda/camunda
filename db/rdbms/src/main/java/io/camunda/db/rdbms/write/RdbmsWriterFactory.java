@@ -8,7 +8,6 @@
 package io.camunda.db.rdbms.write;
 
 import io.camunda.db.rdbms.write.queue.DefaultExecutionQueue;
-import io.camunda.db.rdbms.write.queue.TransactionRunner;
 import io.camunda.db.rdbms.write.service.ExporterPositionService;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Map;
@@ -17,15 +16,11 @@ public class RdbmsWriterFactory {
 
   private final Map<String, RdbmsMapperBundle> mapperBundles;
   private final MeterRegistry meterRegistry;
-  private final TransactionRunner transactionRunner;
 
   public RdbmsWriterFactory(
-      final Map<String, RdbmsMapperBundle> mapperBundles,
-      final MeterRegistry meterRegistry,
-      final TransactionRunner transactionRunner) {
+      final Map<String, RdbmsMapperBundle> mapperBundles, final MeterRegistry meterRegistry) {
     this.mapperBundles = mapperBundles;
     this.meterRegistry = meterRegistry;
-    this.transactionRunner = transactionRunner;
   }
 
   public RdbmsWriters createWriter(final RdbmsWriterConfig config) {
@@ -44,8 +39,7 @@ public class RdbmsWriterFactory {
             config.partitionId(),
             config.queueSize(),
             config.queueMemoryLimit(),
-            metrics,
-            transactionRunner);
+            metrics);
     return new RdbmsWriters(
         config,
         executionQueue,

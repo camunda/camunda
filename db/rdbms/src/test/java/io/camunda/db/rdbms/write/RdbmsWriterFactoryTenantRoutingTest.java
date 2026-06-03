@@ -36,7 +36,6 @@ import io.camunda.db.rdbms.sql.UsageMetricTUMapper;
 import io.camunda.db.rdbms.sql.UserTaskMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.db.rdbms.sql.WaitStateMapper;
-import io.camunda.db.rdbms.write.queue.TransactionRunner;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.Map;
 import org.apache.ibatis.session.SqlSessionFactory;
@@ -51,9 +50,7 @@ class RdbmsWriterFactoryTenantRoutingTest {
     final var tenantABundle = newBundle();
     final var factory =
         new RdbmsWriterFactory(
-            Map.of("default", defaultBundle, "tenantA", tenantABundle),
-            new SimpleMeterRegistry(),
-            TransactionRunner.noop());
+            Map.of("default", defaultBundle, "tenantA", tenantABundle), new SimpleMeterRegistry());
 
     // when
     final var defaultWriters =
@@ -73,8 +70,7 @@ class RdbmsWriterFactoryTenantRoutingTest {
   void shouldRejectUnknownTenant() {
     // given
     final var factory =
-        new RdbmsWriterFactory(
-            Map.of("default", newBundle()), new SimpleMeterRegistry(), TransactionRunner.noop());
+        new RdbmsWriterFactory(Map.of("default", newBundle()), new SimpleMeterRegistry());
 
     // when / then
     assertThatThrownBy(
