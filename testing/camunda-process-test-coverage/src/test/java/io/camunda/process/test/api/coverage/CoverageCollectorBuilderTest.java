@@ -23,14 +23,14 @@ import io.camunda.client.api.search.response.DecisionDefinitionType;
 import io.camunda.client.api.search.response.DecisionInstance;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.process.test.api.coverage.model.CoverageReport;
-import io.camunda.process.test.impl.coverage.ProcessCoverage;
+import io.camunda.process.test.impl.coverage.CoverageCollector;
 import io.camunda.process.test.impl.coverage.data.CoverageTestData;
 import io.camunda.process.test.impl.coverage.data.ImmutableCoverageDecisionInstanceData;
 import io.camunda.process.test.impl.coverage.data.ImmutableCoverageProcessInstanceData;
 import io.camunda.process.test.impl.coverage.data.ImmutableCoverageTestData;
 import org.junit.jupiter.api.Test;
 
-class ProcessCoverageBuilderTest {
+class CoverageCollectorBuilderTest {
 
   @Test
   void shouldApplyExclusionConfigurationToCoverageResult() {
@@ -55,15 +55,15 @@ class ProcessCoverageBuilderTest {
                     .build())
             .build();
 
-    final ProcessCoverage processCoverage =
-        ProcessCoverage.newBuilder()
+    final CoverageCollector coverageCollector =
+        CoverageCollector.newBuilder()
             .testClass(getClass())
             .excludeProcessDefinitionIds(java.util.Collections.singletonList("excluded-process"))
             .excludeDecisionDefinitionIds(java.util.Collections.singletonList("excluded-decision"))
             .build();
 
     // when
-    final CoverageReport report = processCoverage.collectTestRunCoverage("run-1", testResults);
+    final CoverageReport report = coverageCollector.collectTestRunCoverage("run-1", testResults);
 
     // then
     assertThat(report.getSuites())

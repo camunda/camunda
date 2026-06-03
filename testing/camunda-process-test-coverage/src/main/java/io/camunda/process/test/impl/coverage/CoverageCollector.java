@@ -23,16 +23,16 @@ import io.camunda.process.test.impl.coverage.data.CoverageTestData;
  *
  * <p>Use {@link #newBuilder()} to create an instance.
  */
-public interface ProcessCoverage {
+public interface CoverageCollector {
 
   /**
    * Collects coverage data for one test run and returns the suite-level coverage report.
    *
    * @param runName Name of the test run for identification in reports
-   * @param testResults Snapshot of all test run data required for coverage calculation
+   * @param testData Snapshot of all test run data required for coverage calculation
    * @return Coverage report for the current suite
    */
-  CoverageReport collectTestRunCoverage(String runName, CoverageTestData testResults);
+  CoverageReport collectTestRunCoverage(String runName, CoverageTestData testData);
 
   /**
    * Generates coverage reports (JSON/HTML), prints coverage summary, and returns the aggregated
@@ -40,7 +40,7 @@ public interface ProcessCoverage {
    *
    * @return Aggregated coverage report
    */
-  CoverageReport reportCoverage();
+  CoverageReport generateReport();
 
   /**
    * Creates a new builder for configuring and creating ProcessCoverage instances.

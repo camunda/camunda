@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.function.Consumer;
 
 /**
- * Builder API for creating configured instances of {@link ProcessCoverage}.
+ * Builder API for creating configured instances of {@link CoverageCollector}.
  *
  * <p>Provides a fluent API for setting up process coverage collection and reporting with specific
  * configurations such as excluded process definitions, report directory, and test class
@@ -75,5 +75,5 @@ public interface ProcessCoverageBuilder {
    *
    * @return A new ProcessCoverage instance configured with the builder settings
    */
-  ProcessCoverage build();
+  CoverageCollector build();
 }

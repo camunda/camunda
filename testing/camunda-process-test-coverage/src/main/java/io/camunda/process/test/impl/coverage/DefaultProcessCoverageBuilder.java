@@ -60,8 +60,8 @@ public final class DefaultProcessCoverageBuilder implements ProcessCoverageBuild
   }
 
   @Override
-  public ProcessCoverage build() {
-    return new DefaultProcessCoverage(
+  public CoverageCollector build() {
+    return new DefaultCoverageCollector(
         testClass,
         excludedProcessDefinitionIds,
         excludedDecisionDefinitionIds,

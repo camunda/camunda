@@ -16,38 +16,37 @@
 package io.camunda.process.test.impl.coverage;
 
 import io.camunda.process.test.api.coverage.model.CoverageReport;
-import io.camunda.process.test.impl.coverage.core.CoverageCollector;
 import io.camunda.process.test.impl.coverage.data.CoverageTestData;
 import io.camunda.process.test.impl.coverage.report.CoverageReporter;
 import java.util.List;
 import java.util.function.Consumer;
 
-public final class DefaultProcessCoverage implements ProcessCoverage {
+public final class DefaultCoverageCollector implements CoverageCollector {
 
-  private final CoverageCollector coverageCollector;
+  private final io.camunda.process.test.impl.coverage.core.CoverageCollector coverageCollector;
   private final CoverageReporter coverageReporter;
 
-  public DefaultProcessCoverage(
+  public DefaultCoverageCollector(
       final Class<?> testClass,
       final List<String> excludedProcessDefinitionIds,
       final List<String> excludedDecisionDefinitionIds,
       final String reportDirectory,
       final Consumer<String> printStream) {
     coverageCollector =
-        CoverageCollector.createCollector(
+        io.camunda.process.test.impl.coverage.core.CoverageCollector.createCollector(
             testClass, excludedProcessDefinitionIds, excludedDecisionDefinitionIds);
     coverageReporter = new CoverageReporter(reportDirectory, printStream);
   }
 
   @Override
   public CoverageReport collectTestRunCoverage(
-      final String runName, final CoverageTestData testResults) {
-    coverageCollector.collectTestRunCoverage(runName, testResults);
+      final String runName, final CoverageTestData testData) {
+    coverageCollector.collectTestRunCoverage(runName, testData);
     return coverageReporter.createSuiteCoverageReport(coverageCollector);
   }
 
   @Override
-  public CoverageReport reportCoverage() {
+  public CoverageReport generateReport() {
     return coverageReporter.reportCoverage(coverageCollector);
   }
 }
