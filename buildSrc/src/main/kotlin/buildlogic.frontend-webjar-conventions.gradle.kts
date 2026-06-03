@@ -67,7 +67,7 @@ val npmBuild by tasks.registering(NpmTask::class) {
     inputs
         .files(
             provider {
-                val excludes = mutableListOf("node_modules/**", "target/**", ".gradle/**")
+                val excludes = mutableListOf("node_modules/**", "target/**", ".gradle/**", "build/**")
                 if (frontendBuildDirectory.isPresent) {
                     runCatching {
                         val relPath =
