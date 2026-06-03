@@ -6,7 +6,7 @@ description: Automates the always-green baseline check before starting any AI-as
 # Verify Baseline
 
 Run this skill before making any code changes to establish a green baseline. It automates the
-two-step always-green policy defined in AGENTS.md.
+always-green baseline requirements described in AGENTS.md.
 
 Accepts an optional base branch argument (default: `main`). Pass a different branch when
 targeting a stable release, e.g. `/verify-baseline stable/8.7`.
