@@ -141,11 +141,12 @@ public class AnalyticsExporter implements Exporter {
     try {
       licenseKey = context.getLicenseKey();
     } catch (final NoSuchMethodError e) {
+      LOG.warn("Context.getLicenseKey() not available (pre-8.10 broker); falling back to env var");
       licenseKey = System.getenv(LICENSE_KEY_ENV_VAR);
     }
     if (licenseKey == null || licenseKey.isBlank()) {
       throw new IllegalStateException(
-          "Analytics exporter requires a license key. Set the "
+          "Analytics exporter requires a license key. Set camunda.license.key in configuration or the "
               + LICENSE_KEY_ENV_VAR
               + " environment variable.");
     }

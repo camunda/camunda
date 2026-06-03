@@ -14,6 +14,7 @@ import io.camunda.zeebe.broker.system.configuration.backpressure.LimitCfg;
 import io.camunda.zeebe.util.Environment;
 import java.util.HashMap;
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 
 public class BrokerCfg {
 
@@ -36,7 +37,7 @@ public class BrokerCfg {
 
   // Safeguard: exclude from Jackson serialization to prevent accidental exposure (e.g. logging,
   // debug endpoints). Primary sanitization is handled by ConfigSanitizingFunction.
-  @JsonIgnore private String licenseKey;
+  @JsonIgnore private @Nullable String licenseKey;
 
   public void init(final String brokerBase) {
     init(brokerBase, new Environment());
@@ -165,11 +166,11 @@ public class BrokerCfg {
     this.experimental = experimental;
   }
 
-  public String getLicenseKey() {
+  public @Nullable String getLicenseKey() {
     return licenseKey;
   }
 
-  public void setLicenseKey(final String licenseKey) {
+  public void setLicenseKey(final @Nullable String licenseKey) {
     this.licenseKey = licenseKey;
   }
 

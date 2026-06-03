@@ -7,15 +7,22 @@
  */
 package io.camunda.configuration;
 
+import org.jspecify.annotations.Nullable;
+
 public class License {
 
-  private String key;
+  private @Nullable String key;
 
-  public String getKey() {
+  public @Nullable String getKey() {
     return key;
   }
 
-  public void setKey(final String key) {
+  public void setKey(final @Nullable String key) {
     this.key = key;
+  }
+
+  @Override
+  public String toString() {
+    return "License{key=***}";
   }
 }

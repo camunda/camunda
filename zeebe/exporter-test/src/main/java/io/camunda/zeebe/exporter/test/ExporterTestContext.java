@@ -14,6 +14,7 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.InstantSource;
 import java.util.Objects;
 import net.jcip.annotations.NotThreadSafe;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,7 +32,7 @@ public final class ExporterTestContext implements Context {
   private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
   private int partitionId;
   private String clusterId = "";
-  private String licenseKey;
+  private @Nullable String licenseKey;
   private InstantSource clock = InstantSource.system();
 
   @Override
@@ -75,11 +76,11 @@ public final class ExporterTestContext implements Context {
   }
 
   @Override
-  public String getLicenseKey() {
+  public @Nullable String getLicenseKey() {
     return licenseKey;
   }
 
-  public ExporterTestContext setLicenseKey(final String licenseKey) {
+  public ExporterTestContext setLicenseKey(final @Nullable String licenseKey) {
     this.licenseKey = licenseKey;
     return this;
   }

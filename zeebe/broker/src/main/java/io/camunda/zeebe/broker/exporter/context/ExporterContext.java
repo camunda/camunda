@@ -18,6 +18,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import java.time.InstantSource;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
 public final class ExporterContext implements Context, AutoCloseable {
@@ -28,7 +29,7 @@ public final class ExporterContext implements Context, AutoCloseable {
   private final Configuration configuration;
   private final int partitionId;
   private final String clusterId;
-  private final String licenseKey;
+  private final @Nullable String licenseKey;
   private final CompositeMeterRegistry meterRegistry;
   private final InstantSource clock;
 
@@ -39,7 +40,7 @@ public final class ExporterContext implements Context, AutoCloseable {
       final Configuration configuration,
       final int partitionId,
       final String clusterId,
-      final String licenseKey,
+      final @Nullable String licenseKey,
       final MeterRegistry meterRegistry,
       final InstantSource clock) {
     this.logger = logger;
@@ -86,7 +87,7 @@ public final class ExporterContext implements Context, AutoCloseable {
   }
 
   @Override
-  public String getLicenseKey() {
+  public @Nullable String getLicenseKey() {
     return licenseKey;
   }
 
