@@ -24,11 +24,6 @@ on:
         description: 'Max fix-agent dispatches this run (default: 4 — one per supported version)'
         default: '4'
         required: false
-      include_main:
-        description: 'Include main in triage scope (set false to limit to stable branches)'
-        type: boolean
-        default: true
-        required: false
       send_slack_notification:
         description: 'Post triage summary and fix-agent replies to Slack (always true for scheduled runs)'
         type: boolean
@@ -88,7 +83,6 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.secrets.outputs.GH_TOKEN }}
           REPO:     ${{ github.repository }}
-          INCLUDE_MAIN: ${{ github.event.inputs.include_main || 'true' }}
         run: |
           set -euo pipefail
 
@@ -103,13 +97,11 @@ jobs:
             "c8-orchestration-cluster-nightly-8.9-api-es.yml|8.9|api_es"
             "c8-orchestration-cluster-nightly-8.9-api-rdbms.yml|8.9|api_rdbms"
           )
-          if [ "$INCLUDE_MAIN" = "true" ]; then
-            SCOPE+=(
-              "c8-orchestration-cluster-nightly-main-e2e.yml|main|e2e"
-              "c8-orchestration-cluster-nightly-main-api-es.yml|main|api_es"
-              "c8-orchestration-cluster-nightly-main-api-rdbms.yml|main|api_rdbms"
-            )
-          fi
+          SCOPE+=(
+            "c8-orchestration-cluster-nightly-main-e2e.yml|main|e2e"
+            "c8-orchestration-cluster-nightly-main-api-es.yml|main|api_es"
+            "c8-orchestration-cluster-nightly-main-api-rdbms.yml|main|api_rdbms"
+          )
 
           # Working files
           all_failures=/tmp/all_failures.jsonl
