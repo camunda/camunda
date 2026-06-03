@@ -47,6 +47,10 @@ Read the chosen template:
 cat ".github/ISSUE_TEMPLATE/<chosen>.yml"
 ```
 
+For bug reports (`1. bug_report.yml`), invoke the `grill-me` skill before inferring fields — it
+builds shared understanding of impact, root cause, and reproduction path, making field inference
+much more accurate.
+
 Ask the user for a free-form description of the issue. Use that description to infer values for
 every field in the template's `body:` list. For each item:
 - Skip `type: markdown` items (they are display-only).
@@ -121,6 +125,10 @@ Do not invent sections or use any structure other than what the template defines
 
 ### Step 6 — Propose summary and ask for approval
 
+Before printing the summary, scan the body for sensitive data and redact it: replace UUIDs,
+customer/user IDs, internal hostnames, and email addresses found in any copied log output with
+`<redacted>`.
+
 Print a clear summary and wait for explicit confirmation. Do NOT call `gh issue create` yet.
 
 ```
@@ -159,11 +167,30 @@ gh issue create \
 rm -f "$body_file"
 ```
 
-Capture the new issue number from the returned URL. Then fetch its database ID (required by the
-sub-issues API — the issue number alone will return 404):
+Capture the new issue number from the returned URL. Then fetch its database ID and node ID (both
+needed below — the database ID for the sub-issues API, the node ID for setting the Issue Type):
 
 ```bash
-gh api repos/camunda/camunda/issues/<new-issue-number> --jq '.id'
+gh api repos/camunda/camunda/issues/<new-issue-number> --jq '{id: .id, node_id: .node_id}'
+```
+
+Set the native GitHub Issue Type (bypassed by `gh issue create`) by resolving the type name from
+the template's `type:` field against the repo's configured issue types:
+
+```bash
+type_id=$(gh api graphql -f query='{
+  repository(owner: "camunda", name: "camunda") {
+    issueTypes(first: 20) { nodes { id name } }
+  }
+}' --jq --arg t "<type from template>" \
+  '.data.repository.issueTypes.nodes[]
+   | select(.name | ascii_downcase == ($t | ascii_downcase)) | .id')
+
+gh api graphql -f query="mutation {
+  updateIssue(input: {id: \"<node_id>\", issueTypeId: \"$type_id\"}) {
+    issue { id }
+  }
+}"
 ```
 
 If a parent was provided, register the native GitHub sub-issue relationship so the new issue
