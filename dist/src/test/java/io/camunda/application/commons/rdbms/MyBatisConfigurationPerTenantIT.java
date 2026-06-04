@@ -16,7 +16,6 @@ import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.RdbmsWriterFactory;
-import io.camunda.db.rdbms.write.queue.TransactionRunner;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.LinkedHashMap;
 import java.util.UUID;
@@ -114,7 +113,7 @@ class MyBatisConfigurationPerTenantIT {
       implements AutoCloseable {
 
     RdbmsWriterFactory writerFactory() {
-      return new RdbmsWriterFactory(bundles, new SimpleMeterRegistry(), TransactionRunner.noop());
+      return new RdbmsWriterFactory(bundles, new SimpleMeterRegistry());
     }
 
     @Override

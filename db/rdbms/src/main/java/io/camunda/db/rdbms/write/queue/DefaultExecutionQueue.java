@@ -42,7 +42,6 @@ public class DefaultExecutionQueue implements ExecutionQueue {
           Pattern.compile("io.camunda.db.rdbms.sql.BatchOperationMapper.activate"));
 
   private final SqlSessionFactory sessionFactory;
-  private final TransactionRunner transactionRunner;
   private final List<PreFlushListener> preFlushListeners = new ArrayList<>();
   private final List<PostFlushListener> postFlushListeners = new ArrayList<>();
   private final List<InTransactionHook> inTransactionHooks = new ArrayList<>();
@@ -63,15 +62,13 @@ public class DefaultExecutionQueue implements ExecutionQueue {
       final long partitionId,
       final int queueFlushLimit,
       final int queueMemoryLimitMb,
-      final RdbmsWriterMetrics metrics,
-      final TransactionRunner transactionRunner) {
+      final RdbmsWriterMetrics metrics) {
     this.sessionFactory = sessionFactory;
     this.partitionId = partitionId;
     this.queueFlushLimit = queueFlushLimit;
     // Convert MB to bytes for internal comparison
     queueMemoryLimitBytes = (long) queueMemoryLimitMb * BYTES_PER_MB;
     this.metrics = metrics;
-    this.transactionRunner = transactionRunner;
   }
 
   @Override
@@ -138,7 +135,7 @@ public class DefaultExecutionQueue implements ExecutionQueue {
       try (final var ignored = metrics.measureFlushDuration()) {
         // Record memory usage before flush
         metrics.recordQueueMemoryUsage(currentQueueMemoryBytes);
-        final int numFlushedElements = transactionRunner.runInTransaction(this::doFLush);
+        final int numFlushedElements = doFLush();
         metrics.stopFlushLatencyMeasurement();
         metrics.recordBulkSize(numFlushedElements);
         // Reset memory tracking after flush
