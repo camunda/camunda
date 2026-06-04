@@ -43,7 +43,8 @@ test.describe.serial('Create Process Instance Batch to Migrate Tests', () => {
     const v2Result: DeployResourceResponse = await deploy([
       './resources/test_migration_process_v2.bpmn',
     ]);
-    sharedTargetProcessDefinitionKey = v2Result.processes[0].processDefinitionKey;
+    sharedTargetProcessDefinitionKey =
+      v2Result.processes[0].processDefinitionKey;
   });
 
   test.afterAll(async () => {
