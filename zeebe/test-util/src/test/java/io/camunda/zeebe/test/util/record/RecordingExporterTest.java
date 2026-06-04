@@ -11,6 +11,7 @@ import static io.camunda.zeebe.test.util.record.RecordingExporter.records;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.protocol.record.Agent;
+import io.camunda.zeebe.protocol.record.ChannelType;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
@@ -146,6 +147,16 @@ public final class RecordingExporterTest {
 
     @Override
     public Agent getAgent() {
+      return null;
+    }
+
+    @Override
+    public ChannelType getRequestChannelType() {
+      return null;
+    }
+
+    @Override
+    public String getRequestToolName() {
       return null;
     }
 
