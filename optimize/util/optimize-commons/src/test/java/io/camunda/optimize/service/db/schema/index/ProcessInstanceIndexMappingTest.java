@@ -34,7 +34,7 @@ class ProcessInstanceIndexMappingTest {
   }
 
   @Test
-  void shouldHaveVersionNine() {
-    assertThat(ProcessInstanceIndex.VERSION).isEqualTo(9);
+  void shouldHaveVersionEight() {
+    assertThat(ProcessInstanceIndex.VERSION).isEqualTo(8);
   }
 }

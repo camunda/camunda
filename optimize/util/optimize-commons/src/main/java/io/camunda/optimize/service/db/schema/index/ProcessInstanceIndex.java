@@ -24,7 +24,10 @@ import java.util.Locale;
 
 public abstract class ProcessInstanceIndex<TBuilder> extends AbstractInstanceIndex<TBuilder> {
 
-  public static final int VERSION = 9;
+  // Bump this only for breaking mapping changes that require reindexing.
+  // Backwards-compatible additions (new fields, nested type additions) must NOT increment the
+  // version, as doing so forces a full migration for all customers on minor updates.
+  public static final int VERSION = 8;
 
   public static final String START_DATE = ProcessInstanceDto.Fields.startDate;
   public static final String END_DATE = ProcessInstanceDto.Fields.endDate;
