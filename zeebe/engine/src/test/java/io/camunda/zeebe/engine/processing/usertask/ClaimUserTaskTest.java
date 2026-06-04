@@ -251,6 +251,36 @@ public class ClaimUserTaskTest {
   }
 
   @Test
+  public void shouldAllowServiceAccountToClaimUserTaskForAnotherUser() {
+    // given
+    ENGINE.deployment().withXmlResource(process()).deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final long userTaskKey =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst()
+            .getKey();
+
+    // when
+    final var claimingRecord =
+        ENGINE.userTask().withKey(userTaskKey).withAssignee("target-user").claimAsClient("svc");
+
+    // then
+    Assertions.assertThat(claimingRecord)
+        .hasRecordType(RecordType.EVENT)
+        .hasIntent(UserTaskIntent.CLAIMING);
+
+    final var assignedRecord =
+        RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED)
+            .filter(r -> r.getPosition() > claimingRecord.getPosition())
+            .getFirst();
+
+    Assertions.assertThat(assignedRecord.getValue())
+        .hasUserTaskKey(userTaskKey)
+        .hasAssignee("target-user");
+  }
+
+  @Test
   public void shouldRejectClaimIfUserTaskIsCompleted() {
     // given
     ENGINE.deployment().withXmlResource(process()).deploy();
