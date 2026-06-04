@@ -58,8 +58,6 @@ components:
     CursorForwardPagination:
       type: object
       title: Cursor-based forward pagination
-      required:
-        - after
       properties:
         after:
           description: Use the `endCursor` value from the previous response to fetch the next page of results.
@@ -81,8 +79,6 @@ components:
     CursorBackwardPagination:
       type: object
       title: Cursor-based backward pagination
-      required:
-        - before
       properties:
         before:
           description: Use the `startCursor` value from the previous response to fetch the previous page of results.
