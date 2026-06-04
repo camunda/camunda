@@ -151,10 +151,11 @@ Direct fixes pushed to `stable/*` branches by humans still run the gate.
 
 ## Workflow integration
 
-The `detect-new-flaky-tests` job is defined in `.github/workflows/ci.yml`. Key implementation details:
+The `detect-new-flaky-tests` job is defined in `.github/workflows/ci.yml`. The job stays thin: it computes the run-specific context (bypass label, ran-jobs JSON from `needs.*.result`, BigQuery baseline) and hands it to the `detect-new-flaky-tests` composite action, which owns all sticky-state plumbing. Key implementation details:
 
 - **Checkout** uses `fetch-depth: 0` because `git log -L` requires full history.
-- **State artifact** is named `flaky-gate-state-pr-<PR_NUMBER>` with 30-day retention. The gate downloads the latest non-expired artifact via `gh api`, mutates the JSON, and re-uploads with `overwrite: true`.
+- **State artifact** is named `flaky-gate-state-pr-<PR_NUMBER>` with 30-day retention. The action downloads the latest non-expired artifact via `gh api`, mutates the JSON, and re-uploads with `overwrite: true` — the workflow no longer wires state files in/out.
+- **No-op short-circuit** lives in the detector: when there is no prior state, no new flakes this run, and no bypass label, it returns without posting a comment or writing state, so clean PRs are left untouched.
 - **Hidden comment marker** `<!-- flaky-gate-state-artifact: <name> -->` points to the artifact for cross-reference.
 - **BigQuery baseline** is queried only when this run produced new flakes. The query lives in the workflow step "Query known flaky tests from BigQuery."
 - **Blocking** is `true` (default) — sticky entries fail `check-results`.
