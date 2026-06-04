@@ -24,6 +24,8 @@ public final class EngineConfiguration {
   public static final int DEFAULT_FORM_CACHE_CAPACITY = 1000;
   public static final int DEFAULT_PROCESS_CACHE_CAPACITY = 1000;
   public static final int DEFAULT_AUTHORIZATIONS_CACHE_CAPACITY = 1000;
+  public static final int DEFAULT_GROUP_NAME_CACHE_CAPACITY = 1000;
+  public static final boolean DEFAULT_CANDIDATE_GROUP_NAME_RESOLUTION = true;
   public static final Duration DEFAULT_AUTHORIZATIONS_CACHE_TTL = Duration.ofSeconds(10);
   public static final Duration DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL = Duration.ofSeconds(1);
   public static final boolean DEFAULT_JOBS_INCLUDE_VARIABLES_IN_JOB_COMPLETED_EVENT = false;
@@ -97,6 +99,8 @@ public final class EngineConfiguration {
   private int processCacheCapacity = DEFAULT_FORM_CACHE_CAPACITY;
   private int authorizationsCacheCapacity = DEFAULT_AUTHORIZATIONS_CACHE_CAPACITY;
   private Duration authorizationsCacheTtl = DEFAULT_AUTHORIZATIONS_CACHE_TTL;
+  private int groupNameCacheCapacity = DEFAULT_GROUP_NAME_CACHE_CAPACITY;
+  private boolean candidateGroupNameResolution = DEFAULT_CANDIDATE_GROUP_NAME_RESOLUTION;
   private Duration jobsTimeoutCheckerPollingInterval = DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL;
   private int jobsTimeoutCheckerBatchLimit = DEFAULT_JOBS_TIMEOUT_CHECKER_BATCH_LIMIT;
   private int validatorsResultsOutputMaxSize = DEFAULT_VALIDATORS_RESULTS_OUTPUT_MAX_SIZE;
@@ -214,6 +218,25 @@ public final class EngineConfiguration {
 
   public EngineConfiguration setAuthorizationsCacheTtl(final Duration authorizationsCacheTtl) {
     this.authorizationsCacheTtl = authorizationsCacheTtl;
+    return this;
+  }
+
+  public int getGroupNameCacheCapacity() {
+    return groupNameCacheCapacity;
+  }
+
+  public EngineConfiguration setGroupNameCacheCapacity(final int groupNameCacheCapacity) {
+    this.groupNameCacheCapacity = groupNameCacheCapacity;
+    return this;
+  }
+
+  public boolean isCandidateGroupNameResolution() {
+    return candidateGroupNameResolution;
+  }
+
+  public EngineConfiguration setCandidateGroupNameResolution(
+      final boolean candidateGroupNameResolution) {
+    this.candidateGroupNameResolution = candidateGroupNameResolution;
     return this;
   }
 

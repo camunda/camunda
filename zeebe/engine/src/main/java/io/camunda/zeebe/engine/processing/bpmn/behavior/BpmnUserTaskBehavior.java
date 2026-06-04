@@ -25,6 +25,7 @@ import io.camunda.zeebe.engine.state.deployment.PersistedForm;
 import io.camunda.zeebe.engine.state.globallistener.GlobalListenersState;
 import io.camunda.zeebe.engine.state.immutable.AsyncRequestState;
 import io.camunda.zeebe.engine.state.immutable.FormState;
+import io.camunda.zeebe.engine.state.immutable.GroupState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
@@ -74,6 +75,8 @@ public final class BpmnUserTaskBehavior {
   private final VariableState variableState;
   private final AsyncRequestState asyncRequestState;
   private final GlobalListenersState globalListenersState;
+  private final GroupState groupState;
+  private final boolean candidateGroupNameResolution;
   private final InstantSource clock;
 
   public BpmnUserTaskBehavior(
@@ -86,6 +89,8 @@ public final class BpmnUserTaskBehavior {
       final VariableState variableState,
       final AsyncRequestState asyncRequestState,
       final GlobalListenersState globalListenersState,
+      final GroupState groupState,
+      final boolean candidateGroupNameResolution,
       final InstantSource clock) {
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
@@ -97,6 +102,8 @@ public final class BpmnUserTaskBehavior {
     this.variableState = variableState;
     this.asyncRequestState = asyncRequestState;
     this.globalListenersState = globalListenersState;
+    this.groupState = groupState;
+    this.candidateGroupNameResolution = candidateGroupNameResolution;
     this.clock = clock;
   }
 
@@ -219,7 +226,57 @@ public final class BpmnUserTaskBehavior {
     if (candidateGroups == null) {
       return Either.right(null);
     }
-    return expressionBehavior.evaluateArrayOfStringsExpression(candidateGroups, scopeKey, tenantId);
+    final var evaluated =
+        expressionBehavior.evaluateArrayOfStringsExpression(candidateGroups, scopeKey, tenantId);
+    if (!candidateGroupNameResolution) {
+      return evaluated;
+    }
+    return evaluated.flatMap(groups -> resolveCandidateGroupNamesToIds(groups, scopeKey));
+  }
+
+  /**
+   * Resolves candidate group names to group IDs using a best-effort approach. For each value:
+   *
+   * <ul>
+   *   <li>If it matches a group ID, keep it as-is.
+   *   <li>If it matches a single group name, replace it with that group's ID.
+   *   <li>If it doesn't match any managed group, keep the original value. This is expected for
+   *       deployments whose groups are not managed in the engine (e.g. OIDC group claims), so the
+   *       original value still matches the user's group at authorization time.
+   *   <li>If it matches multiple group names, the value is ambiguous and cannot be resolved safely
+   *       (group names are not unique). Resolution fails so an incident is raised, prompting the
+   *       modeller to use the specific group ID.
+   * </ul>
+   *
+   * @param candidateGroups list of group IDs or names from BPMN
+   * @param scopeKey the variable scope key used to report a resulting incident
+   * @return resolved candidate groups, or a {@link Failure} if a name is ambiguous
+   */
+  private Either<Failure, List<String>> resolveCandidateGroupNamesToIds(
+      final List<String> candidateGroups, final long scopeKey) {
+    if (candidateGroups == null || candidateGroups.isEmpty()) {
+      return Either.right(candidateGroups);
+    }
+
+    final List<String> resolvedGroupIds = new ArrayList<>();
+    for (final String value : candidateGroups) {
+      final var matchingGroups = groupState.findByIdOrName(value);
+
+      if (matchingGroups.size() > 1) {
+        return Either.left(
+            new Failure(
+                "Expected to resolve the candidate group '%s' to a single group ID, but multiple groups share that name. Please use a specific group ID instead."
+                    .formatted(value),
+                ErrorType.EXTRACT_VALUE_ERROR,
+                scopeKey));
+      } else if (matchingGroups.isEmpty()) {
+        resolvedGroupIds.add(value);
+      } else {
+        resolvedGroupIds.add(matchingGroups.getFirst().getGroupId());
+      }
+    }
+
+    return Either.right(resolvedGroupIds);
   }
 
   public Either<Failure, List<String>> evaluateCandidateUsersExpression(
