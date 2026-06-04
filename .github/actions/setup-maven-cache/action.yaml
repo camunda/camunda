@@ -27,8 +27,10 @@ runs:
       #
       # `aether.enhancedLocalRepository.split` splits between local and remote artifacts.
       # `aether.enhancedLocalRepository.splitRemote` splits remote artifacts into released and snapshot
-      # `aether.syncContext.*` config ensures that maven uses file locks to prevent corruption
-      #      from downloading multiple artifacts at the same time.
+      # `aether.syncContext.*` config ensures that maven uses JVM in-memory read-write locks
+      #      to prevent corruption from downloading multiple artifacts at the same time.
+      #      `rwlock-local` is preferred over `file-lock` for CI where only one Maven process runs
+      #      per job. File locks caused timeouts on high-core-count runners (inc-5871).
       # `aether.dependencyCollector.impl=bf` uses a breadth first algorithm when resolving/downloading poms.
       #     The `bf` collector is suggested when the project contains many modules and dependencies.
       run: |
@@ -41,9 +43,8 @@ runs:
         -D aether.transport.http.retryHandler.count=5
         -D aether.enhancedLocalRepository.split=true
         -D aether.enhancedLocalRepository.splitRemote=true
-        -D aether.syncContext.named.nameMapper=file-gav
-        -D aether.syncContext.named.factory=file-lock
-        -D aether.syncContext.named.time=180
+        -D aether.syncContext.named.nameMapper=gav
+        -D aether.syncContext.named.factory=rwlock-local
         -D maven.artifact.threads=32
         -D aether.dependencyCollector.impl=bf
         EOF
@@ -105,3 +106,10 @@ runs:
         key: ${{ env.MAVEN_CACHE_KEY }}
         restore-keys: |
           ${{ env.MAVEN_CACHE_KEY_PREFIX }}
+
+    - name: DEBUG
+      shell: bash
+      run: |
+        ls -lah ~/.m2/repository/ || true
+        ls -lah ~/.m2/repository/.locks || true
+        rm -rf ~/.m2/repository/.locks || true
