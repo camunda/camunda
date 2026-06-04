@@ -23,18 +23,19 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
  * hash(businessId)}, the partition where a message-start instance created via the cross-partition
  * handshake actually runs.
  *
- * <p>{@code P_K} polls this processor to discover when such a holder instance has completed, so it
- * can release the correlation-key lock it is holding for it. The processor answers for the single
- * requested instance: it is "still active" iff a local element instance exists for the holder's key
- * and the instance is not banned. A banned holder is treated as gone, mirroring the banned-instance
- * filter on the uniqueness check, so a stuck holder does not block its correlation key forever.
+ * <p>{@code P_K} polls this processor to discover when such holder instances have completed, so it
+ * can release the correlation-key locks it is holding for them. A query batches one holder per lock
+ * entry {@code P_K} is polling for a given {@code P_B}; the processor answers per holder: a holder
+ * is "still active" iff a local element instance exists for its key and the instance is not banned.
+ * A banned holder is treated as gone, mirroring the banned-instance filter on the uniqueness check,
+ * so a stuck holder does not block its correlation key forever.
  *
  * <p>The processor always acknowledges with {@link
  * MessageStartCorrelationKeyLockReleaseIntent#QUERIED} for an observable trail, and replies {@link
- * MessageStartCorrelationKeyLockReleaseIntent#RELEASE} back to {@code P_K} only when the holder is
- * gone. While the holder is still active it stays silent — {@code P_K} keeps polling with back-off
- * until completion — so a still-active answer produces no reply command. The reply is routed back
- * to {@code P_K} via the partition encoded in the query's {@code requestKey}.
+ * MessageStartCorrelationKeyLockReleaseIntent#RELEASE} back to {@code P_K} for each holder that is
+ * gone. Holders that are still active produce no reply — {@code P_K} keeps polling them with
+ * back-off until completion. Each reply is routed back to {@code P_K} via the partition encoded in
+ * the query's {@code requestKey}.
  */
 @ExcludeAuthorizationCheck
 public final class MessageStartCorrelationKeyLockReleaseQueryProcessor
@@ -63,8 +64,10 @@ public final class MessageStartCorrelationKeyLockReleaseQueryProcessor
     stateWriter.appendFollowUpEvent(
         record.getKey(), MessageStartCorrelationKeyLockReleaseIntent.QUERIED, query);
 
-    if (!isHolderActive(query.getProcessInstanceKey())) {
-      commandSender.sendCorrelationKeyLockRelease(query);
+    for (final var holder : query.getHolders()) {
+      if (!isHolderActive(holder.getProcessInstanceKey())) {
+        commandSender.sendCorrelationKeyLockRelease(query.getRequestKey(), holder);
+      }
     }
   }
 

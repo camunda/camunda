@@ -1119,6 +1119,12 @@ public class BrokerBasedPropertiesOverride {
         processInstanceCreation.getMessageStartDedupExpirationSweepBatchLimit());
     processInstanceCreationCfg.setMessageStartAskRetryInterval(
         processInstanceCreation.getMessageStartAskRetryInterval());
+    processInstanceCreationCfg.setMessageStartLockReleasePollInterval(
+        processInstanceCreation.getMessageStartLockReleasePollInterval());
+    processInstanceCreationCfg.setMessageStartLockReleasePollMaxBackoff(
+        processInstanceCreation.getMessageStartLockReleasePollMaxBackoff());
+    processInstanceCreationCfg.setMessageStartLockReleasePollBatchLimit(
+        processInstanceCreation.getMessageStartLockReleasePollBatchLimit());
   }
 
   private void populateFromJobs(final BrokerBasedProperties override) {

@@ -9,9 +9,15 @@
   "version": 1,
   "template": {
     "settings": {
-      "number_of_shards": 1,
-      "number_of_replicas": 0,
-      "index.queries.cache.enabled": false
+      "index": {
+        "number_of_shards": "1",
+        "number_of_replicas": "0",
+        "queries": {
+          "cache": {
+            "enabled": false
+          }
+        }
+      }
     },
     "aliases": {
       "zeebe-record-message-start-correlation-key-lock-release": {}
@@ -24,17 +30,23 @@
             "requestKey": {
               "type": "long"
             },
-            "processInstanceKey": {
-              "type": "long"
-            },
-            "bpmnProcessId": {
-              "type": "keyword"
-            },
-            "correlationKey": {
-              "type": "text"
-            },
-            "tenantId": {
-              "type": "keyword"
+            "holders": {
+              "type": "nested",
+              "dynamic": "strict",
+              "properties": {
+                "processInstanceKey": {
+                  "type": "long"
+                },
+                "bpmnProcessId": {
+                  "type": "keyword"
+                },
+                "correlationKey": {
+                  "type": "text"
+                },
+                "tenantId": {
+                  "type": "keyword"
+                }
+              }
             }
           }
         }

@@ -937,19 +937,21 @@ public class CompactRecordLogger {
     final var value = (MessageStartCorrelationKeyLockReleaseRecordValue) record.getValue();
 
     final var result =
-        new StringBuilder()
-            .append("req[")
-            .append(shortenKey(value.getRequestKey()))
-            .append("] holder")
-            .append(
-                summarizeProcessInformation(
-                    value.getBpmnProcessId(), value.getProcessInstanceKey()));
+        new StringBuilder().append("req[").append(shortenKey(value.getRequestKey())).append("]");
 
-    if (!StringUtils.isEmpty(value.getCorrelationKey())) {
-      result.append(" correlationKey: ").append(value.getCorrelationKey());
+    for (final var holder : value.getHolders()) {
+      result
+          .append(" holder")
+          .append(
+              summarizeProcessInformation(
+                  holder.getBpmnProcessId(), holder.getProcessInstanceKey()));
+      if (!StringUtils.isEmpty(holder.getCorrelationKey())) {
+        result.append(" correlationKey: ").append(holder.getCorrelationKey());
+      }
+      result.append(formatTenant(holder));
     }
 
-    return result.append(formatTenant(value)).toString();
+    return result.toString();
   }
 
   private String summarizeMessageSubscription(final Record<?> record) {

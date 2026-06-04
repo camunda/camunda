@@ -122,21 +122,25 @@ public final class MessageStartCorrelationKeyLockReleaseQueryProcessorTest {
   }
 
   private MessageStartCorrelationKeyLockReleaseRecord query(final long holderProcessInstanceKey) {
-    return new MessageStartCorrelationKeyLockReleaseRecord()
-        .setRequestKey(REQUEST_KEY)
+    final var record = new MessageStartCorrelationKeyLockReleaseRecord().setRequestKey(REQUEST_KEY);
+    record
+        .addHolder()
         .setProcessInstanceKey(holderProcessInstanceKey)
         .setBpmnProcessId(PROCESS_ID)
         .setCorrelationKey(CORRELATION_KEY)
         .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    return record;
   }
 
   private void assertQueryPreserved(
       final MessageStartCorrelationKeyLockReleaseRecordValue value,
       final long holderProcessInstanceKey) {
     assertThat(value.getRequestKey()).isEqualTo(REQUEST_KEY);
-    assertThat(value.getProcessInstanceKey()).isEqualTo(holderProcessInstanceKey);
-    assertThat(value.getBpmnProcessId()).isEqualTo(PROCESS_ID);
-    assertThat(value.getCorrelationKey()).isEqualTo(CORRELATION_KEY);
-    assertThat(value.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    assertThat(value.getHolders()).hasSize(1);
+    final var holder = value.getHolders().getFirst();
+    assertThat(holder.getProcessInstanceKey()).isEqualTo(holderProcessInstanceKey);
+    assertThat(holder.getBpmnProcessId()).isEqualTo(PROCESS_ID);
+    assertThat(holder.getCorrelationKey()).isEqualTo(CORRELATION_KEY);
+    assertThat(holder.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   }
 }

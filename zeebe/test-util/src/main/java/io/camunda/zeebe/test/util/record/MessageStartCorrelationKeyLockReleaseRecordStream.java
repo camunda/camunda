@@ -31,22 +31,31 @@ public final class MessageStartCorrelationKeyLockReleaseRecordStream
     return valueFilter(v -> v.getRequestKey() == requestKey);
   }
 
+  /** Keeps records that carry a holder for the given holder process instance key. */
   public MessageStartCorrelationKeyLockReleaseRecordStream withProcessInstanceKey(
       final long processInstanceKey) {
-    return valueFilter(v -> v.getProcessInstanceKey() == processInstanceKey);
+    return valueFilter(
+        v ->
+            v.getHolders().stream().anyMatch(h -> h.getProcessInstanceKey() == processInstanceKey));
   }
 
+  /** Keeps records that carry a holder for the given bpmn process id. */
   public MessageStartCorrelationKeyLockReleaseRecordStream withBpmnProcessId(
       final String bpmnProcessId) {
-    return valueFilter(v -> bpmnProcessId.equals(v.getBpmnProcessId()));
+    return valueFilter(
+        v -> v.getHolders().stream().anyMatch(h -> bpmnProcessId.equals(h.getBpmnProcessId())));
   }
 
+  /** Keeps records that carry a holder for the given correlation key. */
   public MessageStartCorrelationKeyLockReleaseRecordStream withCorrelationKey(
       final String correlationKey) {
-    return valueFilter(v -> correlationKey.equals(v.getCorrelationKey()));
+    return valueFilter(
+        v -> v.getHolders().stream().anyMatch(h -> correlationKey.equals(h.getCorrelationKey())));
   }
 
+  /** Keeps records that carry a holder for the given tenant id. */
   public MessageStartCorrelationKeyLockReleaseRecordStream withTenantId(final String tenantId) {
-    return valueFilter(v -> tenantId.equals(v.getTenantId()));
+    return valueFilter(
+        v -> v.getHolders().stream().anyMatch(h -> tenantId.equals(h.getTenantId())));
   }
 }

@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageStartCorrelationKeyLockRel
 import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.value.MessageStartCorrelationKeyLockReleaseRecordValue.MessageStartLockReleaseHolderValue;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import org.agrona.DirectBuffer;
 
@@ -484,24 +485,49 @@ public class SubscriptionCommandSender {
   }
 
   /**
-   * Sends the {@link MessageStartCorrelationKeyLockReleaseIntent#RELEASE} reply from {@code P_B}
-   * back to {@code P_K} after a holder-liveness query found the holder instance is no longer
-   * active. The target partition is derived from {@code query.getRequestKey()} — the originating
-   * partition {@code P_K} is encoded in the request key by Zeebe's key-partitioning.
+   * Dispatches a batched holder-liveness {@link MessageStartCorrelationKeyLockReleaseIntent#QUERY}
+   * from {@code P_K} to {@code P_B}. Sent directly (bypassing the writers' post-commit task)
+   * because it originates from the scheduled poll task on {@code P_K} that walks the
+   * cross-partition lock entries; mirrors {@link #sendDirectStartProcessInstanceRequest}.
    *
-   * <p>The reply replays the query payload so the {@code P_K} handler can locate the
+   * <p>Every holder in {@code query} targets the same {@code targetPartitionId} (each holder
+   * instance key's partition bits identify {@code P_B}), so one command covers all of {@code P_K}'s
+   * locks for that partition. The {@code requestKey} on {@code query} encodes {@code P_K} so {@code
+   * P_B} can route each {@code RELEASE} reply back.
+   */
+  public void sendDirectCorrelationKeyLockReleaseQuery(
+      final int targetPartitionId, final MessageStartCorrelationKeyLockReleaseRecord query) {
+    interPartitionCommandSender.sendCommand(
+        targetPartitionId,
+        ValueType.MESSAGE_START_CORRELATION_KEY_LOCK_RELEASE,
+        MessageStartCorrelationKeyLockReleaseIntent.QUERY,
+        query);
+  }
+
+  /**
+   * Sends the {@link MessageStartCorrelationKeyLockReleaseIntent#RELEASE} reply from {@code P_B}
+   * back to {@code P_K} after a holder-liveness query found {@code holder}'s instance is no longer
+   * active. The target partition is derived from {@code requestKey} — the originating partition
+   * {@code P_K} is encoded in it by Zeebe's key-partitioning.
+   *
+   * <p>The reply carries the single gone {@code holder} so the {@code P_K} handler can locate the
    * correlation-key lock entry to release (via {@code bpmnProcessId} + {@code correlationKey}) and
    * scope the buffered-message rescan (via {@code tenantId}) without any further cross-partition
-   * lookup. {@code P_B} sends this reply only when the holder is gone; while the holder is still
-   * active it stays silent and {@code P_K} re-polls.
+   * lookup. {@code P_B} sends this reply only for holders that are gone; for ones still active it
+   * stays silent and {@code P_K} re-polls.
    */
   public boolean sendCorrelationKeyLockRelease(
-      final MessageStartCorrelationKeyLockReleaseRecord query) {
+      final long requestKey, final MessageStartLockReleaseHolderValue holder) {
     final MessageStartCorrelationKeyLockReleaseRecord reply =
-        new MessageStartCorrelationKeyLockReleaseRecord();
-    reply.wrap(query);
+        new MessageStartCorrelationKeyLockReleaseRecord().setRequestKey(requestKey);
+    reply
+        .addHolder()
+        .setProcessInstanceKey(holder.getProcessInstanceKey())
+        .setBpmnProcessId(holder.getBpmnProcessId())
+        .setCorrelationKey(holder.getCorrelationKey())
+        .setTenantId(holder.getTenantId());
     return handleFollowUpCommandBasedOnPartition(
-        Protocol.decodePartitionId(query.getRequestKey()),
+        Protocol.decodePartitionId(requestKey),
         ValueType.MESSAGE_START_CORRELATION_KEY_LOCK_RELEASE,
         MessageStartCorrelationKeyLockReleaseIntent.RELEASE,
         reply);

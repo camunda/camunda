@@ -199,7 +199,7 @@ public final class MessageEventProcessors {
             new MessageStartProcessInstanceRequestRejectNoSubscriptionProcessor(writers.state()))
         // Holder-liveness release query handler on P_B - answers whether a cross-partition
         // message-start holder instance is still active, so P_K can release its correlation-key
-        // lock. No caller dispatches the query yet; that lands in a later commit.
+        // lock. The queries are dispatched by CrossPartitionMessageStartLockReleaseScheduler below.
         .onCommand(
             ValueType.MESSAGE_START_CORRELATION_KEY_LOCK_RELEASE,
             MessageStartCorrelationKeyLockReleaseIntent.QUERY,
@@ -223,6 +223,14 @@ public final class MessageEventProcessors {
                 subscriptionCommandSender,
                 processingState.getMessageStartProcessInstanceAskState(),
                 routingInfo,
-                config::getMessageStartAskRetryInterval));
+                config::getMessageStartAskRetryInterval))
+        .withListener(
+            new CrossPartitionMessageStartLockReleaseScheduler(
+                partitionId,
+                subscriptionCommandSender,
+                messageState,
+                config::getMessageStartLockReleasePollInterval,
+                config::getMessageStartLockReleasePollMaxBackoff,
+                config::getMessageStartLockReleasePollBatchLimit));
   }
 }

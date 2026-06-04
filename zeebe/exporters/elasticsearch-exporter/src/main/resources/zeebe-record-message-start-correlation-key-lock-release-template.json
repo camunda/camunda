@@ -24,17 +24,23 @@
             "requestKey": {
               "type": "long"
             },
-            "processInstanceKey": {
-              "type": "long"
-            },
-            "bpmnProcessId": {
-              "type": "keyword"
-            },
-            "correlationKey": {
-              "type": "text"
-            },
-            "tenantId": {
-              "type": "keyword"
+            "holders": {
+              "type": "nested",
+              "dynamic": "strict",
+              "properties": {
+                "processInstanceKey": {
+                  "type": "long"
+                },
+                "bpmnProcessId": {
+                  "type": "keyword"
+                },
+                "correlationKey": {
+                  "type": "text"
+                },
+                "tenantId": {
+                  "type": "keyword"
+                }
+              }
             }
           }
         }
