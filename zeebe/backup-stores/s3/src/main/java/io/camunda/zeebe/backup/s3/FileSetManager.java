@@ -45,15 +45,19 @@ final class FileSetManager {
   private final S3AsyncClient client;
   private final S3BackupConfig config;
   private final Semaphore concurrencyLimit;
-  private final Thread.Builder threadBuilder;
-  private final Executor schedulerExecutor;
+  private final ExecutorService schedulerExecutor;
 
   public FileSetManager(final S3AsyncClient client, final S3BackupConfig config) {
     this.client = client;
     this.config = config;
+    // We try not to exhaust the available connections by restricting the number of
+    // concurrent uploads to half of the number of available connections.
+    // This should prevent ConnectionAcquisitionTimeout for backups with many and/or large files
+    // where we would otherwise occupy all connections, preventing some uploads from starting.
     concurrencyLimit = new Semaphore(Math.max(1, config.maxConcurrentConnections() / 2));
-    threadBuilder = Thread.ofVirtual().name("zeebe-backup-s3", 0);
-    schedulerExecutor = threadBuilder::start;
+    schedulerExecutor =
+        Executors.newThreadPerTaskExecutor(
+            Thread.ofVirtual().name("zeebe-backup-s3-", 0).factory());
   }
 
   CompletableFuture<FileSet> save(final String prefix, final NamedFileSet files) {
@@ -230,6 +234,18 @@ final class FileSetManager {
           e);
     } finally {
       cleanupCompressedFile(compressed);
+    }
+  }
+
+  void close() {
+    schedulerExecutor.shutdown();
+    try {
+      if (!schedulerExecutor.awaitTermination(1, TimeUnit.MINUTES)) {
+        schedulerExecutor.shutdownNow();
+      }
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+      schedulerExecutor.shutdownNow();
     }
   }
 }
