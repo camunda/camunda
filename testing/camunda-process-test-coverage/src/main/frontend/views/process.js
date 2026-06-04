@@ -19,7 +19,7 @@ import { renderBpmnDiagram } from '../bpmn.js';
  */
 export async function renderProcess(processId, data, context = null) {
   const suites = data.suites || [];
-  const definitions = data.definitions || {};
+  const processDefinitions = data.processDefinitions || {};
 
   // Resolve coverage: run-scoped, suite-scoped, or global aggregate
   let cov = null;
@@ -60,7 +60,7 @@ export async function renderProcess(processId, data, context = null) {
     cov = (data.processCoverages || []).find((c) => c.processDefinitionId === processId) ?? null;
   }
 
-  const xml = definitions[processId];
+  const xml = processDefinitions[processId];
 
   let html = breadcrumbHtml + `
     <h2 class="view-title">
