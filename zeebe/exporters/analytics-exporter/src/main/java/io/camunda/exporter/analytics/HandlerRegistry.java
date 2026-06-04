@@ -52,16 +52,15 @@ final class HandlerRegistry {
 
   /** Routes the record to its handler. Does nothing if no handler is registered. */
   @SuppressWarnings({"unchecked", "rawtypes"})
-  boolean handle(final Record<?> record) {
+  void handle(final Record<?> record) {
     final var intentMap = handlers.get(record.getValueType());
     if (intentMap == null) {
-      return false;
+      return;
     }
     final AnalyticsHandler handler = intentMap.get(record.getIntent());
     if (handler == null) {
-      return false;
+      return;
     }
     handler.handle(record);
-    return true;
   }
 }

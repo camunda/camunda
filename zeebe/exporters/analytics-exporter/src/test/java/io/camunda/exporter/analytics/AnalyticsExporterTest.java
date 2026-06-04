@@ -159,6 +159,74 @@ class AnalyticsExporterTest {
   }
 
   @Test
+  void shouldPersistMetadataWhenHandlerThrowsAfterMutation() {
+    // given — OtelSdkManager that increments the sequence number and then throws
+    final var throwingController = new ExporterTestController();
+    final var throwingExporter = exporterWithMutatingThrowingOtel(throwingController);
+    final var record = piCreatedEvent();
+
+    // when — export must not propagate the exception
+    assertThatCode(() -> throwingExporter.export(record)).doesNotThrowAnyException();
+
+    // then — metadata was persisted despite the exception, because the mutation happened before
+    // throw
+    assertThat(throwingController.readMetadata())
+        .isPresent()
+        .get()
+        .satisfies(
+            bytes -> {
+              final var persisted = AnalyticsExporterMetadata.deserialize(bytes);
+              assertThat(persisted.getEventSequenceNumber()).isEqualTo(1L);
+            });
+  }
+
+  @Test
+  void shouldPersistMetadataMutatedOutsideHandler() {
+    // given — a custom OtelSdkManager that exposes the metadata so the test can simulate a gauge
+    // flush callback (which bumps the metric sequence number outside the export path)
+    final var metricOnlyController = new ExporterTestController();
+    final var metadataHolder = new AnalyticsExporterMetadata[1];
+    final var metricOnlyExporter =
+        newExporter(
+            new OtelSdkManager() {
+              @Override
+              OtelSdkManager initialize(
+                  final AnalyticsExporterConfig cfg,
+                  final AnalyticsExporterContext ctx,
+                  final AnalyticsExporterMetadata meta) {
+                metadataHolder[0] = meta;
+                return this;
+              }
+
+              @Override
+              public void logEvent(
+                  final String eventName,
+                  final long logPosition,
+                  final Consumer<LogRecordBuilder> builder) {
+                // no-op — event logging is not under test here
+              }
+            },
+            metricOnlyController);
+
+    // Simulate the gauge flush callback bumping the metric sequence number outside the export path.
+    metadataHolder[0].incrementAndGetMetricSequenceNumber();
+
+    // when — export an unhandled record (no handler runs, but metadata is already dirty)
+    final var unhandledRecord = FACTORY.generateRecord(ValueType.JOB);
+    metricOnlyExporter.export(unhandledRecord);
+
+    // then — metadata was persisted because the metric seqnum was bumped outside the export path
+    assertThat(metricOnlyController.readMetadata())
+        .isPresent()
+        .get()
+        .satisfies(
+            bytes -> {
+              final var persisted = AnalyticsExporterMetadata.deserialize(bytes);
+              assertThat(persisted.getMetricSequenceNumber()).isEqualTo(1L);
+            });
+  }
+
+  @Test
   void shouldInstallRecordFilterOnConfigure() {
     // given
     final var context =
@@ -248,6 +316,37 @@ class AnalyticsExporterTest {
               final long logPosition,
               final Consumer<LogRecordBuilder> builder) {
             throw new RuntimeException("simulated failure");
+          }
+        },
+        controller);
+  }
+
+  /**
+   * Builds an exporter whose {@code OtelSdkManager.logEvent} increments the event sequence number
+   * (via the metadata reference captured during {@code initialize}) and then throws. This simulates
+   * a handler that mutates metadata and then fails mid-way.
+   */
+  private static AnalyticsExporter exporterWithMutatingThrowingOtel(
+      final ExporterTestController controller) {
+    final var metadataHolder = new AnalyticsExporterMetadata[1];
+    return newExporter(
+        new OtelSdkManager() {
+          @Override
+          OtelSdkManager initialize(
+              final AnalyticsExporterConfig cfg,
+              final AnalyticsExporterContext ctx,
+              final AnalyticsExporterMetadata meta) {
+            metadataHolder[0] = meta;
+            return this;
+          }
+
+          @Override
+          public void logEvent(
+              final String eventName,
+              final long logPosition,
+              final Consumer<LogRecordBuilder> builder) {
+            metadataHolder[0].incrementAndGetEventSequenceNumber();
+            throw new RuntimeException("simulated failure after mutation");
           }
         },
         controller);
