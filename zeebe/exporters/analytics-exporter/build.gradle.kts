@@ -41,6 +41,13 @@ dependencies {
     testAnnotationProcessor(versionCatalog.findLibrary("org-openjdk-jmh-jmh-generator-annprocess").get())
 }
 
+tasks.named<ProcessResources>("processResources") {
+    val projectVersion = project.version.toString()
+    filesMatching("*.properties") {
+        filter { line -> line.replace("\${project.version}", projectVersion) }
+    }
+}
+
 description = "Camunda Analytics Exporter"
 
 val standaloneJar by tasks.registering(ShadowJar::class) {
