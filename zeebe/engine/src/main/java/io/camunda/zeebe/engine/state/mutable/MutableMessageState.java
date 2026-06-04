@@ -48,6 +48,18 @@ public interface MutableMessageState extends MessageState, StreamProcessorLifecy
       long holderProcessInstanceKey,
       String tenantId);
 
+  /**
+   * Removes the cross-partition message-start lock discriminator for {@code (bpmnProcessId,
+   * correlationKey)}. Called on {@code P_K} when the pull-based release path learns the holder
+   * instance has completed on {@code P_B}, together with {@link
+   * #removeActiveProcessInstance(DirectBuffer, DirectBuffer)} which releases the underlying
+   * correlation-key lock. A no-op when the entry is absent.
+   *
+   * @param bpmnProcessId the lock entry's process id
+   * @param correlationKey the lock entry's correlation key
+   */
+  void removeCrossPartitionStartLock(DirectBuffer bpmnProcessId, DirectBuffer correlationKey);
+
   void putProcessInstanceCorrelationKey(long processInstanceKey, DirectBuffer correlationKey);
 
   void removeProcessInstanceCorrelationKey(long processInstanceKey);

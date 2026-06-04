@@ -64,6 +64,21 @@ public interface MessageState {
   void visitCrossPartitionStartLocks(CrossPartitionStartLockVisitor visitor);
 
   /**
+   * Returns the holder process-instance key recorded on the cross-partition message-start lock
+   * entry for {@code (bpmnProcessId, correlationKey)}, or {@code -1} when no such entry exists.
+   *
+   * <p>Used by the pull-based release path to release a lock only while it is still held by the
+   * exact instance a {@code RELEASE} reply names: a redelivered reply, or one that arrives after a
+   * different instance has taken the same correlation key, reads a non-matching holder (or none)
+   * and is ignored.
+   *
+   * @param bpmnProcessId the BPMN process id half of the lock key
+   * @param correlationKey the correlation key half of the lock key
+   * @return the recorded holder process-instance key, or {@code -1} when absent
+   */
+  long getCrossPartitionStartLockHolder(DirectBuffer bpmnProcessId, DirectBuffer correlationKey);
+
+  /**
    * Index to point to a specific position in the messages with deadline column family.
    *
    * @param key The message key

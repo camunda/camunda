@@ -349,6 +349,29 @@ public final class DbMessageState implements MutableMessageState {
   }
 
   @Override
+  public long getCrossPartitionStartLockHolder(
+      final DirectBuffer bpmnProcessId, final DirectBuffer correlationKey) {
+    ensureNotNullOrEmpty("BPMN process id", bpmnProcessId);
+    ensureNotNullOrEmpty("correlation key", correlationKey);
+
+    bpmnProcessIdKey.wrapBuffer(bpmnProcessId);
+    this.correlationKey.wrapBuffer(correlationKey);
+    final var lock = crossPartitionStartLockColumnFamily.get(bpmnProcessIdCorrelationKey);
+    return lock == null ? -1L : lock.getProcessInstanceKey();
+  }
+
+  @Override
+  public void removeCrossPartitionStartLock(
+      final DirectBuffer bpmnProcessId, final DirectBuffer correlationKey) {
+    ensureNotNullOrEmpty("BPMN process id", bpmnProcessId);
+    ensureNotNullOrEmpty("correlation key", correlationKey);
+
+    bpmnProcessIdKey.wrapBuffer(bpmnProcessId);
+    this.correlationKey.wrapBuffer(correlationKey);
+    crossPartitionStartLockColumnFamily.deleteIfExists(bpmnProcessIdCorrelationKey);
+  }
+
+  @Override
   public void putProcessInstanceCorrelationKey(
       final long processInstanceKey, final DirectBuffer correlationKey) {
     ensureGreaterThan("process instance key", processInstanceKey, 0);

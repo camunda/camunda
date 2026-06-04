@@ -8,24 +8,43 @@
 package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
+import io.camunda.zeebe.engine.state.mutable.MutableMessageState;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartCorrelationKeyLockReleaseRecord;
 import io.camunda.zeebe.protocol.record.intent.MessageStartCorrelationKeyLockReleaseIntent;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 
 /**
  * Applier for {@link MessageStartCorrelationKeyLockReleaseIntent#RELEASED}.
  *
- * <p>Emitted on {@code P_K} when it accepts a {@code RELEASE} reply from {@code P_B} telling it the
- * remote holder instance has completed. At this point of the increment chain the event is a no-op:
- * the {@code P_K}-side reply handling (accepting the response) and the actual lock release plus
- * buffered-message pick-up land in later commits. The applier is registered now so every event
- * intent has an applier from the moment the intent is introduced.
+ * <p>Emitted on {@code P_K} when it accepts a {@code RELEASE} reply from {@code P_B} reporting that
+ * a cross-partition message-start holder instance has completed. For each holder carried by the
+ * event it drops the underlying correlation-key lock ({@link
+ * MutableMessageState#removeActiveProcessInstance}) so the next buffered message for that key can
+ * be picked up, and removes the holder-instance discriminator that the pull-based release loop
+ * polls on ({@link MutableMessageState#removeCrossPartitionStartLock}).
+ *
+ * <p>The release decision — including the idempotency guard that ensures the lock is still held by
+ * the exact instance the reply names — lives in the {@code RELEASE} processor; the event is only
+ * written for holders that actually have a matching live lock, so this applier removes
+ * unconditionally.
  */
 final class MessageStartCorrelationKeyLockReleaseReleasedV1Applier
     implements TypedEventApplier<
         MessageStartCorrelationKeyLockReleaseIntent, MessageStartCorrelationKeyLockReleaseRecord> {
 
+  private final MutableMessageState messageState;
+
+  MessageStartCorrelationKeyLockReleaseReleasedV1Applier(final MutableMessageState messageState) {
+    this.messageState = messageState;
+  }
+
   @Override
   public void applyState(final long key, final MessageStartCorrelationKeyLockReleaseRecord value) {
-    // no-op for now: the lock release and buffered-message pick-up land in a later commit
+    for (final var holder : value.getHolders()) {
+      final var bpmnProcessId = BufferUtil.wrapString(holder.getBpmnProcessId());
+      final var correlationKey = BufferUtil.wrapString(holder.getCorrelationKey());
+      messageState.removeActiveProcessInstance(bpmnProcessId, correlationKey);
+      messageState.removeCrossPartitionStartLock(bpmnProcessId, correlationKey);
+    }
   }
 }

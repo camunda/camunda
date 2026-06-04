@@ -36,9 +36,8 @@ import org.slf4j.LoggerFactory;
  * walks the cross-partition lock entries in local {@link MessageState}, groups them by the target
  * partition (derived from each holder instance key's partition bits, since every Zeebe key encodes
  * its generating partition), and dispatches one batched {@code QUERY} per target partition. {@code
- * P_B} replies {@code RELEASE} for any holder that is gone; the actual lock release and
- * buffered-message pick-up are wired in a later commit, so for now the responses are accepted but
- * trigger no release action.
+ * P_B} replies {@code RELEASE} for any holder that is gone; the RELEASE command processor on {@code
+ * P_K} then releases the correlation-key lock and picks up the next buffered message for that key.
  *
  * <p>The poll set is fully reconstructable from local lock state, so no cross-partition
  * coordination state is persisted. The per-entry back-off bookkeeping is transient and rebuilt from

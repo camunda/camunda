@@ -567,9 +567,9 @@ public final class EventAppliers implements EventApplier {
    *
    * <ul>
    *   <li>{@code QUERIED}: acknowledgement event on {@code P_B} with no state effect.
-   *   <li>{@code RELEASED}: accepted on {@code P_K} when the holder is reported gone; the lock
-   *       removal and buffered-message pick-up land in a later commit, so the applier is a no-op
-   *       for now.
+   *   <li>{@code RELEASED}: applied on {@code P_K} for each holder reported gone; removes the
+   *       active process-instance lock and the cross-partition lock marker for that correlation
+   *       key. The buffered-message pick-up is not done here but in the RELEASE command processor.
    * </ul>
    */
   private void registerMessageStartCorrelationKeyLockReleaseAppliers(
@@ -577,7 +577,7 @@ public final class EventAppliers implements EventApplier {
     register(MessageStartCorrelationKeyLockReleaseIntent.QUERIED, NOOP_EVENT_APPLIER);
     register(
         MessageStartCorrelationKeyLockReleaseIntent.RELEASED,
-        new MessageStartCorrelationKeyLockReleaseReleasedV1Applier());
+        new MessageStartCorrelationKeyLockReleaseReleasedV1Applier(state.getMessageState()));
   }
 
   private void registerIncidentEventAppliers(final MutableProcessingState state) {

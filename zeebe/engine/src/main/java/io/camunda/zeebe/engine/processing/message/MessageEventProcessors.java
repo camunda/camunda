@@ -205,6 +205,13 @@ public final class MessageEventProcessors {
             MessageStartCorrelationKeyLockReleaseIntent.QUERY,
             new MessageStartCorrelationKeyLockReleaseQueryProcessor(
                 elementInstanceState, bannedInstanceState, subscriptionCommandSender, writers))
+        // Holder-completion release handler on P_K - on a RELEASE reply from P_B, releases the
+        // correlation-key lock and picks up the next buffered message for that key.
+        .onCommand(
+            ValueType.MESSAGE_START_CORRELATION_KEY_LOCK_RELEASE,
+            MessageStartCorrelationKeyLockReleaseIntent.RELEASE,
+            new MessageStartCorrelationKeyLockReleaseReleaseProcessor(
+                messageState, bpmnBehaviors.bufferedMessageStartEventBehavior(), writers))
         .withListener(
             new MessageTimeToLiveCheckScheduler(
                 config.getMessagesTtlCheckerInterval(),
