@@ -37,7 +37,7 @@ final class FileSetManagerTest {
 
   @BeforeEach
   void setUp() {
-    manager = new FileSetManager(containerClient, blobBatchClient, false);
+    manager = new FileSetManager(containerClient, blobBatchClient, false, Runnable::run, 1);
   }
 
   @Test

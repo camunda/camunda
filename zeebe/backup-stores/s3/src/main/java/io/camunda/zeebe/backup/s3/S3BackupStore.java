@@ -354,8 +354,11 @@ public final class S3BackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<Void> closeAsync() {
-    client.close();
-    return CompletableFuture.completedFuture(null);
+    return CompletableFuture.runAsync(
+        () -> {
+          fileSetManager.close();
+          client.close();
+        });
   }
 
   @Override

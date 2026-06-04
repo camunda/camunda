@@ -37,7 +37,6 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.ReentrantLock;
@@ -58,15 +57,13 @@ public final class AzureBackupStore implements BackupStore {
   public static final String SNAPSHOT_FILESET_NAME = "snapshot";
   public static final String SEGMENTS_FILESET_NAME = "segments";
   public static final String METADATA_OBJECT_NAME = "metadata.json";
-  static final int MAX_CONCURRENT_SAVES = 128;
+  static final int MAX_CONCURRENT_FILE_OPERATIONS = 128;
   private static final Logger LOG = LoggerFactory.getLogger(AzureBackupStore.class);
   private final ExecutorService executor;
-  private final Semaphore saveSemaphore = new Semaphore(MAX_CONCURRENT_SAVES);
   private final ReentrantLock containerCreationLock = new ReentrantLock();
   private final FileSetManager fileSetManager;
   private final ManifestManager manifestManager;
   private final BlobContainerClient blobContainerClient;
-  private final AzureBackupConfig config;
   private volatile boolean containerCreated;
 
   AzureBackupStore(final AzureBackupConfig config) {
@@ -74,14 +71,21 @@ public final class AzureBackupStore implements BackupStore {
   }
 
   AzureBackupStore(final AzureBackupConfig config, final BlobServiceClient client) {
-    this.config = config;
-    executor = Executors.newVirtualThreadPerTaskExecutor();
+    executor =
+        Executors.newThreadPerTaskExecutor(
+            Thread.ofVirtual().name("zeebe-backup-azure-", 0).factory());
     blobContainerClient = getContainerClient(client, config);
     final boolean createContainer = isCreateContainer(config);
     containerCreated = !createContainer;
 
     final var blobBatchClient = new BlobBatchClientBuilder(client).buildClient();
-    fileSetManager = new FileSetManager(blobContainerClient, blobBatchClient, createContainer);
+    fileSetManager =
+        new FileSetManager(
+            blobContainerClient,
+            blobBatchClient,
+            createContainer,
+            executor,
+            MAX_CONCURRENT_FILE_OPERATIONS);
     manifestManager = new ManifestManager(blobContainerClient, createContainer);
   }
 
@@ -146,17 +150,8 @@ public final class AzureBackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<Void> save(final Backup backup) {
-    return CompletableFuture.runAsync(
-            () -> {
-              try {
-                saveSemaphore.acquire();
-              } catch (final InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new RuntimeException("Interrupted while waiting to save backup", e);
-              }
-            },
-            executor)
-        .thenApplyAsync(ignored -> manifestManager.createInitialManifest(backup), executor)
+    return CompletableFuture.supplyAsync(
+            () -> manifestManager.createInitialManifest(backup), executor)
         .thenComposeAsync(
             persistedManifest -> {
               final var snapshotFuture =
@@ -193,8 +188,7 @@ public final class AzureBackupStore implements BackupStore {
                 throw e;
               }
             },
-            executor)
-        .whenComplete((ignored, error) -> saveSemaphore.release());
+            executor);
   }
 
   @Override
