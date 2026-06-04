@@ -34,6 +34,7 @@ import io.camunda.process.test.impl.coverage.data.ImmutableCoverageDecisionInsta
 import io.camunda.process.test.impl.coverage.data.ImmutableCoverageProcessDefinitionData;
 import io.camunda.process.test.impl.coverage.data.ImmutableCoverageProcessInstanceData;
 import io.camunda.process.test.impl.coverage.data.ImmutableCoverageTestData;
+import io.camunda.zeebe.model.bpmn.Bpmn;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -133,11 +134,11 @@ class CoverageReportCollectorBuilderTest {
     final CoverageCollector coverageCollector = CoverageCollector.newBuilder().build();
     coverageCollector.collectTestRunCoverage(
         AggregatedReportTest.class, "run-1", createProcessCoverageTestData("process-a", "taskA"));
-    coverageCollector.collectTestRunCoverage(
-        AggregatedReportTest.class, "run-2", createProcessCoverageTestData("process-b", "taskB"));
-
-    // when
-    final CoverageReport report = coverageCollector.generateReport(AggregatedReportTest.class);
+    final CoverageReport report =
+        coverageCollector.collectTestRunCoverage(
+            AggregatedReportTest.class,
+            "run-2",
+            createProcessCoverageTestData("process-b", "taskB"));
 
     // then
     assertThat(report.getSuites())
@@ -176,8 +177,8 @@ class CoverageReportCollectorBuilderTest {
         .addProcessInstanceData(
             ImmutableCoverageProcessInstanceData.builder()
                 .processInstance(processInstance)
-            .addAllElementInstances(java.util.Collections.singletonList(elementInstance))
-            .addAllSequenceFlows(java.util.Collections.singletonList(sequenceFlow))
+                .addAllElementInstances(java.util.Collections.singletonList(elementInstance))
+                .addAllSequenceFlows(java.util.Collections.singletonList(sequenceFlow))
                 .build())
         .addProcessDefinitionData(
             ImmutableCoverageProcessDefinitionData.builder()
@@ -191,27 +192,18 @@ class CoverageReportCollectorBuilderTest {
 
   private String processXml(
       final String processDefinitionId, final String completedElementId, final String flowId) {
-    return "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-        + "<bpmn:definitions xmlns:bpmn=\"http://www.omg.org/spec/BPMN/20100524/MODEL\" "
-        + "id=\"Definitions_1\" targetNamespace=\"http://camunda.org/examples\">\n"
-        + "  <bpmn:process id=\""
-        + processDefinitionId
-        + "\" isExecutable=\"true\">\n"
-        + "    <bpmn:startEvent id=\"start\" />\n"
-        + "    <bpmn:serviceTask id=\""
-        + completedElementId
-        + "\" />\n"
-        + "    <bpmn:endEvent id=\"end\" />\n"
-        + "    <bpmn:sequenceFlow id=\"flow-start\" sourceRef=\"start\" targetRef=\""
-        + completedElementId
-        + "\" />\n"
-        + "    <bpmn:sequenceFlow id=\""
-        + flowId
-        + "\" sourceRef=\""
-        + completedElementId
-        + "\" targetRef=\"end\" />\n"
-        + "  </bpmn:process>\n"
-        + "</bpmn:definitions>";
+    return Bpmn.convertToString(
+        Bpmn.createExecutableProcess(processDefinitionId)
+            .startEvent("start")
+            .serviceTask(completedElementId)
+            .endEvent("end")
+            .moveToNode("start")
+            .sequenceFlowId("flow-start")
+            .connectTo(completedElementId)
+            .moveToNode(completedElementId)
+            .sequenceFlowId(flowId)
+            .connectTo("end")
+            .done());
   }
 
   private static final class GivenRunTest {}
