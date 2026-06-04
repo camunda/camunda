@@ -56,6 +56,7 @@
     <version.commons-validator>1.10.1</version.commons-validator>
     <version.zstd-jni>1.5.7-9</version.zstd-jni>
     <version.commons-text>1.15.0</version.commons-text>
+    <version.crac>1.5.0</version.crac>
     <version.cron-utils>9.2.1</version.cron-utils>
     <version.docker-java-api>3.7.1</version.docker-java-api>
     <version.elasticsearch>8.19.16</version.elasticsearch>
@@ -1495,6 +1496,15 @@
         <groupId>co.elastic.clients</groupId>
         <artifactId>elasticsearch-java</artifactId>
         <version>${version.elasticsearch-java-client}</version>
+      </dependency>
+
+      <!-- CRaC (Coordinated Restore at Checkpoint) API facade. Delegates to the JDK's
+           jdk.crac when present (CRaC-enabled JDK), otherwise a no-op. Required on the
+           classpath for Spring's checkpoint-on-refresh integration. -->
+      <dependency>
+        <groupId>org.crac</groupId>
+        <artifactId>crac</artifactId>
+        <version>${version.crac}</version>
       </dependency>
 
       <dependency>

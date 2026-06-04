@@ -553,6 +553,13 @@
       </exclusions>
     </dependency>
 
+    <!-- CRaC API facade: required on the runtime classpath so Spring's checkpoint-on-refresh
+         can initialize. No-op unless the JVM is CRaC-enabled (see camunda.Dockerfile BASE=crac). -->
+    <dependency>
+      <groupId>org.crac</groupId>
+      <artifactId>crac</artifactId>
+    </dependency>
+
     <!-- Used by TomcatEncodedSlashConfig for encoded slash passthrough (#45215) -->
     <dependency>
       <groupId>org.springframework.boot</groupId>

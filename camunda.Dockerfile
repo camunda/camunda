@@ -14,6 +14,12 @@ ARG JATTACH_CHECKSUM_ARM64="288ae5ed87ee7fe0e608c06db5a23a096a6217c9878ede53c4e3
 # Simply pass `--build-arg BASE=public` in order to build with the Temurin JDK.
 ARG BASE_IMAGE_PUBLIC="eclipse-temurin:25.0.3_9-jre-noble"
 ARG BASE_DIGEST_PUBLIC="sha256:f9bd8815e73632c22985ebb133ec49b9fc4ad5ffe0657594ac02748ad0431ab7"
+
+# Opt-in CRaC (Coordinated Restore at Checkpoint) base. A CRaC-enabled JDK (ships criu +
+# jdk.crac) is required to checkpoint/restore the JVM. Build with `--build-arg BASE=crac`.
+# Draft/foundation: the tag is a glibc CRaC JDK; before leaving draft, pin BASE_DIGEST_CRAC
+# and align the CRaC JDK major version with the project's target Java version.
+ARG BASE_IMAGE_CRAC="bellsoft/liberica-runtime-container:jdk-21-crac-slim-glibc"
 ARG BASE="hardened"
 
 # set to "build" to build camunda from scratch instead of using a distball
@@ -26,6 +32,10 @@ FROM ${BASE_IMAGE}@${BASE_DIGEST} AS base-hardened
 ### Base Public Application Image ###
 # hadolint ignore=DL3006
 FROM ${BASE_IMAGE_PUBLIC}@${BASE_DIGEST_PUBLIC} AS base-public
+
+### Base CRaC Application Image (opt-in: --build-arg BASE=crac) ###
+# hadolint ignore=DL3006
+FROM ${BASE_IMAGE_CRAC} AS base-crac
 
 ### Build camunda from scratch ###
 # hadolint ignore=DL3006
