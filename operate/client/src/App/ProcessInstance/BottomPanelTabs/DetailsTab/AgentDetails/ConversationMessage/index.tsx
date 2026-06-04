@@ -17,6 +17,7 @@ import {
   Message,
   MessageActions,
 } from './styled';
+import {MarkdownMessage} from './MarkdownMessage';
 import {RichTextEditorModal} from 'modules/components/RichTextEditorModal';
 
 type Actor = 'user' | 'assistant' | 'system';
@@ -52,7 +53,9 @@ const ConversationMessage: React.FC<ConversationMessageProps> = ({
       <ActorLabel>{labelByActor[actor]}</ActorLabel>
       {messages.map((message, index) => (
         <MessageBlock key={index}>
-          <Message>{message}</Message>
+          <Message>
+            <MarkdownMessage content={message} />
+          </Message>
           <MessageActions>
             <Button
               kind="ghost"

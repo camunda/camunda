@@ -57,7 +57,6 @@ const MessageBlock = styled.div`
 const Message = styled.div`
   flex: 1;
   overflow-y: auto;
-  white-space: pre-wrap;
   font-size: var(--cds-body-compact-01-font-size);
   font-weight: var(--cds-body-compact-01-font-weight);
   line-height: var(--cds-body-compact-01-line-height);
