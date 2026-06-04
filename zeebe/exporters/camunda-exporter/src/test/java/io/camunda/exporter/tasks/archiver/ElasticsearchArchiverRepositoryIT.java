@@ -630,8 +630,8 @@ final class ElasticsearchArchiverRepositoryIT {
         .forEach(doc -> index(processInstanceIndex, doc));
     testClient.indices().refresh(r -> r.index(processInstanceIndex));
 
-    final var backlog100 = repository.getProcessInstancesNextBatch(100);
-    assertThat(backlog100).succeedsWithin(Duration.ofSeconds(30));
+    assertThat(repository.getProcessInstancesNextBatch(100))
+        .succeedsWithin(Duration.ofSeconds(30));
     assertThat(
             meterRegistry
                 .get("zeebe.camunda.exporter.process.instances.awaiting.archival")
@@ -669,8 +669,8 @@ final class ElasticsearchArchiverRepositoryIT {
         .forEach(doc -> index(processInstanceIndex, doc));
     testClient.indices().refresh(r -> r.index(processInstanceIndex));
 
-    final var backlog5 = repository.getProcessInstancesNextBatch(100);
-    assertThat(backlog5).succeedsWithin(Duration.ofSeconds(30));
+    assertThat(repository.getProcessInstancesNextBatch(100))
+        .succeedsWithin(Duration.ofSeconds(30));
     assertThat(
             meterRegistry
                 .get("zeebe.camunda.exporter.process.instances.awaiting.archival")
