@@ -62,9 +62,10 @@
       COALESCE(
         (SELECT MAX(al.next_change#)
          FROM   v$archived_log al
-         WHERE  al.thread#   = ads.applied_thread#
-           AND  al.sequence# = ads.applied_seq#
-           AND  al.dest_id   = ads.dest_id),
+         WHERE  al.thread#           = ads.applied_thread#
+           AND  al.sequence#         = ads.applied_seq#
+           AND  al.dest_id           = ads.dest_id
+           AND  al.resetlogs_change# = (SELECT resetlogs_change# FROM v$database)),
         0
       )                    AS logStatus,
       TO_CHAR(ads.dest_id) AS replicaId,
