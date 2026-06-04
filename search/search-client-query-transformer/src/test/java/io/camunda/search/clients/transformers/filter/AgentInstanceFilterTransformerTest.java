@@ -220,6 +220,21 @@ class AgentInstanceFilterTransformerTest extends AbstractTransformerTest {
   }
 
   @Test
+  void shouldQueryByRootProcessInstanceKey() {
+    final var filter = FilterBuilders.agentInstance(f -> f.rootProcessInstanceKeys(300L));
+
+    final var searchRequest = transformQuery(filter);
+
+    assertThat(searchRequest.queryOption())
+        .isInstanceOfSatisfying(
+            SearchTermQuery.class,
+            t -> {
+              assertThat(t.field()).isEqualTo("rootProcessInstanceKey");
+              assertThat(t.value().longValue()).isEqualTo(300L);
+            });
+  }
+
+  @Test
   void shouldQueryByAllFields() {
     final var filter =
         FilterBuilders.agentInstance(
@@ -227,6 +242,7 @@ class AgentInstanceFilterTransformerTest extends AbstractTransformerTest {
                 f.agentInstanceKeys(100L)
                     .elementInstanceKeys(1L)
                     .processInstanceKeys(200L)
+                    .rootProcessInstanceKeys(300L)
                     .processDefinitionKeys(400L)
                     .processDefinitionIds("myProcess")
                     .processDefinitionVersions(2)
@@ -244,6 +260,6 @@ class AgentInstanceFilterTransformerTest extends AbstractTransformerTest {
     final var searchRequest = transformQuery(filter);
 
     assertThat(searchRequest.queryOption()).isInstanceOf(SearchBoolQuery.class);
-    assertThat(((SearchBoolQuery) searchRequest.queryOption()).must()).hasSize(13);
+    assertThat(((SearchBoolQuery) searchRequest.queryOption()).must()).hasSize(14);
   }
 }

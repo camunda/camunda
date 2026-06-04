@@ -22,6 +22,7 @@ public record AgentInstanceFilter(
     List<Operation<Long>> agentInstanceKeyOperations,
     List<Operation<Long>> elementInstanceKeyOperations,
     List<Operation<Long>> processInstanceKeyOperations,
+    List<Operation<Long>> rootProcessInstanceKeyOperations,
     List<Operation<Long>> processDefinitionKeyOperations,
     List<Operation<String>> processDefinitionIdOperations,
     List<Operation<Integer>> processDefinitionVersionOperations,
@@ -44,6 +45,7 @@ public record AgentInstanceFilter(
     private List<Operation<Long>> agentInstanceKeyOperations;
     private List<Operation<Long>> elementInstanceKeyOperations;
     private List<Operation<Long>> processInstanceKeyOperations;
+    private List<Operation<Long>> rootProcessInstanceKeyOperations;
     private List<Operation<Long>> processDefinitionKeyOperations;
     private List<Operation<String>> processDefinitionIdOperations;
     private List<Operation<Integer>> processDefinitionVersionOperations;
@@ -98,6 +100,22 @@ public record AgentInstanceFilter(
 
     public Builder processInstanceKeys(final Long value, final Long... values) {
       return processInstanceKeyOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    public Builder rootProcessInstanceKeyOperations(final List<Operation<Long>> operations) {
+      rootProcessInstanceKeyOperations =
+          addValuesToList(rootProcessInstanceKeyOperations, operations);
+      return this;
+    }
+
+    @SafeVarargs
+    public final Builder rootProcessInstanceKeyOperations(
+        final Operation<Long> operation, final Operation<Long>... operations) {
+      return rootProcessInstanceKeyOperations(collectValues(operation, operations));
+    }
+
+    public Builder rootProcessInstanceKeys(final Long value, final Long... values) {
+      return rootProcessInstanceKeyOperations(FilterUtil.mapDefaultToOperation(value, values));
     }
 
     public Builder processDefinitionKeyOperations(final List<Operation<Long>> operations) {
@@ -245,6 +263,7 @@ public record AgentInstanceFilter(
           Objects.requireNonNullElse(agentInstanceKeyOperations, Collections.emptyList()),
           Objects.requireNonNullElse(elementInstanceKeyOperations, Collections.emptyList()),
           Objects.requireNonNullElse(processInstanceKeyOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(rootProcessInstanceKeyOperations, Collections.emptyList()),
           Objects.requireNonNullElse(processDefinitionKeyOperations, Collections.emptyList()),
           Objects.requireNonNullElse(processDefinitionIdOperations, Collections.emptyList()),
           Objects.requireNonNullElse(processDefinitionVersionOperations, Collections.emptyList()),

@@ -261,6 +261,12 @@
           <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
         </foreach>
       </if>
+      <if test="filter.rootProcessInstanceKeyOperations != null and !filter.rootProcessInstanceKeyOperations.isEmpty()">
+        <foreach collection="filter.rootProcessInstanceKeyOperations" item="operation">
+          AND ai.ROOT_PROCESS_INSTANCE_KEY
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
       <if test="filter.processDefinitionIdOperations != null and !filter.processDefinitionIdOperations.isEmpty()">
         <foreach collection="filter.processDefinitionIdOperations" item="operation">
           AND ai.PROCESS_DEFINITION_ID
