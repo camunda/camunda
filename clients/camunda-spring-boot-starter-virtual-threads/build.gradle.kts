@@ -10,7 +10,8 @@ dependencies {
     implementation(libs.org.springframework.boot.spring.boot.autoconfigure)
     implementation(libs.org.springframework.spring.context)
     implementation(libs.org.springframework.spring.beans)
-    implementation(libs.io.micrometer.micrometer.core)
+    compileOnly(libs.io.micrometer.micrometer.core)
+    testImplementation(libs.io.micrometer.micrometer.core)
     testImplementation(project(":camunda-spring-boot-starter"))
     testImplementation(libs.org.springframework.boot.spring.boot.actuator.autoconfigure)
     testImplementation(libs.org.springframework.boot.spring.boot.starter.test)
@@ -18,5 +19,13 @@ dependencies {
     compileOnly(project(":camunda-spring-boot-starter"))
     compileOnly(libs.org.springframework.boot.spring.boot.actuator.autoconfigure)
 }
+
+// spring-boot-starter-test pulls in logback-classic and log4j-to-slf4j via spring-boot-starter-logging.
+// client-conventions adds log4j-slf4j2-impl, which conflicts with both. Exclude it so the test
+// classpath matches Maven: logback is the SLF4J provider, log4j-to-slf4j bridges log4j2 API to it.
+configurations.testRuntimeClasspath {
+    exclude(group = "org.apache.logging.log4j", module = "log4j-slf4j2-impl")
+}
+
 
 description = "Camunda Spring Boot Starter Virtual Threads"
