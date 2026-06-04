@@ -1026,10 +1026,16 @@ public class SearchQuerySortRequestMapper {
       validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
     } else {
       switch (field) {
+        case AGENT_INSTANCE_KEY -> builder.agentInstanceKey();
+        case STATUS -> builder.status();
+        case ELEMENT_ID -> builder.elementId();
+        case PROCESS_INSTANCE_KEY -> builder.processInstanceKey();
+        case ROOT_PROCESS_INSTANCE_KEY -> builder.rootProcessInstanceKey();
+        case PROCESS_DEFINITION_KEY -> builder.processDefinitionKey();
+        case TENANT_ID -> builder.tenantId();
         case CREATION_DATE -> builder.creationDate();
         case LAST_UPDATED_DATE -> builder.lastUpdatedDate();
         case COMPLETION_DATE -> builder.completionDate();
-        case STATUS -> builder.status();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }

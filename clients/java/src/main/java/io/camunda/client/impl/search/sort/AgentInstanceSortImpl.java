@@ -27,6 +27,41 @@ public class AgentInstanceSortImpl extends SearchRequestSortBase<AgentInstanceSo
   }
 
   @Override
+  public AgentInstanceSort agentInstanceKey() {
+    return field("agentInstanceKey");
+  }
+
+  @Override
+  public AgentInstanceSort status() {
+    return field("status");
+  }
+
+  @Override
+  public AgentInstanceSort elementId() {
+    return field("elementId");
+  }
+
+  @Override
+  public AgentInstanceSort processInstanceKey() {
+    return field("processInstanceKey");
+  }
+
+  @Override
+  public AgentInstanceSort rootProcessInstanceKey() {
+    return field("rootProcessInstanceKey");
+  }
+
+  @Override
+  public AgentInstanceSort processDefinitionKey() {
+    return field("processDefinitionKey");
+  }
+
+  @Override
+  public AgentInstanceSort tenantId() {
+    return field("tenantId");
+  }
+
+  @Override
   public AgentInstanceSort creationDate() {
     return field("creationDate");
   }
@@ -39,10 +74,5 @@ public class AgentInstanceSortImpl extends SearchRequestSortBase<AgentInstanceSo
   @Override
   public AgentInstanceSort completionDate() {
     return field("completionDate");
-  }
-
-  @Override
-  public AgentInstanceSort status() {
-    return field("status");
   }
 }

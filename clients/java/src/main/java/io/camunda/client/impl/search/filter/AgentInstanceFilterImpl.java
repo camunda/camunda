@@ -101,6 +101,19 @@ public class AgentInstanceFilterImpl
   }
 
   @Override
+  public AgentInstanceFilter rootProcessInstanceKey(final long value) {
+    return rootProcessInstanceKey(f -> f.eq(value));
+  }
+
+  @Override
+  public AgentInstanceFilter rootProcessInstanceKey(final Consumer<BasicLongProperty> fn) {
+    final BasicLongProperty property = new BasicLongPropertyImpl();
+    fn.accept(property);
+    filter.setRootProcessInstanceKey(provideSearchRequestProperty(property));
+    return this;
+  }
+
+  @Override
   public AgentInstanceFilter processDefinitionKey(final long value) {
     return processDefinitionKey(f -> f.eq(value));
   }

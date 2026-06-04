@@ -93,6 +93,23 @@ public interface AgentInstanceFilter extends SearchRequestFilter {
   AgentInstanceFilter processInstanceKey(Consumer<BasicLongProperty> fn);
 
   /**
+   * Filter agent instances by the root process instance key.
+   *
+   * @param value the root process instance key
+   * @return the updated filter
+   */
+  AgentInstanceFilter rootProcessInstanceKey(long value);
+
+  /**
+   * Filter agent instances by the root process instance key using a {@link BasicLongProperty}
+   * consumer.
+   *
+   * @param fn the root process instance key filter consumer
+   * @return the updated filter
+   */
+  AgentInstanceFilter rootProcessInstanceKey(Consumer<BasicLongProperty> fn);
+
+  /**
    * Filter agent instances by the process definition key.
    *
    * @param value the process definition key
