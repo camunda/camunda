@@ -9,8 +9,13 @@ package io.camunda.zeebe.protocol.impl.record.value.agenthistory;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryCommitStatus;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryContentType;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRole;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 final class AgentHistoryRecordTest {
@@ -89,5 +94,57 @@ final class AgentHistoryRecordTest {
 
     // then
     assertThat(copy.getCommitStatus()).isEqualTo(AgentHistoryCommitStatus.COMMITTED);
+  }
+
+  @Test
+  void shouldExposeDefaultContent() {
+    // given
+    final AgentHistoryRecord record = new AgentHistoryRecord();
+
+    // then
+    assertThat(record.getContent()).isEmpty();
+  }
+
+  @Test
+  void shouldRoundTripContentViaMsgPack() {
+    // given
+    final var textBlock =
+        new AgentHistoryMessageContent()
+            .setContentType(AgentHistoryContentType.TEXT)
+            .setText("Hello, world!");
+
+    final var documentBlock =
+        new AgentHistoryMessageContent().setContentType(AgentHistoryContentType.DOCUMENT);
+    documentBlock.getDocumentReference().setDocumentId("doc-123").setStoreId("store-456");
+
+    final Map<String, Object> objectData = Map.of("key", "value");
+    final var objectBlock =
+        new AgentHistoryMessageContent()
+            .setContentType(AgentHistoryContentType.OBJECT)
+            .setObject(BufferUtil.wrapArray(MsgPackConverter.convertToMsgPack(objectData)));
+
+    final AgentHistoryRecord original =
+        new AgentHistoryRecord().setContent(List.of(textBlock, documentBlock, objectBlock));
+
+    // when
+    final AgentHistoryRecord copy = new AgentHistoryRecord();
+    copy.copyFrom(original);
+
+    // then
+    final var content = copy.getContent();
+    assertThat(content).hasSize(3);
+
+    final var text = content.get(0);
+    assertThat(text.getContentType()).isEqualTo(AgentHistoryContentType.TEXT);
+    assertThat(text.getText()).isEqualTo("Hello, world!");
+
+    final var document = content.get(1);
+    assertThat(document.getContentType()).isEqualTo(AgentHistoryContentType.DOCUMENT);
+    assertThat(document.getDocumentReference().getDocumentId()).isEqualTo("doc-123");
+    assertThat(document.getDocumentReference().getStoreId()).isEqualTo("store-456");
+
+    final var object = content.get(2);
+    assertThat(object.getContentType()).isEqualTo(AgentHistoryContentType.OBJECT);
+    assertThat(object.getObject()).isEqualTo(objectData);
   }
 }

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.agenthistory;
 
+import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
@@ -16,6 +17,7 @@ import io.camunda.zeebe.protocol.record.value.AgentHistoryCommitStatus;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRole;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.List;
 
 public final class AgentHistoryRecord extends UnifiedRecordValue
     implements AgentHistoryRecordValue {
@@ -32,9 +34,11 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
           "commitStatus", AgentHistoryCommitStatus.class, AgentHistoryCommitStatus.UNSPECIFIED);
   private final LongProperty producedAtProp = new LongProperty("producedAt", -1L);
   private final StringProperty metadataProp = new StringProperty("metadata", "");
+  private final ArrayProperty<AgentHistoryMessageContent> contentProp =
+      new ArrayProperty<>("content", AgentHistoryMessageContent::new);
 
   public AgentHistoryRecord() {
-    super(9);
+    super(10);
     declareProperty(agentInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(jobKeyProp)
@@ -43,7 +47,8 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
         .declareProperty(roleProp)
         .declareProperty(commitStatusProp)
         .declareProperty(producedAtProp)
-        .declareProperty(metadataProp);
+        .declareProperty(metadataProp)
+        .declareProperty(contentProp);
   }
 
   @Override
@@ -133,6 +138,32 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
 
   public AgentHistoryRecord setMetadata(final String metadata) {
     metadataProp.setValue(metadata);
+    return this;
+  }
+
+  @Override
+  public List<AgentHistoryMessageContentValue> getContent() {
+    return contentProp.stream()
+        .map(
+            element -> {
+              final var copy = new AgentHistoryMessageContent();
+              copy.copy(element);
+              return (AgentHistoryMessageContentValue) copy;
+            })
+        .toList();
+  }
+
+  public AgentHistoryRecord setContent(
+      final List<? extends AgentHistoryMessageContentValue> content) {
+    contentProp.reset();
+    for (final var item : content) {
+      contentProp.add().copy(item);
+    }
+    return this;
+  }
+
+  public AgentHistoryRecord addContent(final AgentHistoryMessageContent content) {
+    contentProp.add().copy(content);
     return this;
   }
 }

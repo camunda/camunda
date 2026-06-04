@@ -17,6 +17,8 @@ package io.camunda.zeebe.protocol.record.value;
 
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import java.util.List;
+import java.util.Map;
 import org.immutables.value.Value;
 
 @Value.Immutable
@@ -49,4 +51,35 @@ public interface AgentHistoryRecordValue extends RecordValue {
 
   /** Returns optional free-form metadata attached to this entry. */
   String getMetadata();
+
+  /** Returns the list of content blocks in this history entry. */
+  List<AgentHistoryMessageContentValue> getContent();
+
+  /** Represents a document reference associated with a content block. */
+  @Value.Immutable
+  @ImmutableProtocol(builder = ImmutableAgentHistoryDocumentReferenceValue.Builder.class)
+  interface AgentHistoryDocumentReferenceValue {
+    /** Returns the unique identifier of the document. */
+    String getDocumentId();
+
+    /** Returns the identifier of the store where the document is held. */
+    String getStoreId();
+  }
+
+  /** Represents a single content block in a history entry message. */
+  @Value.Immutable
+  @ImmutableProtocol(builder = ImmutableAgentHistoryMessageContentValue.Builder.class)
+  interface AgentHistoryMessageContentValue {
+    /** Returns the type of this content block (e.g. TEXT, DOCUMENT, OBJECT). */
+    AgentHistoryContentType getContentType();
+
+    /** Returns the text payload; non-empty when contentType is TEXT. */
+    String getText();
+
+    /** Returns the document reference; populated when contentType is DOCUMENT. */
+    AgentHistoryDocumentReferenceValue getDocumentReference();
+
+    /** Returns the structured object payload; populated when contentType is OBJECT. */
+    Map<String, Object> getObject();
+  }
 }
