@@ -28,7 +28,6 @@ import io.camunda.process.test.impl.coverage.core.CoverageCreator;
 import io.camunda.process.test.impl.coverage.core.DecisionCoverageCreator;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 /** Utility class for creating and aggregating coverage reports. */
@@ -64,24 +63,12 @@ public class CoverageReportCreator {
         CoverageCreator.aggregateCoverages(allProcessCoverages(suites), processModels);
     final java.util.List<DecisionCoverage> decisionCoverages =
         DecisionCoverageCreator.aggregateCoverages(allDecisionCoverages(suites), decisionModels);
-    final Map<String, String> processDefinitions =
-        processModels.stream()
-            .collect(
-                Collectors.toMap(
-                    ProcessModel::getProcessDefinitionId, ProcessModel::getXml, (a, b) -> a));
-    final Map<String, String> decisionDefinitions =
-        decisionModels.stream()
-            .collect(
-                Collectors.toMap(
-                    DecisionModel::getDecisionDefinitionId, DecisionModel::getXml, (a, b) -> a));
     return ImmutableCoverageReport.builder()
         .addAllSuites(suiteReports)
         .addAllProcessModels(processModels)
         .addAllDecisionModels(decisionModels)
         .addAllProcessCoverages(processCoverages)
         .addAllDecisionCoverages(decisionCoverages)
-        .putAllProcessDefinitions(processDefinitions)
-        .putAllDecisionDefinitions(decisionDefinitions)
         .build();
   }
 

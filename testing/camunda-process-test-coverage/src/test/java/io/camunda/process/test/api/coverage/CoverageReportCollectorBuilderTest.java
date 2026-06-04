@@ -16,15 +16,22 @@
 package io.camunda.process.test.api.coverage;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.camunda.client.api.search.enums.ElementInstanceState;
+import io.camunda.client.api.search.enums.ElementInstanceType;
 import io.camunda.client.api.search.response.DecisionDefinitionType;
 import io.camunda.client.api.search.response.DecisionInstance;
+import io.camunda.client.api.search.response.ElementInstance;
+import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.client.api.search.response.ProcessInstance;
+import io.camunda.client.api.search.response.ProcessInstanceSequenceFlow;
 import io.camunda.process.test.api.coverage.model.CoverageReport;
 import io.camunda.process.test.impl.coverage.CoverageCollector;
 import io.camunda.process.test.impl.coverage.data.CoverageTestData;
 import io.camunda.process.test.impl.coverage.data.ImmutableCoverageDecisionInstanceData;
+import io.camunda.process.test.impl.coverage.data.ImmutableCoverageProcessDefinitionData;
 import io.camunda.process.test.impl.coverage.data.ImmutableCoverageProcessInstanceData;
 import io.camunda.process.test.impl.coverage.data.ImmutableCoverageTestData;
 import org.junit.jupiter.api.Test;
@@ -68,7 +75,7 @@ class CoverageReportCollectorBuilderTest {
 
     // when
     final CoverageReport report =
-        coverageCollector.collectTestRunCoverage(getClass(), "run-1", testResults);
+        coverageCollector.collectTestRunCoverage(ExclusionTest.class, "run-1", testResults);
 
     // then
     assertThat(report.getSuites())
@@ -77,4 +84,139 @@ class CoverageReportCollectorBuilderTest {
     assertThat(report.getProcessCoverages()).isEmpty();
     assertThat(report.getDecisionCoverages()).isEmpty();
   }
+
+  @Test
+  void shouldIncludeGivenRunAndCollectedDataInSuiteReport() {
+    // given
+    final CoverageCollector coverageCollector = CoverageCollector.newBuilder().build();
+    final String processDefinitionId = "process-a";
+    final CoverageTestData testData = createProcessCoverageTestData(processDefinitionId, "taskA");
+
+    // when
+    final CoverageReport report =
+        coverageCollector.collectTestRunCoverage(GivenRunTest.class, "run-1", testData);
+
+    // then
+    assertThat(report.getSuites())
+        .singleElement()
+        .satisfies(
+            suite -> {
+              assertThat(suite.getId()).isEqualTo(GivenRunTest.class.getName());
+              assertThat(suite.getRuns())
+                  .singleElement()
+                  .satisfies(
+                      run -> {
+                        assertThat(run.getName()).isEqualTo("run-1");
+                        assertThat(run.getProcessCoverages())
+                            .singleElement()
+                            .satisfies(
+                                coverage -> {
+                                  assertThat(coverage.getProcessDefinitionId())
+                                      .isEqualTo(processDefinitionId);
+                                  assertThat(coverage.getCompletedElements()).contains("taskA");
+                                });
+                      });
+            });
+
+    assertThat(report.getProcessModels())
+        .singleElement()
+        .satisfies(
+            model -> {
+              assertThat(model.getProcessDefinitionId()).isEqualTo(processDefinitionId);
+              assertThat(model.getXml()).contains("id=\"" + processDefinitionId + "\"");
+            });
+  }
+
+  @Test
+  void shouldIncludeCollectedDataInAggregatedReport() {
+    // given
+    final CoverageCollector coverageCollector = CoverageCollector.newBuilder().build();
+    coverageCollector.collectTestRunCoverage(
+        AggregatedReportTest.class, "run-1", createProcessCoverageTestData("process-a", "taskA"));
+    coverageCollector.collectTestRunCoverage(
+        AggregatedReportTest.class, "run-2", createProcessCoverageTestData("process-b", "taskB"));
+
+    // when
+    final CoverageReport report = coverageCollector.generateReport(AggregatedReportTest.class);
+
+    // then
+    assertThat(report.getSuites())
+        .anySatisfy(
+            suite -> {
+              if (suite.getId().equals(AggregatedReportTest.class.getName())) {
+                assertThat(suite.getRuns())
+                    .extracting(run -> run.getName())
+                    .containsExactly("run-1", "run-2");
+              }
+            });
+    assertThat(report.getProcessCoverages()).hasSize(2);
+    assertThat(report.getProcessModels())
+        .extracting(model -> model.getProcessDefinitionId())
+        .containsExactlyInAnyOrder("process-a", "process-b");
+  }
+
+  private CoverageTestData createProcessCoverageTestData(
+      final String processDefinitionId, final String completedElementId) {
+    final ProcessInstance processInstance = mock(ProcessInstance.class);
+    when(processInstance.getProcessDefinitionId()).thenReturn(processDefinitionId);
+
+    final ElementInstance elementInstance = mock(ElementInstance.class);
+    when(elementInstance.getElementId()).thenReturn(completedElementId);
+    when(elementInstance.getType()).thenReturn(ElementInstanceType.SERVICE_TASK);
+    when(elementInstance.getState()).thenReturn(ElementInstanceState.COMPLETED);
+
+    final ProcessInstanceSequenceFlow sequenceFlow = mock(ProcessInstanceSequenceFlow.class);
+    when(sequenceFlow.getElementId()).thenReturn("flow-" + completedElementId);
+
+    final ProcessDefinition processDefinition = mock(ProcessDefinition.class);
+    when(processDefinition.getProcessDefinitionId()).thenReturn(processDefinitionId);
+    when(processDefinition.getVersion()).thenReturn(1);
+
+    return ImmutableCoverageTestData.builder()
+        .addProcessInstanceData(
+            ImmutableCoverageProcessInstanceData.builder()
+                .processInstance(processInstance)
+            .addAllElementInstances(java.util.Collections.singletonList(elementInstance))
+            .addAllSequenceFlows(java.util.Collections.singletonList(sequenceFlow))
+                .build())
+        .addProcessDefinitionData(
+            ImmutableCoverageProcessDefinitionData.builder()
+                .processDefinition(processDefinition)
+                .xml(
+                    processXml(
+                        processDefinitionId, completedElementId, "flow-" + completedElementId))
+                .build())
+        .build();
+  }
+
+  private String processXml(
+      final String processDefinitionId, final String completedElementId, final String flowId) {
+    return "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+        + "<bpmn:definitions xmlns:bpmn=\"http://www.omg.org/spec/BPMN/20100524/MODEL\" "
+        + "id=\"Definitions_1\" targetNamespace=\"http://camunda.org/examples\">\n"
+        + "  <bpmn:process id=\""
+        + processDefinitionId
+        + "\" isExecutable=\"true\">\n"
+        + "    <bpmn:startEvent id=\"start\" />\n"
+        + "    <bpmn:serviceTask id=\""
+        + completedElementId
+        + "\" />\n"
+        + "    <bpmn:endEvent id=\"end\" />\n"
+        + "    <bpmn:sequenceFlow id=\"flow-start\" sourceRef=\"start\" targetRef=\""
+        + completedElementId
+        + "\" />\n"
+        + "    <bpmn:sequenceFlow id=\""
+        + flowId
+        + "\" sourceRef=\""
+        + completedElementId
+        + "\" targetRef=\"end\" />\n"
+        + "  </bpmn:process>\n"
+        + "</bpmn:definitions>";
+  }
+
+  private static final class GivenRunTest {}
+
+  private static final class AggregatedReportTest {}
+
+  private static final class ExclusionTest {}
 }

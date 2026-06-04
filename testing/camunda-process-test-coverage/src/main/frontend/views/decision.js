@@ -22,7 +22,7 @@ import { renderDmnDecision } from '../dmn.js';
  */
 export async function renderDecision(decisionId, data, context = null) {
   const suites = data.suites || [];
-  const decisionDefinitions = data.decisionDefinitions || {};
+  const decisionModels = data.decisionModels || [];
 
   // Resolve coverage: run-scoped, suite-scoped, or global aggregate
   let cov = null;
@@ -63,7 +63,8 @@ export async function renderDecision(decisionId, data, context = null) {
     cov = (data.decisionCoverages || []).find((c) => c.decisionDefinitionId === decisionId) ?? null;
   }
 
-  const xml = decisionDefinitions[decisionId];
+  const xml =
+    decisionModels.find((model) => model.decisionDefinitionId === decisionId)?.xml ?? null;
 
   let html = breadcrumbHtml + `
     <h2 class="view-title">

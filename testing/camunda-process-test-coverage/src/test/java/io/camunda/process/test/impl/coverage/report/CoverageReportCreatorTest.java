@@ -33,7 +33,7 @@ import org.junit.jupiter.api.Test;
 class CoverageReportCreatorTest {
 
   @Test
-  void shouldCreateAggregatedCoverageReportWithDefinitions() {
+  void shouldCreateAggregatedCoverageReportWithModels() {
     // given
     final ProcessModel processModel =
         ImmutableProcessModel.builder()
@@ -84,7 +84,11 @@ class CoverageReportCreatorTest {
     assertThat(report.getSuites()).hasSize(1);
     assertThat(report.getProcessCoverages()).hasSize(1);
     assertThat(report.getDecisionCoverages()).hasSize(1);
-    assertThat(report.getProcessDefinitions()).containsEntry("process", "<bpmn>process</bpmn>");
-    assertThat(report.getDecisionDefinitions()).containsEntry("decision", "<dmn>decision</dmn>");
+    assertThat(report.getProcessModels())
+        .singleElement()
+        .satisfies(model -> assertThat(model.getXml()).isEqualTo("<bpmn>process</bpmn>"));
+    assertThat(report.getDecisionModels())
+        .singleElement()
+        .satisfies(model -> assertThat(model.getXml()).isEqualTo("<dmn>decision</dmn>"));
   }
 }

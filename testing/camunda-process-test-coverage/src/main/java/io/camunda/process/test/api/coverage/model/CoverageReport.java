@@ -17,14 +17,13 @@ package io.camunda.process.test.api.coverage.model;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.List;
-import java.util.Map;
 import org.immutables.value.Value;
 
 /**
  * Top-level coverage report containing suite, model, and aggregated coverage data.
  *
  * <p>This payload is serialized for the coverage frontend and contains both summarized coverage
- * metrics and raw model definition XML used by the viewer.
+ * metrics and referenced model definitions used by the viewer.
  */
 @Value.Immutable
 @JsonDeserialize(builder = ImmutableCoverageReport.Builder.class)
@@ -45,9 +44,4 @@ public interface CoverageReport {
   /** Returns decision coverage aggregated across all captured suites and runs. */
   List<DecisionCoverage> getDecisionCoverages();
 
-  /** Returns process definition XML mapped by process definition id. */
-  Map<String, String> getProcessDefinitions();
-
-  /** Returns decision definition XML mapped by decision definition id. */
-  Map<String, String> getDecisionDefinitions();
 }

@@ -19,12 +19,16 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.List;
 import org.immutables.value.Value;
 
+/** Coverage report for a single test suite (typically one test class). */
 @Value.Immutable
 @JsonDeserialize(builder = ImmutableSuite.Builder.class)
 public interface Suite {
+  /** Returns the fully qualified test class name used as suite identifier. */
   String getId();
 
+  /** Returns the simple test class name used for display. */
   String getName();
 
+  /** Returns all coverage run reports captured for this suite. */
   List<CoverageRunReport> getRuns();
 }
