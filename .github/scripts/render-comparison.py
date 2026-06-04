@@ -98,6 +98,7 @@ def load_inputs() -> dict:
     return {
         "namespace": os.environ.get("NAMESPACE", ""),
         "daily_namespace": os.environ.get("DAILY_NAMESPACE", ""),
+        "daily_at": os.environ.get("DAILY_AT", ""),
         "duration_seconds": int(os.environ.get("DURATION_SECONDS", "0")),
         "storage_type": os.environ.get("STORAGE_TYPE", ""),
         "queries": queries_doc["queries"],
@@ -126,10 +127,12 @@ def render_row(q: dict, ctx: dict) -> str:
 def render_body(ctx: dict) -> str:
     storage = ctx["storage_type"]
     heading = f"## 📈 Load Test Metrics - {storage}" if storage else "## 📈 Load Test Metrics"
+    daily_at = ctx["daily_at"]
     daily_line = (
         f"Daily reference: `{ctx['daily_namespace']}`"
+        + (f" · last 30 min ending `{daily_at}`" if daily_at else "")
         if ctx["daily_namespace"]
-        else "_No active daily-on-main namespace found; Daily column shows `-`._"
+        else "_No completed daily-on-main run found; Daily column shows `-`._"
     )
     dashboard = (
         "https://dashboard.benchmark.camunda.cloud/d/zeebe-dashboard/zeebe"
