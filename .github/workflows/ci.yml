@@ -488,14 +488,18 @@ jobs:
             --exclude='*.repositories' \
             -cf m2-installed.tar -C "${HOME}/.m2/repository/installed" io/camunda
           ls -lh m2-installed.tar
-      - name: Upload local Maven SNAPSHOT artifacts
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      # EXPERIMENT (#52693): transport the m2-installed tar via run-scoped GHA
+      # cache instead of the throughput-capped artifacts API. Key is unique per
+      # run (no restore-keys ⇒ no stale/partial restore); utils-cleanup-distball
+      # deletes the entry so it doesn't linger on the shared cache budget. The
+      # repo caching policy bans cache *writes* from PRs for dependency caches
+      # (docs/monorepo-docs/ci.md) — this is an ephemeral, self-deleting entry,
+      # pending team sign-off before merge.
+      - name: Cache local Maven SNAPSHOT artifacts
+        uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
-          name: m2-installed-${{ github.run_id }}
           path: m2-installed.tar
-          retention-days: 1
-          compression-level: 6  # tar is uncompressed; let upload-artifact's zip shrink it
-          if-no-files-found: error
+          key: m2-installed-${{ github.run_id }}
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -1168,17 +1172,18 @@ jobs:
       # which resolves io.camunda:* SNAPSHOTs from ~/.m2/repository/installed/.
       # Restore those SNAPSHOTs from the build-distball job since the GHA Maven
       # cache does not propagate locally-installed artifacts between jobs.
-      - name: Download local Maven SNAPSHOT artifacts
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - name: Restore local Maven SNAPSHOT artifacts (cache)
+        uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
-          name: m2-installed-${{ github.run_id }}
-          path: ${{ runner.temp }}
-      - name: Restore local Maven SNAPSHOT artifacts
+          path: m2-installed.tar
+          key: m2-installed-${{ github.run_id }}
+          fail-on-cache-miss: true
+      - name: Extract local Maven SNAPSHOT artifacts
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p "${HOME}/.m2/repository/installed"
-          tar -xf "${{ runner.temp }}/m2-installed.tar" -C "${HOME}/.m2/repository/installed"
+          tar -xf m2-installed.tar -C "${HOME}/.m2/repository/installed"
       - uses: ./.github/actions/build-platform-docker
         if: ${{ matrix.docker-file != '' }}
         with:
@@ -1386,17 +1391,18 @@ jobs:
       # which resolves io.camunda:* SNAPSHOTs from ~/.m2/repository/installed/.
       # Restore those SNAPSHOTs from the build-distball job since the GHA Maven
       # cache does not propagate locally-installed artifacts between jobs.
-      - name: Download local Maven SNAPSHOT artifacts
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - name: Restore local Maven SNAPSHOT artifacts (cache)
+        uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
-          name: m2-installed-${{ github.run_id }}
-          path: ${{ runner.temp }}
-      - name: Restore local Maven SNAPSHOT artifacts
+          path: m2-installed.tar
+          key: m2-installed-${{ github.run_id }}
+          fail-on-cache-miss: true
+      - name: Extract local Maven SNAPSHOT artifacts
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p "${HOME}/.m2/repository/installed"
-          tar -xf "${{ runner.temp }}/m2-installed.tar" -C "${HOME}/.m2/repository/installed"
+          tar -xf m2-installed.tar -C "${HOME}/.m2/repository/installed"
       - uses: ./.github/actions/build-platform-docker
         id: build-camunda-docker
         with:
@@ -2297,13 +2303,21 @@ jobs:
       actions: write
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@main
-      - name: Delete distball + m2-installed artifacts
+      - name: Delete distball artifact
         uses: geekyeggo/delete-artifact@176a747ab7e287e3ff4787bf8a148716375ca118 # v6.0.0
         with:
-          name: |
-            distball-${{ github.run_id }}
-            m2-installed-${{ github.run_id }}
+          name: distball-${{ github.run_id }}
           failOnError: false
+      # m2-installed now travels via run-scoped GHA cache (EXPERIMENT #52693);
+      # delete the entry so it doesn't linger on the shared cache budget.
+      - name: Delete m2-installed cache
+        shell: bash
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api -X DELETE \
+            "/repos/${{ github.repository }}/actions/caches?key=m2-installed-${{ github.run_id }}" || true
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Observe build status
         if: always()
