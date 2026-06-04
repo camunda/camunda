@@ -47,6 +47,8 @@ final class EngineCfgTest {
     assertThat(configuration.getCommandRedistributionMaxBackoff())
         .isEqualTo(EngineConfiguration.DEFAULT_COMMAND_REDISTRIBUTION_MAX_BACKOFF_DURATION);
     assertThat(configuration.getExpressionEvaluationTimeout()).isEqualTo(Duration.ofSeconds(5));
+    assertThat(configuration.getGroupNameCacheCapacity())
+        .isEqualTo(EngineConfiguration.DEFAULT_GROUP_NAME_CACHE_CAPACITY);
   }
 
   @Test
@@ -70,5 +72,18 @@ final class EngineCfgTest {
     assertThat(configuration.getCommandRedistributionMaxBackoff())
         .isEqualTo(Duration.ofMinutes(20));
     assertThat(configuration.getExpressionEvaluationTimeout()).isEqualTo(Duration.ofSeconds(2));
+    assertThat(configuration.getGroupNameCacheCapacity()).isEqualTo(2000);
+  }
+
+  void assertListenerCfg(
+      final GlobalListenerConfiguration config,
+      final String type,
+      final String[] eventTypes,
+      final String retries,
+      final boolean afterNonGlobal) {
+    assertThat(config.type()).isEqualTo(type);
+    assertThat(config.eventTypes()).containsExactly(eventTypes);
+    assertThat(config.retries()).isEqualTo(retries);
+    assertThat(config.afterNonGlobal()).isEqualTo(afterNonGlobal);
   }
 }
