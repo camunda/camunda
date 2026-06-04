@@ -21,4 +21,32 @@ import org.immutables.value.Value;
 
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableAgentHistoryRecordValue.Builder.class)
-public interface AgentHistoryRecordValue extends RecordValue {}
+public interface AgentHistoryRecordValue extends RecordValue {
+
+  /** Returns the key of the agent instance that produced this history entry. */
+  long getAgentInstanceKey();
+
+  /** Returns the key of the element instance associated with this entry. */
+  long getElementInstanceKey();
+
+  /** Returns the key of the job that triggered the agent for this entry. */
+  long getJobKey();
+
+  /** Returns the attempt number for the job, starting at 1. */
+  int getAttemptNumber();
+
+  /** Returns the iteration counter (conversation round with the LLM). */
+  int getIteration();
+
+  /** Returns the role of the message author (e.g. USER, ASSISTANT, TOOL_RESULT). */
+  AgentHistoryRole getRole();
+
+  /** Returns the commit status of this history entry (e.g. PENDING, COMMITTED, DISCARDED). */
+  AgentHistoryCommitStatus getCommitStatus();
+
+  /** Returns the epoch-millis timestamp at which this entry was produced. */
+  long getProducedAt();
+
+  /** Returns optional free-form metadata attached to this entry. */
+  String getMetadata();
+}
