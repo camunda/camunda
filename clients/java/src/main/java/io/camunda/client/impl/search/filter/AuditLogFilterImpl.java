@@ -433,6 +433,32 @@ public class AuditLogFilterImpl
   }
 
   @Override
+  public AuditLogFilter requestSourceChannelType(final String requestSourceChannelType) {
+    return requestSourceChannelType(b -> b.eq(requestSourceChannelType));
+  }
+
+  @Override
+  public AuditLogFilter requestSourceChannelType(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setRequestSourceChannelType(provideSearchRequestProperty(property));
+    return this;
+  }
+
+  @Override
+  public AuditLogFilter requestSourceToolName(final String requestSourceToolName) {
+    return requestSourceToolName(b -> b.eq(requestSourceToolName));
+  }
+
+  @Override
+  public AuditLogFilter requestSourceToolName(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setRequestSourceToolName(provideSearchRequestProperty(property));
+    return this;
+  }
+
+  @Override
   protected io.camunda.client.protocol.rest.AuditLogFilter getSearchRequestProperty() {
     return filter;
   }

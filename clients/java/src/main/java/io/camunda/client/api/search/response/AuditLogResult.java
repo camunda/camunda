@@ -94,4 +94,8 @@ public interface AuditLogResult {
   AuditLogEntityTypeEnum getRelatedEntityType();
 
   String getEntityDescription();
+
+  String getRequestSourceChannelType();
+
+  String getRequestSourceToolName();
 }

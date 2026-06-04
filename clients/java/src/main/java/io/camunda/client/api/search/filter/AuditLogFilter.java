@@ -500,4 +500,36 @@ public interface AuditLogFilter extends SearchRequestFilter {
    * @return the updated filter
    */
   AuditLogFilter entityDescription(final Consumer<StringProperty> fn);
+
+  /**
+   * Filter audit logs by the request source channel type
+   *
+   * @param requestSourceChannelType the channel type (e.g. MCP)
+   * @return the updated filter
+   */
+  AuditLogFilter requestSourceChannelType(final String requestSourceChannelType);
+
+  /**
+   * Filter audit logs by the request source channel type using {@link StringProperty} consumer
+   *
+   * @param fn the request source channel type filter consumer
+   * @return the updated filter
+   */
+  AuditLogFilter requestSourceChannelType(final Consumer<StringProperty> fn);
+
+  /**
+   * Filter audit logs by the request source tool name
+   *
+   * @param requestSourceToolName the tool name
+   * @return the updated filter
+   */
+  AuditLogFilter requestSourceToolName(final String requestSourceToolName);
+
+  /**
+   * Filter audit logs by the request source tool name using {@link StringProperty} consumer
+   *
+   * @param fn the request source tool name filter consumer
+   * @return the updated filter
+   */
+  AuditLogFilter requestSourceToolName(final Consumer<StringProperty> fn);
 }
