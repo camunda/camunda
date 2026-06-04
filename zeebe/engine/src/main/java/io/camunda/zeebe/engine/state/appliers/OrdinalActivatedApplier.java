@@ -8,16 +8,16 @@
 package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
-import io.camunda.zeebe.engine.state.mutable.MutableOrdinalState;
+import io.camunda.zeebe.engine.state.mutable.MutableOrdinalActiveState;
 import io.camunda.zeebe.protocol.impl.record.value.ordinal.OrdinalRecord;
 import io.camunda.zeebe.protocol.record.intent.OrdinalIntent;
 
 public final class OrdinalActivatedApplier
     implements TypedEventApplier<OrdinalIntent, OrdinalRecord> {
 
-  private final MutableOrdinalState ordinalState;
+  private final MutableOrdinalActiveState ordinalState;
 
-  public OrdinalActivatedApplier(final MutableOrdinalState ordinalState) {
+  public OrdinalActivatedApplier(final MutableOrdinalActiveState ordinalState) {
     this.ordinalState = ordinalState;
   }
 

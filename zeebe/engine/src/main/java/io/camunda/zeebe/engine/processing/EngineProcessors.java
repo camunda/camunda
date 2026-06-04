@@ -54,9 +54,9 @@ import io.camunda.zeebe.engine.processing.message.MessageEventProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.metrics.job.JobMetricsProcessors;
 import io.camunda.zeebe.engine.processing.metrics.usage.UsageMetricsProcessors;
+import io.camunda.zeebe.engine.processing.ordinal.ActiveOrdinalKeyProvider;
 import io.camunda.zeebe.engine.processing.ordinal.OrdinalKeyProvider;
 import io.camunda.zeebe.engine.processing.ordinal.OrdinalProcessors;
-import io.camunda.zeebe.engine.processing.ordinal.StateBasedOrdinalKeyProvider;
 import io.camunda.zeebe.engine.processing.resource.ResourceDeletionDeleteProcessor;
 import io.camunda.zeebe.engine.processing.resource.ResourceFetchProcessor;
 import io.camunda.zeebe.engine.processing.resource.ResourceReexportReexportProcessor;
@@ -115,9 +115,7 @@ public final class EngineProcessors {
     final var processingState = typedRecordProcessorContext.getProcessingState();
     // YOHAN COMMENT >> OLD key generator
     final var keyGenerator = processingState.getKeyGenerator();
-    // TODO: @yohanfernando >> assess this, should we get the key provider from processing state
-    final var ordinalKeyProvider =
-        new StateBasedOrdinalKeyProvider(processingState.getOrdinalState());
+    final var ordinalKeyProvider = new ActiveOrdinalKeyProvider(processingState.getOrdinalState());
 
     final var routingInfo =
         RoutingInfo.dynamic(

@@ -11,7 +11,7 @@ import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.state.immutable.OrdinalState;
+import io.camunda.zeebe.engine.state.mutable.MutableOrdinalState;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.OrdinalIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -41,7 +41,7 @@ public final class OrdinalProcessors {
           - ILM issued date
           - Delete pending date
           - total created vs completed ???
-        - Ordinal Active State
+        - Ordinal Active State => DONE
           - active => ordinalKey
         - Ordinal State (all partitions)
           - ordinalKey (FK) + partitionId
@@ -63,7 +63,7 @@ public final class OrdinalProcessors {
       final KeyGenerator keyGenerator,
       final CommandDistributionBehavior commandDistributionBehavior,
       final EngineConfiguration config,
-      final OrdinalState ordinalState) {
+      final MutableOrdinalState ordinalState) {
 
     // TODO: @yohanfernando >> require command processors for
     //  a) activate

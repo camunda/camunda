@@ -5,6 +5,11 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.engine.state.immutable;
+package io.camunda.zeebe.engine.state.mutable;
 
-public interface OrdinalState {}
+import io.camunda.zeebe.engine.state.immutable.OrdinalActiveState;
+
+public interface MutableOrdinalActiveState extends OrdinalActiveState {
+
+  void activate(int ordinalKey);
+}

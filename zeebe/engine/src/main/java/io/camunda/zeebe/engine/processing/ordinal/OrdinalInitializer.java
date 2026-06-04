@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.ordinal;
 
-import io.camunda.zeebe.engine.state.immutable.OrdinalState;
+import io.camunda.zeebe.engine.state.immutable.OrdinalActiveState;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.ordinal.OrdinalRecord;
 import io.camunda.zeebe.protocol.record.intent.OrdinalIntent;
@@ -16,10 +16,10 @@ import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 
 public final class OrdinalInitializer implements StreamProcessorLifecycleAware {
 
-  private final OrdinalState ordinalState;
+  private final OrdinalActiveState ordinalActiveState;
 
-  public OrdinalInitializer(final OrdinalState ordinalState) {
-    this.ordinalState = ordinalState;
+  public OrdinalInitializer(final OrdinalActiveState ordinalActiveState) {
+    this.ordinalActiveState = ordinalActiveState;
   }
 
   @Override
@@ -29,7 +29,7 @@ public final class OrdinalInitializer implements StreamProcessorLifecycleAware {
     }
 
     // TODO: @yohanfernando >> flesh out actual initialisation
-    if (!ordinalState.isInitialized()) {
+    if (!ordinalActiveState.isInitialized()) {
       // TODO: @yohanfernando >> to support migration behaviour, add a flag to control if we
       //  should initialize with `0` (to indicate everything is saved in main index, OR with
       //  start ordinal of `1001`)

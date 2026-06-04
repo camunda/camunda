@@ -51,7 +51,6 @@ import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.metrics.DbUsageMetricState;
 import io.camunda.zeebe.engine.state.migration.DbMigrationState;
 import io.camunda.zeebe.engine.state.multiinstance.DbMultiInstanceState;
-import io.camunda.zeebe.engine.state.ordinal.DbOrdinalState;
 import io.camunda.zeebe.engine.state.mutable.MutableAsyncRequestState;
 import io.camunda.zeebe.engine.state.mutable.MutableAuthorizationState;
 import io.camunda.zeebe.engine.state.mutable.MutableBannedInstanceState;
@@ -92,6 +91,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableUsageMetricState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
+import io.camunda.zeebe.engine.state.ordinal.DbOrdinalState;
 import io.camunda.zeebe.engine.state.processing.DbBannedInstanceState;
 import io.camunda.zeebe.engine.state.routing.DbRoutingState;
 import io.camunda.zeebe.engine.state.signal.DbSignalSubscriptionState;
@@ -364,11 +364,6 @@ public class ProcessingDbState implements MutableProcessingState {
   }
 
   @Override
-  public MutableOrdinalState getOrdinalState() {
-    return ordinalState;
-  }
-
-  @Override
   public MutableRoleState getRoleState() {
     return roleState;
   }
@@ -426,6 +421,11 @@ public class ProcessingDbState implements MutableProcessingState {
   @Override
   public MutableJobMetricsState getJobMetricsState() {
     return jobMetricsState;
+  }
+
+  @Override
+  public MutableOrdinalState getOrdinalState() {
+    return ordinalState;
   }
 
   @Override

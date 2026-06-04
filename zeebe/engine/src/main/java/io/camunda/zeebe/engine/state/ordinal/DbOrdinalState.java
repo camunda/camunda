@@ -15,32 +15,35 @@ import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.mutable.MutableOrdinalState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 
-// TODO: @yohanfernando >> requre proper implementation
 public class DbOrdinalState implements MutableOrdinalState {
 
-  private static final String ACTIVE_KEY = "ACTIVE_KEY";
+  // key to identify the currently active ordinal
+  private static final String ACTIVE_ORDINAL_KEY_KEY = "ACTIVE_ORDINAL_KEY";
 
-  private final ColumnFamily<DbString, DbInt> columnFamily;
-  private final DbString key = new DbString();
-  private final DbInt value = new DbInt();
+  /** Stores the active ordinal key which we can use to get it's ordinal state by key. */
+  private final ColumnFamily<DbString, DbInt> activeOrdinalColumnFamily;
+
+  private final DbString activeOrdinalKey = new DbString();
+  private final DbInt ordinalKey = new DbInt();
 
   public DbOrdinalState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
-    columnFamily =
-        zeebeDb.createColumnFamily(ZbColumnFamilies.ORDINAL_STATE, transactionContext, key, value);
+    activeOrdinalColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.ORDINAL_STATE, transactionContext, activeOrdinalKey, ordinalKey);
   }
 
   @Override
   public boolean isInitialized() {
-    key.wrapString(ACTIVE_KEY);
-    final var activeOrdinalKey = columnFamily.get(key);
+    activeOrdinalKey.wrapString(ACTIVE_ORDINAL_KEY_KEY);
+    final var activeOrdinalKey = activeOrdinalColumnFamily.get(this.activeOrdinalKey);
     return activeOrdinalKey != null;
   }
 
   @Override
   public int getActiveOrdinalKey() {
-    key.wrapString(ACTIVE_KEY);
-    final var activeOrdinalKey = columnFamily.get(key);
+    activeOrdinalKey.wrapString(ACTIVE_ORDINAL_KEY_KEY);
+    final var activeOrdinalKey = activeOrdinalColumnFamily.get(this.activeOrdinalKey);
     if (activeOrdinalKey == null) {
       // 0-1000 are reserved ordinal keys,
       // using 101 as the default destination index when ordinals not initialized
@@ -51,8 +54,8 @@ public class DbOrdinalState implements MutableOrdinalState {
 
   @Override
   public void activate(final int ordinalKey) {
-    key.wrapString(ACTIVE_KEY);
-    value.wrapInt(ordinalKey);
-    columnFamily.upsert(key, value);
+    activeOrdinalKey.wrapString(ACTIVE_ORDINAL_KEY_KEY);
+    this.ordinalKey.wrapInt(ordinalKey);
+    activeOrdinalColumnFamily.upsert(activeOrdinalKey, this.ordinalKey);
   }
 }

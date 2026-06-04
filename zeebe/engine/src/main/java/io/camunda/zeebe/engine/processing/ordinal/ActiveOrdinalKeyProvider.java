@@ -7,19 +7,18 @@
  */
 package io.camunda.zeebe.engine.processing.ordinal;
 
-import io.camunda.zeebe.engine.state.immutable.OrdinalState;
+import io.camunda.zeebe.engine.state.immutable.OrdinalActiveState;
 
-// TODO: @yohanfernando >> probably need a better name for this
-public class StateBasedOrdinalKeyProvider implements OrdinalKeyProvider {
+public class ActiveOrdinalKeyProvider implements OrdinalKeyProvider {
 
-  private final OrdinalState ordinalState;
+  private final OrdinalActiveState ordinalActiveState;
 
-  public StateBasedOrdinalKeyProvider(final OrdinalState ordinalState) {
-    this.ordinalState = ordinalState;
+  public ActiveOrdinalKeyProvider(final OrdinalActiveState ordinalActiveState) {
+    this.ordinalActiveState = ordinalActiveState;
   }
 
   @Override
   public int getOrdinal(final long rootProcessInstanceKey) {
-    return ordinalState.getActiveOrdinalKey();
+    return ordinalActiveState.getActiveOrdinalKey();
   }
 }

@@ -9,7 +9,7 @@ package io.camunda.zeebe.engine.processing.ordinal;
 
 import static io.camunda.zeebe.protocol.Protocol.DEPLOYMENT_PARTITION;
 
-import io.camunda.zeebe.engine.state.immutable.OrdinalState;
+import io.camunda.zeebe.engine.state.immutable.OrdinalActiveState;
 import io.camunda.zeebe.protocol.impl.record.value.ordinal.OrdinalRecord;
 import io.camunda.zeebe.protocol.record.intent.OrdinalIntent;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
@@ -19,12 +19,12 @@ import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 import java.time.Duration;
 
 public class OrdinalRolloverScheduler implements StreamProcessorLifecycleAware {
-  private final OrdinalState ordinalState;
+  private final OrdinalActiveState ordinalActiveState;
   private final Duration schedulerInterval;
 
   public OrdinalRolloverScheduler(
-      final OrdinalState ordinalState, final Duration schedulerInterval) {
-    this.ordinalState = ordinalState;
+      final OrdinalActiveState ordinalActiveState, final Duration schedulerInterval) {
+    this.ordinalActiveState = ordinalActiveState;
     this.schedulerInterval = schedulerInterval;
   }
 
@@ -38,7 +38,7 @@ public class OrdinalRolloverScheduler implements StreamProcessorLifecycleAware {
   }
 
   private TaskResult runRollover(final TaskResultBuilder taskResultBuilder) {
-    final int current = ordinalState.getActiveOrdinalKey();
+    final int current = ordinalActiveState.getActiveOrdinalKey();
     final var record = new OrdinalRecord().setOrdinalKey(current + 1);
     taskResultBuilder.appendCommandRecord(OrdinalIntent.ACTIVATE, record);
     return taskResultBuilder.build();
