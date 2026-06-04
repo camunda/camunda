@@ -137,6 +137,15 @@ export async function expectBatchState(
   });
 }
 
+// Post-migration user-task search waits for the secondary-storage indexer to
+// reflect the migrated elementId. Used as the second phase after
+// searchElementInstanceByElementIdAndState confirms the engine already moved
+// the token, so the pipeline is partially warm and 120s is sufficient.
+export const postMigrationAssertionOptions = {
+  intervals: [5_000, 10_000, 15_000, 20_000, 25_000, 25_000],
+  timeout: 120_000,
+};
+
 export const notFoundDetail = (key: string) =>
   `Command 'SUSPEND' rejected with code 'NOT_FOUND': Expected to suspend a batch operation with key '${key}', but no such batch operation was found`;
 

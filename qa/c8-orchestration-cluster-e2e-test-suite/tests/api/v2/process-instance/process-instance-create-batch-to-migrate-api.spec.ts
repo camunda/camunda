@@ -26,18 +26,10 @@ import {DeployResourceResponse} from '@camunda8/sdk/dist/c8/lib/C8Dto';
 import {
   expectBatchState,
   findUserTask,
+  postMigrationAssertionOptions,
   searchElementInstanceByElementIdAndState,
 } from '@requestHelpers';
 import {validateResponse} from 'json-body-assertions';
-
-// After element-instance search confirms the engine moved the token, the
-// secondary-storage pipeline is already partially caught up. 120s is enough
-// for the user-task indexer to reflect the updated elementId and stays within
-// the 2-minute budget.
-const postMigrationUserTaskOptions = {
-  intervals: [5_000, 10_000, 15_000, 20_000, 25_000, 25_000],
-  timeout: 120_000,
-};
 
 /* eslint-disable playwright/expect-expect */
 test.describe.serial('Create Process Instance Batch to Migrate Tests', () => {
@@ -297,7 +289,7 @@ test.describe.serial('Create Process Instance Batch to Migrate Tests', () => {
         localState.processInstanceKey2,
         'CREATED',
         'do_something_else',
-        postMigrationUserTaskOptions,
+        postMigrationAssertionOptions,
       );
     });
   });
@@ -434,14 +426,14 @@ test.describe.serial('Create Process Instance Batch to Migrate Tests', () => {
       processInstanceKey1,
       'CREATED',
       elementId,
-      postMigrationUserTaskOptions,
+      postMigrationAssertionOptions,
     );
     await findUserTask(
       request,
       processInstanceKey2,
       'CREATED',
       elementId,
-      postMigrationUserTaskOptions,
+      postMigrationAssertionOptions,
     );
   };
 
