@@ -9,6 +9,7 @@ zeebe:
           drgCacheCapacity: 2000
           formCacheCapacity: 2000
           processCacheCapacity: 2000
+          groupNameCacheCapacity: 2000
         jobs:
           timeoutCheckerPollingInterval: 15s
           timeoutCheckerBatchLimit: 1000
