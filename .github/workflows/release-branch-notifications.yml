@@ -65,6 +65,19 @@ jobs:
 
           echo "🔍 Validation result: $VALID"
           echo "valid=$VALID" >> "$GITHUB_OUTPUT"
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          sparse-checkout: .github
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
   notify-release-activity:
     name: Send Slack notification for release branch activity
     runs-on: ubuntu-latest
@@ -268,6 +281,10 @@ jobs:
             echo "⚠️ Slack notification failed but workflow continues"
             echo "::warning::Failed to notify #top-monorepo-release about ${{ steps.extract-data.outputs.action_type }} on ${{ steps.extract-data.outputs.branch_name }}"
           fi
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          sparse-checkout: .github
       - name: Observe build status
         if: always()
         continue-on-error: true

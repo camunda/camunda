@@ -28,8 +28,7 @@ warn[msg] {
 }
 
 deny[msg] {
-    # only enforced on workflows that opted-in
-    input.env.GHA_BEST_PRACTICES_LINTER == "enabled"
+    is_push_or_schedule_or_bestpractices_workflow
 
     count(get_jobs_without_cihealth(input.jobs)) > 0
 
@@ -315,4 +314,18 @@ get_jobs_without_printmetadata(jobInput) = jobs_without_printmetadata {
         }
         count(printmetadata_steps) == 0
     }
+}
+
+# multiple functions with the same name act as logical OR
+is_push_or_schedule_or_bestpractices_workflow {
+    # "on:" is parsed as boolean true by the YAML 1.1 parser
+    input["true"].push
+}
+is_push_or_schedule_or_bestpractices_workflow {
+    # "on:" is parsed as boolean true by the YAML 1.1 parser
+    input["true"].schedule
+}
+is_push_or_schedule_or_bestpractices_workflow {
+    # only enforced on workflows that opted-in
+    input.env.GHA_BEST_PRACTICES_LINTER == "enabled"
 }

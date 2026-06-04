@@ -66,6 +66,17 @@ deny[msg] {
         [concat(", ", get_matrix_jobs_with_cihealthbutnojobname(input.jobs))])
 }
 
+deny[msg] {
+    # This rule ensures that jobs submitting CI health metrics have checked out
+    # the repository beforehand — the observe-build-status composite action
+    # requires local access to .github/actions/observe-build-status/action.yml.
+
+    count(get_jobs_with_cihealth_but_no_checkout(input.jobs)) > 0
+
+    msg := sprintf("There are GitHub Actions jobs with observe-build-status but without a preceding checkout step! Affected job IDs: %s",
+        [concat(", ", get_jobs_with_cihealth_but_no_checkout(input.jobs))])
+}
+
 warn[msg] {
     # This rule warns in situations where no "secrets: inherit" is passed on
     # calling other workflows as this is usually an oversight that prevents
@@ -142,5 +153,38 @@ get_matrix_jobs_with_cihealthbutnojobname(jobInput) = matrix_jobs_with_cihealthb
             not step["with"].job_name
         }
         count(missing_job_name_steps) > 0
+    }
+}
+
+get_jobs_with_cihealth_but_no_checkout(jobInput) = result {
+    result := { job_id |
+        job := jobInput[job_id]
+
+        # not enforced on jobs that invoke other reusable workflows
+        not job.uses
+
+        # check that there is at least one observe-build-status step
+        cihealth_steps := { i |
+            step := job.steps[i]
+            step.name == "Observe build status"
+            step.uses == "./.github/actions/observe-build-status"
+        }
+        count(cihealth_steps) > 0
+
+        # check that there is no checkout step anywhere before any cihealth step
+        checkout_indices := { i |
+            step := job.steps[i]
+            startswith(step.uses, "actions/checkout@")
+        }
+
+        # get the earliest observe-build-status index
+        earliest_cihealth := min(cihealth_steps)
+
+        # count checkouts that appear before the earliest cihealth step
+        checkouts_before := { i |
+            i := checkout_indices[_]
+            i < earliest_cihealth
+        }
+        count(checkouts_before) == 0
     }
 }
