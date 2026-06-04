@@ -34,7 +34,7 @@ public final class AgentInstanceFixtures extends CommonFixtures {
             .processDefinitionId("process-" + nextStringKey())
             .processDefinitionKey(nextKey())
             .processDefinitionVersion(1)
-            .tenantId("<default>")
+            .tenantId("tenant-" + key)
             .partitionId(1)
             .status(AgentInstanceStatus.IDLE)
             .model("gpt-4o")

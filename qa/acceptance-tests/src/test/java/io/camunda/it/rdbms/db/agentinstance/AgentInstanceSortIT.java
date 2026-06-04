@@ -79,6 +79,107 @@ public class AgentInstanceSortIT {
         Comparator.comparing((AgentInstanceEntity e) -> e.status().name()).reversed());
   }
 
+  @TestTemplate
+  public void shouldSortByAgentInstanceKeyAsc(final CamundaRdbmsTestApplication testApplication) {
+    testSorting(
+        testApplication,
+        b -> b.agentInstanceKey().asc(),
+        Comparator.comparingLong(AgentInstanceEntity::agentInstanceKey));
+  }
+
+  @TestTemplate
+  public void shouldSortByAgentInstanceKeyDesc(final CamundaRdbmsTestApplication testApplication) {
+    testSorting(
+        testApplication,
+        b -> b.agentInstanceKey().desc(),
+        Comparator.comparingLong(AgentInstanceEntity::agentInstanceKey).reversed());
+  }
+
+  @TestTemplate
+  public void shouldSortByProcessInstanceKeyAsc(final CamundaRdbmsTestApplication testApplication) {
+    testSorting(
+        testApplication,
+        b -> b.processInstanceKey().asc(),
+        Comparator.comparingLong(AgentInstanceEntity::processInstanceKey));
+  }
+
+  @TestTemplate
+  public void shouldSortByProcessInstanceKeyDesc(
+      final CamundaRdbmsTestApplication testApplication) {
+    testSorting(
+        testApplication,
+        b -> b.processInstanceKey().desc(),
+        Comparator.comparingLong(AgentInstanceEntity::processInstanceKey).reversed());
+  }
+
+  @TestTemplate
+  public void shouldSortByProcessDefinitionKeyAsc(
+      final CamundaRdbmsTestApplication testApplication) {
+    testSorting(
+        testApplication,
+        b -> b.processDefinitionKey().asc(),
+        Comparator.comparingLong(AgentInstanceEntity::processDefinitionKey));
+  }
+
+  @TestTemplate
+  public void shouldSortByProcessDefinitionKeyDesc(
+      final CamundaRdbmsTestApplication testApplication) {
+    testSorting(
+        testApplication,
+        b -> b.processDefinitionKey().desc(),
+        Comparator.comparingLong(AgentInstanceEntity::processDefinitionKey).reversed());
+  }
+
+  @TestTemplate
+  public void shouldSortByElementIdAsc(final CamundaRdbmsTestApplication testApplication) {
+    testSorting(
+        testApplication,
+        b -> b.elementId().asc(),
+        Comparator.comparing(AgentInstanceEntity::elementId));
+  }
+
+  @TestTemplate
+  public void shouldSortByElementIdDesc(final CamundaRdbmsTestApplication testApplication) {
+    testSorting(
+        testApplication,
+        b -> b.elementId().desc(),
+        Comparator.comparing(AgentInstanceEntity::elementId).reversed());
+  }
+
+  @TestTemplate
+  public void shouldSortByTenantIdAsc(final CamundaRdbmsTestApplication testApplication) {
+    testSorting(
+        testApplication,
+        b -> b.tenantId().asc(),
+        Comparator.comparing(AgentInstanceEntity::tenantId));
+  }
+
+  @TestTemplate
+  public void shouldSortByTenantIdDesc(final CamundaRdbmsTestApplication testApplication) {
+    testSorting(
+        testApplication,
+        b -> b.tenantId().desc(),
+        Comparator.comparing(AgentInstanceEntity::tenantId).reversed());
+  }
+
+  @TestTemplate
+  public void shouldSortByRootProcessInstanceKeyAsc(
+      final CamundaRdbmsTestApplication testApplication) {
+    testSorting(
+        testApplication,
+        b -> b.rootProcessInstanceKey().asc(),
+        Comparator.comparingLong(AgentInstanceEntity::rootProcessInstanceKey));
+  }
+
+  @TestTemplate
+  public void shouldSortByRootProcessInstanceKeyDesc(
+      final CamundaRdbmsTestApplication testApplication) {
+    testSorting(
+        testApplication,
+        b -> b.rootProcessInstanceKey().desc(),
+        Comparator.comparingLong(AgentInstanceEntity::rootProcessInstanceKey).reversed());
+  }
+
   private void testSorting(
       final CamundaRdbmsTestApplication testApplication,
       final Function<Builder, ObjectBuilder<AgentInstanceSort>> sortBuilder,

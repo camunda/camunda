@@ -326,6 +326,20 @@ public class AgentInstanceSearchIT {
   }
 
   @Test
+  void shouldSortByAgentInstanceKeyAscending() {
+    // given — three agent instances created in order; engine assigns monotonically increasing keys
+    // when
+    final var response =
+        camundaClient
+            .newAgentInstanceSearchRequest()
+            .sort(s -> s.agentInstanceKey().asc())
+            .execute();
+
+    // then — keys must be in ascending order; this is the canonical stable pagination tiebreaker
+    assertThat(response.items()).extracting(AgentInstance::getAgentInstanceKey).isSorted();
+  }
+
+  @Test
   void shouldSortByCreationDateDescending() {
     // when
     final var response =
