@@ -116,3 +116,68 @@ against a throwaway ES (must be ES ≥ 8.19 — the 8.19 java client requires
 `HealthResponse.unassignedPrimaryShards`), and confirm the checkpoint completes with no remaining
 open fds, then restore and assert the gateway/REST endpoints become ready and a process can be
 deployed and completed.
+
+## Spike results (experimental, GKE) and recommendation
+
+An end-to-end spike implemented the restart machinery and tested checkpoint-on-refresh of the unified
+`StandaloneCamunda` on GKE (Azul Zulu CRaC JDK 25 image, throwaway Elasticsearch — note: ES **8.19+**,
+since the 8.19 ES Java client requires `HealthResponse.unassignedPrimaryShards`). Findings:
+
+1. **Restart machinery works.** `ActorScheduler` and `AtomixCluster` restart **in place** (rebuild
+   their executors / netty event loops + SWIM on `start()`), so consumers that cached
+   `getMessagingService()` etc. stay valid (unit-tested: `ActorSchedulerTest.shouldRestartAfterStop`,
+   `AtomixClusterTest.shouldRestartAfterStop`). `Broker` / `BrokerClient` recreate their actors on
+   `start()` after `close()`. In-JVM broker recreation is independently proven by the existing
+   `EmbeddedBrokerRule.restartBroker` / `BrokerRestartTest`.
+
+2. **Drive via `org.crac.Resource`, not `SmartLifecycle`.** Spring Boot's checkpoint-on-refresh only
+   invokes registered `org.crac.Resource` beans; it does **not** stop arbitrary `SmartLifecycle`
+   beans. The four `SmartLifecycle` bridges never fired; consolidating into a single ordered
+   `org.crac.Resource` (`CracBrokerStackResource`) did fire and tore the **whole broker stack** down
+   cleanly (broker, RocksDB, gateway, command API, cluster netty, SWIM, scheduler).
+
+3. **The unified checkpoint still aborts — on the webapp tier, not the broker.** After the broker
+   stack is fully stopped, ~**41 event-loop fds remain genuinely open** (measured via `/proc/self/fd`;
+   they do not drain). A thread dump attributes them to the **webapp/web tier**: the JDK
+   `java.net.http.HttpClient` selector managers (ES clients / OIDC / web-modeler), the servlet
+   container (Tomcat NIO), and gRPC — not components owned by the broker-stack teardown.
+
+4. **Failure-path caveat:** stopping the scheduler before a *failed* checkpoint makes Spring's context
+   teardown hang (`Actor.close()` joins on the dead scheduler), masking the `CheckpointException`.
+
+### Conclusion
+
+Option B (make the broker stack restartable) is **viable and the hard depth-risk — broker/Raft/RocksDB
+in-process restart — is solved**. But achieving a *clean* unified checkpoint via B is a **breadth**
+problem: every event loop in the process (broker tier ✓ + webapp tier ES/HttpClient/gRPC/servlet)
+must be closed synchronously before the dump. That is many components, several behind async shutdown.
+
+**Recommendation: Option A.** Because A captures the checkpoint *before* I/O starts, there are no
+event loops to close — it sidesteps the entire breadth problem the spike exposed.
+
+### Option A — concrete design (recommended)
+
+Goal: at the checkpoint point, no I/O has started (0 event loops) → clean checkpoint; on restore,
+start everything once.
+
+1. **Move all I/O start out of bean instantiation into a post-refresh phase.** Today the eager
+   `@Bean` methods start I/O during context refresh (`ActorScheduler.start()`,
+   `AtomixCluster.start()`, `Broker.start()`, `BrokerClient.start()`, ES schema init). The
+   checkpoint-on-refresh fires inside `finishRefresh`, after instantiation, so these are already
+   running. Start them instead from an `ApplicationRunner`/`CommandLineRunner`, which runs in
+   `callRunners()` — *after* `refreshContext()` and therefore *after* the on-refresh checkpoint.
+
+2. **Break the construction-time coupling.** `Broker`'s constructor submits the startup actor to the
+   scheduler, so it cannot be constructed before the scheduler is started. True deferral therefore
+   needs the broker subgraph created lazily (e.g. `@Lazy` + `ObjectProvider`/holder), with the
+   post-refresh runner: start scheduler → start cluster → start broker client → create+start broker
+   → run ES schema init. Refresh-time consumers (gateway, partition-dependent webapp beans) must go
+   through the holder rather than caching a started instance.
+
+3. **Restore.** On restore the JVM resumes after the checkpoint point and `callRunners()` starts the
+   stack fresh against the existing data dir (RocksDB reopen + Raft recovery — the normal restart
+   path). No per-component `org.crac.Resource` close handlers are required.
+
+The restartability work from this spike (in-place scheduler/cluster restart, broker/broker-client
+actor recreation) is reusable but **not required** for Option A; A's value is precisely that it
+avoids needing to stop/restart anything across the checkpoint.
