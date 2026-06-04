@@ -488,18 +488,30 @@ jobs:
             --exclude='*.repositories' \
             -cf m2-installed.tar -C "${HOME}/.m2/repository/installed" io/camunda
           ls -lh m2-installed.tar
-      # EXPERIMENT (#52693): transport the m2-installed tar via run-scoped GHA
-      # cache instead of the throughput-capped artifacts API. Key is unique per
-      # run (no restore-keys ⇒ no stale/partial restore); utils-cleanup-distball
-      # deletes the entry so it doesn't linger on the shared cache budget. The
-      # repo caching policy bans cache *writes* from PRs for dependency caches
-      # (docs/monorepo-docs/ci.md) — this is an ephemeral, self-deleting entry,
-      # pending team sign-off before merge.
-      - name: Cache local Maven SNAPSHOT artifacts
+      # Hybrid transport (#52693): the m2-installed tar feeds two consumer
+      # classes. Paid self-hosted gcp IT shards restore it via the GHA cache
+      # (CDN/parallel ⇒ ~16s vs ~82s on the throughput-capped artifacts API,
+      # saving real GCP minutes). Free GitHub-hosted docker-checks stays on the
+      # artifacts API — the cache is runner-family-locked (would miss on
+      # ubuntu-latest) and there is no cost reason to speed up a free runner.
+      # So we publish BOTH: a run-scoped cache entry and an artifact.
+      #
+      # Cache caveat: the repo policy bans cache *writes* from PRs for dependency
+      # caches (docs/monorepo-docs/ci.md). This entry is ephemeral, run-scoped
+      # and deleted by utils-cleanup-distball — pending team sign-off before merge.
+      - name: Cache local Maven SNAPSHOT artifacts (paid gcp consumers)
         uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: m2-installed.tar
           key: m2-installed-${{ github.run_id }}
+      - name: Upload local Maven SNAPSHOT artifacts (free gh-hosted consumers)
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: m2-installed-${{ github.run_id }}
+          path: m2-installed.tar
+          retention-days: 1
+          compression-level: 6
+          if-no-files-found: error
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -1389,20 +1401,22 @@ jobs:
           path: dist/target/
       # docker-checks's "Run Docker tests" step invokes `mvn -pl dist/ verify`,
       # which resolves io.camunda:* SNAPSHOTs from ~/.m2/repository/installed/.
-      # Restore those SNAPSHOTs from the build-distball job since the GHA Maven
-      # cache does not propagate locally-installed artifacts between jobs.
-      - name: Restore local Maven SNAPSHOT artifacts (cache)
-        uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+      # This job runs on free GitHub-hosted ubuntu-latest, so it stays on the
+      # artifacts API (runner-agnostic, ~8s here since gh-hosted runners sit next
+      # to the artifact store). The GHA cache transport used by the paid gcp IT
+      # shards is runner-family-locked and would miss here — and there is no cost
+      # reason to speed up a free runner. See #52693.
+      - name: Download local Maven SNAPSHOT artifacts
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          path: m2-installed.tar
-          key: m2-installed-${{ github.run_id }}
-          fail-on-cache-miss: true
-      - name: Extract local Maven SNAPSHOT artifacts
+          name: m2-installed-${{ github.run_id }}
+          path: ${{ runner.temp }}
+      - name: Restore local Maven SNAPSHOT artifacts
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p "${HOME}/.m2/repository/installed"
-          tar -xf m2-installed.tar -C "${HOME}/.m2/repository/installed"
+          tar -xf "${{ runner.temp }}/m2-installed.tar" -C "${HOME}/.m2/repository/installed"
       - uses: ./.github/actions/build-platform-docker
         id: build-camunda-docker
         with:
@@ -2303,13 +2317,16 @@ jobs:
       actions: write
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@main
-      - name: Delete distball artifact
+      - name: Delete distball + m2-installed artifacts
         uses: geekyeggo/delete-artifact@176a747ab7e287e3ff4787bf8a148716375ca118 # v6.0.0
         with:
-          name: distball-${{ github.run_id }}
+          name: |
+            distball-${{ github.run_id }}
+            m2-installed-${{ github.run_id }}
           failOnError: false
-      # m2-installed now travels via run-scoped GHA cache (EXPERIMENT #52693);
-      # delete the entry so it doesn't linger on the shared cache budget.
+      # m2-installed also travels via run-scoped GHA cache for the paid gcp
+      # consumers (#52693); delete that entry too so it doesn't linger on the
+      # shared cache budget.
       - name: Delete m2-installed cache
         shell: bash
         continue-on-error: true
