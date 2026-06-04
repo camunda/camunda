@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useState, useEffect} from 'react';
+import {useState, useEffect, useCallback} from 'react';
 
 import {useErrorHandling} from 'hooks';
 import {showError} from 'notifications';
@@ -36,6 +36,7 @@ function presetToFilter(preset) {
 export function AgenticControlPlane() {
   const [preset, setPreset] = useState('30d');
   const [dashboard, setDashboard] = useState(null);
+  const [processScope, setProcessScope] = useState(null);
   const {mightFail} = useErrorHandling();
 
   useEffect(() => {
@@ -45,9 +46,30 @@ export function AgenticControlPlane() {
   const selectedPreset = DATE_PRESETS.find((p) => p.id === preset);
   const filter = [presetToFilter(selectedPreset)];
 
+  const scopedEvaluateReport = useCallback(
+    (id, tileFilter, query) =>
+      evaluateReport(
+        id,
+        tileFilter,
+        query,
+        processScope ? [{key: processScope, versions: ['all']}] : []
+      ),
+    [processScope]
+  );
+
   if (!dashboard) {
     return <Loading />;
   }
+
+  const visibleTiles = dashboard.tiles?.filter((tile) => {
+    if (processScope && tile.configuration?.visibleInL0Only) {
+      return false;
+    }
+    if (!processScope && tile.configuration?.visibleInL1Only) {
+      return false;
+    }
+    return true;
+  });
 
   return (
     <div className="AgenticControlPlane">
@@ -55,8 +77,13 @@ export function AgenticControlPlane() {
         <h1 className="AgenticControlPlane__title">{t('agenticControlPlane.title')}</h1>
         <p className="AgenticControlPlane__description">{t('agenticControlPlane.description')}</p>
       </div>
-      <FilterBar preset={preset} onPresetChange={setPreset} />
-      <DashboardRenderer loadTile={evaluateReport} tiles={dashboard.tiles} filter={filter} />
+      <FilterBar
+        preset={preset}
+        onPresetChange={setPreset}
+        processScope={processScope}
+        onProcessScopeChange={setProcessScope}
+      />
+      <DashboardRenderer loadTile={scopedEvaluateReport} tiles={visibleTiles} filter={filter} />
     </div>
   );
 }

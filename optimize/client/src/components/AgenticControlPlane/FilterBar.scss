@@ -8,12 +8,18 @@
 
 .FilterBar {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   align-items: center;
   padding: 0.75rem 0;
   border-top: 1px solid var(--cds-border-subtle);
   border-bottom: 1px solid var(--cds-border-subtle);
   margin-bottom: 1rem;
+
+  &__processScope {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
 
   &__dateRange {
     display: flex;

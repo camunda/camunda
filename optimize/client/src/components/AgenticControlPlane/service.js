@@ -14,5 +14,8 @@
 // }
 
 export async function loadAgenticDashboard() {
-  return {tiles: [], availableFilters: []};
+  return {
+    availableFilters: [{type: 'processScope'}],
+    tiles: [],
+  };
 }
