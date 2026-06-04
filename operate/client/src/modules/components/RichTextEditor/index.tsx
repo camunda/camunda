@@ -41,11 +41,6 @@ type Props = {
   width?: string;
   options?: editor.IStandaloneEditorConstructionOptions;
   loading?: ReactNode;
-  /**
-   * JSON Schema applied to this editor's model. Enables Monaco's built-in
-   * structural validation against the schema (errors surface as squiggles).
-   * Only used when `language === "json"`.
-   */
   jsonSchema?: object;
 };
 
