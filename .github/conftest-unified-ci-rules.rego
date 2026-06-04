@@ -182,6 +182,14 @@ get_jobs_without_cihealth(jobInput) = jobs_without_cihealth {
         # temporary for docker-build-helm-integration.yml workflow from alwaysgreen
         job_id != "format-identifier"
         job_id != "should-run"
+        # observed via a dependent observer job to avoid registering Vault
+        # secrets in the data-producing job's scope, which would cause GHA's
+        # cross-job output substring guard to drop `stale_data` (the masked
+        # gcloud_sa_key value contains `camunda`, which matches every PR URL
+        # in the stale_data JSON). See `observe-collect-status` job in
+        # stale-backport-tracker.yml. Follow-up: amend this rule to accept a
+        # dependent observer job natively instead of maintaining whitelist.
+        job_id != "collect-stale-backports"
 
         # not enforced on jobs that invoke other reusable workflows (instead enforced there)
         not job.uses
