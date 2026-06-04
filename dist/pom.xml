@@ -433,6 +433,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>document-api</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>document-store</artifactId>
     </dependency>
 
