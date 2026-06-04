@@ -40,6 +40,9 @@ public class CamundaExporterMetrics implements AutoCloseable {
 
   private final Timer flushLatency;
 
+  private final Counter processInstancesDeleting;
+  private final Counter processInstancesDeleted;
+
   /** Count of completed process instances that are in progress of archiving. */
   private final Counter processInstancesArchiving;
 
@@ -108,6 +111,7 @@ public class CamundaExporterMetrics implements AutoCloseable {
   private final Timer archiverReindexTimer;
   private Timer.Sample flushLatencyMeasurement;
   private final Timer archivingDuration;
+  private final Timer deleterBatchDuration;
   private final DistributionSummary bulkSize;
   private final DistributionSummary bulkEstimatedMemorySize;
   private final Counter bulkOperations;
@@ -138,6 +142,15 @@ public class CamundaExporterMetrics implements AutoCloseable {
             .description(
                 "Time of how long a export buffer is open and collects new records before flushing, meaning latency until the next flush is done.")
             .publishPercentileHistogram()
+            .register(meterRegistry);
+
+    processInstancesDeleted =
+        Counter.builder(meterName("deleter.process.instances"))
+            .tag("state", "deleted")
+            .register(meterRegistry);
+    processInstancesDeleting =
+        Counter.builder(meterName("deleter.process.instances"))
+            .tag("state", "deleting")
             .register(meterRegistry);
 
     processInstancesArchived =
@@ -261,6 +274,10 @@ public class CamundaExporterMetrics implements AutoCloseable {
         Timer.builder(meterName("archiver.duration"))
             .description(
                 "Duration of how long it takes from resolving to archiving entities, all in all together.")
+            .publishPercentileHistogram()
+            .register(meterRegistry);
+    deleterBatchDuration =
+        Timer.builder(meterName("deleter.batch.duration"))
             .publishPercentileHistogram()
             .register(meterRegistry);
     incidentUpdatesRetriesNeeded =
@@ -404,6 +421,14 @@ public class CamundaExporterMetrics implements AutoCloseable {
     }
   }
 
+  public void recordProcessInstancesDeleted(final int count) {
+    processInstancesDeleted.increment(count);
+  }
+
+  public void recordProcessInstancesDeleting(final int count) {
+    processInstancesDeleting.increment(count);
+  }
+
   public void recordProcessInstancesArchived(final int count) {
     processInstancesArchived.increment(count);
   }
@@ -527,6 +552,10 @@ public class CamundaExporterMetrics implements AutoCloseable {
     timer.stop(archiverReindexTimer);
   }
 
+  public void measureDeleterBatchDuration(final Sample timer) {
+    timer.stop(deleterBatchDuration);
+  }
+
   public void measureArchivingDuration(final Sample timer) {
     timer.stop(archivingDuration);
   }
@@ -606,6 +635,10 @@ public class CamundaExporterMetrics implements AutoCloseable {
     meterRegistry.remove(auditLogsArchiving);
     meterRegistry.remove(auditLogsArchived);
     meterRegistry.remove(archiverBatchRetries);
+
+    meterRegistry.remove(processInstancesDeleted);
+    meterRegistry.remove(processInstancesDeleting);
+    meterRegistry.remove(deleterBatchDuration);
 
     meterRegistry.find(FLUSH_FAILURE_TYPE_METER_NAME).meters().forEach(meterRegistry::remove);
 

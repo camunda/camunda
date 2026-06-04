@@ -15,6 +15,8 @@ import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.zeebe.exporter.common.tasks.BackgroundTask;
+import io.camunda.zeebe.util.FunctionUtil;
+import io.micrometer.core.instrument.Timer;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -106,7 +108,9 @@ public class ProcessInstanceDeleterJob implements BackgroundTask {
     if (batch.isEmpty()) {
       return CompletableFuture.completedFuture(0);
     }
-    logger.info(
+    final var timer = Timer.start();
+    exporterMetrics.recordProcessInstancesDeleting(batch.rootProcessInstances().size());
+    logger.debug(
         "Deleting batch of {} root process instances for ordinal {}",
         batch.rootProcessInstances().size(),
         batch.ordinal());
@@ -130,7 +134,15 @@ public class ProcessInstanceDeleterJob implements BackgroundTask {
                         ListViewTemplate.JOIN_RELATION,
                         ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION),
                     Map.of()),
-            executor);
+            executor)
+        .thenApply(
+            FunctionUtil.peek(
+                deleted -> {
+                  logger.debug("Deleted batch of {} root process instances", deleted);
+                  exporterMetrics.recordProcessInstancesDeleted(
+                      batch.rootProcessInstances().size());
+                  exporterMetrics.measureDeleterBatchDuration(timer);
+                }));
   }
 
   protected CompletableFuture<Integer> delete(

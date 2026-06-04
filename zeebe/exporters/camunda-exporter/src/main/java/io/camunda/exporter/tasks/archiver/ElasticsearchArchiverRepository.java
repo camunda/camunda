@@ -215,18 +215,6 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   }
 
   @Override
-  public CompletableFuture<BasicArchiveBatch> getJobBatchMetricsNextBatch() {
-    final var searchRequest = createJobBatchMetricsSearchRequest();
-
-    final var timer = Timer.start();
-    return client
-        .search(searchRequest, Object.class)
-        .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
-        .thenApplyAsync(
-            response -> createBasicBatch(response, JobMetricsBatchTemplate.END_TIME), executor);
-  }
-
-  @Override
   public CompletableFuture<BasicArchiveBatch> getStandaloneDecisionNextBatch() {
     final var searchRequest = createStandaloneDecisionSearchRequest();
 
@@ -285,6 +273,31 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
             .toList();
 
     return CompletableFuture.allOf(requests.toArray(new CompletableFuture[0]));
+  }
+
+  @Override
+  public CompletableFuture<Integer> getCountOfProcessInstancesAwaitingArchival() {
+    final var countRequest =
+        CountRequest.of(
+            cr ->
+                cr.index(listViewTemplateDescriptor.getFullQualifiedName())
+                    .query(
+                        finishedProcessInstancesQuery(
+                            config.getArchivingTimePoint(), partitionId)));
+
+    return client.count(countRequest).thenApplyAsync(res -> Math.toIntExact(res.count()));
+  }
+
+  @Override
+  public CompletableFuture<BasicArchiveBatch> getJobBatchMetricsNextBatch() {
+    final var searchRequest = createJobBatchMetricsSearchRequest();
+
+    final var timer = Timer.start();
+    return client
+        .search(searchRequest, Object.class)
+        .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
+        .thenApplyAsync(
+            response -> createBasicBatch(response, JobMetricsBatchTemplate.END_TIME), executor);
   }
 
   @Override
@@ -385,7 +398,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
             taskSupplier::moveNextBatch, count -> taskSupplier.isComplete())
         .thenApply(
             ignored -> {
-              logger.info(
+              logger.trace(
                   "Successfully completed deleting from the {} index, deleted {} docs in {}s",
                   sourceIndexName,
                   taskSupplier.getTotalArchived(),
@@ -462,19 +475,6 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
                     err);
               }
             });
-  }
-
-  @Override
-  public CompletableFuture<Integer> getCountOfProcessInstancesAwaitingArchival() {
-    final var countRequest =
-        CountRequest.of(
-            cr ->
-                cr.index(listViewTemplateDescriptor.getFullQualifiedName())
-                    .query(
-                        finishedProcessInstancesQuery(
-                            config.getArchivingTimePoint(), partitionId)));
-
-    return client.count(countRequest).thenApplyAsync(res -> Math.toIntExact(res.count()));
   }
 
   private List<ProcessInstanceOrdinal> createProcessInstanceOrdinals(
@@ -920,6 +920,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
         .query(query -> query.bool(q -> q.filter(filterQuery)))
         .sort(sort -> sort.field(field -> field.field(sortField).order(SortOrder.Asc)))
         .size(size)
+        .aggregations(agg -> agg.)
         .build();
   }
 }
