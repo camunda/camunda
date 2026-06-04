@@ -69,7 +69,7 @@ public final class CoverageCollectorImpl implements CoverageCollector {
     Optional.ofNullable(COLLECTORS_BY_TEST_CLASS.get(testClassName))
         .ifPresent(
             coverageReportCollector -> {
-              coverageReporter.createSuiteCoverageReport(coverageReportCollector);
+              coverageReporter.reportSuiteCoverage(coverageReportCollector);
               coverageReporter.printCoverage(coverageReportCollector);
             });
 
