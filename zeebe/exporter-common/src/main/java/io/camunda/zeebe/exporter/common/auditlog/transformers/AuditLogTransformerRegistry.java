@@ -104,6 +104,7 @@ public final class AuditLogTransformerRegistry {
   public static List<Supplier<AuditLogTransformer<?>>> getAllPartitionTransformerSuppliers() {
     return List.of(
         DecisionEvaluationAuditLogTransformer::new,
+        HistoryDeletionAuditLogTransformer::new,
         IncidentResolutionAuditLogTransformer::new,
         JobAuditLogTransformer::new,
         ProcessInstanceCancelAuditLogTransformer::new,
