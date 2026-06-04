@@ -28,7 +28,6 @@ import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import io.camunda.zeebe.backup.common.BackupStoreException.UnexpectedManifestState;
 import io.camunda.zeebe.backup.common.Manifest;
 import io.camunda.zeebe.backup.common.Manifest.StatusCode;
-import io.camunda.zeebe.backup.common.SemaphoreLeasedScheduler;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -38,7 +37,6 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.ReentrantLock;
@@ -59,15 +57,13 @@ public final class AzureBackupStore implements BackupStore {
   public static final String SNAPSHOT_FILESET_NAME = "snapshot";
   public static final String SEGMENTS_FILESET_NAME = "segments";
   public static final String METADATA_OBJECT_NAME = "metadata.json";
-  static final int MAX_CONCURRENT_SAVES = 128;
+  static final int MAX_CONCURRENT_FILE_OPERATIONS = 128;
   private static final Logger LOG = LoggerFactory.getLogger(AzureBackupStore.class);
   private final ExecutorService executor;
-  private final Semaphore saveSemaphore = new Semaphore(MAX_CONCURRENT_SAVES);
   private final ReentrantLock containerCreationLock = new ReentrantLock();
   private final FileSetManager fileSetManager;
   private final ManifestManager manifestManager;
   private final BlobContainerClient blobContainerClient;
-  private final AzureBackupConfig config;
   private volatile boolean containerCreated;
 
   AzureBackupStore(final AzureBackupConfig config) {
@@ -83,7 +79,13 @@ public final class AzureBackupStore implements BackupStore {
     containerCreated = !createContainer;
 
     final var blobBatchClient = new BlobBatchClientBuilder(client).buildClient();
-    fileSetManager = new FileSetManager(blobContainerClient, blobBatchClient, createContainer);
+    fileSetManager =
+        new FileSetManager(
+            blobContainerClient,
+            blobBatchClient,
+            createContainer,
+            executor,
+            MAX_CONCURRENT_FILE_OPERATIONS);
     manifestManager = new ManifestManager(blobContainerClient, createContainer);
   }
 
@@ -148,50 +150,45 @@ public final class AzureBackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<Void> save(final Backup backup) {
-    return SemaphoreLeasedScheduler.scheduleAsync(
-        () ->
-            CompletableFuture.supplyAsync(
-                    () -> manifestManager.createInitialManifest(backup), executor)
-                .thenComposeAsync(
-                    persistedManifest -> {
-                      final var snapshotFuture =
-                          CompletableFuture.runAsync(
-                              () ->
-                                  fileSetManager.save(
-                                      backup.id(), SNAPSHOT_FILESET_NAME, backup.snapshot()),
-                              executor);
-                      final var segmentsFuture =
-                          CompletableFuture.runAsync(
-                              () ->
-                                  fileSetManager.save(
-                                      backup.id(), SEGMENTS_FILESET_NAME, backup.segments()),
-                              executor);
+    return CompletableFuture.supplyAsync(
+            () -> manifestManager.createInitialManifest(backup), executor)
+        .thenComposeAsync(
+            persistedManifest -> {
+              final var snapshotFuture =
+                  CompletableFuture.runAsync(
+                      () ->
+                          fileSetManager.save(
+                              backup.id(), SNAPSHOT_FILESET_NAME, backup.snapshot()),
+                      executor);
+              final var segmentsFuture =
+                  CompletableFuture.runAsync(
+                      () ->
+                          fileSetManager.save(
+                              backup.id(), SEGMENTS_FILESET_NAME, backup.segments()),
+                      executor);
 
-                      return CompletableFuture.allOf(snapshotFuture, segmentsFuture)
-                          .whenCompleteAsync(
-                              (ignored, error) -> {
-                                if (error != null) {
-                                  manifestManager.markAsFailed(
-                                      persistedManifest.manifest().id(), error.getMessage());
-                                }
-                              },
-                              executor)
-                          .thenApplyAsync(ignored -> persistedManifest, executor);
-                    },
-                    executor)
-                .thenAcceptAsync(
-                    persistedManifest -> {
-                      try {
-                        manifestManager.completeManifest(persistedManifest);
-                      } catch (final Exception e) {
-                        manifestManager.markAsFailed(
-                            persistedManifest.manifest().id(), e.getMessage());
-                        throw e;
-                      }
-                    },
-                    executor),
-        executor,
-        saveSemaphore);
+              return CompletableFuture.allOf(snapshotFuture, segmentsFuture)
+                  .whenCompleteAsync(
+                      (ignored, error) -> {
+                        if (error != null) {
+                          manifestManager.markAsFailed(
+                              persistedManifest.manifest().id(), error.getMessage());
+                        }
+                      },
+                      executor)
+                  .thenApplyAsync(ignored -> persistedManifest, executor);
+            },
+            executor)
+        .thenAcceptAsync(
+            persistedManifest -> {
+              try {
+                manifestManager.completeManifest(persistedManifest);
+              } catch (final Exception e) {
+                manifestManager.markAsFailed(persistedManifest.manifest().id(), e.getMessage());
+                throw e;
+              }
+            },
+            executor);
   }
 
   @Override
