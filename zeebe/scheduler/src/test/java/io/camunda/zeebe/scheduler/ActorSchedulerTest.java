@@ -13,6 +13,7 @@ import static org.awaitility.Awaitility.await;
 
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 
 final class ActorSchedulerTest {
@@ -81,6 +82,35 @@ final class ActorSchedulerTest {
     assertThatThrownBy(() -> sut.submitActor(testActor)).isInstanceOf(IllegalStateException.class);
     assertThatThrownBy(() -> sut.submitActor(testActor, SchedulingHints.cpuBound()))
         .isInstanceOf(IllegalStateException.class);
+  }
+
+  @Test
+  void shouldRestartAfterStop() throws InterruptedException {
+    // given -- a scheduler that has been started and stopped
+    final var sut = ActorScheduler.newActorScheduler().build();
+    sut.start();
+    final var stopFuture = sut.stop();
+    await().until(stopFuture::isDone);
+
+    // when -- it is started again (rebuilds the executor + threads)
+    sut.start();
+
+    // then -- a newly submitted actor actually runs on the rebuilt threads
+    final var started = new CountDownLatch(1);
+    final var restartedActor =
+        new Actor() {
+          @Override
+          protected void onActorStarted() {
+            started.countDown();
+          }
+        };
+    sut.submitActor(restartedActor);
+
+    assertThat(started.await(5, TimeUnit.SECONDS)).isTrue();
+
+    // cleanup
+    restartedActor.closeAsync();
+    sut.stop();
   }
 
   private static final class TestActor extends Actor {}

@@ -20,11 +20,15 @@ import org.agrona.concurrent.IdleStrategy;
 
 public final class ActorScheduler implements AutoCloseable, ActorSchedulingService {
   private final AtomicReference<SchedulerState> state = new AtomicReference<>();
-  private final ActorExecutor actorTaskExecutor;
+  private final ActorSchedulerBuilder builder;
   private final ActorMetrics metrics;
+  // Non-final: rebuilt on restart because the executor's Java threads are single-use and cannot be
+  // restarted after closeAsync() (EXPERIMENTAL — CRaC restart support).
+  private ActorExecutor actorTaskExecutor;
 
   public ActorScheduler(final ActorSchedulerBuilder builder) {
     state.set(SchedulerState.NEW);
+    this.builder = builder;
     actorTaskExecutor = builder.getActorExecutor();
     metrics = builder.getActorMetrics();
   }
@@ -77,6 +81,11 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
 
   public void start() {
     if (state.compareAndSet(SchedulerState.NEW, SchedulerState.RUNNING)) {
+      actorTaskExecutor.start();
+    } else if (state.compareAndSet(SchedulerState.TERMINATED, SchedulerState.RUNNING)) {
+      // EXPERIMENTAL (CRaC restart): the previous executor's Java threads are dead and cannot be
+      // restarted, so rebuild the executor + thread groups from the retained builder config.
+      actorTaskExecutor = builder.rebuildActorExecutor();
       actorTaskExecutor.start();
     } else {
       throw new IllegalStateException("Cannot start scheduler already started.");
@@ -255,6 +264,22 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
       if (actorExecutor == null) {
         actorExecutor = new ActorExecutor(this);
       }
+    }
+
+    /**
+     * EXPERIMENTAL (CRaC restart): discards the previously built thread groups + executor and
+     * builds a fresh {@link ActorExecutor} with new threads from the same configuration. Required
+     * because the executor's Java threads are single-use and cannot be restarted after {@link
+     * ActorExecutor#closeAsync()}.
+     */
+    ActorExecutor rebuildActorExecutor() {
+      cpuBoundActorGroup = null;
+      ioBoundActorGroup = null;
+      actorExecutor = null;
+      initCpuBoundActorThreadGroup();
+      initIoBoundActorThreadGroup();
+      initActorExecutor();
+      return actorExecutor;
     }
 
     public ActorScheduler build() {
