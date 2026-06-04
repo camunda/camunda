@@ -1694,6 +1694,8 @@ public final class SearchQueryResponseMapper {
                 .map(AuditLogEntityTypeEnum::fromValue)
                 .orElse(null))
         .entityDescription(auditLog.entityDescription())
+        .requestSourceChannelType(auditLog.requestSourceChannelType())
+        .requestSourceToolName(auditLog.requestSourceToolName())
         .build();
   }
 

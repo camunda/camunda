@@ -112,6 +112,8 @@ components:
         - relatedEntityKey
         - relatedEntityType
         - entityDescription
+        - requestSourceChannelType
+        - requestSourceToolName
       properties:
         auditLogKey:
           allOf:
@@ -256,6 +258,19 @@ components:
             Additional description of the entity affected by the operation.
             For example, for variable operations, this will contain the variable name.
           nullable: true
+        requestSourceChannelType:
+          type: string
+          description: The channel type of the request source (e.g. MCP).
+          nullable: true
+        requestSourceToolName:
+          type: string
+          description: The tool name of the request source (e.g. the MCP tool that triggered the operation).
+          nullable: true
+      x-properties-added-in-version:
+        - propertyName: "requestSourceChannelType"
+          addedInVersion: "8.10"
+        - propertyName: "requestSourceToolName"
+          addedInVersion: "8.10"
     AuditLogSearchQuerySortRequest:
       type: object
       additionalProperties: false
@@ -283,6 +298,8 @@ components:
             - processDefinitionId
             - processDefinitionKey
             - processInstanceKey
+            - requestSourceChannelType
+            - requestSourceToolName
             - result
             - tenantId
             - timestamp
@@ -429,6 +446,19 @@ components:
           description: The entity description filter.
           allOf:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+        requestSourceChannelType:
+          description: The request source channel type search filter (e.g. MCP).
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+        requestSourceToolName:
+          description: The request source tool name search filter.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+      x-properties-added-in-version:
+        - propertyName: "requestSourceChannelType"
+          addedInVersion: "8.10"
+        - propertyName: "requestSourceToolName"
+          addedInVersion: "8.10"
 
     AuditLogSearchQueryResult:
       description: Audit log search response.
