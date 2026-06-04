@@ -33,7 +33,7 @@
     "react-final-form": "7.0.0",
     "react-final-form-arrays": "4.0.0",
     "react-i18next": "16.5.4",
-    "react-router-dom": "7.13.1",
+    "react-router-dom": "7.16.0",
     "react-transition-group": "4.4.5",
     "sass": "1.97.3",
     "styled-components": "6.4.1",
