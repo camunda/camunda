@@ -11,6 +11,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryCommitStatus;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryContentType;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryRole;
+import io.camunda.zeebe.protocol.record.value.ImmutableAgentHistoryEmbeddedToolCallValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableAgentHistoryMessageContentValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableAgentHistoryMetricsValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableAgentHistoryRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableAgentHistoryToolCallRefValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableUsageMetricRecordValue;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.EventType;
@@ -137,6 +145,103 @@ class CompactRecordLoggerTest {
           .contains(
               """
               in <process "procID"[K123]"bizzID">""");
+    }
+
+    @Test
+    void shouldSummarizeAgentHistoryRecord() {
+      // given
+      final var logger = new CompactRecordLogger(List.of());
+      final var record =
+          ImmutableRecord.builder()
+              .withValueType(ValueType.AGENT_HISTORY)
+              .withValue(
+                  ImmutableAgentHistoryRecordValue.builder()
+                      .withAgentInstanceKey(1L)
+                      .withElementInstanceKey(2L)
+                      .withJobKey(3L)
+                      .withRole(AgentHistoryRole.ASSISTANT)
+                      .withCommitStatus(AgentHistoryCommitStatus.COMMITTED)
+                      .withAttemptNumber(1)
+                      .withIteration(2)
+                      .withMetrics(
+                          ImmutableAgentHistoryMetricsValue.builder()
+                              .withInputTokens(100)
+                              .withOutputTokens(50)
+                              .withDurationMs(1234)
+                              .build())
+                      .addContent(
+                          ImmutableAgentHistoryMessageContentValue.builder()
+                              .withContentType(AgentHistoryContentType.TEXT)
+                              .withText("I will analyze the customer data")
+                              .build())
+                      .addToolCalls(
+                          ImmutableAgentHistoryEmbeddedToolCallValue.builder()
+                              .withToolCallId("call_xyz")
+                              .withToolName("getAccount")
+                              .withElementId("task_2")
+                              .build())
+                      .addToolCalls(
+                          ImmutableAgentHistoryEmbeddedToolCallValue.builder()
+                              .withToolCallId("call_abc")
+                              .withToolName("getOrderDetails")
+                              .withElementId("task_1")
+                              .build())
+                      .build())
+              .build();
+
+      // when
+      final String result = logger.summarizeAgentHistory(record);
+
+      // then
+      assertThat(result)
+          .isEqualTo(
+              """
+              K1#2 ASSISTANT COMMITTED K2 K3#1 tokens:100/50 ms:1234
+                     I will analyze the customer data
+                     calling tools: getAccount, getOrderDetails""");
+    }
+
+    @Test
+    void shouldSummarizeAgentHistoryToolResultRecord() {
+      // given
+      final var logger = new CompactRecordLogger(List.of());
+      final var record =
+          ImmutableRecord.builder()
+              .withValueType(ValueType.AGENT_HISTORY)
+              .withValue(
+                  ImmutableAgentHistoryRecordValue.builder()
+                      .withAgentInstanceKey(1L)
+                      .withElementInstanceKey(2L)
+                      .withJobKey(3L)
+                      .withRole(AgentHistoryRole.TOOL_RESULT)
+                      .withCommitStatus(AgentHistoryCommitStatus.COMMITTED)
+                      .withAttemptNumber(1)
+                      .withIteration(3)
+                      .addContent(
+                          ImmutableAgentHistoryMessageContentValue.builder()
+                              .withContentType(AgentHistoryContentType.TEXT)
+                              .withText("Order 12345: 2 items, $49.99 total")
+                              .build())
+                      .withToolCallRef(
+                          ImmutableAgentHistoryToolCallRefValue.builder()
+                              .withToolCallId("call_abc")
+                              .withToolName("getOrderDetails")
+                              .withElementId("task_1")
+                              .withToolElementInstanceKey(4L)
+                              .build())
+                      .build())
+              .build();
+
+      // when
+      final String result = logger.summarizeAgentHistory(record);
+
+      // then
+      assertThat(result)
+          .isEqualTo(
+              """
+              K1#3 TOOL_RESULT COMMITTED K2 K3#1
+                     Order 12345: 2 items, $49.99 total
+                     ref:getOrderDetails/K4""");
     }
   }
 }
