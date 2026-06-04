@@ -20,9 +20,11 @@ import io.opentelemetry.sdk.logs.SdkLoggerProvider;
 import io.opentelemetry.sdk.logs.data.LogRecordData;
 import io.opentelemetry.sdk.logs.export.LogRecordExporter;
 import io.opentelemetry.sdk.logs.export.SimpleLogRecordProcessor;
+import java.util.Arrays;
 import java.util.Collection;
-import java.util.Set;
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -36,14 +38,15 @@ import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Warmup;
+import org.openjdk.jmh.results.format.ResultFormatType;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 /**
  * JMH microbenchmarks for the {@link AnalyticsExporter} hot paths.
  *
- * <p>Run manually via the main method or: {@code mvn verify -pl zeebe/exporters/analytics-exporter
- * -Dtest=AnalyticsExporterBenchmark -DskipTests=false}
+ * <p>Run via: {@code mvn verify -pl zeebe/exporters/analytics-exporter
+ * -Dtest=AnalyticsExporterBenchmark -DskipTests=false -Dbenchmark=true}
  *
  * <p>Pass {@code -Dbenchmark.profiler=jfr} to capture a Java Flight Recorder {@code .jfr} file
  * (built into the JVM; no native dependency). JMH writes the output to {@code target/jmh-jfr/}. The
@@ -169,13 +172,20 @@ public class AnalyticsExporterBenchmark {
   @EnabledIfSystemProperty(named = "benchmark", matches = "true")
   void runBenchmarks() throws Exception {
     final var profilerProp = System.getProperty("benchmark.profiler", "none");
-    final var profilers = Set.of(profilerProp.split("\\+"));
+    final var profilers =
+        Arrays.stream(profilerProp.split("\\+"))
+            .map(String::trim)
+            .filter(s -> !s.isEmpty())
+            .map(s -> s.toLowerCase(Locale.ROOT))
+            .collect(Collectors.toUnmodifiableSet());
 
     final var builder =
         new OptionsBuilder()
             .include(AnalyticsExporterBenchmark.class.getSimpleName())
             .warmupIterations(5)
-            .measurementIterations(10);
+            .measurementIterations(10)
+            .resultFormat(ResultFormatType.JSON)
+            .result("target/jmh-result.json");
 
     final var needsFork = profilers.contains("jfr");
 
