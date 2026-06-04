@@ -68,7 +68,9 @@ public class AuthenticationController {
       return List.of();
     }
     return serviceRegistry
-        .tenantServices(PhysicalTenantContext.DEFAULT_PHYSICAL_TENANT_ID)
+        .tenantServices(
+            PhysicalTenantContext
+                .DEFAULT_PHYSICAL_TENANT_ID) // TODO replace with contextual physicalTenantId
         .search(
             TenantQuery.of(q -> q.filter(f -> f.tenantIds(tenantIds)).unlimited()),
             CamundaAuthentication.anonymous())

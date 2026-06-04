@@ -59,7 +59,7 @@ public class AuthenticationControllerTest extends RestControllerTest {
     when(tenantServices.search(any(TenantQuery.class), any()))
         .thenReturn(
             SearchQueryResult.of(
-                new TenantEntity(100L, "testTenantId", "testTenantNem", "testTenantDescription")));
+                new TenantEntity(100L, "testTenantId", "testTenantName", "testTenantDescription")));
 
     // when
     webClient
@@ -77,7 +77,7 @@ public class AuthenticationControllerTest extends RestControllerTest {
                   "username": "camundaUSer",
                   "email": "camunda.user@email.com",
                   "authorizedComponents": ["test application"],
-                  "tenants": [{"tenantId":"testTenantId","name":"testTenantNem","description":"testTenantDescription"}],
+                  "tenants": [{"tenantId":"testTenantId","name":"testTenantName","description":"testTenantDescription"}],
                   "groups": ["test group"],
                   "roles": ["test role"],
                   "salesPlanType": null,
