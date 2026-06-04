@@ -49,6 +49,8 @@ final class EngineCfgTest {
     assertThat(configuration.getExpressionEvaluationTimeout()).isEqualTo(Duration.ofSeconds(5));
     assertThat(configuration.getGroupNameCacheCapacity())
         .isEqualTo(EngineConfiguration.DEFAULT_GROUP_NAME_CACHE_CAPACITY);
+    assertThat(configuration.isCandidateGroupNameResolution())
+        .isEqualTo(EngineConfiguration.DEFAULT_CANDIDATE_GROUP_NAME_RESOLUTION);
   }
 
   @Test
@@ -73,6 +75,7 @@ final class EngineCfgTest {
         .isEqualTo(Duration.ofMinutes(20));
     assertThat(configuration.getExpressionEvaluationTimeout()).isEqualTo(Duration.ofSeconds(2));
     assertThat(configuration.getGroupNameCacheCapacity()).isEqualTo(2000);
+    assertThat(configuration.isCandidateGroupNameResolution()).isFalse();
   }
 
   void assertListenerCfg(

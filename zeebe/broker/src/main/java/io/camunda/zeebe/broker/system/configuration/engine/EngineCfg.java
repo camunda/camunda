@@ -142,6 +142,7 @@ public final class EngineCfg implements ConfigurationEntry {
         .setAuthorizationsCacheCapacity(caches.getAuthorizationsCacheCapacity())
         .setAuthorizationsCacheTtl(caches.getAuthorizationsCacheTtl())
         .setGroupNameCacheCapacity(caches.getGroupNameCacheCapacity())
+        .setCandidateGroupNameResolution(caches.isCandidateGroupNameResolution())
         .setJobsTimeoutCheckerPollingInterval(jobs.getTimeoutCheckerPollingInterval())
         .setJobsTimeoutCheckerBatchLimit(jobs.getTimeoutCheckerBatchLimit())
         .setValidatorsResultsOutputMaxSize(validators.getResultsOutputMaxSize())
