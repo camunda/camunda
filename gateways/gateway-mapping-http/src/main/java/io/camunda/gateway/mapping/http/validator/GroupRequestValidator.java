@@ -33,6 +33,10 @@ public final class GroupRequestValidator {
     return validate(() -> groupValidator.validate(groupId, request.getName()));
   }
 
+  public Optional<ProblemDetail> validateGroupId(final String groupId) {
+    return validate(() -> groupValidator.validateId(groupId));
+  }
+
   public Optional<ProblemDetail> validateMemberRequest(
       final String roleId, final String memberId, final EntityType memberType) {
     return validate(() -> groupValidator.validateMember(roleId, memberId, memberType));

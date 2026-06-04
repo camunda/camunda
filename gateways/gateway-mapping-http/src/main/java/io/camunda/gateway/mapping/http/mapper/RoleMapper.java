@@ -16,6 +16,7 @@ import io.camunda.service.RoleServices.CreateRoleRequest;
 import io.camunda.service.RoleServices.RoleMemberRequest;
 import io.camunda.service.RoleServices.UpdateRoleRequest;
 import io.camunda.zeebe.util.Either;
+import java.util.Optional;
 import org.springframework.http.ProblemDetail;
 
 public class RoleMapper {
@@ -24,6 +25,10 @@ public class RoleMapper {
 
   public RoleMapper(final RoleRequestValidator roleRequestValidator) {
     this.roleRequestValidator = roleRequestValidator;
+  }
+
+  public Optional<ProblemDetail> validateRoleId(final String roleId) {
+    return roleRequestValidator.validateRoleId(roleId);
   }
 
   public Either<ProblemDetail, CreateRoleRequest> toRoleCreateRequest(

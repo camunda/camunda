@@ -15,6 +15,7 @@ import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.service.GroupServices.GroupDTO;
 import io.camunda.service.GroupServices.GroupMemberDTO;
 import io.camunda.zeebe.util.Either;
+import java.util.Optional;
 import org.springframework.http.ProblemDetail;
 
 public class GroupMapper {
@@ -23,6 +24,10 @@ public class GroupMapper {
 
   public GroupMapper(final GroupRequestValidator groupRequestValidator) {
     this.groupRequestValidator = groupRequestValidator;
+  }
+
+  public Optional<ProblemDetail> validateGroupId(final String groupId) {
+    return groupRequestValidator.validateGroupId(groupId);
   }
 
   public Either<ProblemDetail, GroupDTO> toGroupCreateRequest(

@@ -183,6 +183,10 @@ public class GroupController {
       @PhysicalTenantId final String physicalTenantId,
       @PathVariable final String groupId,
       @RequestBody(required = false) final GroupUserSearchQueryRequest query) {
+    final var idProblem = groupMapper.validateGroupId(groupId);
+    if (idProblem.isPresent()) {
+      return RestErrorMapper.mapProblemToResponse(idProblem.get());
+    }
     return SearchQueryRequestMapper.toGroupMemberQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
@@ -195,6 +199,10 @@ public class GroupController {
       @PhysicalTenantId final String physicalTenantId,
       @PathVariable final String groupId,
       @RequestBody(required = false) final MappingRuleSearchQueryRequest query) {
+    final var idProblem = groupMapper.validateGroupId(groupId);
+    if (idProblem.isPresent()) {
+      return RestErrorMapper.mapProblemToResponse(idProblem.get());
+    }
     return SearchQueryRequestMapper.toMappingRuleQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
@@ -207,6 +215,10 @@ public class GroupController {
       @PhysicalTenantId final String physicalTenantId,
       @PathVariable final String groupId,
       @RequestBody(required = false) final RoleSearchQueryRequest query) {
+    final var idProblem = groupMapper.validateGroupId(groupId);
+    if (idProblem.isPresent()) {
+      return RestErrorMapper.mapProblemToResponse(idProblem.get());
+    }
     return SearchQueryRequestMapper.toRoleQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
@@ -219,6 +231,10 @@ public class GroupController {
       @PhysicalTenantId final String physicalTenantId,
       @PathVariable final String groupId,
       @RequestBody(required = false) final GroupClientSearchQueryRequest query) {
+    final var idProblem = groupMapper.validateGroupId(groupId);
+    if (idProblem.isPresent()) {
+      return RestErrorMapper.mapProblemToResponse(idProblem.get());
+    }
     return SearchQueryRequestMapper.toGroupMemberQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,

@@ -40,6 +40,12 @@ public class TenantValidator {
     return identifierValidator.validateMembers(memberIds, memberType);
   }
 
+  public List<String> validateId(final String tenantId) {
+    final List<String> violations = new ArrayList<>();
+    validateTenantId(tenantId, violations);
+    return violations;
+  }
+
   public List<String> validateTenantMember(
       final String tenantId, final String memberId, final EntityType memberType) {
     final List<String> violations = new ArrayList<>();
