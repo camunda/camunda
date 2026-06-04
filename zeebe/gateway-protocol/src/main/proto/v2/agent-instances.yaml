@@ -186,10 +186,16 @@ components:
           description: The field to sort by.
           type: string
           enum:
+            - agentInstanceKey
+            - status
+            - elementId
+            - processInstanceKey
+            - rootProcessInstanceKey
+            - processDefinitionKey
+            - tenantId
             - creationDate
             - lastUpdatedDate
             - completionDate
-            - status
         order:
           $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
 
