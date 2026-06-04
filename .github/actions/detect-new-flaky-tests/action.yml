@@ -117,5 +117,5 @@ runs:
       with:
         name: flaky-gate-state-pr-${{ inputs.pr-number }}
         path: ${{ runner.temp }}/flaky-gate-state-out/state.json
-        retention-days: 30
+        retention-days: 4
         overwrite: true
