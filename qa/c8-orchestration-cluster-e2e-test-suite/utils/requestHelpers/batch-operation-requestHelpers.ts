@@ -137,13 +137,13 @@ export async function expectBatchState(
   });
 }
 
-// Post-migration user-task search has to wait for the secondary-storage
-// indexer to reflect the migrated elementId. On a loaded shared cluster the
-// 180s budget proved tight (seen as flake on nightly runs), 240s proved tight
-// too (observed in nightly runs on 2026-06-03), so allow up to 360s.
+// Post-migration user-task search waits for the secondary-storage indexer to
+// reflect the migrated elementId. Used as the second phase after
+// searchElementInstanceByElementIdAndState confirms the engine already moved
+// the token, so the pipeline is partially warm and 120s is sufficient.
 export const postMigrationAssertionOptions = {
-  intervals: [5_000, 10_000, 15_000, 25_000, 35_000, 45_000, 60_000, 60_000],
-  timeout: 360_000,
+  intervals: [5_000, 10_000, 15_000, 20_000, 25_000, 25_000],
+  timeout: 120_000,
 };
 
 export const notFoundDetail = (key: string) =>
