@@ -71,6 +71,15 @@ jobs:
         with:
           name: camunda-platform-dist-zip
           path: ${{ steps.build-dist.outputs.distzip }}
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   test_c8run:
     strategy:
@@ -160,6 +169,16 @@ jobs:
           name: c8run-logs-${{ matrix.os }}
           path: ./c8run/log/*.log
           retention-days: 10
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "test_c8run/${{ matrix.os }}"
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   test_c8run_windows:
     name: C8Run Test Windows
@@ -282,3 +301,12 @@ jobs:
           name: c8run-logs
           path: .\c8run\log\*.log
           retention-days: 10
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

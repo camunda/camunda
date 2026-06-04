@@ -43,6 +43,10 @@ jobs:
         with:
           branch: ${{ github.event.pull_request.head.ref }}
           max_length: 50  # reduced to account for load-test prefix "c8-" and potential suffixes for uniqueness
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          sparse-checkout: .github
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -77,6 +81,10 @@ jobs:
     steps:
       - name: Wait for load test to stabilize
         run: sleep 1800  # 30 minutes
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          sparse-checkout: .github
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -338,6 +346,10 @@ jobs:
               repo: context.repo.repo,
               body: comment
             });
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          sparse-checkout: .github
       - name: Observe build status
         if: always()
         continue-on-error: true
