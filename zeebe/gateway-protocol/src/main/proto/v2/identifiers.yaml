@@ -203,6 +203,17 @@ components:
       example: order-12345
 
 
+    IterationId:
+      description: |
+        A client-provided opaque identifier for a logical iteration: one LLM call,
+        its tool dispatches, and their results. Established by the connector when
+        appending the first history item of an iteration.
+      format: IterationId
+      type: string
+      x-semantic-type: IterationId
+      x-semantic-client-minted: true
+      example: iter-001
+
     ## Filters
 
     ElementIdFilterProperty:
