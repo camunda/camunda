@@ -6,11 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
-  serializeConditions,
-  parseConditionsJson,
-  apiVariablesJsonSchema,
-} from './conditionsJsonCodec';
+import {serializeConditions, parseConditionsJson} from './conditionsJsonCodec';
 import type {DraftCondition} from './constants';
 
 describe('conditionsJsonCodec', () => {
@@ -318,31 +314,5 @@ describe('conditionsJsonCodec', () => {
     const text = JSON.stringify([{name: 'v', value: [1, 2, 3]}]);
     const result = parseConditionsJson(text);
     expect(result.ok).toBe(false);
-  });
-
-  describe('apiVariablesJsonSchema', () => {
-    it('should expose a JSON Schema describing the variables array', () => {
-      expect(apiVariablesJsonSchema).toMatchObject({
-        type: 'array',
-        items: expect.objectContaining({
-          type: 'object',
-          required: expect.arrayContaining(['name', 'value']),
-        }),
-      });
-    });
-
-    it('should mark name with minLength 1', () => {
-      const schema = apiVariablesJsonSchema as {
-        items?: {properties?: {name?: {minLength?: number}}};
-      };
-      expect(schema.items?.properties?.name?.minLength).toBe(1);
-    });
-
-    it('should disallow additional properties on entries', () => {
-      const schema = apiVariablesJsonSchema as {
-        items?: {additionalProperties?: boolean};
-      };
-      expect(schema.items?.additionalProperties).toBe(false);
-    });
   });
 });
