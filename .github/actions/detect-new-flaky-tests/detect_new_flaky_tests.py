@@ -357,10 +357,14 @@ def increment_counters_if_clean(
     for entry in state["tests"]:
         if entry.get("status") != "active":
             continue
+        # Re-flake resets the counter for every case — including a baseline-known
+        # re-flake that merge_new_flakes never sees (it only gets new_flaky_tests).
+        # Checked before the modification guard so the reset holds unconditionally.
+        if entry["key"] in current_flake_keys:
+            entry["clean_runs_since_modified"] = 0
+            continue
         if not entry.get("method_last_modified_sha"):
             continue
-        if entry["key"] in current_flake_keys:
-            continue  # Already handled by merge_new_flakes (counter reset).
         parents = {j.split("/", 1)[0] for j in entry.get("flagged_jobs", [])}
         if not (parents & ran_parent_jobs):
             continue
@@ -635,16 +639,21 @@ def main() -> None:
             print(f"{PREFIX} Failed to parse PR_FLAKY_TESTS_DATA — treating as empty.")
     pr_flaky_tests = process_flaky_tests_data(raw_pr_flaky_entries)
 
+    # Every flake observed this run, regardless of BigQuery-baseline membership.
+    # Reconciliation and counter logic must see the full set: a tracked test that
+    # re-flakes is still flaking even if it later joined the org-wide baseline.
+    # The baseline filter applies ONLY to deciding what becomes a brand-new entry.
+    all_flaky_keys = {get_test_key(t) for t in pr_flaky_tests}
+
     baseline_keys = load_baseline_keys(known_flaky_file)
-    pr_flaky_tests = [t for t in pr_flaky_tests
-                      if not is_in_baseline(get_test_key(t), baseline_keys)]
-    pr_flaky_keys = {get_test_key(t) for t in pr_flaky_tests}
+    new_flaky_tests = [t for t in pr_flaky_tests
+                       if not is_in_baseline(get_test_key(t), baseline_keys)]
 
     # -- Nothing-to-do short-circuit --------------------------------------
     # No prior tracked entries, no new flakes this run, and no bypass: there is
     # nothing to reconcile and nothing to show. Return without posting a comment
     # or writing state (so no artifact is uploaded) — keeps clean PRs untouched.
-    if not bypass and not pr_flaky_tests and not state["tests"]:
+    if not bypass and not new_flaky_tests and not state["tests"]:
         print(f"{PREFIX} No prior state and no flaky tests this run — nothing to do.")
         set_output("has-new-flaky-tests", "false")
         return
@@ -673,9 +682,9 @@ def main() -> None:
     else:
         print(f"{PREFIX} WARN: could not resolve merge-base for base_ref={base_ref!r}")
 
-    reconcile_state(state, pr_flaky_keys, head_sha, base_sha, repo_root)
-    merge_new_flakes(state, pr_flaky_tests, head_sha, repo_root)
-    increment_counters_if_clean(state, pr_flaky_keys, ran_parent_jobs, head_sha)
+    reconcile_state(state, all_flaky_keys, head_sha, base_sha, repo_root)
+    merge_new_flakes(state, new_flaky_tests, head_sha, repo_root)
+    increment_counters_if_clean(state, all_flaky_keys, ran_parent_jobs, head_sha)
     apply_clearance(state)
 
     # Strip snapshot field before persisting.
