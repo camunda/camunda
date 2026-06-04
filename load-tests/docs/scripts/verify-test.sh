@@ -30,6 +30,7 @@ POD_TIMEOUT=${2:-800}
 POD_READY_RETRIES=${3:-3}
 CONNECTIVITY_TIMEOUT=${4:-1800}
 METRICS_PORT=${5:-9600}
+GITHUB_OUTPUT="${GITHUB_OUTPUT:-/dev/stdout}"
 
 echo "--- Checking namespace: $NAMESPACE ---"
 # Verify namespace exists
@@ -48,43 +49,22 @@ wait_for_pods() {
   local max_retries="${POD_READY_RETRIES}"
   local retry_delay=10
   local wait_output
-  local start_time elapsed remaining
-
-  start_time=$(date +%s)
 
   for attempt in $(seq 1 "$max_retries"); do
-    elapsed=$(( $(date +%s) - start_time ))
-    remaining=$(( POD_TIMEOUT - elapsed ))
-
-    if [[ "$remaining" -le 0 ]]; then
-      echo "::error::Overall timeout (${POD_TIMEOUT}s) exceeded waiting for ${description}"
-      return 1
-    fi
-
-    echo "Waiting for ${description} to be ready (attempt ${attempt}/${max_retries}, timeout: ${remaining}s)..."
+    echo "Waiting for ${description} to be ready (attempt ${attempt}/${max_retries}, timeout: ${POD_TIMEOUT}s)..."
     wait_output=$(kubectl wait --for=condition=ready pod \
         -l "$label" \
-        --timeout="${remaining}s" -n "$NAMESPACE" 2>&1) && {
+        --timeout="${POD_TIMEOUT}s" -n "$NAMESPACE" 2>&1) && {
       echo "$wait_output"
       echo "${description} are ready in $NAMESPACE"
       return 0
     }
-    echo "$wait_output"
+    echo "Output: '$wait_output'"
 
-    # Only retry on NotFound errors (pod rescheduled); fail immediately on other errors
-    if ! echo "$wait_output" | grep -q "NotFound"; then
-      echo "::error::Not all ${description} are ready in $NAMESPACE"
-      return 1
-    fi
-
+    # Retry on errors (pod rescheduled/timeouts);
+    echo "::error::Not all ${description} are ready in $NAMESPACE"
     if [[ "$attempt" -lt "$max_retries" ]]; then
-      elapsed=$(( $(date +%s) - start_time ))
-      remaining=$(( POD_TIMEOUT - elapsed ))
-      if [[ "$remaining" -le "$retry_delay" ]]; then
-        echo "Not enough time remaining (${remaining}s) to retry. Giving up."
-        break
-      fi
-      echo "Pod was rescheduled (NotFound). Retrying in ${retry_delay}s..."
+      echo "Pod wasn't ready yet. Retrying in ${retry_delay}s..."
       sleep "$retry_delay"
     fi
   done
@@ -109,6 +89,7 @@ fi
 local_port=$((METRICS_PORT + RANDOM % 1000))
 kubectl port-forward "svc/clients" "${local_port}:${METRICS_PORT}" -n "$NAMESPACE" &
 pf_pid=$!
+trap 'kill "$pf_pid" 2>/dev/null || true; wait "$pf_pid" 2>/dev/null || true' EXIT
 sleep 5  # wait for port-forward to establish
 
 # Check that the client has successfully connected to the gateway.
@@ -120,7 +101,7 @@ attempts=0
 verified=false
 
 while [[ $attempts -lt $max_attempts ]]; do
-  count=$(curl -s "http://localhost:${local_port}/metrics" 2>/dev/null \
+  count=$( { curl -s "http://localhost:${local_port}/metrics" 2>/dev/null || true; } \
     | { grep '^app_connected ' || true; } \
     | awk '{print $2}' \
     | cut -d. -f1)
