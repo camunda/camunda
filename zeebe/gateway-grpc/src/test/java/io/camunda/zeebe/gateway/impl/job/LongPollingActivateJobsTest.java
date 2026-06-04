@@ -13,18 +13,25 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+import io.atomix.cluster.BrokerMemberId;
+import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
+import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.broker.client.api.dto.BrokerErrorResponse;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejectionResponse;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.gateway.Gateway;
 import io.camunda.zeebe.gateway.RequestMapper;
 import io.camunda.zeebe.gateway.ResponseMapper;
@@ -39,6 +46,7 @@ import io.camunda.zeebe.gateway.metrics.LongPollingMetrics;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -55,6 +63,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -65,7 +74,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Mockito;
 import org.springframework.util.unit.DataSize;
 
 public final class LongPollingActivateJobsTest {
@@ -553,7 +561,7 @@ public final class LongPollingActivateJobsTest {
     // then
     final ArgumentCaptor<Throwable> throwableCaptor = ArgumentCaptor.forClass(Throwable.class);
     verify(request.getResponseObserver(), times(1)).onError(throwableCaptor.capture());
-    verify(request.getResponseObserver(), never()).onNext(Mockito.any());
+    verify(request.getResponseObserver(), never()).onNext(any());
     verify(request.getResponseObserver(), never()).onCompleted();
 
     assertThat(throwableCaptor.getValue()).isInstanceOf(StatusException.class);
@@ -1004,6 +1012,81 @@ public final class LongPollingActivateJobsTest {
     assertThat(brokerRequestValue.getErrorMessageBuffer()).isNotNull();
   }
 
+  @Test
+  // issue https://github.com/camunda/camunda/issues/54159
+  // before the fix, RoundRobinActivateJobsHandler returned early on
+  // !isOpen(), skipping the delegate and leaving the request in activeRequests indefinitely.
+  public void shouldNotRetainActiveRequestWhenTimeoutFiresDuringBrokerActivation() {
+    // given
+    final long probeTimeout = 2000;
+    final long requestTimeout = 5000;
+    final var pendingBrokerResponse = new CompletableFuture<BrokerResponse<JobBatchRecord>>();
+    final var customHandler =
+        LongPollingActivateJobsHandler.<ActivateJobsResponse>newBuilder()
+            .setBrokerClient(buildSinglePartitionBroker(pendingBrokerResponse))
+            .setMaxMessageSize(MAX_MESSAGE_SIZE)
+            .setLongPollingTimeout(requestTimeout)
+            .setProbeTimeoutMillis(probeTimeout)
+            .setMinEmptyResponses(FAILED_RESPONSE_THRESHOLD)
+            .setActivationResultMapper(ResponseMapper::toActivateJobsResponse)
+            .setResourceExhaustedExceptionProvider(Gateway.RESOURCE_EXHAUSTED_EXCEPTION_PROVIDER)
+            .setRequestCanceledExceptionProvider(Gateway.REQUEST_CANCELED_EXCEPTION_PROVIDER)
+            .setMetrics(LongPollingMetrics.noop())
+            .build();
+    submitActorToActivateJobs(customHandler);
+
+    final var request =
+        toInflightActivateJobsRequest(
+            ActivateJobsRequest.newBuilder()
+                .setType(TYPE)
+                .setMaxJobsToActivate(MAX_JOBS_TO_ACTIVATE)
+                .setRequestTimeout(requestTimeout)
+                .build());
+
+    // request goes through broker (1st call: empty response) -> pending with long-poll timer
+    customHandler.internalActivateJobsRetry(request);
+    waitUntil(request::hasScheduledTimer);
+
+    // probe fires: re-activates request against broker (2nd call: response pending)
+    actorClock.addTime(Duration.ofMillis(probeTimeout + 1));
+    Awaitility.await().until(() -> customHandler.activeRequestsCountForJobType(TYPE) > 0);
+
+    // when
+    // long-poll timeout fires: request closes while broker call is still in-flight
+    actorClock.addTime(Duration.ofMillis(requestTimeout + 1));
+    waitUntil(request::isTimedOut);
+
+    // broker responds after request is already closed
+    pendingBrokerResponse.complete(
+        new BrokerResponse<>(
+            new JobBatchRecord(),
+            Protocol.START_PARTITION_ID,
+            Protocol.encodePartitionId(Protocol.START_PARTITION_ID, 1L)));
+
+    // then
+    // request must be removed from activeRequests
+    Awaitility.await().until(() -> customHandler.activeRequestsCountForJobType(TYPE) == 0);
+  }
+
+  @Test
+  // issue https://github.com/camunda/camunda/issues/54159
+  // before the fix, the jobTypeState entry was never removed after
+  // all requests timed out, leaving stale failedAttempts that immediately blocked new requests.
+  public void shouldNotBlockNewRequestsAfterAllPendingRequestsTimedOut() {
+    // given
+    activateJobsAndWaitUntilBlocked(FAILED_RESPONSE_THRESHOLD);
+    actorClock.addTime(Duration.ofMillis(LONG_POLLING_TIMEOUT));
+    Awaitility.await().until(() -> handler.pendingRequestsCountForJobType(TYPE) == 0);
+
+    activateJobsStub.addAvailableJobs(TYPE, 1);
+    final var newRequest = getLongPollingActivateJobsRequest();
+    handler.internalActivateJobsRetry(newRequest);
+
+    // without stale state, the new request goes to broker and activates the available job
+    Awaitility.await().until(newRequest::isCompleted);
+    verify(newRequest.getResponseObserver(), times(1)).onCompleted();
+  }
+
   private List<InflightActivateJobsRequest<ActivateJobsResponse>> activateJobsAndWaitUntilBlocked(
       final int amount) {
     return IntStream.range(0, amount)
@@ -1065,5 +1148,38 @@ public final class LongPollingActivateJobsTest {
             .build();
     actorSchedulerRule.submitActor(actor);
     future.join();
+  }
+
+  @SuppressWarnings("unchecked")
+  private BrokerClient buildSinglePartitionBroker(
+      final CompletableFuture<BrokerResponse<JobBatchRecord>> pendingProbeResponse) {
+    final var clusterState = mock(BrokerClusterState.class);
+    when(clusterState.isInitialized()).thenReturn(true);
+    when(clusterState.getPartitionsCount()).thenReturn(1);
+    when(clusterState.getPartitions()).thenReturn(List.of(Protocol.START_PARTITION_ID));
+    when(clusterState.getLeaderForPartition(Protocol.START_PARTITION_ID))
+        .thenReturn(BrokerMemberId.from(0));
+
+    final var topologyManager = mock(BrokerTopologyManager.class);
+    when(topologyManager.getTopology()).thenReturn(clusterState);
+    when(topologyManager.getClusterConfiguration())
+        .thenReturn(ClusterConfiguration.uninitialized());
+
+    final var firstCallDone = new AtomicBoolean(false);
+    final var broker = mock(BrokerClient.class);
+    when(broker.getTopologyManager()).thenReturn(topologyManager);
+    when(broker.sendRequest(any()))
+        .thenAnswer(
+            inv -> {
+              if (firstCallDone.compareAndSet(false, true)) {
+                return CompletableFuture.completedFuture(
+                    new BrokerResponse<>(
+                        new JobBatchRecord(),
+                        Protocol.START_PARTITION_ID,
+                        Protocol.encodePartitionId(Protocol.START_PARTITION_ID, 1L)));
+              }
+              return pendingProbeResponse;
+            });
+    return broker;
   }
 }
