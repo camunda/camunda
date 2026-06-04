@@ -32,6 +32,7 @@ import io.camunda.optimize.service.db.os.schema.index.MetadataIndexOS;
 import io.camunda.optimize.service.db.schema.DatabaseMetadataService;
 import io.camunda.optimize.service.db.schema.DatabaseSchemaManager;
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
+import io.camunda.optimize.service.db.schema.IndexLookupUtil;
 import io.camunda.optimize.service.db.schema.IndexMappingCreator;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.db.schema.index.MetadataIndex;
@@ -41,7 +42,6 @@ import io.camunda.optimize.service.util.configuration.elasticsearch.DatabaseConn
 import io.camunda.optimize.test.it.extension.DatabaseIntegrationTestExtension;
 import io.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import io.camunda.optimize.test.it.extension.MockServerUtil;
-import io.camunda.optimize.upgrade.db.IndexLookupUtilIncludingTestIndices;
 import io.camunda.optimize.upgrade.db.index.UpdateLogEntryIndex;
 import io.camunda.optimize.upgrade.es.indices.RenameFieldTestIndexES;
 import io.camunda.optimize.upgrade.es.indices.UserTestIndexES;
@@ -224,7 +224,7 @@ public abstract class AbstractUpgradeIT {
                       index ->
                           (IndexMappingCreator<
                                   org.opensearch.client.opensearch.indices.IndexSettings.Builder>)
-                              IndexLookupUtilIncludingTestIndices.convertIndexForDatabase(
+                              IndexLookupUtil.convertIndexForDatabase(
                                   index, DatabaseType.OPENSEARCH))
                   .toList());
 

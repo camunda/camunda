@@ -20,6 +20,20 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 
+/**
+ * Builds the complete set of {@link UpgradePlan}s needed to advance from any prior version to the
+ * current one.
+ *
+ * <p><b>Adding migration steps for a new minor release</b><br>
+ * Only create a new {@link io.camunda.optimize.upgrade.plan.factories.UpgradePlanFactory}
+ * implementation in the {@code factories} package when there are <em>concrete</em> migration steps
+ * for that cross-minor jump (index deletions, field renames, data reshaping, etc.). When no steps
+ * are needed, no factory is required — {@link #generateMissingCrossMinorUpgradePlan} automatically
+ * inserts a no-op plan for the current {@code (previousMinor → currentMinor.0)} pair at startup,
+ * and {@link #generateMissingPatchUpgradePlans} fills all patch gaps. The {@code optimize-metadata}
+ * schema version is written unconditionally after every plan executes, so omitting a factory never
+ * causes a stale version.
+ */
 public class UpgradePlanRegistry {
 
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(UpgradePlanRegistry.class);
