@@ -22,9 +22,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -93,13 +94,12 @@ final class FileSetManager {
       LOG.trace("Saving file {}({}) in prefix {}", fileName, filePath, prefix);
       // Use InputStream instead of File to bypass AWS SDK's file modification time
       // check: https://github.com/camunda/camunda/issues/44035
-      try (final var inputStream = Files.newInputStream(filePath);
-          final var executor = Executors.newThreadPerTaskExecutor(threadBuilder.factory())) {
+      try (final var inputStream = Files.newInputStream(filePath)) {
         final var fileSize = Files.size(filePath);
         client
             .putObject(
                 put -> put.bucket(config.bucketName()).key(prefix + fileName),
-                AsyncRequestBody.fromInputStream(inputStream, fileSize, executor))
+                AsyncRequestBody.fromInputStream(inputStream, fileSize, schedulerExecutor))
             .join();
       } catch (final IOException e) {
         throw new UncheckedIOException("Failed to upload file: " + filePath, e);
