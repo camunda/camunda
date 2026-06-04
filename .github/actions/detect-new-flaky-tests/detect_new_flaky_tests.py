@@ -150,9 +150,15 @@ def _run_git(args: list[str], repo_root: str) -> tuple[int, str, str]:
     return proc.returncode, proc.stdout, proc.stderr
 
 
-def get_merge_base(head_sha: str, base_ref: str, repo_root: str) -> str | None:
-    candidates = [base_ref, f"origin/{base_ref}", f"refs/remotes/origin/{base_ref}"]
+def get_merge_base(head_sha: str, base_ref: str, repo_root: str,
+                   base_sha: str | None = None) -> str | None:
+    # base_sha is tried first: a PR merge-ref checkout has the base commit
+    # reachable but usually no local main/origin/main ref to resolve base_ref.
+    candidates = [base_sha, base_ref,
+                  f"origin/{base_ref}", f"refs/remotes/origin/{base_ref}"]
     for ref in candidates:
+        if not ref:
+            continue
         rc, out, _ = _run_git(["merge-base", ref, head_sha], repo_root)
         if rc == 0 and out.strip():
             return out.strip()
@@ -603,6 +609,7 @@ def main() -> None:
     bypass = os.environ.get("BYPASS_LABEL_PRESENT", "false").lower() == "true"
     head_sha = os.environ.get("HEAD_SHA", "")
     base_ref = os.environ.get("BASE_REF", "main")
+    base_sha_input = os.environ.get("BASE_SHA", "")
     blocking = os.environ.get("BLOCKING", "true").lower() == "true"
     repo_root = os.environ.get("REPO_ROOT", os.getcwd())
     artifact_name = f"flaky-gate-state-pr-{pr_number}"
@@ -652,12 +659,15 @@ def main() -> None:
         state["last_known_head_sha"] = head_sha
         save_state(state_out, state)
         comment = render_comment(state, artifact_name)
-        _post_comment_with_handling(repository, pr_number, comment, token, blocking)
+        # Bypass is an escape hatch: entries are already cleared, so a failed
+        # comment post must never fail the job (would defeat the unblock).
+        _post_comment_with_handling(repository, pr_number, comment, token, blocking=False)
         set_output("has-new-flaky-tests", "false")
         return
 
     # -- Reconcile sticky state -------------------------------------------
-    base_sha = get_merge_base(head_sha, base_ref, repo_root) if base_ref else None
+    base_sha = (get_merge_base(head_sha, base_ref, repo_root, base_sha_input)
+                if (base_ref or base_sha_input) else None)
     if base_sha:
         print(f"{PREFIX} merge-base({base_ref}, HEAD) = {base_sha[:12]}")
     else:
