@@ -471,7 +471,17 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          tar -cf m2-installed.tar -C "${HOME}/.m2/repository/installed" io/camunda
+          # Consumers only resolve compiled SNAPSHOT JARs/POMs from this tree.
+          # Strip sources/javadoc JARs and Maven bookkeeping files — they bloat
+          # the payload (~1 GB) without being needed for dependency resolution,
+          # which dominates the per-shard download time for the artifact.
+          tar \
+            --exclude='*-sources.jar' \
+            --exclude='*-javadoc.jar' \
+            --exclude='*.lastUpdated' \
+            --exclude='_remote.repositories' \
+            --exclude='*.repositories' \
+            -cf m2-installed.tar -C "${HOME}/.m2/repository/installed" io/camunda
           ls -lh m2-installed.tar
       - name: Upload local Maven SNAPSHOT artifacts
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -479,7 +489,7 @@ jobs:
           name: m2-installed-${{ github.run_id }}
           path: m2-installed.tar
           retention-days: 1
-          compression-level: 0  # tar is uncompressed; upload-artifact's zip compresses
+          compression-level: 6  # tar is uncompressed; let upload-artifact's zip shrink it
           if-no-files-found: error
       - name: Observe build status
         if: always()
