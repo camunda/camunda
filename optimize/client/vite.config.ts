@@ -6,12 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {type PluginOption, defineConfig, transformWithEsbuild} from 'vite';
+import {type PluginOption, defineConfig, transformWithOxc} from 'vite';
 import react from '@vitejs/plugin-react';
 import svgr from 'vite-plugin-svgr';
 import {readdirSync} from 'node:fs';
-import license from 'rollup-plugin-license';
-import path from 'node:path';
 import sbom from '@vzeta/rollup-plugin-sbom';
 
 const outDir = 'dist';
@@ -19,20 +17,15 @@ const outDir = 'dist';
 const plugins: PluginOption[] = [
   {
     name: 'treat-js-files-as-jsx',
+    enforce: 'pre',
     async transform(code, id) {
       if (!id.match(/src\/.*\.js$/)) {
         return null;
       }
-
-      // Use the exposed transform from vite, instead of directly
-      // transforming with esbuild
-      return transformWithEsbuild(code, id, {
-        loader: 'jsx',
-        jsx: 'automatic',
-      });
+      return transformWithOxc(code, id, {lang: 'jsx'});
     },
   },
-  react(),
+  react({include: /\.(js|jsx|ts|tsx)$/}),
   svgr({
     svgrOptions: {exportType: 'default', ref: true, svgo: false, titleProp: true},
     include: '**/*.svg',
@@ -45,29 +38,39 @@ export default defineConfig(({mode}) => ({
     outDir,
     // The backend only allow public resources inside the static folder
     assetsDir: 'static',
-    rollupOptions: {
-      plugins: license({
-        thirdParty: {
-          output: path.resolve(__dirname, `./${outDir}/static/vendor.LICENSE.txt`),
-        },
-      }) as PluginOption,
+    // Use esbuild for CSS minification as the older @carbon/react version has
+    // CSS that Lightning CSS (the default in Vite 8) cannot parse
+    // will be fixed with github.com/camunda/camunda/issues/54826
+    cssMinify: 'esbuild',
+    license: {
+      fileName: 'static/vendor.LICENSE.txt',
     },
-  },
-  esbuild: {
-    banner: '/*! licenses: /static/vendor.LICENSE.txt */',
-    legalComments: 'none',
+    rolldownOptions: {
+      moduleTypes: {
+        '.js': 'jsx',
+      },
+      output: {
+        postBanner: '/*! licenses: /static/vendor.LICENSE.txt */',
+      },
+    },
   },
   plugins: mode === 'sbom' ? [...plugins, sbom() as PluginOption] : plugins,
   optimizeDeps: {
     force: true,
-    esbuildOptions: {
-      loader: {
+    rolldownOptions: {
+      moduleTypes: {
         '.js': 'jsx',
       },
     },
   },
   resolve: {
-    alias: generateAliases(),
+    alias: {
+      // Redirect @carbon/react/lib (CJS) to @carbon/react/es (ESM) so Vite 8's
+      // Rolldown pre-bundler handles them correctly
+      // will be fixed with github.com/camunda/camunda/issues/54826
+      '@carbon/react/lib': '@carbon/react/es',
+      ...generateAliases(),
+    },
   },
   server: {
     port: 3000,
