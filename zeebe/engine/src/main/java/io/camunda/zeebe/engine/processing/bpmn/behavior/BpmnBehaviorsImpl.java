@@ -250,6 +250,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             processingState.getVariableState(),
             processingState.getAsyncRequestState(),
             processingState.getGlobalListenersState(),
+            processingState.getGroupState(),
             clock);
 
     jobBehavior =
