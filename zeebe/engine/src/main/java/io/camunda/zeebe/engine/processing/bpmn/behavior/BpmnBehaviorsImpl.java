@@ -207,6 +207,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             eventTriggerBehavior,
             stateBehavior,
             writers,
+            subscriptionCommandSender,
+            routingInfo,
             clock,
             config.isBusinessIdUniquenessEnabled());
 

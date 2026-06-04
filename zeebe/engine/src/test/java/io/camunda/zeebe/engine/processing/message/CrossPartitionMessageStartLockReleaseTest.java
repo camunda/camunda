@@ -104,6 +104,16 @@ public final class CrossPartitionMessageStartLockReleaseTest {
           .endEvent()
           .done();
 
+  // Dual-start process on a *single* bpmnProcessId: the message-start path auto-completes (the
+  // cross-partition holder), while the none-start path parks on a service task so a second instance
+  // of the SAME process definition can actively hold the businessId. Needed because businessId
+  // uniqueness is scoped per (businessId, processDefinitionId, tenantId) — a different process
+  // could
+  // not contend for the same businessId.
+  private static final String CONTENDED_PROCESS_ID = "wf-contended";
+  private static final String CONTENDED_MESSAGE_NAME = "contended-start-msg";
+  private static final BpmnModelInstance CONTENDED_PROCESS = contendedProcess();
+
   @Rule
   public final EngineRule engine =
       EngineRule.multiplePartition(PARTITION_COUNT)
@@ -112,6 +122,16 @@ public final class CrossPartitionMessageStartLockReleaseTest {
                   config
                       .setBusinessIdUniquenessEnabled(true)
                       .setMessageStartLockReleasePollInterval(POLL_INTERVAL));
+
+  private static BpmnModelInstance contendedProcess() {
+    final var process = Bpmn.createExecutableProcess(CONTENDED_PROCESS_ID);
+    process.startEvent("contendedMsgStart").message(CONTENDED_MESSAGE_NAME).endEvent();
+    process
+        .startEvent("contendedNoneStart")
+        .serviceTask("contendedTask", t -> t.zeebeJobType("hold"))
+        .endEvent();
+    return process.done();
+  }
 
   @Before
   public void assertCrossPartitionRouting() {
@@ -152,6 +172,47 @@ public final class CrossPartitionMessageStartLockReleaseTest {
     assertThat(Protocol.decodePartitionId(pickedUp.getValue().getProcessInstanceKey()))
         .as("the buffered message is picked up and started on P_K after the lock is released")
         .isEqualTo(partitionFor(CORRELATION_KEY));
+  }
+
+  @Test
+  public void shouldReRouteBufferedCrossPartitionBusinessIdMessageThroughPBWhenLockReleased() {
+    // Pins the cross-partition routing of the *buffered-message pick-up* path. A second publish
+    // with
+    // the same correlation key but a businessId that hashes to P_B != P_K is buffered behind the
+    // lock. When the holder completes and the lock is released, that buffered message must be
+    // re-routed through the cross-partition handshake to P_B (its businessId's partition) — exactly
+    // as the original live publish was — and NOT started locally on P_K. Starting it locally would
+    // bypass P_B's uniqueness check and violate the invariant "every active root PI carrying a
+    // businessId lives on P_B = hash(businessId)".
+    deployAndAwaitStartSubscriptions(AUTO_PROCESS, AUTO_MESSAGE_NAME);
+
+    // given a cross-partition start: holder created (and auto-completes) on P_B, lock on P_K
+    publishStart(AUTO_MESSAGE_NAME, CORRELATION_KEY, BUSINESS_ID);
+    final long holderKey = awaitHolderActivating(AUTO_PROCESS_ID);
+    awaitMessageConsumedOnPK(AUTO_MESSAGE_NAME);
+
+    // and a second publish with the same correlation key AND a cross-partition businessId buffered
+    // behind the lock
+    publishStart(AUTO_MESSAGE_NAME, CORRELATION_KEY, BUSINESS_ID);
+
+    // and the holder completes on P_B, freeing the businessId
+    awaitHolderCompleted(AUTO_PROCESS_ID);
+
+    // when the release poll fires and P_K picks up the buffered message
+    engine.increaseTime(POLL_INTERVAL.multipliedBy(2));
+
+    // then the picked-up instance must run on P_B (re-routed through the handshake), not on P_K
+    final var pickedUp =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withBpmnProcessId(AUTO_PROCESS_ID)
+            .withElementType(BpmnElementType.PROCESS)
+            .filter(r -> r.getValue().getProcessInstanceKey() != holderKey)
+            .getFirst();
+    assertThat(Protocol.decodePartitionId(pickedUp.getValue().getProcessInstanceKey()))
+        .as(
+            "a buffered cross-partition-businessId message must be re-routed to P_B on pick-up, not"
+                + " started locally on P_K")
+        .isEqualTo(partitionFor(BUSINESS_ID));
   }
 
   @Test
@@ -273,6 +334,53 @@ public final class CrossPartitionMessageStartLockReleaseTest {
     assertThat(Protocol.decodePartitionId(pickedUp.getValue().getProcessInstanceKey()))
         .as("a completed holder's lock is released even under businessId reuse")
         .isEqualTo(partitionFor(CORRELATION_KEY));
+  }
+
+  @Test
+  public void shouldUniquenessRejectBufferedBusinessIdMessageWhenBusinessIdStillHeldAtPickUp() {
+    // Severe-consequence pin for the re-routed pick-up. The buffered message must honor P_B's
+    // uniqueness check, not merely land on P_B: if another instance of the SAME process still
+    // actively holds the businessId on P_B when the buffered message is picked up, the re-routed
+    // ask
+    // must be UNIQUENESS_REJECTED and NO second instance may be created. Starting it anyway would
+    // leave two active root PIs sharing one businessId — the exact corruption the cross-partition
+    // routing of the pick-up exists to prevent. Uses a dual-start process so the contender shares
+    // the buffered message's process definition (uniqueness is scoped per process definition).
+    deployAndAwaitStartSubscriptions(CONTENDED_PROCESS, CONTENDED_MESSAGE_NAME);
+
+    // the original holder starts on P_B via the message-start ask and auto-completes; lock on P_K
+    publishStart(CONTENDED_MESSAGE_NAME, CORRELATION_KEY, BUSINESS_ID);
+    final long holderKey = awaitHolderActivating(CONTENDED_PROCESS_ID);
+    awaitMessageConsumedOnPK(CONTENDED_MESSAGE_NAME);
+
+    // a second publish with the same correlation key AND the same businessId is buffered behind the
+    // lock — it will have to be re-routed to P_B on pick-up
+    publishStart(CONTENDED_MESSAGE_NAME, CORRELATION_KEY, BUSINESS_ID);
+    awaitHolderCompleted(CONTENDED_PROCESS_ID);
+
+    // a *different* instance of the same process now actively holds that businessId on P_B (via the
+    // none-start path that parks on a service task), so the businessId is taken again before the
+    // buffered message is picked up
+    final long contenderKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId(CONTENDED_PROCESS_ID)
+            .onPartition(partitionFor(BUSINESS_ID))
+            .withBusinessId(BUSINESS_ID)
+            .create();
+    awaitHolderJobCreated(contenderKey);
+
+    // when the release poll fires and P_K re-routes the buffered message to P_B
+    engine.increaseTime(POLL_INTERVAL.multipliedBy(2));
+
+    // then P_B rejects the re-routed ask on uniqueness (the businessId is still held by the
+    // contender). The rejection applier writes no process instance, so observing it already proves
+    // the buffered message did not start a duplicate; it is also the deterministic fence below.
+    final var rejection =
+        RecordingExporter.records()
+            .withIntent(MessageStartProcessInstanceRequestIntent.UNIQUENESS_REJECTED)
+            .getFirst();
+    assertThat(rejection).isNotNull();
   }
 
   @Test

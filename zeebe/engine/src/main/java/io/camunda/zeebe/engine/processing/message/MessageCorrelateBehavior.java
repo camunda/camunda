@@ -137,31 +137,16 @@ public final class MessageCorrelateBehavior {
           }
 
           if (shouldCorrelateStartEvent(messageData, subscriptionRecord)) {
-            if (shouldDelegateToBusinessIdPartition(messageData)) {
-              // Cross-partition arm: hand uniqueness ownership to P_B. The local pending-ask entry
-              // (written by the REQUESTED applier on P_K) is what makes a dropped reply
-              // recoverable via the retry scheduler. The actual PI activation and the three reply
-              // outcomes are handled by P_B and the reply processors on P_K.
-              dispatchCrossPartitionStartProcessInstanceAsk(
-                  messageData, subscription.getKey(), subscriptionRecord);
-              // Do not add to correlatingSubscriptions — the message has not been correlated yet
-              // from this partition's point of view. The CORRELATED event is written by the STARTED
-              // reply processor only after P_B confirms the activation.
-              return;
-            }
-
             final var processInstanceKey =
-                eventHandle.triggerMessageStartEvent(
-                    subscription.getKey(),
-                    subscriptionRecord,
-                    messageData.messageKey(),
-                    messageData.messageName(),
-                    messageData.correlationKey(),
-                    messageData.variables(),
-                    messageData.businessId());
-
-            subscriptionRecord.setProcessInstanceKey(processInstanceKey);
-            correlatingSubscriptions.add(subscriptionRecord);
+                triggerOrDelegateStartEvent(messageData, subscription.getKey(), subscriptionRecord);
+            if (processInstanceKey > 0) {
+              // Started locally on this partition — record it so the message is not correlated to
+              // the same process twice. A delegated cross-partition ask returns -1: its CORRELATED
+              // event is written by the STARTED reply processor only after P_B confirms the
+              // activation, so it must not be added here.
+              subscriptionRecord.setProcessInstanceKey(processInstanceKey);
+              correlatingSubscriptions.add(subscriptionRecord);
+            }
           } else if (blockedProcessIds != null) {
             blockedProcessIds.add(subscriptionRecord.getBpmnProcessId());
           }
@@ -341,6 +326,42 @@ public final class MessageCorrelateBehavior {
       return false;
     }
     return routingInfo.partitionForCorrelationKey(businessId) != partitionId;
+  }
+
+  /**
+   * Starts a single selected start-event subscription for the given message, applying the same
+   * routing as a fresh publish: when the businessId hashes to another partition ({@code P_B !=
+   * P_K}) the start is delegated to {@code P_B} via the cross-partition ask; otherwise the start
+   * event is triggered locally. Returns the new process-instance key when started locally, or
+   * {@code -1} when the start was delegated cross-partition (the {@code CORRELATED} event is then
+   * written by the STARTED reply processor on {@code P_K} once {@code P_B} confirms).
+   *
+   * <p>This is shared by the live publish path ({@link #correlateToMessageStartEvents}) and the
+   * buffered-message pick-up ({@code BpmnBufferedMessageStartEventBehavior}) so a buffered message
+   * whose businessId belongs to {@code P_B} can never be started locally and bypass the
+   * cross-partition uniqueness handshake.
+   */
+  public long triggerOrDelegateStartEvent(
+      final MessageData messageData,
+      final long messageStartEventSubscriptionKey,
+      final MessageStartEventSubscriptionRecord subscriptionRecord) {
+    if (shouldDelegateToBusinessIdPartition(messageData)) {
+      // Cross-partition arm: hand uniqueness ownership to P_B. The local pending-ask entry (written
+      // by the REQUESTED applier on P_K) is what makes a dropped reply recoverable via the retry
+      // scheduler. The actual PI activation and the three reply outcomes are handled by P_B and the
+      // reply processors on P_K.
+      dispatchCrossPartitionStartProcessInstanceAsk(
+          messageData, messageStartEventSubscriptionKey, subscriptionRecord);
+      return -1L;
+    }
+    return eventHandle.triggerMessageStartEvent(
+        messageStartEventSubscriptionKey,
+        subscriptionRecord,
+        messageData.messageKey(),
+        messageData.messageName(),
+        messageData.correlationKey(),
+        messageData.variables(),
+        messageData.businessId());
   }
 
   /**
