@@ -29,6 +29,10 @@ concurrency:
   group: smoke-load-test-${{ github.event.pull_request.id || github.event.inputs.ref }}
   cancel-in-progress: true
 
+env:
+  CLUSTER: camunda-benchmark-prod
+  TELEPORT_JOIN_TOKEN: infra-benchmark-prod-github-action-zeebe
+
 defaults:
   run:
     # use bash shell by default to ensure pipefail behavior is the default
@@ -88,11 +92,98 @@ jobs:
       orchestration-tag: SNAPSHOT
 
 
-  verify-and-cleanup:
-    name: Verify and cleanup
+  verify-install:
+    name: Verify Install
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
     needs: [sanitize-branch-name, smoke-install]
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: teleport-actions/setup@b638ff596557cc3959eb6b5287d5e58e0c8ac6a6 # v1.1.1
+        with:
+          proxy: camunda.teleport.sh:443
+          version: auto
+      - uses: teleport-actions/auth-k8s@0f46164469ae4fcd4d359d40e06bab17d4be17c9 # v2.0.6
+        with:
+          proxy: camunda.teleport.sh:443
+          token: ${{ env.TELEPORT_JOIN_TOKEN }}
+          kubernetes-cluster: ${{ env.CLUSTER }}
+      - uses: ./.github/actions/await-load-test
+        with:
+          namespace: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+
+  # This is to validate whether the load test can be updated successfully, without issues in the update process itself.
+  # To prevent regressions like regenerating credentials on every update, which can cause downtime and failed updates.
+  smoke-update:
+    name: Smoke update
+    needs: [sanitize-branch-name, verify-install]
+    uses: ./.github/workflows/camunda-load-test.yml
+    secrets: inherit
+    with:
+      name: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
+      ref: ${{ github.event.pull_request.head.ref || github.event.inputs.ref }}
+      scenario: realistic
+      secondary-storage-type: elasticsearch
+      # Short TTL acts as a safety net; verify-and-cleanup deletes the namespace explicitly.
+      ttl: 1
+      # We make use of the official docker image (SNAPSHOT TAG) this is to reduce CI runtime and feedback cycle.
+      # Setting the focus only on the installation and connectivity part of the load test.
+      # Issues with the load test applications, should ideally catched with integration tests.
+      orchestration-tag: SNAPSHOT
+
+  verify-update:
+    name: Verify update
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    needs: [sanitize-branch-name, smoke-update]
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: teleport-actions/setup@b638ff596557cc3959eb6b5287d5e58e0c8ac6a6 # v1.1.1
+        with:
+          proxy: camunda.teleport.sh:443
+          version: auto
+      - uses: teleport-actions/auth-k8s@0f46164469ae4fcd4d359d40e06bab17d4be17c9 # v2.0.6
+        with:
+          proxy: camunda.teleport.sh:443
+          token: ${{ env.TELEPORT_JOIN_TOKEN }}
+          kubernetes-cluster: ${{ env.CLUSTER }}
+      - uses: ./.github/actions/await-load-test
+        with:
+          namespace: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  cleanup:
+    name: Cleanup
+    needs: [sanitize-branch-name, verify-update]
     if: always()
-    uses: ./.github/workflows/camunda-verify-and-cleanup-load-test.yml
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/camunda-delete-load-test.yml
     secrets: inherit
     with:
       namespace: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
