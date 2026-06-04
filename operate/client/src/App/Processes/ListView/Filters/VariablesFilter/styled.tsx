@@ -20,8 +20,6 @@ const ModalContent = styled.div`
     margin-bottom: 0;
   }
 
-  /* Soften Carbon's autoAlign dropdown shadow to a modern floating-popup
-     style (matches Shadcn/Radix pattern used elsewhere in C8 frontends). */
   .cds--autoalign .cds--list-box__menu {
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
   }
@@ -94,9 +92,6 @@ const SwitcherWrap = styled.div`
   width: fit-content;
   max-width: 100%;
 
-  // Carbon's ContentSwitcher children default to flex:1, stretching the
-  // switcher to fill its parent. Constrain to content width so it doesn't
-  // span the full modal body.
   .cds--content-switcher,
   .cds--content-switcher-btn {
     flex: 0 0 auto;

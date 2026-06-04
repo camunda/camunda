@@ -9,7 +9,6 @@
 import {
   serializeConditions,
   parseConditionsJson,
-  findConditionRanges,
   apiVariablesJsonSchema,
 } from './conditionsJsonCodec';
 import type {DraftCondition} from './constants';
@@ -313,45 +312,6 @@ describe('conditionsJsonCodec', () => {
     const serialized = serializeConditions([]);
     const parsed = parseConditionsJson(serialized);
     expect(parsed).toEqual({ok: true, conditions: []});
-  });
-
-  it('should find ranges for serialized conditions', () => {
-    const json = serializeConditions([
-      {name: 'a', operator: 'equals', value: '1'},
-      {name: 'b', operator: 'exists', value: ''},
-    ]);
-    const ranges = findConditionRanges(json);
-    expect(ranges).toHaveLength(2);
-    expect(ranges[0]!.startLine).toBe(2);
-    expect(ranges[1]!.startLine).toBeGreaterThan(ranges[0]!.endLine);
-  });
-
-  it('should return empty array for empty JSON array', () => {
-    expect(findConditionRanges('[]')).toEqual([]);
-  });
-
-  it('should handle single-line JSON', () => {
-    const json = '[{"name":"a","value":"1"}]';
-    const ranges = findConditionRanges(json);
-    expect(ranges).toHaveLength(1);
-    expect(ranges[0]!.startLine).toBe(1);
-    expect(ranges[0]!.endLine).toBe(1);
-  });
-
-  it('should not be confused by braces inside string values', () => {
-    const json = JSON.stringify(
-      [{name: 'data', value: '{"key": "val"}'}],
-      null,
-      2,
-    );
-    const ranges = findConditionRanges(json);
-    expect(ranges).toHaveLength(1);
-  });
-
-  it('should handle escaped backslash before quote in findConditionRanges', () => {
-    const json = JSON.stringify([{name: 'path', value: 'C:\\\\'}], null, 2);
-    const ranges = findConditionRanges(json);
-    expect(ranges).toHaveLength(1);
   });
 
   it('should reject array passed as value', () => {

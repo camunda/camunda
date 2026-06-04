@@ -10,9 +10,6 @@ import {z} from 'zod';
 import {processInstanceVariableFilterSchema} from '@camunda/camunda-api-zod-schemas/8.10';
 import type {DraftCondition} from './constants';
 
-// Build on the official top-level schema (a `.strict()` object whose `value`
-// field is a discriminated union of `.strict()` operator shapes). We only
-// override `name` to add the UI-only "non-empty" constraint.
 const ApiVariableEntrySchema = processInstanceVariableFilterSchema.extend({
   name: z.string().min(1, 'Variable name is required'),
 });
@@ -170,75 +167,9 @@ const formatZodError = (error: z.ZodError): string => {
     .join('; ');
 };
 
-type ConditionRange = {
-  startLine: number;
-  startColumn: number;
-  endLine: number;
-  endColumn: number;
-};
-
-const isEscaped = (text: string, pos: number): boolean => {
-  let backslashes = 0;
-  for (let j = pos - 1; j >= 0 && text[j] === '\\'; j--) {
-    backslashes++;
-  }
-  return backslashes % 2 !== 0;
-};
-
-const findConditionRanges = (text: string): ConditionRange[] => {
-  const ranges: ConditionRange[] = [];
-  let depth = 0;
-  let line = 1;
-  let column = 1;
-  let inString = false;
-  let startLine = 1;
-  let startColumn = 1;
-
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i]!;
-    if (ch === '\n') {
-      line++;
-      column = 1;
-      continue;
-    }
-
-    if (ch === '"' && !isEscaped(text, i)) {
-      inString = !inString;
-      column++;
-      continue;
-    }
-    if (inString) {
-      column++;
-      continue;
-    }
-
-    if (ch === '{') {
-      depth++;
-      if (depth === 1) {
-        startLine = line;
-        startColumn = column;
-      }
-    } else if (ch === '}') {
-      if (depth === 1) {
-        ranges.push({
-          startLine,
-          startColumn,
-          endLine: line,
-          endColumn: column + 1,
-        });
-      }
-      depth--;
-    }
-    column++;
-  }
-
-  return ranges;
-};
-
 export {
   serializeConditions,
   parseConditionsJson,
-  findConditionRanges,
   apiVariablesJsonSchema,
   type ParseResult,
 };

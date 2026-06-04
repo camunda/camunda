@@ -41,7 +41,6 @@ import {
 import {
   serializeConditions,
   parseConditionsJson,
-  findConditionRanges,
   apiVariablesJsonSchema,
 } from './conditionsJsonCodec';
 import {
@@ -69,6 +68,7 @@ type Tab = 'fields' | 'json';
 
 type FormValues = {
   conditions: DraftCondition[];
+  jsonDraft: string;
 };
 
 const createDraft = (): DraftCondition => ({
@@ -80,22 +80,13 @@ const createDraft = (): DraftCondition => ({
 type EditorRef = {
   showMarkers: () => void;
   hideMarkers: () => void;
-  setCustomMarkers: (
-    markers: Array<{
-      message: string;
-      startLineNumber: number;
-      startColumn: number;
-      endLineNumber: number;
-      endColumn: number;
-      severity?: 'error' | 'warning' | 'info';
-    }>,
-  ) => void;
 };
 
 const VariableFilterModal: React.FC = observer(() => {
   const {conditions} = variableFilterStore;
   const initialValues = useRef<FormValues>({
     conditions: conditions.length > 0 ? [...conditions] : [createDraft()],
+    jsonDraft: '',
   });
   const navigate = useNavigate();
   const location = useLocation();
@@ -116,7 +107,6 @@ const VariableFilterModal: React.FC = observer(() => {
   const jsonEditorRef = useRef<EditorRef | null>(null);
 
   const [tab, setTab] = useState<Tab>('fields');
-  const [jsonDraft, setJsonDraft] = useState('');
   const [jsonError, setJsonError] = useState<string | null>(null);
   const [jsonParseWarning, setJsonParseWarning] = useState<string | null>(null);
 
@@ -132,11 +122,12 @@ const VariableFilterModal: React.FC = observer(() => {
     if (newTab === 'json') {
       if (jsonParseWarning === null) {
         const current = form.getState().values?.conditions ?? [];
-        setJsonDraft(serializeConditions(current));
+        form.change('jsonDraft', serializeConditions(current));
       }
       setJsonError(null);
       setJsonParseWarning(null);
     } else {
+      const jsonDraft = form.getState().values?.jsonDraft ?? '';
       const result = parseConditionsJson(jsonDraft);
       if (result.ok) {
         form.change(
@@ -154,29 +145,11 @@ const VariableFilterModal: React.FC = observer(() => {
     setTab(newTab);
   };
 
-  const applyFromJson = () => {
+  const applyFromJson = (form: FormApi<FormValues>) => {
+    const jsonDraft = form.getState().values?.jsonDraft ?? '';
     const result = parseConditionsJson(jsonDraft);
     if (!result.ok) {
-      if (result.kind === 'syntax') {
-        jsonEditorRef.current?.showMarkers();
-      } else {
-        const ranges = findConditionRanges(jsonDraft);
-        const markers = result.error.split('; ').map((msg) => {
-          const match = msg.match(/^Condition #(\d+)/);
-          const conditionIndex = match ? parseInt(match[1]!, 10) - 1 : 0;
-          const range = ranges[conditionIndex];
-          return {
-            message: msg,
-            startLineNumber: range?.startLine ?? 1,
-            startColumn: range?.startColumn ?? 1,
-            endLineNumber: range?.endLine ?? 1,
-            endColumn: range?.endColumn ?? 2,
-            severity: 'error' as const,
-          };
-        });
-        jsonEditorRef.current?.setCustomMarkers(markers);
-        jsonEditorRef.current?.showMarkers();
-      }
+      jsonEditorRef.current?.showMarkers();
       setJsonError(result.error);
       return;
     }
@@ -193,31 +166,10 @@ const VariableFilterModal: React.FC = observer(() => {
       .filter(Boolean);
 
     if (errorMessages.length > 0) {
-      const ranges = findConditionRanges(jsonDraft);
-      const markers = conditionErrors.flatMap((errors, i) => {
-        if (!hasErrors(errors)) {
-          return [];
-        }
-        const range = ranges[i];
-        const parts = [errors.name, errors.value].filter(Boolean);
-        return [
-          {
-            message: parts.join(', '),
-            startLineNumber: range?.startLine ?? 1,
-            startColumn: range?.startColumn ?? 1,
-            endLineNumber: range?.endLine ?? 1,
-            endColumn: range?.endColumn ?? 2,
-            severity: 'error' as const,
-          },
-        ];
-      });
-      jsonEditorRef.current?.setCustomMarkers(markers);
-      jsonEditorRef.current?.showMarkers();
       setJsonError(errorMessages.join('; '));
       return;
     }
 
-    jsonEditorRef.current?.setCustomMarkers([]);
     setJsonError(null);
     handleApplyConditions(result.conditions.map(mapToVariableCondition));
   };
@@ -273,7 +225,7 @@ const VariableFilterModal: React.FC = observer(() => {
                   editorRef.current?.showMarkers();
                 }
               } else if (tab === 'json') {
-                applyFromJson();
+                applyFromJson(form);
               } else {
                 submitForm();
               }
@@ -426,40 +378,46 @@ const VariableFilterModal: React.FC = observer(() => {
                       </FieldArray>
                     </>
                   ) : (
-                    <Stack gap={4}>
-                      <EditorToolbar>
-                        <CopyButton value={jsonDraft} />
-                      </EditorToolbar>
-                      <JsonEditorWrap $invalid={jsonError !== null}>
-                        <Suspense>
-                          <RichTextEditor
-                            value={jsonDraft}
-                            jsonSchema={apiVariablesJsonSchema}
-                            onChange={(v) => {
-                              setJsonDraft(v);
-                              if (jsonError !== null) {
-                                jsonEditorRef.current?.setCustomMarkers([]);
-                                setJsonError(null);
-                              }
-                            }}
-                            onMount={(editor) => {
-                              jsonEditorRef.current = editor;
-                            }}
-                            height="300px"
-                          />
-                        </Suspense>
-                      </JsonEditorWrap>
-                      {jsonError !== null && (
-                        <InlineNotification
-                          kind="error"
-                          lowContrast
-                          hideCloseButton
-                          title="Could not apply JSON"
-                          subtitle={jsonError}
-                          role="alert"
-                        />
+                    <Field<string>
+                      name="jsonDraft"
+                      subscription={{value: true}}
+                    >
+                      {({input: jsonInput}) => (
+                        <Stack gap={4}>
+                          <EditorToolbar>
+                            <CopyButton value={jsonInput.value} />
+                          </EditorToolbar>
+                          <JsonEditorWrap $invalid={jsonError !== null}>
+                            <Suspense>
+                              <RichTextEditor
+                                value={jsonInput.value}
+                                jsonSchema={apiVariablesJsonSchema}
+                                onChange={(v) => {
+                                  jsonInput.onChange(v);
+                                  if (jsonError !== null) {
+                                    setJsonError(null);
+                                  }
+                                }}
+                                onMount={(editor) => {
+                                  jsonEditorRef.current = editor;
+                                }}
+                                height="300px"
+                              />
+                            </Suspense>
+                          </JsonEditorWrap>
+                          {jsonError !== null && (
+                            <InlineNotification
+                              kind="error"
+                              lowContrast
+                              hideCloseButton
+                              title="Could not apply JSON"
+                              subtitle={jsonError}
+                              role="alert"
+                            />
+                          )}
+                        </Stack>
                       )}
-                    </Stack>
+                    </Field>
                   )}
                 </Stack>
               </div>
