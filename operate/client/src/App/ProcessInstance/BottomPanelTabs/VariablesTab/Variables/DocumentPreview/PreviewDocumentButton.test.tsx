@@ -12,6 +12,7 @@ import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {mockDownloadDocument} from 'modules/mocks/api/v2/documents/downloadDocument';
 import {PreviewDocumentButton} from './PreviewDocumentButton';
 import type {DocumentInfo} from '../DocumentValueCell/parseDocumentVariable';
+import {tracking} from 'modules/tracking';
 
 const createWrapper = (): React.FC<{children?: React.ReactNode}> => {
   const client = getMockQueryClient();
@@ -24,6 +25,7 @@ const imageDocument: DocumentInfo = {
   link: '/v2/documents/img',
   fileName: 'photo.png',
   type: 'image',
+  contentType: 'image/png',
   size: 1024,
 };
 
@@ -31,6 +33,7 @@ const pdfDocument: DocumentInfo = {
   link: '/v2/documents/pdf',
   fileName: 'report.pdf',
   type: 'pdf',
+  contentType: 'application/pdf',
   size: 2048,
 };
 
@@ -38,6 +41,7 @@ const jsonDocument: DocumentInfo = {
   link: '/v2/documents/json',
   fileName: 'data.json',
   type: 'json',
+  contentType: 'application/json',
   size: 256,
 };
 
@@ -179,5 +183,23 @@ describe('<PreviewDocumentButton />', () => {
     expect(
       screen.getByRole('heading', {name: 'Preview: photo.png'}),
     ).toBeInTheDocument();
+  });
+
+  it('should track "document-previewed" events', async () => {
+    const trackSpy = vi.spyOn(tracking, 'track');
+    const {user} = render(
+      <PreviewDocumentButton document={imageDocument} variableName="myImage" />,
+    );
+
+    await user.click(
+      screen.getByLabelText('Preview document for variable myImage'),
+    );
+
+    expect(trackSpy).toHaveBeenCalledWith({
+      eventName: 'document-previewed',
+      documentType: 'image',
+      contentType: 'image/png',
+      size: 1024,
+    });
   });
 });

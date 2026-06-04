@@ -131,8 +131,7 @@ const VariablesTable: React.FC<Props> = ({
                             variableName={name}
                           />
                           <DownloadDocumentButton
-                            documentLink={documentResult.document.link}
-                            fileName={documentResult.document.fileName}
+                            document={documentResult.document}
                             variableName={name}
                           />
                         </>

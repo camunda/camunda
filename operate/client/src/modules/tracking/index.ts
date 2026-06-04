@@ -337,6 +337,15 @@ type Events =
     }
   | {
       eventName: 'audit-logs-fetch-failed';
+    }
+  /**
+   * Document analytics
+   */
+  | {
+      eventName: 'document-previewed' | 'document-downloaded';
+      documentType: 'image' | 'pdf' | 'json' | 'unknown';
+      contentType: string | null;
+      size: number | null;
     };
 
 const STAGE_ENV = getStage(window.location.host);

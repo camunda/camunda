@@ -11,6 +11,7 @@ import {View} from '@carbon/react/icons';
 import {ModalStateManager} from 'modules/components/ModalStateManager';
 import type {DocumentInfo} from '../DocumentValueCell/parseDocumentVariable';
 import {DocumentPreviewModal} from './DocumentPreviewModal';
+import {tracking} from 'modules/tracking';
 
 type Props = {
   document: DocumentInfo;
@@ -37,7 +38,15 @@ const PreviewDocumentButton: React.FC<Props> = ({document, variableName}) => {
           autoAlign={true}
           aria-label={`Preview document for variable ${variableName}`}
           disabled={document.type === 'unknown'}
-          onClick={() => setOpen(true)}
+          onClick={() => {
+            tracking.track({
+              eventName: 'document-previewed',
+              documentType: document.type,
+              contentType: document.contentType ?? null,
+              size: document.size ?? null,
+            });
+            setOpen(true);
+          }}
         />
       )}
     >

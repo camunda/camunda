@@ -19,7 +19,8 @@ type DocumentInfo = {
   fileName: string;
   link: string;
   type: DocumentType;
-  size: number | undefined;
+  contentType?: string | undefined;
+  size?: number | undefined;
 };
 
 type DocumentParseResult =
@@ -76,6 +77,7 @@ function toDocumentInfo(ref: DetectedDocumentReference): DocumentInfo {
     link,
     fileName: ref.metadata?.fileName ?? ref.documentId,
     type: getDocumentType(ref.metadata?.contentType),
+    contentType: ref.metadata?.contentType,
     size: ref.metadata?.size,
   };
 }
