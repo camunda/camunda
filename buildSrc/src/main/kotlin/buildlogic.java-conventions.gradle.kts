@@ -83,6 +83,12 @@ val skipRandomTests = providers.gradleProperty("skip.random.tests").isPresent
 val parallelTests = providers.gradleProperty("parallel.tests").isPresent
 val junitThreadCount = providers.gradleProperty("junit.thread.count").getOrElse("2")
 
+val itPatterns = listOf(
+    "**/IT*.class",
+    "**/*IT.class",
+    "**/*ITCase.class",
+)
+
 tasks.withType<Test>().configureEach {
     enabled = !quickly.get()
     jvmArgs(
@@ -107,3 +113,19 @@ tasks.withType<Test>().configureEach {
 
     useJUnitPlatform()
 }
+
+// Match Maven surefire defaults: unit test task excludes *IT/*ITCase/IT* patterns.
+// Integration tests are run by the separate `it` task (equivalent to maven-failsafe-plugin).
+tasks.named<Test>("test") {
+    exclude(itPatterns)
+}
+
+val it by tasks.register<Test>("it") {
+    group = "verification"
+    description = "Runs Maven-style integration tests (IT*, *IT, *ITCase)"
+    testClassesDirs = sourceSets["test"].output.classesDirs
+    classpath = sourceSets["test"].runtimeClasspath
+    shouldRunAfter(tasks.named("test"))
+    include(itPatterns)
+}
+

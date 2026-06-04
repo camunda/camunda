@@ -15,10 +15,8 @@ dependencies{
     add("testRuntimeOnly", versionCatalog.findLibrary("org-apache-logging-log4j-log4j-slf4j2-impl").get())
 }
 
-val integrationTestIncludes = listOf(
-    "**/IT*.class",
-    "**/*IT.class",
-    "**/*ITCase.class",
+// For IT-only modules, also treat *Test* classes as integration tests (no unit tests here).
+val additionalItIncludes = listOf(
     "**/Test*.class",
     "**/*Test.class",
     "**/*Tests.class",
@@ -40,13 +38,11 @@ val ut by tasks.register<Test>("ut") {
     exclude("**/*")
 }
 
-val it by tasks.register<Test>("it") {
-    group = "verification"
-    description = "Runs integration tests"
-    testClassesDirs = test.testClassesDirs
-    classpath = test.classpath
+// Extend the `it` task registered by java-conventions to also include *Test* patterns,
+// since this module has no unit tests — all tests are integration tests.
+val it = tasks.named<Test>("it") {
+    include(additionalItIncludes)
     shouldRunAfter(ut)
-    include(integrationTestIncludes)
 }
 
 tasks.named("check") {

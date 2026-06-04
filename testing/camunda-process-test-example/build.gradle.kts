@@ -11,13 +11,11 @@ tasks.named<Test>("test") {
     exclude("**/*Test.class", "**/*Test\$*.class")
 }
 
-val it by tasks.registering(Test::class) {
-    group = "verification"
+// Extend the it task registered by java-conventions to also include *Test* patterns,
+// since all tests in this module require Docker/Testcontainers.
+tasks.named<Test>("it") {
     description = "Runs integration tests (require Docker)"
-    testClassesDirs = tasks.named<Test>("test").get().testClassesDirs
-    classpath = tasks.named<Test>("test").get().classpath
     include("**/*Test.class", "**/*Test\$*.class")
-    shouldRunAfter(tasks.named("test"))
 }
 
 dependencies {
