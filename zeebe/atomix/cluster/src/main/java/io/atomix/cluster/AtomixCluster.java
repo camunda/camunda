@@ -101,7 +101,9 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
   protected final ManagedClusterEventService eventService;
   protected volatile CompletableFuture<Void> openFuture;
   protected volatile CompletableFuture<Void> closeFuture;
-  protected final ThreadContext threadContext = new SingleThreadContext("atomix-cluster-%d");
+  // Non-final: rebuilt on restart because completeShutdown() closes it (EXPERIMENTAL — CRaC
+  // restart).
+  protected ThreadContext threadContext = new SingleThreadContext("atomix-cluster-%d");
   private final AtomicBoolean started = new AtomicBoolean();
 
   public AtomixCluster(
@@ -224,9 +226,16 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
   @Override
   public synchronized CompletableFuture<Void> start() {
     if (closeFuture != null) {
-      return CompletableFuture.failedFuture(
-          new IllegalStateException(
-              "Cluster instance is " + (closeFuture.isDone() ? "shutdown" : "shutting down")));
+      if (!closeFuture.isDone()) {
+        return CompletableFuture.failedFuture(
+            new IllegalStateException("Cluster instance is shutting down"));
+      }
+      // EXPERIMENTAL (CRaC restart): the cluster was fully stopped; reset for an in-place restart.
+      // The underlying Managed* services (e.g. NettyMessagingService) rebuild their transports on
+      // start(), so consumers that cached getMessagingService()/getEventService() stay valid.
+      closeFuture = null;
+      openFuture = null;
+      threadContext = new SingleThreadContext("atomix-cluster-%d");
     }
 
     if (openFuture != null) {

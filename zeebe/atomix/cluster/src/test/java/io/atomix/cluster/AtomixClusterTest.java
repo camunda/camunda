@@ -24,11 +24,9 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.assertj.core.api.Assertions;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -55,23 +53,25 @@ public class AtomixClusterTest {
   }
 
   @Test
-  public void shouldFailStartAfterStop() throws Exception {
-    // given
+  public void shouldRestartAfterStop() throws Exception {
+    // given -- a started then stopped cluster (EXPERIMENTAL — CRaC in-place restart)
     final var atomix =
         atomixClusterRule
             .startAtomix(1, Arrays.asList(1), AtomixClusterBuilder::build)
             .get(TIMEOUT_IN_S, TimeUnit.SECONDS);
+    final var messagingServiceBeforeRestart = atomix.getMessagingService();
     atomix.stop().get(TIMEOUT_IN_S, TimeUnit.SECONDS);
 
-    // when
-    try {
-      atomix.start().get(TIMEOUT_IN_S, TimeUnit.SECONDS);
-      Assertions.fail("Expected ExecutionException");
-    } catch (final ExecutionException ex) {
-      // then
-      assertThat(ex.getCause() instanceof IllegalStateException).isTrue();
-      assertThat(ex.getCause().getMessage()).isEqualTo("Cluster instance is shutdown");
-    }
+    // when -- it is started again in place
+    atomix.start().get(TIMEOUT_IN_S, TimeUnit.SECONDS);
+
+    // then -- it is running again and the SAME messaging-service object is reusable, so consumers
+    // that cached getMessagingService() stay valid across the restart (no rewiring needed)
+    assertThat(atomix.isRunning()).isTrue();
+    assertThat(atomix.getMessagingService()).isSameAs(messagingServiceBeforeRestart);
+    assertThat(atomix.getMembershipService().getLocalMember()).isNotNull();
+
+    atomix.stop().get(TIMEOUT_IN_S, TimeUnit.SECONDS);
   }
 
   @Test

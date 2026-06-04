@@ -100,8 +100,11 @@ public class SwimMembershipProtocol
   private final List<SwimMember> randomMembers = Lists.newCopyOnWriteArrayList();
   private final Map<MemberId, ImmutableMember> updates = new LinkedHashMap<>();
   private final List<SwimMember> syncMembers = new ArrayList<>();
-  private final ScheduledExecutorService swimScheduler;
-  private final ExecutorService eventExecutor;
+  // Non-final: recreated on each join() because leave() shuts them down, so the protocol can be
+  // restarted in place (EXPERIMENTAL — CRaC restart).
+  private ScheduledExecutorService swimScheduler;
+  private ExecutorService eventExecutor;
+  private final String actorSchedulerName;
   private final AtomicInteger probeCounter = new AtomicInteger();
   private NodeDiscoveryService discoveryService;
   private BootstrapService bootstrapService;
@@ -127,14 +130,8 @@ public class SwimMembershipProtocol
       final String actorSchedulerName,
       final MeterRegistry registry) {
     this.config = config;
+    this.actorSchedulerName = actorSchedulerName;
     swimMembershipProtocolMetrics = new SwimMembershipProtocolMetrics(registry);
-
-    swimScheduler =
-        Executors.newSingleThreadScheduledExecutor(
-            namedThreads("atomix-cluster-heartbeat-sender", LOGGER, actorSchedulerName));
-    eventExecutor =
-        Executors.newSingleThreadExecutor(
-            namedThreads("atomix-cluster-events", LOGGER, actorSchedulerName));
   }
 
   /**
@@ -165,6 +162,13 @@ public class SwimMembershipProtocol
   public CompletableFuture<Void> join(
       final BootstrapService bootstrap, final NodeDiscoveryService discovery, final Member member) {
     if (started.compareAndSet(false, true)) {
+      // (Re)create executors here — leave() shuts them down, so recreate to support restart.
+      swimScheduler =
+          Executors.newSingleThreadScheduledExecutor(
+              namedThreads("atomix-cluster-heartbeat-sender", LOGGER, actorSchedulerName));
+      eventExecutor =
+          Executors.newSingleThreadExecutor(
+              namedThreads("atomix-cluster-events", LOGGER, actorSchedulerName));
       bootstrapService = bootstrap;
       discoveryService = discovery;
       localMember =
