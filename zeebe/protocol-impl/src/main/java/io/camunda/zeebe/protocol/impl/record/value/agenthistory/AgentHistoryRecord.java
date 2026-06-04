@@ -11,6 +11,7 @@ import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryCommitStatus;
@@ -36,9 +37,15 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
   private final StringProperty metadataProp = new StringProperty("metadata", "");
   private final ArrayProperty<AgentHistoryMessageContent> contentProp =
       new ArrayProperty<>("content", AgentHistoryMessageContent::new);
+  private final ArrayProperty<AgentHistoryEmbeddedToolCall> toolCallsProp =
+      new ArrayProperty<>("toolCalls", AgentHistoryEmbeddedToolCall::new);
+  private final ObjectProperty<AgentHistoryToolCallRef> toolCallRefProp =
+      new ObjectProperty<>("toolCallRef", new AgentHistoryToolCallRef());
+  private final ObjectProperty<AgentHistoryMetrics> metricsProp =
+      new ObjectProperty<>("metrics", new AgentHistoryMetrics());
 
   public AgentHistoryRecord() {
-    super(10);
+    super(13);
     declareProperty(agentInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(jobKeyProp)
@@ -48,7 +55,10 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
         .declareProperty(commitStatusProp)
         .declareProperty(producedAtProp)
         .declareProperty(metadataProp)
-        .declareProperty(contentProp);
+        .declareProperty(contentProp)
+        .declareProperty(toolCallsProp)
+        .declareProperty(toolCallRefProp)
+        .declareProperty(metricsProp);
   }
 
   @Override
@@ -165,5 +175,41 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
   public AgentHistoryRecord addContent(final AgentHistoryMessageContent content) {
     contentProp.add().copy(content);
     return this;
+  }
+
+  @Override
+  public List<AgentHistoryEmbeddedToolCallValue> getToolCalls() {
+    return toolCallsProp.stream()
+        .map(
+            element -> {
+              final var copy = new AgentHistoryEmbeddedToolCall();
+              copy.copy(element);
+              return (AgentHistoryEmbeddedToolCallValue) copy;
+            })
+        .toList();
+  }
+
+  public AgentHistoryRecord setToolCalls(
+      final List<? extends AgentHistoryEmbeddedToolCallValue> toolCalls) {
+    toolCallsProp.reset();
+    for (final var item : toolCalls) {
+      toolCallsProp.add().copy(item);
+    }
+    return this;
+  }
+
+  public AgentHistoryRecord addToolCall(final AgentHistoryEmbeddedToolCall toolCall) {
+    toolCallsProp.add().copy(toolCall);
+    return this;
+  }
+
+  @Override
+  public AgentHistoryToolCallRef getToolCallRef() {
+    return toolCallRefProp.getValue();
+  }
+
+  @Override
+  public AgentHistoryMetrics getMetrics() {
+    return metricsProp.getValue();
   }
 }

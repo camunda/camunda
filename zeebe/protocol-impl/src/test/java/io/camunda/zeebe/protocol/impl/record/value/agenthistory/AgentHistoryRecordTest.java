@@ -147,4 +147,102 @@ final class AgentHistoryRecordTest {
     assertThat(object.getContentType()).isEqualTo(AgentHistoryContentType.OBJECT);
     assertThat(object.getObject()).isEqualTo(objectData);
   }
+
+  @Test
+  void shouldExposeDefaultToolCalls() {
+    // given
+    final AgentHistoryRecord record = new AgentHistoryRecord();
+
+    // then
+    assertThat(record.getToolCalls()).isEmpty();
+  }
+
+  @Test
+  void shouldExposeDefaultToolCallRef() {
+    // given
+    final AgentHistoryRecord record = new AgentHistoryRecord();
+
+    // then
+    assertThat(record.getToolCallRef().getToolCallId()).isEmpty();
+    assertThat(record.getToolCallRef().getToolName()).isEmpty();
+    assertThat(record.getToolCallRef().getElementId()).isEmpty();
+    assertThat(record.getToolCallRef().getToolElementInstanceKey()).isEqualTo(-1L);
+  }
+
+  @Test
+  void shouldExposeDefaultMetrics() {
+    // given
+    final AgentHistoryRecord record = new AgentHistoryRecord();
+
+    // then
+    assertThat(record.getMetrics().getInputTokens()).isEqualTo(0L);
+    assertThat(record.getMetrics().getOutputTokens()).isEqualTo(0L);
+    assertThat(record.getMetrics().getDurationMs()).isEqualTo(0L);
+  }
+
+  @Test
+  void shouldRoundTripToolCallsViaMsgPack() {
+    // given
+    final Map<String, Object> args = Map.of("param", "value");
+    final var toolCall =
+        new AgentHistoryEmbeddedToolCall()
+            .setToolCallId("call-123")
+            .setToolName("myTool")
+            .setElementId("element-456")
+            .setArguments(BufferUtil.wrapArray(MsgPackConverter.convertToMsgPack(args)));
+
+    final AgentHistoryRecord original = new AgentHistoryRecord().setToolCalls(List.of(toolCall));
+
+    // when
+    final AgentHistoryRecord copy = new AgentHistoryRecord();
+    copy.copyFrom(original);
+
+    // then
+    final var toolCalls = copy.getToolCalls();
+    assertThat(toolCalls).hasSize(1);
+
+    final var copied = toolCalls.get(0);
+    assertThat(copied.getToolCallId()).isEqualTo("call-123");
+    assertThat(copied.getToolName()).isEqualTo("myTool");
+    assertThat(copied.getElementId()).isEqualTo("element-456");
+    assertThat(copied.getArguments()).isEqualTo(args);
+  }
+
+  @Test
+  void shouldRoundTripMetricsViaMsgPack() {
+    // given
+    final AgentHistoryRecord original = new AgentHistoryRecord();
+    original.getMetrics().setInputTokens(100L).setOutputTokens(200L).setDurationMs(350L);
+
+    // when
+    final AgentHistoryRecord copy = new AgentHistoryRecord();
+    copy.copyFrom(original);
+
+    // then
+    assertThat(copy.getMetrics().getInputTokens()).isEqualTo(100L);
+    assertThat(copy.getMetrics().getOutputTokens()).isEqualTo(200L);
+    assertThat(copy.getMetrics().getDurationMs()).isEqualTo(350L);
+  }
+
+  @Test
+  void shouldRoundTripToolCallRefViaMsgPack() {
+    // given
+    final AgentHistoryRecord original = new AgentHistoryRecord();
+    original
+        .getToolCallRef()
+        .setToolCallId("ref-789")
+        .setToolName("refTool")
+        .setElementId("elem-001")
+        .setToolElementInstanceKey(9999L);
+
+    // when
+    final AgentHistoryRecord copy = new AgentHistoryRecord();
+    copy.copyFrom(original);
+
+    // then
+    assertThat(copy.getToolCallRef().getToolCallId()).isEqualTo("ref-789");
+    assertThat(copy.getToolCallRef().getToolName()).isEqualTo("refTool");
+    assertThat(copy.getToolCallRef().getElementId()).isEqualTo("elem-001");
+    assertThat(copy.getToolCallRef().getToolElementInstanceKey()).isEqualTo(9999L);
+  }
 }
