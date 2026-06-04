@@ -14,6 +14,7 @@ import org.springframework.boot.health.contributor.Health;
 import org.springframework.boot.health.contributor.HealthIndicator;
 import org.springframework.stereotype.Component;
 
+// TODO: to be removed in https://github.com/camunda/camunda/issues/51861
 @Component("indicesCheck")
 @ConditionalOnRdbmsDisabled
 public class IndicesHealthIndicator implements HealthIndicator {

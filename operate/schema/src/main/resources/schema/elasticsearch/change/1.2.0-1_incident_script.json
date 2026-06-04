@@ -1,8 +1,0 @@
-{
-  "description": "Fill in tree path",
-  "@type": "processorStep",
-  "indexName": "incident",
-  "version": "1.2.0",
-  "order": 1,
-  "content": "{\"script\": {\"lang\": \"painless\",\"source\": \"ctx.treePath = 'PI_' + ctx.processInstanceKey + '/FN_' + ctx.flowNodeId + '/FNI_' + ctx.flowNodeInstanceKey;\"}}"
-}

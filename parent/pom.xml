@@ -722,12 +722,6 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
-        <artifactId>operate-schema</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
         <artifactId>operate-mvc-auth-commons</artifactId>
         <version>${project.version}</version>
       </dependency>

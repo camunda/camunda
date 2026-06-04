@@ -1,8 +1,0 @@
-{
-  "description": "Fill in tree path",
-  "@type": "processorStep",
-  "indexName": "list-view",
-  "version": "1.2.0",
-  "order": 0,
-  "content": "{\"script\": {\"lang\": \"painless\",\"source\": \"if (ctx.joinRelation.name.equals('processInstance')) { ctx.treePath = 'PI_' + ctx.processInstanceKey; }\"}}"
-}
