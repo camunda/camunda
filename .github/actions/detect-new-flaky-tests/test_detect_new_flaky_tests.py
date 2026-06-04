@@ -373,5 +373,37 @@ class TestRenderComment(unittest.TestCase):
         self.assertIn("cleared via `ci:flaky-test-bypass`", body)
 
 
+class TestMergeBase(unittest.TestCase):
+    def test_prefers_base_sha_over_ref_names(self):
+        calls = []
+
+        def fake_run_git(args, repo_root):
+            calls.append(args)
+            # Only the base_sha candidate resolves; ref names fail (as in a
+            # PR merge-ref checkout with no local main/origin/main).
+            if args[:2] == ["merge-base", "baseSha123"]:
+                return 0, "mergeBaseSha\n", ""
+            return 1, "", "fatal: Not a valid object name"
+
+        with mock.patch.object(d, "_run_git", side_effect=fake_run_git):
+            result = d.get_merge_base("headSha", "main", ".", "baseSha123")
+
+        self.assertEqual(result, "mergeBaseSha")
+        # base_sha must be the first candidate tried.
+        self.assertEqual(calls[0], ["merge-base", "baseSha123", "headSha"])
+
+    def test_skips_empty_candidates_and_falls_back_to_ref(self):
+        def fake_run_git(args, repo_root):
+            if args[:2] == ["merge-base", "origin/main"]:
+                return 0, "fromOriginMain\n", ""
+            return 1, "", ""
+
+        with mock.patch.object(d, "_run_git", side_effect=fake_run_git):
+            # Empty base_sha is skipped, resolution falls through to origin/main.
+            result = d.get_merge_base("headSha", "main", ".", "")
+
+        self.assertEqual(result, "fromOriginMain")
+
+
 if __name__ == "__main__":
     unittest.main()
