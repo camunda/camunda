@@ -62,4 +62,8 @@ dependencies {
     compileOnly(libs.net.jcip.jcip.annotations)
 }
 
+tasks.named<Test>("test") {
+    jvmArgs("-Xmx4g")
+}
+
 description = "Zeebe Workflow Engine"
