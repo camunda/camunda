@@ -6,16 +6,28 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
-import {MenuItemSelectable} from '@carbon/react';
+import {ComboBox, MenuItemSelectable} from '@carbon/react';
 
 import {MenuDropdown} from 'components';
+import {loadDefinitions} from 'services';
 
 import {FilterBar, DATE_PRESETS} from './FilterBar';
+
+jest.mock('services', () => ({
+  ...jest.requireActual('services'),
+  loadDefinitions: jest.fn().mockResolvedValue([
+    {key: 'process-a', name: 'Process A'},
+    {key: 'process-b', name: 'Process B'},
+  ]),
+}));
 
 const props = {
   preset: '30d',
   onPresetChange: jest.fn(),
+  processScope: null,
+  onProcessScopeChange: jest.fn(),
 };
 
 beforeEach(() => {
@@ -55,4 +67,44 @@ it('should default to Last 30 days being selected when preset is 30d', () => {
 
   const selectedItem = node.find(MenuItemSelectable).filterWhere((n) => n.prop('selected'));
   expect(selectedItem.prop('label')).toBe('Last 30 days');
+});
+
+it('should render a process scope ComboBox', () => {
+  const node = shallow(<FilterBar {...props} />);
+
+  expect(node.find(ComboBox)).toExist();
+});
+
+it('should load agent-enabled process definitions on mount', async () => {
+  shallow(<FilterBar {...props} />);
+
+  await runAllEffects();
+
+  expect(loadDefinitions).toHaveBeenCalledWith('process', null);
+});
+
+it('should call onProcessScopeChange with the definition key when a process is selected', async () => {
+  const node = shallow(<FilterBar {...props} />);
+
+  await runAllEffects();
+
+  node.find(ComboBox).prop('onChange')({selectedItem: {key: 'process-a', name: 'Process A'}});
+
+  expect(props.onProcessScopeChange).toHaveBeenCalledWith('process-a');
+});
+
+it('should call onProcessScopeChange with null when the ComboBox is cleared', async () => {
+  const node = shallow(<FilterBar {...props} processScope="process-a" />);
+
+  await runAllEffects();
+
+  node.find(ComboBox).prop('onChange')({selectedItem: null});
+
+  expect(props.onProcessScopeChange).toHaveBeenCalledWith(null);
+});
+
+it('should show null selectedItem in ComboBox when no process is selected', () => {
+  const node = shallow(<FilterBar {...props} processScope={null} />);
+
+  expect(node.find(ComboBox).prop('selectedItem')).toBeNull();
 });
