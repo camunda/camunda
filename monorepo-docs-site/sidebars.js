@@ -16,9 +16,12 @@ const sidebars = {
   tutorialSidebar: [
     'index',
     'collaboration-guidelines',
-    'ci',
-    'ci-runbooks',
-    'flaky-test-gate',
+    {
+      type: 'category',
+      label: 'CI',
+      link: { type: 'doc', id: 'ci' },
+      items: ['ci-runbooks', 'flaky-test-gate'],
+    },
     'infrastructure-services',
     'processes',
     'release',
