@@ -145,6 +145,20 @@ class AnalyticsExporterTest {
   }
 
   @Test
+  void shouldNotSerializeMetadataForUnhandledRecords() {
+    // given — fresh controller with no pre-existing metadata
+    final var unhandledRecord = FACTORY.generateRecord(ValueType.JOB);
+
+    // when
+    exporter.export(unhandledRecord);
+
+    // then — position advances but no metadata was written, because the handler did not
+    // touch the metadata so serializing it again would be wasted work
+    assertThat(controller.getPosition()).isEqualTo(unhandledRecord.getPosition());
+    assertThat(controller.readMetadata()).isEmpty();
+  }
+
+  @Test
   void shouldInstallRecordFilterOnConfigure() {
     // given
     final var context =
