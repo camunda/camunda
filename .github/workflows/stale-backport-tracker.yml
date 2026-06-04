@@ -136,12 +136,39 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
           echo "📊 Summary: $total_stale stale backport PR(s) found"
+
+  # CI health observation for the collect job runs in a SEPARATE downstream job to
+  # avoid registering Vault secrets in the collect job's scope. When Vault secrets
+  # are masked in the same job that emits `stale_data` via `outputs:`, GHA's
+  # cross-job output guard does a substring match against every registered secret
+  # value. The Vault URL (VAULT_ADDR) contains the substring "camunda", which is
+  # also present in every PR URL (github.com/camunda/camunda/pull/N) inside
+  # stale_data — causing the entire output to be silently dropped with the warning:
+  #   "Skip output 'stale_data' since it may contain secret."
+  # That regression was introduced by commit d300af0b on 2026-06-03 and broke the
+  # tracker (Slack posted false "no stale backports" while the collect job had
+  # found 5). Keeping the Observe step in its own job isolates the Vault secret
+  # registration to a scope that does not emit cross-job outputs.
+  observe-collect-status:
+    name: Observe Collect job status
+    needs: collect-stale-backports
+    if: always()
+    runs-on: ubuntu-slim
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          sparse-checkout: .github
       - name: Observe build status
         if: always()
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
-          build_status: ${{ job.status }}
+          job_name: collect-stale-backports
+          build_status: ${{ needs.collect-stale-backports.result }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
