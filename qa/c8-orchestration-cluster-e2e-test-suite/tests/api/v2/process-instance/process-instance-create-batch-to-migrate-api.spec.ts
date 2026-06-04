@@ -30,6 +30,15 @@ import {
 } from '@requestHelpers';
 import {validateResponse} from 'json-body-assertions';
 
+// After element-instance search confirms the engine moved the token, the
+// secondary-storage pipeline is already partially caught up. 120s is enough
+// for the user-task indexer to reflect the updated elementId and stays within
+// the 2-minute budget.
+const postMigrationUserTaskOptions = {
+  intervals: [5_000, 10_000, 15_000, 20_000, 25_000, 25_000],
+  timeout: 120_000,
+};
+
 /* eslint-disable playwright/expect-expect */
 test.describe.serial('Create Process Instance Batch to Migrate Tests', () => {
   const instanceKeys: string[] = [];
@@ -275,13 +284,20 @@ test.describe.serial('Create Process Instance Batch to Migrate Tests', () => {
         'CREATED',
         'test_migration_api_user_task',
       );
-      // Instance 2 was migrated — confirm via element-instance search which
-      // reflects engine state faster than user-task secondary-storage indexing.
+      // Instance 2 was migrated — first confirm via element-instance (fast),
+      // then verify the user-task API reflects the updated elementId.
       await searchElementInstanceByElementIdAndState(
         request,
         localState.processInstanceKey2,
         'do_something_else',
         'ACTIVE',
+      );
+      await findUserTask(
+        request,
+        localState.processInstanceKey2,
+        'CREATED',
+        'do_something_else',
+        postMigrationUserTaskOptions,
       );
     });
   });
@@ -387,9 +403,14 @@ test.describe.serial('Create Process Instance Batch to Migrate Tests', () => {
   };
 
   // Used after migration to confirm instances reached the target element.
-  // Element-instance search reflects engine state faster than the user-task
-  // secondary-storage indexer, so it avoids the ever-growing timeout that
-  // plagued the previous findUserTask-based approach on a loaded shared cluster.
+  // Two-phase: element-instance search first (engine-level, fast) then
+  // user-task search (secondary-storage). Per the migration docs, the existing
+  // user task is preserved through migration with only its elementId updated —
+  // it is NOT deleted and recreated — so verifying the user-task API reflects
+  // the new elementId is a valid assertion. Gating on element-instance first
+  // means the secondary-storage pipeline is already partially caught up, so
+  // a 120s budget for the user-task check is sufficient and stays within the
+  // 2-minute limit.
   const verifyBothInstancesMigratedToElement = async (
     request: APIRequestContext,
     processInstanceKey1: string,
@@ -407,6 +428,20 @@ test.describe.serial('Create Process Instance Batch to Migrate Tests', () => {
       processInstanceKey2,
       elementId,
       'ACTIVE',
+    );
+    await findUserTask(
+      request,
+      processInstanceKey1,
+      'CREATED',
+      elementId,
+      postMigrationUserTaskOptions,
+    );
+    await findUserTask(
+      request,
+      processInstanceKey2,
+      'CREATED',
+      elementId,
+      postMigrationUserTaskOptions,
     );
   };
 
