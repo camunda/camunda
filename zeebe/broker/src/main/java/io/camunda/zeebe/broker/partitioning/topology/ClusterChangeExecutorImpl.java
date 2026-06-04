@@ -125,6 +125,7 @@ public final class ClusterChangeExecutorImpl implements ClusterChangeExecutor {
             Loggers.getExporterLogger(descriptor.getId()),
             descriptor.getConfiguration(),
             1,
+            "default",
             "",
             exporterRepository.getLicenseKey(),
             meterRegistry,
