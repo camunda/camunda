@@ -22,22 +22,28 @@ import {
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {APIRequestContext} from 'playwright-core';
 import {JSONDoc} from '@camunda8/sdk/dist/zeebe/types.js';
+import {DeployResourceResponse} from '@camunda8/sdk/dist/c8/lib/C8Dto';
 import {
   expectBatchState,
   findUserTask,
-  postMigrationAssertionOptions,
+  searchElementInstanceByElementIdAndState,
 } from '@requestHelpers';
 import {validateResponse} from 'json-body-assertions';
 
 /* eslint-disable playwright/expect-expect */
 test.describe.serial('Create Process Instance Batch to Migrate Tests', () => {
   const instanceKeys: string[] = [];
+  // Captured once in beforeAll and shared across all tests — avoids
+  // re-deploying v2 on every prepareTestCases call which would create
+  // a new deployment version each time and add noise to the shared cluster.
+  let sharedTargetProcessDefinitionKey: string;
 
   test.beforeAll(async () => {
-    await deploy([
-      './resources/test_migration_process_v1.bpmn',
+    await deploy(['./resources/test_migration_process_v1.bpmn']);
+    const v2Result: DeployResourceResponse = await deploy([
       './resources/test_migration_process_v2.bpmn',
     ]);
+    sharedTargetProcessDefinitionKey = v2Result.processes[0].processDefinitionKey;
   });
 
   test.afterAll(async () => {
@@ -192,12 +198,11 @@ test.describe.serial('Create Process Instance Batch to Migrate Tests', () => {
     });
 
     await test.step('Verify both instances migrated to target task', async () => {
-      await verifyBothInstancesAreAtElementId(
+      await verifyBothInstancesMigratedToElement(
         request,
         localState.processInstanceKey1,
         localState.processInstanceKey2,
         'do_something_else',
-        postMigrationAssertionOptions,
       );
     });
   });
@@ -262,19 +267,20 @@ test.describe.serial('Create Process Instance Batch to Migrate Tests', () => {
     });
 
     await test.step('Verify only second instance migrated', async () => {
+      // Instance 1 was filtered out — still at the source element.
       await findUserTask(
         request,
         localState.processInstanceKey1,
         'CREATED',
         'test_migration_api_user_task',
       );
-
-      await findUserTask(
+      // Instance 2 was migrated — confirm via element-instance search which
+      // reflects engine state faster than user-task secondary-storage indexing.
+      await searchElementInstanceByElementIdAndState(
         request,
         localState.processInstanceKey2,
-        'CREATED',
         'do_something_else',
-        postMigrationAssertionOptions,
+        'ACTIVE',
       );
     });
   });
@@ -344,16 +350,17 @@ test.describe.serial('Create Process Instance Batch to Migrate Tests', () => {
     });
 
     await test.step('Verify both instances migrated', async () => {
-      await verifyBothInstancesAreAtElementId(
+      await verifyBothInstancesMigratedToElement(
         request,
         localState.processInstanceKey1,
         localState.processInstanceKey2,
         'do_something_else',
-        postMigrationAssertionOptions,
       );
     });
   });
 
+  // Used before migration to confirm instances are at the source element via
+  // user-task search (only called with defaultAssertionOptions / 30s budget).
   const verifyBothInstancesAreAtElementId = async (
     request: APIRequestContext,
     processInstanceKey1: string,
@@ -375,6 +382,30 @@ test.describe.serial('Create Process Instance Batch to Migrate Tests', () => {
       'CREATED',
       elementId,
       assertionOptions,
+    );
+  };
+
+  // Used after migration to confirm instances reached the target element.
+  // Element-instance search reflects engine state faster than the user-task
+  // secondary-storage indexer, so it avoids the ever-growing timeout that
+  // plagued the previous findUserTask-based approach on a loaded shared cluster.
+  const verifyBothInstancesMigratedToElement = async (
+    request: APIRequestContext,
+    processInstanceKey1: string,
+    processInstanceKey2: string,
+    elementId: string,
+  ) => {
+    await searchElementInstanceByElementIdAndState(
+      request,
+      processInstanceKey1,
+      elementId,
+      'ACTIVE',
+    );
+    await searchElementInstanceByElementIdAndState(
+      request,
+      processInstanceKey2,
+      elementId,
+      'ACTIVE',
     );
   };
 
@@ -418,15 +449,8 @@ test.describe.serial('Create Process Instance Batch to Migrate Tests', () => {
       );
     });
 
-    await test.step('Deploy version 2 and get target process definition key', async () => {
-      await deploy(['./resources/test_migration_process_v2.bpmn']);
-      const instances = await createInstances(
-        'test_migration_process_v2',
-        1,
-        1,
-      );
-      localState.targetProcessDefinitionKey = instances[0].processDefinitionKey;
-      instanceKeys.push(instances[0].processInstanceKey);
+    await test.step('Use pre-deployed version 2 process definition key', async () => {
+      localState.targetProcessDefinitionKey = sharedTargetProcessDefinitionKey;
     });
 
     return localState;

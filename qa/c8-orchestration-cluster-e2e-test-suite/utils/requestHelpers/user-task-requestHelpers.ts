@@ -28,9 +28,17 @@ export async function findUserTask(
 ) {
   const localState: Record<string, unknown> = {};
   await expect(async () => {
+    // Include elementId in the filter when provided so the API only returns
+    // results once the indexer has reflected the correct element — avoids
+    // intermediate states where the task is found but still carries the old
+    // elementId, which would burn retry budget and require a larger timeout.
+    const filter: Record<string, string> = {processInstanceKey: procKey};
+    if (elementId) {
+      filter.elementId = elementId;
+    }
     const searchRes = await request.post(buildUrl('/user-tasks/search'), {
       headers: jsonHeaders(),
-      data: {filter: {processInstanceKey: procKey}},
+      data: {filter},
     });
     await assertStatusCode(searchRes, 200);
     await validateResponse(
