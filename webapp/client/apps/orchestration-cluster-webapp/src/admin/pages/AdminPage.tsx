@@ -6,9 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {createFileRoute} from '@tanstack/react-router';
-import {TasklistPage} from '#/tasklist/pages/TasklistPage';
-
-export const Route = createFileRoute('/_auth/tasklist/')({
-	component: TasklistPage,
-});
+const AdminPage: React.FC = () => {
+	return <h1>Admin</h1>;
+}
+ export {AdminPage}

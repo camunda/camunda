@@ -7,11 +7,8 @@
  */
 
 import {createFileRoute} from '@tanstack/react-router';
+import {AdminPage} from '#/admin/pages/AdminPage';
 
 export const Route = createFileRoute('/_auth/admin/')({
-	component: Admin,
+	component: AdminPage,
 });
-
-function Admin() {
-	return <h1>Admin</h1>;
-}

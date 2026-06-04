@@ -11,7 +11,9 @@ import {useTranslation} from 'react-i18next';
 import SvgErrorRobot from '#/shared/svg/ErrorRobot';
 import styles from './GenericErrorPage.module.scss';
 
-type Props = {reset: () => void};
+type Props = {
+	reset: () => void
+};
 
 const GenericErrorPage: React.FC<Props> = ({reset}) => {
 	const {t} = useTranslation();
