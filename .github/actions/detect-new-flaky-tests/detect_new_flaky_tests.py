@@ -633,6 +633,15 @@ def main() -> None:
                       if not is_in_baseline(get_test_key(t), baseline_keys)]
     pr_flaky_keys = {get_test_key(t) for t in pr_flaky_tests}
 
+    # -- Nothing-to-do short-circuit --------------------------------------
+    # No prior tracked entries, no new flakes this run, and no bypass: there is
+    # nothing to reconcile and nothing to show. Return without posting a comment
+    # or writing state (so no artifact is uploaded) — keeps clean PRs untouched.
+    if not bypass and not pr_flaky_tests and not state["tests"]:
+        print(f"{PREFIX} No prior state and no flaky tests this run — nothing to do.")
+        set_output("has-new-flaky-tests", "false")
+        return
+
     # -- Bypass short-circuit ---------------------------------------------
     if bypass:
         print(f"{PREFIX} Bypass label present — clearing all active entries.")

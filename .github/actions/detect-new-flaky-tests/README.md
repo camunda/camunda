@@ -17,11 +17,11 @@ silence the alert. Real flakes routinely got merged because authors hit
 
 An alert entry transitions from `active` → cleared when one of:
 
-| Path | Trigger | Resulting status |
-|------|---------|------------------|
-| Method fix | The flagged test's method body is modified, AND the affected job runs clean (no Maven retries) for at least **3** subsequent gate runs. | `cleared_via_fix` |
-| Bypass label | `ci:flaky-test-bypass` is applied to the PR. | `cleared_via_bypass` |
-| Force-push drop | The PR is rewritten so the original flagging commit is no longer reachable, AND the test does not flake in the new history. | `dropped_force_push` |
+|      Path       |                                                                 Trigger                                                                 |   Resulting status   |
+|-----------------|-----------------------------------------------------------------------------------------------------------------------------------------|----------------------|
+| Method fix      | The flagged test's method body is modified, AND the affected job runs clean (no Maven retries) for at least **3** subsequent gate runs. | `cleared_via_fix`    |
+| Bypass label    | `ci:flaky-test-bypass` is applied to the PR.                                                                                            | `cleared_via_bypass` |
+| Force-push drop | The PR is rewritten so the original flagging commit is no longer reachable, AND the test does not flake in the new history.             | `dropped_force_push` |
 
 "Clean run" means **Def-2**: the test was actually observed in this run AND
 did not appear in `FLAKY.xml`. A cancelled or skipped job does not advance
@@ -46,22 +46,23 @@ re-run-spam-without-fix can't game it.
 │     produces flaky_tests_data (JSON).                                │
 │                                                                      │
 │  2. detect-new-flaky-tests job                                       │
-│     ├─ Discover prior state artifact (latest non-expired)            │
-│     ├─ Download state.json (or treat as fresh)                       │
 │     ├─ Build ran-jobs JSON from needs.X.result                       │
 │     ├─ Read bypass label                                             │
 │     ├─ Query BigQuery for baseline (only if new flakes this run)     │
-│     ├─ Run detect_new_flaky_tests.py                                 │
-│     │  ├─ Bypass label?  → mark all active → cleared_via_bypass      │
-│     │  ├─ Else:                                                      │
-│     │  │    1. Reconcile force-push (drop unreachable+absent)        │
-│     │  │    2. Re-evaluate method modification via git log -L        │
-│     │  │    3. Merge new flakes / reset re-flaked entries            │
-│     │  │    4. Increment counters where job ran AND test clean       │
-│     │  │    5. Promote counter>=3 entries to cleared_via_fix         │
-│     │  └─ Render comment, write state.json                           │
-│     ├─ Upload state artifact (flaky-gate-state-pr-<N>, 30d retention)│
-│     └─ Exit non-zero if any entries remain active (blocking mode)    │
+│     └─ detect-new-flaky-tests action (composite)                     │
+│        ├─ Discover + download prior state artifact (or fresh)        │
+│        ├─ Run detect_new_flaky_tests.py                              │
+│        │  ├─ No prior state + no flakes + no bypass? → no-op         │
+│        │  ├─ Bypass label?  → mark all active → cleared_via_bypass   │
+│        │  ├─ Else:                                                   │
+│        │  │    1. Reconcile force-push (drop unreachable+absent)     │
+│        │  │    2. Re-evaluate method modification via git log -L     │
+│        │  │    3. Merge new flakes / reset re-flaked entries         │
+│        │  │    4. Increment counters where job ran AND test clean    │
+│        │  │    5. Promote counter>=3 entries to cleared_via_fix      │
+│        │  └─ Render comment, write state.json                        │
+│        ├─ Upload state artifact (flaky-gate-state-pr-<N>, 30d)       │
+│        └─ Exit non-zero if any entries remain active (blocking)      │
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -270,35 +271,33 @@ If the gate flags a flaky test that is **not caused by your changes**:
 
 ## Inputs
 
-| Input | Required | Default | Description |
-|-------|----------|---------|-------------|
-| `pr-flaky-tests-data` | yes | — | JSON `[{job, flaky_tests}]` from `collect-flaky-tests`. |
-| `known-flaky-tests-file` | yes | — | Path to BigQuery baseline JSON. |
-| `pr-number` | yes | — | Pull request number. |
-| `blocking` | no | `true` | Fail the job if any sticky entry is still active. |
-| `state-file-in` | no | `''` | Path to the state JSON from prior run (missing = fresh). |
-| `state-file-out` | yes | — | Path where the updated state JSON is written for upload. |
-| `ran-jobs-json` | no | `[]` | JSON list of parent job names whose result is not `skipped`. |
-| `bypass-label-present` | no | `false` | `true` if `ci:flaky-test-bypass` is on the PR. |
-| `head-sha` | yes | — | Current PR head SHA. |
-| `base-ref` | yes | — | PR base branch (used for merge-base in `git log -L`). |
-| `repo-root` | no | `$GITHUB_WORKSPACE` | Absolute path to the checked-out repo. |
+|          Input           | Required |       Default       |                         Description                          |
+|--------------------------|----------|---------------------|--------------------------------------------------------------|
+| `pr-flaky-tests-data`    | yes      | —                   | JSON `[{job, flaky_tests}]` from `collect-flaky-tests`.      |
+| `known-flaky-tests-file` | yes      | —                   | Path to BigQuery baseline JSON.                              |
+| `pr-number`              | yes      | —                   | Pull request number.                                         |
+| `blocking`               | no       | `true`              | Fail the job if any sticky entry is still active.            |
+| `ran-jobs-json`          | no       | `[]`                | JSON list of parent job names whose result is not `skipped`. |
+| `bypass-label-present`   | no       | `false`             | `true` if `ci:flaky-test-bypass` is on the PR.               |
+| `head-sha`               | yes      | —                   | Current PR head SHA.                                         |
+| `base-ref`               | yes      | —                   | PR base branch (used for merge-base in `git log -L`).        |
+| `repo-root`              | no       | `$GITHUB_WORKSPACE` | Absolute path to the checked-out repo.                       |
 
 ## Outputs
 
-| Output | Description |
-|--------|-------------|
+|        Output         |                              Description                              |
+|-----------------------|-----------------------------------------------------------------------|
 | `has-new-flaky-tests` | `true` if any entries remain in `active` status after reconciliation. |
 
 ## Secrets
 
-| Secret | Source | Purpose |
-|--------|--------|---------|
-| `VAULT_ADDR` | Repository secret | Vault server URL |
-| `VAULT_ROLE_ID` | Repository secret | Vault AppRole auth |
-| `VAULT_SECRET_ID` | Repository secret | Vault AppRole auth |
-| GCP SA key | Vault (`secret/data/products/zeebe/ci/ci-analytics`) | BigQuery access |
-| `GITHUB_TOKEN` | Auto | Comment + artifact API |
+|      Secret       |                        Source                        |        Purpose         |
+|-------------------|------------------------------------------------------|------------------------|
+| `VAULT_ADDR`      | Repository secret                                    | Vault server URL       |
+| `VAULT_ROLE_ID`   | Repository secret                                    | Vault AppRole auth     |
+| `VAULT_SECRET_ID` | Repository secret                                    | Vault AppRole auth     |
+| GCP SA key        | Vault (`secret/data/products/zeebe/ci/ci-analytics`) | BigQuery access        |
+| `GITHUB_TOKEN`    | Auto                                                 | Comment + artifact API |
 
 ## Running locally
 
@@ -369,3 +368,4 @@ rendering (active / mixed / all-clear).
 ├── test_detect_new_flaky_tests.py   # Unit tests (stdlib only)
 └── README.md                        # This file
 ```
+
