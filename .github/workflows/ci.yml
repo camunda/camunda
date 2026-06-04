@@ -1545,10 +1545,6 @@ jobs:
           # tests that flake mostly on PRs are still recognised, but the current PR's own
           # observations are excluded to prevent a new flake from laundering itself across
           # re-runs.
-          # Trigger/ref filters live in the LEFT JOIN's ON clause: keeping them in the
-          # WHERE clause silently turned the LEFT JOIN into an INNER JOIN whenever
-          # build_status_v2 ingestion lagged behind test_status_v1, dropping known
-          # flakes from the baseline and producing false-positive alerts.
           # Backticks in the SQL below are BigQuery identifier quoting, not shell substitution.
           # shellcheck disable=SC2016
           bq query --format=json --use_legacy_sql=false --quiet=true --max_rows=100000 \
