@@ -76,6 +76,7 @@ public final class BpmnUserTaskBehavior {
   private final AsyncRequestState asyncRequestState;
   private final GlobalListenersState globalListenersState;
   private final GroupState groupState;
+  private final boolean candidateGroupNameResolution;
   private final InstantSource clock;
 
   public BpmnUserTaskBehavior(
@@ -89,6 +90,7 @@ public final class BpmnUserTaskBehavior {
       final AsyncRequestState asyncRequestState,
       final GlobalListenersState globalListenersState,
       final GroupState groupState,
+      final boolean candidateGroupNameResolution,
       final InstantSource clock) {
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
@@ -101,6 +103,7 @@ public final class BpmnUserTaskBehavior {
     this.asyncRequestState = asyncRequestState;
     this.globalListenersState = globalListenersState;
     this.groupState = groupState;
+    this.candidateGroupNameResolution = candidateGroupNameResolution;
     this.clock = clock;
   }
 
@@ -223,9 +226,12 @@ public final class BpmnUserTaskBehavior {
     if (candidateGroups == null) {
       return Either.right(null);
     }
-    return expressionBehavior
-        .evaluateArrayOfStringsExpression(candidateGroups, scopeKey, tenantId)
-        .flatMap(groups -> resolveCandidateGroupNamesToIds(groups, scopeKey));
+    final var evaluated =
+        expressionBehavior.evaluateArrayOfStringsExpression(candidateGroups, scopeKey, tenantId);
+    if (!candidateGroupNameResolution) {
+      return evaluated;
+    }
+    return evaluated.flatMap(groups -> resolveCandidateGroupNamesToIds(groups, scopeKey));
   }
 
   /**

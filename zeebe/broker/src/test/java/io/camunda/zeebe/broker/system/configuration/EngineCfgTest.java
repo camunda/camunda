@@ -69,6 +69,8 @@ final class EngineCfgTest {
         .isEqualTo(EngineConfiguration.DEFAULT_BUSINESS_ID_UNIQUENESS_ENABLED);
     assertThat(configuration.getGroupNameCacheCapacity())
         .isEqualTo(EngineConfiguration.DEFAULT_GROUP_NAME_CACHE_CAPACITY);
+    assertThat(configuration.isCandidateGroupNameResolution())
+        .isEqualTo(EngineConfiguration.DEFAULT_CANDIDATE_GROUP_NAME_RESOLUTION);
   }
 
   @Test
@@ -108,6 +110,7 @@ final class EngineCfgTest {
     assertThat(configuration.getExpressionEvaluationTimeout()).isEqualTo(Duration.ofSeconds(2));
     assertThat(configuration.isBusinessIdUniquenessEnabled()).isTrue();
     assertThat(configuration.getGroupNameCacheCapacity()).isEqualTo(2000);
+    assertThat(configuration.isCandidateGroupNameResolution()).isFalse();
   }
 
   void assertListenerCfg(

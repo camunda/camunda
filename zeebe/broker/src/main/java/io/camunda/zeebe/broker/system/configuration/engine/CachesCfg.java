@@ -20,6 +20,8 @@ public final class CachesCfg implements ConfigurationEntry {
       EngineConfiguration.DEFAULT_AUTHORIZATIONS_CACHE_CAPACITY;
   private Duration authorizationsCacheTtl = EngineConfiguration.DEFAULT_AUTHORIZATIONS_CACHE_TTL;
   private int groupNameCacheCapacity = EngineConfiguration.DEFAULT_GROUP_NAME_CACHE_CAPACITY;
+  private boolean candidateGroupNameResolution =
+      EngineConfiguration.DEFAULT_CANDIDATE_GROUP_NAME_RESOLUTION;
 
   public int getDrgCacheCapacity() {
     return drgCacheCapacity;
@@ -77,6 +79,14 @@ public final class CachesCfg implements ConfigurationEntry {
     this.groupNameCacheCapacity = groupNameCacheCapacity;
   }
 
+  public boolean isCandidateGroupNameResolution() {
+    return candidateGroupNameResolution;
+  }
+
+  public void setCandidateGroupNameResolution(final boolean candidateGroupNameResolution) {
+    this.candidateGroupNameResolution = candidateGroupNameResolution;
+  }
+
   @Override
   public String toString() {
     return "CachesCfg{"
@@ -94,6 +104,8 @@ public final class CachesCfg implements ConfigurationEntry {
         + authorizationsCacheTtl
         + ", groupNameCacheCapacity="
         + groupNameCacheCapacity
+        + ", candidateGroupNameResolution="
+        + candidateGroupNameResolution
         + '}';
   }
 }
