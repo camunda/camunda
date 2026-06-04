@@ -910,6 +910,8 @@ public class SearchQuerySortRequestMapper {
         case PROCESS_DEFINITION_ID -> builder.processDefinitionId();
         case PROCESS_DEFINITION_KEY -> builder.processDefinitionKey();
         case PROCESS_INSTANCE_KEY -> builder.processInstanceKey();
+        case REQUEST_SOURCE_CHANNEL_TYPE -> builder.requestSourceChannelType();
+        case REQUEST_SOURCE_TOOL_NAME -> builder.requestSourceToolName();
         case RESULT -> builder.result();
         case TENANT_ID -> builder.tenantId();
         case TIMESTAMP -> builder.timestamp();
