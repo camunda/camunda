@@ -114,11 +114,11 @@ Search params drive filter state. The `useFilters` hook in `modules/hooks/useFil
 
 ### Authentication guards
 
-All authenticated routes are wrapped in `AuthenticationCheck` (redirects to `/login` if not logged in) and `AuthorizationCheck` (redirects to `/forbidden` if user lacks permissions). These are composed in the dashboard route's `lazy` loader. If you add a new authenticated route, nest it under the dashboard route in the route tree — don't duplicate the guards.
+All authenticated routes are wrapped in `AuthenticationCheck` + `AuthorizationCheck`, composed in the dashboard route's `lazy` loader. New authenticated routes must nest under the dashboard route — don't duplicate the guards.
 
 ### Error boundaries
 
-A single `PageErrorBoundary` is attached to the root route via React Router's `ErrorBoundary` prop. It uses `useRouteError()` to render error details. Individual pages don't define their own error boundaries — the root one catches everything.
+A single `PageErrorBoundary` on the root route catches all errors via `useRouteError()`. Don't add per-page error boundaries.
 
 ## Data fetching
 
@@ -134,9 +134,7 @@ import {endpoints, type QueryProcessInstancesRequestBody, type QueryProcessInsta
 import {requestWithThrow} from 'modules/request';
 ```
 
-`requestWithThrow` returns `{response, error}` — a discriminated union, not a thrown exception (despite the name). `response` is the parsed data on success, `null` on failure. `error` is a `RequestError` on failure, `null` on success. The underlying `request` function handles 401s automatically by disabling the session.
-
-There is also `requestAndParse` — this is an older utility used by a few legacy stores. Don't use it for new code; use `requestWithThrow`.
+`requestWithThrow` returns `{response, error}` — a discriminated union. `response` is parsed data on success (else `null`), `error` is `RequestError` on failure (else `null`). 401s are handled automatically. Don't use `requestAndParse` (legacy) for new code.
 
 ### Layer 2: React Query hooks (`modules/queries/`)
 
@@ -148,7 +146,7 @@ const useProcessInstance = () => {
   return useQuery({
 ```
 
-The standard pattern: destructure `{response, error}` from the API function, return `response` on success, `throw error` on failure. React Query catches the thrown error and surfaces it via `query.error`.
+The standard pattern: return `response` on success, `throw error` on failure.
 
 ### Layer 3: Components
 
@@ -186,11 +184,11 @@ Live data uses `refetchInterval` on query hooks (standard interval is 5000ms). C
 
 State is split across three mechanisms. When you encounter state, identify which category it belongs to:
 
-|                              What                               |                         Where                         |                            Why                             |
-|-----------------------------------------------------------------|-------------------------------------------------------|------------------------------------------------------------|
-| Server data (API responses)                                     | React Query via `modules/queries/`                    | Automatic caching, deduplication, background refresh       |
-| Filters, sort, pagination, element selection                    | URL search params via `useFilters`, `useSearchParams` | Shareable, survives refresh, back/forward works            |
-| UI mode (modification mode, panel visibility, selection, theme) | MobX stores in `modules/stores/`                      | Ephemeral client-side state that doesn't belong in the URL |
+|                              What                               |                         Where                         |
+|-----------------------------------------------------------------|-------------------------------------------------------|
+| Server data (API responses)                                     | React Query via `modules/queries/`                    |
+| Filters, sort, pagination, element selection                    | URL search params via `useFilters`, `useSearchParams` |
+| UI mode (modification mode, panel visibility, selection, theme) | MobX stores in `modules/stores/`                      |
 
 ### MobX stores
 
@@ -239,9 +237,9 @@ import {styles} from '@carbon/elements';
 ### Key patterns
 
 - **Wrapping Carbon components**: `styled(CarbonComponent)` applies additional styles on top of Carbon's defaults.
-- **Respect Carbon's defaults**: Carbon components ship with intentional styling — colors, spacing, typography, interactive states. Before applying any style that changes a Carbon component's visual defaults, you must first tell the user what you're about to override and why it's risky — even if the user explicitly asked for the change, because they may not realize it touches Carbon defaults. Explain what the override is (e.g., "This would set a custom height on SkeletonText, overriding Carbon's built-in sizing"), suggest the Carbon-native alternative if one exists (e.g., a prop, a token, a different component), and ask the user to confirm before proceeding. Only apply the override after the user says to go ahead.
+- **Respect Carbon's defaults**: Before overriding a Carbon component's visual defaults (colors, spacing, typography), explain the override to the user, suggest the Carbon-native alternative if one exists (prop, token, different component), and get confirmation before proceeding.
 - **Carbon tokens**: typography via `@carbon/elements` `styles` object (`${styles.productiveHeading02}`), spacing/color via CSS custom properties (`var(--cds-spacing-05)`, `var(--cds-text-primary)`).
-- **Transient props**: use the `$` prefix (`$isActive`, `$size`) to avoid passing props to the DOM. Type them with generics: `styled.div<{$isActive: boolean}>`.
+- **Transient props**: use the `$` prefix (`$isActive`, `$size`). Type them with generics: `styled.div<{$isActive: boolean}>`.
 - **`css` helper**: use for conditional style blocks inside template literals.
 
 ## Component structure
@@ -291,7 +289,7 @@ const getWrapper = (initialPath = Paths.processes()) => {
 };
 ```
 
-`getMockQueryClient()` creates a `QueryClient` with `retry: false`, `gcTime: Infinity`, `staleTime: Infinity` — no retries, no cache expiration, always fresh.
+`getMockQueryClient()` creates a `QueryClient` with `retry: false`, `gcTime: Infinity`, `staleTime: Infinity`.
 
 ### API mocking
 
@@ -309,7 +307,7 @@ mockFetchProcessInstance().withDelay(processInstanceData);
 mockFetchProcessInstance().withNetworkError();
 ```
 
-All handlers except `withNetworkError` are registered with `{once: true}` — they're consumed on first match, then removed. This lets you chain multiple setups for sequential requests in the same test. The MSW server resets all handlers in `afterEach` via `setupTests.tsx`.
+All handlers except `withNetworkError` are `{once: true}` — consumed on first match. Chain multiple `.withSuccess()` calls for sequential requests. MSW resets all handlers in `afterEach`.
 
 To create a new mock, use `mockGetRequest`, `mockPostRequest`, etc. from `modules/mocks/api/mockRequest.ts`:
 
@@ -375,6 +373,32 @@ npm run build          # Production build
 npm run knip           # Dead code/dependency analysis
 ```
 
+## Common workflows
+
+### Fixing a bug
+
+1. Reproduce with a failing test in the component's `index.test.tsx`
+2. Fix the component in `index.tsx`
+3. Verify: `npm test -- --reporter=verbose <test-file>` — if tests fail, check mock handler consumption (chain `.withSuccess()` for repeated requests)
+4. Run `npm run lint` — if it fails, fix reported issues and re-run before proceeding
+5. Check for regressions in related components
+
+### Writing a test for an existing component
+
+1. Set up mocks for API calls the component makes (check which query hooks it uses)
+2. Render with `getWrapper()` — match the route path the component expects
+3. Chain `.withSuccess()` calls if the component fetches the same endpoint multiple times
+4. Assert on user-visible text and ARIA roles, not implementation details
+5. Run: `npm test -- --reporter=verbose <test-file>` — if assertions fail on async content, use `findBy*` queries or `waitFor`
+
+### Adding a new API endpoint
+
+1. Create the API function in `modules/api/v2/` using `requestWithThrow`
+2. Add a query key to `modules/queries/queryKeys.ts`
+3. Create the query hook in `modules/queries/` wrapping the API function
+4. Create mock builders in `modules/mocks/api/v2/` using `mockPostRequest` or `mockGetRequest`
+5. Use the query hook in the component — verify with `npm test`
+
 ## Common pitfalls
 
 - **Mock handler consumption**: `.withSuccess()` handlers are `{once: true}` — if a component makes the same request twice, the second call gets no handler. Chain two `.withSuccess()` calls or use a non-one-shot approach.
@@ -401,3 +425,16 @@ npm run knip           # Dead code/dependency analysis
 - New UI component libraries
 
 **For substantial new features:** use the `frontend-migrator` skill to build them in the orchestration cluster webapp instead. Operate is winding down — invest engineering effort in the replacement.
+
+## Key references
+
+| What | Where |
+|------|-------|
+| Route definitions | `src/App/index.tsx` |
+| Path/Location builders | `src/modules/Routes.tsx` |
+| Custom test render | `src/modules/testing-library.ts` |
+| Mock query client | `src/modules/react-query/mockQueryClient.ts` |
+| Mock request builders | `src/modules/mocks/api/mockRequest.ts` |
+| Query key registry | `src/modules/queries/queryKeys.ts` |
+| HTTP request utils | `src/modules/request/` |
+| Test setup (store reset, MSW) | `src/setupTests.tsx` |
