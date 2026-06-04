@@ -28,6 +28,7 @@ import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.enums.UserTaskState;
+import io.camunda.client.api.search.filter.AuditLogFilter;
 import io.camunda.client.api.search.filter.DecisionDefinitionFilter;
 import io.camunda.client.api.search.filter.DecisionInstanceFilter;
 import io.camunda.client.api.search.filter.DecisionRequirementsFilter;
@@ -2117,5 +2118,19 @@ public final class TestHelper {
               assertThat(result).isNotNull();
               assertThat(result.getStatus()).isEqualTo(status);
             });
+  }
+
+  /**
+   * Waits for audit log entries to be indexed in Elasticsearch/OpenSearch after creation with the
+   * provided filter.
+   */
+  public static void waitForAuditLogEntries(
+      final CamundaClient camundaClient,
+      final Consumer<AuditLogFilter> filter,
+      final int expectedEntries) {
+    waitForItemsPaginated(
+        "should wait until audit log entries are available",
+        expectedEntries,
+        page -> camundaClient.newAuditLogSearchRequest().filter(filter).page(page).execute());
   }
 }
