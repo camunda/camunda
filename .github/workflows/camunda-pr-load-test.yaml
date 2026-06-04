@@ -74,6 +74,10 @@ jobs:
           pr_number="${{ github.event.pull_request.number }}"
           echo "namespace=c8-${author}-pr-${pr_number}-${db_type}" >> "$GITHUB_OUTPUT"
 
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          sparse-checkout: .github
       - name: Observe build status
         if: always()
         continue-on-error: true
