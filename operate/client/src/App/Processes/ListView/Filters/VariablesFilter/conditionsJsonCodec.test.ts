@@ -234,9 +234,8 @@ describe('conditionsJsonCodec', () => {
     const text = JSON.stringify([{name: 'v', value: {$gt: '42'}}]);
     const result = parseConditionsJson(text);
     expect(result.ok).toBe(false);
-    expect((result as {error: string}).error).toContain(
-      "Unsupported operator '$gt'",
-    );
+    expect((result as {error: string}).error).toContain('Condition #1');
+    expect((result as {error: string}).error).toContain('value');
   });
 
   it('should reject multiple operators in one entry', () => {
@@ -245,14 +244,16 @@ describe('conditionsJsonCodec', () => {
     ]);
     const result = parseConditionsJson(text);
     expect(result.ok).toBe(false);
-    expect((result as {error: string}).error).toContain('Multiple operators');
+    expect((result as {error: string}).error).toContain('Condition #1');
+    expect((result as {error: string}).error).toContain('value');
   });
 
   it('should reject empty operator object', () => {
     const text = JSON.stringify([{name: 'v', value: {}}]);
     const result = parseConditionsJson(text);
     expect(result.ok).toBe(false);
-    expect((result as {error: string}).error).toContain('No operator');
+    expect((result as {error: string}).error).toContain('Condition #1');
+    expect((result as {error: string}).error).toContain('value');
   });
 
   it('should reject $exists with non-boolean', () => {
@@ -273,6 +274,15 @@ describe('conditionsJsonCodec', () => {
     const text = JSON.stringify([{name: 'v', value: {$like: 42}}]);
     const result = parseConditionsJson(text);
     expect(result.ok).toBe(false);
+  });
+
+  it('should reject $notIn (valid per API schema but not yet exposed in UI)', () => {
+    const text = JSON.stringify([{name: 'v', value: {$notIn: ['a', 'b']}}]);
+    const result = parseConditionsJson(text);
+    expect(result.ok).toBe(false);
+    expect((result as {error: string}).error).toContain(
+      "'$notIn' is not yet supported in the UI",
+    );
   });
 
   it('should include condition number in error messages', () => {

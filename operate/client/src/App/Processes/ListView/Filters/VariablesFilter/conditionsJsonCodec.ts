@@ -7,17 +7,15 @@
  */
 
 import {z} from 'zod';
-import {queryProcessInstancesRequestBodySchema} from '@camunda/camunda-api-zod-schemas/8.10';
+import {processInstanceVariableFilterSchema} from '@camunda/camunda-api-zod-schemas/8.10';
 import type {DraftCondition} from './constants';
 
-const ApiVariableEntrySchema =
-  queryProcessInstancesRequestBodySchema.shape.filter
-    .unwrap()
-    .shape.variables.unwrap()
-    .def.element.extend({
-      name: z.string().min(1, 'Variable name is required'),
-    })
-    .strict();
+// Build on the official top-level schema (a `.strict()` object whose `value`
+// field is a discriminated union of `.strict()` operator shapes). We only
+// override `name` to add the UI-only "non-empty" constraint.
+const ApiVariableEntrySchema = processInstanceVariableFilterSchema.extend({
+  name: z.string().min(1, 'Variable name is required'),
+});
 
 const ApiVariablesSchema = z.array(ApiVariableEntrySchema);
 
@@ -78,15 +76,6 @@ const parseConditionsJson = (text: string): ParseResult => {
     return {ok: false, error: 'Invalid JSON syntax', kind: 'syntax'};
   }
 
-  const unknownOperatorErrors = detectUnknownOperators(raw);
-  if (unknownOperatorErrors.length > 0) {
-    return {
-      ok: false,
-      error: unknownOperatorErrors.join('; '),
-      kind: 'validation',
-    };
-  }
-
   const result = ApiVariablesSchema.safeParse(raw);
   if (!result.success) {
     return {
@@ -115,6 +104,9 @@ const parseConditionsJson = (text: string): ParseResult => {
   return {ok: true, conditions};
 };
 
+// The schema guarantees `value` is `string | {$eq} | {$neq} | {$like} |
+// {$in} | {$notIn} | {$exists}` with strict shape, so we can dispatch on the
+// presence of a single operator key without re-validating types.
 const fromApiEntry = (
   entry: z.infer<typeof ApiVariableEntrySchema>,
 ): {ok: true; condition: DraftCondition} | {ok: false; error: string} => {
@@ -123,105 +115,46 @@ const fromApiEntry = (
   if (typeof value === 'string') {
     return {ok: true, condition: {name, operator: 'equals', value}};
   }
-
-  if (Array.isArray(value)) {
-    return {ok: false, error: 'Value must be a string or an operator object'};
+  if ('$eq' in value) {
+    return {ok: true, condition: {name, operator: 'equals', value: value.$eq}};
   }
-
-  const entries = Object.entries(value).filter(([, v]) => v !== undefined);
-  if (entries.length === 0) {
-    return {ok: false, error: 'No operator specified in value'};
-  }
-  if (entries.length > 1) {
+  if ('$neq' in value) {
     return {
-      ok: false,
-      error: 'Multiple operators in a single condition are not supported',
+      ok: true,
+      condition: {name, operator: 'notEqual', value: value.$neq},
     };
   }
-
-  const [op, val] = entries[0]!;
-
-  switch (op) {
-    case '$eq':
-      if (typeof val !== 'string') {
-        return {ok: false, error: "'$eq' must be a string"};
-      }
-      return {ok: true, condition: {name, operator: 'equals', value: val}};
-    case '$neq':
-      if (typeof val !== 'string') {
-        return {ok: false, error: "'$neq' must be a string"};
-      }
-      return {ok: true, condition: {name, operator: 'notEqual', value: val}};
-    case '$like':
-      if (typeof val !== 'string') {
-        return {ok: false, error: "'$like' must be a string"};
-      }
-      return {
-        ok: true,
-        condition: {
-          name,
-          operator: 'contains',
-          value: val.replace(/^\*/, '').replace(/\*$/, ''),
-        },
-      };
-    case '$in':
-      if (!Array.isArray(val)) {
-        return {ok: false, error: "'$in' must be an array"};
-      }
-      return {
-        ok: true,
-        condition: {
-          name,
-          operator: 'oneOf',
-          value: JSON.stringify(val),
-        },
-      };
-    case '$exists':
-      if (typeof val !== 'boolean') {
-        return {ok: false, error: "'$exists' must be a boolean"};
-      }
-      return {
-        ok: true,
-        condition: {
-          name,
-          operator: val ? 'exists' : 'doesNotExist',
-          value: '',
-        },
-      };
-    default:
-      return {ok: false, error: `Unsupported operator '${op}'`};
+  if ('$like' in value) {
+    return {
+      ok: true,
+      condition: {
+        name,
+        operator: 'contains',
+        value: value.$like.replace(/^\*/, '').replace(/\*$/, ''),
+      },
+    };
   }
-};
-
-const KNOWN_OPERATORS = new Set([
-  '$eq',
-  '$neq',
-  '$exists',
-  '$in',
-  '$notIn',
-  '$like',
-]);
-
-const detectUnknownOperators = (raw: unknown): string[] => {
-  if (!Array.isArray(raw)) {
-    return [];
+  if ('$in' in value) {
+    return {
+      ok: true,
+      condition: {name, operator: 'oneOf', value: JSON.stringify(value.$in)},
+    };
   }
-  const errors: string[] = [];
-  raw.forEach((entry, i) => {
-    if (typeof entry !== 'object' || entry === null || Array.isArray(entry)) {
-      return;
-    }
-    const value = (entry as Record<string, unknown>)['value'];
-    if (typeof value !== 'object' || value === null || Array.isArray(value)) {
-      return;
-    }
-    for (const key of Object.keys(value)) {
-      if (key.startsWith('$') && !KNOWN_OPERATORS.has(key)) {
-        errors.push(`Condition #${i + 1}: Unsupported operator '${key}'`);
-      }
-    }
-  });
-  return errors;
+  if ('$exists' in value) {
+    return {
+      ok: true,
+      condition: {
+        name,
+        operator: value.$exists ? 'exists' : 'doesNotExist',
+        value: '',
+      },
+    };
+  }
+  if ('$notIn' in value) {
+    return {ok: false, error: "'$notIn' is not yet supported in the UI"};
+  }
+  // Unreachable: schema's discriminated union covers all cases.
+  return {ok: false, error: 'Unsupported operator'};
 };
 
 const formatZodError = (error: z.ZodError): string => {
