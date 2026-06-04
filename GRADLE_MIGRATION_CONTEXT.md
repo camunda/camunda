@@ -25,6 +25,11 @@ Run Gradle in parallel with Maven for faster builds on the Camunda monorepo (~12
 - **`dependencyResolutionManagement` with `PREFER_SETTINGS`**: Centralized repos work; `buildSrc/build.gradle.kts` still uses its own `gradlePluginPortal()` without conflict.
 - **Content filter gotcha**: `org.camunda.bpm.extension.dmn.scala:dmn-engine` is only on Maven Central (Artifactory returns 401/409), so Maven Central has NO content exclusions.
 - **dist module needs 3 OpenAPI generation tasks**: The `dist/pom.xml` has 3 `openapi-generator-maven-plugin` executions (`backups`, `cluster`, `exporter`) that each generate models from different spec files. Since the Gradle `org.openapi.generator` plugin only registers a single `openApiGenerate` task, additional tasks must be registered manually using `GenerateTask` class.
+- **Pom version injection invalidated cache silently**: `settings.gradle.kts` and `buildSrc/build.gradle.kts` read `parent/pom.xml` via `DocumentBuilderFactory.parse(file(...))`. Raw `File` reads are untracked by the configuration cache, so pom changes did NOT invalidate the cache (correctness bug, not perf bug — user assumption was inverted). `ValueSource` with `RegularFileProperty` parameter also does NOT auto-track file content. `providers.fileContents(layout.rootDirectory.file(...)).asText` IS tracked. After switch: cache reused on identical content, invalidates with `"file 'parent/pom.xml' has changed"` on content change.
+- **`camunda-process-test-spring-boot-4` is a relocation stub**: `packaging=pom`, redirects to `camunda-process-test-spring`. No sources/tests by design. Gradle empty module is correct, no fix needed.
+- **`camunda-process-test-spring-boot-3` shares test sources from sibling**: Maven uses `build-helper-maven-plugin` `add-test-source` to compile `../camunda-process-test-spring/src/test/java` against SB3-pinned classpath. Gradle equivalent: `sourceSets.test.java.srcDir("../camunda-process-test-spring/src/test/java")` + matching resources. Also needs test deps not exposed transitively by `implementation(project(...))`: `:camunda-spring-boot-starter`, `:camunda-process-test-langchain4j`, spring-test, spring-boot-test, mockito, wiremock, testcontainers, awaitility, jackson-jsr310.
+- **SB3 version pinning needs `resolutionStrategy.eachDependency`, not `enforcedPlatform`**: `server-conventions` adds `platform("spring-boot-dependencies")` (catalog version = 4.0.6). Adding a second `enforcedPlatform("spring-boot-dependencies:3.5.14")` conflicts (two `strictly` constraints → FAILED resolution). Solution: `configurations.all { resolutionStrategy.eachDependency { useVersion(...) } }` for groups `org.springframework.boot` → 3.5.14 and `org.springframework` → 6.2.18. Plus `exclude(group = "org.springframework.boot", module = "spring-boot-health")` because that module doesn't exist in 3.x (SB4 starter pulls it transitively).
+- **New convention `buildlogic.spring-boot-3-conventions`** does only version overrides + spring-boot-health exclude (no parent plugin). Modules apply it alongside their existing convention: SB3 starter = `client-conventions` + `spring-boot-3-conventions`; SB3 testing = `server-conventions` + `spring-boot-3-conventions`. Centralizes the SB3 version in one place.
 
 ## Accomplished
 
@@ -67,6 +72,9 @@ Run Gradle in parallel with Maven for faster builds on the Camunda monorepo (~12
 23. **Fixed zeebe-scheduler test failure** by isolating SBE tool from runtime classpath: added `sbeTool` configuration in `buildlogic.sbe-conventions.gradle.kts` and used it for `generateSbe` so Agrona 2.4.0 is not forced into runtime
 24. **Added Mockito JUnit extension dependency** to `zeebe/backup-stores/gcs`
 25. **Created `zeebe-test-classpath-deps.md`** to track test-jar dependencies from Maven for review and to keep Gradle aligned
+26. **Fixed config cache tracking for pom version injection**: replaced `DocumentBuilderFactory.parse(file(...))` with `providers.fileContents(layout.rootDirectory.file("parent/pom.xml")).asText.get()` + pure `parsePomProperties(String)` in `settings.gradle.kts` and `buildSrc/build.gradle.kts`. Cache now invalidates on pom content change, reused otherwise.
+27. **Wired SB3 test compilation**: added shared sources (`../camunda-process-test-spring/src/test/{java,resources}`) and missing test deps to `testing/camunda-process-test-spring-boot-3/build.gradle.kts`. `compileTestJava` now passes (was NO-SOURCE).
+28. **Created `buildlogic.spring-boot-3-conventions.gradle.kts`** to centralize SB3 version pinning (Spring Boot 3.5.14, Spring 6.2.18) via `resolutionStrategy.eachDependency` + spring-boot-health exclude. Applied to SB3 starter (`clients/camunda-spring-boot-3-starter`) and SB3 testing module, replacing inline `enforcedPlatform`/`exclude`.
 
 ### In Progress — Where We Left Off
 
@@ -95,6 +103,11 @@ Run Gradle in parallel with Maven for faster builds on the Camunda monorepo (~12
 - `/home/carlosana/workspace/camunda/camunda/optimize/upgrade/build.gradle.kts` — Added PreviousVersion.java template gen task with value `8.8.0`
 - `/home/carlosana/workspace/camunda/camunda/zeebe/gateway-rest/build.gradle.kts` — Added spring-boot-webmvc, spring-boot-jackson2
 - `/home/carlosana/workspace/camunda/camunda/configuration/build.gradle.kts` — Added dynamic-node-id-provider project dep
+- `settings.gradle.kts` — Replaced raw `File.parse()` pom read with tracked `providers.fileContents(...).asText`
+- `buildSrc/build.gradle.kts` — Same fix as settings.gradle.kts
+- `buildSrc/src/main/kotlin/buildlogic.spring-boot-3-conventions.gradle.kts` — New plugin: SB3 version overrides + spring-boot-health exclude
+- `clients/camunda-spring-boot-3-starter/build.gradle.kts` — Applied `spring-boot-3-conventions`, dropped inline enforcedPlatform/exclude
+- `testing/camunda-process-test-spring-boot-3/build.gradle.kts` — Applied `spring-boot-3-conventions`, added shared test sources + test deps
 
 ### Key reference files (Maven POMs to consult for dep mismatches)
 
@@ -163,6 +176,48 @@ val openApiGenerateXxx by tasks.registering(org.openapitools.generator.gradle.pl
 sourceSets { main { java { srcDir("${project.layout.buildDirectory.get()}/generated/openapi-xxx/src/main/java") } } }
 tasks.named("compileJava") { dependsOn(openApiGenerateXxx) }
 ```
+
+### Tracking external file reads in settings/buildSrc for config cache
+
+```kotlin
+import javax.xml.parsers.DocumentBuilderFactory
+import org.xml.sax.InputSource
+
+fun parsePomProperties(xml: String): Map<String, String> { /* parse from String, not File */ }
+
+val pomVersions: Map<String, String> =
+    parsePomProperties(
+        providers.fileContents(layout.rootDirectory.file("parent/pom.xml")).asText.get()
+    )
+```
+
+Do NOT use `DocumentBuilderFactory.parse(file(...))` directly — it bypasses config cache tracking. `ValueSource` with `RegularFileProperty` is also NOT tracked. Only `providers.fileContents(...)` is.
+
+### Pinning a different Spring/Spring Boot version per module
+
+```kotlin
+// buildSrc/src/main/kotlin/buildlogic.spring-boot-3-conventions.gradle.kts
+configurations.all {
+    exclude(group = "org.springframework.boot", module = "spring-boot-health")
+    resolutionStrategy.eachDependency {
+        when (requested.group) {
+            "org.springframework.boot" -> useVersion("3.5.14")
+            "org.springframework" -> useVersion("6.2.18")
+        }
+    }
+}
+```
+
+Apply alongside the module's existing convention:
+
+```kotlin
+plugins {
+    id("buildlogic.server-conventions")          // or client-conventions
+    id("buildlogic.spring-boot-3-conventions")
+}
+```
+
+Do NOT use a second `enforcedPlatform("spring-boot-dependencies:3.5.14")` — it conflicts with the SB4 platform already added by server/client conventions (two `strictly` constraints → FAILED resolution).
 
 ### Template generation (replacing Maven templating-maven-plugin)
 

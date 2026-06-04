@@ -20,6 +20,8 @@ dependencies {
     api(libs.org.springframework.spring.beans)
     api(libs.org.springframework.boot.spring.boot.autoconfigure)
     implementation(project(":camunda-client-java"))
+    implementation(project(":camunda-search-client"))
+    implementation(project(":camunda-search-domain"))
     implementation(libs.org.slf4j.slf4j.api)
     api(libs.jakarta.annotation.jakarta.annotation.api)
     api(libs.com.fasterxml.jackson.core.jackson.databind)

@@ -8,6 +8,7 @@ plugins {
 
 dependencies {
     api(project(":zeebe-backup"))
+    api(project(":zeebe-backup-store-common"))
     implementation(libs.org.slf4j.slf4j.api)
     api(libs.org.apache.commons.commons.compress)
     implementation(libs.com.github.luben.zstd.jni)

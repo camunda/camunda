@@ -21,6 +21,8 @@ dependencies {
     implementation(libs.io.camunda.security.library.spring.boot.starter)
     implementation(libs.io.camunda.security.library.api)
     implementation(libs.io.camunda.security.library.spring.boot.starter)
+    implementation(project(":camunda-schema-manager"))
+    implementation(project(":camunda-search-client-connect"))
     implementation(project(":camunda-service"))
     implementation(project(":camunda-spring-utils"))
     api(libs.org.springframework.boot.spring.boot.starter.web) {
