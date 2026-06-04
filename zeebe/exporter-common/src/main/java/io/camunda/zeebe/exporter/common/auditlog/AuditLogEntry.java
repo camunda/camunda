@@ -14,6 +14,7 @@ import io.camunda.search.entities.AuditLogEntity.AuditLogOperationType;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo.AuditLogActor;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo.AuditLogTenant;
 import io.camunda.zeebe.protocol.record.Agent;
+import io.camunda.zeebe.protocol.record.ChannelType;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
 import io.camunda.zeebe.protocol.record.RecordValue;
@@ -23,6 +24,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;
 import io.camunda.zeebe.util.DateUtil;
 import java.time.OffsetDateTime;
 import java.util.Optional;
+import org.apache.commons.lang3.StringUtils;
 
 public class AuditLogEntry {
 
@@ -104,6 +106,10 @@ public class AuditLogEntry {
 
   private Agent agent;
 
+  private ChannelType requestChannelType;
+
+  private String requestToolName;
+
   public String getEntityKey() {
     return entityKey;
   }
@@ -122,8 +128,21 @@ public class AuditLogEntry {
     return this;
   }
 
-  public AuditLogEntry setAgent(final Optional<Agent> agent) {
-    this.agent = agent.orElse(null);
+  public ChannelType getRequestChannelType() {
+    return requestChannelType;
+  }
+
+  public AuditLogEntry setRequestChannelType(final ChannelType requestChannelType) {
+    this.requestChannelType = requestChannelType;
+    return this;
+  }
+
+  public String getRequestToolName() {
+    return requestToolName;
+  }
+
+  public AuditLogEntry setRequestToolName(final String requestToolName) {
+    this.requestToolName = StringUtils.isEmpty(requestToolName) ? null : requestToolName;
     return this;
   }
 
@@ -408,6 +427,8 @@ public class AuditLogEntry {
             .setOperationType(info.operationType())
             .setActor(info.actor())
             .setAgent(record.getAgent())
+            .setRequestChannelType(record.getRequestChannelType())
+            .setRequestToolName(record.getRequestToolName())
             .setTenant(AuditLogTenant.of(record))
             .setBatchOperationKey(getBatchOperationKey(record))
             .setProcessInstanceKey(getProcessInstanceKey(record))
