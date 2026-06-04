@@ -10,6 +10,7 @@ zeebe:
           formCacheCapacity: 2000
           processCacheCapacity: 2000
           groupNameCacheCapacity: 2000
+          candidateGroupNameResolution: false
         jobs:
           timeoutCheckerPollingInterval: 15s
           timeoutCheckerBatchLimit: 1000
