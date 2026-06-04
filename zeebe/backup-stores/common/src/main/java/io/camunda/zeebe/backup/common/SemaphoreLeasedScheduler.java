@@ -17,35 +17,30 @@ public final class SemaphoreLeasedScheduler {
   private SemaphoreLeasedScheduler() {}
 
   /**
-   * Schedules a task to be executed asynchronously, respecting the concurrency limit imposed by the
-   * semaphore.
+   * Schedules a (blocking) task to be executed on the given executor, respecting the concurrency
+   * limit imposed by the semaphore.
+   *
+   * <p>Semaphore acquire, executing task and release all run in a single submitted unit of work:
+   * the worker thread acquires a permit, runs the task, and releases the permit in a {@code
+   * finally} block on that same thread. The release itself never needs an additional thread, so a
+   * permit freed by a finishing task immediately unblocks a worker parked in {@link
+   * Semaphore#acquire()}.
+   *
+   * <p><strong>Executor sizing:</strong> the scheduling itself is safe with a bounded executor.
+   * However, if the {@code task} blocks on further work submitted back to the <em>same</em>
+   * executor (e.g. it submits sub-tasks and joins on them), that executor must be unbounded (such
+   * as a virtual-thread-per-task executor). With a bounded executor in that case all worker threads
+   * can be parked waiting on tasks that can never be scheduled, which deadlocks. All current
+   * callers use unbounded virtual-thread executors for this reason.
    *
    * @param task the task to execute
-   * @param executor the executor to run the task
+   * @param executor the executor to run the task (see the executor sizing note above)
    * @param concurrencyLimit the semaphore to limit concurrency
    * @param <T> the type of the result
    * @return a future that completes with the result of the task
    */
   public static <T> CompletableFuture<T> schedule(
       final Supplier<T> task, final Executor executor, final Semaphore concurrencyLimit) {
-    return scheduleAsync(
-        () -> CompletableFuture.completedFuture(task.get()), executor, concurrencyLimit);
-  }
-
-  /**
-   * Schedules an asynchronous task to be executed, respecting the concurrency limit imposed by the
-   * semaphore. The permit is held until the future returned by the task completed.
-   *
-   * @param task the task to execute
-   * @param executor the executor to run the task
-   * @param concurrencyLimit the semaphore to limit concurrency
-   * @param <T> the type of the result
-   * @return a future that completes when the task's future completes
-   */
-  public static <T> CompletableFuture<T> scheduleAsync(
-      final Supplier<CompletableFuture<T>> task,
-      final Executor executor,
-      final Semaphore concurrencyLimit) {
     final var result = new CompletableFuture<T>();
 
     executor.execute(
@@ -55,26 +50,15 @@ public final class SemaphoreLeasedScheduler {
           } catch (final InterruptedException e) {
             Thread.currentThread().interrupt();
             result.completeExceptionally(e);
-            // The permit was never acquired
+            // The permit was never acquired, so it must not be released.
             return;
           }
 
           try {
-            task.get()
-                .whenComplete(
-                    (res, err) -> {
-                      try {
-                        if (err != null) {
-                          result.completeExceptionally(err);
-                        } else {
-                          result.complete(res);
-                        }
-                      } finally {
-                        concurrencyLimit.release();
-                      }
-                    });
-          } catch (final Exception e) {
-            result.completeExceptionally(e);
+            result.complete(task.get());
+          } catch (final Throwable t) {
+            result.completeExceptionally(t);
+          } finally {
             concurrencyLimit.release();
           }
         });
