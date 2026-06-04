@@ -241,6 +241,68 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
 
   @Override
   public long writeCommand(
+<<<<<<< HEAD
+=======
+      final long key,
+      final Intent intent,
+      final String username,
+      final UnifiedRecordValue recordValue,
+      final String... authorizedTenants) {
+    return streamProcessingComposite.writeCommand(
+        key, intent, username, recordValue, authorizedTenants);
+  }
+
+  @Override
+  public long writeCommand(
+      final long key,
+      final int requestStreamId,
+      final long requestId,
+      final Intent intent,
+      final UnifiedRecordValue recordValue,
+      final String... authorizedTenants) {
+    return streamProcessingComposite.writeCommand(
+        key, requestStreamId, requestId, intent, recordValue, authorizedTenants);
+  }
+
+  @Override
+  public long writeCommand(
+      final int requestStreamId,
+      final long requestId,
+      final Intent intent,
+      final UnifiedRecordValue recordValue,
+      final String... authorizedTenants) {
+    return streamProcessingComposite.writeCommand(
+        requestStreamId, requestId, intent, recordValue, authorizedTenants);
+  }
+
+  @Override
+  public long writeCommand(
+      final long key,
+      final int requestStreamId,
+      final long requestId,
+      final Intent intent,
+      final String username,
+      final UnifiedRecordValue recordValue,
+      final String... authorizedTenants) {
+    return streamProcessingComposite.writeCommand(
+        key, requestStreamId, requestId, intent, username, recordValue, authorizedTenants);
+  }
+
+  @Override
+  public long writeCommand(
+      final long key,
+      final int requestStreamId,
+      final long requestId,
+      final Intent intent,
+      final AuthInfo authorizations,
+      final UnifiedRecordValue recordValue) {
+    return streamProcessingComposite.writeCommand(
+        key, requestStreamId, requestId, intent, authorizations, recordValue);
+  }
+
+  @Override
+  public long writeCommand(
+>>>>>>> 94b4a9df (fix: Prevent users from claiming tasks as other users)
       final int requestStreamId,
       final long requestId,
       final Intent intent,
