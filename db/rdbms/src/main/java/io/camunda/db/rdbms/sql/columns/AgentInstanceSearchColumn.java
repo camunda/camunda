@@ -11,14 +11,15 @@ import io.camunda.search.entities.AgentInstanceEntity;
 
 public enum AgentInstanceSearchColumn implements SearchColumn<AgentInstanceEntity> {
   AGENT_INSTANCE_KEY("agentInstanceKey"),
+  STATUS("status"),
+  ELEMENT_ID("elementId"),
+  PROCESS_INSTANCE_KEY("processInstanceKey"),
+  ROOT_PROCESS_INSTANCE_KEY("rootProcessInstanceKey"),
+  PROCESS_DEFINITION_KEY("processDefinitionKey"),
+  TENANT_ID("tenantId"),
   CREATION_DATE("creationDate"),
   LAST_UPDATED_DATE("lastUpdatedDate"),
-  COMPLETION_DATE("completionDate"),
-  STATUS("status"),
-  PROCESS_INSTANCE_KEY("processInstanceKey"),
-  PROCESS_DEFINITION_KEY("processDefinitionKey"),
-  ELEMENT_ID("elementId"),
-  TENANT_ID("tenantId");
+  COMPLETION_DATE("completionDate");
 
   private final String property;
 
