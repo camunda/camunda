@@ -78,6 +78,11 @@
     </dependency>
 
     <dependency>
+      <groupId>javax.annotation</groupId>
+      <artifactId>javax.annotation-api</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
     </dependency>
@@ -153,6 +158,21 @@
       <plugin>
         <groupId>org.revapi</groupId>
         <artifactId>revapi-maven-plugin</artifactId>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <configuration>
+          <usedDependencies>
+            <dependency>javax.annotation:javax.annotation-api</dependency>
+          </usedDependencies>
+          <ignoredUsedUndeclaredDependencies>
+            <dep>com.google.code.findbugs:jsr305</dep>
+            <dep>com.google.errorprone:error_prone_annotations</dep>
+            <dep>com.google.guava:guava</dep>
+          </ignoredUsedUndeclaredDependencies>
+        </configuration>
       </plugin>
 
       <plugin>

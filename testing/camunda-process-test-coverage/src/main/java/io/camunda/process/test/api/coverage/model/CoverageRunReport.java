@@ -15,6 +15,7 @@
  */
 package io.camunda.process.test.api.coverage.model;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.List;
 import org.immutables.value.Value;
 
@@ -24,6 +25,7 @@ import org.immutables.value.Value;
  * <p>Represents the process and decision coverage produced by one execution of a test case.
  */
 @Value.Immutable
+@JsonDeserialize(builder = ImmutableCoverageRunReport.Builder.class)
 public interface CoverageRunReport {
   /** Returns the test run name. */
   String getName();
