@@ -8,7 +8,7 @@
 
 import {createFileRoute, Outlet} from '@tanstack/react-router';
 import {getClientConfig} from '#/shared/config/getClientConfig';
-import {ComponentNotAvailableError, ForbiddenError} from '#/shared/errors/errors';
+import {ComponentNotAvailableError, ForbiddenError} from '#/shared/errors';
 import {ForbiddenPage} from '#/shared/pages/ForbiddenPage';
 
 export const Route = createFileRoute('/_auth/operate')({
