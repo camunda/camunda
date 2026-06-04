@@ -52,6 +52,7 @@ final class ExporterContainer implements Controller {
   ExporterContainer(
       final ExporterDescriptor descriptor,
       final int partitionId,
+      final String physicalTenantId,
       final String clusterId,
       final String licenseKey,
       final ExporterInitializationInfo initializationInfo,
@@ -65,6 +66,7 @@ final class ExporterContainer implements Controller {
             Loggers.getExporterLogger(descriptor.getId()),
             descriptor.getConfiguration(),
             partitionId,
+            physicalTenantId,
             clusterId,
             licenseKey,
             meterRegistry,
