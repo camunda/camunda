@@ -224,16 +224,29 @@ class TestIncrementCounters(unittest.TestCase):
             state, set(), {"general-unit-tests"}, "hN")
         self.assertEqual(state["tests"][0]["clean_runs_since_modified"], 0)
 
-    def test_no_increment_when_test_reflakes(self):
+    def test_reflake_resets_counter_to_zero(self):
         state = _make_state(_make_entry(
             method_last_modified_sha="fix1",
-            clean_runs_since_modified=1,
+            clean_runs_since_modified=2,
         ))
         d.increment_counters_if_clean(
             state, current_flake_keys={"p.C.m"},
             ran_parent_jobs={"general-unit-tests"}, head_sha="hN",
         )
-        self.assertEqual(state["tests"][0]["clean_runs_since_modified"], 1)
+        # Re-flake must reset the counter, not leave it unchanged, so the
+        # "fix + 3 clean runs" clearance restarts after any intermittent flake.
+        self.assertEqual(state["tests"][0]["clean_runs_since_modified"], 0)
+
+    def test_reflake_resets_counter_even_without_modification(self):
+        state = _make_state(_make_entry(
+            method_last_modified_sha=None,
+            clean_runs_since_modified=2,
+        ))
+        d.increment_counters_if_clean(
+            state, current_flake_keys={"p.C.m"},
+            ran_parent_jobs={"general-unit-tests"}, head_sha="hN",
+        )
+        self.assertEqual(state["tests"][0]["clean_runs_since_modified"], 0)
 
     def test_no_increment_when_job_not_in_ran(self):
         state = _make_state(_make_entry(
