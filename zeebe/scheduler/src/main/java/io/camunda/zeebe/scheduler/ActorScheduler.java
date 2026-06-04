@@ -79,6 +79,13 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
     }
   }
 
+  /**
+   * @return true if the scheduler is currently running (started and not stopped).
+   */
+  public boolean isRunning() {
+    return state.get() == SchedulerState.RUNNING;
+  }
+
   public void start() {
     if (state.compareAndSet(SchedulerState.NEW, SchedulerState.RUNNING)) {
       actorTaskExecutor.start();
