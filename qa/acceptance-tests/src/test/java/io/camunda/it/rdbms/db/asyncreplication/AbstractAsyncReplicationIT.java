@@ -73,7 +73,7 @@ abstract class AbstractAsyncReplicationIT {
                           "asyncReplication",
                           Map.of(
                               "type",
-                              "LOG_SEQ",
+                              "LSN",
                               "pollingInterval",
                               "PT1S",
                               "maxLag",

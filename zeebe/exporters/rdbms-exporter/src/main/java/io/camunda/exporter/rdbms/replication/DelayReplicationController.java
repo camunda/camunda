@@ -84,7 +84,11 @@ public class DelayReplicationController implements ReplicationController {
 
     // if null, controller was closed during check
     if (checkTask != null) {
-      checkTask = controller.scheduleCancellableTask(delay, this::checkDue);
+      final DelayedEntry next = pendingEntries.peek();
+      final long nextDelayMs =
+          next == null ? delay.toMillis() : Math.max(0L, next.releaseTimeMs() - now);
+      checkTask =
+          controller.scheduleCancellableTask(Duration.ofMillis(nextDelayMs), this::checkDue);
     }
   }
 

@@ -528,7 +528,7 @@ class ExporterConfigurationTest {
     // given
     final ExporterConfiguration configuration = new ExporterConfiguration();
     final ReplicationConfiguration replication = new ReplicationConfiguration();
-    replication.setType(ReplicationType.LOG_SEQ);
+    replication.setType(ReplicationType.LSN);
     replication.setPollingInterval(Duration.ofSeconds(10));
     replication.setMinSyncReplicas(1);
     replication.setMaxLag(Duration.ofMinutes(5));
@@ -545,7 +545,7 @@ class ExporterConfigurationTest {
     // given
     final ExporterConfiguration configuration = new ExporterConfiguration();
     final ReplicationConfiguration replication = new ReplicationConfiguration();
-    replication.setType(ReplicationType.DELAY);
+    replication.setType(ReplicationType.TIME_DELAY);
     replication.setDelay(Duration.ofMinutes(10));
     configuration.setAsyncReplication(replication);
 
@@ -568,7 +568,7 @@ class ExporterConfigurationTest {
     // when
     configuration.validate();
 
-    // then - no error, pollingInterval and maxLag are only validated for LOG_SEQ type
+    // then - no error, pollingInterval and maxLag are only validated for LSN type
   }
 
   @ParameterizedTest
@@ -590,14 +590,14 @@ class ExporterConfigurationTest {
         Arguments.of(
             (Consumer<ReplicationConfiguration>)
                 r -> {
-                  r.setType(ReplicationType.LOG_SEQ);
+                  r.setType(ReplicationType.LSN);
                   r.setPollingInterval(Duration.ofMillis(-1000));
                 },
             "asyncReplication.pollingInterval must be a positive duration"),
         Arguments.of(
             (Consumer<ReplicationConfiguration>)
                 r -> {
-                  r.setType(ReplicationType.LOG_SEQ);
+                  r.setType(ReplicationType.LSN);
                   r.setPollingInterval(Duration.ZERO);
                 },
             "asyncReplication.pollingInterval must be a positive duration"),
@@ -610,28 +610,28 @@ class ExporterConfigurationTest {
         Arguments.of(
             (Consumer<ReplicationConfiguration>)
                 r -> {
-                  r.setType(ReplicationType.LOG_SEQ);
+                  r.setType(ReplicationType.LSN);
                   r.setMaxLag(Duration.ofMillis(-1000));
                 },
             "asyncReplication.maxLag must be a positive duration"),
         Arguments.of(
             (Consumer<ReplicationConfiguration>)
                 r -> {
-                  r.setType(ReplicationType.LOG_SEQ);
+                  r.setType(ReplicationType.LSN);
                   r.setMaxLag(Duration.ZERO);
                 },
             "asyncReplication.maxLag must be a positive duration"),
         Arguments.of(
             (Consumer<ReplicationConfiguration>)
                 r -> {
-                  r.setType(ReplicationType.DELAY);
+                  r.setType(ReplicationType.TIME_DELAY);
                   r.setDelay(Duration.ofMillis(-1000));
                 },
             "asyncReplication.delay must be a positive duration"),
         Arguments.of(
             (Consumer<ReplicationConfiguration>)
                 r -> {
-                  r.setType(ReplicationType.DELAY);
+                  r.setType(ReplicationType.TIME_DELAY);
                   r.setDelay(Duration.ZERO);
                 },
             "asyncReplication.delay must be a positive duration"));

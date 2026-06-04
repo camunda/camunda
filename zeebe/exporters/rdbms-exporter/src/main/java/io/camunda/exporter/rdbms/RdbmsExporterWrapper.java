@@ -140,7 +140,7 @@ public class RdbmsExporterWrapper implements Exporter {
             context.clock());
     builder.historyDeletionService(historyDeletionService);
     switch (config.getAsyncReplication().getType()) {
-      case LOG_SEQ -> {
+      case LSN -> {
         final ReplicationLogStatusProvider replicationLogStatusProvider =
             rdbmsService.getReplicationLogStatusProvider();
         builder.replicationControllerFactory(
@@ -151,7 +151,7 @@ public class RdbmsExporterWrapper implements Exporter {
                 context.clock(),
                 rdbmsWriters.getMetrics()));
       }
-      case DELAY ->
+      case TIME_DELAY ->
           builder.replicationControllerFactory(
               new DelayReplicationControllerFactory(
                   config.getAsyncReplication(), partitionId, context.clock()));

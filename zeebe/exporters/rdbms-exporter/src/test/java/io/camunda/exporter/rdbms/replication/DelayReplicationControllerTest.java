@@ -9,6 +9,7 @@ package io.camunda.exporter.rdbms.replication;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -123,7 +124,7 @@ class DelayReplicationControllerTest {
   }
 
   @Test
-  void shouldNotAcknowledgeOnClose() throws Exception {
+  void shouldNotAcknowledgeOnClose() {
     // given - a flush is pending
     final var replicationController = createController();
     when(clock.millis()).thenReturn(0L);
@@ -133,7 +134,7 @@ class DelayReplicationControllerTest {
     replicationController.close();
 
     // then - position was never acknowledged (safe: will re-export from last committed position)
-    verify(controller, never()).updateLastExportedRecordPosition(any(Long.class));
+    verify(controller, never()).updateLastExportedRecordPosition(anyLong());
   }
 
   @Test
@@ -149,7 +150,7 @@ class DelayReplicationControllerTest {
   }
 
   @Test
-  void shouldCancelTaskAfterClose() throws Exception {
+  void shouldCancelTaskAfterClose() {
     // given
     final var replicationController = createController();
 
@@ -161,7 +162,7 @@ class DelayReplicationControllerTest {
   }
 
   @Test
-  void shouldNotRescheduleAfterCloseduringCheck() throws Exception {
+  void shouldNotRescheduleAfterClosedDuringCheck() {
     // given - close is called; checkTask is set to null
     final var replicationController = createController();
     replicationController.close(); // sets checkTask to null
@@ -174,18 +175,23 @@ class DelayReplicationControllerTest {
   }
 
   @Test
-  void shouldDropEntryOnFullQueue() {
-    // given - fill the queue to capacity
+  void shouldAcknowledgeOldestEntriesWhenQueueIsFull() {
+    // given - fill the queue to capacity plus one more
     final var replicationController = createController();
-    when(clock.millis()).thenReturn(0L);
-    for (int i = 0; i < DelayReplicationController.DEFAULT_QUEUE_CAPACITY; i++) {
+    for (long i = 0; i < DelayReplicationController.DEFAULT_QUEUE_CAPACITY + 1; i++) {
+      when(clock.millis()).thenReturn(i);
       replicationController.onFlush(i);
     }
 
-    // when - one more flush that should be silently dropped
-    replicationController.onFlush(DelayReplicationController.DEFAULT_QUEUE_CAPACITY + 1L);
+    // when - one more flush is dropped and the queued entries expire
+    when(clock.millis()).thenReturn(DELAY.toMillis() * 2);
+    replicationController.checkDue();
 
-    // then - no exception, controller is still in sync
+    // then - the oldest retained entries are still acknowledged, the dropped one is not
     assertThat(replicationController.isReplicationInSync()).isTrue();
+    verify(controller)
+        .updateLastExportedRecordPosition(DelayReplicationController.DEFAULT_QUEUE_CAPACITY - 1L);
+    verify(controller, never())
+        .updateLastExportedRecordPosition(DelayReplicationController.DEFAULT_QUEUE_CAPACITY);
   }
 }

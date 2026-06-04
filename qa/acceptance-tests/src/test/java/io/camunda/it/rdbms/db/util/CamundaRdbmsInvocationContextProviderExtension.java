@@ -10,6 +10,7 @@ package io.camunda.it.rdbms.db.util;
 import static io.camunda.zeebe.test.util.testcontainers.TestSearchContainers.*;
 import static org.junit.jupiter.api.extension.ExtensionContext.Namespace.GLOBAL;
 
+import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration.ReplicationType;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -47,11 +48,7 @@ public class CamundaRdbmsInvocationContextProviderExtension
             .withUnifiedConfig(
                 c -> {
                   final var rdbms = c.getData().getSecondaryStorage().getRdbms();
-                  rdbms
-                      .getAsyncReplication()
-                      .setType(
-                          io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration
-                              .ReplicationType.LOG_SEQ);
+                  rdbms.getAsyncReplication().setType(ReplicationType.LSN);
                   rdbms.getAsyncReplication().setMinSyncReplicas(1);
                 })
             .withDatabaseContainer(new PostgresReplicationClusterContainer()));
@@ -111,7 +108,7 @@ public class CamundaRdbmsInvocationContextProviderExtension
                 c -> {
                   c.getData().getSecondaryStorage().getRdbms().setUsername("sa");
                   final var rdbms = c.getData().getSecondaryStorage().getRdbms();
-                  rdbms.getAsyncReplication().setEnabled(true);
+                  rdbms.getAsyncReplication().setType(ReplicationType.LSN);
                   rdbms.getAsyncReplication().setMinSyncReplicas(1);
                 })
             .withDatabaseContainer(new MSSQLReplicationClusterContainer()));
