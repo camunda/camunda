@@ -38,13 +38,17 @@ public final class Broker implements AutoCloseable {
 
   private final SystemContext systemContext;
   private final ExporterRepository exporterRepository;
+  private final SpringBrokerBridge springBrokerBridge;
+  private final List<PartitionListener> additionalPartitionListeners;
   private boolean isClosed = false;
 
   private CompletableFuture<Broker> startFuture;
   private BrokerHealthCheckService healthCheckService;
 
   // TODO make Broker class itself the actor
-  private final BrokerStartupActor brokerStartupActor;
+  // Non-final: recreated on restart (EXPERIMENTAL — CRaC) since the startup actor is submitted to
+  // the actor scheduler, which is rebuilt across a checkpoint/restore.
+  private BrokerStartupActor brokerStartupActor;
   private BrokerContext brokerContext;
 
   // TODO just used by tests ...
@@ -62,8 +66,20 @@ public final class Broker implements AutoCloseable {
       final ExporterRepository exporterRepository) {
     this.systemContext = systemContext;
     this.exporterRepository = exporterRepository;
+    this.springBrokerBridge = springBrokerBridge;
+    this.additionalPartitionListeners = additionalPartitionListeners;
 
-    final ActorScheduler scheduler = this.systemContext.getScheduler();
+    initStartup();
+  }
+
+  /**
+   * Builds the startup actor + context and submits it to the actor scheduler. Extracted so it can
+   * be re-run on a CRaC restart (EXPERIMENTAL): the previous startup actor was submitted to a now-
+   * rebuilt scheduler, so a fresh actor must be submitted to the restarted scheduler. The scheduler
+   * and cluster are the same (in-place restarted) instances, so their references stay valid.
+   */
+  private void initStartup() {
+    final ActorScheduler scheduler = systemContext.getScheduler();
     final BrokerInfo localBroker = createBrokerInfo(getConfig());
     final var cluster = getConfig().getCluster();
     final var nodeId = BrokerMemberId.from(cluster.getZone(), cluster.getNodeId());
@@ -102,6 +118,13 @@ public final class Broker implements AutoCloseable {
   }
 
   public synchronized CompletableFuture<Broker> start() {
+    if (isClosed) {
+      // EXPERIMENTAL (CRaC restart): recreate the startup machinery on the restarted scheduler,
+      // then start again. Keeps the same Broker instance so its consumers stay valid.
+      isClosed = false;
+      startFuture = null;
+      initStartup();
+    }
     if (startFuture == null) {
       logBrokerStart();
 
@@ -187,6 +210,13 @@ public final class Broker implements AutoCloseable {
 
   public BrokerCfg getConfig() {
     return systemContext.getBrokerConfiguration();
+  }
+
+  /**
+   * @return true if the broker has been started and not (yet) closed.
+   */
+  public synchronized boolean isRunning() {
+    return startFuture != null && !isClosed;
   }
 
   @Override

@@ -32,13 +32,20 @@ public final class BrokerClientImpl implements BrokerClient {
   public static final Logger LOG = LoggerFactory.getLogger(BrokerClientImpl.class);
 
   private final BrokerTopologyManager topologyManager;
-  private final BrokerRequestManager requestManager;
+  // Non-final: recreated on restart (EXPERIMENTAL — CRaC) since these actors are submitted to the
+  // actor scheduler, which is rebuilt across a checkpoint/restore.
+  private BrokerRequestManager requestManager;
 
   private boolean isClosed;
   private Subscription jobAvailableSubscription;
   private final ClusterEventService eventService;
   private final ActorSchedulingService schedulingService;
-  private final AtomixClientTransportAdapter atomixTransportAdapter;
+  private AtomixClientTransportAdapter atomixTransportAdapter;
+  // Retained so the actors can be recreated on restart.
+  private final Duration requestTimeout;
+  private final MessagingService messagingService;
+  private final BrokerClientRequestMetrics metrics;
+  private final TopicSupplier sendingTopicSupplier;
 
   public BrokerClientImpl(
       final Duration requestTimeout,
@@ -50,8 +57,15 @@ public final class BrokerClientImpl implements BrokerClient {
       final TopicSupplier sendingTopicSupplier) {
     this.eventService = eventService;
     this.schedulingService = schedulingService;
-
     this.topologyManager = topologyManager;
+    this.requestTimeout = requestTimeout;
+    this.messagingService = messagingService;
+    this.metrics = metrics;
+    this.sendingTopicSupplier = sendingTopicSupplier;
+    initActors();
+  }
+
+  private void initActors() {
     atomixTransportAdapter =
         new AtomixClientTransportAdapter(messagingService, sendingTopicSupplier);
     requestManager =
@@ -65,6 +79,11 @@ public final class BrokerClientImpl implements BrokerClient {
 
   @Override
   public Collection<ActorFuture<Void>> start() {
+    if (isClosed) {
+      // EXPERIMENTAL (CRaC restart): recreate the actors on the restarted scheduler.
+      isClosed = false;
+      initActors();
+    }
     final var transportStarted = schedulingService.submitActor(atomixTransportAdapter);
     final var requestManagerStarted = schedulingService.submitActor(requestManager);
     return List.of(transportStarted, requestManagerStarted);
