@@ -18,7 +18,7 @@ on:
       - '.github/workflows/camunda-load-test.yml'
       - '.github/workflows/camunda-verify-and-cleanup-load-test.yml'
       - '.github/workflows/camunda-load-test-smoke.yml'
-  workflow_dispatch: 
+  workflow_dispatch:
     inputs:
       ref:
         description: 'Branch ref to use for smoke test (e.g., "main" or "feature/my-branch")'
@@ -56,6 +56,10 @@ jobs:
           author="${{ steps.sanitize-author.outputs.branch_name }}"
           pr_number="${{ github.event.pull_request.number }}"
           echo "namespace=c8-smoke-${author}-${pr_number}" >> "$GITHUB_OUTPUT"
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          sparse-checkout: .github
       - name: Observe build status
         if: always()
         continue-on-error: true
