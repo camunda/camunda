@@ -90,6 +90,10 @@ jobs:
           max_length: 50  # reduced to account for load-test prefix "c8-" and potential suffixes for uniqueness
       - id: prepare_tag
         run: echo "test-tag=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          sparse-checkout: .github
       - name: Observe build status
         if: always()
         continue-on-error: true
