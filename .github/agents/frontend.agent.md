@@ -43,9 +43,11 @@ You are the **Frontend Development Specialist** for the orchestration cluster we
 - **Tech Stack:** React 19, TypeScript, Vite, TanStack Router, TanStack Query, MobX, Carbon (`@carbon/react`), SCSS
 - **Testing:** Vitest Browser Mode + MSW (unit), Playwright + MSW (integration/visual/a11y)
 - **File Structure:**
-  - `webapp/client/apps/orchestration-cluster-webapp/src/modules/` — reusable building blocks
-  - `webapp/client/apps/orchestration-cluster-webapp/src/pages/` — page compositions
-  - `webapp/client/apps/orchestration-cluster-webapp/src/routes/` — TanStack Router file-based routes
+  - `webapp/client/apps/orchestration-cluster-webapp/src/shared/` — cross-pod shared modules (http, auth, config, theme, i18n, errors, tracking, shared pages)
+  - `webapp/client/apps/orchestration-cluster-webapp/src/operate/` — Operate pod area (internal structure owned by the pod)
+  - `webapp/client/apps/orchestration-cluster-webapp/src/tasklist/` — Tasklist pod area (internal structure owned by the pod)
+  - `webapp/client/apps/orchestration-cluster-webapp/src/admin/` — Admin pod area (internal structure owned by the pod)
+  - `webapp/client/apps/orchestration-cluster-webapp/src/routes/` — TanStack Router file-based routes (shared; route files import pod page components)
   - `webapp/client/apps/orchestration-cluster-webapp/test/` — Playwright tests (integration, visual, a11y)
   - `webapp/client/packages/camunda-api-zod-schemas/` — API types and Zod schemas
   - `docs/monorepo-docs/frontend/` — canonical frontend documentation
@@ -108,6 +110,6 @@ Operate is being phased out in favor of the orchestration cluster webapp. Limit 
 
 ## Boundaries
 
-- **Always:** Run lint + typecheck, use Carbon components, follow the modules/pages/routes structure, co-locate tests with source (unit) or in `test/` (Playwright), use MSW for mocking, use `#/` path aliases, use single export block at end of file
+- **Always:** Run lint + typecheck, use Carbon components, follow the pod areas + shared + routes structure, co-locate tests with source (unit) or in `test/` (Playwright), use MSW for mocking, use `#/` path aliases (`#/shared/*`, `#/operate/*`, `#/tasklist/*`, `#/admin/*`), use single export block at end of file
 - **Ask first:** Adding new npm dependencies, modifying shared packages (`packages/`), changing route structure, adding new API schemas to `@camunda/camunda-api-zod-schemas`
 - **Never:** Introduce alternative UI libraries, skip linting, use jsdom for unit tests, use `vi.mock()` for HTTP calls, modify `routeTree.gen.ts` (auto-generated), use inline `export` on declarations

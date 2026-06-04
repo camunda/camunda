@@ -27,8 +27,8 @@ component reads the same options via `useSuspenseQuery`.
 // src/routes/_auth/profile.tsx
 import { createFileRoute } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { currentUserQueryOptions } from "#/modules/http/queries";
-import { MyUserComponent } from "#/modules/my-account/components/MyUserComponent";
+import { currentUserQueryOptions } from "#/shared/http/queries";
+import { MyUserComponent } from "#/operate/components/MyUserComponent";
 
 export const Route = createFileRoute("/_auth/profile")({
   loader: ({ context: { queryClient } }) => {
@@ -44,8 +44,8 @@ function Profile() {
 }
 ```
 
-`queryOptions` constants live in `#/modules/http/queries.ts` (or
-co-located with the owning module). Loader and component import the
+`queryOptions` constants live in `#/shared/http/queries.ts` (or
+co-located with the owning pod). Loader and component import the
 same reference so the cache key and fetcher stay in sync.
 
 ### 2. Route loader + `pendingComponent`
@@ -58,9 +58,9 @@ takes too long.
 // src/routes/_auth/dashboard.tsx
 import { createFileRoute } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { dashboardQueryOptions } from "#/modules/http/queries";
-import { DashboardSkeleton } from "#/modules/dashboard/components/DashboardSkeleton";
-import { MyDashboard } from "#/modules/dashboard/components/MyDashboard";
+import { dashboardQueryOptions } from "#/shared/http/queries";
+import { DashboardSkeleton } from "#/operate/components/DashboardSkeleton";
+import { MyDashboard } from "#/operate/components/MyDashboard";
 
 export const Route = createFileRoute("/_auth/dashboard")({
   loader: ({ context: { queryClient } }) => {
@@ -95,9 +95,9 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import {
   dashboardSummaryQueryOptions,
   dashboardMetricsQueryOptions,
-} from "#/modules/http/queries";
-import { MetricsPanelSkeleton } from "#/modules/dashboard/components/MetricsPanelSkeleton";
-import { Metrics } from "#/modules/dashboard/components/Metrics";
+} from "#/shared/http/queries";
+import { MetricsPanelSkeleton } from "#/operate/components/MetricsPanelSkeleton";
+import { Metrics } from "#/operate/components/Metrics";
 
 export const Route = createFileRoute("/_auth/dashboard")({
   loader: async ({ context: { queryClient } }) => {
@@ -140,7 +140,7 @@ import {
   type ErrorComponentProps,
 } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { currentUserQueryOptions } from "#/modules/http/queries";
+import { currentUserQueryOptions } from "#/shared/http/queries";
 
 export const Route = createFileRoute("/_auth/profile")({
   loader: ({ context: { queryClient } }) =>

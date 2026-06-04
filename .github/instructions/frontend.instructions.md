@@ -82,5 +82,5 @@ npm run test:visual       # Playwright visual regression (needs Docker)
 - Tech stack: React 19, TypeScript, Vite, TanStack Router, TanStack Query, Carbon, MSW
 - Unit tests use Vitest Browser Mode (real Chromium), not jsdom. See `.claude/skills/frontend-unit-test/`.
 - Playwright tests (integration, visual, a11y) use MSW via `@msw/playwright`. See `.claude/skills/frontend-integration-test/`.
-- Follow the modules/pages/routes architecture. See `.claude/skills/frontend-feature/`.
+- Follow the pod areas + shared + routes architecture. See `.claude/skills/frontend-feature/`.
 - For migrating legacy Operate/Tasklist code to the unified app, see `.claude/skills/frontend-migrator/`.

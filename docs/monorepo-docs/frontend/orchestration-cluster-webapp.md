@@ -25,47 +25,66 @@ from `operate/client`, `tasklist/client`, and `identity/client`.
 ```
 apps/orchestration-cluster-webapp/
 ├── src/
-│   ├── assets/svg/         # SVG sources (see Generating SVG components)
-│   ├── modules/            # Building blocks the app is assembled from (see Modules below)
-│   ├── pages/              # Standalone pages. Each file assembles all compponents of a page. Like main page content, error, loading, etc.
-│   ├── routes/             # TanStack Router file-based routes. Each page is plugged into a route here.
-│   ├── vitest-modules/     # Unit test utils
+│   ├── operate/            # Operate pod (internal structure owned by the pod)
+│   ├── tasklist/           # Tasklist pod (internal structure owned by the pod)
+│   ├── admin/              # Admin pod (internal structure owned by the pod)
+│   ├── shared/             # Cross-pod shared code (see Shared below)
+│   │   ├── auth/           # Session & authentication
+│   │   ├── browser-storage/# Typed storage abstraction
+│   │   ├── config/         # Boot & client configuration
+│   │   ├── errors/         # Error classes
+│   │   ├── http/           # Endpoints, queries, request wrapper
+│   │   ├── i18n/           # Internationalization
+│   │   ├── login/          # Login UI components
+│   │   ├── svg/            # Generated SVG components
+│   │   ├── theme/          # Theme provider (MobX)
+│   │   ├── tracking/       # Analytics (Mixpanel)
+│   │   ├── pages/          # Shared pages (login, errors, forbidden, 404)
+│   │   ├── assets/svg/     # SVG sources (see Generating SVG components)
+│   │   └── feature-flags.ts
+│   ├── routes/             # TanStack Router file-based routes (shared)
+│   ├── vitest-modules/     # Unit test infrastructure
 │   └── main.tsx            # App entry
 ├── test/                   # Playwright based tests
-│   ├── a11y/               # accessibility (Axe)
+│   ├── a11y/               # Accessibility (Axe)
 │   ├── integration/        # MSW-mocked integration
-│   ├── visual/             # visual regression
-│   ├── pw-modules/         # shared fixtures (MSW + Axe)
-│   └── pages/              # page objects
+│   ├── visual/             # Visual regression
+│   ├── pw-modules/         # Shared fixtures (MSW + Axe)
+│   └── pages/              # Page objects
 ├── shared-test-modules/    # Test utils shared between unit and Playwright tests
 └── vite.config.ts
 ```
 
-## Modules
+## Pod areas
 
-`src/modules/` holds the building blocks the app is assembled from,
-split by **meaningful unit** — not by feature. A module owns one small
-concern that one or more pages reuse.
+Each pod owns its directory (`src/operate/`, `src/tasklist/`, `src/admin/`) and is
+**free to define its own internal structure**. There is no prescribed layout inside
+a pod. Pods decide their own folder names, naming conventions, and internal patterns.
 
-Two common shapes:
+Path aliases give each pod a clean import boundary:
 
-- **Cross-cutting** — `http` for requests, `errors` for generic error
-  UI, `theme`, `tracking`, etc.
-- **Shared between related pages** — e.g., a layout module shared by
-  the process instances and decision instances pages, or a filters module
-  those pages share.
+| Alias | Resolves to |
+| ---- | ---- |
+| `#/operate/*` | `src/operate/*` |
+| `#/tasklist/*` | `src/tasklist/*` |
+| `#/admin/*` | `src/admin/*` |
+| `#/shared/*` | `src/shared/*` |
 
-Small, self-contained pages can live entirely inside a single module
-folder. The `login` module is an example.
+## Shared
 
-Keep each module's internal structure flat. React components live in a
-`components/` subfolder; everything else (hooks, utilities, stores,
-etc.) sits at the module root.
+`src/shared/` holds cross-cutting infrastructure that all pods can import.
+Changes here affect every pod, so they require cross-pod coordination.
 
-### Filename conventions
+Current shared modules: `auth`, `browser-storage`, `config`, `errors`, `http`,
+`i18n`, `login`, `svg`, `theme`, `tracking`, plus shared pages (login,
+error states, 404) and feature flags.
 
-Keep filenames consistent so the role of each file is obvious at a
-glance:
+Keep shared code **focused and small**. A shared module owns one concern.
+When a concern is relevant to only one pod, keep it in that pod's area.
+
+### Filename conventions for shared code
+
+Keep filenames consistent so the role of each file is obvious at a glance:
 
 | Kind      | Pattern          | Example                  |
 | --------- | ---------------- | ------------------------ |
@@ -75,10 +94,8 @@ glance:
 | Page      | `*Page.tsx`      | `DashboardPage.tsx`      |
 | Unit test | `*.test.ts(x)`   | `request.test.ts`        |
 
-Page co-located styles and tests mirror the component name (e.g. `DashboardPage.module.scss`, `DashboardPage.test.tsx`).
-
-There is **no** `modules/process-instances/` covering an entire large page;
-pages are assembled in `src/pages/` from these building blocks.
+Co-located styles and tests mirror the component name (e.g. `DashboardPage.module.scss`,
+`DashboardPage.test.tsx`). Pod areas may adopt these conventions or define their own.
 
 ## Scripts
 
@@ -95,7 +112,7 @@ pages are assembled in `src/pages/` from these building blocks.
 | `test:a11y`               | Playwright a11y projects (light + dark)                                                                                             |
 | `test:visual`             | Playwright visual-regression projects (light/dark × desktop/tablet)                                                                 |
 | `test:integration`        | Playwright integration project (MSW-mocked)                                                                                         |
-| `generate:svg`            | Convert `src/assets/svg/` to React components (see [Generating SVG components](./development-process/generating-svg-components.md)) |
+| `generate:svg`            | Convert `src/shared/assets/svg/` to React components (see [Generating SVG components](./development-process/generating-svg-components.md)) |
 
 ## Dev server & backend integration
 

@@ -37,7 +37,7 @@ import {Paths} from 'modules/Routes';
 ```tsx
 // src/routes/_auth/operate/processes/index.tsx
 import {createFileRoute} from '@tanstack/react-router';
-import {ProcessesPage} from '#/pages/ProcessesPage';
+import {ProcessesPage} from '#/operate/pages/ProcessesPage';
 
 const Route = createFileRoute('/_auth/operate/processes/')({
   component: ProcessesPage,
@@ -65,8 +65,8 @@ function Dashboard() {
 ```tsx
 // src/routes/_auth/operate/dashboard/index.tsx
 import {createFileRoute} from '@tanstack/react-router';
-import {queries} from '#/modules/http/queries';
-import {DashboardPage} from '#/pages/DashboardPage';
+import {queries} from '#/shared/http/queries';
+import {DashboardPage} from '#/operate/pages/DashboardPage';
 
 const Route = createFileRoute('/_auth/operate/dashboard/')({
   beforeLoad: async ({context: {queryClient}}) => {
@@ -183,7 +183,7 @@ const searchVariables = async (payload: QueryVariablesRequestBody) => {
 **Target (centralized):**
 
 ```tsx
-// src/modules/http/endpoints.ts — ALL endpoints in one file
+// src/shared/http/endpoints.ts — ALL endpoints in one file
 import {endpoints as apiEndpoints} from '@camunda/camunda-api-zod-schemas/8.10';
 
 function searchVariables(body: QueryVariablesRequestBody): Request {
@@ -219,7 +219,7 @@ function useVariables(filters: Filters) {
 **Target (centralized `queries.ts`):**
 
 ```tsx
-// src/modules/http/queries.ts — ALL query options in one file
+// src/shared/http/queries.ts — ALL query options in one file
 import {queryOptions} from '@tanstack/react-query';
 import * as endpoints from './endpoints';
 import {request} from './request';
@@ -487,9 +487,9 @@ App/Dashboard/index.test.tsx   → co-located test
 **Target:**
 
 ```
-pages/DashboardPage.tsx             → import from '#/pages/DashboardPage'
-pages/DashboardPage.module.scss     → co-located SCSS module
-pages/DashboardPage.test.tsx        → co-located test
+operate/pages/DashboardPage.tsx             → import from '#/operate/pages/DashboardPage'
+operate/pages/DashboardPage.module.scss     → co-located SCSS module
+operate/pages/DashboardPage.test.tsx        → co-located test
 ```
 
 No barrel files, no `index.tsx`, direct file imports with `#/` path aliases.

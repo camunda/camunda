@@ -38,11 +38,11 @@ to merge to `main`, gate it behind a feature flag.
 ### Creating a flag
 
 Export a boolean `const` from
-`src/modules/feature-flags.ts`. Use `SCREAMING_SNAKE_CASE` and
+`src/shared/feature-flags.ts`. Use `SCREAMING_SNAKE_CASE` and
 default to `false`.
 
 ```ts
-// src/modules/feature-flags.ts
+// src/shared/feature-flags.ts
 export const ENABLE_PROCESS_MIGRATION = false;
 ```
 
@@ -53,7 +53,7 @@ component, or navigation item. Do not scatter flag checks deep inside
 modules.
 
 ```tsx
-import { ENABLE_PROCESS_MIGRATION } from "#/modules/feature-flags";
+import { ENABLE_PROCESS_MIGRATION } from "#/shared/feature-flags";
 
 function ProcessActions() {
   return (
@@ -91,7 +91,7 @@ issue and link it from a comment next to the flag.
 Before opening each PR in a large feature:
 
 - [ ] PR is a self-contained slice, not a partial dump.
-- [ ] Feature flag added in `src/modules/feature-flags.ts` if the
+- [ ] Feature flag added in `src/shared/feature-flags.ts` if the
       feature is not ready to enable.
 - [ ] Flag gating lives at route or page level, not deep in modules.
 - [ ] No leftover flags without a tracking issue for removal.

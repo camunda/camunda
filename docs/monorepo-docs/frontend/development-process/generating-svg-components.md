@@ -8,9 +8,9 @@ Run the following command inside the `@camunda/orchestration-cluster-webapp` app
 npm run generate:svg
 ```
 
-This command processes all SVG files in `apps/orchestration-cluster-webapp/src/assets/svg/` and generates React components from them. These components are stored in `apps/orchestration-cluster-webapp/src/modules/svg/` and are intended for use throughout the project. They must not be edited manually, as any changes will be overwritten the next time the command is run.
+This command processes all SVG files in `apps/orchestration-cluster-webapp/src/shared/assets/svg/` and generates React components from them. These components are stored in `apps/orchestration-cluster-webapp/src/shared/svg/` and are intended for use throughout the project. They must not be edited manually, as any changes will be overwritten the next time the command is run.
 
 This must be run manually in the following cases:
 
-- **A new SVG is added** to `apps/orchestration-cluster-webapp/src/assets/svg/`
-- **An existing SVG is changed** in `apps/orchestration-cluster-webapp/src/assets/svg/`
+- **A new SVG is added** to `apps/orchestration-cluster-webapp/src/shared/assets/svg/`
+- **An existing SVG is changed** in `apps/orchestration-cluster-webapp/src/shared/assets/svg/`

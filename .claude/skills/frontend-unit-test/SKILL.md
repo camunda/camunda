@@ -20,7 +20,7 @@ This is fundamentally different from the `@testing-library/react` + `vi.mock()` 
 - Use `expect.element()` for DOM assertions — it retries automatically until the assertion passes or times out. This replaces the `waitFor` / `findBy*` / `screen.findByRole` patterns you may know from Testing Library. There is no `waitFor` here.
 - Mock HTTP through the `worker` fixture using endpoint mocks from `#/shared-test-modules/mock-handlers`. Each mock is an individually named export (e.g., `mockCurrentUserEndpoint`, `mockLoginEndpoint`) created with `createEndpointMock` from `#/shared-test-modules/mock-endpoint`. Both unit and Playwright tests use the same definitions. All endpoint mocks must be defined in `apps/orchestration-cluster-webapp/shared-test-modules/mock-handlers.ts` — never create `createEndpointMock` calls inline in test files. Never use `vi.mock()` for API calls; it couples tests to implementation details and breaks on refactors.
 - Prefer testing library selectors: `getByRole`, `getByLabelText`, `getByText`. They enforce accessible markup and survive structural refactors. Avoid `querySelector` and `getByTestId` — they test DOM structure, not behavior.
-- Co-locate test files with source: `src/modules/foo/bar.test.tsx` sits next to `bar.tsx`.
+- Co-locate test files with source: a test for `src/shared/foo/bar.tsx` sits at `src/shared/foo/bar.test.tsx`; a test for `src/operate/components/Foo.tsx` sits next to it at `src/operate/components/Foo.test.tsx`. Pod areas follow their own conventions for test placement.
 - Prefix test names with `should` (e.g., `it('should display an error on invalid credentials')`).
 - Do not mock the router. Use `renderWithRouter(initialLocation)` from `#/vitest-modules/render-with-router` when the component needs routing context. It creates a real TanStack Router backed by an in-memory history — the component receives real route params, search params, and navigation.
 - Avoid `vi.mock()` in general. Prefer MSW and real implementations. Vitest mocks couple tests to internals and break on refactors. Reach for them only when there is no practical alternative, such as faking time with `vi.useFakeTimers`.
@@ -135,8 +135,8 @@ npm run test:unit:ui    # Visible browser — useful for debugging
 
 ## Template references
 
-- `src/pages/LoginPage.test.tsx` — page-level test using `renderWithRouter`.
-- `src/modules/mock-test.test.tsx` — component test with MSW mocking.
+- `src/shared/pages/LoginPage.test.tsx` — page-level test using `renderWithRouter`.
+- `src/shared/mock-test.test.tsx` — component test with MSW mocking.
 - `src/vitest-modules/test-extend.ts` — custom `it` fixture source.
 - `src/vitest-modules/render-with-router.tsx` — `renderWithRouter` utility source.
 - `shared-test-modules/mock-endpoint.ts` — `createEndpointMock` factory source.
