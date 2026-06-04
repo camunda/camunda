@@ -37,19 +37,26 @@ public class UserTaskRejectionCommandTest {
 
   private static final String TENANT = "custom-tenant";
   private static final String USERNAME = "tenant-user";
+  private static final String USERNAME2 = "tenant-user-2";
 
   @Rule public final TestWatcher watcher = new RecordingExporterTestWatcher();
 
   @BeforeClass
   public static void setUp() {
+    ENGINE.tenant().newTenant().withTenantId(TENANT).create();
     final var user = ENGINE.user().newUser(USERNAME).create().getValue();
-    final var createdUsername = user.getUsername();
-    ENGINE.tenant().newTenant().withTenantId(TENANT).create().getValue().getTenantKey();
     ENGINE
         .tenant()
         .addEntity(TENANT)
         .withEntityType(EntityType.USER)
-        .withEntityId(createdUsername)
+        .withEntityId(user.getUsername())
+        .add();
+    final var user2 = ENGINE.user().newUser(USERNAME2).create().getValue();
+    ENGINE
+        .tenant()
+        .addEntity(TENANT)
+        .withEntityType(EntityType.USER)
+        .withEntityId(user2.getUsername())
         .add();
   }
 
@@ -128,22 +135,22 @@ public class UserTaskRejectionCommandTest {
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
-    // Claim the user task with user1
-    ENGINE.userTask().ofInstance(processInstanceKey).withAssignee("user1").claim(USERNAME);
+    // Claim the user task (self-claim: assignee == caller)
+    ENGINE.userTask().ofInstance(processInstanceKey).withAssignee(USERNAME).claim(USERNAME);
 
     // Wait for the task to be claimed
     RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED)
         .withProcessInstanceKey(processInstanceKey)
         .await();
 
-    // when - try to claim the already claimed user task with user2
+    // when - a different tenant user tries to claim the already claimed user task
     final var rejectionRecord =
         ENGINE
             .userTask()
             .ofInstance(processInstanceKey)
-            .withAssignee("user2")
+            .withAssignee(USERNAME2)
             .expectRejection()
-            .claim(USERNAME);
+            .claim(USERNAME2);
 
     // then - verify the rejection record is enriched
     assertThat(rejectionRecord)
@@ -207,22 +214,22 @@ public class UserTaskRejectionCommandTest {
             .withProcessInstanceKey(childProcessInstanceKey)
             .getFirst();
 
-    // Claim the user task with user1
-    ENGINE.userTask().withKey(userTaskCreated.getKey()).withAssignee("user1").claim(USERNAME);
+    // Claim the user task (self-claim: assignee == caller)
+    ENGINE.userTask().withKey(userTaskCreated.getKey()).withAssignee(USERNAME).claim(USERNAME);
 
     // Wait for the task to be claimed
     RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED)
         .withProcessInstanceKey(childProcessInstanceKey)
         .await();
 
-    // when - try to claim the already claimed user task
+    // when - a different tenant user tries to claim the already claimed user task
     final var rejectionRecord =
         ENGINE
             .userTask()
             .withKey(userTaskCreated.getKey())
-            .withAssignee("user2")
+            .withAssignee(USERNAME2)
             .expectRejection()
-            .claim(USERNAME);
+            .claim(USERNAME2);
 
     // then - verify the rejection record has the ROOT process instance key (parent), not the child
     assertThat(rejectionRecord)
@@ -369,22 +376,22 @@ public class UserTaskRejectionCommandTest {
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
-    // Claim the user task first with user1
-    ENGINE.userTask().withKey(userTaskCreated.getKey()).withAssignee("user1").claim(USERNAME);
+    // Claim the user task first (self-claim: assignee == caller)
+    ENGINE.userTask().withKey(userTaskCreated.getKey()).withAssignee(USERNAME).claim(USERNAME);
 
     // Wait for the task to be claimed
     RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED)
         .withProcessInstanceKey(processInstanceKey)
         .await();
 
-    // when - try to claim the already claimed task with a different user (user2)
+    // when - a different tenant user tries to claim the already claimed task
     final var rejectionRecord =
         ENGINE
             .userTask()
             .withKey(userTaskCreated.getKey())
-            .withAssignee("user2")
+            .withAssignee(USERNAME2)
             .expectRejection()
-            .claim(USERNAME);
+            .claim(USERNAME2);
 
     // then - verify the rejection record is enriched (task exists, just can't be claimed again)
     assertThat(rejectionRecord)
