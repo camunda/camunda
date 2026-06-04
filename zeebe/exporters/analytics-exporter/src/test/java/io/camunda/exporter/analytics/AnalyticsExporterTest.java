@@ -18,6 +18,9 @@ import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.opentelemetry.api.logs.LogRecordBuilder;
@@ -145,16 +148,27 @@ class AnalyticsExporterTest {
   }
 
   @Test
-  void shouldNotSerializeMetadataForUnhandledRecords() {
-    // given — fresh controller with no pre-existing metadata
-    final var unhandledRecord = FACTORY.generateRecord(ValueType.JOB);
+  void shouldNotSerializeMetadataWhenHandlerNoOps() {
+    // given — a record that passes the AnalyticsRecordFilter but the handler skips because the
+    // element isn't an ad-hoc sub-process. This is the realistic hot-path no-op case.
+    final var value =
+        ImmutableProcessInstanceRecordValue.builder()
+            .withBpmnElementType(BpmnElementType.SERVICE_TASK)
+            .build();
+    final var record =
+        FACTORY.generateRecord(
+            ValueType.PROCESS_INSTANCE,
+            r ->
+                r.withRecordType(RecordType.EVENT)
+                    .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                    .withValue(value));
 
     // when
-    exporter.export(unhandledRecord);
+    exporter.export(record);
 
-    // then — position advances but no metadata was written, because the handler did not
-    // touch the metadata so serializing it again would be wasted work
-    assertThat(controller.getPosition()).isEqualTo(unhandledRecord.getPosition());
+    // then — position advances but no metadata was written, because the handler didn't touch
+    // it so serializing again would be wasted work
+    assertThat(controller.getPosition()).isEqualTo(record.getPosition());
     assertThat(controller.readMetadata()).isEmpty();
   }
 
