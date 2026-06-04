@@ -151,6 +151,11 @@ public final class ExporterTest {
     }
 
     @Override
+    public String getPhysicalTenantId() {
+      return "default";
+    }
+
+    @Override
     public String getClusterId() {
       return "";
     }
