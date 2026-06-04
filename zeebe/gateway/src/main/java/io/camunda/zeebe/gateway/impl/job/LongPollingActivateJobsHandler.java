@@ -200,6 +200,7 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
           if (state != null) {
             state.removeRequest(longPollingRequest);
             state.removeActiveRequest(longPollingRequest);
+            tryCleanupJobTypeState(type);
           }
         });
   }
@@ -374,6 +375,7 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
             () -> {
               request.timeout();
               state.removeRequest(request);
+              tryCleanupJobTypeState(request.getType());
             });
     request.setScheduledTimer(timeout);
   }
