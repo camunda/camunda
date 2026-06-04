@@ -29,14 +29,48 @@ public class ExporterContextTest {
 
   public ExporterContext makeExporterContext(
       final int partitionId, final String exporterId, final MeterRegistry underlying) {
+    return makeExporterContext(partitionId, "default", exporterId, underlying);
+  }
+
+  public ExporterContext makeExporterContext(
+      final int partitionId,
+      final String physicalTenantId,
+      final String exporterId,
+      final MeterRegistry underlying) {
     return new ExporterContext(
         LOG,
         new ExporterTestConfiguration<>(exporterId, Collections.emptyMap()),
         partitionId,
+        physicalTenantId,
         "",
         null,
         underlying,
         FIXED_INSTANT_SOURCE);
+  }
+
+  @Test
+  void shouldReturnDefaultPhysicalTenantId() {
+    // given
+    final var context = makeExporterContext(1, "TestExporter", new SimpleMeterRegistry());
+
+    // when
+    final var physicalTenantId = context.getPhysicalTenantId();
+
+    // then
+    assertThat(physicalTenantId).isEqualTo("default");
+  }
+
+  @Test
+  void shouldReturnExplicitPhysicalTenantId() {
+    // given
+    final var context =
+        makeExporterContext(1, "tenant-a", "TestExporter", new SimpleMeterRegistry());
+
+    // when
+    final var physicalTenantId = context.getPhysicalTenantId();
+
+    // then
+    assertThat(physicalTenantId).isEqualTo("tenant-a");
   }
 
   @Test

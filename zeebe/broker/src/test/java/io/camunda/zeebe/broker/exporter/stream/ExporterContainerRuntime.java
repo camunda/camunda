@@ -80,6 +80,17 @@ public final class ExporterContainerRuntime implements CloseableSilently {
   }
 
   public ExporterContainer newContainer(
+      final ExporterDescriptor descriptor, final int partitionId, final String physicalTenantId) {
+    return newContainer(
+        descriptor,
+        partitionId,
+        physicalTenantId,
+        new ExporterInitializationInfo(0, null),
+        new SimpleMeterRegistry(),
+        pos -> true);
+  }
+
+  public ExporterContainer newContainer(
       final ExporterDescriptor descriptor,
       final int partitionId,
       final ExporterInitializationInfo initializationInfo) {
@@ -100,12 +111,23 @@ public final class ExporterContainerRuntime implements CloseableSilently {
       final ExporterInitializationInfo initializationInfo,
       final MeterRegistry meterRegistry,
       final ExporterReplayControl replayControl) {
+    return newContainer(
+        descriptor, partitionId, "default", initializationInfo, meterRegistry, replayControl);
+  }
+
+  public ExporterContainer newContainer(
+      final ExporterDescriptor descriptor,
+      final int partitionId,
+      final String physicalTenantId,
+      final ExporterInitializationInfo initializationInfo,
+      final MeterRegistry meterRegistry,
+      final ExporterReplayControl replayControl) {
 
     final var container =
         new ExporterContainer(
             descriptor,
             partitionId,
-            "default",
+            physicalTenantId,
             "",
             null,
             initializationInfo,

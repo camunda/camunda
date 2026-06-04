@@ -232,6 +232,33 @@ final class ExporterContainerTest {
     }
 
     @Test
+    void shouldExposeDefaultPhysicalTenantIdToExporter() throws Exception {
+      // when
+      exporterContainer.configureExporter();
+
+      // then
+      assertThat(exporter.getContext().getPhysicalTenantId()).isEqualTo("default");
+    }
+
+    @Test
+    void shouldExposeExplicitPhysicalTenantIdToExporter() throws Exception {
+      // given
+      final var descriptor =
+          runtime
+              .getRepository()
+              .validateAndAddExporterDescriptor(
+                  "tenantExporter", FakeExporter.class, Map.of("key", "value"));
+      final var container = runtime.newContainer(descriptor, PARTITION_ID, "tenant-a");
+      final var tenantExporter = (FakeExporter) container.getExporter();
+
+      // when
+      container.configureExporter();
+
+      // then
+      assertThat(tenantExporter.getContext().getPhysicalTenantId()).isEqualTo("tenant-a");
+    }
+
+    @Test
     void shouldOpenExporter() throws Exception {
       // given
       exporterContainer.configureExporter();
