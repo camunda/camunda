@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {IS_AI_AGENT_ENABLED} from 'modules/feature-flags';
 import {useProcessInstanceAgentInstances} from './useProcessInstanceAgentInstances';
 import {useAgentInstancesSearch} from './useAgentInstancesSearch';
 
@@ -28,10 +27,7 @@ const useAgentInstanceForElement = (
     : undefined;
 
   const needsFallback =
-    IS_AI_AGENT_ENABLED &&
-    isSuccess &&
-    cachedAgentInstance === undefined &&
-    !!elementInstanceKey;
+    isSuccess && cachedAgentInstance === undefined && !!elementInstanceKey;
 
   const {
     data: fallbackAgentInstanceResult,

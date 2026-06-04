@@ -22,7 +22,6 @@ import {isCamundaUserTask} from 'modules/bpmn-js/utils/isCamundaUserTask';
 import {isMessageEventElement} from 'modules/bpmn-js/utils/isMessageEventElement';
 import {useSearchUserTasks} from 'modules/queries/userTasks/useSearchUserTasks';
 import {useMessageSubscriptions} from 'modules/queries/messageSubscriptions/useMessageSubscriptions';
-import {IS_AI_AGENT_ENABLED} from 'modules/feature-flags';
 import {getClientConfig} from 'modules/utils/getClientConfig';
 import {mergePathname} from 'modules/request/mergePathname';
 import {getExecutionDuration} from './getExecutionDuration';
@@ -520,14 +519,13 @@ const DetailsTab: React.FC = () => {
         ]}
         rows={rows}
       />
-      {IS_AI_AGENT_ENABLED &&
-        (agentInstance !== undefined || isAgentLoading || isAgentError) && (
-          <AgentDetails
-            agentInstance={agentInstance}
-            isLoading={isAgentLoading}
-            isError={isAgentError}
-          />
-        )}
+      {(agentInstance !== undefined || isAgentLoading || isAgentError) && (
+        <AgentDetails
+          agentInstance={agentInstance}
+          isLoading={isAgentLoading}
+          isError={isAgentError}
+        />
+      )}
       <WaitingStatus waitStates={elementWaitStates} />
     </Container>
   );
