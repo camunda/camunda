@@ -608,14 +608,16 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
     if (total.relation() == TotalHitsRelation.Eq) {
       metrics.setProcessInstancesAwaitingArchival(toInt(total.value()));
     } else {
-      if (System.currentTimeMillis() - lastFullPiBacklogCountTimestamp.get()
-          < DELAY_BETWEEN_PI_COUNT_RUNS) {
+      // relation is Gte (≥10 000), fire a separate _count for the exact number
+      final long now = System.currentTimeMillis();
+      final long last = lastFullPiBacklogCountTimestamp.get();
+      if (now - last < DELAY_BETWEEN_PI_COUNT_RUNS) {
         logger.trace(
             "Total hits relation is 'gte' and last count was {}s ago, skipping count query",
-            lastFullPiBacklogCountTimestamp.get() / 1000);
+            (now - last) / 1000);
         return;
       }
-      // relation is Gte (≥10 000), fire a separate _count for the exact number
+      lastFullPiBacklogCountTimestamp.set(now);
       client
           .count(
               b ->
@@ -628,7 +630,6 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
           .whenCompleteAsync(
               (countResponse, countError) -> {
                 try {
-                  lastFullPiBacklogCountTimestamp.set(System.currentTimeMillis());
                   if (countError != null) {
                     logger.debug("Failed to fetch archival backlog count from _count", countError);
                   } else {
