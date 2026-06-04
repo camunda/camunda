@@ -25,10 +25,14 @@ import io.camunda.zeebe.backup.azure.AzureBackupStoreException.BlobAlreadyExists
 import io.camunda.zeebe.backup.common.FileSet;
 import io.camunda.zeebe.backup.common.FileSet.NamedFile;
 import io.camunda.zeebe.backup.common.NamedFileSetImpl;
+import io.camunda.zeebe.backup.common.SemaphoreLeasedScheduler;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
@@ -49,33 +53,55 @@ final class FileSetManager {
   private final BlobBatchClient blobBatchClient;
   private final ReentrantLock containerCreationLock = new ReentrantLock();
   private volatile boolean containerCreated = false;
+  private final Executor executor;
+  private final Semaphore concurrencyLimit;
 
   FileSetManager(
       final BlobContainerClient containerClient,
       final BlobBatchClient blobBatchClient,
-      final boolean createContainer) {
+      final boolean createContainer,
+      final Executor executor,
+      final int maxConcurrentOperations) {
     this.containerClient = containerClient;
     this.blobBatchClient = blobBatchClient;
     containerCreated = !createContainer;
+    this.executor = executor;
+    concurrencyLimit = new Semaphore(maxConcurrentOperations);
   }
 
   void save(final BackupIdentifier id, final String fileSetName, final NamedFileSet fileSet) {
     assureContainerCreated();
-    for (final var namedFile : fileSet.namedFiles().entrySet()) {
-      final var fileName = namedFile.getKey();
-      final var filePath = namedFile.getValue();
-      final String fileSetPath = fileSetPath(id, fileSetName);
+    final var uploadFutures =
+        fileSet.namedFiles().entrySet().stream()
+            .map(
+                namedFile ->
+                    SemaphoreLeasedScheduler.schedule(
+                        () -> {
+                          saveFile(id, fileSetName, namedFile.getKey(), namedFile.getValue());
+                          return null;
+                        },
+                        executor,
+                        concurrencyLimit))
+            .toList();
 
-      final BlobClient blobClient = containerClient.getBlobClient(fileSetPath + fileName);
+    // Wait for all uploads to complete.
+    CompletableFuture.allOf(uploadFutures.toArray(new CompletableFuture[0])).join();
+  }
 
-      try {
-        upload(blobClient, filePath);
-      } catch (final BlobStorageException e) {
-        if (e.getErrorCode() == BlobErrorCode.BLOB_ALREADY_EXISTS) {
-          throw new BlobAlreadyExists("File already exists.", e.getCause());
-        }
-        throw e;
+  private void saveFile(
+      final BackupIdentifier id,
+      final String fileSetName,
+      final String fileName,
+      final Path filePath) {
+    final BlobClient blobClient =
+        containerClient.getBlobClient(fileSetPath(id, fileSetName) + fileName);
+    try {
+      upload(blobClient, filePath);
+    } catch (final BlobStorageException e) {
+      if (e.getErrorCode() == BlobErrorCode.BLOB_ALREADY_EXISTS) {
+        throw new BlobAlreadyExists("File already exists.", e.getCause());
       }
+      throw e;
     }
   }
 
@@ -109,18 +135,33 @@ final class FileSetManager {
         fileSet.files().stream()
             .collect(Collectors.toMap(NamedFile::name, f -> targetFolder.resolve(f.name())));
 
-    for (final var entry : pathByName.entrySet()) {
-      final var fileName = entry.getKey();
-      final var filePath = entry.getValue();
+    final var downloadFutures =
+        pathByName.entrySet().stream()
+            .map(
+                entry ->
+                    SemaphoreLeasedScheduler.schedule(
+                        () -> {
+                          downloadFile(id, fileSetName, entry.getKey(), entry.getValue());
+                          return null;
+                        },
+                        executor,
+                        concurrencyLimit))
+            .toList();
 
-      final BlockBlobClient blobClient =
-          containerClient
-              .getBlobClient(fileSetPath(id, fileSetName) + fileName)
-              .getBlockBlobClient();
-      blobClient.downloadToFile(String.valueOf(filePath), true);
-    }
+    // Wait for all downloads to complete.
+    CompletableFuture.allOf(downloadFutures.toArray(new CompletableFuture[0])).join();
 
     return new NamedFileSetImpl(pathByName);
+  }
+
+  private void downloadFile(
+      final BackupIdentifier id,
+      final String fileSetName,
+      final String fileName,
+      final Path filePath) {
+    final BlockBlobClient blobClient =
+        containerClient.getBlobClient(fileSetPath(id, fileSetName) + fileName).getBlockBlobClient();
+    blobClient.downloadToFile(String.valueOf(filePath), true);
   }
 
   void assureContainerCreated() {

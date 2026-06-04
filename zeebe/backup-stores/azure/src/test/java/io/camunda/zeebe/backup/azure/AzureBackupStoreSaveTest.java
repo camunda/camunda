@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -34,9 +33,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.CompletionException;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Semaphore;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -55,7 +52,6 @@ final class AzureBackupStoreSaveTest {
   private AzureBackupStore store;
   private Backup backup;
   private PersistedManifest persistedManifest;
-  private Semaphore saveSemaphore;
 
   @BeforeEach
   void setUp() throws Exception {
@@ -81,10 +77,6 @@ final class AzureBackupStoreSaveTest {
     fileSetManagerField.setAccessible(true);
     fileSetManagerField.set(realStore, fileSetManager);
 
-    final Field semaphoreField = AzureBackupStore.class.getDeclaredField("saveSemaphore");
-    semaphoreField.setAccessible(true);
-    saveSemaphore = (Semaphore) semaphoreField.get(realStore);
-
     store = spy(realStore);
 
     final var id = new BackupIdentifierImpl(1, 0, 1L);
@@ -104,7 +96,23 @@ final class AzureBackupStoreSaveTest {
   }
 
   @Test
-  void shouldCompleteExceptionallyWhenSnapshotUploadFails() {
+  void shouldUploadFileSetsAndCompleteManifestOnSuccess() {
+    // given
+    when(manifestManager.createInitialManifest(any())).thenReturn(persistedManifest);
+
+    // when
+    store.save(backup).join();
+
+    // then
+    verify(fileSetManager)
+        .save(backup.id(), AzureBackupStore.SNAPSHOT_FILESET_NAME, backup.snapshot());
+    verify(fileSetManager)
+        .save(backup.id(), AzureBackupStore.SEGMENTS_FILESET_NAME, backup.segments());
+    verify(manifestManager).completeManifest(persistedManifest);
+  }
+
+  @Test
+  void shouldCompleteExceptionallyAndMarkAsFailedWhenUploadFails() {
     // given
     when(manifestManager.createInitialManifest(any())).thenReturn(persistedManifest);
     final var uploadError = new RuntimeException("snapshot upload failed");
@@ -124,86 +132,15 @@ final class AzureBackupStoreSaveTest {
   }
 
   @Test
-  void shouldAcquireAndReleaseTheSemaphoreOnSuccess() {
+  void shouldCompleteExceptionallyWhenCreateInitialManifestFails() {
     // given
-    when(manifestManager.createInitialManifest(any())).thenReturn(persistedManifest);
-    final int permitsBefore = saveSemaphore.availablePermits();
-
-    // when
-    store.save(backup).join();
-
-    // then
-    assertThat(saveSemaphore.availablePermits())
-        .as("semaphore permits should be fully restored after a successful save")
-        .isEqualTo(permitsBefore);
-  }
-
-  @Test
-  void shouldAcquireAndReleaseTheSemaphoreWhenUploadFails() {
-    // given
-
-    lenient()
-        .doThrow(new RuntimeException("upload failed"))
-        .when(fileSetManager)
-        .save(any(), anyString(), any());
-    final int permitsBefore = saveSemaphore.availablePermits();
-
-    // when
-    store.save(backup).exceptionally(e -> null).join();
-
-    // then
-    assertThat(saveSemaphore.availablePermits())
-        .as("semaphore permits should be fully restored after a failed upload")
-        .isEqualTo(permitsBefore);
-  }
-
-  @Test
-  void shouldAcquireAndReleaseTheSemaphoreWhenCreateInitialManifestFails() {
-    // given
-    Mockito.lenient()
-        .when(manifestManager.createInitialManifest(any()))
+    Mockito.when(manifestManager.createInitialManifest(any()))
         .thenThrow(new RuntimeException("manifest creation failed"));
-    final int permitsBefore = saveSemaphore.availablePermits();
 
-    // when
-    store.save(backup).exceptionally(e -> null).join();
-
-    // then
-    assertThat(saveSemaphore.availablePermits())
-        .as("semaphore permits should be fully restored after a failed manifest creation")
-        .isEqualTo(permitsBefore);
-  }
-
-  @Test
-  void shouldDecrementPermitWhileSaveIsInFlight() throws Exception {
-    // given – block the upload so the save is still in progress when we sample the semaphore
-    when(manifestManager.createInitialManifest(any())).thenReturn(persistedManifest);
-    final var uploadStarted = new CountDownLatch(1);
-    final var releaseUpload = new CountDownLatch(1);
-    Mockito.doAnswer(
-            inv -> {
-              uploadStarted.countDown();
-              releaseUpload.await();
-              return null;
-            })
-        .when(fileSetManager)
-        .save(any(), anyString(), any());
-
-    // when
-    final var future = store.save(backup);
-    uploadStarted.await();
-
-    // then – one permit must be held while the save is in progress
-    assertThat(saveSemaphore.availablePermits())
-        .as("one permit should be held while a save is in progress")
-        .isEqualTo(AzureBackupStore.MAX_CONCURRENT_SAVES - 1);
-
-    // cleanup – let the upload finish and confirm the permit is restored
-    releaseUpload.countDown();
-    future.join();
-
-    assertThat(saveSemaphore.availablePermits())
-        .as("permit should be restored after the in-flight save completes")
-        .isEqualTo(AzureBackupStore.MAX_CONCURRENT_SAVES);
+    // when / then
+    assertThat(store.save(backup))
+        .failsWithin(Duration.ofSeconds(5))
+        .withThrowableOfType(ExecutionException.class)
+        .withCauseInstanceOf(RuntimeException.class);
   }
 }
