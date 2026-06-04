@@ -57,6 +57,10 @@ public interface AuditLogSort extends SearchRequestSort<AuditLogSort> {
 
   AuditLogSort processInstanceKey();
 
+  AuditLogSort requestSourceChannelType();
+
+  AuditLogSort requestSourceToolName();
+
   AuditLogSort result();
 
   AuditLogSort tenantId();

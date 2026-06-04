@@ -59,6 +59,8 @@ public class AuditLogResultImpl implements AuditLogResult {
   private String relatedEntityKey;
   private AuditLogEntityTypeEnum relatedEntityType;
   private String entityDescription;
+  private String requestSourceChannelType;
+  private String requestSourceToolName;
 
   public AuditLogResultImpl(final io.camunda.client.protocol.rest.AuditLogResult item) {
     auditLogKey = item.getAuditLogKey();
@@ -92,6 +94,8 @@ public class AuditLogResultImpl implements AuditLogResult {
     relatedEntityKey = item.getRelatedEntityKey();
     relatedEntityType = EnumUtil.convert(item.getRelatedEntityType(), AuditLogEntityTypeEnum.class);
     entityDescription = item.getEntityDescription();
+    requestSourceChannelType = item.getRequestSourceChannelType();
+    requestSourceToolName = item.getRequestSourceToolName();
   }
 
   @Override
@@ -363,6 +367,24 @@ public class AuditLogResultImpl implements AuditLogResult {
 
   public void setEntityDescription(final String entityDescription) {
     this.entityDescription = entityDescription;
+  }
+
+  @Override
+  public String getRequestSourceChannelType() {
+    return requestSourceChannelType;
+  }
+
+  public void setRequestSourceChannelType(final String requestSourceChannelType) {
+    this.requestSourceChannelType = requestSourceChannelType;
+  }
+
+  @Override
+  public String getRequestSourceToolName() {
+    return requestSourceToolName;
+  }
+
+  public void setRequestSourceToolName(final String requestSourceToolName) {
+    this.requestSourceToolName = requestSourceToolName;
   }
 
   public void setTenantId(final String tenantId) {
