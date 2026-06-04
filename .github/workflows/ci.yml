@@ -471,11 +471,16 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          # Consumers only resolve compiled SNAPSHOT JARs/POMs from this tree.
-          # Strip sources/javadoc JARs and Maven bookkeeping files — they bloat
-          # the payload (~1 GB) without being needed for dependency resolution,
-          # which dominates the per-shard download time for the artifact.
+          # Consumers resolve only compiled SNAPSHOT JARs/POMs from this tree
+          # (e.g. io.camunda:camunda-zeebe:jar). The distro assemblies installed
+          # here (camunda-zeebe / optimize-distro *.tar.gz) are attached, never
+          # depended on with <type>tar.gz</type>, and the distball is already
+          # shipped via the separate distball-{run_id} artifact — so they are
+          # dead weight that nearly halves this ~1 GB payload. The remaining
+          # excludes (sources/javadoc JARs, Maven bookkeeping) are no-ops today
+          # but cheap insurance if a profile ever installs them.
           tar \
+            --exclude='*.tar.gz' \
             --exclude='*-sources.jar' \
             --exclude='*-javadoc.jar' \
             --exclude='*.lastUpdated' \
