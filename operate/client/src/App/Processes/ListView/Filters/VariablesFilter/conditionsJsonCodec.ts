@@ -101,9 +101,6 @@ const parseConditionsJson = (text: string): ParseResult => {
   return {ok: true, conditions};
 };
 
-// The schema guarantees `value` is `string | {$eq} | {$neq} | {$like} |
-// {$in} | {$notIn} | {$exists}` with strict shape, so we can dispatch on the
-// presence of a single operator key without re-validating types.
 const fromApiEntry = (
   entry: z.infer<typeof ApiVariableEntrySchema>,
 ): {ok: true; condition: DraftCondition} | {ok: false; error: string} => {
