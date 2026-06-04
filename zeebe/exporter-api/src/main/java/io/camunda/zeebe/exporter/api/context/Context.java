@@ -21,7 +21,6 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.InstantSource;
-import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
 /** Encapsulates context associated with the exporter on open. */
@@ -72,7 +71,7 @@ public interface Context {
    *
    * @return the license key, or {@code null} if not available.
    */
-  @Nullable String getLicenseKey();
+  String getLicenseKey();
 
   /**
    * Apply the given filter to limit the records which are exported.
