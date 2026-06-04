@@ -93,6 +93,7 @@ import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableSourceRecord;
+import io.camunda.zeebe.protocol.record.ChannelType;
 import io.camunda.zeebe.protocol.record.JsonSerializable;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -195,7 +196,6 @@ final class JsonSerializableToJsonTest {
 
               final AuthInfo authInfo = new AuthInfo().setClaims(Map.of("foo", "bar"));
               final AgentInfo agentInfo = new AgentInfo().setElementId("agent-element");
-
               recordMetadata
                   .intent(intent)
                   .protocolVersion(protocolVersion)
@@ -209,6 +209,8 @@ final class JsonSerializableToJsonTest {
                   .requestStreamId(requestStreamId)
                   .authorization(authInfo)
                   .agent(agentInfo)
+                  .requestChannelType(ChannelType.MCP)
+                  .requestToolName("myTool")
                   .operationReference(1234)
                   .batchOperationReference(5678);
 
@@ -260,6 +262,8 @@ final class JsonSerializableToJsonTest {
                   "agent": {
                     "elementId": "agent-element"
                   },
+                  "requestChannelType": "MCP",
+                  "requestToolName": "myTool",
                   "recordVersion": 10,
                   "operationReference": 1234,
                   "batchOperationReference": 5678,
@@ -328,6 +332,8 @@ final class JsonSerializableToJsonTest {
                   "brokerVersion": "0.0.0",
                   "authorizations": {},
                   "agent": null,
+                  "requestChannelType": null,
+                  "requestToolName": null,
                   "recordVersion": 1,
                   "operationReference": -1,
                   "batchOperationReference": -1,

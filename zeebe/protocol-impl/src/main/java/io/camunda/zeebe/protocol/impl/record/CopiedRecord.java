@@ -11,6 +11,7 @@ import io.camunda.zeebe.protocol.impl.encoding.AgentInfo;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.record.Agent;
+import io.camunda.zeebe.protocol.record.ChannelType;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -36,6 +37,8 @@ public final class CopiedRecord<T extends UnifiedRecordValue> implements Record<
   private final String brokerVersion;
   private final AuthInfo authorization;
   private final Agent agent;
+  private final ChannelType requestChannelType;
+  private final String requestToolName;
   private final int recordVersion;
   private final long operationReference;
   private final long batchOperationReference;
@@ -66,6 +69,8 @@ public final class CopiedRecord<T extends UnifiedRecordValue> implements Record<
     operationReference = metadata.getOperationReference();
     batchOperationReference = metadata.getBatchOperationReference();
     agent = AgentInfo.of(metadata.getAgent());
+    requestChannelType = metadata.getRequestChannelType();
+    requestToolName = metadata.getRequestToolName();
   }
 
   private CopiedRecord(final CopiedRecord<T> copiedRecord) {
@@ -103,6 +108,8 @@ public final class CopiedRecord<T extends UnifiedRecordValue> implements Record<
     operationReference = copiedRecord.operationReference;
     batchOperationReference = copiedRecord.batchOperationReference;
     agent = AgentInfo.of(copiedRecord.agent);
+    requestChannelType = copiedRecord.requestChannelType;
+    requestToolName = copiedRecord.requestToolName;
   }
 
   @Override
@@ -163,6 +170,16 @@ public final class CopiedRecord<T extends UnifiedRecordValue> implements Record<
   @Override
   public Agent getAgent() {
     return agent;
+  }
+
+  @Override
+  public ChannelType getRequestChannelType() {
+    return requestChannelType;
+  }
+
+  @Override
+  public String getRequestToolName() {
+    return requestToolName;
   }
 
   @Override
