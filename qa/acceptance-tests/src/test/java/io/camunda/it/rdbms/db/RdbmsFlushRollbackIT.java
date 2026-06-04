@@ -32,9 +32,9 @@ import org.junit.jupiter.api.extension.RegisterExtension;
  * behavior. When statements are batched and flushed, they should either all commit or all rollback
  * to maintain data integrity.
  *
- * <p>This test uses the actual RDBMS infrastructure (H2) with no Spring transaction manager, so the
- * queue manages its own JDBC transaction directly via MyBatis {@code session.commit()} / {@code
- * session.rollback()} — matching the production deployment.
+ * <p>This test uses the actual RDBMS infrastructure (H2) and does not wrap {@code
+ * DefaultExecutionQueue#flush()} in a Spring transaction; the queue manages its JDBC transaction
+ * via MyBatis {@code session.commit()} / {@code session.rollback()}.
  */
 @Tag("rdbms")
 public class RdbmsFlushRollbackIT {
@@ -44,11 +44,11 @@ public class RdbmsFlushRollbackIT {
       new CamundaRdbmsInvocationContextProviderExtension("camundaWithH2");
 
   // Each test uses its own partition ID to avoid row-level conflicts between tests
-  private static final int PARTITION_ID_BASIC_ROLLBACK = 1;
-  private static final int PARTITION_ID_PRE_FLUSH = 2;
-  private static final int PARTITION_ID_POST_FLUSH = 3;
-  private static final int PARTITION_ID_HOOK = 4;
-  private static final int PARTITION_ID_FULL_SCENARIO = 5;
+  private static final int PARTITION_ID_BASIC_ROLLBACK = 10_001;
+  private static final int PARTITION_ID_PRE_FLUSH = 10_002;
+  private static final int PARTITION_ID_POST_FLUSH = 10_003;
+  private static final int PARTITION_ID_HOOK = 10_004;
+  private static final int PARTITION_ID_FULL_SCENARIO = 10_005;
 
   @TestTemplate
   void shouldRollbackAllStatementsWhenSecondStatementFails(
