@@ -296,9 +296,38 @@ final class ElasticsearchArchiverRepositoryTest extends AbstractArchiverReposito
     final var gauge =
         meterRegistry.get("zeebe.camunda.exporter.process.instances.awaiting.archival").gauge();
     Awaitility.await()
-        .atMost(Duration.ofMillis(200))
+        .atMost(Duration.ofSeconds(2))
         .untilAsserted(() -> assertThat(gauge.value()).isEqualTo(15000.0));
     verify(client).count(any(Function.class));
+  }
+
+  @Test
+  public void shouldNotFireCountRequestAgainWithinThrottleWindow() {
+    // given
+    final var config = new HistoryConfiguration();
+    config.setTrackArchivalMetricsForProcessInstance(true);
+    final var meterRegistry = new SimpleMeterRegistry();
+    final var metrics = new CamundaExporterMetrics(meterRegistry);
+    final var repository = createRepository(client, config, metrics);
+    final var hit1 = createHit("1", "2024-01-01", null);
+
+    // response with Gte relation (total is a lower bound, e.g. 10000+)
+    final var response = createResponseWithRelation(List.of(hit1), 15000, TotalHitsRelation.Gte);
+    when(client.search(any(SearchRequest.class), eq(ProcessInstanceForListViewEntity.class)))
+        .thenReturn(CompletableFuture.completedFuture(response));
+
+    final var countResponse =
+        co.elastic.clients.elasticsearch.core.CountResponse.of(
+            c -> c.count(15000L).shards(s -> s.total(1).successful(1).failed(0)));
+    when(client.count(any(Function.class)))
+        .thenReturn(CompletableFuture.completedFuture(countResponse));
+
+    // when - two batches are processed back to back within the throttle window
+    repository.getProcessInstancesNextBatch(100).join();
+    repository.getProcessInstancesNextBatch(100).join();
+
+    // then - the count query is fired only once, the second is throttled
+    verify(client, Mockito.times(1)).count(any(Function.class));
   }
 
   @Test

@@ -65,6 +65,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicLong;
 import javax.annotation.WillCloseWhenClosed;
 import org.slf4j.Logger;
 
@@ -73,6 +74,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   private static final Time REINDEX_SCROLL_TIMEOUT = Time.of(t -> t.time("30s"));
   private static final Slices AUTO_SLICES =
       Slices.of(slices -> slices.computed(SlicesCalculation.Auto));
+  private static final int DELAY_BETWEEN_PI_COUNT_RUNS = 60000;
 
   private final int partitionId;
   private final HistoryConfiguration config;
@@ -85,6 +87,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   private final Collection<IndexTemplateDescriptor> allTemplatesDescriptors;
   private final CamundaExporterMetrics metrics;
   private final Cache<String, String> lifeCyclePolicyApplied;
+  private final AtomicLong lastFullPiBacklogCountTimestamp = new AtomicLong();
 
   public ElasticsearchArchiverRepository(
       final int partitionId,
@@ -603,8 +606,15 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
 
   private void measureProcessInstancesArchiverBacklog(final TotalHits total) {
     if (total.relation() == TotalHitsRelation.Eq) {
-      metrics.setProcessInstancesAwaitingArchival(Math.toIntExact(total.value()));
+      metrics.setProcessInstancesAwaitingArchival(toInt(total.value()));
     } else {
+      if (System.currentTimeMillis() - lastFullPiBacklogCountTimestamp.get()
+          < DELAY_BETWEEN_PI_COUNT_RUNS) {
+        logger.trace(
+            "Total hits relation is 'gte' and last count was {}s ago, skipping count query",
+            lastFullPiBacklogCountTimestamp.get() / 1000);
+        return;
+      }
       // relation is Gte (≥10 000), fire a separate _count for the exact number
       client
           .count(
@@ -618,11 +628,11 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
           .whenCompleteAsync(
               (countResponse, countError) -> {
                 try {
+                  lastFullPiBacklogCountTimestamp.set(System.currentTimeMillis());
                   if (countError != null) {
                     logger.debug("Failed to fetch archival backlog count from _count", countError);
                   } else {
-                    metrics.setProcessInstancesAwaitingArchival(
-                        Math.toIntExact(countResponse.count()));
+                    metrics.setProcessInstancesAwaitingArchival(toInt(countResponse.count()));
                   }
                 } catch (final Exception e) {
                   logger.warn("Failed to publish archival backlog metric from _count", e);
@@ -630,6 +640,10 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
               },
               executor);
     }
+  }
+
+  private static int toInt(final long value) {
+    return value > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) value;
   }
 
   private CompletableFuture<PutIndicesSettingsResponse> applyPolicyToIndices(
