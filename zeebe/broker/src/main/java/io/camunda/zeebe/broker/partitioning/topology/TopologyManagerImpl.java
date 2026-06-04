@@ -240,6 +240,9 @@ public final class TopologyManagerImpl extends Actor
   public void onHealthChanged(final int partitionId, final HealthStatus status) {
     actor.run(
         () -> {
+          if (!localPartitionGroupInfo.getPartitionRoles().containsKey(partitionId)) {
+            return;
+          }
           if (status == HealthStatus.HEALTHY) {
             localPartitionGroupInfo.setPartitionHealthy(partitionId);
           } else if (status == HealthStatus.UNHEALTHY) {
@@ -257,6 +260,7 @@ public final class TopologyManagerImpl extends Actor
         () -> {
           removeIfLeader(localPartitionGroupInfo, partitionId);
           localPartitionGroupInfo.removePartition(partitionId);
+          publishTopologyChanges();
         });
   }
 

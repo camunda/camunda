@@ -8,6 +8,7 @@
 package io.camunda.zeebe.it.cluster.clustering.dynamic;
 
 import static io.camunda.zeebe.it.cluster.clustering.dynamic.Utils.assertChangeIsPlanned;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
@@ -62,8 +63,30 @@ final class PartitionJoinTest {
           .untilAsserted(
               () -> ClusterActuatorAssert.assertThat(cluster).hasCompletedChanges(leave));
       ClusterActuatorAssert.assertThat(cluster).hasAppliedChanges(leave);
+      assertPartitionIsAbsent(cluster, scenario);
       cluster.awaitHealthyTopology();
     }
+  }
+
+  private void assertPartitionIsAbsent(final TestCluster cluster, final Scenario scenario) {
+    Awaitility.await("broker no longer reports partition in gRPC topology")
+        .atMost(JOIN_TIMEOUT)
+        .untilAsserted(
+            () -> {
+              try (final var client =
+                  cluster.newClientBuilder().preferRestOverGrpc(false).build()) {
+                final var topology = client.newTopologyRequest().send().join();
+                assertThat(topology.getBrokers())
+                    .filteredOn(b -> b.getNodeId() == scenario.operation().brokerId())
+                    .hasSize(1)
+                    .element(0)
+                    .satisfies(
+                        b ->
+                            assertThat(b.getPartitions())
+                                .noneMatch(
+                                    p -> p.getPartitionId() == scenario.operation().partitionId()));
+              }
+            });
   }
 
   static Stream<Scenario> testScenarios() {
