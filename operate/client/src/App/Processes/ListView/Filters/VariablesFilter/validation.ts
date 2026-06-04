@@ -31,7 +31,6 @@ const validateCondition = (condition: DraftCondition): RowErrors => {
     if (!condition.value?.trim()) {
       errors.value = 'Value is required';
     } else if (IS_VARIABLE_FILTER_V2_ENABLED) {
-      // Contains passes raw text straight through to $like; no transform.
       if (condition.operator !== 'contains') {
         try {
           smartTransformValue(condition.value);

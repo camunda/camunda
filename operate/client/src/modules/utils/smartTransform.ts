@@ -7,6 +7,7 @@
  */
 
 import type {VariableFilterOperator} from 'modules/stores/variableFilter';
+import type {ProcessInstanceVariableValueFilter} from '@camunda/camunda-api-zod-schemas/8.10';
 
 const STRUCTURAL_CHARS_RE = /[{}[\]"]/;
 
@@ -30,7 +31,6 @@ const smartTransformValue = (raw: string): unknown => {
   try {
     return JSON.parse(trimmed);
   } catch {
-    // Not whole-string JSON. Try comma-split for unquoted lists.
     if (trimmed.includes(',') && !STRUCTURAL_CHARS_RE.test(trimmed)) {
       return trimmed
         .split(',')
@@ -38,7 +38,6 @@ const smartTransformValue = (raw: string): unknown => {
         .filter((part) => part !== '')
         .map(parseScalar);
     }
-    // Auto-quote bare strings (no structural JSON characters).
     if (!STRUCTURAL_CHARS_RE.test(trimmed)) {
       return trimmed;
     }
@@ -49,15 +48,13 @@ const smartTransformValue = (raw: string): unknown => {
 const toStringFilterProperty = (
   operator: VariableFilterOperator,
   value: unknown,
-): Record<string, unknown> => {
+): ProcessInstanceVariableValueFilter => {
   switch (operator) {
     case 'equals':
       return {$eq: JSON.stringify(value)};
     case 'notEqual':
       return {$neq: JSON.stringify(value)};
     case 'contains':
-      // $like is a glob pattern: `*` matches any chars, `?` matches one.
-      // User-typed wildcards pass through unchanged (backend-documented).
       return {$like: `*${String(value)}*`};
     case 'oneOf': {
       const arr = Array.isArray(value) ? value : [value];

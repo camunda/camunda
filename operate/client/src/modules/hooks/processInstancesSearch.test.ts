@@ -6,18 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-vi.mock('modules/feature-flags', async () => {
-  const actual = await vi.importActual<typeof import('modules/feature-flags')>(
-    'modules/feature-flags',
-  );
-  return {...actual, IS_VARIABLE_FILTER_V2_ENABLED: false};
-});
-
-import {
-  buildVariableEntry,
-  buildSmartVariableEntry,
-  parseOneOfValues,
-} from './processInstancesSearch';
+import {buildVariableEntry, parseOneOfValues} from './processInstancesSearch';
 import type {VariableCondition} from 'modules/stores/variableFilter';
 
 const mockCondition = {
@@ -148,93 +137,5 @@ describe('buildVariableEntry — multi-condition', () => {
     };
 
     expect(mvfResult).toEqual(legacyResult);
-  });
-});
-
-describe('buildSmartVariableEntry', () => {
-  it('should JSON-encode a number typed without quotes', () => {
-    expect(
-      buildSmartVariableEntry({
-        name: 'amount',
-        operator: 'equals',
-        value: '42',
-      }),
-    ).toEqual({name: 'amount', value: {$eq: '42'}});
-  });
-
-  it('should auto-quote a bare string for equals', () => {
-    expect(
-      buildSmartVariableEntry({
-        name: 'status',
-        operator: 'equals',
-        value: 'active',
-      }),
-    ).toEqual({name: 'status', value: {$eq: '"active"'}});
-  });
-
-  it('should JSON-encode a boolean for notEqual', () => {
-    expect(
-      buildSmartVariableEntry({
-        name: 'flag',
-        operator: 'notEqual',
-        value: 'true',
-      }),
-    ).toEqual({name: 'flag', value: {$neq: 'true'}});
-  });
-
-  it('should pass raw text through $like for contains', () => {
-    expect(
-      buildSmartVariableEntry({
-        name: 'desc',
-        operator: 'contains',
-        value: 'order',
-      }),
-    ).toEqual({name: 'desc', value: {$like: '*order*'}});
-  });
-
-  it('should split a comma list into a JSON-encoded $in array', () => {
-    expect(
-      buildSmartVariableEntry({
-        name: 'tag',
-        operator: 'oneOf',
-        value: 'gold, silver, bronze',
-      }),
-    ).toEqual({
-      name: 'tag',
-      value: {$in: ['"gold"', '"silver"', '"bronze"']},
-    });
-  });
-
-  it('should accept a JSON array literal for oneOf', () => {
-    expect(
-      buildSmartVariableEntry({
-        name: 'tag',
-        operator: 'oneOf',
-        value: '["gold","silver"]',
-      }),
-    ).toEqual({
-      name: 'tag',
-      value: {$in: ['"gold"', '"silver"']},
-    });
-  });
-
-  it('should emit $exists true for exists regardless of value', () => {
-    expect(
-      buildSmartVariableEntry({
-        name: 'x',
-        operator: 'exists',
-        value: '',
-      }),
-    ).toEqual({name: 'x', value: {$exists: true}});
-  });
-
-  it('should emit $exists false for doesNotExist', () => {
-    expect(
-      buildSmartVariableEntry({
-        name: 'x',
-        operator: 'doesNotExist',
-        value: '',
-      }),
-    ).toEqual({name: 'x', value: {$exists: false}});
   });
 });

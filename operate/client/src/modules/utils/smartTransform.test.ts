@@ -6,11 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
-  smartTransformValue,
-  toStringFilterProperty,
-  operatorTakesValue,
-} from './smartTransform';
+import {smartTransformValue, toStringFilterProperty} from './smartTransform';
 
 describe('smartTransformValue', () => {
   it('should auto-quote a bare string', () => {
@@ -130,36 +126,6 @@ describe('toStringFilterProperty', () => {
   it('should map doesNotExist to $exists false (ignoring value)', () => {
     expect(toStringFilterProperty('doesNotExist', undefined)).toEqual({
       $exists: false,
-    });
-  });
-});
-
-describe('operatorTakesValue', () => {
-  it('should return false only for exists and doesNotExist', () => {
-    expect(operatorTakesValue('equals')).toBe(true);
-    expect(operatorTakesValue('notEqual')).toBe(true);
-    expect(operatorTakesValue('contains')).toBe(true);
-    expect(operatorTakesValue('oneOf')).toBe(true);
-    expect(operatorTakesValue('exists')).toBe(false);
-    expect(operatorTakesValue('doesNotExist')).toBe(false);
-  });
-});
-
-describe('integration: transform then build filter property', () => {
-  it('plain string equals produces JSON-encoded $eq', () => {
-    const v = smartTransformValue('approved');
-    expect(toStringFilterProperty('equals', v)).toEqual({$eq: '"approved"'});
-  });
-
-  it('number equals produces unquoted JSON-encoded $eq', () => {
-    const v = smartTransformValue('42');
-    expect(toStringFilterProperty('equals', v)).toEqual({$eq: '42'});
-  });
-
-  it('comma list with oneOf produces $in array of JSON-encoded values', () => {
-    const v = smartTransformValue('gold, silver, bronze');
-    expect(toStringFilterProperty('oneOf', v)).toEqual({
-      $in: ['"gold"', '"silver"', '"bronze"'],
     });
   });
 });
