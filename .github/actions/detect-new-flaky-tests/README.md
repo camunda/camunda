@@ -271,17 +271,18 @@ If the gate flags a flaky test that is **not caused by your changes**:
 
 ## Inputs
 
-|          Input           | Required |       Default       |                         Description                          |
-|--------------------------|----------|---------------------|--------------------------------------------------------------|
-| `pr-flaky-tests-data`    | yes      | —                   | JSON `[{job, flaky_tests}]` from `collect-flaky-tests`.      |
-| `known-flaky-tests-file` | yes      | —                   | Path to BigQuery baseline JSON.                              |
-| `pr-number`              | yes      | —                   | Pull request number.                                         |
-| `blocking`               | no       | `true`              | Fail the job if any sticky entry is still active.            |
-| `ran-jobs-json`          | no       | `[]`                | JSON list of parent job names whose result is not `skipped`. |
-| `bypass-label-present`   | no       | `false`             | `true` if `ci:flaky-test-bypass` is on the PR.               |
-| `head-sha`               | yes      | —                   | Current PR head SHA.                                         |
-| `base-ref`               | yes      | —                   | PR base branch (used for merge-base in `git log -L`).        |
-| `repo-root`              | no       | `$GITHUB_WORKSPACE` | Absolute path to the checked-out repo.                       |
+|          Input           | Required |       Default       |                                                Description                                                |
+|--------------------------|----------|---------------------|-----------------------------------------------------------------------------------------------------------|
+| `pr-flaky-tests-data`    | yes      | —                   | JSON `[{job, flaky_tests}]` from `collect-flaky-tests`.                                                   |
+| `known-flaky-tests-file` | yes      | —                   | Path to BigQuery baseline JSON.                                                                           |
+| `pr-number`              | yes      | —                   | Pull request number.                                                                                      |
+| `blocking`               | no       | `true`              | Fail the job if any sticky entry is still active.                                                         |
+| `ran-jobs-json`          | no       | `[]`                | JSON list of parent job names whose result is not `skipped`.                                              |
+| `bypass-label-present`   | no       | `false`             | `true` if `ci:flaky-test-bypass` is on the PR.                                                            |
+| `head-sha`               | yes      | —                   | Current PR head SHA.                                                                                      |
+| `base-ref`               | yes      | —                   | PR base branch — fallback merge-base candidate for `git log -L`.                                          |
+| `base-sha`               | no       | `''`                | PR base commit SHA — preferred merge-base candidate (base/origin refs absent in a PR merge-ref checkout). |
+| `repo-root`              | no       | `$GITHUB_WORKSPACE` | Absolute path to the checked-out repo.                                                                    |
 
 ## Outputs
 

@@ -34,8 +34,12 @@ inputs:
     description: 'Current PR head SHA. Used as the modification anchor and for git log -L.'
     required: true
   base-ref:
-    description: 'PR base branch (e.g. "main" or "stable/8.7"). Used as the lower bound for git log -L.'
+    description: 'PR base branch (e.g. "main" or "stable/8.7"). Used as a fallback merge-base candidate for git log -L.'
     required: true
+  base-sha:
+    description: 'PR base commit SHA (github.event.pull_request.base.sha). Preferred merge-base candidate — local main/origin refs are absent in a PR merge-ref checkout.'
+    required: false
+    default: ''
   repo-root:
     description: 'Absolute path to the checked-out repo. Defaults to GITHUB_WORKSPACE.'
     required: false
@@ -66,9 +70,12 @@ runs:
         state_file="${state_dir}/state.json"
         echo "state_file=${state_file}" >> "$GITHUB_OUTPUT"
 
-        artifact_id=$(gh api -X GET "/repos/${REPO}/actions/artifacts" \
+        if ! artifact_id=$(gh api -X GET "/repos/${REPO}/actions/artifacts" \
             -f "name=${ARTIFACT_NAME}" -F per_page=100 \
-            --jq '.artifacts | map(select(.expired == false)) | sort_by(.created_at) | reverse | .[0].id // ""')
+            --jq '.artifacts | map(select(.expired == false)) | sort_by(.created_at) | reverse | .[0].id // ""'); then
+          echo "Artifact list API call failed; continuing with no prior state."
+          exit 0
+        fi
 
         if [[ -z "$artifact_id" ]]; then
           echo "No prior sticky-state artifact found; first-run for this PR."
@@ -97,6 +104,7 @@ runs:
         BYPASS_LABEL_PRESENT: ${{ inputs.bypass-label-present }}
         HEAD_SHA: ${{ inputs.head-sha }}
         BASE_REF: ${{ inputs.base-ref }}
+        BASE_SHA: ${{ inputs.base-sha }}
         REPO_ROOT: ${{ inputs.repo-root != '' && inputs.repo-root || github.workspace }}
         GITHUB_TOKEN: ${{ github.token }}
       run: python3 ${{ github.action_path }}/detect_new_flaky_tests.py
