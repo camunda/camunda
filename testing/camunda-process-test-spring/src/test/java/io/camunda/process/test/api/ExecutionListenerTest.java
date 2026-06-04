@@ -26,6 +26,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.spring.event.CamundaClientClosingSpringEvent;
@@ -90,6 +91,12 @@ public class ExecutionListenerTest {
   @Mock private CamundaProcessTestResultCollector camundaProcessTestResultCollector;
   @Mock private CamundaClientBuilderFactory camundaClientBuilderFactory;
   @Mock private CamundaClientProperties camundaClientProperties;
+
+  @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+  private CamundaClientBuilder camundaClientBuilder;
+
+  @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+  private CamundaClient camundaClient;
 
   @Captor private ArgumentCaptor<CamundaClient> camundaClientArgumentCaptor;
 
@@ -382,6 +389,10 @@ public class ExecutionListenerTest {
     final CamundaProcessTestExecutionListener listener =
         new CamundaProcessTestExecutionListener(
             camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+
+    when(camundaContainerRuntime.getCamundaClientBuilderFactory())
+        .thenReturn(() -> camundaClientBuilder);
+    when(camundaClientBuilder.build()).thenReturn(camundaClient);
 
     final Method testMethod = mock(Method.class);
     when(processCoverageBuilder.build()).thenReturn(processCoverage);
