@@ -57,17 +57,32 @@ late `SmartLifecycle` phase that runs after the `onRefresh` checkpoint point).
 
 ### Option B — Make the broker stack restartable (stop → start same instances)
 
-Rework the terminal-state lifecycles so `stop()`/`close()` is followed by a working `start()`:
+Rework the terminal-state lifecycles so `stop()`/`close()` is followed by a working `start()`. This
+is a multi-increment Zeebe-core initiative; increments 1–2 have **no end-to-end CRaC payoff** until
+increment 3 also lands.
 
-- `ActorScheduler`: remove the irreversible `TERMINATED` end-state (or provide a reset) so threads
-  can be torn down and re-created. **Highest risk** — this is core concurrency machinery.
-- `Broker` / `BrokerStartupProcess`: reset `isClosed` and make the startup steps replayable
-  (idempotent teardown + re-init for ClusterServices, CommandApi, EmbeddedGateway, RocksDb
-  resources, PartitionManagers).
-- `AtomixCluster`: support a real stop→start cycle (rebind netty, rejoin membership).
-- Expose these as `SmartLifecycle` so Spring's CRaC support drives them automatically.
-- **Con:** touches the most correctness-sensitive code; restart of a Raft member must handle term,
-  leadership, and clock-jump correctly even for a single-broker topology.
+**Increment 1 — `ActorScheduler` restartable** (`zeebe/scheduler`). Today `ActorScheduler` holds a
+`final ActorExecutor` (`ActorScheduler.java:23,28`) whose two `ActorThreadGroup`s own real Java
+threads; `stop()` drives `NEW→RUNNING→TERMINATING→TERMINATED` and `ActorExecutor.closeAsync()`
+terminates the threads (`ActorExecutor.java:51-58`). Java threads are single-use, so `start()` after
+`stop()` must **rebuild** the executor + thread groups from the retained builder config (thread
+counts, factory, clock, timer queue), not reuse them — and the state machine must allow
+`TERMINATED→(rebuild)→RUNNING`. Unit-testable (`submitActor` works after a stop→start cycle), but a
+green unit test does not prove the absence of thread leaks/races under load.
+
+**Increment 2 — `AtomixCluster` restartable** (`zeebe/atomix/cluster`). Real stop→start:
+`NettyMessagingService` must rebuild its `EpollEventLoopGroup`/`NioEventLoopGroup` and rebind, and
+membership (SWIM) must rejoin. Today `stop()` is effectively terminal (`Cluster instance is shutdown`).
+
+**Increment 3 — `Broker` / `BrokerStartupProcess` replayable** (`zeebe/broker`). Reset `isClosed`
+(`Broker.java`) and make every startup step (`BrokerStartupProcess`: ClusterServices, CommandApi,
+GatewayBrokerTransport, EmbeddedGateway, JobStream, RocksDbResources, PartitionManagers, …)
+idempotently teardown-and-reinit. Must handle RocksDB reopen and Raft term/leadership/clock-jump on
+restart, even for a single-broker topology. **Highest risk.**
+
+- Expose increments 1–3 as `SmartLifecycle` beans so Spring's CRaC support drives stop/start.
+- **Con:** touches the most correctness-sensitive code in the product (concurrency core + Raft +
+  RocksDB). Needs Zeebe-core ownership and extensive testing; not a side change.
 
 ### Recommendation
 
