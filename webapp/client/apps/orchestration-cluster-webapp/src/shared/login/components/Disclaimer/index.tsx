@@ -7,7 +7,7 @@
  */
 
 import {Link} from '@carbon/react';
-import {getBootConfig} from '#/modules/config/getBootConfig';
+import {getBootConfig} from '#/shared/config/getBootConfig';
 import styles from './styles.module.scss';
 
 const Disclaimer: React.FC = () => {

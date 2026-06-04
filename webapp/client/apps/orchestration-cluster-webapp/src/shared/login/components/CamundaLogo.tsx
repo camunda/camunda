@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import CamundaLogoSVG from '#/modules/svg/CamundaLogo';
+import CamundaLogoSVG from '#/shared/svg/CamundaLogo';
 import styles from './CamundaLogo.module.scss';
 
 const CamundaLogo: React.FC<React.ComponentProps<typeof CamundaLogoSVG>> = () => (

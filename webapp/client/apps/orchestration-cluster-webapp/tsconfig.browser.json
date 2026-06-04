@@ -10,9 +10,10 @@
 		"moduleDetection": "force",
 		"types": ["vite/client"],
 		"paths": {
-			"#/modules/*": ["./src/modules/*"],
-			"#/assets/*": ["./src/assets/*"],
-			"#/pages/*": ["./src/pages/*"]
+			"#/shared/*": ["./src/shared/*"],
+			"#/operate/*": ["./src/operate/*"],
+			"#/tasklist/*": ["./src/tasklist/*"],
+			"#/admin/*": ["./src/admin/*"]
 		}
 	}
 }

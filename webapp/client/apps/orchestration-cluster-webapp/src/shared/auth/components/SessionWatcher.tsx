@@ -8,7 +8,7 @@
 
 import {observer} from 'mobx-react-lite';
 import {Navigate, useLocation} from '@tanstack/react-router';
-import {authenticationStore} from '#/modules/auth/authentication.store';
+import {authenticationStore} from '#/shared/auth/authentication.store';
 
 const SessionWatcher: React.FC = observer(() => {
 	const location = useLocation();

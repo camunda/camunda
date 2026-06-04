@@ -7,11 +7,11 @@
  */
 
 import {makeObservable, observable, action} from 'mobx';
-import {endpoints} from '#/modules/http/endpoints';
-import {getClientConfig} from '#/modules/config/getClientConfig';
-import {reactQueryClient} from '#/modules/http/reactQueryClient';
-import {request} from '#/modules/http/request';
-import {getStateLocally, storeStateLocally} from '#/modules/browser-storage/local-storage';
+import {endpoints} from '#/shared/http/endpoints';
+import {getClientConfig} from '#/shared/config/getClientConfig';
+import {reactQueryClient} from '#/shared/http/reactQueryClient';
+import {request} from '#/shared/http/request';
+import {getStateLocally, storeStateLocally} from '#/shared/browser-storage/local-storage';
 import {z} from 'zod';
 
 type Status =

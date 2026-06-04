@@ -7,13 +7,12 @@
  */
 
 import {Layer, Stack, Button} from '@carbon/react';
+import {Link} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
-import SvgErrorRobot from '#/modules/svg/ErrorRobot';
-import styles from './GenericErrorPage.module.scss';
+import SvgErrorRobot from '#/shared/svg/ErrorRobot';
+import styles from './NotFoundPage.module.scss';
 
-type Props = {reset: () => void};
-
-const GenericErrorPage: React.FC<Props> = ({reset}) => {
+const NotFoundPage: React.FC = () => {
 	const {t} = useTranslation();
 
 	return (
@@ -23,10 +22,12 @@ const GenericErrorPage: React.FC<Props> = ({reset}) => {
 					<SvgErrorRobot aria-hidden />
 					<Stack gap={6}>
 						<Stack gap={3}>
-							<h1 className={styles['heading']}>{t('errorGenericErrorPageTitle')}</h1>
-							<p className={styles['description']}>{t('errorGenericErrorPageMessage')}</p>
+							<h1 className={styles['heading']}>{t('notFoundPageTitle')}</h1>
+							<p className={styles['description']}>{t('notFoundPageDescription')}</p>
 						</Stack>
-						<Button onClick={reset}>{t('errorGenericErrorPageButtonLabel')}</Button>
+						<Button as={Link} to="/">
+							{t('notFoundPageButtonLabel')}
+						</Button>
 					</Stack>
 				</Stack>
 			</Layer>
@@ -34,4 +35,4 @@ const GenericErrorPage: React.FC<Props> = ({reset}) => {
 	);
 };
 
-export {GenericErrorPage};
+export {NotFoundPage};

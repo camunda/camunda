@@ -7,7 +7,7 @@
  */
 
 import {endpoints as unifiedAPIEndpoints} from '@camunda/camunda-api-zod-schemas/8.10';
-import {getBootConfig} from '#/modules/config/getBootConfig';
+import {getBootConfig} from '#/shared/config/getBootConfig';
 import {mergePathname} from './mergePathname';
 
 const BASE_REQUEST_OPTIONS: RequestInit = {

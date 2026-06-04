@@ -8,8 +8,8 @@
 
 import {type Mixpanel} from 'mixpanel-browser';
 import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.10/authentication';
-import {getStage} from '#/modules/config/getStage';
-import {getBootConfig} from '#/modules/config/getBootConfig';
+import {getStage} from '#/shared/config/getStage';
+import {getBootConfig} from '#/shared/config/getBootConfig';
 
 type Events =
 	| {

@@ -7,7 +7,7 @@
  */
 
 import type {GetSystemConfigurationResponseBody} from '@camunda/camunda-api-zod-schemas/8.10';
-import {getSessionState} from '#/modules/browser-storage/session-storage';
+import {getSessionState} from '#/shared/browser-storage/session-storage';
 
 function getClientConfig(): GetSystemConfigurationResponseBody {
 	const config = getSessionState('clientConfig');
