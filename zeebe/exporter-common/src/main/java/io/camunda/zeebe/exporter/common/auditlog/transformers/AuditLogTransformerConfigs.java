@@ -14,6 +14,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.DECISION;
 import static io.camunda.zeebe.protocol.record.ValueType.DECISION_EVALUATION;
 import static io.camunda.zeebe.protocol.record.ValueType.DECISION_REQUIREMENTS;
 import static io.camunda.zeebe.protocol.record.ValueType.GROUP;
+import static io.camunda.zeebe.protocol.record.ValueType.HISTORY_DELETION;
 import static io.camunda.zeebe.protocol.record.ValueType.MAPPING_RULE;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_CREATION;
@@ -37,6 +38,7 @@ import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
+import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
@@ -101,6 +103,11 @@ public class AuditLogTransformerConfigs {
   public static final TransformerConfig GROUP_ENTITY_CONFIG =
       TransformerConfig.with(GROUP)
           .withIntents(GroupIntent.ENTITY_ADDED, GroupIntent.ENTITY_REMOVED);
+
+  public static final TransformerConfig HISTORY_DELETION_CONFIG =
+      TransformerConfig.with(HISTORY_DELETION)
+          .withIntents(HistoryDeletionIntent.DELETED)
+          .withDataCleanupIntents(HistoryDeletionIntent.DELETED);
 
   public static final TransformerConfig INCIDENT_RESOLUTION_CONFIG =
       TransformerConfig.with(ValueType.INCIDENT)
