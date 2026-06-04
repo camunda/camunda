@@ -61,7 +61,9 @@
         RELATED_ENTITY_KEY,
         ENTITY_DESCRIPTION,
         PARTITION_ID,
-        HISTORY_CLEANUP_DATE
+        HISTORY_CLEANUP_DATE,
+        REQUEST_SOURCE_CHANNEL_TYPE,
+        REQUEST_SOURCE_TOOL_NAME
       FROM ${prefix}AUDIT_LOG
       <include refid="io.camunda.db.rdbms.sql.AuditLogMapper.searchFilter" />
     ) t
@@ -176,6 +178,18 @@
       <if test="filter.agentElementIdOperations != null and !filter.agentElementIdOperations.isEmpty()">
         <foreach collection="filter.agentElementIdOperations" item="operation">
           AND AGENT_ELEMENT_ID
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.requestSourceChannelTypeOperations != null and !filter.requestSourceChannelTypeOperations.isEmpty()">
+        <foreach collection="filter.requestSourceChannelTypeOperations" item="operation">
+          AND REQUEST_SOURCE_CHANNEL_TYPE
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.requestSourceToolNameOperations != null and !filter.requestSourceToolNameOperations.isEmpty()">
+        <foreach collection="filter.requestSourceToolNameOperations" item="operation">
+          AND REQUEST_SOURCE_TOOL_NAME
           <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
         </foreach>
       </if>
@@ -346,7 +360,9 @@
       RELATED_ENTITY_KEY,
       ENTITY_DESCRIPTION,
       PARTITION_ID,
-      HISTORY_CLEANUP_DATE
+      HISTORY_CLEANUP_DATE,
+      REQUEST_SOURCE_CHANNEL_TYPE,
+      REQUEST_SOURCE_TOOL_NAME
     )
     VALUES
     <foreach collection="dbModels" item="auditLog" separator=",">
@@ -387,7 +403,9 @@
         #{auditLog.relatedEntityKey},
         #{auditLog.entityDescription},
         #{auditLog.partitionId},
-        #{auditLog.historyCleanupDate, jdbcType=TIMESTAMP}
+        #{auditLog.historyCleanupDate, jdbcType=TIMESTAMP},
+        #{auditLog.requestSourceChannelType},
+        #{auditLog.requestSourceToolName}
       )
     </foreach>
   </insert>
@@ -526,7 +544,7 @@
         ELEMENT_INSTANCE_KEY, JOB_KEY, USER_TASK_KEY, DECISION_REQUIREMENTS_KEY,
         DECISION_DEFINITION_KEY, DECISION_EVALUATION_KEY, DEPLOYMENT_KEY, FORM_KEY,
         RESOURCE_KEY, RELATED_ENTITY_TYPE, RELATED_ENTITY_KEY, ENTITY_DESCRIPTION,
-        PARTITION_ID, HISTORY_CLEANUP_DATE)
+        PARTITION_ID, HISTORY_CLEANUP_DATE, REQUEST_SOURCE_CHANNEL_TYPE, REQUEST_SOURCE_TOOL_NAME)
       VALUES (
         #{auditLog.auditLogKey}, #{auditLog.entityKey}, #{auditLog.entityType},
         #{auditLog.operationType}, #{auditLog.entityVersion}, #{auditLog.entityValueType},
@@ -543,7 +561,8 @@
         #{auditLog.deploymentKey}, #{auditLog.formKey}, #{auditLog.resourceKey},
         #{auditLog.relatedEntityType}, #{auditLog.relatedEntityKey},
         #{auditLog.entityDescription}, #{auditLog.partitionId},
-        #{auditLog.historyCleanupDate, jdbcType=TIMESTAMP})
+        #{auditLog.historyCleanupDate, jdbcType=TIMESTAMP},
+        #{auditLog.requestSourceChannelType}, #{auditLog.requestSourceToolName})
     </foreach>
     SELECT 1 FROM DUAL
   </insert>
