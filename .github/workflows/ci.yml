@@ -1555,7 +1555,7 @@ jobs:
           pr-flaky-tests-data: '${{ steps.collect-results.outputs.flaky_tests_data || ''[]'' }}'
           known-flaky-tests-file: '${{ steps.query-known-flaky.outputs.known_flaky_tests_file }}'
           pr-number: ${{ github.event.pull_request.number }}
-          blocking: 'true'
+          blocking: 'false'  # pilot: observe + comment only, do not fail check-results yet
           ran-jobs-json: ${{ steps.ran-jobs.outputs.json || '[]' }}
           bypass-label-present: ${{ steps.bypass.outputs.present }}
           head-sha: ${{ github.event.pull_request.head.sha }}
