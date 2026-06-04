@@ -75,8 +75,9 @@ public final class AzureBackupStore implements BackupStore {
   }
 
   AzureBackupStore(final AzureBackupConfig config, final BlobServiceClient client) {
-    this.config = config;
-    executor = Executors.newVirtualThreadPerTaskExecutor();
+    executor =
+        Executors.newThreadPerTaskExecutor(
+            Thread.ofVirtual().name("zeebe-backup-azure-", 0).factory());
     blobContainerClient = getContainerClient(client, config);
     final boolean createContainer = isCreateContainer(config);
     containerCreated = !createContainer;
