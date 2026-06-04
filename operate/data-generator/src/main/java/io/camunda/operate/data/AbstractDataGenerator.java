@@ -15,6 +15,7 @@ import io.camunda.client.api.worker.JobWorker;
 import io.camunda.operate.data.usertest.UserTestDataGenerator;
 import io.camunda.search.clients.ProcessDefinitionSearchClient;
 import io.camunda.search.query.ProcessDefinitionQuery;
+import io.camunda.security.auth.SecurityContext;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -116,6 +117,8 @@ public abstract class AbstractDataGenerator implements DataGenerator {
       final boolean exists;
       exists =
           processDefinitionSearchClient
+                  .withSecurityContext(
+                      SecurityContext.of(b -> b.withAuthentication(a -> a.anonymous(true))))
                   .searchProcessDefinitions(ProcessDefinitionQuery.of(q -> q))
                   .total()
               > 0;
