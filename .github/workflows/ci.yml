@@ -1385,6 +1385,7 @@ jobs:
     permissions:
       pull-requests: write
       contents: read
+      actions: read  # read the prior per-PR sticky-state run artifact via the Artifacts API
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         timeout-minutes: 1
@@ -1580,6 +1581,7 @@ jobs:
           bypass-label-present: ${{ steps.bypass.outputs.present }}
           head-sha: ${{ github.event.pull_request.head.sha }}
           base-ref: ${{ github.event.pull_request.base.ref }}
+          base-sha: ${{ github.event.pull_request.base.sha }}
 
       - name: Delete matrix job generated artifacts
         if: always()
