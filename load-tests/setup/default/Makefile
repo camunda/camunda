@@ -59,6 +59,8 @@ platform_values += -f camunda-platform-values-$(secondary_storage).yaml
 # Disable Optimize if not enabled
 ifneq ($(enable_optimize),true)
 	platform_values += --set optimize.enabled=false
+else
+	platform_values += -f camunda-platform-values-optimize-elasticsearch.yaml
 endif
 
 # Disable Operate and Tasklist if webapps not enabled

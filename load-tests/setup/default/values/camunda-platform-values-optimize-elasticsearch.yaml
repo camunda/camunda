@@ -1,14 +1,13 @@
 # Elasticsearch values for Camunda Platform Chart.
 # https://github.com/camunda/camunda-platform-helm
 #
-# This configures Elasticsearch when it's used for Optimize AND as the Camunda secondary storage.
+# This configures Elasticsearch when it's used fr Optimize, but NOT as the Camunda secondary storage.
+# storage.
 #
-# If you want to configure Elasticsearch only for Optimize and use another
-# secondary storage option for Camunda, see
-# the "camunda-platform-values-optimize-elasticsearch.yaml" file.
-# If you make changes to this file or the
-# "camunda-platform-values-optimize-elasticsearch.yaml" file, make sure to keep
-# the other file in sync (minus the secondary storage-only options).
+# For the Elasticsearch as secondary storage configuration, see the
+# "camunda-platform-values-elasticsearch.yaml" file.
+# If you make changes to this file or the "camunda-platform-values-elasticsearch.yaml" file, make
+# sure to keep the other file in sync (minus the secondary storage-only options).
 
 ########################################################################################
 ################################################### Global cluster configuration
@@ -23,28 +22,17 @@ global:
       # update this host value accordingly.
       host: elastic
 
-
-########################################################################################
-################################################### Orchestration cluster configuration
-########################################################################################
-orchestration:
-  # We need to explicitly set the secondary storage type to ELS
-  # THIS GETS OVERRIDDEN IN THE OTHER VALUES FILES
-  data:
-    secondaryStorage:
-      type: elasticsearch
-
 ########################################################################################
 ################################################### Elasticsearch cluster configuration
 ########################################################################################
 elasticsearch:
   enabled: true
-  imageTag: 8.9.2
   # Override the default name for ConfigMap, Service, etc.
   # Changing this value also changes the name of the Kubernetes Service used by
   # the other components to connect to Elasticsearch, make sure to update
   # the "global.elasticsearch.url.host" value accordingly.
   fullnameOverride: elastic
+  clusterName: elasticsearch
   master:
     fullnameOverride: elastic
     nameOverride: elastic
@@ -74,3 +62,5 @@ elasticsearch:
         operator: Equal
         value: n2-standard-8
         effect: NoSchedule
+  extraConfig:
+    logger.org.elasticsearch.deprecation: "OFF"
