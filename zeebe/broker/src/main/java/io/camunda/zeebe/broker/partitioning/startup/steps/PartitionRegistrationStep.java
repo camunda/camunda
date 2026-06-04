@@ -47,6 +47,7 @@ public final class PartitionRegistrationStep implements StartupStep<PartitionSta
     context.diskSpaceUsageMonitor().removeDiskUsageListener(context.zeebePartition());
     context.brokerHealthCheckService().removeMonitoredPartition(context.zeebePartition());
     context.topologyManager().removePartition(partitionId);
+    // TODO: failure listener added to ZeebePartition is not removed here.
 
     result.complete(context);
     return result;
