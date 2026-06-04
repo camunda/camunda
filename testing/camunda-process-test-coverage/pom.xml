@@ -15,14 +15,8 @@
   <description>Coverage module for Camunda Process Test.
     Contains backend coverage collection/report generation and bundled frontend resources.</description>
 
-  <licenses>
-    <license>
-      <name>Apache License, Version 2.0</name>
-      <url>http://www.apache.org/licenses/LICENSE-2.0</url>
-    </license>
-  </licenses>
-
   <properties>
+    <version.java>8</version.java>
     <skip.fe.build>false</skip.fe.build>
     <!--
       Maven resource root – everything placed here becomes a classpath resource.
@@ -88,6 +82,8 @@
       <artifactId>commons-io</artifactId>
     </dependency>
 
+    <!-- Test dependencies -->
+
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>
@@ -152,6 +148,11 @@
             </configuration>
           </execution>
         </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.revapi</groupId>
+        <artifactId>revapi-maven-plugin</artifactId>
       </plugin>
 
       <plugin>

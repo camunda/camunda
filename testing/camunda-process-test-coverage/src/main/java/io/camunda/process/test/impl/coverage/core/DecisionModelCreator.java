@@ -54,7 +54,10 @@ public class DecisionModelCreator {
                 data ->
                     data.getDecisionDefinition().getDmnDecisionId().equals(decisionDefinitionId))
             .findFirst()
-            .orElseThrow();
+            .orElseThrow(
+                () ->
+                    new IllegalArgumentException(
+                        "No decision definition data found for ID: " + decisionDefinitionId));
 
     final String xml = decisionDefinitionData.getXml();
 

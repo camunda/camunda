@@ -17,6 +17,7 @@ package io.camunda.process.test.impl.coverage.report;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.process.test.api.coverage.model.CoverageReport;
 import io.camunda.process.test.api.coverage.model.ImmutableCoverageReport;
 import io.camunda.process.test.api.coverage.model.ImmutableCoverageSuiteReport;
 import java.util.HashMap;
@@ -46,7 +47,7 @@ class CoverageReportUtilTest {
   @Test
   void shouldGenerateHtmlReportFromTemplate() {
     // given
-    final var report =
+    final CoverageReport report =
         ImmutableCoverageReport.builder()
             .addSuites(ImmutableCoverageSuiteReport.builder().id("suite").name("Suite").build())
             .build();

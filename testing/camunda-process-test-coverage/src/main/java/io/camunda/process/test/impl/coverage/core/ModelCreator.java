@@ -62,7 +62,10 @@ public class ModelCreator {
                         .getProcessDefinitionId()
                         .equals(processDefinitionId))
             .findFirst()
-            .orElseThrow();
+            .orElseThrow(
+                () ->
+                    new IllegalArgumentException(
+                        "No process definition data found for ID: " + processDefinitionId));
 
     final ByteArrayInputStream inputStream =
         new ByteArrayInputStream(processDefinitionData.getXml().getBytes());
