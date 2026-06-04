@@ -6,4 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-export {};
+const IS_VARIABLE_FILTER_V2_ENABLED = false;
+
+export {IS_VARIABLE_FILTER_V2_ENABLED};

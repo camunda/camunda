@@ -7,17 +7,25 @@
  */
 
 import {lazy, Suspense, useEffect, useRef, useState} from 'react';
-import {Button, InlineNotification, Modal, Stack} from '@carbon/react';
+import {
+  Button,
+  ContentSwitcher,
+  InlineNotification,
+  Modal,
+  Stack,
+  Switch,
+} from '@carbon/react';
 import {Add} from '@carbon/react/icons';
 import {Field, Form} from 'react-final-form';
+import type {FormApi} from 'final-form';
 import {FieldArray} from 'react-final-form-arrays';
 import arrayMutators from 'final-form-arrays';
 import {useNavigate, useLocation} from 'react-router-dom';
 import truncate from 'lodash/truncate';
-import {isValidJSON} from 'modules/utils';
 import {beautifyJSON} from 'modules/utils/editor/beautifyJSON';
 import {Paths} from 'modules/Routes';
 import {CopyButton} from 'modules/components/CopyButton';
+import {IS_VARIABLE_FILTER_V2_ENABLED} from 'modules/feature-flags';
 import {VariableFilterRow} from './VariableFilterRow';
 import {
   variableFilterStore,
@@ -25,10 +33,23 @@ import {
 } from 'modules/stores/variableFilter';
 import type {DraftCondition} from './constants';
 import {
+  validateCondition,
+  hasErrors,
+  mapToVariableCondition,
+  type RowErrors,
+} from './validation';
+import {
+  serializeConditions,
+  parseConditionsJson,
+  apiVariablesJsonSchema,
+} from './conditionsJsonCodec';
+import {
   ConditionRowsScroll,
   Description,
   EditorToolbar,
+  JsonEditorWrap,
   ModalContent,
+  SwitcherWrap,
 } from './styled';
 import {observer} from 'mobx-react-lite';
 
@@ -43,49 +64,11 @@ const RichTextEditor = lazy(async () => {
 
 const SOFT_WARNING_THRESHOLD = 8;
 
-type RowErrors = {
-  name?: string;
-  value?: string;
-};
-
-const validateCondition = (condition: DraftCondition): RowErrors => {
-  const errors: RowErrors = {};
-
-  if (!condition.name?.trim()) {
-    errors.name = 'Variable name is required';
-  }
-
-  if (
-    condition.operator !== 'exists' &&
-    condition.operator !== 'doesNotExist'
-  ) {
-    if (!condition.value?.trim()) {
-      errors.value = 'Value is required';
-    } else if (condition.operator === 'oneOf') {
-      let parsed: unknown;
-      try {
-        parsed = JSON.parse(condition.value);
-      } catch {
-        // handled below
-      }
-      if (!Array.isArray(parsed)) {
-        errors.value = 'Value must be a JSON array (e.g. ["val1", "val2"])';
-      }
-    } else if (
-      condition.operator !== 'contains' &&
-      !isValidJSON(condition.value)
-    ) {
-      errors.value = 'Value must be valid JSON';
-    }
-  }
-
-  return errors;
-};
-
-const hasErrors = (errors: RowErrors) => Object.keys(errors).length > 0;
+type Tab = 'fields' | 'json';
 
 type FormValues = {
   conditions: DraftCondition[];
+  jsonDraft: string;
 };
 
 const createDraft = (): DraftCondition => ({
@@ -103,6 +86,7 @@ const VariableFilterModal: React.FC = observer(() => {
   const {conditions} = variableFilterStore;
   const initialValues = useRef<FormValues>({
     conditions: conditions.length > 0 ? [...conditions] : [createDraft()],
+    jsonDraft: '',
   });
   const navigate = useNavigate();
   const location = useLocation();
@@ -120,11 +104,75 @@ const VariableFilterModal: React.FC = observer(() => {
   const editorRef = useRef<EditorRef | null>(null);
   const preEditValueRef = useRef('');
 
+  const jsonEditorRef = useRef<EditorRef | null>(null);
+
+  const [tab, setTab] = useState<Tab>('fields');
+  const [jsonError, setJsonError] = useState<string | null>(null);
+  const [jsonParseWarning, setJsonParseWarning] = useState<string | null>(null);
+
+  const showSwitcher = IS_VARIABLE_FILTER_V2_ENABLED;
+
   useEffect(() => {
     if (isEditorValid) {
       editorRef.current?.hideMarkers();
     }
   }, [isEditorValid]);
+
+  const handleTabChange = (newTab: Tab, form: FormApi<FormValues>) => {
+    if (newTab === 'json') {
+      if (jsonParseWarning === null) {
+        const current = form.getState().values?.conditions ?? [];
+        form.change('jsonDraft', serializeConditions(current));
+      }
+      setJsonError(null);
+      setJsonParseWarning(null);
+    } else {
+      const jsonDraft = form.getState().values?.jsonDraft ?? '';
+      const result = parseConditionsJson(jsonDraft);
+      if (result.ok) {
+        form.change(
+          'conditions',
+          result.conditions.length > 0 ? result.conditions : [createDraft()],
+        );
+        setJsonParseWarning(null);
+      } else {
+        setJsonParseWarning(
+          'JSON could not be parsed. Switch back to the JSON tab to fix it. Existing conditions were kept.',
+        );
+      }
+      setJsonError(null);
+    }
+    setTab(newTab);
+  };
+
+  const applyFromJson = (form: FormApi<FormValues>) => {
+    const jsonDraft = form.getState().values?.jsonDraft ?? '';
+    const result = parseConditionsJson(jsonDraft);
+    if (!result.ok) {
+      jsonEditorRef.current?.showMarkers();
+      setJsonError(result.error);
+      return;
+    }
+
+    const conditionErrors = result.conditions.map(validateCondition);
+    const errorMessages = conditionErrors
+      .map((errors, i) => {
+        if (!hasErrors(errors)) {
+          return null;
+        }
+        const parts = [errors.name, errors.value].filter(Boolean);
+        return `Condition #${i + 1}: ${parts.join(', ')}`;
+      })
+      .filter(Boolean);
+
+    if (errorMessages.length > 0) {
+      setJsonError(errorMessages.join('; '));
+      return;
+    }
+
+    setJsonError(null);
+    handleApplyConditions(result.conditions.map(mapToVariableCondition));
+  };
 
   const handleSubmit = (
     values: FormValues,
@@ -133,14 +181,7 @@ const VariableFilterModal: React.FC = observer(() => {
     if (conditionErrors.some(hasErrors)) {
       return {conditions: conditionErrors};
     }
-    handleApplyConditions(
-      values.conditions.map(({operator, name, value}): VariableCondition => {
-        if (operator === 'exists' || operator === 'doesNotExist') {
-          return {name, operator, value: ''};
-        }
-        return {name, operator, value: value ?? ''};
-      }),
-    );
+    handleApplyConditions(values.conditions.map(mapToVariableCondition));
     return undefined;
   };
 
@@ -183,6 +224,8 @@ const VariableFilterModal: React.FC = observer(() => {
                 } else {
                   editorRef.current?.showMarkers();
                 }
+              } else if (tab === 'json') {
+                applyFromJson(form);
               } else {
                 submitForm();
               }
@@ -244,66 +287,138 @@ const VariableFilterModal: React.FC = observer(() => {
                     Define one or more conditions to filter process instances by
                     variable values. All conditions are combined with AND logic.
                   </Description>
-                  <FieldArray<DraftCondition> name="conditions">
-                    {({fields}) => (
-                      <>
-                        <ConditionRowsScroll>
-                          <Stack gap={4}>
-                            {fields.map((fieldName, index) => (
-                              <VariableFilterRow
-                                key={fieldName}
-                                fieldName={fieldName}
-                                rowIndex={index}
-                                onDelete={() => fields.remove(index)}
-                                isDeleteHidden={fields.length === 1}
-                                onEditValue={(i) => {
-                                  const val =
-                                    form.getState().values?.['conditions']?.[i]
-                                      ?.value ?? '';
-                                  preEditValueRef.current = val;
-                                  changeField(
-                                    `conditions[${i}].value`,
-                                    beautifyJSON(val),
-                                  );
-                                  setEditingRowIndex(i);
-                                }}
+                  {showSwitcher && (
+                    <SwitcherWrap>
+                      <ContentSwitcher
+                        size="sm"
+                        selectedIndex={tab === 'fields' ? 0 : 1}
+                        onChange={(e) => {
+                          handleTabChange(
+                            e.index === 0 ? 'fields' : 'json',
+                            form,
+                          );
+                        }}
+                      >
+                        <Switch name="fields" text="Fields" />
+                        <Switch name="json" text="JSON" />
+                      </ContentSwitcher>
+                    </SwitcherWrap>
+                  )}
+                  {tab === 'fields' ? (
+                    <>
+                      {jsonParseWarning !== null && (
+                        <InlineNotification
+                          kind="warning"
+                          lowContrast
+                          hideCloseButton
+                          subtitle={jsonParseWarning}
+                          role="status"
+                        />
+                      )}
+                      <FieldArray<DraftCondition> name="conditions">
+                        {({fields}) => (
+                          <>
+                            <ConditionRowsScroll>
+                              <Stack gap={4}>
+                                {fields.map((fieldName, index) => (
+                                  <VariableFilterRow
+                                    key={fieldName}
+                                    fieldName={fieldName}
+                                    rowIndex={index}
+                                    onDelete={() => fields.remove(index)}
+                                    isDeleteHidden={fields.length === 1}
+                                    onEditValue={(i) => {
+                                      const val =
+                                        form.getState().values?.[
+                                          'conditions'
+                                        ]?.[i]?.value ?? '';
+                                      preEditValueRef.current = val;
+                                      changeField(
+                                        `conditions[${i}].value`,
+                                        beautifyJSON(val),
+                                      );
+                                      setEditingRowIndex(i);
+                                    }}
+                                  />
+                                ))}
+                              </Stack>
+                            </ConditionRowsScroll>
+                            {form
+                              .getState()
+                              .values?.conditions?.some(
+                                (c) => c.operator === 'contains',
+                              ) && (
+                              <InlineNotification
+                                kind="warning"
+                                lowContrast
+                                hideCloseButton
+                                subtitle='"contains" searches only the first ~8 000 characters of a variable value. Matches in longer values may not be returned.'
+                                role="status"
                               />
-                            ))}
-                          </Stack>
-                        </ConditionRowsScroll>
-                        {form
-                          .getState()
-                          .values?.conditions?.some(
-                            (c) => c.operator === 'contains',
-                          ) && (
-                          <InlineNotification
-                            kind="warning"
-                            lowContrast
-                            hideCloseButton
-                            subtitle='"contains" searches only the first ~8 000 characters of a variable value. Matches in longer values may not be returned.'
-                            role="status"
-                          />
+                            )}
+                            {(fields.length ?? 0) >= SOFT_WARNING_THRESHOLD && (
+                              <InlineNotification
+                                kind="info"
+                                lowContrast
+                                hideCloseButton
+                                subtitle="Filtering by many conditions can be slow. Add conditions only if you need them."
+                                role="status"
+                              />
+                            )}
+                            <Button
+                              kind="ghost"
+                              size="sm"
+                              renderIcon={Add}
+                              onClick={() => fields.push(createDraft())}
+                            >
+                              Add condition
+                            </Button>
+                          </>
                         )}
-                        {(fields.length ?? 0) >= SOFT_WARNING_THRESHOLD && (
-                          <InlineNotification
-                            kind="info"
-                            lowContrast
-                            hideCloseButton
-                            subtitle="Filtering by many conditions can be slow. Add conditions only if you need them."
-                            role="status"
-                          />
-                        )}
-                        <Button
-                          kind="ghost"
-                          size="sm"
-                          renderIcon={Add}
-                          onClick={() => fields.push(createDraft())}
-                        >
-                          Add condition
-                        </Button>
-                      </>
-                    )}
-                  </FieldArray>
+                      </FieldArray>
+                    </>
+                  ) : (
+                    <Field<string>
+                      name="jsonDraft"
+                      subscription={{value: true}}
+                    >
+                      {({input: jsonInput}) => (
+                        <Stack gap={4}>
+                          <EditorToolbar>
+                            <CopyButton value={jsonInput.value} />
+                          </EditorToolbar>
+                          <JsonEditorWrap $invalid={jsonError !== null}>
+                            <Suspense>
+                              <RichTextEditor
+                                value={jsonInput.value}
+                                jsonSchema={apiVariablesJsonSchema}
+                                onChange={(v) => {
+                                  jsonInput.onChange(v);
+                                  if (jsonError !== null) {
+                                    setJsonError(null);
+                                  }
+                                }}
+                                onMount={(editor) => {
+                                  jsonEditorRef.current = editor;
+                                }}
+                                height="300px"
+                              />
+                            </Suspense>
+                          </JsonEditorWrap>
+                          {jsonError !== null && (
+                            <InlineNotification
+                              kind="error"
+                              lowContrast
+                              hideCloseButton
+                              title="Could not apply JSON"
+                              subtitle={jsonError}
+                              role="alert"
+                            />
+                          )}
+                        </Stack>
+                      )}
+                    </Field>
+                  )}
                 </Stack>
               </div>
             </ModalContent>

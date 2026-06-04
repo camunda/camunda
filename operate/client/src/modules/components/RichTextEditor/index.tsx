@@ -12,7 +12,12 @@ import {currentTheme} from 'modules/stores/currentTheme';
 import {EditorStyles} from './styled';
 import {options as defaultOptions} from 'modules/utils/editor/options';
 import {type editor, KeyCode} from 'monaco-editor';
-import type {ReactNode} from 'react';
+import {useEffect, useMemo, useRef, type ReactNode} from 'react';
+
+type EditorHandle = {
+  showMarkers: () => void;
+  hideMarkers: () => void;
+};
 
 type Props = {
   /** @default "json" */
@@ -21,14 +26,12 @@ type Props = {
   readOnly?: boolean;
   onChange?: (value: string) => void;
   onValidate?: (isValid: boolean) => void;
-  onMount?: (editor: {
-    showMarkers: () => void;
-    hideMarkers: () => void;
-  }) => void;
+  onMount?: (editor: EditorHandle) => void;
   height?: string;
   width?: string;
   options?: editor.IStandaloneEditorConstructionOptions;
   loading?: ReactNode;
+  jsonSchema?: object;
 };
 
 const RichTextEditor: React.FC<Props> = observer(
@@ -43,12 +46,43 @@ const RichTextEditor: React.FC<Props> = observer(
     width = '100%',
     options = {},
     loading,
+    jsonSchema,
   }) => {
     const editorOptions = {
       ...defaultOptions,
       ...options,
       readOnly,
     };
+
+    const {modelPath, schemaUri} = useMemo(() => {
+      const id = Math.random().toString(36).slice(2, 10);
+      return {
+        modelPath: `inmemory://rich-text-editor/${id}.json`,
+        schemaUri: `inmemory://rich-text-editor/${id}.schema.json`,
+      };
+    }, []);
+    const monacoRef = useRef<
+      | Parameters<
+          NonNullable<React.ComponentProps<typeof Editor>['onMount']>
+        >[1]
+      | null
+    >(null);
+
+    useEffect(() => {
+      return () => {
+        const monaco = monacoRef.current;
+        if (!monaco) {
+          return;
+        }
+        const current = monaco.languages.json.jsonDefaults.diagnosticsOptions;
+        monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
+          ...current,
+          schemas: (current.schemas ?? []).filter(
+            (s: {uri: string}) => s.uri !== schemaUri,
+          ),
+        });
+      };
+    }, [schemaUri]);
 
     return (
       <>
@@ -60,12 +94,32 @@ const RichTextEditor: React.FC<Props> = observer(
           value={value}
           height={height}
           width={width}
+          path={jsonSchema ? modelPath : undefined}
           theme={currentTheme.theme === 'dark' ? 'vs-dark' : 'light'}
           onChange={(value) => {
             onChange?.(value ?? '');
           }}
-          onMount={(editor) => {
+          onMount={(editor, monaco) => {
             editor.focus();
+            monacoRef.current = monaco;
+
+            if (jsonSchema && language === 'json') {
+              const current =
+                monaco.languages.json.jsonDefaults.diagnosticsOptions;
+              monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
+                ...current,
+                schemas: [
+                  ...(current.schemas ?? []).filter(
+                    (s: {uri: string}) => s.uri !== schemaUri,
+                  ),
+                  {
+                    uri: schemaUri,
+                    fileMatch: [modelPath],
+                    schema: jsonSchema,
+                  },
+                ],
+              });
+            }
 
             editor.onKeyDown((e) => {
               if (e.keyCode && e.keyCode === KeyCode.Escape) {
@@ -95,3 +149,4 @@ const RichTextEditor: React.FC<Props> = observer(
 );
 
 export {RichTextEditor};
+export type {EditorHandle};

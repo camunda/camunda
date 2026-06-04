@@ -19,6 +19,10 @@ const ModalContent = styled.div`
   && {
     margin-bottom: 0;
   }
+
+  .cds--autoalign .cds--list-box__menu {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  }
 `;
 
 const Description = styled.p`
@@ -83,6 +87,26 @@ const ConditionRowsScroll = styled.div`
   min-height: 0;
 `;
 
+const SwitcherWrap = styled.div`
+  align-self: flex-start;
+  width: fit-content;
+  max-width: 100%;
+
+  .cds--content-switcher,
+  .cds--content-switcher-btn {
+    flex: 0 0 auto;
+  }
+`;
+
+const JsonEditorWrap = styled.div<{$invalid?: boolean}>`
+  border: 1px solid
+    ${({$invalid}) =>
+      $invalid ? 'var(--cds-support-error)' : 'var(--cds-border-subtle-01)'};
+  border-radius: 4px;
+  overflow: hidden;
+  min-height: 280px;
+`;
+
 export {
   ModalContent,
   Description,
@@ -93,4 +117,6 @@ export {
   ConditionItem,
   EditorToolbar,
   ConditionRowsScroll,
+  SwitcherWrap,
+  JsonEditorWrap,
 };

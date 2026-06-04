@@ -103,7 +103,7 @@ const VariableFilterRow: React.FC<Props> = ({
                   }
                 }}
                 size="sm"
-                direction={rowIndex < 2 ? 'bottom' : 'top'}
+                autoAlign
                 data-testid={`variable-filter-operator-${rowIndex}`}
               />
               <ValueFieldContainer>
