@@ -73,11 +73,21 @@ jobs:
           roleId: ${{ secrets.VAULT_ROLE_ID }}
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           secrets: |
+<<<<<<< HEAD
             secret/data/products/infra/ci/common CAMUNDA_NEXUS_USR;
             secret/data/products/infra/ci/common CAMUNDA_NEXUS_PSW;
             secret/data/products/optimize/ci/camunda-optimize REGISTRY_HUB_DOCKER_COM_USR;
             secret/data/products/optimize/ci/camunda-optimize REGISTRY_HUB_DOCKER_COM_PSW;
             secret/data/products/camunda/ci/github-actions REGISTRY_MINIMUS_PSW | minimus-token
+=======
+            secret/data/github.com/organizations/camunda MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE;
+            secret/data/github.com/organizations/camunda MAVEN_CENTRAL_GPG_SIGNING_KEY_SEC;
+            secret/data/github.com/organizations/camunda MAVEN_CENTRAL_GPG_SIGNING_KEY_PUB;
+            secret/data/github.com/organizations/camunda MAVEN_CENTRAL_DEPLOYMENT_USR;
+            secret/data/github.com/organizations/camunda MAVEN_CENTRAL_DEPLOYMENT_PSW;
+            secret/data/products/optimize/ci/artifactory USER | ARTIFACTORY_USERNAME;
+            secret/data/products/optimize/ci/artifactory TOKEN | ARTIFACTORY_TOKEN;
+>>>>>>> 4f9f38f4 (fix: add camunda-cpm Artifactory credentials to optimize release workflow)
 
       - name: Log Input Variables
         run: |
@@ -90,7 +100,29 @@ jobs:
       - name: Setup Maven
         uses: ./.github/actions/setup-maven
         with:
+<<<<<<< HEAD
           secrets: ${{ toJSON(secrets) }}
+=======
+          dockerhub: true
+          harbor: true
+          maven-cache-key-modifier: optimize
+          time-zone: Europe/Berlin
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          minimus: true
+          maven-servers: |
+            [{
+                "id": "central",
+                "username": "${{ steps.secrets.outputs.MAVEN_CENTRAL_DEPLOYMENT_USR }}",
+                "password": "${{ steps.secrets.outputs.MAVEN_CENTRAL_DEPLOYMENT_PSW }}"
+            },
+            {
+                "id": "camunda-cpm",
+                "username": "${{ steps.secrets.outputs.ARTIFACTORY_USERNAME }}",
+                "password": "${{ steps.secrets.outputs.ARTIFACTORY_TOKEN }}"
+            }]
+>>>>>>> 4f9f38f4 (fix: add camunda-cpm Artifactory credentials to optimize release workflow)
 
       - name: Is current release major or minor.
         id: release-type
