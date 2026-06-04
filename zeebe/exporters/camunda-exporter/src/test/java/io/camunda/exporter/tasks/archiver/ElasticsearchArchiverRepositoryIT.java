@@ -601,6 +601,85 @@ final class ElasticsearchArchiverRepositoryIT {
   }
 
   @Test
+  void shouldCaptureProcessInstanceArchivalBacklogMetricTransitions() throws Exception {
+    // given
+    final var repository = createRepository();
+    final var archivedAt = Instant.now().minus(Duration.ofHours(2)).toString();
+    createProcessInstanceIndex();
+
+    // when/then - 0
+    assertThat(repository.getProcessInstancesNextBatch(100)).succeedsWithin(Duration.ofSeconds(30));
+    assertThat(
+            meterRegistry
+                .get("zeebe.camunda.exporter.process.instances.awaiting.archival")
+                .gauge()
+                .value())
+        .isEqualTo(0.0);
+
+    // when/then - 100
+    LongStream.rangeClosed(1, 100)
+        .mapToObj(
+            id ->
+                new TestProcessInstance(
+                    String.valueOf(id),
+                    archivedAt,
+                    ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION,
+                    1,
+                    null,
+                    null))
+        .forEach(doc -> index(processInstanceIndex, doc));
+    testClient.indices().refresh(r -> r.index(processInstanceIndex));
+
+    final var backlog100 = repository.getProcessInstancesNextBatch(100);
+    assertThat(backlog100).succeedsWithin(Duration.ofSeconds(30));
+    assertThat(
+            meterRegistry
+                .get("zeebe.camunda.exporter.process.instances.awaiting.archival")
+                .gauge()
+                .value())
+        .isEqualTo(100.0);
+
+    // when/then - 0
+    assertThat(
+            repository.deleteDocuments(
+                processInstanceIndex,
+                Map.of("id", LongStream.rangeClosed(1, 100).mapToObj(String::valueOf).toList())))
+        .succeedsWithin(Duration.ofSeconds(30));
+    testClient.indices().refresh(r -> r.index(processInstanceIndex));
+
+    assertThat(repository.getProcessInstancesNextBatch(100)).succeedsWithin(Duration.ofSeconds(30));
+    assertThat(
+            meterRegistry
+                .get("zeebe.camunda.exporter.process.instances.awaiting.archival")
+                .gauge()
+                .value())
+        .isEqualTo(0.0);
+
+    // when/then - 5
+    LongStream.rangeClosed(1, 5)
+        .mapToObj(
+            id ->
+                new TestProcessInstance(
+                    String.valueOf(id),
+                    archivedAt,
+                    ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION,
+                    1,
+                    null,
+                    null))
+        .forEach(doc -> index(processInstanceIndex, doc));
+    testClient.indices().refresh(r -> r.index(processInstanceIndex));
+
+    final var backlog5 = repository.getProcessInstancesNextBatch(100);
+    assertThat(backlog5).succeedsWithin(Duration.ofSeconds(30));
+    assertThat(
+            meterRegistry
+                .get("zeebe.camunda.exporter.process.instances.awaiting.archival")
+                .gauge()
+                .value())
+        .isEqualTo(5.0);
+  }
+
+  @Test
   void shouldHandlePIMode() throws Exception {
     // given
     config.setProcessInstanceRetentionMode(ProcessInstanceRetentionMode.PI);
