@@ -49,6 +49,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.agrona.LangUtil;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
 public final class ExporterDirector extends Actor implements HealthMonitorable, LogRecordAwaiter {
@@ -96,7 +97,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private final int partitionId;
   private final EventFilter positionsToSkipFilter;
   private final MeterRegistry meterRegistry;
-  private final String licenseKey;
+  private final @Nullable String licenseKey;
   // When idle, exporter director is not exporting any records because no exporters are configured.
   // The actor is still running, but it is not actively doing any work.
   private boolean idle;

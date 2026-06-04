@@ -17,6 +17,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.time.InstantSource;
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 
 public final class ExporterDirectorContext {
 
@@ -34,7 +35,7 @@ public final class ExporterDirectorContext {
   private MeterRegistry meterRegistry;
   private InstantSource clock;
   private String clusterId = "";
-  private String licenseKey;
+  private @Nullable String licenseKey;
   private String tenantName;
   private boolean sendOnLegacySubject = true;
   private boolean receiveOnLegacySubject = true;
@@ -87,7 +88,7 @@ public final class ExporterDirectorContext {
     return clusterId;
   }
 
-  public String getLicenseKey() {
+  public @Nullable String getLicenseKey() {
     return licenseKey;
   }
 
@@ -165,7 +166,7 @@ public final class ExporterDirectorContext {
     return this;
   }
 
-  public ExporterDirectorContext licenseKey(final String licenseKey) {
+  public ExporterDirectorContext licenseKey(final @Nullable String licenseKey) {
     this.licenseKey = licenseKey;
     return this;
   }

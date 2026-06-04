@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.agrona.CloseHelper;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
 public final class ExporterRepository {
@@ -31,7 +32,7 @@ public final class ExporterRepository {
   private static final int NULL_PARTITION_ID = Integer.MIN_VALUE;
   private final ExternalJarRepository jarRepository;
   private final Map<String, ExporterDescriptor> exporters;
-  private String licenseKey;
+  private @Nullable String licenseKey;
 
   public ExporterRepository() {
     this(new ArrayList<>());
@@ -49,11 +50,11 @@ public final class ExporterRepository {
     this.jarRepository = jarRepository;
   }
 
-  public String getLicenseKey() {
+  public @Nullable String getLicenseKey() {
     return licenseKey;
   }
 
-  public void setLicenseKey(final String licenseKey) {
+  public void setLicenseKey(final @Nullable String licenseKey) {
     this.licenseKey = licenseKey;
   }
 
