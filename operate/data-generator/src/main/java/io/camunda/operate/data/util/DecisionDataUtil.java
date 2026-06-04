@@ -7,7 +7,6 @@
  */
 package io.camunda.operate.data.util;
 
-import io.camunda.operate.util.PayloadUtil;
 import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity;

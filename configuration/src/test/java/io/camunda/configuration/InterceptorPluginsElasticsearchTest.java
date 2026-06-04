@@ -74,14 +74,6 @@ public class InterceptorPluginsElasticsearchTest {
     }
 
     @Test
-    void testCamundaDataSecondaryStorageOperateProperties() {
-      assertThat(operateProperties.getElasticsearch().getInterceptorPlugins())
-          .hasSize(2)
-          .usingRecursiveFieldByFieldElementComparator()
-          .containsExactly(EXPECTED_PLUGIN_CONFIGURATION_0, EXPECTED_PLUGIN_CONFIGURATION_1);
-    }
-
-    @Test
     void testCamundaDataSecondaryStorageTasklistProperties() {
       assertThat(tasklistProperties.getElasticsearch().getInterceptorPlugins())
           .hasSize(2)
@@ -163,14 +155,6 @@ public class InterceptorPluginsElasticsearchTest {
       this.tasklistProperties = tasklistProperties;
       this.searchEngineConnectProperties = searchEngineConnectProperties;
       this.brokerBasedProperties = brokerBasedProperties;
-    }
-
-    @Test
-    void testCamundaDataSecondaryStorageOperateProperties() {
-      assertThat(operateProperties.getElasticsearch().getInterceptorPlugins())
-          .hasSize(2)
-          .usingRecursiveFieldByFieldElementComparator()
-          .containsExactly(EXPECTED_PLUGIN_CONFIGURATION_0, EXPECTED_PLUGIN_CONFIGURATION_1);
     }
 
     @Test
@@ -262,14 +246,6 @@ public class InterceptorPluginsElasticsearchTest {
       this.tasklistProperties = tasklistProperties;
       this.searchEngineConnectProperties = searchEngineConnectProperties;
       this.brokerBasedProperties = brokerBasedProperties;
-    }
-
-    @Test
-    void testCamundaDataSecondaryStorageOperateProperties() {
-      assertThat(operateProperties.getElasticsearch().getInterceptorPlugins())
-          .hasSize(2)
-          .usingRecursiveFieldByFieldElementComparator()
-          .containsExactly(EXPECTED_PLUGIN_CONFIGURATION_0, EXPECTED_PLUGIN_CONFIGURATION_1);
     }
 
     @Test

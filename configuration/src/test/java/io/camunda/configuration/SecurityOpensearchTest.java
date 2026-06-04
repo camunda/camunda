@@ -106,14 +106,6 @@ public class SecurityOpensearchTest {
           .returns(false, SslProperties::isVerifyHostname)
           .returns(true, SslProperties::isSelfSigned);
     }
-
-    @Test
-    void testCamundaOperateProperties() {
-      assertThat(operateProperties.getOpensearch().getSsl())
-          .returns("certificatePath", io.camunda.operate.property.SslProperties::getCertificatePath)
-          .returns(false, io.camunda.operate.property.SslProperties::isVerifyHostname)
-          .returns(true, io.camunda.operate.property.SslProperties::isSelfSigned);
-    }
   }
 
   @Nested
@@ -183,14 +175,6 @@ public class SecurityOpensearchTest {
           .returns("certificatePath", SslProperties::getCertificatePath)
           .returns(false, SslProperties::isVerifyHostname)
           .returns(true, SslProperties::isSelfSigned);
-    }
-
-    @Test
-    void testCamundaOperateProperties() {
-      assertThat(operateProperties.getOpensearch().getSsl())
-          .returns("certificatePath", io.camunda.operate.property.SslProperties::getCertificatePath)
-          .returns(false, io.camunda.operate.property.SslProperties::isVerifyHostname)
-          .returns(true, io.camunda.operate.property.SslProperties::isSelfSigned);
     }
   }
 }

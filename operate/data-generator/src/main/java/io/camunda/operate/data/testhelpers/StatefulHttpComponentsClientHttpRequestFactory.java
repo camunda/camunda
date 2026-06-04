@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate.util.rest;
+package io.camunda.operate.data.testhelpers;
 
 import java.net.URI;
 import org.apache.hc.client5.http.classic.HttpClient;
@@ -23,13 +23,13 @@ public class StatefulHttpComponentsClientHttpRequestFactory
   private final HttpContext httpContext;
 
   public StatefulHttpComponentsClientHttpRequestFactory(
-      HttpClient httpClient, HttpContext httpContext) {
+      final HttpClient httpClient, final HttpContext httpContext) {
     super(httpClient);
     this.httpContext = httpContext;
   }
 
   @Override
-  protected HttpContext createHttpContext(HttpMethod httpMethod, URI uri) {
-    return this.httpContext;
+  protected HttpContext createHttpContext(final HttpMethod httpMethod, final URI uri) {
+    return httpContext;
   }
 }

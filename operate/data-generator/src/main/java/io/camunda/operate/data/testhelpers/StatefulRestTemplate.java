@@ -5,11 +5,10 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate.testhelpers;
+package io.camunda.operate.data.testhelpers;
 
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
-import io.camunda.operate.util.rest.StatefulHttpComponentsClientHttpRequestFactory;
 import java.lang.reflect.Type;
 import java.net.MalformedURLException;
 import java.net.URI;

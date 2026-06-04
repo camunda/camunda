@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.data.usertest;
 
-import static io.camunda.operate.util.ThreadUtil.sleepFor;
+import static io.camunda.operate.data.util.ThreadUtil.sleepFor;
 import static io.camunda.webapps.schema.entities.AbstractExporterEntity.DEFAULT_TENANT_ID;
 
 import io.camunda.client.api.command.ClientException;
@@ -19,8 +19,8 @@ import io.camunda.client.api.worker.JobHandler;
 import io.camunda.client.api.worker.JobWorker;
 import io.camunda.operate.data.AbstractDataGenerator;
 import io.camunda.operate.data.util.NameGenerator;
-import io.camunda.operate.util.PayloadUtil;
-import io.camunda.operate.util.ZeebeTestUtil;
+import io.camunda.operate.data.util.PayloadUtil;
+import io.camunda.operate.data.util.ZeebeTestUtil;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.time.Duration;
