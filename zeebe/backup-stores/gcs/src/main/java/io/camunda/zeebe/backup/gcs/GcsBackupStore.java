@@ -65,7 +65,9 @@ public final class GcsBackupStore implements BackupStore {
     bucketInfo = BucketInfo.of(config.bucketName());
     basePath = Optional.ofNullable(config.basePath()).map(s -> s + "/").orElse("");
     this.client = client;
-    executor = Executors.newVirtualThreadPerTaskExecutor();
+    executor =
+        Executors.newThreadPerTaskExecutor(
+            Thread.ofVirtual().name("zeebe-backup-gcs-", 0).factory());
     manifestManager = new ManifestManager(client, bucketInfo, basePath, executor);
     fileSetManager =
         new FileSetManager(
