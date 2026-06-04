@@ -6,6 +6,20 @@ plugins {
     id("buildlogic.server-conventions")
 }
 
+// Maven surefire excludes *Test classes; failsafe runs them as ITs (require Docker/Testcontainers).
+tasks.named<Test>("test") {
+    exclude("**/*Test.class", "**/*Test\$*.class")
+}
+
+val it by tasks.registering(Test::class) {
+    group = "verification"
+    description = "Runs integration tests (require Docker)"
+    testClassesDirs = tasks.named<Test>("test").get().testClassesDirs
+    classpath = tasks.named<Test>("test").get().classpath
+    include("**/*Test.class", "**/*Test\$*.class")
+    shouldRunAfter(tasks.named("test"))
+}
+
 dependencies {
     implementation(project(":camunda-spring-boot-starter"))
     testImplementation(project(":camunda-process-test-spring"))
