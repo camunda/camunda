@@ -8,6 +8,7 @@
 package io.camunda.protocol;
 
 import io.camunda.zeebe.protocol.record.Agent;
+import io.camunda.zeebe.protocol.record.ChannelType;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -74,6 +75,16 @@ public record TestRecord(long position, ValueType valueType) implements Record<T
 
   @Override
   public Agent getAgent() {
+    return null;
+  }
+
+  @Override
+  public ChannelType getRequestChannelType() {
+    return null;
+  }
+
+  @Override
+  public String getRequestToolName() {
     return null;
   }
 

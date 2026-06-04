@@ -22,6 +22,7 @@ import io.camunda.zeebe.exporter.api.context.Configuration;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Context.RecordFilter;
 import io.camunda.zeebe.protocol.record.Agent;
+import io.camunda.zeebe.protocol.record.ChannelType;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -248,6 +249,16 @@ public final class ExporterTest {
 
     @Override
     public Agent getAgent() {
+      return null;
+    }
+
+    @Override
+    public ChannelType getRequestChannelType() {
+      return null;
+    }
+
+    @Override
+    public String getRequestToolName() {
       return null;
     }
 

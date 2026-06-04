@@ -46,8 +46,8 @@ import org.springframework.util.unit.DataSize;
 public class SingleBrokerDataDeletionTest {
 
   private static final Duration SNAPSHOT_PERIOD = Duration.ofMinutes(5);
-  private static final DataSize LOG_SEGMENT_SIZE = DataSize.ofKilobytes(32);
-  private static final DataSize MAX_MESSAGE_SIZE = DataSize.ofKilobytes(32);
+  private static final DataSize LOG_SEGMENT_SIZE = DataSize.ofKilobytes(48);
+  private static final DataSize MAX_MESSAGE_SIZE = DataSize.ofKilobytes(48);
   private static final int PARTITION_ID = 1;
 
   @Rule
