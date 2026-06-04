@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.usertask.processors;
 
+import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.processing.AsyncRequestBehavior;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
@@ -24,6 +25,7 @@ import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
+import java.util.Optional;
 
 public final class UserTaskClaimProcessor implements UserTaskCommandProcessor {
 
@@ -33,6 +35,8 @@ public final class UserTaskClaimProcessor implements UserTaskCommandProcessor {
       "Expected to claim user task with key '%d', but it has already been assigned";
   private static final String INVALID_USER_TASK_EMPTY_ASSIGNEE_MESSAGE =
       "Expected to claim user task with key '%d', but provided assignee is empty";
+  private static final String INVALID_USER_TASK_CLAIM_FOR_OTHER_USER_MESSAGE =
+      "Expected to claim user task with key '%d', but the assignee '%s' does not match the calling user '%s'";
 
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
@@ -119,6 +123,18 @@ public final class UserTaskClaimProcessor implements UserTaskCommandProcessor {
               String.format(INVALID_USER_TASK_EMPTY_ASSIGNEE_MESSAGE, userTaskKey)));
     }
 
+    final Optional<String> callerUsername = getCallerUsername(command);
+    if (callerUsername.isPresent() && !callerUsername.get().equals(newAssignee)) {
+      return Either.left(
+          new Rejection(
+              RejectionType.FORBIDDEN,
+              String.format(
+                  INVALID_USER_TASK_CLAIM_FOR_OTHER_USER_MESSAGE,
+                  userTaskKey,
+                  newAssignee,
+                  callerUsername.get())));
+    }
+
     final String currentAssignee = userTaskRecord.getAssignee();
     final boolean canClaim = currentAssignee.isBlank() || currentAssignee.equals(newAssignee);
     if (!canClaim) {
@@ -129,5 +145,10 @@ public final class UserTaskClaimProcessor implements UserTaskCommandProcessor {
     }
 
     return Either.right(userTaskRecord);
+  }
+
+  private static Optional<String> getCallerUsername(final TypedRecord<?> command) {
+    return Optional.ofNullable(
+        (String) command.getAuthorizations().get(Authorization.AUTHORIZED_USERNAME));
   }
 }
