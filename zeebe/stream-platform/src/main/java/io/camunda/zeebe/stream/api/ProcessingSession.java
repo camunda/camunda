@@ -14,6 +14,7 @@ import io.camunda.zeebe.protocol.impl.encoding.AgentInfo;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.Agent;
+import io.camunda.zeebe.protocol.record.ChannelType;
 import java.util.function.Consumer;
 
 public interface ProcessingSession {
@@ -51,6 +52,16 @@ public interface ProcessingSession {
       // make a copy to rule out any side effects
       final var agent = AgentInfo.of(agentInfo);
       appendMetadataToFollowUps(metadata -> metadata.agent(agent));
+    }
+  }
+
+  default void appendRequestSourceToFollowUps(
+      final ChannelType channelType, final String toolName) {
+    if (channelType != null) {
+      appendMetadataToFollowUps(metadata -> metadata.requestChannelType(channelType));
+    }
+    if (toolName != null && !toolName.isEmpty()) {
+      appendMetadataToFollowUps(metadata -> metadata.requestToolName(toolName));
     }
   }
 }

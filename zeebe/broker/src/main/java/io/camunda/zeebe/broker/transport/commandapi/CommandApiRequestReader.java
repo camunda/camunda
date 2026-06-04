@@ -14,6 +14,7 @@ import io.camunda.zeebe.broker.transport.RequestReaderException;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.ChannelType;
 import io.camunda.zeebe.protocol.record.ExecuteCommandRequestDecoder;
 import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
 import io.camunda.zeebe.protocol.record.ValueTypes;
@@ -54,6 +55,11 @@ public class CommandApiRequestReader implements RequestReader {
 
     metadata.protocolVersion(messageHeaderDecoder.version());
     final var valueType = commandRequestDecoder.valueType();
+    final var requestChannelType = commandRequestDecoder.channelType();
+    if (requestChannelType != ChannelType.NULL_VAL
+        && requestChannelType != ChannelType.SBE_UNKNOWN) {
+      metadata.requestChannelType(requestChannelType);
+    }
     if (ValueTypes.isUserCommand(valueType)) {
       final var record = UnifiedRecordValue.fromValueType(valueType);
       if (record != null) {
@@ -69,8 +75,20 @@ public class CommandApiRequestReader implements RequestReader {
     if (commandRequestDecoder.limit() < buffer.capacity()) {
       final int authOffset =
           commandRequestDecoder.limit() + ExecuteCommandRequestDecoder.authorizationHeaderLength();
-      authInfo.wrap(buffer, authOffset, commandRequestDecoder.authorizationLength());
+      final int authLength = commandRequestDecoder.authorizationLength();
+      authInfo.wrap(buffer, authOffset, authLength);
       metadata.authorization(authInfo);
+      // advance the decoder past the authorization data
+      commandRequestDecoder.limit(authOffset + authLength);
+    }
+    if (commandRequestDecoder.limit() < buffer.capacity()) {
+      final int toolNameLength = commandRequestDecoder.toolNameLength();
+      final int toolNameOffset =
+          commandRequestDecoder.limit() + ExecuteCommandRequestDecoder.toolNameHeaderLength();
+      if (toolNameLength > 0) {
+        metadata.requestToolName(commandRequestDecoder.toolName());
+      }
+      commandRequestDecoder.limit(toolNameOffset + toolNameLength);
     }
   }
 
