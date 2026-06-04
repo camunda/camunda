@@ -8,6 +8,6 @@
 
 const TasklistPage: React.FC = () => {
 	return <h1>Tasklist</h1>;
-}
+};
 
-export { TasklistPage };
+export {TasklistPage};

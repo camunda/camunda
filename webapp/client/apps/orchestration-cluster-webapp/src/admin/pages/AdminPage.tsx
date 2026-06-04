@@ -8,5 +8,5 @@
 
 const AdminPage: React.FC = () => {
 	return <h1>Admin</h1>;
-}
- export {AdminPage}
+};
+export {AdminPage};

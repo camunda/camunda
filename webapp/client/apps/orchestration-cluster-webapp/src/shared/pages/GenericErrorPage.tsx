@@ -12,7 +12,7 @@ import SvgErrorRobot from '#/shared/svg/ErrorRobot';
 import styles from './GenericErrorPage.module.scss';
 
 type Props = {
-	reset: () => void
+	reset: () => void;
 };
 
 const GenericErrorPage: React.FC<Props> = ({reset}) => {

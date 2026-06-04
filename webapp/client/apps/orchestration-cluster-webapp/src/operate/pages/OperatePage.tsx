@@ -8,6 +8,6 @@
 
 const OperatePage: React.FC = () => {
 	return <h1>Operate</h1>;
-}
+};
 
-export { OperatePage };
+export {OperatePage};
