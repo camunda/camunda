@@ -105,6 +105,21 @@ tasks.named<Jar>("jar") {
     enabled = false
 }
 
+// ResourceUtils.getFile("classpath:...") requires real filesystem paths — it cannot resolve
+// resources from inside a JAR. The base starter's main output must appear as directories on the
+// test classpath rather than being consumed via its published JAR.
+val baseStarter = project(":camunda-spring-boot-starter")
+tasks.named<Test>("test") {
+    dependsOn(
+        baseStarter.tasks.named("compileJava"),
+        baseStarter.tasks.named("processResources"),
+    )
+    classpath = files(
+        baseStarter.layout.buildDirectory.dir("classes/java/main"),
+        baseStarter.layout.buildDirectory.dir("resources/main"),
+    ) + classpath
+}
+
 // Use the shadow jar as the runtime artifact for inter-project dependencies.
 // The shadow jar shades and excludes SB4-specific classes (CamundaActuatorConfiguration,
 // CamundaClientHealthIndicator) that reference spring-boot-health (SB4 only) — preventing
