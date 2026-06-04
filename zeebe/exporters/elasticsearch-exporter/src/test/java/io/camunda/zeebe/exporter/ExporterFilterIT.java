@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.function.UnaryOperator;
 import org.agrona.CloseHelper;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -106,6 +107,11 @@ final class ExporterFilterIT {
 
   @BeforeEach
   void beforeEach() {
+    // Reset all filter state up-front so each test starts from a known-clean configuration. Doing
+    // this in @BeforeEach (rather than try/finally inside each test) ensures the reset still runs
+    // even if a previous test failed mid-assertion.
+    resetAllFilters();
+
     // ProtocolFactory is seeded deterministically per test, so without a fresh ES state the
     // (partitionId, position) -> document-id collisions between tests would let one test see
     // documents written by another. Delete all our indices between tests to keep the assertions
@@ -128,6 +134,13 @@ final class ExporterFilterIT {
     exporter.open(controller);
   }
 
+  @AfterEach
+  void afterEach() {
+    // Close the exporter between tests so its scheduled flush task is cancelled and its bulk
+    // client released, instead of leaking until @AfterAll.
+    quietCloseExporter();
+  }
+
   @AfterAll
   static void afterAll() {
     try {
@@ -137,9 +150,19 @@ final class ExporterFilterIT {
     } catch (final Exception ignored) {
       // best-effort cleanup; container is also being torn down
     }
+    quietCloseExporter();
     CloseHelper.quietCloseAll(testClient);
+  }
+
+  private static void quietCloseExporter() {
+    // Mirrors `CloseHelper.quietCloseAll` for `Exporter`, which is not `AutoCloseable`.
     if (exporter != null) {
-      exporter.close();
+      try {
+        exporter.close();
+      } catch (final Exception ignored) {
+        // best-effort; tests don't care about close-time failures
+      }
+      exporter = null;
     }
   }
 
@@ -149,7 +172,6 @@ final class ExporterFilterIT {
   @Test
   void shouldFilterVariablesByNameWhenExclusionStartWithRuleIsConfigured() {
     // given: exclude variables whose name starts with "pii_"
-    resetVariableNameFilters();
     config.index.setVariableNameExclusionStartWith(List.of("pii_"));
 
     final var pii = variableRecord("pii_ssn", "\"123-45-6789\"");
@@ -173,7 +195,6 @@ final class ExporterFilterIT {
   @Test
   void shouldFilterVariablesByTypeWhenInclusionIsConfigured() {
     // given: only STRING and NUMBER variables are exported
-    resetVariableNameFilters();
     config.index.setVariableValueTypeInclusion(List.of("STRING", "NUMBER"));
 
     final var stringVar = variableRecord("s", "\"hello\"");
@@ -195,9 +216,6 @@ final class ExporterFilterIT {
     assertNotIndexed(booleanVar);
     assertNotIndexed(objectVar);
     assertNotIndexed(nullVar);
-
-    // cleanup for subsequent tests
-    config.index.setVariableValueTypeInclusion(List.of());
   }
 
   // ---------------------------------------------------------------------------
@@ -207,7 +225,6 @@ final class ExporterFilterIT {
   void shouldFilterVariablesByNameWithinTheirScope() {
     // given: at the root scope, exclude variables named "secret"; at the local scope, exclude
     // variables named "debug"
-    resetVariableNameFilters();
     config.index.setRootVariableNameExclusionExact(List.of("secret"));
     config.index.setLocalVariableNameExclusionExact(List.of("debug"));
 
@@ -238,63 +255,56 @@ final class ExporterFilterIT {
   @Test
   void shouldRestrictRecordsToOptimizeRelevantSubsetWhenOptimizeModeEnabled() {
     // given
-    resetVariableNameFilters();
     config.index.setOptimizeModeEnabled(true);
-    try {
-      // VariableIntent.CREATED is in the Optimize-allowed set
-      final var variableCreated =
-          variableRecord(
-              "v",
-              "\"x\"",
-              r -> r.withRecordType(RecordType.EVENT).withIntent(VariableIntent.CREATED));
+    // VariableIntent.CREATED is in the Optimize-allowed set
+    final var variableCreated =
+        variableRecord(
+            "v",
+            "\"x\"",
+            r -> r.withRecordType(RecordType.EVENT).withIntent(VariableIntent.CREATED));
 
-      // VariableIntent.MIGRATED is not in the Optimize-allowed set
-      final var variableMigrated =
-          variableRecord(
-              "v",
-              "\"x\"",
-              r -> r.withRecordType(RecordType.EVENT).withIntent(VariableIntent.MIGRATED));
+    // VariableIntent.MIGRATED is not in the Optimize-allowed set
+    final var variableMigrated =
+        variableRecord(
+            "v",
+            "\"x\"",
+            r -> r.withRecordType(RecordType.EVENT).withIntent(VariableIntent.MIGRATED));
 
-      // ProcessInstance ELEMENT_COMPLETED on a non-excluded element type is allowed
-      final var piCompleted =
-          processInstanceRecord(
-              "any-process", ProcessInstanceIntent.ELEMENT_COMPLETED, BpmnElementType.PROCESS);
+    // ProcessInstance ELEMENT_COMPLETED on a non-excluded element type is allowed
+    final var piCompleted =
+        processInstanceRecord(
+            "any-process", ProcessInstanceIntent.ELEMENT_COMPLETED, BpmnElementType.PROCESS);
 
-      // ProcessInstance ELEMENT_COMPLETED on SEQUENCE_FLOW is explicitly excluded
-      final var piSequenceFlow =
-          processInstanceRecord(
-              "any-process",
-              ProcessInstanceIntent.ELEMENT_COMPLETED,
-              BpmnElementType.SEQUENCE_FLOW);
+    // ProcessInstance ELEMENT_COMPLETED on SEQUENCE_FLOW is explicitly excluded
+    final var piSequenceFlow =
+        processInstanceRecord(
+            "any-process", ProcessInstanceIntent.ELEMENT_COMPLETED, BpmnElementType.SEQUENCE_FLOW);
 
-      // when
-      exportFiltered(variableCreated);
-      exportFiltered(variableMigrated);
-      exportFiltered(piCompleted);
-      exportFiltered(piSequenceFlow);
+    // when
+    exportFiltered(variableCreated);
+    exportFiltered(variableMigrated);
+    exportFiltered(piCompleted);
+    exportFiltered(piSequenceFlow);
 
-      // then
-      assertIndexed(variableCreated);
-      assertNotIndexed(variableMigrated);
-      assertIndexed(piCompleted);
-      assertNotIndexed(piSequenceFlow);
+    // then
+    assertIndexed(variableCreated);
+    assertNotIndexed(variableMigrated);
+    assertIndexed(piCompleted);
+    assertNotIndexed(piSequenceFlow);
 
-      // and: disabling optimize mode again restores full export for the same records
-      config.index.setOptimizeModeEnabled(false);
-      // re-configure so the filter chain is rebuilt
-      exporter.configure(exporterTestContext);
-      exporter.open(controller);
+    // and: disabling optimize mode again restores full export for the same records
+    config.index.setOptimizeModeEnabled(false);
+    // re-configure so the filter chain is rebuilt
+    exporter.configure(exporterTestContext);
+    exporter.open(controller);
 
-      final var variableMigratedAfter =
-          variableRecord(
-              "v",
-              "\"x\"",
-              r -> r.withRecordType(RecordType.EVENT).withIntent(VariableIntent.MIGRATED));
-      exportFiltered(variableMigratedAfter);
-      assertIndexed(variableMigratedAfter);
-    } finally {
-      config.index.setOptimizeModeEnabled(false);
-    }
+    final var variableMigratedAfter =
+        variableRecord(
+            "v",
+            "\"x\"",
+            r -> r.withRecordType(RecordType.EVENT).withIntent(VariableIntent.MIGRATED));
+    exportFiltered(variableMigratedAfter);
+    assertIndexed(variableMigratedAfter);
   }
 
   // ---------------------------------------------------------------------------
@@ -303,32 +313,27 @@ final class ExporterFilterIT {
   @Test
   void shouldFilterRecordsByBpmnProcessIdWhenInclusionIsConfigured() {
     // given: only "process-A" instances should be exported
-    resetVariableNameFilters();
     config.index.setBpmnProcessIdInclusion(List.of("process-A"));
-    try {
-      final var procA =
-          processInstanceRecord(
-              "process-A", ProcessInstanceIntent.ELEMENT_ACTIVATED, BpmnElementType.PROCESS);
-      final var procB =
-          processInstanceRecord(
-              "process-B", ProcessInstanceIntent.ELEMENT_ACTIVATED, BpmnElementType.PROCESS);
-      final var varInProcA = variableRecord("anything", "1", "process-A");
-      final var varInProcB = variableRecord("anything", "1", "process-B");
+    final var procA =
+        processInstanceRecord(
+            "process-A", ProcessInstanceIntent.ELEMENT_ACTIVATED, BpmnElementType.PROCESS);
+    final var procB =
+        processInstanceRecord(
+            "process-B", ProcessInstanceIntent.ELEMENT_ACTIVATED, BpmnElementType.PROCESS);
+    final var varInProcA = variableRecord("anything", "1", "process-A");
+    final var varInProcB = variableRecord("anything", "1", "process-B");
 
-      // when
-      exportFiltered(procA);
-      exportFiltered(procB);
-      exportFiltered(varInProcA);
-      exportFiltered(varInProcB);
+    // when
+    exportFiltered(procA);
+    exportFiltered(procB);
+    exportFiltered(varInProcA);
+    exportFiltered(varInProcB);
 
-      // then
-      assertIndexed(procA);
-      assertNotIndexed(procB);
-      assertIndexed(varInProcA);
-      assertNotIndexed(varInProcB);
-    } finally {
-      config.index.setBpmnProcessIdInclusion(List.of());
-    }
+    // then
+    assertIndexed(procA);
+    assertNotIndexed(procB);
+    assertIndexed(varInProcA);
+    assertNotIndexed(varInProcB);
   }
 
   // ---------------------------------------------------------------------------
@@ -338,59 +343,52 @@ final class ExporterFilterIT {
   void shouldEnforceUnionOfConstraintsWhenMultipleFiltersAreConfigured() {
     // given: allow only "process-A", exclude variables starting with "pii_", and enable optimize
     // mode (which restricts to CREATED/UPDATED for VARIABLE records)
-    resetVariableNameFilters();
     config.index.setBpmnProcessIdInclusion(List.of("process-A"));
     config.index.setVariableNameExclusionStartWith(List.of("pii_"));
     config.index.setOptimizeModeEnabled(true);
-    try {
-      // passes all filters
-      final var ok =
-          variableRecord(
-              "orderId",
-              "\"order-1\"",
-              "process-A",
-              r -> r.withRecordType(RecordType.EVENT).withIntent(VariableIntent.CREATED));
+    // passes all filters
+    final var ok =
+        variableRecord(
+            "orderId",
+            "\"order-1\"",
+            "process-A",
+            r -> r.withRecordType(RecordType.EVENT).withIntent(VariableIntent.CREATED));
 
-      // wrong process id
-      final var wrongProcess =
-          variableRecord(
-              "orderId",
-              "\"order-1\"",
-              "process-B",
-              r -> r.withRecordType(RecordType.EVENT).withIntent(VariableIntent.CREATED));
+    // wrong process id
+    final var wrongProcess =
+        variableRecord(
+            "orderId",
+            "\"order-1\"",
+            "process-B",
+            r -> r.withRecordType(RecordType.EVENT).withIntent(VariableIntent.CREATED));
 
-      // excluded variable name
-      final var excludedName =
-          variableRecord(
-              "pii_ssn",
-              "\"123-45-6789\"",
-              "process-A",
-              r -> r.withRecordType(RecordType.EVENT).withIntent(VariableIntent.CREATED));
+    // excluded variable name
+    final var excludedName =
+        variableRecord(
+            "pii_ssn",
+            "\"123-45-6789\"",
+            "process-A",
+            r -> r.withRecordType(RecordType.EVENT).withIntent(VariableIntent.CREATED));
 
-      // excluded by optimize mode (MIGRATED intent not in the allowed set)
-      final var optimizeRejected =
-          variableRecord(
-              "orderId",
-              "\"order-1\"",
-              "process-A",
-              r -> r.withRecordType(RecordType.EVENT).withIntent(VariableIntent.MIGRATED));
+    // excluded by optimize mode (MIGRATED intent not in the allowed set)
+    final var optimizeRejected =
+        variableRecord(
+            "orderId",
+            "\"order-1\"",
+            "process-A",
+            r -> r.withRecordType(RecordType.EVENT).withIntent(VariableIntent.MIGRATED));
 
-      // when
-      exportFiltered(ok);
-      exportFiltered(wrongProcess);
-      exportFiltered(excludedName);
-      exportFiltered(optimizeRejected);
+    // when
+    exportFiltered(ok);
+    exportFiltered(wrongProcess);
+    exportFiltered(excludedName);
+    exportFiltered(optimizeRejected);
 
-      // then: only the record that passes every filter is exported
-      assertIndexed(ok);
-      assertNotIndexed(wrongProcess);
-      assertNotIndexed(excludedName);
-      assertNotIndexed(optimizeRejected);
-    } finally {
-      config.index.setBpmnProcessIdInclusion(List.of());
-      config.index.setVariableNameExclusionStartWith(List.of());
-      config.index.setOptimizeModeEnabled(false);
-    }
+    // then: only the record that passes every filter is exported
+    assertIndexed(ok);
+    assertNotIndexed(wrongProcess);
+    assertNotIndexed(excludedName);
+    assertNotIndexed(optimizeRejected);
   }
 
   // ---------------------------------------------------------------------------
@@ -431,14 +429,17 @@ final class ExporterFilterIT {
               indexRouter.idFor(record), record.getValueType(), indexRouter.indexFor(record))
           .isFalse();
     } catch (final ElasticsearchException e) {
-      // a missing index is also acceptable evidence that nothing was exported for this record
-      assertThat(e.getMessage())
-          .as("expected 'no such index' for unindexed record %s", indexRouter.idFor(record))
-          .contains("no such index");
+      // A 404 from ES (the target index doesn't exist yet) is also acceptable evidence that
+      // nothing was exported for this record. Anything else (shard routing, cluster health,
+      // auth, ...) must surface as a real test error rather than being silently swallowed and
+      // converted into a confusing assertion message.
+      if (e.status() != 404) {
+        throw e;
+      }
     }
   }
 
-  private void resetVariableNameFilters() {
+  private void resetAllFilters() {
     config.index.setVariableNameExclusionStartWith(List.of());
     config.index.setVariableNameExclusionEndWith(List.of());
     config.index.setVariableNameExclusionExact(List.of());
@@ -511,7 +512,9 @@ final class ExporterFilterIT {
   private Record<VariableRecordValue> scopedVariable(
       final String name, final String jsonValue, final boolean local) {
     final var generated = factory.<VariableRecordValue>generateRecord(ValueType.VARIABLE);
-    final long processInstanceKey = generated.getValue().getProcessInstanceKey();
+    // Use a fixed process-instance key so the local/root pair never collides with `Long.MAX_VALUE`
+    // and the +1 trick has a clear, bounded meaning to the next reader.
+    final long processInstanceKey = 1L;
     final long scopeKey = local ? processInstanceKey + 1 : processInstanceKey;
     final var value =
         ImmutableVariableRecordValue.builder()
