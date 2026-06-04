@@ -114,6 +114,23 @@ public interface Record<T extends RecordValue> extends JsonSerializable {
   Agent getAgent();
 
   /**
+   * Identifies the inbound channel through which the command that produced this record was received
+   * (e.g. REST, gRPC, MCP).
+   *
+   * @return the channel type, or {@code null} if not set
+   */
+  @Nullable
+  ChannelType getRequestChannelType();
+
+  /**
+   * The name of the MCP tool that was called. Empty for non-MCP channels.
+   *
+   * @return the tool name, or {@code null} if not set
+   */
+  @Nullable
+  String getRequestToolName();
+
+  /**
    * A record version is an integer starting from 1. The version of a record is defined when it is
    * written. It allows different versions of the same record to be processed or applied
    * differently.
