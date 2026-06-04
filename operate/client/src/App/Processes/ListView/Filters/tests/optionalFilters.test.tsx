@@ -520,7 +520,7 @@ describe('Optional Filters', () => {
       incidents: 'true',
       completed: 'true',
       canceled: 'true',
-      businessId: 'order-12345',
+      businessId: 'eq_order-12345',
     } as const;
 
     const {user} = render(<Filters />, {

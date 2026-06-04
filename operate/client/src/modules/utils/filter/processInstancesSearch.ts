@@ -14,6 +14,7 @@ import {
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {formatToISO} from 'modules/utils/date/formatDate';
 import {parseIds, parseSortParamsV2, updateFiltersSearchString} from './index';
+import {advancedStringFilterCodec} from './advancedStringFilter';
 
 /**
  * ProcessInstancesFilter represents the URL search params.
@@ -168,7 +169,12 @@ const parseProcessInstancesSearchFilter = (
   }
 
   if (filter.businessId) {
-    apiFilter.businessId = {$eq: filter.businessId};
+    const advancedFilter = advancedStringFilterCodec.safeDecode(
+      filter.businessId,
+    );
+    if (advancedFilter.success) {
+      apiFilter.businessId = advancedFilter.data;
+    }
   }
 
   return apiFilter;
