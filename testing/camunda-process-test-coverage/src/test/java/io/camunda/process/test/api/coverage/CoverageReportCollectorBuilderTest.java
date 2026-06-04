@@ -16,7 +16,6 @@
 package io.camunda.process.test.api.coverage;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.client.api.search.response.DecisionDefinitionType;
@@ -29,16 +28,19 @@ import io.camunda.process.test.impl.coverage.data.ImmutableCoverageDecisionInsta
 import io.camunda.process.test.impl.coverage.data.ImmutableCoverageProcessInstanceData;
 import io.camunda.process.test.impl.coverage.data.ImmutableCoverageTestData;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 
 class CoverageReportCollectorBuilderTest {
+
+  @Mock private ProcessInstance processInstance;
+
+  @Mock private DecisionInstance decisionInstance;
 
   @Test
   void shouldApplyExclusionConfigurationToCoverageResult() {
     // given
-    final ProcessInstance processInstance = mock(ProcessInstance.class);
     when(processInstance.getProcessDefinitionId()).thenReturn("excluded-process");
 
-    final DecisionInstance decisionInstance = mock(DecisionInstance.class);
     when(decisionInstance.getDecisionDefinitionId()).thenReturn("excluded-decision");
     when(decisionInstance.getDecisionDefinitionType())
         .thenReturn(DecisionDefinitionType.DECISION_TABLE);
