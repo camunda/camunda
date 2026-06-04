@@ -618,8 +618,7 @@ final class OpenSearchArchiverRepositoryIT {
         .forEach(doc -> index(processInstanceIndex, doc));
     testClient.indices().refresh(r -> r.index(processInstanceIndex));
 
-    assertThat(repository.getProcessInstancesNextBatch(100))
-        .succeedsWithin(Duration.ofSeconds(30));
+    assertThat(repository.getProcessInstancesNextBatch(100)).succeedsWithin(Duration.ofSeconds(30));
     assertThat(
             meterRegistry
                 .get("zeebe.camunda.exporter.process.instances.awaiting.archival")
@@ -657,8 +656,7 @@ final class OpenSearchArchiverRepositoryIT {
         .forEach(doc -> index(processInstanceIndex, doc));
     testClient.indices().refresh(r -> r.index(processInstanceIndex));
 
-    assertThat(repository.getProcessInstancesNextBatch(100))
-        .succeedsWithin(Duration.ofSeconds(30));
+    assertThat(repository.getProcessInstancesNextBatch(100)).succeedsWithin(Duration.ofSeconds(30));
     assertThat(
             meterRegistry
                 .get("zeebe.camunda.exporter.process.instances.awaiting.archival")
