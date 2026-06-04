@@ -10,6 +10,7 @@ package io.camunda.container;
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -101,7 +102,7 @@ public class ExtendedConfigurationBuilder {
             .setVisibility(PropertyAccessor.FIELD, Visibility.ANY)
             .setPropertyNamingStrategy(PropertyNamingStrategies.KEBAB_CASE);
 
-    mapper.addMixIn(Cluster.class, LegacyPropertiesMapMixIn.class);
+    mapper.addMixIn(Cluster.class, ClusterMixIn.class);
     mapper.addMixIn(Grpc.class, LegacyPropertiesMapMixIn.class);
     mapper.addMixIn(InternalApi.class, LegacyPropertiesMapMixIn.class);
     mapper.addMixIn(LongPolling.class, LegacyPropertiesMapMixIn.class);
@@ -434,6 +435,15 @@ public class ExtendedConfigurationBuilder {
   /** Hides the legacy-property-name lookup map shared by many unified-config classes. */
   private abstract static class LegacyPropertiesMapMixIn {
     @JsonIgnore private Map<String, String> legacyPropertiesMap;
+  }
+
+  /** Hides {@code nodeIdProvider} and re-exposes node ID directly to emit flat {@code node-id}. */
+  private abstract static class ClusterMixIn {
+    @JsonIgnore private Map<String, String> legacyPropertiesMap;
+    @JsonIgnore private Object nodeIdProvider;
+
+    @JsonProperty("node-id")
+    abstract Integer getNodeId();
   }
 
   /** {@link KeyStore} additionally has a constructor-injected {@code prefix}. */
