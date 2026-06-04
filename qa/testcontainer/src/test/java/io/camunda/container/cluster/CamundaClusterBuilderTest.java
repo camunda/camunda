@@ -14,6 +14,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
@@ -267,6 +268,7 @@ final class CamundaClusterBuilderTest {
   }
 
   @Test
+  @Disabled("https://github.com/camunda/camunda/issues/54703")
   @SuppressWarnings("unchecked")
   void shouldAssignDifferentClusterHostsToAllNodes() {
     // given

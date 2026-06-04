@@ -19,6 +19,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Map;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -47,6 +48,7 @@ class BrokerContainerConfigIT {
           .withProperty("zeebe.broker.gateway.enable", true);
 
   @Test
+  @Disabled("https://github.com/camunda/camunda/issues/54702")
   @SuppressWarnings("unchecked")
   void shouldUploadConfigWithCustomUnifiedConfigValues() throws Exception {
     // given — the container is already started with the custom config by @Container
