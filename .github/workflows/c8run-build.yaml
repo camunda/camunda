@@ -58,6 +58,15 @@ jobs:
         with:
           working-directory: ./c8run
           skip-cache: true
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   test_c8run_unittests:
     strategy:
@@ -82,6 +91,16 @@ jobs:
 
       - name: Unit tests
         run: go test ./...
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "test_c8run_unittests/${{ matrix.os }}"
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   camunda-dist-build:
     name: Build camunda-dist
@@ -120,6 +139,15 @@ jobs:
         with:
           name: camunda-platform-dist-zip
           path: ${{ steps.build-dist.outputs.distzip }}
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   test_c8run_on_unix:
     strategy:
@@ -204,6 +232,16 @@ jobs:
             "text": "Job *${{ github.job }}* in workflow *${{ github.workflow }}* failed for *${{ github.repository }}*!\nBranch: ${{ github.ref }}\nCommit: ${{ github.sha }}\nRun: <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Run>\nLogs: <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts|View Artifacts>"
           }' \
           "$SLACK_WEBHOOK_URL"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "test_c8run_on_unix/${{ matrix.os }}"
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   test_c8run_e2e_on_windows:
     name: C8Run Test Windows
@@ -341,3 +379,12 @@ jobs:
             "text": "Job *${{ github.job }}* in workflow *${{ github.workflow }}* failed for *${{ github.repository }}*!\nBranch: ${{ github.ref }}\nCommit: ${{ github.sha }}\nRun: <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Run>\nLogs: <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts|View Artifacts>"
           }' \
           $SLACK_WEBHOOK_URL
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
