@@ -1404,47 +1404,6 @@ jobs:
             echo "present=false" >> "$GITHUB_OUTPUT"
           fi
 
-      # Discover the most recent non-expired state artifact for this PR across
-      # any prior CI run on this repo. The artifact name is per-PR-number, so
-      # this works across force-pushes and re-runs.
-      - name: Download prior sticky-state artifact
-        id: download-state
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPO: ${{ github.repository }}
-          ARTIFACT_NAME: flaky-gate-state-pr-${{ github.event.pull_request.number }}
-        run: |
-          set -euo pipefail
-          state_dir="${RUNNER_TEMP}/flaky-gate-state-in"
-          mkdir -p "$state_dir"
-          state_file="${state_dir}/state.json"
-          echo "state_file=${state_file}" >> "$GITHUB_OUTPUT"
-
-          artifact_id=$(gh api -X GET "/repos/${REPO}/actions/artifacts" \
-              -f "name=${ARTIFACT_NAME}" -F per_page=100 \
-              --jq '.artifacts | map(select(.expired == false)) | sort_by(.created_at) | reverse | .[0].id // ""')
-
-          if [[ -z "$artifact_id" ]]; then
-            echo "No prior sticky-state artifact found; first-run for this PR."
-            echo "has_prior_state=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          echo "Found prior artifact id: $artifact_id"
-
-          if ! gh api "/repos/${REPO}/actions/artifacts/${artifact_id}/zip" \
-                  > "${RUNNER_TEMP}/prior-state.zip"; then
-            echo "Artifact download failed; continuing with no prior state."
-            echo "has_prior_state=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          unzip -q -o "${RUNNER_TEMP}/prior-state.zip" -d "$state_dir" || true
-          if [[ -f "$state_file" ]]; then
-            echo "has_prior_state=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "has_prior_state=false" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Read Zeebe unit tests matrix outputs
         if: steps.bypass.outputs.present != 'true'
         uses: cloudposse/github-action-matrix-outputs-read@33cac12fa9282a7230a418d859b93fdbc4f27b5a # 1.0.0
@@ -1511,25 +1470,8 @@ jobs:
             echo "has_flaky_tests=true" >> "$GITHUB_OUTPUT"
           fi
 
-      # Run the detector when: bypass label is set (mark all active → bypass),
-      # OR new flakes were observed this run, OR prior sticky state exists
-      # (so counters can advance or entries can clear / be re-evaluated).
-      - name: Decide if detector should run
-        id: should-run
-        shell: bash
-        env:
-          BYPASS: ${{ steps.bypass.outputs.present }}
-          HAS_FLAKY: ${{ steps.check.outputs.has_flaky_tests }}
-          HAS_PRIOR: ${{ steps.download-state.outputs.has_prior_state }}
-        run: |
-          if [[ "$BYPASS" == "true" || "$HAS_FLAKY" == "true" || "$HAS_PRIOR" == "true" ]]; then
-            echo "run=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "run=false" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Build ran-jobs JSON
-        if: steps.should-run.outputs.run == 'true'
+        if: steps.bypass.outputs.present != 'true'
         id: ran-jobs
         shell: bash
         env:
@@ -1627,7 +1569,6 @@ jobs:
           echo "known_flaky_tests_file=$RUNNER_TEMP/known-flaky-tests.json" >> "$GITHUB_OUTPUT"
 
       - name: Detect new flaky tests
-        if: steps.should-run.outputs.run == 'true'
         id: detect
         uses: ./.github/actions/detect-new-flaky-tests
         with:
@@ -1635,21 +1576,10 @@ jobs:
           known-flaky-tests-file: '${{ steps.query-known-flaky.outputs.known_flaky_tests_file }}'
           pr-number: ${{ github.event.pull_request.number }}
           blocking: 'true'
-          state-file-in: ${{ steps.download-state.outputs.state_file }}
-          state-file-out: ${{ runner.temp }}/flaky-gate-state-out/state.json
           ran-jobs-json: ${{ steps.ran-jobs.outputs.json || '[]' }}
           bypass-label-present: ${{ steps.bypass.outputs.present }}
           head-sha: ${{ github.event.pull_request.head.sha }}
           base-ref: ${{ github.event.pull_request.base.ref }}
-
-      - name: Upload sticky-state artifact
-        if: always() && steps.should-run.outputs.run == 'true' && hashFiles(format('{0}/flaky-gate-state-out/state.json', runner.temp)) != ''
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: flaky-gate-state-pr-${{ github.event.pull_request.number }}
-          path: ${{ runner.temp }}/flaky-gate-state-out/state.json
-          retention-days: 30
-          overwrite: true
 
       - name: Delete matrix job generated artifacts
         if: always()
