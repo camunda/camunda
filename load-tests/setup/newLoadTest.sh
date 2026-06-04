@@ -172,6 +172,12 @@ case "$secondaryStorage" in
     ;;
 esac
 
+if [[ "$enable_optimize" == "true" ]]; then
+  # Optimize needs specifically Elasticsearch (independently from the secondary
+  # storage configuration).
+  cp -v default/values/camunda-platform-values-optimize-elasticsearch.yaml "$namespace/"
+fi
+
 cd "$namespace"
 
 # Bake values into the rendered Makefile.
