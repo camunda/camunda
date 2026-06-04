@@ -19,6 +19,7 @@ const sidebars = {
     'collaboration-guidelines',
     'ci',
     'ci-runbooks',
+    'flaky-test-gate',
     'infrastructure-services',
     'processes',
     'release',
