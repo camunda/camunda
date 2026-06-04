@@ -93,4 +93,8 @@ dependencies {
     testImplementation(libs.org.openjdk.jmh.jmh.generator.annprocess)
 }
 
+tasks.named<Test>("test") {
+    jvmArgs("-Xmx2g")
+}
+
 description = "Zeebe Broker"
