@@ -128,6 +128,24 @@ public class AgentInstanceFilterIT {
   }
 
   @TestTemplate
+  public void shouldFilterByRootProcessInstanceKey(
+      final CamundaRdbmsTestApplication testApplication) {
+    final long rootKey = nextKey();
+    final var model =
+        createAndSaveRandomAgentInstance(testApplication, b -> b.rootProcessInstanceKey(rootKey));
+    createAndSaveRandomAgentInstance(testApplication, b -> b);
+
+    final var result =
+        search(
+            testApplication,
+            new AgentInstanceFilter.Builder().rootProcessInstanceKeys(rootKey).build());
+
+    assertThat(result.total()).isEqualTo(1);
+    assertThat(result.items().getFirst().agentInstanceKey()).isEqualTo(model.agentInstanceKey());
+    assertThat(result.items().getFirst().rootProcessInstanceKey()).isEqualTo(rootKey);
+  }
+
+  @TestTemplate
   public void shouldFilterByElementInstanceKey(final CamundaRdbmsTestApplication testApplication) {
     final long elementInstanceKey = nextKey();
     final var model =
