@@ -20,6 +20,9 @@ import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.VersionInfo;
 import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessInstructionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryEmbeddedToolCall;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryMessageContent;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceTool;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
@@ -99,6 +102,9 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryCommitStatus;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryContentType;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryRole;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
@@ -4778,6 +4784,128 @@ final class JsonSerializableToJsonTest {
           "metrics": { "inputTokens": 0, "outputTokens": 0, "modelCalls": 0, "toolCalls": 0 },
           "tools": [],
           "changedAttributes": []
+        }
+        """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////////// AgentHistoryRecord ///////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "AgentHistoryRecord",
+        (Supplier<UnifiedRecordValue>)
+            () -> {
+              final AgentHistoryRecord record =
+                  new AgentHistoryRecord()
+                      .setAgentInstanceKey(2251799813685251L)
+                      .setElementInstanceKey(2251799813685249L)
+                      .setJobKey(2251799813685252L)
+                      .setAttemptNumber(1)
+                      .setIteration(3)
+                      .setRole(AgentHistoryRole.ASSISTANT)
+                      .setCommitStatus(AgentHistoryCommitStatus.COMMITTED)
+                      .setProducedAt(1748860800000L)
+                      .setMetadata("model=gpt-4o");
+              record.addContent(
+                  new AgentHistoryMessageContent()
+                      .setContentType(AgentHistoryContentType.TEXT)
+                      .setText("I will extract the line items from the invoice."));
+              final var docContent =
+                  new AgentHistoryMessageContent().setContentType(AgentHistoryContentType.DOCUMENT);
+              docContent.getDocumentReference().setDocumentId("doc-001").setStoreId("gcs-store");
+              record.addContent(docContent);
+              record.addContent(
+                  new AgentHistoryMessageContent()
+                      .setContentType(AgentHistoryContentType.OBJECT)
+                      .setObject(wrapArray(MsgPackConverter.convertToMsgPack(Map.of("page", 1)))));
+              record.addToolCall(
+                  new AgentHistoryEmbeddedToolCall()
+                      .setToolCallId("call_abc123")
+                      .setToolName("extract_line_items")
+                      .setElementId("extract-line-items-task")
+                      .setArguments(
+                          wrapArray(
+                              MsgPackConverter.convertToMsgPack(Map.of("documentId", "inv-001")))));
+              record
+                  .getToolCallRef()
+                  .setToolCallId("call_abc123")
+                  .setToolName("extract_line_items")
+                  .setElementId("extract-line-items-task")
+                  .setToolElementInstanceKey(2251799813685253L);
+              record.getMetrics().setInputTokens(512L).setOutputTokens(148L).setDurationMs(1200L);
+              return record;
+            },
+        """
+        {
+          "agentInstanceKey": 2251799813685251,
+          "elementInstanceKey": 2251799813685249,
+          "jobKey": 2251799813685252,
+          "attemptNumber": 1,
+          "iteration": 3,
+          "role": "ASSISTANT",
+          "commitStatus": "COMMITTED",
+          "producedAt": 1748860800000,
+          "metadata": "model=gpt-4o",
+          "content": [
+            {
+              "contentType": "TEXT",
+              "text": "I will extract the line items from the invoice.",
+              "documentReference": { "documentId": "", "storeId": "" },
+              "object": {}
+            },
+            {
+              "contentType": "DOCUMENT",
+              "text": "",
+              "documentReference": { "documentId": "doc-001", "storeId": "gcs-store" },
+              "object": {}
+            },
+            {
+              "contentType": "OBJECT",
+              "text": "",
+              "documentReference": { "documentId": "", "storeId": "" },
+              "object": { "page": 1 }
+            }
+          ],
+          "toolCalls": [
+            {
+              "toolCallId": "call_abc123",
+              "toolName": "extract_line_items",
+              "elementId": "extract-line-items-task",
+              "arguments": { "documentId": "inv-001" }
+            }
+          ],
+          "toolCallRef": {
+            "toolCallId": "call_abc123",
+            "toolName": "extract_line_items",
+            "elementId": "extract-line-items-task",
+            "toolElementInstanceKey": 2251799813685253
+          },
+          "metrics": { "inputTokens": 512, "outputTokens": 148, "durationMs": 1200 }
+        }
+        """
+      },
+      {
+        "Empty AgentHistoryRecord",
+        (Supplier<UnifiedRecordValue>) AgentHistoryRecord::new,
+        """
+        {
+          "agentInstanceKey": -1,
+          "elementInstanceKey": -1,
+          "jobKey": -1,
+          "attemptNumber": 0,
+          "iteration": 0,
+          "role": "UNSPECIFIED",
+          "commitStatus": "UNSPECIFIED",
+          "producedAt": -1,
+          "metadata": "",
+          "content": [],
+          "toolCalls": [],
+          "toolCallRef": {
+            "toolCallId": "",
+            "toolName": "",
+            "elementId": "",
+            "toolElementInstanceKey": -1
+          },
+          "metrics": { "inputTokens": 0, "outputTokens": 0, "durationMs": 0 }
         }
         """
       }
