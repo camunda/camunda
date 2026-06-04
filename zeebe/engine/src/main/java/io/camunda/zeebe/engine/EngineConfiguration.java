@@ -24,6 +24,7 @@ public final class EngineConfiguration {
   public static final int DEFAULT_FORM_CACHE_CAPACITY = 1000;
   public static final int DEFAULT_PROCESS_CACHE_CAPACITY = 1000;
   public static final int DEFAULT_AUTHORIZATIONS_CACHE_CAPACITY = 1000;
+  public static final int DEFAULT_GROUP_NAME_CACHE_CAPACITY = 1000;
   public static final Duration DEFAULT_AUTHORIZATIONS_CACHE_TTL = Duration.ofSeconds(10);
   public static final Duration DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL = Duration.ofSeconds(1);
   public static final int DEFAULT_JOBS_TIMEOUT_CHECKER_BATCH_LIMIT = Integer.MAX_VALUE;
@@ -80,6 +81,7 @@ public final class EngineConfiguration {
   private int processCacheCapacity = DEFAULT_FORM_CACHE_CAPACITY;
   private int authorizationsCacheCapacity = DEFAULT_AUTHORIZATIONS_CACHE_CAPACITY;
   private Duration authorizationsCacheTtl = DEFAULT_AUTHORIZATIONS_CACHE_TTL;
+  private int groupNameCacheCapacity = DEFAULT_GROUP_NAME_CACHE_CAPACITY;
   private Duration jobsTimeoutCheckerPollingInterval = DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL;
   private int jobsTimeoutCheckerBatchLimit = DEFAULT_JOBS_TIMEOUT_CHECKER_BATCH_LIMIT;
   private int validatorsResultsOutputMaxSize = DEFAULT_VALIDATORS_RESULTS_OUTPUT_MAX_SIZE;
@@ -188,6 +190,15 @@ public final class EngineConfiguration {
 
   public EngineConfiguration setAuthorizationsCacheTtl(final Duration authorizationsCacheTtl) {
     this.authorizationsCacheTtl = authorizationsCacheTtl;
+    return this;
+  }
+
+  public int getGroupNameCacheCapacity() {
+    return groupNameCacheCapacity;
+  }
+
+  public EngineConfiguration setGroupNameCacheCapacity(final int groupNameCacheCapacity) {
+    this.groupNameCacheCapacity = groupNameCacheCapacity;
     return this;
   }
 
