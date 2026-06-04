@@ -30,7 +30,6 @@ import io.camunda.client.api.search.response.ProcessInstanceSequenceFlow;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.coverage.data.CoverageTestData;
 import java.util.Arrays;
-import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -72,7 +71,8 @@ class CoverageTestDataCollectorTest {
     when(dataSource.findSequenceFlowsByProcessInstanceKey(200L))
         .thenReturn(java.util.Collections.singletonList(sequenceFlowB));
 
-    when(dataSource.findProcessDefinitionByProcessDefinitionId("process-1")).thenReturn(processDefinition);
+    when(dataSource.findProcessDefinitionByProcessDefinitionId("process-1"))
+        .thenReturn(processDefinition);
     when(processDefinition.getProcessDefinitionKey()).thenReturn(11L);
     when(dataSource.getProcessDefinitionXmlByProcessDefinitionKey(11L))
         .thenReturn("<bpmn>process-1</bpmn>");
@@ -105,21 +105,29 @@ class CoverageTestDataCollectorTest {
         .containsExactly(elementInstanceA);
     assertThat(data.getProcessInstanceData().get(1).getElementInstances())
         .containsExactly(elementInstanceB);
-    assertThat(data.getProcessInstanceData().get(0).getSequenceFlows()).containsExactly(sequenceFlowA);
-    assertThat(data.getProcessInstanceData().get(1).getSequenceFlows()).containsExactly(sequenceFlowB);
+    assertThat(data.getProcessInstanceData().get(0).getSequenceFlows())
+        .containsExactly(sequenceFlowA);
+    assertThat(data.getProcessInstanceData().get(1).getSequenceFlows())
+        .containsExactly(sequenceFlowB);
 
-    assertThat(data.getProcessDefinitionData()).singleElement().satisfies(entry -> {
-      assertThat(entry.getProcessDefinition()).isSameAs(processDefinition);
-      assertThat(entry.getXml()).isEqualTo("<bpmn>process-1</bpmn>");
-    });
+    assertThat(data.getProcessDefinitionData())
+        .singleElement()
+        .satisfies(
+            entry -> {
+              assertThat(entry.getProcessDefinition()).isSameAs(processDefinition);
+              assertThat(entry.getXml()).isEqualTo("<bpmn>process-1</bpmn>");
+            });
 
     assertThat(data.getDecisionInstanceData())
         .extracting(entry -> entry.getDecisionInstance())
         .containsExactly(decisionInstanceDetailA, decisionInstanceDetailB);
-    assertThat(data.getDecisionDefinitionData()).singleElement().satisfies(entry -> {
-      assertThat(entry.getDecisionDefinition()).isSameAs(decisionDefinition);
-      assertThat(entry.getXml()).isEqualTo("<dmn>decision-1</dmn>");
-    });
+    assertThat(data.getDecisionDefinitionData())
+        .singleElement()
+        .satisfies(
+            entry -> {
+              assertThat(entry.getDecisionDefinition()).isSameAs(decisionDefinition);
+              assertThat(entry.getXml()).isEqualTo("<dmn>decision-1</dmn>");
+            });
 
     verify(dataSource, times(1)).findProcessDefinitionByProcessDefinitionId("process-1");
     verify(dataSource, times(1)).getProcessDefinitionXmlByProcessDefinitionKey(11L);

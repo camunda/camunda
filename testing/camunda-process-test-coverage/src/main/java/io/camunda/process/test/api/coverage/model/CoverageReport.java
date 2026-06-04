@@ -43,5 +43,4 @@ public interface CoverageReport {
 
   /** Returns decision coverage aggregated across all captured suites and runs. */
   List<DecisionCoverage> getDecisionCoverages();
-
 }

@@ -217,7 +217,9 @@ public class ProcessEngineCoverageIT {
       final CoverageCollector coverageCollector, final Class<?> testClass, final String testName) {
     final CoverageReport coverageReport =
         coverageCollector.collectTestRunCoverage(
-            testClass, testName, CoverageTestDataCollector.collectData(new CamundaDataSource(client)));
+            testClass,
+            testName,
+            CoverageTestDataCollector.collectData(new CamundaDataSource(client)));
     return coverageReport.getSuites().stream()
         .flatMap(report -> report.getRuns().stream())
         .filter(run -> run.getName().equals(testName))
