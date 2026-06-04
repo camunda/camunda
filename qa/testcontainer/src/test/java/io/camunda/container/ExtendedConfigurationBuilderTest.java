@@ -106,6 +106,20 @@ final class ExtendedConfigurationBuilderTest {
   }
 
   @Test
+  void shouldEmitNodeIdAsPlainInteger() {
+    // given
+    final var config = new Camunda();
+    config.getCluster().setNodeId(2);
+
+    // when
+    final var flat = ExtendedConfigurationBuilder.flatPropertiesFor(config);
+
+    // then
+    assertThat(flat).containsEntry("camunda.cluster.node-id", 2);
+    assertThat(flat.keySet()).noneMatch(k -> k.contains("node-id-provider"));
+  }
+
+  @Test
   void shouldIgnoreInternalHelperFields() {
     // given
     final var config = new Camunda();
