@@ -6,49 +6,31 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {z} from 'zod';
 import {safeJsonParse} from 'modules/utils';
 import {untruncateJson} from 'modules/utils/editor/untruncateJSON';
 import {mergePathname} from 'modules/request/mergePathname';
 import {getClientConfig} from 'modules/utils/getClientConfig';
-import {endpoints} from '@camunda/camunda-api-zod-schemas/8.10';
+import {
+  endpoints,
+  documentReferenceSchema,
+  type DocumentReference,
+} from '@camunda/camunda-api-zod-schemas/8.10';
 
 type DocumentType = 'image' | 'pdf' | 'json' | 'unknown';
 
 type DocumentInfo = {
   fileName: string;
-  link: string;
+  link: string | null;
   type: DocumentType;
-  contentType?: string | undefined;
-  size?: number | undefined;
+  contentType: string;
+  size: number;
 };
 
 type DocumentParseResult =
   | {type: 'single'; document: DocumentInfo}
   | {type: 'list'; documents: DocumentInfo[]; isLowerBound: boolean};
 
-const documentReferenceSchema = z
-  .object({
-    'camunda.document.type': z.literal('camunda'),
-    documentId: z.string(),
-    storeId: z.string().optional(),
-    contentHash: z.string(),
-    metadata: z
-      .object({
-        fileName: z.string().optional(),
-        contentType: z.string().optional(),
-        size: z.number().optional(),
-      })
-      .catchall(z.unknown())
-      .optional(),
-  })
-  .catchall(z.unknown());
-
-type DetectedDocumentReference = z.infer<typeof documentReferenceSchema>;
-
-function isDocumentReference(
-  value: unknown,
-): value is DetectedDocumentReference {
+function isDocumentReference(value: unknown): value is DocumentReference {
   return documentReferenceSchema.safeParse(value).success;
 }
 
@@ -61,24 +43,29 @@ const MIME_TYPE_MAP: Record<string, DocumentType> = {
   'application/json': 'json',
 };
 
-function getDocumentType(contentType: string | undefined): DocumentType {
-  if (!contentType) {
-    return 'unknown';
-  }
+function getDocumentType(contentType: string): DocumentType {
   return MIME_TYPE_MAP[contentType] ?? 'unknown';
 }
 
-function toDocumentInfo(ref: DetectedDocumentReference): DocumentInfo {
-  const link = mergePathname(
-    getClientConfig().contextPath,
-    endpoints.getDocument.getUrl(ref),
-  );
+function toDocumentInfo(ref: DocumentReference): DocumentInfo {
+  const link =
+    ref.contentHash !== null
+      ? mergePathname(
+          getClientConfig().contextPath,
+          endpoints.getDocument.getUrl({
+            documentId: ref.documentId,
+            storeId: ref.storeId,
+            contentHash: ref.contentHash,
+          }),
+        )
+      : null;
+
   return {
     link,
-    fileName: ref.metadata?.fileName ?? ref.documentId,
-    type: getDocumentType(ref.metadata?.contentType),
-    contentType: ref.metadata?.contentType,
-    size: ref.metadata?.size,
+    fileName: ref.metadata.fileName ?? ref.documentId,
+    type: getDocumentType(ref.metadata.contentType),
+    contentType: ref.metadata.contentType,
+    size: ref.metadata.size,
   };
 }
 

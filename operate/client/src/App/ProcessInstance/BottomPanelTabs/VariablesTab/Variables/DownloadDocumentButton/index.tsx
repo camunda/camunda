@@ -17,28 +17,32 @@ type Props = {
 };
 
 const DownloadDocumentButton: React.FC<Props> = ({document, variableName}) => {
+  const isDisabled = document.link === null;
   return (
     <Button
-      as="a"
-      href={document.link}
-      download={document.fileName}
+      as={isDisabled ? undefined : 'a'}
+      href={document.link ?? undefined}
+      download={isDisabled ? undefined : document.fileName}
       rel="noopener"
       kind="ghost"
       size="sm"
       hasIconOnly
       renderIcon={Download}
-      iconDescription="Download"
+      iconDescription={
+        isDisabled ? 'Download not available for this document' : 'Download'
+      }
       tooltipPosition="top"
       tooltipAlignment="end"
       // @ts-expect-error - Solves rendering issues in `DocumentListModal`. Not exposed through TS but used at runtime.
       autoAlign={true}
       aria-label={`Download document for variable ${variableName}`}
+      disabled={isDisabled}
       onClick={() => {
         tracking.track({
           eventName: 'document-downloaded',
           documentType: document.type,
-          contentType: document.contentType ?? null,
-          size: document.size ?? null,
+          contentType: document.contentType,
+          size: document.size,
         });
       }}
     />

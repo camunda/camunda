@@ -49,6 +49,7 @@ const unknownDocument: DocumentInfo = {
   link: '/v2/documents/archive',
   fileName: 'archive.zip',
   type: 'unknown',
+  contentType: 'application/zip',
   size: 4096,
 };
 
@@ -182,6 +183,26 @@ describe('<PreviewDocumentButton />', () => {
 
     expect(
       screen.getByRole('heading', {name: 'Preview: photo.png'}),
+    ).toBeInTheDocument();
+  });
+
+  it('should render a disabled preview button when document has no link', () => {
+    const noLinkDocument: DocumentInfo = {
+      link: null,
+      fileName: 'no-hash.pdf',
+      type: 'pdf',
+      contentType: 'application/pdf',
+      size: 1024,
+    };
+
+    render(
+      <PreviewDocumentButton document={noLinkDocument} variableName="myDoc" />,
+    );
+
+    const button = screen.getByLabelText('Preview document for variable myDoc');
+    expect(button).toBeDisabled();
+    expect(
+      screen.getByText('Preview not available for this document'),
     ).toBeInTheDocument();
   });
 

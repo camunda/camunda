@@ -19,10 +19,13 @@ type Props = {
 };
 
 const PreviewDocumentButton: React.FC<Props> = ({document, variableName}) => {
+  const isDisabled = document.link === null || document.type === 'unknown';
   const tooltipText =
-    document.type !== 'unknown'
-      ? 'Preview'
-      : 'Preview not available for this document type';
+    document.link === null
+      ? 'Preview not available for this document'
+      : document.type !== 'unknown'
+        ? 'Preview'
+        : 'Preview not available for this document type';
 
   return (
     <ModalStateManager
@@ -37,13 +40,13 @@ const PreviewDocumentButton: React.FC<Props> = ({document, variableName}) => {
           // @ts-expect-error - Solves rendering issues in `DocumentListModal`. Not exposed through TS but used at runtime.
           autoAlign={true}
           aria-label={`Preview document for variable ${variableName}`}
-          disabled={document.type === 'unknown'}
+          disabled={isDisabled}
           onClick={() => {
             tracking.track({
               eventName: 'document-previewed',
               documentType: document.type,
-              contentType: document.contentType ?? null,
-              size: document.size ?? null,
+              contentType: document.contentType,
+              size: document.size,
             });
             setOpen(true);
           }}

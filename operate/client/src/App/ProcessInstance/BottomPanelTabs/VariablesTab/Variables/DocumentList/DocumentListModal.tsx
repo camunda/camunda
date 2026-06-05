@@ -85,11 +85,7 @@ const DocumentListModal: React.FC<StateProps & Props> = ({
               >
                 {middleTruncate(document.fileName)}
               </DocumentFileName>
-              {document.size !== undefined && (
-                <DocumentSize>
-                  {toHumanReadableBytes(document.size)}
-                </DocumentSize>
-              )}
+              <DocumentSize>{toHumanReadableBytes(document.size)}</DocumentSize>
             </DocumentInfoBlock>
             <PreviewDocumentButton
               document={document}

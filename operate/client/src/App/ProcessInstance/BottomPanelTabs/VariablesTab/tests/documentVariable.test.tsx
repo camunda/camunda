@@ -13,19 +13,33 @@ import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinit
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
 import {getWrapper, mockProcessInstance} from './mocks';
+import type {DocumentReference} from '@camunda/camunda-api-zod-schemas/8.10';
 
-const makeDocumentRef = (overrides: Record<string, unknown> = {}) => ({
-  'camunda.document.type': 'camunda',
-  documentId: 'doc-abc',
-  storeId: 'in-memory',
-  contentHash: 'sha256-xyz',
-  metadata: {
-    fileName: 'test-document.pdf',
-    contentType: 'application/pdf',
-    size: 1024,
-  },
-  ...overrides,
-});
+type DeepPartial<T> = {
+  [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
+};
+
+const makeDocumentRef = (
+  overrides: DeepPartial<DocumentReference> = {},
+): DocumentReference => {
+  return {
+    'camunda.document.type': 'camunda',
+    documentId: 'doc-abc',
+    storeId: 'in-memory',
+    contentHash: 'sha256-xyz',
+    ...overrides,
+    metadata: {
+      fileName: 'test-document.pdf',
+      contentType: 'application/pdf',
+      expiresAt: null,
+      processDefinitionId: null,
+      processInstanceKey: null,
+      size: 1024,
+      customProperties: {},
+      ...overrides.metadata,
+    },
+  } as DocumentReference;
+};
 
 describe('VariablesTab document variables', () => {
   beforeEach(() => {
