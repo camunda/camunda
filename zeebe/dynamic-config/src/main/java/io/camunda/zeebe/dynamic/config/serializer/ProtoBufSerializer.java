@@ -64,6 +64,7 @@ import io.camunda.zeebe.dynamic.config.state.ExportingConfig;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling;
@@ -158,6 +159,11 @@ public class ProtoBufSerializer
             ? decodeRoutingState(encodedClusterTopology.getRoutingState())
             : Optional.empty();
 
+    final Optional<PartitionDistributorConfig> partitionDistributorConfig =
+        encodedClusterTopology.hasPartitionDistributor()
+            ? decodePartitionDistributorConfig(encodedClusterTopology.getPartitionDistributor())
+            : Optional.empty();
+
     final Optional<String> clusterId =
         encodedClusterTopology.getClusterId().isEmpty()
             ? Optional.empty()
@@ -174,7 +180,8 @@ public class ProtoBufSerializer
         routingState,
         clusterId,
         incarnationNumber,
-        recovery);
+        recovery,
+        partitionDistributorConfig);
   }
 
   private Map<MemberId, io.camunda.zeebe.dynamic.config.state.MemberState> decodeMemberStateMap(
@@ -204,6 +211,11 @@ public class ProtoBufSerializer
     clusterConfiguration
         .routingState()
         .ifPresent(routingState -> builder.setRoutingState(encodeRoutingState(routingState)));
+    clusterConfiguration
+        .partitionDistributorConfig()
+        .ifPresent(
+            config ->
+                builder.setPartitionDistributor(encodePartitionDistributorConfig(config)));
     clusterConfiguration.clusterId().ifPresent(builder::setClusterId);
 
     return builder.build();
@@ -674,6 +686,52 @@ public class ProtoBufSerializer
                   Topology.MessageCorrelation.HashMod.newBuilder()
                       .setPartitionCount(partitionCount))
               .build();
+    };
+  }
+
+  private static Topology.PartitionDistributorConfig encodePartitionDistributorConfig(
+      final PartitionDistributorConfig config) {
+    final var builder = Topology.PartitionDistributorConfig.newBuilder();
+    switch (config) {
+      case PartitionDistributorConfig.RoundRobinConfig ignored ->
+          builder.setRoundRobin(
+              Topology.PartitionDistributorConfig.RoundRobinDistributor.getDefaultInstance());
+      case PartitionDistributorConfig.FixedConfig ignored ->
+          builder.setFixed(
+              Topology.PartitionDistributorConfig.FixedDistributor.getDefaultInstance());
+      case PartitionDistributorConfig.ZoneAwareConfig zoneAware ->
+          builder.setZoneAware(
+              Topology.PartitionDistributorConfig.ZoneAwareDistributor.newBuilder()
+                  .addAllZones(
+                      zoneAware.zones().stream()
+                          .map(
+                              z ->
+                                  Topology.PartitionDistributorConfig.ZoneSpec.newBuilder()
+                                      .setName(z.name())
+                                      .setNumberOfReplicas(z.numberOfReplicas())
+                                      .setPriority(z.priority())
+                                      .build())
+                          .toList())
+                  .build());
+    }
+    return builder.build();
+  }
+
+  private static Optional<PartitionDistributorConfig> decodePartitionDistributorConfig(
+      final Topology.PartitionDistributorConfig proto) {
+    return switch (proto.getKindCase()) {
+      case ROUNDROBIN -> Optional.of(new PartitionDistributorConfig.RoundRobinConfig());
+      case FIXED -> Optional.of(new PartitionDistributorConfig.FixedConfig());
+      case ZONEAWARE ->
+          Optional.of(
+              new PartitionDistributorConfig.ZoneAwareConfig(
+                  proto.getZoneAware().getZonesList().stream()
+                      .map(
+                          z ->
+                              new PartitionDistributorConfig.ZoneSpec(
+                                  z.getName(), z.getNumberOfReplicas(), z.getPriority()))
+                      .toList()));
+      case KIND_NOT_SET -> Optional.empty();
     };
   }
 
