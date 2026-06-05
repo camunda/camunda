@@ -71,14 +71,14 @@ const AdvancedStringFilterField: React.FC<FieldProps> = ({
 
   // The selected operator is stored and synced locally to be able to change it without a value.
   // Only with a selected value, it gets synced to the form state and URL.
-  const [selectedOpator, setSelectedOperator] = useState(
+  const [selectedOperator, setSelectedOperator] = useState(
     filterOperator ?? '$eq',
   );
   useEffect(() => {
-    if (filterOperator && filterOperator !== selectedOpator) {
+    if (filterOperator && filterOperator !== selectedOperator) {
       setSelectedOperator(filterOperator);
     }
-  }, [filterOperator, selectedOpator]);
+  }, [filterOperator, selectedOperator]);
 
   const handleOperatorChange = (
     newOperator: AdvancedStringFilterOperator | null,
@@ -97,7 +97,7 @@ const AdvancedStringFilterField: React.FC<FieldProps> = ({
       input.onChange(undefined);
       return;
     }
-    input.onChange(encodeFilterOperation(selectedOpator, newValue));
+    input.onChange(encodeFilterOperation(selectedOperator, newValue));
   };
 
   return (
@@ -111,7 +111,7 @@ const AdvancedStringFilterField: React.FC<FieldProps> = ({
         label="Select operator"
         items={selectableOperators}
         itemToString={(item) => (item ? OPERATOR_CONFIG[item].label : '')}
-        selectedItem={selectedOpator}
+        selectedItem={selectedOperator}
         onChange={({selectedItem}) => handleOperatorChange(selectedItem)}
       />
       <TextInputField
@@ -120,7 +120,7 @@ const AdvancedStringFilterField: React.FC<FieldProps> = ({
         size="sm"
         labelText=""
         hideLabel
-        placeholder={OPERATOR_CONFIG[selectedOpator].placeholder}
+        placeholder={OPERATOR_CONFIG[selectedOperator].placeholder}
         value={filterValue ?? ''}
         onChange={(event) => handleValueChange(event.target.value)}
         onBlur={input.onBlur}

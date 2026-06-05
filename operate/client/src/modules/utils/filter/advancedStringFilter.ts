@@ -29,7 +29,7 @@ const advancedStringFilterSchema = z.object({
   $like: z.string().optional(),
 }) satisfies z.ZodType<AdvancedStringFilter>;
 
-/** Turns a operator value pair into a URL-ready string. */
+/** Turns an operator value pair into a URL-ready string. */
 function encodeFilterOperation(
   operator: AdvancedStringFilterOperator,
   rawValue: string,
