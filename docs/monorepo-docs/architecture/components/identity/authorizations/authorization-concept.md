@@ -16,7 +16,7 @@ These are combined into a `RequiredAuthorization` record that represents a singl
 
 ### RequiredAuthorization Record
 
-**Location:** `io.camunda.security.core.auth.RequiredAuthorization` (CSL `core` module — not in OC)
+**Location:** `io.camunda.security.core.auth.RequiredAuthorization` (defined in CSL `core` module; consumed by OC as an external dependency)
 
 The `RequiredAuthorization<T>` record is the central type. It binds together:
 
