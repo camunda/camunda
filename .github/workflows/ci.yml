@@ -1185,34 +1185,42 @@ jobs:
         if: ${{ github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'gradle-build') }}
         with:
           maven-extra-args: -T1C -PskipFrontendBuild
+      - uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
+        if: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'gradle-build') }}
+        with:
+          cache-read-only: true
+      - name: Build Zeebe distribution (Gradle)
+        id: build-zeebe-gradle
+        if: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'gradle-build') }}
+        shell: bash
+        run: |
+          ./gradlew --no-daemon --console=plain -Pskip.fe.build :camunda-zeebe:distTar
+          DISTBALL=$(ls dist/build/distributions/camunda-zeebe-*.tar.gz)
+          echo "distball=${DISTBALL}" >> "$GITHUB_OUTPUT"
       - uses: ./.github/actions/build-platform-docker
-        if: ${{ matrix.docker-file != '' && (github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'gradle-build')) }}
+        if: ${{ matrix.docker-file != '' }}
         with:
           repository: ${{ matrix.docker-repository }}
           version: ${{ env.DOCKER_IMAGE_TAG }}
           dockerfile: ${{ matrix.docker-file }}
           push: true
-          distball: ${{ steps.build-zeebe.outputs.distball }}
+          distball: ${{ steps.build-zeebe.outputs.distball || steps.build-zeebe-gradle.outputs.distball }}
       - uses: ./.github/actions/build-platform-docker
-        if: ${{ matrix.group == 'root' && (github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'gradle-build')) }}
+        if: ${{ matrix.group == 'root' }}
         with:
           repository: localhost:5000/camunda/operate
           version: ${{ env.DOCKER_IMAGE_TAG }}
           dockerfile: operate.Dockerfile
           push: true
-          distball: ${{ steps.build-zeebe.outputs.distball }}
+          distball: ${{ steps.build-zeebe.outputs.distball || steps.build-zeebe-gradle.outputs.distball }}
       - uses: ./.github/actions/build-platform-docker
-        if: ${{ matrix.group == 'root' && (github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'gradle-build')) }}
+        if: ${{ matrix.group == 'root' }}
         with:
           repository: localhost:5000/camunda/tasklist
           version: ${{ env.DOCKER_IMAGE_TAG }}
           dockerfile: tasklist.Dockerfile
           push: true
-          distball: ${{ steps.build-zeebe.outputs.distball }}
-      - uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
-        if: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'gradle-build') }}
-        with:
-          cache-read-only: true
+          distball: ${{ steps.build-zeebe.outputs.distball || steps.build-zeebe-gradle.outputs.distball }}
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       - name: Maven Test Build Integration
