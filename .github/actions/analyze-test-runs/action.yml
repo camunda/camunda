@@ -28,6 +28,8 @@ runs:
         **/target/failsafe-reports/TEST-*.xml
         **/target/surefire-reports/TEST-*.xml
         **/build/test-results/test/TEST-*.xml
+        **/build/test-results/ut/TEST-*.xml
+        **/build/test-results/it/TEST-*.xml
   - name: Find flaky tests
     id: find-flakes
     shell: bash

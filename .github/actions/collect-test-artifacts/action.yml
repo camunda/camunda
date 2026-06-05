@@ -16,6 +16,8 @@ inputs:
       **/target/failsafe-reports/
       **/target/surefire-reports/
       **/build/test-results/test/
+      **/build/test-results/ut/
+      **/build/test-results/it/
       **/*.log
   retention-days:
     description: 'Number of days to keep the test artifact'
