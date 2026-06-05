@@ -525,6 +525,10 @@ jobs:
           echo "::endgroup::"
 
       - name: Scaffold load-test folder
+        env:
+          # newLoadTest.sh pins the orchestration image digest only when this tag is the
+          # mutable SNAPSHOT; custom build / release / reuse tags are already immutable.
+          ORCHESTRATION_IMAGE_TAG: ${{ needs.calculate-image-tag.outputs.image-tag }}
         run: |
           cd load-tests/setup
           # The namespace label created-by will not be able resolve the actual user which triggered

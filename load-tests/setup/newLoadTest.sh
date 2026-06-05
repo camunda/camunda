@@ -128,6 +128,23 @@ else
   availability_zone="~"
 fi
 
+# Pin the orchestration image to an immutable digest when it would otherwise run the
+# mutable SNAPSHOT tag (local default, or a CI run with orchestration-tag=SNAPSHOT;
+# CI sets ORCHESTRATION_IMAGE_TAG, locally it's unset). Resolved once and written to
+# camunda-platform-values.local.yaml below, so every `make install` reuses the same
+# digest and can't drift. Done before any side effects so a missing tool fails cleanly.
+orchestration_digest=""
+if [ "${ORCHESTRATION_IMAGE_TAG:-SNAPSHOT}" = "SNAPSHOT" ]; then
+  pin_image="docker.io/camunda/camunda:SNAPSHOT"
+  echo "Resolving $pin_image digest to pin this run..."
+  orchestration_digest=$(docker buildx imagetools inspect "$pin_image" --format '{{.Manifest.Digest}}' 2>/dev/null \
+    || crane digest "$pin_image" 2>/dev/null || true)
+  if [ -z "$orchestration_digest" ]; then
+    echo "ERROR: could not resolve digest for $pin_image (need docker buildx imagetools or crane)." >&2
+    exit 1
+  fi
+fi
+
 git_author=$(compute_git_author)
 
 # Compute deadline-date once at scaffold time. The Makefile's check-deadline
@@ -153,9 +170,9 @@ mkdir -p "$namespace"
 # camunda-platform-values-${secondaryStorage}.yaml. Flat layout so the
 # per-namespace Makefile's -f <file>.yaml references resolve unchanged.
 cp -v  default/Makefile                              "$namespace/"
-cp -v  ../docs/scripts/pin-camunda-image.sh          "$namespace/"
 cp -rv default/resources                             "$namespace/"
 cp -v  default/values/camunda-platform-override-values.yaml "$namespace/"
+cp -v  default/values/camunda-platform-values.local.yaml    "$namespace/"
 cp -v  default/values/load-test-values.yaml                 "$namespace/"
 cp -v  default/values/values-stable.yaml                    "$namespace/"
 cp -v "default/values/camunda-platform-values-defaults.yaml" "$namespace/"
@@ -216,6 +233,19 @@ if [[ "$enable_single_zone" != "true" ]]; then
     sed -i    -e '/^  annotations:$/d' resources/namespace.yaml
   fi
 fi
+
+# Write the digest resolved above into the local override file (applied last).
+if [ -n "$orchestration_digest" ]; then
+  cat >> camunda-platform-values.local.yaml <<EOF
+
+# Pinned by newLoadTest.sh at scaffold time — immutable SNAPSHOT digest.
+orchestration:
+  image:
+    digest: "$orchestration_digest"
+EOF
+  echo "Pinned orchestration image digest: $orchestration_digest"
+fi
+
 
 #############################################################################################
 ################################ CREDENTIALS ################################################

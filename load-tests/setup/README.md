@@ -121,11 +121,13 @@ The template files live under `setup/default/`:
   `camunda-platform-values-defaults.yaml` (shared baseline platform config)
   and layer `camunda-platform-values-${secondaryStorage}.yaml` on top. RDBMS
   storages additionally apply `camunda-platform-values-rdbms.yaml` between
-  them. For example, `elasticsearch` copies
-  `camunda-platform-values-defaults.yaml`,
+  them, and `camunda-platform-values.local.yaml` is applied **last** on every
+  platform install (per-namespace overrides; holds the SNAPSHOT digest pin). For
+  example, `elasticsearch` copies `camunda-platform-values-defaults.yaml`,
   `camunda-platform-values-elasticsearch.yaml`,
   `camunda-platform-override-values.yaml`, `load-test-values.yaml`,
-  `values-stable.yaml`, and `prometheus-elasticsearch-exporter-values.yaml`.
+  `values-stable.yaml`, `camunda-platform-values.local.yaml`, and
+  `prometheus-elasticsearch-exporter-values.yaml`.
 - `databases/` — raw Kubernetes manifests for MSSQL and Oracle (no public
   Helm chart). Copied into the namespace folder only when the matching
   storage is chosen.
@@ -174,25 +176,24 @@ You can also modify the Makefile to pass additional Helm arguments if needed.
 #### Camunda image version pinning
 
 The default Camunda (orchestration) image is `docker.io/camunda/camunda:SNAPSHOT` with
-`pullPolicy: Always`. `SNAPSHOT` is a mutable tag: when a pod is rescheduled mid-test (e.g. spot-VM
-node preemption), the new node re-pulls `SNAPSHOT` and could land on a newer build, drifting the
-engine version under test.
+`pullPolicy: Always`. `SNAPSHOT` is mutable: when a pod is rescheduled mid-test (e.g. spot-VM
+preemption), the new node re-pulls `SNAPSHOT` and may land on a newer build, drifting the engine
+version under test.
 
-To prevent this, `make install` / `make install-stable` automatically resolve the **current**
-`SNAPSHOT` digest at deploy time and pin the orchestration image to it
-(`--set orchestration.image.digest=sha256:…`). A digest is immutable, so every re-pull during the
-run fetches identical bits regardless of `pullPolicy`. This requires `docker buildx imagetools`
-(ships with Docker) or `crane` on your machine.
-
-Auto-pinning is skipped when you specify an explicit Camunda image — either via
-`additional_platform_configuration="--set orchestration.image.tag=…"` (also how CI pins, using its
-own built tag) or by editing `orchestration.image.tag` to a non-`SNAPSHOT` value in the namespace's
-`camunda-platform-values-defaults.yaml` (see below).
+To prevent this, `newLoadTest.sh` resolves the `SNAPSHOT` digest **once** at scaffold time and writes
+it into the namespace's `camunda-platform-values.local.yaml` as `orchestration.image.digest: sha256:…`,
+which the Makefile applies **last** on every `make install`. A digest is immutable, so repeated installs
+all use the same bits. This needs `docker buildx imagetools` (ships with Docker) or `crane`; without
+either, `newLoadTest.sh` fails fast. Pinning only happens when the orchestration tag is the mutable
+`SNAPSHOT` (the local default, or a CI run started with `orchestration-tag: SNAPSHOT`); any
+already-immutable tag is left as-is.
 
 #### Use different Camunda Snapshot
 
-If you want to use your own or a different Camunda snapshot, then you could do the following.
-Setting an explicit tag here also disables the SNAPSHOT digest auto-pinning described above.
+To use your own or a different Camunda snapshot, set its tag in the namespace's
+`camunda-platform-values.local.yaml` (applied last, so it wins; this is also where the digest pin
+lives). Don't edit `camunda-platform-values-defaults.yaml` — the local file's digest would override a
+tag set there.
 
 **Build the Docker image:**
 
@@ -206,7 +207,7 @@ docker build --build-arg DISTBALL=dist/target/camunda-zeebe-*.tar.gz -t registry
 docker push registry.camunda.cloud/team-zeebe/camunda:SNAPSHOT-$(date +%Y-%m-%d)-$(git rev-parse --short=8 HEAD)
 ```
 
-Update the `camunda-platform-values-defaults.yaml` file in your namespace folder and set the newly created image tag.
+Update the `camunda-platform-values.local.yaml` file in your namespace folder and set the newly created image tag (replacing the auto-pinned `orchestration.image.digest` block).
 
 The changes should look similar to this:
 

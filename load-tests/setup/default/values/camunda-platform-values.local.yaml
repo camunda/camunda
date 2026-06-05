@@ -1,0 +1,13 @@
+# Per-namespace LOCAL Helm overrides for the Camunda Platform chart.
+# Applied LAST on every `make install`, so anything here wins over the other
+# camunda-platform-values-*.yaml files (including values-stable.yaml).
+#
+# newLoadTest.sh writes the pinned orchestration image digest here when the image
+# would otherwise run the mutable SNAPSHOT tag, so repeated installs can't drift:
+#
+#   orchestration:
+#     image:
+#       digest: "sha256:..."
+#
+# Single place to override the image: set your own tag, or drop the digest to fall
+# back to mutable SNAPSHOT. Add any other per-namespace overrides here too.
