@@ -291,13 +291,7 @@ public final class ClusterConfigurationManagerService
       case final PartitionDistributorConfig.RoundRobinConfig ignored ->
           new RoundRobinPartitionDistributor();
       case final PartitionDistributorConfig.ZoneAwareConfig zoneAware ->
-          new ZoneAwarePartitionDistributor(
-              zoneAware.zones().stream()
-                  .map(
-                      z ->
-                          new ZoneAwarePartitionDistributor.ZoneSpec(
-                              z.name(), z.numberOfReplicas(), z.priority()))
-                  .toList());
+          new ZoneAwarePartitionDistributor(zoneAware.zones());
       case final PartitionDistributorConfig.FixedConfig ignored ->
           Objects.requireNonNull(staticConfiguration, "staticConfiguration not set")
               .partitionDistributor();

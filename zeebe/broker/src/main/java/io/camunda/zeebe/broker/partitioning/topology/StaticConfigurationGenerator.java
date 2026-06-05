@@ -25,7 +25,7 @@ import io.camunda.zeebe.dynamic.config.state.ExportingConfig;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.util.RoundRobinPartitionDistributor;
 import io.camunda.zeebe.dynamic.config.util.ZoneAwarePartitionDistributor;
-import io.camunda.zeebe.dynamic.config.util.ZoneAwarePartitionDistributor.ZoneSpec;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

@@ -11,6 +11,7 @@ import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.zeebe.dynamic.config.PartitionDistributor;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -200,32 +201,4 @@ public final class ZoneAwarePartitionDistributor implements PartitionDistributor
             });
   }
 
-  /**
-   * Describes a single zone's participation in the cluster.
-   *
-   * @param name the zone name (e.g. {@code "us-east1"})
-   * @param numberOfReplicas how many replicas of each partition are placed in this zone
-   * @param priority the zone's preferred-leader ranking; higher values are preferred.
-   */
-  public record ZoneSpec(String name, int numberOfReplicas, int priority) {
-    public ZoneSpec {
-      if (name.isEmpty()) {
-        throw new IllegalArgumentException(
-            "ZoneAwarePartitionDistributor: expected non-empty name, but got empty string");
-      }
-      if (numberOfReplicas <= 0) {
-        throw new IllegalArgumentException(
-            "ZoneAwarePartitionDistributor: expected numberOfReplicas >= 1, but got "
-                + numberOfReplicas);
-      }
-      if (priority <= 0) {
-        throw new IllegalArgumentException(
-            "ZoneAwarePartitionDistributor: expected priority > 0, but got " + priority);
-      }
-    }
-
-    public ZoneSpec withPriority(final int priority) {
-      return new ZoneSpec(name, numberOfReplicas, priority);
-    }
-  }
 }

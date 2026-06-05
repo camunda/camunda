@@ -16,7 +16,7 @@ import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
 import io.camunda.zeebe.dynamic.config.util.RoundRobinPartitionDistributor;
 import io.camunda.zeebe.dynamic.config.util.ZoneAwarePartitionDistributor;
-import io.camunda.zeebe.dynamic.config.util.ZoneAwarePartitionDistributor.ZoneSpec;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.Test;

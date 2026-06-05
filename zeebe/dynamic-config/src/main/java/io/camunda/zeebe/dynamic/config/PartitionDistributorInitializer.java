@@ -48,13 +48,6 @@ public class PartitionDistributorInitializer implements ClusterConfigurationModi
       case final RoundRobinPartitionDistributor ignored ->
           new PartitionDistributorConfig.RoundRobinConfig();
       case final ZoneAwarePartitionDistributor zoneAware ->
-          new PartitionDistributorConfig.ZoneAwareConfig(
-              zoneAware.zoneSpecs().stream()
-                  .map(
-                      z ->
-                          new PartitionDistributorConfig.ZoneSpec(
-                              z.name(), z.numberOfReplicas(), z.priority()))
-                  .toList());
           new PartitionDistributorConfig.ZoneAwareConfig(zoneAware.zoneSpecs());
       // TODO: FixedPartitionDistributor is not in this module: we need to move it to this module as
       // well and just use PartitionDistributorConfig directly in StaticConfiguration instead
