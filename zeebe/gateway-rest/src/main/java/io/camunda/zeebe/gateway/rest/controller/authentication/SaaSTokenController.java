@@ -24,16 +24,16 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @ConditionalOnSecondaryStorageEnabled
 @RequestMapping("/v2/authentication")
 public class SaaSTokenController {
-  private final CamundaUserPort camundaUserService;
+  private final CamundaUserPort camundaUserPort;
 
-  public SaaSTokenController(final CamundaUserPort camundaUserService) {
-    this.camundaUserService = camundaUserService;
+  public SaaSTokenController(final CamundaUserPort camundaUserPort) {
+    this.camundaUserPort = camundaUserPort;
   }
 
   @Hidden
   @CamundaGetMapping(path = "/me/token")
   public ResponseEntity<String> getCurrentToken() {
-    final var token = camundaUserService.getUserToken();
+    final var token = camundaUserPort.getUserToken();
 
     return token == null
         ? ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
