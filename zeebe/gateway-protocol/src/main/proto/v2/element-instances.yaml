@@ -290,6 +290,22 @@ components:
       required:
         - field
 
+    ElementInstanceWaitStateQuerySortRequest:
+      type: object
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - elementInstanceKey
+            - processInstanceKey
+            - rootProcessInstanceKey
+            - elementId
+        order:
+          $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
+      required:
+        - field
+
     ElementInstanceSearchQuery:
       description: Element instance search request.
       type: object
@@ -624,6 +640,11 @@ components:
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryRequest'
       properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: '#/components/schemas/ElementInstanceWaitStateQuerySortRequest'
         filter:
           description: Filter criteria for the inspection.
           allOf:

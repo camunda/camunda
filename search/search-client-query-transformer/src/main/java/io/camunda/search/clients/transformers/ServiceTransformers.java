@@ -191,6 +191,7 @@ import io.camunda.search.clients.transformers.sort.UsageMetricsFieldSortingTrans
 import io.camunda.search.clients.transformers.sort.UserFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.UserTaskFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.VariableFieldSortingTransformer;
+import io.camunda.search.clients.transformers.sort.WaitStateFieldSortingTransformer;
 import io.camunda.search.filter.AgentInstanceFilter;
 import io.camunda.search.filter.AuditLogFilter;
 import io.camunda.search.filter.AuthorizationFilter;
@@ -318,6 +319,7 @@ import io.camunda.search.sort.UsageMetricsSort;
 import io.camunda.search.sort.UserSort;
 import io.camunda.search.sort.UserTaskSort;
 import io.camunda.search.sort.VariableSort;
+import io.camunda.search.sort.WaitStateSort;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.index.AuthorizationIndex;
 import io.camunda.webapps.schema.descriptors.index.ClusterVariableIndex;
@@ -567,6 +569,7 @@ public final class ServiceTransformers {
         new IncidentFieldSortingTransformer());
     mappers.put(GlobalListenerSort.class, new GlobalListenerFieldSortingTransformer());
     mappers.put(DeployedResourceSort.class, new DeployedResourceFieldSortingTransformer());
+    mappers.put(WaitStateSort.class, new WaitStateFieldSortingTransformer());
 
     // filters -> search query
     mappers.put(
