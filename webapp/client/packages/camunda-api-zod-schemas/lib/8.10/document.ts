@@ -12,10 +12,10 @@ import {API_VERSION, type Endpoint} from './common';
 const documentMetadataSchema = z.object({
 	contentType: z.string(),
 	fileName: z.string(),
-	expiresAt: z.string(),
+	expiresAt: z.string().nullable(),
 	size: z.number(),
-	processDefinitionId: z.string(),
-	processInstanceKey: z.string(),
+	processDefinitionId: z.string().nullable(),
+	processInstanceKey: z.string().nullable(),
 	customProperties: z.record(z.string(), z.unknown()),
 });
 type DocumentMetadata = z.infer<typeof documentMetadataSchema>;
@@ -24,7 +24,7 @@ const documentReferenceSchema = z.object({
 	'camunda.document.type': z.literal('camunda'),
 	storeId: z.string(),
 	documentId: z.string(),
-	contentHash: z.string(),
+	contentHash: z.string().nullable(),
 	metadata: documentMetadataSchema,
 });
 type DocumentReference = z.infer<typeof documentReferenceSchema>;

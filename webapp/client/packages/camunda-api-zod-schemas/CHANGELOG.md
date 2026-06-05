@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.0.71
+
+### 🩹 Fixes
+
+- Align `DocumentReference` nullable fields with OpenAPI schema. The following fields are now nullable:
+  - `contentHash`
+  - `metadata.expiresAt`
+  - `metadata.processDefinitionId`
+  - `metadata.processInstanceKey`
+
+### ❤️ Contributors
+
+- Christoph Fricke ([@christoph-fricke](https://github.com/christoph-fricke))
+
 ## v0.0.70
 
 ### 🚀 Enhancements
