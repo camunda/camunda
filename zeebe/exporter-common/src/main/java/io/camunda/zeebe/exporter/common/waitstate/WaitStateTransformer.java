@@ -66,6 +66,10 @@ public interface WaitStateTransformer<R extends RecordValue & WaitStateRelated> 
     return config().triggersAdd(record);
   }
 
+  default boolean triggersUpdate(final Record<R> record) {
+    return config().triggersUpdate(record);
+  }
+
   default boolean triggersRemoval(final Record<R> record) {
     return config().triggersRemoval(record);
   }

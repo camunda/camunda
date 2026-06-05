@@ -61,7 +61,7 @@ public class WaitStateAddHandler<R extends RecordValue & WaitStateRelated>
 
   @Override
   public boolean handlesRecord(final Record<R> record) {
-    return transformer.triggersAdd(record);
+    return transformer.triggersAdd(record) || transformer.triggersUpdate(record);
   }
 
   @Override

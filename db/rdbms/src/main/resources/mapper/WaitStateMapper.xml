@@ -121,6 +121,15 @@
             #{details, jdbcType=CLOB}, #{tenantId}, #{partitionId})
   </insert>
 
+  <update id="update" parameterType="io.camunda.db.rdbms.write.domain.WaitStateDbModel">
+    UPDATE ${prefix}WAIT_STATE
+    SET ELEMENT_INSTANCE_KEY = #{elementInstanceKey},
+        ELEMENT_ID           = #{elementId},
+        ELEMENT_TYPE         = #{elementType},
+        DETAILS              = #{details, jdbcType=CLOB}
+    WHERE WAIT_STATE_KEY = #{waitStateKey}
+  </update>
+
   <delete id="delete" parameterType="java.lang.Long">
     DELETE
     FROM ${prefix}WAIT_STATE

@@ -48,13 +48,18 @@ public class WaitStateAddHandler<R extends RecordValue & WaitStateRelated>
 
   @Override
   public boolean canExport(final Record<R> record) {
-    return transformer.triggersAdd(record);
+    return transformer.triggersAdd(record) || transformer.triggersUpdate(record);
   }
 
   @Override
   public void export(final Record<R> record) {
     final var entry = transformer.transform(record);
-    waitStateWriter.create(map(record, entry));
+    final var model = map(record, entry);
+    if (transformer.triggersUpdate(record)) {
+      waitStateWriter.update(model);
+    } else {
+      waitStateWriter.create(model);
+    }
   }
 
   @VisibleForTesting
