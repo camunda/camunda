@@ -765,7 +765,7 @@ components:
           description: Opaque lease token received from the job activation response.
           type: string
         iteration:
-          description: Logical iteration this item belongs to. Omit if not grouping items into iterations.
+          description: Sequential iteration number this item belongs to. Omit if not grouping items into iterations.
           nullable: true
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/IterationId'
@@ -864,9 +864,9 @@ components:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/JobKeyFilterProperty'
         iteration:
-          description: The iteration identifier.
+          description: The iteration number.
           allOf:
-            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+            - $ref: 'filters.yaml#/components/schemas/IntegerFilterProperty'
         commitStatus:
           description: |
             The commit status of the history item. Defaults to COMMITTED only.
@@ -929,7 +929,7 @@ components:
           description: The lease token of the activation that produced this item.
           type: string
         iteration:
-          description: The iteration this item belongs to. Null if not provided by the connector.
+          description: The sequential iteration number this item belongs to. Null if not provided by the connector.
           nullable: true
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/IterationId'
