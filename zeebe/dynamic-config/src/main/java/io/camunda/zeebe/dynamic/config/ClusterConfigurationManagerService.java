@@ -41,7 +41,9 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
+import java.util.Objects;
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 
 public final class ClusterConfigurationManagerService
     implements ClusterConfigurationUpdateNotifier, AsyncClosable {
@@ -62,6 +64,7 @@ public final class ClusterConfigurationManagerService
   private final ClusterChangeExecutor clusterChangeExecutor;
   private final TopologyMetrics topologyMetrics;
   private final TopologyManagerMetrics topologyManagerMetrics;
+  private @Nullable volatile PartitionDistributor partitionDistributor;
 
   public ClusterConfigurationManagerService(
       final Path dataRootDirectory,
@@ -107,7 +110,10 @@ public final class ClusterConfigurationManagerService
             communicationService,
             new ProtoBufSerializer(),
             new ClusterConfigurationManagementRequestsHandler(
-                configurationChangeCoordinator, localMemberId, managerActor));
+                configurationChangeCoordinator,
+                () -> Objects.requireNonNull(partitionDistributor, "partitionDistributor is null"),
+                localMemberId,
+                managerActor));
 
     clusterConfigurationManager.setConfigurationGossiper(
         clusterConfigurationGossiper::updateClusterConfiguration);
@@ -178,6 +184,8 @@ public final class ClusterConfigurationManagerService
   public ActorFuture<Void> start(
       final ActorSchedulingService actorSchedulingService,
       final StaticConfiguration staticConfiguration) {
+    // TODO this needs to change once the partition distribution config is in ClusterConfiguration
+    partitionDistributor = staticConfiguration.partitionDistributor();
     return startGossiper(actorSchedulingService)
         .andThen(
             () -> startClusterTopologyServices(actorSchedulingService, staticConfiguration),

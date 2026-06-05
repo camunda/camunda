@@ -23,13 +23,13 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.AwaitRelocationCompletion;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.StartPartitionScaleUp;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
-import io.camunda.zeebe.dynamic.config.util.RoundRobinPartitionDistributor;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -39,21 +39,26 @@ import java.util.stream.Stream;
  * strategy.
  */
 public class PartitionReassignRequestTransformer implements ConfigurationChangeRequest {
+
   final Set<MemberId> members;
+  private final Supplier<PartitionDistributor> partitionDistributor;
   private final Optional<Integer> newReplicationFactor;
   private final Optional<Integer> newPartitionCount;
 
   public PartitionReassignRequestTransformer(
+      final Supplier<PartitionDistributor> partitionDistributor,
       final Set<MemberId> members,
       final Optional<Integer> newReplicationFactor,
       final Optional<Integer> newPartitionCount) {
+    this.partitionDistributor = partitionDistributor;
     this.members = members;
     this.newReplicationFactor = newReplicationFactor;
     this.newPartitionCount = newPartitionCount;
   }
 
-  public PartitionReassignRequestTransformer(final Set<MemberId> members) {
-    this(members, Optional.empty(), Optional.empty());
+  public PartitionReassignRequestTransformer(
+      final Supplier<PartitionDistributor> partitionDistributor, final Set<MemberId> members) {
+    this(partitionDistributor, members, Optional.empty(), Optional.empty());
   }
 
   @Override
@@ -126,13 +131,12 @@ public class PartitionReassignRequestTransformer implements ConfigurationChangeR
                         .toList())
             .orElse(List.of());
 
-    final PartitionDistributor roundRobinDistributor = new RoundRobinPartitionDistributor();
-
     final var allPartitions =
         Stream.of(oldPartitions, newPartitions).flatMap(List::stream).toList();
 
     final var newDistribution =
-        roundRobinDistributor
+        partitionDistributor
+            .get()
             .distributePartitions(brokers, allPartitions, replicationFactor)
             .stream()
             .collect(Collectors.toMap(PartitionMetadata::id, p -> p));

@@ -51,6 +51,7 @@ final class ClusterPatchRequestTransformerTest {
     // when
     final var result =
         new ClusterPatchRequestTransformer(
+                RoundRobinPartitionDistributor::new,
                 patchRequest.membersToAdd(),
                 patchRequest.membersToRemove(),
                 patchRequest.newPartitionCount(),
@@ -76,6 +77,7 @@ final class ClusterPatchRequestTransformerTest {
         new ClusterPatchRequest(Set.of(), Set.of(), Optional.of(1), Optional.empty(), false);
     final var result =
         new ClusterPatchRequestTransformer(
+                RoundRobinPartitionDistributor::new,
                 patchRequest.membersToAdd(),
                 patchRequest.membersToRemove(),
                 patchRequest.newPartitionCount(),
@@ -230,6 +232,7 @@ final class ClusterPatchRequestTransformerTest {
     // when
     final var result =
         new ClusterPatchRequestTransformer(
+                RoundRobinPartitionDistributor::new,
                 patchRequest.membersToAdd(),
                 patchRequest.membersToRemove(),
                 patchRequest.newPartitionCount(),

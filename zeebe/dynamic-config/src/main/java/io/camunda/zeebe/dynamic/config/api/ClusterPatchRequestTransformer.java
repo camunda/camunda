@@ -8,6 +8,7 @@
 package io.camunda.zeebe.dynamic.config.api;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.dynamic.config.PartitionDistributor;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
@@ -16,19 +17,23 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Supplier;
 
 public final class ClusterPatchRequestTransformer implements ConfigurationChangeRequest {
 
+  private final Supplier<PartitionDistributor> partitionDistributor;
   private final Set<MemberId> membersToAdd;
   private final Set<MemberId> membersToRemove;
   private final Optional<Integer> newPartitionCount;
   private final Optional<Integer> newReplicationFactor;
 
   public ClusterPatchRequestTransformer(
+      final Supplier<PartitionDistributor> partitionDistributor,
       final Set<MemberId> membersToAdd,
       final Set<MemberId> membersToRemove,
       final Optional<Integer> newPartitionCount,
       final Optional<Integer> newReplicationFactor) {
+    this.partitionDistributor = partitionDistributor;
     this.membersToAdd = membersToAdd;
     this.membersToRemove = membersToRemove;
     this.newPartitionCount = newPartitionCount;
@@ -50,7 +55,8 @@ public final class ClusterPatchRequestTransformer implements ConfigurationChange
     newSetOfMembers.addAll(membersToAdd);
     newSetOfMembers.removeAll(membersToRemove);
 
-    return new ScaleRequestTransformer(newSetOfMembers, newReplicationFactor, newPartitionCount)
+    return new ScaleRequestTransformer(
+            partitionDistributor, newSetOfMembers, newReplicationFactor, newPartitionCount)
         .operations(clusterConfiguration);
   }
 }

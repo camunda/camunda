@@ -132,7 +132,8 @@ class ScaleRequestTransformerTest {
 
     //  when
     final var operationsEither =
-        new ScaleRequestTransformer(getClusterMembers(newClusterSize))
+        new ScaleRequestTransformer(
+                RoundRobinPartitionDistributor::new, getClusterMembers(newClusterSize))
             .operations(oldClusterTopology);
 
     // then
@@ -166,7 +167,8 @@ class ScaleRequestTransformerTest {
 
     // when
     final var operations =
-        new ScaleRequestTransformer(getClusterMembers(newClusterSize))
+        new ScaleRequestTransformer(
+                RoundRobinPartitionDistributor::new, getClusterMembers(newClusterSize))
             .operations(oldClusterTopology)
             .get();
 
@@ -214,7 +216,10 @@ class ScaleRequestTransformerTest {
         ConfigurationUtil.getClusterConfigFrom(distribution, partitionConfig, "clusterId");
     final var transformer =
         new ScaleRequestTransformer(
-            getClusterMembers(clusterSize), Optional.of(3), Optional.of(desiredPartitionCount));
+            RoundRobinPartitionDistributor::new,
+            getClusterMembers(clusterSize),
+            Optional.of(3),
+            Optional.of(desiredPartitionCount));
     final var operations = transformer.operations(config);
     if (desiredPartitionCount < currentPartitionCount) {
       EitherAssert.assertThat(operations).isLeft();

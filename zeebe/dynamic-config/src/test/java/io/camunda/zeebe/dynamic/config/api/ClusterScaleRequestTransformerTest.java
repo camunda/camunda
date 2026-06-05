@@ -165,6 +165,7 @@ final class ClusterScaleRequestTransformerTest {
     // when
     final var result =
         new ClusterScaleRequestTransformer(
+                RoundRobinPartitionDistributor::new,
                 patchRequest.newClusterSize(),
                 patchRequest.newPartitionCount(),
                 patchRequest.newReplicationFactor())

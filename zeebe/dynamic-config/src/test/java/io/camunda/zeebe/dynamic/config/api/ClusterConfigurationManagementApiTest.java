@@ -46,6 +46,7 @@ import io.camunda.zeebe.dynamic.config.state.ExportingConfig;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
+import io.camunda.zeebe.dynamic.config.util.RoundRobinPartitionDistributor;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
@@ -108,7 +109,10 @@ final class ClusterConfigurationManagementApiTest {
             coordinator.getCommunicationService(),
             new ProtoBufSerializer(),
             new ClusterConfigurationManagementRequestsHandler(
-                recordingCoordinator, id0, new TestConcurrencyControl()));
+                recordingCoordinator,
+                RoundRobinPartitionDistributor::new,
+                id0,
+                new TestConcurrencyControl()));
 
     requestServer.start();
   }

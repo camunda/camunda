@@ -132,7 +132,8 @@ class PartitionReassignRequestTransformerTest {
 
     //  when
     final var operationsEither =
-        new PartitionReassignRequestTransformer(getClusterMembers(newClusterSize))
+        new PartitionReassignRequestTransformer(
+                RoundRobinPartitionDistributor::new, getClusterMembers(newClusterSize))
             .operations(oldClusterTopology);
 
     // then
@@ -201,6 +202,7 @@ class PartitionReassignRequestTransformerTest {
     // when
     final var request =
         new PartitionReassignRequestTransformer(
+            RoundRobinPartitionDistributor::new,
             getClusterMembers(newClusterSize),
             Optional.of(newReplicationFactor),
             Optional.of(newPartitionCount));

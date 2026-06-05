@@ -8,25 +8,30 @@
 package io.camunda.zeebe.dynamic.config.api;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.dynamic.config.PartitionDistributor;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public final class ClusterScaleRequestTransformer implements ConfigurationChangeRequest {
 
+  private final Supplier<PartitionDistributor> partitionDistributor;
   private final Optional<Integer> newClusterSize;
   private final Optional<Integer> newPartitionCount;
   private final Optional<Integer> newReplicationFactor;
 
   public ClusterScaleRequestTransformer(
+      final Supplier<PartitionDistributor> partitionDistributor,
       final Optional<Integer> newClusterSize,
       final Optional<Integer> newPartitionCount,
       final Optional<Integer> newReplicationFactor) {
+    this.partitionDistributor = partitionDistributor;
     this.newClusterSize = newClusterSize;
     this.newPartitionCount = newPartitionCount;
     this.newReplicationFactor = newReplicationFactor;
@@ -46,7 +51,8 @@ public final class ClusterScaleRequestTransformer implements ConfigurationChange
         IntStream.range(0, newClusterSize.orElse(clusterConfiguration.members().size()))
             .mapToObj(i -> MemberId.from(String.valueOf(i)))
             .collect(Collectors.toSet());
-    return new ScaleRequestTransformer(newSetOfMembers, newReplicationFactor, newPartitionCount)
+    return new ScaleRequestTransformer(
+            partitionDistributor, newSetOfMembers, newReplicationFactor, newPartitionCount)
         .operations(clusterConfiguration);
   }
 }
