@@ -10,7 +10,7 @@ plugins {
     id("buildlogic.test-jar-conventions")
 }
 
-val backwardsCompatVersion = "8.8.0"
+val backwardsCompatVersion = libs.versions.zeebeBackwardsCompat.get()
 
 tasks.named<ProcessResources>("processResources") {
     filter(
