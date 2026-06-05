@@ -93,7 +93,7 @@ dependencies {
     testImplementation(libs.org.openjdk.jmh.jmh.generator.annprocess)
 }
 
-tasks.named<Test>("test") {
+tasks.withType<Test>().configureEach {
     jvmArgs("-Xmx2g")
 }
 

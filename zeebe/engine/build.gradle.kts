@@ -62,7 +62,7 @@ dependencies {
     compileOnly(libs.net.jcip.jcip.annotations)
 }
 
-tasks.named<Test>("test") {
+tasks.withType<Test>().configureEach {
     jvmArgs("-Xmx4g")
 }
 
