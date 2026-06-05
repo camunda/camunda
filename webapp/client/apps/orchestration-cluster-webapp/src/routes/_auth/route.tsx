@@ -7,9 +7,9 @@
  */
 
 import {createFileRoute, Outlet, redirect} from '@tanstack/react-router';
-import {SessionWatcher} from '#/modules/auth/components/SessionWatcher';
-import {queries} from '#/modules/http/queries';
-import {storeSessionState} from '#/modules/browser-storage/session-storage';
+import {SessionWatcher} from '#/shared/auth/components/SessionWatcher';
+import {queries} from '#/shared/http/queries';
+import {storeSessionState} from '#/shared/browser-storage/session-storage';
 
 export const Route = createFileRoute('/_auth')({
 	beforeLoad: async ({location, context: {queryClient}}) => {

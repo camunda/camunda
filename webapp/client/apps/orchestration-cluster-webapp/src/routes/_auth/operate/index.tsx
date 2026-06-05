@@ -7,11 +7,8 @@
  */
 
 import {createFileRoute} from '@tanstack/react-router';
+import {OperatePage} from '#/operate/pages/OperatePage';
 
 export const Route = createFileRoute('/_auth/operate/')({
-	component: Operate,
+	component: OperatePage,
 });
-
-function Operate() {
-	return <h1>Operate</h1>;
-}

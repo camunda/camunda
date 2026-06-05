@@ -32,10 +32,10 @@ heuristic in
 
 ## If it stays on the existing page
 
-Build new pieces as modules
-([Step 1](./creating-a-new-page.md#step-1-build-the-modules)) and
+Build new pieces in your pod's area
+([Step 1](./creating-a-new-page.md#step-1-build-the-feature-in-your-pods-area)) and
 compose them into the existing page file
-([Step 2](./creating-a-new-page.md#step-2-compose-the-page)). No new
+([Step 2](./creating-a-new-page.md#step-2-plug-into-the-router)). No new
 abstraction layers, no wrapper-of-wrappers, no parent-feature state
 plumbed through new children.
 

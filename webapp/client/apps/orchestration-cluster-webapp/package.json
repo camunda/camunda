@@ -14,7 +14,7 @@
 		"test:a11y": "playwright test --project=a11y-light --project=a11y-dark",
 		"test:visual": "cross-env CONTAINERIZED_BROWSER=true playwright test --project=visual-light --project=visual-dark --project=visual-light-tablet --project=visual-dark-tablet",
 		"test:integration": "playwright test --project=integration",
-		"generate:svg": "svgr --typescript --no-index --out-dir src/modules/svg src/assets/svg"
+		"generate:svg": "svgr --typescript --no-index --out-dir src/shared/svg src/shared/assets/svg"
 	},
 	"dependencies": {
 		"@camunda/camunda-api-zod-schemas": "0.0.71",

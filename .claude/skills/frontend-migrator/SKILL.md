@@ -9,7 +9,7 @@ description: Use when migrating, porting, rewriting, or moving frontend code fro
 
 The orchestration cluster webapp (`webapp/client/apps/orchestration-cluster-webapp/`) is replacing the legacy Operate, Tasklist, and Admin frontends. Migration is a **rewrite using new patterns**, not a code port. The legacy code is the specification of *what* the feature does; the new code follows a different architecture for *how*.
 
-This skill is the translation layer. It maps legacy patterns to their target equivalents so you produce code that fits the new codebase from the start. For target conventions (modules/pages/routes structure, data loading tiers, forms, feature flags), defer to the `frontend-feature` skill. For test-writing details, defer to `frontend-unit-test` and `frontend-integration-test`.
+This skill is the translation layer. It maps legacy patterns to their target equivalents so you produce code that fits the new codebase from the start. For target conventions (pod areas + shared structure, data loading tiers, forms, feature flags), defer to the `frontend-feature` skill. For test-writing details, defer to `frontend-unit-test` and `frontend-integration-test`.
 
 ## Migration workflow
 
@@ -28,17 +28,17 @@ Focus on behavior. The implementation details (MobX stores, styled-components, R
 
 Look up every endpoint the legacy feature calls in `@camunda/camunda-api-zod-schemas`. The legacy code typically imports from this package already — check its `import` statements. If an endpoint is missing from the schema package, it needs to be added before or alongside the migration.
 
-### 3. Map to modules / pages / routes
+### 3. Map to pod area / shared / routes
 
 Decide how the feature decomposes in the new architecture. The general rule:
 
-- **One route file** per navigable URL, under `src/routes/_auth/<product>/`
-- **One page component** per route, in `src/pages/`
-- **Modules** for reusable logic, in `src/modules/<concern>/` — not one module per page, but one per *concern* (e.g., `processes`, `incidents`, `variables`)
+- **One route file** per navigable URL, under `src/routes/_auth/<pod>/`
+- **Page component and supporting code** in the pod's area (`src/operate/`, `src/tasklist/`, or `src/admin/`). The pod decides its own internal structure — there is no prescribed layout.
+- **Shared cross-cutting code** in `src/shared/<concern>/` — http, auth, config, errors, i18n, theme, tracking. Use what's already there; extend it rather than duplicating in the pod area.
 
 Produce the code directly. If the decomposition is genuinely ambiguous (e.g., a legacy page that mixes two concerns and could become one page or two), flag it for the user with your recommendation and reasoning.
 
-Dependencies flow one way: **routes → pages → modules**. A module must never import from a route file or a page file. If a type (like search param schemas) needs to be shared between a route and a module, define it in the module and import it into the route — not the other way around.
+Dependencies flow one way: **routes → pod area → shared**. Pod code must never import from a route file. Shared code must never import from a pod area. If a type (like search param schemas) needs to be shared between a route and pod code, define it in the pod area and import it into the route — not the other way around.
 
 ### 4. Transform patterns
 
@@ -72,21 +72,21 @@ Rewrite tests using the new patterns (Vitest browser mode, MSW via worker fixtur
 | `<Navigate to={path} />` redirect | `throw redirect({ to: path })` in `beforeLoad` |
 | `ErrorBoundary` per route | `errorComponent` on the route definition |
 
-Auth-gated routes go under `_auth/` (pathless layout route). Product routes go under `_auth/operate/` or `_auth/tasklist/`.
+Auth-gated routes go under `_auth/` (pathless layout route). Product routes go under `_auth/operate/`, `_auth/tasklist/`, or `_auth/admin/`.
 
 ### Data fetching
 
 | Legacy | Target |
 |--------|--------|
-| `use*.query.ts` files scattered across modules | Centralized `queryOptions` in `#/modules/http/queries.ts` |
-| Endpoint URL construction inline in hooks | `Request` factories in `#/modules/http/endpoints.ts` |
-| `requestAndParse()` / `requestWithThrow()` | `request()` from `#/modules/http/request` |
+| `use*.query.ts` files scattered across modules | Centralized `queryOptions` in `#/shared/http/queries.ts` |
+| Endpoint URL construction inline in hooks | `Request` factories in `#/shared/http/endpoints.ts` |
+| `requestAndParse()` / `requestWithThrow()` | `request()` from `#/shared/http/request` |
 | `useQuery` / `useInfiniteQuery` in components | `useSuspenseQuery` / `useSuspenseInfiniteQuery` in components |
 | No data prefetching | `queryClient.ensureQueryData(queries.xxx())` in route `beforeLoad` |
 | `document.title` in `useEffect` | `head()` function on the route |
 | `refetchInterval` for polling | Same — `refetchInterval` on the query options |
 
-The pattern is: define the endpoint in `endpoints.ts`, wrap it in `queryOptions` in `queries.ts`, prefetch in the route loader, consume with `useSuspenseQuery` in the page component. This replaces the legacy pattern where each feature scattered its own query hooks.
+The pattern is: define the endpoint in `endpoints.ts`, wrap it in `queryOptions` in `queries.ts`, prefetch in the route loader, consume with `useSuspenseQuery` in the pod page component. This replaces the legacy pattern where each feature scattered its own query hooks.
 
 ### State management
 
@@ -123,7 +123,7 @@ SCSS modules use bracket notation for class access: `className={styles['containe
 | `export default Component` or `export {Component}` inline | `export {Component}` block at end of file |
 | `const Component: React.FC = () => ...` | `function Component() { ... }` or `const Component: React.FC = () => ...` (both OK, function declarations preferred) |
 | `index.tsx` as main file in component dir | `PascalCase.tsx` named file (no barrel files) |
-| Import via directory (`./Dashboard`) | Import via file (`#/modules/dashboard/Dashboard`) |
+| Import via directory (`./Dashboard`) | Import via file (`#/shared/dashboard/Dashboard` or `#/operate/components/Dashboard`) |
 | `React.memo()` wrapping | `useMemo` for derived data inside components; `React.memo` only when profiling shows a need |
 | `observer()` from mobx-react-lite (for MobX) | Remove — no MobX observation needed for server state or URL state |
 
@@ -161,7 +161,7 @@ Endpoint mocks live in `shared-test-modules/mock-handlers.ts`. If the mock you n
 
 **Legacy (Operate):** No i18n — all strings are hardcoded in English. There are no `i18next` imports, translation files, or `useTranslation()` calls.
 
-**Target:** The orchestration cluster webapp uses `i18next` + `react-i18next`. When migrating from Operate, wrap user-facing strings in `t('key')` via `useTranslation()` and add translation keys to the appropriate namespace in `src/modules/i18n/`. Check the target's namespace structure before adding keys.
+**Target:** The orchestration cluster webapp uses `i18next` + `react-i18next`. When migrating from Operate, wrap user-facing strings in `t('key')` via `useTranslation()` and add translation keys to the appropriate namespace in `src/shared/i18n/`. Check the target's namespace structure before adding keys.
 
 ## Handling partial migrations
 
@@ -177,7 +177,7 @@ For partial work:
 
 **Porting MobX stores verbatim.** This is the most common mistake. Legacy stores mix server cache, UI state, and derived data in one class. In the target, these concerns are separated. Decompose the store, don't port it.
 
-**Scattering query definitions.** Legacy apps have `use*.query.ts` files next to each feature. The target centralizes all queries in `#/modules/http/queries.ts` and all endpoints in `endpoints.ts`. This makes the full API surface visible in one place.
+**Scattering query definitions.** Legacy apps have `use*.query.ts` files next to each feature. The target centralizes all queries in `#/shared/http/queries.ts` and all endpoints in `#/shared/http/endpoints.ts`. This makes the full API surface visible in one place.
 
 **Using `vi.mock()`.** Legacy tests mock MobX stores and modules with `vi.mock()`. The target mocks HTTP responses with MSW. If you need to control what a component sees, control it at the network level. The only acceptable use of `vi.mock()` is for things like `vi.useFakeTimers()` where there's no HTTP-level alternative.
 

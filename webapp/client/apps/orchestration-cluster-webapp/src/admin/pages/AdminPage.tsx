@@ -6,14 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import i18n from 'i18next';
-import {initReactI18next} from 'react-i18next';
-import en from '#/shared/i18n/locales/en.json';
-
-if (!i18n.isInitialized) {
-	i18n.use(initReactI18next).init({
-		lng: 'en',
-		resources: {en},
-		interpolation: {escapeValue: false},
-	});
-}
+const AdminPage: React.FC = () => {
+	return <h1>Admin</h1>;
+};
+export {AdminPage};

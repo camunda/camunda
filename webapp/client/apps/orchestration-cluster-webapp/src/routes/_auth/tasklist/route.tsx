@@ -7,9 +7,9 @@
  */
 
 import {createFileRoute, Outlet} from '@tanstack/react-router';
-import {getClientConfig} from '#/modules/config/getClientConfig';
-import {ComponentNotAvailableError, ForbiddenError} from '#/modules/errors/errors';
-import {ForbiddenPage} from '#/pages/ForbiddenPage';
+import {getClientConfig} from '#/shared/config/getClientConfig';
+import {ComponentNotAvailableError, ForbiddenError} from '#/shared/errors';
+import {ForbiddenPage} from '#/shared/pages/ForbiddenPage';
 
 export const Route = createFileRoute('/_auth/tasklist')({
 	beforeLoad: () => {

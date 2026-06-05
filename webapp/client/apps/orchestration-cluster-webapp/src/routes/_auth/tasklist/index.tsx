@@ -7,11 +7,8 @@
  */
 
 import {createFileRoute} from '@tanstack/react-router';
+import {TasklistPage} from '#/tasklist/pages/TasklistPage';
 
 export const Route = createFileRoute('/_auth/tasklist/')({
-	component: Tasklist,
+	component: TasklistPage,
 });
-
-function Tasklist() {
-	return <h1>Tasklist</h1>;
-}

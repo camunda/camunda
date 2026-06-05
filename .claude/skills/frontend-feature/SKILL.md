@@ -12,10 +12,15 @@ Reference for building features in `@camunda/orchestration-cluster-webapp` — t
 ## Key rules
 
 - Use Carbon Design System components (`@carbon/react`). Introducing alternative UI libraries fragments the design language and creates maintenance burden.
-- Use `#/` path aliases for all imports — `#/modules/*`, `#/assets/*`, `#/pages/*`. They are resolved by Vite and the relevant tsconfig.
+- Use `#/` path aliases for all imports. Each pod has its own alias; shared infrastructure has one too:
+  - `#/operate/*` → `src/operate/` (Operate pod)
+  - `#/tasklist/*` → `src/tasklist/` (Tasklist pod)
+  - `#/admin/*` → `src/admin/` (Admin pod)
+  - `#/shared/*` → `src/shared/` (cross-pod shared code)
 - Prefer **types** from `@camunda/camunda-api-zod-schemas` to type API responses — trust the API contract. Use Zod schema validation only for **user input** (forms, URL search params, path params). For general validation needs beyond API contracts, use Zod directly.
-- Routes go in `src/routes/` (file-based, TanStack Router); pages go in `src/pages/`; reusable logic goes in `src/modules/`. A module owns one small concern — not an entire page. Keep internal structure flat; cap depth at `modules/<thing>/components/<Component>/`.
-- Follow filename conventions: `use*.ts(x)` for hooks, `*.store.ts` for stores, `PascalCase.tsx` for components, `*.test.ts(x)` for tests. Page components use a `Page` suffix (e.g. `DashboardPage.tsx`); co-located styles and tests mirror the component name (`DashboardPage.module.scss`, `DashboardPage.test.tsx`).
+- Pod areas (`src/operate/`, `src/tasklist/`, `src/admin/`) are **autonomous** — pods decide their own internal folder structure, naming conventions, and patterns. Do not prescribe internal layout for another pod's area.
+- `src/shared/` holds cross-cutting infrastructure (http, auth, config, errors, theme, i18n, tracking, feature flags). Changes here affect all pods; keep shared code focused and small.
+- Route files live in `src/routes/_auth/{pod}/` and are **thin wrappers**: they wire the pod's page component into the router. No feature logic in route files.
 - Use a single `export {}` block at the end of each file — no inline `export` on declarations. Only export symbols that are actually imported by other files. Don't export internal helpers, types used only within the same file, or constants that nothing else references. This keeps the public surface minimal and scannable.
 - YAGNI — don't build abstractions for hypothetical future use. Three similar lines beat a premature wrapper. Wait until a real requirement forces the shape.
 
@@ -31,11 +36,11 @@ Reference for building features in `@camunda/orchestration-cluster-webapp` — t
 
 ## Building a feature
 
-A feature spans three folders in `apps/orchestration-cluster-webapp/src/`:
+A feature lives in the pod's area and plugs into the shared router:
 
-1. **`modules/`** — components, hooks, stores, utilities. Each module owns one focused concern (`http`, `errors`, `theme`, `login`). A module is a reusable building block — not a full feature. Pages compose modules; modules don't mirror pages. Components go in a `components/` subfolder; everything else sits at the module root. Reuse existing modules before creating new ones.
-2. **`pages/`** — one file per page with co-located styles (`*.module.scss`) and tests. Pages are glue: receive data as props, orchestrate module components. No `fetch`, no business logic.
-3. **`routes/`** — TanStack Router file-based routes. File path = URL path. Auth-gated routes go under `_auth/`. The route owns the loader, `pendingComponent`, and `errorComponent`.
+1. **Pod area** (`src/{operate,tasklist,admin}/`) — build your page component and any supporting code here. Internal structure (folder names, conventions, depth) is the pod's decision. Reuse existing shared modules before creating new ones in the pod area.
+2. **`src/shared/`** — for cross-cutting concerns used by more than one pod: http, auth, config, errors, theme, i18n, tracking, feature flags. Keep shared code focused; one module per concern.
+3. **`src/routes/_auth/{pod}/`** — thin route file. File path = URL path. Auth-gated routes go under `_auth/`. The route owns the loader, `pendingComponent`, and `errorComponent`. It imports the page component from the pod area.
 
 Default to a new route for anything a user can navigate to. Skip a route only for transient overlays (toasts, hover cards), non-linkable modals (confirmations), or in-page tabs sharing the same data (encode as `?tab=...` search param).
 
@@ -57,7 +62,7 @@ Uses TanStack Router loaders + TanStack Query. Three tiers in descending order o
 2. **Route loader + `pendingComponent`** — same as above, but fire-and-forget the loader (don't `await`) and add a `pendingComponent` skeleton so the page doesn't freeze.
 3. **Streamed promises + granular skeletons** — `await` the fast query, fire-and-forget the slow one, wrap the slow slice in its own `<Suspense>`.
 
-`queryOptions` constants live in `#/modules/http/queries.ts` — the central query dictionary. API endpoint definitions (URL + method + types) live in `#/modules/http/endpoints.ts`. Do not co-locate queries or endpoints with individual modules; keep them in one place so the full set is visible and discoverable. Error handling defaults to `errorComponent` on the route. 401s are handled centrally by the `request()` wrapper (cache clear + login redirect).
+`queryOptions` constants live in `#/shared/http/queries.ts` — the central query dictionary. API endpoint definitions (URL + method + types) live in `#/shared/http/endpoints.ts`. Do not co-locate queries or endpoints with individual pod areas; keep them in one place so the full set is visible and discoverable. Error handling defaults to `errorComponent` on the route. 401s are handled centrally by the `request()` wrapper (cache clear + login redirect).
 
 ## Before starting a feature
 
@@ -76,7 +81,7 @@ Decision rule: use plain HTML `<form>` for simple forms. Reach for react-final-f
 
 ## Feature flags
 
-When a feature is not ready for users but code needs to merge to `main`, gate it behind a flag. Export a boolean `const` from `src/modules/feature-flags.ts`, `SCREAMING_SNAKE_CASE`, default `false`. Gate at the highest possible level — route, page, or nav item — not deep in modules. Remove flags in a dedicated cleanup PR once the feature ships.
+When a feature is not ready for users but code needs to merge to `main`, gate it behind a flag. Export a boolean `const` from `src/shared/feature-flags.ts`, `SCREAMING_SNAKE_CASE`, default `false`. Gate at the highest possible level — route, page, or nav item — not deep inside a pod area. Remove flags in a dedicated cleanup PR once the feature ships.
 
 ## Local checks before commit
 

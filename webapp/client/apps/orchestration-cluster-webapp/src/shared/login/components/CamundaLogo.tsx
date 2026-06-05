@@ -6,14 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import i18n from 'i18next';
-import {initReactI18next} from 'react-i18next';
-import en from '#/shared/i18n/locales/en.json';
+import CamundaLogoSVG from '#/shared/svg/CamundaLogo';
+import styles from './CamundaLogo.module.scss';
 
-if (!i18n.isInitialized) {
-	i18n.use(initReactI18next).init({
-		lng: 'en',
-		resources: {en},
-		interpolation: {escapeValue: false},
-	});
-}
+const CamundaLogo: React.FC<React.ComponentProps<typeof CamundaLogoSVG>> = () => (
+	<CamundaLogoSVG className={styles['logo']} />
+);
+
+export {CamundaLogo};
