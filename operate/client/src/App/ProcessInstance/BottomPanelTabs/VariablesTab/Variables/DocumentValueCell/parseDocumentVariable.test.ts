@@ -45,6 +45,7 @@ describe('parseDocumentVariable', () => {
         type: 'image',
         contentType: 'image/png',
         size: 109748,
+        isExpired: false,
       },
     });
   });
@@ -61,6 +62,7 @@ describe('parseDocumentVariable', () => {
         type: 'image',
         contentType: 'image/png',
         size: 109748,
+        isExpired: false,
       },
     });
   });
@@ -106,6 +108,7 @@ describe('parseDocumentVariable', () => {
           type: 'pdf',
           contentType: 'application/pdf',
           size: 1000,
+          isExpired: false,
         },
         {
           link: '/v2/documents/doc-124?storeId=in-memory&contentHash=sha256%3Aabc',
@@ -113,6 +116,7 @@ describe('parseDocumentVariable', () => {
           type: 'json',
           contentType: 'application/json',
           size: 500,
+          isExpired: false,
         },
         {
           link: '/v2/documents/doc-125?storeId=in-memory&contentHash=sha256%3Aabc',
@@ -120,6 +124,7 @@ describe('parseDocumentVariable', () => {
           type: 'unknown',
           contentType: 'text/plain',
           size: 200,
+          isExpired: false,
         },
       ],
       isLowerBound: false,
@@ -143,8 +148,60 @@ describe('parseDocumentVariable', () => {
         type: 'image',
         contentType: 'image/png',
         size: 109748,
+        isExpired: false,
       },
     });
+  });
+
+  it('should set isExpired=true when expiresAt is in the past', () => {
+    vi.setSystemTime('2026-06-01T00:00:00.000Z');
+    const value = JSON.stringify(
+      makeDocRef({
+        metadata: {
+          ...makeDocRef().metadata,
+          expiresAt: '2026-05-01T00:00:00.000Z',
+        },
+      }),
+    );
+    const result = parseDocumentVariable(value, false);
+
+    assert(
+      result !== null && result.type === 'single',
+      'Expected a single parsing result.',
+    );
+    expect(result.document.isExpired).toBe(true);
+  });
+
+  it('should set isExpired=false when expiresAt is in the future', () => {
+    vi.setSystemTime('2026-06-01T00:00:00.000Z');
+    const value = JSON.stringify(
+      makeDocRef({
+        metadata: {
+          ...makeDocRef().metadata,
+          expiresAt: '2026-06-04T00:00:00.000Z',
+        },
+      }),
+    );
+    const result = parseDocumentVariable(value, false);
+
+    assert(
+      result !== null && result.type === 'single',
+      'Expected a single parsing result.',
+    );
+    expect(result.document.isExpired).toBe(false);
+  });
+
+  it('should set isExpired=false when expiresAt is null', () => {
+    const value = JSON.stringify(
+      makeDocRef({metadata: {...makeDocRef().metadata, expiresAt: null}}),
+    );
+    const result = parseDocumentVariable(value, false);
+
+    assert(
+      result !== null && result.type === 'single',
+      'Expected a single parsing result.',
+    );
+    expect(result.document.isExpired).toBe(false);
   });
 
   it('should parse a image document type for supported image formats', () => {

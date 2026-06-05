@@ -210,6 +210,62 @@ describe('VariablesTab document variables', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('should show Expired badge and disable buttons for expired documents', async () => {
+    vi.setSystemTime('2026-06-01T00:00:00.000Z');
+    mockSearchVariables().withSuccess(
+      searchResult([
+        createVariable({
+          name: 'myDocument',
+          value: JSON.stringify(
+            makeDocumentRef({
+              metadata: {expiresAt: '2026-05-01T00:00:00.000Z'},
+            }),
+          ),
+        }),
+      ]),
+    );
+
+    render(<VariablesTab />, {wrapper: getWrapper()});
+    await screen.findByTestId('variables-list');
+
+    const variableRow = within(screen.getByTestId('variable-myDocument'));
+    expect(variableRow.getByText('Expired')).toBeInTheDocument();
+    expect(
+      variableRow.getByLabelText('Download document for variable myDocument'),
+    ).toBeDisabled();
+    expect(
+      variableRow.getByLabelText('Preview document for variable myDocument'),
+    ).toBeDisabled();
+  });
+
+  it('should not show Expired badge for non-expired documents', async () => {
+    vi.setSystemTime('2026-06-01T00:00:00.000Z');
+    mockSearchVariables().withSuccess(
+      searchResult([
+        createVariable({
+          name: 'myDocument',
+          value: JSON.stringify(
+            makeDocumentRef({
+              metadata: {expiresAt: '2026-06-04T00:00:00.000Z'},
+            }),
+          ),
+        }),
+      ]),
+    );
+
+    render(<VariablesTab />, {wrapper: getWrapper()});
+    await screen.findByTestId('variables-list');
+
+    const variableRow = within(screen.getByTestId('variable-myDocument'));
+    expect(variableRow.queryByText('Expired')).not.toBeInTheDocument();
+    expect(
+      variableRow.getByLabelText('Download document for variable myDocument'),
+    ).toBeEnabled();
+    expect(
+      variableRow.getByLabelText('Preview document for variable myDocument'),
+    ).toBeEnabled();
+  });
+
   it('should not render document-related buttons for regular variables', async () => {
     mockSearchVariables().withSuccess(searchResult([createVariable()]));
 

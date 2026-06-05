@@ -20,6 +20,7 @@ describe('<DocumentValueCell />', () => {
         type: 'image',
         contentType: 'image/png',
         size: 112640,
+        isExpired: false,
       },
     };
 
@@ -39,6 +40,7 @@ describe('<DocumentValueCell />', () => {
         type: 'unknown',
         contentType: 'application/octet-stream',
         size: 1000,
+        isExpired: false,
       },
     };
 
@@ -59,6 +61,7 @@ describe('<DocumentValueCell />', () => {
           type: 'unknown',
           contentType: 'application/octet-stream',
           size: 1000,
+          isExpired: false,
         },
         {
           link: '/v2/documents/doc-2',
@@ -66,6 +69,7 @@ describe('<DocumentValueCell />', () => {
           type: 'unknown',
           contentType: 'application/octet-stream',
           size: 2000,
+          isExpired: false,
         },
         {
           link: '/v2/documents/doc-3',
@@ -73,6 +77,7 @@ describe('<DocumentValueCell />', () => {
           type: 'unknown',
           contentType: 'application/octet-stream',
           size: 3000,
+          isExpired: false,
         },
       ],
       isLowerBound: false,
@@ -93,6 +98,7 @@ describe('<DocumentValueCell />', () => {
           type: 'unknown',
           contentType: 'application/octet-stream',
           size: 1000,
+          isExpired: false,
         },
         {
           link: '/v2/documents/doc-2',
@@ -100,6 +106,7 @@ describe('<DocumentValueCell />', () => {
           type: 'unknown',
           contentType: 'application/octet-stream',
           size: 2000,
+          isExpired: false,
         },
       ],
       isLowerBound: true,
@@ -119,11 +126,48 @@ describe('<DocumentValueCell />', () => {
         type: 'unknown',
         contentType: 'application/octet-stream',
         size: 5000,
+        isExpired: false,
       },
     };
 
     render(<DocumentValueCell result={result} />);
 
     expect(screen.getByTitle('my-important-file.pdf')).toBeInTheDocument();
+  });
+
+  it('should render an expired tag for an expired documents', () => {
+    const result: DocumentParseResult = {
+      type: 'single',
+      document: {
+        link: '/v2/documents/doc',
+        fileName: 'old.pdf',
+        type: 'pdf',
+        contentType: 'application/pdf',
+        size: 1024,
+        isExpired: true,
+      },
+    };
+
+    render(<DocumentValueCell result={result} />);
+
+    expect(screen.getByText('Expired')).toBeInTheDocument();
+  });
+
+  it('should not render an expired tag for a non-expired documents', () => {
+    const result: DocumentParseResult = {
+      type: 'single',
+      document: {
+        link: '/v2/documents/doc',
+        fileName: 'current.pdf',
+        type: 'pdf',
+        contentType: 'application/pdf',
+        size: 1024,
+        isExpired: false,
+      },
+    };
+
+    render(<DocumentValueCell result={result} />);
+
+    expect(screen.queryByText('Expired')).not.toBeInTheDocument();
   });
 });

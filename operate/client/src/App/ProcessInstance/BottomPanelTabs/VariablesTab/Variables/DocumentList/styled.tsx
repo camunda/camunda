@@ -33,6 +33,7 @@ const DocumentInfo = styled.div`
   min-width: 0;
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: var(--cds-spacing-01);
 `;
 

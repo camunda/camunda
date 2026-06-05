@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {Tag} from '@carbon/react';
 import {Document} from '@carbon/react/icons';
 import {
   toHumanReadableBytes,
@@ -26,7 +27,7 @@ type Props = {
 
 const DocumentValueCell: React.FC<Props> = ({result}) => {
   if (result.type === 'single') {
-    const {fileName, size} = result.document;
+    const {fileName, size, isExpired} = result.document;
     return (
       <DocumentCellContainer data-testid="document-value-cell">
         <DocumentIcon>
@@ -36,6 +37,11 @@ const DocumentValueCell: React.FC<Props> = ({result}) => {
           {middleTruncate(fileName)}
         </DocumentFileName>
         <DocumentSize>{toHumanReadableBytes(size)}</DocumentSize>
+        {isExpired && (
+          <Tag type="red" size="sm">
+            Expired
+          </Tag>
+        )}
       </DocumentCellContainer>
     );
   }

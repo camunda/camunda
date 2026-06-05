@@ -27,6 +27,7 @@ const imageDocument: DocumentInfo = {
   type: 'image',
   contentType: 'image/png',
   size: 1024,
+  isExpired: false,
 };
 
 const pdfDocument: DocumentInfo = {
@@ -35,6 +36,7 @@ const pdfDocument: DocumentInfo = {
   type: 'pdf',
   contentType: 'application/pdf',
   size: 2048,
+  isExpired: false,
 };
 
 const jsonDocument: DocumentInfo = {
@@ -43,6 +45,7 @@ const jsonDocument: DocumentInfo = {
   type: 'json',
   contentType: 'application/json',
   size: 256,
+  isExpired: false,
 };
 
 const unknownDocument: DocumentInfo = {
@@ -51,6 +54,7 @@ const unknownDocument: DocumentInfo = {
   type: 'unknown',
   contentType: 'application/zip',
   size: 4096,
+  isExpired: false,
 };
 
 describe('<PreviewDocumentButton />', () => {
@@ -186,6 +190,25 @@ describe('<PreviewDocumentButton />', () => {
     ).toBeInTheDocument();
   });
 
+  it('should render a disabled preview button with expired tooltip when document is expired', () => {
+    const expiredDocument: DocumentInfo = {
+      link: '/v2/documents/pdf',
+      fileName: 'expired.pdf',
+      type: 'pdf',
+      contentType: 'application/pdf',
+      size: 1024,
+      isExpired: true,
+    };
+
+    render(
+      <PreviewDocumentButton document={expiredDocument} variableName="myDoc" />,
+    );
+
+    const button = screen.getByLabelText('Preview document for variable myDoc');
+    expect(button).toBeDisabled();
+    expect(screen.getByText('Document has expired')).toBeInTheDocument();
+  });
+
   it('should render a disabled preview button when document has no link', () => {
     const noLinkDocument: DocumentInfo = {
       link: null,
@@ -193,6 +216,7 @@ describe('<PreviewDocumentButton />', () => {
       type: 'pdf',
       contentType: 'application/pdf',
       size: 1024,
+      isExpired: false,
     };
 
     render(
