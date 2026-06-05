@@ -379,8 +379,26 @@ jobs:
       - name: Ensure Keycloak bootstrap env for smoketest
         run: |
           compose_file=".github/actions/compose/docker-compose.smoketest.yml"
-          if grep -q "image: bitnami/keycloak:" "$compose_file" && ! grep -q "KC_BOOTSTRAP_ADMIN_PASSWORD" "$compose_file"; then
-            sed -i '/KEYCLOAK_ADMIN_PASSWORD:/a\      KC_BOOTSTRAP_ADMIN_USERNAME: admin\n      KC_BOOTSTRAP_ADMIN_PASSWORD: admin' "$compose_file"
+          if grep -q "image: bitnami/keycloak:" "$compose_file" && \
+            ( ! grep -q "KC_BOOTSTRAP_ADMIN_USERNAME" "$compose_file" || ! grep -q "KC_BOOTSTRAP_ADMIN_PASSWORD" "$compose_file" ); then
+            awk '
+              !patched && /KEYCLOAK_ADMIN_PASSWORD:/ {
+                match($0, /^[[:space:]]*/)
+                indent = substr($0, 1, RLENGTH)
+                print
+                print indent "KC_BOOTSTRAP_ADMIN_USERNAME: admin"
+                print indent "KC_BOOTSTRAP_ADMIN_PASSWORD: admin"
+                patched=1
+                next
+              }
+              { print }
+              END { if (!patched) exit 2 }
+            ' "$compose_file" > "$compose_file.tmp" || {
+              echo "::error::Failed to find KEYCLOAK_ADMIN_PASSWORD in $compose_file"
+              rm -f "$compose_file.tmp"
+              exit 1
+            }
+            mv "$compose_file.tmp" "$compose_file"
             grep -q "KC_BOOTSTRAP_ADMIN_PASSWORD" "$compose_file" || {
               echo "::error::Failed to patch Keycloak bootstrap env in $compose_file"
               exit 1
