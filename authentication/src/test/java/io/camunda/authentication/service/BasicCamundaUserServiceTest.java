@@ -16,15 +16,11 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.entities.UserEntity;
-import io.camunda.search.query.SearchQueryResult;
-import io.camunda.search.query.TenantQuery;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.reader.ResourceAccess;
 import io.camunda.security.reader.ResourceAccessProvider;
-import io.camunda.service.TenantServices;
 import io.camunda.service.UserServices;
 import io.camunda.service.registry.DefaultServiceRegistry;
 import java.util.List;
@@ -37,7 +33,6 @@ public class BasicCamundaUserServiceTest {
 
   @Mock private CamundaAuthenticationProvider authenticationProvider;
   @Mock private ResourceAccessProvider resourceAccessProvider;
-  @Mock private TenantServices tenantServices;
   @Mock private UserServices userServices;
   @Mock private CamundaAuthentication authentication;
   private BasicCamundaUserService basicCamundaUserService;
@@ -60,8 +55,7 @@ public class BasicCamundaUserServiceTest {
     when(userServices.getUser(eq("foo@bar.com"), any())).thenReturn(user);
 
     final var serviceRegistry =
-        DefaultServiceRegistry.of(
-            b -> b.tenantServices("default", tenantServices).userServices("default", userServices));
+        DefaultServiceRegistry.of(b -> b.userServices("default", userServices));
 
     basicCamundaUserService =
         new BasicCamundaUserService(
@@ -103,21 +97,15 @@ public class BasicCamundaUserServiceTest {
   }
 
   @Test
-  void shouldIncludeTenants() {
+  void shouldIncludeTenantIds() {
     // given
     when(authentication.authenticatedTenantIds()).thenReturn(List.of("tenant1", "tenant2"));
-    when(tenantServices.search(any(TenantQuery.class), any()))
-        .thenReturn(
-            SearchQueryResult.of(
-                new TenantEntity(1L, "tenant1", "name", "desc"),
-                new TenantEntity(2L, "tenant2", "name", "desc")));
 
     // when
     final var currentUser = basicCamundaUserService.getCurrentUser();
 
     // then
-    assertThat(currentUser.tenants().stream().map(TenantEntity::tenantId).toList())
-        .containsExactlyInAnyOrder("tenant1", "tenant2");
+    assertThat(currentUser.tenants()).containsExactlyInAnyOrder("tenant1", "tenant2");
   }
 
   @Test

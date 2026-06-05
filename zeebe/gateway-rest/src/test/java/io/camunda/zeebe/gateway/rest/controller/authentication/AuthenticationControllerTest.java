@@ -7,17 +7,23 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.authentication;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.authentication.entity.CamundaUserDTO;
-import io.camunda.authentication.service.CamundaUserService;
 import io.camunda.search.entities.TenantEntity;
+import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.query.TenantQuery;
+import io.camunda.security.api.model.user.CamundaUserDTO;
+import io.camunda.security.core.port.in.CamundaUserPort;
+import io.camunda.service.TenantServices;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
@@ -28,7 +34,8 @@ import org.springframework.test.json.JsonCompareMode;
 @ActiveProfiles("consolidated-auth")
 public class AuthenticationControllerTest extends RestControllerTest {
 
-  @MockitoBean private CamundaUserService camundaUserService;
+  @MockitoBean private CamundaUserPort camundaUserPort;
+  @MockitoBean private ServiceRegistry serviceRegistry;
 
   @Test
   void getAuthorizationShouldReturnOk() {
@@ -39,15 +46,20 @@ public class AuthenticationControllerTest extends RestControllerTest {
             "camundaUSer",
             "camunda.user@email.com",
             List.of("test application"),
-            List.of(
-                new TenantEntity(100L, "testTenantId", "testTenantNem", "testTenantDescription")),
+            List.of("testTenantId"),
             List.of("test group"),
             List.of("test role"),
             null,
             Map.of(),
             true);
 
-    when(camundaUserService.getCurrentUser()).thenReturn(camundaUserDTO);
+    final TenantServices tenantServices = Mockito.mock(TenantServices.class);
+    when(serviceRegistry.tenantServices(any())).thenReturn(tenantServices);
+    when(camundaUserPort.getCurrentUser()).thenReturn(camundaUserDTO);
+    when(tenantServices.search(any(TenantQuery.class), any()))
+        .thenReturn(
+            SearchQueryResult.of(
+                new TenantEntity(100L, "testTenantId", "testTenantName", "testTenantDescription")));
 
     // when
     webClient
@@ -65,7 +77,7 @@ public class AuthenticationControllerTest extends RestControllerTest {
                   "username": "camundaUSer",
                   "email": "camunda.user@email.com",
                   "authorizedComponents": ["test application"],
-                  "tenants": [{"tenantId":"testTenantId","name":"testTenantNem","description":"testTenantDescription"}],
+                  "tenants": [{"tenantId":"testTenantId","name":"testTenantName","description":"testTenantDescription"}],
                   "groups": ["test group"],
                   "roles": ["test role"],
                   "salesPlanType": null,
@@ -75,6 +87,6 @@ public class AuthenticationControllerTest extends RestControllerTest {
             JsonCompareMode.STRICT);
 
     // then
-    verify(camundaUserService, times(1)).getCurrentUser();
+    verify(camundaUserPort, times(1)).getCurrentUser();
   }
 }

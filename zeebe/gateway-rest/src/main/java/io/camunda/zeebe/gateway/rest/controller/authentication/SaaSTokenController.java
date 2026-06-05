@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.authentication;
 
-import io.camunda.authentication.service.CamundaUserService;
 import io.camunda.security.ConditionalOnSaaSConfigured;
+import io.camunda.security.core.port.in.CamundaUserPort;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
@@ -24,9 +24,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @ConditionalOnSecondaryStorageEnabled
 @RequestMapping("/v2/authentication")
 public class SaaSTokenController {
-  private final CamundaUserService camundaUserService;
+  private final CamundaUserPort camundaUserService;
 
-  public SaaSTokenController(final CamundaUserService camundaUserService) {
+  public SaaSTokenController(final CamundaUserPort camundaUserService) {
     this.camundaUserService = camundaUserService;
   }
 
