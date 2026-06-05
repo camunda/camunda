@@ -115,6 +115,8 @@ public class RestGatewayPaths {
   private static final String URL_VARIABLE = REST_API_PATH + "/variables/%s";
   private static final String URL_AUDIT_LOG_GET = REST_API_PATH + "/audit-logs/%s";
   private static final String URL_AUDIT_LOG_SEARCH = REST_API_PATH + "/audit-logs/search";
+  private static final String URL_ELEMENT_INSTANCE_WAIT_STATE_SEARCH =
+      REST_API_PATH + "/element-instances/wait-states/search";
   private static final String URL_PROCESS_DEFINITION_INSTANCE_STATISTICS =
       REST_API_PATH + "/process-definitions/statistics/process-instances";
   private static final String URL_PROCESS_DEFINITION_INSTANCE_VERSION_STATISTICS =
@@ -435,6 +437,10 @@ public class RestGatewayPaths {
 
   public static String getAuditLogSearchUrl() {
     return String.format(URL_AUDIT_LOG_SEARCH);
+  }
+
+  public static String getElementInstanceWaitStateSearchUrl() {
+    return URL_ELEMENT_INSTANCE_WAIT_STATE_SEARCH;
   }
 
   public static String getUserTaskAuditLogSearchUrl(final long userTaskKey) {

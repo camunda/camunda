@@ -470,6 +470,11 @@ public class RestGatewayService {
     registerPost(RestGatewayPaths.getAuditLogSearchUrl(), response);
   }
 
+  public void onSearchElementInstanceWaitStatesRequest(
+      final io.camunda.client.protocol.rest.ElementInstanceWaitStateQueryResult response) {
+    registerPost(RestGatewayPaths.getElementInstanceWaitStateSearchUrl(), response);
+  }
+
   public void onSearchUserTaskAuditLogRequest(
       final long userTaskKey, final AuditLogSearchQueryResult response) {
     registerPost(RestGatewayPaths.getUserTaskAuditLogSearchUrl(userTaskKey), response);

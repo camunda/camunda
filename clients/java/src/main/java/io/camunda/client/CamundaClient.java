@@ -155,6 +155,7 @@ import io.camunda.client.api.search.request.DecisionDefinitionSearchRequest;
 import io.camunda.client.api.search.request.DecisionInstanceSearchRequest;
 import io.camunda.client.api.search.request.DecisionRequirementsSearchRequest;
 import io.camunda.client.api.search.request.ElementInstanceSearchRequest;
+import io.camunda.client.api.search.request.ElementInstanceWaitStateSearchRequest;
 import io.camunda.client.api.search.request.GlobalTaskListenerSearchRequest;
 import io.camunda.client.api.search.request.GroupsByRoleSearchRequest;
 import io.camunda.client.api.search.request.GroupsByTenantSearchRequest;
@@ -3264,6 +3265,21 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the incidents by element instance search request
    */
   AuditLogSearchRequest newAuditLogSearchRequest();
+
+  /**
+   * Executes a search request to query element instance wait states.
+   *
+   * <pre>
+   *   camundaClient
+   *    .newElementInstanceWaitStateSearchRequest()
+   *    .filter((f) -> f.processInstanceKey(myProcessInstanceKey))
+   *    .page((p) -> p.limit(100))
+   *    .send();
+   * </pre>
+   *
+   * @return a builder for the element instance wait state search request
+   */
+  ElementInstanceWaitStateSearchRequest newElementInstanceWaitStateSearchRequest();
 
   /**
    * Executes a search request to query audit logs related to a user task.

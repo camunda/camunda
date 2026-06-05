@@ -33,6 +33,7 @@ import io.camunda.client.api.search.response.DecisionDefinition;
 import io.camunda.client.api.search.response.DecisionInstance;
 import io.camunda.client.api.search.response.DecisionRequirements;
 import io.camunda.client.api.search.response.ElementInstance;
+import io.camunda.client.api.search.response.ElementInstanceWaitStateResult;
 import io.camunda.client.api.search.response.GlobalTaskListener;
 import io.camunda.client.api.search.response.Group;
 import io.camunda.client.api.search.response.GroupUser;
@@ -460,6 +461,15 @@ public final class SearchResponseMapper {
     final SearchResponsePage page = toSearchResponsePage(response.getPage());
     final List<AuditLogResult> instances =
         toSearchResponseInstances(response.getItems(), AuditLogResultImpl::new);
+    return new SearchResponseImpl<>(instances, page);
+  }
+
+  public static SearchResponse<ElementInstanceWaitStateResult>
+      toElementInstanceWaitStateSearchResponse(
+          final io.camunda.client.protocol.rest.ElementInstanceWaitStateQueryResult response) {
+    final SearchResponsePage page = toSearchResponsePage(response.getPage());
+    final List<ElementInstanceWaitStateResult> instances =
+        toSearchResponseInstances(response.getItems(), ElementInstanceWaitStateResultImpl::new);
     return new SearchResponseImpl<>(instances, page);
   }
 

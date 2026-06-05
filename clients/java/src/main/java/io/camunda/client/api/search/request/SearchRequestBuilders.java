@@ -543,6 +543,15 @@ public final class SearchRequestBuilders {
     return filter;
   }
 
+  public static io.camunda.client.api.search.filter.ElementInstanceWaitStateFilter
+      elementInstanceWaitStateFilter(
+          final Consumer<io.camunda.client.api.search.filter.ElementInstanceWaitStateFilter> fn) {
+    final io.camunda.client.api.search.filter.ElementInstanceWaitStateFilter filter =
+        new io.camunda.client.impl.search.filter.ElementInstanceWaitStateFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
   public static AuditLogSort auditLogSort(final Consumer<AuditLogSort> fn) {
     final AuditLogSort sort = new AuditLogSortImpl();
     fn.accept(sort);
