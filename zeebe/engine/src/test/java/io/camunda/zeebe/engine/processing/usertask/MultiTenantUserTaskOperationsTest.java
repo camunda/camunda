@@ -129,7 +129,7 @@ public class MultiTenantUserTaskOperationsTest {
 
     // when
     final var claimingRecord =
-        ENGINE.userTask().ofInstance(processInstanceKey).withAssignee("foo").claim(username);
+        ENGINE.userTask().ofInstance(processInstanceKey).withAssignee(username).claim(username);
 
     // then
     Assertions.assertThat(claimingRecord)
@@ -148,7 +148,7 @@ public class MultiTenantUserTaskOperationsTest {
             recordValue ->
                 Assertions.assertThat(recordValue)
                     .hasAction("claim")
-                    .hasAssignee("foo")
+                    .hasAssignee(username)
                     .hasTenantId(tenantId));
   }
 
