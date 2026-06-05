@@ -148,7 +148,7 @@ public class SecurityHeadersOidcIT extends SecurityHeadersBaseIT {
             .header(HttpHeaders.AUTHORIZATION, BEARER_PREFIX + bearerToken)
             .build();
 
-    return HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+    return httpClient.send(request, HttpResponse.BodyHandlers.ofString());
   }
 
   @Override
