@@ -12,6 +12,8 @@ plugins {
 val versionCatalog = extensions.getByType<VersionCatalogsExtension>().named("libs")
 val esJavaVersion =
     versionCatalog.findVersion("co-elastic-clients-elasticsearch-java").get().requiredVersion
+val httpcore5Version =
+    versionCatalog.findVersion("org-apache-httpcomponents-core5-httpcore5").get().requiredVersion
 val includePerformanceTests = providers.gradleProperty("includePerformanceTests").isPresent
 val includeStraceTests = providers.gradleProperty("includeStraceTests").isPresent
 
@@ -43,9 +45,13 @@ dependencies {
 }
 
 // Spring Boot 4 BOM uses strictly constraints for elasticsearch-java (upgrades 8.x → 9.x).
-// Force the POM-pinned 8.x version to win over enforced BOM constraints.
+// zeebe-test-container forces httpcore5:5.3.x via constraint, which breaks opensearch-java 3.5+.
+// Force both to the POM-pinned versions so they win over external forced constraints.
 configurations.all {
-    resolutionStrategy.force("co.elastic.clients:elasticsearch-java:$esJavaVersion")
+    resolutionStrategy.force(
+        "co.elastic.clients:elasticsearch-java:$esJavaVersion",
+        "org.apache.httpcomponents.core5:httpcore5:$httpcore5Version",
+    )
     // server-conventions adds log4j-slf4j2-impl (SLF4J → Log4j) globally.
     // spring-boot-starter-logging pulls in logback and log4j-to-slf4j (Log4j → SLF4J),
     // creating a circular bridge. Exclude it globally; modules that need Logback for
