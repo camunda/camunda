@@ -15,6 +15,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.sql.DataSource;
 import liquibase.exception.LiquibaseException;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Value;
 
@@ -24,6 +26,7 @@ import org.springframework.beans.factory.annotation.Value;
  * (e.g. Oracle).
  */
 public class ScriptBasedSchemaManager implements RdbmsSchemaManagerRegistry, InitializingBean {
+  private static final Logger LOGGER = LoggerFactory.getLogger(ScriptBasedSchemaManager.class);
 
   private static final ConcurrentHashMap<String, String> SCRIPT_CACHE = new ConcurrentHashMap<>();
 
@@ -77,7 +80,11 @@ public class ScriptBasedSchemaManager implements RdbmsSchemaManagerRegistry, Ini
       for (final String stmt : sql.split(";")) {
         final String trimmed = stmt.strip();
         if (!trimmed.isEmpty()) {
+          LOGGER.info(
+              "Executing DDL statement: {}...",
+              trimmed.substring(0, Math.min(trimmed.length(), 50)));
           conn.createStatement().execute(trimmed);
+          conn.commit();
         }
       }
     }
