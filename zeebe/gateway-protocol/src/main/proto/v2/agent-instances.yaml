@@ -895,12 +895,15 @@ components:
         - elementInstanceKey
         - jobKey
         - jobLease
+        - iteration
         - role
         - content
         - toolCalls
         - isContentTruncated
+        - metrics
         - commitStatus
         - producedAt
+        - metadata
       properties:
         historyItemKey:
           description: The unique key for this history item. Stable and sortable by creation order.
@@ -990,6 +993,9 @@ components:
       type: object
       required:
         - contentType
+        - text
+        - documentReference
+        - object
         - isTruncated
       properties:
         contentType:
@@ -1030,6 +1036,8 @@ components:
       required:
         - toolCallId
         - toolName
+        - elementId
+        - arguments
       properties:
         toolCallId:
           description: The LLM-assigned tool call ID. Correlates ASSISTANT items to their matching TOOL_RESULT items.
