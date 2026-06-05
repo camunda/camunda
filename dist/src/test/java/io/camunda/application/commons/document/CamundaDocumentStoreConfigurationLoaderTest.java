@@ -86,7 +86,7 @@ class CamundaDocumentStoreConfigurationLoaderTest {
   }
 
   @Test
-  void shouldUseLegacyConfigurationAsFallback() {
+  void shouldLoadLegacyOnlyStoreDefinitions() {
     // given
     final Camunda camunda = new Camunda();
     final var loader = new CamundaDocumentStoreConfigurationLoader(camunda);
@@ -100,7 +100,11 @@ class CamundaDocumentStoreConfigurationLoaderTest {
       final var configuration = loader.loadConfiguration();
 
       // then
-      assertThat(configuration.defaultDocumentStoreId()).isEqualTo("legacy");
+      // Root-level legacy fallback (defaultDocumentStoreId, threadPoolSize) is handled by
+      // Document.getDefaultStoreId() / getThreadPoolSize() via UnifiedConfigurationHelper, which
+      // requires a Spring environment — in this non-Spring unit test the helper returns null.
+      assertThat(configuration.defaultDocumentStoreId()).isNull();
+      assertThat(configuration.threadPoolSize()).isNull();
       assertThat(configuration.documentStores())
           .extracting(DocumentStoreConfigurationRecord::id)
           .containsExactly("legacy");
@@ -111,6 +115,25 @@ class CamundaDocumentStoreConfigurationLoaderTest {
       System.clearProperty("DOCUMENT_STORE_LEGACY_CLASS");
       System.clearProperty("DOCUMENT_STORE_LEGACY_BUCKET");
     }
+  }
+
+  @Test
+  void shouldOmitNullUnifiedFieldsFromStoreProperties() {
+    // given — partial store: only bucketName set, all other fields null
+    final Camunda camunda = new Camunda();
+    final Document.AwsStore awsStore = new Document.AwsStore();
+    awsStore.setBucketName("my-bucket");
+    camunda.getDocument().getAws().put("s3", awsStore);
+
+    final var loader = new CamundaDocumentStoreConfigurationLoader(camunda);
+
+    // when
+    final var configuration = loader.loadConfiguration();
+
+    // then — null fields must not appear in the properties map
+    assertThat(store("s3", configuration.documentStores()).properties())
+        .containsOnlyKeys("BUCKET")
+        .containsEntry("BUCKET", "my-bucket");
   }
 
   @Test

@@ -9,6 +9,8 @@ package io.camunda.application.commons.document;
 
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.Document;
+import io.camunda.configuration.UnifiedConfigurationHelper;
+import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import io.camunda.document.api.DocumentStoreConfiguration;
 import io.camunda.document.api.DocumentStoreConfiguration.DocumentStoreConfigurationRecord;
 import io.camunda.document.api.DocumentStoreProvider;
@@ -22,7 +24,7 @@ import io.camunda.document.store.localstorage.LocalStorageDocumentStoreProvider;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
+import java.util.Set;
 
 /**
  * Loads document store configuration from unified properties under {@code camunda.document.*}.
@@ -32,6 +34,13 @@ import java.util.Optional;
  */
 public final class CamundaDocumentStoreConfigurationLoader
     implements DocumentStoreConfigurationLoader {
+
+  private static final String PREFIX = "camunda.document.";
+  private static final String LEGACY_STORE_PREFIX = "DOCUMENT_STORE_";
+  private static final String AWS = "aws";
+  private static final String GCP = "gcp";
+  private static final String AZURE = "azure";
+  private static final String LOCAL = "local";
 
   private final Document document;
   private final EnvironmentConfigurationLoader legacyConfigurationLoader;
@@ -55,45 +64,51 @@ public final class CamundaDocumentStoreConfigurationLoader
     document.getInMemory().forEach((id, store) -> storesById.put(id, toInMemoryStore(id, store)));
 
     return new DocumentStoreConfiguration(
-        Optional.ofNullable(document.getDefaultStoreId())
-            .orElse(legacyConfiguration.defaultDocumentStoreId()),
-        Optional.ofNullable(document.getThreadPoolSize())
-            .orElse(legacyConfiguration.threadPoolSize()),
+        document.getDefaultStoreId(),
+        document.getThreadPoolSize(),
         List.copyOf(storesById.values()));
   }
 
   private static DocumentStoreConfigurationRecord toAwsStore(
       final String storeId, final Document.AwsStore store) {
     final Map<String, String> properties = new LinkedHashMap<>();
-    putIfPresent(properties, "BUCKET", store.getBucketName());
-    putIfPresent(properties, "BUCKET_PATH", store.getBucketPath());
-    putIfPresent(properties, "REGION", store.getRegion());
-    putIfPresent(properties, "BUCKET_TTL", store.getBucketTtl());
+    putResolved(properties, AWS, storeId, "bucket-name", "BUCKET", store.getBucketName());
+    putResolved(properties, AWS, storeId, "bucket-path", "BUCKET_PATH", store.getBucketPath());
+    putResolved(properties, AWS, storeId, "region", "REGION", store.getRegion());
+    putResolved(properties, AWS, storeId, "bucket-ttl", "BUCKET_TTL", store.getBucketTtl());
     return toRecord(storeId, AwsDocumentStoreProvider.class, properties);
   }
 
   private static DocumentStoreConfigurationRecord toGcpStore(
       final String storeId, final Document.GcpStore store) {
     final Map<String, String> properties = new LinkedHashMap<>();
-    putIfPresent(properties, "BUCKET", store.getBucketName());
-    putIfPresent(properties, "PREFIX", store.getPrefix());
+    putResolved(properties, GCP, storeId, "bucket-name", "BUCKET", store.getBucketName());
+    putResolved(properties, GCP, storeId, "prefix", "PREFIX", store.getPrefix());
     return toRecord(storeId, GcpDocumentStoreProvider.class, properties);
   }
 
   private static DocumentStoreConfigurationRecord toAzureStore(
       final String storeId, final Document.AzureStore store) {
     final Map<String, String> properties = new LinkedHashMap<>();
-    putIfPresent(properties, "CONTAINER", store.getContainerName());
-    putIfPresent(properties, "CONTAINER_PATH", store.getContainerPath());
-    putIfPresent(properties, "ENDPOINT", store.getEndpoint());
-    putIfPresent(properties, "CONNECTION_STRING", store.getConnectionString());
+    putResolved(
+        properties, AZURE, storeId, "container-name", "CONTAINER", store.getContainerName());
+    putResolved(
+        properties, AZURE, storeId, "container-path", "CONTAINER_PATH", store.getContainerPath());
+    putResolved(properties, AZURE, storeId, "endpoint", "ENDPOINT", store.getEndpoint());
+    putResolved(
+        properties,
+        AZURE,
+        storeId,
+        "connection-string",
+        "CONNECTION_STRING",
+        store.getConnectionString());
     return toRecord(storeId, AzureBlobDocumentStoreProvider.class, properties);
   }
 
   private static DocumentStoreConfigurationRecord toLocalStore(
       final String storeId, final Document.LocalStore store) {
     final Map<String, String> properties = new LinkedHashMap<>();
-    putIfPresent(properties, "PATH", store.getPath());
+    putResolved(properties, LOCAL, storeId, "path", "PATH", store.getPath());
     return toRecord(storeId, LocalStorageDocumentStoreProvider.class, properties);
   }
 
@@ -102,10 +117,22 @@ public final class CamundaDocumentStoreConfigurationLoader
     return toRecord(storeId, InMemoryDocumentStoreProvider.class, Map.of());
   }
 
-  private static void putIfPresent(
-      final Map<String, String> properties, final String key, final Object value) {
-    if (value != null) {
-      properties.put(key, String.valueOf(value));
+  private static void putResolved(
+      final Map<String, String> properties,
+      final String storeType,
+      final String storeId,
+      final String unifiedField,
+      final String propertyKey,
+      final Object unifiedValue) {
+    final String resolved =
+        UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
+            PREFIX + storeType + "." + storeId + "." + unifiedField,
+            unifiedValue == null ? null : String.valueOf(unifiedValue),
+            String.class,
+            BackwardsCompatibilityMode.SUPPORTED,
+            Set.of(LEGACY_STORE_PREFIX + storeId.toUpperCase() + "_" + propertyKey));
+    if (resolved != null) {
+      properties.put(propertyKey, resolved);
     }
   }
 

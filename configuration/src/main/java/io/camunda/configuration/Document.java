@@ -7,8 +7,10 @@
  */
 package io.camunda.configuration;
 
+import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 /**
@@ -53,7 +55,12 @@ public class Document {
   @NestedConfigurationProperty private Map<String, InMemoryStore> inMemory = new LinkedHashMap<>();
 
   public String getDefaultStoreId() {
-    return defaultStoreId;
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
+        "camunda.document.default-store-id",
+        defaultStoreId,
+        String.class,
+        BackwardsCompatibilityMode.SUPPORTED,
+        Set.of("DOCUMENT_DEFAULT_STORE_ID"));
   }
 
   public void setDefaultStoreId(final String defaultStoreId) {
@@ -61,7 +68,12 @@ public class Document {
   }
 
   public Integer getThreadPoolSize() {
-    return threadPoolSize;
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
+        "camunda.document.thread-pool-size",
+        threadPoolSize,
+        Integer.class,
+        BackwardsCompatibilityMode.SUPPORTED,
+        Set.of("DOCUMENT_THREAD_POOL_SIZE"));
   }
 
   public void setThreadPoolSize(final Integer threadPoolSize) {
