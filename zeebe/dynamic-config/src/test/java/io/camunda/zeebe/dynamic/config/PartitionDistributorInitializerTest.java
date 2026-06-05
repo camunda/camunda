@@ -14,9 +14,9 @@ import io.atomix.primitive.partition.PartitionId;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
 import io.camunda.zeebe.dynamic.config.util.RoundRobinPartitionDistributor;
 import io.camunda.zeebe.dynamic.config.util.ZoneAwarePartitionDistributor;
-import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -41,8 +41,7 @@ final class PartitionDistributorInitializerTest {
         ClusterConfiguration.init()
             .setPartitionDistributorConfig(new PartitionDistributorConfig.RoundRobinConfig());
     final var initializer =
-        new PartitionDistributorInitializer(
-            staticConfigWith(new RoundRobinPartitionDistributor()));
+        new PartitionDistributorInitializer(staticConfigWith(new RoundRobinPartitionDistributor()));
 
     // when
     final var result = initializer.modify(config).join();
@@ -56,8 +55,7 @@ final class PartitionDistributorInitializerTest {
     // given
     final var config = ClusterConfiguration.init();
     final var initializer =
-        new PartitionDistributorInitializer(
-            staticConfigWith(new RoundRobinPartitionDistributor()));
+        new PartitionDistributorInitializer(staticConfigWith(new RoundRobinPartitionDistributor()));
 
     // when
     final var result = initializer.modify(config).join();
@@ -70,8 +68,7 @@ final class PartitionDistributorInitializerTest {
   @Test
   void shouldDeriveZoneAwareConfig() {
     // given
-    final var zoneSpecs =
-        List.of(new ZoneSpec("zone-a", 2, 1000), new ZoneSpec("zone-b", 1, 500));
+    final var zoneSpecs = List.of(new ZoneSpec("zone-a", 2, 1000), new ZoneSpec("zone-b", 1, 500));
     final var config = ClusterConfiguration.init();
     final var initializer =
         new PartitionDistributorInitializer(

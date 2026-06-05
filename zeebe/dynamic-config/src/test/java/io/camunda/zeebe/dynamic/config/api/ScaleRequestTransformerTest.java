@@ -39,6 +39,7 @@ import net.jqwik.api.Property;
 import net.jqwik.api.ShrinkingMode;
 import net.jqwik.api.constraints.IntRange;
 import org.assertj.core.api.AssertionsForInterfaceTypes;
+import org.junit.jupiter.api.Test;
 
 class ScaleRequestTransformerTest {
 
@@ -209,7 +210,7 @@ class ScaleRequestTransformerTest {
     assertThat(newTopology.members().keySet()).containsExactlyInAnyOrderElementsOf(newMembers);
   }
 
-  @org.junit.jupiter.api.Test
+  @Test
   void shouldScaleOutZoneAwareCluster() {
     // given: 2 zones, RF=3 (zone-a contributes 2 replicas, zone-b contributes 1)
     final var zoneSpecs = List.of(new ZoneSpec("zone-a", 2, 1000), new ZoneSpec("zone-b", 1, 500));
@@ -233,7 +234,7 @@ class ScaleRequestTransformerTest {
     shouldScaleAndReassign(3, 3, distributor, oldMembers, newMembers);
   }
 
-  @org.junit.jupiter.api.Test
+  @Test
   void shouldScaleInZoneAwareCluster() {
     // given: 2 zones, RF=3 (zone-a contributes 2 replicas, zone-b contributes 1)
     final var zoneSpecs = List.of(new ZoneSpec("zone-a", 2, 1000), new ZoneSpec("zone-b", 1, 500));
