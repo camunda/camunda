@@ -7,8 +7,8 @@
  */
 package io.camunda.it.auth;
 
-import static io.camunda.client.api.search.enums.PermissionType.READ;
-import static io.camunda.client.api.search.enums.ResourceType.USER_TASK;
+import static io.camunda.client.api.search.enums.PermissionType.READ_USER_TASK;
+import static io.camunda.client.api.search.enums.ResourceType.PROCESS_DEFINITION;
 import static io.camunda.it.util.TestHelper.deployResource;
 import static io.camunda.it.util.TestHelper.startProcessInstance;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -24,7 +24,7 @@ import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
-import io.camunda.security.api.model.authz.EntityType;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.time.Duration;
 import java.util.List;
@@ -63,9 +63,7 @@ class UserTaskCandidateGroupAuthorizationIT {
       new TestUser(
           USER_IN_MIGRATED_GROUP,
           "password",
-          List.of(
-              // User has permission to read user tasks by candidateGroups property
-              Permissions.withPropertyName(USER_TASK, READ, "candidateGroups")));
+          List.of(new Permissions(PROCESS_DEFINITION, READ_USER_TASK, List.of("*"))));
 
   @GroupDefinition
   private static final TestGroup MIGRATED_GROUP =
