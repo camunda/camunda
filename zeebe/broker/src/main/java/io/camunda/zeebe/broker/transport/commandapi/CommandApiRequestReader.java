@@ -77,16 +77,13 @@ public class CommandApiRequestReader implements RequestReader {
     if (commandRequestDecoder.limit() < buffer.capacity()) {
       final int authOffset =
           commandRequestDecoder.limit() + ExecuteCommandRequestDecoder.authorizationHeaderLength();
-      final int authorizationLength = commandRequestDecoder.authorizationLength();
-      authInfo.wrap(buffer, authOffset, authorizationLength);
+      authInfo.wrap(buffer, authOffset, commandRequestDecoder.authorizationLength());
       metadata.authorization(authInfo);
-      commandRequestDecoder.limit(authOffset + authorizationLength);
+      commandRequestDecoder.skipAuthorization();
     }
 
     if (commandRequestDecoder.limit() < buffer.capacity()) {
-      final int toolNameOffset =
-          commandRequestDecoder.limit() + ExecuteCommandRequestDecoder.toolNameHeaderLength();
-      toolName.wrap(buffer, toolNameOffset, commandRequestDecoder.toolNameLength());
+      commandRequestDecoder.wrapToolName(toolName);
       metadata.requestToolName(toolName);
     }
   }
