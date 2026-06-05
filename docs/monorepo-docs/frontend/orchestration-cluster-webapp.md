@@ -32,7 +32,7 @@ apps/orchestration-cluster-webapp/
 │   │   ├── auth/           # Session & authentication
 │   │   ├── browser-storage/# Typed storage abstraction
 │   │   ├── config/         # Boot & client configuration
-│   │   ├── errors/         # Error classes
+│   │   ├── errors.ts       # Error classes
 │   │   ├── http/           # Endpoints, queries, request wrapper
 │   │   ├── i18n/           # Internationalization
 │   │   ├── login/          # Login UI components
