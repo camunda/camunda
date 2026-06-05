@@ -230,7 +230,7 @@ public class HistoryCleanupIT {
   public void shouldDeleteStandaloneDecisionAuditLogDuringCleanup() {
     // GIVEN - Create a standalone decision audit log with an expired cleanup date
     final var evaluationDate = OffsetDateTime.now().minusDays(40);
-    final var processInstanceKey = Math.abs(ThreadLocalRandom.current().nextLong());
+    final var processInstanceKey = ThreadLocalRandom.current().nextLong(1, Long.MAX_VALUE);
     final var auditLog =
         AuditLogFixtures.createRandomized(
             b ->
