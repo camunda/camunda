@@ -8,7 +8,7 @@
 package io.camunda.security.reader;
 
 import io.camunda.security.api.model.CamundaAuthentication;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 
 public interface ResourceAccessProvider {
 
@@ -19,17 +19,18 @@ public interface ResourceAccessProvider {
    * access if access is not denied.
    */
   <T> ResourceAccess resolveResourceAccess(
-      final CamundaAuthentication authentication, final Authorization<T> requiredAuthorization);
+      final CamundaAuthentication authentication,
+      final RequiredAuthorization<T> requiredAuthorization);
 
   /** Returns a {@link ResourceAccess} allowing or denying access to the given resource. */
   <T> ResourceAccess hasResourceAccess(
       final CamundaAuthentication authentication,
-      Authorization<T> requiredAuthorization,
+      RequiredAuthorization<T> requiredAuthorization,
       final T resource);
 
   /** Returns a {@link ResourceAccess} allowing or denying access to the given resource id. */
   <T> ResourceAccess hasResourceAccessByResourceId(
       final CamundaAuthentication authentication,
-      final Authorization<T> requiredAuthorization,
+      final RequiredAuthorization<T> requiredAuthorization,
       final String resourceId);
 }

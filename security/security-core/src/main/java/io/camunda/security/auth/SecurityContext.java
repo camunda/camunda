@@ -12,6 +12,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.condition.AuthorizationCondition;
 import io.camunda.security.auth.condition.AuthorizationConditions;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import java.util.function.Function;
 
 /**
@@ -43,13 +44,14 @@ public record SecurityContext(
       return withAuthentication(CamundaAuthentication.of(builderFunction));
     }
 
-    public Builder withAuthorization(final Authorization<?> authorization) {
+    public Builder withAuthorization(final RequiredAuthorization<?> authorization) {
       return withAuthorizationCondition(AuthorizationConditions.single(authorization));
     }
 
     public <T> Builder withAuthorization(
-        final Function<Authorization.Builder<T>, Authorization.Builder<T>> builderFunction) {
-      return withAuthorization(Authorization.of(builderFunction));
+        final Function<RequiredAuthorization.Builder<T>, RequiredAuthorization.Builder<T>>
+            builderFunction) {
+      return withAuthorization(RequiredAuthorization.of(builderFunction));
     }
 
     public Builder withAuthorizationCondition(final AuthorizationCondition authorizationCondition) {

@@ -22,8 +22,8 @@ import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.api.model.authz.AuthorizationScope;
 import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.security.api.model.config.AuthorizationsConfiguration;
-import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.security.impl.AuthorizationChecker;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.exception.ServiceException;
@@ -70,7 +70,7 @@ public class DocumentServices extends ApiServices<DocumentServices> {
     if (!hasDocumentPermission(PermissionType.CREATE, authentication)) {
       return CompletableFuture.failedFuture(
           ErrorMapper.createForbiddenException(
-              Authorization.of(a -> a.document().permissionType(PermissionType.CREATE))));
+              RequiredAuthorization.of(a -> a.document().permissionType(PermissionType.CREATE))));
     }
 
     final DocumentCreationRequest storeRequest =
@@ -100,7 +100,7 @@ public class DocumentServices extends ApiServices<DocumentServices> {
     if (!hasDocumentPermission(PermissionType.CREATE, authentication)) {
       return CompletableFuture.failedFuture(
           ErrorMapper.createForbiddenException(
-              Authorization.of(a -> a.document().permissionType(PermissionType.CREATE))));
+              RequiredAuthorization.of(a -> a.document().permissionType(PermissionType.CREATE))));
     }
 
     final List<CompletableFuture<Either<DocumentErrorResponse, DocumentReferenceResponse>>>
@@ -141,7 +141,7 @@ public class DocumentServices extends ApiServices<DocumentServices> {
     if (!hasDocumentPermission(PermissionType.READ, authentication)) {
       return CompletableFuture.failedFuture(
           ErrorMapper.createForbiddenException(
-              Authorization.of(a -> a.document().permissionType(PermissionType.READ))));
+              RequiredAuthorization.of(a -> a.document().permissionType(PermissionType.READ))));
     }
 
     final DocumentStore documentStore = getDocumentStore(storeId).instance();
@@ -168,7 +168,7 @@ public class DocumentServices extends ApiServices<DocumentServices> {
     if (!hasDocumentPermission(PermissionType.DELETE, authentication)) {
       return CompletableFuture.failedFuture(
           ErrorMapper.createForbiddenException(
-              Authorization.of(a -> a.document().permissionType(PermissionType.DELETE))));
+              RequiredAuthorization.of(a -> a.document().permissionType(PermissionType.DELETE))));
     }
 
     return getDocumentStore(storeId)
@@ -187,7 +187,7 @@ public class DocumentServices extends ApiServices<DocumentServices> {
     if (!hasDocumentPermission(PermissionType.CREATE, authentication)) {
       return CompletableFuture.failedFuture(
           ErrorMapper.createForbiddenException(
-              Authorization.of(a -> a.document().permissionType(PermissionType.CREATE))));
+              RequiredAuthorization.of(a -> a.document().permissionType(PermissionType.CREATE))));
     }
 
     final long ttl = params.timeToLive().toMillis();

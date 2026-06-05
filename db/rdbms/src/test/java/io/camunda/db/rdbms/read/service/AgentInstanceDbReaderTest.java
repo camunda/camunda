@@ -19,7 +19,7 @@ import io.camunda.db.rdbms.sql.AgentInstanceMapper;
 import io.camunda.db.rdbms.write.domain.AgentInstanceDbModel;
 import io.camunda.search.entities.AgentInstanceEntity.AgentInstanceStatus;
 import io.camunda.search.query.AgentInstanceQuery;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.security.reader.TenantCheck;
@@ -43,7 +43,7 @@ class AgentInstanceDbReaderTest {
             AgentInstanceQuery.of(b -> b),
             ResourceAccessChecks.of(
                 AuthorizationCheck.enabled(
-                    Authorization.of(a -> a.processDefinition().readProcessInstance())),
+                    RequiredAuthorization.of(a -> a.processDefinition().readProcessInstance())),
                 TenantCheck.disabled()));
 
     assertThat(result.items()).isEmpty();
@@ -61,7 +61,7 @@ class AgentInstanceDbReaderTest {
         AgentInstanceQuery.of(b -> b),
         ResourceAccessChecks.of(
             AuthorizationCheck.enabled(
-                Authorization.of(
+                RequiredAuthorization.of(
                     a -> a.processDefinition().readProcessInstance().resourceIds(authorizedIds))),
             TenantCheck.disabled()));
 

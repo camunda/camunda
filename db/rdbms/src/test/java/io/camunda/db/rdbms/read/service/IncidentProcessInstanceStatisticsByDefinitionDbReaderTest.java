@@ -17,7 +17,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.db.rdbms.sql.IncidentMapper;
 import io.camunda.search.entities.IncidentProcessInstanceStatisticsByDefinitionEntity;
 import io.camunda.search.query.IncidentProcessInstanceStatisticsByDefinitionQuery;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.security.reader.TenantCheck;
@@ -40,7 +40,7 @@ class IncidentProcessInstanceStatisticsByDefinitionDbReaderTest {
     final var resourceAccessChecks =
         ResourceAccessChecks.of(
             AuthorizationCheck.enabled(
-                Authorization.of(a -> a.processDefinition().readProcessInstance())),
+                RequiredAuthorization.of(a -> a.processDefinition().readProcessInstance())),
             TenantCheck.disabled());
 
     final var result = reader.aggregate(query, resourceAccessChecks);

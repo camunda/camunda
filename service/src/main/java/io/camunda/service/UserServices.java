@@ -7,7 +7,7 @@
  */
 package io.camunda.service;
 
-import static io.camunda.security.auth.Authorization.withAuthorization;
+import static io.camunda.security.core.auth.RequiredAuthorization.withRequiredAuthorization;
 import static io.camunda.service.authorization.Authorizations.USER_READ_AUTHORIZATION;
 
 import io.camunda.search.clients.UserSearchClient;
@@ -91,7 +91,8 @@ public class UserServices extends SearchQueryService<UserServices, UserQuery, Us
             userSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
-                        authentication, withAuthorization(USER_READ_AUTHORIZATION, username)))
+                        authentication,
+                        withRequiredAuthorization(USER_READ_AUTHORIZATION, username)))
                 .getUser(username));
   }
 

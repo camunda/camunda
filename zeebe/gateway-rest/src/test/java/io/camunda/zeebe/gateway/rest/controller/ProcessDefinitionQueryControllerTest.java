@@ -30,7 +30,7 @@ import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.service.FormServices;
 import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.service.exception.ErrorMapper;
@@ -246,7 +246,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
     when(service.apply(processDefinitionServices, processDefinitionKey))
         .thenThrow(
             ErrorMapper.createForbiddenException(
-                Authorization.of(a -> a.processDefinition().read())));
+                RequiredAuthorization.of(a -> a.processDefinition().read())));
     // when / then
     final String formattedUrl = url.formatted(processDefinitionKey);
     webClient

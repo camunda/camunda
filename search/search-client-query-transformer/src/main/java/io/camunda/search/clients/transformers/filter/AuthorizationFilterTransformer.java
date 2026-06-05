@@ -24,7 +24,7 @@ import static io.camunda.webapps.schema.descriptors.index.AuthorizationIndex.RES
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.AuthorizationFilter;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 
 public final class AuthorizationFilterTransformer
@@ -44,7 +44,8 @@ public final class AuthorizationFilterTransformer
   }
 
   @Override
-  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
+  protected SearchQuery toAuthorizationCheckSearchQuery(
+      final RequiredAuthorization<?> authorization) {
     return longTerms(ID, authorization.resourceIds().stream().map(Long::valueOf).toList());
   }
 

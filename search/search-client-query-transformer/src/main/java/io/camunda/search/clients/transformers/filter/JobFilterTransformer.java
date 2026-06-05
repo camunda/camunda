@@ -44,7 +44,7 @@ import static java.util.Optional.ofNullable;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.JobFilter;
 import io.camunda.search.filter.Operator;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.util.ArrayList;
 
@@ -105,7 +105,8 @@ public class JobFilterTransformer extends IndexFilterTransformer<JobFilter> {
   }
 
   @Override
-  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
+  protected SearchQuery toAuthorizationCheckSearchQuery(
+      final RequiredAuthorization<?> authorization) {
     return stringTerms(BPMN_PROCESS_ID, authorization.resourceIds());
   }
 }

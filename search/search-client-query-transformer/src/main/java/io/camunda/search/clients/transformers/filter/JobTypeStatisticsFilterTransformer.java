@@ -15,7 +15,7 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperatio
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.JobTypeStatisticsFilter;
 import io.camunda.search.filter.Operation;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.template.JobMetricsBatchTemplate;
 import java.util.ArrayList;
@@ -54,7 +54,8 @@ public class JobTypeStatisticsFilterTransformer
   }
 
   @Override
-  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
+  protected SearchQuery toAuthorizationCheckSearchQuery(
+      final RequiredAuthorization<?> authorization) {
     return matchAll();
   }
 }

@@ -7,7 +7,7 @@
  */
 package io.camunda.service;
 
-import static io.camunda.security.auth.Authorization.withAuthorization;
+import static io.camunda.security.core.auth.RequiredAuthorization.withRequiredAuthorization;
 import static io.camunda.service.authorization.Authorizations.GROUP_READ_AUTHORIZATION;
 
 import io.camunda.search.clients.GroupSearchClient;
@@ -92,7 +92,8 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
             groupSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
-                        authentication, withAuthorization(GROUP_READ_AUTHORIZATION, groupId)))
+                        authentication,
+                        withRequiredAuthorization(GROUP_READ_AUTHORIZATION, groupId)))
                 .getGroup(groupId));
   }
 

@@ -8,7 +8,7 @@
 package io.camunda.service;
 
 import static io.camunda.search.query.SearchQueryBuilders.incidentSearchQuery;
-import static io.camunda.security.auth.Authorization.withAuthorization;
+import static io.camunda.security.core.auth.RequiredAuthorization.withRequiredAuthorization;
 import static io.camunda.service.authorization.Authorizations.INCIDENT_READ_AUTHORIZATION;
 
 import io.camunda.search.clients.IncidentSearchClient;
@@ -76,7 +76,7 @@ public class IncidentServices
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication,
-                        withAuthorization(
+                        withRequiredAuthorization(
                             INCIDENT_READ_AUTHORIZATION, IncidentEntity::processDefinitionId)))
                 .getIncident(key));
   }

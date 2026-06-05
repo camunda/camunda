@@ -29,8 +29,8 @@ import io.camunda.search.filter.UserTaskFilter.Builder;
 import io.camunda.search.filter.VariableValueFilter;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.security.api.model.CamundaAuthentication;
-import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.condition.AuthorizationConditions;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.security.reader.TenantCheck;
@@ -697,7 +697,8 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
   public void shouldApplySingleAuthorizationCheck() {
     // given
     final var authorization =
-        Authorization.of(a -> a.processDefinition().readUserTask().resourceIds(List.of("1", "2")));
+        RequiredAuthorization.of(
+            a -> a.processDefinition().readUserTask().resourceIds(List.of("1", "2")));
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var resourceAccessChecks =
         ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled());
@@ -723,10 +724,11 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
   public void shouldApplyAnyOfAuthorizationCheck() {
     // given
     final var processDefinitionAuth =
-        Authorization.of(
+        RequiredAuthorization.of(
             a -> a.processDefinition().readUserTask().resourceIds(List.of("pd-1", "pd-2")));
     final var userTaskAuth =
-        Authorization.of(a -> a.userTask().read().resourceIds(List.of("5", "55", "not-a-number")));
+        RequiredAuthorization.of(
+            a -> a.userTask().read().resourceIds(List.of("5", "55", "not-a-number")));
     final var authorizationCheck =
         AuthorizationCheck.enabled(
             AuthorizationConditions.anyOf(processDefinitionAuth, userTaskAuth));
@@ -782,7 +784,7 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
   @Test
   public void shouldReturnNonMatchWhenNoResourceIdsProvided() {
     // given
-    final var authorization = Authorization.of(a -> a.processDefinition().readUserTask());
+    final var authorization = RequiredAuthorization.of(a -> a.processDefinition().readUserTask());
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var resourceAccessChecks =
         ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled());
@@ -799,7 +801,8 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
   public void shouldApplyPropertyBasedAuthorizationForAssignee() {
     // given
     final var authentication = CamundaAuthentication.of(b -> b.user("john"));
-    final var authorization = Authorization.of(a -> a.userTask().read().authorizedByAssignee());
+    final var authorization =
+        RequiredAuthorization.of(a -> a.userTask().read().authorizedByAssignee());
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var resourceAccessChecks =
         ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled(), authentication);
@@ -825,7 +828,7 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
     // given
     final var authentication = CamundaAuthentication.of(b -> b.user("jane"));
     final var authorization =
-        Authorization.of(a -> a.userTask().read().authorizedByCandidateUsers());
+        RequiredAuthorization.of(a -> a.userTask().read().authorizedByCandidateUsers());
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var resourceAccessChecks =
         ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled(), authentication);
@@ -852,7 +855,7 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
     final var authentication =
         CamundaAuthentication.of(b -> b.user("alice").groupIds(List.of("group1", "group2")));
     final var authorization =
-        Authorization.of(a -> a.userTask().read().authorizedByCandidateGroups());
+        RequiredAuthorization.of(a -> a.userTask().read().authorizedByCandidateGroups());
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var resourceAccessChecks =
         ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled(), authentication);
@@ -882,7 +885,7 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
     final var authentication =
         CamundaAuthentication.of(b -> b.user("bob").groupIds(List.of("teamA")));
     final var authorization =
-        Authorization.of(
+        RequiredAuthorization.of(
             a ->
                 a.userTask()
                     .read()
@@ -940,11 +943,11 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
   public void shouldReturnMatchNoneWhenPropertyBasedAuthorizationWithNoAuthentication() {
     // given
     final var authorization =
-        Authorization.of(
+        RequiredAuthorization.of(
             a ->
                 a.userTask()
                     .read()
-                    .resourcePropertyNames(java.util.Set.of(Authorization.PROP_ASSIGNEE)));
+                    .resourcePropertyNames(java.util.Set.of(RequiredAuthorization.PROP_ASSIGNEE)));
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var resourceAccessChecks =
         ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled(), null);
@@ -962,7 +965,7 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
     // given
     final var authentication = CamundaAuthentication.of(b -> b.user("user1"));
     final var authorization =
-        Authorization.of(a -> a.processDefinition().readUserTask().authorizedByAssignee());
+        RequiredAuthorization.of(a -> a.processDefinition().readUserTask().authorizedByAssignee());
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var resourceAccessChecks =
         ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled(), authentication);
@@ -980,7 +983,7 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
     // given
     final var authentication = CamundaAuthentication.of(b -> b.user("user1"));
     final var authorization =
-        Authorization.of(a -> a.userTask().read().authorizedByProperty("unknownProperty"));
+        RequiredAuthorization.of(a -> a.userTask().read().authorizedByProperty("unknownProperty"));
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var resourceAccessChecks =
         ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled(), authentication);
@@ -1082,7 +1085,8 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
   public void shouldApplyFilterAndChecks() {
     // given
     final var authorization =
-        Authorization.of(a -> a.processDefinition().readUserTask().resourceIds(List.of("1", "2")));
+        RequiredAuthorization.of(
+            a -> a.processDefinition().readUserTask().resourceIds(List.of("1", "2")));
 
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var tenantCheck = TenantCheck.enabled(List.of("a", "b"));

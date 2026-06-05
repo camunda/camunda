@@ -18,7 +18,7 @@ import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.query.ProcessDefinitionFlowNodeStatisticsQuery;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.security.reader.TenantCheck;
@@ -40,7 +40,7 @@ class ProcessDefinitionStatisticsDbReaderTest {
     final ResourceAccessChecks resourceAccessChecks =
         ResourceAccessChecks.of(
             AuthorizationCheck.enabled(
-                Authorization.of(a -> a.processDefinition().readProcessDefinition())),
+                RequiredAuthorization.of(a -> a.processDefinition().readProcessDefinition())),
             TenantCheck.disabled());
 
     final var result = reader.aggregate(query, resourceAccessChecks);
@@ -81,7 +81,7 @@ class ProcessDefinitionStatisticsDbReaderTest {
     final ResourceAccessChecks resourceAccessChecks =
         ResourceAccessChecks.of(
             AuthorizationCheck.enabled(
-                Authorization.of(
+                RequiredAuthorization.of(
                     a ->
                         a.processDefinition()
                             .readProcessDefinition()
@@ -108,7 +108,7 @@ class ProcessDefinitionStatisticsDbReaderTest {
     final ResourceAccessChecks resourceAccessChecks =
         ResourceAccessChecks.of(
             AuthorizationCheck.enabled(
-                Authorization.of(
+                RequiredAuthorization.of(
                     a ->
                         a.processDefinition()
                             .readProcessDefinition()
@@ -135,7 +135,7 @@ class ProcessDefinitionStatisticsDbReaderTest {
     final ResourceAccessChecks resourceAccessChecks =
         ResourceAccessChecks.of(
             AuthorizationCheck.enabled(
-                Authorization.of(
+                RequiredAuthorization.of(
                     a ->
                         a.processDefinition()
                             .readProcessDefinition()

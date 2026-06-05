@@ -19,7 +19,7 @@ import static io.camunda.webapps.schema.descriptors.index.MappingRuleIndex.NAME;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.MappingRuleFilter;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 
 public class MappingRuleFilterTransformer extends IndexFilterTransformer<MappingRuleFilter> {
@@ -52,7 +52,8 @@ public class MappingRuleFilterTransformer extends IndexFilterTransformer<Mapping
   }
 
   @Override
-  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
+  protected SearchQuery toAuthorizationCheckSearchQuery(
+      final RequiredAuthorization<?> authorization) {
     return stringTerms(MAPPING_RULE_ID, authorization.resourceIds());
   }
 }

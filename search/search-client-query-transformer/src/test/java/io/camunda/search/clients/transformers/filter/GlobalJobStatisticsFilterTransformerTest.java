@@ -15,8 +15,8 @@ import io.camunda.search.clients.query.SearchRangeQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.search.clients.query.SearchTermsQuery;
 import io.camunda.search.filter.FilterBuilders;
-import io.camunda.security.auth.Authorization;
-import io.camunda.security.auth.Authorization.Builder;
+import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.security.core.auth.RequiredAuthorization.Builder;
 import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.security.reader.TenantCheck;
@@ -179,7 +179,7 @@ class GlobalJobStatisticsFilterTransformerTest extends AbstractTransformerTest {
     // given
     final var fromTime = OffsetDateTime.of(2024, 1, 15, 10, 0, 0, 0, ZoneOffset.UTC);
     final var authorization =
-        Authorization.of(a -> a.readJobMetric().resourceIds(List.of("1", "2")));
+        RequiredAuthorization.of(a -> a.readJobMetric().resourceIds(List.of("1", "2")));
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var resourceAccessChecks =
         ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled());
@@ -200,7 +200,7 @@ class GlobalJobStatisticsFilterTransformerTest extends AbstractTransformerTest {
   void shouldReturnNonMatchWhenNoResourceIdsProvided() {
     // given
     final var fromTime = OffsetDateTime.of(2024, 1, 15, 10, 0, 0, 0, ZoneOffset.UTC);
-    final var authorization = Authorization.of(Builder::readJobMetric);
+    final var authorization = RequiredAuthorization.of(Builder::readJobMetric);
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var resourceAccessChecks =
         ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled());

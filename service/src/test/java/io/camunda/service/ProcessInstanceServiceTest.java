@@ -37,8 +37,8 @@ import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SequenceFlowQuery;
 import io.camunda.security.api.model.CamundaAuthentication;
-import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateBatchOperationRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyBatchOperationRequest;
 import io.camunda.service.authorization.Authorizations;
@@ -90,7 +90,7 @@ public final class ProcessInstanceServiceTest {
   private IncidentServices incidentServices;
   private SecurityContextProvider securityContextProvider;
   private CamundaAuthentication authentication;
-  private Authorization<BatchOperationCreationRecord> authorizationCheck;
+  private RequiredAuthorization<BatchOperationCreationRecord> authorizationCheck;
   private BrokerClient brokerClient;
   private ApiServicesExecutorProvider executorProvider;
   private BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
@@ -101,8 +101,9 @@ public final class ProcessInstanceServiceTest {
     sequenceFlowSearchClient = mock(SequenceFlowSearchClient.class);
     authentication = CamundaAuthentication.none();
     authorizationCheck =
-        Authorization.withAuthorization(
-            Authorization.of(a -> a.processDefinition().updateProcessInstance()), "myProcess");
+        RequiredAuthorization.withRequiredAuthorization(
+            RequiredAuthorization.of(a -> a.processDefinition().updateProcessInstance()),
+            "myProcess");
     incidentServices = mock(IncidentServices.class);
     when(processInstanceSearchClient.withSecurityContext(any()))
         .thenReturn(processInstanceSearchClient);
@@ -267,7 +268,7 @@ public final class ProcessInstanceServiceTest {
 
     assertThat(
             MsgPackConverter.convertToObject(
-                enrichedRecord.getAuthorizationCheckBuffer(), Authorization.class))
+                enrichedRecord.getAuthorizationCheckBuffer(), RequiredAuthorization.class))
         .isEqualTo(authorizationCheck);
   }
 
@@ -511,7 +512,7 @@ public final class ProcessInstanceServiceTest {
     when(processInstanceSearchClient.getProcessInstance(eq(processInstanceKey)))
         .thenThrow(
             new ResourceAccessDeniedException(
-                Authorization.of(a -> a.processDefinition().readProcessInstance())));
+                RequiredAuthorization.of(a -> a.processDefinition().readProcessInstance())));
 
     final var query = new IncidentQuery.Builder().build();
 

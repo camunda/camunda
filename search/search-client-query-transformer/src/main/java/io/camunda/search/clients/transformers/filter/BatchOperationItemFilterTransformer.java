@@ -13,7 +13,7 @@ import static io.camunda.webapps.schema.descriptors.template.OperationTemplate.*
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.BatchOperationItemFilter;
 import io.camunda.search.filter.Operation;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.util.List;
 
@@ -35,7 +35,8 @@ public final class BatchOperationItemFilterTransformer
   }
 
   @Override
-  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
+  protected SearchQuery toAuthorizationCheckSearchQuery(
+      final RequiredAuthorization<?> authorization) {
     return matchAll();
   }
 

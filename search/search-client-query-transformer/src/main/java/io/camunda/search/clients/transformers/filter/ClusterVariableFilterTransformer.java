@@ -19,7 +19,7 @@ import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.ClusterVariableFilter;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.UntypedOperation;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.security.reader.TenantCheck;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.index.ClusterVariableIndex;
@@ -64,7 +64,8 @@ public final class ClusterVariableFilterTransformer
   }
 
   @Override
-  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
+  protected SearchQuery toAuthorizationCheckSearchQuery(
+      final RequiredAuthorization<?> authorization) {
     return stringTerms(ClusterVariableIndex.NAME, authorization.resourceIds());
   }
 

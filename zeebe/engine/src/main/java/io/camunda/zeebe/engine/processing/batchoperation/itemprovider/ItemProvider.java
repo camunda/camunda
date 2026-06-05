@@ -8,8 +8,8 @@
 package io.camunda.zeebe.engine.processing.batchoperation.itemprovider;
 
 import io.camunda.security.api.model.CamundaAuthentication;
-import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.SecurityContext;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import java.util.List;
 
 public interface ItemProvider {
@@ -17,7 +17,7 @@ public interface ItemProvider {
   ItemPage fetchItemPage(String cursor, int pageSize);
 
   default SecurityContext createSecurityContext(
-      final CamundaAuthentication authentication, final Authorization authorization) {
+      final CamundaAuthentication authentication, final RequiredAuthorization<?> authorization) {
     return SecurityContext.of(
         b -> b.withAuthentication(authentication).withAuthorization(authorization));
   }

@@ -12,7 +12,7 @@ import static org.mockito.Mockito.mock;
 
 import io.camunda.db.rdbms.sql.SequenceFlowMapper;
 import io.camunda.search.query.SequenceFlowQuery;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.security.reader.TenantCheck;
@@ -29,7 +29,7 @@ class SequenceFlowDbReaderTest {
     final SequenceFlowQuery query = SequenceFlowQuery.of(b -> b);
     final ResourceAccessChecks resourceAccessChecks =
         ResourceAccessChecks.of(
-            AuthorizationCheck.enabled(Authorization.of(a -> a.processDefinition().read())),
+            AuthorizationCheck.enabled(RequiredAuthorization.of(a -> a.processDefinition().read())),
             TenantCheck.disabled());
 
     final var items = sequenceFlowDbReader.search(query, resourceAccessChecks).items();

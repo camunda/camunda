@@ -22,9 +22,9 @@ import io.camunda.search.clients.query.SearchQueryBuilders;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.FilterBase;
 import io.camunda.security.api.model.CamundaAuthentication;
-import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.condition.AnyOfAuthorizationCondition;
 import io.camunda.security.auth.condition.SingleAuthorizationCondition;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.security.reader.TenantCheck;
@@ -106,7 +106,7 @@ public abstract class IndexFilterTransformer<T extends FilterBase> implements Fi
   }
 
   private SearchQuery applyAuthorizationCheck(
-      final Authorization<?> authorization, final CamundaAuthentication authentication) {
+      final RequiredAuthorization<?> authorization, final CamundaAuthentication authentication) {
     if (authorization.hasAnyResourceIds()) {
       return toAuthorizationCheckSearchQuery(authorization);
     }
@@ -180,10 +180,11 @@ public abstract class IndexFilterTransformer<T extends FilterBase> implements Fi
     return and(filteredQueries);
   }
 
-  protected abstract SearchQuery toAuthorizationCheckSearchQuery(Authorization<?> authorization);
+  protected abstract SearchQuery toAuthorizationCheckSearchQuery(
+      RequiredAuthorization<?> authorization);
 
   protected SearchQuery toAuthorizationCheckSearchQueryByProperties(
-      Authorization<?> authorization, final CamundaAuthentication authentication) {
+      RequiredAuthorization<?> authorization, final CamundaAuthentication authentication) {
     LOG.warn(
         "Authorization check by resource properties is not supported by '{}'; returning match-none query.",
         this.getClass().getSimpleName());

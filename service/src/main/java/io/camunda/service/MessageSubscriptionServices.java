@@ -17,8 +17,8 @@ import io.camunda.search.query.CorrelatedMessageSubscriptionQuery;
 import io.camunda.search.query.MessageSubscriptionQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.api.model.CamundaAuthentication;
-import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -63,7 +63,7 @@ public class MessageSubscriptionServices
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication,
-                        Authorization.withAuthorization(
+                        RequiredAuthorization.withRequiredAuthorization(
                             MESSAGE_SUBSCRIPTION_READ_AUTHORIZATION,
                             MessageSubscriptionEntity::processDefinitionId)))
                 .getMessageSubscription(key));

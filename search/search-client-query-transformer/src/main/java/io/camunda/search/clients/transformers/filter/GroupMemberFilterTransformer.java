@@ -15,7 +15,7 @@ import static io.camunda.webapps.schema.descriptors.index.GroupIndex.GROUP_ID;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.GroupMemberFilter;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.index.GroupIndex;
 import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation.IdentityJoinRelationshipType;
@@ -42,7 +42,8 @@ public class GroupMemberFilterTransformer extends IndexFilterTransformer<GroupMe
   }
 
   @Override
-  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
+  protected SearchQuery toAuthorizationCheckSearchQuery(
+      final RequiredAuthorization<?> authorization) {
     return stringTerms(GROUP_ID, authorization.resourceIds());
   }
 }

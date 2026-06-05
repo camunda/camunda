@@ -7,7 +7,7 @@
  */
 package io.camunda.service;
 
-import static io.camunda.security.auth.Authorization.withAuthorization;
+import static io.camunda.security.core.auth.RequiredAuthorization.withRequiredAuthorization;
 import static io.camunda.service.authorization.Authorizations.ELEMENT_INSTANCE_READ_AUTHORIZATION;
 
 import io.camunda.search.clients.FlowNodeInstanceSearchClient;
@@ -82,7 +82,7 @@ public final class ElementInstanceServices
                     .withSecurityContext(
                         securityContextProvider.provideSecurityContext(
                             authentication,
-                            withAuthorization(
+                            withRequiredAuthorization(
                                 ELEMENT_INSTANCE_READ_AUTHORIZATION,
                                 FlowNodeInstanceEntity::processDefinitionId)))
                     .getFlowNodeInstance(key));

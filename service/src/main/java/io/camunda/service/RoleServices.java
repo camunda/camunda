@@ -7,7 +7,7 @@
  */
 package io.camunda.service;
 
-import static io.camunda.security.auth.Authorization.withAuthorization;
+import static io.camunda.security.core.auth.RequiredAuthorization.withRequiredAuthorization;
 import static io.camunda.service.authorization.Authorizations.ROLE_READ_AUTHORIZATION;
 
 import io.camunda.search.clients.RoleSearchClient;
@@ -123,7 +123,7 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
             roleSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
-                        authentication, withAuthorization(ROLE_READ_AUTHORIZATION, roleId)))
+                        authentication, withRequiredAuthorization(ROLE_READ_AUTHORIZATION, roleId)))
                 .getRole(roleId));
   }
 

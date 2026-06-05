@@ -16,7 +16,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.search.query.VariableQuery;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.security.reader.TenantCheck;
@@ -33,7 +33,8 @@ class VariableDbReaderTest {
     final VariableQuery query = VariableQuery.of(b -> b);
     final ResourceAccessChecks resourceAccessChecks =
         ResourceAccessChecks.of(
-            AuthorizationCheck.enabled(Authorization.of(a -> a.readProcessInstance().read())),
+            AuthorizationCheck.enabled(
+                RequiredAuthorization.of(a -> a.readProcessInstance().read())),
             TenantCheck.disabled());
 
     final var items = variableDbReader.search(query, resourceAccessChecks).items();

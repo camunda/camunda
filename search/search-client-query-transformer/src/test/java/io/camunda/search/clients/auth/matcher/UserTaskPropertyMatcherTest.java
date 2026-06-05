@@ -13,7 +13,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.security.api.model.CamundaAuthentication;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -46,7 +46,7 @@ class UserTaskPropertyMatcherTest {
     // given
     final var userTask = createUserTask("frodo", List.of(), List.of());
     final var authentication = CamundaAuthentication.of(a -> a.user("frodo"));
-    final var propertyNames = Set.of(Authorization.PROP_ASSIGNEE);
+    final var propertyNames = Set.of(RequiredAuthorization.PROP_ASSIGNEE);
 
     // when
     final var matches = matcher.matches(userTask, propertyNames, authentication);
@@ -61,7 +61,7 @@ class UserTaskPropertyMatcherTest {
     // given
     final var userTask = createUserTask(assignee, List.of(), List.of());
     final var authentication = CamundaAuthentication.of(a -> a.user(username));
-    final var propertyNames = Set.of(Authorization.PROP_ASSIGNEE);
+    final var propertyNames = Set.of(RequiredAuthorization.PROP_ASSIGNEE);
 
     // when
     final var matches = matcher.matches(userTask, propertyNames, authentication);
@@ -84,7 +84,7 @@ class UserTaskPropertyMatcherTest {
     // given
     final var userTask = createUserTask("gandalf", List.of("frodo", "aragorn"), List.of());
     final var authentication = CamundaAuthentication.of(a -> a.user("frodo"));
-    final var propertyNames = Set.of(Authorization.PROP_CANDIDATE_USERS);
+    final var propertyNames = Set.of(RequiredAuthorization.PROP_CANDIDATE_USERS);
 
     // when
     final var matches = matcher.matches(userTask, propertyNames, authentication);
@@ -100,7 +100,7 @@ class UserTaskPropertyMatcherTest {
     // given
     final var userTask = createUserTask("gandalf", candidateUsers, List.of());
     final var authentication = CamundaAuthentication.of(a -> a.user(username));
-    final var propertyNames = Set.of(Authorization.PROP_CANDIDATE_USERS);
+    final var propertyNames = Set.of(RequiredAuthorization.PROP_CANDIDATE_USERS);
 
     // when
     final var matches = matcher.matches(userTask, propertyNames, authentication);
@@ -125,7 +125,7 @@ class UserTaskPropertyMatcherTest {
     // given
     final var userTask = createUserTask("gandalf", List.of(), candidateGroups);
     final var authentication = CamundaAuthentication.of(a -> a.user("frodo").groupIds(userGroups));
-    final var propertyNames = Set.of(Authorization.PROP_CANDIDATE_GROUPS);
+    final var propertyNames = Set.of(RequiredAuthorization.PROP_CANDIDATE_GROUPS);
 
     // when
     final var matches = matcher.matches(userTask, propertyNames, authentication);
@@ -150,7 +150,7 @@ class UserTaskPropertyMatcherTest {
     // given
     final var userTask = createUserTask("gandalf", List.of(), candidateGroups);
     final var authentication = CamundaAuthentication.of(a -> a.user("frodo").groupIds(userGroups));
-    final var propertyNames = Set.of(Authorization.PROP_CANDIDATE_GROUPS);
+    final var propertyNames = Set.of(RequiredAuthorization.PROP_CANDIDATE_GROUPS);
 
     // when
     final var matches = matcher.matches(userTask, propertyNames, authentication);

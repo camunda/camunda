@@ -14,7 +14,7 @@ import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.authz.AuthorizationResourceMatcher;
 import io.camunda.security.api.model.authz.AuthorizationScope;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.security.impl.AuthorizationChecker;
 import io.camunda.security.reader.ResourceAccess;
 import io.camunda.security.reader.ResourceAccessProvider;
@@ -38,7 +38,7 @@ public class DefaultResourceAccessProvider implements ResourceAccessProvider {
 
   @Override
   public <T> ResourceAccess resolveResourceAccess(
-      final CamundaAuthentication authentication, final Authorization<T> authorization) {
+      final CamundaAuthentication authentication, final RequiredAuthorization<T> authorization) {
     if (authorization.hasAnyResourcePropertyNames()) {
       return resolveResourceAccessByPropertyNames(authentication, authorization);
     }
@@ -47,7 +47,7 @@ public class DefaultResourceAccessProvider implements ResourceAccessProvider {
   }
 
   private <T> ResourceAccess resolveResourceAccessByResourceId(
-      final CamundaAuthentication authentication, final Authorization<T> authorization) {
+      final CamundaAuthentication authentication, final RequiredAuthorization<T> authorization) {
 
     // fetch the authorization entities for the authenticated user
     final var authorizationScopes =
@@ -78,7 +78,7 @@ public class DefaultResourceAccessProvider implements ResourceAccessProvider {
   }
 
   private <T> ResourceAccess resolveResourceAccessByPropertyNames(
-      final CamundaAuthentication authentication, final Authorization<T> authorization) {
+      final CamundaAuthentication authentication, final RequiredAuthorization<T> authorization) {
 
     final var authorizedResourcePropertyNames =
         authorizationChecker
@@ -105,7 +105,7 @@ public class DefaultResourceAccessProvider implements ResourceAccessProvider {
   @Override
   public <T> ResourceAccess hasResourceAccess(
       final CamundaAuthentication authentication,
-      final Authorization<T> requiredAuthorization,
+      final RequiredAuthorization<T> requiredAuthorization,
       final T resource) {
     if (requiredAuthorization.hasAnyResourcePropertyNames()) {
       return hasResourceAccessByProperties(authentication, requiredAuthorization, resource);
@@ -117,7 +117,7 @@ public class DefaultResourceAccessProvider implements ResourceAccessProvider {
 
   private <T> ResourceAccess hasResourceAccessByProperties(
       final CamundaAuthentication authentication,
-      final Authorization<T> requiredAuthorization,
+      final RequiredAuthorization<T> requiredAuthorization,
       final T resource) {
     // resolve which properties the user is authorized for
     final var resolvedAccess =
@@ -146,7 +146,7 @@ public class DefaultResourceAccessProvider implements ResourceAccessProvider {
   }
 
   private <T> String resolveResourceId(
-      final Authorization<T> requiredAuthorization, final T resource) {
+      final RequiredAuthorization<T> requiredAuthorization, final T resource) {
     final var resourceIdSupplier = requiredAuthorization.resourceIdSupplier();
     final var resourceIds = requiredAuthorization.resourceIds();
     return Optional.ofNullable(resourceIdSupplier)
@@ -165,13 +165,13 @@ public class DefaultResourceAccessProvider implements ResourceAccessProvider {
   @Override
   public <T> ResourceAccess hasResourceAccessByResourceId(
       final CamundaAuthentication authentication,
-      final Authorization<T> requiredAuthorization,
+      final RequiredAuthorization<T> requiredAuthorization,
       final String resourceId) {
     final var isAuthorized =
         authorizationChecker.isAuthorized(
             AuthorizationScope.of(resourceId), authentication, requiredAuthorization);
     final var checkedAuthorization =
-        Authorization.of(
+        RequiredAuthorization.of(
             a ->
                 a.resourceType(requiredAuthorization.resourceType())
                     .permissionType(requiredAuthorization.permissionType())

@@ -16,7 +16,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.sql.RoleMapper;
 import io.camunda.search.query.RoleMemberQuery;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.security.reader.TenantCheck;
@@ -33,7 +33,7 @@ class RoleMemberDbReaderTest {
     final RoleMemberQuery query = RoleMemberQuery.of(b -> b);
     final ResourceAccessChecks resourceAccessChecks =
         ResourceAccessChecks.of(
-            AuthorizationCheck.enabled(Authorization.of(a -> a.role().read())),
+            AuthorizationCheck.enabled(RequiredAuthorization.of(a -> a.role().read())),
             TenantCheck.disabled());
 
     final var items = roleMemberDbReader.search(query, resourceAccessChecks).items();

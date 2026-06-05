@@ -15,7 +15,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.config.MultiTenancyConfiguration;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.service.ConditionalServices;
 import io.camunda.service.ConditionalServices.EvaluateConditionalRequest;
 import io.camunda.service.exception.ErrorMapper;
@@ -271,7 +271,7 @@ public class ConditionalControllerTest extends RestControllerTest {
     when(conditionalServices.evaluateConditional(any(EvaluateConditionalRequest.class), any()))
         .thenThrow(
             ErrorMapper.createForbiddenException(
-                Authorization.of(a -> a.processDefinition().createProcessInstance())));
+                RequiredAuthorization.of(a -> a.processDefinition().createProcessInstance())));
 
     final var request =
         """

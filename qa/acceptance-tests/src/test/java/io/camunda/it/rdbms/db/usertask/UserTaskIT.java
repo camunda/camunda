@@ -36,8 +36,8 @@ import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.sort.UserTaskSort;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
-import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.condition.AuthorizationConditions;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.security.reader.TenantCheck;
@@ -510,7 +510,7 @@ public class UserTaskIT {
                 UserTaskQuery.of(b -> b),
                 ResourceAccessChecks.of(
                     AuthorizationCheck.enabled(
-                        Authorization.of(b -> b.userTask().read().authorizedByAssignee())),
+                        RequiredAuthorization.of(b -> b.userTask().read().authorizedByAssignee())),
                     TenantCheck.disabled(),
                     CamundaAuthentication.of(builder -> builder.user(userTask.assignee()))));
 
@@ -539,7 +539,8 @@ public class UserTaskIT {
                 UserTaskQuery.of(b -> b),
                 ResourceAccessChecks.of(
                     AuthorizationCheck.enabled(
-                        Authorization.of(b -> b.userTask().read().authorizedByCandidateUsers())),
+                        RequiredAuthorization.of(
+                            b -> b.userTask().read().authorizedByCandidateUsers())),
                     TenantCheck.disabled(),
                     CamundaAuthentication.of(
                         builder -> builder.user(userTask.candidateUsers().getFirst()))));
@@ -569,7 +570,8 @@ public class UserTaskIT {
                 UserTaskQuery.of(b -> b),
                 ResourceAccessChecks.of(
                     AuthorizationCheck.enabled(
-                        Authorization.of(b -> b.userTask().read().authorizedByCandidateGroups())),
+                        RequiredAuthorization.of(
+                            b -> b.userTask().read().authorizedByCandidateGroups())),
                     TenantCheck.disabled(),
                     CamundaAuthentication.of(
                         builder ->
@@ -605,7 +607,8 @@ public class UserTaskIT {
                 UserTaskQuery.of(b -> b),
                 ResourceAccessChecks.of(
                     AuthorizationCheck.enabled(
-                        Authorization.of(b -> b.userTask().read().authorizedByCandidateGroups())),
+                        RequiredAuthorization.of(
+                            b -> b.userTask().read().authorizedByCandidateGroups())),
                     TenantCheck.disabled(),
                     CamundaAuthentication.of(builder -> builder.groupIds(userGroups))));
 
@@ -643,7 +646,7 @@ public class UserTaskIT {
                 UserTaskQuery.of(b -> b),
                 ResourceAccessChecks.of(
                     AuthorizationCheck.enabled(
-                        Authorization.of(
+                        RequiredAuthorization.of(
                             b ->
                                 b.userTask()
                                     .read()
@@ -693,11 +696,11 @@ public class UserTaskIT {
                     AuthorizationCheck.enabled(
                         // both branches match the user task
                         AuthorizationConditions.anyOf(
-                            Authorization.of(
+                            RequiredAuthorization.of(
                                 b ->
                                     b.processDefinition()
                                         .resourceId(userTask.processDefinitionId())),
-                            Authorization.of(
+                            RequiredAuthorization.of(
                                 b ->
                                     b.userTask()
                                         .read()
@@ -736,11 +739,11 @@ public class UserTaskIT {
                     AuthorizationCheck.enabled(
                         AuthorizationConditions.anyOf(
                             // only process definition branch matches
-                            Authorization.of(
+                            RequiredAuthorization.of(
                                 b ->
                                     b.processDefinition()
                                         .resourceId(userTask.processDefinitionId())),
-                            Authorization.of(
+                            RequiredAuthorization.of(
                                 b ->
                                     b.userTask()
                                         .read()
@@ -776,10 +779,10 @@ public class UserTaskIT {
                 ResourceAccessChecks.of(
                     AuthorizationCheck.enabled(
                         AuthorizationConditions.anyOf(
-                            Authorization.of(
+                            RequiredAuthorization.of(
                                 b -> b.processDefinition().resourceId("non-existent-process-def")),
                             // only user task branch matches
-                            Authorization.of(
+                            RequiredAuthorization.of(
                                 b ->
                                     b.userTask()
                                         .read()
@@ -814,9 +817,9 @@ public class UserTaskIT {
                     AuthorizationCheck.enabled(
                         // either branch matches
                         AuthorizationConditions.anyOf(
-                            Authorization.of(
+                            RequiredAuthorization.of(
                                 b -> b.processDefinition().resourceId("non-existent-process-def")),
-                            Authorization.of(
+                            RequiredAuthorization.of(
                                 b ->
                                     b.userTask()
                                         .read()
@@ -857,8 +860,9 @@ public class UserTaskIT {
                     AuthorizationCheck.enabled(
                         // composite authorization: proc-def-1 OR userTask2's key
                         AuthorizationConditions.anyOf(
-                            Authorization.of(b -> b.processDefinition().resourceId("proc-def-1")),
-                            Authorization.of(
+                            RequiredAuthorization.of(
+                                b -> b.processDefinition().resourceId("proc-def-1")),
+                            RequiredAuthorization.of(
                                 b ->
                                     b.userTask()
                                         .read()
@@ -905,11 +909,11 @@ public class UserTaskIT {
                     AuthorizationCheck.enabled(
                         // multiple IDs for PROCESS_DEFINITION and USER_TASK
                         AuthorizationConditions.anyOf(
-                            Authorization.of(
+                            RequiredAuthorization.of(
                                 b ->
                                     b.processDefinition()
                                         .resourceIds(List.of("proc-def-A", "proc-def-B"))),
-                            Authorization.of(
+                            RequiredAuthorization.of(
                                 b ->
                                     b.userTask()
                                         .read()
@@ -952,13 +956,14 @@ public class UserTaskIT {
                     AuthorizationCheck.enabled(
                         AuthorizationConditions.anyOf(
                             // ID-based: matches
-                            Authorization.of(
+                            RequiredAuthorization.of(
                                 b ->
                                     b.userTask()
                                         .read()
                                         .resourceId(String.valueOf(userTask.userTaskKey()))),
                             // Property-based: doesn't match (different user)
-                            Authorization.of(b -> b.userTask().read().authorizedByAssignee()))),
+                            RequiredAuthorization.of(
+                                b -> b.userTask().read().authorizedByAssignee()))),
                     TenantCheck.disabled(),
                     CamundaAuthentication.of(
                         builder -> builder.user(generateRandomString("different-user")))));
@@ -992,13 +997,14 @@ public class UserTaskIT {
                     AuthorizationCheck.enabled(
                         AuthorizationConditions.anyOf(
                             // ID-based: doesn't match (wrong task key)
-                            Authorization.of(
+                            RequiredAuthorization.of(
                                 b ->
                                     b.userTask()
                                         .read()
                                         .resourceId(String.valueOf(nonExistentTaskKey))),
                             // Property-based: matches by assignee
-                            Authorization.of(b -> b.userTask().read().authorizedByAssignee()))),
+                            RequiredAuthorization.of(
+                                b -> b.userTask().read().authorizedByAssignee()))),
                     TenantCheck.disabled(),
                     CamundaAuthentication.of(builder -> builder.user(userTask.assignee()))));
 
@@ -1036,15 +1042,16 @@ public class UserTaskIT {
                     AuthorizationCheck.enabled(
                         AuthorizationConditions.anyOf(
                             // ID-based: matches task1
-                            Authorization.of(
+                            RequiredAuthorization.of(
                                 b ->
                                     b.userTask()
                                         .read()
                                         .resourceId(String.valueOf(task1.userTaskKey()))),
                             // Property-based: matches task2 by assignee
-                            Authorization.of(b -> b.userTask().read().authorizedByAssignee()),
+                            RequiredAuthorization.of(
+                                b -> b.userTask().read().authorizedByAssignee()),
                             // Property-based: matches task3 by candidate group
-                            Authorization.of(
+                            RequiredAuthorization.of(
                                 b -> b.userTask().read().authorizedByCandidateGroups()))),
                     TenantCheck.disabled(),
                     CamundaAuthentication.of(

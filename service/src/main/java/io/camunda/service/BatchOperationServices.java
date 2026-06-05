@@ -8,7 +8,7 @@
 package io.camunda.service;
 
 import static io.camunda.search.entities.BatchOperationEntity.getBatchOperationKey;
-import static io.camunda.security.auth.Authorization.withAuthorization;
+import static io.camunda.security.core.auth.RequiredAuthorization.withRequiredAuthorization;
 import static io.camunda.service.authorization.Authorizations.BATCH_OPERATION_READ_AUTHORIZATION;
 
 import io.camunda.search.clients.BatchOperationSearchClient;
@@ -82,7 +82,8 @@ public final class BatchOperationServices
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication,
-                        withAuthorization(BATCH_OPERATION_READ_AUTHORIZATION, batchOperationKey)))
+                        withRequiredAuthorization(
+                            BATCH_OPERATION_READ_AUTHORIZATION, batchOperationKey)))
                 .getBatchOperation(batchOperationKey));
   }
 

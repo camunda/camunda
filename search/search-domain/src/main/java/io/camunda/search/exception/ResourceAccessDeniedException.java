@@ -9,7 +9,7 @@ package io.camunda.search.exception;
 
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.api.model.authz.PermissionType;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -27,12 +27,12 @@ public class ResourceAccessDeniedException extends CamundaSearchException {
     missingAuthorizations = List.of(missingAuthorization);
   }
 
-  public ResourceAccessDeniedException(final Authorization<?> authorization) {
+  public ResourceAccessDeniedException(final RequiredAuthorization<?> authorization) {
     this(MissingAuthorization.from(authorization));
   }
 
   public ResourceAccessDeniedException(
-      final Authorization<?> authorization, final String customMessage) {
+      final RequiredAuthorization<?> authorization, final String customMessage) {
     this(MissingAuthorization.from(authorization), customMessage);
   }
 
@@ -40,7 +40,7 @@ public class ResourceAccessDeniedException extends CamundaSearchException {
    * Support multiple missing authorizations (e.g. when checking AnyOfAuthorizationCondition and
    * none of the branches are granted).
    */
-  public ResourceAccessDeniedException(final List<Authorization<?>> authorizations) {
+  public ResourceAccessDeniedException(final List<RequiredAuthorization<?>> authorizations) {
     super(missingMultipleAuthMessage(MissingAuthorization.from(authorizations)), Reason.FORBIDDEN);
     missingAuthorizations = MissingAuthorization.from(authorizations);
   }
@@ -77,11 +77,11 @@ public class ResourceAccessDeniedException extends CamundaSearchException {
   public record MissingAuthorization(
       AuthorizationResourceType resourceType, PermissionType permissionType) {
 
-    static MissingAuthorization from(final Authorization<?> authorization) {
+    static MissingAuthorization from(final RequiredAuthorization<?> authorization) {
       return new MissingAuthorization(authorization.resourceType(), authorization.permissionType());
     }
 
-    static List<MissingAuthorization> from(final List<Authorization<?>> authorizations) {
+    static List<MissingAuthorization> from(final List<RequiredAuthorization<?>> authorizations) {
       return authorizations.stream().map(MissingAuthorization::from).collect(Collectors.toList());
     }
   }

@@ -7,7 +7,7 @@
  */
 package io.camunda.service;
 
-import static io.camunda.security.auth.Authorization.withAuthorization;
+import static io.camunda.security.core.auth.RequiredAuthorization.withRequiredAuthorization;
 import static io.camunda.service.authorization.Authorizations.CLUSTER_VARIABLE_READ_AUTHORIZATION;
 
 import io.camunda.search.clients.ClusterVariableSearchClient;
@@ -112,7 +112,7 @@ public final class ClusterVariableServices
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication,
-                        withAuthorization(
+                        withRequiredAuthorization(
                             CLUSTER_VARIABLE_READ_AUTHORIZATION, ClusterVariableEntity::name)))
                 .getClusterVariable(request.name()));
   }
@@ -125,7 +125,7 @@ public final class ClusterVariableServices
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication,
-                        withAuthorization(
+                        withRequiredAuthorization(
                             CLUSTER_VARIABLE_READ_AUTHORIZATION, ClusterVariableEntity::name)))
                 .getClusterVariable(request.name(), request.tenantId()));
   }

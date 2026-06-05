@@ -7,7 +7,7 @@
  */
 package io.camunda.service;
 
-import static io.camunda.security.auth.Authorization.withAuthorization;
+import static io.camunda.security.core.auth.RequiredAuthorization.withRequiredAuthorization;
 import static io.camunda.service.authorization.Authorizations.VARIABLE_READ_AUTHORIZATION;
 
 import io.camunda.search.clients.VariableSearchClient;
@@ -58,7 +58,7 @@ public final class VariableServices
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication,
-                        withAuthorization(
+                        withRequiredAuthorization(
                             VARIABLE_READ_AUTHORIZATION, VariableEntity::processDefinitionId)))
                 .getVariable(key));
   }
