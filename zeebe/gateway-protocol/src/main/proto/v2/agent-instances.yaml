@@ -903,7 +903,6 @@ components:
         - metrics
         - commitStatus
         - producedAt
-        - metadata
       properties:
         historyItemKey:
           description: The unique key for this history item. Stable and sortable by creation order.
@@ -962,12 +961,6 @@ components:
           description: The connector-side timestamp of when this message was produced.
           type: string
           format: date-time
-        metadata:
-          description: Opaque extension point for provider or connector-specific metadata.
-          type: object
-          nullable: true
-          additionalProperties: true
-
     AgentInstanceHistoryRoleEnum:
       description: The role of a history item in the agent conversation.
       type: string
