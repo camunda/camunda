@@ -38,7 +38,7 @@ apps/orchestration-cluster-webapp/
 │   │   ├── login/          # Login UI components
 │   │   ├── svg/            # Generated SVG components
 │   │   ├── theme/          # Theme provider (MobX)
-│   │   ├── tracking/       # Analytics (Mixpanel)
+│   │   ├── tracking.tsx    # Analytics (Mixpanel)
 │   │   ├── pages/          # Shared pages (login, errors, forbidden, 404)
 │   │   ├── assets/svg/     # SVG sources (see Generating SVG components)
 │   │   └── feature-flags.ts
