@@ -161,7 +161,7 @@ class CompactRecordLoggerTest {
                       .withJobKey(3L)
                       .withRole(AgentHistoryRole.ASSISTANT)
                       .withCommitStatus(AgentHistoryCommitStatus.COMMITTED)
-                      .withAttemptNumber(1)
+                      .withJobLease("1")
                       .withIteration(2)
                       .withMetrics(
                           ImmutableAgentHistoryMetricsValue.builder()
@@ -215,7 +215,7 @@ class CompactRecordLoggerTest {
                       .withJobKey(3L)
                       .withRole(AgentHistoryRole.TOOL_RESULT)
                       .withCommitStatus(AgentHistoryCommitStatus.COMMITTED)
-                      .withAttemptNumber(1)
+                      .withJobLease("1")
                       .withIteration(3)
                       .addContent(
                           ImmutableAgentHistoryMessageContentValue.builder()

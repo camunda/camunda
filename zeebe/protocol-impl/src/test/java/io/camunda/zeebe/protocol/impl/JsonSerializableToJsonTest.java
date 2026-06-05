@@ -4799,7 +4799,7 @@ final class JsonSerializableToJsonTest {
                       .setAgentInstanceKey(2251799813685251L)
                       .setElementInstanceKey(2251799813685249L)
                       .setJobKey(2251799813685252L)
-                      .setAttemptNumber(1)
+                      .setJobLease("job-lease-abc123")
                       .setIteration(3)
                       .setRole(AgentHistoryRole.ASSISTANT)
                       .setCommitStatus(AgentHistoryCommitStatus.COMMITTED)
@@ -4839,7 +4839,7 @@ final class JsonSerializableToJsonTest {
           "agentInstanceKey": 2251799813685251,
           "elementInstanceKey": 2251799813685249,
           "jobKey": 2251799813685252,
-          "attemptNumber": 1,
+          "jobLease": "job-lease-abc123",
           "iteration": 3,
           "role": "ASSISTANT",
           "commitStatus": "COMMITTED",
@@ -4895,7 +4895,7 @@ final class JsonSerializableToJsonTest {
           "agentInstanceKey": -1,
           "elementInstanceKey": -1,
           "jobKey": -1,
-          "attemptNumber": 0,
+          "jobLease": "",
           "iteration": 0,
           "role": "UNSPECIFIED",
           "commitStatus": "UNSPECIFIED",

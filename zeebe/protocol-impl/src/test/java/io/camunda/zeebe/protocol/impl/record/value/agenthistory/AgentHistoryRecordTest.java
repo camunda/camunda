@@ -30,7 +30,7 @@ final class AgentHistoryRecordTest {
     assertThat(record.getAgentInstanceKey()).isEqualTo(-1L);
     assertThat(record.getElementInstanceKey()).isEqualTo(-1L);
     assertThat(record.getJobKey()).isEqualTo(-1L);
-    assertThat(record.getAttemptNumber()).isEqualTo(0);
+    assertThat(record.getJobLease()).isEmpty();
     assertThat(record.getIteration()).isEqualTo(0);
     assertThat(record.getRole()).isEqualTo(AgentHistoryRole.UNSPECIFIED);
     assertThat(record.getCommitStatus()).isEqualTo(AgentHistoryCommitStatus.UNSPECIFIED);
@@ -50,7 +50,7 @@ final class AgentHistoryRecordTest {
             .setAgentInstanceKey(2251799813685251L)
             .setElementInstanceKey(2251799813685249L)
             .setJobKey(2251799813685252L)
-            .setAttemptNumber(2)
+            .setJobLease("job-lease-abc123")
             .setIteration(3)
             .setRole(AgentHistoryRole.USER)
             .setCommitStatus(AgentHistoryCommitStatus.DISCARDED)
@@ -65,12 +65,25 @@ final class AgentHistoryRecordTest {
     assertThat(copy.getAgentInstanceKey()).isEqualTo(original.getAgentInstanceKey());
     assertThat(copy.getElementInstanceKey()).isEqualTo(original.getElementInstanceKey());
     assertThat(copy.getJobKey()).isEqualTo(original.getJobKey());
-    assertThat(copy.getAttemptNumber()).isEqualTo(original.getAttemptNumber());
+    assertThat(copy.getJobLease()).isEqualTo(original.getJobLease());
     assertThat(copy.getIteration()).isEqualTo(original.getIteration());
     assertThat(copy.getRole()).isEqualTo(original.getRole());
     assertThat(copy.getCommitStatus()).isEqualTo(original.getCommitStatus());
     assertThat(copy.getProducedAt()).isEqualTo(original.getProducedAt());
     assertThat(copy.getMetadata()).isEqualTo(original.getMetadata());
+  }
+
+  @Test
+  void shouldRoundTripJobLeaseViaMsgPack() {
+    // given
+    final AgentHistoryRecord original = new AgentHistoryRecord().setJobLease("job-lease-abc123");
+
+    // when
+    final AgentHistoryRecord copy = new AgentHistoryRecord();
+    copy.copyFrom(original);
+
+    // then
+    assertThat(copy.getJobLease()).isEqualTo("job-lease-abc123");
   }
 
   @Test

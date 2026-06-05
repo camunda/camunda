@@ -55,8 +55,8 @@ public interface AgentHistoryRecordValue extends RecordValue, TenantOwned, Proce
   /** Returns the key of the job that triggered the agent for this entry. */
   long getJobKey();
 
-  /** Returns the attempt number for the job, starting at 1. */
-  int getAttemptNumber();
+  /** Returns the job lease token identifying which job activation produced this history entry. */
+  String getJobLease();
 
   /** Returns the iteration counter (conversation round with the LLM). */
   int getIteration();

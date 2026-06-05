@@ -34,7 +34,7 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final LongProperty jobKeyProp = new LongProperty("jobKey", -1L);
-  private final IntegerProperty attemptNumberProp = new IntegerProperty("attemptNumber", 0);
+  private final StringProperty jobLeaseProp = new StringProperty("jobLease", "");
   private final IntegerProperty iterationProp = new IntegerProperty("iteration", 0);
   private final EnumProperty<AgentHistoryRole> roleProp =
       new EnumProperty<>("role", AgentHistoryRole.class, AgentHistoryRole.UNSPECIFIED);
@@ -61,7 +61,7 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
         .declareProperty(processDefinitionKeyProp)
         .declareProperty(tenantIdProp)
         .declareProperty(jobKeyProp)
-        .declareProperty(attemptNumberProp)
+        .declareProperty(jobLeaseProp)
         .declareProperty(iterationProp)
         .declareProperty(roleProp)
         .declareProperty(commitStatusProp)
@@ -144,12 +144,12 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
   }
 
   @Override
-  public int getAttemptNumber() {
-    return attemptNumberProp.getValue();
+  public String getJobLease() {
+    return BufferUtil.bufferAsString(jobLeaseProp.getValue());
   }
 
-  public AgentHistoryRecord setAttemptNumber(final int attemptNumber) {
-    attemptNumberProp.setValue(attemptNumber);
+  public AgentHistoryRecord setJobLease(final String jobLease) {
+    jobLeaseProp.setValue(jobLease);
     return this;
   }
 
