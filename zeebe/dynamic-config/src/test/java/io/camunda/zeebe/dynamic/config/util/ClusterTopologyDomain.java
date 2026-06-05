@@ -15,12 +15,15 @@ import io.camunda.zeebe.dynamic.config.state.CompletedChange;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExportingConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.ActivePartitions;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.AllPartitions;
 import io.camunda.zeebe.util.ReflectUtil;
+import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.SortedSet;
@@ -59,6 +62,7 @@ public final class ClusterTopologyDomain extends DomainContextBase {
     final var arbitraryClusterId = Arbitraries.strings().ofMinLength(1).ofMaxLength(50).optional();
     final var arbitraryIncarnationNumber = Arbitraries.longs().greaterOrEqual(0);
     final var arbitraryRecovery = Arbitraries.of(true, false);
+    // Combinators.combine supports up to 8 arbitraries; use flatMap for the 9th field.
     return Combinators.combine(
             arbitraryVersion,
             arbitraryMembers,
@@ -68,7 +72,35 @@ public final class ClusterTopologyDomain extends DomainContextBase {
             arbitraryClusterId,
             arbitraryIncarnationNumber,
             arbitraryRecovery)
-        .as(ClusterConfiguration::new);
+        .flatAs(
+            (version, members, lastChange, pendingChanges, routingState, clusterId,
+                incarnationNumber, recovery) ->
+                partitionDistributorConfigs()
+                    .map(
+                        distributorConfig ->
+                            new ClusterConfiguration(
+                                version,
+                                members,
+                                lastChange,
+                                pendingChanges,
+                                routingState,
+                                clusterId,
+                                incarnationNumber,
+                                recovery,
+                                distributorConfig)));
+  }
+
+  @Provide
+  Arbitrary<Optional<PartitionDistributorConfig>> partitionDistributorConfigs() {
+    return Arbitraries.of(
+        Optional.empty(),
+        Optional.of(new PartitionDistributorConfig.RoundRobinConfig()),
+        Optional.of(new PartitionDistributorConfig.FixedConfig()),
+        Optional.of(
+            new PartitionDistributorConfig.ZoneAwareConfig(
+                List.of(
+                    new PartitionDistributorConfig.ZoneSpec("zone-a", 2, 1000),
+                    new PartitionDistributorConfig.ZoneSpec("zone-b", 1, 500)))));
   }
 
   @Provide
