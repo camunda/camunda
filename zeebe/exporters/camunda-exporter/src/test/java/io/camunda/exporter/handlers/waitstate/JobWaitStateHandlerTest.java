@@ -189,6 +189,69 @@ class JobWaitStateHandlerTest {
   }
 
   @Test
+  void shouldAddHandlerHandleMigratedEvent() {
+    // given
+    final var migrated = jobRecord(JobIntent.MIGRATED);
+
+    // when / then — MIGRATED is an upsert, handled by the add handler, not the remove handler
+    assertThat(addHandler.handlesRecord(migrated)).isTrue();
+    assertThat(removeHandler.handlesRecord(migrated)).isFalse();
+  }
+
+  @Test
+  void shouldMigratedDocumentIdMatchOriginal() {
+    // given
+    final var migrated = jobRecord(JobIntent.MIGRATED);
+
+    // when
+    final var ids = addHandler.generateIds(migrated);
+
+    // then — same stable document id as CREATED so the upsert updates the existing entry
+    assertThat(ids).containsExactly(String.valueOf(JOB_KEY));
+  }
+
+  @Test
+  void shouldUpdateEntityElementIdOnJobMigrated() throws Exception {
+    // given — a record with the post-migration elementId
+    final var jobValue =
+        ImmutableJobRecordValue.builder()
+            .from(factory.generateObject(JobRecordValue.class))
+            .withType("payment-service")
+            .withJobKind(JobKind.BPMN_ELEMENT)
+            .withJobListenerEventType(JobListenerEventType.UNSPECIFIED)
+            .withRetries(3)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementId("task-after-migration")
+            .withElementInstanceKey(300L)
+            .withProcessInstanceKey(200L)
+            .withRootProcessInstanceKey(100L)
+            .withTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+            .build();
+    final var record =
+        cast(
+            factory.generateRecord(
+                ValueType.JOB,
+                r ->
+                    r.withKey(JOB_KEY)
+                        .withRecordType(RecordType.EVENT)
+                        .withIntent(JobIntent.MIGRATED)
+                        .withValue(jobValue)));
+    final var entity = addHandler.createNewEntity(String.valueOf(JOB_KEY));
+
+    // when
+    addHandler.updateEntity(record, entity);
+
+    // then — entity reflects the post-migration element id; all other fields are also updated
+    assertThat(entity.getElementId()).isEqualTo("task-after-migration");
+    assertThat(entity.getElementType()).isEqualTo(BpmnElementType.SERVICE_TASK.name());
+    assertThat(entity.getProcessInstanceKey()).isEqualTo(200L);
+    assertThat(entity.getWaitStateType()).isEqualTo(WaitStateType.JOB.name());
+    final var details = objectMapper.readTree(entity.getDetails());
+    assertThat(details.get("jobType").textValue()).isEqualTo("payment-service");
+    assertThat(details.get("jobKind").textValue()).isEqualTo(JobKind.BPMN_ELEMENT.name());
+  }
+
+  @Test
   void shouldBuilderProduceExactlyTwoHandlers() {
     final var handlers =
         WaitStateHandlerBuilder.of(INDEX_NAME, objectMapper)

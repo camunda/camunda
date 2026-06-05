@@ -15,6 +15,8 @@ public interface WaitStateMapper {
 
   void insert(WaitStateDbModel waitState);
 
+  void update(WaitStateDbModel waitState);
+
   void delete(Long waitStateKey);
 
   WaitStateDbModel findOne(Long waitStateKey);

@@ -53,6 +53,54 @@ class WaitStateAddHandlerTest {
   }
 
   @Test
+  void shouldAcceptJobMigratedRecord() {
+    // given
+    final Record<JobRecordValue> record =
+        factory.generateRecord(
+            ValueType.JOB, r -> r.withRecordType(RecordType.EVENT).withIntent(JobIntent.MIGRATED));
+
+    // when / then
+    assertThat(handler.canExport(record)).isTrue();
+  }
+
+  @Test
+  void shouldUpdateWaitStateRowOnMigratedExport() {
+    // given
+    final JobRecordValue value =
+        ImmutableJobRecordValue.builder()
+            .from(factory.generateObject(JobRecordValue.class))
+            .withType("payment-service")
+            .withJobKind(JobKind.BPMN_ELEMENT)
+            .withJobListenerEventType(JobListenerEventType.UNSPECIFIED)
+            .withRetries(3)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementId("task-after-migration")
+            .withElementInstanceKey(300L)
+            .withProcessInstanceKey(200L)
+            .withRootProcessInstanceKey(100L)
+            .withTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+            .build();
+    final Record<JobRecordValue> record =
+        factory.generateRecord(
+            ValueType.JOB,
+            r ->
+                r.withKey(999L)
+                    .withRecordType(RecordType.EVENT)
+                    .withIntent(JobIntent.MIGRATED)
+                    .withValue(value));
+
+    // when
+    handler.export(record);
+
+    // then — update (not insert) is called with the post-migration elementId
+    verify(waitStateWriter).update(modelCaptor.capture());
+    final WaitStateDbModel model = modelCaptor.getValue();
+    assertThat(model.waitStateKey()).isEqualTo(999L);
+    assertThat(model.elementId()).isEqualTo("task-after-migration");
+    assertThat(model.elementType()).isEqualTo(BpmnElementType.SERVICE_TASK.name());
+  }
+
+  @Test
   void shouldExportJobCreatedRecord() {
     // given
     final Record<JobRecordValue> record =

@@ -24,6 +24,7 @@ public final class WaitStateConfigs {
   public static final WaitStateTransformerConfig JOB_CONFIG =
       WaitStateTransformerConfig.of(ValueType.JOB)
           .withAddIntents(JobIntent.CREATED)
+          .withUpdateIntents(JobIntent.MIGRATED)
           .withRemoveIntents(JobIntent.COMPLETED, JobIntent.CANCELED)
           .withSupportedElementTypes(
               BpmnElementType.SERVICE_TASK,

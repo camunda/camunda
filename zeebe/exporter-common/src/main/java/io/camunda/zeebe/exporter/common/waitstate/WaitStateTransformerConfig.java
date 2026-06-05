@@ -23,33 +23,54 @@ import java.util.Set;
 public record WaitStateTransformerConfig(
     ValueType valueType,
     Set<Intent> addIntents,
+    Set<Intent> updateIntents,
     Set<Intent> removeIntents,
     Set<BpmnElementType> supportedElementTypes,
     WaitStateType waitStateType) {
 
   public static WaitStateTransformerConfig of(final ValueType valueType) {
-    return new WaitStateTransformerConfig(valueType, Set.of(), Set.of(), Set.of(), null);
+    return new WaitStateTransformerConfig(valueType, Set.of(), Set.of(), Set.of(), Set.of(), null);
   }
 
   public WaitStateTransformerConfig withAddIntents(final Intent... intents) {
     return new WaitStateTransformerConfig(
-        valueType, Set.of(intents), removeIntents, supportedElementTypes, waitStateType);
+        valueType,
+        Set.of(intents),
+        updateIntents,
+        removeIntents,
+        supportedElementTypes,
+        waitStateType);
+  }
+
+  public WaitStateTransformerConfig withUpdateIntents(final Intent... intents) {
+    return new WaitStateTransformerConfig(
+        valueType,
+        addIntents,
+        Set.of(intents),
+        removeIntents,
+        supportedElementTypes,
+        waitStateType);
   }
 
   public WaitStateTransformerConfig withRemoveIntents(final Intent... intents) {
     return new WaitStateTransformerConfig(
-        valueType, addIntents, Set.of(intents), supportedElementTypes, waitStateType);
+        valueType,
+        addIntents,
+        updateIntents,
+        Set.of(intents),
+        supportedElementTypes,
+        waitStateType);
   }
 
   public WaitStateTransformerConfig withSupportedElementTypes(
       final BpmnElementType... elementTypes) {
     return new WaitStateTransformerConfig(
-        valueType, addIntents, removeIntents, Set.of(elementTypes), waitStateType);
+        valueType, addIntents, updateIntents, removeIntents, Set.of(elementTypes), waitStateType);
   }
 
   public WaitStateTransformerConfig withWaitStateType(final WaitStateType waitStateType) {
     return new WaitStateTransformerConfig(
-        valueType, addIntents, removeIntents, supportedElementTypes, waitStateType);
+        valueType, addIntents, updateIntents, removeIntents, supportedElementTypes, waitStateType);
   }
 
   public boolean supports(final Record<?> record) {
@@ -61,6 +82,10 @@ public record WaitStateTransformerConfig(
 
   public boolean triggersAdd(final Record<?> record) {
     return supports(record) && addIntents.contains(record.getIntent());
+  }
+
+  public boolean triggersUpdate(final Record<?> record) {
+    return supports(record) && updateIntents.contains(record.getIntent());
   }
 
   public boolean triggersRemoval(final Record<?> record) {

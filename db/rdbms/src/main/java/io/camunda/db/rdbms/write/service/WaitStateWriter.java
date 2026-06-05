@@ -31,6 +31,16 @@ public class WaitStateWriter implements RdbmsWriter {
             waitState));
   }
 
+  public void update(final WaitStateDbModel waitState) {
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.WAIT_STATE,
+            WriteStatementType.UPDATE,
+            waitState.waitStateKey(),
+            "io.camunda.db.rdbms.sql.WaitStateMapper.update",
+            waitState));
+  }
+
   public void delete(final long waitStateKey) {
     executionQueue.executeInQueue(
         new QueueItem(
