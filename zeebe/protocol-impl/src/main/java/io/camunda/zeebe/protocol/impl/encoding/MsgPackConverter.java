@@ -287,6 +287,7 @@ public final class MsgPackConverter {
   // RequiredAuthorization lives in CSL annotation-free; this mixin provides the same snake_case
   // wire format that the in-class Jackson annotations on the old Authorization<T> produced.
   @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
+  @JsonIgnoreProperties({"wildcard"})
   private abstract static class RequiredAuthorizationMixin {
     @JsonProperty("resource_type")
     abstract io.camunda.security.api.model.authz.AuthorizationResourceType resourceType();
