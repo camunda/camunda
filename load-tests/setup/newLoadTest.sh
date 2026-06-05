@@ -167,7 +167,7 @@ cp -v "default/values/camunda-platform-values-${secondaryStorage}.yaml" "$namesp
 
 # Storage-specific copies. databases/ is created only for mssql/oracle.
 case "$secondaryStorage" in
-  elasticsearch)
+  elasticsearch|opensearch)
     cp -v default/values/prometheus-elasticsearch-exporter-values.yaml "$namespace/"
     ;;
 esac
@@ -176,6 +176,7 @@ if [[ "$enable_optimize" == "true" ]]; then
   # Optimize needs specifically Elasticsearch (independently from the secondary
   # storage configuration).
   cp -v default/values/camunda-platform-values-optimize-elasticsearch.yaml "$namespace/"
+  cp -v default/values/prometheus-elasticsearch-exporter-values.yaml "$namespace/"
 fi
 
 cd "$namespace"
