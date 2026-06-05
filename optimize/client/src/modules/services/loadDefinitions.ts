@@ -15,12 +15,17 @@ export type Definition = {
 
 export async function loadDefinitions(
   type: string,
-  collectionId: string | null
+  collectionId: string | null,
+  options?: {onlyWithAgentRuns?: boolean}
 ): Promise<Definition[]> {
-  const params: {filterByCollectionScope?: string} = {};
+  const params: {filterByCollectionScope?: string; onlyWithAgentRuns?: boolean} = {};
 
   if (collectionId) {
     params.filterByCollectionScope = collectionId;
+  }
+
+  if (options?.onlyWithAgentRuns) {
+    params.onlyWithAgentRuns = true;
   }
 
   const response = await get(`api/definition/${type}/keys`, params);

@@ -11,6 +11,10 @@
       "last3Months": "Letzte 3 Monate",
       "last6Months": "Letzte 6 Monate",
       "last12Months": "Letzte 12 Monate"
+    },
+    "processFilter": {
+      "label": "Prozess",
+      "placeholder": "Alle Prozesse"
     }
   },
   "navigation": {

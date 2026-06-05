@@ -9,6 +9,8 @@
 import {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 
+import {evaluateReport} from 'services';
+
 import {AgenticControlPlane} from './AgenticControlPlane';
 import {loadAgenticDashboard} from './service';
 
@@ -117,4 +119,60 @@ it('should pass the loaded tiles to DashboardRenderer', async () => {
   await runAllEffects();
 
   expect(node.find('DashboardRenderer').prop('tiles')).toEqual(tiles);
+});
+
+it('should hide visibleInL0Only tiles when a process is selected', async () => {
+  const tiles = [
+    {id: 'l0-tile', configuration: {visibleInL0Only: true}},
+    {id: 'l1-tile', configuration: {visibleInL1Only: true}},
+    {id: 'common-tile', configuration: {}},
+  ];
+  loadAgenticDashboard.mockReturnValueOnce({tiles, availableFilters: []});
+
+  const node = shallow(<AgenticControlPlane />);
+  await runAllEffects();
+
+  node.find('FilterBar').prop('onProcessScopeChange')('my-process');
+
+  const visibleTiles = node.find('DashboardRenderer').prop('tiles');
+  expect(visibleTiles.map((t) => t.id)).toEqual(['l1-tile', 'common-tile']);
+});
+
+it('should hide visibleInL1Only tiles when no process is selected (L0)', async () => {
+  const tiles = [
+    {id: 'l0-tile', configuration: {visibleInL0Only: true}},
+    {id: 'l1-tile', configuration: {visibleInL1Only: true}},
+    {id: 'common-tile', configuration: {}},
+  ];
+  loadAgenticDashboard.mockReturnValueOnce({tiles, availableFilters: []});
+
+  const node = shallow(<AgenticControlPlane />);
+  await runAllEffects();
+
+  const visibleTiles = node.find('DashboardRenderer').prop('tiles');
+  expect(visibleTiles.map((t) => t.id)).toEqual(['l0-tile', 'common-tile']);
+});
+
+it('should include definitions in evaluate calls when a process is selected', async () => {
+  const node = shallow(<AgenticControlPlane />);
+  await runAllEffects();
+
+  node.find('FilterBar').prop('onProcessScopeChange')('my-process');
+
+  const loadTile = node.find('DashboardRenderer').prop('loadTile');
+  loadTile('report-id', [], {});
+
+  expect(evaluateReport).toHaveBeenCalledWith('report-id', [], {}, [
+    {key: 'my-process', versions: ['all']},
+  ]);
+});
+
+it('should pass empty definitions in evaluate calls when no process is selected', async () => {
+  const node = shallow(<AgenticControlPlane />);
+  await runAllEffects();
+
+  const loadTile = node.find('DashboardRenderer').prop('loadTile');
+  loadTile('report-id', [], {});
+
+  expect(evaluateReport).toHaveBeenCalledWith('report-id', [], {}, []);
 });
