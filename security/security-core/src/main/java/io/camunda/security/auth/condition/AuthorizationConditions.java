@@ -7,7 +7,7 @@
  */
 package io.camunda.security.auth.condition;
 
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import java.util.Arrays;
 import java.util.List;
 
@@ -22,17 +22,17 @@ public final class AuthorizationConditions {
   }
 
   /** Wraps a single authorization as an authorization condition. */
-  public static AuthorizationCondition single(final Authorization<?> authorization) {
+  public static AuthorizationCondition single(final RequiredAuthorization<?> authorization) {
     return new SingleAuthorizationCondition(authorization);
   }
 
   /** Combines multiple authorizations as a disjunctive authorization condition. */
-  public static AuthorizationCondition anyOf(final List<Authorization<?>> authorizations) {
+  public static AuthorizationCondition anyOf(final List<RequiredAuthorization<?>> authorizations) {
     return new AnyOfAuthorizationCondition(authorizations);
   }
 
   /** Combines multiple authorizations as a disjunctive authorization condition. */
-  public static AuthorizationCondition anyOf(final Authorization<?>... authorizations) {
+  public static AuthorizationCondition anyOf(final RequiredAuthorization<?>... authorizations) {
     return anyOf(Arrays.asList(authorizations));
   }
 }

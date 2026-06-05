@@ -7,9 +7,9 @@
  */
 package io.camunda.security.reader;
 
-import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.condition.AuthorizationCondition;
 import io.camunda.security.auth.condition.AuthorizationConditions;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -21,7 +21,7 @@ import java.util.function.Predicate;
  */
 public record AuthorizationCheck(boolean enabled, AuthorizationCondition authorizationCondition) {
 
-  public static AuthorizationCheck enabled(final Authorization<?> authorization) {
+  public static AuthorizationCheck enabled(final RequiredAuthorization<?> authorization) {
     return enabled(AuthorizationConditions.single(authorization));
   }
 
@@ -34,7 +34,7 @@ public record AuthorizationCheck(boolean enabled, AuthorizationCondition authori
   }
 
   /** Returns the list of authorizations, or an empty list if none are configured. */
-  public List<Authorization<?>> authorizations() {
+  public List<RequiredAuthorization<?>> authorizations() {
     return Optional.ofNullable(authorizationCondition)
         .map(AuthorizationCondition::authorizations)
         .orElse(Collections.emptyList());
@@ -45,14 +45,14 @@ public record AuthorizationCheck(boolean enabled, AuthorizationCondition authori
   }
 
   private boolean hasAnyResourceIdAccess() {
-    return anyAuthorizationMatches(Authorization::hasAnyResourceIds);
+    return anyAuthorizationMatches(RequiredAuthorization::hasAnyResourceIds);
   }
 
   private boolean hasAnyResourcePropertyAccess() {
-    return anyAuthorizationMatches(Authorization::hasAnyResourcePropertyNames);
+    return anyAuthorizationMatches(RequiredAuthorization::hasAnyResourcePropertyNames);
   }
 
-  private boolean anyAuthorizationMatches(Predicate<Authorization<?>> predicate) {
+  private boolean anyAuthorizationMatches(Predicate<RequiredAuthorization<?>> predicate) {
     if (authorizationCondition == null) {
       return false;
     }
