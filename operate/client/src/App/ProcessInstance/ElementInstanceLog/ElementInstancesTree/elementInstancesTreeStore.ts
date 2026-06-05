@@ -218,12 +218,15 @@ class ElementInstancesTreeStore extends NetworkReconnectionHandler {
       return -1;
     }
 
-    const nextWindowStart = nodeData.pageMetadata.windowEnd;
-    const nextWindowEnd = nextWindowStart + PAGE_SIZE;
-
-    if (nextWindowStart >= nodeData.pageMetadata.totalItems) {
+    // All remaining items already fit in the second page of the current window
+    // (loaded by the initial 2*PAGE_SIZE fetch). Fetching would remove PAGE_SIZE
+    // items from the top with no compensation, causing a scroll jump and loop.
+    if (nodeData.pageMetadata.windowEnd + PAGE_SIZE >= nodeData.pageMetadata.totalItems) {
       return 0;
     }
+
+    const nextWindowStart = nodeData.pageMetadata.windowEnd;
+    const nextWindowEnd = nextWindowStart + PAGE_SIZE;
 
     this.setNodeStatus(scopeKey, 'loading');
 
