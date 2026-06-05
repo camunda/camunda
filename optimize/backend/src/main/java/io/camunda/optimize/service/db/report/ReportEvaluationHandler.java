@@ -163,7 +163,7 @@ public abstract class ReportEvaluationHandler {
     // from all tenants the given definition currently exists on
     if (reportEvaluationInfo.getReport().getData()
         instanceof final ProcessReportDataDto processReportData) {
-      if (processReportData.isManagementReport()) {
+      if (processReportData.isAgenticControlReport()) {
         final List<ReportDataDefinitionDto> scopedDefinitions =
             Optional.ofNullable(reportEvaluationInfo.getAdditionalFilters())
                 .map(AdditionalProcessReportEvaluationFilterDto::getDefinitions)
@@ -191,8 +191,8 @@ public abstract class ReportEvaluationHandler {
                   .collect(Collectors.toList());
           processReportData.setDefinitions(validatedDefs);
         } else {
-          // L0: no process selected — existing behaviour, fetch all fully-imported definitions
-          final List<ReportDataDefinitionDto> definitionsForManagementReport =
+          // L0: no process selected — fetch all fully-imported definitions
+          final List<ReportDataDefinitionDto> definitionsForAgenticReport =
               definitionService
                   .getFullyImportedDefinitions(
                       DefinitionType.PROCESS, reportEvaluationInfo.getUserId())
@@ -208,8 +208,26 @@ public abstract class ReportEvaluationHandler {
                                   .collect(Collectors.toList()),
                               def.getName()))
                   .collect(Collectors.toList());
-          processReportData.setDefinitions(definitionsForManagementReport);
+          processReportData.setDefinitions(definitionsForAgenticReport);
         }
+      } else if (processReportData.isManagementReport()) {
+        final List<ReportDataDefinitionDto> definitionsForManagementReport =
+            definitionService
+                .getFullyImportedDefinitions(
+                    DefinitionType.PROCESS, reportEvaluationInfo.getUserId())
+                .stream()
+                .map(
+                    def ->
+                        new ReportDataDefinitionDto(
+                            def.getKey(),
+                            def.getName(),
+                            List.of(ALL_VERSIONS),
+                            def.getTenants().stream()
+                                .map(TenantDto::getId)
+                                .collect(Collectors.toList()),
+                            def.getName()))
+                .collect(Collectors.toList());
+        processReportData.setDefinitions(definitionsForManagementReport);
       } else if (processReportData.isInstantPreviewReport()
           && !reportEvaluationInfo.isSharedReport()) {
         // Same logic as above, but just for the single process definition in the report
