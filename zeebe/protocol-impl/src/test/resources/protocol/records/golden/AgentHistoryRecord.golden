@@ -42,7 +42,6 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
       new EnumProperty<>(
           "commitStatus", AgentHistoryCommitStatus.class, AgentHistoryCommitStatus.UNSPECIFIED);
   private final LongProperty producedAtProp = new LongProperty("producedAt", -1L);
-  private final StringProperty metadataProp = new StringProperty("metadata", "");
   private final ArrayProperty<AgentHistoryMessageContent> contentProp =
       new ArrayProperty<>("content", AgentHistoryMessageContent::new);
   private final ArrayProperty<AgentHistoryEmbeddedToolCall> toolCallsProp =
@@ -53,7 +52,7 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
       new ObjectProperty<>("metrics", new AgentHistoryMetrics());
 
   public AgentHistoryRecord() {
-    super(17);
+    super(16);
     declareProperty(agentInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(processInstanceKeyProp)
@@ -66,7 +65,6 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
         .declareProperty(roleProp)
         .declareProperty(commitStatusProp)
         .declareProperty(producedAtProp)
-        .declareProperty(metadataProp)
         .declareProperty(contentProp)
         .declareProperty(toolCallsProp)
         .declareProperty(toolCallRefProp)
@@ -190,16 +188,6 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
 
   public AgentHistoryRecord setProducedAt(final long producedAt) {
     producedAtProp.setValue(producedAt);
-    return this;
-  }
-
-  @Override
-  public String getMetadata() {
-    return BufferUtil.bufferAsString(metadataProp.getValue());
-  }
-
-  public AgentHistoryRecord setMetadata(final String metadata) {
-    metadataProp.setValue(metadata);
     return this;
   }
 

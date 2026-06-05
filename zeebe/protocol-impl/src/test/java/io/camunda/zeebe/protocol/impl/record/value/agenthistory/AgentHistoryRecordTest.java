@@ -35,7 +35,6 @@ final class AgentHistoryRecordTest {
     assertThat(record.getRole()).isEqualTo(AgentHistoryRole.UNSPECIFIED);
     assertThat(record.getCommitStatus()).isEqualTo(AgentHistoryCommitStatus.UNSPECIFIED);
     assertThat(record.getProducedAt()).isEqualTo(-1L);
-    assertThat(record.getMetadata()).isEmpty();
     assertThat(record.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     assertThat(record.getProcessInstanceKey()).isEqualTo(-1L);
     assertThat(record.getRootProcessInstanceKey()).isEqualTo(-1L);
@@ -54,8 +53,7 @@ final class AgentHistoryRecordTest {
             .setIteration(3)
             .setRole(AgentHistoryRole.USER)
             .setCommitStatus(AgentHistoryCommitStatus.DISCARDED)
-            .setProducedAt(1717200000000L)
-            .setMetadata("{\"source\":\"test\"}");
+            .setProducedAt(1717200000000L);
 
     // when
     final AgentHistoryRecord copy = new AgentHistoryRecord();
@@ -70,7 +68,6 @@ final class AgentHistoryRecordTest {
     assertThat(copy.getRole()).isEqualTo(original.getRole());
     assertThat(copy.getCommitStatus()).isEqualTo(original.getCommitStatus());
     assertThat(copy.getProducedAt()).isEqualTo(original.getProducedAt());
-    assertThat(copy.getMetadata()).isEqualTo(original.getMetadata());
   }
 
   @Test

@@ -70,9 +70,6 @@ public interface AgentHistoryRecordValue extends RecordValue, TenantOwned, Proce
   /** Returns the epoch-millis timestamp at which this entry was produced. */
   long getProducedAt();
 
-  /** Returns optional free-form metadata attached to this entry. */
-  String getMetadata();
-
   /** Returns the list of content blocks in this history entry. */
   List<AgentHistoryMessageContentValue> getContent();
 

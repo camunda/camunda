@@ -4803,8 +4803,7 @@ final class JsonSerializableToJsonTest {
                       .setIteration(3)
                       .setRole(AgentHistoryRole.ASSISTANT)
                       .setCommitStatus(AgentHistoryCommitStatus.COMMITTED)
-                      .setProducedAt(1748860800000L)
-                      .setMetadata("model=gpt-4o");
+                      .setProducedAt(1748860800000L);
               record.addContent(
                   new AgentHistoryMessageContent()
                       .setContentType(AgentHistoryContentType.TEXT)
@@ -4844,7 +4843,6 @@ final class JsonSerializableToJsonTest {
           "role": "ASSISTANT",
           "commitStatus": "COMMITTED",
           "producedAt": 1748860800000,
-          "metadata": "model=gpt-4o",
           "content": [
             {
               "contentType": "TEXT",
@@ -4900,7 +4898,6 @@ final class JsonSerializableToJsonTest {
           "role": "UNSPECIFIED",
           "commitStatus": "UNSPECIFIED",
           "producedAt": -1,
-          "metadata": "",
           "content": [],
           "toolCalls": [],
           "toolCallRef": {
