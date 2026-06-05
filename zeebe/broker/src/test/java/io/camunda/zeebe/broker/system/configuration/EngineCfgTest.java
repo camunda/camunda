@@ -77,5 +77,4 @@ final class EngineCfgTest {
     assertThat(configuration.getGroupNameCacheCapacity()).isEqualTo(2000);
     assertThat(configuration.isCandidateGroupNameResolution()).isFalse();
   }
-
 }
