@@ -10,6 +10,7 @@ import {createFileRoute} from '@tanstack/react-router';
 import {getClientConfig} from '#/shared/config/getClientConfig';
 import {ComponentNotAvailableError, ForbiddenError} from '#/shared/errors';
 import {ForbiddenPage} from '#/shared/pages/ForbiddenPage';
+import {NotFoundPage} from '#/shared/pages/NotFoundPage';
 
 export const Route = createFileRoute('/_auth/operate')({
 	beforeLoad: () => {
@@ -23,6 +24,11 @@ export const Route = createFileRoute('/_auth/operate')({
 		}
 		throw error;
 	},
+	notFoundComponent: () => (
+		<main className="cds--content">
+			<NotFoundPage />
+		</main>
+	),
 	head: () => ({
 		meta: [
 			{

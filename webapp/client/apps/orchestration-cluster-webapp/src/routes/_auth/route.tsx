@@ -16,6 +16,7 @@ import {fetchSaasToken} from '#/shared/c3/fetchSaasToken';
 import {Header} from '#/shared/header/components/Header';
 import {getBootConfig} from '#/shared/config/getBootConfig';
 import {tracking} from '#/shared/tracking';
+import {NotFoundPage} from '#/shared/pages/NotFoundPage';
 
 export const Route = createFileRoute('/_auth')({
 	beforeLoad: async ({location, context: {queryClient}}) => {
@@ -48,6 +49,11 @@ export const Route = createFileRoute('/_auth')({
 		return {initialSaasToken: await fetchSaasToken()};
 	},
 	component: RouteComponent,
+	notFoundComponent: () => (
+		<main className="cds--content">
+			<NotFoundPage />
+		</main>
+	),
 });
 
 type FileRouteTypes = RegisteredRouter['routeTree']['types']['fileRouteTypes'];

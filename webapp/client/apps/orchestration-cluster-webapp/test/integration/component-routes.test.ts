@@ -149,4 +149,55 @@ test.describe('component routes', () => {
 
 		await expect(page).toHaveURL('/login?redirect=%2Foperate');
 	});
+
+	test('should show 404 page for unknown tasklist route', async ({network, page}) => {
+		network.use(
+			mockCurrentUserEndpoint({successResponse: HttpResponse.json(mockCurrentUser)}),
+			mockSystemConfigurationEndpoint({
+				successResponse: HttpResponse.json({
+					...mockSystemConfiguration,
+					components: {active: ['tasklist']},
+				}),
+			}),
+			mockLicenseEndpoint({successResponse: HttpResponse.json(mockLicense)}),
+		);
+
+		await page.goto('/tasklist/nonexistent');
+
+		await expect(page.getByRole('heading', {name: '404 - Page not found'})).toBeVisible();
+	});
+
+	test('should show 404 page for unknown operate route', async ({network, page}) => {
+		network.use(
+			mockCurrentUserEndpoint({successResponse: HttpResponse.json(mockCurrentUser)}),
+			mockSystemConfigurationEndpoint({
+				successResponse: HttpResponse.json({
+					...mockSystemConfiguration,
+					components: {active: ['operate']},
+				}),
+			}),
+			mockLicenseEndpoint({successResponse: HttpResponse.json(mockLicense)}),
+		);
+
+		await page.goto('/operate/nonexistent');
+
+		await expect(page.getByRole('heading', {name: '404 - Page not found'})).toBeVisible();
+	});
+
+	test('should show 404 page for unknown admin route', async ({network, page}) => {
+		network.use(
+			mockCurrentUserEndpoint({successResponse: HttpResponse.json(mockCurrentUser)}),
+			mockSystemConfigurationEndpoint({
+				successResponse: HttpResponse.json({
+					...mockSystemConfiguration,
+					components: {active: ['admin']},
+				}),
+			}),
+			mockLicenseEndpoint({successResponse: HttpResponse.json(mockLicense)}),
+		);
+
+		await page.goto('/admin/nonexistent');
+
+		await expect(page.getByRole('heading', {name: '404 - Page not found'})).toBeVisible();
+	});
 });
