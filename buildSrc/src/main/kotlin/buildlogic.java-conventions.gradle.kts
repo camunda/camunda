@@ -83,6 +83,7 @@ val skipRandomTests = providers.gradleProperty("skip.random.tests").isPresent
 val parallelTests = providers.gradleProperty("parallel.tests").isPresent
 val junitThreadCount = providers.gradleProperty("junit.thread.count").getOrElse("2")
 val testJvmMaxHeap = providers.gradleProperty("test.jvm.maxheap").orNull
+val testMaxForks = providers.gradleProperty("test.max.forks").orNull?.toInt() ?: 1
 
 val itPatterns = listOf(
     "**/IT*.class",

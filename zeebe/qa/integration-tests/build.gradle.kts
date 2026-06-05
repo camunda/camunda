@@ -126,7 +126,9 @@ configurations.named("testRuntimeClasspath") {
 description = "Zeebe QA Integration Tests"
 
 tasks.withType<Test>().configureEach {
-    jvmArgs("-Xmx3g")
+    if (providers.gradleProperty("test.jvm.maxheap").orNull == null) {
+        jvmArgs("-Xmx3g")
+    }
 }
 
 

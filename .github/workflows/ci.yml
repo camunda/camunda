@@ -1262,7 +1262,8 @@ jobs:
             GRADLE_ARGS+=("-Pit.exclude.tests=${{ matrix.gradle-test-exclude }}")
           fi
           ./gradlew --no-daemon --console=plain --max-workers=${{ matrix.maven-test-fork-count }} \
-            -Pskip.fe.build -Pparallel.tests -Pjunit.thread.count=16 \
+            -Pskip.fe.build -Pparallel.tests -Pjunit.thread.count=2 \
+            -Ptest.jvm.maxheap=6g \
             -Dio.camunda.process.test.camundaDockerImageName="${{ env.CAMUNDA_DOCKER_IMAGE_NAME }}" \
             -Dio.camunda.process.test.camundaDockerImageVersion="${{ env.DOCKER_IMAGE_TAG }}" \
             -Dio.camunda.process.test.camundaVersion="${{ env.DOCKER_IMAGE_TAG }}" \
