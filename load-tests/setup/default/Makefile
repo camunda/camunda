@@ -68,15 +68,28 @@ ifneq ($(enable_optimize),true)
 		platform_values += --set elasticsearch.enabled=false
 	endif
 else
-	# Optimize needs specifically Elasticsearch (independently from the
-	# secondary storage configuration).
-	ifneq ($(secondary_storage),elasticsearch)
+	# Optimize needs Elasticsearch or OpenSearch, so enable Elasticsearch if
+	# we are not already creating a cluster for secondary storage.
+	ifeq ($(filter $(secondary_storage),elasticsearch opensearch),)
 		platform_values += -f camunda-platform-values-optimize-elasticsearch.yaml
 	endif
 endif
 
 # Platform values with stable configuration
 platform_values_stable := $(platform_values) -f values-stable.yaml
+
+ifeq ($(secondary_storage),elasticsearch)
+	install_es_prom_exporter := true
+	es_prom_exporter_es_uri := http://elastic:9200
+else ifeq ($(secondary_storage),opensearch)
+	install_es_prom_exporter := true
+	es_prom_exporter_es_uri := http://opensearch:9200
+else ifeq ($(enable_optimize),true)
+	install_es_prom_exporter := true
+	es_prom_exporter_es_uri := http://elastic:9200
+else
+	install_es_prom_exporter := false
+endif
 
 .PHONY: all
 all: install
@@ -162,16 +175,17 @@ else
 	@echo "Skipping secondary storage installation (secondary_storage=$(secondary_storage))"
 endif
 
-# Install Elasticsearch Prometheus exporter if secondary_storage is elasticsearch
+# Install Elasticsearch Prometheus exporter if Elasticsearch/OpenSearch is deployed (secondary storage or Optimize)
 .PHONY: install-elasticsearch-exporter
 install-elasticsearch-exporter:
-ifeq ($(secondary_storage),elasticsearch)
+ifeq ($(install_es_prom_exporter),true)
 	@echo "Installing Elasticsearch Prometheus Exporter for namespace $(namespace)..."
 	helm upgrade --install elasticsearch-exporter oci://ghcr.io/prometheus-community/charts/prometheus-elasticsearch-exporter \
     --namespace $(namespace) \
     --version $(prometheus_elasticsearch_exporter_chart_version) \
     --wait --timeout 5m0s \
-    -f prometheus-elasticsearch-exporter-values.yaml
+    -f prometheus-elasticsearch-exporter-values.yaml \
+    --set "es.uri=$(es_prom_exporter_es_uri)"
 else
 	@echo "Skipping Elasticsearch Prometheus Exporter installation (secondary_storage=$(secondary_storage))"
 endif

@@ -1,7 +1,7 @@
 fullnameOverride: "prom-els-exporter"
 
-es:
-  uri: http://elastic:9200
+# The target Elasticsearch/OpenSearch cluster is configured at deployment time
+# via: --set es.uri
 
 commonLabels:
   camunda.io/created-by: __AUTHOR__
