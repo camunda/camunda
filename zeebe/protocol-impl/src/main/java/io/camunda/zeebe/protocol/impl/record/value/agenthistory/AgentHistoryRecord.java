@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryCommitStatus;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRole;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 
@@ -25,6 +26,13 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
 
   private final LongProperty agentInstanceKeyProp = new LongProperty("agentInstanceKey", -1L);
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey", -1L);
+  private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey", -1L);
+  private final LongProperty rootProcessInstanceKeyProp =
+      new LongProperty("rootProcessInstanceKey", -1L);
+  private final LongProperty processDefinitionKeyProp =
+      new LongProperty("processDefinitionKey", -1L);
+  private final StringProperty tenantIdProp =
+      new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final LongProperty jobKeyProp = new LongProperty("jobKey", -1L);
   private final IntegerProperty attemptNumberProp = new IntegerProperty("attemptNumber", 0);
   private final IntegerProperty iterationProp = new IntegerProperty("iteration", 0);
@@ -45,9 +53,13 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
       new ObjectProperty<>("metrics", new AgentHistoryMetrics());
 
   public AgentHistoryRecord() {
-    super(13);
+    super(17);
     declareProperty(agentInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
+        .declareProperty(processInstanceKeyProp)
+        .declareProperty(rootProcessInstanceKeyProp)
+        .declareProperty(processDefinitionKeyProp)
+        .declareProperty(tenantIdProp)
         .declareProperty(jobKeyProp)
         .declareProperty(attemptNumberProp)
         .declareProperty(iterationProp)
@@ -78,6 +90,46 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
 
   public AgentHistoryRecord setElementInstanceKey(final long elementInstanceKey) {
     elementInstanceKeyProp.setValue(elementInstanceKey);
+    return this;
+  }
+
+  @Override
+  public long getProcessInstanceKey() {
+    return processInstanceKeyProp.getValue();
+  }
+
+  public AgentHistoryRecord setProcessInstanceKey(final long processInstanceKey) {
+    processInstanceKeyProp.setValue(processInstanceKey);
+    return this;
+  }
+
+  @Override
+  public long getRootProcessInstanceKey() {
+    return rootProcessInstanceKeyProp.getValue();
+  }
+
+  public AgentHistoryRecord setRootProcessInstanceKey(final long rootProcessInstanceKey) {
+    rootProcessInstanceKeyProp.setValue(rootProcessInstanceKey);
+    return this;
+  }
+
+  @Override
+  public long getProcessDefinitionKey() {
+    return processDefinitionKeyProp.getValue();
+  }
+
+  public AgentHistoryRecord setProcessDefinitionKey(final long processDefinitionKey) {
+    processDefinitionKeyProp.setValue(processDefinitionKey);
+    return this;
+  }
+
+  @Override
+  public String getTenantId() {
+    return BufferUtil.bufferAsString(tenantIdProp.getValue());
+  }
+
+  public AgentHistoryRecord setTenantId(final String tenantId) {
+    tenantIdProp.setValue(tenantId);
     return this;
   }
 

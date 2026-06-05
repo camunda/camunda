@@ -13,6 +13,7 @@ import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryCommitStatus;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryContentType;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRole;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +36,10 @@ final class AgentHistoryRecordTest {
     assertThat(record.getCommitStatus()).isEqualTo(AgentHistoryCommitStatus.UNSPECIFIED);
     assertThat(record.getProducedAt()).isEqualTo(-1L);
     assertThat(record.getMetadata()).isEmpty();
+    assertThat(record.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    assertThat(record.getProcessInstanceKey()).isEqualTo(-1L);
+    assertThat(record.getRootProcessInstanceKey()).isEqualTo(-1L);
+    assertThat(record.getProcessDefinitionKey()).isEqualTo(-1L);
   }
 
   @Test
@@ -222,6 +227,27 @@ final class AgentHistoryRecordTest {
     assertThat(copy.getMetrics().getInputTokens()).isEqualTo(100L);
     assertThat(copy.getMetrics().getOutputTokens()).isEqualTo(200L);
     assertThat(copy.getMetrics().getDurationMs()).isEqualTo(350L);
+  }
+
+  @Test
+  void shouldRoundTripTenantAndProcessFieldsViaMsgPack() {
+    // given
+    final AgentHistoryRecord original =
+        new AgentHistoryRecord()
+            .setTenantId("tenant-a")
+            .setProcessInstanceKey(2251799813685260L)
+            .setRootProcessInstanceKey(2251799813685262L)
+            .setProcessDefinitionKey(2251799813685261L);
+
+    // when
+    final AgentHistoryRecord copy = new AgentHistoryRecord();
+    copy.copyFrom(original);
+
+    // then
+    assertThat(copy.getTenantId()).isEqualTo("tenant-a");
+    assertThat(copy.getProcessInstanceKey()).isEqualTo(2251799813685260L);
+    assertThat(copy.getRootProcessInstanceKey()).isEqualTo(2251799813685262L);
+    assertThat(copy.getProcessDefinitionKey()).isEqualTo(2251799813685261L);
   }
 
   @Test

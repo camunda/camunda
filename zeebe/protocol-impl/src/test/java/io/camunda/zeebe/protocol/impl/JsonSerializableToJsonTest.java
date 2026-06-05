@@ -4879,7 +4879,11 @@ final class JsonSerializableToJsonTest {
             "elementId": "extract-line-items-task",
             "toolElementInstanceKey": 2251799813685253
           },
-          "metrics": { "inputTokens": 512, "outputTokens": 148, "durationMs": 1200 }
+          "metrics": { "inputTokens": 512, "outputTokens": 148, "durationMs": 1200 },
+          "tenantId": "<default>",
+          "processInstanceKey": -1,
+          "rootProcessInstanceKey": -1,
+          "processDefinitionKey": -1
         }
         """
       },
@@ -4905,7 +4909,11 @@ final class JsonSerializableToJsonTest {
             "elementId": "",
             "toolElementInstanceKey": -1
           },
-          "metrics": { "inputTokens": 0, "outputTokens": 0, "durationMs": 0 }
+          "metrics": { "inputTokens": 0, "outputTokens": 0, "durationMs": 0 },
+          "tenantId": "<default>",
+          "processInstanceKey": -1,
+          "rootProcessInstanceKey": -1,
+          "processDefinitionKey": -1
         }
         """
       }

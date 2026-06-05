@@ -23,13 +23,34 @@ import org.immutables.value.Value;
 
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableAgentHistoryRecordValue.Builder.class)
-public interface AgentHistoryRecordValue extends RecordValue {
+public interface AgentHistoryRecordValue extends RecordValue, TenantOwned, ProcessInstanceRelated {
 
   /** Returns the key of the agent instance that produced this history entry. */
   long getAgentInstanceKey();
 
   /** Returns the key of the element instance associated with this entry. */
   long getElementInstanceKey();
+
+  /**
+   * @return the key of the process instance containing this agent history entry
+   */
+  @Override
+  long getProcessInstanceKey();
+
+  /** Returns the key of the root process instance in the hierarchy. */
+  long getRootProcessInstanceKey();
+
+  /**
+   * @return the key of the process definition
+   */
+  @Override
+  long getProcessDefinitionKey();
+
+  /**
+   * @return the ID of the tenant that owns this agent history entry
+   */
+  @Override
+  String getTenantId();
 
   /** Returns the key of the job that triggered the agent for this entry. */
   long getJobKey();
