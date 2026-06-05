@@ -1182,10 +1182,11 @@ jobs:
           minimus: true
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
+        if: ${{ github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'gradle-build') }}
         with:
           maven-extra-args: -T1C -PskipFrontendBuild
       - uses: ./.github/actions/build-platform-docker
-        if: ${{ matrix.docker-file != '' }}
+        if: ${{ matrix.docker-file != '' && (github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'gradle-build')) }}
         with:
           repository: ${{ matrix.docker-repository }}
           version: ${{ env.DOCKER_IMAGE_TAG }}
@@ -1193,7 +1194,7 @@ jobs:
           push: true
           distball: ${{ steps.build-zeebe.outputs.distball }}
       - uses: ./.github/actions/build-platform-docker
-        if: ${{ matrix.group == 'root' }}
+        if: ${{ matrix.group == 'root' && (github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'gradle-build')) }}
         with:
           repository: localhost:5000/camunda/operate
           version: ${{ env.DOCKER_IMAGE_TAG }}
@@ -1201,7 +1202,7 @@ jobs:
           push: true
           distball: ${{ steps.build-zeebe.outputs.distball }}
       - uses: ./.github/actions/build-platform-docker
-        if: ${{ matrix.group == 'root' }}
+        if: ${{ matrix.group == 'root' && (github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'gradle-build')) }}
         with:
           repository: localhost:5000/camunda/tasklist
           version: ${{ env.DOCKER_IMAGE_TAG }}
@@ -1242,14 +1243,15 @@ jobs:
           IS_STRESS_ENABLED: ${{ matrix.allow-stress == true && github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ci:stress-test') }}
         shell: bash
         run: |
-          GRADLE_ARGS=""
+          GRADLE_ARGS=()
           if [[ -n "${{ matrix.gradle-test-filter }}" ]]; then
-            for pattern in $(echo "${{ matrix.gradle-test-filter }}" | tr ',' '\n'); do
-              GRADLE_ARGS="$GRADLE_ARGS --tests '$pattern'"
+            IFS=',' read -ra patterns <<< "${{ matrix.gradle-test-filter }}"
+            for pattern in "${patterns[@]}"; do
+              GRADLE_ARGS+=("--tests" "${pattern// /}")
             done
           fi
           if [[ -n "${{ matrix.gradle-test-exclude }}" ]]; then
-            GRADLE_ARGS="$GRADLE_ARGS -Pit.exclude.tests=${{ matrix.gradle-test-exclude }}"
+            GRADLE_ARGS+=("-Pit.exclude.tests=${{ matrix.gradle-test-exclude }}")
           fi
           ./gradlew --no-daemon --console=plain \
             -Pskip.fe.build -Pparallel.tests -Pjunit.thread.count=16 \
@@ -1257,7 +1259,7 @@ jobs:
             -Dio.camunda.process.test.camundaDockerImageVersion="${{ env.DOCKER_IMAGE_TAG }}" \
             -Dio.camunda.process.test.camundaVersion="${{ env.DOCKER_IMAGE_TAG }}" \
             ${{ matrix.gradle-modules }} \
-            $GRADLE_ARGS \
+            "${GRADLE_ARGS[@]}" \
             | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Analyze Test Runs
         id: analyze-test-run
