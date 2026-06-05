@@ -376,6 +376,13 @@ jobs:
           # Verify using the most reliable tag (DockerHub)
           ./optimize/docker/test/verify.sh "${DOCKER_IMAGE_DOCKER_HUB}:${RELEASE_VERSION}"
 
+      - name: Ensure Keycloak bootstrap env for smoketest
+        run: |
+          compose_file=".github/actions/compose/docker-compose.smoketest.yml"
+          if grep -q "image: bitnami/keycloak:" "$compose_file" && ! grep -q "KC_BOOTSTRAP_ADMIN_PASSWORD" "$compose_file"; then
+            sed -i '/KEYCLOAK_ADMIN_PASSWORD: admin/a\      KC_BOOTSTRAP_ADMIN_USERNAME: admin\n      KC_BOOTSTRAP_ADMIN_PASSWORD: admin' "$compose_file"
+          fi
+
       - name: Start Smoketest
         uses: ./.github/actions/compose
         with:
