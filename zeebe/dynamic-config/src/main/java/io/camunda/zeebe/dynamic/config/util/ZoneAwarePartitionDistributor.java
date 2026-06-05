@@ -153,6 +153,10 @@ public final class ZoneAwarePartitionDistributor implements PartitionDistributor
     return result;
   }
 
+  public List<ZoneSpec> zoneSpecs() {
+    return zoneSpecs;
+  }
+
   private void validateMemberZones(final Set<MemberId> clusterMembers) {
     for (final var member : clusterMembers) {
       if (member.zone() == null) {
