@@ -18,9 +18,12 @@ package io.camunda.client.api.search.request;
 import io.camunda.client.api.search.filter.ElementInstanceWaitStateFilter;
 import io.camunda.client.api.search.page.AnyPage;
 import io.camunda.client.api.search.response.ElementInstanceWaitStateResult;
+import io.camunda.client.api.search.sort.ElementInstanceWaitStateSort;
 
 public interface ElementInstanceWaitStateSearchRequest
-    extends TypedFilterableRequest<
-            ElementInstanceWaitStateFilter, ElementInstanceWaitStateSearchRequest>,
-        TypedPageableRequest<AnyPage, ElementInstanceWaitStateSearchRequest>,
+    extends TypedSearchRequest<
+            ElementInstanceWaitStateFilter,
+            ElementInstanceWaitStateSort,
+            AnyPage,
+            ElementInstanceWaitStateSearchRequest>,
         FinalSearchRequestStep<ElementInstanceWaitStateResult> {}

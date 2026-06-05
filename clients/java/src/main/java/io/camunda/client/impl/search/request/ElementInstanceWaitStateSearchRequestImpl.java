@@ -17,6 +17,7 @@ package io.camunda.client.impl.search.request;
 
 import static io.camunda.client.api.search.request.SearchRequestBuilders.anyPage;
 import static io.camunda.client.api.search.request.SearchRequestBuilders.elementInstanceWaitStateFilter;
+import static io.camunda.client.api.search.request.SearchRequestBuilders.elementInstanceWaitStateSort;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
@@ -26,6 +27,7 @@ import io.camunda.client.api.search.request.ElementInstanceWaitStateSearchReques
 import io.camunda.client.api.search.request.FinalSearchRequestStep;
 import io.camunda.client.api.search.response.ElementInstanceWaitStateResult;
 import io.camunda.client.api.search.response.SearchResponse;
+import io.camunda.client.api.search.sort.ElementInstanceWaitStateSort;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.SearchResponseMapper;
@@ -84,6 +86,20 @@ public class ElementInstanceWaitStateSearchRequestImpl
   public ElementInstanceWaitStateSearchRequest filter(
       final Consumer<ElementInstanceWaitStateFilter> fn) {
     return filter(elementInstanceWaitStateFilter(fn));
+  }
+
+  @Override
+  public ElementInstanceWaitStateSearchRequest sort(final ElementInstanceWaitStateSort value) {
+    request.setSort(
+        SearchRequestSortMapper.toElementInstanceWaitStateSearchQuerySortRequest(
+            provideSearchRequestProperty(value)));
+    return this;
+  }
+
+  @Override
+  public ElementInstanceWaitStateSearchRequest sort(
+      final Consumer<ElementInstanceWaitStateSort> fn) {
+    return sort(elementInstanceWaitStateSort(fn));
   }
 
   @Override
