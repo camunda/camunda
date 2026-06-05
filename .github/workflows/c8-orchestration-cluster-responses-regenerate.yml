@@ -1,0 +1,237 @@
+# description: Regenerates the JSON-body response assertions for the C8 Orchestration
+#              Cluster E2E test suite across all supported refs (main, stable/8.9,
+#              stable/8.8) via a matrix. For each ref it runs
+#              `npm run responses:regenerate` + `npm run lint:fix` and opens a PR
+#              (reviewer: @camunda/test-automation-team) ONLY when the actual API
+#              response schemas change. Metadata-only churn (generatedAt / commit /
+#              specSha256) is ignored and never opens a PR.
+# type: CI
+# owner: @camunda/test-automation-team
+---
+name: C8 Orchestration Cluster Responses Regeneration
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: '0 13 * * *'
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  regenerate:
+    name: Regenerate responses (${{ matrix.ref }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    strategy:
+      # Each ref is independent — one failing branch must not cancel the others.
+      fail-fast: false
+      matrix:
+        include:
+          - ref: main
+            safe: main
+          - ref: stable/8.9
+            safe: stable-8.9
+          - ref: stable/8.8
+            safe: stable-8.8
+
+    # Serialise per ref (not across the whole matrix), so two runs of the same
+    # branch never collide but the three refs still run in parallel.
+    concurrency:
+      group: responses-regenerate-${{ matrix.safe }}
+      cancel-in-progress: false
+
+    env:
+      SUITE_DIR: qa/c8-orchestration-cluster-e2e-test-suite
+      RESPONSES_FILE: qa/c8-orchestration-cluster-e2e-test-suite/json-body-assertions/_generated/responses.json
+      # matrix context is available to job-level env; shell steps read these
+      # instead of interpolating ${{ matrix.* }} directly (injection-safe).
+      TARGET_REF: ${{ matrix.ref }}
+      SAFE: ${{ matrix.safe }}
+
+    steps:
+      - name: Checkout ${{ matrix.ref }}
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ matrix.ref }}
+          fetch-depth: 0
+          # The regeneration branch is pushed with the bot PAT configured below,
+          # so the short-lived GITHUB_TOKEN must not linger in .git/config
+          # (zizmor: artipacked).
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: qa/c8-orchestration-cluster-e2e-test-suite/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ${{ env.SUITE_DIR }}
+        run: npm ci
+
+      - name: Import Vault secrets
+        id: secrets
+        uses: hashicorp/vault-action@d1720f055e0635fd932a1d2a48f87a666a57906c
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/qa/ci/common GH_TOKEN ;
+
+      - name: Configure git with bot PAT
+        env:
+          TOKEN: ${{ steps.secrets.outputs.GH_TOKEN }}
+        run: |
+          # The insteadOf rule also authenticates the clone that
+          # `assert-json-body extract` performs against camunda/camunda.
+          git config --global url."https://x-access-token:${TOKEN}@github.com/".insteadOf "https://github.com/"
+          git config --global user.name  "QA Responses Bot"
+          git config --global user.email "qa-responses-bot@camunda.com"
+
+      - name: Snapshot committed responses (pre-regeneration)
+        run: |
+          set -euo pipefail
+          if [ -f "$RESPONSES_FILE" ]; then
+            cp "$RESPONSES_FILE" /tmp/responses.before.json
+          else
+            echo "No existing responses file at $RESPONSES_FILE — will be treated as a change."
+            echo '{"responses":null}' > /tmp/responses.before.json
+          fi
+
+      - name: Regenerate responses
+        working-directory: ${{ env.SUITE_DIR }}
+        run: npm run responses:regenerate
+
+      - name: Detect response changes (ignore metadata)
+        id: diff
+        run: |
+          set -euo pipefail
+
+          if [ ! -f "$RESPONSES_FILE" ]; then
+            echo "::error::Regeneration did not produce $RESPONSES_FILE"
+            exit 1
+          fi
+
+          # Canonicalise ONLY the .responses array: sort object keys (-S) and
+          # order entries deterministically so reordering never registers as a
+          # change. metadata.{generatedAt,commit,specSha256,...} is intentionally
+          # excluded from the comparison.
+          norm() {
+            jq -S '.responses | (if . == null then null else sort_by(.path, .method, .status) end)' "$1"
+          }
+
+          norm /tmp/responses.before.json > /tmp/responses.before.norm
+          norm "$RESPONSES_FILE"           > /tmp/responses.after.norm
+
+          if cmp -s /tmp/responses.before.norm /tmp/responses.after.norm; then
+            echo "No response changes (metadata-only churn, if any). Nothing to do."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Response schema changes detected:"
+            diff /tmp/responses.before.norm /tmp/responses.after.norm || true
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create branch, commit & push
+        id: push
+        if: steps.diff.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ steps.secrets.outputs.GH_TOKEN }}
+        run: |
+          set -euo pipefail
+          stamp="$(date -u +%Y%m%d-%H%M%S)"
+          branch="test/regenerate-responses-${SAFE}-${stamp}-${GITHUB_RUN_ID}"
+          echo "branch=${branch}" >> "$GITHUB_OUTPUT"
+
+          git checkout -b "$branch"
+          # Stage ONLY the generated responses file — nothing else.
+          git add -- "$RESPONSES_FILE"
+          # 'test:' prefix — commitlint rejects 'fix:' for this kind of change.
+          git commit -m "test: regenerate API response assertions from latest ${TARGET_REF} OpenAPI spec"
+          git push origin "$branch"
+
+      - name: Open pull request
+        id: pr
+        if: steps.diff.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ steps.secrets.outputs.GH_TOKEN }}
+          BRANCH:   ${{ steps.push.outputs.branch }}
+        run: |
+          set -euo pipefail
+          printf '%s\n' \
+            "Automated regeneration of the JSON body response assertions via \`npm run responses:regenerate\` (followed by \`npm run lint:fix\`)." \
+            "" \
+            "This PR was opened because the **response schemas** in \`json-body-assertions/_generated/responses.json\` changed." \
+            "Metadata-only differences (\`generatedAt\`, \`commit\`, \`specSha256\`) do not trigger a PR." \
+            "" \
+            "Please review the schema changes against the upstream REST API spec." \
+            "" \
+            "_Opened by the C8 Orchestration Cluster responses-regeneration workflow for ${TARGET_REF}._" \
+            > /tmp/pr-body.md
+
+          url=$(gh pr create \
+            --repo "$GITHUB_REPOSITORY" \
+            --base "$TARGET_REF" \
+            --head "$BRANCH" \
+            --title "test: regenerate API response assertions from latest ${TARGET_REF} OpenAPI spec" \
+            --body-file /tmp/pr-body.md)
+          echo "url=${url}" >> "$GITHUB_OUTPUT"
+
+          number=$(gh pr view "$url" --repo "$GITHUB_REPOSITORY" --json number --jq '.number')
+          echo "number=${number}" >> "$GITHUB_OUTPUT"
+          echo "Opened PR #${number}: ${url}"
+
+      - name: Request review from @camunda/test-automation-team
+        if: steps.diff.outputs.changed == 'true'
+        env:
+          # Use the built-in repo-scoped token here: requesting a *team* reviewer
+          # via the REST API needs only pull-requests:write, not the read:org
+          # scope that the Vault bot PAT lacks.
+          GH_TOKEN:  ${{ secrets.GITHUB_TOKEN }}
+          BOT_TOKEN: ${{ steps.secrets.outputs.GH_TOKEN }}
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+        run: |
+          set -euo pipefail
+          if gh api \
+              --method POST \
+              -H "Accept: application/vnd.github+json" \
+              "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/requested_reviewers" \
+              -f "team_reviewers[]=test-automation-team"; then
+            echo "Requested review from camunda/test-automation-team."
+          else
+            echo "::warning::REST reviewer request failed — retrying via gh CLI with the bot PAT."
+            GH_TOKEN="$BOT_TOKEN" gh pr edit "$PR_NUMBER" \
+              --repo "$GITHUB_REPOSITORY" \
+              --add-reviewer "camunda/test-automation-team"
+          fi
+
+      - name: Job summary
+        if: always()
+        env:
+          CHANGED: ${{ steps.diff.outputs.changed }}
+          PR_URL:  ${{ steps.pr.outputs.url }}
+        run: |
+          {
+            echo "## Responses regeneration — \`${TARGET_REF}\`"
+            echo ""
+            if [ "${CHANGED:-false}" = "true" ]; then
+              echo ":white_check_mark: Response schema changes detected."
+              if [ -n "${PR_URL:-}" ]; then
+                echo ""
+                echo "**PR:** ${PR_URL}"
+              fi
+            else
+              echo ":information_source: No response schema changes — metadata-only churn ignored, no PR opened."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
