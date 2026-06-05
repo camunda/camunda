@@ -73,8 +73,14 @@ public final class ClusterTopologyDomain extends DomainContextBase {
             arbitraryIncarnationNumber,
             arbitraryRecovery)
         .flatAs(
-            (version, members, lastChange, pendingChanges, routingState, clusterId,
-                incarnationNumber, recovery) ->
+            (version,
+                members,
+                lastChange,
+                pendingChanges,
+                routingState,
+                clusterId,
+                incarnationNumber,
+                recovery) ->
                 partitionDistributorConfigs()
                     .map(
                         distributorConfig ->

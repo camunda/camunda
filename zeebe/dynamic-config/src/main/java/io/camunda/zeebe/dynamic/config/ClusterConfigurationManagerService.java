@@ -283,7 +283,8 @@ public final class ClusterConfigurationManagerService
   private PartitionDistributor resolveDistributor() {
     // Reads from the persisted (actor-thread-safe) configuration directly to avoid async
     // indirection. Called from the manager actor when handling a request.
-    final var config = persistedClusterConfiguration.getConfiguration().partitionDistributorConfig();
+    final var config =
+        persistedClusterConfiguration.getConfiguration().partitionDistributorConfig();
     if (config.isEmpty()) {
       return new RoundRobinPartitionDistributor();
     }

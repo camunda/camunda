@@ -63,8 +63,8 @@ import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExportingConfig;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
-import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
+import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling;
@@ -214,8 +214,7 @@ public class ProtoBufSerializer
     clusterConfiguration
         .partitionDistributorConfig()
         .ifPresent(
-            config ->
-                builder.setPartitionDistributor(encodePartitionDistributorConfig(config)));
+            config -> builder.setPartitionDistributor(encodePartitionDistributorConfig(config)));
     clusterConfiguration.clusterId().ifPresent(builder::setClusterId);
 
     return builder.build();

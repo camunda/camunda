@@ -27,8 +27,8 @@ public sealed interface PartitionDistributorConfig {
   }
 
   /**
-   * Marker for a fixed (statically-configured) distribution. The actual partition→member mapping
-   * is not serialized; the broker resolves it from its local static configuration at runtime.
+   * Marker for a fixed (statically-configured) distribution. The actual partition→member mapping is
+   * not serialized; the broker resolves it from its local static configuration at runtime.
    */
   record FixedConfig() implements PartitionDistributorConfig {}
 
