@@ -4,6 +4,7 @@
 
 plugins {
     id("buildlogic.server-conventions")
+    id("buildlogic.integration-test-module-conventions")
 }
 
 dependencies {

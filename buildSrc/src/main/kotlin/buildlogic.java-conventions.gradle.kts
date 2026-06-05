@@ -114,18 +114,27 @@ tasks.withType<Test>().configureEach {
     useJUnitPlatform()
 }
 
-// Match Maven surefire defaults: unit test task excludes *IT/*ITCase/IT* patterns.
-// Integration tests are run by the separate `it` task (equivalent to maven-failsafe-plugin).
-tasks.named<Test>("test") {
+val ut by tasks.register<Test>("ut") {
+    group = "verification"
+    description = "Runs unit tests (Maven surefire equivalent); excludes IT* patterns"
+    testClassesDirs = sourceSets["test"].output.classesDirs
+    classpath = sourceSets["test"].runtimeClasspath
     exclude(itPatterns)
 }
 
 val it by tasks.register<Test>("it") {
     group = "verification"
-    description = "Runs Maven-style integration tests (IT*, *IT, *ITCase)"
+    description = "Runs integration tests (Maven failsafe equivalent); includes IT* patterns"
     testClassesDirs = sourceSets["test"].output.classesDirs
     classpath = sourceSets["test"].runtimeClasspath
-    shouldRunAfter(tasks.named("test"))
+    shouldRunAfter(ut)
     include(itPatterns)
+}
+
+// Lifecycle task: runs both ut and it.
+tasks.named<Test>("test") {
+    dependsOn(ut, it)
+    testClassesDirs = files()
+    classpath = files()
 }
 

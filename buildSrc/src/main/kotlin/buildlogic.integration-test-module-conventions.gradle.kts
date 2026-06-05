@@ -1,6 +1,5 @@
 import org.gradle.api.tasks.testing.Test
 import org.gradle.kotlin.dsl.named
-import org.gradle.kotlin.dsl.register
 
 plugins {
     id("buildlogic.java-conventions")
@@ -15,36 +14,17 @@ dependencies{
     add("testRuntimeOnly", versionCatalog.findLibrary("org-apache-logging-log4j-log4j-slf4j2-impl").get())
 }
 
-// For IT-only modules, also treat *Test* classes as integration tests (no unit tests here).
-val additionalItIncludes = listOf(
-    "**/Test*.class",
-    "**/*Test.class",
-    "**/*Tests.class",
-    "**/*TestCase.class",
-)
-
-val test by tasks.named<Test>("test") {
-    description = "Runs Maven-style integration tests via the it task"
-    dependsOn("it")
-    exclude("**/*")
+// IT-only modules have no unit tests; ut is a no-op.
+tasks.named<Test>("ut") {
+    testClassesDirs = files()
+    classpath = files()
 }
 
-val ut by tasks.register<Test>("ut") {
-    group = "verification"
-    description = "No-op unit test task for integration-test-only modules"
-    testClassesDirs = test.testClassesDirs
-    classpath = test.classpath
-    shouldRunAfter(test)
-    exclude("**/*")
-}
-
-// Extend the `it` task registered by java-conventions to also include *Test* patterns,
-// since this module has no unit tests — all tests are integration tests.
-val it = tasks.named<Test>("it") {
-    include(additionalItIncludes)
-    shouldRunAfter(ut)
+// IT-only modules: run all test classes, no naming-convention filter needed.
+tasks.named<Test>("it") {
+    setIncludes(emptySet())
 }
 
 tasks.named("check") {
-    dependsOn(it)
+    dependsOn(tasks.named("it"))
 }

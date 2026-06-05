@@ -62,7 +62,7 @@ declare -A seen_formatted_modules=()
 
 for module in $modules; do
   if [[ -z "${seen_formatted_modules[$module]:-}" ]]; then
-    gradle_formatted_modules+=("-x :$module:test")
+    gradle_formatted_modules+=("-x :$module:ut")
     maven_formatted_modules+=("'-:$module'")
     seen_formatted_modules["$module"]=1
   fi
