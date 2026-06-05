@@ -12,6 +12,7 @@ import static io.camunda.optimize.service.dashboard.AgenticControlDashboardServi
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -19,6 +20,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.optimize.dto.optimize.query.IdResponseDto;
 import io.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import io.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardFilterDto;
 import io.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardInstanceEndDateFilterDto;
@@ -30,12 +32,14 @@ import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.Rol
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.RollingDateFilterDataDto;
 import io.camunda.optimize.service.db.reader.DashboardReader;
 import io.camunda.optimize.service.db.writer.DashboardWriter;
+import io.camunda.optimize.service.db.writer.ReportWriter;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.EntityConfiguration;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map;
 import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -43,11 +47,19 @@ public class AgenticControlDashboardServiceTest {
 
   private final DashboardWriter dashboardWriter = mock(DashboardWriter.class);
   private final DashboardReader dashboardReader = mock(DashboardReader.class);
+  private final ReportWriter reportWriter = mock(ReportWriter.class);
   private final ConfigurationService configurationService = mock(ConfigurationService.class);
   private final EntityConfiguration entityConfiguration = mock(EntityConfiguration.class);
 
   private final AgenticControlDashboardService underTest =
-      new AgenticControlDashboardService(dashboardWriter, dashboardReader, configurationService);
+      new AgenticControlDashboardService(
+          dashboardWriter, dashboardReader, reportWriter, configurationService);
+
+  @BeforeEach
+  void setUp() {
+    when(reportWriter.createNewSingleProcessReport(isNull(), any(), any(), any(), isNull()))
+        .thenReturn(new IdResponseDto("report-stub-id"));
+  }
 
   @Test
   void shouldCreateDashboardWithExpectedShapeOnColdStart() {
@@ -63,7 +75,45 @@ public class AgenticControlDashboardServiceTest {
     assertThat(saved.isAgenticControlDashboard()).isTrue();
     assertThat(saved.isManagementDashboard()).isFalse();
     assertThat(saved.getCollectionId()).isNull();
-    assertThat(saved.getTiles()).isEmpty();
+    assertThat(saved.getTiles()).hasSize(3);
+  }
+
+  @Test
+  void shouldSeedThreeKpiReportsOnColdStart() {
+    // given
+    when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID)).thenReturn(Optional.empty());
+
+    // when
+    underTest.reconcile();
+
+    // then three reports are created
+    verify(reportWriter)
+        .createNewSingleProcessReport(
+            isNull(),
+            any(),
+            org.mockito.ArgumentMatchers.eq(
+                AgenticControlDashboardService.KPI_EXECUTION_COMPLETED_NAME),
+            org.mockito.ArgumentMatchers.eq(
+                AgenticControlDashboardService.KPI_EXECUTION_COMPLETED_DESCRIPTION),
+            isNull());
+    verify(reportWriter)
+        .createNewSingleProcessReport(
+            isNull(),
+            any(),
+            org.mockito.ArgumentMatchers.eq(
+                AgenticControlDashboardService.KPI_EXECUTION_AVG_DURATION_NAME),
+            org.mockito.ArgumentMatchers.eq(
+                AgenticControlDashboardService.KPI_EXECUTION_AVG_DURATION_DESCRIPTION),
+            isNull());
+    verify(reportWriter)
+        .createNewSingleProcessReport(
+            isNull(),
+            any(),
+            org.mockito.ArgumentMatchers.eq(
+                AgenticControlDashboardService.KPI_EXECUTION_INCIDENT_RATE_NAME),
+            org.mockito.ArgumentMatchers.eq(
+                AgenticControlDashboardService.KPI_EXECUTION_INCIDENT_RATE_DESCRIPTION),
+            isNull());
   }
 
   @Test
@@ -127,6 +177,7 @@ public class AgenticControlDashboardServiceTest {
     verify(dashboardWriter, never()).saveDashboard(any());
     verify(dashboardWriter, never()).updateDashboard(any(), any());
     verify(dashboardWriter, never()).deleteDashboard(any());
+    verifyNoInteractions(reportWriter);
   }
 
   @Test
@@ -155,6 +206,7 @@ public class AgenticControlDashboardServiceTest {
     // then nothing is read or written
     verifyNoInteractions(dashboardReader);
     verifyNoInteractions(dashboardWriter);
+    verifyNoInteractions(reportWriter);
   }
 
   @Test
@@ -168,7 +220,6 @@ public class AgenticControlDashboardServiceTest {
     // then seeding stays isolated from the management dashboard lifecycle
     verify(dashboardWriter, never()).deleteManagementDashboard();
     verify(dashboardWriter, never()).deleteDashboard(any());
-    // and it only ever touches its own dashboard id
     final DashboardDefinitionRestDto saved = captureSavedDashboard();
     assertThat(saved.getId()).isEqualTo(AGENTIC_DASHBOARD_ID);
   }
@@ -181,7 +232,7 @@ public class AgenticControlDashboardServiceTest {
     // when
     underTest.reconcile();
 
-    // then
+    // then the tile list is mutable (can be extended)
     final DashboardDefinitionRestDto saved = captureSavedDashboard();
     assertThatNoException().isThrownBy(() -> saved.getTiles().add(new DashboardReportTileDto()));
   }
@@ -194,6 +245,24 @@ public class AgenticControlDashboardServiceTest {
           .as("locale '%s' must define agenticControl.%s", locale, AGENTIC_DASHBOARD_NAME)
           .containsKey(AGENTIC_DASHBOARD_NAME);
       assertThat(agenticControl.get(AGENTIC_DASHBOARD_NAME)).isEqualTo("Agentic Control Dashboard");
+    }
+  }
+
+  @Test
+  void shouldResolveKpiReportLocalizationCodesInEveryLocale() throws IOException {
+    for (final String locale : new String[] {"en", "de"}) {
+      final Map<String, Object> agenticControl = readAgenticControlLocalization(locale);
+      @SuppressWarnings("unchecked")
+      final Map<String, Object> report = (Map<String, Object>) agenticControl.get("report");
+      assertThat(report)
+          .as("locale '%s' must define all KPI report localization codes", locale)
+          .containsKeys(
+              AgenticControlDashboardService.KPI_EXECUTION_COMPLETED_NAME,
+              AgenticControlDashboardService.KPI_EXECUTION_COMPLETED_DESCRIPTION,
+              AgenticControlDashboardService.KPI_EXECUTION_AVG_DURATION_NAME,
+              AgenticControlDashboardService.KPI_EXECUTION_AVG_DURATION_DESCRIPTION,
+              AgenticControlDashboardService.KPI_EXECUTION_INCIDENT_RATE_NAME,
+              AgenticControlDashboardService.KPI_EXECUTION_INCIDENT_RATE_DESCRIPTION);
     }
   }
 

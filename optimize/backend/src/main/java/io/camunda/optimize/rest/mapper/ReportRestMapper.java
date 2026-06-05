@@ -103,17 +103,26 @@ public class ReportRestMapper {
       final ReportDefinitionDto<?> reportDefinitionDto,
       final String locale,
       final LocalizationService localizationService) {
-    if (isManagementOrInstantPreviewReport(reportDefinitionDto)) {
+    if (isManagementOrInstantPreviewOrAgenticReport(reportDefinitionDto)) {
       final String validLocale = localizationService.validateAndReturnValidLocale(locale);
-      if (((SingleProcessReportDefinitionRequestDto) reportDefinitionDto)
-          .getData()
-          .isManagementReport()) {
+      final var data =
+          ((SingleProcessReportDefinitionRequestDto) reportDefinitionDto).getData();
+      if (data.isManagementReport()) {
         Optional.ofNullable(
                 localizationService.getLocalizationForManagementReportCode(
                     validLocale, reportDefinitionDto.getName()))
             .ifPresent(reportDefinitionDto::setName);
         Optional.ofNullable(
                 localizationService.getLocalizationForManagementReportCode(
+                    validLocale, reportDefinitionDto.getDescription()))
+            .ifPresent(reportDefinitionDto::setDescription);
+      } else if (data.isAgenticControlReport()) {
+        Optional.ofNullable(
+                localizationService.getLocalizationForAgenticControlReportCode(
+                    validLocale, reportDefinitionDto.getName()))
+            .ifPresent(reportDefinitionDto::setName);
+        Optional.ofNullable(
+                localizationService.getLocalizationForAgenticControlReportCode(
                     validLocale, reportDefinitionDto.getDescription()))
             .ifPresent(reportDefinitionDto::setDescription);
       } else {
@@ -214,15 +223,13 @@ public class ReportRestMapper {
         .ifPresent(reportDefinitionDto::setLastModifier);
   }
 
-  private static boolean isManagementOrInstantPreviewReport(
+  private static boolean isManagementOrInstantPreviewOrAgenticReport(
       final ReportDefinitionDto<?> reportDefinitionDto) {
-    return reportDefinitionDto instanceof SingleProcessReportDefinitionRequestDto
-        && (((SingleProcessReportDefinitionRequestDto) reportDefinitionDto)
-                .getData()
-                .isManagementReport()
-            || ((SingleProcessReportDefinitionRequestDto) reportDefinitionDto)
-                .getData()
-                .isInstantPreviewReport());
+    if (!(reportDefinitionDto instanceof SingleProcessReportDefinitionRequestDto)) {
+      return false;
+    }
+    final var data = ((SingleProcessReportDefinitionRequestDto) reportDefinitionDto).getData();
+    return data.isManagementReport() || data.isInstantPreviewReport() || data.isAgenticControlReport();
   }
 
   private void localizeReportData(

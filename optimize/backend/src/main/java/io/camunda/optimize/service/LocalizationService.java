@@ -107,6 +107,11 @@ public class LocalizationService implements ConfigurationReloadable {
         localeCode, MANAGEMENT_DASHBOARD_FIELD, REPORT_FIELD, reportCode);
   }
 
+  public String getLocalizationForAgenticControlReportCode(
+      final String localeCode, final String reportCode) {
+    return getNestedMessageForCode(localeCode, AGENTIC_CONTROL_FIELD, REPORT_FIELD, reportCode);
+  }
+
   public String getLocalizationForInstantPreviewReportCode(
       final String localeCode, final String reportCode) {
     return getNestedMessageForCode(localeCode, INSTANT_DASHBOARD_FIELD, REPORT_FIELD, reportCode);
