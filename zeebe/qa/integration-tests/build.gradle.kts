@@ -124,3 +124,10 @@ configurations.named("testRuntimeClasspath") {
 }
 
 description = "Zeebe QA Integration Tests"
+
+tasks.withType<Test>().configureEach {
+    jvmArgs("-Xmx3g")
+}
+
+
+
