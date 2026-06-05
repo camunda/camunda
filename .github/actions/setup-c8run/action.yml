@@ -99,6 +99,12 @@ runs:
         go-version: ">=1.23.1"
         cache: false # disabling since not working anyways without a cache-dependency-path specified
 
+    - name: Setup Java
+      uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+      with:
+        distribution: "temurin"
+        java-version: "21"
+
     - uses: ./.github/actions/setup-build
       if: ${{ inputs.source-build == 'true' }}
       with:
