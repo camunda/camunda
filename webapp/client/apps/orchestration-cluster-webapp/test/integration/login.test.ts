@@ -16,6 +16,7 @@ import {
 } from '#/shared-test-modules/mock-handlers';
 import {mockSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {mockLicense} from '#/shared-test-modules/api-mocks/license';
+import {mockCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 
 test('should redirect to the initial page on success', async ({network, page, loginPage}) => {
 	network.use(
@@ -32,7 +33,7 @@ test('should redirect to the initial page on success', async ({network, page, lo
 
 	network.use(
 		mockCurrentUserEndpoint({
-			successResponse: HttpResponse.json({}),
+			successResponse: HttpResponse.json(mockCurrentUser),
 		}),
 		mockSystemConfigurationEndpoint({
 			successResponse: HttpResponse.json({
@@ -75,7 +76,7 @@ test('should redirect to the referrer page', async ({network, page, loginPage}) 
 
 	network.use(
 		mockCurrentUserEndpoint({
-			successResponse: HttpResponse.json({}),
+			successResponse: HttpResponse.json(mockCurrentUser),
 		}),
 		mockSystemConfigurationEndpoint({
 			successResponse: HttpResponse.json({
