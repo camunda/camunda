@@ -123,7 +123,7 @@ public interface Record<T extends RecordValue> extends JsonSerializable {
   ChannelType getRequestChannelType();
 
   /**
-   * The name of the MCP tool that was called. Empty for non-MCP channels.
+   * An optional tool name associated with the command, e.g. the MCP tool that triggered it.
    *
    * @return the tool name, or {@code null} if not set
    */
