@@ -70,11 +70,6 @@ public class UserDbReader extends AbstractEntityReader<UserEntity> implements Us
     return Optional.ofNullable(result.items()).flatMap(items -> items.stream().findFirst());
   }
 
-  public Optional<UserEntity> findOne(final long userKey) {
-    final var result = search(UserQuery.of(b -> b.filter(f -> f.key(userKey))));
-    return Optional.ofNullable(result.items()).flatMap(items -> items.stream().findFirst());
-  }
-
   public SearchQueryResult<UserEntity> search(final UserQuery query) {
     return search(query, ResourceAccessChecks.disabled());
   }

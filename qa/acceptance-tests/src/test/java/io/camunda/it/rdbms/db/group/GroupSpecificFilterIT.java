@@ -94,11 +94,7 @@ public class GroupSpecificFilterIT {
     createAndSaveGroup(
         rdbmsWriters,
         GroupFixtures.createRandomized(
-            b ->
-                b.groupId("groupId")
-                    .groupKey(1337L)
-                    .name("Group 1337")
-                    .description("This is group 1337")));
+            b -> b.groupId("groupId").name("Group 1337").description("This is group 1337")));
     GroupMemberFixtures.createAndSaveRandomGroupMember(
         rdbmsWriters,
         b -> b.groupId("groupId").entityId("entityId").entityType(EntityType.USER.name()));
@@ -110,7 +106,7 @@ public class GroupSpecificFilterIT {
 
     assertThat(searchResult.total()).isEqualTo(1);
     assertThat(searchResult.items()).hasSize(1);
-    assertThat(searchResult.items().getFirst().groupKey()).isEqualTo(1337L);
+    assertThat(searchResult.items().getFirst().groupId()).isEqualTo("groupId");
   }
 
   @ParameterizedTest
@@ -119,8 +115,7 @@ public class GroupSpecificFilterIT {
     createAndSaveRandomGroups(rdbmsWriters);
     createAndSaveGroup(
         rdbmsWriters,
-        GroupFixtures.createRandomized(
-            b -> b.groupId("groupId1").groupKey(1337L).name("Group 1337")));
+        GroupFixtures.createRandomized(b -> b.groupId("groupId1").name("Group 1337")));
     GroupMemberFixtures.createAndSaveRandomGroupMember(
         rdbmsWriters,
         b -> b.groupId("groupId1").entityId("entityId1").entityType(EntityType.USER.name()));
@@ -145,7 +140,6 @@ public class GroupSpecificFilterIT {
 
   static List<GroupFilter> shouldFindWithSpecificFilterParameters() {
     return List.of(
-        new GroupFilter.Builder().groupKey(1337L).build(),
         new GroupFilter.Builder().name("Group 1337").build(),
         new GroupFilter.Builder().description("This is group 1337").build(),
         new GroupFilter.Builder().memberId("entityId").childMemberType(EntityType.USER).build());

@@ -55,7 +55,6 @@
         </foreach>
       </if>
       <!-- basic filters -->
-      <if test="filter.key != null">AND t.USER_KEY = #{filter.key}</if>
       <if test="filter.usernameOperations != null and !filter.usernameOperations.isEmpty()">
         <foreach collection="filter.usernameOperations" item="operation">
           AND t.USERNAME
