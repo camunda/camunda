@@ -82,6 +82,7 @@ tasks.withType<Javadoc> {
 val skipRandomTests = providers.gradleProperty("skip.random.tests").isPresent
 val parallelTests = providers.gradleProperty("parallel.tests").isPresent
 val junitThreadCount = providers.gradleProperty("junit.thread.count").getOrElse("2")
+val testJvmMaxHeap = providers.gradleProperty("test.jvm.maxheap").orNull
 
 val itPatterns = listOf(
     "**/IT*.class",
@@ -100,6 +101,10 @@ tasks.withType<Test>().configureEach {
         "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED",
         "--enable-native-access=ALL-UNNAMED",
     )
+
+    if (testJvmMaxHeap != null) {
+        jvmArgs("-Xmx$testJvmMaxHeap")
+    }
 
     if (skipRandomTests) {
         exclude("**/*RandomizedPropertyTest.class", "**/*RandomizedRaftTest.class")

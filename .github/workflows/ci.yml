@@ -831,7 +831,7 @@ jobs:
         if: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'gradle-build') }}
         shell: bash
         run: >
-          ./gradlew --no-daemon --console=plain
+          ./gradlew --no-daemon --console=plain --max-workers=7
           -Pskip.fe.build -Pskip.random.tests -Pparallel.tests -Pjunit.thread.count=16
           ut ${{ env.GENERAL_UT_GRADLE_MODULES }}
           | tee "${BUILD_OUTPUT_FILE_PATH}"
@@ -943,7 +943,7 @@ jobs:
         shell: bash
         run: >
           TASKS=$(echo "${{ matrix.maven-modules }}" | tr -d "'" | tr ',' '\n' | sed '/^$/d; s/$/:test/' | tr '\n' ' ') &&
-          ./gradlew --no-daemon --console=plain -Pskip.fe.build -Pskip.random.tests -Pparallel.tests -Pjunit.thread.count=16 ${TASKS} | tee "${BUILD_OUTPUT_FILE_PATH}"
+          ./gradlew --no-daemon --console=plain --max-workers=3 -Pskip.fe.build -Pskip.random.tests -Pparallel.tests -Pjunit.thread.count=16 -Ptest.jvm.maxheap=4g ${TASKS} | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Analyze Test Runs
         id: analyze-test-run
         if: always()
@@ -1261,7 +1261,7 @@ jobs:
           if [[ -n "${{ matrix.gradle-test-exclude }}" ]]; then
             GRADLE_ARGS+=("-Pit.exclude.tests=${{ matrix.gradle-test-exclude }}")
           fi
-          ./gradlew --no-daemon --console=plain \
+          ./gradlew --no-daemon --console=plain --max-workers=${{ matrix.maven-test-fork-count }} \
             -Pskip.fe.build -Pparallel.tests -Pjunit.thread.count=16 \
             -Dio.camunda.process.test.camundaDockerImageName="${{ env.CAMUNDA_DOCKER_IMAGE_NAME }}" \
             -Dio.camunda.process.test.camundaDockerImageVersion="${{ env.DOCKER_IMAGE_TAG }}" \
