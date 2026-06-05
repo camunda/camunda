@@ -376,46 +376,6 @@ jobs:
           # Verify using the most reliable tag (DockerHub)
           ./optimize/docker/test/verify.sh "${DOCKER_IMAGE_DOCKER_HUB}:${RELEASE_VERSION}"
 
-      - name: Ensure Keycloak bootstrap env for smoketest
-        run: |
-          compose_file=".github/actions/compose/docker-compose.smoketest.yml"
-          if grep -q "image: bitnami/keycloak:" "$compose_file"; then
-            missing_username=false
-            missing_password=false
-            grep -q "KC_BOOTSTRAP_ADMIN_USERNAME" "$compose_file" || missing_username=true
-            grep -q "KC_BOOTSTRAP_ADMIN_PASSWORD" "$compose_file" || missing_password=true
-
-            if [ "$missing_username" = true ] || [ "$missing_password" = true ]; then
-              awk -v add_user="$missing_username" -v add_pass="$missing_password" '
-                !patched && /KEYCLOAK_ADMIN_PASSWORD:/ {
-                  match($0, /^[[:space:]]*/)
-                  indent = substr($0, 1, RLENGTH)
-                  print
-                  if (add_user == "true") print indent "KC_BOOTSTRAP_ADMIN_USERNAME: admin"
-                  if (add_pass == "true") print indent "KC_BOOTSTRAP_ADMIN_PASSWORD: admin"
-                  patched=1
-                  next
-                }
-                { print }
-                END { if (!patched) exit 2 }
-              ' "$compose_file" > "$compose_file.tmp" || {
-                echo "::error::Failed to find KEYCLOAK_ADMIN_PASSWORD in $compose_file"
-                rm -f "$compose_file.tmp"
-                exit 1
-              }
-              mv "$compose_file.tmp" "$compose_file"
-              grep -q "KC_BOOTSTRAP_ADMIN_USERNAME" "$compose_file" || {
-                echo "::error::Failed to patch Keycloak bootstrap username env in $compose_file"
-                exit 1
-              }
-              grep -q "KC_BOOTSTRAP_ADMIN_PASSWORD" "$compose_file" || {
-                echo "::error::Failed to patch Keycloak bootstrap password env in $compose_file"
-                exit 1
-              }
-            fi
-          fi
-          fi
-
       - name: Start Smoketest
         uses: ./.github/actions/compose
         with:
