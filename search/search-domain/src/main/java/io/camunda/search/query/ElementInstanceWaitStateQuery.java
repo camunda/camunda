@@ -62,8 +62,7 @@ public record ElementInstanceWaitStateQuery(
       return filter(FilterBuilders.elementInstanceWaitState(fn));
     }
 
-    public Builder sort(
-        final Function<WaitStateSort.Builder, ObjectBuilder<WaitStateSort>> fn) {
+    public Builder sort(final Function<WaitStateSort.Builder, ObjectBuilder<WaitStateSort>> fn) {
       return sort(SortOptionBuilders.waitState(fn));
     }
 

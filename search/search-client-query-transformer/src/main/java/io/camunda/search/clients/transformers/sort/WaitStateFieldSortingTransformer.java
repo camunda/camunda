@@ -7,7 +7,6 @@
  */
 package io.camunda.search.clients.transformers.sort;
 
-import static io.camunda.webapps.schema.descriptors.IndexDescriptor.TENANT_ID;
 import static io.camunda.webapps.schema.descriptors.template.WaitStateTemplate.*;
 
 public class WaitStateFieldSortingTransformer implements FieldSortingTransformer {
