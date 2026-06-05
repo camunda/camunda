@@ -58,8 +58,9 @@ final class HandlerRegistry {
       return;
     }
     final AnalyticsHandler handler = intentMap.get(record.getIntent());
-    if (handler != null) {
-      handler.handle(record);
+    if (handler == null) {
+      return;
     }
+    handler.handle(record);
   }
 }

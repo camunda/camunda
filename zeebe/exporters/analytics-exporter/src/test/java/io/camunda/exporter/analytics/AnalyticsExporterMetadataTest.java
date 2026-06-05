@@ -48,4 +48,64 @@ class AnalyticsExporterMetadataTest {
     assertThat(metadata.incrementAndGetMetricSequenceNumber()).isEqualTo(11);
     assertThat(metadata.incrementAndGetMetricSequenceNumber()).isEqualTo(12);
   }
+
+  @Test
+  void shouldNotBeDirtyOnConstruction() {
+    // given / when
+    final var metadata = new AnalyticsExporterMetadata();
+
+    // then
+    assertThat(metadata.isDirty()).isFalse();
+  }
+
+  @Test
+  void shouldBeDirtyAfterIncrementingEventSequenceNumber() {
+    // given
+    final var metadata = new AnalyticsExporterMetadata();
+
+    // when
+    metadata.incrementAndGetEventSequenceNumber();
+
+    // then
+    assertThat(metadata.isDirty()).isTrue();
+  }
+
+  @Test
+  void shouldBeDirtyAfterIncrementingMetricSequenceNumber() {
+    // given
+    final var metadata = new AnalyticsExporterMetadata();
+
+    // when
+    metadata.incrementAndGetMetricSequenceNumber();
+
+    // then
+    assertThat(metadata.isDirty()).isTrue();
+  }
+
+  @Test
+  void shouldNotBeDirtyAfterSerialize() {
+    // given
+    final var metadata = new AnalyticsExporterMetadata();
+    metadata.incrementAndGetEventSequenceNumber();
+    assertThat(metadata.isDirty()).isTrue();
+
+    // when
+    metadata.serialize();
+
+    // then
+    assertThat(metadata.isDirty()).isFalse();
+  }
+
+  @Test
+  void shouldNotBeDirtyAfterDeserialize() {
+    // given
+    final var original = new AnalyticsExporterMetadata(3, 7);
+    final var bytes = original.serialize();
+
+    // when
+    final var restored = AnalyticsExporterMetadata.deserialize(bytes);
+
+    // then — Jackson setters must not mark the restored object as dirty
+    assertThat(restored.isDirty()).isFalse();
+  }
 }

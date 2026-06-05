@@ -119,8 +119,12 @@ public class AnalyticsExporter implements Exporter {
     } catch (final Exception e) {
       SAMPLED_WARN_LOG.warn("Failed to handle record at position {}", record.getPosition(), e);
     }
-
-    controller.updateLastExportedRecordPosition(record.getPosition(), metadata.serialize());
+    if (metadata.isDirty()) {
+      controller.updateLastExportedRecordPosition(record.getPosition(), metadata.serialize());
+    } else {
+      // No need to serialize the metadata if it didn't change.
+      controller.updateLastExportedRecordPosition(record.getPosition());
+    }
   }
 
   private void scheduleMetricFlush() {

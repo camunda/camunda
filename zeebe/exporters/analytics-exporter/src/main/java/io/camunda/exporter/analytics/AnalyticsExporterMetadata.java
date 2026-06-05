@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.analytics;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -21,6 +22,13 @@ final class AnalyticsExporterMetadata {
   private long eventSequenceNumber;
 
   private long metricSequenceNumber;
+
+  /**
+   * Transient flag: true when a mutating method has been called since the last {@link #serialize()}
+   * or construction. Never persisted — Jackson setters must NOT set this flag so that a freshly
+   * deserialized object starts clean.
+   */
+  @JsonIgnore private boolean dirty;
 
   /** No-arg constructor required by Jackson. */
   AnalyticsExporterMetadata() {}
@@ -39,6 +47,7 @@ final class AnalyticsExporterMetadata {
   }
 
   public long incrementAndGetEventSequenceNumber() {
+    dirty = true;
     return ++eventSequenceNumber;
   }
 
@@ -51,12 +60,21 @@ final class AnalyticsExporterMetadata {
   }
 
   public long incrementAndGetMetricSequenceNumber() {
+    dirty = true;
     return ++metricSequenceNumber;
+  }
+
+  /** Returns true if a mutating method has been called since construction or last serialization. */
+  @JsonIgnore
+  boolean isDirty() {
+    return dirty;
   }
 
   byte[] serialize() {
     try {
-      return OBJECT_MAPPER.writeValueAsBytes(this);
+      final var bytes = OBJECT_MAPPER.writeValueAsBytes(this);
+      dirty = false;
+      return bytes;
     } catch (final JsonProcessingException e) {
       throw new RuntimeException("Failed to serialize exporter metadata", e);
     }
