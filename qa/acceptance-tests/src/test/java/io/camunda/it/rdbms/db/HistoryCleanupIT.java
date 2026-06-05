@@ -26,6 +26,7 @@ import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import io.camunda.search.entities.BatchOperationType;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -236,7 +237,7 @@ public class HistoryCleanupIT {
   public void shouldDeleteStandaloneDecisionAuditLogDuringCleanup() {
     // GIVEN - Create a standalone decision audit log with an expired cleanup date
     final var evaluationDate = OffsetDateTime.now().minusDays(40);
-    final var processInstanceKey = Math.abs(new java.util.Random().nextLong());
+    final var processInstanceKey = Math.abs(ThreadLocalRandom.current().nextLong());
     final var auditLog =
         AuditLogFixtures.createRandomized(
             b ->
