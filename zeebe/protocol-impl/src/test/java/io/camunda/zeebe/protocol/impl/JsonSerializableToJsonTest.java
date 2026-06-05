@@ -333,7 +333,7 @@ final class JsonSerializableToJsonTest {
                   "authorizations": {},
                   "agent": null,
                   "requestChannelType": null,
-                  "requestToolName": null,
+                  "requestToolName": "",
                   "recordVersion": 1,
                   "operationReference": -1,
                   "batchOperationReference": -1,

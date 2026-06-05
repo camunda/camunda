@@ -54,7 +54,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
   private final UnsafeBuffer rejectionReason = new UnsafeBuffer(0, 0);
   private AgentInfo agent;
   private ChannelType requestChannelType = ChannelType.NULL_VAL;
-  private String requestToolName = "";
+  private final DirectBuffer requestToolName = new UnsafeBuffer(0, 0);
 
   // always the current version by default
   private int protocolVersion = Protocol.PROTOCOL_VERSION;
@@ -138,9 +138,11 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
       decoder.skipAgent();
     }
 
-    final String decodedToolName = decoder.requestToolName();
-    if (!decodedToolName.isEmpty()) {
-      requestToolName = decodedToolName;
+    final int toolNameLength = decoder.requestToolNameLength();
+    if (toolNameLength > 0) {
+      decoder.wrapRequestToolName(requestToolName);
+    } else {
+      decoder.skipRequestToolName();
     }
   }
 
@@ -154,9 +156,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         + RecordMetadataEncoder.agentHeaderLength()
         + (agent != null ? agent.getLength() : 0)
         + RecordMetadataEncoder.requestToolNameHeaderLength()
-        + (!requestToolName.isEmpty()
-            ? requestToolName.getBytes(java.nio.charset.StandardCharsets.UTF_8).length
-            : 0);
+        + requestToolName.capacity();
   }
 
   @Override
@@ -201,7 +201,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
       encoder.agent("");
     }
 
-    encoder.requestToolName(requestToolName);
+    encoder.putRequestToolName(requestToolName, 0, requestToolName.capacity());
 
     return headerEncoder.encodedLength() + encoder.encodedLength();
   }
@@ -313,16 +313,27 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
   }
 
   public RecordMetadata requestChannelType(final ChannelType requestChannelType) {
-    this.requestChannelType = requestChannelType;
+    this.requestChannelType =
+        requestChannelType == null ? ChannelType.NULL_VAL : requestChannelType;
     return this;
   }
 
   public String getRequestToolName() {
-    return requestToolName.isEmpty() ? null : requestToolName;
+    return BufferUtil.bufferAsString(requestToolName);
   }
 
   public RecordMetadata requestToolName(final String requestToolName) {
-    this.requestToolName = requestToolName != null ? requestToolName : "";
+    if (requestToolName == null) {
+      this.requestToolName.wrap(0, 0);
+    } else {
+      final byte[] bytes = requestToolName.getBytes(StandardCharsets.UTF_8);
+      this.requestToolName.wrap(bytes);
+    }
+    return this;
+  }
+
+  public RecordMetadata requestToolName(final DirectBuffer buffer) {
+    requestToolName.wrap(BufferUtil.cloneBuffer(buffer));
     return this;
   }
 
@@ -375,7 +386,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     authorization.reset();
     agent = null;
     requestChannelType = ChannelType.NULL_VAL;
-    requestToolName = "";
+    requestToolName.wrap(0, 0);
     brokerVersion = CURRENT_BROKER_VERSION;
     recordVersion = DEFAULT_RECORD_VERSION;
     operationReference = RecordMetadataEncoder.operationReferenceNullValue();
@@ -424,7 +435,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         && authorization.equals(that.authorization)
         && Objects.equals(agent, that.agent)
         && requestChannelType == that.requestChannelType
-        && Objects.equals(requestToolName, that.requestToolName)
+        && requestToolName.equals(that.requestToolName)
         && brokerVersion.equals(that.brokerVersion)
         && recordVersion == that.recordVersion
         && operationReference == that.operationReference
@@ -468,8 +479,8 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     if (requestChannelType != ChannelType.NULL_VAL) {
       builder.append(", requestChannelType=").append(requestChannelType);
     }
-    if (!requestToolName.isEmpty()) {
-      builder.append(", requestToolName=").append(requestToolName);
+    if (requestToolName.capacity() > 0) {
+      builder.append(", requestToolName=").append(BufferUtil.bufferAsString(requestToolName));
     }
 
     builder.append('}');
