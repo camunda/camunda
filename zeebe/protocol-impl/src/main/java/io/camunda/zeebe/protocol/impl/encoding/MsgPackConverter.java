@@ -10,6 +10,7 @@ package io.camunda.zeebe.protocol.impl.encoding;
 import static io.camunda.zeebe.util.StringUtil.getBytes;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonEncoding;
@@ -25,6 +26,7 @@ import com.fasterxml.jackson.databind.MappingJsonFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.protocol.record.JsonSerializable;
 import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -80,7 +82,8 @@ public final class MsgPackConverter {
   private static final ObjectMapper MESSSAGE_PACK_OBJECT_MAPPER =
       new ObjectMapper(MESSAGE_PACK_FACTORY)
           .registerModule(new JavaTimeModule())
-          .addMixIn(CamundaAuthentication.class, CamundaAuthenticationMixin.class);
+          .addMixIn(CamundaAuthentication.class, CamundaAuthenticationMixin.class)
+          .addMixIn(RequiredAuthorization.class, RequiredAuthorizationMixin.class);
   private static final JsonFactory JSON_FACTORY =
       new MappingJsonFactory()
           .configure(Feature.ALLOW_SINGLE_QUOTES, true)
@@ -279,5 +282,31 @@ public final class MsgPackConverter {
 
     @JsonProperty("claims")
     abstract java.util.Map<String, Object> claims();
+  }
+
+  // RequiredAuthorization lives in CSL annotation-free; this mixin provides the same snake_case
+  // wire format that the in-class Jackson annotations on the old Authorization<T> produced.
+  @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
+  private abstract static class RequiredAuthorizationMixin {
+    @JsonProperty("resource_type")
+    abstract io.camunda.security.api.model.authz.AuthorizationResourceType resourceType();
+
+    @JsonProperty("permission_type")
+    abstract io.camunda.security.api.model.authz.PermissionType permissionType();
+
+    @JsonProperty("resource_ids")
+    abstract java.util.List<String> resourceIds();
+
+    @JsonProperty("resource_property_names")
+    abstract java.util.Set<String> resourcePropertyNames();
+
+    @JsonProperty("transitive")
+    abstract boolean transitive();
+
+    @JsonIgnore
+    abstract java.util.function.Function<?, String> resourceIdSupplier();
+
+    @JsonIgnore
+    abstract java.util.function.Predicate<?> condition();
   }
 }
