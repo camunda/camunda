@@ -28,6 +28,7 @@ import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.function.UnaryOperator;
 import org.agrona.CloseHelper;
 import org.junit.jupiter.api.AfterAll;
@@ -35,6 +36,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -392,8 +395,153 @@ final class ExporterFilterIT {
   }
 
   // ---------------------------------------------------------------------------
+  // Scenario 7 — Remaining variable name matcher kinds (parameterized)
+  // ---------------------------------------------------------------------------
+  @ParameterizedTest(name = "{0}")
+  @EnumSource(VariableNameMatcher.class)
+  void shouldApplyVariableNameMatcherEndToEnd(final VariableNameMatcher matcher) {
+    // given
+    matcher.apply(config, List.of(matcher.pattern));
+
+    final var matching = variableRecord(matcher.matchingName, "\"x\"");
+    final var nonMatching = variableRecord(matcher.nonMatchingName, "\"x\"");
+
+    // when
+    exportFiltered(matching);
+    exportFiltered(nonMatching);
+
+    // then
+    if (matcher.matchingShouldBeExported) {
+      assertIndexed(matching);
+      assertNotIndexed(nonMatching);
+    } else {
+      assertNotIndexed(matching);
+      assertIndexed(nonMatching);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Scenario 8 — Variable value type filter (exclusion)
+  // ---------------------------------------------------------------------------
+  @Test
+  void shouldFilterVariablesByTypeWhenExclusionIsConfigured() {
+    // given
+    config.index.setVariableValueTypeExclusion(List.of("BOOLEAN", "OBJECT"));
+
+    final var stringVar = variableRecord("s", "\"hello\"");
+    final var numberVar = variableRecord("n", "42");
+    final var booleanVar = variableRecord("b", "true");
+    final var objectVar = variableRecord("o", "{\"k\":1}");
+    final var nullVar = variableRecord("z", "null");
+
+    // when
+    exportFiltered(stringVar);
+    exportFiltered(numberVar);
+    exportFiltered(booleanVar);
+    exportFiltered(objectVar);
+    exportFiltered(nullVar);
+
+    // then
+    assertIndexed(stringVar);
+    assertIndexed(numberVar);
+    assertNotIndexed(booleanVar);
+    assertNotIndexed(objectVar);
+    assertIndexed(nullVar);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Scenario 9 — BPMN process id filter (exclusion blocklist)
+  // ---------------------------------------------------------------------------
+  @Test
+  void shouldFilterRecordsByBpmnProcessIdWhenExclusionIsConfigured() {
+    // given
+    config.index.setBpmnProcessIdExclusion(List.of("process-blocked"));
+
+    final var procBlocked =
+        processInstanceRecord(
+            "process-blocked", ProcessInstanceIntent.ELEMENT_ACTIVATED, BpmnElementType.PROCESS);
+    final var procAllowed =
+        processInstanceRecord(
+            "process-allowed", ProcessInstanceIntent.ELEMENT_ACTIVATED, BpmnElementType.PROCESS);
+    final var varInBlocked = variableRecord("anything", "1", "process-blocked");
+    final var varInAllowed = variableRecord("anything", "1", "process-allowed");
+
+    // when
+    exportFiltered(procBlocked);
+    exportFiltered(procAllowed);
+    exportFiltered(varInBlocked);
+    exportFiltered(varInAllowed);
+
+    // then
+    assertNotIndexed(procBlocked);
+    assertIndexed(procAllowed);
+    assertNotIndexed(varInBlocked);
+    assertIndexed(varInAllowed);
+  }
+
+  // ---------------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------------
+
+  /**
+   * Enumerates every variable-name matcher kind not already covered by Scenarios 1 and 3 so that
+   * Scenario 7 can iterate over them with one record pair each.
+   */
+  private enum VariableNameMatcher {
+    EXCLUSION_END_WITH(
+        "_secret",
+        "api_secret",
+        "orderId",
+        false,
+        (cfg, p) -> cfg.index.setVariableNameExclusionEndWith(p)),
+    EXCLUSION_EXACT(
+        "password",
+        "password",
+        "orderId",
+        false,
+        (cfg, p) -> cfg.index.setVariableNameExclusionExact(p)),
+    INCLUSION_START_WITH(
+        "order_",
+        "order_id",
+        "unrelated",
+        true,
+        (cfg, p) -> cfg.index.setVariableNameInclusionStartWith(p)),
+    INCLUSION_END_WITH(
+        "_id",
+        "order_id",
+        "unrelated",
+        true,
+        (cfg, p) -> cfg.index.setVariableNameInclusionEndWith(p)),
+    INCLUSION_EXACT(
+        "orderId",
+        "orderId",
+        "unrelated",
+        true,
+        (cfg, p) -> cfg.index.setVariableNameInclusionExact(p));
+
+    private final String pattern;
+    private final String matchingName;
+    private final String nonMatchingName;
+    private final boolean matchingShouldBeExported;
+    private final BiConsumer<ElasticsearchExporterConfiguration, List<String>> setter;
+
+    VariableNameMatcher(
+        final String pattern,
+        final String matchingName,
+        final String nonMatchingName,
+        final boolean matchingShouldBeExported,
+        final BiConsumer<ElasticsearchExporterConfiguration, List<String>> setter) {
+      this.pattern = pattern;
+      this.matchingName = matchingName;
+      this.nonMatchingName = nonMatchingName;
+      this.matchingShouldBeExported = matchingShouldBeExported;
+      this.setter = setter;
+    }
+
+    void apply(final ElasticsearchExporterConfiguration cfg, final List<String> patterns) {
+      setter.accept(cfg, patterns);
+    }
+  }
 
   /**
    * Reproduces the broker's per-record contract: {@code ExporterContainer.acceptRecord} consults
