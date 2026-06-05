@@ -39,6 +39,7 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import java.time.InstantSource;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
@@ -66,7 +67,6 @@ public final class BpmnUserTaskBehavior {
   private final UserTaskState userTaskState;
   private final VariableState variableState;
   private final AsyncRequestState asyncRequestState;
-  private final GlobalListenersState globalListenersState;
   private final GroupState groupState;
   private final boolean candidateGroupNameResolution;
   private final InstantSource clock;
@@ -80,7 +80,6 @@ public final class BpmnUserTaskBehavior {
       final UserTaskState userTaskState,
       final VariableState variableState,
       final AsyncRequestState asyncRequestState,
-      final GlobalListenersState globalListenersState,
       final GroupState groupState,
       final boolean candidateGroupNameResolution,
       final InstantSource clock) {
@@ -93,7 +92,6 @@ public final class BpmnUserTaskBehavior {
     this.userTaskState = userTaskState;
     this.variableState = variableState;
     this.asyncRequestState = asyncRequestState;
-    this.globalListenersState = globalListenersState;
     this.groupState = groupState;
     this.candidateGroupNameResolution = candidateGroupNameResolution;
     this.clock = clock;

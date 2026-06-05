@@ -78,15 +78,4 @@ final class EngineCfgTest {
     assertThat(configuration.isCandidateGroupNameResolution()).isFalse();
   }
 
-  void assertListenerCfg(
-      final GlobalListenerConfiguration config,
-      final String type,
-      final String[] eventTypes,
-      final String retries,
-      final boolean afterNonGlobal) {
-    assertThat(config.type()).isEqualTo(type);
-    assertThat(config.eventTypes()).containsExactly(eventTypes);
-    assertThat(config.retries()).isEqualTo(retries);
-    assertThat(config.afterNonGlobal()).isEqualTo(afterNonGlobal);
-  }
 }
