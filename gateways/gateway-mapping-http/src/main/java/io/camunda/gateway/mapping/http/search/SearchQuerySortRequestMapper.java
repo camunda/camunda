@@ -43,6 +43,7 @@ import io.camunda.search.sort.TenantSort;
 import io.camunda.search.sort.UserSort;
 import io.camunda.search.sort.UserTaskSort;
 import io.camunda.search.sort.VariableSort;
+import io.camunda.search.sort.WaitStateSort;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.util.Either;
 import jakarta.validation.Valid;
@@ -112,6 +113,30 @@ public class SearchQuerySortRequestMapper {
         case VERSION_TAG -> builder.versionTag();
         case DEPLOYMENT_KEY -> builder.deploymentKey();
         case TENANT_ID -> builder.tenantId();
+        default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
+      }
+    }
+    return validationErrors;
+  }
+
+  static List<SearchQuerySortRequest<ElementInstanceWaitStateQuerySortRequest.FieldEnum>>
+      fromElementInstanceWaitStateQuerySortRequest(
+          final List<ElementInstanceWaitStateQuerySortRequest> requests) {
+    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
+  }
+
+  static List<String> applyWaitStateSortField(
+      final ElementInstanceWaitStateQuerySortRequest.FieldEnum field,
+      final WaitStateSort.Builder builder) {
+    final List<String> validationErrors = new ArrayList<>();
+    if (field == null) {
+      validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
+    } else {
+      switch (field) {
+        case ELEMENT_INSTANCE_KEY -> builder.elementInstanceKey();
+        case PROCESS_INSTANCE_KEY -> builder.processInstanceKey();
+        case ROOT_PROCESS_INSTANCE_KEY -> builder.rootProcessInstanceKey();
+        case ELEMENT_ID -> builder.elementId();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }
