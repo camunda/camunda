@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
 import io.camunda.zeebe.dmn.DecisionEvaluationResult;
 import io.camunda.zeebe.dmn.ParsedDecisionRequirementsGraph;
+import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.common.DecisionBehavior;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
@@ -130,7 +131,7 @@ public final class BpmnDecisionBehavior {
   private Either<Failure, PersistedDecision> findCalledDecision(
       final String decisionId,
       final ZeebeBindingType bindingType,
-      final String versionTag,
+      final Expression versionTag,
       final BpmnElementContext context) {
     return switch (bindingType) {
       case deployment -> getDecisionVersionInSameDeployment(decisionId, context);
@@ -156,9 +157,22 @@ public final class BpmnDecisionBehavior {
   }
 
   private Either<Failure, PersistedDecision> getLatestDecisionVersionWithVersionTag(
-      final String decisionId, final String versionTag, final String tenantId) {
+      final String decisionId, final Expression versionTag, final String tenantId) {
+    if (versionTag == null) {
+      return Either.left(
+          new Failure(
+              "Expected a version tag expression but none was provided for decision '%s'."
+                  .formatted(decisionId)));
+    }
+    if (!versionTag.isStatic()) {
+      // TODO(#52910): evaluate versionTag expression against process instance variables
+      return Either.left(
+          new Failure(
+              "Dynamic version tag expressions are not yet supported for decision '%s'."
+                  .formatted(decisionId)));
+    }
     return decisionBehavior.findDecisionByIdAndVersionTagAndTenant(
-        decisionId, versionTag, tenantId);
+        decisionId, versionTag.getExpression(), tenantId);
   }
 
   private Either<Failure, String> evalDecisionIdExpression(
