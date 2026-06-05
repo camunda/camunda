@@ -1,0 +1,202 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.optimize.service.dashboard;
+
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENTIC_DASHBOARD_ID;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENTIC_DASHBOARD_NAME;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
+import io.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardFilterDto;
+import io.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardInstanceEndDateFilterDto;
+import io.camunda.optimize.dto.optimize.query.dashboard.filter.data.DashboardDateFilterDataDto;
+import io.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTileDto;
+import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateUnit;
+import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
+import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.RollingDateFilterDataDto;
+import io.camunda.optimize.service.db.reader.DashboardReader;
+import io.camunda.optimize.service.db.writer.DashboardWriter;
+import io.camunda.optimize.service.util.configuration.ConfigurationService;
+import io.camunda.optimize.service.util.configuration.EntityConfiguration;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Map;
+import java.util.Optional;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+
+public class AgenticControlDashboardServiceTest {
+
+  private final DashboardWriter dashboardWriter = mock(DashboardWriter.class);
+  private final DashboardReader dashboardReader = mock(DashboardReader.class);
+  private final ConfigurationService configurationService = mock(ConfigurationService.class);
+  private final EntityConfiguration entityConfiguration = mock(EntityConfiguration.class);
+
+  private final AgenticControlDashboardService underTest =
+      new AgenticControlDashboardService(dashboardWriter, dashboardReader, configurationService);
+
+  @Test
+  void shouldCreateDashboardWithExpectedShapeOnColdStart() {
+    // given
+    when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID)).thenReturn(Optional.empty());
+
+    // when
+    underTest.reconcile();
+
+    // then
+    final DashboardDefinitionRestDto saved = captureSavedDashboard();
+    assertThat(saved.getId()).isEqualTo(AGENTIC_DASHBOARD_ID);
+    assertThat(saved.isAgenticControlDashboard()).isTrue();
+    assertThat(saved.isManagementDashboard()).isFalse();
+    assertThat(saved.getCollectionId()).isNull();
+    assertThat(saved.getTiles()).isEmpty();
+  }
+
+  @Test
+  void shouldSeedExactlyTheInstanceEndDateFilterOnColdStart() {
+    // given
+    when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID)).thenReturn(Optional.empty());
+
+    // when
+    underTest.reconcile();
+
+    // then
+    final DashboardDefinitionRestDto saved = captureSavedDashboard();
+    assertThat(saved.getAvailableFilters())
+        .singleElement()
+        .isInstanceOf(DashboardInstanceEndDateFilterDto.class);
+  }
+
+  @Test
+  void shouldDefaultInstanceEndDateFilterToRollingLast30Days() {
+    // given
+    when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID)).thenReturn(Optional.empty());
+
+    // when
+    underTest.reconcile();
+
+    // then the default range is a rolling last-30-days range
+    final DashboardDefinitionRestDto saved = captureSavedDashboard();
+    final DashboardFilterDto<?> filter = saved.getAvailableFilters().get(0);
+    final DashboardDateFilterDataDto data = (DashboardDateFilterDataDto) filter.getData();
+    assertThat(data.getDefaultValues()).isInstanceOf(RollingDateFilterDataDto.class);
+
+    final RollingDateFilterDataDto rolling = (RollingDateFilterDataDto) data.getDefaultValues();
+    final RollingDateFilterStartDto start = rolling.getStart();
+    assertThat(start.getValue()).isEqualTo(30L);
+    assertThat(start.getUnit()).isEqualTo(DateUnit.DAYS);
+  }
+
+  @Test
+  void shouldNotCreateOrMutateWhenDashboardAlreadyPresent() {
+    // given the dashboard already exists
+    when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID))
+        .thenReturn(Optional.of(new DashboardDefinitionRestDto()));
+
+    // when
+    underTest.reconcile();
+
+    // then nothing is written
+    verify(dashboardWriter, never()).saveDashboard(any());
+    verify(dashboardWriter, never()).updateDashboard(any(), any());
+    verify(dashboardWriter, never()).deleteDashboard(any());
+  }
+
+  @Test
+  void shouldSeedDashboardWhenCreateOnStartupEnabled() {
+    // given the startup flag is enabled and no dashboard exists
+    when(configurationService.getEntityConfiguration()).thenReturn(entityConfiguration);
+    when(entityConfiguration.getCreateOnStartup()).thenReturn(true);
+    when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID)).thenReturn(Optional.empty());
+
+    // when
+    underTest.init();
+
+    // then the dashboard is seeded
+    verify(dashboardWriter).saveDashboard(any());
+  }
+
+  @Test
+  void shouldSeedNothingWhenCreateOnStartupDisabled() {
+    // given the startup flag is disabled
+    when(configurationService.getEntityConfiguration()).thenReturn(entityConfiguration);
+    when(entityConfiguration.getCreateOnStartup()).thenReturn(false);
+
+    // when
+    underTest.init();
+
+    // then nothing is read or written
+    verifyNoInteractions(dashboardReader);
+    verifyNoInteractions(dashboardWriter);
+  }
+
+  @Test
+  void shouldNotTouchManagementDashboardWhenSeeding() {
+    // given
+    when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID)).thenReturn(Optional.empty());
+
+    // when
+    underTest.reconcile();
+
+    // then seeding stays isolated from the management dashboard lifecycle
+    verify(dashboardWriter, never()).deleteManagementDashboard();
+    verify(dashboardWriter, never()).deleteDashboard(any());
+    // and it only ever touches its own dashboard id
+    final DashboardDefinitionRestDto saved = captureSavedDashboard();
+    assertThat(saved.getId()).isEqualTo(AGENTIC_DASHBOARD_ID);
+  }
+
+  @Test
+  void shouldSeedAppendableTileListForFutureReconcileExtensions() {
+    // given
+    when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID)).thenReturn(Optional.empty());
+
+    // when
+    underTest.reconcile();
+
+    // then
+    final DashboardDefinitionRestDto saved = captureSavedDashboard();
+    assertThatNoException().isThrownBy(() -> saved.getTiles().add(new DashboardReportTileDto()));
+  }
+
+  @Test
+  void shouldResolveDashboardNameLocalizationCodeInEveryLocale() throws IOException {
+    for (final String locale : new String[] {"en", "de"}) {
+      final Map<String, Object> agenticControl = readAgenticControlLocalization(locale);
+      assertThat(agenticControl)
+          .as("locale '%s' must define agenticControl.%s", locale, AGENTIC_DASHBOARD_NAME)
+          .containsKey(AGENTIC_DASHBOARD_NAME);
+      assertThat(agenticControl.get(AGENTIC_DASHBOARD_NAME)).isEqualTo("Agentic Control Dashboard");
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  private Map<String, Object> readAgenticControlLocalization(final String locale)
+      throws IOException {
+    try (final InputStream in =
+        getClass().getClassLoader().getResourceAsStream("localization/" + locale + ".json")) {
+      final Map<String, Object> root = new ObjectMapper().readValue(in, Map.class);
+      return (Map<String, Object>) root.get("agenticControl");
+    }
+  }
+
+  private DashboardDefinitionRestDto captureSavedDashboard() {
+    final ArgumentCaptor<DashboardDefinitionRestDto> captor =
+        ArgumentCaptor.forClass(DashboardDefinitionRestDto.class);
+    verify(dashboardWriter).saveDashboard(captor.capture());
+    return captor.getValue();
+  }
+}

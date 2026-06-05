@@ -72,9 +72,10 @@ public class DashboardRestService {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     if (dashboardDefinitionDto != null) {
       if (dashboardDefinitionDto.isManagementDashboard()
-          || dashboardDefinitionDto.isInstantPreviewDashboard()) {
+          || dashboardDefinitionDto.isInstantPreviewDashboard()
+          || dashboardDefinitionDto.isAgenticControlDashboard()) {
         throw new OptimizeValidationException(
-            "Management and Instant preview dashboards cannot be created");
+            "Management, Instant preview and Agentic control dashboards cannot be created");
       }
       validateDashboard(dashboardDefinitionDto);
     }

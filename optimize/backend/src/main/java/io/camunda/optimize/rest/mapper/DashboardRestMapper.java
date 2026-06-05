@@ -67,7 +67,8 @@ public class DashboardRestMapper {
   private void localizeDashboard(
       final DashboardDefinitionRestDto dashboardDefinition, final String locale) {
     if (dashboardDefinition.isManagementDashboard()
-        || dashboardDefinition.isInstantPreviewDashboard()) {
+        || dashboardDefinition.isInstantPreviewDashboard()
+        || dashboardDefinition.isAgenticControlDashboard()) {
       final String validLocale = localizationService.validateAndReturnValidLocale(locale);
       if (dashboardDefinition.isManagementDashboard()) {
         Optional.ofNullable(
@@ -76,6 +77,15 @@ public class DashboardRestMapper {
             .ifPresent(dashboardDefinition::setName);
         Optional.ofNullable(
                 localizationService.getLocalizationForManagementDashboardCode(
+                    validLocale, dashboardDefinition.getDescription()))
+            .ifPresent(dashboardDefinition::setDescription);
+      } else if (dashboardDefinition.isAgenticControlDashboard()) {
+        Optional.ofNullable(
+                localizationService.getLocalizationForAgenticControlDashboardCode(
+                    validLocale, dashboardDefinition.getName()))
+            .ifPresent(dashboardDefinition::setName);
+        Optional.ofNullable(
+                localizationService.getLocalizationForAgenticControlDashboardCode(
                     validLocale, dashboardDefinition.getDescription()))
             .ifPresent(dashboardDefinition::setDescription);
       } else {

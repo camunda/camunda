@@ -57,8 +57,22 @@ public class DashboardReaderES implements DashboardReader {
                 b.optimizeIndex(esClient, DASHBOARD_INDEX_NAME)
                     .query(
                         q ->
-                            q.term(
-                                t -> t.field(DashboardIndex.MANAGEMENT_DASHBOARD).value(false))));
+                            q.bool(
+                                bool ->
+                                    bool.must(
+                                            m ->
+                                                m.term(
+                                                    t ->
+                                                        t.field(DashboardIndex.MANAGEMENT_DASHBOARD)
+                                                            .value(false)))
+                                        .mustNot(
+                                            m ->
+                                                m.term(
+                                                    t ->
+                                                        t.field(
+                                                                DashboardIndex
+                                                                    .AGENTIC_CONTROL_DASHBOARD)
+                                                            .value(true))))));
     try {
       return esClient.count(countRequest).count();
     } catch (final IOException e) {

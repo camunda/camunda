@@ -25,6 +25,7 @@ public class BaseDashboardDefinitionDto {
   protected String collectionId;
   protected boolean managementDashboard = false;
   protected boolean instantPreviewDashboard = false;
+  protected boolean agenticControlDashboard = false;
   protected List<DashboardFilterDto<?>> availableFilters = new ArrayList<>();
   protected Long refreshRateSeconds;
 
@@ -110,6 +111,14 @@ public class BaseDashboardDefinitionDto {
     this.instantPreviewDashboard = instantPreviewDashboard;
   }
 
+  public boolean isAgenticControlDashboard() {
+    return agenticControlDashboard;
+  }
+
+  public void setAgenticControlDashboard(final boolean agenticControlDashboard) {
+    this.agenticControlDashboard = agenticControlDashboard;
+  }
+
   public List<DashboardFilterDto<?>> getAvailableFilters() {
     return availableFilters;
   }
@@ -138,6 +147,7 @@ public class BaseDashboardDefinitionDto {
     final BaseDashboardDefinitionDto that = (BaseDashboardDefinitionDto) o;
     return managementDashboard == that.managementDashboard
         && instantPreviewDashboard == that.instantPreviewDashboard
+        && agenticControlDashboard == that.agenticControlDashboard
         && Objects.equals(id, that.id)
         && Objects.equals(name, that.name)
         && Objects.equals(description, that.description)
@@ -163,6 +173,7 @@ public class BaseDashboardDefinitionDto {
         collectionId,
         managementDashboard,
         instantPreviewDashboard,
+        agenticControlDashboard,
         availableFilters,
         refreshRateSeconds);
   }
@@ -189,6 +200,8 @@ public class BaseDashboardDefinitionDto {
         + isManagementDashboard()
         + ", instantPreviewDashboard="
         + isInstantPreviewDashboard()
+        + ", agenticControlDashboard="
+        + isAgenticControlDashboard()
         + ", availableFilters="
         + getAvailableFilters()
         + ", refreshRateSeconds="
@@ -209,6 +222,7 @@ public class BaseDashboardDefinitionDto {
     public static final String collectionId = "collectionId";
     public static final String managementDashboard = "managementDashboard";
     public static final String instantPreviewDashboard = "instantPreviewDashboard";
+    public static final String agenticControlDashboard = "agenticControlDashboard";
     public static final String availableFilters = "availableFilters";
     public static final String refreshRateSeconds = "refreshRateSeconds";
   }

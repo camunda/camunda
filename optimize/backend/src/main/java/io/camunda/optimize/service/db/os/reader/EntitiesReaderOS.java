@@ -15,6 +15,7 @@ import static io.camunda.optimize.service.db.DatabaseConstants.SINGLE_DECISION_R
 import static io.camunda.optimize.service.db.DatabaseConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.term;
 import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.terms;
+import static io.camunda.optimize.service.db.schema.index.DashboardIndex.AGENTIC_CONTROL_DASHBOARD;
 import static io.camunda.optimize.service.db.schema.index.DashboardIndex.INSTANT_PREVIEW_DASHBOARD;
 import static io.camunda.optimize.service.db.schema.index.DashboardIndex.MANAGEMENT_DASHBOARD;
 import static io.camunda.optimize.service.db.schema.index.report.AbstractReportIndex.COLLECTION_ID;
@@ -105,6 +106,7 @@ public class EntitiesReaderOS implements EntitiesReader {
     final BoolQuery.Builder query =
         new BoolQuery.Builder()
             .mustNot(QueryDSL.exists(COLLECTION_ID))
+            .mustNot(term(AGENTIC_CONTROL_DASHBOARD, true))
             .must(
                 new BoolQuery.Builder()
                     .minimumShouldMatch("1")
@@ -335,6 +337,9 @@ public class EntitiesReaderOS implements EntitiesReader {
           locale, dashboardEntity.getName());
     } else if (dashboardEntity.isManagementDashboard()) {
       return localizationService.getLocalizationForManagementDashboardCode(
+          locale, dashboardEntity.getName());
+    } else if (dashboardEntity.isAgenticControlDashboard()) {
+      return localizationService.getLocalizationForAgenticControlDashboardCode(
           locale, dashboardEntity.getName());
     }
     return dashboardEntity.getName();

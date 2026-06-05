@@ -14,6 +14,7 @@ import static io.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
 import static io.camunda.optimize.service.db.DatabaseConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 import static io.camunda.optimize.service.db.es.reader.ElasticsearchReaderUtil.atLeastOneResponseExistsForMultiGet;
+import static io.camunda.optimize.service.db.schema.index.DashboardIndex.AGENTIC_CONTROL_DASHBOARD;
 import static io.camunda.optimize.service.db.schema.index.DashboardIndex.INSTANT_PREVIEW_DASHBOARD;
 import static io.camunda.optimize.service.db.schema.index.DashboardIndex.MANAGEMENT_DASHBOARD;
 import static io.camunda.optimize.service.db.schema.index.report.AbstractReportIndex.COLLECTION_ID;
@@ -107,6 +108,7 @@ public class EntitiesReaderES implements EntitiesReader {
                 q.bool(
                     b -> {
                       b.mustNot(m -> m.exists(e -> e.field(COLLECTION_ID)))
+                          .mustNot(m -> m.term(t -> t.field(AGENTIC_CONTROL_DASHBOARD).value(true)))
                           .must(
                               m ->
                                   m.bool(
@@ -431,6 +433,9 @@ public class EntitiesReaderES implements EntitiesReader {
           locale, dashboardEntity.getName());
     } else if (dashboardEntity.isManagementDashboard()) {
       return localizationService.getLocalizationForManagementDashboardCode(
+          locale, dashboardEntity.getName());
+    } else if (dashboardEntity.isAgenticControlDashboard()) {
+      return localizationService.getLocalizationForAgenticControlDashboardCode(
           locale, dashboardEntity.getName());
     }
     return dashboardEntity.getName();

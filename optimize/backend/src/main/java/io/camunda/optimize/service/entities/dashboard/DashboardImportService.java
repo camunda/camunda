@@ -162,6 +162,7 @@ public class DashboardImportService {
     dashboardDefinition.setTiles(dashboardToImport.getTiles());
     dashboardDefinition.setManagementDashboard(false);
     dashboardDefinition.setInstantPreviewDashboard(dashboardToImport.isInstantPreviewDashboard());
+    dashboardDefinition.setAgenticControlDashboard(false);
     return dashboardDefinition;
   }
 }
