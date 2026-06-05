@@ -113,8 +113,7 @@ class ZeebeRecordFactory {
    */
   BulkOperation optimizeProcessDefinitionOp(
       final String processId, final int version, final String dataSourceName) {
-    final String bpmn20Xml =
-        new String(bpmnProvider.bpmnFor(processId), StandardCharsets.UTF_8);
+    final String bpmn20Xml = new String(bpmnProvider.bpmnFor(processId), StandardCharsets.UTF_8);
     final String docId = processId + ":" + version + ":" + ZEEBE_DEFAULT_TENANT_ID;
     final String versionStr = String.valueOf(version);
     final ProcessDefinitionOptimizeDto dto =

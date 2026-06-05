@@ -33,14 +33,6 @@ class VariableCatalogue {
   private static final List<String> BUSINESS_VARS =
       List.of("customerId", "orderId", "amount", "status", "requiresReview", "priority");
 
-  private enum VarType {
-    INT,
-    DOUBLE,
-    BOOLEAN
-  }
-
-  private record OptionalVar(String name, VarType type) {}
-
   private static final List<OptionalVar> OPTIONAL_VARS =
       List.of(
           new OptionalVar("REPORTING_PROCESS_errorCount", VarType.INT),
@@ -121,4 +113,12 @@ class VariableCatalogue {
   private static double round2(final double v) {
     return Math.round(v * 100.0) / 100.0;
   }
+
+  private enum VarType {
+    INT,
+    DOUBLE,
+    BOOLEAN
+  }
+
+  private record OptionalVar(String name, VarType type) {}
 }

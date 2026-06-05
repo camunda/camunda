@@ -4,7 +4,6 @@
       <env name="CAMUNDA_MODE" value="all-in-one" />
       <env name="CAMUNDA_INSECURE" value="true" />
       <env name="CAMUNDA_DEVELOPMENT" value="true" />
-
       <env name="CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0_" value="demo" />
       <env name="CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL" value="demo@example.com" />
       <env name="CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME" value="Demo" />
@@ -12,9 +11,9 @@
       <env name="CAMUNDA_SECURITY_INITIALIZATION_USERS_0_USERNAME" value="demo" />
       <env name="CAMUNDA_MCP_ENABLED" value="true" />
     </envs>
-    <option name="VM_PARAMETERS" value="--add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/jdk.internal.misc=ALL-UNNAMED" />
-    <module name="camunda-zeebe" />
+    <module name="camunda-zeebe.main" />
     <option name="SPRING_BOOT_MAIN_CLASS" value="io.camunda.application.StandaloneCamunda" />
+    <option name="VM_PARAMETERS" value="--add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/jdk.internal.misc=ALL-UNNAMED" />
     <extension name="net.ashald.envfile">
       <option name="IS_ENABLED" value="false" />
       <option name="IS_SUBST" value="false" />

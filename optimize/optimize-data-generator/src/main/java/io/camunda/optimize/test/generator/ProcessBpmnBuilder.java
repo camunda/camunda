@@ -24,6 +24,8 @@ final class ProcessBpmnBuilder {
 
   private static final String RESOURCE_PATH = "bpmn/generator/";
 
+  private ProcessBpmnBuilder() {}
+
   static byte[] bpmn(final String processId) {
     final String path = RESOURCE_PATH + processId + ".bpmn";
     try (final InputStream in =
@@ -36,6 +38,4 @@ final class ProcessBpmnBuilder {
       throw new UncheckedIOException("Failed to load BPMN resource: " + path, e);
     }
   }
-
-  private ProcessBpmnBuilder() {}
 }

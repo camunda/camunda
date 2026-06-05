@@ -45,6 +45,38 @@ class FlowNodeEmitter {
   static final long INCIDENT_KEY_MULTIPLIER = 3_000L;
   static final long AGENT_INSTANCE_KEY_MULTIPLIER = 4_000L;
 
+  // Predefined LLM model/provider pairs
+  private static final String[][] LLM_CHOICES = {
+    {"gpt-4o", "openai"},
+    {"claude-sonnet-4-20250514", "anthropic"},
+    {"gemini-2.0-flash", "google"},
+    {"gpt-4o-mini", "openai"},
+  };
+
+  // AD_HOC tools are modelled in BPMN (elementId present); they become available after the agent
+  // reads the BPMN schema during INITIALIZING — i.e. before the first THINKING update.
+  private static final List<AgentTool> ADHOC_TOOLS =
+      List.of(
+          new AgentTool(
+              "extract_data", "Extract structured data from a document", "extract-data-task"),
+          new AgentTool(
+              "validate_fields", "Validate fields against business rules", "validate-fields-task"),
+          new AgentTool("lookup_record", "Look up a record by key", "lookup-record-task"),
+          new AgentTool(
+              "submit_decision", "Submit decision to downstream system", "submit-decision-task"));
+
+  // MCP/A2A tools have no BPMN element; they are discovered during the TOOL_DISCOVERY phase and
+  // therefore only appear in events after a TOOL_DISCOVERY UPDATED event.
+  private static final List<AgentTool> MCP_TOOLS =
+      List.of(
+          new AgentTool("MCP_ocr___scan_document", "Scan document with OCR"),
+          new AgentTool("MCP_crm___get_customer", "Retrieve customer data from CRM"),
+          new AgentTool("MCP_slack___post_message", "Post update to a Slack channel"),
+          new AgentTool("MCP_s3___read_file", "Read file content from S3"));
+
+  // Synthetic element ID used for the AI agent task node (not in real BPMN files)
+  private static final String AGENT_ELEMENT_ID = "ai-agent-task";
+
   private final ZeebeRecordFactory factory;
   private final NodeTimingSimulator timingSimulator;
   private final Random rng;
@@ -128,38 +160,6 @@ class FlowNodeEmitter {
   }
 
   // ── Agent instance ────────────────────────────────────────────────────────
-
-  // Predefined LLM model/provider pairs
-  private static final String[][] LLM_CHOICES = {
-    {"gpt-4o", "openai"},
-    {"claude-sonnet-4-20250514", "anthropic"},
-    {"gemini-2.0-flash", "google"},
-    {"gpt-4o-mini", "openai"},
-  };
-
-  // AD_HOC tools are modelled in BPMN (elementId present); they become available after the agent
-  // reads the BPMN schema during INITIALIZING — i.e. before the first THINKING update.
-  private static final List<AgentTool> ADHOC_TOOLS =
-      List.of(
-          new AgentTool(
-              "extract_data", "Extract structured data from a document", "extract-data-task"),
-          new AgentTool(
-              "validate_fields", "Validate fields against business rules", "validate-fields-task"),
-          new AgentTool("lookup_record", "Look up a record by key", "lookup-record-task"),
-          new AgentTool(
-              "submit_decision", "Submit decision to downstream system", "submit-decision-task"));
-
-  // MCP/A2A tools have no BPMN element; they are discovered during the TOOL_DISCOVERY phase and
-  // therefore only appear in events after a TOOL_DISCOVERY UPDATED event.
-  private static final List<AgentTool> MCP_TOOLS =
-      List.of(
-          new AgentTool("MCP_ocr___scan_document", "Scan document with OCR"),
-          new AgentTool("MCP_crm___get_customer", "Retrieve customer data from CRM"),
-          new AgentTool("MCP_slack___post_message", "Post update to a Slack channel"),
-          new AgentTool("MCP_s3___read_file", "Read file content from S3"));
-
-  // Synthetic element ID used for the AI agent task node (not in real BPMN files)
-  private static final String AGENT_ELEMENT_ID = "ai-agent-task";
 
   /**
    * Returns the full agent instance lifecycle records (CREATED → UPDATED… → COMPLETED) for one

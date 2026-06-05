@@ -55,6 +55,8 @@ final class BpmnFlowParser {
           Map.entry("parallelGateway", BpmnElementType.PARALLEL_GATEWAY),
           Map.entry("subProcess", SUB_PROCESS));
 
+  private BpmnFlowParser() {}
+
   // ── Public API ────────────────────────────────────────────────────────────
 
   /**
@@ -154,6 +156,4 @@ final class BpmnFlowParser {
   private static Stream<Node> nodeListStream(final NodeList nodeList) {
     return IntStream.range(0, nodeList.getLength()).mapToObj(nodeList::item);
   }
-
-  private BpmnFlowParser() {}
 }

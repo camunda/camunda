@@ -136,9 +136,9 @@ public class ZeebeProcessDataGenerator {
   // ── Optimize process definitions (direct seeding) ─────────────────────────
 
   /**
-   * Writes Optimize-formatted process definition documents directly to the Optimize
-   * {@code process-definition} index. This ensures the process ComboBox is populated immediately
-   * without waiting for the Optimize importer to process the Zeebe raw records.
+   * Writes Optimize-formatted process definition documents directly to the Optimize {@code
+   * process-definition} index. This ensures the process ComboBox is populated immediately without
+   * waiting for the Optimize importer to process the Zeebe raw records.
    *
    * <p>The target index is {@code {optimizeIndexPrefix}-process-definition_v{version}}, which is
    * the same index that the Optimize importer and UI query. If the index does not yet exist it is
@@ -187,7 +187,7 @@ public class ZeebeProcessDataGenerator {
           new InstanceContext(instanceKey, definitionKey, processId, version);
       final List<FlowNode> executionPath = processGraphs[definitionIndex].walk(random);
       final InstanceWindow instanceWindow =
-          sampleInstanceWindow(earliestStartTime, historicalRangeSeconds);
+          sampleInstanceWindow(earliestStartTime, historicalRangeSeconds, endTime);
 
       final var instanceOps = generateInstance(instanceContext, executionPath, instanceWindow);
       writeBatches.addAll(instanceOps);
@@ -230,7 +230,8 @@ public class ZeebeProcessDataGenerator {
       final long instanceKey = config.instanceKeyOffset + i;
       final long definitionKey = config.definitionKeyFor(definitionIndex, version);
       final String processId = processIds[definitionIndex];
-      final InstanceContext ctx = new InstanceContext(instanceKey, definitionKey, processId, version);
+      final InstanceContext ctx =
+          new InstanceContext(instanceKey, definitionKey, processId, version);
 
       variableBatch.addAll(emitter.variableUpdateOps(ctx, updateTimestampMs));
       writer.flushIfNeeded(variableBatch);
@@ -319,7 +320,9 @@ public class ZeebeProcessDataGenerator {
   // ── Instance window sampling ──────────────────────────────────────────────
 
   private InstanceWindow sampleInstanceWindow(
-      final OffsetDateTime earliestStartTime, final long historicalRangeSeconds) {
+      final OffsetDateTime earliestStartTime,
+      final long historicalRangeSeconds,
+      final OffsetDateTime now) {
 
     final boolean isActive = random.nextDouble() < ACTIVE_INSTANCE_RATE;
     final boolean isTerminated = !isActive && random.nextDouble() < TERMINATED_INSTANCE_RATE;
@@ -329,7 +332,9 @@ public class ZeebeProcessDataGenerator {
     final OffsetDateTime instanceStart = earliestStartTime.plusSeconds(randomOffsetSeconds);
 
     final long durationMinutes = 10L + (long) (random.nextDouble() * 4310);
-    final OffsetDateTime instanceEnd = isActive ? null : instanceStart.plusMinutes(durationMinutes);
+    final OffsetDateTime computedEnd = instanceStart.plusMinutes(durationMinutes);
+    final OffsetDateTime clampedEnd = computedEnd.isAfter(now) ? now : computedEnd;
+    final OffsetDateTime instanceEnd = isActive ? null : clampedEnd;
 
     final long startMs = instanceStart.toInstant().toEpochMilli();
     final long endMs = instanceEnd != null ? instanceEnd.toInstant().toEpochMilli() : startMs;
