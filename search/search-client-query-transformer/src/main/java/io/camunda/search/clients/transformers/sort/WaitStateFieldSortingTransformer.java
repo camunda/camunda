@@ -7,7 +7,10 @@
  */
 package io.camunda.search.clients.transformers.sort;
 
-import static io.camunda.webapps.schema.descriptors.template.WaitStateTemplate.*;
+import static io.camunda.webapps.schema.descriptors.template.WaitStateTemplate.ELEMENT_ID;
+import static io.camunda.webapps.schema.descriptors.template.WaitStateTemplate.ELEMENT_INSTANCE_KEY;
+import static io.camunda.webapps.schema.descriptors.template.WaitStateTemplate.PROCESS_INSTANCE_KEY;
+import static io.camunda.webapps.schema.descriptors.template.WaitStateTemplate.ROOT_PROCESS_INSTANCE_KEY;
 
 public class WaitStateFieldSortingTransformer implements FieldSortingTransformer {
 
@@ -20,5 +23,10 @@ public class WaitStateFieldSortingTransformer implements FieldSortingTransformer
       case "elementId" -> ELEMENT_ID;
       default -> throw new IllegalArgumentException("Unknown field: " + domainField);
     };
+  }
+
+  @Override
+  public String defaultSortField() {
+    return ELEMENT_INSTANCE_KEY;
   }
 }
