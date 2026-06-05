@@ -1,0 +1,103 @@
+# description: Smoke-tests the load-test setup on every push that touches load-test infra.
+#              Deploys a minimal load test from the PR head ref, for supported secondary storages,
+#              waits for pod readiness and gateway connectivity, then deletes the namespace.
+# calls: camunda-load-test.yml (scenario: realistic),
+#        camunda-verify-and-cleanup-load-test.yml (verify + delete namespace)
+# notifications: Slack (#reliability-testing-alerts) on failure only
+# type: CI
+# owner: @camunda/reliability-testing
+name: Camunda Smoke Load Test
+on:
+  pull_request:
+    # Sequence of patterns matched against refs/heads
+    branches:
+      - main
+      - 'stable/**'
+    paths:
+      - 'load-tests/setup/**'
+      - '.github/workflows/camunda-load-test.yml'
+      - '.github/workflows/camunda-verify-and-cleanup-load-test.yml'
+      - '.github/workflows/camunda-load-test-smoke.yml'
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Branch ref to use for smoke test (e.g., "main" or "feature/my-branch")'
+        required: true
+        type: string
+
+concurrency:
+  group: smoke-load-test-${{ github.event.pull_request.id || github.event.inputs.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
+jobs:
+
+  # Dynamically generate the Docker tag (e.g., SNAPSHOT or X.Y-SNAPSHOT) based on branch name
+  utils-get-snapshot-docker-tag:
+    uses: ./.github/workflows/generate-snapshot-docker-tag.yml
+    secrets: inherit
+    permissions:
+      contents: read
+
+  sanitize-branch-name:
+    name: Sanitize Branch Name
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    outputs:
+      sanitized-name: ${{ steps.compute-namespace.outputs.namespace }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: sanitize-author
+        name: Sanitize author name
+        uses: camunda/infra-global-github-actions/sanitize-branch-name@main
+        with:
+          branch: ${{ github.event.pull_request.user.login }}
+          max_length: 10
+      - id: compute-namespace
+        name: Compute safe namespace from PR author and number
+        run: |
+          author="${{ steps.sanitize-author.outputs.branch_name }}"
+          pr_number="${{ github.event.pull_request.number }}"
+          echo "namespace=c8-smoke-${author}-${pr_number}" >> "$GITHUB_OUTPUT"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  smoke-install:
+    name: Smoke Install
+    needs: [ sanitize-branch-name, utils-get-snapshot-docker-tag ]
+    uses: ./.github/workflows/camunda-load-test.yml
+    secrets: inherit
+    with:
+      name: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
+      ref: ${{ github.event.pull_request.head.ref || github.event.inputs.ref }}
+      scenario: realistic
+      secondary-storage-type: elasticsearch
+      # Short TTL acts as a safety net; verify-and-cleanup deletes the namespace explicitly.
+      ttl: 1
+      # We make use of the official docker image (SNAPSHOT TAG) this is to reduce CI runtime and feedback cycle.
+      # Setting the focus only on the installation and connectivity part of the load test.
+      # Issues with the load test applications, should ideally catched with integration tests.
+      orchestration-tag: ${{ needs.utils-get-snapshot-docker-tag.outputs.version_tag }}
+
+
+  verify-and-cleanup:
+    name: Verify and cleanup
+    needs: [sanitize-branch-name, smoke-install]
+    if: always()
+    uses: ./.github/workflows/camunda-verify-and-cleanup-load-test.yml
+    secrets: inherit
+    with:
+      namespace: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}

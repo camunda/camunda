@@ -26,8 +26,8 @@ if [ -z "$1" ]; then
 fi
 
 NAMESPACE=$1
-POD_TIMEOUT=${2:-800}
-POD_READY_RETRIES=${3:-3}
+POD_TIMEOUT=${2:-30}
+POD_READY_RETRIES=${3:-20}
 CONNECTIVITY_TIMEOUT=${4:-1800}
 METRICS_PORT=${5:-9600}
 GITHUB_OUTPUT="${GITHUB_OUTPUT:-/dev/stdout}"
@@ -86,12 +86,6 @@ if ! wait_for_pods "app.kubernetes.io/component=zeebe-client" "load test client 
 fi
 
 # Port-forward to the clients service metrics endpoint
-local_port=$((METRICS_PORT + RANDOM % 1000))
-kubectl port-forward "svc/clients" "${local_port}:${METRICS_PORT}" -n "$NAMESPACE" &
-pf_pid=$!
-trap 'kill "$pf_pid" 2>/dev/null || true; wait "$pf_pid" 2>/dev/null || true' EXIT
-sleep 5  # wait for port-forward to establish
-
 # Check that the client has successfully connected to the gateway.
 # app_connected >= 1 confirms that the topology was received (i.e. the
 # client authenticated and connected successfully, regardless of REST or gRPC).
@@ -101,6 +95,14 @@ attempts=0
 verified=false
 
 while [[ $attempts -lt $max_attempts ]]; do
+  local_port=$((METRICS_PORT + RANDOM % 1000))
+  echo "Establishing port-forward to clients service on port ${local_port}..."
+  kubectl port-forward "svc/clients" "${local_port}:${METRICS_PORT}" -n "$NAMESPACE" &
+  pf_pid=$!
+  # Ensure port-forward is cleaned up on exit
+  trap 'kill "$pf_pid" 2>/dev/null || true; wait "$pf_pid" 2>/dev/null || true' EXIT
+  sleep 5  # wait for port-forward to establish
+
   count=$( { curl -s "http://localhost:${local_port}/metrics" 2>/dev/null || true; } \
     | { grep '^app_connected ' || true; } \
     | awk '{print $2}' \
@@ -116,9 +118,6 @@ while [[ $attempts -lt $max_attempts ]]; do
   echo "Namespace $NAMESPACE: waiting for gateway connectivity (attempt $attempts/$max_attempts)"
   sleep "$interval"
 done
-
-kill $pf_pid 2>/dev/null || true
-wait $pf_pid 2>/dev/null || true
 
 if [[ "$verified" != "true" ]]; then
   echo "::error::Namespace $NAMESPACE client did not connect to gateway within timeout (app.connected metric never reached 1)"
