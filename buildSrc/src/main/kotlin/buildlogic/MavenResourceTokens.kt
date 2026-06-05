@@ -31,3 +31,9 @@ fun Project.optimizeBackendTestResourceTokens(): Map<String, String> =
         "zeebe.docker.version" to catalogVersion("optimize-zeebe-docker"),
         "database.type" to catalogVersion("optimize-database-type"),
     )
+
+fun Project.zeebeUtilResourceTokens(): Map<String, String> =
+    mapOf(
+        "project.version" to version.toString(),
+        "backwards.compat.version" to catalogVersion("zeebe-compat"),
+    )

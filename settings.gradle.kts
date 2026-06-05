@@ -359,6 +359,7 @@ dependencyResolutionManagement {
             version("wiremock", pomVersion("version.wiremock"))
             // from testing/camunda-process-test-example/pom.xml; versioned separately from wiremock
             version("wiremock-spring-boot", "4.2.1")
+            version("zeebe-compat", pomVersion("backwards.compat.version"))
             version("zeebe-test-container", pomVersion("version.zeebe-test-container"))
             version("optimize-zeebe-docker", optimizePomVersion("zeebe.docker.version"))
             version("optimize-database-type", optimizePomVersion("database.type"))
