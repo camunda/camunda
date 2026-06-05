@@ -193,7 +193,9 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   gradle-compile-check:
-    if: needs.detect-changes.outputs.gradle-changes == 'true'
+    if: >-
+      needs.detect-changes.outputs.gradle-changes == 'true' ||
+      (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'gradle-build'))
     name: "Gradle / Compile"
     needs: [ detect-changes ]
     runs-on: gcp-perf-core-16-default
@@ -1123,7 +1125,7 @@ jobs:
   integration-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     name: "${{ matrix.module }} / Integration / ${{ matrix.name }} ITs (${{ matrix.stressRun }})"
-    needs: [ detect-changes, setup-tests ]
+    needs: [ detect-changes, setup-tests, gradle-compile-check ]
     timeout-minutes: 30
     permissions: { }  # GITHUB_TOKEN unused in this job
     runs-on: ${{ matrix.runs-on }}

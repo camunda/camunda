@@ -51,10 +51,10 @@ jobs:
         include:
           - suite: DataLayer
             suiteName: Data Layer
-            gradleTestTasks: ":optimize-commons:test --tests io.camunda.optimize.OptimizeDataLayerTestSuite :optimize-backend:test --tests io.camunda.optimize.OptimizeDataLayerTestSuite :upgrade-optimize:test --tests io.camunda.optimize.upgrade.OptimizeDataLayerTestSuite"
+            gradleTestTasks: ":optimize-commons:ut --tests io.camunda.optimize.OptimizeDataLayerTestSuite :optimize-backend:ut --tests io.camunda.optimize.OptimizeDataLayerTestSuite :upgrade-optimize:ut --tests io.camunda.optimize.upgrade.OptimizeDataLayerTestSuite"
           - suite: CoreFeatures
             suiteName: Core Features
-            gradleTestTasks: ":optimize-commons:test --tests io.camunda.optimize.OptimizeCoreFeaturesTestSuite :optimize-backend:test --tests io.camunda.optimize.OptimizeCoreFeaturesTestSuite"
+            gradleTestTasks: ":optimize-commons:ut --tests io.camunda.optimize.OptimizeCoreFeaturesTestSuite :optimize-backend:ut --tests io.camunda.optimize.OptimizeCoreFeaturesTestSuite"
     with:
       componentName: "Optimize"
       suite: ${{ matrix.suite }}
