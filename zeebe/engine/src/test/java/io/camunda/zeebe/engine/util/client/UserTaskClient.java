@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.util.client;
 
+import io.camunda.zeebe.engine.util.AuthorizationUtil;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
@@ -242,6 +243,21 @@ public final class UserTaskClient {
             username,
             userTaskRecord.setUserTaskKey(userTaskKey),
             TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    return expectation.apply(position);
+  }
+
+  public Record<UserTaskRecordValue> claimAsClient(final String clientId) {
+    final long userTaskKey = findUserTaskKey();
+    final var authInfo =
+        AuthorizationUtil.getClientIdAuthInfo(clientId, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    final long position =
+        writer.writeCommand(
+            userTaskKey,
+            DEFAULT_REQUEST_STREAM_ID,
+            DEFAULT_REQUEST_ID,
+            UserTaskIntent.CLAIM,
+            authInfo,
+            userTaskRecord.setUserTaskKey(userTaskKey));
     return expectation.apply(position);
   }
 

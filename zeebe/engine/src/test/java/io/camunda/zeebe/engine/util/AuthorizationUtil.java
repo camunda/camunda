@@ -50,4 +50,16 @@ public class AuthorizationUtil {
     auth.setClaims(Map.of(claim, claimValue));
     return auth;
   }
+
+  public static AuthInfo getClientIdAuthInfo(
+      final String clientId, final String... authorizedTenantIds) {
+    final var auth = new AuthInfo();
+    auth.setClaims(
+        Map.of(
+            Authorization.AUTHORIZED_CLIENT_ID,
+            clientId,
+            Authorization.AUTHORIZED_TENANTS,
+            List.of(authorizedTenantIds)));
+    return auth;
+  }
 }

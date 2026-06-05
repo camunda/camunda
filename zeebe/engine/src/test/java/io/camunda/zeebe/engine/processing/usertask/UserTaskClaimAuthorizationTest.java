@@ -79,7 +79,7 @@ public class UserTaskClaimAuthorizationTest {
     engine
         .userTask()
         .ofInstance(processInstanceKey)
-        .withAssignee("assignee")
+        .withAssignee(DEFAULT_USER.getUsername())
         .claim(DEFAULT_USER.getUsername());
 
     // then
@@ -106,7 +106,7 @@ public class UserTaskClaimAuthorizationTest {
     engine
         .userTask()
         .ofInstance(processInstanceKey)
-        .withAssignee("assignee")
+        .withAssignee(user.getUsername())
         .claim(user.getUsername());
 
     // then
@@ -115,6 +115,41 @@ public class UserTaskClaimAuthorizationTest {
                 .withProcessInstanceKey(processInstanceKey)
                 .exists())
         .isTrue();
+  }
+
+  @Test
+  public void shouldRejectClaimWhenAssigneeDoesNotMatchCaller() {
+    // given
+    final var processInstanceKey = createProcessInstance();
+    final var caller = createUser();
+    final var otherUser = createUser();
+    addPermissionsToUser(
+        caller,
+        AuthorizationResourceType.PROCESS_DEFINITION,
+        PermissionType.UPDATE_USER_TASK,
+        AuthorizationResourceMatcher.ID,
+        PROCESS_ID);
+    final var userTaskKey =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst()
+            .getKey();
+
+    // when
+    final var rejection =
+        engine
+            .userTask()
+            .ofInstance(processInstanceKey)
+            .withAssignee(otherUser.getUsername())
+            .expectRejection()
+            .claim(caller.getUsername());
+
+    // then
+    Assertions.assertThat(rejection)
+        .hasRejectionType(RejectionType.FORBIDDEN)
+        .hasRejectionReason(
+            "Expected to claim user task with key '%d', but the assignee '%s' does not match the calling user '%s'"
+                .formatted(userTaskKey, otherUser.getUsername(), caller.getUsername()));
   }
 
   @Test
