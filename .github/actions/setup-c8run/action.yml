@@ -196,15 +196,12 @@ runs:
       working-directory: ./c8run
       env:
         JAVA_HOME: /usr/lib/jvm/temurin-21-jdk-amd64
-        JAVA_VERSION: 21.0.3
 
     - if: ${{ startsWith(inputs.os, 'macos') }}
       name: Mac - Run c8run
       shell: bash
       run: ./c8run start --config e2e_tests/prefix-config.yaml
       working-directory: ./c8run
-      env:
-        JAVA_VERSION: 21.0.3
 
     - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:

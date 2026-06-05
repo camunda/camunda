@@ -22,6 +22,8 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+const javaHelperReleaseVersion = "21"
+
 func Clean(camundaVersion string) {
 	// Older C8Run builds extracted Elasticsearch locally. Remove any leftovers so they cannot be
 	// picked up by later packaging runs after Elasticsearch was removed from the distribution.
@@ -198,21 +200,22 @@ func createZipArchive(filesToArchive []string, outputPath, sourceRoot, targetRoo
 }
 
 func BuildJavaScripts() error {
-	javaVersionCmd := exec.Command("javac", "JavaVersion.java")
+	for _, javaFile := range []string{"JavaVersion.java", "JavaHome.java"} {
+		if err := compileJavaHelper(javaFile); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func compileJavaHelper(javaFile string) error {
+	javaCmd := exec.Command("javac", "--release", javaHelperReleaseVersion, javaFile)
 	var out strings.Builder
 	var stderr strings.Builder
-	javaVersionCmd.Stdout = &out
-	javaVersionCmd.Stderr = &stderr
-	err := javaVersionCmd.Run()
-	if err != nil {
-		return fmt.Errorf("failed to compile JavaVersion : %w", err)
-	}
-	javaHomeCmd := exec.Command("javac", "JavaHome.java")
-	javaHomeCmd.Stdout = &out
-	javaHomeCmd.Stderr = &stderr
-	err = javaHomeCmd.Run()
-	if err != nil {
-		return fmt.Errorf("failed to compile JavaHome : %w", err)
+	javaCmd.Stdout = &out
+	javaCmd.Stderr = &stderr
+	if err := javaCmd.Run(); err != nil {
+		return fmt.Errorf("failed to compile %s: %w\n%s", javaFile, err, stderr.String())
 	}
 	return nil
 }
