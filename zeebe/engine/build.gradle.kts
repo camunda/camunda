@@ -15,6 +15,7 @@ dependencies {
     implementation(project(":camunda-security-protocol"))
     implementation(project(":camunda-security-validation"))
     implementation(libs.io.camunda.security.library.api)
+    implementation(libs.io.camunda.security.library.core)
     api(libs.org.agrona.agrona)
     implementation(libs.org.slf4j.slf4j.api)
     implementation(project(":zeebe-protocol"))

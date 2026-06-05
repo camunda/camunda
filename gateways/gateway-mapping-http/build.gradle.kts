@@ -22,6 +22,7 @@ dependencies {
     implementation(project(":zeebe-broker-client"))
     implementation(project(":document-api"))
     implementation(project(":camunda-search-domain"))
+    implementation(libs.io.camunda.security.library.core)
     implementation(project(":zeebe-msgpack-value"))
     api(libs.com.fasterxml.jackson.core.jackson.core)
     api(libs.org.agrona.agrona)

@@ -10,6 +10,8 @@ dependencies {
     implementation(libs.org.apache.commons.commons.lang3)
     api(libs.com.fasterxml.jackson.core.jackson.annotations)
     implementation(libs.org.slf4j.slf4j.api)
+    implementation(libs.io.camunda.security.library.api)
+    implementation(libs.io.camunda.security.library.core)
     implementation(project(":camunda-security-core"))
     implementation(project(":camunda-security-protocol"))
     implementation(project(":zeebe-protocol"))

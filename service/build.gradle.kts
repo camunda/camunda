@@ -26,6 +26,7 @@ dependencies {
     implementation(project(":camunda-security-core"))
     implementation(project(":camunda-security-protocol"))
     implementation(libs.io.camunda.security.library.api)
+    implementation(libs.io.camunda.security.library.core)
     api(libs.org.agrona.agrona)
     api(libs.org.camunda.bpm.camunda.license.check)
     implementation(libs.org.slf4j.slf4j.api)
