@@ -176,6 +176,9 @@ paths:
   /agent-instances/{agentInstanceKey}/history:
     post:
       x-eventually-consistent: false
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       tags:
         - Agent instance
       operationId: createAgentInstanceHistoryItem
@@ -233,6 +236,9 @@ paths:
   /agent-instances/{agentInstanceKey}/history/search:
     post:
       x-eventually-consistent: true
+      security:
+        - bearerAuth: []
+        - basicAuth: []
       tags:
         - Agent instance
       operationId: searchAgentInstanceHistory
