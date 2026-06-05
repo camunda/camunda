@@ -130,7 +130,7 @@ public class SnapshotTransferTest {
         .thenReturn(CompletableActorFuture.completed(null));
 
     // when
-    final var persistedSnapshotFuture = snapshotTransfer.getLatestSnapshot(partitionId);
+    snapshotTransfer.getLatestSnapshot(partitionId);
 
     // then
     verify(takeSnapshotMock, timeout(5000)).takeSnapshot(eq(-1L));

@@ -13,6 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 
 /** Represents a snapshot, which was persisted at the {@link PersistedSnapshotStore}. */
 public interface PersistedSnapshot {
@@ -89,7 +90,7 @@ public interface PersistedSnapshot {
    *
    * @return the metadata of the snapshot.
    */
-  SnapshotMetadata getMetadata();
+  @Nullable SnapshotMetadata getMetadata();
 
   /**
    * Reserves this snapshot. When the snapshot is reserved, it is not deleted until it is released.

@@ -86,10 +86,22 @@ public final class FileUtil {
   public static void moveDurably(final Path source, final Path target, final CopyOption... options)
       throws IOException {
     Files.move(source, target, options);
-    final var targetParent =
-        Objects.requireNonNull(
-            target.getParent(), "Expected target path to have a parent directory, but it is null");
-    flushDirectory(targetParent);
+    flushDirectory(requireParent(target));
+  }
+
+  /**
+   * Returns the parent of the given path, throwing if it has none.
+   *
+   * @param path the path whose parent to return
+   * @return the non-null parent path
+   * @throws NullPointerException if the path has no parent
+   */
+  public static Path requireParent(final Path path) {
+    final var parent = path.getParent();
+    if (parent == null) {
+      throw new NullPointerException("Expected path " + path + " to have a non-null parent");
+    }
+    return parent;
   }
 
   public static void deleteFolder(final String path) throws IOException {

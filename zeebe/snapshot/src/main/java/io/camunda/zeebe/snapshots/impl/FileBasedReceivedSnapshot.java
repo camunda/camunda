@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.snapshots.impl;
 
+import static io.camunda.zeebe.util.Unit.unit;
+
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -24,6 +26,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,10 +41,10 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
 
   private final FileBasedSnapshotId snapshotId;
   private int expectedTotalCount;
-  private FileBasedSnapshotMetadata metadata;
-  private ByteBuffer metadataBuffer;
+  private @Nullable FileBasedSnapshotMetadata metadata;
+  private @Nullable ByteBuffer metadataBuffer;
   private long writtenMetadataBytes;
-  private SfvChecksumImpl checksumCollection;
+  private @Nullable SfvChecksumImpl checksumCollection;
 
   FileBasedReceivedSnapshot(
       final FileBasedSnapshotId snapshotId,
@@ -66,7 +69,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
     return actor.call(
         () -> {
           applyInternal(snapshotChunk);
-          return null;
+          return unit();
         });
   }
 
@@ -102,11 +105,8 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
     LOGGER.trace("Consume snapshot snapshotChunk {} of snapshot {}", chunkName, snapshotId);
     writeReceivedSnapshotChunk(snapshotChunk, snapshotFile);
 
-    if (checksumCollection == null) {
-      checksumCollection = new SfvChecksumImpl();
-    }
-    checksumCollection.updateFromBytes(
-        snapshotFile.getFileName().toString(), snapshotChunk.getContent());
+    getChecksumCollection()
+        .updateFromBytes(snapshotFile.getFileName().toString(), snapshotChunk.getContent());
 
     if (snapshotChunk.getChunkName().equals(FileBasedSnapshotStoreImpl.METADATA_FILE_NAME)) {
       try {
@@ -203,7 +203,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
     actor.run(
         () -> {
           abortInternal();
-          abortFuture.complete(null);
+          abortFuture.complete(unit());
         });
     return abortFuture;
   }
@@ -277,13 +277,21 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
                 false);
       }
       final PersistedSnapshot value =
-          snapshotStore.persistNewSnapshot(directory, snapshotId, checksumCollection, metadata);
+          snapshotStore.persistNewSnapshot(
+              directory, snapshotId, getChecksumCollection(), metadata);
       future.complete(value);
     } catch (final Exception e) {
       future.completeExceptionally(e);
     }
 
     snapshotStore.removePendingSnapshot(this);
+  }
+
+  private SfvChecksumImpl getChecksumCollection() {
+    if (checksumCollection == null) {
+      checksumCollection = new SfvChecksumImpl();
+    }
+    return checksumCollection;
   }
 
   @Override

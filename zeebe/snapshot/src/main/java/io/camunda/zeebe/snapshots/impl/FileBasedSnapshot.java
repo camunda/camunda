@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Consumer;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +38,7 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
   private final Path checksumFile;
   private final ImmutableChecksumsSFV checksums;
   private final FileBasedSnapshotId snapshotId;
-  private final SnapshotMetadata metadata;
+  private final @Nullable SnapshotMetadata metadata;
   private final Consumer<FileBasedSnapshot> onSnapshotDeleted;
 
   private final Set<FileBasedSnapshotReservation> reservations = new HashSet<>();
@@ -50,7 +51,7 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
       final Path checksumFile,
       final ImmutableChecksumsSFV checksums,
       final FileBasedSnapshotId snapshotId,
-      final SnapshotMetadata metadata,
+      final @Nullable SnapshotMetadata metadata,
       final Consumer<FileBasedSnapshot> onSnapshotDeleted,
       final ConcurrencyControl actor) {
     this.directory = directory;
@@ -125,7 +126,7 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
   }
 
   @Override
-  public SnapshotMetadata getMetadata() {
+  public @Nullable SnapshotMetadata getMetadata() {
     return metadata;
   }
 

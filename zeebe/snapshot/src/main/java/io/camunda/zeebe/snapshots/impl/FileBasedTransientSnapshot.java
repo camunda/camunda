@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.snapshots.impl;
 
+import static io.camunda.zeebe.util.Unit.unit;
+
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -27,7 +29,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
+import java.util.Objects;
 import java.util.function.Consumer;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,13 +48,14 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
   private final FileBasedSnapshotId snapshotId;
   private final ActorFuture<Void> takenFuture = new CompletableActorFuture<>();
   private boolean isValid = false;
-  private PersistedSnapshot snapshot;
-  private MutableChecksumsSFV checksum;
+  private @Nullable PersistedSnapshot snapshot;
+  private @Nullable MutableChecksumsSFV checksum;
   private final CRC32CChecksumProvider checksumProvider;
   private long lastFollowupEventPosition = Long.MAX_VALUE;
   private long maxExportedPosition = Long.MAX_VALUE;
   private final boolean isBootstrap;
 
+  @SuppressWarnings("NullAway.Init")
   FileBasedTransientSnapshot(
       final FileBasedSnapshotId snapshotId,
       final Path directory,
@@ -104,7 +109,7 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
 
           snapshot = null;
           isValid = true;
-          takenFuture.complete(null);
+          takenFuture.complete(unit());
         }
 
       } catch (final Exception exception) {
@@ -121,7 +126,7 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
     actor.run(
         () -> {
           abortInternal();
-          abortFuture.complete(null);
+          abortFuture.complete(unit());
         });
     return abortFuture;
   }
@@ -196,9 +201,10 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
               snapshotId.getProcessedPosition(),
               snapshotId.getExportedPosition(),
               snapshotId.getBrokerId(),
-              Long.toHexString(checksum.getCombinedChecksum()));
+              Long.toHexString(Objects.requireNonNull(checksum, "checksum").getCombinedChecksum()));
+      final var directoryParent = FileUtil.requireParent(directory);
       final var directoryWithChecksum =
-          directory.getParent().resolve(idWithChecksum.getSnapshotIdAsString());
+          directoryParent.resolve(idWithChecksum.getSnapshotIdAsString());
       try {
         FileUtil.moveDurably(directory, directoryWithChecksum, StandardCopyOption.ATOMIC_MOVE);
       } catch (final Exception e) {
@@ -241,7 +247,7 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
                 StandardOpenOption.DSYNC);
         final var output = Channels.newOutputStream(channel)) {
       metadata.encode(output);
-      checksum.updateFromFile(metadataPath);
+      Objects.requireNonNull(checksum, "checksum").updateFromFile(metadataPath);
     }
   }
 

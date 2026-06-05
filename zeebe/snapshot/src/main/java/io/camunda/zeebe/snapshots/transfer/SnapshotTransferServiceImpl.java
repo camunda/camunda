@@ -8,6 +8,8 @@
 
 package io.camunda.zeebe.snapshots.transfer;
 
+import static io.camunda.zeebe.util.Unit.unit;
+
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -22,10 +24,12 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import org.agrona.CloseHelper;
+import org.jspecify.annotations.Nullable;
 
 public class SnapshotTransferServiceImpl implements SnapshotSenderService {
 
@@ -50,7 +54,7 @@ public class SnapshotTransferServiceImpl implements SnapshotSenderService {
   }
 
   @Override
-  public ActorFuture<SnapshotChunk> getLatestSnapshot(
+  public ActorFuture<@Nullable SnapshotChunk> getLatestSnapshot(
       final int partition, final long lastProcessedPosition, final UUID transferId) {
     if (partition != partitionId) {
       return CompletableActorFuture.completedExceptionally(
@@ -86,7 +90,7 @@ public class SnapshotTransferServiceImpl implements SnapshotSenderService {
   }
 
   @Override
-  public ActorFuture<SnapshotChunk> getNextChunk(
+  public ActorFuture<@Nullable SnapshotChunk> getNextChunk(
       final int partition,
       final String snapshotId,
       final String previousChunkName,
@@ -100,7 +104,7 @@ public class SnapshotTransferServiceImpl implements SnapshotSenderService {
                     "[%s] Invalid snapshotId: %s. Expected: %s",
                     transferId, snapshotId, transfer.snapshotId)));
       }
-      if (!transfer.lastChunkName.equals(previousChunkName)) {
+      if (!Objects.equals(transfer.lastChunkName, previousChunkName)) {
         return CompletableActorFuture.completedExceptionally(
             new IllegalArgumentException(
                 String.format(
@@ -129,32 +133,27 @@ public class SnapshotTransferServiceImpl implements SnapshotSenderService {
         .thenApply(
             ignored -> {
               pendingTransfers.clear();
-              return null;
+              return unit();
             });
   }
 
-  private ActorFuture<PersistedSnapshot> getLatestSnapshotForBootstrap(
+  private ActorFuture<@Nullable PersistedSnapshot> getLatestSnapshotForBootstrap(
       final long lastProcessedPosition) {
-    final ActorFuture<PersistedSnapshot> lastSnapshotFuture = concurrency.createFuture();
-
-    final var lastSnapshot = snapshotStore.getBootstrapSnapshot();
-    if (lastSnapshot.isEmpty()) {
-      createSnapshotForBootstrap(lastProcessedPosition).onComplete(lastSnapshotFuture, concurrency);
-    } else {
-      lastSnapshotFuture.complete(lastSnapshot.get());
-    }
-    return lastSnapshotFuture;
+    return snapshotStore
+        .getBootstrapSnapshot()
+        .<ActorFuture<@Nullable PersistedSnapshot>>map(
+            snapshot -> CompletableActorFuture.completed(snapshot).asNullable())
+        .orElseGet(() -> createSnapshotForBootstrap(lastProcessedPosition));
   }
 
   private ActorFuture<PersistedSnapshot> createSnapshotForBootstrap(
       final long lastProcessedPosition) {
-    final var lastPersistedSnapshot = snapshotStore.getLatestSnapshot();
-    final ActorFuture<PersistedSnapshot> lastSnapshot =
-        lastPersistedSnapshot.isEmpty()
-                || lastPersistedSnapshot.get().getMetadata().processedPosition()
-                    < lastProcessedPosition
-            ? takeSnapshot.takeSnapshot(lastProcessedPosition)
-            : CompletableActorFuture.completed(lastPersistedSnapshot.get());
+    final var lastSnapshot =
+        snapshotStore
+            .getLatestSnapshot()
+            .filter(snapshot -> metadataProcessedPosition(snapshot) >= lastProcessedPosition)
+            .<ActorFuture<PersistedSnapshot>>map(CompletableActorFuture::completed)
+            .orElseGet(() -> takeSnapshot.takeSnapshot(lastProcessedPosition));
 
     return lastSnapshot.andThen(
         persistedSnapshot ->
@@ -167,8 +166,13 @@ public class SnapshotTransferServiceImpl implements SnapshotSenderService {
                             (snapshot, error) -> {
                               if (error != null) {
                                 if (error instanceof SnapshotAlreadyExistsException) {
-                                  return CompletableActorFuture.completed(
-                                      snapshotStore.getBootstrapSnapshot().orElse(null));
+                                  return snapshotStore
+                                      .getBootstrapSnapshot()
+                                      .map(CompletableActorFuture::completed)
+                                      .orElse(
+                                          CompletableActorFuture.completedExceptionally(
+                                              new IllegalStateException(
+                                                  "Expected to find a bootstrap snapshot, but none found.")));
                                 } else {
                                   return CompletableActorFuture.completedExceptionally(error);
                                 }
@@ -180,12 +184,20 @@ public class SnapshotTransferServiceImpl implements SnapshotSenderService {
         concurrency);
   }
 
+  private static long metadataProcessedPosition(final PersistedSnapshot snapshot) {
+    final var metadata = snapshot.getMetadata();
+    if (metadata == null) {
+      throw new NullPointerException();
+    }
+    return metadata.processedPosition();
+  }
+
   /**
    * Run a () -> ActorFuture<A> while the reservation of the persisted snapshot is active. Ensure
    * that the reservation is released even in case of errors
    */
   @VisibleForTesting
-  <A> ActorFuture<A> withReservation(
+  <A extends @Nullable Object> ActorFuture<A> withReservation(
       final PersistedSnapshot persistedSnapshot, final Supplier<ActorFuture<A>> supplier) {
     return persistedSnapshot
         .reserve()
@@ -225,19 +237,21 @@ public class SnapshotTransferServiceImpl implements SnapshotSenderService {
   private static class PendingTransfer {
 
     private final String snapshotId;
-    private String lastChunkName;
+    private @Nullable String lastChunkName;
     private final SnapshotChunkReader reader;
 
     PendingTransfer(
-        final String snapshotId, final String lastChunkName, final SnapshotChunkReader reader) {
+        final String snapshotId,
+        final @Nullable String lastChunkName,
+        final SnapshotChunkReader reader) {
       this.snapshotId = snapshotId;
       this.lastChunkName = lastChunkName;
       this.reader = reader;
     }
 
-    private SnapshotChunk next() {
+    private @Nullable SnapshotChunk next() {
       // reader.hasNext does not involve any I/O
-      if (reader != null && reader.hasNext()) {
+      if (reader.hasNext()) {
         final var next = reader.next();
         lastChunkName = next.getChunkName();
         return next;

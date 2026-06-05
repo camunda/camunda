@@ -15,6 +15,7 @@ import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.snapshots.transfer.SnapshotTransfer;
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -90,7 +91,7 @@ public final class SnapshotInitializationUtil {
       final FileBasedSnapshotStore snapshotStore,
       final ConcurrencyControl concurrencyControl) {
 
-    final ActorFuture<PersistedSnapshot> fetchFuture =
+    final ActorFuture<@Nullable PersistedSnapshot> fetchFuture =
         snapshotTransfer.getLatestSnapshot(Protocol.DEPLOYMENT_PARTITION);
 
     return fetchFuture.andThen(
