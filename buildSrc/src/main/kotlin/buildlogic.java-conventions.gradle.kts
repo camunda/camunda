@@ -129,6 +129,9 @@ val it by tasks.register<Test>("it") {
     classpath = sourceSets["test"].runtimeClasspath
     shouldRunAfter(ut)
     include(itPatterns)
+    providers.gradleProperty("it.exclude.tests").orNull
+        ?.split(",")
+        ?.forEach { filter.excludeTestsMatching(it.trim()) }
 }
 
 // Lifecycle task: runs both ut and it.
