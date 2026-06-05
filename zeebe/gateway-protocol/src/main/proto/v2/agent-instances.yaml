@@ -984,31 +984,70 @@ components:
         - DISCARDED
 
     AgentInstanceMessageContent:
-      description: A single content block within a history item.
+      x-polymorphic-schema: true
+      description: A single content block within a history item. Discriminated by `contentType`.
+      discriminator:
+        propertyName: contentType
+        mapping:
+          TEXT: '#/components/schemas/AgentInstanceTextContent'
+          DOCUMENT: '#/components/schemas/AgentInstanceDocumentContent'
+          OBJECT: '#/components/schemas/AgentInstanceObjectContent'
+      oneOf:
+        - $ref: '#/components/schemas/AgentInstanceTextContent'
+        - $ref: '#/components/schemas/AgentInstanceDocumentContent'
+        - $ref: '#/components/schemas/AgentInstanceObjectContent'
+
+    AgentInstanceTextContent:
       type: object
+      title: Text content
+      description: A plain-text content block.
+      additionalProperties: false
       required:
         - contentType
         - text
+      properties:
+        contentType:
+          description: The content type discriminator.
+          type: string
+          example: TEXT
+        text:
+          description: The text content.
+          type: string
+
+    AgentInstanceDocumentContent:
+      type: object
+      title: Document content
+      description: A Camunda Document Store reference content block.
+      additionalProperties: false
+      required:
+        - contentType
         - documentReference
+      properties:
+        contentType:
+          description: The content type discriminator.
+          type: string
+          example: DOCUMENT
+        documentReference:
+          description: A Camunda Document Store reference.
+          type: object
+          additionalProperties: true
+
+    AgentInstanceObjectContent:
+      type: object
+      title: Object content
+      description: An arbitrary structured content block.
+      additionalProperties: false
+      required:
+        - contentType
         - object
       properties:
         contentType:
           description: The content type discriminator.
-          allOf:
-            - $ref: '#/components/schemas/AgentInstanceMessageContentTypeEnum'
-        text:
-          description: The text content. Present when contentType is TEXT.
           type: string
-          nullable: true
-        documentReference:
-          description: A Camunda Document Store reference. Present when contentType is DOCUMENT.
-          type: object
-          nullable: true
-          additionalProperties: true
+          example: OBJECT
         object:
-          description: Arbitrary structured content. Present when contentType is OBJECT.
+          description: Arbitrary structured content.
           type: object
-          nullable: true
           additionalProperties: true
 
     AgentInstanceMessageContentTypeEnum:
