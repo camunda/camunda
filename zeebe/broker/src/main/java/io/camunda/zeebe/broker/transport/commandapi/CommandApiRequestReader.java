@@ -19,12 +19,14 @@ import io.camunda.zeebe.protocol.record.ExecuteCommandRequestDecoder;
 import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
 import io.camunda.zeebe.protocol.record.ValueTypes;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class CommandApiRequestReader implements RequestReader {
 
   private UnifiedRecordValue value;
   private final RecordMetadata metadata = new RecordMetadata();
   private final AuthInfo authInfo = new AuthInfo();
+  private final DirectBuffer toolName = new UnsafeBuffer(0, 0);
   private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
   private final ExecuteCommandRequestDecoder commandRequestDecoder =
       new ExecuteCommandRequestDecoder();
@@ -75,20 +77,17 @@ public class CommandApiRequestReader implements RequestReader {
     if (commandRequestDecoder.limit() < buffer.capacity()) {
       final int authOffset =
           commandRequestDecoder.limit() + ExecuteCommandRequestDecoder.authorizationHeaderLength();
-      final int authLength = commandRequestDecoder.authorizationLength();
-      authInfo.wrap(buffer, authOffset, authLength);
+      final int authorizationLength = commandRequestDecoder.authorizationLength();
+      authInfo.wrap(buffer, authOffset, authorizationLength);
       metadata.authorization(authInfo);
-      // advance the decoder past the authorization data
-      commandRequestDecoder.limit(authOffset + authLength);
+      commandRequestDecoder.limit(authOffset + authorizationLength);
     }
+
     if (commandRequestDecoder.limit() < buffer.capacity()) {
-      final int toolNameLength = commandRequestDecoder.toolNameLength();
       final int toolNameOffset =
           commandRequestDecoder.limit() + ExecuteCommandRequestDecoder.toolNameHeaderLength();
-      if (toolNameLength > 0) {
-        metadata.requestToolName(commandRequestDecoder.toolName());
-      }
-      commandRequestDecoder.limit(toolNameOffset + toolNameLength);
+      toolName.wrap(buffer, toolNameOffset, commandRequestDecoder.toolNameLength());
+      metadata.requestToolName(toolName);
     }
   }
 
