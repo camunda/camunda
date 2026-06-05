@@ -6,6 +6,10 @@ plugins {
     id("buildlogic.server-conventions")
 }
 
+tasks.withType<Test>().configureEach {
+    jvmArgs("-Xmx2g")
+}
+
 dependencies {
     implementation(project(":zeebe-exporter-api"))
     implementation(project(":zeebe-exporter-filter"))
