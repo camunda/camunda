@@ -157,7 +157,7 @@
     <data name="value" id="7" type="varDataEncoding"/>
     <!-- populated when RecordType is COMMAND -->
     <data name="authorization" id="8" type="varDataEncoding" sinceVersion="4"/>
-    <!-- populated when set in a gateway for API requests; only non-empty for MCP channel -->
+    <!-- populated when set in a gateway for API requests; carries an optional tool name -->
     <data name="toolName" id="10" type="varDataEncoding" sinceVersion="10"/>
   </sbe:message>
 
@@ -210,7 +210,7 @@
     <!-- populated when RecordType is COMMAND -->
     <data name="authorization" id="11" type="varDataEncoding" sinceVersion="4"/>
     <data name="agent" id="14" type="varDataEncoding" sinceVersion="7"/>
-    <!-- populated when set in a gateway for API requests; only non-empty for MCP channel -->
+    <!-- populated when set in a gateway for API requests; carries an optional tool name -->
     <data name="requestToolName" id="15" type="varDataEncoding" sinceVersion="10"/>
   </sbe:message>
 
