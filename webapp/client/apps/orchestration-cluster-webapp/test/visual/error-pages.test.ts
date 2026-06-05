@@ -8,22 +8,29 @@
 
 import {test, expect} from '#/pw-modules/test-extend';
 import {HttpResponse} from 'msw';
-import {mockCurrentUserEndpoint, mockSystemConfigurationEndpoint} from '#/shared-test-modules/mock-handlers';
+import {
+	mockCurrentUserEndpoint,
+	mockLicenseEndpoint,
+	mockSystemConfigurationEndpoint,
+} from '#/shared-test-modules/mock-handlers';
 import {mockSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
+import {mockLicense} from '#/shared-test-modules/api-mocks/license';
+import {mockCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 
-test('should match the 404 page snapshot', async ({page}) => {
+test('should match the 404 page snapshot', async ({page, notFoundPage}) => {
 	await page.goto('/nonexistent-path');
-	await expect(page.getByRole('heading', {name: '404 - Page not found'})).toBeVisible();
+	await expect(notFoundPage.heading).toBeVisible();
 
 	await expect(page).toHaveScreenshot();
 });
 
 test('should match the forbidden page snapshot', async ({network, page}) => {
 	network.use(
-		mockCurrentUserEndpoint({successResponse: HttpResponse.json({})}),
+		mockCurrentUserEndpoint({successResponse: HttpResponse.json(mockCurrentUser)}),
 		mockSystemConfigurationEndpoint({
 			successResponse: HttpResponse.json(mockSystemConfiguration),
 		}),
+		mockLicenseEndpoint({successResponse: HttpResponse.json(mockLicense)}),
 	);
 
 	await page.goto('/operate');

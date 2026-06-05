@@ -150,7 +150,7 @@ test.describe('component routes', () => {
 		await expect(page).toHaveURL('/login?redirect=%2Foperate');
 	});
 
-	test('should show 404 page for unknown tasklist route', async ({network, page}) => {
+	test('should show 404 page for unknown tasklist route', async ({network, page, notFoundPage}) => {
 		network.use(
 			mockCurrentUserEndpoint({successResponse: HttpResponse.json(mockCurrentUser)}),
 			mockSystemConfigurationEndpoint({
@@ -164,10 +164,10 @@ test.describe('component routes', () => {
 
 		await page.goto('/tasklist/nonexistent');
 
-		await expect(page.getByRole('heading', {name: '404 - Page not found'})).toBeVisible();
+		await expect(notFoundPage.heading).toBeVisible();
 	});
 
-	test('should show 404 page for unknown operate route', async ({network, page}) => {
+	test('should show 404 page for unknown operate route', async ({network, page, notFoundPage}) => {
 		network.use(
 			mockCurrentUserEndpoint({successResponse: HttpResponse.json(mockCurrentUser)}),
 			mockSystemConfigurationEndpoint({
@@ -181,10 +181,10 @@ test.describe('component routes', () => {
 
 		await page.goto('/operate/nonexistent');
 
-		await expect(page.getByRole('heading', {name: '404 - Page not found'})).toBeVisible();
+		await expect(notFoundPage.heading).toBeVisible();
 	});
 
-	test('should show 404 page for unknown admin route', async ({network, page}) => {
+	test('should show 404 page for unknown admin route', async ({network, page, notFoundPage}) => {
 		network.use(
 			mockCurrentUserEndpoint({successResponse: HttpResponse.json(mockCurrentUser)}),
 			mockSystemConfigurationEndpoint({
@@ -198,6 +198,6 @@ test.describe('component routes', () => {
 
 		await page.goto('/admin/nonexistent');
 
-		await expect(page.getByRole('heading', {name: '404 - Page not found'})).toBeVisible();
+		await expect(notFoundPage.heading).toBeVisible();
 	});
 });

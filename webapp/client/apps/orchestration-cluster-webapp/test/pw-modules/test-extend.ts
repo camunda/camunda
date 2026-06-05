@@ -15,6 +15,7 @@ import {TasklistIndexPage} from '#/pages/TasklistIndex.page';
 import {TasklistProcessesPage} from '#/pages/TasklistProcesses.page';
 import {OperateIndexPage} from '#/pages/OperateIndex.page';
 import {AdminIndexPage} from '#/pages/AdminIndex.page';
+import {NotFoundPage} from '#/pages/NotFound.page';
 
 type Fixtures = {
 	handlers: Array<AnyHandler>;
@@ -25,6 +26,7 @@ type Fixtures = {
 	tasklistProcessesPage: TasklistProcessesPage;
 	operateIndexPage: OperateIndexPage;
 	adminIndexPage: AdminIndexPage;
+	notFoundPage: NotFoundPage;
 };
 
 const test = base.extend<Fixtures>({
@@ -46,6 +48,9 @@ const test = base.extend<Fixtures>({
 	},
 	adminIndexPage: async ({page}, use) => {
 		await use(new AdminIndexPage(page));
+	},
+	notFoundPage: async ({page}, use) => {
+		await use(new NotFoundPage(page));
 	},
 	handlers: [[], {option: true}],
 	network: [
