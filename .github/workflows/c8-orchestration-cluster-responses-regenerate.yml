@@ -56,6 +56,7 @@ jobs:
       SAFE: ${{ matrix.safe }}
 
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
       - name: Checkout ${{ matrix.ref }}
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
@@ -235,3 +236,13 @@ jobs:
               echo ":information_source: No response schema changes — metadata-only churn ignored, no PR opened."
             fi
           } >> "$GITHUB_STEP_SUMMARY"
+      
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
