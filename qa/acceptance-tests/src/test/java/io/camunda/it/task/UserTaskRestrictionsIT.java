@@ -253,7 +253,8 @@ public class UserTaskRestrictionsIT {
           TestRestTasklistClient.OBJECT_MAPPER.readValue(
               user5Response.body(), TaskSearchResponse[].class);
       assertThat(tasksUser5).hasSize(1);
-      assertThat(tasksUser5[0].getCandidateGroups()).containsExactly(GROUP3_NAME);
+      // The engine resolves the group name to its ID at task creation time
+      assertThat(tasksUser5[0].getCandidateGroups()).containsExactly(GROUP3_ID);
     }
   }
 
