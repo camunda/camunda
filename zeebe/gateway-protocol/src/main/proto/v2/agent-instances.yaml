@@ -899,7 +899,6 @@ components:
         - role
         - content
         - toolCalls
-        - isContentTruncated
         - metrics
         - commitStatus
         - producedAt
@@ -933,7 +932,7 @@ components:
           allOf:
             - $ref: '#/components/schemas/AgentInstanceHistoryRoleEnum'
         content:
-          description: The content blocks of this history item. May be truncated at read time.
+          description: The content blocks of this history item.
           type: array
           items:
             $ref: '#/components/schemas/AgentInstanceMessageContent'
@@ -945,9 +944,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AgentInstanceToolCall'
-        isContentTruncated:
-          description: True if any content block in this item was truncated at read time.
-          type: boolean
         metrics:
           description: Per-call token and latency metrics. Present on ASSISTANT items only.
           nullable: true
@@ -989,7 +985,6 @@ components:
         - text
         - documentReference
         - object
-        - isTruncated
       properties:
         contentType:
           description: The content type discriminator.
@@ -1009,9 +1004,6 @@ components:
           type: object
           nullable: true
           additionalProperties: true
-        isTruncated:
-          description: True if this content block was truncated at read time.
-          type: boolean
 
     AgentInstanceMessageContentTypeEnum:
       description: The content type discriminator for a history item content block.
