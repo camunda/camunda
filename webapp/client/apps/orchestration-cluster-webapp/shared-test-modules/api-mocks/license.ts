@@ -6,9 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {TasklistIndexPage} from '#/tasklist/pages/TasklistIndexPage';
-import {createFileRoute} from '@tanstack/react-router';
+import type {License} from '@camunda/camunda-api-zod-schemas/8.10';
 
-export const Route = createFileRoute('/_auth/tasklist/')({
-	component: TasklistIndexPage,
-});
+const mockLicense = {
+	validLicense: true,
+	licenseType: 'production',
+	isCommercial: true,
+	expiresAt: null,
+} satisfies License;
+
+export {mockLicense};

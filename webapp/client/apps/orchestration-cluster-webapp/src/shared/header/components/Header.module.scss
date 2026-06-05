@@ -6,9 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {TasklistIndexPage} from '#/tasklist/pages/TasklistIndexPage';
-import {createFileRoute} from '@tanstack/react-router';
-
-export const Route = createFileRoute('/_auth/tasklist/')({
-	component: TasklistIndexPage,
-});
+.languageDropdownPadding {
+	padding: var(--cds-spacing-03) var(--cds-spacing-05);
+}

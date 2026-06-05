@@ -6,10 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {createFileRoute, Outlet} from '@tanstack/react-router';
-import {getClientConfig} from '#/shared/config/getClientConfig';
-import {ComponentNotAvailableError, ForbiddenError} from '#/shared/errors';
+import {createFileRoute} from '@tanstack/react-router';
 import {ForbiddenPage} from '#/shared/pages/ForbiddenPage';
+import {ComponentNotAvailableError, ForbiddenError} from '#/shared/errors';
+import {getClientConfig} from '#/shared/config/getClientConfig';
 
 export const Route = createFileRoute('/_auth/tasklist')({
 	beforeLoad: () => {
@@ -23,7 +23,6 @@ export const Route = createFileRoute('/_auth/tasklist')({
 		}
 		throw error;
 	},
-	component: TasklistLayout,
 	head: () => ({
 		meta: [
 			{
@@ -32,7 +31,3 @@ export const Route = createFileRoute('/_auth/tasklist')({
 		],
 	}),
 });
-
-function TasklistLayout() {
-	return <Outlet />;
-}

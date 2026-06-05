@@ -29,4 +29,21 @@ const mockSystemConfigurationEndpoint = createEndpointMock({
 	method: 'GET',
 });
 
-export {mockCurrentUserEndpoint, mockLoginEndpoint, mockLogoutEndpoint, mockSystemConfigurationEndpoint};
+const mockLicenseEndpoint = createEndpointMock({
+	endpoint: endpoints.getLicense.getUrl(),
+	method: 'GET',
+});
+
+const mockSaasTokenEndpoint = createEndpointMock({
+	endpoint: '/v2/authentication/me/token',
+	method: 'GET',
+});
+
+export {
+	mockCurrentUserEndpoint,
+	mockLoginEndpoint,
+	mockLogoutEndpoint,
+	mockSystemConfigurationEndpoint,
+	mockLicenseEndpoint,
+	mockSaasTokenEndpoint,
+};

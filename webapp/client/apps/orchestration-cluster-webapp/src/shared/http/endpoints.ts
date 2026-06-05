@@ -53,6 +53,20 @@ const endpoints = {
 			method: unifiedAPIEndpoints.getSystemConfiguration.method,
 			headers: {'Content-Type': 'application/json'},
 		}),
+
+	getLicense: () =>
+		new Request(getFullURL(unifiedAPIEndpoints.getLicense.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getLicense.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getSaasUserToken: () =>
+		new Request(getFullURL('/v2/authentication/me/token'), {
+			...BASE_REQUEST_OPTIONS,
+			method: 'GET',
+			headers: {'Content-Type': 'application/json'},
+		}),
 };
 
 export {endpoints};

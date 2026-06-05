@@ -10,10 +10,12 @@ import {test, expect} from '#/pw-modules/test-extend';
 import {HttpResponse} from 'msw';
 import {
 	mockCurrentUserEndpoint,
+	mockLicenseEndpoint,
 	mockLoginEndpoint,
 	mockSystemConfigurationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {mockSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
+import {mockLicense} from '#/shared-test-modules/api-mocks/license';
 
 test('should redirect to the initial page on success', async ({network, page, loginPage}) => {
 	network.use(
@@ -38,6 +40,9 @@ test('should redirect to the initial page on success', async ({network, page, lo
 				components: {active: ['operate']},
 			}),
 		}),
+		mockLicenseEndpoint({
+			successResponse: HttpResponse.json(mockLicense),
+		}),
 	);
 
 	await loginPage.fillCredentials('demo', 'demo');
@@ -60,6 +65,9 @@ test('should redirect to the referrer page', async ({network, page, loginPage}) 
 				components: {active: ['operate']},
 			}),
 		}),
+		mockLicenseEndpoint({
+			successResponse: HttpResponse.json(mockLicense),
+		}),
 	);
 
 	await page.goto('/operate');
@@ -74,6 +82,9 @@ test('should redirect to the referrer page', async ({network, page, loginPage}) 
 				...mockSystemConfiguration,
 				components: {active: ['operate']},
 			}),
+		}),
+		mockLicenseEndpoint({
+			successResponse: HttpResponse.json(mockLicense),
 		}),
 	);
 

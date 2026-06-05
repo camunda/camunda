@@ -6,9 +6,15 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {TasklistIndexPage} from '#/tasklist/pages/TasklistIndexPage';
-import {createFileRoute} from '@tanstack/react-router';
+@use '@carbon/layout';
 
-export const Route = createFileRoute('/_auth/tasklist/')({
-	component: TasklistIndexPage,
-});
+.container {
+	display: grid;
+	grid-template-columns:
+		auto layout.to-rem(312px)
+		1fr;
+	grid-template-rows: 100%;
+	height: 100%;
+	padding-top: layout.to-rem(48px);
+	box-sizing: border-box;
+}

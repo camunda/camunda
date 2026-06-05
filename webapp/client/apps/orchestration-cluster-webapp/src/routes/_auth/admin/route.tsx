@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {createFileRoute, Outlet} from '@tanstack/react-router';
+import {createFileRoute} from '@tanstack/react-router';
 import {getClientConfig} from '#/shared/config/getClientConfig';
 import {ComponentNotAvailableError, ForbiddenError} from '#/shared/errors';
 import {ForbiddenPage} from '#/shared/pages/ForbiddenPage';
@@ -23,7 +23,6 @@ export const Route = createFileRoute('/_auth/admin')({
 		}
 		throw error;
 	},
-	component: AdminLayout,
 	head: () => ({
 		meta: [
 			{
@@ -32,7 +31,3 @@ export const Route = createFileRoute('/_auth/admin')({
 		],
 	}),
 });
-
-function AdminLayout() {
-	return <Outlet />;
-}

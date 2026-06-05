@@ -8,8 +8,13 @@
 
 import {test, expect} from '#/pw-modules/test-extend';
 import {HttpResponse} from 'msw';
-import {mockCurrentUserEndpoint, mockSystemConfigurationEndpoint} from '#/shared-test-modules/mock-handlers';
+import {
+	mockCurrentUserEndpoint,
+	mockLicenseEndpoint,
+	mockSystemConfigurationEndpoint,
+} from '#/shared-test-modules/mock-handlers';
 import {mockSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
+import {mockLicense} from '#/shared-test-modules/api-mocks/license';
 
 test.describe('component routes', () => {
 	test('should render Operate when component is active', async ({network, page}) => {
@@ -22,6 +27,9 @@ test.describe('component routes', () => {
 					...mockSystemConfiguration,
 					components: {active: ['operate']},
 				}),
+			}),
+			mockLicenseEndpoint({
+				successResponse: HttpResponse.json(mockLicense),
 			}),
 		);
 
@@ -41,6 +49,9 @@ test.describe('component routes', () => {
 					components: {active: ['tasklist']},
 				}),
 			}),
+			mockLicenseEndpoint({
+				successResponse: HttpResponse.json(mockLicense),
+			}),
 		);
 
 		await page.goto('/tasklist');
@@ -59,6 +70,9 @@ test.describe('component routes', () => {
 					components: {active: ['admin']},
 				}),
 			}),
+			mockLicenseEndpoint({
+				successResponse: HttpResponse.json(mockLicense),
+			}),
 		);
 
 		await page.goto('/admin');
@@ -71,6 +85,9 @@ test.describe('component routes', () => {
 			mockCurrentUserEndpoint({successResponse: HttpResponse.json({})}),
 			mockSystemConfigurationEndpoint({
 				successResponse: HttpResponse.json(mockSystemConfiguration),
+			}),
+			mockLicenseEndpoint({
+				successResponse: HttpResponse.json(mockLicense),
 			}),
 		);
 
@@ -85,6 +102,9 @@ test.describe('component routes', () => {
 			mockCurrentUserEndpoint({successResponse: HttpResponse.json({})}),
 			mockSystemConfigurationEndpoint({
 				successResponse: HttpResponse.json(mockSystemConfiguration),
+			}),
+			mockLicenseEndpoint({
+				successResponse: HttpResponse.json(mockLicense),
 			}),
 		);
 
@@ -101,6 +121,9 @@ test.describe('component routes', () => {
 			}),
 			mockSystemConfigurationEndpoint({
 				successResponse: new HttpResponse(null, {status: 500}),
+			}),
+			mockLicenseEndpoint({
+				successResponse: HttpResponse.json(mockLicense),
 			}),
 		);
 
