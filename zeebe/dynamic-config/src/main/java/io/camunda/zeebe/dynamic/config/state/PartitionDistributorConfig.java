@@ -52,5 +52,9 @@ public sealed interface PartitionDistributorConfig {
         throw new IllegalArgumentException("ZoneSpec: priority must be > 0, got " + priority);
       }
     }
+
+    public ZoneSpec withPriority(final int priority) {
+      return new ZoneSpec(name, numberOfReplicas, priority);
+    }
   }
 }
