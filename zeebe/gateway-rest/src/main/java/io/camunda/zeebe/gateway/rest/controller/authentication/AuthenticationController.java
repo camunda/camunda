@@ -57,9 +57,8 @@ public class AuthenticationController {
    * contract for {@code CamundaUserResult}) still includes those richer tenant objects, so the
    * controller re-enriches at the edge.
    *
-   * <p>This is the seam that used to live inside OC's previous {@code OidcCamundaUserService} (now
-   * the CSL-default one). The lookup runs with {@link CamundaAuthentication#anonymous()} because
-   * tenant visibility for the current user has already been decided by CSL when populating {@code
+   * <p>The lookup runs with {@link CamundaAuthentication#anonymous()} because tenant visibility for
+   * the current user has already been decided by CSL when populating {@code
    * authenticatedTenantIds()}; here we are just fetching display metadata for IDs the caller is
    * already entitled to see.
    */
