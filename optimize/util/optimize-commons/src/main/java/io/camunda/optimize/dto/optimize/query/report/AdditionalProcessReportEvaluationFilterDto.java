@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.dto.optimize.query.report;
 
+import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import java.util.ArrayList;
 import java.util.List;
@@ -15,6 +16,7 @@ import java.util.Objects;
 public class AdditionalProcessReportEvaluationFilterDto {
 
   protected List<ProcessFilterDto<?>> filter = new ArrayList<>();
+  protected List<ReportDataDefinitionDto> definitions = new ArrayList<>();
 
   public AdditionalProcessReportEvaluationFilterDto(final List<ProcessFilterDto<?>> filter) {
     this.filter = filter;
@@ -30,6 +32,14 @@ public class AdditionalProcessReportEvaluationFilterDto {
     this.filter = filter;
   }
 
+  public List<ReportDataDefinitionDto> getDefinitions() {
+    return definitions;
+  }
+
+  public void setDefinitions(final List<ReportDataDefinitionDto> definitions) {
+    this.definitions = definitions;
+  }
+
   protected boolean canEqual(final Object other) {
     return other instanceof AdditionalProcessReportEvaluationFilterDto;
   }
@@ -41,16 +51,20 @@ public class AdditionalProcessReportEvaluationFilterDto {
     }
     final AdditionalProcessReportEvaluationFilterDto that =
         (AdditionalProcessReportEvaluationFilterDto) o;
-    return Objects.equals(filter, that.filter);
+    return Objects.equals(filter, that.filter) && Objects.equals(definitions, that.definitions);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(filter);
+    return Objects.hash(filter, definitions);
   }
 
   @Override
   public String toString() {
-    return "AdditionalProcessReportEvaluationFilterDto(filter=" + getFilter() + ")";
+    return "AdditionalProcessReportEvaluationFilterDto(filter="
+        + getFilter()
+        + ", definitions="
+        + getDefinitions()
+        + ")";
   }
 }
