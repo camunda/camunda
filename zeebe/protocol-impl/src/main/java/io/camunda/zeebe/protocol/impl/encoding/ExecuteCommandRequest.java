@@ -41,7 +41,7 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
   private ValueType valueType;
   private Intent intent;
   private final AuthInfo authorization = new AuthInfo();
-  private ChannelType channelType = ChannelType.NULL_VAL;
+  private ChannelType channelType;
   private final DirectBuffer toolName = new UnsafeBuffer(0, 0);
 
   public ExecuteCommandRequest() {
