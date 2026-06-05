@@ -45,7 +45,8 @@ public record ClusterConfiguration(
     Optional<RoutingState> routingState,
     Optional<String> clusterId,
     long incarnationNumber,
-    boolean recovery) {
+    boolean recovery,
+    Optional<PartitionDistributorConfig> partitionDistributorConfig) {
 
   public static final int INITIAL_VERSION = 1;
   public static final long INITIAL_INCARNATION_NUMBER = 0;
@@ -60,7 +61,8 @@ public record ClusterConfiguration(
       final Optional<RoutingState> routingState,
       final Optional<String> clusterId,
       final long incarnationNumber,
-      final boolean recovery) {
+      final boolean recovery,
+      final Optional<PartitionDistributorConfig> partitionDistributorConfig) {
     this(
         version,
         ImmutableSortedMap.copyOf(members),
@@ -69,7 +71,8 @@ public record ClusterConfiguration(
         routingState,
         clusterId,
         incarnationNumber,
-        recovery);
+        recovery,
+        partitionDistributorConfig);
   }
 
   public ClusterConfiguration {
@@ -83,6 +86,7 @@ public record ClusterConfiguration(
     Objects.requireNonNull(pendingChanges);
     Objects.requireNonNull(routingState);
     Objects.requireNonNull(clusterId);
+    Objects.requireNonNull(partitionDistributorConfig);
     if (incarnationNumber < 0) {
       throw new IllegalArgumentException("Incarnation number must be >= 0");
     }
@@ -97,7 +101,8 @@ public record ClusterConfiguration(
         Optional.empty(),
         Optional.empty(),
         INITIAL_INCARNATION_NUMBER,
-        false);
+        false,
+        Optional.empty());
   }
 
   public boolean isUninitialized() {
@@ -113,7 +118,8 @@ public record ClusterConfiguration(
         Optional.empty(),
         Optional.empty(),
         INITIAL_INCARNATION_NUMBER,
-        false);
+        false,
+        Optional.empty());
   }
 
   public ClusterConfiguration addMember(final MemberId memberId, final MemberState state) {
@@ -134,7 +140,8 @@ public record ClusterConfiguration(
         routingState,
         clusterId,
         incarnationNumber,
-        recovery);
+        recovery,
+        partitionDistributorConfig);
   }
 
   public ClusterConfiguration setRoutingState(final RoutingState updatedRoutingState) {
@@ -146,7 +153,22 @@ public record ClusterConfiguration(
         Optional.of(updatedRoutingState),
         clusterId,
         incarnationNumber,
-        recovery);
+        recovery,
+        partitionDistributorConfig);
+  }
+
+  public ClusterConfiguration setPartitionDistributorConfig(
+      final PartitionDistributorConfig config) {
+    return new ClusterConfiguration(
+        version,
+        members,
+        lastChange,
+        pendingChanges,
+        routingState,
+        clusterId,
+        incarnationNumber,
+        recovery,
+        Optional.of(config));
   }
 
   /**
@@ -192,7 +214,8 @@ public record ClusterConfiguration(
         routingState,
         clusterId,
         incarnationNumber,
-        recovery);
+        recovery,
+        partitionDistributorConfig);
   }
 
   public ClusterConfiguration startConfigurationChange(
@@ -214,7 +237,8 @@ public record ClusterConfiguration(
           routingState,
           clusterId,
           incarnationNumber,
-          recovery);
+          recovery,
+          partitionDistributorConfig);
     }
   }
 
@@ -246,6 +270,11 @@ public record ClusterConfiguration(
               .flatMap(Optional::stream)
               .reduce(RoutingState::merge);
 
+      final var mergedDistributorConfig =
+          Stream.of(partitionDistributorConfig, other.partitionDistributorConfig)
+              .flatMap(Optional::stream)
+              .findFirst();
+
       return new ClusterConfiguration(
           version,
           ImmutableMap.copyOf(mergedMembers),
@@ -254,7 +283,8 @@ public record ClusterConfiguration(
           mergedRoutingState,
           clusterId,
           Math.max(incarnationNumber, other.incarnationNumber()),
-          recovery || other.recovery());
+          recovery || other.recovery(),
+          mergedDistributorConfig);
     }
   }
 
@@ -324,7 +354,8 @@ public record ClusterConfiguration(
             routingState,
             clusterId,
             incarnationNumber,
-            recovery);
+            recovery,
+            partitionDistributorConfig);
 
     if (!result.hasPendingChanges()) {
       // The last change has been applied. Clean up the members that are marked as LEFT in the
@@ -350,7 +381,8 @@ public record ClusterConfiguration(
           routingState,
           clusterId,
           incarnationNumber,
-          recovery);
+          recovery,
+          partitionDistributorConfig);
     }
 
     return result;
@@ -454,7 +486,8 @@ public record ClusterConfiguration(
           routingState,
           clusterId,
           incarnationNumber,
-          recovery);
+          recovery,
+          partitionDistributorConfig);
     } else {
       return this;
     }
@@ -475,6 +508,7 @@ public record ClusterConfiguration(
     private Optional<String> clusterId = Optional.empty();
     private long incarnationNumber = INITIAL_INCARNATION_NUMBER;
     private boolean recovery = false;
+    private Optional<PartitionDistributorConfig> partitionDistributorConfig = Optional.empty();
 
     /**
      * Copies all properties from the given ClusterConfiguration.
@@ -491,6 +525,7 @@ public record ClusterConfiguration(
       clusterId = config.clusterId;
       incarnationNumber = config.incarnationNumber;
       recovery = config.recovery;
+      partitionDistributorConfig = config.partitionDistributorConfig;
       return this;
     }
 
@@ -583,6 +618,18 @@ public record ClusterConfiguration(
     }
 
     /**
+     * Sets the partition distributor config.
+     *
+     * @param partitionDistributorConfig the partition distributor config
+     * @return this builder
+     */
+    public Builder partitionDistributorConfig(
+        final Optional<PartitionDistributorConfig> partitionDistributorConfig) {
+      this.partitionDistributorConfig = partitionDistributorConfig;
+      return this;
+    }
+
+    /**
      * Builds and returns a new ClusterConfiguration instance.
      *
      * @return the new ClusterConfiguration
@@ -596,7 +643,8 @@ public record ClusterConfiguration(
           routingState,
           clusterId,
           incarnationNumber,
-          recovery);
+          recovery,
+          partitionDistributorConfig);
     }
   }
 }
