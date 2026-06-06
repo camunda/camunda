@@ -259,7 +259,8 @@ public class EntitiesReaderOS implements EntitiesReader {
               }
               if (entityId.equals(requestDto.getDashboardId())) {
                 result.setDashboardName(
-                    getLocalizedDashboardName((DashboardDefinitionRestDto) entity, locale));
+                    getLocalizedDashboardName(
+                        localizationService, (DashboardDefinitionRestDto) entity, locale));
               } else if (entityId.equals(requestDto.getReportId())) {
                 result.setReportName(getLocalizedReportName(localizationService, entity, locale));
               }
@@ -328,20 +329,5 @@ public class EntitiesReaderOS implements EntitiesReader {
             SINGLE_DECISION_REPORT_INDEX_NAME,
             COMBINED_REPORT_INDEX_NAME,
             DASHBOARD_INDEX_NAME);
-  }
-
-  private String getLocalizedDashboardName(
-      final DashboardDefinitionRestDto dashboardEntity, final String locale) {
-    if (dashboardEntity.isInstantPreviewDashboard()) {
-      return localizationService.getLocalizationForInstantPreviewDashboardCode(
-          locale, dashboardEntity.getName());
-    } else if (dashboardEntity.isManagementDashboard()) {
-      return localizationService.getLocalizationForManagementDashboardCode(
-          locale, dashboardEntity.getName());
-    } else if (dashboardEntity.isAgenticControlDashboard()) {
-      return localizationService.getLocalizationForAgenticControlDashboardCode(
-          locale, dashboardEntity.getName());
-    }
-    return dashboardEntity.getName();
   }
 }

@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.dto.optimize.query.dashboard;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardFilterDto;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -117,6 +118,11 @@ public class BaseDashboardDefinitionDto {
 
   public void setAgenticControlDashboard(final boolean agenticControlDashboard) {
     this.agenticControlDashboard = agenticControlDashboard;
+  }
+
+  @JsonIgnore
+  public boolean isSystemGeneratedDashboard() {
+    return managementDashboard || instantPreviewDashboard || agenticControlDashboard;
   }
 
   public List<DashboardFilterDto<?>> getAvailableFilters() {
