@@ -29,10 +29,6 @@ concurrency:
   group: smoke-load-test-${{ github.event.pull_request.id || github.event.inputs.ref }}
   cancel-in-progress: true
 
-env:
-  CLUSTER: camunda-benchmark-prod
-  TELEPORT_JOIN_TOKEN: infra-benchmark-prod-github-action-zeebe
-
 defaults:
   run:
     # use bash shell by default to ensure pipefail behavior is the default
@@ -111,7 +107,7 @@ jobs:
   # To prevent regressions like regenerating credentials on every update, which can cause downtime and failed updates.
   smoke-update:
     name: Smoke update
-    needs: [sanitize-branch-name, verify-install]
+    needs: [sanitize-branch-name, utils-get-snapshot-docker-tag, verify-install]
     uses: ./.github/workflows/camunda-load-test.yml
     secrets: inherit
     with:
@@ -124,7 +120,7 @@ jobs:
       # We make use of the official docker image (SNAPSHOT TAG) this is to reduce CI runtime and feedback cycle.
       # Setting the focus only on the installation and connectivity part of the load test.
       # Issues with the load test applications, should ideally catched with integration tests.
-      orchestration-tag: SNAPSHOT
+      orchestration-tag: ${{ needs.utils-get-snapshot-docker-tag.outputs.version_tag }}
 
   verify-update:
     name: Verify update
