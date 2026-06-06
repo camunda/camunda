@@ -14,7 +14,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
@@ -268,7 +267,6 @@ final class CamundaClusterBuilderTest {
   }
 
   @Test
-  @Disabled("https://github.com/camunda/camunda/issues/54703")
   @SuppressWarnings("unchecked")
   void shouldAssignDifferentClusterHostsToAllNodes() {
     // given
@@ -281,11 +279,8 @@ final class CamundaClusterBuilderTest {
     // then
     final Set<String> advertisedHosts = new HashSet<>();
     cluster.getBrokers().values().stream()
-        .map(ClusterNode::getAdditionalConfigs)
-        .map(config -> (Map<String, Object>) config.get("zeebe"))
-        .map(config -> (Map<String, Object>) config.get("broker"))
-        .map(config -> (Map<String, Object>) config.get("network"))
-        .map(config -> (String) config.get("advertised-host"))
+        .map(ClusterNode::getConfiguration)
+        .map(config -> config.getCluster().getNetwork().getAdvertisedHost())
         .forEach(advertisedHosts::add);
     cluster.getGateways().values().stream()
         .map(GatewayNode::getAdditionalConfigs)
