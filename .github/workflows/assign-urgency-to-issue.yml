@@ -184,7 +184,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          ISSUE_DATA='${STEPS_FETCH_DATA_OUTPUTS_ISSUE_DATA}'
+          ISSUE_DATA="${STEPS_FETCH_DATA_OUTPUTS_ISSUE_DATA}"
 
           # Extract issue type and labels
           ISSUE_TYPE=$(echo "$ISSUE_DATA" | jq -r '.issueType.name // empty')
@@ -242,8 +242,8 @@ jobs:
         if: steps.check_labels.outputs.severity != ''
         run: |
           set -euo pipefail
-          SEVERITY='${STEPS_CHECK_LABELS_OUTPUTS_SEVERITY}'
-          LIKELIHOOD='${STEPS_CHECK_LABELS_OUTPUTS_LIKELIHOOD}'
+          SEVERITY="${STEPS_CHECK_LABELS_OUTPUTS_SEVERITY}"
+          LIKELIHOOD="${STEPS_CHECK_LABELS_OUTPUTS_LIKELIHOOD}"
 
           # Default missing or unknown likelihood to low
           if [[ -z "$LIKELIHOOD" || "$LIKELIHOOD" == "unknown" ]]; then
@@ -289,8 +289,8 @@ jobs:
         if: steps.check_labels.outputs.impact != ''
         run: |
           set -euo pipefail
-          IMPACT='${STEPS_CHECK_LABELS_OUTPUTS_IMPACT}'
-          WHEN='${STEPS_CHECK_LABELS_OUTPUTS_WHEN}'
+          IMPACT="${STEPS_CHECK_LABELS_OUTPUTS_IMPACT}"
+          WHEN="${STEPS_CHECK_LABELS_OUTPUTS_WHEN}"
 
           # Default when to later if not set
           if [[ -z "$WHEN" ]]; then
@@ -335,8 +335,8 @@ jobs:
         if: steps.calculate_urgency_from_severity.outputs.urgency != '' || steps.calculate_urgency_from_impact.outputs.urgency != ''
         run: |
           set -euo pipefail
-          URGENCY_FROM_SEVERITY='${STEPS_CALCULATE_URGENCY_FROM_SEVERITY_OUTPUTS_URGENCY}'
-          URGENCY_FROM_IMPACT='${STEPS_CALCULATE_URGENCY_FROM_IMPACT_OUTPUTS_URGENCY}'
+          URGENCY_FROM_SEVERITY="${STEPS_CALCULATE_URGENCY_FROM_SEVERITY_OUTPUTS_URGENCY}"
+          URGENCY_FROM_IMPACT="${STEPS_CALCULATE_URGENCY_FROM_IMPACT_OUTPUTS_URGENCY}"
 
           # Urgency priority: immediate > next > planned > someday
           # Use case statement for bash 3.2+ compatibility
@@ -383,10 +383,10 @@ jobs:
         run: |
           set -euo pipefail
 
-          ISSUE_DATA='${STEPS_FETCH_DATA_OUTPUTS_ISSUE_DATA}'
+          ISSUE_DATA="${STEPS_FETCH_DATA_OUTPUTS_ISSUE_DATA}"
           ISSUE_ID=$(echo "$ISSUE_DATA" | jq -r '.id')
-          NEW_URGENCY='${STEPS_VALIDATE_URGENCY_OUTPUTS_URGENCY}'
-          HAS_URGENCY_LOCKED='${STEPS_CHECK_LABELS_OUTPUTS_HAS_URGENCY_LOCKED}'
+          NEW_URGENCY="${STEPS_VALIDATE_URGENCY_OUTPUTS_URGENCY}"
+          HAS_URGENCY_LOCKED="${STEPS_CHECK_LABELS_OUTPUTS_HAS_URGENCY_LOCKED}"
 
           # Org-level urgency field option IDs
           declare -A OPTION_IDS=(
@@ -468,9 +468,9 @@ jobs:
         run: |
           set -euo pipefail
 
-          ISSUE_DATA='${STEPS_FETCH_DATA_OUTPUTS_ISSUE_DATA}'
+          ISSUE_DATA="${STEPS_FETCH_DATA_OUTPUTS_ISSUE_DATA}"
           URGENCY_FIELD_NAME='Urgency'
-          HAS_URGENCY_LOCKED='${STEPS_CHECK_LABELS_OUTPUTS_HAS_URGENCY_LOCKED}'
+          HAS_URGENCY_LOCKED="${STEPS_CHECK_LABELS_OUTPUTS_HAS_URGENCY_LOCKED}"
 
           # For locked issues, use the current org-level value instead of the calculated one
           if [[ "$HAS_URGENCY_LOCKED" == "true" ]]; then
@@ -482,7 +482,7 @@ jobs:
             fi
             echo "🔒 urgency-locked — syncing org-level value '$NEW_URGENCY' to project"
           else
-            NEW_URGENCY='${STEPS_VALIDATE_URGENCY_OUTPUTS_URGENCY}'
+            NEW_URGENCY="${STEPS_VALIDATE_URGENCY_OUTPUTS_URGENCY}"
           fi
 
           if [[ "$DRY_RUN" == "true" ]]; then
