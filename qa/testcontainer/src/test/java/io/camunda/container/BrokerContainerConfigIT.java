@@ -19,7 +19,6 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Map;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -48,7 +47,6 @@ class BrokerContainerConfigIT {
           .withProperty("zeebe.broker.gateway.enable", true);
 
   @Test
-  @Disabled("https://github.com/camunda/camunda/issues/54702")
   @SuppressWarnings("unchecked")
   void shouldUploadConfigWithCustomUnifiedConfigValues() throws Exception {
     // given — the container is already started with the custom config by @Container
@@ -66,13 +64,13 @@ class BrokerContainerConfigIT {
         .as("camunda.cluster section should be present")
         .isNotNull()
         .containsEntry("name", CUSTOM_CLUSTER_NAME)
-        .containsEntry("partitionCount", CUSTOM_PARTITION_COUNT);
+        .containsEntry("partition-count", CUSTOM_PARTITION_COUNT);
 
     final var processing = (Map<String, Object>) camunda.get("processing");
     assertThat(processing)
         .as("camunda.processing section should be present")
         .isNotNull()
-        .containsEntry("maxCommandsInBatch", 200);
+        .containsEntry("max-commands-in-batch", 200);
 
     // verify that additional zeebe properties are present
     final var zeebe = (Map<String, Object>) yaml.get("zeebe");

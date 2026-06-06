@@ -10,7 +10,6 @@ package io.camunda.container;
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -102,7 +101,7 @@ public class ExtendedConfigurationBuilder {
             .setVisibility(PropertyAccessor.FIELD, Visibility.ANY)
             .setPropertyNamingStrategy(PropertyNamingStrategies.KEBAB_CASE);
 
-    mapper.addMixIn(Cluster.class, ClusterMixIn.class);
+    mapper.addMixIn(Cluster.class, LegacyPropertiesMapMixIn.class);
     mapper.addMixIn(Grpc.class, LegacyPropertiesMapMixIn.class);
     mapper.addMixIn(InternalApi.class, LegacyPropertiesMapMixIn.class);
     mapper.addMixIn(LongPolling.class, LegacyPropertiesMapMixIn.class);
@@ -292,7 +291,7 @@ public class ExtendedConfigurationBuilder {
       final Map<String, Object> defaultMap = flatten(createDefaultCamunda());
       final Map<String, Object> configuredMap = flatten(unifiedConfig);
       final Map<String, Object> diff = diffMaps(defaultMap, configuredMap);
-
+      putLegacyNodeIdPropertyIfNeeded(diff);
       final Map<String, Object> fullConfig = new LinkedHashMap<>();
       if (!diff.isEmpty()) {
         fullConfig.put(CAMUNDA_HEADER, diff);
@@ -326,6 +325,7 @@ public class ExtendedConfigurationBuilder {
     final Map<String, Object> defaultMap = flatten(new Camunda());
     final Map<String, Object> configuredMap = flatten(config);
     final Map<String, Object> diff = diffMaps(defaultMap, configuredMap);
+    putLegacyNodeIdPropertyIfNeeded(diff);
     final Map<String, Object> flat = new LinkedHashMap<>();
     flattenInto(diff, CAMUNDA_HEADER, flat);
     return flat;
@@ -352,6 +352,40 @@ public class ExtendedConfigurationBuilder {
     } else if (node != null) {
       flat.put(key, node);
     }
+  }
+
+  /**
+   * Mirrors a configured fixed node id onto the legacy flat {@code camunda.cluster.node-id}
+   * property.
+   *
+   * <p>Camunda versions before 8.9 do not understand the {@code node-id-provider} structure and
+   * expect the node id under the flat {@code camunda.cluster.node-id} key. Since this builder uses
+   * the current configuration classes, which express a fixed node id as {@code
+   * node-id-provider.fixed.node-id}, we additionally copy that value to the legacy key so the
+   * generated config also binds on older versions.
+   */
+  private static void putLegacyNodeIdPropertyIfNeeded(final Map<String, Object> diff) {
+    final var clusterNode = diff.get("cluster");
+    if (clusterNode instanceof final Map clusterMap) {
+      final Integer nodeId = getFixedNodeId(clusterMap);
+      if (nodeId != null) {
+        clusterMap.put("node-id", nodeId);
+      }
+    }
+  }
+
+  private static Integer getFixedNodeId(final Map clusterMap) {
+    final var providerNode = clusterMap.get("node-id-provider");
+    if (providerNode instanceof final Map providerMap) {
+      final var fixedNode = providerMap.get("fixed");
+      if (fixedNode instanceof final Map fixedMap) {
+        final var nodeIdNode = fixedMap.get("node-id");
+        if (nodeIdNode instanceof final Integer nodeId) {
+          return nodeId;
+        }
+      }
+    }
+    return null;
   }
 
   /**
@@ -435,15 +469,6 @@ public class ExtendedConfigurationBuilder {
   /** Hides the legacy-property-name lookup map shared by many unified-config classes. */
   private abstract static class LegacyPropertiesMapMixIn {
     @JsonIgnore private Map<String, String> legacyPropertiesMap;
-  }
-
-  /** Hides {@code nodeIdProvider} and re-exposes node ID directly to emit flat {@code node-id}. */
-  private abstract static class ClusterMixIn {
-    @JsonIgnore private Map<String, String> legacyPropertiesMap;
-    @JsonIgnore private Object nodeIdProvider;
-
-    @JsonProperty("node-id")
-    abstract Integer getNodeId();
   }
 
   /** {@link KeyStore} additionally has a constructor-injected {@code prefix}. */
