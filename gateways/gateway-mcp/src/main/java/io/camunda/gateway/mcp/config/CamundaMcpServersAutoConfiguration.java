@@ -29,46 +29,47 @@ import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.servlet.function.HandlerFilterFunction;
+import org.springframework.web.servlet.function.RequestPredicates;
 import org.springframework.web.servlet.function.RouterFunction;
+import org.springframework.web.servlet.function.RouterFunctions;
 import org.springframework.web.servlet.function.ServerResponse;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Configuration for multiple MCP server instances with their own transports.
  *
- * <p>This configuration creates MCP servers programmatically:
+ * <p>This configuration creates two MCP servers programmatically, each served from two URLs by a
+ * single dual-path router function:
  *
  * <ul>
- *   <li>{@code /mcp/cluster} — all static tools from {@link CamundaMcpTool} annotated methods
- *   <li>{@code /physical-tenants/{physicalTenantId}/mcp/cluster} — all static tools from {@link
- *       CamundaMcpTool} annotated methods
- *   <li>{@code /mcp/processes} — process definitions as tools based on permissions and deployments
- *   <li>{@code /physical-tenants/{physicalTenantId}/mcp/processes} — same as above, scoped to the
- *       resolved physical tenant
+ *   <li>cluster server — all static tools from {@link CamundaMcpTool} annotated methods, at {@code
+ *       /mcp/cluster} and {@code /physical-tenants/{physicalTenantId}/mcp/cluster}
+ *   <li>processes server — process definitions as tools based on permissions and deployments, at
+ *       {@code /mcp/processes} and {@code /physical-tenants/{physicalTenantId}/mcp/processes}
  * </ul>
  *
- * <p>Each server has its own transport provider and tool resolution strategy, allowing independent
- * configuration and management.
+ * <p>The default URL stamps the {@link PhysicalTenantContext#DEFAULT_PHYSICAL_TENANT_ID default}
+ * physical tenant; the {@code /physical-tenants/...} URL resolves and validates the tenant from the
+ * path. Both URLs share one transport per server, since the transport handler reads only the
+ * request body and is path-agnostic — the resolved tenant flows through {@link
+ * PhysicalTenantContext}.
  */
 @AutoConfiguration
 @ConditionalOnMcpGatewayEnabled
 public class CamundaMcpServersAutoConfiguration {
 
-  /** Cluster MCP server endpoints. */
+  /** Cluster MCP server endpoint. */
   private static final String CLUSTER_ENDPOINT = "/mcp/cluster";
 
-  private static final String CLUSTER_TENANT_ENDPOINT =
-      "/physical-tenants/{"
-          + PhysicalTenantContext.PATH_VARIABLE_PHYSICAL_TENANT_ID
-          + "}/mcp/cluster";
-
-  /** Processes MCP server endpoints. */
+  /** Processes MCP server endpoint. */
   private static final String PROCESSES_ENDPOINT = "/mcp/processes";
 
-  private static final String PROCESSES_TENANT_ENDPOINT =
-      "/physical-tenants/{"
-          + PhysicalTenantContext.PATH_VARIABLE_PHYSICAL_TENANT_ID
-          + "}/mcp/processes";
+  /**
+   * Path prefix that carries the {@code physicalTenantId} path variable. Nested in front of the
+   * base endpoints to serve the physical-tenant-scoped variant from the same transport.
+   */
+  private static final String PHYSICAL_TENANT_PREFIX =
+      "/physical-tenants/{" + PhysicalTenantContext.PATH_VARIABLE_PHYSICAL_TENANT_ID + "}";
 
   private static final String CLUSTER_SERVER_NAME = "Camunda 8 Orchestration API MCP Server";
   private static final String CLUSTER_SERVER_INSTRUCTIONS =
@@ -128,23 +129,6 @@ public class CamundaMcpServersAutoConfiguration {
   }
 
   /**
-   * Transport provider for the cluster MCP server at {@code
-   * /physical-tenants/:physicalTenantId/mcp/cluster}.
-   *
-   * <p>Handles MCP protocol messages for cluster-wide operations and general Camunda API access.
-   *
-   * <p>The MCP JsonMapper is provided by Spring AI auto-configuration. We tie into that to reuse
-   * what Spring AI is using for tool schema definitions.
-   *
-   * @param jsonMapper the JSON mapper to use for MCP message serialization and deserialization
-   */
-  @Bean(name = "clusterTenantTransportProvider")
-  public WebMvcStatelessServerTransport clusterTenantTransportProvider(
-      @Qualifier("mcpServerJsonMapper") final JsonMapper jsonMapper) {
-    return webMvcTransport(jsonMapper, CLUSTER_TENANT_ENDPOINT);
-  }
-
-  /**
    * Transport provider for the processes MCP server at {@code /mcp/processes}.
    *
    * <p>Handles MCP protocol messages for processes exposed as tools.
@@ -158,77 +142,40 @@ public class CamundaMcpServersAutoConfiguration {
     return webMvcTransport(jsonMapper, PROCESSES_ENDPOINT);
   }
 
-  /**
-   * Transport provider for the processes MCP server at {@code
-   * /physical-tenants/:physicalTenantId/mcp/processes}.
-   *
-   * <p>Handles MCP protocol messages for processes exposed as tools.
-   *
-   * <p>The MCP JsonMapper is provided by Spring AI auto-configuration. We tie into that to reuse
-   * what Spring AI is using for tool schema definitions.
-   */
-  @Bean(name = "processesTenantTransportProvider")
-  public WebMvcStatelessServerTransport processesTenantTransportProvider(
-      @Qualifier("mcpServerJsonMapper") final JsonMapper jsonMapper) {
-    return webMvcTransport(jsonMapper, PROCESSES_TENANT_ENDPOINT);
-  }
-
   // ---------------------------------------------------------------------------------------------
   // Router functions (wire transports into the web stack and apply tenant filters)
   // ---------------------------------------------------------------------------------------------
 
   /**
-   * Router function for the cluster MCP server to tie in with the web server stack.
+   * Dual-path router function for the cluster MCP server.
+   *
+   * <p>Serves the same transport from two URLs: the default {@code /mcp/cluster} and the
+   * physical-tenant-scoped {@code /physical-tenants/{physicalTenantId}/mcp/cluster}.
    *
    * @param clusterTransportProvider the associated transport provider
    */
   @Bean
   public RouterFunction<ServerResponse> clusterRouterFunction(
       @Qualifier("clusterTransportProvider")
-          final WebMvcStatelessServerTransport clusterTransportProvider) {
-    return clusterTransportProvider.getRouterFunction().filter(defaultTenantFilter());
-  }
-
-  /**
-   * Router function for the cluster tenant MCP server to tie in with the web server stack.
-   *
-   * @param clusterTenantTransportProvider the associated transport provider
-   */
-  @Bean
-  public RouterFunction<ServerResponse> clusterTenantRouterFunction(
-      @Qualifier("clusterTenantTransportProvider")
-          final WebMvcStatelessServerTransport clusterTenantTransportProvider,
+          final WebMvcStatelessServerTransport clusterTransportProvider,
       final ObjectProvider<PhysicalTenantResolver> resolverProvider) {
-    return clusterTenantTransportProvider
-        .getRouterFunction()
-        .filter(tenantFilter(resolverProvider));
+    return dualPathRouterFunction(clusterTransportProvider, resolverProvider);
   }
 
   /**
-   * Router function for the processes MCP server to tie in with the web server stack.
+   * Dual-path router function for the processes MCP server.
+   *
+   * <p>Serves the same transport from two URLs: the default {@code /mcp/processes} and the
+   * physical-tenant-scoped {@code /physical-tenants/{physicalTenantId}/mcp/processes}.
    *
    * @param processesTransportProvider the associated transport provider
    */
   @Bean
   public RouterFunction<ServerResponse> processesRouterFunction(
       @Qualifier("processesTransportProvider")
-          final WebMvcStatelessServerTransport processesTransportProvider) {
-    return processesTransportProvider.getRouterFunction().filter(defaultTenantFilter());
-  }
-
-  /**
-   * Router function for the processes tenant MCP server to tie in with the web server stack.
-   *
-   * @param processesTenantTransportProvider the associated transport provider
-   */
-  @Bean
-  public RouterFunction<ServerResponse> processesTenantRouterFunction(
-      @Qualifier("processesTenantTransportProvider")
-          final WebMvcStatelessServerTransport processesTenantTransportProvider,
+          final WebMvcStatelessServerTransport processesTransportProvider,
       final ObjectProvider<PhysicalTenantResolver> resolverProvider) {
-    return processesTenantTransportProvider
-        .getRouterFunction()
-        .filter(tenantFilter(resolverProvider));
+    return dualPathRouterFunction(processesTransportProvider, resolverProvider);
   }
 
   // ---------------------------------------------------------------------------------------------
@@ -250,27 +197,6 @@ public class CamundaMcpServersAutoConfiguration {
         .instructions(CLUSTER_SERVER_INSTRUCTIONS)
         .capabilities(defaultCapabilities())
         .tools(toolSpecifications)
-        .immediateExecution(true)
-        .validateToolInputs(false) // covered by bean validation
-        .build();
-  }
-
-  /**
-   * Cluster server for {@code /physical-tenants/{physicalTenantId}/mcp/cluster}.
-   *
-   * <p>Provides static tools defined via {@link CamundaMcpTool} annotations.
-   */
-  @Bean
-  public McpStatelessSyncServer clusterTenantMcpServer(
-      @Qualifier("clusterTenantTransportProvider")
-          final McpStatelessServerTransport clusterTenantTransport,
-      @Qualifier("clusterMcpToolSpecifications")
-          final List<SyncToolSpecification> tenantToolSpecifications) {
-    return McpServer.sync(clusterTenantTransport)
-        .serverInfo(CLUSTER_SERVER_NAME, VersionUtil.getVersion())
-        .instructions(CLUSTER_SERVER_INSTRUCTIONS)
-        .capabilities(defaultCapabilities())
-        .tools(tenantToolSpecifications)
         .immediateExecution(true)
         .validateToolInputs(false) // covered by bean validation
         .build();
@@ -299,29 +225,6 @@ public class CamundaMcpServersAutoConfiguration {
     return server;
   }
 
-  /**
-   * Processes server for {@code /physical-tenants/{physicalTenantId}/mcp/processes}. Resolves tools
-   * dynamically per request, scoped to the resolved physical tenant.
-   */
-  @Bean
-  public McpStatelessSyncServer processesTenantMcpServer(
-      @Qualifier("processesTenantTransportProvider")
-          final McpStatelessServerTransport processesTenantTransport,
-      @Qualifier("processesToolRepository") final ToolRepository toolRepository,
-      @Qualifier("mcpServerJsonMapper") final JsonMapper jsonMapper) {
-    final McpStatelessSyncServer server =
-        McpServer.sync(processesTenantTransport)
-            .serverInfo(PROCESSES_SERVER_NAME, VersionUtil.getVersion())
-            .instructions(PROCESSES_SERVER_INSTRUCTIONS)
-            .capabilities(defaultCapabilities())
-            .immediateExecution(true)
-            .validateToolInputs(false) // covered by bean validation
-            .build();
-    RequestHandlerCustomizer.replaceToolHandlers(
-        processesTenantTransport, jsonMapper, toolRepository);
-    return server;
-  }
-
   // ---------------------------------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------------------------------
@@ -332,6 +235,29 @@ public class CamundaMcpServersAutoConfiguration {
         .jsonMapper(new JacksonMcpJsonMapper(jsonMapper))
         .messageEndpoint(messageEndpoint)
         .build();
+  }
+
+  /**
+   * Builds a router function that serves a transport's base endpoint at both the default URL and
+   * the physical-tenant-scoped URL.
+   *
+   * <p>The default branch stamps the {@link PhysicalTenantContext#DEFAULT_PHYSICAL_TENANT_ID
+   * default} tenant. The tenant branch nests the same base router under {@link
+   * #PHYSICAL_TENANT_PREFIX} so the {@code physicalTenantId} path variable is captured, then
+   * validates and stamps it via {@link #tenantFilter}. The transport handler reads only the request
+   * body, so the same instance serves both routes.
+   */
+  private static RouterFunction<ServerResponse> dualPathRouterFunction(
+      final WebMvcStatelessServerTransport transport,
+      final ObjectProvider<PhysicalTenantResolver> resolverProvider) {
+    final RouterFunction<ServerResponse> base = transport.getRouterFunction();
+
+    final RouterFunction<ServerResponse> global = base.filter(defaultTenantFilter());
+    final RouterFunction<ServerResponse> tenant =
+        RouterFunctions.nest(RequestPredicates.path(PHYSICAL_TENANT_PREFIX), base)
+            .filter(tenantFilter(resolverProvider));
+
+    return global.and(tenant);
   }
 
   private static McpSchema.ServerCapabilities defaultCapabilities() {
