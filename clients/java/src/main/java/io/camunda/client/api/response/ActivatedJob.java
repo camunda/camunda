@@ -80,6 +80,11 @@ public interface ActivatedJob {
   int getRetries();
 
   /**
+   * @return the priority of the job; higher values indicate higher priority
+   */
+  int getPriority();
+
+  /**
    * @return the unix timestamp until when the job is exclusively assigned to this worker (time unit
    *     * is milliseconds since unix epoch). If the deadline is exceeded, it can happen that the
    *     job is handed to another worker and the work is performed twice.

@@ -59,6 +59,7 @@ public final class ActivateJobsTest extends ClientTest {
             .setCustomHeaders("{\"version\": \"1\"}")
             .setWorker("worker1")
             .setRetries(34)
+            .setPriority(15)
             .setDeadline(1231)
             .setVariables("{\"key\": \"val\"}")
             .setTenantId("test-tenant-1")
@@ -79,6 +80,7 @@ public final class ActivateJobsTest extends ClientTest {
             .setCustomHeaders("{\"key\": \"value\"}")
             .setWorker("worker1")
             .setRetries(334)
+            .setPriority(-3)
             .setDeadline(3131)
             .setVariables("{\"bar\": 3}")
             .setTenantId("test-tenant-2")
@@ -116,6 +118,7 @@ public final class ActivateJobsTest extends ClientTest {
     assertThat(job.getCustomHeaders()).isEqualTo(fromJsonAsMap(activatedJob1.getCustomHeaders()));
     assertThat(job.getWorker()).isEqualTo(activatedJob1.getWorker());
     assertThat(job.getRetries()).isEqualTo(activatedJob1.getRetries());
+    assertThat(job.getPriority()).isEqualTo(activatedJob1.getPriority());
     assertThat(job.getDeadline()).isEqualTo(activatedJob1.getDeadline());
     assertThat(job.getVariables()).isEqualTo(activatedJob1.getVariables());
     assertThat(job.getUserTask()).isNull();
@@ -143,6 +146,7 @@ public final class ActivateJobsTest extends ClientTest {
     assertThat(job.getCustomHeaders()).isEqualTo(fromJsonAsMap(activatedJob2.getCustomHeaders()));
     assertThat(job.getWorker()).isEqualTo(activatedJob2.getWorker());
     assertThat(job.getRetries()).isEqualTo(activatedJob2.getRetries());
+    assertThat(job.getPriority()).isEqualTo(activatedJob2.getPriority());
     assertThat(job.getDeadline()).isEqualTo(activatedJob2.getDeadline());
     assertThat(job.getVariables()).isEqualTo(activatedJob2.getVariables());
     assertThat(job.getUserTask()).isNull();
