@@ -76,6 +76,7 @@ const DetailsTab: React.FC = () => {
     processInstanceKey: processInstanceId,
     elementInstanceKey: elementInstanceKey ?? undefined,
     enabled:
+      clientConfig.waitStatesEnabled &&
       !!elementInstanceKey &&
       processInstance?.state === 'ACTIVE' &&
       resolvedElementInstance?.state === 'ACTIVE',
@@ -526,7 +527,9 @@ const DetailsTab: React.FC = () => {
           isError={isAgentError}
         />
       )}
-      <WaitingStatus waitStates={elementWaitStates} />
+      {clientConfig.waitStatesEnabled && (
+        <WaitingStatus waitStates={elementWaitStates} />
+      )}
     </Container>
   );
 };
