@@ -59,20 +59,6 @@ dependencyResolutionManagement {
     repositoriesMode = RepositoriesMode.PREFER_SETTINGS
 
     repositories {
-        // Camunda internal aggregation repo — only for Camunda/Zeebe artifacts
-        maven {
-            name = "CamundaInternal"
-            url = uri("https://artifacts.camunda.com/artifactory/internal")
-            content {
-                includeGroupByRegex("io\\.camunda.*")
-                includeGroupByRegex("io\\.zeebe.*")
-                includeGroupByRegex("org\\.camunda\\..*")
-            }
-        }
-
-        // Maven Central — universal fallback for all dependencies.
-        // No content filters: many Camunda/Zeebe artifacts are also published here,
-        // and the Artifactory repos above may require authentication.
         mavenCentral()
 
         ivy {
@@ -86,60 +72,6 @@ dependencyResolutionManagement {
             }
             content {
                 includeModule("org.nodejs", "node")
-            }
-        }
-
-        // Zeebe IO releases
-        maven {
-            name = "ZeebeIO"
-            url = uri("https://artifacts.camunda.com/artifactory/zeebe-io/")
-            content {
-                includeGroupByRegex("io\\.zeebe.*")
-            }
-        }
-
-        // Zeebe IO snapshots (kept as insurance for development cycles)
-        maven {
-            name = "ZeebeIOSnapshots"
-            url = uri("https://artifacts.camunda.com/artifactory/zeebe-io-snapshots/")
-            content {
-                includeGroupByRegex("io\\.zeebe.*")
-            }
-        }
-
-        // Camunda Identity releases
-        maven {
-            name = "CamundaIdentity"
-            url = uri("https://artifacts.camunda.com/artifactory/camunda-identity/")
-            content {
-                includeGroupByRegex("io\\.camunda.*")
-            }
-        }
-
-        // Camunda Identity snapshots (kept as insurance for development cycles)
-        maven {
-            name = "CamundaIdentitySnapshots"
-            url = uri("https://artifacts.camunda.com/artifactory/camunda-identity-snapshots/")
-            content {
-                includeGroupByRegex("io\\.camunda.*")
-            }
-        }
-
-        // Camunda BPM releases
-        maven {
-            name = "CamundaBPM"
-            url = uri("https://artifacts.camunda.com/artifactory/camunda-bpm/")
-            content {
-                includeGroupByRegex("org\\.camunda\\..*")
-            }
-        }
-
-        // Camunda BPM snapshots (kept as insurance for development cycles)
-        maven {
-            name = "CamundaBPMSnapshots"
-            url = uri("https://artifacts.camunda.com/artifactory/camunda-bpm-snapshots/")
-            content {
-                includeGroupByRegex("org\\.camunda\\..*")
             }
         }
 
