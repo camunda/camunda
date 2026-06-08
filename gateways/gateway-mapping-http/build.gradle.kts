@@ -36,6 +36,8 @@ dependencies {
     testImplementation(project(":zeebe-msgpack-core"))
     testImplementation(libs.org.springframework.security.spring.security.oauth2.core)
     compileOnly(libs.jakarta.servlet.jakarta.servlet.api)
+    testImplementation(libs.jakarta.servlet.jakarta.servlet.api)
+    testImplementation(libs.org.springframework.spring.test)
 }
 
 description = "Camunda Gateway Mapping for HTTP"
