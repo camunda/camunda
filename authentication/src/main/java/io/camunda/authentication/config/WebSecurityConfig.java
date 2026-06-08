@@ -11,6 +11,7 @@ import io.camunda.authentication.config.spi.AdminUserPresenceAdapter;
 import io.camunda.authentication.config.spi.AuthorizationRepositoryAdapter;
 import io.camunda.authentication.config.spi.IdentityToAdminComponentAliasAdapter;
 import io.camunda.authentication.config.spi.SecurityPathAdapter;
+import io.camunda.authentication.config.spi.UserDetailsAdapter;
 import io.camunda.authentication.config.spi.WebAppProviderAdapter;
 import io.camunda.search.clients.reader.AuthorizationReader;
 import io.camunda.security.api.context.CamundaAuthenticationConverter;
@@ -19,6 +20,7 @@ import io.camunda.security.core.port.in.ResourcePermissionPort;
 import io.camunda.security.core.port.out.AdminUserPresencePort;
 import io.camunda.security.core.port.out.AuthorizationRepositoryPort;
 import io.camunda.security.core.port.out.SecurityPathPort;
+import io.camunda.security.core.port.out.UserDetailsPort;
 import io.camunda.security.spring.CamundaSecurityAutoConfiguration;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.security.spring.security.OidcResourceServerCustomizer;
@@ -92,6 +94,20 @@ public class WebSecurityConfig {
     return new AdminUserPresenceAdapter(
         serviceRegistry.roleServices("default"), // TODO apply this to all physical tenants
         properties.getInitialization());
+  }
+
+  /**
+   * Host {@link UserDetailsPort} resolving basic-auth users from OC's user services. Gated
+   * on the basic-auth path the removed {@code CamundaUserDetailsService} ran under.
+   */
+  @Bean
+  @ConditionalOnProperty(
+      name = "camunda.security.authentication.method",
+      havingValue = "basic",
+      matchIfMissing = true)
+  @ConditionalOnMissingBean(UserDetailsPort.class)
+  public UserDetailsPort userDetailsPort(final ServiceRegistry serviceRegistry) {
+    return new UserDetailsAdapter(serviceRegistry);
   }
 
   /**

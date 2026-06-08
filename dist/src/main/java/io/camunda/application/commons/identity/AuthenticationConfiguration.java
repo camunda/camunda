@@ -8,14 +8,10 @@
 package io.camunda.application.commons.identity;
 
 import io.camunda.application.commons.condition.ConditionalOnAnyHttpGatewayEnabled;
-import io.camunda.service.registry.ServiceRegistry;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
-import org.springframework.security.core.userdetails.UserDetailsService;
 
 @Configuration(proxyBeanMethods = false)
 @ComponentScan(basePackages = {"io.camunda.authentication"})
@@ -23,11 +19,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 @Profile("consolidated-auth")
 @ConditionalOnAnyHttpGatewayEnabled
 public class AuthenticationConfiguration {
-
-  @Bean
-  @ConditionalOnMissingBean(UserDetailsService.class)
-  public CamundaUserDetailsService camundaUserDetailsService(
-      final ServiceRegistry serviceRegistry) {
-    return new CamundaUserDetailsService(serviceRegistry);
-  }
+  // Intentionally empty: annotation-only configuration. It carries no beans, existing solely to
+  // component- and configuration-properties-scan the io.camunda.authentication package for the
+  // consolidated-auth profile.
 }
