@@ -88,7 +88,6 @@ tasks.named<ShadowJar>("shadowJar") {
 dependencies {
     implementation(project(":camunda-process-test-json-test-cases"))
     implementation(project(":camunda-process-test-coverage"))
-    runtimeOnly(project(":camunda-process-test-coverage-frontend-new"))
     api(libs.org.testcontainers.testcontainers)
     api(libs.org.testcontainers.testcontainers.elasticsearch)
     api(libs.org.junit.jupiter.junit.jupiter.api.x1)
