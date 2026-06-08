@@ -111,5 +111,5 @@ func main() {
 }
 
 func cleanCommand(camundaVersion string) {
-	packages.Clean(camundaVersion, "")
+	packages.Clean(camundaVersion)
 }

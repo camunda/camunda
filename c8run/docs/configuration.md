@@ -12,13 +12,12 @@ The shutdown handler (`internal/shutdown/shutdownhandler.go`) also handles direc
 
 `resolveJavaHomeAndBinary` in `internal/start/startuphandler.go` resolves the Java binary through a chain of fallbacks:
 
-1. **Bundled `jre/` exists** → use `<c8run>/jre/bin/java` directly
-2. **`JAVA_HOME` env var set + symlink resolves** → use it directly
-3. **`JAVA_HOME` env var set + symlink resolution fails** → retry by calling `getJavaHome()` (runs the bundled `JavaHome` class via `exec.Command(javaBinary, "JavaHome")`, which prints `System.getProperty("java.home")`)
-4. **`JAVA_HOME` empty or still invalid** → `exec.LookPath("java")` to find the binary, then walk two directories up (`filepath.Dir(filepath.Dir(path))`) to derive `JAVA_HOME` from `bin/java`
-5. **Walk finds no matching binary** → build a hardcoded path as last resort
+1. **`JAVA_HOME` env var set + symlink resolves** → use it directly
+2. **`JAVA_HOME` env var set + symlink resolution fails** → retry by calling `getJavaHome()` (runs the bundled `JavaHome` class via `exec.Command(javaBinary, "JavaHome")`, which prints `System.getProperty("java.home")`)
+3. **`JAVA_HOME` empty or still invalid** → `exec.LookPath("java")` to find the binary, then walk two directories up (`filepath.Dir(filepath.Dir(path))`) to derive `JAVA_HOME` from `bin/java`
+4. **Walk finds no matching binary** → build a hardcoded path as last resort
 
-Changes to this chain must ensure all fallback paths still produce a valid binary. The two-directory walk assumes a standard `{JAVA_HOME}/bin/java` layout — non-standard JDK layouts (e.g. macOS `jre/` subdirectory structures) may fall through to the hardcoded path.
+Changes to this chain must ensure all four fallback paths still produce a valid binary. The two-directory walk assumes a standard `{JAVA_HOME}/bin/java` layout — non-standard JDK layouts (e.g. macOS `jre/` subdirectory structures) may fall through to the hardcoded path.
 
 ## H2 Data Directory Cleanup
 
@@ -68,9 +67,3 @@ If `CAMUNDA_VERSION` is not set when driver detection runs, the function cannot 
 - Keystore password if a keystore is configured
 
 Keystore password is appended unquoted — special characters in the password may break argument parsing.
-
-When the resolved runtime is Java 25 or newer, startup appends the required Java 25 compatibility flags to `JDK_JAVA_OPTIONS`:
-- `--enable-native-access=ALL-UNNAMED`
-- `--sun-misc-unsafe-memory-access=allow`
-
-Existing `JDK_JAVA_OPTIONS` values are preserved and only missing flags are appended. Java 21–24 runtimes are left unchanged.
