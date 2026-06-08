@@ -266,13 +266,13 @@ final class BulkIndexRequestTest {
           .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
           .extracting(source -> source.get("requestChannelType"))
           .describedAs("Expect that the records are NOT serialized with requestChannelType")
-          .isNull();
+          .containsExactly(new Object[] {null});
       assertThat(request.bulkOperations())
           .hasSize(1)
           .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
           .extracting(source -> source.get("requestToolName"))
           .describedAs("Expect that the records are NOT serialized with requestToolName")
-          .isNull();
+          .containsExactly(new Object[] {null});
     }
 
     @Test
