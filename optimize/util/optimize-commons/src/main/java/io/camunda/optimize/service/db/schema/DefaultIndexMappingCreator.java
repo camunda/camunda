@@ -14,10 +14,10 @@ import co.elastic.clients.elasticsearch._types.mapping.DynamicMapping;
 import co.elastic.clients.elasticsearch._types.mapping.DynamicTemplate;
 import co.elastic.clients.elasticsearch._types.mapping.IndexOptions;
 import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
+import co.elastic.clients.util.NamedValue;
 import io.camunda.optimize.service.db.es.schema.PropertiesAppender;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.io.IOException;
-import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,7 +59,7 @@ public abstract class DefaultIndexMappingCreator<TBuilder>
 
   protected TypeMapping.Builder addDynamicTemplates(final TypeMapping.Builder builder) {
     return builder.dynamicTemplates(
-        Map.of(
+        NamedValue.of(
             "string_template",
             DynamicTemplate.of(
                 t ->

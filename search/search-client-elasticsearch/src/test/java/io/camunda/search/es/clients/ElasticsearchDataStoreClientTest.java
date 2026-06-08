@@ -208,7 +208,7 @@ public class ElasticsearchDataStoreClientTest {
   }
 
   private SearchResponse<TestDocument> createDefaultSearchResponse(
-      long totalHits, TotalHitsRelation totalHitsRelation) {
+      final long totalHits, final TotalHitsRelation totalHitsRelation) {
     return SearchResponse.of(
         (f) ->
             f.took(122)
