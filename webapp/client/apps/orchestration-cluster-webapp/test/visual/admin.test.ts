@@ -34,16 +34,16 @@ test.beforeEach(({network}) => {
 	);
 });
 
-test('should match the admin index page snapshot', async ({adminIndexPage}) => {
+test('should match the admin index page snapshot', async ({adminIndexPage, page}) => {
 	await adminIndexPage.goto();
 	await expect(adminIndexPage.heading).toBeVisible();
 
-	await expect(adminIndexPage.page).toHaveScreenshot();
+	await expect(page).toHaveScreenshot();
 });
 
-test('should match the admin 404 page snapshot', async ({adminIndexPage, notFoundPage}) => {
-	await adminIndexPage.page.goto('/admin/nonexistent');
+test('should match the admin 404 page snapshot', async ({notFoundPage, page}) => {
+	await page.goto('/admin/nonexistent');
 	await expect(notFoundPage.heading).toBeVisible();
 
-	await expect(adminIndexPage.page).toHaveScreenshot();
+	await expect(page).toHaveScreenshot();
 });

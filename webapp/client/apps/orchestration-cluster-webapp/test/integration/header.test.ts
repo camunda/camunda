@@ -36,7 +36,7 @@ test.beforeEach(({network}) => {
 });
 
 test.describe('logout', () => {
-	test('should redirect to login page after clicking logout', async ({network, tasklistIndexPage}) => {
+	test('should redirect to login page after clicking logout', async ({network, tasklistIndexPage, page}) => {
 		network.use(
 			mockLogoutEndpoint({
 				successResponse: new HttpResponse(null, {status: 204}),
@@ -54,16 +54,16 @@ test.describe('logout', () => {
 
 		await tasklistIndexPage.header.logoutButton.click();
 
-		await expect(tasklistIndexPage.page).toHaveURL(/\/login/);
+		await expect(page).toHaveURL(/\/login/);
 	});
 });
 
 test.describe('user sidebar', () => {
-	test('should display the user name', async ({tasklistIndexPage}) => {
+	test('should display the user name', async ({tasklistIndexPage, page}) => {
 		await tasklistIndexPage.goto();
 		await tasklistIndexPage.header.openUserSidebar();
 
-		await expect(tasklistIndexPage.page.getByText(mockCurrentUser.displayName)).toBeVisible();
+		await expect(page.getByText(mockCurrentUser.displayName)).toBeVisible();
 	});
 
 	test('should display the language selector', async ({tasklistIndexPage}) => {
@@ -125,12 +125,12 @@ test.describe('i18n', () => {
 		await expect(tasklistIndexPage.processesNavItem).toBeVisible();
 	});
 
-	test('should update header text when language is changed', async ({tasklistIndexPage}) => {
+	test('should update header text when language is changed', async ({tasklistIndexPage, page}) => {
 		await tasklistIndexPage.goto();
 		await tasklistIndexPage.header.openUserSidebar();
 		await tasklistIndexPage.header.selectLanguage('Deutsch');
 
-		await expect(tasklistIndexPage.page.getByRole('link', {name: 'Aufgaben'})).toBeVisible();
-		await expect(tasklistIndexPage.page.getByRole('link', {name: 'Prozesse'})).toBeVisible();
+		await expect(page.getByRole('link', {name: 'Aufgaben'})).toBeVisible();
+		await expect(page.getByRole('link', {name: 'Prozesse'})).toBeVisible();
 	});
 });

@@ -34,23 +34,23 @@ test.beforeEach(({network}) => {
 	);
 });
 
-test('should match the tasklist index page snapshot', async ({tasklistIndexPage}) => {
+test('should match the tasklist index page snapshot', async ({tasklistIndexPage, page}) => {
 	await tasklistIndexPage.goto();
 	await expect(tasklistIndexPage.heading).toBeVisible();
 
-	await expect(tasklistIndexPage.page).toHaveScreenshot();
+	await expect(page).toHaveScreenshot();
 });
 
-test('should match the tasklist processes page snapshot', async ({tasklistProcessesPage}) => {
+test('should match the tasklist processes page snapshot', async ({tasklistProcessesPage, page}) => {
 	await tasklistProcessesPage.goto();
 	await expect(tasklistProcessesPage.heading).toBeVisible();
 
-	await expect(tasklistProcessesPage.page).toHaveScreenshot();
+	await expect(page).toHaveScreenshot();
 });
 
-test('should match the tasklist 404 page snapshot', async ({tasklistIndexPage, notFoundPage}) => {
-	await tasklistIndexPage.page.goto('/tasklist/nonexistent');
+test('should match the tasklist 404 page snapshot', async ({notFoundPage, page}) => {
+	await page.goto('/tasklist/nonexistent');
 	await expect(notFoundPage.heading).toBeVisible();
 
-	await expect(tasklistIndexPage.page).toHaveScreenshot();
+	await expect(page).toHaveScreenshot();
 });

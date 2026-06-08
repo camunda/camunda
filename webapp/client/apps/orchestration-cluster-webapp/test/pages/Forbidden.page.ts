@@ -10,7 +10,7 @@ import {type Page} from '@playwright/test';
 import {Header} from './Header';
 
 class ForbiddenPage {
-	readonly page: Page;
+	private readonly page: Page;
 	readonly header: Header;
 
 	constructor(page: Page) {

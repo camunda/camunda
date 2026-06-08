@@ -34,16 +34,16 @@ test.beforeEach(({network}) => {
 	);
 });
 
-test('should match the operate index page snapshot', async ({operateIndexPage}) => {
+test('should match the operate index page snapshot', async ({operateIndexPage, page}) => {
 	await operateIndexPage.goto();
 	await expect(operateIndexPage.heading).toBeVisible();
 
-	await expect(operateIndexPage.page).toHaveScreenshot();
+	await expect(page).toHaveScreenshot();
 });
 
-test('should match the operate 404 page snapshot', async ({operateIndexPage, notFoundPage}) => {
-	await operateIndexPage.page.goto('/operate/nonexistent');
+test('should match the operate 404 page snapshot', async ({notFoundPage, page}) => {
+	await page.goto('/operate/nonexistent');
 	await expect(notFoundPage.heading).toBeVisible();
 
-	await expect(operateIndexPage.page).toHaveScreenshot();
+	await expect(page).toHaveScreenshot();
 });
