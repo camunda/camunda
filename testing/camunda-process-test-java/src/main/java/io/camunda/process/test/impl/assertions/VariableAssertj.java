@@ -433,7 +433,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
 
   private void evaluateJudge(
       final VariableSelector variableSelector, final String expectation, final String rawValue) {
-    final List<ResolvedDocument> documents = resolveDocumentsIfEnabled(rawValue);
+    final List<ResolvedDocument> documents = attachDocumentsIfEnabled(rawValue);
     judgeAssertj.evaluateExpectation(
         expectation,
         rawValue,
@@ -441,8 +441,8 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
         documents);
   }
 
-  private List<ResolvedDocument> resolveDocumentsIfEnabled(final String rawValue) {
-    if (!judgeAssertj.isMultimodalDocumentResolutionEnabled()) {
+  private List<ResolvedDocument> attachDocumentsIfEnabled(final String rawValue) {
+    if (!judgeAssertj.isDocumentAttachmentEnabled()) {
       return Collections.emptyList();
     }
     return documentReferenceResolver.resolve(rawValue);

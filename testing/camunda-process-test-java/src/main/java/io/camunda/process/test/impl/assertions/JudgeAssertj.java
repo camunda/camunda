@@ -59,20 +59,20 @@ class JudgeAssertj {
   }
 
   /**
-   * Returns whether judge document resolution should run for the next evaluation. True when the
-   * caller has opted in via {@link JudgeConfig#withResolveDocuments(boolean)} and the configured
-   * chat model can accept structured document content (i.e. implements {@link
-   * MultimodalChatModelAdapter}). Logs a one-line warning when the toggle is on but the adapter
-   * cannot consume documents, so the misconfiguration is visible.
+   * Returns whether document attachment should run for the next evaluation. True when the caller
+   * has opted in via {@link JudgeConfig#withAttachDocuments(boolean)} and the configured chat model
+   * can accept structured document content (i.e. implements {@link MultimodalChatModelAdapter}).
+   * Logs a one-line warning when the toggle is on but the adapter cannot consume documents, so the
+   * misconfiguration is visible.
    */
-  boolean isMultimodalDocumentResolutionEnabled() {
-    if (judgeConfig == null || !judgeConfig.isResolveDocuments()) {
+  boolean isDocumentAttachmentEnabled() {
+    if (judgeConfig == null || !judgeConfig.isAttachDocuments()) {
       return false;
     }
     if (!(judgeConfig.getChatModel() instanceof MultimodalChatModelAdapter)) {
       LOG.warn(
-          "Judge document resolution is enabled but the configured ChatModelAdapter does not "
-              + "implement MultimodalChatModelAdapter. Skipping document resolution. Implement "
+          "Judge document attachment is enabled but the configured ChatModelAdapter does not "
+              + "implement MultimodalChatModelAdapter. Skipping document attachment. Implement "
               + "MultimodalChatModelAdapter or use one of the built-in LangChain4j providers to "
               + "enable multimodal evaluation.");
       return false;

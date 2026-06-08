@@ -22,7 +22,7 @@ import java.util.List;
  * structured content blocks alongside the prompt.
  *
  * <p>Adapters that implement this interface receive resolved Camunda document content when the
- * judge has document resolution enabled (see {@link JudgeConfig#withResolveDocuments(boolean)}).
+ * judge has document attachment enabled (see {@link JudgeConfig#withAttachDocuments(boolean)}).
  * Adapters that only implement {@link ChatModelAdapter} receive a text-only prompt and no documents
  * will be resolved.
  *

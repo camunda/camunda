@@ -26,36 +26,36 @@ class JudgeConfigImplTest {
   private static final ChatModelAdapter ADAPTER = prompt -> "response";
 
   @Test
-  void shouldDefaultResolveDocumentsToFalse() {
-    assertThat(JudgeConfig.defaults().isResolveDocuments()).isFalse();
-    assertThat(JudgeConfig.of(ADAPTER).isResolveDocuments()).isFalse();
+  void shouldDefaultAttachDocumentsToFalse() {
+    assertThat(JudgeConfig.defaults().isAttachDocuments()).isFalse();
+    assertThat(JudgeConfig.of(ADAPTER).isAttachDocuments()).isFalse();
   }
 
   @Test
-  void shouldEnableResolveDocuments() {
-    final JudgeConfig config = JudgeConfig.of(ADAPTER).withResolveDocuments(true);
+  void shouldEnableAttachDocuments() {
+    final JudgeConfig config = JudgeConfig.of(ADAPTER).withAttachDocuments(true);
 
-    assertThat(config.isResolveDocuments()).isTrue();
+    assertThat(config.isAttachDocuments()).isTrue();
   }
 
   @Test
-  void shouldPreserveResolveDocumentsAcrossOtherWithCalls() {
+  void shouldPreserveAttachDocumentsAcrossOtherWithCalls() {
     final JudgeConfig config =
         JudgeConfig.of(ADAPTER)
-            .withResolveDocuments(true)
+            .withAttachDocuments(true)
             .withThreshold(0.7)
             .withCustomPrompt("custom");
 
-    assertThat(config.isResolveDocuments()).isTrue();
+    assertThat(config.isAttachDocuments()).isTrue();
     assertThat(config.getThreshold()).isEqualTo(0.7);
     assertThat(config.getCustomPrompt()).hasValue("custom");
   }
 
   @Test
-  void shouldPreserveOtherSettingsAcrossWithResolveDocuments() {
-    final JudgeConfig config = JudgeConfig.of(ADAPTER, 0.9, "custom").withResolveDocuments(true);
+  void shouldPreserveOtherSettingsAcrossWithAttachDocuments() {
+    final JudgeConfig config = JudgeConfig.of(ADAPTER, 0.9, "custom").withAttachDocuments(true);
 
-    assertThat(config.isResolveDocuments()).isTrue();
+    assertThat(config.isAttachDocuments()).isTrue();
     assertThat(config.getThreshold()).isEqualTo(0.9);
     assertThat(config.getCustomPrompt()).hasValue("custom");
     assertThat(config.getChatModel()).isSameAs(ADAPTER);

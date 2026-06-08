@@ -169,8 +169,7 @@ public final class DocumentReferenceResolver {
         return false;
       }
       final DocumentKey other = (DocumentKey) o;
-      return Objects.equals(documentId, other.documentId)
-          && Objects.equals(storeId, other.storeId);
+      return Objects.equals(documentId, other.documentId) && Objects.equals(storeId, other.storeId);
     }
 
     @Override
