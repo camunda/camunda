@@ -70,6 +70,9 @@ import org.springframework.stereotype.Component;
 @Component
 public class DashboardService implements ReportReferencingService, CollectionReferencingService {
 
+  public static final String SYSTEM_GENERATED_DASHBOARDS_LABEL =
+      "Management, Instant preview and Agentic control dashboards";
+
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(DashboardService.class);
   private final DashboardWriter dashboardWriter;
   private final DashboardReader dashboardReader;
@@ -209,10 +212,9 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     final AuthorizedDashboardDefinitionResponseDto authorizedDashboard =
         getDashboardDefinition(dashboardId, userId);
     final DashboardDefinitionRestDto dashboardDefinition = authorizedDashboard.getDefinitionDto();
-    if (dashboardDefinition.isManagementDashboard()
-        || dashboardDefinition.isInstantPreviewDashboard()) {
+    if (dashboardDefinition.isSystemGeneratedDashboard()) {
       throw new OptimizeValidationException(
-          "Management and Instant preview dashboards cannot be copied");
+          SYSTEM_GENERATED_DASHBOARDS_LABEL + " cannot be copied");
     }
 
     collectionService.verifyUserAuthorizedToEditCollectionResources(userId, collectionId);
@@ -370,7 +372,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
   private RoleType getUserRoleType(
       final String userId, final DashboardDefinitionRestDto dashboard) {
     RoleType currentUserRole = null;
-    if (dashboard.isManagementDashboard() || dashboard.isInstantPreviewDashboard()) {
+    if (dashboard.isSystemGeneratedDashboard()) {
       currentUserRole = RoleType.VIEWER;
     } else if (dashboard.getCollectionId() != null) {
       currentUserRole =
@@ -419,10 +421,9 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     final AuthorizedDashboardDefinitionResponseDto dashboardWithEditAuthorization =
         getDashboardWithEditAuthorization(dashboardId, userId);
     if (dashboardWithEditAuthorization.getDefinitionDto() != null) {
-      if (dashboardWithEditAuthorization.getDefinitionDto().isManagementDashboard()
-          || dashboardWithEditAuthorization.getDefinitionDto().isInstantPreviewDashboard()) {
+      if (dashboardWithEditAuthorization.getDefinitionDto().isSystemGeneratedDashboard()) {
         throw new OptimizeValidationException(
-            "Management and Instant preview dashboards cannot be edited");
+            SYSTEM_GENERATED_DASHBOARDS_LABEL + " cannot be edited");
       } else {
         validateEntityEditorAuthorization(
             dashboardWithEditAuthorization.getDefinitionDto().getCollectionId());
@@ -670,10 +671,9 @@ public class DashboardService implements ReportReferencingService, CollectionRef
 
   private void validateEntityCanBeDeletedByUser(
       final DashboardDefinitionRestDto dashboardDefinitionDto) {
-    if (dashboardDefinitionDto.isManagementDashboard()
-        || dashboardDefinitionDto.isInstantPreviewDashboard()) {
+    if (dashboardDefinitionDto.isSystemGeneratedDashboard()) {
       throw new OptimizeValidationException(
-          "Management Dashboards and Instant preview dashboards cannot be deleted");
+          SYSTEM_GENERATED_DASHBOARDS_LABEL + " cannot be deleted");
     }
   }
 

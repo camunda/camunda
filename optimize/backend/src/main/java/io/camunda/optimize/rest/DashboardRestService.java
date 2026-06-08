@@ -71,10 +71,9 @@ public class DashboardRestService {
       final HttpServletRequest request) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     if (dashboardDefinitionDto != null) {
-      if (dashboardDefinitionDto.isManagementDashboard()
-          || dashboardDefinitionDto.isInstantPreviewDashboard()) {
+      if (dashboardDefinitionDto.isSystemGeneratedDashboard()) {
         throw new OptimizeValidationException(
-            "Management and Instant preview dashboards cannot be created");
+            DashboardService.SYSTEM_GENERATED_DASHBOARDS_LABEL + " cannot be created");
       }
       validateDashboard(dashboardDefinitionDto);
     }

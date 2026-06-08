@@ -1539,6 +1539,9 @@
       }
     }
   },
+  "agenticControl": {
+    "agenticControlPlaneDashboardName": "Agentic Control Dashboard"
+  },
   "managementDashboard": {
     "dashboardName": "Adoption",
     "report": {

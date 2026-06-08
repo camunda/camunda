@@ -67,6 +67,7 @@ public class EntityImportService {
       final String collectionId, final Set<OptimizeEntityExportDto> entitiesToImport) {
     validateCompletenessOrFail(entitiesToImport);
     validateNoInstantPreviewEntities(entitiesToImport);
+    validateNoAgenticControlEntities(entitiesToImport);
     return importValidatedEntities(collectionId, entitiesToImport);
   }
 
@@ -238,6 +239,17 @@ public class EntityImportService {
                             .isInstantPreviewReport()))) {
       throw new OptimizeValidationException(
           "Cannot import Instant preview dashboards and reports.");
+    }
+  }
+
+  private void validateNoAgenticControlEntities(
+      final Set<OptimizeEntityExportDto> entitiesToImport) {
+    if (entitiesToImport.stream()
+        .anyMatch(
+            exportDto ->
+                (DASHBOARD.equals(exportDto.getExportEntityType())
+                    && ((DashboardDefinitionExportDto) exportDto).isAgenticControlDashboard()))) {
+      throw new OptimizeValidationException("Cannot import agentic control dashboards.");
     }
   }
 }
