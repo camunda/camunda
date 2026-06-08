@@ -17,6 +17,7 @@ package io.camunda.zeebe.protocol.record.value;
 
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import java.util.List;
 import org.immutables.value.Value;
 
 /**
@@ -26,4 +27,15 @@ import org.immutables.value.Value;
  */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableMessageBatchRecordValue.Builder.class)
-public interface MessageBatchRecordValue extends RecordValue {}
+public interface MessageBatchRecordValue extends RecordValue {
+
+  /**
+   * @return list of the keys from the messages assigned to this batch
+   * @deprecated since 8.10. The batch expiry processor now queries the message state directly
+   *     instead of carrying the keys on the command record, so records produced by 8.10+ always
+   *     return an empty list. The method is retained for backwards compatibility with exporters and
+   *     to deserialize records written by earlier versions.
+   */
+  @Deprecated
+  List<Long> getMessageKeys();
+}
