@@ -329,6 +329,30 @@ abstract class ClusterEndpointIT {
     }
   }
 
+  protected void assertClusterScaleResponse(
+      final ClusterActuator actuator, final ClusterConfigPatchRequest request) {
+    final var response = actuator.patchCluster(request, true, false);
+    assertThat(response.getExpectedTopology())
+        .describedAs("ClusterSize is " + brokerCount())
+        .hasSize(brokerCount());
+    assertThat(response.getExpectedTopology().getFirst().getPartitions().size())
+        .describedAs("Partitions are evenly distributed")
+        .isEqualTo(response.getExpectedTopology().getLast().getPartitions().size());
+    assertThat(response.getPlannedChanges()).isNotEmpty();
+  }
+
+  protected void assertClusterPatchResponse(
+      final ClusterActuator actuator, final ClusterConfigPatchRequest request) {
+    final var response = actuator.patchCluster(request, true, false);
+    assertThat(response.getExpectedTopology())
+        .describedAs("Cluster has " + brokerCount() + " brokers")
+        .hasSize(brokerCount());
+    assertThat(response.getExpectedTopology().getFirst().getPartitions().size())
+        .describedAs("Partitions are evenly distributed")
+        .isEqualTo(response.getExpectedTopology().getLast().getPartitions().size());
+    assertThat(response.getPlannedChanges()).isNotEmpty();
+  }
+
   @Nested
   final class ClusterPatchRequest {
     @Test
@@ -346,16 +370,8 @@ abstract class ClusterEndpointIT {
                     new ClusterConfigPatchRequestPartitions()
                         .count(partitionCount())
                         .replicationFactor(minReplicationFactor() + 1));
-        final var response = actuator.patchCluster(request, true, false);
         // then
-        assertThat(response.getExpectedTopology())
-            .describedAs("ClusterSize is " + brokerCount())
-            .hasSize(brokerCount());
-        assertThat(response.getExpectedTopology().getFirst().getPartitions().size())
-            .describedAs("Partitions are evenly distributed")
-            .isEqualTo(response.getExpectedTopology().getLast().getPartitions().size());
-
-        assertThat(response.getPlannedChanges()).isNotEmpty();
+        assertClusterScaleResponse(actuator, request);
       }
     }
 
@@ -374,16 +390,8 @@ abstract class ClusterEndpointIT {
                     new ClusterConfigPatchRequestPartitions()
                         .count(partitionCount())
                         .replicationFactor(minReplicationFactor() + 1));
-        final var response = actuator.patchCluster(request, true, false);
         // then
-        assertThat(response.getExpectedTopology())
-            .describedAs("Cluster has " + brokerCount() + " brokers")
-            .hasSize(brokerCount());
-        assertThat(response.getExpectedTopology().getFirst().getPartitions().size())
-            .describedAs("Partitions are evenly distributed")
-            .isEqualTo(response.getExpectedTopology().getLast().getPartitions().size());
-
-        assertThat(response.getPlannedChanges()).isNotEmpty();
+        assertClusterPatchResponse(actuator, request);
       }
     }
 

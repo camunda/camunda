@@ -80,6 +80,27 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
         BrokerMemberId.from(ZONES[nodeIdx % ZONES.length], nodeIdx / ZONES.length).toString());
   }
 
+  @Override
+  protected MemberId memberIdForBroker(final int nodeIdx) {
+    return MemberId.from(ZONES[0], nodeIdx);
+  }
+
+  @Override
+  protected void assertClusterScaleResponse(
+      final ClusterActuator actuator, final ClusterConfigPatchRequest request) {
+    assertThatCode(() -> actuator.patchCluster(request, true, false))
+        .isInstanceOf(FeignException.BadRequest.class)
+        .hasMessageContaining("zone-aware");
+  }
+
+  @Override
+  protected void assertClusterPatchResponse(
+      final ClusterActuator actuator, final ClusterConfigPatchRequest request) {
+    assertThatCode(() -> actuator.patchCluster(request, true, false))
+        .isInstanceOf(FeignException.BadRequest.class)
+        .hasMessageContaining("zone-aware");
+  }
+
   @Test
   void shouldRejectBareIntegersWhenScaling() {
     try (final var cluster = createCluster(brokerCount())) {

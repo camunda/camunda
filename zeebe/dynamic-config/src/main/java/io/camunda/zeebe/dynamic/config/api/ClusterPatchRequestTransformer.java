@@ -39,6 +39,14 @@ public final class ClusterPatchRequestTransformer implements ConfigurationChange
   @Override
   public Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
       final ClusterConfiguration clusterConfiguration) {
+    // Changing the replication factor on a zone-aware cluster requires adjusting zone specs,
+    // which is not yet supported.
+    if (newReplicationFactor.isPresent() && clusterConfiguration.isZoneAware()) {
+      return Either.left(
+          new InvalidRequest(
+              "Changing the replication factor is not supported on zone-aware clusters."));
+    }
+
     // if membersToAdd and membersToRemove have common items, reject the request
     if (membersToAdd.stream().anyMatch(membersToRemove::contains)) {
       return Either.left(
