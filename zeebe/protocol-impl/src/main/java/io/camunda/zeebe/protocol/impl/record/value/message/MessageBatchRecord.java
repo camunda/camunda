@@ -18,10 +18,10 @@ import java.util.stream.StreamSupport;
 public final class MessageBatchRecord extends UnifiedRecordValue
     implements MessageBatchRecordValue {
 
-  // Retained for backwards compatibility: 8.10+ no longer writes message keys onto the batch
-  // command (the expiry processor queries the message state directly), but the property is kept so
-  // records written by earlier versions still deserialize and the public getMessageKeys() contract
-  // holds.
+  // Retained for backwards compatibility: message batch expire commands no longer write message
+  // keys onto the record (the expiry processor queries the message state directly), but the
+  // property is kept so records written by earlier versions still deserialize and the public
+  // getMessageKeys() contract holds.
   private final ArrayProperty<LongValue> messageKeysProp =
       new ArrayProperty<>("messageKeys", LongValue::new);
 
