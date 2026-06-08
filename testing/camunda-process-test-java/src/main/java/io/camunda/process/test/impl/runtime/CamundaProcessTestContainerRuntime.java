@@ -41,6 +41,7 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
+import org.testcontainers.images.ImagePullPolicy;
 import org.testcontainers.images.PullPolicy;
 
 public class CamundaProcessTestContainerRuntime
@@ -132,11 +133,11 @@ public class CamundaProcessTestContainerRuntime
   private ElasticsearchContainer createElasticsearchContainer(
       final Network network, final CamundaProcessTestRuntimeBuilder builder) {
     final ElasticsearchContainer container =
-        withConfiguredImagePullPolicy(
-                containerFactory.createElasticsearchContainer(
-                    builder.getElasticsearchDockerImageName(),
-                    builder.getElasticsearchDockerImageVersion()),
+        containerFactory
+            .createElasticsearchContainer(
+                builder.getElasticsearchDockerImageName(),
                 builder.getElasticsearchDockerImageVersion())
+            .withImagePullPolicy(getImagePullPolicy(builder.getElasticsearchDockerImageVersion()))
             .withLogConsumer(createContainerLogger(builder.getElasticsearchLoggerName()))
             .withNetwork(network)
             .withNetworkAliases(NETWORK_ALIAS_ELASTICSEARCH)
@@ -151,10 +152,10 @@ public class CamundaProcessTestContainerRuntime
   private CamundaContainer createCamundaContainer(
       final Network network, final CamundaProcessTestRuntimeBuilder builder) {
     final CamundaContainer container =
-        withConfiguredImagePullPolicy(
-                containerFactory.createCamundaContainer(
-                    builder.getCamundaDockerImageName(), builder.getCamundaDockerImageVersion()),
-                builder.getCamundaDockerImageVersion())
+        containerFactory
+            .createCamundaContainer(
+                builder.getCamundaDockerImageName(), builder.getCamundaDockerImageVersion())
+            .withImagePullPolicy(getImagePullPolicy(builder.getCamundaDockerImageVersion()))
             .withLogConsumer(
                 createContainerJsonLogger(builder.getCamundaLoggerName(), CamundaLogEntry.class))
             .withNetwork(network)
@@ -174,11 +175,10 @@ public class CamundaProcessTestContainerRuntime
   private ConnectorsContainer createConnectorsContainer(
       final Network network, final CamundaProcessTestRuntimeBuilder builder) {
     final ConnectorsContainer container =
-        withConfiguredImagePullPolicy(
-                containerFactory.createConnectorsContainer(
-                    builder.getConnectorsDockerImageName(),
-                    builder.getConnectorsDockerImageVersion()),
-                builder.getConnectorsDockerImageVersion())
+        containerFactory
+            .createConnectorsContainer(
+                builder.getConnectorsDockerImageName(), builder.getConnectorsDockerImageVersion())
+            .withImagePullPolicy(getImagePullPolicy(builder.getConnectorsDockerImageVersion()))
             .withLogConsumer(
                 createContainerJsonLogger(
                     builder.getConnectorsLoggerName(), ConnectorsLogEntry.class))
@@ -298,10 +298,10 @@ public class CamundaProcessTestContainerRuntime
     return new Slf4jJsonLogConsumer(logger, logEntryType);
   }
 
-  private static <T extends GenericContainer<T>> T withConfiguredImagePullPolicy(
-      final T container, final String imageVersion) {
-    return container.withImagePullPolicy(
-        shouldAlwaysPullImage(imageVersion) ? PullPolicy.alwaysPull() : PullPolicy.defaultPolicy());
+  private static ImagePullPolicy getImagePullPolicy(final String imageVersion) {
+    return shouldAlwaysPullImage(imageVersion)
+        ? PullPolicy.alwaysPull()
+        : PullPolicy.defaultPolicy();
   }
 
   static boolean shouldAlwaysPullImage(final String imageVersion) {
