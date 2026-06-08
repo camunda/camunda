@@ -24,18 +24,18 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class UserDetailsAdapterTest {
+class BasicAuthUserDetailsAdapterTest {
 
   private static final String TEST_USER_ID = "username1";
 
   @Mock private UserServices userServices;
-  private UserDetailsAdapter adapter;
+  private BasicAuthUserDetailsAdapter adapter;
 
   @BeforeEach
   void setUp() {
     final var serviceRegistry =
         DefaultServiceRegistry.of(b -> b.userServices("default", userServices));
-    adapter = new UserDetailsAdapter(serviceRegistry);
+    adapter = new BasicAuthUserDetailsAdapter(serviceRegistry);
   }
 
   @Test

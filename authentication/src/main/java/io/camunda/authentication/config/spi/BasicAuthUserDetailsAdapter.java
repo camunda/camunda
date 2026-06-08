@@ -9,23 +9,24 @@ package io.camunda.authentication.config.spi;
 
 import io.camunda.search.entities.UserEntity;
 import io.camunda.security.api.model.CamundaAuthentication;
-import io.camunda.security.core.port.out.UserDetailsPort;
+import io.camunda.security.core.port.out.BasicAuthUserDetailsPort;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.registry.ServiceRegistry;
 
 /**
- * Host-supplied {@link UserDetailsPort} resolving basic-auth users from OC's user services,
- * replacing the hand-rolled {@code CamundaUserDetailsService} (camunda/camunda-security-library#372).
+ * Host-supplied {@link BasicAuthUserDetailsPort} resolving basic-auth users from OC's user
+ * services, replacing the hand-rolled {@code CamundaUserDetailsService}
+ * (camunda/camunda-security-library#372).
  *
  * <p>An unknown user ({@link ServiceException.Status#NOT_FOUND}) resolves to {@code null}, the
  * port's no-such-user signal; any other lookup failure propagates rather than being masked as a
  * missing user.
  */
-public final class UserDetailsAdapter implements UserDetailsPort {
+public final class BasicAuthUserDetailsAdapter implements BasicAuthUserDetailsPort {
 
   private final ServiceRegistry serviceRegistry;
 
-  public UserDetailsAdapter(final ServiceRegistry serviceRegistry) {
+  public BasicAuthUserDetailsAdapter(final ServiceRegistry serviceRegistry) {
     this.serviceRegistry = serviceRegistry;
   }
 
