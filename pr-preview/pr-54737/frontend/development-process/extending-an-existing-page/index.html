@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.1">
 <title data-rh="true">Extending an existing page | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-54737/frontend/development-process/extending-an-existing-page/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Extending an existing page | Camunda Platform"><meta data-rh="true" name="description" content="Incremental work on a page that already ships. For greenfield pages"><meta data-rh="true" property="og:description" content="Incremental work on a page that already ships. For greenfield pages"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-54737/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-54737/frontend/development-process/extending-an-existing-page/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-54737/frontend/development-process/extending-an-existing-page/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-54737/frontend/development-process/extending-an-existing-page/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Frontend","item":"https://camunda.github.io/camunda/pr-preview/pr-54737/frontend/"},{"@type":"ListItem","position":2,"name":"Development process","item":"https://camunda.github.io/camunda/pr-preview/pr-54737/frontend/development-process/"},{"@type":"ListItem","position":3,"name":"Extending an existing page","item":"https://camunda.github.io/camunda/pr-preview/pr-54737/frontend/development-process/extending-an-existing-page"}]}</script><link rel="stylesheet" href="/camunda/pr-preview/pr-54737/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-54737/assets/js/runtime~main.a18f168b.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-54737/assets/js/main.29095b30.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-54737/assets/js/runtime~main.79a74a91.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-54737/assets/js/main.41668954.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -37,10 +37,10 @@ route.</li>
 heuristic in
 <a class="" href="/camunda/pr-preview/pr-54737/frontend/development-process/creating-a-new-page/#default-to-a-new-route">Default to a new route</a>.</p>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="if-it-stays-on-the-existing-page">If it stays on the existing page<a href="#if-it-stays-on-the-existing-page" class="hash-link" aria-label="Direct link to If it stays on the existing page" title="Direct link to If it stays on the existing page" translate="no">​</a></h2>
-<p>Build new pieces as modules
-(<a class="" href="/camunda/pr-preview/pr-54737/frontend/development-process/creating-a-new-page/#step-1-build-the-modules">Step 1</a>) and
+<p>Build new pieces in your pod&#x27;s area
+(<a class="" href="/camunda/pr-preview/pr-54737/frontend/development-process/creating-a-new-page/#step-1-build-the-feature-in-your-pods-area">Step 1</a>) and
 compose them into the existing page file
-(<a class="" href="/camunda/pr-preview/pr-54737/frontend/development-process/creating-a-new-page/#step-2-compose-the-page">Step 2</a>). No new
+(<a class="" href="/camunda/pr-preview/pr-54737/frontend/development-process/creating-a-new-page/#step-2-plug-into-the-router">Step 2</a>). No new
 abstraction layers, no wrapper-of-wrappers, no parent-feature state
 plumbed through new children.</p>
 <p>If the addition introduces branching view state (open/closed,
