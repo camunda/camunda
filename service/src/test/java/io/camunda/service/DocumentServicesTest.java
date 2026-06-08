@@ -24,7 +24,7 @@ import io.camunda.document.store.SimpleDocumentStoreRegistry;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.security.api.model.config.AuthorizationsConfiguration;
-import io.camunda.security.impl.AuthorizationChecker;
+import io.camunda.security.core.auth.AuthorizationChecker;
 import io.camunda.service.DocumentServices.DocumentCreateRequest;
 import io.camunda.service.DocumentServices.DocumentReferenceResponse;
 import io.camunda.service.security.SecurityContextProvider;

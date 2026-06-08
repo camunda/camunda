@@ -15,7 +15,7 @@ import io.camunda.gateway.protocol.model.JobActivationResult;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.EngineSecurityConfig;
-import io.camunda.security.impl.AuthorizationChecker;
+import io.camunda.security.core.auth.AuthorizationChecker;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.service.AdHocSubProcessActivityServices;
 import io.camunda.service.AgentInstanceServices;
