@@ -57,6 +57,10 @@ public class ProcessFilterBuilder {
     return RunningInstancesOnlyFilterBuilder.construct(this);
   }
 
+  public HasAgentInstancesFilterBuilder hasAgentInstances() {
+    return HasAgentInstancesFilterBuilder.construct(this);
+  }
+
   public DeletedIncidentFilterBuilder withDeletedIncident() {
     return DeletedIncidentFilterBuilder.construct(this);
   }
