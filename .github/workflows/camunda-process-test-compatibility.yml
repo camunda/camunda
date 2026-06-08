@@ -44,6 +44,17 @@ jobs:
         with:
           ref: ${{ inputs.branch }}
 
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          job_name: run-cpt-tests (branch=${{ inputs.branch }}, runtime=${{ inputs.camunda_image_version }})
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
       - uses: ./.github/actions/setup-build
         with:
           dockerhub-readonly: true
