@@ -165,6 +165,12 @@ runs:
       shell: bash
       working-directory: ./c8run
 
+    - name: Set up Java 21 for C8Run packaging
+      uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+      with:
+        distribution: "temurin"
+        java-version: "21"
+
     - name: Build c8run packager
       run: go build -o packager ./cmd/packager
       shell: bash
