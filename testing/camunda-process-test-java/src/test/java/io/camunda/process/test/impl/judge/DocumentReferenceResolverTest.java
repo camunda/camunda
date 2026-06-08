@@ -23,11 +23,15 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.fetch.DocumentContentGetRequest;
 import io.camunda.client.api.response.DocumentReferenceResponse;
+import io.camunda.client.impl.CamundaObjectMapper;
 import io.camunda.process.test.api.judge.ResolvedDocument;
+import io.camunda.process.test.impl.assertions.CamundaDataSource;
+import io.camunda.process.test.impl.assertions.util.CamundaAssertJsonMapper;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.List;
@@ -49,7 +53,10 @@ class DocumentReferenceResolverTest {
 
   @BeforeEach
   void setUp() {
-    resolver = new DocumentReferenceResolver(client);
+    resolver =
+        new DocumentReferenceResolver(
+            new CamundaDataSource(client),
+            new CamundaAssertJsonMapper(new CamundaObjectMapper(new ObjectMapper())));
   }
 
   @Test
