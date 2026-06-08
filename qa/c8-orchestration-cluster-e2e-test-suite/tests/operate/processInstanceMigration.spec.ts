@@ -320,7 +320,9 @@ test.describe.serial('Process Instance Migration', () => {
           await validateURL(page, /operationId=/);
         },
       });
-      await expect(operateProcessesPage.getVersionCells('2')).toHaveCount(6, {
+      await expect(
+        operateProcessesPage.getVersionCells(targetVersion),
+      ).toHaveCount(6, {
         timeout: 30000,
       });
     });
