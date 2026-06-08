@@ -37,7 +37,7 @@ public class HttpTransportTest {
   @BeforeEach
   public void beforeAll() {
     url = "http://localhost:" + wireMock.getPort();
-    final var httpConfig = new HttpTransportConfig(url, new ApiKey("test-key"), 2, 50, 500);
+    final var httpConfig = new HttpTransportConfig(url, new ApiKey("test-key"), 2, 50, 5000);
     final var jsonMapper = SubscriptionFactory.createJsonMapper();
     transport = new HttpTransportImpl(jsonMapper, httpConfig);
   }
