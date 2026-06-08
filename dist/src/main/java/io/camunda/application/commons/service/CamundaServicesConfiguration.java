@@ -417,11 +417,6 @@ public class CamundaServicesConfiguration {
         PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID);
   }
 
-  @Bean
-  public ResourceServices resourceServices(final ServiceRegistry serviceRegistry) {
-    return serviceRegistry.resourceServices(PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID);
-  }
-
   // This is required by BrokerModuleConfiguration that requires UserServices for Basic auth
   // TODO we need to make it physical tenant aware
   @Bean

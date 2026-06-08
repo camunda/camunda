@@ -13,10 +13,9 @@ import static io.camunda.zeebe.protocol.record.value.TenantOwned.DEFAULT_TENANT_
 import io.camunda.client.impl.command.StreamUtil;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.CamundaAuthentication;
-import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
-import io.camunda.service.ResourceServices;
 import io.camunda.service.ResourceServices.DeployResourcesRequest;
+import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.PayloadUtil;
@@ -46,13 +45,13 @@ public abstract class DevDataGeneratorAbstract implements DataGenerator {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(DevDataGeneratorAbstract.class);
 
+  private static final String DEFAULT_PHYSICAL_TENANT_ID = "default";
+
   @Autowired protected TasklistProperties tasklistProperties;
 
   @Autowired private PayloadUtil payloadUtil;
 
-  @Autowired private ResourceServices resourceServices;
-
-  @Autowired private ProcessInstanceServices processInstanceServices;
+  @Autowired private ServiceRegistry serviceRegistry;
 
   @Autowired private CamundaAuthenticationProvider authenticationProvider;
 
@@ -272,9 +271,11 @@ public abstract class DevDataGeneratorAbstract implements DataGenerator {
         final byte[] bytes = StreamUtil.readInputStream(resourceStream);
         executeCamundaServiceAnonymously(
             (authentication) ->
-                resourceServices.deployResources(
-                    new DeployResourcesRequest(Map.of(classpathResource, bytes), tenantId),
-                    authentication));
+                serviceRegistry
+                    .resourceServices(DEFAULT_PHYSICAL_TENANT_ID)
+                    .deployResources(
+                        new DeployResourcesRequest(Map.of(classpathResource, bytes), tenantId),
+                        authentication));
       } else {
         throw new FileNotFoundException(classpathResource);
       }
@@ -289,22 +290,24 @@ public abstract class DevDataGeneratorAbstract implements DataGenerator {
       final String bpmnProcessId, final Map<String, Object> variables, final String tenantId) {
     return executeCamundaServiceAnonymously(
         (authentication) ->
-            processInstanceServices.createProcessInstance(
-                new ProcessInstanceCreateRequest(
-                    -1L,
-                    bpmnProcessId,
-                    -1,
-                    variables,
-                    tenantId,
-                    null,
-                    null,
-                    null,
-                    List.of(),
-                    List.of(),
-                    null,
-                    Set.of(),
-                    null),
-                authentication));
+            serviceRegistry
+                .processInstanceServices(DEFAULT_PHYSICAL_TENANT_ID)
+                .createProcessInstance(
+                    new ProcessInstanceCreateRequest(
+                        -1L,
+                        bpmnProcessId,
+                        -1,
+                        variables,
+                        tenantId,
+                        null,
+                        null,
+                        null,
+                        List.of(),
+                        List.of(),
+                        null,
+                        Set.of(),
+                        null),
+                    authentication));
   }
 
   private <T> T executeCamundaServiceAnonymously(
