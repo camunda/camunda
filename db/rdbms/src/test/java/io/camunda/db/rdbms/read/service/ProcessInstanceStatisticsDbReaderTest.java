@@ -146,7 +146,7 @@ class ProcessInstanceStatisticsDbReaderTest {
   void shouldReturnStatistics() {
     final ProcessInstanceFlowNodeStatisticsQuery query =
         new ProcessInstanceFlowNodeStatisticsQuery(new ProcessInstanceStatisticsFilter(123L));
-    final var dbQuery = new ProcessInstanceStatisticsDbQuery(query.filter(), List.of(), null);
+    final var dbQuery = new ProcessInstanceStatisticsDbQuery(query.filter(), List.of(), List.of());
     final var expected =
         List.of(
             new ProcessFlowNodeStatisticsEntity("node1", 10L, 5L, 2L, 3L),

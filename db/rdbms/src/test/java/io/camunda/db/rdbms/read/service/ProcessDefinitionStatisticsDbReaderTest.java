@@ -153,7 +153,8 @@ class ProcessDefinitionStatisticsDbReaderTest {
     final ProcessDefinitionFlowNodeStatisticsQuery query =
         new ProcessDefinitionFlowNodeStatisticsQuery(
             new ProcessDefinitionStatisticsFilter.Builder(123L).build());
-    final var dbQuery = new ProcessDefinitionStatisticsDbQuery(query.filter(), List.of(), null);
+    final var dbQuery =
+        new ProcessDefinitionStatisticsDbQuery(query.filter(), List.of(), List.of());
     final var expected =
         List.of(
             new ProcessFlowNodeStatisticsEntity("node1", 10L, 5L, 2L, 3L),
