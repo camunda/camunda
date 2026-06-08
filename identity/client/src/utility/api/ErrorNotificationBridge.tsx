@@ -11,8 +11,8 @@ import { useNavigate } from "react-router-dom";
 import { useNotifications } from "src/components/notifications";
 import useTranslate from "src/utility/localization";
 import { isLoggedIn } from "src/utility/auth";
-import { setErrorNotifier } from "./errorNotification";
-import { ApiError, isDetailedError } from "./request";
+import { ErrorNotifier, setErrorNotifier } from "./errorNotification";
+import { isDetailedError } from "./request";
 
 const ErrorNotificationBridge: FC = () => {
   const { enqueueNotification } = useNotifications();
@@ -20,14 +20,16 @@ const ErrorNotificationBridge: FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    setErrorNotifier((error: ApiError, { skipToast }) => {
+    const notifier: ErrorNotifier = (error, { skipToast }) => {
       const { status, body } = error;
 
       // Session-recovery navigation is independent of toast suppression: any
       // 401 (including the initial auth probe) should bounce to the login
       // screen, matching the legacy addHandler behavior.
       if (status === 401 && !window.location.pathname.includes("/login")) {
-        void navigate(`/login?next=${window.location.pathname}`);
+        void navigate(`/login?next=${window.location.pathname}`, {
+          replace: true,
+        });
       }
 
       if (skipToast) return;
@@ -73,7 +75,11 @@ const ErrorNotificationBridge: FC = () => {
             });
           }
       }
-    });
+    };
+    setErrorNotifier(notifier);
+    return () => {
+      setErrorNotifier(() => {});
+    };
   }, [enqueueNotification, t, navigate]);
 
   return null;

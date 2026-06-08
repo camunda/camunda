@@ -29,6 +29,7 @@ const Members: FC<MembersProps> = ({ tenantId, isOIDC }) => {
   const { t } = useTranslate("tenants");
 
   const { users, loading, success, reload, paginationProps } = useEnrichedUsers(
+    "tenants",
     getMembersByTenantId,
     {
       tenantId,

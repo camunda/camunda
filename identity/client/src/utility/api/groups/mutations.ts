@@ -53,7 +53,7 @@ export const groupMutations = {
         unwrap(assignGroupRole(body)(getApiBaseUrl())),
       onSuccess: (_data, variables) =>
         qc.invalidateQueries({
-          queryKey: ["groups", "roles", variables.groupId],
+          queryKey: queryKeys.groups.roles(variables.groupId),
         }),
     }),
   unassignRole: (qc: QueryClient) =>
@@ -62,7 +62,7 @@ export const groupMutations = {
         unwrap(unassignGroupRole(body)(getApiBaseUrl())),
       onSuccess: (_data, variables) =>
         qc.invalidateQueries({
-          queryKey: ["groups", "roles", variables.groupId],
+          queryKey: queryKeys.groups.roles(variables.groupId),
         }),
     }),
   assignMappingRule: (qc: QueryClient) =>
@@ -72,7 +72,7 @@ export const groupMutations = {
       ) => unwrap(assignGroupMappingRule(body)(getApiBaseUrl())),
       onSuccess: (_data, variables) =>
         qc.invalidateQueries({
-          queryKey: ["groups", "mappingRules", variables.groupId],
+          queryKey: queryKeys.groups.mappingRules(variables.groupId),
         }),
     }),
   unassignMappingRule: (qc: QueryClient) =>
@@ -82,7 +82,7 @@ export const groupMutations = {
       ) => unwrap(unassignGroupMappingRule(body)(getApiBaseUrl())),
       onSuccess: (_data, variables) =>
         qc.invalidateQueries({
-          queryKey: ["groups", "mappingRules", variables.groupId],
+          queryKey: queryKeys.groups.mappingRules(variables.groupId),
         }),
     }),
   assignClient: (qc: QueryClient) =>
@@ -92,7 +92,7 @@ export const groupMutations = {
       ) => unwrap(assignGroupClient(body)(getApiBaseUrl())),
       onSuccess: (_data, variables) =>
         qc.invalidateQueries({
-          queryKey: ["groups", "clients", variables.groupId],
+          queryKey: queryKeys.groups.clients(variables.groupId),
         }),
     }),
   unassignClient: (qc: QueryClient) =>
@@ -102,7 +102,7 @@ export const groupMutations = {
       ) => unwrap(unassignGroupClient(body)(getApiBaseUrl())),
       onSuccess: (_data, variables) =>
         qc.invalidateQueries({
-          queryKey: ["groups", "clients", variables.groupId],
+          queryKey: queryKeys.groups.clients(variables.groupId),
         }),
     }),
 };

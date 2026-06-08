@@ -54,7 +54,7 @@ export const roleMutations = {
       ) => unwrap(assignRoleMappingRule(body)(getApiBaseUrl())),
       onSuccess: (_data, variables) =>
         qc.invalidateQueries({
-          queryKey: ["roles", "mappingRules", variables.roleId],
+          queryKey: queryKeys.roles.mappingRules(variables.roleId),
         }),
     }),
   unassignMappingRule: (qc: QueryClient) =>
@@ -64,7 +64,7 @@ export const roleMutations = {
       ) => unwrap(unassignRoleMappingRule(body)(getApiBaseUrl())),
       onSuccess: (_data, variables) =>
         qc.invalidateQueries({
-          queryKey: ["roles", "mappingRules", variables.roleId],
+          queryKey: queryKeys.roles.mappingRules(variables.roleId),
         }),
     }),
   assignGroup: (qc: QueryClient) =>
@@ -73,7 +73,7 @@ export const roleMutations = {
         unwrap(assignRoleGroup(body)(getApiBaseUrl())),
       onSuccess: (_data, variables) =>
         qc.invalidateQueries({
-          queryKey: ["roles", "groups", variables.roleId],
+          queryKey: queryKeys.roles.groups(variables.roleId),
         }),
     }),
   unassignGroup: (qc: QueryClient) =>
@@ -82,7 +82,7 @@ export const roleMutations = {
         unwrap(unassignRoleGroup(body)(getApiBaseUrl())),
       onSuccess: (_data, variables) =>
         qc.invalidateQueries({
-          queryKey: ["roles", "groups", variables.roleId],
+          queryKey: queryKeys.roles.groups(variables.roleId),
         }),
     }),
   assignClient: (qc: QueryClient) =>
@@ -92,7 +92,7 @@ export const roleMutations = {
       ) => unwrap(assignRoleClient(body)(getApiBaseUrl())),
       onSuccess: (_data, variables) =>
         qc.invalidateQueries({
-          queryKey: ["roles", "clients", variables.roleId],
+          queryKey: queryKeys.roles.clients(variables.roleId),
         }),
     }),
   unassignClient: (qc: QueryClient) =>
@@ -102,7 +102,7 @@ export const roleMutations = {
       ) => unwrap(unassignRoleClient(body)(getApiBaseUrl())),
       onSuccess: (_data, variables) =>
         qc.invalidateQueries({
-          queryKey: ["roles", "clients", variables.roleId],
+          queryKey: queryKeys.roles.clients(variables.roleId),
         }),
     }),
 };
