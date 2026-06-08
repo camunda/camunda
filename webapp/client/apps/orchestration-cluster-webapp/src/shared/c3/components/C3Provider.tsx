@@ -10,7 +10,7 @@ import {C3UserConfigurationProvider} from '@camunda/camunda-composite-components
 import {C3ThemePersister} from '#/shared/theme/C3ThemePersister';
 import {getBootConfig} from '#/shared/config/getBootConfig';
 import {getStage} from '#/shared/config/getStage';
-import {fetchSaasToken} from '../fetchSaasToken';
+import {fetchSaasToken} from '#/shared/c3/fetchSaasToken';
 
 const STAGE = getStage(window.location.host);
 
