@@ -46,6 +46,35 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}-${{ inputs.app-name }}
 
 jobs:
+  resolve-image-tag:
+    # For workflow_call: inputs.app-name is set (github.event_name is inherited from caller, not 'workflow_call')
+    # For pull_request: check label conditions
+    if: >
+      inputs.app-name != '' || (
+        github.event.pull_request.state != 'closed' && (
+          contains(github.event.label.name, 'deploy-preview') ||
+          contains(github.event.pull_request.labels.*.name, 'deploy-preview')
+        )
+      )
+    name: Resolve Image Tag
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      image-tag: ${{ steps.resolve.outputs.image-tag }}
+      checkout-ref: ${{ steps.resolve.outputs.checkout-ref }}
+    steps:
+    - name: Checkout
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        ref: ${{ inputs.ref || github.event.pull_request.head.sha || github.sha }}
+
+    - name: Resolve image tag
+      id: resolve
+      run: |
+        SHA=$(git rev-parse HEAD)
+        echo "image-tag=pr-${SHA}" >> "$GITHUB_OUTPUT"
+        echo "checkout-ref=${SHA}" >> "$GITHUB_OUTPUT"
+
   build-camunda:
     # For workflow_call: inputs.app-name is set (github.event_name is inherited from caller, not 'workflow_call')
     # For pull_request: check label conditions
@@ -57,18 +86,14 @@ jobs:
         )
       )
     name: Build Camunda
+    needs: [resolve-image-tag]
     runs-on: gcp-perf-core-8-default
     timeout-minutes: 20
     steps:
     - name: Checkout
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
-        ref: ${{ inputs.ref }}
-
-    - name: Resolve commit SHA
-      if: inputs.ref != ''
-      id: ref
-      run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+        ref: ${{ needs.resolve-image-tag.outputs.checkout-ref }}
 
     - uses: ./.github/actions/setup-build
       with:
@@ -92,7 +117,7 @@ jobs:
         platforms: linux/amd64
         dockerfile: camunda.Dockerfile
         push: true
-        version: pr-${{ steps.ref.outputs.sha || github.event.pull_request.head.sha || github.sha }}
+        version: ${{ needs.resolve-image-tag.outputs.image-tag }}
 
     - name: Observe build status
       if: always()
@@ -116,11 +141,13 @@ jobs:
         )
       )
     name: Build Optimize
+    needs: [resolve-image-tag]
     uses: ./.github/workflows/optimize-ci-build-reusable.yml
     secrets: inherit
     with:
       branch: ${{ inputs.ref || github.head_ref || github.ref_name }}
       pushDocker: true
+      version: ${{ needs.resolve-image-tag.outputs.image-tag }}
 
   deploy-preview:
     # For workflow_call: inputs.app-name is set (github.event_name is inherited from caller, not 'workflow_call')
@@ -134,6 +161,7 @@ jobs:
       )
     name: Deploy Preview Environment C8SM
     needs:
+    - resolve-image-tag
     - build-camunda
     - build-optimize
     # permission needed for the camunda/infra-global-github-actions/preview-env/create
@@ -198,20 +226,11 @@ jobs:
           secret/data/products/camunda/ci/camunda ARGOCD_TOKEN;
 
     #########################################################################
-    # Checkout the specified workflow_call ref when provided; for pull_request
-    # runs, an empty inputs.ref lets checkout fall back to the event ref
+    # Checkout the same ref used for image tagging to ensure chart files match
     - name: Checkout
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
-        ref: ${{ inputs.ref }}
-
-    #########################################################################
-    # Resolve commit SHA for docker image tagging only when workflow_call
-    # provides an explicit ref
-    - name: Resolve commit SHA
-      if: inputs.ref != ''
-      id: ref
-      run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+        ref: ${{ needs.resolve-image-tag.outputs.checkout-ref }}
 
     #########################################################################
     # Determine the argocd arguments that need to be passed to the create app command
@@ -233,7 +252,7 @@ jobs:
           --helm-set git.branch=${revision} \
           --upsert ${label_args} ${helm_extra}" >> "$GITHUB_ENV"
       env:
-        docker_tag: pr-${{ steps.ref.outputs.sha || github.event.pull_request.head.sha || github.sha }}
+        docker_tag: ${{ needs.resolve-image-tag.outputs.image-tag }}
         helm_extra_args: ${{ inputs.helm-extra-args }}
         labels: ${{ inputs.labels }}
         revision: ${{ inputs.ref || github.head_ref || github.ref_name }}
