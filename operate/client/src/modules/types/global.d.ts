@@ -43,6 +43,7 @@ export declare global {
        */
       resourcePermissionsEnabled?: boolean;
       multiTenancyEnabled?: boolean;
+      waitStatesEnabled?: boolean;
     };
     Osano?: {
       cm?: {
