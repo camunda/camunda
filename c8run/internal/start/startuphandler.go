@@ -73,17 +73,24 @@ func printSystemInformation(javaVersion, javaHome, javaOpts string, connectorsEn
 }
 
 func getJavaVersion(javaBinary string) (string, error) {
-	javaVersionCmd := exec.Command(javaBinary, "JavaVersion")
+	return runJavaHelper(javaBinary, "JavaVersion")
+}
+
+func runJavaHelper(javaBinary, helperClass string) (string, error) {
+	javaCmd := exec.Command(javaBinary, helperClass)
 	var out strings.Builder
 	var stderr strings.Builder
-	javaVersionCmd.Stdout = &out
-	javaVersionCmd.Stderr = &stderr
-	err := javaVersionCmd.Run()
-	if err != nil {
-		return "", fmt.Errorf("failed to run java version command: %w", err)
+	javaCmd.Stdout = &out
+	javaCmd.Stderr = &stderr
+	if err := javaCmd.Run(); err != nil {
+		return "", fmt.Errorf(
+			"failed to run java helper %s with %s: %w\n%s",
+			helperClass,
+			javaBinary,
+			err,
+			strings.TrimSpace(stderr.String()))
 	}
-	javaVersionOutput := out.String()
-	return javaVersionOutput, nil
+	return out.String(), nil
 }
 
 type StartupHandler struct {
@@ -154,17 +161,7 @@ func (s *StartupHandler) startApplication(cmd *exec.Cmd, pid string, logPath str
 }
 
 func getJavaHome(javaBinary string) (string, error) {
-	javaHomeCmd := exec.Command(javaBinary, "JavaHome")
-	var out strings.Builder
-	var stderr strings.Builder
-	javaHomeCmd.Stdout = &out
-	javaHomeCmd.Stderr = &stderr
-	err := javaHomeCmd.Run()
-	if err != nil {
-		return "", fmt.Errorf("failed to run java version command: %w", err)
-	}
-	javaHomeOutput := out.String()
-	return javaHomeOutput, nil
+	return runJavaHelper(javaBinary, "JavaHome")
 }
 
 func resolveJavaHomeAndBinary(parentDir string) (string, string, error) {
@@ -192,7 +189,7 @@ func resolveJavaHomeAndBinary(parentDir string) (string, string, error) {
 	if javaHome == "" {
 		javaHome, err = getJavaHome(javaBinary)
 		if err != nil {
-			return "", "", fmt.Errorf("failed to get JAVA_HOME")
+			return "", "", fmt.Errorf("failed to get JAVA_HOME: %w", err)
 		}
 	}
 
@@ -389,7 +386,7 @@ func (s *StartupHandler) StartCommand(wg *sync.WaitGroup, ctx context.Context, s
 	if javaVersion == "" {
 		javaVersion, err = getJavaVersion(javaBinary)
 		if err != nil {
-			fmt.Println("Failed to get Java version")
+			fmt.Printf("Failed to get Java version: %v\n", err)
 			os.Exit(1)
 		}
 	}

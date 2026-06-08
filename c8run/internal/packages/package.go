@@ -239,21 +239,22 @@ func createZipArchive(filesToArchive []string, outputPath, sourceRoot, targetRoo
 }
 
 func BuildJavaScripts() error {
-	javaVersionCmd := exec.Command("javac", buildJavaHelperArgs("JavaVersion.java")...)
+	for _, javaFile := range []string{"JavaVersion.java", "JavaHome.java"} {
+		if err := compileJavaHelper(javaFile); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func compileJavaHelper(javaFile string) error {
+	javaCmd := exec.Command("javac", buildJavaHelperArgs(javaFile)...)
 	var out strings.Builder
 	var stderr strings.Builder
-	javaVersionCmd.Stdout = &out
-	javaVersionCmd.Stderr = &stderr
-	err := javaVersionCmd.Run()
-	if err != nil {
-		return fmt.Errorf("failed to compile JavaVersion : %w", err)
-	}
-	javaHomeCmd := exec.Command("javac", buildJavaHelperArgs("JavaHome.java")...)
-	javaHomeCmd.Stdout = &out
-	javaHomeCmd.Stderr = &stderr
-	err = javaHomeCmd.Run()
-	if err != nil {
-		return fmt.Errorf("failed to compile JavaHome : %w", err)
+	javaCmd.Stdout = &out
+	javaCmd.Stderr = &stderr
+	if err := javaCmd.Run(); err != nil {
+		return fmt.Errorf("failed to compile %s: %w\n%s", javaFile, err, stderr.String())
 	}
 	return nil
 }
