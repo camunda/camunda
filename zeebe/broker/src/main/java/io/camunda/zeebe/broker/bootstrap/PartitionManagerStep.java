@@ -159,36 +159,23 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
         new RecoveryPartitionManager(
             physicalTenantId,
             brokerCfg.getData().getDirectory(),
+            brokerStartupContext.getConcurrencyControl(),
             brokerStartupContext.getClusterConfigurationService(),
             brokerStartupContext.getClusterServices(),
             brokerStartupContext.getActorSchedulingService(),
             brokerStartupContext.getBrokerInfo(),
             brokerStartupContext.getMeterRegistry());
 
-    final var schedulingService = brokerStartupContext.getActorSchedulingService();
-    concurrencyControl.run(
-        () ->
-            schedulingService
-                .submitActor(partitionManager)
-                .onComplete(
-                    (submitted, submitError) -> {
-                      if (submitError != null) {
-                        startupFuture.completeExceptionally(submitError);
-                        return;
-                      }
-                      partitionManager
-                          .start()
-                          .onComplete(
-                              (started, startError) -> {
-                                if (startError != null) {
-                                  startupFuture.completeExceptionally(startError);
-                                } else {
-                                  brokerStartupContext.addPartitionManager(
-                                      physicalTenantId, partitionManager);
-                                  startupFuture.complete(brokerStartupContext);
-                                }
-                              });
-                    }));
+    concurrencyControl.runOnCompletion(
+        partitionManager.start(),
+        (started, startError) -> {
+          if (startError != null) {
+            startupFuture.completeExceptionally(startError);
+          } else {
+            brokerStartupContext.addPartitionManager(physicalTenantId, partitionManager);
+            startupFuture.complete(brokerStartupContext);
+          }
+        });
   }
 
   private void shutdownOnInconsistentTopology(
