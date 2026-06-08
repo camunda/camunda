@@ -81,7 +81,7 @@ test.describe('component routes', () => {
 		await expect(page.getByRole('heading', {name: 'Admin'})).toBeVisible();
 	});
 
-	test('should show error page when Tasklist is not active', async ({network, page}) => {
+	test('should show error page when Tasklist is not active', async ({network, page, forbiddenPage}) => {
 		network.use(
 			mockCurrentUserEndpoint({successResponse: HttpResponse.json(mockCurrentUser)}),
 			mockSystemConfigurationEndpoint({
@@ -94,11 +94,11 @@ test.describe('component routes', () => {
 
 		await page.goto('/tasklist');
 
-		await expect(page.getByRole('heading', {name: 'You need permission'})).toBeVisible();
-		await expect(page.getByText('Please contact the owner to get access.')).toBeVisible();
+		await expect(forbiddenPage.heading).toBeVisible();
+		await expect(forbiddenPage.description).toBeVisible();
 	});
 
-	test('should show error page when Admin is not active', async ({network, page}) => {
+	test('should show error page when Admin is not active', async ({network, page, forbiddenPage}) => {
 		network.use(
 			mockCurrentUserEndpoint({successResponse: HttpResponse.json(mockCurrentUser)}),
 			mockSystemConfigurationEndpoint({
@@ -111,11 +111,11 @@ test.describe('component routes', () => {
 
 		await page.goto('/admin');
 
-		await expect(page.getByRole('heading', {name: 'You need permission'})).toBeVisible();
-		await expect(page.getByText('Please contact the owner to get access.')).toBeVisible();
+		await expect(forbiddenPage.heading).toBeVisible();
+		await expect(forbiddenPage.description).toBeVisible();
 	});
 
-	test('should show error page on /tasklist/processes when Tasklist is not active', async ({network, page}) => {
+	test('should show error page on /tasklist/processes when Tasklist is not active', async ({network, page, forbiddenPage}) => {
 		network.use(
 			mockCurrentUserEndpoint({successResponse: HttpResponse.json(mockCurrentUser)}),
 			mockSystemConfigurationEndpoint({
@@ -128,8 +128,8 @@ test.describe('component routes', () => {
 
 		await page.goto('/tasklist/processes');
 
-		await expect(page.getByRole('heading', {name: 'You need permission'})).toBeVisible();
-		await expect(page.getByText('Please contact the owner to get access.')).toBeVisible();
+		await expect(forbiddenPage.heading).toBeVisible();
+		await expect(forbiddenPage.description).toBeVisible();
 	});
 
 	test('should redirect to login when system configuration endpoint fails', async ({network, page}) => {

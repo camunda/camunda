@@ -24,7 +24,7 @@ test('should match the 404 page snapshot', async ({page, notFoundPage}) => {
 	await expect(page).toHaveScreenshot();
 });
 
-test('should match the forbidden page snapshot', async ({network, page}) => {
+test('should match the forbidden page snapshot', async ({network, page, forbiddenPage}) => {
 	network.use(
 		mockCurrentUserEndpoint({successResponse: HttpResponse.json(mockCurrentUser)}),
 		mockSystemConfigurationEndpoint({
@@ -34,7 +34,7 @@ test('should match the forbidden page snapshot', async ({network, page}) => {
 	);
 
 	await page.goto('/operate');
-	await expect(page.getByRole('heading', {name: 'You need permission'})).toBeVisible();
+	await expect(forbiddenPage.heading).toBeVisible();
 
 	await expect(page).toHaveScreenshot();
 });
