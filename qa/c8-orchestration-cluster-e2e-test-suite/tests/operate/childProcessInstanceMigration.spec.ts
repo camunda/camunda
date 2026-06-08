@@ -59,11 +59,30 @@ test.beforeAll(async () => {
     processDefinitionKey: '',
   };
 
-  const parentInstances = await createInstances(
-    parentProcess.bpmnProcessId,
-    parentProcess.version,
-    2,
-  );
+  // The engine processes deployments asynchronously after the REST API returns,
+  // so createProcessInstance can get a 404 (process definition not yet committed)
+  // if called immediately after deploy. Retry with backoff only for that expected
+  // "not found" case; rethrow any other error (auth/network/validation) immediately.
+  let parentInstances: Awaited<ReturnType<typeof createInstances>> = [];
+  for (let attempt = 1; attempt <= 5; attempt++) {
+    try {
+      parentInstances = await createInstances(
+        parentProcess.bpmnProcessId,
+        parentProcess.version,
+        2,
+      );
+      break;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const isNotFound = /404|NOT_FOUND/i.test(message);
+      if (!isNotFound || attempt === 5) throw error;
+      const delaySec = 2 ** attempt;
+      console.log(
+        `createInstances attempt ${attempt} failed (process definition not yet committed), retrying after ${delaySec}s...`,
+      );
+      await sleep(delaySec * 1000);
+    }
+  }
 
   const parentProcessInstanceKeys = parentInstances.map(
     (instance) => instance.processInstanceKey,

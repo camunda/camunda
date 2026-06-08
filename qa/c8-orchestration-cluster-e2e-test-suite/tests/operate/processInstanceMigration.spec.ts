@@ -145,7 +145,19 @@ test.describe.serial('Process Instance Migration', () => {
       await sleep(3000);
     });
 
-    await test.step('Verify target process is preselected with auto-mapping and Complete Migration', async () => {
+    await test.step('Select target process, verify auto-mapping and Complete Migration', async () => {
+      // Operate can auto-preselect the target via a mobx autorun, but that only
+      // fires when the newer process version is already imported as the migration
+      // view loads; under import lag the combobox stays empty. Actively select the
+      // target process (which also triggers the flow-node auto-mapping verified
+      // below) to make the step deterministic.
+      await operateProcessMigrationModePage.targetProcessCombobox.click();
+      // The option may take up to 60s to appear under import lag; override the
+      // default 10s actionTimeout to match the tolerance used by toHaveValue below.
+      await operateProcessMigrationModePage
+        .getOptionByName(targetBpmnProcessId)
+        .click({timeout: 60000});
+
       await expect(
         operateProcessMigrationModePage.targetProcessCombobox,
       ).toHaveValue(targetBpmnProcessId, {timeout: 60000});
@@ -308,7 +320,9 @@ test.describe.serial('Process Instance Migration', () => {
           await validateURL(page, /operationId=/);
         },
       });
-      await expect(operateProcessesPage.getVersionCells('2')).toHaveCount(6, {
+      await expect(
+        operateProcessesPage.getVersionCells(targetVersion),
+      ).toHaveCount(6, {
         timeout: 30000,
       });
     });
@@ -372,12 +386,22 @@ test.describe.serial('Process Instance Migration', () => {
     const targetBpmnProcessId = testProcesses.processV3.bpmnProcessId;
 
     await test.step('Filter by process name and version', async () => {
-      await operateFiltersPanelPage.selectProcess(sourceBpmnProcessId);
-      await operateFiltersPanelPage.selectVersion(sourceVersion);
+      // Navigate using the auto-mapping operation ID so we only see the instances
+      // migrated in this test run, avoiding stale processV2 instances from previous
+      // nightly runs that may be at unmapped flow nodes and cause migration failures.
+      const baseUrl = process.env.CORE_APPLICATION_OPERATE_URL ?? '';
+      await page.goto(
+        `${baseUrl}/operate/processes?active=true&incidents=true&process=${sourceBpmnProcessId}&version=${sourceVersion}&operationId=${migratedIds[0]}`,
+      );
 
+      // Assert the expected instance count explicitly so a wrong/missing
+      // operationId (which would yield "0 results") fails fast with a clear
+      // signal instead of timing out later during instance selection.
       await waitForAssertion({
         assertion: async () => {
-          await expect(operateProcessesPage.resultsText.first()).toBeVisible();
+          await expect(
+            page.getByText(`${AUTO_MIGRATION_INSTANCE_COUNT} results`),
+          ).toBeVisible({timeout: 30000});
         },
         onFailure: async () => {
           await page.reload();
@@ -648,7 +672,9 @@ test.describe.serial('Process Instance Migration', () => {
       await waitForAssertion({
         assertion: async () => {
           await operateDiagramPage.clickFlowNode('BusinessRuleTask2');
-          await operateDiagramPage.verifyIncidentInPopover(/invalid.*decision/i);
+          await operateDiagramPage.verifyIncidentInPopover(
+            /invalid.*decision/i,
+          );
         },
         onFailure: async () => {
           await page.reload();
