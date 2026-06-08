@@ -9,6 +9,7 @@ package io.camunda.exporter.tasks.archiver;
 
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.BasicArchiveBatch;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.ProcessInstanceArchiveBatch;
+import io.camunda.exporter.tasks.deleter.ProcessInstanceOrdinal;
 import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
@@ -28,6 +29,11 @@ public interface ArchiverRepository extends AutoCloseable {
       Map.of(
           UsageMetricTemplate.INDEX_NAME, RetentionConfiguration::getUsageMetricsPolicyName,
           UsageMetricTUTemplate.INDEX_NAME, RetentionConfiguration::getUsageMetricsPolicyName);
+
+  default CompletableFuture<List<ProcessInstanceOrdinal>> getProcessInstancesToDeleteNextBatch(
+      final int size) {
+    return CompletableFuture.completedFuture(List.of());
+  }
 
   CompletableFuture<ProcessInstanceArchiveBatch> getProcessInstancesNextBatch(final int size);
 
@@ -86,6 +92,15 @@ public interface ArchiverRepository extends AutoCloseable {
         .thenComposeAsync(ok -> deleteDocuments(sourceIndexName, keysByField, filters), executor);
   }
 
+  default CompletableFuture<Void> deleteDocumentsById(
+      final String sourceIndexName,
+      final Map<String, List<String>> keysByField,
+      final Map<String, String> inclusionFilters,
+      final Map<String, String> exclusionFilters,
+      final Executor executor) {
+    throw new UnsupportedOperationException("not implemented");
+  }
+
   CompletableFuture<Void> moveDocumentsById(
       final String sourceIndexName,
       final String destinationIndexName,
@@ -104,10 +119,11 @@ public interface ArchiverRepository extends AutoCloseable {
   }
 
   default String buildHistoricalIndicesPattern(final IndexTemplateDescriptor indexTemplate) {
-    return "%s,-%s,-%s"
+    return "%s,-%s,-%s,-%sord*"
         .formatted(
             indexTemplate.getIndexPattern(),
             indexTemplate.getFullQualifiedName(),
-            indexTemplate.getAlias());
+            indexTemplate.getAlias(),
+            indexTemplate.getFullQualifiedName());
   }
 }

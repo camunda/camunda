@@ -44,6 +44,7 @@ import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.BasicArchiveBatch;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.ProcessInstanceArchiveBatch;
 import io.camunda.exporter.tasks.archiver.ArchiveByIdTaskSupplier.ArchiveDocIdsBatch;
+import io.camunda.exporter.tasks.deleter.ProcessInstanceOrdinal;
 import io.camunda.exporter.tasks.util.DateOfArchivedDocumentsUtil;
 import io.camunda.exporter.tasks.util.ElasticsearchRepository;
 import io.camunda.search.schema.config.RetentionConfiguration;
@@ -136,6 +137,16 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   }
 
   @Override
+  public CompletableFuture<List<ProcessInstanceOrdinal>> getProcessInstancesToDeleteNextBatch(
+      final int size) {
+    final var searchRequest = createFinishedInstancesToDeleteSearchRequest(size);
+
+    return client
+        .search(searchRequest, ProcessInstanceForListViewEntity.class)
+        .thenApplyAsync((response) -> createProcessInstanceOrdinals(response), executor);
+  }
+
+  @Override
   public CompletableFuture<ProcessInstanceArchiveBatch> getProcessInstancesNextBatch(
       final int size) {
     final var searchRequest = createFinishedInstancesSearchRequest(size);
@@ -204,18 +215,6 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   }
 
   @Override
-  public CompletableFuture<BasicArchiveBatch> getJobBatchMetricsNextBatch() {
-    final var searchRequest = createJobBatchMetricsSearchRequest();
-
-    final var timer = Timer.start();
-    return client
-        .search(searchRequest, Object.class)
-        .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
-        .thenApplyAsync(
-            response -> createBasicBatch(response, JobMetricsBatchTemplate.END_TIME), executor);
-  }
-
-  @Override
   public CompletableFuture<BasicArchiveBatch> getStandaloneDecisionNextBatch() {
     final var searchRequest = createStandaloneDecisionSearchRequest();
 
@@ -274,6 +273,31 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
             .toList();
 
     return CompletableFuture.allOf(requests.toArray(new CompletableFuture[0]));
+  }
+
+  @Override
+  public CompletableFuture<Integer> getCountOfProcessInstancesAwaitingArchival() {
+    final var countRequest =
+        CountRequest.of(
+            cr ->
+                cr.index(listViewTemplateDescriptor.getFullQualifiedName())
+                    .query(
+                        finishedProcessInstancesQuery(
+                            config.getArchivingTimePoint(), partitionId)));
+
+    return client.count(countRequest).thenApplyAsync(res -> Math.toIntExact(res.count()));
+  }
+
+  @Override
+  public CompletableFuture<BasicArchiveBatch> getJobBatchMetricsNextBatch() {
+    final var searchRequest = createJobBatchMetricsSearchRequest();
+
+    final var timer = Timer.start();
+    return client
+        .search(searchRequest, Object.class)
+        .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
+        .thenApplyAsync(
+            response -> createBasicBatch(response, JobMetricsBatchTemplate.END_TIME), executor);
   }
 
   @Override
@@ -348,6 +372,57 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   }
 
   @Override
+  public CompletableFuture<Void> deleteDocumentsById(
+      final String sourceIndexName,
+      final Map<String, List<String>> keysByField,
+      final Map<String, String> inclusionFilters,
+      final Map<String, String> exclusionFilters,
+      final Executor executor) {
+    final ArchiveByIdTaskSupplier<FieldValue> taskSupplier =
+        new ArchiveByIdTaskSupplier<>(
+            config,
+            sourceIndexName,
+            null,
+            searchAfter ->
+                getArchiveDocIdsBatch(
+                    sourceIndexName, keysByField, inclusionFilters, exclusionFilters, searchAfter),
+            (ignored1, ignored2, docIds) ->
+                CompletableFuture.completedFuture((long) docIds.size()), // NB no actual reindexing
+            this::deleteDocumentsById,
+            executor,
+            metrics,
+            logger);
+
+    final var timer = Timer.start();
+    return AsyncRepeatUntil.repeatUntil(
+            taskSupplier::moveNextBatch, count -> taskSupplier.isComplete())
+        .thenApply(
+            ignored -> {
+              logger.trace(
+                  "Successfully completed deleting from the {} index, deleted {} docs in {}s",
+                  sourceIndexName,
+                  taskSupplier.getTotalArchived(),
+                  taskSupplier.getTotalTimeTakenMs() / 1000);
+
+              metrics.measureArchiveIndexDuration(
+                  sourceIndexName, timer, taskSupplier.getTotalArchived());
+              return ignored;
+            })
+        .whenComplete(
+            (val, err) -> {
+              if (err != null) {
+                logger.warn(
+                    "Failed deleting from the {} index, deleted {} docs so far in {}s, error={}",
+                    sourceIndexName,
+                    taskSupplier.getTotalArchived(),
+                    taskSupplier.getTotalTimeTakenMs() / 1000,
+                    err.getMessage(),
+                    err);
+              }
+            });
+  }
+
+  @Override
   public CompletableFuture<Void> moveDocumentsById(
       final String sourceIndexName,
       final String destinationIndexName,
@@ -402,17 +477,19 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
             });
   }
 
-  @Override
-  public CompletableFuture<Integer> getCountOfProcessInstancesAwaitingArchival() {
-    final var countRequest =
-        CountRequest.of(
-            cr ->
-                cr.index(listViewTemplateDescriptor.getFullQualifiedName())
-                    .query(
-                        finishedProcessInstancesQuery(
-                            config.getArchivingTimePoint(), partitionId)));
+  private List<ProcessInstanceOrdinal> createProcessInstanceOrdinals(
+      final SearchResponse<ProcessInstanceForListViewEntity> response) {
+    // TODO extract ordinal from name of index (might need to do differently in future)
+    return response.hits().hits().stream()
+        .map(
+            hit ->
+                new ProcessInstanceOrdinal(Long.parseLong(hit.id()), extractOrdinal(hit.index())))
+        .toList();
+  }
 
-    return client.count(countRequest).thenApplyAsync(res -> Math.toIntExact(res.count()));
+  private int extractOrdinal(final String indexName) {
+    final var ordPart = indexName.replaceAll("^.*_ord0*", "");
+    return Integer.parseInt(ordPart);
   }
 
   @VisibleForTesting
@@ -585,6 +662,15 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
     return createSearchRequest(
         listViewTemplateDescriptor.getFullQualifiedName(),
         finishedProcessInstancesQuery(config.getArchivingTimePoint(), partitionId),
+        size,
+        ListViewTemplate.END_DATE,
+        ListViewTemplate.ROOT_PROCESS_INSTANCE_KEY);
+  }
+
+  private SearchRequest createFinishedInstancesToDeleteSearchRequest(final int size) {
+    return createSearchRequest(
+        listViewTemplateDescriptor.getFullQualifiedName() + "ord*",
+        finishedProcessInstancesQuery(config.getDeletionTimePoint(), partitionId),
         size,
         ListViewTemplate.END_DATE,
         ListViewTemplate.ROOT_PROCESS_INSTANCE_KEY);

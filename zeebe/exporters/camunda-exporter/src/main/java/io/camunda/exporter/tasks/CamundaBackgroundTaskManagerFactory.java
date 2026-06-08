@@ -37,6 +37,7 @@ import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateTask;
 import io.camunda.exporter.tasks.batchoperations.ElasticsearchBatchOperationUpdateRepository;
 import io.camunda.exporter.tasks.batchoperations.OpensearchBatchOperationUpdateRepository;
+import io.camunda.exporter.tasks.deleter.ProcessInstanceDeleterJob;
 import io.camunda.exporter.tasks.historydeletion.ElasticsearchHistoryDeletionRepository;
 import io.camunda.exporter.tasks.historydeletion.HistoryDeletionJob;
 import io.camunda.exporter.tasks.historydeletion.HistoryDeletionRepository;
@@ -265,6 +266,7 @@ public final class CamundaBackgroundTaskManagerFactory {
       if (config.getHistory().isTrackArchivalMetricsForProcessInstance()) {
         tasks.add(buildProcessInstanceToBeArchivedCountJob());
       }
+      tasks.add(buildProcessInstanceDeleterJob());
     }
     tasks.add(buildUsageMetricsArchiverJob());
     tasks.add(buildUsageMetricsTUArchiverJob());
@@ -429,6 +431,26 @@ public final class CamundaBackgroundTaskManagerFactory {
               executor);
     }
     return buildReschedulingArchiverTask(piArchiverJob);
+  }
+
+  private ReschedulingTask buildProcessInstanceDeleterJob() {
+    final var dependantTemplates = new ArrayList<ProcessInstanceDependant>();
+    resourceProvider.getIndexTemplateDescriptors().stream()
+        .filter(ProcessInstanceDependant.class::isInstance)
+        .map(ProcessInstanceDependant.class::cast)
+        .forEach(dependantTemplates::add);
+
+    final ProcessInstanceDeleterJob piDeleterJob =
+        new ProcessInstanceDeleterJob(
+            config.getHistory(),
+            archiverRepository,
+            resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class),
+            dependantTemplates,
+            metrics,
+            logger,
+            executor);
+
+    return buildReschedulingArchiverTask(piDeleterJob);
   }
 
   private ReschedulingTask buildBatchOperationArchiverJob() {

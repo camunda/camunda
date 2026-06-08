@@ -130,7 +130,7 @@ public class FakeOrdinalIndexLocatorProvider implements IndexLocatorProvider {
     return suffix;
   }
 
-  private String createOrdinalSuffix(final String prefix, final int ordinal) {
+  public static String createOrdinalSuffix(final String prefix, final int ordinal) {
     return prefix + Strings.padStart(String.valueOf(ordinal), 5, '0');
   }
 

@@ -302,6 +302,10 @@ public class ExporterConfiguration {
       return "now-" + waitPeriodBeforeArchiving;
     }
 
+    public String getDeletionTimePoint() {
+      return "now-" + retention.getMinimumAge();
+    }
+
     public int getRolloverBatchSize() {
       return rolloverBatchSize;
     }
