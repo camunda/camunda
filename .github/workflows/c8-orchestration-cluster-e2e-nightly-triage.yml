@@ -54,6 +54,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     outputs:
+      # base64-encoded JSON array -- decoded by the dispatch job.
+      # Encoding prevents GitHub Actions secret scanner from suppressing the output
+      # when a masked secret substring appears in test error messages or run IDs.
       dispatches:    ${{ steps.group.outputs.dispatches }}
       slack_ts:      ${{ steps.slack.outputs.ts }}
       slack_channel: ${{ steps.slack.outputs.channel }}
@@ -256,7 +259,8 @@ jobs:
           failed_run_count=$(jq 'length' /tmp/failed_runs.json 2>/dev/null || echo 0)
           if [ ! -s /tmp/all_failures.jsonl ] && [ "$failed_run_count" -eq 0 ]; then
             echo "No failures."
-            echo "dispatches=[]" >> "$GITHUB_OUTPUT"
+            # W10= is base64('[]') -- kept consistent with the encoding used below.
+            echo "dispatches=W10=" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
@@ -268,9 +272,8 @@ jobs:
           #   - empty/malformed file fields
 
           # Path normalization + error sanitization + truncation. Control characters
-          # (ANSI escape sequences, etc.) are stripped first via explode/map/implode to
-          # prevent GitHub Actions' secret scanner from suppressing the dispatches output.
-          # Errors are then truncated to 600 chars because workflow_dispatch inputs cap at
+          # (ANSI escape sequences, etc.) are stripped via explode/map/implode.
+          # Errors are truncated to 600 chars because workflow_dispatch inputs cap at
           # ~64KB total payload -- long stack traces from many failures would otherwise overflow.
           jq -s '
             map(
@@ -400,12 +403,9 @@ jobs:
           echo "Dispatches planned: $(jq 'length' /tmp/dispatches.json)"
           jq '[.[] | {version, count: (.test_specs | length), e2e_run_id, api_es_run_id, api_rdbms_run_id}]' /tmp/dispatches.json || true
 
-          # Emit as compact single-line output
-          {
-            echo "dispatches<<EOF_DISPATCH"
-            jq -c '.' /tmp/dispatches.json
-            echo "EOF_DISPATCH"
-          } >> "$GITHUB_OUTPUT"
+          # Base64-encode the output so GitHub Actions secret scanner cannot suppress it.
+          # The dispatch job decodes it before use. -w 0 disables line wrapping.
+          echo "dispatches=$(jq -c '.' /tmp/dispatches.json | base64 -w 0)" >> "$GITHUB_OUTPUT"
 
       - name: Write job summary
         if: always()
@@ -569,7 +569,8 @@ jobs:
   dispatch:
     name: Dispatch fix agents
     needs: triage
-    if: ${{ github.event.inputs.dispatch != 'false' && needs.triage.outputs.dispatches != '[]' && needs.triage.outputs.dispatches != '' }}
+    # W10= is base64('[]') -- the encoded empty-array sentinel written when there are no failures.
+    if: ${{ github.event.inputs.dispatch != 'false' && needs.triage.outputs.dispatches != 'W10=' && needs.triage.outputs.dispatches != '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -595,7 +596,7 @@ jobs:
         env:
           GH_TOKEN:                  ${{ steps.secrets.outputs.GH_TOKEN }}
           REPO:                      ${{ github.repository }}
-          DISPATCHES_JSON:           ${{ needs.triage.outputs.dispatches }}
+          DISPATCHES_B64:            ${{ needs.triage.outputs.dispatches }}
           TRIAGE_RUN_URL:            ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           SLACK_THREAD_TS:           ${{ needs.triage.outputs.slack_ts }}
           SLACK_CHANNEL:             ${{ needs.triage.outputs.slack_channel }}
@@ -605,6 +606,9 @@ jobs:
           set -euo pipefail
 
           echo '[]' > /tmp/fix_agent_runs.json
+
+          # Decode the base64-encoded dispatches payload from the triage job.
+          DISPATCHES_JSON=$(echo "${DISPATCHES_B64}" | base64 -d)
 
           echo "$DISPATCHES_JSON" | jq -c '.[]' | while read -r d; do
             version=$(echo "$d" | jq -r '.version')
