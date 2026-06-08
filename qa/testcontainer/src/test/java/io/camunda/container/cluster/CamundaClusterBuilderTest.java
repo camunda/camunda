@@ -279,11 +279,8 @@ final class CamundaClusterBuilderTest {
     // then
     final Set<String> advertisedHosts = new HashSet<>();
     cluster.getBrokers().values().stream()
-        .map(ClusterNode::getAdditionalConfigs)
-        .map(config -> (Map<String, Object>) config.get("zeebe"))
-        .map(config -> (Map<String, Object>) config.get("broker"))
-        .map(config -> (Map<String, Object>) config.get("network"))
-        .map(config -> (String) config.get("advertised-host"))
+        .map(ClusterNode::getConfiguration)
+        .map(config -> config.getCluster().getNetwork().getAdvertisedHost())
         .forEach(advertisedHosts::add);
     cluster.getGateways().values().stream()
         .map(GatewayNode::getAdditionalConfigs)
