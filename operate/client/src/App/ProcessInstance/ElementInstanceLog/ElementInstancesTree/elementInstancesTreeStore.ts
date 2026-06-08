@@ -218,10 +218,14 @@ class ElementInstancesTreeStore extends NetworkReconnectionHandler {
       return -1;
     }
 
-    // All remaining items already fit in the second page of the current window
-    // (loaded by the initial 2*PAGE_SIZE fetch). Fetching would remove PAGE_SIZE
-    // items from the top with no compensation, causing a scroll jump and loop.
-    if (nodeData.pageMetadata.windowEnd + PAGE_SIZE >= nodeData.pageMetadata.totalItems) {
+    // Each window holds 2*PAGE_SIZE items. If all remaining items fit in the
+    // second half of the current window, they are already in the DOM — fetching
+    // would replace PAGE_SIZE items from the top with no compensation, causing
+    // a scroll jump and a fetch loop.
+    if (
+      nodeData.pageMetadata.windowEnd + PAGE_SIZE >=
+      nodeData.pageMetadata.totalItems
+    ) {
       return 0;
     }
 
