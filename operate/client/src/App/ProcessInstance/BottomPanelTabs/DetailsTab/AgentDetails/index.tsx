@@ -10,7 +10,7 @@ import type {
   AgentInstance,
   AgentInstanceStatus,
 } from '@camunda/camunda-api-zod-schemas/8.10';
-import {AccordionItem} from '@carbon/react';
+import {Accordion, AccordionItem, AccordionSkeleton} from '@carbon/react';
 import {
   CircleDash,
   WarningFilled,
@@ -23,10 +23,7 @@ import {
 import {
   AgentDetailsContainer,
   AgentHeading,
-  Accordion,
-  StatusRow,
-  StatusIconWrapper,
-  StatusLabel,
+  ErrorHint,
   MetricsRow,
   ModelInfo,
   ModelInfoLabel,
@@ -77,9 +74,12 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
     return (
       <AgentDetailsContainer>
         <AgentHeading>AI Agent</AgentHeading>
-        <StatusRow>
-          <StatusLabel>Loading...</StatusLabel>
-        </StatusRow>
+        <AccordionSkeleton
+          align="start"
+          count={4}
+          open={false}
+          data-testid="agent-details-skeleton"
+        />
       </AgentDetailsContainer>
     );
   }
@@ -88,12 +88,7 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
     return (
       <AgentDetailsContainer>
         <AgentHeading>AI Agent</AgentHeading>
-        <StatusRow>
-          <StatusIconWrapper>
-            <WarningFilled size={16} />
-          </StatusIconWrapper>
-          <StatusLabel>Unable to load agent status</StatusLabel>
-        </StatusRow>
+        <ErrorHint>Unable to load agent information.</ErrorHint>
       </AgentDetailsContainer>
     );
   }
@@ -105,13 +100,16 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
   return (
     <AgentDetailsContainer data-testid="agent-details">
       <AgentHeading>AI Agent</AgentHeading>
-      <StatusRow data-testid="agent-status-row">
-        <StatusIconWrapper>
-          <StatusIcon status={agentInstance.status} />
-        </StatusIconWrapper>
-        <StatusLabel>Status: {statusLabel}</StatusLabel>
-      </StatusRow>
       <Accordion align="start">
+        <AccordionItem
+          data-testid="agent-status-section"
+          disabled
+          title={
+            <SectionTitle icon={<StatusIcon status={agentInstance.status} />}>
+              Status: {statusLabel}
+            </SectionTitle>
+          }
+        ></AccordionItem>
         <AccordionItem
           data-testid="agent-usage-section"
           title={

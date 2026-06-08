@@ -50,7 +50,10 @@ describe('<AgentDetails />', () => {
     );
 
     expect(screen.getByText('AI Agent')).toBeInTheDocument();
-    expect(screen.getByText('Status: Calling tools')).toBeInTheDocument();
+    const statusSection = screen.getByTestId('agent-status-section');
+    expect(
+      within(statusSection).getByText('Status: Calling tools'),
+    ).toBeInTheDocument();
   });
 
   it('should render status for THINKING', () => {
@@ -62,7 +65,10 @@ describe('<AgentDetails />', () => {
       />,
     );
 
-    expect(screen.getByText('Status: Thinking')).toBeInTheDocument();
+    const statusSection = screen.getByTestId('agent-status-section');
+    expect(
+      within(statusSection).getByText('Status: Thinking'),
+    ).toBeInTheDocument();
   });
 
   it('should render status for IDLE', () => {
@@ -74,7 +80,8 @@ describe('<AgentDetails />', () => {
       />,
     );
 
-    expect(screen.getByText('Status: Idle')).toBeInTheDocument();
+    const statusSection = screen.getByTestId('agent-status-section');
+    expect(within(statusSection).getByText('Status: Idle')).toBeInTheDocument();
   });
 
   it('should render status for COMPLETED', () => {
@@ -86,7 +93,10 @@ describe('<AgentDetails />', () => {
       />,
     );
 
-    expect(screen.getByText('Status: Completed')).toBeInTheDocument();
+    const statusSection = screen.getByTestId('agent-status-section');
+    expect(
+      within(statusSection).getByText('Status: Completed'),
+    ).toBeInTheDocument();
   });
 
   it('should render status for INITIALIZING', () => {
@@ -98,7 +108,10 @@ describe('<AgentDetails />', () => {
       />,
     );
 
-    expect(screen.getByText('Status: Initializing')).toBeInTheDocument();
+    const statusSection = screen.getByTestId('agent-status-section');
+    expect(
+      within(statusSection).getByText('Status: Initializing'),
+    ).toBeInTheDocument();
   });
 
   it('should render status for TOOL_DISCOVERY', () => {
@@ -110,7 +123,10 @@ describe('<AgentDetails />', () => {
       />,
     );
 
-    expect(screen.getByText('Status: Discovering tools')).toBeInTheDocument();
+    const statusSection = screen.getByTestId('agent-status-section');
+    expect(
+      within(statusSection).getByText('Status: Discovering tools'),
+    ).toBeInTheDocument();
   });
 
   it('should render loading state', () => {
@@ -123,7 +139,7 @@ describe('<AgentDetails />', () => {
     );
 
     expect(screen.getByText('AI Agent')).toBeInTheDocument();
-    expect(screen.getByText('Loading...')).toBeInTheDocument();
+    expect(screen.getByTestId('agent-details-skeleton')).toBeInTheDocument();
   });
 
   it('should render error state when fetch fails', () => {
@@ -136,7 +152,9 @@ describe('<AgentDetails />', () => {
     );
 
     expect(screen.getByText('AI Agent')).toBeInTheDocument();
-    expect(screen.getByText('Unable to load agent status')).toBeInTheDocument();
+    expect(
+      screen.getByText('Unable to load agent information.'),
+    ).toBeInTheDocument();
   });
 
   it('should render usage metrics', () => {

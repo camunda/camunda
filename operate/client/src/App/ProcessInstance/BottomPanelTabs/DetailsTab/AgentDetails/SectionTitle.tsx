@@ -13,6 +13,7 @@ const TitleWithIcon = styled.span`
   align-items: center;
   font-weight: var(--cds-heading-compact-01-font-weight);
   gap: var(--cds-spacing-03);
+  color: var(--cds-text-primary);
   & > svg {
     color: var(--cds-icon-primary);
   }
