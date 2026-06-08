@@ -34,6 +34,17 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
+      - name: Import secrets
+        id: secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/github.com/organizations/camunda NEXUS_USR;
+            secret/data/github.com/organizations/camunda NEXUS_PSW;
       # Scope to shipped modules only (mirrors JAVA_PROJECTS in zeebe-snyk.yml).
       # -am resolves the full transitive tree including BOM-pinned versions.
       - name: Submit Maven dependency snapshot
@@ -41,10 +52,14 @@ jobs:
         with:
           token: ${{ github.token }}
           maven-args: >-
+            -s maven-settings.xml
             -pl bom,clients/java,clients/camunda-spring-boot-starter,zeebe/bpmn-model,zeebe/exporter-api,zeebe/gateway-protocol-impl,zeebe/protocol
             -am
             -Dquickly
           correlator: ${{ github.job }}-maven
+        env:
+          NEXUS_USR: ${{ steps.secrets.outputs.NEXUS_USR }}
+          NEXUS_PSW: ${{ steps.secrets.outputs.NEXUS_PSW }}
       - name: Observe build status
         if: always()
         continue-on-error: true
