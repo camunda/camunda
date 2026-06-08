@@ -124,14 +124,13 @@ Make sure to build the project with Maven before running tests for the first tim
 mvn clean build
 ```
 
-The integration tests require a Docker environment to run the Testcontainers. The runtime chooses
-the Docker image versions based on the current Git branch (`main: SNAPSHOT`,
-`stable/8.8: 8.8-SNAPSHOT`, etc.).
+The integration tests require a Docker environment to run the Testcontainers. The runtime uses the
+configured Docker image versions and resolves snapshot image versions to `SNAPSHOT`.
 
 ## CI Pipeline
 
 We run the integration tests in an extra CI job that builds a Camunda Docker image based on the
-current branch and uses that image to run the tests.
+current code and uses that image to run the tests.
 
 We select the Docker image using the Maven properties
 `io.camunda.process.test.camundaDockerImageName` and
@@ -225,4 +224,3 @@ Make sure to run the Maven build without the profile or property.
 ```shell
 mvn clean compile -Dskip.fe.build=false -pl camunda-process-test-java
 ```
-
