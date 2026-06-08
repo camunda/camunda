@@ -538,6 +538,41 @@ describe('elementInstancesTreeStore', () => {
     expect(count).toBe(0);
   });
 
+  it('should skip fetch and return 0 when remaining items fit in current window', async () => {
+    // Regression: totalItems=53, windowEnd=50. Old guard (windowEnd >= totalItems)
+    // would allow a fetch that replaces 53 items with 3, causing a scroll jump/loop.
+    const items53 = Array.from({length: 53}, (_, i) =>
+      createMockElementInstance({
+        elementInstanceKey: `${2251799813685630 + i}`,
+        elementId: `task_${i}`,
+        startDate: `2023-01-01T10:${String(i).padStart(2, '0')}:00.000Z`,
+      }),
+    );
+    mockSearchElementInstances().withSuccess(createMockResponse(items53, 53));
+    await elementInstancesTreeStore.setRootNode(mockProcessInstanceKey);
+
+    const before = elementInstancesTreeStore.state.nodes.get(
+      mockProcessInstanceKey,
+    );
+    expect(before?.pageMetadata.windowEnd).toBe(50);
+    expect(before?.pageMetadata.totalItems).toBe(53);
+
+    const count = await elementInstancesTreeStore.fetchNextPage(
+      mockProcessInstanceKey,
+    );
+
+    expect(count).toBe(0);
+
+    // Guard must have fired: items, metadata, and status are all unchanged.
+    const after = elementInstancesTreeStore.state.nodes.get(
+      mockProcessInstanceKey,
+    );
+    expect(after?.items.length).toBe(53);
+    expect(after?.pageMetadata.windowEnd).toBe(50);
+    expect(after?.pageMetadata.totalItems).toBe(53);
+    expect(after?.status).toBe('loaded');
+  });
+
   it('should return -1 when next page fetch fails', async () => {
     mockSearchElementInstances().withSuccess(mockFirstPageResponse);
     await elementInstancesTreeStore.setRootNode(mockProcessInstanceKey);
