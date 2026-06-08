@@ -23,6 +23,7 @@ import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService
 import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.protocol.record.PartitionRole;
+import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
@@ -42,6 +43,7 @@ final class RecoveryPartitionManagerTest {
   @TempDir private Path dataDirectory;
 
   private ActorScheduler actorScheduler;
+  private Actor controlActor;
   private Member localMember;
   private MemberId localMemberId;
   private ClusterConfigurationService clusterConfigurationService;
@@ -52,6 +54,9 @@ final class RecoveryPartitionManagerTest {
   void setUp() {
     actorScheduler = ActorScheduler.newActorScheduler().build();
     actorScheduler.start();
+
+    controlActor = new Actor() {};
+    actorScheduler.submitActor(controlActor).join();
 
     localMember = new Member(new MemberConfig());
     localMemberId = localMember.id();
@@ -75,12 +80,12 @@ final class RecoveryPartitionManagerTest {
         new RecoveryPartitionManager(
             GROUP,
             dataDirectory.toString(),
+            controlActor,
             clusterConfigurationService,
             clusterServices,
             actorScheduler,
             brokerInfo,
             new SimpleMeterRegistry());
-    actorScheduler.submitActor(partitionManager).join();
   }
 
   private PartitionMetadata localPartitionMetadata(final int partitionId) {
@@ -96,6 +101,9 @@ final class RecoveryPartitionManagerTest {
   void tearDown() {
     if (partitionManager != null) {
       partitionManager.stop().join();
+    }
+    if (controlActor != null) {
+      controlActor.closeAsync().join();
     }
     actorScheduler.stop();
   }

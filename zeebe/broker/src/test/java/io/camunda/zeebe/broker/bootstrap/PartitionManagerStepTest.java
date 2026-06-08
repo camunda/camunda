@@ -191,8 +191,6 @@ class PartitionManagerStepTest {
 
     private PartitionManagerImpl mockPartitionManager;
     private ActorFuture<BrokerStartupContext> shutdownFuture;
-    private ClusterConfigurationService clusterConfigurationService;
-    private ClusterConfiguration mockClusterConfiguration;
 
     @BeforeEach
     void setUp() {
@@ -207,17 +205,8 @@ class PartitionManagerStepTest {
 
       testBrokerStartupContext.addPartitionManager(
           PartitionManagerImpl.DEFAULT_GROUP_NAME, mockPartitionManager);
-      final ClusterConfigurationService mockClusterTopology =
-          mock(ClusterConfigurationService.class);
-      clusterConfigurationService = mock(ClusterConfigurationService.class);
-      when(clusterConfigurationService.getPartitionDistribution())
-          .thenReturn(PartitionDistribution.NO_PARTITIONS);
-      mockClusterConfiguration = mock(ClusterConfiguration.class);
-      when(clusterConfigurationService.getInitialClusterConfiguration())
-          .thenReturn(mockClusterConfiguration);
-      when(mockClusterConfiguration.recovery()).thenReturn(false);
-
-      testBrokerStartupContext.setClusterConfigurationService(mockClusterTopology);
+      testBrokerStartupContext.setClusterConfigurationService(
+          mock(ClusterConfigurationService.class));
       shutdownFuture = CONCURRENCY_CONTROL.createFuture();
     }
 
