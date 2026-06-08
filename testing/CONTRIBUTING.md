@@ -138,6 +138,24 @@ We select the Docker image using the Maven properties
 `io.camunda.process.test.camundaDockerImageVersion` in the properties file
 `camunda-container-runtime-version.properties`.
 
+## CI compatibility tests
+
+We run CPT compatibility test in CI to ensure forward-compatibility between Camunda runtime images
+and CPT.
+
+Workflow resources:
+
+- Main workflow: `.github/workflows/camunda-process-test-compatibility.yml`
+- Daily trigger workflow: `.github/workflows/camunda-process-test-compatibility-trigger.yml`
+
+Parameters:
+
+- `branch` (for example: `stable/8.8`)
+- `camunda_image_version` (for example: `8.9-SNAPSHOT`)
+- `connectors_image_version` (for example: `8.9-SNAPSHOT`)
+
+We trigger the workflow daily for the stable branches and report test failures to a Slack channel.
+
 ## Guide for common contributions
 
 If you're new and want to contribute to the project, check out the following step-by-step guides for
