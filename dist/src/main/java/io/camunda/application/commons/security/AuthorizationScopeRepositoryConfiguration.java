@@ -8,14 +8,20 @@
 package io.camunda.application.commons.security;
 
 import io.camunda.search.clients.reader.AuthorizationReader;
-import io.camunda.security.impl.AuthorizationChecker;
+import io.camunda.security.core.port.out.AuthorizationScopeRepositoryPort;
+import io.camunda.security.impl.SearchAuthorizationScopeRepository;
+import io.camunda.security.spring.auth.AuthorizationCheckerConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 
 @Configuration(proxyBeanMethods = false)
-public class AuthorizationCheckerConfiguration {
+@Import(AuthorizationCheckerConfiguration.class)
+public class AuthorizationScopeRepositoryConfiguration {
+
   @Bean
-  public AuthorizationChecker authorizationChecker(final AuthorizationReader authorizationReader) {
-    return new AuthorizationChecker(authorizationReader);
+  public AuthorizationScopeRepositoryPort authorizationScopeRepositoryPort(
+      final AuthorizationReader authorizationReader) {
+    return new SearchAuthorizationScopeRepository(authorizationReader);
   }
 }
