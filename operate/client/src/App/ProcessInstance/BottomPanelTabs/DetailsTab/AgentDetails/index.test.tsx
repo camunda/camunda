@@ -139,7 +139,7 @@ describe('<AgentDetails />', () => {
     );
 
     expect(screen.getByText('AI Agent')).toBeInTheDocument();
-    expect(screen.getByText('Loading...')).toBeInTheDocument();
+    expect(screen.getByTestId('agent-details-skeleton')).toBeInTheDocument();
   });
 
   it('should render error state when fetch fails', () => {

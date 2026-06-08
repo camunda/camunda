@@ -10,7 +10,7 @@ import type {
   AgentInstance,
   AgentInstanceStatus,
 } from '@camunda/camunda-api-zod-schemas/8.10';
-import {AccordionItem} from '@carbon/react';
+import {Accordion, AccordionItem, AccordionSkeleton} from '@carbon/react';
 import {
   CircleDash,
   WarningFilled,
@@ -23,8 +23,7 @@ import {
 import {
   AgentDetailsContainer,
   AgentHeading,
-  Accordion,
-  LoadingStatusHint,
+  ErrorHint,
   MetricsRow,
   ModelInfo,
   ModelInfoLabel,
@@ -75,7 +74,12 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
     return (
       <AgentDetailsContainer>
         <AgentHeading>AI Agent</AgentHeading>
-        <LoadingStatusHint>Loading...</LoadingStatusHint>
+        <AccordionSkeleton
+          align="start"
+          count={4}
+          open={false}
+          data-testid="agent-details-skeleton"
+        />
       </AgentDetailsContainer>
     );
   }
@@ -84,7 +88,7 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
     return (
       <AgentDetailsContainer>
         <AgentHeading>AI Agent</AgentHeading>
-        <LoadingStatusHint>Unable to load agent information.</LoadingStatusHint>
+        <ErrorHint>Unable to load agent information.</ErrorHint>
       </AgentDetailsContainer>
     );
   }

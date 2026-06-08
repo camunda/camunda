@@ -6,16 +6,23 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Accordion as CarbonAccordion} from '@carbon/react';
 import styled from 'styled-components';
 
 const AgentDetailsContainer = styled.div`
   display: flex;
   flex-direction: column;
   gap: var(--cds-spacing-03);
+
+  /* Small accordion overrides that apply to both Accordion and AccordionSkeleton. */
+  .cds--accordion__item:first-child {
+    border-block-start: none;
+  }
+  .cds--accordion__content {
+    padding-inline-end: var(--cds-spacing-02);
+  }
 `;
 
-const LoadingStatusHint = styled.span`
+const ErrorHint = styled.span`
   font-size: var(--cds-body-compact-01-font-size);
   line-height: var(--cds-body-compact-01-line-height);
   letter-spacing: var(--cds-body-compact-01-letter-spacing);
@@ -27,15 +34,6 @@ const AgentHeading = styled.h5`
   font-weight: var(--cds-heading-compact-01-font-weight);
   line-height: var(--cds-heading-compact-01-line-height);
   margin: 0;
-`;
-
-const Accordion = styled(CarbonAccordion)`
-  .cds--accordion__item:first-child {
-    border-block-start: none;
-  }
-  .cds--accordion__content {
-    padding-inline-end: var(--cds-spacing-02);
-  }
 `;
 
 const MetricsRow = styled.div`
@@ -59,8 +57,7 @@ const ModelInfoLabel = styled.strong`
 export {
   AgentDetailsContainer,
   AgentHeading,
-  Accordion,
-  LoadingStatusHint,
+  ErrorHint,
   MetricsRow,
   ModelInfo,
   ModelInfoLabel,
