@@ -265,3 +265,4 @@ export {orderProcessInstance} from './orderProcessInstance.mocks';
 export {runningInstance} from './runningInstance.mocks';
 export {runningOrderProcessInstance} from './runningOrderProcessInstance.mocks';
 export {compensationProcessInstance} from './compensationProcessInstance.mocks';
+export {documentReferenceProcessInstance} from './documentReferenceProcessInstance.mocks';
