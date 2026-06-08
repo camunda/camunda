@@ -67,7 +67,4 @@ const toStringFilterProperty = (
   }
 };
 
-const operatorTakesValue = (operator: VariableFilterOperator): boolean =>
-  operator !== 'exists' && operator !== 'doesNotExist';
-
-export {smartTransformValue, toStringFilterProperty, operatorTakesValue};
+export {smartTransformValue, toStringFilterProperty};
