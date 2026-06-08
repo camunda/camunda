@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.Exporter;
+import io.camunda.configuration.NodeIdProvider.Type;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import java.time.Duration;
 import java.util.List;
@@ -103,6 +104,51 @@ final class ExtendedConfigurationBuilderTest {
         .containsEntry("camunda.data.exporters.myExporter.class-name", "io.camunda.test.MyExporter")
         .containsEntry(
             "camunda.data.exporters.myExporter.args.connect.url", "http://localhost:9200");
+  }
+
+  @Test
+  void shouldMirrorFixedNodeIdToLegacyNodeIdProperty() {
+    // given
+    final var config = new Camunda();
+    config.getCluster().setNodeId(2);
+
+    // when
+    final var flat = ExtendedConfigurationBuilder.flatPropertiesFor(config);
+
+    // then — the fixed node id is emitted under the current key and mirrored to the legacy flat
+    // `camunda.cluster.node-id` so the config also binds on pre-8.9 versions
+    assertThat(flat).containsEntry("camunda.cluster.node-id-provider.fixed.node-id", 2);
+    assertThat(flat).containsEntry("camunda.cluster.node-id", 2);
+  }
+
+  @Test
+  void shouldMirrorFixedNodeIdToLegacyNodeIdPropertyWhenSetViaFixedNodeIdProvider() {
+    // given
+    final var config = new Camunda();
+    config.getCluster().getNodeIdProvider().fixed().setNodeId(2);
+
+    // when
+    final var flat = ExtendedConfigurationBuilder.flatPropertiesFor(config);
+
+    // then — setting the node id directly on the fixed provider yields the same legacy mirror
+    assertThat(flat).containsEntry("camunda.cluster.node-id-provider.fixed.node-id", 2);
+    assertThat(flat).containsEntry("camunda.cluster.node-id", 2);
+  }
+
+  @Test
+  void shouldNotMirrorLegacyNodeIdWhenNodeIdProviderIsNotFixed() {
+    // given
+    final var config = new Camunda();
+    config.getCluster().getNodeIdProvider().setType(Type.S3);
+
+    // when
+    final var flat = ExtendedConfigurationBuilder.flatPropertiesFor(config);
+
+    // then — a non-FIXED provider has no flat node id, so nothing is mirrored to the legacy key
+    assertThat(flat)
+        .containsEntry("camunda.cluster.node-id-provider.type", "S3")
+        .doesNotContainKeys(
+            "camunda.cluster.node-id", "camunda.cluster.node-id-provider.fixed.node-id");
   }
 
   @Test

@@ -291,7 +291,7 @@ public class ExtendedConfigurationBuilder {
       final Map<String, Object> defaultMap = flatten(createDefaultCamunda());
       final Map<String, Object> configuredMap = flatten(unifiedConfig);
       final Map<String, Object> diff = diffMaps(defaultMap, configuredMap);
-
+      putLegacyNodeIdPropertyIfNeeded(diff);
       final Map<String, Object> fullConfig = new LinkedHashMap<>();
       if (!diff.isEmpty()) {
         fullConfig.put(CAMUNDA_HEADER, diff);
@@ -325,6 +325,7 @@ public class ExtendedConfigurationBuilder {
     final Map<String, Object> defaultMap = flatten(new Camunda());
     final Map<String, Object> configuredMap = flatten(config);
     final Map<String, Object> diff = diffMaps(defaultMap, configuredMap);
+    putLegacyNodeIdPropertyIfNeeded(diff);
     final Map<String, Object> flat = new LinkedHashMap<>();
     flattenInto(diff, CAMUNDA_HEADER, flat);
     return flat;
@@ -351,6 +352,40 @@ public class ExtendedConfigurationBuilder {
     } else if (node != null) {
       flat.put(key, node);
     }
+  }
+
+  /**
+   * Mirrors a configured fixed node id onto the legacy flat {@code camunda.cluster.node-id}
+   * property.
+   *
+   * <p>Camunda versions before 8.9 do not understand the {@code node-id-provider} structure and
+   * expect the node id under the flat {@code camunda.cluster.node-id} key. Since this builder uses
+   * the current configuration classes, which express a fixed node id as {@code
+   * node-id-provider.fixed.node-id}, we additionally copy that value to the legacy key so the
+   * generated config also binds on older versions.
+   */
+  private static void putLegacyNodeIdPropertyIfNeeded(final Map<String, Object> diff) {
+    final var clusterNode = diff.get("cluster");
+    if (clusterNode instanceof final Map clusterMap) {
+      final Integer nodeId = getFixedNodeId(clusterMap);
+      if (nodeId != null) {
+        clusterMap.put("node-id", nodeId);
+      }
+    }
+  }
+
+  private static Integer getFixedNodeId(final Map clusterMap) {
+    final var providerNode = clusterMap.get("node-id-provider");
+    if (providerNode instanceof final Map providerMap) {
+      final var fixedNode = providerMap.get("fixed");
+      if (fixedNode instanceof final Map fixedMap) {
+        final var nodeIdNode = fixedMap.get("node-id");
+        if (nodeIdNode instanceof final Integer nodeId) {
+          return nodeId;
+        }
+      }
+    }
+    return null;
   }
 
   /**
