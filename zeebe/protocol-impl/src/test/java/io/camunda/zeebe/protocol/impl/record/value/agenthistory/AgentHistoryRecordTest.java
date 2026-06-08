@@ -130,7 +130,11 @@ final class AgentHistoryRecordTest {
 
     final var documentBlock =
         new AgentHistoryMessageContent().setContentType(AgentHistoryContentType.DOCUMENT);
-    documentBlock.getDocumentReference().setDocumentId("doc-123").setStoreId("store-456");
+    documentBlock
+        .getDocumentReference()
+        .setDocumentId("doc-123")
+        .setStoreId("store-456")
+        .setContentHash("sha256-doc123");
 
     final Map<String, Object> objectData = Map.of("key", "value");
     final var objectBlock =
@@ -157,6 +161,7 @@ final class AgentHistoryRecordTest {
     assertThat(document.getContentType()).isEqualTo(AgentHistoryContentType.DOCUMENT);
     assertThat(document.getDocumentReference().getDocumentId()).isEqualTo("doc-123");
     assertThat(document.getDocumentReference().getStoreId()).isEqualTo("store-456");
+    assertThat(document.getDocumentReference().getContentHash()).isEqualTo("sha256-doc123");
 
     final var object = content.get(2);
     assertThat(object.getContentType()).isEqualTo(AgentHistoryContentType.OBJECT);

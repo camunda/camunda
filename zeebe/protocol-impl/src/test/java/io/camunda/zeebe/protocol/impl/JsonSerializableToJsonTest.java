@@ -4810,7 +4810,11 @@ final class JsonSerializableToJsonTest {
                       .setText("I will extract the line items from the invoice."));
               final var docContent =
                   new AgentHistoryMessageContent().setContentType(AgentHistoryContentType.DOCUMENT);
-              docContent.getDocumentReference().setDocumentId("doc-001").setStoreId("gcs-store");
+              docContent
+                  .getDocumentReference()
+                  .setDocumentId("doc-001")
+                  .setStoreId("gcs-store")
+                  .setContentHash("sha256-doc001");
               record.addContent(docContent);
               record.addContent(
                   new AgentHistoryMessageContent()
@@ -4847,19 +4851,19 @@ final class JsonSerializableToJsonTest {
             {
               "contentType": "TEXT",
               "text": "I will extract the line items from the invoice.",
-              "documentReference": { "documentId": "", "storeId": "" },
+              "documentReference": { "documentId": "", "storeId": "", "contentHash": "" },
               "object": {}
             },
             {
               "contentType": "DOCUMENT",
               "text": "",
-              "documentReference": { "documentId": "doc-001", "storeId": "gcs-store" },
+              "documentReference": { "documentId": "doc-001", "storeId": "gcs-store", "contentHash": "sha256-doc001" },
               "object": {}
             },
             {
               "contentType": "OBJECT",
               "text": "",
-              "documentReference": { "documentId": "", "storeId": "" },
+              "documentReference": { "documentId": "", "storeId": "", "contentHash": "" },
               "object": { "page": 1 }
             }
           ],

@@ -19,10 +19,11 @@ public final class AgentHistoryDocumentReference extends ObjectValue
 
   private final StringProperty documentIdProp = new StringProperty("documentId", "");
   private final StringProperty storeIdProp = new StringProperty("storeId", "");
+  private final StringProperty contentHashProp = new StringProperty("contentHash", "");
 
   public AgentHistoryDocumentReference() {
-    super(2);
-    declareProperty(documentIdProp).declareProperty(storeIdProp);
+    super(3);
+    declareProperty(documentIdProp).declareProperty(storeIdProp).declareProperty(contentHashProp);
   }
 
   @Override
@@ -45,8 +46,19 @@ public final class AgentHistoryDocumentReference extends ObjectValue
     return this;
   }
 
+  @Override
+  public String getContentHash() {
+    return BufferUtil.bufferAsString(contentHashProp.getValue());
+  }
+
+  public AgentHistoryDocumentReference setContentHash(final String contentHash) {
+    contentHashProp.setValue(contentHash);
+    return this;
+  }
+
   public void copy(final AgentHistoryDocumentReferenceValue other) {
     setDocumentId(other.getDocumentId());
     setStoreId(other.getStoreId());
+    setContentHash(other.getContentHash());
   }
 }

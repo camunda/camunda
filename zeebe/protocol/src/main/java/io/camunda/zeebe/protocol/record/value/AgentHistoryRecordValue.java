@@ -91,6 +91,16 @@ public interface AgentHistoryRecordValue extends RecordValue, TenantOwned, Proce
 
     /** Returns the identifier of the store where the document is held. */
     String getStoreId();
+
+    /**
+     * Returns the content hash of the document.
+     *
+     * <p>Required to construct the document download URL via the Camunda Document Store REST API
+     * ({@code GET /v2/documents/{documentId}}). Without this hash the document cannot be retrieved
+     * from the record alone, because it is not derivable from {@code documentId} or {@code storeId}
+     * after the fact.
+     */
+    String getContentHash();
   }
 
   /** Represents a single content block in a history entry message. */
