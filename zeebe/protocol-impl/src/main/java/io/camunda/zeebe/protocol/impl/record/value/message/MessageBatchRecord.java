@@ -22,10 +22,10 @@ public final class MessageBatchRecord extends UnifiedRecordValue
   // Static StringValue key to avoid memory waste
   private static final StringValue MESSAGE_KEYS_KEY = new StringValue("messageKeys");
 
-  // Retained for backwards compatibility: 8.10+ no longer writes message keys onto the batch
-  // command (the expiry processor queries the message state directly), but the property is kept so
-  // records written by earlier versions still deserialize and the public getMessageKeys() contract
-  // holds.
+  // Retained for backwards compatibility: message batch expire commands no longer write message
+  // keys onto the record (the expiry processor queries the message state directly), but the
+  // property is kept so records written by earlier versions still deserialize and the public
+  // getMessageKeys() contract holds.
   private final ArrayProperty<LongValue> messageKeysProp =
       new ArrayProperty<>(MESSAGE_KEYS_KEY, LongValue::new);
 
