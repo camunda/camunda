@@ -991,8 +991,10 @@ final class JsonSerializableToJsonTest {
         "MessageBatchRecord",
         (Supplier<UnifiedRecordValue>) MessageBatchRecord::new,
         """
-        {}
-        """
+                {
+                  "messageKeys": []
+                }
+                """
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////

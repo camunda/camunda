@@ -7,13 +7,33 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.message;
 
+import io.camunda.zeebe.msgpack.property.ArrayProperty;
+import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageBatchRecordValue;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 public final class MessageBatchRecord extends UnifiedRecordValue
     implements MessageBatchRecordValue {
 
+  // Retained for backwards compatibility: message batch expire commands no longer write message
+  // keys onto the record (the expiry processor queries the message state directly), but the
+  // property is kept so records written by earlier versions still deserialize and the public
+  // getMessageKeys() contract holds.
+  private final ArrayProperty<LongValue> messageKeysProp =
+      new ArrayProperty<>("messageKeys", LongValue::new);
+
   public MessageBatchRecord() {
-    super(0);
+    super(1);
+    declareProperty(messageKeysProp);
+  }
+
+  @Override
+  public List<Long> getMessageKeys() {
+    return StreamSupport.stream(messageKeysProp.spliterator(), false)
+        .map(LongValue::getValue)
+        .collect(Collectors.toList());
   }
 }
