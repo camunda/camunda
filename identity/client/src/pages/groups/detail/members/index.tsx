@@ -29,6 +29,7 @@ const Members: FC<MembersProps> = ({ groupId, isOIDC }) => {
   const { t } = useTranslate("groups");
 
   const { users, loading, success, reload, paginationProps } = useEnrichedUsers(
+    "groups",
     searchMembersByGroup,
     {
       groupId,

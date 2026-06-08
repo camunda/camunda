@@ -9,7 +9,7 @@
 import { ApiError } from "./request";
 
 export type DispatchOptions = { skipToast: boolean };
-type ErrorNotifier = (error: ApiError, options: DispatchOptions) => void;
+export type ErrorNotifier = (error: ApiError, options: DispatchOptions) => void;
 
 let dispatch: ErrorNotifier = () => {};
 

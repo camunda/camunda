@@ -30,6 +30,7 @@ const Groups: FC<GroupsProps> = ({ roleId, isCamundaGroupsEnabled }) => {
 
   const { groups, loading, success, reload, paginationProps } =
     useEnrichedGroups(
+      "roles",
       getGroupsByRoleId,
       {
         roleId,

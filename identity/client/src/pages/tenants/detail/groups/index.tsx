@@ -30,6 +30,7 @@ const Groups: FC<GroupsProps> = ({ tenantId, isCamundaGroupsEnabled }) => {
 
   const { groups, loading, success, reload, paginationProps } =
     useEnrichedGroups(
+      "tenants",
       getGroupsByTenantId,
       {
         tenantId,

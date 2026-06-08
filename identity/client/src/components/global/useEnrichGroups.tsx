@@ -33,7 +33,13 @@ type UseEnrichedGroupsResult = {
   };
 };
 
+/**
+ * Fetching group list using a provided api definition,
+ * if isCamundaGroupsEnabled==true, fetch group details in a follow-up request
+ * if isCamundaGroupsEnabled==false, substitute empty details.
+ */
 export function useEnrichedGroups<P>(
+  parentType: string,
   apiDefinition: ApiDefinition<
     QueryGroupsResponseBody | QueryGroupsByRoleResponseBody,
     P
@@ -50,7 +56,7 @@ export function useEnrichedGroups<P>(
   ) as P;
 
   const membersQuery = useQuery({
-    queryKey: ["enrichedGroups", apiDefinition.name, mergedParams],
+    queryKey: ["enrichedGroups", parentType, mergedParams],
     queryFn: () => unwrap(apiDefinition(mergedParams)(getApiBaseUrl())),
   });
 
@@ -98,7 +104,6 @@ export function useEnrichedGroups<P>(
     success,
     reload: () => {
       void membersQuery.refetch();
-      if (isCamundaGroupsEnabled) void groupsQuery.refetch();
     },
     paginationProps: {
       page: { ...page, ...membersQuery.data?.page },

@@ -31,9 +31,9 @@ export const roleQueries = {
       queryFn: () =>
         unwrap(searchRoles(params as QueryRolesRequestBody)(getApiBaseUrl())),
     }),
-  detail: (roleId: string | undefined) =>
+  detail: (roleId: string) =>
     queryOptions({
-      queryKey: queryKeys.roles.detail(roleId ?? ""),
+      queryKey: queryKeys.roles.detail(roleId),
       queryFn: () =>
         unwrap(getRoleDetails({ roleId: roleId as string })(getApiBaseUrl())),
       enabled: !!roleId,

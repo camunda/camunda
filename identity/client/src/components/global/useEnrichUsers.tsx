@@ -32,8 +32,13 @@ type UseEnrichedUsersResult = {
     setSearch: ReturnType<typeof usePagination>["setSearch"];
   };
 };
-
+/**
+ * Fetching user list using a provided api definition,
+ * if isOIDC==true, fetch user details in a follow-up request
+ * if isOIDC==false, substitute empty details.
+ */
 export function useEnrichedUsers<P>(
+  parentType: string,
   apiDefinition: ApiDefinition<
     QueryUsersResponseBody | QueryUsersByGroupResponseBody,
     P
@@ -50,7 +55,7 @@ export function useEnrichedUsers<P>(
   ) as P;
 
   const membersQuery = useQuery({
-    queryKey: ["enrichedMembers", apiDefinition.name, mergedParams],
+    queryKey: ["enrichedMembers", parentType, mergedParams],
     queryFn: () => unwrap(apiDefinition(mergedParams)(getApiBaseUrl())),
   });
 
@@ -98,7 +103,6 @@ export function useEnrichedUsers<P>(
     success,
     reload: () => {
       void membersQuery.refetch();
-      if (!isOIDC) void usersQuery.refetch();
     },
     paginationProps: {
       page: { ...page, ...membersQuery.data?.page },

@@ -29,6 +29,7 @@ const Members: FC<MembersProps> = ({ roleId, isOIDC }) => {
   const { t } = useTranslate("roles");
 
   const { users, loading, success, reload, paginationProps } = useEnrichedUsers(
+    "roles",
     getMembersByRole,
     {
       roleId,

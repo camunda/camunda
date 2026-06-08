@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { queryOptions } from "@tanstack/react-query";
+import { queryOptions, skipToken } from "@tanstack/react-query";
 import type {
   QueryClientsByGroupRequestBody,
   QueryGroupsRequestBody,
@@ -33,13 +33,15 @@ export const groupQueries = {
       queryFn: () =>
         unwrap(searchGroups(params as SearchGroupsParams)(getApiBaseUrl())),
     }),
-  detail: (groupId: string | undefined) =>
+  detail: (groupId: string) =>
     queryOptions({
-      queryKey: queryKeys.groups.detail(groupId ?? ""),
-      queryFn: () =>
-        unwrap(
-          getGroupDetails({ groupId: groupId as string })(getApiBaseUrl()),
-        ),
+      queryKey: queryKeys.groups.detail(groupId),
+      queryFn: groupId
+        ? () =>
+            unwrap(
+              getGroupDetails({ groupId: groupId as string })(getApiBaseUrl()),
+            )
+        : skipToken,
       enabled: !!groupId,
     }),
   roles: (
