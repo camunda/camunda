@@ -16,6 +16,9 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import org.apache.commons.io.IOUtils;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
@@ -29,8 +32,19 @@ class ResourceDeployIT {
 
   private static long rpaResourceKey;
   private static long nonRpaResourceKey;
+  private static long pngResourceKey;
   private static final String NON_RPA_CONTENT = "## Some markdown";
   private static final String RPA_CONTENT = loadRpaContent();
+
+  private static final byte[] PNG_BYTES = loadPngBytes();
+
+  private static byte[] loadPngBytes() {
+    try (final var stream = ResourceDeployIT.class.getResourceAsStream("/panda.png")) {
+      return IOUtils.toByteArray(stream);
+    } catch (final IOException e) {
+      throw new RuntimeException("Failed to load panda.png", e);
+    }
+  }
 
   private static String loadRpaContent() {
     try (final var stream = ResourceDeployIT.class.getResourceAsStream("/rpa/test-rpa.rpa")) {
@@ -60,7 +74,16 @@ class ResourceDeployIT {
             .getFirst()
             .getResourceKey();
 
-    // wait for secondary storage to have both resources
+    pngResourceKey =
+        camundaClient
+            .newDeployResourceCommand()
+            .addResourceBytes(PNG_BYTES, "panda.png")
+            .execute()
+            .getResource()
+            .getFirst()
+            .getResourceKey();
+
+    // wait for secondary storage to have all resources
     await("resources should be available in secondary storage")
         .atMost(TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions()
@@ -69,6 +92,7 @@ class ResourceDeployIT {
               assertThat(camundaClient.newResourceGetRequest(rpaResourceKey).execute()).isNotNull();
               assertThat(camundaClient.newResourceGetRequest(nonRpaResourceKey).execute())
                   .isNotNull();
+              assertThat(camundaClient.newResourceGetRequest(pngResourceKey).execute()).isNotNull();
             });
   }
 
@@ -138,5 +162,24 @@ class ResourceDeployIT {
 
     // then
     assertThat(content).isEqualTo(NON_RPA_CONTENT);
+  }
+
+  @Test
+  void shouldReturnBinaryContentBytesExactlyForPngResource() throws Exception {
+    // given
+    final URI restUri =
+        camundaClient
+            .getConfiguration()
+            .getRestAddress()
+            .resolve("/v2/resources/" + pngResourceKey + "/content/binary");
+
+    // when - fetch raw bytes via JDK HTTP client to bypass the String-returning Java client
+    final var httpClient = java.net.http.HttpClient.newHttpClient();
+    final var request = HttpRequest.newBuilder(restUri).GET().build();
+    final var response = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray());
+
+    // then
+    assertThat(response.statusCode()).isEqualTo(200);
+    assertThat(response.body()).isEqualTo(PNG_BYTES);
   }
 }
