@@ -31,6 +31,8 @@ safe-outputs:
 
 You are a CI/CD cost analyst. Analyze all changes made to GitHub Actions workflow files (`.github/workflows/`) in this repository during the **last 7 days** and identify changes that could potentially **increase CI costs**.
 
+**Cost model for this repo**: `camunda/camunda` is a public repository, so standard GitHub-hosted runners are free — including single-CPU variants like `ubuntu-slim` (see [GitHub's docs](https://docs.github.com/en/enterprise-cloud@latest/actions/reference/runners/github-hosted-runners#single-cpu-runners)) and the regular labels `ubuntu-latest`, `ubuntu-24.04`, `windows-latest`, `macos-latest`. Cost is incurred on **self-hosted runners** (labels like `gcp-*`, `aws-*`). Note: GitHub-hosted *larger/premium* runners (e.g., `*-16-core`, `macos-large`, GPU runners) can still be billed and should be treated as cost-relevant if they appear.
+
 Use exactly one persistent issue for reporting:
 - **Persistent issue title**: `Weekly CI Change Cost Impact Analysis`
 - Do not create rotating weekly issues.
@@ -44,22 +46,26 @@ Use exactly one persistent issue for reporting:
 
    ### Cost-Increasing Patterns to Detect
 
-   - **New workflow files**: Brand new workflow files added
-   - **New jobs added**: Entirely new job definitions added to existing workflows
-   - **New triggers added**: Additional trigger events (e.g., adding `push` alongside `pull_request`, adding `schedule`, adding more branch patterns)
-   - **Increased timeouts**: `timeout-minutes` values being raised
-   - **Larger runner types**: Changes from smaller to larger runners (e.g., `ubuntu-latest` → `ubuntu-latest-16-core`, or any move to larger/paid runners)
-   - **Extended matrix strategies**: More entries in matrix configurations
-   - **New or expanded test suites**: Addition of large test commands, new test frameworks, or expansion of test scope
-   - **Removed concurrency controls**: Removal of `concurrency` groups that previously prevented duplicate runs
-   - **Removed path filters**: Removing `paths:` or `paths-ignore:` filters causing workflows to trigger more broadly
-   - **Added retry logic**: Adding retry steps or `continue-on-error` that multiply execution time
-   - **Container or service additions**: New `services:` or `container:` definitions that add overhead
+   Only flag a pattern when the affected job runs on a **paid runner**, meaning either a self-hosted runner (`runs-on: gcp-*`, `aws-*`, or any non-GitHub-provided label) or a larger/premium GitHub-hosted runner (labels with a core-count, GPU, or Arm64 suffix, e.g. `ubuntu-latest-16-core`). Skip patterns that exclusively affect standard free GitHub-hosted runners (`ubuntu-latest`, `ubuntu-slim`, `ubuntu-24.04`, `windows-latest`, `macos-latest`, etc.).
+
+   - **New workflow files**: Brand new workflow files added with paid-runner jobs
+   - **New jobs added**: Entirely new job definitions added to existing workflows, running on paid runners
+   - **New triggers added**: Additional trigger events on workflows with paid-runner jobs (e.g., adding `push` alongside `pull_request`, adding `schedule`, adding more branch patterns)
+   - **Increased timeouts**: `timeout-minutes` values being raised on paid-runner jobs
+   - **Larger / shifted runner types**: Changes that move a job to a larger paid runner, or migrate a job from a free runner to a paid one (e.g., `ubuntu-latest` → `gcp-core-8-default`, or `ubuntu-latest` → `ubuntu-latest-16-core`)
+   - **Extended matrix strategies**: More entries in matrix configurations on paid-runner jobs
+   - **New or expanded test suites**: Addition of large test commands, new test frameworks, or expansion of test scope on paid-runner jobs
+   - **Removed concurrency controls**: Removal of `concurrency` groups that previously prevented duplicate paid-runner runs
+   - **Removed path filters**: Removing `paths:` or `paths-ignore:` filters causing workflows with paid-runner jobs to trigger more broadly
+   - **Added retry logic**: Adding retry steps or `continue-on-error` that multiply execution time on paid-runner jobs
+   - **Container or service additions**: New `services:` or `container:` definitions on paid-runner jobs that add overhead
 
 3. **Assess impact**: For each detected change, estimate the cost impact as **Low**, **Medium**, or **High** based on:
    - How frequently the workflow runs (scheduled vs. per-push vs. per-PR)
-   - The size of the runner change
-   - The number of additional minutes per run
+   - The size of the paid-runner change (e.g., `gcp-core-2` → `gcp-core-16` is High; minor increase is Medium)
+   - The number of additional paid-runner minutes per run
+
+   Changes that only affect standard free GitHub-hosted runners have zero cost impact and must not appear in the report.
 
 4. **Generate report body**. The body must fit under the 10 KB `update-issue` safe-output limit; the structural caps below keep it well under that budget without measuring bytes:
    - A summary section with the total number of CI changes and how many are cost-relevant
