@@ -42,10 +42,20 @@ public sealed interface ClusterConfigurationManagementRequest {
   record PurgeRequest(boolean dryRun) implements ClusterConfigurationManagementRequest {}
 
   record BrokerScaleRequest(
-      Set<MemberId> members, Optional<Integer> newReplicationFactor, boolean dryRun)
+      Set<MemberId> members,
+      Optional<Integer> newReplicationFactor,
+      Optional<Integer> newPartitionCount,
+      boolean dryRun)
       implements ClusterConfigurationManagementRequest {
     public BrokerScaleRequest(final Set<MemberId> members, final boolean dryRun) {
-      this(members, Optional.empty(), dryRun);
+      this(members, Optional.empty(), Optional.empty(), dryRun);
+    }
+
+    public BrokerScaleRequest(
+        final Set<MemberId> members,
+        final Optional<Integer> newReplicationFactor,
+        final boolean dryRun) {
+      this(members, newReplicationFactor, Optional.empty(), dryRun);
     }
   }
 

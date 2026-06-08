@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.it.cluster.management;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 import feign.FeignException;
@@ -96,6 +97,44 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
     return List.of(
         new Zone(ZONES[0], brokersZoneA, replicasZoneA, 100),
         new Zone(ZONES[1], brokersZoneB, replicasZoneB, 10));
+  }
+
+  @Test
+  void shouldScaleZoneViaCount() {
+    try (final var cluster = createCluster(minReplicationFactor())) {
+      // given
+      cluster.awaitCompleteTopology();
+      final var actuator = ClusterActuator.of(cluster.availableGateway());
+
+      // when -- scale zone() (zoneA) from its current broker count to one more
+      final var request =
+          new ClusterConfigPatchRequest()
+              .brokers(new ClusterConfigPatchRequestBrokers().count(brokerCount()).zone(zone()));
+      final var response = actuator.patchCluster(request, true, false);
+
+      // then -- cluster grew by one (zoneA has an additional broker)
+      assertThat(response.getExpectedTopology()).hasSize(brokerCount() + 1);
+      assertThat(response.getPlannedChanges()).isNotEmpty();
+    }
+  }
+
+  @Test
+  void shouldRejectCountWithoutZoneOnZoneAware() {
+    try (final var cluster = createCluster(minReplicationFactor())) {
+      // given
+      cluster.awaitCompleteTopology();
+      final var actuator = ClusterActuator.of(cluster.availableGateway());
+
+      // when
+      final var request =
+          new ClusterConfigPatchRequest()
+              .brokers(new ClusterConfigPatchRequestBrokers().count(brokerCount() + 1));
+
+      // then -- rejected: zone field is required for count-based scaling on zone-aware clusters
+      assertThatCode(() -> actuator.patchCluster(request, true, false))
+          .isInstanceOf(FeignException.BadRequest.class)
+          .hasMessageContaining("zone");
+    }
   }
 
   @Test

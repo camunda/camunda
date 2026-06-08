@@ -46,6 +46,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -249,12 +250,34 @@ public class ClusterEndpoint {
               .map(ClusterConfigPatchRequestPartitions::getReplicationFactor);
 
       if (isScale) {
-        final var scaleRequest =
-            new ClusterScaleRequest(
-                Optional.of(brokers.getCount()), newPartitionCount, newReplicationFactor, dryRun);
-        return ClusterApiUtils.mapOperationResponse(
-            requestSender.scaleCluster(scaleRequest).join());
+        final String zone = brokers.getZone();
+        final boolean zoneAware = isClusterZoneAware();
+        if (newReplicationFactor.isPresent() && zoneAware) {
+          return invalidRequest(
+              "Changing the replication factor is not supported on zone-aware clusters");
+        }
+        if (zone != null) {
+          if (!zoneAware) {
+            return invalidRequest("'brokers.zone' is only valid on zone-aware clusters");
+          }
+          return scaleZoneByCount(
+              dryRun, zone, brokers.getCount(), newPartitionCount, newReplicationFactor);
+        } else {
+          if (zoneAware) {
+            return invalidRequest(
+                "Specify 'brokers.zone' to count-scale a zone-aware cluster; use 'brokers.add'/'brokers.remove' for multi-zone changes");
+          }
+          final var scaleRequest =
+              new ClusterScaleRequest(
+                  Optional.of(brokers.getCount()), newPartitionCount, newReplicationFactor, dryRun);
+          return ClusterApiUtils.mapOperationResponse(
+              requestSender.scaleCluster(scaleRequest).join());
+        }
       } else {
+        if (newReplicationFactor.isPresent() && isClusterZoneAware()) {
+          return invalidRequest(
+              "Changing the replication factor is not supported on zone-aware clusters");
+        }
         return patchCluster(dryRun, request, brokers, newPartitionCount, newReplicationFactor);
       }
 
@@ -294,6 +317,30 @@ public class ClusterEndpoint {
           return ClusterApiUtils.mapOperationResponse(
               requestSender.patchCluster(patchRequest).join());
         });
+  }
+
+  private ResponseEntity<?> scaleZoneByCount(
+      final boolean dryRun,
+      final String zone,
+      final int count,
+      final Optional<Integer> newPartitionCount,
+      final Optional<Integer> newReplicationFactor) {
+    final var topologyResult = requestSender.getTopology().join();
+    if (topologyResult.isLeft()) {
+      return ClusterApiUtils.mapErrorResponse(topologyResult.getLeft());
+    }
+    final var currentMembers = topologyResult.get().members().keySet();
+    final Set<MemberId> otherZoneMembers =
+        currentMembers.stream().filter(m -> !zone.equals(m.zone())).collect(Collectors.toSet());
+    final Set<MemberId> targetZoneMembers =
+        IntStream.range(0, count).mapToObj(i -> MemberId.from(zone, i)).collect(Collectors.toSet());
+    final Set<MemberId> allTargetMembers = new HashSet<>();
+    allTargetMembers.addAll(otherZoneMembers);
+    allTargetMembers.addAll(targetZoneMembers);
+    return ClusterApiUtils.mapOperationResponse(
+        requestSender
+            .scaleMembers(new BrokerScaleRequest(allTargetMembers, newReplicationFactor, dryRun))
+            .join());
   }
 
   private ResponseEntity<?> forceRemoveBrokers(
