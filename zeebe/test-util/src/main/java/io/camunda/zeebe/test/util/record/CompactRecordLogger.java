@@ -74,6 +74,8 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryContentType;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.AsyncRequestRecordValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
@@ -332,6 +334,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.GLOBAL_LISTENER, this::summarizeGlobalListener);
     valueLoggers.put(RESOURCE_REEXPORT, this::summarizeResourceReexport);
     valueLoggers.put(ValueType.AGENT_INSTANCE, this::summarizeAgentInstance);
+    valueLoggers.put(ValueType.AGENT_HISTORY, this::summarizeAgentHistory);
   }
 
   public CompactRecordLogger(final Collection<Record<?>> records) {
@@ -543,6 +546,87 @@ public class CompactRecordLogger {
               changedAttributes.stream()
                   .map(CompactRecordLogger::abbreviateToFirstLetters)
                   .toList());
+    }
+
+    return result.toString();
+  }
+
+  protected String summarizeAgentHistory(final Record<?> record) {
+    final var value = (AgentHistoryRecordValue) record.getValue();
+    final var result = new StringBuilder();
+
+    result
+        .append(shortenKey(value.getAgentInstanceKey()))
+        .append("#")
+        .append(value.getIteration())
+        .append(" ")
+        .append(value.getRole())
+        .append(" ")
+        .append(value.getCommitStatus())
+        .append(" @")
+        .append(shortenKey(value.getElementInstanceKey()))
+        .append(" ")
+        .append(shortenKey(value.getJobKey()))
+        .append("#")
+        .append(value.getJobLease());
+
+    final var metrics = value.getMetrics();
+    if (metrics != null) {
+      if (metrics.getInputTokens() != 0 || metrics.getOutputTokens() != 0) {
+        result
+            .append(" tokens:")
+            .append(metrics.getInputTokens())
+            .append("/")
+            .append(metrics.getOutputTokens());
+      }
+      if (metrics.getDurationMs() != 0) {
+        result.append(" ms:").append(metrics.getDurationMs());
+      }
+    }
+
+    final var content = value.getContent();
+    final var toolCalls = value.getToolCalls();
+
+    final var indent = StringUtils.rightPad("\n", 8 + valueTypeChars);
+
+    if (content != null && !content.isEmpty()) {
+      for (final var block : content) {
+        final var contentType = block.getContentType();
+        if (contentType == null || contentType == AgentHistoryContentType.UNSPECIFIED) {
+          continue;
+        }
+        switch (contentType) {
+          case TEXT -> {
+            final var text = block.getText();
+            if (!StringUtils.isEmpty(text)) {
+              result.append(indent).append(StringUtils.abbreviate(text, 50));
+            }
+          }
+          case DOCUMENT -> {
+            final var docRef = block.getDocumentReference();
+            if (docRef != null && !StringUtils.isEmpty(docRef.getDocumentId())) {
+              result.append(indent).append("doc:").append(docRef.getDocumentId());
+            }
+          }
+          case OBJECT -> {
+            final var object = block.getObject();
+            if (object != null && !object.isEmpty()) {
+              result.append(indent).append(StringUtils.abbreviate(object.toString(), 50));
+            }
+          }
+          default -> {} // skip unknown types
+        }
+      }
+    }
+
+    if (toolCalls != null && !toolCalls.isEmpty()) {
+      result
+          .append(indent)
+          .append("calling tools: ")
+          .append(
+              toolCalls.stream()
+                  .map(AgentHistoryRecordValue.AgentHistoryEmbeddedToolCallValue::getToolName)
+                  .collect(Collectors.joining(", ")));
     }
 
     return result.toString();
