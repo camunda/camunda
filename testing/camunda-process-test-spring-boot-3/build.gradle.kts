@@ -19,6 +19,7 @@ dependencies {
     implementation(project(":camunda-spring-boot-3-starter"))
     implementation(project(":camunda-client-java"))
 
+    testImplementation(project(":camunda-process-test-coverage"))
     testImplementation(project(":zeebe-bpmn-model"))
     testCompileOnly(project(":camunda-spring-boot-starter"))
     testImplementation(project(":camunda-process-test-langchain4j"))

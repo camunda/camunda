@@ -1,46 +1,32 @@
-import org.gradle.api.provider.Provider
-
-fun Provider<String>.asEnabledFlag(): Provider<Boolean> =
-    map { value -> value.isEmpty() || value.toBoolean() }
-
 plugins {
-    id("buildlogic.frontend-webjar-conventions")
+    id("buildlogic.server-conventions")
 }
 
-val skipFrontendBuild =
-    providers.gradleProperty("skip.fe.build")
-        .orElse(providers.gradleProperty("quickly"))
-        .asEnabledFlag()
-        .orElse(true)
-val skipProcessTestFrontendBuild =
-    providers.gradleProperty("skip.fe.process-test.build").asEnabledFlag().orElse(true)
-val shouldBuildFrontend = !skipFrontendBuild.get() || !skipProcessTestFrontendBuild.get()
-
-frontendWebjar {
-    frontendBuildDirectory.set(layout.buildDirectory.dir("generated-frontend-resources"))
-    resourceTargetPath.set("")
+java {
+    disableAutoTargetJvm()
 }
 
-tasks.named<com.github.gradle.node.npm.task.NpmTask>("npmVersionPackage") {
-    enabled = false
+tasks.withType<JavaCompile>().configureEach {
+    options.release.set(8)
 }
 
-tasks.named<com.github.gradle.node.npm.task.NpmTask>("npmCi") {
-    enabled = shouldBuildFrontend
+dependencies {
+    implementation(project(":camunda-client-java"))
+    implementation(project(":zeebe-bpmn-model"))
+    implementation(libs.org.slf4j.slf4j.api)
+    implementation(libs.org.camunda.bpm.model.camunda.dmn.model)
+    implementation(libs.org.camunda.bpm.model.camunda.xml.model)
+    implementation(libs.com.fasterxml.jackson.core.jackson.databind)
+    implementation(libs.com.fasterxml.jackson.core.jackson.annotations)
+    implementation(libs.com.fasterxml.jackson.core.jackson.core)
+    implementation(libs.javax.annotation.javax.annotation.api)
+    implementation(libs.commons.io.commons.io)
+    compileOnly(libs.org.immutables.value)
+    annotationProcessor(libs.org.immutables.value)
+    testImplementation(libs.org.junit.jupiter.junit.jupiter.api.x1)
+    testImplementation(libs.org.assertj.assertj.core)
+    testImplementation(libs.org.mockito.mockito.core)
+    testImplementation(libs.org.mockito.mockito.junit.jupiter)
 }
 
-tasks.named<com.github.gradle.node.npm.task.NpmTask>("npmBuild") {
-    enabled = shouldBuildFrontend
-    environment.put(
-        "BUILD_PATH",
-        layout.buildDirectory.dir("generated-frontend-resources/coverage").get().asFile.absolutePath,
-    )
-}
-
-tasks.named<org.gradle.language.jvm.tasks.ProcessResources>("processResources") {
-    if (shouldBuildFrontend) {
-        dependsOn(tasks.named("npmBuild"))
-    }
-}
-
-description = "Camunda Process Test Coverage Frontend (New)"
+description = "Camunda Process Test Coverage"
