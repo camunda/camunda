@@ -60,11 +60,11 @@ public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
 
   // the inbound channel type that triggered this operation (e.g. "MCP")
   @SinceVersion(value = "8.10.0", requireDefault = false)
-  private String requestSourceChannelType;
+  private String inboundChannelType;
 
   // the tool name when the inbound channel is MCP
   @SinceVersion(value = "8.10.0", requireDefault = false)
-  private String requestSourceToolName;
+  private String inboundChannelToolName;
 
   // marks if the operations was successful or failed
   @SinceVersion(value = "8.9.0", requireDefault = false)
@@ -239,21 +239,21 @@ public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
     return this;
   }
 
-  public String getRequestSourceChannelType() {
-    return requestSourceChannelType;
+  public String getInboundChannelType() {
+    return inboundChannelType;
   }
 
-  public AuditLogEntity setRequestSourceChannelType(final String requestSourceChannelType) {
-    this.requestSourceChannelType = requestSourceChannelType;
+  public AuditLogEntity setInboundChannelType(final String inboundChannelType) {
+    this.inboundChannelType = inboundChannelType;
     return this;
   }
 
-  public String getRequestSourceToolName() {
-    return requestSourceToolName;
+  public String getInboundChannelToolName() {
+    return inboundChannelToolName;
   }
 
-  public AuditLogEntity setRequestSourceToolName(final String requestSourceToolName) {
-    this.requestSourceToolName = requestSourceToolName;
+  public AuditLogEntity setInboundChannelToolName(final String inboundChannelToolName) {
+    this.inboundChannelToolName = inboundChannelToolName;
     return this;
   }
 

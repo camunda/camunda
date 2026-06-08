@@ -52,8 +52,8 @@ public record AuditLogDbModel(
     String entityDescription,
     int partitionId,
     OffsetDateTime historyCleanupDate,
-    String requestSourceChannelType,
-    String requestSourceToolName)
+    String inboundChannelType,
+    String inboundChannelToolName)
     implements DbModel<AuditLogDbModel> {
 
   @Override
@@ -101,8 +101,8 @@ public record AuditLogDbModel(
         .partitionId(partitionId)
         .historyCleanupDate(historyCleanupDate)
         .rootProcessInstanceKey(rootProcessInstanceKey)
-        .requestSourceChannelType(requestSourceChannelType)
-        .requestSourceToolName(requestSourceToolName);
+        .inboundChannelType(inboundChannelType)
+        .inboundChannelToolName(inboundChannelToolName);
   }
 
   public AuditLogDbModel truncateEntityDescription(final int sizeLimit, final Integer byteLimit) {
@@ -156,8 +156,8 @@ public record AuditLogDbModel(
     private String entityDescription;
     private int partitionId;
     private OffsetDateTime historyCleanupDate;
-    private String requestSourceChannelType;
-    private String requestSourceToolName;
+    private String inboundChannelType;
+    private String inboundChannelToolName;
 
     public Builder() {}
 
@@ -346,13 +346,13 @@ public record AuditLogDbModel(
       return this;
     }
 
-    public Builder requestSourceChannelType(final String requestSourceChannelType) {
-      this.requestSourceChannelType = requestSourceChannelType;
+    public Builder inboundChannelType(final String inboundChannelType) {
+      this.inboundChannelType = inboundChannelType;
       return this;
     }
 
-    public Builder requestSourceToolName(final String requestSourceToolName) {
-      this.requestSourceToolName = requestSourceToolName;
+    public Builder inboundChannelToolName(final String inboundChannelToolName) {
+      this.inboundChannelToolName = inboundChannelToolName;
       return this;
     }
 
@@ -396,8 +396,8 @@ public record AuditLogDbModel(
           entityDescription,
           partitionId,
           historyCleanupDate,
-          requestSourceChannelType,
-          requestSourceToolName);
+          inboundChannelType,
+          inboundChannelToolName);
     }
   }
 }

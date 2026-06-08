@@ -32,8 +32,8 @@ public class AuditLogTemplate extends AbstractTemplateDescriptor
   public static final String ACTOR_ID = "actorId";
   public static final String ACTOR_TYPE = "actorType";
   public static final String AGENT_ELEMENT_ID = "agentElementId";
-  public static final String REQUEST_SOURCE_CHANNEL_TYPE = "requestSourceChannelType";
-  public static final String REQUEST_SOURCE_TOOL_NAME = "requestSourceToolName";
+  public static final String INBOUND_CHANNEL_TYPE = "inboundChannelType";
+  public static final String INBOUND_CHANNEL_TOOL_NAME = "inboundChannelToolName";
   public static final String AUDIT_LOG_KEY = "auditLogKey";
   public static final String BATCH_OPERATION_KEY = "batchOperationKey";
   public static final String BATCH_OPERATION_TYPE = "batchOperationType";

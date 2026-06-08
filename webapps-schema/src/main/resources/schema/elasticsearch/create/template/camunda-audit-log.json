@@ -108,10 +108,10 @@
       "entityDescription": {
         "type": "keyword"
       },
-      "requestSourceChannelType": {
+      "inboundChannelType": {
         "type": "keyword"
       },
-      "requestSourceToolName": {
+      "inboundChannelToolName": {
         "type": "keyword"
       }
     }

@@ -95,7 +95,7 @@ public interface AuditLogResult {
 
   String getEntityDescription();
 
-  String getRequestSourceChannelType();
+  String getInboundChannelType();
 
-  String getRequestSourceToolName();
+  String getInboundChannelToolName();
 }

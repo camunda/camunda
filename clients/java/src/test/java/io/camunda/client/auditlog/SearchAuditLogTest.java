@@ -110,8 +110,8 @@ public class SearchAuditLogTest extends ClientRestTest {
                     .relatedEntityKey("relatedEntityKey")
                     .relatedEntityType(AuditLogEntityTypeEnum.USER)
                     .entityDescription("entityDescription")
-                    .requestSourceChannelType("MCP")
-                    .requestSourceToolName("myTool"))
+                    .inboundChannelType("MCP")
+                    .inboundChannelToolName("myTool"))
         .send()
         .join();
 
@@ -147,8 +147,8 @@ public class SearchAuditLogTest extends ClientRestTest {
     assertThat(filter.getRelatedEntityKey().get$Eq()).isEqualTo("relatedEntityKey");
     assertThat(filter.getRelatedEntityType().get$Eq().getValue()).isEqualTo("USER");
     assertThat(filter.getEntityDescription().get$Eq()).isEqualTo("entityDescription");
-    assertThat(filter.getRequestSourceChannelType().get$Eq()).isEqualTo("MCP");
-    assertThat(filter.getRequestSourceToolName().get$Eq()).isEqualTo("myTool");
+    assertThat(filter.getInboundChannelType().get$Eq()).isEqualTo("MCP");
+    assertThat(filter.getInboundChannelToolName().get$Eq()).isEqualTo("myTool");
   }
 
   @Test
@@ -185,8 +185,8 @@ public class SearchAuditLogTest extends ClientRestTest {
                     .relatedEntityKey(f -> f.eq("relatedEntityKey"))
                     .relatedEntityType(f -> f.eq(AuditLogEntityTypeEnum.USER))
                     .entityDescription(f -> f.eq("entityDescription"))
-                    .requestSourceChannelType(f -> f.like("MC*"))
-                    .requestSourceToolName(f -> f.eq("myTool")))
+                    .inboundChannelType(f -> f.like("MC*"))
+                    .inboundChannelToolName(f -> f.eq("myTool")))
         .send()
         .join();
 
@@ -222,8 +222,8 @@ public class SearchAuditLogTest extends ClientRestTest {
     assertThat(filter.getRelatedEntityKey().get$Eq()).isEqualTo("relatedEntityKey");
     assertThat(filter.getRelatedEntityType().get$Eq().getValue()).isEqualTo("USER");
     assertThat(filter.getEntityDescription().get$Eq()).isEqualTo("entityDescription");
-    assertThat(filter.getRequestSourceChannelType().get$Like()).isEqualTo("MC*");
-    assertThat(filter.getRequestSourceToolName().get$Eq()).isEqualTo("myTool");
+    assertThat(filter.getInboundChannelType().get$Like()).isEqualTo("MC*");
+    assertThat(filter.getInboundChannelToolName().get$Eq()).isEqualTo("myTool");
   }
 
   @Test
@@ -271,9 +271,9 @@ public class SearchAuditLogTest extends ClientRestTest {
                     .asc()
                     .processInstanceKey()
                     .asc()
-                    .requestSourceChannelType()
+                    .inboundChannelType()
                     .asc()
-                    .requestSourceToolName()
+                    .inboundChannelToolName()
                     .desc()
                     .result()
                     .asc()
@@ -312,8 +312,8 @@ public class SearchAuditLogTest extends ClientRestTest {
     assertSort(sorts.get(16), "processDefinitionId", SortOrderEnum.ASC);
     assertSort(sorts.get(17), "processDefinitionKey", SortOrderEnum.ASC);
     assertSort(sorts.get(18), "processInstanceKey", SortOrderEnum.ASC);
-    assertSort(sorts.get(19), "requestSourceChannelType", SortOrderEnum.ASC);
-    assertSort(sorts.get(20), "requestSourceToolName", SortOrderEnum.DESC);
+    assertSort(sorts.get(19), "inboundChannelType", SortOrderEnum.ASC);
+    assertSort(sorts.get(20), "inboundChannelToolName", SortOrderEnum.DESC);
     assertSort(sorts.get(21), "result", SortOrderEnum.ASC);
     assertSort(sorts.get(22), "tenantId", SortOrderEnum.ASC);
     assertSort(sorts.get(23), "timestamp", SortOrderEnum.DESC);

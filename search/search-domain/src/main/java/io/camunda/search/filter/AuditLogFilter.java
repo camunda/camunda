@@ -48,8 +48,8 @@ public record AuditLogFilter(
     List<Operation<String>> relatedEntityKeyOperations,
     List<Operation<String>> relatedEntityTypeOperations,
     List<Operation<String>> entityDescriptionOperations,
-    List<Operation<String>> requestSourceChannelTypeOperations,
-    List<Operation<String>> requestSourceToolNameOperations)
+    List<Operation<String>> inboundChannelTypeOperations,
+    List<Operation<String>> inboundChannelToolNameOperations)
     implements FilterBase {
 
   public static AuditLogFilter of(
@@ -89,8 +89,8 @@ public record AuditLogFilter(
         .relatedEntityKeyOperations(relatedEntityKeyOperations)
         .relatedEntityTypeOperations(relatedEntityTypeOperations)
         .entityDescriptionOperations(entityDescriptionOperations)
-        .requestSourceChannelTypeOperations(requestSourceChannelTypeOperations)
-        .requestSourceToolNameOperations(requestSourceToolNameOperations);
+        .inboundChannelTypeOperations(inboundChannelTypeOperations)
+        .inboundChannelToolNameOperations(inboundChannelToolNameOperations);
   }
 
   public static final class Builder implements ObjectBuilder<AuditLogFilter> {
@@ -124,8 +124,8 @@ public record AuditLogFilter(
     private List<Operation<String>> entityDescriptionOperations;
     private List<Operation<String>> relatedEntityTypeOperations;
     private List<Operation<String>> relatedEntityKeyOperations;
-    private List<Operation<String>> requestSourceChannelTypeOperations;
-    private List<Operation<String>> requestSourceToolNameOperations;
+    private List<Operation<String>> inboundChannelTypeOperations;
+    private List<Operation<String>> inboundChannelToolNameOperations;
 
     public Builder auditLogKeyOperations(final List<Operation<String>> operations) {
       if (operations != null) {
@@ -476,29 +476,27 @@ public record AuditLogFilter(
       return entityDescriptionOperations(List.of(FilterUtil.mapDefaultToOperation(value, values)));
     }
 
-    public Builder requestSourceChannelTypeOperations(final List<Operation<String>> operations) {
+    public Builder inboundChannelTypeOperations(final List<Operation<String>> operations) {
       if (operations != null) {
-        requestSourceChannelTypeOperations =
-            addValuesToList(requestSourceChannelTypeOperations, operations);
+        inboundChannelTypeOperations = addValuesToList(inboundChannelTypeOperations, operations);
       }
       return this;
     }
 
-    public Builder requestSourceChannelTypes(final String value, final String... values) {
-      return requestSourceChannelTypeOperations(
-          List.of(FilterUtil.mapDefaultToOperation(value, values)));
+    public Builder inboundChannelTypes(final String value, final String... values) {
+      return inboundChannelTypeOperations(List.of(FilterUtil.mapDefaultToOperation(value, values)));
     }
 
-    public Builder requestSourceToolNameOperations(final List<Operation<String>> operations) {
+    public Builder inboundChannelToolNameOperations(final List<Operation<String>> operations) {
       if (operations != null) {
-        requestSourceToolNameOperations =
-            addValuesToList(requestSourceToolNameOperations, operations);
+        inboundChannelToolNameOperations =
+            addValuesToList(inboundChannelToolNameOperations, operations);
       }
       return this;
     }
 
-    public Builder requestSourceToolNames(final String value, final String... values) {
-      return requestSourceToolNameOperations(
+    public Builder inboundChannelToolNames(final String value, final String... values) {
+      return inboundChannelToolNameOperations(
           List.of(FilterUtil.mapDefaultToOperation(value, values)));
     }
 
@@ -535,8 +533,8 @@ public record AuditLogFilter(
           Objects.requireNonNullElse(relatedEntityKeyOperations, List.of()),
           Objects.requireNonNullElse(relatedEntityTypeOperations, List.of()),
           Objects.requireNonNullElse(entityDescriptionOperations, List.of()),
-          Objects.requireNonNullElse(requestSourceChannelTypeOperations, List.of()),
-          Objects.requireNonNullElse(requestSourceToolNameOperations, List.of()));
+          Objects.requireNonNullElse(inboundChannelTypeOperations, List.of()),
+          Objects.requireNonNullElse(inboundChannelToolNameOperations, List.of()));
     }
   }
 }
