@@ -173,7 +173,7 @@ mkdir -p "$namespace"
 # camunda-platform-values-${secondaryStorage}.yaml. Flat layout so the
 # per-namespace Makefile's -f <file>.yaml references resolve unchanged.
 cp -v  default/Makefile                              "$namespace/"
-cp -rv default/resources/                            "$namespace/"
+cp -rv default/resources                            "$namespace/"
 cp -v  default/values/camunda-platform-override-values.yaml "$namespace/"
 cp -v  default/values/load-test-values.yaml                 "$namespace/"
 cp -v  default/values/values-stable.yaml                    "$namespace/"
