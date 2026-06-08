@@ -26,6 +26,7 @@ env-h2-up:
 	ZEEBE_BROKER_EXPORTERS_RDBMS_CLASSNAME=io.camunda.exporter.rdbms.RdbmsExporter \
 	ZEEBE_BROKER_NETWORK_HOST=127.0.0.1 \
 	ZEEBE_BROKER_NETWORK_ADVERTISEDHOST=127.0.0.1 \
+	CAMUNDA_CLIENT_REST_ADDRESS=http://localhost:8080 \
 	mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml spring-boot:run \
 	  -Dspring-boot.run.mainClass="io.camunda.application.StandaloneCamunda" \
 	  -Dspring-boot.run.profiles=tasklist,broker,dev,dev-data,admin,consolidated-auth
@@ -48,7 +49,8 @@ env-up: $(DATABASE) setup-maven-context
     $(WRITE_OR_REPLACE_SCRIPT) CAMUNDA_SECURITY_INITIALIZATION_USERS_1_EMAIL "john@example.com" $(MAVEN_CONTEXT) && \
 		$(WRITE_OR_REPLACE_SCRIPT) CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0 "demo" $(MAVEN_CONTEXT) && \
 		$(WRITE_OR_REPLACE_SCRIPT) CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI "true" $(MAVEN_CONTEXT) && \
-		$(WRITE_OR_REPLACE_SCRIPT) CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED "false" $(MAVEN_CONTEXT)
+		$(WRITE_OR_REPLACE_SCRIPT) CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED "false" $(MAVEN_CONTEXT) && \
+		$(WRITE_OR_REPLACE_SCRIPT) CAMUNDA_CLIENT_REST_ADDRESS "http://localhost:8080" $(MAVEN_CONTEXT)
 	$(call run-env)
 
 # Set the env var ZEEBE_TASKLIST_AUTH0_CLIENTSECRET in your shell please, eg: export ZEEBE_TASKLIST_AUTH0_CLIENTSECRET=<client-secret>
