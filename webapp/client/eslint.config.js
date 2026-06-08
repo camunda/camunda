@@ -13,7 +13,7 @@ import {defineConfig} from 'eslint/config';
 import licenseHeaderPlugin from 'eslint-plugin-license-header';
 
 const files = {
-	browser: ['packages/**/*.{js,mjs,cjs,ts,mts,cts}', 'apps/**/*.{js,mjs,cjs,ts,mts,cts}'],
+	browser: ['packages/**/*.{js,jsx,mjs,cjs,ts,tsx,mts,cts}', 'apps/**/*.{js,jsx,mjs,cjs,ts,tsx,mts,cts}'],
 	node: ['scripts/**/*.{js,mjs,cjs,ts,mts,cts}', 'prettier.config.js'],
 };
 
