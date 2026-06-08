@@ -70,7 +70,7 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
   }
 
   @Override
-  protected void assertClusterScaleResponse(
+  protected void verifyClusterScaleViaPatch(
       final ClusterActuator actuator, final ClusterConfigPatchRequest request) {
     assertThatCode(() -> actuator.patchCluster(request, true, false))
         .isInstanceOf(FeignException.BadRequest.class)
@@ -78,11 +78,23 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
   }
 
   @Override
-  protected void assertClusterPatchResponse(
+  protected void verifyClusterPatch(
       final ClusterActuator actuator, final ClusterConfigPatchRequest request) {
-    assertThatCode(() -> actuator.patchCluster(request, true, false))
-        .isInstanceOf(FeignException.BadRequest.class)
-        .hasMessageContaining("zone-aware");
+    // Replace replicationFactor with per-zone replicationFactors so the cluster-patch path works
+    // on zone-aware clusters. zoneA: 2 replicas, zoneB: 1 replica (total RF = minRF + 1 = 3).
+    final var zoneAwareRequest =
+        new ClusterConfigPatchRequest()
+            .brokers(request.getBrokers())
+            .partitions(
+                new ClusterConfigPatchRequestPartitions()
+                    .count(partitionCount())
+                    .putNewReplicationFactorsItem(ZONES[0], 2)
+                    .putNewReplicationFactorsItem(ZONES[1], 1));
+    final var response = actuator.patchCluster(zoneAwareRequest, true, false);
+    assertThat(response.getExpectedTopology())
+        .describedAs("Cluster has " + brokerCount() + " brokers")
+        .hasSize(brokerCount());
+    assertThat(response.getPlannedChanges()).isNotEmpty();
   }
 
   private String zoneFor(final int nodeIdx) {
@@ -112,9 +124,28 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
               .brokers(new ClusterConfigPatchRequestBrokers().count(brokerCount()).zone(zone()));
       final var response = actuator.patchCluster(request, true, false);
 
+      final var topology = actuator.getTopology();
+
       // then -- cluster grew by one (zoneA has an additional broker)
       assertThat(response.getExpectedTopology()).hasSize(brokerCount() + 1);
       assertThat(response.getPlannedChanges()).isNotEmpty();
+      // then -- topology reports zone-aware distributor config
+      assertThat(topology.getPartitionDistribution()).isNotNull();
+      assertThat(topology.getPartitionDistribution().getType())
+          .isEqualTo(
+              io.camunda.zeebe.management.cluster.PartitionDistributionConfig.TypeEnum.ZONE_AWARE);
+      assertThat(topology.getPartitionDistribution().getZones())
+          .satisfiesExactlyInAnyOrder(
+              z -> {
+                assertThat(z.getName()).isEqualTo(ZONES[0]); // zoneA: 1 replica
+                assertThat(z.getNumberOfReplicas()).isEqualTo(1);
+                assertThat(z.getPriority()).isEqualTo(100);
+              },
+              z -> {
+                assertThat(z.getName()).isEqualTo(ZONES[1]); // zoneB: 1 replica
+                assertThat(z.getNumberOfReplicas()).isEqualTo(1);
+                assertThat(z.getPriority()).isEqualTo(10);
+              });
     }
   }
 
