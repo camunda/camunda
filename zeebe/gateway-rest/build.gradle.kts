@@ -26,6 +26,7 @@ dependencies {
     implementation(project(":camunda-security-protocol"))
     implementation(project(":camunda-security-validation"))
     implementation(libs.io.camunda.security.library.api)
+    implementation(libs.io.camunda.security.library.core)
     implementation(libs.io.camunda.security.library.spring.boot.starter)
     api(libs.org.springframework.spring.web)
     api(libs.org.springframework.spring.webmvc)

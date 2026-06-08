@@ -12,6 +12,7 @@ dependencies {
     implementation(project(":camunda-search-domain"))
     implementation(project(":camunda-search-client-reader"))
     api(libs.io.camunda.security.library.api)
+    api(libs.io.camunda.security.library.core)
     implementation(libs.org.slf4j.slf4j.api)
     testImplementation(project(":zeebe-auth"))
     testImplementation(project(":zeebe-protocol"))
