@@ -502,34 +502,34 @@ public interface AuditLogFilter extends SearchRequestFilter {
   AuditLogFilter entityDescription(final Consumer<StringProperty> fn);
 
   /**
-   * Filter audit logs by the request source channel type
+   * Filter audit logs by the inbound channel type
    *
-   * @param requestSourceChannelType the channel type (e.g. MCP)
+   * @param inboundChannelType the channel type (e.g. MCP)
    * @return the updated filter
    */
-  AuditLogFilter requestSourceChannelType(final String requestSourceChannelType);
+  AuditLogFilter inboundChannelType(final String inboundChannelType);
 
   /**
-   * Filter audit logs by the request source channel type using {@link StringProperty} consumer
+   * Filter audit logs by the inbound channel type using {@link StringProperty} consumer
    *
-   * @param fn the request source channel type filter consumer
+   * @param fn the inbound channel type filter consumer
    * @return the updated filter
    */
-  AuditLogFilter requestSourceChannelType(final Consumer<StringProperty> fn);
+  AuditLogFilter inboundChannelType(final Consumer<StringProperty> fn);
 
   /**
-   * Filter audit logs by the request source tool name
+   * Filter audit logs by the inbound channel tool name
    *
-   * @param requestSourceToolName the tool name
+   * @param inboundChannelToolName the tool name
    * @return the updated filter
    */
-  AuditLogFilter requestSourceToolName(final String requestSourceToolName);
+  AuditLogFilter inboundChannelToolName(final String inboundChannelToolName);
 
   /**
-   * Filter audit logs by the request source tool name using {@link StringProperty} consumer
+   * Filter audit logs by the inbound channel tool name using {@link StringProperty} consumer
    *
-   * @param fn the request source tool name filter consumer
+   * @param fn the inbound channel tool name filter consumer
    * @return the updated filter
    */
-  AuditLogFilter requestSourceToolName(final Consumer<StringProperty> fn);
+  AuditLogFilter inboundChannelToolName(final Consumer<StringProperty> fn);
 }

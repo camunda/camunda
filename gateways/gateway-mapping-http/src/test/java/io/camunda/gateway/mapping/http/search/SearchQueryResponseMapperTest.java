@@ -636,16 +636,16 @@ class SearchQueryResponseMapperTest {
             .result(AuditLogOperationResult.SUCCESS)
             .category(AuditLogOperationCategory.DEPLOYED_RESOURCES)
             .timestamp(OffsetDateTime.now())
-            .requestSourceChannelType("MCP")
-            .requestSourceToolName("myTool")
+            .inboundChannelType("MCP")
+            .inboundChannelToolName("myTool")
             .build();
 
     // when
     final var response = SearchQueryResponseMapper.toAuditLog(entity);
 
     // then
-    assertThat(response.getRequestSourceChannelType()).isEqualTo("MCP");
-    assertThat(response.getRequestSourceToolName()).isEqualTo("myTool");
+    assertThat(response.getInboundChannelType()).isEqualTo("MCP");
+    assertThat(response.getInboundChannelToolName()).isEqualTo("myTool");
   }
 
   @Test
@@ -660,16 +660,16 @@ class SearchQueryResponseMapperTest {
             .result(AuditLogOperationResult.SUCCESS)
             .category(AuditLogOperationCategory.DEPLOYED_RESOURCES)
             .timestamp(OffsetDateTime.now())
-            .requestSourceChannelType(null)
-            .requestSourceToolName(null)
+            .inboundChannelType(null)
+            .inboundChannelToolName(null)
             .build();
 
     // when
     final var response = SearchQueryResponseMapper.toAuditLog(entity);
 
     // then
-    assertThat(response.getRequestSourceChannelType()).isNull();
-    assertThat(response.getRequestSourceToolName()).isNull();
+    assertThat(response.getInboundChannelType()).isNull();
+    assertThat(response.getInboundChannelToolName()).isNull();
   }
 
   @Test

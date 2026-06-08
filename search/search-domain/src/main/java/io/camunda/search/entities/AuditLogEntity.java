@@ -48,8 +48,8 @@ public record AuditLogEntity(
     @Nullable String relatedEntityKey,
     @Nullable String entityDescription,
     @Nullable OffsetDateTime historyCleanupDate,
-    @Nullable String requestSourceChannelType,
-    @Nullable String requestSourceToolName)
+    @Nullable String inboundChannelType,
+    @Nullable String inboundChannelToolName)
     implements TenantOwnedEntity {
 
   public AuditLogEntity {
@@ -101,8 +101,8 @@ public record AuditLogEntity(
     private @Nullable String relatedEntityKey;
     private @Nullable String entityDescription;
     private @Nullable OffsetDateTime historyCleanupDate;
-    private @Nullable String requestSourceChannelType;
-    private @Nullable String requestSourceToolName;
+    private @Nullable String inboundChannelType;
+    private @Nullable String inboundChannelToolName;
 
     public Builder auditLogKey(final String auditLogKey) {
       this.auditLogKey = auditLogKey;
@@ -269,13 +269,13 @@ public record AuditLogEntity(
       return this;
     }
 
-    public Builder requestSourceChannelType(final String requestSourceChannelType) {
-      this.requestSourceChannelType = requestSourceChannelType;
+    public Builder inboundChannelType(final String inboundChannelType) {
+      this.inboundChannelType = inboundChannelType;
       return this;
     }
 
-    public Builder requestSourceToolName(final String requestSourceToolName) {
-      this.requestSourceToolName = requestSourceToolName;
+    public Builder inboundChannelToolName(final String inboundChannelToolName) {
+      this.inboundChannelToolName = inboundChannelToolName;
       return this;
     }
 
@@ -316,8 +316,8 @@ public record AuditLogEntity(
           relatedEntityKey,
           entityDescription,
           historyCleanupDate,
-          requestSourceChannelType,
-          requestSourceToolName);
+          inboundChannelType,
+          inboundChannelToolName);
     }
   }
 

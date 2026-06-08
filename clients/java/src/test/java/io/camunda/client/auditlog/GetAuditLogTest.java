@@ -58,16 +58,16 @@ public class GetAuditLogTest extends ClientRestTest {
         AUDIT_LOG_KEY,
         Instancio.of(AuditLogResult.class)
             .set(Select.field(AuditLogResult.class, "timestamp"), "2024-01-15T10:30:00+00:00")
-            .set(Select.field(AuditLogResult.class, "requestSourceChannelType"), "MCP")
-            .set(Select.field(AuditLogResult.class, "requestSourceToolName"), "myTool")
+            .set(Select.field(AuditLogResult.class, "inboundChannelType"), "MCP")
+            .set(Select.field(AuditLogResult.class, "inboundChannelToolName"), "myTool")
             .create()
             .auditLogKey(AUDIT_LOG_KEY));
 
     // when / then
     final io.camunda.client.api.search.response.AuditLogResult result =
         client.newAuditLogGetRequest(AUDIT_LOG_KEY).send().join();
-    assertThat(result.getRequestSourceChannelType()).isEqualTo("MCP");
-    assertThat(result.getRequestSourceToolName()).isEqualTo("myTool");
+    assertThat(result.getInboundChannelType()).isEqualTo("MCP");
+    assertThat(result.getInboundChannelToolName()).isEqualTo("myTool");
   }
 
   @Test

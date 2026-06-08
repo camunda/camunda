@@ -348,15 +348,25 @@
     </sql>
   </changeSet>
 
-  <changeSet id="add_request_source_to_audit_log" author="camunda">
+  <changeSet id="add_inbound_channel_type_to_audit_log" author="camunda">
     <preConditions onFail="MARK_RAN">
       <not>
-        <columnExists tableName="${prefix}AUDIT_LOG" columnName="REQUEST_SOURCE_CHANNEL_TYPE"/>
+        <columnExists tableName="${prefix}AUDIT_LOG" columnName="INBOUND_CHANNEL_TYPE"/>
       </not>
     </preConditions>
     <addColumn tableName="${prefix}AUDIT_LOG">
-      <column name="REQUEST_SOURCE_CHANNEL_TYPE" type="NVARCHAR(${userCharColumnSize})"/>
-      <column name="REQUEST_SOURCE_TOOL_NAME" type="NVARCHAR(${userCharColumnSize})"/>
+      <column name="INBOUND_CHANNEL_TYPE" type="NVARCHAR(${userCharColumnSize})"/>
+    </addColumn>
+  </changeSet>
+
+  <changeSet id="add_inbound_channel_tool_name_to_audit_log" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="${prefix}AUDIT_LOG" columnName="INBOUND_CHANNEL_TOOL_NAME"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="${prefix}AUDIT_LOG">
+      <column name="INBOUND_CHANNEL_TOOL_NAME" type="NVARCHAR(${userCharColumnSize})"/>
     </addColumn>
   </changeSet>
 

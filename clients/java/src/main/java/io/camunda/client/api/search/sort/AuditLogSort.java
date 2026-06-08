@@ -57,9 +57,9 @@ public interface AuditLogSort extends SearchRequestSort<AuditLogSort> {
 
   AuditLogSort processInstanceKey();
 
-  AuditLogSort requestSourceChannelType();
+  AuditLogSort inboundChannelType();
 
-  AuditLogSort requestSourceToolName();
+  AuditLogSort inboundChannelToolName();
 
   AuditLogSort result();
 

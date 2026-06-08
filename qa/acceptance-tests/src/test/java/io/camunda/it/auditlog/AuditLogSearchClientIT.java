@@ -723,13 +723,13 @@ public class AuditLogSearchClientIT {
   }
 
   @Test
-  void shouldSearchAuditLogsByRequestSourceChannelTypeNotPresent(
+  void shouldSearchAuditLogsByInboundChannelTypeNotPresent(
       @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
     // when
     final var auditLogItems =
         client
             .newAuditLogSearchRequest()
-            .filter(f -> f.requestSourceChannelType(p -> p.exists(false)))
+            .filter(f -> f.inboundChannelType(p -> p.exists(false)))
             .page(p -> p.limit(5))
             .send()
             .join();
@@ -739,18 +739,18 @@ public class AuditLogSearchClientIT {
     assertThat(auditLogItems.items())
         .allSatisfy(
             log -> {
-              assertThat(log.getRequestSourceChannelType()).isNull();
+              assertThat(log.getInboundChannelType()).isNull();
             });
   }
 
   @Test
-  void shouldSearchAuditLogsByRequestSourceToolNameNotPresent(
+  void shouldSearchAuditLogsByInboundChannelToolNameNotPresent(
       @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
     // when
     final var auditLogItems =
         client
             .newAuditLogSearchRequest()
-            .filter(f -> f.requestSourceToolName(p -> p.exists(false)))
+            .filter(f -> f.inboundChannelToolName(p -> p.exists(false)))
             .page(p -> p.limit(5))
             .send()
             .join();
@@ -760,7 +760,7 @@ public class AuditLogSearchClientIT {
     assertThat(auditLogItems.items())
         .allSatisfy(
             log -> {
-              assertThat(log.getRequestSourceToolName()).isNull();
+              assertThat(log.getInboundChannelToolName()).isNull();
             });
   }
 

@@ -106,9 +106,9 @@ public class AuditLogEntry {
 
   private Agent agent;
 
-  private ChannelType requestChannelType;
+  private ChannelType inboundChannelType;
 
-  private String requestToolName;
+  private String inboundChannelToolName;
 
   public String getEntityKey() {
     return entityKey;
@@ -128,21 +128,22 @@ public class AuditLogEntry {
     return this;
   }
 
-  public ChannelType getRequestChannelType() {
-    return requestChannelType;
+  public ChannelType getInboundChannelType() {
+    return inboundChannelType;
   }
 
-  public AuditLogEntry setRequestChannelType(final ChannelType requestChannelType) {
-    this.requestChannelType = requestChannelType;
+  public AuditLogEntry setInboundChannelType(final ChannelType inboundChannelType) {
+    this.inboundChannelType = inboundChannelType;
     return this;
   }
 
-  public String getRequestToolName() {
-    return requestToolName;
+  public String getInboundChannelToolName() {
+    return inboundChannelToolName;
   }
 
-  public AuditLogEntry setRequestToolName(final String requestToolName) {
-    this.requestToolName = StringUtils.isEmpty(requestToolName) ? null : requestToolName;
+  public AuditLogEntry setInboundChannelToolName(final String inboundChannelToolName) {
+    this.inboundChannelToolName =
+        StringUtils.isEmpty(inboundChannelToolName) ? null : inboundChannelToolName;
     return this;
   }
 
@@ -427,8 +428,8 @@ public class AuditLogEntry {
             .setOperationType(info.operationType())
             .setActor(info.actor())
             .setAgent(record.getAgent())
-            .setRequestChannelType(record.getRequestChannelType())
-            .setRequestToolName(record.getRequestToolName())
+            .setInboundChannelType(record.getRequestChannelType())
+            .setInboundChannelToolName(record.getRequestToolName())
             .setTenant(AuditLogTenant.of(record))
             .setBatchOperationKey(getBatchOperationKey(record))
             .setProcessInstanceKey(getProcessInstanceKey(record))

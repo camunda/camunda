@@ -433,28 +433,28 @@ public class AuditLogFilterImpl
   }
 
   @Override
-  public AuditLogFilter requestSourceChannelType(final String requestSourceChannelType) {
-    return requestSourceChannelType(b -> b.eq(requestSourceChannelType));
+  public AuditLogFilter inboundChannelType(final String inboundChannelType) {
+    return inboundChannelType(b -> b.eq(inboundChannelType));
   }
 
   @Override
-  public AuditLogFilter requestSourceChannelType(final Consumer<StringProperty> fn) {
+  public AuditLogFilter inboundChannelType(final Consumer<StringProperty> fn) {
     final StringProperty property = new StringPropertyImpl();
     fn.accept(property);
-    filter.setRequestSourceChannelType(provideSearchRequestProperty(property));
+    filter.setInboundChannelType(provideSearchRequestProperty(property));
     return this;
   }
 
   @Override
-  public AuditLogFilter requestSourceToolName(final String requestSourceToolName) {
-    return requestSourceToolName(b -> b.eq(requestSourceToolName));
+  public AuditLogFilter inboundChannelToolName(final String inboundChannelToolName) {
+    return inboundChannelToolName(b -> b.eq(inboundChannelToolName));
   }
 
   @Override
-  public AuditLogFilter requestSourceToolName(final Consumer<StringProperty> fn) {
+  public AuditLogFilter inboundChannelToolName(final Consumer<StringProperty> fn) {
     final StringProperty property = new StringPropertyImpl();
     fn.accept(property);
-    filter.setRequestSourceToolName(provideSearchRequestProperty(property));
+    filter.setInboundChannelToolName(provideSearchRequestProperty(property));
     return this;
   }
 

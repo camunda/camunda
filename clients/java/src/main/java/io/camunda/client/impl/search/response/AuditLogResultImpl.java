@@ -59,8 +59,8 @@ public class AuditLogResultImpl implements AuditLogResult {
   private String relatedEntityKey;
   private AuditLogEntityTypeEnum relatedEntityType;
   private String entityDescription;
-  private String requestSourceChannelType;
-  private String requestSourceToolName;
+  private String inboundChannelType;
+  private String inboundChannelToolName;
 
   public AuditLogResultImpl(final io.camunda.client.protocol.rest.AuditLogResult item) {
     auditLogKey = item.getAuditLogKey();
@@ -94,8 +94,8 @@ public class AuditLogResultImpl implements AuditLogResult {
     relatedEntityKey = item.getRelatedEntityKey();
     relatedEntityType = EnumUtil.convert(item.getRelatedEntityType(), AuditLogEntityTypeEnum.class);
     entityDescription = item.getEntityDescription();
-    requestSourceChannelType = item.getRequestSourceChannelType();
-    requestSourceToolName = item.getRequestSourceToolName();
+    inboundChannelType = item.getInboundChannelType();
+    inboundChannelToolName = item.getInboundChannelToolName();
   }
 
   @Override
@@ -370,21 +370,21 @@ public class AuditLogResultImpl implements AuditLogResult {
   }
 
   @Override
-  public String getRequestSourceChannelType() {
-    return requestSourceChannelType;
+  public String getInboundChannelType() {
+    return inboundChannelType;
   }
 
-  public void setRequestSourceChannelType(final String requestSourceChannelType) {
-    this.requestSourceChannelType = requestSourceChannelType;
+  public void setInboundChannelType(final String inboundChannelType) {
+    this.inboundChannelType = inboundChannelType;
   }
 
   @Override
-  public String getRequestSourceToolName() {
-    return requestSourceToolName;
+  public String getInboundChannelToolName() {
+    return inboundChannelToolName;
   }
 
-  public void setRequestSourceToolName(final String requestSourceToolName) {
-    this.requestSourceToolName = requestSourceToolName;
+  public void setInboundChannelToolName(final String inboundChannelToolName) {
+    this.inboundChannelToolName = inboundChannelToolName;
   }
 
   public void setTenantId(final String tenantId) {

@@ -62,7 +62,7 @@ public class McpAuditLogIT {
 
     waitForMessageSubscriptions(client, f -> f.toolName(TOOL_NAME), 1);
 
-    // start one instance via MCP tool call (requestSource=MCP)
+    // start one instance via MCP tool call (inboundChannelType=MCP)
     try (final var mcpClient =
         createMcpClient(
             "processes",
@@ -78,7 +78,7 @@ public class McpAuditLogIT {
       assertThat(result.isError()).withFailMessage("MCP tool call failed: %s", result).isFalse();
     }
 
-    // start a control instance via direct message correlation (no requestSource)
+    // start a control instance via direct message correlation (no inboundChannelType)
     startProcessInstanceWithMessage(client, MCP_MESSAGE_NAME);
 
     // wait until both process instance creation audit log entries are indexed
@@ -94,11 +94,11 @@ public class McpAuditLogIT {
   @Test
   void shouldTrackMcpRequestSourceInAuditLog(
       @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
-    // when — filter audit log directly by requestSource to isolate the MCP entry
+    // when — filter audit log directly by inboundChannelType to isolate the MCP entry
     final var auditLogs =
         client
             .newAuditLogSearchRequest()
-            .filter(f -> f.requestSourceChannelType("MCP").processDefinitionId(MCP_PROCESS_ID))
+            .filter(f -> f.inboundChannelType("MCP").processDefinitionId(MCP_PROCESS_ID))
             .send()
             .join();
 
@@ -108,8 +108,8 @@ public class McpAuditLogIT {
         .singleElement()
         .satisfies(
             log -> {
-              assertThat(log.getRequestSourceChannelType()).isEqualTo("MCP");
-              assertThat(log.getRequestSourceToolName()).startsWith(TOOL_NAME);
+              assertThat(log.getInboundChannelType()).isEqualTo("MCP");
+              assertThat(log.getInboundChannelToolName()).startsWith(TOOL_NAME);
             });
   }
 }
