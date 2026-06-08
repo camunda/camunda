@@ -61,6 +61,14 @@ public interface ReportWriter {
       final String description,
       final String collectionId);
 
+  IdResponseDto createOrUpdateSingleProcessReport(
+      final String reportId,
+      final String userId,
+      final ProcessReportDataDto reportData,
+      final String reportName,
+      final String description,
+      final String collectionId);
+
   IdResponseDto createNewSingleDecisionReport(
       final String userId,
       final DecisionReportDataDto reportData,

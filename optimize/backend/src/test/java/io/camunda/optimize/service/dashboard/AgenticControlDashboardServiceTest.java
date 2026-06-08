@@ -57,8 +57,11 @@ public class AgenticControlDashboardServiceTest {
 
   @BeforeEach
   void setUp() {
-    when(reportWriter.createNewSingleProcessReport(isNull(), any(), any(), any(), isNull()))
-        .thenReturn(new IdResponseDto("report-stub-id"));
+    // createOrUpdateSingleProcessReport is called with (reportId, userId, data, name, desc,
+    // collectionId)
+    when(reportWriter.createOrUpdateSingleProcessReport(
+            any(), isNull(), any(), any(), any(), isNull()))
+        .thenAnswer(invocation -> new IdResponseDto(invocation.getArgument(0)));
   }
 
   @Test
@@ -79,16 +82,17 @@ public class AgenticControlDashboardServiceTest {
   }
 
   @Test
-  void shouldSeedThreeKpiReportsOnColdStart() {
+  void shouldSeedThreeKpiReportsWithDeterministicIdsOnColdStart() {
     // given
     when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID)).thenReturn(Optional.empty());
 
     // when
     underTest.reconcile();
 
-    // then three reports are created
+    // then three reports are upserted with deterministic IDs and correct localization keys
     verify(reportWriter)
-        .createNewSingleProcessReport(
+        .createOrUpdateSingleProcessReport(
+            org.mockito.ArgumentMatchers.eq(AgenticControlDashboardService.KPI_COMPLETED_REPORT_ID),
             isNull(),
             any(),
             org.mockito.ArgumentMatchers.eq(
@@ -97,7 +101,9 @@ public class AgenticControlDashboardServiceTest {
                 AgenticControlDashboardService.KPI_EXECUTION_COMPLETED_DESCRIPTION),
             isNull());
     verify(reportWriter)
-        .createNewSingleProcessReport(
+        .createOrUpdateSingleProcessReport(
+            org.mockito.ArgumentMatchers.eq(
+                AgenticControlDashboardService.KPI_AVG_DURATION_REPORT_ID),
             isNull(),
             any(),
             org.mockito.ArgumentMatchers.eq(
@@ -106,7 +112,9 @@ public class AgenticControlDashboardServiceTest {
                 AgenticControlDashboardService.KPI_EXECUTION_AVG_DURATION_DESCRIPTION),
             isNull());
     verify(reportWriter)
-        .createNewSingleProcessReport(
+        .createOrUpdateSingleProcessReport(
+            org.mockito.ArgumentMatchers.eq(
+                AgenticControlDashboardService.KPI_INCIDENT_RATE_REPORT_ID),
             isNull(),
             any(),
             org.mockito.ArgumentMatchers.eq(
@@ -114,6 +122,47 @@ public class AgenticControlDashboardServiceTest {
             org.mockito.ArgumentMatchers.eq(
                 AgenticControlDashboardService.KPI_EXECUTION_INCIDENT_RATE_DESCRIPTION),
             isNull());
+  }
+
+  @Test
+  void shouldUpsertReportDefinitionsOnWarmRestart() {
+    // given — dashboard already exists (warm restart)
+    when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID))
+        .thenReturn(Optional.of(new DashboardDefinitionRestDto()));
+
+    // when — reconcile is called twice (simulating two restarts)
+    underTest.reconcile();
+    underTest.reconcile();
+
+    // then — reports are upserted on every call, dashboard is never recreated
+    verify(reportWriter, org.mockito.Mockito.times(2))
+        .createOrUpdateSingleProcessReport(
+            org.mockito.ArgumentMatchers.eq(AgenticControlDashboardService.KPI_COMPLETED_REPORT_ID),
+            any(),
+            any(),
+            any(),
+            any(),
+            any());
+    verify(dashboardWriter, never()).saveDashboard(any());
+  }
+
+  @Test
+  void shouldUseDeterministicTileIdsMatchingReportIds() {
+    // given
+    when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID)).thenReturn(Optional.empty());
+
+    // when
+    underTest.reconcile();
+
+    // then tile IDs in the saved dashboard match the deterministic report ID constants
+    final DashboardDefinitionRestDto saved = captureSavedDashboard();
+    assertThat(saved.getTiles())
+        .extracting(
+            io.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTileDto::getId)
+        .containsExactlyInAnyOrder(
+            AgenticControlDashboardService.KPI_COMPLETED_REPORT_ID,
+            AgenticControlDashboardService.KPI_AVG_DURATION_REPORT_ID,
+            AgenticControlDashboardService.KPI_INCIDENT_RATE_REPORT_ID);
   }
 
   @Test
@@ -165,19 +214,20 @@ public class AgenticControlDashboardServiceTest {
   }
 
   @Test
-  void shouldNotCreateOrMutateWhenDashboardAlreadyPresent() {
-    // given the dashboard already exists
+  void shouldUpsertReportsButNotRecreateDashboardOnWarmRestart() {
+    // given the dashboard already exists (warm restart)
     when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID))
         .thenReturn(Optional.of(new DashboardDefinitionRestDto()));
 
     // when
     underTest.reconcile();
 
-    // then nothing is written
+    // then reports are upserted (so config changes are applied) but dashboard is not touched
+    verify(reportWriter, org.mockito.Mockito.times(3))
+        .createOrUpdateSingleProcessReport(any(), any(), any(), any(), any(), any());
     verify(dashboardWriter, never()).saveDashboard(any());
     verify(dashboardWriter, never()).updateDashboard(any(), any());
     verify(dashboardWriter, never()).deleteDashboard(any());
-    verifyNoInteractions(reportWriter);
   }
 
   @Test

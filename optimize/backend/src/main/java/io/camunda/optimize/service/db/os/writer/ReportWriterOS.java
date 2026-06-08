@@ -133,6 +133,18 @@ public class ReportWriterOS implements ReportWriter {
       final String reportName,
       final String description,
       final String collectionId) {
+    return createOrUpdateSingleProcessReport(
+        IdGenerator.getNextId(), userId, reportData, reportName, description, collectionId);
+  }
+
+  @Override
+  public IdResponseDto createOrUpdateSingleProcessReport(
+      final String reportId,
+      final String userId,
+      final ProcessReportDataDto reportData,
+      final String reportName,
+      final String description,
+      final String collectionId) {
     if (reportData == null) {
       throw new OptimizeRuntimeException("reportData is null");
     }
@@ -140,13 +152,12 @@ public class ReportWriterOS implements ReportWriter {
       throw new OptimizeRuntimeException("reportName is null");
     }
 
-    LOG.debug("Writing new single report to OpenSearch");
+    LOG.debug("Writing single process report with id [{}] to OpenSearch", reportId);
 
-    final String id = IdGenerator.getNextId();
     final SingleProcessReportDefinitionRequestDto reportDefinitionDto =
         new SingleProcessReportDefinitionRequestDto();
 
-    reportDefinitionDto.setId(id);
+    reportDefinitionDto.setId(reportId);
     final OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
     reportDefinitionDto.setCreated(now);
     reportDefinitionDto.setLastModified(now);
@@ -160,23 +171,24 @@ public class ReportWriterOS implements ReportWriter {
     final IndexRequest.Builder<SingleProcessReportDefinitionRequestDto> request =
         new IndexRequest.Builder<SingleProcessReportDefinitionRequestDto>()
             .index(SINGLE_PROCESS_REPORT_INDEX_NAME)
-            .id(id)
+            .id(reportId)
             .document(reportDefinitionDto)
             .refresh(Refresh.True);
 
     final IndexResponse indexResponse = osClient.index(request);
 
-    if (!indexResponse.result().equals(Result.Created)) {
+    if (!indexResponse.result().equals(Result.Created)
+        && !indexResponse.result().equals(Result.Updated)) {
       final String message =
           String.format(
               "Could not write single process report with id [%s] and name [%s] to OpenSearch.",
-              id, reportName);
+              reportId, reportName);
       LOG.error(message);
       throw new OptimizeRuntimeException(message);
     }
 
-    LOG.debug("Single process report with id [{}] has successfully been created.", id);
-    return new IdResponseDto(id);
+    LOG.debug("Single process report with id [{}] has successfully been written.", reportId);
+    return new IdResponseDto(reportId);
   }
 
   @Override

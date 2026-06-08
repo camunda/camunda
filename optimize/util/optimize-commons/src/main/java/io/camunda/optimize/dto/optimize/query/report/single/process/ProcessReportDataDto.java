@@ -364,6 +364,11 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
     this.agenticControlReport = agenticControlReport;
   }
 
+  @JsonIgnore
+  public boolean isSystemGeneratedReport() {
+    return managementReport || instantPreviewReport || agenticControlReport;
+  }
+
   protected boolean canEqual(final Object other) {
     return other instanceof ProcessReportDataDto;
   }

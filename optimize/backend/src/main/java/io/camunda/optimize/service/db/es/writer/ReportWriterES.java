@@ -144,7 +144,19 @@ public class ReportWriterES implements ReportWriter {
       final String reportName,
       final String description,
       final String collectionId) {
-    LOG.debug("Writing new single report to Elasticsearch");
+    return createOrUpdateSingleProcessReport(
+        IdGenerator.getNextId(), userId, reportData, reportName, description, collectionId);
+  }
+
+  @Override
+  public IdResponseDto createOrUpdateSingleProcessReport(
+      final String reportId,
+      final String userId,
+      final ProcessReportDataDto reportData,
+      final String reportName,
+      final String description,
+      final String collectionId) {
+    LOG.debug("Writing single process report with id [{}] to Elasticsearch", reportId);
 
     if (reportData == null) {
       throw new OptimizeRuntimeException("reportData is null");
@@ -153,10 +165,9 @@ public class ReportWriterES implements ReportWriter {
       throw new OptimizeRuntimeException("reportName is null");
     }
 
-    final String id = IdGenerator.getNextId();
     final SingleProcessReportDefinitionRequestDto reportDefinitionDto =
         new SingleProcessReportDefinitionRequestDto();
-    reportDefinitionDto.setId(id);
+    reportDefinitionDto.setId(reportId);
     final OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
     reportDefinitionDto.setCreated(now);
     reportDefinitionDto.setLastModified(now);
@@ -173,20 +184,23 @@ public class ReportWriterES implements ReportWriter {
               OptimizeIndexRequestBuilderES.of(
                   i ->
                       i.optimizeIndex(esClient, SINGLE_PROCESS_REPORT_INDEX_NAME)
-                          .id(id)
+                          .id(reportId)
                           .document(reportDefinitionDto)
                           .refresh(Refresh.True)));
 
-      if (!indexResponse.result().equals(Result.Created)) {
-        final String message = "Could not write single process report to Elasticsearch.";
+      if (!indexResponse.result().equals(Result.Created)
+          && !indexResponse.result().equals(Result.Updated)) {
+        final String message =
+            String.format(
+                "Could not write single process report with id [%s] to Elasticsearch.", reportId);
         LOG.error(message);
         throw new OptimizeRuntimeException(message);
       }
 
-      LOG.debug("Single process report with id [{}] has successfully been created.", id);
-      return new IdResponseDto(id);
+      LOG.debug("Single process report with id [{}] has successfully been written.", reportId);
+      return new IdResponseDto(reportId);
     } catch (final IOException e) {
-      final String errorMessage = "Was not able to insert single process report.";
+      final String errorMessage = "Was not able to write single process report.";
       LOG.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }

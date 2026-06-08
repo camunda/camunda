@@ -32,9 +32,11 @@ import io.camunda.optimize.service.db.reader.DashboardReader;
 import io.camunda.optimize.service.db.writer.DashboardWriter;
 import io.camunda.optimize.service.db.writer.ReportWriter;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 import org.slf4j.Logger;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
@@ -59,6 +61,18 @@ public class AgenticControlDashboardService {
       "agenticKpiExecutionIncidentRateName";
   public static final String KPI_EXECUTION_INCIDENT_RATE_DESCRIPTION =
       "agenticKpiExecutionIncidentRateDescription";
+
+  // Deterministic report IDs — derived from fixed seed strings so IDs are stable across restarts
+  // and DB reimports. Same seed always produces the same UUID (UUID v3 / name-based).
+  public static final String KPI_COMPLETED_REPORT_ID =
+      UUID.nameUUIDFromBytes("agentic-kpi-completed-instances".getBytes(StandardCharsets.UTF_8))
+          .toString();
+  public static final String KPI_AVG_DURATION_REPORT_ID =
+      UUID.nameUUIDFromBytes("agentic-kpi-avg-duration".getBytes(StandardCharsets.UTF_8))
+          .toString();
+  public static final String KPI_INCIDENT_RATE_REPORT_ID =
+      UUID.nameUUIDFromBytes("agentic-kpi-incident-rate".getBytes(StandardCharsets.UTF_8))
+          .toString();
 
   private static final long INSTANCE_END_DATE_ROLLING_DAYS = 30L;
 
@@ -91,11 +105,16 @@ public class AgenticControlDashboardService {
   }
 
   public void reconcile() {
+    // Always upsert the three KPI reports so config changes are applied on every restart.
+    // Report IDs are deterministic so upserts are safe and tile references never orphan.
+    final List<DashboardReportTileDto> tiles = new ArrayList<>();
+    tiles.add(buildCompletedInstancesReport());
+    tiles.add(buildAvgDurationReport());
+    tiles.add(buildIncidentRateReport());
+
+    // Only create the dashboard itself if it is absent — the stable tile IDs mean we never
+    // need to recreate it just to keep tile→report references consistent.
     if (dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID).isEmpty()) {
-      final List<DashboardReportTileDto> tiles = new ArrayList<>();
-      tiles.add(buildCompletedInstancesReport());
-      tiles.add(buildAvgDurationReport());
-      tiles.add(buildIncidentRateReport());
       dashboardWriter.saveDashboard(buildAgentDashboard(tiles));
     }
   }
@@ -117,16 +136,14 @@ public class AgenticControlDashboardService {
                     .buildList())
             .agenticControlReport(true)
             .build();
-    final String id =
-        reportWriter
-            .createNewSingleProcessReport(
-                null,
-                reportData,
-                KPI_EXECUTION_COMPLETED_NAME,
-                KPI_EXECUTION_COMPLETED_DESCRIPTION,
-                null)
-            .getId();
-    return buildTile(id, new PositionDto(0, 0), new DimensionDto(6, 2));
+    reportWriter.createOrUpdateSingleProcessReport(
+        KPI_COMPLETED_REPORT_ID,
+        null,
+        reportData,
+        KPI_EXECUTION_COMPLETED_NAME,
+        KPI_EXECUTION_COMPLETED_DESCRIPTION,
+        null);
+    return buildTile(KPI_COMPLETED_REPORT_ID, new PositionDto(0, 0), new DimensionDto(6, 2));
   }
 
   private DashboardReportTileDto buildAvgDurationReport() {
@@ -146,23 +163,21 @@ public class AgenticControlDashboardService {
                     .buildList())
             .agenticControlReport(true)
             .build();
-    final String id =
-        reportWriter
-            .createNewSingleProcessReport(
-                null,
-                reportData,
-                KPI_EXECUTION_AVG_DURATION_NAME,
-                KPI_EXECUTION_AVG_DURATION_DESCRIPTION,
-                null)
-            .getId();
-    return buildTile(id, new PositionDto(6, 0), new DimensionDto(6, 2));
+    reportWriter.createOrUpdateSingleProcessReport(
+        KPI_AVG_DURATION_REPORT_ID,
+        null,
+        reportData,
+        KPI_EXECUTION_AVG_DURATION_NAME,
+        KPI_EXECUTION_AVG_DURATION_DESCRIPTION,
+        null);
+    return buildTile(KPI_AVG_DURATION_REPORT_ID, new PositionDto(6, 0), new DimensionDto(6, 2));
   }
 
   private DashboardReportTileDto buildIncidentRateReport() {
     final ProcessReportDataDto reportData =
         ProcessReportDataDto.builder()
             .definitions(Collections.emptyList())
-            .view(new ProcessViewDto(ProcessViewEntity.PROCESS_INSTANCE, ViewProperty.FREQUENCY))
+            .view(new ProcessViewDto(ProcessViewEntity.PROCESS_INSTANCE, ViewProperty.PERCENTAGE))
             .groupBy(new NoneGroupByDto())
             .distributedBy(new NoneDistributedByDto())
             .visualization(ProcessVisualization.NUMBER)
@@ -177,16 +192,14 @@ public class AgenticControlDashboardService {
                     .buildList())
             .agenticControlReport(true)
             .build();
-    final String id =
-        reportWriter
-            .createNewSingleProcessReport(
-                null,
-                reportData,
-                KPI_EXECUTION_INCIDENT_RATE_NAME,
-                KPI_EXECUTION_INCIDENT_RATE_DESCRIPTION,
-                null)
-            .getId();
-    return buildTile(id, new PositionDto(12, 0), new DimensionDto(6, 2));
+    reportWriter.createOrUpdateSingleProcessReport(
+        KPI_INCIDENT_RATE_REPORT_ID,
+        null,
+        reportData,
+        KPI_EXECUTION_INCIDENT_RATE_NAME,
+        KPI_EXECUTION_INCIDENT_RATE_DESCRIPTION,
+        null);
+    return buildTile(KPI_INCIDENT_RATE_REPORT_ID, new PositionDto(12, 0), new DimensionDto(6, 2));
   }
 
   private DashboardDefinitionRestDto buildAgentDashboard(final List<DashboardReportTileDto> tiles) {

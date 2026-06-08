@@ -227,10 +227,9 @@ public class ReportRestMapper {
     if (!(reportDefinitionDto instanceof SingleProcessReportDefinitionRequestDto)) {
       return false;
     }
-    final var data = ((SingleProcessReportDefinitionRequestDto) reportDefinitionDto).getData();
-    return data.isManagementReport()
-        || data.isInstantPreviewReport()
-        || data.isAgenticControlReport();
+    return ((SingleProcessReportDefinitionRequestDto) reportDefinitionDto)
+        .getData()
+        .isSystemGeneratedReport();
   }
 
   private void localizeReportData(
