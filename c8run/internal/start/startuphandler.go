@@ -15,6 +15,7 @@ import (
 	"syscall"
 
 	"github.com/camunda/camunda/c8run/internal/health"
+	"github.com/camunda/camunda/c8run/internal/jre"
 	"github.com/camunda/camunda/c8run/internal/overrides"
 	"github.com/camunda/camunda/c8run/internal/types"
 	"github.com/rs/zerolog/log"
@@ -30,6 +31,17 @@ type processHandler interface {
 	TrackProcessTree(pidPath string, rootPid int)
 }
 
+const (
+	expectedJavaVersion       = 21
+	java25RuntimeVersion      = 25
+	jdkJavaOptionsEnvironment = "JDK_JAVA_OPTIONS"
+)
+
+var java25RuntimeOptions = []string{
+	"--enable-native-access=ALL-UNNAMED",
+	"--sun-misc-unsafe-memory-access=allow",
+}
+
 func printSystemInformation(javaVersion, javaHome, javaOpts string, connectorsEnabled bool) {
 	fmt.Println("")
 	fmt.Println("")
@@ -42,6 +54,9 @@ func printSystemInformation(javaVersion, javaHome, javaOpts string, connectorsEn
 	fmt.Printf("  Version: %s\n", javaVersion)
 	fmt.Printf("  JAVA_HOME: %s\n", javaHome)
 	fmt.Printf("  JAVA_OPTS: %s\n", javaOpts)
+	if jdkJavaOptions := os.Getenv(jdkJavaOptionsEnvironment); jdkJavaOptions != "" {
+		fmt.Printf("  %s: %s\n", jdkJavaOptionsEnvironment, jdkJavaOptions)
+	}
 	fmt.Println("--------------------------")
 	fmt.Println("Logging Details:")
 	if connectorsEnabled {
@@ -58,17 +73,24 @@ func printSystemInformation(javaVersion, javaHome, javaOpts string, connectorsEn
 }
 
 func getJavaVersion(javaBinary string) (string, error) {
-	javaVersionCmd := exec.Command(javaBinary, "JavaVersion")
+	return runJavaHelper(javaBinary, "JavaVersion")
+}
+
+func runJavaHelper(javaBinary, helperClass string) (string, error) {
+	javaCmd := exec.Command(javaBinary, helperClass)
 	var out strings.Builder
 	var stderr strings.Builder
-	javaVersionCmd.Stdout = &out
-	javaVersionCmd.Stderr = &stderr
-	err := javaVersionCmd.Run()
-	if err != nil {
-		return "", fmt.Errorf("failed to run java version command: %w", err)
+	javaCmd.Stdout = &out
+	javaCmd.Stderr = &stderr
+	if err := javaCmd.Run(); err != nil {
+		return "", fmt.Errorf(
+			"failed to run java helper %s with %s: %w\n%s",
+			helperClass,
+			javaBinary,
+			err,
+			strings.TrimSpace(stderr.String()))
 	}
-	javaVersionOutput := out.String()
-	return javaVersionOutput, nil
+	return out.String(), nil
 }
 
 type StartupHandler struct {
@@ -139,20 +161,14 @@ func (s *StartupHandler) startApplication(cmd *exec.Cmd, pid string, logPath str
 }
 
 func getJavaHome(javaBinary string) (string, error) {
-	javaHomeCmd := exec.Command(javaBinary, "JavaHome")
-	var out strings.Builder
-	var stderr strings.Builder
-	javaHomeCmd.Stdout = &out
-	javaHomeCmd.Stderr = &stderr
-	err := javaHomeCmd.Run()
-	if err != nil {
-		return "", fmt.Errorf("failed to run java version command: %w", err)
-	}
-	javaHomeOutput := out.String()
-	return javaHomeOutput, nil
+	return runJavaHelper(javaBinary, "JavaHome")
 }
 
-func resolveJavaHomeAndBinary() (string, string, error) {
+func resolveJavaHomeAndBinary(parentDir string) (string, string, error) {
+	if javaHome, javaBinary, ok := resolveBundledJava(parentDir); ok {
+		return javaHome, javaBinary, nil
+	}
+
 	javaHome := os.Getenv("JAVA_HOME")
 	javaBinary := "java"
 	var javaHomeAfterSymlink string
@@ -173,7 +189,7 @@ func resolveJavaHomeAndBinary() (string, string, error) {
 	if javaHome == "" {
 		javaHome, err = getJavaHome(javaBinary)
 		if err != nil {
-			return "", "", fmt.Errorf("failed to get JAVA_HOME")
+			return "", "", fmt.Errorf("failed to get JAVA_HOME: %w", err)
 		}
 	}
 
@@ -212,6 +228,110 @@ func resolveJavaHomeAndBinary() (string, string, error) {
 	return javaHome, javaBinary, nil
 }
 
+func resolveBundledJava(parentDir string) (string, string, bool) {
+	if parentDir == "" {
+		return "", "", false
+	}
+
+	javaHome := jre.Home(parentDir)
+	javaBinary := jre.JavaBinary(parentDir)
+	if !isExecutableFile(javaBinary) {
+		return "", "", false
+	}
+	return javaHome, javaBinary, true
+}
+
+func isExecutableFile(path string) bool {
+	info, err := os.Stat(path)
+	if err != nil || info.IsDir() {
+		return false
+	}
+	if runtime.GOOS == "windows" {
+		return true
+	}
+	return info.Mode().Perm()&0o111 != 0
+}
+
+func configureJavaRuntimeEnvironment(javaHome, javaBinary string) error {
+	if err := os.Setenv("JAVA_HOME", javaHome); err != nil {
+		return fmt.Errorf("failed to set JAVA_HOME: %w", err)
+	}
+	// Camunda's launch scripts read JAVACMD; camunda.bat needs quotes for paths with spaces.
+	javaCmd := javaBinary
+	if runtime.GOOS == "windows" {
+		javaCmd = `"` + javaBinary + `"`
+	}
+	if err := os.Setenv("JAVACMD", javaCmd); err != nil {
+		return fmt.Errorf("failed to set JAVACMD: %w", err)
+	}
+	return nil
+}
+
+func parseJavaMajorVersion(version string) (int, error) {
+	version = strings.TrimSpace(version)
+	if version == "" {
+		return 0, fmt.Errorf("empty version")
+	}
+
+	firstToken := strings.Fields(version)[0]
+	firstToken = strings.Trim(firstToken, `"`)
+	parts := strings.Split(firstToken, ".")
+	if len(parts) == 0 {
+		return 0, fmt.Errorf("invalid version")
+	}
+	if parts[0] == "1" && len(parts) > 1 {
+		return leadingInteger(parts[1])
+	}
+	return leadingInteger(parts[0])
+}
+
+func leadingInteger(value string) (int, error) {
+	for index, char := range value {
+		if char < '0' || char > '9' {
+			if index == 0 {
+				return 0, fmt.Errorf("invalid version")
+			}
+			return strconv.Atoi(value[:index])
+		}
+	}
+	return strconv.Atoi(value)
+}
+
+func configureJavaCompatibilityOptions(javaMajorVersion int) error {
+	if javaMajorVersion < java25RuntimeVersion {
+		return nil
+	}
+
+	currentOptions := os.Getenv(jdkJavaOptionsEnvironment)
+	updatedOptions := appendMissingOptions(currentOptions, java25RuntimeOptions)
+	if updatedOptions == currentOptions {
+		return nil
+	}
+	if err := os.Setenv(jdkJavaOptionsEnvironment, updatedOptions); err != nil {
+		return fmt.Errorf("failed to set %s: %w", jdkJavaOptionsEnvironment, err)
+	}
+	return nil
+}
+
+func appendMissingOptions(currentOptions string, requiredOptions []string) string {
+	updatedOptions := strings.TrimSpace(currentOptions)
+	existingOptions := make(map[string]struct{})
+	for _, option := range strings.Fields(currentOptions) {
+		existingOptions[option] = struct{}{}
+	}
+	for _, option := range requiredOptions {
+		if _, exists := existingOptions[option]; exists {
+			continue
+		}
+		if updatedOptions == "" {
+			updatedOptions = option
+		} else {
+			updatedOptions = updatedOptions + " " + option
+		}
+	}
+	return updatedOptions
+}
+
 // ensureDefaultConfig verifies that <parentDir>/configuration/default.yaml exists.
 func ensureDefaultConfig(parentDir string) error {
 	configDir := filepath.Join(parentDir, "configuration")
@@ -237,8 +357,12 @@ func (s *StartupHandler) StartCommand(wg *sync.WaitGroup, ctx context.Context, s
 	processInfo := state.ProcessInfo
 
 	// Resolve JAVA_HOME and javaBinary
-	javaHome, javaBinary, err := resolveJavaHomeAndBinary()
+	javaHome, javaBinary, err := resolveJavaHomeAndBinary(parentDir)
 	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
+	}
+	if err := configureJavaRuntimeEnvironment(javaHome, javaBinary); err != nil {
 		fmt.Println(err.Error())
 		os.Exit(1)
 	}
@@ -262,22 +386,22 @@ func (s *StartupHandler) StartCommand(wg *sync.WaitGroup, ctx context.Context, s
 	if javaVersion == "" {
 		javaVersion, err = getJavaVersion(javaBinary)
 		if err != nil {
-			fmt.Println("Failed to get Java version")
+			fmt.Printf("Failed to get Java version: %v\n", err)
 			os.Exit(1)
 		}
 	}
 
-	expectedJavaVersion := 21
-
-	versionSplit := strings.Split(javaVersion, ".")
-	if len(versionSplit) == 0 {
+	javaMajorVersionInt, err := parseJavaMajorVersion(javaVersion)
+	if err != nil {
 		fmt.Println("Java needs to be installed. Please install JDK " + strconv.Itoa(expectedJavaVersion) + " or newer.")
 		os.Exit(1)
 	}
-	javaMajorVersion := versionSplit[0]
-	javaMajorVersionInt, _ := strconv.Atoi(javaMajorVersion)
 	if javaMajorVersionInt < expectedJavaVersion {
 		fmt.Print("You must use at least JDK " + strconv.Itoa(expectedJavaVersion) + " to start Camunda Platform Run.\n")
+		os.Exit(1)
+	}
+	if err := configureJavaCompatibilityOptions(javaMajorVersionInt); err != nil {
+		fmt.Println(err.Error())
 		os.Exit(1)
 	}
 

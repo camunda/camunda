@@ -22,7 +22,7 @@ The following are runtime or packaging output. Do not edit them as source and do
 
 - Extracted `camunda-zeebe-*/` directories
 - Built `camunda8-run-*/` archives
-- `jre/` — downloaded Java runtime
+- `jre/` — jlink-created Java runtime image
 - `camunda-data/` — runtime data directory
 - `log/` — log output (`camunda.log`, `connectors.log`)
 - Built binaries: `c8run`, `c8run.exe`, `packager`
