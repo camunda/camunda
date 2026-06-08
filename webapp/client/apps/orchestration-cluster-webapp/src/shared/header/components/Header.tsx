@@ -15,6 +15,7 @@ import {C3Navigation} from '@camunda/camunda-composite-components';
 import type {CurrentUser, License} from '@camunda/camunda-api-zod-schemas/8.10';
 import {themeStore} from '#/shared/theme/theme';
 import {authenticationStore} from '#/shared/auth/authentication.store';
+import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {tracking} from '#/shared/tracking';
 import {getClientConfig} from '#/shared/config/getClientConfig';
 import {getBootConfig} from '#/shared/config/getBootConfig';
@@ -78,6 +79,16 @@ const Header: React.FC<Props> = observer(({currentUser, license}) => {
 	const {displayName, salesPlanType} = currentUser;
 	const [isAppBarOpen, setIsAppBarOpen] = useState(false);
 	const {app, elements} = useNavbar(currentUser);
+
+	const logoutWithNotification = () => {
+		notificationsStore.displayNotification({
+			kind: 'info',
+			title: t('notificationLogOutTitle'),
+			subtitle: t('notificationLogOutSubtitle'),
+			isDismissable: true,
+		});
+		setTimeout(authenticationStore.handleLogout, 1000);
+	};
 
 	return (
 		<C3Navigation
@@ -173,7 +184,7 @@ const Header: React.FC<Props> = observer(({currentUser, license}) => {
 								label: t('headerLogOutLabel'),
 								renderIcon: ArrowRight,
 								kind: 'ghost',
-								onClick: () => authenticationStore.handleLogout(),
+								onClick: logoutWithNotification,
 							},
 						]
 					: undefined,
