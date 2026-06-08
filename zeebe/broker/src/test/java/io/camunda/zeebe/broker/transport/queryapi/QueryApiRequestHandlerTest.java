@@ -78,14 +78,13 @@ final class QueryApiRequestHandlerTest {
   @DisplayName("should respond with PARTITION_LEADER_MISMATCH when no service is registered")
   @Test
   void noQueryServiceForPartition() {
-    // given
+    // given — no addPartition call: the handler has no service yet
     final QueryApiRequestHandler sut = createQueryApiRequestHandler(true);
-    sut.addPartition(1, mock(QueryService.class));
 
     // when
     final Either<ErrorResponse, ExecuteQueryResponse> response =
         new AsyncExecuteQueryRequestSender(sut)
-            .sendRequest(new ExecuteQueryRequest().setPartitionId(9999))
+            .sendRequest(new ExecuteQueryRequest().setPartitionId(1))
             .join();
 
     // then
@@ -96,13 +95,13 @@ final class QueryApiRequestHandlerTest {
             ErrorResponse::getErrorCode, error -> BufferUtil.bufferAsString(error.getErrorData()))
         .containsExactly(
             ErrorCode.PARTITION_LEADER_MISMATCH,
-            "Expected to handle client message on the leader of partition '9999', but this node is not the leader for it");
+            "Expected to handle client message on the leader of partition '1', but this node is not the leader for it");
   }
 
   @DisplayName("should respond with PARTITION_LEADER_MISMATCH when the service is closed")
   @Test
   void closedQueryService() {
-    // given
+    // given — the service registered for partition 1 throws ClosedServiceException on any call
     final QueryApiRequestHandler sut = createQueryApiRequestHandler(true);
     sut.addPartition(
         1,
@@ -112,10 +111,14 @@ final class QueryApiRequestHandlerTest {
               throw new ClosedServiceException();
             }));
 
-    // when
+    // when — request targets partition 1, whose service is closed
     final Either<ErrorResponse, ExecuteQueryResponse> response =
         new AsyncExecuteQueryRequestSender(sut)
-            .sendRequest(new ExecuteQueryRequest().setPartitionId(9999))
+            .sendRequest(
+                new ExecuteQueryRequest()
+                    .setPartitionId(1)
+                    .setKey(1)
+                    .setValueType(ValueType.PROCESS))
             .join();
 
     // then
@@ -126,7 +129,7 @@ final class QueryApiRequestHandlerTest {
             ErrorResponse::getErrorCode, error -> BufferUtil.bufferAsString(error.getErrorData()))
         .containsExactly(
             ErrorCode.PARTITION_LEADER_MISMATCH,
-            "Expected to handle client message on the leader of partition '9999', but this node is "
+            "Expected to handle client message on the leader of partition '1', but this node is "
                 + "not the leader for it");
   }
 

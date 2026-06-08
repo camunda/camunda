@@ -30,7 +30,6 @@ import io.camunda.zeebe.broker.system.management.CheckpointSchedulingService;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
-import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceImpl;
 import io.camunda.zeebe.broker.transport.snapshotapi.SnapshotApiRequestHandler;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
@@ -82,10 +81,6 @@ public interface BrokerStartupContext {
   List<PartitionRaftListener> getPartitionRaftListeners();
 
   ClusterServicesImpl getClusterServices();
-
-  CommandApiServiceImpl getCommandApiService();
-
-  void setCommandApiService(CommandApiServiceImpl commandApiService);
 
   AdminApiRequestHandler getAdminApiService();
 

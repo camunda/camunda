@@ -92,7 +92,6 @@ public final class ZeebePartitionFactory {
   private final ActorSchedulingService actorSchedulingService;
   private final BrokerCfg brokerCfg;
   private final BrokerInfo localBroker;
-  private final CommandApiService commandApiService;
   private final SnapshotApiRequestHandler snapshotApiRequestHandler;
   private final ClusterServices clusterServices;
   private final ExporterRepository exporterRepository;
@@ -113,7 +112,6 @@ public final class ZeebePartitionFactory {
       final ActorSchedulingService actorSchedulingService,
       final BrokerCfg brokerCfg,
       final BrokerInfo localBroker,
-      final CommandApiService commandApiService,
       final SnapshotApiRequestHandler snapshotApiRequestHandler,
       final ClusterServices clusterServices,
       final ExporterRepository exporterRepository,
@@ -132,7 +130,6 @@ public final class ZeebePartitionFactory {
     this.actorSchedulingService = actorSchedulingService;
     this.brokerCfg = brokerCfg;
     this.localBroker = localBroker;
-    this.commandApiService = commandApiService;
     this.snapshotApiRequestHandler = snapshotApiRequestHandler;
     this.clusterServices = clusterServices;
     this.exporterRepository = exporterRepository;
@@ -155,7 +152,8 @@ public final class ZeebePartitionFactory {
       final FileBasedSnapshotStore snapshotStore,
       final DynamicPartitionConfig initialPartitionConfig,
       final BrokerHealthCheckService brokerHealthCheckService,
-      final MeterRegistry partitionMeterRegistry) {
+      final MeterRegistry partitionMeterRegistry,
+      final CommandApiService commandApiService) {
 
     final var communicationService = clusterServices.getCommunicationService();
     final var membershipService = clusterServices.getMembershipService();

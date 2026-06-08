@@ -63,7 +63,7 @@ public class CommandApiServiceImplTest {
             withSettings().strictness(org.mockito.quality.Strictness.LENIENT));
     when(cc.createCompletedFuture()).thenReturn(CompletableActorFuture.completed(null));
     commandApiService =
-        new CommandApiServiceImpl(serverTransport, scheduler.getActorScheduler(), queryApi);
+        new CommandApiServiceImpl(1, serverTransport, scheduler.getActorScheduler(), queryApi);
     when(transitionContext.getCommandApiService()).thenReturn(commandApiService);
     when(transitionContext.getConcurrencyControl()).thenReturn(cc);
     scheduler.submitActor(commandApiService);

@@ -33,7 +33,6 @@ import io.camunda.zeebe.broker.system.management.CheckpointSchedulingService;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
-import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceImpl;
 import io.camunda.zeebe.broker.transport.snapshotapi.SnapshotApiRequestHandler;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
@@ -83,7 +82,6 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private AtomixServerTransport gatewayBrokerTransport;
   private SnowflakeIdGenerator requestIdGenerator;
   private ManagedMessagingService commandApiMessagingService;
-  private CommandApiServiceImpl commandApiService;
   private AdminApiRequestHandler adminApiService;
   private EmbeddedGatewayService embeddedGatewayService;
   private final Map<String, PartitionManagerImpl> partitionManagers = new LinkedHashMap<>();
@@ -222,16 +220,6 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   @Override
   public ClusterServicesImpl getClusterServices() {
     return clusterServices;
-  }
-
-  @Override
-  public CommandApiServiceImpl getCommandApiService() {
-    return commandApiService;
-  }
-
-  @Override
-  public void setCommandApiService(final CommandApiServiceImpl commandApiService) {
-    this.commandApiService = commandApiService;
   }
 
   @Override

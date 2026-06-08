@@ -16,14 +16,17 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
+import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceImpl;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.snapshots.transfer.SnapshotTransfer;
+import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import java.nio.file.Path;
+import org.jspecify.annotations.Nullable;
 
 public class PartitionStartupContext {
   private final ActorSchedulingService schedulingService;
@@ -40,6 +43,7 @@ public class PartitionStartupContext {
   private final boolean initializeFromSnapshot;
   private final MeterRegistry brokerMeterRegistry;
   private final BrokerClient brokerClient;
+  private final AtomixServerTransport gatewayBrokerTransport;
 
   private Path partitionDirectory;
 
@@ -47,6 +51,7 @@ public class PartitionStartupContext {
   private FileBasedSnapshotStore snapshotStore;
   private RaftPartition raftPartition;
   private ZeebePartition zeebePartition;
+  private @Nullable CommandApiServiceImpl commandApiService;
   private SnapshotTransfer snapshotTransfer;
 
   public PartitionStartupContext(
@@ -63,7 +68,8 @@ public class PartitionStartupContext {
       final DynamicPartitionConfig initialPartitionConfig,
       final boolean initializeFromSnapshot,
       final MeterRegistry brokerMeterRegistry,
-      final BrokerClient brokerClient) {
+      final BrokerClient brokerClient,
+      final AtomixServerTransport gatewayBrokerTransport) {
     this.schedulingService = schedulingService;
     this.topologyManager = topologyManager;
     this.concurrencyControl = concurrencyControl;
@@ -78,6 +84,7 @@ public class PartitionStartupContext {
     this.initializeFromSnapshot = initializeFromSnapshot;
     this.brokerMeterRegistry = brokerMeterRegistry;
     this.brokerClient = brokerClient;
+    this.gatewayBrokerTransport = gatewayBrokerTransport;
   }
 
   @Override
@@ -156,6 +163,16 @@ public class PartitionStartupContext {
     return zeebePartition;
   }
 
+  public PartitionStartupContext commandApiService(
+      final @Nullable CommandApiServiceImpl commandApiService) {
+    this.commandApiService = commandApiService;
+    return this;
+  }
+
+  public @Nullable CommandApiServiceImpl commandApiService() {
+    return commandApiService;
+  }
+
   public BrokerCfg brokerConfig() {
     return brokerConfig;
   }
@@ -189,6 +206,10 @@ public class PartitionStartupContext {
 
   public BrokerClient brokerClient() {
     return brokerClient;
+  }
+
+  public AtomixServerTransport gatewayBrokerTransport() {
+    return gatewayBrokerTransport;
   }
 
   public void setSnapshotTransfer(final SnapshotTransfer snapshotTransfer) {

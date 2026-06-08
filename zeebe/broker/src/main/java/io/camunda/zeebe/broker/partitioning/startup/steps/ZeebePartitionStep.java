@@ -39,7 +39,8 @@ public final class ZeebePartitionStep implements StartupStep<PartitionStartupCon
                   context.snapshotStore(),
                   context.initialPartitionConfig(),
                   context.brokerHealthCheckService(),
-                  context.partitionMeterRegistry());
+                  context.partitionMeterRegistry(),
+                  context.commandApiService());
     } catch (final Exception e) {
       result.completeExceptionally(e);
       return result;
