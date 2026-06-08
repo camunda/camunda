@@ -21,7 +21,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.atomix.cluster.BrokerMemberId;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
@@ -1157,8 +1156,7 @@ public final class LongPollingActivateJobsTest {
     when(clusterState.isInitialized()).thenReturn(true);
     when(clusterState.getPartitionsCount()).thenReturn(1);
     when(clusterState.getPartitions()).thenReturn(List.of(Protocol.START_PARTITION_ID));
-    when(clusterState.getLeaderForPartition(Protocol.START_PARTITION_ID))
-        .thenReturn(BrokerMemberId.from(0));
+    when(clusterState.getLeaderForPartition(Protocol.START_PARTITION_ID)).thenReturn(0);
 
     final var topologyManager = mock(BrokerTopologyManager.class);
     when(topologyManager.getTopology()).thenReturn(clusterState);
