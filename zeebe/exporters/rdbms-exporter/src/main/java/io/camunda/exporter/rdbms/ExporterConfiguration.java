@@ -7,7 +7,6 @@
  */
 package io.camunda.exporter.rdbms;
 
-import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig.HistoryConfig;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig.InsertBatchingConfig;
@@ -20,13 +19,10 @@ import java.time.Duration;
 import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class ExporterConfiguration {
   public static final Duration DEFAULT_FLUSH_INTERVAL = Duration.ofMillis(500);
   public static final int DEFAULT_MAX_CACHE_SIZE = 10_000;
-  private static final Logger LOG = LoggerFactory.getLogger(ExporterConfiguration.class);
   // AuditLog
   private AuditLogConfiguration auditLog = new AuditLogConfiguration();
   private HistoryDeletionConfiguration historyDeletion = new HistoryDeletionConfiguration();
@@ -226,10 +222,7 @@ public class ExporterConfiguration {
   }
 
   public RdbmsWriterConfig createRdbmsWriterConfig(
-      final int partitionId,
-      final String physicalTenantId,
-      final VendorDatabaseProperties vendorDatabaseProperties,
-      final InstantSource clock) {
+      final int partitionId, final String physicalTenantId, final InstantSource clock) {
     final var historyConfig =
         new HistoryConfig.Builder()
             .defaultHistoryTTL(history.getDefaultHistoryTTL())
@@ -262,39 +255,17 @@ public class ExporterConfiguration {
         .batchOperationItemInsertBlockSize(batchOperationItemInsertBlockSize)
         .exportBatchOperationItemsOnCreation(exportBatchOperationItemsOnCreation)
         .history(historyConfig)
-        .insertBatchingConfig(createInsertBatchingConfig(vendorDatabaseProperties))
+        .insertBatchingConfig(createInsertBatchingConfig())
         .clock(clock)
         .build();
   }
 
-  private InsertBatchingConfig createInsertBatchingConfig(
-      final VendorDatabaseProperties vendorDatabaseProperties) {
-    // If the database vendor doesn't support insert batching (e.g., Oracle 19c),
-    // set all batch sizes to 1 to disable batching
-    final int auditLogBatchSize;
-    final int variableBatchSize;
-    final int jobBatchSize;
-    final int flowNodeBatchSize;
-
-    if (!vendorDatabaseProperties.supportsInsertBatching()) {
-      LOG.info(
-          "Insert batching is not supported by the database vendor. Overriding insert batch sizes to 1 to disable batching.");
-      auditLogBatchSize = 1;
-      variableBatchSize = 1;
-      jobBatchSize = 1;
-      flowNodeBatchSize = 1;
-    } else {
-      auditLogBatchSize = insertBatching.getMaxAuditLogInsertBatchSize();
-      variableBatchSize = insertBatching.getMaxVariableInsertBatchSize();
-      jobBatchSize = insertBatching.getMaxJobInsertBatchSize();
-      flowNodeBatchSize = insertBatching.getMaxFlowNodeInsertBatchSize();
-    }
-
+  private InsertBatchingConfig createInsertBatchingConfig() {
     return InsertBatchingConfig.builder()
-        .auditLogInsertBatchSize(auditLogBatchSize)
-        .variableInsertBatchSize(variableBatchSize)
-        .jobInsertBatchSize(jobBatchSize)
-        .flowNodeInsertBatchSize(flowNodeBatchSize)
+        .auditLogInsertBatchSize(insertBatching.getMaxAuditLogInsertBatchSize())
+        .variableInsertBatchSize(insertBatching.getMaxVariableInsertBatchSize())
+        .jobInsertBatchSize(insertBatching.getMaxJobInsertBatchSize())
+        .flowNodeInsertBatchSize(insertBatching.getMaxFlowNodeInsertBatchSize())
         .build();
   }
 
