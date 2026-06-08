@@ -102,12 +102,12 @@ public class ContainerRuntimePropertiesUtilTest {
   @ParameterizedTest
   @CsvSource({
     "main, SNAPSHOT",
-    "stable/8.8, 8.8-SNAPSHOT",
-    "backport-123-to-stable/8.8, 8.8-SNAPSHOT",
+    "stable/8.8, SNAPSHOT",
+    "backport-123-to-stable/8.8, SNAPSHOT",
     " , SNAPSHOT",
     "feature-123, SNAPSHOT"
   })
-  void shouldReturnDefaultVersionsBasedOnGitBranch(
+  void shouldReturnDefaultVersionsIndependentOfGitBranch(
       final String branchName, final String expectedVersion) {
     // given
     final Properties properties = new Properties();
@@ -183,16 +183,16 @@ public class ContainerRuntimePropertiesUtilTest {
     "8.8.1, , 8.8.1",
     // SNAPSHOT versions
     "8.9.0-SNAPSHOT, main, SNAPSHOT",
-    "8.9.0-SNAPSHOT, stable/8.8, 8.8-SNAPSHOT",
-    "8.9.0-SNAPSHOT, backport-123-to-stable/8.8, 8.8-SNAPSHOT",
+    "8.9.0-SNAPSHOT, stable/8.8, SNAPSHOT",
+    "8.9.0-SNAPSHOT, backport-123-to-stable/8.8, SNAPSHOT",
     "8.9.0-SNAPSHOT, , SNAPSHOT",
     "8.8.1-SNAPSHOT, main, SNAPSHOT",
-    "8.8.1-SNAPSHOT, stable/8.8, 8.8-SNAPSHOT",
-    "8.8.1-SNAPSHOT, backport-123-to-stable/8.8, 8.8-SNAPSHOT",
+    "8.8.1-SNAPSHOT, stable/8.8, SNAPSHOT",
+    "8.8.1-SNAPSHOT, backport-123-to-stable/8.8, SNAPSHOT",
     "8.8.1-SNAPSHOT, , SNAPSHOT",
     "8.8.2-SNAPSHOT, main, SNAPSHOT",
-    "8.8.2-SNAPSHOT, stable/8.8, 8.8-SNAPSHOT",
-    "8.8.2-SNAPSHOT, backport-123-to-stable/8.8, 8.8-SNAPSHOT",
+    "8.8.2-SNAPSHOT, stable/8.8, SNAPSHOT",
+    "8.8.2-SNAPSHOT, backport-123-to-stable/8.8, SNAPSHOT",
     "8.8.2-SNAPSHOT, , SNAPSHOT",
     // rc/alpha versions
     "8.8.0-rc1, main, 8.8.0-rc1",
@@ -278,16 +278,16 @@ public class ContainerRuntimePropertiesUtilTest {
     "8.8.1, , 8.8.1",
     // SNAPSHOT versions
     "8.9.0-SNAPSHOT, main, SNAPSHOT",
-    "8.9.0-SNAPSHOT, stable/8.8, 8.8-SNAPSHOT",
-    "8.9.0-SNAPSHOT, backport-123-to-stable/8.8, 8.8-SNAPSHOT",
+    "8.9.0-SNAPSHOT, stable/8.8, SNAPSHOT",
+    "8.9.0-SNAPSHOT, backport-123-to-stable/8.8, SNAPSHOT",
     "8.9.0-SNAPSHOT, , SNAPSHOT",
     "8.8.1-SNAPSHOT, main, SNAPSHOT",
-    "8.8.1-SNAPSHOT, stable/8.8, 8.8-SNAPSHOT",
-    "8.8.1-SNAPSHOT, backport-123-to-stable/8.8, 8.8-SNAPSHOT",
+    "8.8.1-SNAPSHOT, stable/8.8, SNAPSHOT",
+    "8.8.1-SNAPSHOT, backport-123-to-stable/8.8, SNAPSHOT",
     "8.8.1-SNAPSHOT, , SNAPSHOT",
     "8.8.2-SNAPSHOT, main, SNAPSHOT",
-    "8.8.2-SNAPSHOT, stable/8.8, 8.8-SNAPSHOT",
-    "8.8.2-SNAPSHOT, backport-123-to-stable/8.8, 8.8-SNAPSHOT",
+    "8.8.2-SNAPSHOT, stable/8.8, SNAPSHOT",
+    "8.8.2-SNAPSHOT, backport-123-to-stable/8.8, SNAPSHOT",
     "8.8.2-SNAPSHOT, , SNAPSHOT",
     // rc/alpha versions
     "8.8.0-rc1, main, 8.8.0-rc1",

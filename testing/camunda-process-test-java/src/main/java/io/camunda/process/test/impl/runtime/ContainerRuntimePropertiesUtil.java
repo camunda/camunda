@@ -69,7 +69,7 @@ public final class ContainerRuntimePropertiesUtil {
   public ContainerRuntimePropertiesUtil(
       final Properties properties, final GitPropertiesUtil gitProperties) {
 
-    final VersionedPropertiesUtil versionedPropsReader = new VersionedPropertiesUtil(gitProperties);
+    final VersionedPropertiesUtil versionedPropsReader = new VersionedPropertiesUtil();
 
     elasticsearchVersion =
         getPropertyOrDefault(
