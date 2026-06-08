@@ -207,7 +207,7 @@ components:
       description: |
         A client-provided sequential integer identifying a logical iteration: one LLM
         call, its tool dispatches, and their results. Must be a positive integer,
-        increasing with each iteration within a job activation. Established by the
+        increasing with each iteration. Established by the
         connector when appending the first history item of an iteration.
       type: integer
       format: int32
