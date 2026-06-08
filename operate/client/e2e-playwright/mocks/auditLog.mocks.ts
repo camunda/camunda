@@ -76,6 +76,8 @@ const mockAuditLogs: QueryAuditLogsResponseBody = {
       relatedEntityType: null,
       entityDescription: null,
       agentElementId: null,
+      inboundChannelType: null,
+      inboundChannelToolName: null,
     },
     {
       auditLogKey: 'audit-log-2',
@@ -109,6 +111,8 @@ const mockAuditLogs: QueryAuditLogsResponseBody = {
       relatedEntityType: null,
       entityDescription: null,
       agentElementId: null,
+      inboundChannelType: null,
+      inboundChannelToolName: null,
     },
     {
       auditLogKey: 'audit-log-3',
@@ -142,6 +146,8 @@ const mockAuditLogs: QueryAuditLogsResponseBody = {
       relatedEntityType: null,
       entityDescription: null,
       agentElementId: null,
+      inboundChannelType: null,
+      inboundChannelToolName: null,
     },
   ],
   page: {

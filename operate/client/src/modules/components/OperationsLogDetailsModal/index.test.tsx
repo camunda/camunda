@@ -43,6 +43,8 @@ const baseAuditLog: AuditLog = {
   relatedEntityType: null,
   entityDescription: null,
   agentElementId: null,
+  inboundChannelType: null,
+  inboundChannelToolName: null,
 };
 
 const Wrapper: React.FC<{children: React.ReactNode}> = ({children}) => (

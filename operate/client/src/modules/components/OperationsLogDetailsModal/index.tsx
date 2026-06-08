@@ -22,7 +22,9 @@ import {
   UserAvatar,
   Password,
   ParentNode,
+  Tools,
 } from '@carbon/react/icons';
+import McpIcon from 'modules/components/Icon/mcp.svg?react';
 import {
   TitleListCell,
   FirstColumn,
@@ -133,6 +135,28 @@ const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
                   <CodeSnippet type="inline" wrapText>
                     {auditLog.agentElementId}
                   </CodeSnippet>
+                </IconTextWithTopMargin>
+              )}
+              {auditLog.inboundChannelType && (
+                <IconTextWithTopMargin>
+                  <McpIcon />
+                  <span>
+                    Inbound channel:{' '}
+                    <CodeSnippet type="inline" wrapText>
+                      {auditLog.inboundChannelType}
+                    </CodeSnippet>
+                  </span>
+                </IconTextWithTopMargin>
+              )}
+              {auditLog.inboundChannelToolName && (
+                <IconTextWithTopMargin>
+                  <Tools />
+                  <span>
+                    Inbound channel tool name:{' '}
+                    <CodeSnippet type="inline" wrapText>
+                      {auditLog.inboundChannelToolName}
+                    </CodeSnippet>
+                  </span>
                 </IconTextWithTopMargin>
               )}
             </SecondColumn>

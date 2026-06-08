@@ -7,6 +7,7 @@
  */
 
 import AiAgentIcon from 'modules/components/Icon/ai-agent.svg?react';
+import McpIcon from 'modules/components/Icon/mcp.svg?react';
 import type {
   AuditLog,
   AuditLogActorType,
@@ -53,6 +54,23 @@ const CellActor: React.FC<Props> = ({item}) => {
           description={getTooltipActorContent('AGENT')}
         >
           <AiAgentIcon />
+        </Tooltip>
+      )}
+      {item.inboundChannelType === 'MCP' && (
+        <Tooltip
+          align="bottom-start"
+          description={
+            <AuthorTooltip>
+              <span>MCP tool call</span>
+              {item.inboundChannelToolName && (
+                <TooltipCodeSnippet wrapText>
+                  {item.inboundChannelToolName}
+                </TooltipCodeSnippet>
+              )}
+            </AuthorTooltip>
+          }
+        >
+          <McpIcon />
         </Tooltip>
       )}
       {item.actorId}
