@@ -828,12 +828,24 @@ jobs:
             docker-file: camunda.Dockerfile
             owner: "CamundaEx"
             module: "Testing"
+          - group: qa-testcontainers
+            name: "Testcontainers Tests"
+            maven-modules: "qa/testcontainer"
+            maven-build-threads: 1
+            maven-test-fork-count: 1
+            runs-on: gcp-perf-core-8-default
+            docker-repository: localhost:5000/camunda/camunda
+            docker-file: camunda.Dockerfile
+            owner: "Distributed Platform"
+            module: "Zeebe"
     env:
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
       OPERATE_TEST_DOCKER_IMAGE: localhost:5000/camunda/operate:current-test
       TASKLIST_TEST_DOCKER_IMAGE: localhost:5000/camunda/tasklist:current-test
       CAMUNDA_TEST_DOCKER_IMAGE: localhost:5000/camunda/camunda:current-test
       CAMUNDA_DOCKER_IMAGE_NAME: localhost:5000/camunda/camunda
+      CAMUNDA_CONTAINER_IMAGE: localhost:5000/camunda/camunda
+      CAMUNDA_CONTAINER_VERSION: current-test
       DOCKER_IMAGE_TAG: current-test
       TEST_TYPE: Integration
     services:
