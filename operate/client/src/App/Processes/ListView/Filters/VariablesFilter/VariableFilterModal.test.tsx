@@ -6,13 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-vi.mock('modules/feature-flags', async () => {
-  const actual = await vi.importActual<typeof import('modules/feature-flags')>(
-    'modules/feature-flags',
-  );
-  return {...actual, IS_VARIABLE_FILTER_V2_ENABLED: false};
-});
-
 import {render, screen} from 'modules/testing-library';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {Paths} from 'modules/Routes';

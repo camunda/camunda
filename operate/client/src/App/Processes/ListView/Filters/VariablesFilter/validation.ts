@@ -30,33 +30,50 @@ const validateCondition = (condition: DraftCondition): RowErrors => {
   ) {
     if (!condition.value?.trim()) {
       errors.value = 'Value is required';
-    } else if (IS_VARIABLE_FILTER_V2_ENABLED) {
-      if (condition.operator !== 'contains') {
-        try {
-          smartTransformValue(condition.value);
-        } catch (e) {
-          errors.value = e instanceof Error ? e.message : 'Invalid value';
-        }
+    } else if (condition.operator !== 'contains') {
+      // `contains` skips value-shape validation in both V1 and V2 — see
+      // `smartTransform.ts` for the shared rationale.
+      const error = IS_VARIABLE_FILTER_V2_ENABLED
+        ? validateSmartValue(condition.value)
+        : validateLegacyValue(condition.operator, condition.value);
+      if (error !== undefined) {
+        errors.value = error;
       }
-    } else if (condition.operator === 'oneOf') {
-      let parsed: unknown;
-      try {
-        parsed = JSON.parse(condition.value);
-      } catch {
-        // handled below
-      }
-      if (!Array.isArray(parsed)) {
-        errors.value = 'Value must be a JSON array (e.g. ["val1", "val2"])';
-      }
-    } else if (
-      condition.operator !== 'contains' &&
-      !isValidJSON(condition.value)
-    ) {
-      errors.value = 'Value must be valid JSON';
     }
   }
 
   return errors;
+};
+
+const validateSmartValue = (value: string): string | undefined => {
+  try {
+    smartTransformValue(value);
+    return undefined;
+  } catch (e) {
+    return e instanceof Error ? e.message : 'Invalid value';
+  }
+};
+
+const validateLegacyValue = (
+  operator: Exclude<
+    DraftCondition['operator'],
+    'exists' | 'doesNotExist' | 'contains'
+  >,
+  value: string,
+): string | undefined => {
+  if (operator === 'oneOf') {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(value);
+    } catch {
+      // handled below
+    }
+    if (!Array.isArray(parsed)) {
+      return 'Value must be a JSON array (e.g. ["val1", "val2"])';
+    }
+    return undefined;
+  }
+  return isValidJSON(value) ? undefined : 'Value must be valid JSON';
 };
 
 const hasErrors = (errors: RowErrors) => Object.keys(errors).length > 0;

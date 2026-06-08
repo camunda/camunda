@@ -48,10 +48,15 @@ const buildMutationRequestBody = ({
   }
 
   if (conditions && conditions.length > 0) {
-    filter = {
-      ...filter,
-      variables: conditions.map(buildVariableEntry),
-    };
+    const entries = conditions
+      .map(buildVariableEntry)
+      .filter((entry): entry is NonNullable<typeof entry> => entry !== null);
+    if (entries.length > 0) {
+      filter = {
+        ...filter,
+        variables: entries,
+      };
+    }
   }
 
   const requestBody:

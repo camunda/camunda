@@ -15,6 +15,7 @@ import {useSearchParams} from 'react-router-dom';
 import type {VariableCondition} from 'modules/stores/variableFilter';
 import type {QueryProcessInstancesRequestBody} from '@camunda/camunda-api-zod-schemas/8.10';
 import {IS_VARIABLE_FILTER_V2_ENABLED} from 'modules/feature-flags';
+import {logger} from 'modules/logger';
 import {
   smartTransformValue,
   toStringFilterProperty,
@@ -31,18 +32,24 @@ function useProcessInstancesSearchFilter(conditions?: VariableCondition[]) {
     const filter = parseProcessInstancesSearchFilter(searchParams);
 
     if (filter && conditions && conditions.length > 0) {
-      filter.variables = conditions.map(buildVariableEntry);
+      const entries = conditions
+        .map(buildVariableEntry)
+        .filter((entry): entry is NonNullable<typeof entry> => entry !== null);
+      if (entries.length > 0) {
+        filter.variables = entries;
+      }
     }
 
     return filter;
   }, [searchParams, conditions]);
 }
 
-function buildVariableEntry(condition: VariableCondition): VariableEntry {
-  if (IS_VARIABLE_FILTER_V2_ENABLED) {
-    return buildSmartVariableEntry(condition);
-  }
-  return buildLegacyVariableEntry(condition);
+function buildVariableEntry(
+  condition: VariableCondition,
+): VariableEntry | null {
+  return IS_VARIABLE_FILTER_V2_ENABLED
+    ? buildSmartVariableEntry(condition)
+    : buildLegacyVariableEntry(condition);
 }
 
 function buildLegacyVariableEntry(condition: VariableCondition): VariableEntry {
@@ -65,7 +72,9 @@ function buildLegacyVariableEntry(condition: VariableCondition): VariableEntry {
   }
 }
 
-function buildSmartVariableEntry(condition: VariableCondition): VariableEntry {
+function buildSmartVariableEntry(
+  condition: VariableCondition,
+): VariableEntry | null {
   if (
     condition.operator === 'exists' ||
     condition.operator === 'doesNotExist'
@@ -75,7 +84,23 @@ function buildSmartVariableEntry(condition: VariableCondition): VariableEntry {
       value: toStringFilterProperty(condition.operator, undefined),
     };
   }
-  const transformed = smartTransformValue(condition.value);
+  if (condition.operator === 'contains') {
+    return {
+      name: condition.name,
+      value: toStringFilterProperty('contains', condition.value),
+    };
+  }
+  let transformed: unknown;
+  try {
+    transformed = smartTransformValue(condition.value);
+  } catch (e) {
+    logger.error(
+      '[buildVariableEntry] dropping unparseable variable filter condition:',
+      condition,
+      e,
+    );
+    return null;
+  }
   return {
     name: condition.name,
     value: toStringFilterProperty(condition.operator, transformed),
