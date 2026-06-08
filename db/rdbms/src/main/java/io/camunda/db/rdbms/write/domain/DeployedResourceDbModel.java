@@ -18,7 +18,7 @@ public record DeployedResourceDbModel(
     String versionTag,
     Long deploymentKey,
     String tenantId,
-    String resourceContent) {
+    byte[] resourceContent) {
 
   public static class DeployedResourceDbModelBuilder
       implements ObjectBuilder<DeployedResourceDbModel> {
@@ -31,7 +31,7 @@ public record DeployedResourceDbModel(
     private String versionTag;
     private Long deploymentKey;
     private String tenantId;
-    private String resourceContent;
+    private byte[] resourceContent;
 
     public DeployedResourceDbModelBuilder resourceKey(final Long resourceKey) {
       this.resourceKey = resourceKey;
@@ -73,7 +73,7 @@ public record DeployedResourceDbModel(
       return this;
     }
 
-    public DeployedResourceDbModelBuilder resourceContent(final String resourceContent) {
+    public DeployedResourceDbModelBuilder resourceContent(final byte[] resourceContent) {
       this.resourceContent = resourceContent;
       return this;
     }

@@ -24,7 +24,7 @@ public record DeployedResourceEntity(
     @Nullable String versionTag,
     Long deploymentKey,
     String tenantId,
-    @Nullable String resourceContent)
+    byte @Nullable [] resourceContent)
     implements TenantOwnedEntity {
 
   public DeployedResourceEntity {
@@ -45,7 +45,7 @@ public record DeployedResourceEntity(
     private @Nullable String versionTag;
     private @Nullable Long deploymentKey;
     private @Nullable String tenantId;
-    private @Nullable String resourceContent;
+    private byte @Nullable [] resourceContent;
 
     public Builder resourceKey(final Long resourceKey) {
       this.resourceKey = resourceKey;
@@ -87,7 +87,7 @@ public record DeployedResourceEntity(
       return this;
     }
 
-    public Builder resourceContent(final String resourceContent) {
+    public Builder resourceContent(final byte @Nullable [] resourceContent) {
       this.resourceContent = resourceContent;
       return this;
     }

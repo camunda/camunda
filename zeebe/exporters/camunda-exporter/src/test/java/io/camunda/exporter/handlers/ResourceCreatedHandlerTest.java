@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.ImmutableResource;
 import io.camunda.zeebe.protocol.record.value.deployment.Resource;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -170,7 +171,8 @@ public class ResourceCreatedHandlerTest {
     assertThat(entity.getVersionTag()).isEqualTo("v2");
     assertThat(entity.getDeploymentKey()).isEqualTo(100L);
     assertThat(entity.getTenantId()).isEqualTo("tenant-1");
-    assertThat(entity.getResourceContent()).isEqualTo("rpa-content");
+    assertThat(entity.getResourceContent())
+        .isEqualTo("rpa-content".getBytes(StandardCharsets.UTF_8));
   }
 
   @Test

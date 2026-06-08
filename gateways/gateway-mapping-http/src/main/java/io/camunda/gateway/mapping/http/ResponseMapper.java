@@ -114,6 +114,7 @@ import io.camunda.zeebe.protocol.record.value.EvaluatedOutputValue;
 import io.camunda.zeebe.protocol.record.value.MatchedRuleValue;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import io.camunda.zeebe.util.Either;
+import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
@@ -431,7 +432,13 @@ public final class ResponseMapper {
 
   public static String toGetResourceContentResponse(
       final DeployedResourceEntity deployedResourceEntity) {
-    return requireNonNull(deployedResourceEntity.resourceContent(), "resourceContent");
+    return new String(
+        requireNonNull(deployedResourceEntity.resourceContent()), StandardCharsets.UTF_8);
+  }
+
+  public static byte[] toGetResourceContentBinaryResponse(
+      final DeployedResourceEntity deployedResourceEntity) {
+    return requireNonNull(deployedResourceEntity.resourceContent());
   }
 
   public static MessagePublicationResult toMessagePublicationResponse(

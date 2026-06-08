@@ -62,7 +62,7 @@ public class ResourceExportHandler implements RdbmsExportHandler<Resource> {
         .versionTag(value.getVersionTag())
         .deploymentKey(value.getDeploymentKey())
         .tenantId(value.getTenantId())
-        .resourceContent(value.getResourceProp())
+        .resourceContent(value.getResourceBytes())
         .build();
   }
 }

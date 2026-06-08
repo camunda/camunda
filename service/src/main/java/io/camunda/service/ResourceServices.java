@@ -223,7 +223,7 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
                       record.getVersionTag(),
                       record.getDeploymentKey(),
                       record.getTenantId(),
-                      includeContent ? record.getResourceProp() : null);
+                      includeContent ? record.getResourceBytes() : null);
               validateResourceType(entity.resourceType(), resourceTypeFilter, resourceKey);
               return entity;
             });

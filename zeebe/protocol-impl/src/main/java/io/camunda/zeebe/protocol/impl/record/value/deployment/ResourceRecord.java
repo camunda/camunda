@@ -186,6 +186,12 @@ public class ResourceRecord extends UnifiedRecordValue implements Resource {
     return bufferAsString(resourceProp.getValue());
   }
 
+  @Override
+  @JsonIgnore
+  public byte[] getResourceBytes() {
+    return BufferUtil.bufferAsArray(resourceProp.getValue());
+  }
+
   public ResourceRecord setResource(final DirectBuffer resource) {
     return setResource(resource, 0, resource.capacity());
   }
