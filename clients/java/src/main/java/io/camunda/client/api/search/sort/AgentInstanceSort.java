@@ -19,11 +19,23 @@ import io.camunda.client.api.search.request.TypedSortableRequest.SearchRequestSo
 
 public interface AgentInstanceSort extends SearchRequestSort<AgentInstanceSort> {
 
+  AgentInstanceSort agentInstanceKey();
+
+  AgentInstanceSort status();
+
+  AgentInstanceSort elementId();
+
+  AgentInstanceSort processInstanceKey();
+
+  AgentInstanceSort rootProcessInstanceKey();
+
+  AgentInstanceSort processDefinitionKey();
+
+  AgentInstanceSort tenantId();
+
   AgentInstanceSort creationDate();
 
   AgentInstanceSort lastUpdatedDate();
 
   AgentInstanceSort completionDate();
-
-  AgentInstanceSort status();
 }

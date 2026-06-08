@@ -210,6 +210,32 @@
     </createIndex>
   </changeSet>
 
+  <changeSet id="create_agent_instance_pd_key_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_AGENT_INSTANCE_PD_KEY"
+          tableName="${prefix}AGENT_INSTANCE"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}AGENT_INSTANCE"
+      indexName="${prefix}IDX_AGENT_INSTANCE_PD_KEY">
+      <column name="PROCESS_DEFINITION_KEY"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="create_agent_instance_element_id_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_AGENT_INSTANCE_ELEMENT_ID"
+          tableName="${prefix}AGENT_INSTANCE"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}AGENT_INSTANCE"
+      indexName="${prefix}IDX_AGENT_INSTANCE_ELEMENT_ID">
+      <column name="ELEMENT_ID"/>
+    </createIndex>
+  </changeSet>
+
   <changeSet id="create_agent_instance_element_instance_table" author="camunda">
     <preConditions onFail="MARK_RAN">
       <not>

@@ -15,6 +15,7 @@ import io.camunda.search.sort.AgentInstanceSort;
 import io.camunda.search.sort.SearchSortOptions;
 import io.camunda.search.sort.SortOrder;
 import io.camunda.util.ObjectBuilder;
+import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -28,17 +29,35 @@ public class AgentInstanceFieldSortingTransformerTest extends AbstractSortTransf
   private static Stream<Arguments> provideSortParameters() {
     return Stream.of(
         new TestArguments(
+            AgentInstanceTemplate.KEY, SortOrder.DESC, s -> s.agentInstanceKey().desc()),
+        new TestArguments(AgentInstanceTemplate.STATUS, SortOrder.ASC, s -> s.status().asc()),
+        new TestArguments(
+            AgentInstanceTemplate.ELEMENT_ID, SortOrder.ASC, s -> s.elementId().asc()),
+        new TestArguments(
+            ProcessInstanceDependant.PROCESS_INSTANCE_KEY,
+            SortOrder.ASC,
+            s -> s.processInstanceKey().asc()),
+        new TestArguments(
+            ProcessInstanceDependant.ROOT_PROCESS_INSTANCE_KEY,
+            SortOrder.DESC,
+            s -> s.rootProcessInstanceKey().desc()),
+        new TestArguments(
+            AgentInstanceTemplate.PROCESS_DEFINITION_KEY,
+            SortOrder.ASC,
+            s -> s.processDefinitionKey().asc()),
+        new TestArguments(
+            AgentInstanceTemplate.TENANT_ID, SortOrder.DESC, s -> s.tenantId().desc()),
+        new TestArguments(
             AgentInstanceTemplate.CREATION_DATE, SortOrder.ASC, s -> s.creationDate().asc()),
         new TestArguments(
             AgentInstanceTemplate.LAST_UPDATED_DATE,
             SortOrder.DESC,
             s -> s.lastUpdatedDate().desc()),
         new TestArguments(
-            AgentInstanceTemplate.COMPLETION_DATE, SortOrder.ASC, s -> s.completionDate().asc()),
-        new TestArguments(AgentInstanceTemplate.STATUS, SortOrder.DESC, s -> s.status().desc()));
+            AgentInstanceTemplate.COMPLETION_DATE, SortOrder.ASC, s -> s.completionDate().asc()));
   }
 
-  @ParameterizedTest
+  @ParameterizedTest(name = "should sort by {0} in ''{1}'' direction")
   @MethodSource("provideSortParameters")
   void shouldSortByField(
       final String expectedField,
@@ -56,6 +75,23 @@ public class AgentInstanceFieldSortingTransformerTest extends AbstractSortTransf
               assertThat(t.field().order()).isEqualTo(sortOrder);
             });
     assertThat(sort.get(1))
+        .isInstanceOfSatisfying(
+            SearchSortOptions.class,
+            t -> {
+              assertThat(t.field().field()).isEqualTo(AgentInstanceTemplate.KEY);
+              assertThat(t.field().order()).isEqualTo(SortOrder.ASC);
+            });
+  }
+
+  @Test
+  void shouldUseAgentInstanceKeyAsDefaultTiebreakerWhenNoSortSpecified() {
+    // given — query with no explicit sort
+    final var request = SearchQueryBuilders.agentInstanceSearchQuery(q -> q);
+    // when
+    final var sort = transformRequest(request);
+    // then — only the implicit default tiebreaker is appended
+    assertThat(sort).hasSize(1);
+    assertThat(sort.get(0))
         .isInstanceOfSatisfying(
             SearchSortOptions.class,
             t -> {

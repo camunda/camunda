@@ -326,6 +326,38 @@ public class AgentInstanceSearchIT {
   }
 
   @Test
+  void shouldFilterByRootProcessInstanceKey() {
+    // given — all three process instances are root processes (no call-activity parent),
+    // so rootProcessInstanceKey == processInstanceKey for each agent instance.
+    // ai1 belongs to processInstanceKey1; filtering by that key returns only ai1.
+    // when
+    final var response =
+        camundaClient
+            .newAgentInstanceSearchRequest()
+            .filter(f -> f.rootProcessInstanceKey(processInstanceKey1))
+            .execute();
+
+    // then
+    assertThat(response.items())
+        .extracting(AgentInstance::getAgentInstanceKey)
+        .containsExactly(agentInstanceKey1);
+  }
+
+  @Test
+  void shouldSortByAgentInstanceKeyAscending() {
+    // given — three agent instances created in order; engine assigns monotonically increasing keys
+    // when
+    final var response =
+        camundaClient
+            .newAgentInstanceSearchRequest()
+            .sort(s -> s.agentInstanceKey().asc())
+            .execute();
+
+    // then — keys must be in ascending order; this is the canonical stable pagination tiebreaker
+    assertThat(response.items()).extracting(AgentInstance::getAgentInstanceKey).isSorted();
+  }
+
+  @Test
   void shouldSortByCreationDateDescending() {
     // when
     final var response =
