@@ -1028,9 +1028,9 @@ components:
           type: string
           example: DOCUMENT
         documentReference:
-          description: A Camunda Document Store reference.
-          type: object
-          additionalProperties: true
+          description: A reference to a document stored in the Camunda Document Store.
+          allOf:
+            - $ref: 'documents.yaml#/components/schemas/DocumentReference'
 
     AgentInstanceObjectContent:
       type: object
