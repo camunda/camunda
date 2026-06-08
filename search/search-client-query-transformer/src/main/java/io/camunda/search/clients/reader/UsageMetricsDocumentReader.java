@@ -11,7 +11,7 @@ import io.camunda.search.aggregation.result.UsageMetricsAggregationResult;
 import io.camunda.search.clients.SearchClientBasedQueryExecutor;
 import io.camunda.search.entities.UsageMetricStatisticsEntity;
 import io.camunda.search.query.UsageMetricsQuery;
-import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.core.reader.ResourceAccessChecks;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 
 public class UsageMetricsDocumentReader extends DocumentBasedReader implements UsageMetricsReader {

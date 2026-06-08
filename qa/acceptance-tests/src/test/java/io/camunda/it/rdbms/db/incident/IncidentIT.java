@@ -36,7 +36,7 @@ import io.camunda.search.sort.IncidentProcessInstanceStatisticsByDefinitionSort;
 import io.camunda.search.sort.IncidentProcessInstanceStatisticsByErrorSort;
 import io.camunda.search.sort.IncidentSort;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
-import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.core.reader.ResourceAccessChecks;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -691,7 +691,7 @@ public class IncidentIT {
         reader.aggregate(
             IncidentProcessInstanceStatisticsByDefinitionQuery.of(
                 q -> q.filter(f -> f.errorHashCode(errorHashCode).state("ACTIVE"))),
-            io.camunda.security.reader.ResourceAccessChecks.disabled());
+            io.camunda.security.core.reader.ResourceAccessChecks.disabled());
 
     assertThat(result).isNotNull();
     assertThat(result.total()).isEqualTo(2);
@@ -786,7 +786,7 @@ public class IncidentIT {
                     q.filter(f -> f.errorHashCode(errorHashCode).state(IncidentState.ACTIVE.name()))
                         .sort(sort)
                         .page(p -> p.from(0).size(1))),
-            io.camunda.security.reader.ResourceAccessChecks.disabled());
+            io.camunda.security.core.reader.ResourceAccessChecks.disabled());
 
     assertThat(firstPage.total()).isEqualTo(2);
     assertThat(firstPage.items()).hasSize(1);
@@ -801,7 +801,7 @@ public class IncidentIT {
                     q.filter(f -> f.errorHashCode(errorHashCode).state(IncidentState.ACTIVE.name()))
                         .sort(sort)
                         .page(p -> p.from(1).size(1))),
-            io.camunda.security.reader.ResourceAccessChecks.disabled());
+            io.camunda.security.core.reader.ResourceAccessChecks.disabled());
 
     assertThat(secondPage.total()).isEqualTo(2);
     assertThat(secondPage.items()).hasSize(1);

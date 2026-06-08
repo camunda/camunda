@@ -14,7 +14,7 @@ import static io.camunda.security.api.model.authz.PermissionType.READ_PROCESS_IN
 import static io.camunda.security.api.model.authz.PermissionType.READ_USER_TASK;
 
 import io.camunda.security.core.auth.RequiredAuthorization;
-import io.camunda.security.reader.AuthorizationCheck;
+import io.camunda.security.core.reader.AuthorizationCheck;
 import java.util.ArrayList;
 import java.util.List;
 

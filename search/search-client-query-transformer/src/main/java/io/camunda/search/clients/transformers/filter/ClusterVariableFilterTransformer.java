@@ -20,7 +20,7 @@ import io.camunda.search.filter.ClusterVariableFilter;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.UntypedOperation;
 import io.camunda.security.core.auth.RequiredAuthorization;
-import io.camunda.security.reader.TenantCheck;
+import io.camunda.security.core.reader.TenantCheck;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.index.ClusterVariableIndex;
 import io.camunda.webapps.schema.entities.clustervariable.ClusterVariableScope;

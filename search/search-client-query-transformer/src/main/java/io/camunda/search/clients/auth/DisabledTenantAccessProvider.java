@@ -8,8 +8,8 @@
 package io.camunda.search.clients.auth;
 
 import io.camunda.security.api.model.CamundaAuthentication;
-import io.camunda.security.reader.TenantAccess;
-import io.camunda.security.reader.TenantAccessProvider;
+import io.camunda.security.core.reader.TenantAccess;
+import io.camunda.security.core.reader.TenantAccessProvider;
 
 public class DisabledTenantAccessProvider implements TenantAccessProvider {
 

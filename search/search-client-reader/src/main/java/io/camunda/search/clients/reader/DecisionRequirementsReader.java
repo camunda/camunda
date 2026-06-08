@@ -9,7 +9,7 @@ package io.camunda.search.clients.reader;
 
 import io.camunda.search.entities.DecisionRequirementsEntity;
 import io.camunda.search.query.DecisionRequirementsQuery;
-import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.core.reader.ResourceAccessChecks;
 
 public interface DecisionRequirementsReader
     extends SearchEntityReader<DecisionRequirementsEntity, DecisionRequirementsQuery> {

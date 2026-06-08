@@ -15,7 +15,7 @@ import io.camunda.db.rdbms.sql.UsageMetricMapper;
 import io.camunda.search.clients.reader.UsageMetricsReader;
 import io.camunda.search.entities.UsageMetricStatisticsEntity;
 import io.camunda.search.query.UsageMetricsQuery;
-import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.core.reader.ResourceAccessChecks;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

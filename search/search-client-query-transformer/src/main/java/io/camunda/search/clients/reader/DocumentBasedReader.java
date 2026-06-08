@@ -13,7 +13,7 @@ import io.camunda.search.filter.FilterBase;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.TypedSearchQuery;
 import io.camunda.search.sort.SortOption;
-import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.core.reader.ResourceAccessChecks;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 
 public abstract class DocumentBasedReader {

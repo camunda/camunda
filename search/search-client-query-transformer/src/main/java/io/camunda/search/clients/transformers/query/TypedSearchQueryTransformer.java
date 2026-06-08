@@ -27,7 +27,7 @@ import io.camunda.search.result.QueryResultConfig;
 import io.camunda.search.sort.NoSort;
 import io.camunda.search.sort.SearchSortOptions;
 import io.camunda.search.sort.SortOption;
-import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.core.reader.ResourceAccessChecks;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.List;
 import java.util.Optional;

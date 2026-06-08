@@ -17,7 +17,7 @@ import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.security.api.model.authz.ResourceType;
 import io.camunda.security.core.port.out.AuthorizationRepositoryPort;
-import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.core.reader.ResourceAccessChecks;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;

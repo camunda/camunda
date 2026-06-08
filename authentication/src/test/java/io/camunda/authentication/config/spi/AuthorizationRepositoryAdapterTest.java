@@ -22,7 +22,7 @@ import io.camunda.security.api.model.authz.Authorization;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.security.api.model.authz.ResourceType;
-import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.core.reader.ResourceAccessChecks;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.Test;

@@ -58,7 +58,7 @@ import io.camunda.search.clients.reader.WaitStateReader;
 import io.camunda.search.clients.reader.impl.NoopAuthorizationReader;
 import io.camunda.search.es.clients.ElasticsearchSearchClient;
 import io.camunda.search.os.clients.OpensearchSearchClient;
-import io.camunda.security.reader.ResourceAccessController;
+import io.camunda.security.core.reader.ResourceAccessController;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageDisabled;
 import java.util.List;
 import java.util.Map;

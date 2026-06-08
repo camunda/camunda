@@ -33,7 +33,7 @@ import io.camunda.search.filter.UsageMetricsFilter.Builder;
 import io.camunda.search.filter.UsageMetricsTUFilter;
 import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.search.query.UsageMetricsTUQuery;
-import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.core.reader.ResourceAccessChecks;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.Map;

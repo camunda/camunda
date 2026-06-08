@@ -20,7 +20,7 @@ import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.GlobalListenerQuery;
 import io.camunda.search.sort.GlobalListenerSort;
 import io.camunda.search.sort.GlobalListenerSort.Builder;
-import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.core.reader.ResourceAccessChecks;
 import io.camunda.util.ObjectBuilder;
 import java.util.Comparator;
 import java.util.function.Function;

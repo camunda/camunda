@@ -8,8 +8,8 @@
 package io.camunda.db.rdbms.read.security;
 
 import io.camunda.search.clients.auth.AbstractResourceAccessController;
-import io.camunda.security.reader.ResourceAccessProvider;
-import io.camunda.security.reader.TenantAccessProvider;
+import io.camunda.security.core.reader.ResourceAccessProvider;
+import io.camunda.security.core.reader.TenantAccessProvider;
 
 public class RdbmsResourceAccessController extends AbstractResourceAccessController {
 

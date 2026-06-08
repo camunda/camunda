@@ -38,7 +38,7 @@ import io.camunda.search.sort.JobErrorStatisticsSort;
 import io.camunda.search.sort.JobTimeSeriesStatisticsSort;
 import io.camunda.search.sort.JobTypeStatisticsSort;
 import io.camunda.search.sort.JobWorkerStatisticsSort;
-import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.core.reader.ResourceAccessChecks;
 import java.util.Collections;
 import java.util.Optional;
 import org.slf4j.Logger;

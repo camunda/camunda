@@ -15,7 +15,7 @@ import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.api.model.user.CamundaUserDTO;
 import io.camunda.security.core.port.in.CamundaUserPort;
-import io.camunda.security.reader.ResourceAccessProvider;
+import io.camunda.security.core.reader.ResourceAccessProvider;
 import io.camunda.security.spring.annotation.ConditionalOnAuthenticationMethod;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;

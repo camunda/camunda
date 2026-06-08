@@ -15,7 +15,7 @@ import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.core.port.in.ResourcePermissionPort;
 import io.camunda.security.core.port.out.AuthorizationRepositoryPort;
 import io.camunda.security.core.port.out.MembershipPort;
-import io.camunda.security.reader.ResourceAccessProvider;
+import io.camunda.security.core.reader.ResourceAccessProvider;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import java.util.List;
 import java.util.Map;

@@ -12,7 +12,7 @@ import io.camunda.search.entities.DeployedResourceEntity;
 import io.camunda.search.query.DeployedResourceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.result.DeployedResourceQueryResultConfig;
-import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.core.reader.ResourceAccessChecks;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 
 public class DeployedResourceDocumentReader extends DocumentBasedReader

@@ -21,7 +21,7 @@ import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.GlobalListenerQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.sort.GlobalListenerSort;
-import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.core.reader.ResourceAccessChecks;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;

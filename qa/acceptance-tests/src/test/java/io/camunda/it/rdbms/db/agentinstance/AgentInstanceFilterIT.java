@@ -21,7 +21,7 @@ import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.AgentInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.sort.AgentInstanceSort;
-import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.core.reader.ResourceAccessChecks;
 import java.util.List;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;

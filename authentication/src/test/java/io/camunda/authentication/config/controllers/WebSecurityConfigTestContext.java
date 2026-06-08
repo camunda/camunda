@@ -18,7 +18,7 @@ import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.core.port.in.ResourcePermissionPort;
 import io.camunda.security.core.port.out.AuthorizationRepositoryPort;
-import io.camunda.security.reader.ResourceAccessProvider;
+import io.camunda.security.core.reader.ResourceAccessProvider;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.security.spring.context.holder.HttpSessionBasedAuthenticationHolder;
 import io.camunda.service.ApiServicesExecutorProvider;

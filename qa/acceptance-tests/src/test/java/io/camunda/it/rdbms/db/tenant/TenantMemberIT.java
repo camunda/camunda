@@ -23,7 +23,7 @@ import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.TenantMemberQuery;
 import io.camunda.search.sort.TenantMemberSort;
 import io.camunda.security.api.model.authz.EntityType;
-import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.core.reader.ResourceAccessChecks;
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;

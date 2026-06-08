@@ -16,7 +16,7 @@ import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
-import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.core.reader.ResourceAccessChecks;
 import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;

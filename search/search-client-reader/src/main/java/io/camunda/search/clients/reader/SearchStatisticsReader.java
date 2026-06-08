@@ -8,7 +8,7 @@
 package io.camunda.search.clients.reader;
 
 import io.camunda.search.query.TypedSearchAggregationQuery;
-import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.core.reader.ResourceAccessChecks;
 import java.util.List;
 
 public interface SearchStatisticsReader<T, A extends TypedSearchAggregationQuery<?, ?, ?>>

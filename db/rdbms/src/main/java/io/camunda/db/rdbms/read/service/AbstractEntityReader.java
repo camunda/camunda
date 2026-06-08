@@ -20,7 +20,7 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.sort.SortOption;
 import io.camunda.search.sort.SortOption.FieldSorting;
 import io.camunda.search.sort.SortOrder;
-import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.core.reader.ResourceAccessChecks;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;

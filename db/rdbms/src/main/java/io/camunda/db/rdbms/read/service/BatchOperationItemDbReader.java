@@ -15,7 +15,7 @@ import io.camunda.search.clients.reader.BatchOperationItemReader;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
 import io.camunda.search.query.BatchOperationItemQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.core.reader.ResourceAccessChecks;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

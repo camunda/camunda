@@ -16,9 +16,9 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.sql.GroupMapper;
 import io.camunda.search.query.GroupMemberQuery;
-import io.camunda.security.reader.AuthorizationCheck;
-import io.camunda.security.reader.ResourceAccessChecks;
-import io.camunda.security.reader.TenantCheck;
+import io.camunda.security.core.reader.AuthorizationCheck;
+import io.camunda.security.core.reader.ResourceAccessChecks;
+import io.camunda.security.core.reader.TenantCheck;
 import org.junit.jupiter.api.Test;
 
 class GroupMemberDbReaderTest {

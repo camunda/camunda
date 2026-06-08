@@ -11,8 +11,8 @@ import static io.camunda.search.exception.ErrorMessages.ERROR_RESOURCE_ACCESS_CO
 
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.security.core.auth.SecurityContext;
-import io.camunda.security.reader.ResourceAccessChecks;
-import io.camunda.security.reader.ResourceAccessController;
+import io.camunda.security.core.reader.ResourceAccessChecks;
+import io.camunda.security.core.reader.ResourceAccessController;
 import java.util.List;
 import java.util.function.Function;
 import org.slf4j.Logger;

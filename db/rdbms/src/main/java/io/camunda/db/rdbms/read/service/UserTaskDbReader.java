@@ -22,7 +22,7 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.core.auth.RequiredAuthorization;
-import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.core.reader.ResourceAccessChecks;
 import io.camunda.util.NumberParsingUtil;
 import java.util.List;
 import java.util.Optional;
