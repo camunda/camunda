@@ -1,0 +1,19 @@
+# Scenario 3 — Accumulation under slow workers
+# 300 PI/s, wait states enabled, worker completion delay raised to 5 s.
+# Jobs sit active much longer, so the wait-state table grows large over a 60+ min run.
+# Read benchmarks on to track how query latency evolves as the row count climbs.
+# Key question: does wait_state_all (broad scan) degrade as the table grows?
+global:
+  extraEnvVars:
+    - name: LOAD_TESTER_PERFORM_READ_BENCHMARKS
+      value: "true"
+    - name: ZEEBE_DISABLED_QUERIES
+      value: ""
+    - name: LOAD_TESTER_WORKER_COMPLETION_DELAY
+      value: "5000ms"
+
+orchestration:
+  extraConfiguration:
+    - file: application.yaml
+      content: |
+        camunda.data.wait-states.enabled: "true"

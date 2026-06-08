@@ -1,0 +1,16 @@
+# Scenario 1 — Baseline: wait states disabled
+# Standard 300 PI/s single-task load, no wait-state writes at all.
+# Use as the control run to establish unaffected throughput numbers.
+global:
+  extraEnvVars:
+    - name: LOAD_TESTER_PERFORM_READ_BENCHMARKS
+      value: "false"
+    # Disable all wait-state read queries — table is empty, no signal.
+    - name: ZEEBE_DISABLED_QUERIES
+      value: "wait_state_by_process_instance_key,wait_state_by_element_type,wait_state_all"
+
+orchestration:
+  extraConfiguration:
+    - file: application.yaml
+      content: |
+        camunda.data.wait-states.enabled: "false"
