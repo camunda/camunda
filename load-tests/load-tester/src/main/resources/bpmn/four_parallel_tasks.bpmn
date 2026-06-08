@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!--
+  Scenario 4 — wait-state write amplification benchmark (issue #52037).
+
+  Four parallel service tasks, all using job type "benchmark-task" so the existing
+  worker completes them without modification. Each PI creates 4 wait-state INSERT ops
+  on CREATED and 4 DELETE ops on COMPLETED, giving 8× the secondary-storage write
+  volume of one_task.bpmn at the same PI/s rate.
+-->
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:zeebe="http://camunda.org/schema/zeebe/1.0"
+    id="Definitions_1"
+    targetNamespace="http://bpmn.io/schema/bpmn">
+
+  <bpmn:process id="benchmark" name="Four parallel tasks" isExecutable="true">
+
+    <bpmn:startEvent id="start">
+      <bpmn:outgoing>flow_start_split</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <bpmn:parallelGateway id="split" name="split">
+      <bpmn:incoming>flow_start_split</bpmn:incoming>
+      <bpmn:outgoing>flow_split_t1</bpmn:outgoing>
+      <bpmn:outgoing>flow_split_t2</bpmn:outgoing>
+      <bpmn:outgoing>flow_split_t3</bpmn:outgoing>
+      <bpmn:outgoing>flow_split_t4</bpmn:outgoing>
+    </bpmn:parallelGateway>
+
+    <bpmn:serviceTask id="task1" name="task 1">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="benchmark-task" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>flow_split_t1</bpmn:incoming>
+      <bpmn:outgoing>flow_t1_join</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <bpmn:serviceTask id="task2" name="task 2">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="benchmark-task" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>flow_split_t2</bpmn:incoming>
+      <bpmn:outgoing>flow_t2_join</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <bpmn:serviceTask id="task3" name="task 3">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="benchmark-task" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>flow_split_t3</bpmn:incoming>
+      <bpmn:outgoing>flow_t3_join</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <bpmn:serviceTask id="task4" name="task 4">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="benchmark-task" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>flow_split_t4</bpmn:incoming>
+      <bpmn:outgoing>flow_t4_join</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <bpmn:parallelGateway id="join" name="join">
+      <bpmn:incoming>flow_t1_join</bpmn:incoming>
+      <bpmn:incoming>flow_t2_join</bpmn:incoming>
+      <bpmn:incoming>flow_t3_join</bpmn:incoming>
+      <bpmn:incoming>flow_t4_join</bpmn:incoming>
+      <bpmn:outgoing>flow_join_end</bpmn:outgoing>
+    </bpmn:parallelGateway>
+
+    <bpmn:endEvent id="end">
+      <bpmn:incoming>flow_join_end</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="flow_start_split" sourceRef="start" targetRef="split" />
+    <bpmn:sequenceFlow id="flow_split_t1"   sourceRef="split"  targetRef="task1" />
+    <bpmn:sequenceFlow id="flow_split_t2"   sourceRef="split"  targetRef="task2" />
+    <bpmn:sequenceFlow id="flow_split_t3"   sourceRef="split"  targetRef="task3" />
+    <bpmn:sequenceFlow id="flow_split_t4"   sourceRef="split"  targetRef="task4" />
+    <bpmn:sequenceFlow id="flow_t1_join"    sourceRef="task1"  targetRef="join"  />
+    <bpmn:sequenceFlow id="flow_t2_join"    sourceRef="task2"  targetRef="join"  />
+    <bpmn:sequenceFlow id="flow_t3_join"    sourceRef="task3"  targetRef="join"  />
+    <bpmn:sequenceFlow id="flow_t4_join"    sourceRef="task4"  targetRef="join"  />
+    <bpmn:sequenceFlow id="flow_join_end"   sourceRef="join"   targetRef="end"   />
+
+  </bpmn:process>
+</bpmn:definitions>

@@ -1,0 +1,17 @@
+# Scenario 2 — Query latency under load
+# 300 PI/s, wait states enabled, read benchmarks on.
+# The three wait-state queries run every 30 s alongside the standard set.
+# Measures p50/p99 query latency and throughput interference.
+global:
+  extraEnvVars:
+    - name: LOAD_TESTER_PERFORM_READ_BENCHMARKS
+      value: "true"
+    # All three wait-state queries enabled; standard queries also run.
+    - name: ZEEBE_DISABLED_QUERIES
+      value: ""
+
+orchestration:
+  extraConfiguration:
+    - file: application.yaml
+      content: |
+        camunda.data.wait-states.enabled: "true"

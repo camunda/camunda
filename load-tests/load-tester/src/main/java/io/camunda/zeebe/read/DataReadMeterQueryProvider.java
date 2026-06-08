@@ -9,6 +9,7 @@ package io.camunda.zeebe.read;
 
 import io.camunda.client.api.search.enums.AuditLogCategoryEnum;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
+import io.camunda.client.api.search.enums.WaitStateElementType;
 import io.camunda.client.api.search.response.DecisionInstanceState;
 import io.camunda.client.api.search.sort.ProcessInstanceSort;
 import io.camunda.zeebe.read.DataReadMeter.ReadQuery;
@@ -114,6 +115,31 @@ public final class DataReadMeterQueryProvider {
                                             DecisionInstanceState.EVALUATED,
                                             DecisionInstanceState.FAILED))))
                     .page(p -> p.limit(100))
-                    .sort(s -> s.evaluationDate().desc())));
+                    .sort(s -> s.evaluationDate().desc())),
+        // --- Wait-state benchmark queries (scenarios 2–3 from issue #52037) ---
+        // Narrow lookup: mirrors what Operate would issue to show wait states for one PI.
+        new ReadQuery(
+            "wait_state_by_process_instance_key",
+            Duration.ofSeconds(30),
+            (client, context) ->
+                client
+                    .newElementInstanceWaitStateSearchRequest()
+                    .filter(f -> f.processInstanceKey(context.processInstanceKey()))
+                    .page(p -> p.limit(100))),
+        // Medium scan: all SERVICE_TASK wait states — reasonable for a monitoring dashboard.
+        new ReadQuery(
+            "wait_state_by_element_type",
+            Duration.ofSeconds(30),
+            (client, context) ->
+                client
+                    .newElementInstanceWaitStateSearchRequest()
+                    .filter(f -> f.elementType(WaitStateElementType.SERVICE_TASK))
+                    .page(p -> p.limit(100))),
+        // Broad scan: no filter, small page — exercises index health as the table grows.
+        new ReadQuery(
+            "wait_state_all",
+            Duration.ofSeconds(30),
+            (client, context) ->
+                client.newElementInstanceWaitStateSearchRequest().page(p -> p.limit(20))));
   }
 }

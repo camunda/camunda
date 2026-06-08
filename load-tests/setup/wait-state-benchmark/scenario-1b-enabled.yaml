@@ -1,0 +1,15 @@
+# Scenario 1b — Wait states enabled, read queries off
+# Identical setup to Scenario 1 except wait-state tracking is on.
+# Isolates pure write overhead (INSERT + DELETE per PI) against the Scenario 1 baseline.
+global:
+  extraEnvVars:
+    - name: LOAD_TESTER_PERFORM_READ_BENCHMARKS
+      value: "false"
+    - name: ZEEBE_DISABLED_QUERIES
+      value: "wait_state_by_process_instance_key,wait_state_by_element_type,wait_state_all"
+
+orchestration:
+  extraConfiguration:
+    - file: application.yaml
+      content: |
+        camunda.data.wait-states.enabled: "true"
