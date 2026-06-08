@@ -12,7 +12,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
-import io.camunda.zeebe.gateway.rest.context.PhysicalTenantContext;
+import io.camunda.gateway.mapping.http.physicaltenants.PhysicalTenantContext;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.Map;
 import org.assertj.core.api.Assertions;

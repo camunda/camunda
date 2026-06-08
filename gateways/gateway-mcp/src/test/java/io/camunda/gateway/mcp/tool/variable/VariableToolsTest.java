@@ -38,6 +38,7 @@ import io.modelcontextprotocol.spec.McpSchema.TextContent;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -84,6 +85,11 @@ class VariableToolsTest extends OperationalToolsTest {
   @Autowired private JsonMapper objectMapper;
 
   @Captor private ArgumentCaptor<VariableQuery> queryCaptor;
+
+  @BeforeEach
+  void wireServiceRegistry() {
+    when(serviceRegistry.variableServices(any())).thenReturn(variableServices);
+  }
 
   private void assertExampleVariable(final VariableResult variable) {
     assertThat(variable.getVariableKey()).isEqualTo("123");

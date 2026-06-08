@@ -9,6 +9,7 @@ package io.camunda.gateway.mcp.tool.cluster;
 
 import static io.camunda.gateway.mcp.tool.CallToolResultAssertions.assertTextContentFallback;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import io.camunda.gateway.mcp.OperationalToolsTest;
@@ -31,6 +32,7 @@ import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.TextContent;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -47,6 +49,11 @@ class ClusterToolsTest extends OperationalToolsTest {
 
   @MockitoBean private TopologyServices topologyServices;
   @Autowired private JsonMapper objectMapper;
+
+  @BeforeEach
+  void wireServiceRegistry() {
+    when(serviceRegistry.topologyServices(any())).thenReturn(topologyServices);
+  }
 
   @Nested
   class GetClusterStatus {

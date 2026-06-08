@@ -17,6 +17,7 @@ import static io.camunda.gateway.mcp.tool.ToolDescriptions.VARIABLE_KEY_NOT_NULL
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.VARIABLE_KEY_POSITIVE_MESSAGE;
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.VARIABLE_VALUE_RETURN_FORMAT;
 
+import io.camunda.gateway.mapping.http.physicaltenants.PhysicalTenantContext;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
@@ -25,7 +26,7 @@ import io.camunda.gateway.protocol.model.VariableSearchQuerySortRequest;
 import io.camunda.gateway.protocol.model.simple.SearchQueryPageRequest;
 import io.camunda.gateway.protocol.model.simple.VariableFilter;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
-import io.camunda.service.VariableServices;
+import io.camunda.service.registry.ServiceRegistry;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -39,13 +40,13 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 public class VariableTools {
 
-  private final VariableServices variableServices;
+  private final ServiceRegistry serviceRegistry;
   private final CamundaAuthenticationProvider authenticationProvider;
 
   public VariableTools(
-      final VariableServices variableServices,
+      final ServiceRegistry serviceRegistry,
       final CamundaAuthenticationProvider authenticationProvider) {
-    this.variableServices = variableServices;
+    this.serviceRegistry = serviceRegistry;
     this.authenticationProvider = authenticationProvider;
   }
 
@@ -71,8 +72,10 @@ public class VariableTools {
       final boolean shouldTruncate = truncateValues == null || truncateValues;
       return CallToolResultMapper.from(
           SearchQueryResponseMapper.toVariableSearchQueryResponse(
-              variableServices.search(
-                  variableSearchQuery.get(), authenticationProvider.getCamundaAuthentication()),
+              serviceRegistry
+                  .variableServices(PhysicalTenantContext.current())
+                  .search(
+                      variableSearchQuery.get(), authenticationProvider.getCamundaAuthentication()),
               shouldTruncate));
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
@@ -91,8 +94,9 @@ public class VariableTools {
     try {
       return CallToolResultMapper.from(
           SearchQueryResponseMapper.toVariableItem(
-              variableServices.getByKey(
-                  variableKey, authenticationProvider.getCamundaAuthentication())));
+              serviceRegistry
+                  .variableServices(PhysicalTenantContext.current())
+                  .getByKey(variableKey, authenticationProvider.getCamundaAuthentication())));
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
     }

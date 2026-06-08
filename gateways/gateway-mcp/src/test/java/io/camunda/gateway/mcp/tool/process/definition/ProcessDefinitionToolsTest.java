@@ -37,6 +37,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -78,6 +79,11 @@ class ProcessDefinitionToolsTest extends OperationalToolsTest {
 
   @Autowired private JsonMapper objectMapper;
   @Captor private ArgumentCaptor<ProcessDefinitionQuery> queryCaptor;
+
+  @BeforeEach
+  void wireServiceRegistry() {
+    when(serviceRegistry.processDefinitionServices(any())).thenReturn(processDefinitionServices);
+  }
 
   private void assertExampleProcessDefinitionResult(
       final ProcessDefinitionResult processDefinition) {

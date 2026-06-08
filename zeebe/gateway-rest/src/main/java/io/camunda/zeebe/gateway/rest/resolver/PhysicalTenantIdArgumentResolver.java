@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.gateway.rest.resolver;
 
+import io.camunda.gateway.mapping.http.physicaltenants.PhysicalTenantContext;
 import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
-import io.camunda.zeebe.gateway.rest.context.PhysicalTenantContext;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

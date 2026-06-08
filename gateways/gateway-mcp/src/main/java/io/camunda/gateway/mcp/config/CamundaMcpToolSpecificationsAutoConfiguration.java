@@ -15,8 +15,7 @@ import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
 import io.camunda.gateway.mcp.config.tool.CamundaSyncStatelessMcpToolProvider;
 import io.camunda.gateway.mcp.processes.ProcessesToolRepository;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
-import io.camunda.service.MessageServices;
-import io.camunda.service.MessageSubscriptionServices;
+import io.camunda.service.registry.ServiceRegistry;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures.SyncToolSpecification;
 import java.util.List;
 import org.springframework.ai.util.json.JsonParser;
@@ -69,11 +68,9 @@ public class CamundaMcpToolSpecificationsAutoConfiguration {
   @Bean(name = "processesToolRepository")
   @ConditionalOnMissingBean(name = "processesToolRepository")
   public ToolRepository processesToolRepository(
-      final MessageSubscriptionServices messageSubscriptionServices,
-      final MessageServices messageServices,
+      final ServiceRegistry serviceRegistry,
       final CamundaAuthenticationProvider authenticationProvider,
       @Qualifier("processesMcpToolSpecifications") final List<SyncToolSpecification> staticTools) {
-    return new ProcessesToolRepository(
-        messageSubscriptionServices, messageServices, authenticationProvider, staticTools);
+    return new ProcessesToolRepository(serviceRegistry, authenticationProvider, staticTools);
   }
 }

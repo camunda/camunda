@@ -13,6 +13,7 @@ import static io.camunda.gateway.mcp.tool.ToolDescriptions.PROCESS_INSTANCE_KEY_
 
 import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.mapping.http.SimpleRequestMapper;
+import io.camunda.gateway.mapping.http.physicaltenants.PhysicalTenantContext;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
@@ -22,7 +23,7 @@ import io.camunda.gateway.protocol.model.simple.ProcessInstanceCreationInstructi
 import io.camunda.gateway.protocol.model.simple.ProcessInstanceSearchQuery;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.config.MultiTenancyConfiguration;
-import io.camunda.service.ProcessInstanceServices;
+import io.camunda.service.registry.ServiceRegistry;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -36,15 +37,15 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 public class ProcessInstanceTools {
 
-  private final ProcessInstanceServices processInstanceServices;
+  private final ServiceRegistry serviceRegistry;
   private final MultiTenancyConfiguration multiTenancyCfg;
   private final CamundaAuthenticationProvider authenticationProvider;
 
   public ProcessInstanceTools(
-      final ProcessInstanceServices processInstanceServices,
+      final ServiceRegistry serviceRegistry,
       final MultiTenancyConfiguration multiTenancyCfg,
       final CamundaAuthenticationProvider authenticationProvider) {
-    this.processInstanceServices = processInstanceServices;
+    this.serviceRegistry = serviceRegistry;
     this.multiTenancyCfg = multiTenancyCfg;
     this.authenticationProvider = authenticationProvider;
   }
@@ -62,8 +63,11 @@ public class ProcessInstanceTools {
 
       return CallToolResultMapper.from(
           SearchQueryResponseMapper.toProcessInstanceSearchQueryResponse(
-              processInstanceServices.search(
-                  processInstanceQuery.get(), authenticationProvider.getCamundaAuthentication())));
+              serviceRegistry
+                  .processInstanceServices(PhysicalTenantContext.current())
+                  .search(
+                      processInstanceQuery.get(),
+                      authenticationProvider.getCamundaAuthentication())));
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
     }
@@ -83,8 +87,10 @@ public class ProcessInstanceTools {
     try {
       return CallToolResultMapper.from(
           SearchQueryResponseMapper.toProcessInstance(
-              processInstanceServices.getByKey(
-                  processInstanceKey, authenticationProvider.getCamundaAuthentication())));
+              serviceRegistry
+                  .processInstanceServices(PhysicalTenantContext.current())
+                  .getByKey(
+                      processInstanceKey, authenticationProvider.getCamundaAuthentication())));
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
     }
@@ -116,14 +122,17 @@ public class ProcessInstanceTools {
       final var camundaAuthentication = authenticationProvider.getCamundaAuthentication();
       if (Boolean.TRUE.equals(processInstanceCreateRequest.awaitCompletion())) {
         return CallToolResultMapper.from(
-            processInstanceServices.createProcessInstanceWithResult(
-                processInstanceCreateRequest, camundaAuthentication),
+            serviceRegistry
+                .processInstanceServices(PhysicalTenantContext.current())
+                .createProcessInstanceWithResult(
+                    processInstanceCreateRequest, camundaAuthentication),
             ResponseMapper::toCreateProcessInstanceWithResultResponse);
       }
 
       return CallToolResultMapper.from(
-          processInstanceServices.createProcessInstance(
-              processInstanceCreateRequest, camundaAuthentication),
+          serviceRegistry
+              .processInstanceServices(PhysicalTenantContext.current())
+              .createProcessInstance(processInstanceCreateRequest, camundaAuthentication),
           ResponseMapper::toCreateProcessInstanceResponse);
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);

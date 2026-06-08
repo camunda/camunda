@@ -51,6 +51,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -105,6 +106,11 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
 
   @Captor private ArgumentCaptor<ProcessInstanceQuery> queryCaptor;
   @Captor private ArgumentCaptor<ProcessInstanceCreateRequest> createRequestCaptor;
+
+  @BeforeEach
+  void wireServiceRegistry() {
+    when(serviceRegistry.processInstanceServices(any())).thenReturn(processInstanceServices);
+  }
 
   private void assertExampleProcessInstance(final ProcessInstanceResult processInstance) {
     assertThat(processInstance.getProcessInstanceKey()).isEqualTo("123");

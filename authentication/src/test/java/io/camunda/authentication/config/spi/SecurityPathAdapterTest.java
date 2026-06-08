@@ -19,7 +19,12 @@ class SecurityPathAdapterTest {
   void shouldExposeApiPaths() {
     assertThat(port.apiPaths())
         .containsExactlyInAnyOrder(
-            "/api/**", "/v1/**", "/v2/**", "/mcp/**", "/.well-known/oauth-protected-resource/**");
+            "/api/**",
+            "/v1/**",
+            "/v2/**",
+            "/mcp/**",
+            "/physical-tenants/{physicalTenantId}/mcp/**",
+            "/.well-known/oauth-protected-resource/**");
   }
 
   @Test

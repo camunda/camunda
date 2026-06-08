@@ -31,6 +31,10 @@
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>configuration</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>camunda-search-domain</artifactId>
     </dependency>
     <dependency>
@@ -173,6 +177,12 @@
       <artifactId>reactor-core</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>jakarta.servlet</groupId>
+      <artifactId>jakarta.servlet-api</artifactId>
+      <scope>provided</scope>
+    </dependency>
+
     <!-- test dependencies -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -238,6 +248,12 @@
             <dependency>org.springframework.ai:spring-ai-autoconfigure-mcp-server-common</dependency>
             <dependency>org.springframework.boot:spring-boot-starter-validation</dependency>
           </usedDependencies>
+          <ignoredUnusedDeclaredDependencies>
+            <dependency>jakarta.servlet:jakarta.servlet-api</dependency>
+          </ignoredUnusedDeclaredDependencies>
+          <ignoredUsedUndeclaredDependencies>
+            <dependency>org.apache.tomcat.embed:tomcat-embed-core</dependency>
+          </ignoredUsedUndeclaredDependencies>
         </configuration>
       </plugin>
     </plugins>
