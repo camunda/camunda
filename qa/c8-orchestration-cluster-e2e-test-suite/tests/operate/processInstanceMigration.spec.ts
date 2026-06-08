@@ -145,11 +145,11 @@ test.describe.serial('Process Instance Migration', () => {
       await sleep(3000);
     });
 
-    await test.step('Verify target process is preselected with auto-mapping and Complete Migration', async () => {
-      // The target process auto-preselection relies on a mobx autorun that can
-      // miss the newer process version if it is not yet imported into Operate
-      // when the migration view loads, leaving the combobox empty. Actively
-      // select the target process (which also auto-maps the flow nodes verified
+    await test.step('Select target process, verify auto-mapping and Complete Migration', async () => {
+      // Operate can auto-preselect the target via a mobx autorun, but that only
+      // fires when the newer process version is already imported as the migration
+      // view loads; under import lag the combobox stays empty. Actively select the
+      // target process (which also triggers the flow-node auto-mapping verified
       // below) to make the step deterministic.
       await operateProcessMigrationModePage.targetProcessCombobox.click();
       // The option may take up to 60s to appear under import lag; override the
@@ -394,9 +394,14 @@ test.describe.serial('Process Instance Migration', () => {
         `${baseUrl}/operate/processes?active=true&incidents=true&process=${sourceBpmnProcessId}&version=${sourceVersion}&operationId=${migratedIds[0]}`,
       );
 
+      // Assert the expected instance count explicitly so a wrong/missing
+      // operationId (which would yield "0 results") fails fast with a clear
+      // signal instead of timing out later during instance selection.
       await waitForAssertion({
         assertion: async () => {
-          await expect(operateProcessesPage.resultsText.first()).toBeVisible();
+          await expect(
+            page.getByText(`${AUTO_MIGRATION_INSTANCE_COUNT} results`),
+          ).toBeVisible({timeout: 30000});
         },
         onFailure: async () => {
           await page.reload();

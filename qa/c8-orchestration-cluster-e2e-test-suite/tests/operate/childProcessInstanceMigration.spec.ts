@@ -60,8 +60,9 @@ test.beforeAll(async () => {
   };
 
   // The engine processes deployments asynchronously after the REST API returns,
-  // so createProcessInstance can get a 404 if called immediately after deploy.
-  // Retry with backoff until the process definition is available.
+  // so createProcessInstance can get a 404 (process definition not yet committed)
+  // if called immediately after deploy. Retry with backoff only for that expected
+  // "not found" case; rethrow any other error (auth/network/validation) immediately.
   // eslint-disable-next-line prefer-const
   let parentInstances: Awaited<ReturnType<typeof createInstances>> = [];
   for (let attempt = 1; attempt <= 5; attempt++) {
@@ -73,7 +74,9 @@ test.beforeAll(async () => {
       );
       break;
     } catch (error) {
-      if (attempt === 5) throw error;
+      const message = error instanceof Error ? error.message : String(error);
+      const isNotFound = /404|NOT_FOUND/i.test(message);
+      if (!isNotFound || attempt === 5) throw error;
       console.log(
         `createInstances attempt ${attempt} failed (process definition not yet committed), retrying after ${attempt * 2}s...`,
       );
