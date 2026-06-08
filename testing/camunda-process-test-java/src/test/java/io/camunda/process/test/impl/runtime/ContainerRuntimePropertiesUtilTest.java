@@ -338,6 +338,25 @@ public class ContainerRuntimePropertiesUtilTest {
   }
 
   @Test
+  void shouldFallbackConnectorsPatchVersionToMinorVersion() {
+    // given
+    final Properties properties = new Properties();
+    properties.put(
+        CamundaContainerRuntimeProperties.PROPERTY_NAME_CAMUNDA_DOCKER_IMAGE_VERSION, "8.8.11");
+    properties.put(
+        ConnectorsContainerRuntimeProperties.PROPERTY_NAME_CONNECTORS_DOCKER_IMAGE_VERSION,
+        "8.8.11");
+
+    // when
+    final ContainerRuntimePropertiesUtil propertiesUtil =
+        new ContainerRuntimePropertiesUtil(properties, emptyGitProperties);
+
+    // then
+    assertThat(propertiesUtil.getCamundaDockerImageVersion()).isEqualTo("8.8.11");
+    assertThat(propertiesUtil.getConnectorsDockerImageVersion()).isEqualTo("8.8.0");
+  }
+
+  @Test
   void shouldParseCamundaEnvVars() {
     // given
     final Map<String, String> envVars = new HashMap<>();

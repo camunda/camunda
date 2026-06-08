@@ -57,10 +57,7 @@ public class ConnectorsContainerRuntimeProperties {
             PROPERTY_NAME_CONNECTORS_DOCKER_IMAGE_NAME,
             CamundaProcessTestRuntimeDefaults.DEFAULT_CONNECTORS_DOCKER_IMAGE_NAME);
     connectorsDockerImageVersion =
-        versionedPropertiesReader.getVersion(
-            properties,
-            PROPERTY_NAME_CONNECTORS_DOCKER_IMAGE_VERSION,
-            CamundaProcessTestRuntimeDefaults.DEFAULT_CONNECTORS_DOCKER_IMAGE_VERSION);
+        getConnectorsDockerImageVersion(properties, versionedPropertiesReader);
     connectorsEnvVars = getPropertyMapOrEmpty(properties, PROPERTY_NAME_CONNECTORS_ENV_VARS_PREFIX);
     connectorsSecrets = getPropertyMapOrEmpty(properties, PROPERTY_NAME_CONNECTORS_SECRETS_PREFIX);
     connectorsExposedPorts =
@@ -90,5 +87,25 @@ public class ConnectorsContainerRuntimeProperties {
 
   public List<Integer> getConnectorsExposedPorts() {
     return connectorsExposedPorts;
+  }
+
+  private static String getConnectorsDockerImageVersion(
+      final Properties properties, final VersionedPropertiesUtil versionedPropertiesReader) {
+    final String connectorsVersion =
+        versionedPropertiesReader.getVersion(
+            properties,
+            PROPERTY_NAME_CONNECTORS_DOCKER_IMAGE_VERSION,
+            CamundaProcessTestRuntimeDefaults.DEFAULT_CONNECTORS_DOCKER_IMAGE_VERSION);
+    final String camundaVersion =
+        versionedPropertiesReader.getVersion(
+            properties,
+            CamundaContainerRuntimeProperties.PROPERTY_NAME_CAMUNDA_DOCKER_IMAGE_VERSION,
+            CamundaProcessTestRuntimeDefaults.DEFAULT_CAMUNDA_DOCKER_IMAGE_VERSION);
+
+    if (!connectorsVersion.equals(camundaVersion)) {
+      return connectorsVersion;
+    }
+
+    return versionedPropertiesReader.toMinorVersionIfPatchRelease(connectorsVersion);
   }
 }

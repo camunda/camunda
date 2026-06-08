@@ -60,6 +60,16 @@ public class VersionedPropertiesUtil {
         branchBasedSnapshotVersion);
   }
 
+  public String toMinorVersionIfPatchRelease(final String version) {
+    return Optional.of(version)
+        .map(SEMANTIC_VERSION_PATTERN::matcher)
+        .filter(Matcher::find)
+        .filter(matcher -> matcher.group(4) == null)
+        .filter(matcher -> Integer.parseInt(matcher.group(3)) > 0)
+        .map(matcher -> matcher.group(1) + "." + matcher.group(2) + ".0")
+        .orElse(version);
+  }
+
   private String getBranchBasedSnapshotVersion(final String defaultVersion) {
     final Matcher stableBranchMatcher =
         STABLE_BRANCH_VERSION_PATTERN.matcher(gitProperties.getBranch());
