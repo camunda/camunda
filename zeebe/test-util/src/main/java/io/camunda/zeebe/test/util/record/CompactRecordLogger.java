@@ -586,9 +586,6 @@ public class CompactRecordLogger {
 
     final var content = value.getContent();
     final var toolCalls = value.getToolCalls();
-    final var toolCallRef = value.getToolCallRef();
-    final var hasToolCallRef =
-        toolCallRef != null && !StringUtils.isEmpty(toolCallRef.getToolCallId());
 
     final var indent = StringUtils.rightPad("\n", 8 + valueTypeChars);
 
@@ -630,15 +627,6 @@ public class CompactRecordLogger {
               toolCalls.stream()
                   .map(AgentHistoryRecordValue.AgentHistoryEmbeddedToolCallValue::getToolName)
                   .collect(Collectors.joining(", ")));
-    }
-
-    if (hasToolCallRef) {
-      result
-          .append(indent)
-          .append("ref:")
-          .append(StringUtils.isEmpty(toolCallRef.getToolName()) ? "?" : toolCallRef.getToolName())
-          .append("/")
-          .append(shortenKey(toolCallRef.getToolElementInstanceKey()));
     }
 
     return result.toString();

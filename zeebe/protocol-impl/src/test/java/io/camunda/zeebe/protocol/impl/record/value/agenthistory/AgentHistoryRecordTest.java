@@ -178,18 +178,6 @@ final class AgentHistoryRecordTest {
   }
 
   @Test
-  void shouldExposeDefaultToolCallRef() {
-    // given
-    final AgentHistoryRecord record = new AgentHistoryRecord();
-
-    // then
-    assertThat(record.getToolCallRef().getToolCallId()).isEmpty();
-    assertThat(record.getToolCallRef().getToolName()).isEmpty();
-    assertThat(record.getToolCallRef().getElementId()).isEmpty();
-    assertThat(record.getToolCallRef().getToolElementInstanceKey()).isEqualTo(-1L);
-  }
-
-  @Test
   void shouldExposeDefaultMetrics() {
     // given
     final AgentHistoryRecord record = new AgentHistoryRecord();
@@ -263,27 +251,5 @@ final class AgentHistoryRecordTest {
     assertThat(copy.getProcessInstanceKey()).isEqualTo(2251799813685260L);
     assertThat(copy.getRootProcessInstanceKey()).isEqualTo(2251799813685262L);
     assertThat(copy.getProcessDefinitionKey()).isEqualTo(2251799813685261L);
-  }
-
-  @Test
-  void shouldRoundTripToolCallRefViaMsgPack() {
-    // given
-    final AgentHistoryRecord original = new AgentHistoryRecord();
-    original
-        .getToolCallRef()
-        .setToolCallId("ref-789")
-        .setToolName("refTool")
-        .setElementId("elem-001")
-        .setToolElementInstanceKey(9999L);
-
-    // when
-    final AgentHistoryRecord copy = new AgentHistoryRecord();
-    copy.copyFrom(original);
-
-    // then
-    assertThat(copy.getToolCallRef().getToolCallId()).isEqualTo("ref-789");
-    assertThat(copy.getToolCallRef().getToolName()).isEqualTo("refTool");
-    assertThat(copy.getToolCallRef().getElementId()).isEqualTo("elem-001");
-    assertThat(copy.getToolCallRef().getToolElementInstanceKey()).isEqualTo(9999L);
   }
 }

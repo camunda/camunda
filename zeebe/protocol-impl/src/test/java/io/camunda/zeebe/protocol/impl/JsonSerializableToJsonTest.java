@@ -4828,12 +4828,6 @@ final class JsonSerializableToJsonTest {
                       .setArguments(
                           wrapArray(
                               MsgPackConverter.convertToMsgPack(Map.of("documentId", "inv-001")))));
-              record
-                  .getToolCallRef()
-                  .setToolCallId("call_abc123")
-                  .setToolName("extract_line_items")
-                  .setElementId("extract-line-items-task")
-                  .setToolElementInstanceKey(2251799813685253L);
               record.getMetrics().setInputTokens(512L).setOutputTokens(148L).setDurationMs(1200L);
               return record;
             },
@@ -4875,12 +4869,6 @@ final class JsonSerializableToJsonTest {
               "arguments": { "documentId": "inv-001" }
             }
           ],
-          "toolCallRef": {
-            "toolCallId": "call_abc123",
-            "toolName": "extract_line_items",
-            "elementId": "extract-line-items-task",
-            "toolElementInstanceKey": 2251799813685253
-          },
           "metrics": { "inputTokens": 512, "outputTokens": 148, "durationMs": 1200 },
           "tenantId": "<default>",
           "processInstanceKey": -1,
@@ -4904,12 +4892,6 @@ final class JsonSerializableToJsonTest {
           "producedAt": -1,
           "content": [],
           "toolCalls": [],
-          "toolCallRef": {
-            "toolCallId": "",
-            "toolName": "",
-            "elementId": "",
-            "toolElementInstanceKey": -1
-          },
           "metrics": { "inputTokens": 0, "outputTokens": 0, "durationMs": 0 },
           "tenantId": "<default>",
           "processInstanceKey": -1,

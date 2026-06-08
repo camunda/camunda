@@ -46,13 +46,11 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
       new ArrayProperty<>("content", AgentHistoryMessageContent::new);
   private final ArrayProperty<AgentHistoryEmbeddedToolCall> toolCallsProp =
       new ArrayProperty<>("toolCalls", AgentHistoryEmbeddedToolCall::new);
-  private final ObjectProperty<AgentHistoryToolCallRef> toolCallRefProp =
-      new ObjectProperty<>("toolCallRef", new AgentHistoryToolCallRef());
   private final ObjectProperty<AgentHistoryMetrics> metricsProp =
       new ObjectProperty<>("metrics", new AgentHistoryMetrics());
 
   public AgentHistoryRecord() {
-    super(16);
+    super(15);
     declareProperty(agentInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(processInstanceKeyProp)
@@ -67,7 +65,6 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
         .declareProperty(producedAtProp)
         .declareProperty(contentProp)
         .declareProperty(toolCallsProp)
-        .declareProperty(toolCallRefProp)
         .declareProperty(metricsProp);
   }
 
@@ -241,11 +238,6 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
   public AgentHistoryRecord addToolCall(final AgentHistoryEmbeddedToolCall toolCall) {
     toolCallsProp.add().copy(toolCall);
     return this;
-  }
-
-  @Override
-  public AgentHistoryToolCallRef getToolCallRef() {
-    return toolCallRefProp.getValue();
   }
 
   @Override
