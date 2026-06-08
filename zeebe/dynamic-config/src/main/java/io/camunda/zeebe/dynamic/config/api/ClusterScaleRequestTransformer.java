@@ -9,6 +9,7 @@ package io.camunda.zeebe.dynamic.config.api;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.PartitionDistributor;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
@@ -43,6 +44,15 @@ public final class ClusterScaleRequestTransformer implements ConfigurationChange
     if (newClusterSize.isEmpty() && newPartitionCount.isEmpty() && newReplicationFactor.isEmpty()) {
       // Nothing to change
       return Either.right(List.of());
+    }
+
+    // Count-based scaling generates bare node IDs without zone info, which breaks
+    // zone-aware partition distributors. Reject until zone-aware scaling is implemented.
+    if (clusterConfiguration.members().keySet().stream().anyMatch(m -> m.zone() != null)) {
+      return Either.left(
+          new InvalidRequest(
+              "Scaling a zone-aware cluster by broker count is not supported."
+                  + " Specify broker IDs explicitly instead."));
     }
 
     // replicationFactor and partitionCount is validated in the delegated transformer.
