@@ -61,11 +61,11 @@ Use exactly one persistent issue for reporting:
    - The size of the runner change
    - The number of additional minutes per run
 
-4. **Generate report body**: Build a well-structured report body containing:
+4. **Generate report body**. The body must fit under the 10 KB `update-issue` safe-output limit; the structural caps below keep it well under that budget without measuring bytes:
    - A summary section with the total number of CI changes and how many are cost-relevant
-   - A table of cost-impacting changes with columns: File, Change Type, Impact Level, Description including link to commit or Pull Request
-   - A detailed breakdown per change with the relevant diff snippets in collapsible sections
-   - Recommendations for cost optimization where applicable
+   - A table of cost-impacting changes with columns: File, Change Type, Impact Level, Description including link to commit or Pull Request. Include at most **15 rows**, ranked by Impact Level (High → Medium → Low). Keep each Description cell under **200 characters**. If more than 15 cost-impacting changes were detected, note the omitted count in the summary.
+   - Up to **5 recommendations** for cost optimization where applicable, one short paragraph each.
+   - Do NOT inline diff snippets, `<details>` blocks, or per-change breakdowns — link to the commit or PR instead.
 
 5. **Upsert persistent issue**:
    - Search for an existing issue with exact title `Weekly CI Change Cost Impact Analysis`
@@ -75,4 +75,4 @@ Use exactly one persistent issue for reporting:
 
 ## Output Format
 
-Use GitHub-flavored markdown. Start nested headings at `###`. Use `<details>` and `<summary>` tags for collapsible diff sections. If no cost-impacting changes are found, the persistent issue body should clearly state that no cost-relevant CI changes were detected this week.
+Use GitHub-flavored markdown. Start nested headings at `###`. Keep the body terse — link to commits or PRs instead of quoting diffs. If no cost-impacting changes are found, the persistent issue body should clearly state that no cost-relevant CI changes were detected this week.
