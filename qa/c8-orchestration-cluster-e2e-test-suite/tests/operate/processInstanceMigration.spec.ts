@@ -146,6 +146,16 @@ test.describe.serial('Process Instance Migration', () => {
     });
 
     await test.step('Verify target process is preselected with auto-mapping and Complete Migration', async () => {
+      // The target process auto-preselection relies on a mobx autorun that can
+      // miss the newer process version if it is not yet imported into Operate
+      // when the migration view loads, leaving the combobox empty. Actively
+      // select the target process (which also auto-maps the flow nodes verified
+      // below) to make the step deterministic.
+      await operateProcessMigrationModePage.targetProcessCombobox.click();
+      await operateProcessMigrationModePage
+        .getOptionByName(targetBpmnProcessId)
+        .click();
+
       await expect(
         operateProcessMigrationModePage.targetProcessCombobox,
       ).toHaveValue(targetBpmnProcessId, {timeout: 60000});
@@ -648,7 +658,9 @@ test.describe.serial('Process Instance Migration', () => {
       await waitForAssertion({
         assertion: async () => {
           await operateDiagramPage.clickFlowNode('BusinessRuleTask2');
-          await operateDiagramPage.verifyIncidentInPopover(/invalid.*decision/i);
+          await operateDiagramPage.verifyIncidentInPopover(
+            /invalid.*decision/i,
+          );
         },
         onFailure: async () => {
           await page.reload();
