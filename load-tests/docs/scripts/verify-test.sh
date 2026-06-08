@@ -101,6 +101,13 @@ attempts=0
 verified=false
 
 while [[ $attempts -lt $max_attempts ]]; do
+  if ! kill -0 "$pf_pid" 2>/dev/null; then
+    echo "Port-forward died, restarting..."
+    kubectl port-forward "svc/clients" "${local_port}:${METRICS_PORT}" -n "$NAMESPACE" &
+    pf_pid=$!
+    sleep 5
+  fi
+
   count=$( { curl -s "http://localhost:${local_port}/metrics" 2>/dev/null || true; } \
     | { grep '^app_connected ' || true; } \
     | awk '{print $2}' \
