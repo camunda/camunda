@@ -15,45 +15,28 @@
  */
 package io.camunda.process.test.impl.containers;
 
-import java.util.Locale;
-import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
-import org.testcontainers.images.PullPolicy;
 import org.testcontainers.utility.DockerImageName;
 
 public class ContainerFactory {
 
   public ElasticsearchContainer createElasticsearchContainer(
       final String imageName, final String imageVersion) {
-    return withConfiguredImagePullPolicy(
-        new ElasticsearchContainer(asDockerImageName(imageName, imageVersion)), imageVersion);
+    return new ElasticsearchContainer(asDockerImageName(imageName, imageVersion));
   }
 
   public CamundaContainer createCamundaContainer(
       final String imageName, final String imageVersion) {
-    return withConfiguredImagePullPolicy(
-        new CamundaContainer(asDockerImageName(imageName, imageVersion)), imageVersion);
+    return new CamundaContainer(asDockerImageName(imageName, imageVersion));
   }
 
   public ConnectorsContainer createConnectorsContainer(
       final String imageName, final String imageVersion) {
-    return withConfiguredImagePullPolicy(
-        new ConnectorsContainer(asDockerImageName(imageName, imageVersion)), imageVersion);
+    return new ConnectorsContainer(asDockerImageName(imageName, imageVersion));
   }
 
   private static DockerImageName asDockerImageName(
       final String imageName, final String imageVersion) {
     return DockerImageName.parse(imageName).withTag(imageVersion);
-  }
-
-  private static <T extends GenericContainer<T>> T withConfiguredImagePullPolicy(
-      final T container, final String imageVersion) {
-    return container.withImagePullPolicy(
-        shouldAlwaysPullImage(imageVersion) ? PullPolicy.alwaysPull() : PullPolicy.defaultPolicy());
-  }
-
-  static boolean shouldAlwaysPullImage(final String imageVersion) {
-    final String normalizedVersion = imageVersion.toLowerCase(Locale.ROOT);
-    return normalizedVersion.contains("snapshot") || normalizedVersion.contains("latest");
   }
 }
