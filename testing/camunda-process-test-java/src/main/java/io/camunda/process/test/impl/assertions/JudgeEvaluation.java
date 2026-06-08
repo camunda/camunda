@@ -175,13 +175,11 @@ class JudgeEvaluation {
   /** The result of an LLM-based evaluation, containing a score and reasoning. */
   static class Result {
 
-    private final double rawScore;
-    private final double score;
+    private final BigDecimal score;
     private final String reasoning;
 
-    public Result(final double rawScore, final String reasoning) {
-      this.rawScore = rawScore;
-      this.score = BigDecimal.valueOf(rawScore).setScale(2, RoundingMode.HALF_UP).doubleValue();
+    public Result(final double score, final String reasoning) {
+      this.score = BigDecimal.valueOf(score).setScale(2, RoundingMode.HALF_UP);
       this.reasoning = reasoning;
     }
 
@@ -191,16 +189,7 @@ class JudgeEvaluation {
      * @return the rounded score
      */
     public double getScore() {
-      return score;
-    }
-
-    /**
-     * Returns the raw evaluation score with full precision.
-     *
-     * @return the raw score
-     */
-    public double getRawScore() {
-      return rawScore;
+      return score.doubleValue();
     }
 
     /**
@@ -214,20 +203,20 @@ class JudgeEvaluation {
 
     /**
      * Returns whether the evaluation passed the given threshold. Both the score and threshold are
-     * compared at 2 decimal places.
+     * compared at 2 decimal places using exact decimal arithmetic.
      *
      * @param threshold the threshold score (0-1)
      * @return true if the score is greater than or equal to the threshold
      */
     public boolean passed(final double threshold) {
-      final double roundedThreshold =
-          BigDecimal.valueOf(threshold).setScale(2, RoundingMode.HALF_UP).doubleValue();
-      return score >= roundedThreshold;
+      final BigDecimal roundedThreshold =
+          BigDecimal.valueOf(threshold).setScale(2, RoundingMode.HALF_UP);
+      return score.compareTo(roundedThreshold) >= 0;
     }
 
     @Override
     public String toString() {
-      return String.format("EvaluationResult{score=%.2f, reasoning='%s'}", score, reasoning);
+      return String.format("EvaluationResult{score=%.2f, reasoning='%s'}", getScore(), reasoning);
     }
   }
 }
