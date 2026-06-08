@@ -267,9 +267,11 @@ jobs:
           # Filter out:
           #   - empty/malformed file fields
 
-          # Path normalization + error truncation. Errors are truncated to 600 chars
-          # because workflow_dispatch inputs cap at ~64KB total payload — long stack
-          # traces from many failures would otherwise overflow.
+          # Path normalization + error sanitization + truncation. ANSI escape sequences
+          # (e.g. Playwright colour codes) are stripped first to prevent GitHub Actions'
+          # secret scanner from suppressing the dispatches output. Errors are then
+          # truncated to 600 chars because workflow_dispatch inputs cap at ~64KB total
+          # payload — long stack traces from many failures would otherwise overflow.
           jq -s '
             map(
               .file as $f
@@ -278,7 +280,7 @@ jobs:
                   | sub("^.*/qa/c8-orchestration-cluster-e2e-test-suite/"; "")
                   | sub("^qa/c8-orchestration-cluster-e2e-test-suite/"; "")
                 )
-              | .error = ((.error // "unknown error")[0:600])
+              | .error = ((.error // "unknown error") | gsub("\\[[0-9;]*m"; "") | .[0:600])
               | select(.file != null and .file != "")
               | select(.file | test("\\.spec\\.[jt]s$"))
             )
