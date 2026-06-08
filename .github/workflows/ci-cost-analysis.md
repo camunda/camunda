@@ -61,11 +61,12 @@ Use exactly one persistent issue for reporting:
    - The size of the runner change
    - The number of additional minutes per run
 
-4. **Generate report body**: Build a well-structured report body containing:
+4. **Generate report body** (HARD 8 KB budget — leave headroom under the 10 KB `update-issue` safe-output limit):
    - A summary section with the total number of CI changes and how many are cost-relevant
    - A table of cost-impacting changes with columns: File, Change Type, Impact Level, Description including link to commit or Pull Request
-   - A detailed breakdown per change with the relevant diff snippets in collapsible sections
    - Recommendations for cost optimization where applicable
+   - Do NOT inline diff snippets or `<details>` blocks — link to the commit or PR instead.
+   - After assembling, check the byte size of the body. If it exceeds 8192 bytes, drop the lowest-impact rows from the table until it fits. Never truncate mid-row, and note in the summary how many rows were omitted.
 
 5. **Upsert persistent issue**:
    - Search for an existing issue with exact title `Weekly CI Change Cost Impact Analysis`
@@ -75,4 +76,4 @@ Use exactly one persistent issue for reporting:
 
 ## Output Format
 
-Use GitHub-flavored markdown. Start nested headings at `###`. Use `<details>` and `<summary>` tags for collapsible diff sections. If no cost-impacting changes are found, the persistent issue body should clearly state that no cost-relevant CI changes were detected this week.
+Use GitHub-flavored markdown. Start nested headings at `###`. Keep the body terse — link to commits or PRs instead of quoting diffs. If no cost-impacting changes are found, the persistent issue body should clearly state that no cost-relevant CI changes were detected this week.
