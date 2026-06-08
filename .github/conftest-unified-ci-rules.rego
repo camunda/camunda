@@ -191,6 +191,8 @@ get_jobs_without_cihealth(jobInput) = jobs_without_cihealth {
         # stale-backport-tracker.yml. Follow-up: amend this rule to accept a
         # dependent observer job natively instead of maintaining whitelist.
         job_id != "collect-stale-backports"
+        job_id != "compute-matrix"
+
 
         # not enforced on jobs that invoke other reusable workflows (instead enforced there)
         not job.uses
