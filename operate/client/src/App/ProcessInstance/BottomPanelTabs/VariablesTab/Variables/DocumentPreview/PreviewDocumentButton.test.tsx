@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {render, screen} from 'modules/testing-library';
+import {render, screen, fireEvent} from 'modules/testing-library';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {mockDownloadDocument} from 'modules/mocks/api/v2/documents/downloadDocument';
@@ -165,7 +165,7 @@ describe('<PreviewDocumentButton />', () => {
 
     expect(
       await screen.findByText(
-        `Failed to prepare JSON preview for document "${jsonDocument.fileName}".`,
+        `Failed to load JSON preview for "${jsonDocument.fileName}".`,
       ),
     ).toBeInTheDocument();
     expect(screen.queryByTestId('monaco-editor')).not.toBeInTheDocument();
@@ -201,5 +201,27 @@ describe('<PreviewDocumentButton />', () => {
       contentType: 'image/png',
       size: 1024,
     });
+  });
+
+  it('should show an error notification when the image fails to load', async () => {
+    const {user} = render(
+      <PreviewDocumentButton document={imageDocument} variableName="myImage" />,
+    );
+
+    await user.click(
+      screen.getByLabelText('Preview document for variable myImage'),
+    );
+
+    const image = screen.getByRole('img', {name: 'photo.png'});
+    fireEvent.error(image);
+
+    expect(
+      await screen.findByText(
+        `Failed to load image preview for "${imageDocument.fileName}".`,
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('img', {name: 'photo.png'}),
+    ).not.toBeInTheDocument();
   });
 });
