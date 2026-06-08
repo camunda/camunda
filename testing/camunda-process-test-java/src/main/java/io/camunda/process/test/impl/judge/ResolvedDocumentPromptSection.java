@@ -15,11 +15,9 @@
  */
 package io.camunda.process.test.impl.judge;
 
-import io.camunda.client.api.response.DocumentMetadata;
-import io.camunda.client.api.response.DocumentReferenceResponse;
 import io.camunda.process.test.api.judge.ResolvedDocument;
 import java.util.List;
-import org.apache.commons.lang3.StringEscapeUtils;
+import org.apache.commons.text.StringEscapeUtils;
 
 /**
  * Builds the {@code <resolved_documents>} section that is appended to the judge prompt when Camunda
@@ -60,13 +58,11 @@ public final class ResolvedDocumentPromptSection {
   }
 
   private static String describe(final ResolvedDocument doc) {
-    final DocumentReferenceResponse ref = doc.getReference();
-    final DocumentMetadata md = ref.getMetadata();
     final StringBuilder line = new StringBuilder();
     line.append("- ");
-    appendAttribute(line, "documentId", ref.getDocumentId());
-    appendAttribute(line, " fileName", md == null ? null : md.getFileName());
-    appendAttribute(line, " contentType", md == null ? null : md.getContentType());
+    appendAttribute(line, "documentId", doc.getDocumentId());
+    appendAttribute(line, " fileName", doc.getFileName());
+    appendAttribute(line, " contentType", doc.getContentType());
     return line.toString();
   }
 

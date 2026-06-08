@@ -20,17 +20,46 @@ import io.camunda.process.test.api.judge.ResolvedDocument;
 
 public final class ResolvedDocumentImpl implements ResolvedDocument {
 
-  private final DocumentReferenceResponse reference;
+  private final String documentId;
+  private final String storeId;
+  private final String contentHash;
+  private final String fileName;
+  private final String contentType;
   private final byte[] content;
 
   public ResolvedDocumentImpl(final DocumentReferenceResponse reference, final byte[] content) {
-    this.reference = reference;
+    this.documentId = reference.getDocumentId();
+    this.storeId = reference.getStoreId();
+    this.contentHash = reference.getContentHash();
+    this.fileName = reference.getMetadata() != null ? reference.getMetadata().getFileName() : null;
+    this.contentType =
+        reference.getMetadata() != null ? reference.getMetadata().getContentType() : null;
     this.content = content;
   }
 
   @Override
-  public DocumentReferenceResponse getReference() {
-    return reference;
+  public String getDocumentId() {
+    return documentId;
+  }
+
+  @Override
+  public String getStoreId() {
+    return storeId;
+  }
+
+  @Override
+  public String getContentHash() {
+    return contentHash;
+  }
+
+  @Override
+  public String getFileName() {
+    return fileName;
+  }
+
+  @Override
+  public String getContentType() {
+    return contentType;
   }
 
   @Override

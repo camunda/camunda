@@ -15,15 +15,10 @@
  */
 package io.camunda.process.test.api.judge;
 
-import io.camunda.client.api.response.DocumentReferenceResponse;
-
 /**
  * A Camunda document reference paired with its downloaded binary content, passed to {@link
  * MultimodalChatModelAdapter#generate(String, java.util.List)} so a custom {@link ChatModelAdapter}
  * preset can attach the content as structured blocks for its target LLM API.
- *
- * <p>{@link #getReference()} is the first-class Camunda primitive — read document id, store id,
- * content hash, and metadata (file name, mime type, …) from it directly.
  *
  * <p>If a document cannot be downloaded the judge evaluation fails fast; a {@code ResolvedDocument}
  * therefore always carries both a reference and its content.
@@ -31,9 +26,29 @@ import io.camunda.client.api.response.DocumentReferenceResponse;
 public interface ResolvedDocument {
 
   /**
-   * @return the original Camunda document reference
+   * @return the Camunda document id
    */
-  DocumentReferenceResponse getReference();
+  String getDocumentId();
+
+  /**
+   * @return the document store id, or {@code null} if not set
+   */
+  String getStoreId();
+
+  /**
+   * @return the content hash, or {@code null} if not set
+   */
+  String getContentHash();
+
+  /**
+   * @return the file name from document metadata, or {@code null} if not set
+   */
+  String getFileName();
+
+  /**
+   * @return the MIME content type from document metadata, or {@code null} if not set
+   */
+  String getContentType();
 
   /**
    * @return the downloaded binary content

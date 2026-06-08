@@ -30,7 +30,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
-import org.apache.commons.lang3.StringEscapeUtils;
+import org.apache.commons.text.StringEscapeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,7 +82,7 @@ public final class LangChain4jChatModelAdapter implements MultimodalChatModelAda
     final List<Content> parts = new ArrayList<>();
     parts.add(TextContent.from(buildHeader(d)));
 
-    final String contentType = contentTypeOf(d);
+    final String contentType = d.getContentType();
 
     if (isImage(contentType)) {
       final String base64 = Base64.getEncoder().encodeToString(d.getContent());
@@ -107,7 +107,7 @@ public final class LangChain4jChatModelAdapter implements MultimodalChatModelAda
     LOG.debug(
         "Document '{}' has content type '{}' which is not natively supported as a content "
             + "block; including a placeholder text marker only",
-        d.getReference().getDocumentId(),
+        d.getDocumentId(),
         contentType);
 
     parts.add(
@@ -124,28 +124,16 @@ public final class LangChain4jChatModelAdapter implements MultimodalChatModelAda
 
   private static String buildHeader(final ResolvedDocument d) {
     return "--- documentId=\""
-        + escapeMetadataValue(nullToEmpty(d.getReference().getDocumentId()))
+        + escapeMetadataValue(nullToEmpty(d.getDocumentId()))
         + "\" fileName=\""
-        + escapeMetadataValue(nullToEmpty(fileNameOf(d)))
+        + escapeMetadataValue(nullToEmpty(d.getFileName()))
         + "\" contentType=\""
-        + escapeMetadataValue(nullToEmpty(contentTypeOf(d)))
+        + escapeMetadataValue(nullToEmpty(d.getContentType()))
         + "\" ---";
   }
 
   private static String escapeMetadataValue(final String value) {
     return StringEscapeUtils.escapeJava(value).replace("<", "&lt;").replace(">", "&gt;");
-  }
-
-  private static String fileNameOf(final ResolvedDocument d) {
-    return d.getReference().getMetadata() == null
-        ? null
-        : d.getReference().getMetadata().getFileName();
-  }
-
-  private static String contentTypeOf(final ResolvedDocument d) {
-    return d.getReference().getMetadata() == null
-        ? null
-        : d.getReference().getMetadata().getContentType();
   }
 
   private static String nullToEmpty(final String s) {

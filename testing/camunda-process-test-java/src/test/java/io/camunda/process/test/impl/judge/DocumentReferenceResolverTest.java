@@ -97,11 +97,11 @@ class DocumentReferenceResolverTest {
     // then
     assertThat(resolved).hasSize(1);
     final ResolvedDocument doc = resolved.get(0);
-    assertThat(doc.getReference().getDocumentId()).isEqualTo("doc-1");
-    assertThat(doc.getReference().getStoreId()).isEqualTo("store-1");
-    assertThat(doc.getReference().getContentHash()).isEqualTo("hash-1");
-    assertThat(doc.getReference().getMetadata().getFileName()).isEqualTo("a.png");
-    assertThat(doc.getReference().getMetadata().getContentType()).isEqualTo("image/png");
+    assertThat(doc.getDocumentId()).isEqualTo("doc-1");
+    assertThat(doc.getStoreId()).isEqualTo("store-1");
+    assertThat(doc.getContentHash()).isEqualTo("hash-1");
+    assertThat(doc.getFileName()).isEqualTo("a.png");
+    assertThat(doc.getContentType()).isEqualTo("image/png");
     assertThat(doc.getContent()).containsExactly(1, 2, 3);
 
     final ArgumentCaptor<DocumentReferenceResponse> captor =
@@ -134,7 +134,7 @@ class DocumentReferenceResolverTest {
     // then
     assertThat(resolved).hasSize(2);
     assertThat(resolved)
-        .extracting(d -> d.getReference().getDocumentId())
+        .extracting(ResolvedDocument::getDocumentId)
         .containsExactlyInAnyOrder("doc-a", "doc-b");
   }
 
