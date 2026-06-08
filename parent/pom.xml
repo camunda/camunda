@@ -986,7 +986,7 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
-        <artifactId>camunda-process-test-coverage-frontend-new</artifactId>
+        <artifactId>camunda-process-test-coverage</artifactId>
         <version>${project.version}</version>
       </dependency>
 

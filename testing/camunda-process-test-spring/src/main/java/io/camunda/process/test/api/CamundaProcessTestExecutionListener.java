@@ -26,8 +26,10 @@ import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.configuration.AssertionConfiguration;
 import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration;
 import io.camunda.process.test.impl.configuration.CoverageReportConfiguration;
-import io.camunda.process.test.impl.coverage.ProcessCoverage;
-import io.camunda.process.test.impl.coverage.ProcessCoverageBuilder;
+import io.camunda.process.test.impl.coverage.CoverageCollector;
+import io.camunda.process.test.impl.coverage.CoverageCollectorBuilder;
+import io.camunda.process.test.impl.coverage.CoverageTestDataCollector;
+import io.camunda.process.test.impl.coverage.data.CoverageTestData;
 import io.camunda.process.test.impl.deployment.TestDeploymentService;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
 import io.camunda.process.test.impl.extension.ConditionalBehaviorEngine;
@@ -87,11 +89,11 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
   private final CamundaProcessTestRuntimeBuilder containerRuntimeBuilder;
   private final CamundaProcessTestResultPrinter processTestResultPrinter;
-  private final ProcessCoverageBuilder processCoverageBuilder;
+  private final CoverageCollectorBuilder coverageCollectorBuilder;
   private final TestDeploymentService testDeploymentService;
   private final List<AutoCloseable> createdClients = new ArrayList<>();
 
-  private ProcessCoverage processCoverage;
+  private CoverageCollector coverageCollector;
   private CamundaProcessTestRuntime runtime;
   private CamundaProcessTestResultCollector processTestResultCollector;
   private CamundaProcessTestContext camundaProcessTestContext;
@@ -102,15 +104,16 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
       new ConditionalBehaviorEngine();
 
   public CamundaProcessTestExecutionListener() {
-    this(CamundaProcessTestContainerRuntime.newBuilder(), ProcessCoverage.newBuilder(), LOG::info);
+    this(
+        CamundaProcessTestContainerRuntime.newBuilder(), CoverageCollector.newBuilder(), LOG::info);
   }
 
   CamundaProcessTestExecutionListener(
       final CamundaProcessTestRuntimeBuilder containerRuntimeBuilder,
-      final ProcessCoverageBuilder processCoverageBuilder,
+      final CoverageCollectorBuilder coverageCollectorBuilder,
       final Consumer<String> testResultPrintStream) {
     this.containerRuntimeBuilder = containerRuntimeBuilder;
-    this.processCoverageBuilder = processCoverageBuilder.printStream(testResultPrintStream);
+    this.coverageCollectorBuilder = coverageCollectorBuilder.printStream(testResultPrintStream);
     processTestResultPrinter = new CamundaProcessTestResultPrinter(testResultPrintStream);
     testDeploymentService = new TestDeploymentService();
   }
@@ -140,10 +143,8 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     // create process coverage
     final CoverageReportConfiguration coverageReportConfiguration =
         runtimeConfiguration.getCoverage();
-    processCoverage =
-        processCoverageBuilder
-            .testClass(testContext.getTestClass())
-            .dataSource(() -> new CamundaDataSource(camundaProcessTestContext.createClient()))
+    coverageCollector =
+        coverageCollectorBuilder
             .reportDirectory(coverageReportConfiguration.getReportDirectory())
             .excludeProcessDefinitionIds(coverageReportConfiguration.getExcludedProcesses())
             .excludeDecisionDefinitionIds(coverageReportConfiguration.getExcludedDecisions())
@@ -208,7 +209,10 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     conditionalBehaviorEngine.stop();
 
     try {
-      processCoverage.collectTestRunCoverage(testContext.getTestMethod().getName());
+      final CamundaDataSource dataSource = new CamundaDataSource(client);
+      final CoverageTestData coverageTestData = CoverageTestDataCollector.collectData(dataSource);
+      coverageCollector.collectTestRunCoverage(
+          testContext.getTestClass(), testContext.getTestMethod().getName(), coverageTestData);
     } catch (final Throwable t) {
       LOG.warn("Failed to collect test process coverage, skipping.", t);
     }
@@ -247,7 +251,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     }
 
     try {
-      processCoverage.reportCoverage();
+      coverageCollector.generateReport(testContext.getTestClass());
     } catch (final Throwable t) {
       LOG.warn("Failed to report process coverage, skipping.", t);
     }

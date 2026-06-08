@@ -31,10 +31,10 @@
       <artifactId>camunda-process-test-json-test-cases</artifactId>
     </dependency>
 
-    <!-- Frontend coverage report resources (bundled by camunda-process-test-coverage-frontend-new) -->
+    <!-- Frontend coverage report resources (bundled by camunda-process-test-coverage) -->
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>camunda-process-test-coverage-frontend-new</artifactId>
+      <artifactId>camunda-process-test-coverage</artifactId>
     </dependency>
 
     <dependency>
@@ -112,11 +112,6 @@
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>commons-io</groupId>
-      <artifactId>commons-io</artifactId>
     </dependency>
 
     <dependency>
@@ -268,7 +263,7 @@
             <id>analyze-dependencies</id>
             <configuration>
               <ignoredUnusedDeclaredDependencies combine.children="append">
-                <dep>io.camunda:camunda-process-test-coverage-frontend-new</dep>
+                <dep>io.camunda:camunda-process-test-coverage</dep>
               </ignoredUnusedDeclaredDependencies>
             </configuration>
           </execution>

@@ -32,8 +32,8 @@ import io.camunda.process.test.api.runtime.CamundaProcessTestContainerProvider;
 import io.camunda.process.test.api.similarity.SemanticSimilarityConfig;
 import io.camunda.process.test.api.testCases.TestCaseRunner;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
-import io.camunda.process.test.impl.coverage.ProcessCoverage;
-import io.camunda.process.test.impl.coverage.ProcessCoverageBuilder;
+import io.camunda.process.test.impl.coverage.CoverageCollector;
+import io.camunda.process.test.impl.coverage.CoverageCollectorBuilder;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeBuilder;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultCollector;
@@ -73,9 +73,9 @@ public class JunitExtensionTest {
   private CamundaProcessTestRuntimeBuilder camundaRuntimeBuilder;
 
   @Mock(answer = Answers.RETURNS_SELF)
-  private ProcessCoverageBuilder processCoverageBuilder;
+  private CoverageCollectorBuilder processCoverageBuilder;
 
-  @Mock private ProcessCoverage processCoverage;
+  @Mock private CoverageCollector processCoverage;
   @Mock private CamundaProcessTestContainerRuntime camundaContainerRuntime;
   @Mock private CamundaManagementClient camundaManagementClient;
   @Mock private CamundaProcessTestResultCollector camundaProcessTestResultCollector;

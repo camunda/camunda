@@ -20,67 +20,62 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.EvaluateDecisionResponse;
 import io.camunda.client.api.response.ProcessInstanceEvent;
+import io.camunda.process.test.api.coverage.model.CoverageReport;
+import io.camunda.process.test.api.coverage.model.CoverageRunReport;
+import io.camunda.process.test.api.coverage.model.ProcessCoverage;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
-import io.camunda.process.test.impl.coverage.core.CoverageCollector;
-import io.camunda.process.test.impl.coverage.model.Coverage;
-import io.camunda.process.test.impl.coverage.model.Run;
-import java.util.ArrayList;
+import io.camunda.process.test.impl.coverage.CoverageCollector;
+import io.camunda.process.test.impl.coverage.CoverageTestDataCollector;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 
 @CamundaProcessTest
 public class ProcessEngineCoverageIT {
+
+  private static final Class<?> TEST_CLASS = ProcessEngineCoverageIT.class;
 
   private CamundaProcessTestContext processTestContext;
   private CamundaClient client;
 
   @Test
-  void shouldCollectEventBasedGatewayFlows() {
+  void shouldCollectEventBasedGatewayFlows(final TestInfo testInfo) {
     // given
-    final CoverageCollector coverageCollector =
-        CoverageCollector.createCollector(
-            getClass(), new ArrayList<>(), new ArrayList<>(), () -> new CamundaDataSource(client));
+    final CoverageCollector coverageCollector = CoverageCollector.newBuilder().build();
 
     // when
     final ProcessInstanceEvent processInstance =
         deployAndCreateProcess("test-with-event-based-gateway", null);
     CamundaAssert.assertThat(processInstance).hasCompletedElements("End_Event");
 
-    coverageCollector.collectTestRunCoverage("test-run");
+    final String testName = testInfo.getDisplayName();
+    final CoverageRunReport coverageRunReport =
+        collectCoverageRunReport(coverageCollector, TEST_CLASS, testName);
 
     // then
-    final Collection<Run> runs = coverageCollector.getSuite().getRuns();
-    assertThat(runs).hasSize(1);
-    assertThat(runs)
+    final List<ProcessCoverage> processCoverages = coverageRunReport.getProcessCoverages();
+    assertThat(processCoverages).hasSize(1);
+    assertThat(processCoverages)
         .first()
-        .extracting(Run::getCoverages)
+        .extracting(ProcessCoverage::getProcessDefinitionId)
+        .isEqualTo("test-with-event-based-gateway");
+    assertThat(processCoverages.stream().findFirst().get())
+        .extracting(ProcessCoverage::getTakenSequenceFlows)
         .satisfies(
-            coverages -> {
-              assertThat(coverages).hasSize(1);
-              assertThat(coverages)
-                  .first()
-                  .extracting(Coverage::getProcessDefinitionId)
-                  .isEqualTo("test-with-event-based-gateway");
-              assertThat(coverages.stream().findFirst().get())
-                  .extracting(Coverage::getTakenSequenceFlows)
-                  .satisfies(
-                      takenFlows -> {
-                        assertThat(takenFlows).contains("Flow_Timer");
-                      });
+            takenFlows -> {
+              assertThat(takenFlows).contains("Flow_Timer");
             });
   }
 
   @Test
-  void shouldCoverProcess() {
+  void shouldCoverProcess(final TestInfo testInfo) {
     // given
-    final CoverageCollector coverageCollector =
-        CoverageCollector.createCollector(
-            getClass(), new ArrayList<>(), new ArrayList<>(), () -> new CamundaDataSource(client));
+    final CoverageCollector coverageCollector = CoverageCollector.newBuilder().build();
     final Map<String, Object> variables = new HashMap<>();
 
     // when
@@ -93,44 +88,37 @@ public class ProcessEngineCoverageIT {
         deployAndCreateProcess("test-with-simple-gateway", variables);
     CamundaAssert.assertThat(processInstance2).isCompleted();
 
-    coverageCollector.collectTestRunCoverage("simple-run");
+    final String testName = testInfo.getDisplayName();
+    final CoverageRunReport coverageRunReport =
+        collectCoverageRunReport(coverageCollector, TEST_CLASS, testName);
 
     // then
-    final Collection<Run> runs = coverageCollector.getSuite().getRuns();
-    assertThat(runs.stream().findFirst())
-        .isPresent()
-        .get()
-        .satisfies(
-            run -> {
-              assertThat(run.getCoverages()).hasSize(2);
-              assertThat(run.getCoverages())
-                  .extracting(Coverage::getCompletedElements)
-                  .containsExactly(
-                      Arrays.asList("StartEvent", "GatewayEvent", "NoEvent", "EndEvent"),
-                      Arrays.asList("StartEvent", "GatewayEvent", "YesEvent", "EndEvent"));
-              assertThat(run.getCoverages())
-                  .extracting(Coverage::getTakenSequenceFlows)
-                  .containsExactly(
-                      Arrays.asList("FlowGateway", "FlowGatewayDefault", "FlowNoEnd"),
-                      Arrays.asList("FlowGateway", "FlowGatewayYes", "FlowYesEnd"));
-              assertThat(run.getCoverages())
-                  .extracting(Coverage::getCoverage)
-                  .containsExactly(0.7, 0.7);
-              assertThat(run.getCoverages())
-                  .extracting(Coverage::getProcessDefinitionId)
-                  .containsExactly("test-with-simple-gateway", "test-with-simple-gateway");
-            });
+    assertThat(coverageRunReport.getProcessCoverages()).hasSize(2);
+    assertThat(coverageRunReport.getProcessCoverages())
+        .extracting(ProcessCoverage::getCompletedElements)
+        .containsExactly(
+            Arrays.asList("StartEvent", "GatewayEvent", "NoEvent", "EndEvent"),
+            Arrays.asList("StartEvent", "GatewayEvent", "YesEvent", "EndEvent"));
+    assertThat(coverageRunReport.getProcessCoverages())
+        .extracting(ProcessCoverage::getTakenSequenceFlows)
+        .containsExactly(
+            Arrays.asList("FlowGateway", "FlowGatewayDefault", "FlowNoEnd"),
+            Arrays.asList("FlowGateway", "FlowGatewayYes", "FlowYesEnd"));
+    assertThat(coverageRunReport.getProcessCoverages())
+        .extracting(ProcessCoverage::getCoverage)
+        .containsExactly(0.7, 0.7);
+    assertThat(coverageRunReport.getProcessCoverages())
+        .extracting(ProcessCoverage::getProcessDefinitionId)
+        .containsExactly("test-with-simple-gateway", "test-with-simple-gateway");
   }
 
   @Test
-  void shouldExcludeProcess() {
+  void shouldExcludeProcess(final TestInfo testInfo) {
     // given
     final CoverageCollector coverageCollector =
-        CoverageCollector.createCollector(
-            getClass(),
-            Collections.singletonList("test-with-event-based-gateway"),
-            new ArrayList<>(),
-            () -> new CamundaDataSource(client));
+        CoverageCollector.newBuilder()
+            .excludeProcessDefinitionIds(Collections.singletonList("test-with-event-based-gateway"))
+            .build();
 
     // when
     final ProcessInstanceEvent processInstance1 =
@@ -141,29 +129,22 @@ public class ProcessEngineCoverageIT {
         deployAndCreateProcess("test-with-event-based-gateway", null);
     CamundaAssert.assertThat(processInstance2).isCompleted();
 
-    coverageCollector.collectTestRunCoverage("simple-run");
+    final String testName = testInfo.getDisplayName();
+    final CoverageRunReport coverageRunReport =
+        collectCoverageRunReport(coverageCollector, ExcludeProcessTest.class, testName);
 
     // then
-    final Collection<Run> runs = coverageCollector.getSuite().getRuns();
-    assertThat(runs.stream().findFirst())
-        .isPresent()
-        .get()
-        .satisfies(
-            run -> {
-              assertThat(run.getCoverages()).hasSize(1);
-              assertThat(run.getCoverages())
-                  .first()
-                  .extracting(Coverage::getProcessDefinitionId)
-                  .isEqualTo("test-with-simple-gateway");
-            });
+    assertThat(coverageRunReport.getProcessCoverages()).hasSize(1);
+    assertThat(coverageRunReport.getProcessCoverages())
+        .first()
+        .extracting(ProcessCoverage::getProcessDefinitionId)
+        .isEqualTo("test-with-simple-gateway");
   }
 
   @Test
-  void shouldCoverDecision() {
+  void shouldCoverDecision(final TestInfo testInfo) {
     // given
-    final CoverageCollector coverageCollector =
-        CoverageCollector.createCollector(
-            getClass(), new ArrayList<>(), new ArrayList<>(), () -> new CamundaDataSource(client));
+    final CoverageCollector coverageCollector = CoverageCollector.newBuilder().build();
 
     // when
     client
@@ -182,14 +163,13 @@ public class ProcessEngineCoverageIT {
 
     CamundaAssert.assertThatDecision(decisionResponse).isEvaluated();
 
-    coverageCollector.collectTestRunCoverage("decision-run");
+    final String testName = testInfo.getDisplayName();
+    final CoverageRunReport coverageRunReport =
+        collectCoverageRunReport(coverageCollector, TEST_CLASS, testName);
 
     // then
-    final Collection<Run> runs = coverageCollector.getSuite().getRuns();
-    assertThat(runs).hasSize(1);
-    final Run run = runs.stream().findFirst().get();
-    assertThat(run.getDecisionCoverages()).hasSize(1);
-    assertThat(run.getDecisionCoverages())
+    assertThat(coverageRunReport.getDecisionCoverages()).hasSize(1);
+    assertThat(coverageRunReport.getDecisionCoverages())
         .first()
         .satisfies(
             dc -> {
@@ -201,14 +181,12 @@ public class ProcessEngineCoverageIT {
   }
 
   @Test
-  void shouldExcludeDecision() {
+  void shouldExcludeDecision(final TestInfo testInfo) {
     // given
     final CoverageCollector coverageCollector =
-        CoverageCollector.createCollector(
-            getClass(),
-            new ArrayList<>(),
-            Collections.singletonList("test-coverage-decision"),
-            () -> new CamundaDataSource(client));
+        CoverageCollector.newBuilder()
+            .excludeDecisionDefinitionIds(Collections.singletonList("test-coverage-decision"))
+            .build();
 
     // when
     client
@@ -227,12 +205,26 @@ public class ProcessEngineCoverageIT {
 
     CamundaAssert.assertThatDecision(decisionResponse).isEvaluated();
 
-    coverageCollector.collectTestRunCoverage("decision-run");
+    final String testName = testInfo.getDisplayName();
+    final CoverageRunReport coverageRunReport =
+        collectCoverageRunReport(coverageCollector, ExcludeDecisionTest.class, testName);
 
     // then
-    final Collection<Run> runs = coverageCollector.getSuite().getRuns();
-    assertThat(runs).hasSize(1);
-    assertThat(runs.stream().findFirst().get().getDecisionCoverages()).isEmpty();
+    assertThat(coverageRunReport.getDecisionCoverages()).isEmpty();
+  }
+
+  private CoverageRunReport collectCoverageRunReport(
+      final CoverageCollector coverageCollector, final Class<?> testClass, final String testName) {
+    final CoverageReport coverageReport =
+        coverageCollector.collectTestRunCoverage(
+            testClass,
+            testName,
+            CoverageTestDataCollector.collectData(new CamundaDataSource(client)));
+    return coverageReport.getSuites().stream()
+        .flatMap(report -> report.getRuns().stream())
+        .filter(run -> run.getName().equals(testName))
+        .findFirst()
+        .orElseThrow(() -> new AssertionError("No run report found for " + testName));
   }
 
   private ProcessInstanceEvent deployAndCreateProcess(
@@ -251,4 +243,8 @@ public class ProcessEngineCoverageIT {
         .send()
         .join();
   }
+
+  private static final class ExcludeProcessTest {}
+
+  private static final class ExcludeDecisionTest {}
 }
