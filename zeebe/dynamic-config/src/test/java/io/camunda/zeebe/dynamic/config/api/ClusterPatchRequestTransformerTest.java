@@ -18,7 +18,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedExce
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionBootstrapOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.UpdatePartitionDistributorConfig;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.UpdatePartitionDistributorConfigOperation;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
@@ -295,7 +295,7 @@ final class ClusterPatchRequestTransformerTest {
         .isNotEmpty()
         .first()
         .isEqualTo(
-            new UpdatePartitionDistributorConfig(
+            new UpdatePartitionDistributorConfigOperation(
                 currentTopology.members().firstKey(),
                 new ZoneAwareConfig(
                     List.of(new ZoneSpec("zone-a", 3, 1000), new ZoneSpec("zone-b", 1, 500)))));
@@ -334,7 +334,8 @@ final class ClusterPatchRequestTransformerTest {
     // then operations apply cleanly and produce the expected zone-aware distribution
     assertThat(result).isRight();
     final var operations = result.get();
-    Assertions.assertThat(operations.get(0)).isInstanceOf(UpdatePartitionDistributorConfig.class);
+    Assertions.assertThat(operations.get(0))
+        .isInstanceOf(UpdatePartitionDistributorConfigOperation.class);
 
     final var newTopology = TestTopologyChangeSimulator.apply(currentTopology, operations);
     final var expectedDistribution =
