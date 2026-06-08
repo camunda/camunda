@@ -65,7 +65,7 @@
   "devDependencies": {
     "@camunda/c8-mocks": "file:../../webapp/client/packages/c8-mocks",
     "@camunda/lint-config": "file:../../webapp/client/packages/lint-config",
-    "@eslint/js": "9.39.4",
+    "@eslint/js": "10.0.1",
     "@playwright/test": "1.60.0",
     "@testing-library/dom": "10.4.1",
     "@testing-library/jest-dom": "6.9.1",
@@ -87,7 +87,7 @@
     "@vitest/eslint-plugin": "1.6.17",
     "@vitest/ui": "4.1.5",
     "cross-env": "10.1.0",
-    "eslint": "9.39.4",
+    "eslint": "10.4.1",
     "eslint-plugin-import": "2.32.0",
     "eslint-plugin-license-header": "0.9.0",
     "eslint-plugin-react-hooks": "5.2.0",
