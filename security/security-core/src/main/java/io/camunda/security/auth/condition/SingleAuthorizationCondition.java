@@ -7,13 +7,14 @@
  */
 package io.camunda.security.auth.condition;
 
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import java.util.Objects;
 
 /**
- * An {@link AuthorizationCondition} that requires a single {@link Authorization} to be evaluated.
+ * An {@link AuthorizationCondition} that requires a single {@link RequiredAuthorization} to be
+ * evaluated.
  */
-public record SingleAuthorizationCondition(Authorization<?> authorization)
+public record SingleAuthorizationCondition(RequiredAuthorization<?> authorization)
     implements AuthorizationCondition {
 
   public SingleAuthorizationCondition {

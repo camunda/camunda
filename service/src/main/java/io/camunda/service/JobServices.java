@@ -24,8 +24,8 @@ import io.camunda.search.query.JobTypeStatisticsQuery;
 import io.camunda.search.query.JobWorkerStatisticsQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.api.model.CamundaAuthentication;
-import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -176,7 +176,7 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
             jobSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
-                        authentication, Authorization.of(a -> a.system().readJobMetric())))
+                        authentication, RequiredAuthorization.of(a -> a.system().readJobMetric())))
                 .getGlobalJobStatistics(query));
   }
 
@@ -187,7 +187,7 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
             jobSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
-                        authentication, Authorization.of(a -> a.system().readJobMetric())))
+                        authentication, RequiredAuthorization.of(a -> a.system().readJobMetric())))
                 .getJobTypeStatistics(query));
   }
 
@@ -198,7 +198,7 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
             jobSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
-                        authentication, Authorization.of(a -> a.system().readJobMetric())))
+                        authentication, RequiredAuthorization.of(a -> a.system().readJobMetric())))
                 .getJobWorkerStatistics(query));
   }
 
@@ -209,7 +209,7 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
             jobSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
-                        authentication, Authorization.of(a -> a.system().readJobMetric())))
+                        authentication, RequiredAuthorization.of(a -> a.system().readJobMetric())))
                 .getJobTimeSeriesStatistics(query));
   }
 

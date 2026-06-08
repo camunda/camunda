@@ -8,7 +8,7 @@
 package io.camunda.service;
 
 import static io.camunda.search.query.SearchQueryBuilders.decisionDefinitionSearchQuery;
-import static io.camunda.security.auth.Authorization.withAuthorization;
+import static io.camunda.security.core.auth.RequiredAuthorization.withRequiredAuthorization;
 import static io.camunda.service.authorization.Authorizations.DECISION_DEFINITION_READ_AUTHORIZATION;
 
 import io.camunda.search.clients.DecisionDefinitionSearchClient;
@@ -95,7 +95,7 @@ public final class DecisionDefinitionServices
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication,
-                        withAuthorization(
+                        withRequiredAuthorization(
                             DECISION_DEFINITION_READ_AUTHORIZATION,
                             DecisionDefinitionEntity::decisionDefinitionId)))
                 .getDecisionDefinition(decisionKey));

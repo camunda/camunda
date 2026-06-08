@@ -7,14 +7,14 @@
  */
 package io.camunda.security.auth.condition;
 
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import java.util.List;
 
 /**
  * Disjunctive {@link AuthorizationCondition} that grants access when any child authorization is
  * satisfied.
  */
-public record AnyOfAuthorizationCondition(List<Authorization<?>> authorizations)
+public record AnyOfAuthorizationCondition(List<RequiredAuthorization<?>> authorizations)
     implements AuthorizationCondition {
 
   /**
@@ -28,12 +28,12 @@ public record AnyOfAuthorizationCondition(List<Authorization<?>> authorizations)
     authorizations = List.copyOf(authorizations);
   }
 
-  public <T> List<Authorization<?>> applicableAuthorizations(final T document) {
+  public <T> List<RequiredAuthorization<?>> applicableAuthorizations(final T document) {
     return authorizations().stream()
         .filter(
             auth -> {
               @SuppressWarnings("unchecked")
-              final Authorization<T> typedAuth = (Authorization<T>) auth;
+              final RequiredAuthorization<T> typedAuth = (RequiredAuthorization<T>) auth;
               return typedAuth.appliesTo(document);
             })
         .toList();

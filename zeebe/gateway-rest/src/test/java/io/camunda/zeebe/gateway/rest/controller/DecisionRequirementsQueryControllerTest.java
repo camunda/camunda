@@ -22,7 +22,7 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.sort.DecisionRequirementsSort;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.service.DecisionRequirementsServices;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.registry.ServiceRegistry;
@@ -375,7 +375,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
     when(service.apply(decisionRequirementsServices, decisionRequirementsKey))
         .thenThrow(
             ErrorMapper.createForbiddenException(
-                Authorization.of(a -> a.decisionRequirementsDefinition().read())));
+                RequiredAuthorization.of(a -> a.decisionRequirementsDefinition().read())));
     // when / then
     final String formattedUrl = url.formatted(decisionRequirementsKey);
     webClient

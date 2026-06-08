@@ -18,7 +18,7 @@ import io.camunda.search.filter.AuthorizationFilter;
 import io.camunda.search.filter.AuthorizationFilter.Builder;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.security.api.model.authz.PermissionType;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.security.reader.TenantCheck;
@@ -87,7 +87,7 @@ public class AuthorizationQueryTransformerTest extends AbstractTransformerTest {
   public void shouldApplyAuthorizationCheck() {
     // given
     final var authorization =
-        Authorization.of(a -> a.authorization().read().resourceIds(List.of("1", "2")));
+        RequiredAuthorization.of(a -> a.authorization().read().resourceIds(List.of("1", "2")));
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var resourceAccessChecks =
         ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled());
@@ -112,7 +112,7 @@ public class AuthorizationQueryTransformerTest extends AbstractTransformerTest {
   @Test
   public void shouldReturnNonMatchWhenNoResourceIdsProvided() {
     // given
-    final var authorization = Authorization.of(a -> a.authorization().read());
+    final var authorization = RequiredAuthorization.of(a -> a.authorization().read());
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var resourceAccessChecks =
         ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled());
@@ -160,7 +160,7 @@ public class AuthorizationQueryTransformerTest extends AbstractTransformerTest {
   public void shouldApplyFilterAndChecks() {
     // given
     final var authorization =
-        Authorization.of(a -> a.authorization().read().resourceIds(List.of("1", "2")));
+        RequiredAuthorization.of(a -> a.authorization().read().resourceIds(List.of("1", "2")));
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var tenantCheck = TenantCheck.enabled(List.of("a", "b"));
     final var resourceAccessChecks = ResourceAccessChecks.of(authorizationCheck, tenantCheck);

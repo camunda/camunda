@@ -16,7 +16,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.sql.BatchOperationMapper;
 import io.camunda.search.query.BatchOperationQuery;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.security.reader.TenantCheck;
@@ -33,7 +33,7 @@ class BatchOperationDbReaderTest {
     final BatchOperationQuery query = BatchOperationQuery.of(b -> b);
     final ResourceAccessChecks resourceAccessChecks =
         ResourceAccessChecks.of(
-            AuthorizationCheck.enabled(Authorization.of(a -> a.batchOperation().read())),
+            AuthorizationCheck.enabled(RequiredAuthorization.of(a -> a.batchOperation().read())),
             TenantCheck.disabled());
 
     final var items = batchOperationDbReader.search(query, resourceAccessChecks).items();

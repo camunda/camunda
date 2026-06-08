@@ -7,7 +7,7 @@
  */
 package io.camunda.service;
 
-import static io.camunda.security.auth.Authorization.withAuthorization;
+import static io.camunda.security.core.auth.RequiredAuthorization.withRequiredAuthorization;
 import static io.camunda.service.authorization.Authorizations.FORM_READ_AUTHORIZATION;
 
 import io.camunda.search.clients.FormSearchClient;
@@ -56,7 +56,7 @@ public final class FormServices extends SearchQueryService<FormServices, FormQue
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication,
-                        withAuthorization(FORM_READ_AUTHORIZATION, FormEntity::formId)))
+                        withRequiredAuthorization(FORM_READ_AUTHORIZATION, FormEntity::formId)))
                 .getForm(key));
   }
 

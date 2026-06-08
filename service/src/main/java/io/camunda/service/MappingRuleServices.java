@@ -7,7 +7,7 @@
  */
 package io.camunda.service;
 
-import static io.camunda.security.auth.Authorization.withAuthorization;
+import static io.camunda.security.core.auth.RequiredAuthorization.withRequiredAuthorization;
 import static io.camunda.service.authorization.Authorizations.MAPPING_RULE_READ_AUTHORIZATION;
 
 import io.camunda.search.clients.MappingRuleSearchClient;
@@ -90,7 +90,7 @@ public class MappingRuleServices
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication,
-                        withAuthorization(MAPPING_RULE_READ_AUTHORIZATION, mappingRuleId)))
+                        withRequiredAuthorization(MAPPING_RULE_READ_AUTHORIZATION, mappingRuleId)))
                 .getMappingRule(mappingRuleId));
   }
 

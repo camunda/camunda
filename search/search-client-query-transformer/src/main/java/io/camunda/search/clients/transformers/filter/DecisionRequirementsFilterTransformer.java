@@ -20,7 +20,7 @@ import static io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIn
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.DecisionRequirementsFilter;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 
 public final class DecisionRequirementsFilterTransformer
@@ -42,7 +42,8 @@ public final class DecisionRequirementsFilterTransformer
   }
 
   @Override
-  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
+  protected SearchQuery toAuthorizationCheckSearchQuery(
+      final RequiredAuthorization<?> authorization) {
     return stringTerms(DECISION_REQUIREMENTS_ID, authorization.resourceIds());
   }
 }

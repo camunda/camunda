@@ -20,7 +20,7 @@ import static io.camunda.webapps.schema.descriptors.index.GroupIndex.NAME;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.GroupFilter;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.index.GroupIndex;
 import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation.IdentityJoinRelationshipType;
@@ -79,7 +79,8 @@ public class GroupFilterTransformer extends IndexFilterTransformer<GroupFilter> 
   }
 
   @Override
-  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
+  protected SearchQuery toAuthorizationCheckSearchQuery(
+      final RequiredAuthorization<?> authorization) {
     return stringTerms(GROUP_ID, authorization.resourceIds());
   }
 }

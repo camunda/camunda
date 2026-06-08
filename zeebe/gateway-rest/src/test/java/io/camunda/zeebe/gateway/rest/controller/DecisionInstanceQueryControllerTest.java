@@ -26,7 +26,7 @@ import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.service.DecisionInstanceServices;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.registry.ServiceRegistry;
@@ -415,7 +415,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
     when(decisionInstanceServices.getById(eq(decisionInstanceId), any()))
         .thenThrow(
             ErrorMapper.createForbiddenException(
-                Authorization.of(a -> a.decisionDefinition().readDecisionInstance())));
+                RequiredAuthorization.of(a -> a.decisionDefinition().readDecisionInstance())));
     // when
     webClient
         .get()

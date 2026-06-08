@@ -16,7 +16,7 @@ import static io.camunda.webapps.schema.descriptors.index.UserIndex.USERNAME;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.UserFilter;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.util.ArrayList;
 
@@ -36,7 +36,8 @@ public class UserFilterTransformer extends IndexFilterTransformer<UserFilter> {
   }
 
   @Override
-  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
+  protected SearchQuery toAuthorizationCheckSearchQuery(
+      final RequiredAuthorization<?> authorization) {
     return stringTerms(USERNAME, authorization.resourceIds());
   }
 }

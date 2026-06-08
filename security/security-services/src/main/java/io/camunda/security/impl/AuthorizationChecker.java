@@ -16,7 +16,7 @@ import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.api.model.authz.AuthorizationScope;
 import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.security.api.model.authz.PermissionType;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.security.reader.ResourceAccessChecks;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -56,7 +56,7 @@ public class AuthorizationChecker {
    * @return a list of authorized authorization scopes for the user or group in the SecurityContext
    */
   public List<AuthorizationScope> retrieveAuthorizedAuthorizationScopes(
-      final CamundaAuthentication authentication, final Authorization<?> authorization) {
+      final CamundaAuthentication authentication, final RequiredAuthorization<?> authorization) {
     final var resourceType = authorization.resourceType();
     final var permissionType = authorization.permissionType();
     return getOrElseDefaultResult(
@@ -106,7 +106,7 @@ public class AuthorizationChecker {
   public boolean isAuthorized(
       final AuthorizationScope authorizationScope,
       final CamundaAuthentication authentication,
-      final Authorization<?> authorization) {
+      final RequiredAuthorization<?> authorization) {
     final var resourceType = authorization.resourceType();
     final var permissionType = authorization.permissionType();
     return getOrElseDefaultResult(

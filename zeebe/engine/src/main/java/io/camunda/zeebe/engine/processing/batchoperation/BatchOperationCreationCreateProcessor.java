@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.batchoperation;
 
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
@@ -165,9 +165,9 @@ public final class BatchOperationCreationCreateProcessor
       final TypedRecord<BatchOperationCreationRecord> command) {
 
     if (!DocumentValue.EMPTY_DOCUMENT.equals(command.getValue().getAuthorizationCheckBuffer())) {
-      final Authorization<?> authorization =
+      final RequiredAuthorization<?> authorization =
           MsgPackConverter.convertToObject(
-              command.getValue().getAuthorizationCheckBuffer(), Authorization.class);
+              command.getValue().getAuthorizationCheckBuffer(), RequiredAuthorization.class);
       final AuthorizationRequest authorizationRequest =
           AuthorizationRequest.builder()
               .command(command)

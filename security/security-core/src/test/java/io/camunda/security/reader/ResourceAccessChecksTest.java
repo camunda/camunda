@@ -12,9 +12,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.InstanceOfAssertFactories.LIST;
 
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
-import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.condition.AuthorizationCondition;
 import io.camunda.security.auth.condition.AuthorizationConditions;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import java.util.List;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -39,7 +39,7 @@ class ResourceAccessChecksTest {
     @Test
     void shouldReturnEmptyMapWhenNoResourceIdsProvided() {
       // given
-      final var authorization = Authorization.of(b -> b.processDefinition().readUserTask());
+      final var authorization = RequiredAuthorization.of(b -> b.processDefinition().readUserTask());
 
       final var checks =
           ResourceAccessChecks.of(
@@ -68,7 +68,7 @@ class ResourceAccessChecksTest {
     void shouldReturnIdsGroupedByResourceTypeForSingleAuthorization() {
       // given
       final var authorization =
-          Authorization.of(
+          RequiredAuthorization.of(
               builder ->
                   builder
                       .processDefinition()
@@ -92,11 +92,11 @@ class ResourceAccessChecksTest {
     void shouldMergeIdsForSameResourceTypeFromMultipleAuthorizationsWithoutDuplicates() {
       // given
       final var first =
-          Authorization.of(
+          RequiredAuthorization.of(
               builder ->
                   builder.processDefinition().readUserTask().resourceIds(List.of("pd-1", "pd-2")));
       final var second =
-          Authorization.of(
+          RequiredAuthorization.of(
               builder ->
                   builder
                       .processDefinition()
@@ -118,10 +118,10 @@ class ResourceAccessChecksTest {
     void shouldGroupIdsByDifferentResourceTypes() {
       // given
       final var processDefAuth =
-          Authorization.of(
+          RequiredAuthorization.of(
               builder -> builder.processDefinition().readUserTask().resourceId("pd-1"));
       final var userTaskAuth =
-          Authorization.of(
+          RequiredAuthorization.of(
               builder -> builder.userTask().read().resourceIds(List.of("ut-1", "ut-2")));
       final var condition = AuthorizationConditions.anyOf(processDefAuth, userTaskAuth);
       final var checks =
@@ -145,9 +145,9 @@ class ResourceAccessChecksTest {
     void shouldIgnoreAuthorizationsWithoutIds() {
       // given
       final var withIds =
-          Authorization.of(
+          RequiredAuthorization.of(
               builder -> builder.processDefinition().readUserTask().resourceId("pd-1"));
-      final var withoutIds = Authorization.of(builder -> builder.userTask().read());
+      final var withoutIds = RequiredAuthorization.of(builder -> builder.userTask().read());
       final var condition = AuthorizationConditions.anyOf(withIds, withoutIds);
       final var checks =
           ResourceAccessChecks.of(AuthorizationCheck.enabled(condition), TenantCheck.disabled());
@@ -166,7 +166,7 @@ class ResourceAccessChecksTest {
     void shouldIgnoreAuthorizationsWithoutResourceTypeIds() {
       // given
       final var withoutResourceType =
-          Authorization.of(builder -> builder.resourceIds(List.of("x-1", "x-2")));
+          RequiredAuthorization.of(builder -> builder.resourceIds(List.of("x-1", "x-2")));
       final var condition = AuthorizationConditions.single(withoutResourceType);
       final var checks =
           ResourceAccessChecks.of(AuthorizationCheck.enabled(condition), TenantCheck.disabled());
@@ -197,7 +197,7 @@ class ResourceAccessChecksTest {
     @Test
     void shouldReturnEmptyMapWhenNoResourcePropertyNamesProvided() {
       // given
-      final var authorization = Authorization.of(b -> b.userTask().read());
+      final var authorization = RequiredAuthorization.of(b -> b.userTask().read());
 
       final var checks =
           ResourceAccessChecks.of(
@@ -226,7 +226,7 @@ class ResourceAccessChecksTest {
     void shouldReturnPropertyNamesGroupedByResourceTypeForSingleAuthorization() {
       // given
       final var authorization =
-          Authorization.of(
+          RequiredAuthorization.of(
               b -> b.userTask().read().authorizedByAssignee().or().authorizedByCandidateUsers());
       final var condition = AuthorizationConditions.single(authorization);
       final var checks =
@@ -239,17 +239,17 @@ class ResourceAccessChecksTest {
       assertThat(result).containsOnlyKeys(AuthorizationResourceType.USER_TASK.name());
       assertThat(result.get(AuthorizationResourceType.USER_TASK.name()))
           .containsExactlyInAnyOrder(
-              Authorization.PROP_ASSIGNEE, Authorization.PROP_CANDIDATE_USERS);
+              RequiredAuthorization.PROP_ASSIGNEE, RequiredAuthorization.PROP_CANDIDATE_USERS);
     }
 
     @Test
     void shouldMergePropertyNamesForSameResourceTypeFromMultipleAuthorizations() {
       // given
       final var first =
-          Authorization.of(
+          RequiredAuthorization.of(
               b -> b.userTask().read().authorizedByAssignee().or().authorizedByCandidateUsers());
       final var second =
-          Authorization.of(
+          RequiredAuthorization.of(
               b ->
                   b.userTask()
                       .updateUserTask() // different permission
@@ -267,19 +267,19 @@ class ResourceAccessChecksTest {
       assertThat(result).containsOnlyKeys(AuthorizationResourceType.USER_TASK.name());
       assertThat(result.get(AuthorizationResourceType.USER_TASK.name()))
           .containsExactlyInAnyOrder(
-              Authorization.PROP_ASSIGNEE,
-              Authorization.PROP_CANDIDATE_USERS,
-              Authorization.PROP_CANDIDATE_GROUPS);
+              RequiredAuthorization.PROP_ASSIGNEE,
+              RequiredAuthorization.PROP_CANDIDATE_USERS,
+              RequiredAuthorization.PROP_CANDIDATE_GROUPS);
     }
 
     @Test
     void shouldGroupPropertyNamesByDifferentResourceTypes() {
       // given
       final var userTaskAuth =
-          Authorization.of(
+          RequiredAuthorization.of(
               b -> b.userTask().read().authorizedByAssignee().or().authorizedByCandidateUsers());
       final var processDefAuth =
-          Authorization.of(
+          RequiredAuthorization.of(
               b -> b.processDefinition().readUserTask().authorizedByProperty("tenantId"));
       final var condition = AuthorizationConditions.anyOf(userTaskAuth, processDefAuth);
       final var checks =
@@ -295,7 +295,7 @@ class ResourceAccessChecksTest {
               AuthorizationResourceType.PROCESS_DEFINITION.name());
       assertThat(result.get(AuthorizationResourceType.USER_TASK.name()))
           .containsExactlyInAnyOrder(
-              Authorization.PROP_ASSIGNEE, Authorization.PROP_CANDIDATE_USERS);
+              RequiredAuthorization.PROP_ASSIGNEE, RequiredAuthorization.PROP_CANDIDATE_USERS);
       assertThat(result.get(AuthorizationResourceType.PROCESS_DEFINITION.name()))
           .containsExactly("tenantId");
     }
@@ -327,7 +327,7 @@ class ResourceAccessChecksTest {
     @Test
     void shouldReturnFalseWhenNeitherResourceIdsNorPropertyNamesProvided() {
       // given
-      final var authorization = Authorization.of(b -> b.processDefinition().readUserTask());
+      final var authorization = RequiredAuthorization.of(b -> b.processDefinition().readUserTask());
       final var checks =
           ResourceAccessChecks.of(
               AuthorizationCheck.enabled(authorization), TenantCheck.disabled());
@@ -339,9 +339,9 @@ class ResourceAccessChecksTest {
     @Test
     void shouldReturnTrueWhenAnyAuthorizationHasIds() {
       // given
-      final var withoutIds = Authorization.of(b -> b.processDefinition().readUserTask());
+      final var withoutIds = RequiredAuthorization.of(b -> b.processDefinition().readUserTask());
       final var withIds =
-          Authorization.of(b -> b.userTask().read().resourceIds(List.of("ut-1", "ut-2")));
+          RequiredAuthorization.of(b -> b.userTask().read().resourceIds(List.of("ut-1", "ut-2")));
       final var condition = AuthorizationConditions.anyOf(withoutIds, withIds);
       final var checks =
           ResourceAccessChecks.of(AuthorizationCheck.enabled(condition), TenantCheck.disabled());
@@ -353,9 +353,9 @@ class ResourceAccessChecksTest {
     @Test
     void shouldReturnTrueWhenAnyAuthorizationHasPropertyNames() {
       // given
-      final var withoutPropertyNames = Authorization.of(b -> b.userTask().read());
+      final var withoutPropertyNames = RequiredAuthorization.of(b -> b.userTask().read());
       final var withPropertyNames =
-          Authorization.of(b -> b.userTask().read().authorizedByAssignee());
+          RequiredAuthorization.of(b -> b.userTask().read().authorizedByAssignee());
       final var condition = AuthorizationConditions.anyOf(withoutPropertyNames, withPropertyNames);
       final var checks =
           ResourceAccessChecks.of(AuthorizationCheck.enabled(condition), TenantCheck.disabled());

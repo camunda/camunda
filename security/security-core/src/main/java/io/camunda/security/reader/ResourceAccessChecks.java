@@ -8,8 +8,8 @@
 package io.camunda.security.reader;
 
 import io.camunda.security.api.model.CamundaAuthentication;
-import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.condition.AuthorizationCondition;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -68,7 +68,7 @@ public record ResourceAccessChecks(
     return auths.stream()
         .filter(Objects::nonNull)
         .filter(auth -> auth.resourceType() != null)
-        .filter(Authorization::hasAnyResourceIds)
+        .filter(RequiredAuthorization::hasAnyResourceIds)
         .collect(
             Collectors.groupingBy(
                 auth -> auth.resourceType().name(),
@@ -105,7 +105,7 @@ public record ResourceAccessChecks(
     return auths.stream()
         .filter(Objects::nonNull)
         .filter(auth -> auth.resourceType() != null)
-        .filter(Authorization::hasAnyResourcePropertyNames)
+        .filter(RequiredAuthorization::hasAnyResourcePropertyNames)
         .collect(
             Collectors.groupingBy(
                 auth -> auth.resourceType().name(),

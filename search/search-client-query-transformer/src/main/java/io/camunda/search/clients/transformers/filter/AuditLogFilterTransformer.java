@@ -25,7 +25,7 @@ import static io.camunda.webapps.schema.descriptors.template.AuditLogTemplate.*;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
 import io.camunda.search.filter.AuditLogFilter;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.security.reader.TenantCheck;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogTenantScope;
@@ -112,7 +112,8 @@ public class AuditLogFilterTransformer extends IndexFilterTransformer<AuditLogFi
    * @return the constructed search query for authorization checks
    */
   @Override
-  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
+  protected SearchQuery toAuthorizationCheckSearchQuery(
+      final RequiredAuthorization<?> authorization) {
 
     final var resourceType = authorization.resourceType();
     if (AUDIT_LOG.equals(resourceType)) {

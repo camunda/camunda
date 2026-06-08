@@ -23,8 +23,8 @@ public interface ResourceAccessController {
    * Called before doing a get to retrieve a single resource.
    *
    * @param securityContext contains the {@link io.camunda.security.api.model.CamundaAuthentication}
-   *     and the required {@link io.camunda.security.auth.Authorization authorization} to be
-   *     checked.
+   *     and the required {@link io.camunda.security.core.auth.RequiredAuthorization authorization}
+   *     to be checked.
    * @param resourceChecksApplier will be used to pass required @{@link ResourceAccessChecks} to the
    *     actual reader
    */
@@ -35,8 +35,8 @@ public interface ResourceAccessController {
    * Called before doing a search by query.
    *
    * @param securityContext contains the {@link io.camunda.security.api.model.CamundaAuthentication}
-   *     and the required {@link io.camunda.security.auth.Authorization authorization} to be
-   *     checked.
+   *     and the required {@link io.camunda.security.core.auth.RequiredAuthorization authorization}
+   *     to be checked.
    * @param resourceChecksApplier will be used to pass required @{@link ResourceAccessChecks} to the
    *     actual reader
    */

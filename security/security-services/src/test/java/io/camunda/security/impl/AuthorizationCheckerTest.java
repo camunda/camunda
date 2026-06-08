@@ -14,7 +14,7 @@ import io.camunda.security.api.model.authz.AuthorizationResourceMatcher;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.api.model.authz.AuthorizationScope;
 import io.camunda.security.api.model.authz.PermissionType;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.protocol.Protocol;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -52,7 +52,7 @@ public class AuthorizationCheckerTest {
     // given
     final var result =
         authorizationChecker.retrieveAuthorizedAuthorizationScopes(
-            CamundaAuthentication.of(a -> a), Authorization.of(a -> a));
+            CamundaAuthentication.of(a -> a), RequiredAuthorization.of(a -> a));
 
     // then
     Assertions.assertThat(result).isEmpty();
@@ -77,7 +77,7 @@ public class AuthorizationCheckerTest {
     // when
     final var result =
         authorizationChecker.isAuthorized(
-            authScope, CamundaAuthentication.of(a -> a), Authorization.of(a -> a));
+            authScope, CamundaAuthentication.of(a -> a), RequiredAuthorization.of(a -> a));
 
     // then
     Assertions.assertThat(result).isFalse();
@@ -175,7 +175,7 @@ public class AuthorizationCheckerTest {
     void anonymousAuthorizationScenariosTest(
         final String displayName,
         final CamundaAuthentication authentication,
-        final Authorization<?> authorization,
+        final RequiredAuthorization<?> authorization,
         final AuthorizationScope attemptedScope,
         final Expected expected) {
       // when
@@ -193,7 +193,7 @@ public class AuthorizationCheckerTest {
           Arguments.of(
               "anonymous ID:id accessing id -> denied",
               CamundaAuthentication.anonymous(),
-              Authorization.of(
+              RequiredAuthorization.of(
                   authorization ->
                       authorization
                           .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
@@ -204,7 +204,7 @@ public class AuthorizationCheckerTest {
           Arguments.of(
               "anonymous ID:id accessing * -> denied",
               CamundaAuthentication.anonymous(),
-              Authorization.of(
+              RequiredAuthorization.of(
                   authorization ->
                       authorization
                           .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
@@ -215,7 +215,7 @@ public class AuthorizationCheckerTest {
           Arguments.of(
               "anonymous ANY:* accessing id -> denied",
               CamundaAuthentication.anonymous(),
-              Authorization.of(
+              RequiredAuthorization.of(
                   authorization ->
                       authorization
                           .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
@@ -226,7 +226,7 @@ public class AuthorizationCheckerTest {
           Arguments.of(
               "anonymous ANY:* accessing * -> denied",
               CamundaAuthentication.anonymous(),
-              Authorization.of(
+              RequiredAuthorization.of(
                   authorization ->
                       authorization
                           .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
@@ -241,7 +241,7 @@ public class AuthorizationCheckerTest {
     void authenticatedAuthorizationScenariosTest(
         final String displayName,
         final CamundaAuthentication authentication,
-        final Authorization<?> authorization,
+        final RequiredAuthorization<?> authorization,
         final AuthorizationScope attemptedScope,
         final Expected expected) {
       // when
@@ -264,7 +264,7 @@ public class AuthorizationCheckerTest {
                       authorization
                           .user("userWithWildcard")
                           .claims(Map.of(AUTHORIZED_USERNAME, "userWithWildcard"))),
-              Authorization.of(
+              RequiredAuthorization.of(
                   authorization ->
                       authorization
                           .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
@@ -279,7 +279,7 @@ public class AuthorizationCheckerTest {
                       authorization
                           .user("userWithWildcard")
                           .claims(Map.of(AUTHORIZED_USERNAME, "userWithWildcard"))),
-              Authorization.of(
+              RequiredAuthorization.of(
                   authorization ->
                       authorization
                           .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
@@ -294,7 +294,7 @@ public class AuthorizationCheckerTest {
                       authorization
                           .user("userWithResourceId")
                           .claims(Map.of(AUTHORIZED_USERNAME, "userWithResourceId"))),
-              Authorization.of(
+              RequiredAuthorization.of(
                   authorization ->
                       authorization
                           .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
@@ -309,7 +309,7 @@ public class AuthorizationCheckerTest {
                       authorization
                           .user("userWithResourceId")
                           .claims(Map.of(AUTHORIZED_USERNAME, "userWithResourceId"))),
-              Authorization.of(
+              RequiredAuthorization.of(
                   authorization ->
                       authorization
                           .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
@@ -324,7 +324,7 @@ public class AuthorizationCheckerTest {
                       authorization
                           .user("userWithResourceId")
                           .claims(Map.of(AUTHORIZED_USERNAME, "userWithResourceId"))),
-              Authorization.of(
+              RequiredAuthorization.of(
                   authorization ->
                       authorization
                           .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
@@ -336,7 +336,7 @@ public class AuthorizationCheckerTest {
           Arguments.of(
               "auth clientWildcard ANY:* accessing * -> allowed",
               CamundaAuthentication.of(a -> a.clientId("clientWildcard")),
-              Authorization.of(
+              RequiredAuthorization.of(
                   a ->
                       a.resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
                           .permissionType(PermissionType.READ_PROCESS_INSTANCE)
@@ -346,7 +346,7 @@ public class AuthorizationCheckerTest {
           Arguments.of(
               "auth clientWildcard ANY:* accessing id -> allowed",
               CamundaAuthentication.of(a -> a.clientId("clientWildcard")),
-              Authorization.of(
+              RequiredAuthorization.of(
                   a ->
                       a.resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
                           .permissionType(PermissionType.READ_PROCESS_INSTANCE)
@@ -356,7 +356,7 @@ public class AuthorizationCheckerTest {
           Arguments.of(
               "auth clientWithResourceId ID:id accessing id -> allowed",
               CamundaAuthentication.of(a -> a.clientId("clientWithResourceId")),
-              Authorization.of(
+              RequiredAuthorization.of(
                   a ->
                       a.resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
                           .permissionType(PermissionType.READ_PROCESS_INSTANCE)
@@ -366,7 +366,7 @@ public class AuthorizationCheckerTest {
           Arguments.of(
               "auth clientWithResourceId ID:id accessing other id -> denied",
               CamundaAuthentication.of(a -> a.clientId("clientWithResourceId")),
-              Authorization.of(
+              RequiredAuthorization.of(
                   a ->
                       a.resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
                           .permissionType(PermissionType.READ_PROCESS_INSTANCE)
@@ -377,7 +377,7 @@ public class AuthorizationCheckerTest {
           Arguments.of(
               "auth mapping rule mrWildcard ANY:* accessing * -> allowed",
               CamundaAuthentication.of(a -> a.mappingRule("mrWildcard")),
-              Authorization.of(
+              RequiredAuthorization.of(
                   a ->
                       a.resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
                           .permissionType(PermissionType.READ_PROCESS_INSTANCE)
@@ -387,7 +387,7 @@ public class AuthorizationCheckerTest {
           Arguments.of(
               "auth mapping rule mrWildcard ANY:* accessing id -> allowed",
               CamundaAuthentication.of(a -> a.mappingRule("mrWildcard")),
-              Authorization.of(
+              RequiredAuthorization.of(
                   a ->
                       a.resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
                           .permissionType(PermissionType.READ_PROCESS_INSTANCE)
@@ -397,7 +397,7 @@ public class AuthorizationCheckerTest {
           Arguments.of(
               "auth mapping rule mrWithResourceId ID:id accessing id -> allowed",
               CamundaAuthentication.of(a -> a.mappingRule("mrWithResourceId")),
-              Authorization.of(
+              RequiredAuthorization.of(
                   a ->
                       a.resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
                           .permissionType(PermissionType.READ_PROCESS_INSTANCE)
@@ -407,7 +407,7 @@ public class AuthorizationCheckerTest {
           Arguments.of(
               "auth mapping rule mrWithResourceId ID:id accessing other id -> denied",
               CamundaAuthentication.of(a -> a.mappingRule("mrWithResourceId")),
-              Authorization.of(
+              RequiredAuthorization.of(
                   a ->
                       a.resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
                           .permissionType(PermissionType.READ_PROCESS_INSTANCE)
@@ -958,7 +958,7 @@ public class AuthorizationCheckerTest {
         final var actual =
             checker.retrieveAuthorizedAuthorizationScopes(
                 scenario.authentication(),
-                Authorization.of(
+                RequiredAuthorization.of(
                     a ->
                         a.resourceType(scenario.resourceType())
                             .permissionType(scenario.permissionType())

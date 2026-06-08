@@ -9,7 +9,7 @@ package io.camunda.service;
 
 import static io.camunda.search.exception.ErrorMessages.ERROR_ENTITY_BY_KEY_NOT_FOUND;
 import static io.camunda.search.query.SearchQueryBuilders.decisionInstanceSearchQuery;
-import static io.camunda.security.auth.Authorization.withAuthorization;
+import static io.camunda.security.core.auth.RequiredAuthorization.withRequiredAuthorization;
 import static io.camunda.service.authorization.Authorizations.DECISION_INSTANCE_READ_AUTHORIZATION;
 
 import io.camunda.search.clients.DecisionInstanceSearchClient;
@@ -84,7 +84,7 @@ public final class DecisionInstanceServices
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication,
-                        withAuthorization(
+                        withRequiredAuthorization(
                             DECISION_INSTANCE_READ_AUTHORIZATION,
                             DecisionInstanceEntity::decisionDefinitionId)))
                 .getDecisionInstance(decisionInstanceId));

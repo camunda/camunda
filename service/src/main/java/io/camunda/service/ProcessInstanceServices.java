@@ -8,7 +8,7 @@
 package io.camunda.service;
 
 import static io.camunda.search.query.SearchQueryBuilders.processInstanceSearchQuery;
-import static io.camunda.security.auth.Authorization.withAuthorization;
+import static io.camunda.security.core.auth.RequiredAuthorization.withRequiredAuthorization;
 import static io.camunda.service.authorization.Authorizations.PROCESS_INSTANCE_READ_AUTHORIZATION;
 import static io.camunda.service.authorization.Authorizations.PROCESS_INSTANCE_UPDATE_AUTHORIZATION;
 
@@ -29,9 +29,9 @@ import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SequenceFlowQuery;
 import io.camunda.security.api.model.CamundaAuthentication;
-import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.SecurityContext;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
@@ -265,7 +265,7 @@ public final class ProcessInstanceServices
         processInstanceKey,
         securityContextProvider.provideSecurityContext(
             authentication,
-            withAuthorization(
+            withRequiredAuthorization(
                 PROCESS_INSTANCE_READ_AUTHORIZATION, ProcessInstanceEntity::processDefinitionId)));
   }
 
@@ -381,7 +381,7 @@ public final class ProcessInstanceServices
             .setAuthentication(authentication)
             // the user only needs single instance update permission, not batch creation
             .setAuthorizationCheck(
-                Authorization.withAuthorization(
+                RequiredAuthorization.withRequiredAuthorization(
                     PROCESS_INSTANCE_UPDATE_AUTHORIZATION, processInstance.processDefinitionId()));
 
     return sendBrokerRequest(brokerRequest, authentication);

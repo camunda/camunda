@@ -7,26 +7,26 @@
  */
 package io.camunda.security.auth.condition;
 
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import java.util.List;
 
 /**
  * Describes how a {@code SecurityContext} should evaluate authorizations when securing a query.
- * Implementations can wrap a single {@link io.camunda.security.auth.Authorization} or compose
- * multiple authorizations (for example, disjunctive {@code anyOf} checks). Search backends inspect
- * the concrete condition type to translate it into backend specific predicates while callers
- * express their intent declaratively.
+ * Implementations can wrap a single {@link RequiredAuthorization} or compose multiple
+ * authorizations (for example, disjunctive {@code anyOf} checks). Search backends inspect the
+ * concrete condition type to translate it into backend specific predicates while callers express
+ * their intent declaratively.
  */
 public interface AuthorizationCondition {
 
   /** Returns the underlying authorizations (single returns a size==1 list). */
-  default List<Authorization<?>> authorizations() {
+  default List<RequiredAuthorization<?>> authorizations() {
 
-    if (this instanceof SingleAuthorizationCondition(Authorization<?> authorization)) {
+    if (this instanceof SingleAuthorizationCondition(RequiredAuthorization<?> authorization)) {
       return List.of(authorization);
     }
 
-    if (this instanceof AnyOfAuthorizationCondition(List<Authorization<?>> children)) {
+    if (this instanceof AnyOfAuthorizationCondition(List<RequiredAuthorization<?>> children)) {
       return children;
     }
 

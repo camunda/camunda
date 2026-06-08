@@ -16,7 +16,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.sql.MessageSubscriptionMapper;
 import io.camunda.search.query.MessageSubscriptionQuery;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.security.reader.TenantCheck;
@@ -35,7 +35,8 @@ class MessageSubscriptionDbReaderTest {
     final MessageSubscriptionQuery query = MessageSubscriptionQuery.of(b -> b);
     final ResourceAccessChecks resourceAccessChecks =
         ResourceAccessChecks.of(
-            AuthorizationCheck.enabled(Authorization.of(a -> a.readProcessInstance().read())),
+            AuthorizationCheck.enabled(
+                RequiredAuthorization.of(a -> a.readProcessInstance().read())),
             TenantCheck.disabled());
 
     final var items = messageSubscriptionDbReader.search(query, resourceAccessChecks).items();

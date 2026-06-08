@@ -16,7 +16,7 @@ import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.search.clients.query.SearchTermsQuery;
 import io.camunda.search.clients.types.TypedValue;
 import io.camunda.search.filter.FilterBuilders;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.security.reader.TenantCheck;
@@ -186,7 +186,7 @@ public final class ProcessDefinitionQueryTransformerTest extends AbstractTransfo
   public void shouldApplyAuthorizationCheck() {
     // given
     final var authorization =
-        Authorization.of(
+        RequiredAuthorization.of(
             a -> a.processDefinition().readProcessDefinition().resourceIds(List.of("1", "2")));
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var resourceAccessChecks =
@@ -212,7 +212,8 @@ public final class ProcessDefinitionQueryTransformerTest extends AbstractTransfo
   @Test
   public void shouldReturnNonMatchWhenNoResourceIdsProvided() {
     // given
-    final var authorization = Authorization.of(a -> a.processDefinition().readProcessInstance());
+    final var authorization =
+        RequiredAuthorization.of(a -> a.processDefinition().readProcessInstance());
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var resourceAccessChecks =
         ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled());
@@ -284,7 +285,7 @@ public final class ProcessDefinitionQueryTransformerTest extends AbstractTransfo
   public void shouldApplyFilterAndChecks() {
     // given
     final var authorization =
-        Authorization.of(
+        RequiredAuthorization.of(
             a -> a.processDefinition().readProcessDefinition().resourceIds(List.of("1", "2")));
 
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);

@@ -15,8 +15,8 @@ import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.page.SearchQueryPageBuilders;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.security.api.model.CamundaAuthentication;
-import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.SecurityContext;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.util.FilterUtil;
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.util.VisibleForTesting;
@@ -46,7 +46,8 @@ public class IncidentItemProvider implements ItemProvider {
         new ProcessInstanceItemProvider(searchClientsProxy, metrics, filter, authentication);
     securityContext =
         createSecurityContext(
-            authentication, Authorization.of(a -> a.processDefinition().readProcessInstance()));
+            authentication,
+            RequiredAuthorization.of(a -> a.processDefinition().readProcessInstance()));
   }
 
   @Override

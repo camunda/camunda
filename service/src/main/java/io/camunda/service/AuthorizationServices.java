@@ -7,7 +7,7 @@
  */
 package io.camunda.service;
 
-import static io.camunda.security.auth.Authorization.withAuthorization;
+import static io.camunda.security.core.auth.RequiredAuthorization.withRequiredAuthorization;
 import static io.camunda.service.authorization.Authorizations.AUTHORIZATION_READ_AUTHORIZATION;
 
 import io.camunda.search.clients.AuthorizationSearchClient;
@@ -85,7 +85,7 @@ public class AuthorizationServices
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication,
-                        withAuthorization(
+                        withRequiredAuthorization(
                             AUTHORIZATION_READ_AUTHORIZATION, String.valueOf(authorizationKey))))
                 .getAuthorization(authorizationKey));
   }

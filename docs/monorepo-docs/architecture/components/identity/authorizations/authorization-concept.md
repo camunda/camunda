@@ -10,15 +10,15 @@ Authorization in Camunda controls **who** can perform **what action** on **which
 2. **Permission Types** -- the action being performed (e.g. read, create, update, delete)
 3. **Resource Scoping** -- which specific resources the permission applies to (by ID, by property, or wildcard)
 
-These are combined into an `Authorization` record that represents a single access rule: _"this permission type is granted on this resource type for these specific resources."_
+These are combined into a `RequiredAuthorization` record that represents a single access rule: _"this permission type is granted on this resource type for these specific resources."_
 
 ## Core Data Structures
 
-### Authorization Record
+### RequiredAuthorization Record
 
-**Location:** `security/security-core/.../security/auth/Authorization.java`
+**Location:** `io.camunda.security.core.auth.RequiredAuthorization` (defined in CSL `core` module; consumed by OC as an external dependency)
 
-The `Authorization<T>` record is the central type. It binds together:
+The `RequiredAuthorization<T>` record is the central type. It binds together:
 
 |          Field          |            Type             |                           Description                            |                                     Example                                     |
 |-------------------------|-----------------------------|------------------------------------------------------------------|---------------------------------------------------------------------------------|
@@ -108,10 +108,10 @@ This allows fine-grained access control where users can only see and act on task
 
 ## How Authorizations Are Built
 
-The `Authorization` record provides a fluent builder API. A typical authorization is constructed like:
+The `RequiredAuthorization` record provides a fluent builder API. A typical authorization is constructed like:
 
 ```java
-Authorization.of(b -> b
+RequiredAuthorization.of(b -> b
     .processDefinition()           // resource type
     .readProcessInstance()         // permission type
     .resourceId("my-process-id")  // scoped to a specific resource
@@ -121,7 +121,7 @@ Authorization.of(b -> b
 Or for property-based user task authorization:
 
 ```java
-Authorization.of(b -> b
+RequiredAuthorization.of(b -> b
     .userTask()
     .readUserTask()
     .authorizedByAssignee()
@@ -130,6 +130,12 @@ Authorization.of(b -> b
     .or()
     .authorizedByCandidateGroups()
 );
+```
+
+To create a copy of an existing authorization with a different resource ID, use the static helper (renamed from `withAuthorization` in the old OC class):
+
+```java
+RequiredAuthorization.withRequiredAuthorization(existing, resourceId)
 ```
 
 ## Where Authorization Checks Are Applied

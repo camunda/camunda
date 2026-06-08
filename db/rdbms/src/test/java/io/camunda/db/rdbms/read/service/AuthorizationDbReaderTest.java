@@ -16,7 +16,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.sql.AuthorizationMapper;
 import io.camunda.search.query.AuthorizationQuery;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.security.reader.TenantCheck;
@@ -33,7 +33,7 @@ class AuthorizationDbReaderTest {
     final AuthorizationQuery query = AuthorizationQuery.of(b -> b);
     final ResourceAccessChecks resourceAccessChecks =
         ResourceAccessChecks.of(
-            AuthorizationCheck.enabled(Authorization.of(a -> a.authorization().read())),
+            AuthorizationCheck.enabled(RequiredAuthorization.of(a -> a.authorization().read())),
             TenantCheck.disabled());
 
     final var items = authorizationDbReader.search(query, resourceAccessChecks).items();

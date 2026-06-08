@@ -7,7 +7,7 @@
  */
 package io.camunda.service;
 
-import static io.camunda.security.auth.Authorization.withAuthorization;
+import static io.camunda.security.core.auth.RequiredAuthorization.withRequiredAuthorization;
 import static io.camunda.service.authorization.Authorizations.MESSAGE_SUBSCRIPTION_READ_AUTHORIZATION;
 import static io.camunda.service.authorization.Authorizations.PROCESS_DEFINITION_READ_AUTHORIZATION;
 import static io.camunda.service.authorization.Authorizations.PROCESS_INSTANCE_READ_AUTHORIZATION;
@@ -87,7 +87,7 @@ public class ProcessDefinitionServices
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication,
-                        withAuthorization(
+                        withRequiredAuthorization(
                             PROCESS_DEFINITION_READ_AUTHORIZATION,
                             ProcessDefinitionEntity::processDefinitionId)))
                 .getProcessDefinition(processDefinitionKey));

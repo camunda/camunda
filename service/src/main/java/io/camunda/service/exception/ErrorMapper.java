@@ -20,7 +20,7 @@ import io.camunda.document.api.DocumentError.InvalidInput;
 import io.camunda.document.api.DocumentError.OperationNotSupported;
 import io.camunda.document.api.DocumentError.StoreDoesNotExist;
 import io.camunda.search.exception.CamundaSearchException;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.broker.client.api.NoTopologyAvailableException;
@@ -100,7 +100,8 @@ public class ErrorMapper {
     };
   }
 
-  public static ServiceException createForbiddenException(final Authorization authorization) {
+  public static ServiceException createForbiddenException(
+      final RequiredAuthorization<?> authorization) {
     return new ServiceException(
         "Unauthorized to perform operation '%s' on resource '%s'"
             .formatted(authorization.permissionType(), authorization.resourceType()),

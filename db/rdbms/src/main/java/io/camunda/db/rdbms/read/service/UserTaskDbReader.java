@@ -21,7 +21,7 @@ import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.security.api.model.CamundaAuthentication;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.util.NumberParsingUtil;
 import java.util.List;
@@ -132,17 +132,17 @@ public class UserTaskDbReader extends AbstractEntityReader<UserTaskEntity>
 
     for (final var propertyName : propertyNames) {
       switch (propertyName) {
-        case Authorization.PROP_ASSIGNEE -> {
+        case RequiredAuthorization.PROP_ASSIGNEE -> {
           if (username != null && !username.isEmpty()) {
             builder.assignee(username);
           }
         }
-        case Authorization.PROP_CANDIDATE_USERS -> {
+        case RequiredAuthorization.PROP_CANDIDATE_USERS -> {
           if (username != null && !username.isEmpty()) {
             builder.candidateUsers(List.of(username));
           }
         }
-        case Authorization.PROP_CANDIDATE_GROUPS -> {
+        case RequiredAuthorization.PROP_CANDIDATE_GROUPS -> {
           if (groups != null && !groups.isEmpty()) {
             builder.candidateGroups(groups);
           }

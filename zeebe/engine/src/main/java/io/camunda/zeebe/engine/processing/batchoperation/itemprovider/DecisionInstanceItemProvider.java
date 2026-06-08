@@ -14,8 +14,8 @@ import io.camunda.search.page.SearchQueryPageBuilders;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.api.model.CamundaAuthentication;
-import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.SecurityContext;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.stream.Collectors;
@@ -37,7 +37,8 @@ public class DecisionInstanceItemProvider implements ItemProvider {
     this.filter = filter;
     securityContext =
         createSecurityContext(
-            authentication, Authorization.of(a -> a.decisionDefinition().readDecisionInstance()));
+            authentication,
+            RequiredAuthorization.of(a -> a.decisionDefinition().readDecisionInstance()));
   }
 
   @Override

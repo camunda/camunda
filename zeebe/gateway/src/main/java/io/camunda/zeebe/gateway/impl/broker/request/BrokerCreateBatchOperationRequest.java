@@ -9,7 +9,7 @@ package io.camunda.zeebe.gateway.impl.broker.request;
 
 import io.camunda.search.filter.FilterBase;
 import io.camunda.security.api.model.CamundaAuthentication;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
@@ -73,7 +73,7 @@ public class BrokerCreateBatchOperationRequest
   }
 
   public BrokerCreateBatchOperationRequest setAuthorizationCheck(
-      final Authorization<?> authorization) {
+      final RequiredAuthorization<?> authorization) {
     requestDto.setAuthorizationCheck(
         new UnsafeBuffer(MsgPackConverter.convertToMsgPack(authorization)));
     return this;

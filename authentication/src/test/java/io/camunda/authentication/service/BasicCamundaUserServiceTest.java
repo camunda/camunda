@@ -8,7 +8,7 @@
 package io.camunda.authentication.service;
 
 import static io.camunda.security.api.model.authz.AuthorizationScope.WILDCARD;
-import static io.camunda.security.auth.Authorization.withAuthorization;
+import static io.camunda.security.core.auth.RequiredAuthorization.withRequiredAuthorization;
 import static io.camunda.service.authorization.Authorizations.COMPONENT_ACCESS_AUTHORIZATION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -111,7 +111,8 @@ public class BasicCamundaUserServiceTest {
   @Test
   void shouldIncludeAuthorizedComponents() {
     // given
-    final var allowedAuthorization = withAuthorization(COMPONENT_ACCESS_AUTHORIZATION, "operate");
+    final var allowedAuthorization =
+        withRequiredAuthorization(COMPONENT_ACCESS_AUTHORIZATION, "operate");
     when(resourceAccessProvider.resolveResourceAccess(
             eq(authentication), eq(COMPONENT_ACCESS_AUTHORIZATION)))
         .thenReturn(ResourceAccess.allowed(allowedAuthorization));
@@ -126,7 +127,8 @@ public class BasicCamundaUserServiceTest {
   @Test
   void shouldNormalizeIdentityComponentToAdmin() {
     // given
-    final var allowedAuthorization = withAuthorization(COMPONENT_ACCESS_AUTHORIZATION, "identity");
+    final var allowedAuthorization =
+        withRequiredAuthorization(COMPONENT_ACCESS_AUTHORIZATION, "identity");
     when(resourceAccessProvider.resolveResourceAccess(
             eq(authentication), eq(COMPONENT_ACCESS_AUTHORIZATION)))
         .thenReturn(ResourceAccess.allowed(allowedAuthorization));
@@ -141,7 +143,7 @@ public class BasicCamundaUserServiceTest {
   @Test
   void shouldContainWildcardInAuthorizedComponents() {
     // given
-    final var allowedAuthorization = withAuthorization(COMPONENT_ACCESS_AUTHORIZATION, "*");
+    final var allowedAuthorization = withRequiredAuthorization(COMPONENT_ACCESS_AUTHORIZATION, "*");
     when(resourceAccessProvider.resolveResourceAccess(
             eq(authentication), eq(COMPONENT_ACCESS_AUTHORIZATION)))
         .thenReturn(ResourceAccess.wildcard(allowedAuthorization));

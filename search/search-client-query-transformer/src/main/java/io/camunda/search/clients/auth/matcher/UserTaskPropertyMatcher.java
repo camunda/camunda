@@ -9,7 +9,7 @@ package io.camunda.search.clients.auth.matcher;
 
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.security.api.model.CamundaAuthentication;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import java.util.List;
 import java.util.Set;
 import org.slf4j.Logger;
@@ -54,9 +54,10 @@ public class UserTaskPropertyMatcher implements ResourcePropertyMatcher<UserTask
       final List<String> userGroups) {
 
     return switch (propertyName) {
-      case Authorization.PROP_ASSIGNEE -> matchesAssignee(resource, username);
-      case Authorization.PROP_CANDIDATE_USERS -> matchesCandidateUsers(resource, username);
-      case Authorization.PROP_CANDIDATE_GROUPS -> matchesCandidateGroups(resource, userGroups);
+      case RequiredAuthorization.PROP_ASSIGNEE -> matchesAssignee(resource, username);
+      case RequiredAuthorization.PROP_CANDIDATE_USERS -> matchesCandidateUsers(resource, username);
+      case RequiredAuthorization.PROP_CANDIDATE_GROUPS ->
+          matchesCandidateGroups(resource, userGroups);
       default -> {
         LOG.warn("Unknown property name '{}' for UserTaskEntity matching; ignoring.", propertyName);
         yield false;

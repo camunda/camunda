@@ -16,7 +16,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.sql.ClusterVariableMapper;
 import io.camunda.search.query.ClusterVariableQuery;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.security.reader.TenantCheck;
@@ -32,7 +32,7 @@ class ClusterVariableDbReaderTest {
     final ClusterVariableQuery query = ClusterVariableQuery.of(b -> b);
     final ResourceAccessChecks resourceAccessChecks =
         ResourceAccessChecks.of(
-            AuthorizationCheck.enabled(Authorization.of(a -> a.system().read())),
+            AuthorizationCheck.enabled(RequiredAuthorization.of(a -> a.system().read())),
             TenantCheck.disabled());
 
     final var items = clusterVariableDbReader.search(query, resourceAccessChecks).items();

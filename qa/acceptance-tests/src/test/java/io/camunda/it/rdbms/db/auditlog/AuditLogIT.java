@@ -31,8 +31,8 @@ import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
 import io.camunda.search.query.AuditLogQuery;
 import io.camunda.search.sort.AuditLogSort;
-import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.condition.AuthorizationConditions;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.security.reader.TenantCheck;
@@ -258,7 +258,7 @@ public class AuditLogIT {
     final var resourceAccessChecks =
         ResourceAccessChecks.of(
             AuthorizationCheck.enabled(
-                Authorization.of(
+                RequiredAuthorization.of(
                     a ->
                         a.resourceType(AUDIT_LOG)
                             .resourceIds(
@@ -306,7 +306,7 @@ public class AuditLogIT {
     final var resourceAccessChecks =
         ResourceAccessChecks.of(
             AuthorizationCheck.enabled(
-                Authorization.of(
+                RequiredAuthorization.of(
                     a ->
                         a.resourceType(PROCESS_DEFINITION)
                             .permissionType(READ_PROCESS_INSTANCE)
@@ -358,7 +358,7 @@ public class AuditLogIT {
     final var resourceAccessChecks =
         ResourceAccessChecks.of(
             AuthorizationCheck.enabled(
-                Authorization.of(
+                RequiredAuthorization.of(
                     a ->
                         a.resourceType(PROCESS_DEFINITION)
                             .permissionType(READ_PROCESS_INSTANCE)
@@ -411,7 +411,7 @@ public class AuditLogIT {
     final var resourceAccessChecks =
         ResourceAccessChecks.of(
             AuthorizationCheck.enabled(
-                Authorization.of(
+                RequiredAuthorization.of(
                     a ->
                         a.resourceType(PROCESS_DEFINITION)
                             .permissionType(READ_USER_TASK)
@@ -460,7 +460,7 @@ public class AuditLogIT {
     final var resourceAccessChecks =
         ResourceAccessChecks.of(
             AuthorizationCheck.enabled(
-                Authorization.of(
+                RequiredAuthorization.of(
                     a ->
                         a.resourceType(PROCESS_DEFINITION)
                             .permissionType(READ_USER_TASK)
@@ -512,17 +512,17 @@ public class AuditLogIT {
         ResourceAccessChecks.of(
             AuthorizationCheck.enabled(
                 AuthorizationConditions.anyOf(
-                    Authorization.of(
+                    RequiredAuthorization.of(
                         a ->
                             a.resourceType(AUDIT_LOG)
                                 .resourceIds(
                                     List.of(AuditLogOperationCategory.DEPLOYED_RESOURCES.name()))),
-                    Authorization.of(
+                    RequiredAuthorization.of(
                         a ->
                             a.resourceType(PROCESS_DEFINITION)
                                 .permissionType(READ_PROCESS_INSTANCE)
                                 .resourceIds(List.of(processDefId1))),
-                    Authorization.of(
+                    RequiredAuthorization.of(
                         a ->
                             a.resourceType(PROCESS_DEFINITION)
                                 .permissionType(READ_USER_TASK)
@@ -555,7 +555,7 @@ public class AuditLogIT {
     final var resourceAccessChecks =
         ResourceAccessChecks.of(
             AuthorizationCheck.enabled(
-                Authorization.of(
+                RequiredAuthorization.of(
                     a ->
                         a.resourceType(PROCESS_DEFINITION)
                             .permissionType(READ_PROCESS_INSTANCE)
@@ -625,7 +625,7 @@ public class AuditLogIT {
     final var resourceAccessChecks =
         ResourceAccessChecks.of(
             AuthorizationCheck.enabled(
-                Authorization.of(
+                RequiredAuthorization.of(
                     a ->
                         a.resourceType(PROCESS_DEFINITION)
                             .permissionType(READ_PROCESS_INSTANCE)

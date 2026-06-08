@@ -17,7 +17,7 @@ import io.camunda.search.clients.query.SearchQueryOption;
 import io.camunda.search.clients.query.SearchTermsQuery;
 import io.camunda.search.clients.types.TypedValue;
 import io.camunda.search.filter.FilterBuilders;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.security.reader.TenantCheck;
@@ -68,7 +68,7 @@ public class GroupMemberQueryTransformerTest extends AbstractTransformerTest {
   public void shouldApplyAuthorizationCheck() {
     // given
     final var authorization =
-        Authorization.of(a -> a.group().read().resourceIds(List.of("1", "2")));
+        RequiredAuthorization.of(a -> a.group().read().resourceIds(List.of("1", "2")));
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var resourceAccessChecks =
         ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled());
@@ -136,7 +136,7 @@ public class GroupMemberQueryTransformerTest extends AbstractTransformerTest {
   public void shouldApplyFilterAndChecks() {
     // given
     final var authorization =
-        Authorization.of(a -> a.group().read().resourceIds(List.of("1", "2")));
+        RequiredAuthorization.of(a -> a.group().read().resourceIds(List.of("1", "2")));
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var tenantCheck = TenantCheck.enabled(List.of("a", "b"));
     final var resourceAccessChecks = ResourceAccessChecks.of(authorizationCheck, tenantCheck);
@@ -154,7 +154,7 @@ public class GroupMemberQueryTransformerTest extends AbstractTransformerTest {
   @Test
   public void shouldReturnNonMatchWhenNoResourceIdsProvided() {
     // given
-    final var authorization = Authorization.of(a -> a.group().read());
+    final var authorization = RequiredAuthorization.of(a -> a.group().read());
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var resourceAccessChecks =
         ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled());

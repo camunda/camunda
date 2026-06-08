@@ -16,7 +16,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.sql.DecisionDefinitionMapper;
 import io.camunda.search.query.DecisionDefinitionQuery;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.security.reader.TenantCheck;
@@ -35,7 +35,8 @@ class DecisionDefinitionDbReaderTest {
     final DecisionDefinitionQuery query = DecisionDefinitionQuery.of(b -> b);
     final ResourceAccessChecks resourceAccessChecks =
         ResourceAccessChecks.of(
-            AuthorizationCheck.enabled(Authorization.of(a -> a.decisionDefinition().read())),
+            AuthorizationCheck.enabled(
+                RequiredAuthorization.of(a -> a.decisionDefinition().read())),
             TenantCheck.disabled());
 
     final var items = decisionDefinitionDbReader.search(query, resourceAccessChecks).items();

@@ -22,7 +22,7 @@ import io.camunda.search.entities.JobEntity.JobState;
 import io.camunda.search.entities.JobEntity.ListenerEventType;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.Operation;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.security.reader.TenantCheck;
@@ -305,7 +305,7 @@ public class JobQueryTransformerTest extends AbstractTransformerTest {
   public void shouldApplyAuthorizationCheck() {
     // given
     final var authorization =
-        Authorization.of(
+        RequiredAuthorization.of(
             a -> a.processDefinition().readProcessInstance().resourceIds(List.of("1", "2")));
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var resourceAccessChecks =
@@ -330,7 +330,8 @@ public class JobQueryTransformerTest extends AbstractTransformerTest {
   @Test
   public void shouldReturnNonMatchWhenNoResourceIdsProvided() {
     // given
-    final var authorization = Authorization.of(a -> a.processDefinition().readProcessInstance());
+    final var authorization =
+        RequiredAuthorization.of(a -> a.processDefinition().readProcessInstance());
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var resourceAccessChecks =
         ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled());
@@ -457,7 +458,7 @@ public class JobQueryTransformerTest extends AbstractTransformerTest {
   public void shouldApplyFilterAndChecks() {
     // given
     final var authorization =
-        Authorization.of(
+        RequiredAuthorization.of(
             a -> a.processDefinition().readProcessInstance().resourceIds(List.of("1", "2")));
 
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);

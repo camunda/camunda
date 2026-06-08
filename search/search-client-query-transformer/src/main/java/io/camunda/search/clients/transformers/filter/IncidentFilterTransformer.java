@@ -30,7 +30,7 @@ import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.TR
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.IncidentFilter;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 
 public class IncidentFilterTransformer extends IndexFilterTransformer<IncidentFilter> {
@@ -59,7 +59,8 @@ public class IncidentFilterTransformer extends IndexFilterTransformer<IncidentFi
   }
 
   @Override
-  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
+  protected SearchQuery toAuthorizationCheckSearchQuery(
+      final RequiredAuthorization<?> authorization) {
     return stringTerms(BPMN_PROCESS_ID, authorization.resourceIds());
   }
 }

@@ -30,7 +30,7 @@ import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.filter.VariableValueFilter;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.util.NumberParsingUtil;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity.TaskImplementation;
@@ -106,7 +106,8 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
   }
 
   @Override
-  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
+  protected SearchQuery toAuthorizationCheckSearchQuery(
+      final RequiredAuthorization<?> authorization) {
     return switch (authorization.resourceType()) {
       case PROCESS_DEFINITION -> stringTerms(BPMN_PROCESS_ID, authorization.resourceIds());
       case USER_TASK -> longTerms(KEY, NumberParsingUtil.parseLongs(authorization.resourceIds()));
@@ -122,7 +123,7 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
 
   @Override
   protected SearchQuery toAuthorizationCheckSearchQueryByProperties(
-      final Authorization<?> authorization, final CamundaAuthentication authentication) {
+      final RequiredAuthorization<?> authorization, final CamundaAuthentication authentication) {
 
     if (authorization.resourceType() != AuthorizationResourceType.USER_TASK) {
       LOG.warn(
@@ -139,17 +140,17 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
 
     for (final var propertyName : authorization.resourcePropertyNames()) {
       switch (propertyName) {
-        case Authorization.PROP_ASSIGNEE -> {
+        case RequiredAuthorization.PROP_ASSIGNEE -> {
           if (StringUtils.isNotEmpty(username)) {
             queries.add(term(ASSIGNEE, username));
           }
         }
-        case Authorization.PROP_CANDIDATE_USERS -> {
+        case RequiredAuthorization.PROP_CANDIDATE_USERS -> {
           if (StringUtils.isNotEmpty(username)) {
             queries.add(stringTerms(CANDIDATE_USERS, List.of(username)));
           }
         }
-        case Authorization.PROP_CANDIDATE_GROUPS -> {
+        case RequiredAuthorization.PROP_CANDIDATE_GROUPS -> {
           if (groups != null && !groups.isEmpty()) {
             queries.add(stringTerms(CANDIDATE_GROUPS, groups));
           }

@@ -7,7 +7,7 @@
  */
 package io.camunda.service;
 
-import static io.camunda.security.auth.Authorization.withAuthorization;
+import static io.camunda.security.core.auth.RequiredAuthorization.withRequiredAuthorization;
 import static io.camunda.service.authorization.Authorizations.GLOBAL_TASK_LISTENER_READ_AUTHORIZATION;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD_CHAR;
 
@@ -59,7 +59,8 @@ public final class GlobalListenerServices
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication,
-                        withAuthorization(GLOBAL_TASK_LISTENER_READ_AUTHORIZATION, WILDCARD_CHAR)))
+                        withRequiredAuthorization(
+                            GLOBAL_TASK_LISTENER_READ_AUTHORIZATION, WILDCARD_CHAR)))
                 .getGlobalListener(
                     request.getId(), GlobalListenerType.valueOf(request.getListenerType().name())));
   }

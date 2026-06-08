@@ -8,10 +8,10 @@
 package io.camunda.search.clients.auth;
 
 import static io.camunda.security.api.model.authz.AuthorizationScope.WILDCARD;
-import static io.camunda.security.auth.Authorization.withAuthorization;
+import static io.camunda.security.core.auth.RequiredAuthorization.withRequiredAuthorization;
 
 import io.camunda.security.api.model.CamundaAuthentication;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.security.reader.ResourceAccess;
 import io.camunda.security.reader.ResourceAccessProvider;
 
@@ -19,26 +19,27 @@ public class DisabledResourceAccessProvider implements ResourceAccessProvider {
 
   @Override
   public <T> ResourceAccess resolveResourceAccess(
-      final CamundaAuthentication authentication, final Authorization<T> requiredAuthorization) {
+      final CamundaAuthentication authentication,
+      final RequiredAuthorization<T> requiredAuthorization) {
     return ResourceAccess.wildcard(
-        withAuthorization(requiredAuthorization, WILDCARD.getResourceId()));
+        withRequiredAuthorization(requiredAuthorization, WILDCARD.getResourceId()));
   }
 
   @Override
   public <T> ResourceAccess hasResourceAccess(
       final CamundaAuthentication authentication,
-      final Authorization<T> requiredAuthorization,
+      final RequiredAuthorization<T> requiredAuthorization,
       final T resource) {
     return ResourceAccess.wildcard(
-        withAuthorization(requiredAuthorization, WILDCARD.getResourceId()));
+        withRequiredAuthorization(requiredAuthorization, WILDCARD.getResourceId()));
   }
 
   @Override
   public <T> ResourceAccess hasResourceAccessByResourceId(
       final CamundaAuthentication authentication,
-      final Authorization<T> requiredAuthorization,
+      final RequiredAuthorization<T> requiredAuthorization,
       final String resourceId) {
     return ResourceAccess.wildcard(
-        withAuthorization(requiredAuthorization, WILDCARD.getResourceId()));
+        withRequiredAuthorization(requiredAuthorization, WILDCARD.getResourceId()));
   }
 }

@@ -13,7 +13,7 @@ import static io.camunda.security.api.model.authz.AuthorizationScope.WILDCARD_CH
 import static io.camunda.security.api.model.authz.PermissionType.READ_PROCESS_INSTANCE;
 import static io.camunda.security.api.model.authz.PermissionType.READ_USER_TASK;
 
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.security.reader.AuthorizationCheck;
 import java.util.ArrayList;
 import java.util.List;
@@ -85,7 +85,7 @@ public record AuditLogAuthorizationFilter(
   }
 
   private static void applyAuthorization(
-      final Authorization<?> auth,
+      final RequiredAuthorization<?> auth,
       final List<String> authorizedCategories,
       final List<String> processDefIdsForProcessInstance,
       final List<String> processDefIdsForUserTask) {

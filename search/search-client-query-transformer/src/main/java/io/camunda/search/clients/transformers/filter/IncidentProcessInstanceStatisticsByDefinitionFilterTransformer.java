@@ -16,7 +16,7 @@ import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.ST
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.IncidentProcessInstanceStatisticsByDefinitionFilter;
-import io.camunda.security.auth.Authorization;
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 
 /** Transformer for the narrow incident stats-by-definition filter. */
@@ -35,7 +35,8 @@ public class IncidentProcessInstanceStatisticsByDefinitionFilterTransformer
   }
 
   @Override
-  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
+  protected SearchQuery toAuthorizationCheckSearchQuery(
+      final RequiredAuthorization<?> authorization) {
     return stringTerms(BPMN_PROCESS_ID, authorization.resourceIds());
   }
 }
