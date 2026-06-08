@@ -195,6 +195,49 @@ runs:
       shell: bash
       working-directory: ./c8run
 
+    - name: Verify packaged bundled JRE
+      run: |
+        set -euo pipefail
+
+        goos="$(go env GOOS)"
+        goarch="$(go env GOARCH)"
+        case "$goarch" in
+          amd64) package_arch="x86_64" ;;
+          arm64) package_arch="aarch64" ;;
+          *) echo "Unsupported Go architecture: $goarch" >&2; exit 1 ;;
+        esac
+
+        archive="$(ls camunda8-run-* | head -n 1)"
+        expected_suffix="-${goos}-${package_arch}."
+        if [[ "$archive" != *"$expected_suffix"* ]]; then
+          echo "Expected C8Run archive for ${goos}-${package_arch}, got ${archive}" >&2
+          exit 1
+        fi
+
+        smoke_dir="$(mktemp -d)"
+        trap 'rm -rf "$smoke_dir"' EXIT
+        case "$archive" in
+          *.zip) unzip -q "$archive" -d "$smoke_dir" ;;
+          *.tar.gz) tar -xzf "$archive" -C "$smoke_dir" ;;
+          *) echo "Unsupported C8Run archive type: $archive" >&2; exit 1 ;;
+        esac
+
+        run_dir="$(find "$smoke_dir" -maxdepth 1 -mindepth 1 -type d | head -n 1)"
+        java_binary="$run_dir/jre/bin/java"
+        test -x "$java_binary"
+        if command -v file >/dev/null 2>&1; then
+          file "$java_binary"
+        fi
+        env -u JAVA_HOME -u JAVA_VERSION -u JDK_JAVA_OPTIONS "$java_binary" -version
+        java_version="$(env -u JAVA_HOME -u JAVA_VERSION -u JDK_JAVA_OPTIONS "$java_binary" JavaVersion)"
+        echo "Bundled Java version: $java_version"
+        if [[ "$java_version" != 25* ]]; then
+          echo "Expected bundled Java 25, got $java_version" >&2
+          exit 1
+        fi
+      shell: bash
+      working-directory: ./c8run
+
     - if: ${{ inputs.os == 'ubuntu-latest' }}
       name: Linux - Run c8run
       run: ./c8run start --config e2e_tests/prefix-config.yaml

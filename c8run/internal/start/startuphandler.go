@@ -42,6 +42,8 @@ var java25RuntimeOptions = []string{
 	"--sun-misc-unsafe-memory-access=allow",
 }
 
+var getJavaVersionFunc = getJavaVersion
+
 func printSystemInformation(javaVersion, javaHome, javaOpts string, connectorsEnabled bool) {
 	fmt.Println("")
 	fmt.Println("")
@@ -169,6 +171,10 @@ func resolveJavaHomeAndBinary(parentDir string) (string, string, error) {
 		return javaHome, javaBinary, nil
 	}
 
+	return resolveExternalJavaHomeAndBinary()
+}
+
+func resolveExternalJavaHomeAndBinary() (string, string, error) {
 	javaHome := os.Getenv("JAVA_HOME")
 	javaBinary := "java"
 	var javaHomeAfterSymlink string
@@ -226,6 +232,70 @@ func resolveJavaHomeAndBinary(parentDir string) (string, string, error) {
 	}
 
 	return javaHome, javaBinary, nil
+}
+
+func resolveJavaVersionWithFallback(parentDir, javaHome, javaBinary string) (string, string, string, error) {
+	javaVersion := os.Getenv("JAVA_VERSION")
+	mustValidateBundledJava := isBundledJavaRuntime(parentDir, javaHome, javaBinary)
+	if javaVersion != "" && !mustValidateBundledJava {
+		return javaHome, javaBinary, javaVersion, nil
+	}
+
+	detectedJavaVersion, err := getJavaVersionFunc(javaBinary)
+	if err == nil {
+		if javaVersion == "" {
+			javaVersion = detectedJavaVersion
+		}
+		return javaHome, javaBinary, javaVersion, nil
+	}
+	if !mustValidateBundledJava {
+		return "", "", "", fmt.Errorf("failed to get Java version: %w", err)
+	}
+
+	bundledJavaErr := err
+	fallbackJavaHome, fallbackJavaBinary, err := resolveExternalJavaHomeAndBinary()
+	if err != nil {
+		return "", "", "", fmt.Errorf(
+			"failed to get Java version from bundled JRE at %s: %w; also failed to resolve fallback Java from JAVA_HOME or PATH: %w. The C8Run archive may not match this machine's OS/architecture",
+			javaBinary,
+			bundledJavaErr,
+			err,
+		)
+	}
+
+	fallbackJavaVersion, err := getJavaVersionFunc(fallbackJavaBinary)
+	if err != nil {
+		return "", "", "", fmt.Errorf(
+			"failed to get Java version from bundled JRE at %s: %w; also failed to get Java version from fallback Java at %s: %w. The C8Run archive may not match this machine's OS/architecture",
+			javaBinary,
+			bundledJavaErr,
+			fallbackJavaBinary,
+			err,
+		)
+	}
+
+	log.Warn().
+		Err(bundledJavaErr).
+		Str("bundledJava", javaBinary).
+		Str("fallbackJava", fallbackJavaBinary).
+		Msg("Bundled JRE failed; falling back to JAVA_HOME or system Java")
+	return fallbackJavaHome, fallbackJavaBinary, fallbackJavaVersion, nil
+}
+
+func isBundledJavaRuntime(parentDir, javaHome, javaBinary string) bool {
+	return samePath(javaHome, jre.Home(parentDir)) || samePath(javaBinary, jre.JavaBinary(parentDir))
+}
+
+func samePath(left, right string) bool {
+	if left == "" || right == "" {
+		return false
+	}
+	left = filepath.Clean(left)
+	right = filepath.Clean(right)
+	if runtime.GOOS == "windows" {
+		return strings.EqualFold(left, right)
+	}
+	return left == right
 }
 
 func resolveBundledJava(parentDir string) (string, string, bool) {
@@ -362,10 +432,6 @@ func (s *StartupHandler) StartCommand(wg *sync.WaitGroup, ctx context.Context, s
 		fmt.Println(err.Error())
 		os.Exit(1)
 	}
-	if err := configureJavaRuntimeEnvironment(javaHome, javaBinary); err != nil {
-		fmt.Println(err.Error())
-		os.Exit(1)
-	}
 
 	if err := ensureDefaultConfig(parentDir); err != nil {
 		fmt.Printf("Failed to ensure default config: %v\n", err)
@@ -382,13 +448,14 @@ func (s *StartupHandler) StartCommand(wg *sync.WaitGroup, ctx context.Context, s
 	if err != nil {
 		fmt.Println("Failed to set envVars:", err)
 	}
-	javaVersion := os.Getenv("JAVA_VERSION")
-	if javaVersion == "" {
-		javaVersion, err = getJavaVersion(javaBinary)
-		if err != nil {
-			fmt.Printf("Failed to get Java version: %v\n", err)
-			os.Exit(1)
-		}
+	javaHome, javaBinary, javaVersion, err := resolveJavaVersionWithFallback(parentDir, javaHome, javaBinary)
+	if err != nil {
+		fmt.Printf("Failed to get Java version: %v\n", err)
+		os.Exit(1)
+	}
+	if err := configureJavaRuntimeEnvironment(javaHome, javaBinary); err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
 	}
 
 	javaMajorVersionInt, err := parseJavaMajorVersion(javaVersion)

@@ -317,6 +317,33 @@ jobs:
         run: ls
         working-directory: .\c8run
 
+      - name: Verify packaged bundled JRE
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          archive="$(ls camunda8-run-*-windows-x86_64.zip | head -n 1)"
+          if [[ -z "$archive" ]]; then
+            echo "Could not find windows-x86_64 C8Run archive" >&2
+            exit 1
+          fi
+
+          smoke_dir="$(mktemp -d)"
+          trap 'rm -rf "$smoke_dir"' EXIT
+          unzip -q "$archive" -d "$smoke_dir"
+
+          run_dir="$(find "$smoke_dir" -maxdepth 1 -mindepth 1 -type d | head -n 1)"
+          java_binary="$run_dir/jre/bin/java.exe"
+          test -x "$java_binary"
+          "$java_binary" -version
+          java_version="$("$java_binary" JavaVersion)"
+          echo "Bundled Java version: $java_version"
+          if [[ "$java_version" != 25* ]]; then
+            echo "Expected bundled Java 25, got $java_version" >&2
+            exit 1
+          fi
+        working-directory: ./c8run
+
       - name: Run c8run
         run: bash -c './c8run.exe start --config e2e_tests/prefix-config.yaml'
         working-directory: ./c8run

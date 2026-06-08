@@ -189,6 +189,86 @@ func TestResolveJavaHomeAndBinaryUsesBundledJREFirst(t *testing.T) {
 	}
 }
 
+func TestResolveJavaVersionWithFallbackUsesExternalJavaWhenBundledJREFails(t *testing.T) {
+	// given
+	parentDir := t.TempDir()
+	bundledJavaHome, bundledJavaBinary := createJavaHome(t, filepath.Join(parentDir, "jre"))
+	externalJavaHome, externalJavaBinary := createJavaHome(t, filepath.Join(t.TempDir(), "external-java-home"))
+	resolvedExternalJavaHome, err := filepath.EvalSymlinks(externalJavaHome)
+	if err != nil {
+		t.Fatalf("failed to resolve external JAVA_HOME symlinks: %v", err)
+	}
+	resolvedExternalJavaBinary := filepath.Join(resolvedExternalJavaHome, "bin", filepath.Base(externalJavaBinary))
+	t.Setenv("JAVA_HOME", externalJavaHome)
+	t.Setenv("JAVA_VERSION", "")
+
+	originalGetJavaVersion := getJavaVersionFunc
+	defer func() {
+		getJavaVersionFunc = originalGetJavaVersion
+	}()
+	getJavaVersionFunc = func(javaBinary string) (string, error) {
+		if samePath(javaBinary, bundledJavaBinary) {
+			return "", errors.New("bundled java crashed")
+		}
+		if samePath(javaBinary, resolvedExternalJavaBinary) {
+			return "21.0.8", nil
+		}
+		return "", errors.New("unexpected java binary: " + javaBinary)
+	}
+
+	// when
+	resolvedHome, resolvedBinary, javaVersion, err :=
+		resolveJavaVersionWithFallback(parentDir, bundledJavaHome, bundledJavaBinary)
+
+	// then
+	if err != nil {
+		t.Fatalf("resolveJavaVersionWithFallback returned error: %v", err)
+	}
+	if resolvedHome != resolvedExternalJavaHome {
+		t.Fatalf("expected external JAVA_HOME %s, got %s", resolvedExternalJavaHome, resolvedHome)
+	}
+	if resolvedBinary != resolvedExternalJavaBinary {
+		t.Fatalf("expected external java binary %s, got %s", resolvedExternalJavaBinary, resolvedBinary)
+	}
+	if javaVersion != "21.0.8" {
+		t.Fatalf("expected Java version 21.0.8, got %s", javaVersion)
+	}
+}
+
+func TestResolveJavaVersionWithFallbackReportsBundledJREFailureWhenFallbackFails(t *testing.T) {
+	// given
+	parentDir := t.TempDir()
+	bundledJavaHome, bundledJavaBinary := createJavaHome(t, filepath.Join(parentDir, "jre"))
+	t.Setenv("JAVA_HOME", "")
+	t.Setenv("JAVA_VERSION", "")
+	t.Setenv("PATH", t.TempDir())
+
+	originalGetJavaVersion := getJavaVersionFunc
+	defer func() {
+		getJavaVersionFunc = originalGetJavaVersion
+	}()
+	getJavaVersionFunc = func(javaBinary string) (string, error) {
+		if samePath(javaBinary, bundledJavaBinary) {
+			return "", errors.New("bundled java crashed")
+		}
+		return "", errors.New("unexpected java binary: " + javaBinary)
+	}
+
+	// when
+	_, _, _, err := resolveJavaVersionWithFallback(parentDir, bundledJavaHome, bundledJavaBinary)
+
+	// then
+	if err == nil {
+		t.Fatal("expected bundled JRE failure to be reported")
+	}
+	if !strings.Contains(err.Error(), "bundled JRE") {
+		t.Fatalf("expected error to mention bundled JRE, got %v", err)
+	}
+	if !strings.Contains(err.Error(), "OS/architecture") {
+		t.Fatalf("expected error to mention OS/architecture, got %v", err)
+	}
+}
+
 func TestConfigureJavaRuntimeEnvironment(t *testing.T) {
 	// given
 	t.Setenv("JAVA_HOME", "")
@@ -213,6 +293,24 @@ func TestConfigureJavaRuntimeEnvironment(t *testing.T) {
 	if os.Getenv("JAVACMD") != expectedJavaCmd {
 		t.Fatalf("expected JAVACMD %s, got %s", expectedJavaCmd, os.Getenv("JAVACMD"))
 	}
+}
+
+func createJavaHome(t *testing.T, javaHome string) (string, string) {
+	t.Helper()
+
+	binDir := filepath.Join(javaHome, "bin")
+	if err := os.MkdirAll(binDir, 0o755); err != nil {
+		t.Fatalf("failed to create java bin directory: %v", err)
+	}
+	javaBinaryName := "java"
+	if runtime.GOOS == "windows" {
+		javaBinaryName = "java.exe"
+	}
+	javaBinary := filepath.Join(binDir, javaBinaryName)
+	if err := os.WriteFile(javaBinary, []byte("echo java\n"), 0o755); err != nil {
+		t.Fatalf("failed to create java binary placeholder: %v", err)
+	}
+	return javaHome, javaBinary
 }
 
 func TestParseJavaMajorVersion(t *testing.T) {
