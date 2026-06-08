@@ -12,9 +12,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.InstanceOfAssertFactories.LIST;
 
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
-import io.camunda.security.auth.condition.AuthorizationCondition;
-import io.camunda.security.auth.condition.AuthorizationConditions;
 import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.security.core.auth.condition.AuthorizationCondition;
+import io.camunda.security.core.auth.condition.AuthorizationConditions;
 import java.util.List;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

@@ -11,7 +11,7 @@ import io.camunda.search.entities.GlobalListenerEntity;
 import io.camunda.search.entities.GlobalListenerType;
 import io.camunda.search.query.GlobalListenerQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.SecurityContext;
+import io.camunda.security.core.auth.SecurityContext;
 
 public interface GlobalListenerSearchClient {
 

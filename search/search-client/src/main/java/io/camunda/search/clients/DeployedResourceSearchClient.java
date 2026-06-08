@@ -10,7 +10,7 @@ package io.camunda.search.clients;
 import io.camunda.search.entities.DeployedResourceEntity;
 import io.camunda.search.query.DeployedResourceQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.SecurityContext;
+import io.camunda.security.core.auth.SecurityContext;
 
 public interface DeployedResourceSearchClient {
 

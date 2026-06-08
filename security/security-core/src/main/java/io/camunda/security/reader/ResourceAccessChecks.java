@@ -8,8 +8,8 @@
 package io.camunda.security.reader;
 
 import io.camunda.security.api.model.CamundaAuthentication;
-import io.camunda.security.auth.condition.AuthorizationCondition;
 import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.security.core.auth.condition.AuthorizationCondition;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;

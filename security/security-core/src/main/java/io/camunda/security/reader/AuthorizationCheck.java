@@ -7,9 +7,9 @@
  */
 package io.camunda.security.reader;
 
-import io.camunda.security.auth.condition.AuthorizationCondition;
-import io.camunda.security.auth.condition.AuthorizationConditions;
 import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.security.core.auth.condition.AuthorizationCondition;
+import io.camunda.security.core.auth.condition.AuthorizationConditions;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;

@@ -12,7 +12,7 @@ import io.camunda.search.entities.MessageSubscriptionEntity;
 import io.camunda.search.query.CorrelatedMessageSubscriptionQuery;
 import io.camunda.search.query.MessageSubscriptionQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.SecurityContext;
+import io.camunda.security.core.auth.SecurityContext;
 
 public interface MessageSubscriptionSearchClient {
   SearchQueryResult<MessageSubscriptionEntity> searchMessageSubscriptions(
