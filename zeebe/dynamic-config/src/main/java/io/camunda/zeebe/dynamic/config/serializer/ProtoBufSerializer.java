@@ -57,6 +57,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PreScalingOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.*;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.UpdateIncarnationNumberOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.UpdatePartitionDistributorConfigOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.UpdateRoutingState;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
@@ -536,6 +537,11 @@ public class ProtoBufSerializer
                   .addAllClusterMembers(
                       postScalingOperation.clusterMembers().stream().map(MemberId::id).toList())
                   .build());
+      case final UpdatePartitionDistributorConfigOperation msg ->
+          builder.setUpdatePartitionDistributorConfig(
+              Topology.UpdatePartitionDistributorConfigOperation.newBuilder()
+                  .setConfig(encodePartitionDistributorConfig(msg.config()))
+                  .build());
     }
     return builder.build();
   }
@@ -692,13 +698,13 @@ public class ProtoBufSerializer
       final PartitionDistributorConfig config) {
     final var builder = Topology.PartitionDistributorConfig.newBuilder();
     switch (config) {
-      case PartitionDistributorConfig.RoundRobinConfig ignored ->
+      case final PartitionDistributorConfig.RoundRobinConfig ignored ->
           builder.setRoundRobin(
               Topology.PartitionDistributorConfig.RoundRobinDistributor.getDefaultInstance());
-      case PartitionDistributorConfig.FixedConfig ignored ->
+      case final PartitionDistributorConfig.FixedConfig ignored ->
           builder.setFixed(
               Topology.PartitionDistributorConfig.FixedDistributor.getDefaultInstance());
-      case PartitionDistributorConfig.ZoneAwareConfig zoneAware ->
+      case final PartitionDistributorConfig.ZoneAwareConfig zoneAware ->
           builder.setZoneAware(
               Topology.PartitionDistributorConfig.ZoneAwareDistributor.newBuilder()
                   .addAllZones(
@@ -850,6 +856,14 @@ public class ProtoBufSerializer
           postScalingOperation.getClusterMembersList().stream()
               .map(MemberId::from)
               .collect(Collectors.toSet()));
+    } else if (topologyChangeOperation.hasUpdatePartitionDistributorConfig()) {
+      final var proto = topologyChangeOperation.getUpdatePartitionDistributorConfig().getConfig();
+      return decodePartitionDistributorConfig(proto)
+          .map(config -> new UpdatePartitionDistributorConfigOperation(memberId, config))
+          .orElseThrow(
+              () ->
+                  new IllegalStateException(
+                      "UpdatePartitionDistributorConfig operation has empty config"));
     } else {
       // If the node does not know of a type, the exception thrown will prevent
       // ClusterTopologyGossiper from processing the incoming topology. This helps to prevent any
