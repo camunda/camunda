@@ -30,6 +30,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +38,7 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
+import org.testcontainers.images.PullPolicy;
 
 public class CamundaProcessTestContainerRuntime
     implements AutoCloseable, CamundaProcessTestRuntime {
@@ -104,9 +106,10 @@ public class CamundaProcessTestContainerRuntime
   private ElasticsearchContainer createElasticsearchContainer(
       final Network network, final CamundaProcessTestRuntimeBuilder builder) {
     final ElasticsearchContainer container =
-        containerFactory
-            .createElasticsearchContainer(
-                builder.getElasticsearchDockerImageName(),
+        withConfiguredImagePullPolicy(
+                containerFactory.createElasticsearchContainer(
+                    builder.getElasticsearchDockerImageName(),
+                    builder.getElasticsearchDockerImageVersion()),
                 builder.getElasticsearchDockerImageVersion())
             .withLogConsumer(createContainerLogger(builder.getElasticsearchLoggerName()))
             .withNetwork(network)
@@ -122,9 +125,10 @@ public class CamundaProcessTestContainerRuntime
   private CamundaContainer createCamundaContainer(
       final Network network, final CamundaProcessTestRuntimeBuilder builder) {
     final CamundaContainer container =
-        containerFactory
-            .createCamundaContainer(
-                builder.getCamundaDockerImageName(), builder.getCamundaDockerImageVersion())
+        withConfiguredImagePullPolicy(
+                containerFactory.createCamundaContainer(
+                    builder.getCamundaDockerImageName(), builder.getCamundaDockerImageVersion()),
+                builder.getCamundaDockerImageVersion())
             .withLogConsumer(
                 createContainerJsonLogger(builder.getCamundaLoggerName(), CamundaLogEntry.class))
             .withNetwork(network)
@@ -144,9 +148,11 @@ public class CamundaProcessTestContainerRuntime
   private ConnectorsContainer createConnectorsContainer(
       final Network network, final CamundaProcessTestRuntimeBuilder builder) {
     final ConnectorsContainer container =
-        containerFactory
-            .createConnectorsContainer(
-                builder.getConnectorsDockerImageName(), builder.getConnectorsDockerImageVersion())
+        withConfiguredImagePullPolicy(
+                containerFactory.createConnectorsContainer(
+                    builder.getConnectorsDockerImageName(),
+                    builder.getConnectorsDockerImageVersion()),
+                builder.getConnectorsDockerImageVersion())
             .withLogConsumer(
                 createContainerJsonLogger(
                     builder.getConnectorsLoggerName(), ConnectorsLogEntry.class))
@@ -262,6 +268,17 @@ public class CamundaProcessTestContainerRuntime
       final String name, final Class<T> logEntryType) {
     final Logger logger = LoggerFactory.getLogger(name);
     return new Slf4jJsonLogConsumer(logger, logEntryType);
+  }
+
+  private static <T extends GenericContainer<T>> T withConfiguredImagePullPolicy(
+      final T container, final String imageVersion) {
+    return container.withImagePullPolicy(
+        shouldAlwaysPullImage(imageVersion) ? PullPolicy.alwaysPull() : PullPolicy.defaultPolicy());
+  }
+
+  static boolean shouldAlwaysPullImage(final String imageVersion) {
+    final String normalizedVersion = imageVersion.toLowerCase(Locale.ROOT);
+    return normalizedVersion.contains("snapshot") || normalizedVersion.contains("latest");
   }
 
   public static CamundaProcessTestRuntimeBuilder newBuilder() {
