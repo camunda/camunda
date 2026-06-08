@@ -382,8 +382,13 @@ test.describe.serial('Process Instance Migration', () => {
     const targetBpmnProcessId = testProcesses.processV3.bpmnProcessId;
 
     await test.step('Filter by process name and version', async () => {
-      await operateFiltersPanelPage.selectProcess(sourceBpmnProcessId);
-      await operateFiltersPanelPage.selectVersion(sourceVersion);
+      // Navigate using the auto-mapping operation ID so we only see the instances
+      // migrated in this test run, avoiding stale processV2 instances from previous
+      // nightly runs that may be at unmapped flow nodes and cause migration failures.
+      const baseUrl = process.env.CORE_APPLICATION_OPERATE_URL ?? '';
+      await page.goto(
+        `${baseUrl}/operate/processes?active=true&incidents=true&process=${sourceBpmnProcessId}&version=${sourceVersion}&operationId=${migratedIds[0]}`,
+      );
 
       await waitForAssertion({
         assertion: async () => {
