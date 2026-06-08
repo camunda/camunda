@@ -24,17 +24,17 @@ public final class JudgeConfigImpl implements JudgeConfig {
   private final ChatModelAdapter chatModel;
   private final double threshold;
   private final String customPrompt;
-  private final boolean resolveDocuments;
+  private final boolean attachDocuments;
 
   public JudgeConfigImpl(
       final ChatModelAdapter chatModel,
       final double threshold,
       final String customPrompt,
-      final boolean resolveDocuments) {
+      final boolean attachDocuments) {
     this.chatModel = chatModel;
     this.threshold = threshold;
     this.customPrompt = customPrompt;
-    this.resolveDocuments = resolveDocuments;
+    this.attachDocuments = attachDocuments;
   }
 
   @Override
@@ -42,7 +42,7 @@ public final class JudgeConfigImpl implements JudgeConfig {
     if (chatModel == null) {
       throw new IllegalArgumentException("chatModel must not be null");
     }
-    return new JudgeConfigImpl(chatModel, threshold, customPrompt, resolveDocuments);
+    return new JudgeConfigImpl(chatModel, threshold, customPrompt, attachDocuments);
   }
 
   @Override
@@ -51,17 +51,17 @@ public final class JudgeConfigImpl implements JudgeConfig {
       throw new IllegalArgumentException(
           "threshold must be between 0.0 and 1.0, was: " + threshold);
     }
-    return new JudgeConfigImpl(chatModel, threshold, customPrompt, resolveDocuments);
+    return new JudgeConfigImpl(chatModel, threshold, customPrompt, attachDocuments);
   }
 
   @Override
   public JudgeConfig withCustomPrompt(final String customPrompt) {
-    return new JudgeConfigImpl(chatModel, threshold, customPrompt, resolveDocuments);
+    return new JudgeConfigImpl(chatModel, threshold, customPrompt, attachDocuments);
   }
 
   @Override
-  public JudgeConfig withResolveDocuments(final boolean resolveDocuments) {
-    return new JudgeConfigImpl(chatModel, threshold, customPrompt, resolveDocuments);
+  public JudgeConfig withAttachDocuments(final boolean attachDocuments) {
+    return new JudgeConfigImpl(chatModel, threshold, customPrompt, attachDocuments);
   }
 
   @Override
@@ -80,7 +80,7 @@ public final class JudgeConfigImpl implements JudgeConfig {
   }
 
   @Override
-  public boolean isResolveDocuments() {
-    return resolveDocuments;
+  public boolean isAttachDocuments() {
+    return attachDocuments;
   }
 }

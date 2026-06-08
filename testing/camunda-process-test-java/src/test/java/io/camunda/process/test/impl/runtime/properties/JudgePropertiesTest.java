@@ -40,7 +40,7 @@ public class JudgePropertiesTest {
     // then
     assertThat(judgeProperties.getThreshold()).isEqualTo(0.5);
     assertThat(judgeProperties.getCustomPrompt()).isNull();
-    assertThat(judgeProperties.isResolveDocuments()).isFalse();
+    assertThat(judgeProperties.isAttachDocuments()).isFalse();
     assertThat(judgeProperties.hasProviderConfigured()).isFalse();
   }
 
@@ -60,30 +60,30 @@ public class JudgePropertiesTest {
   }
 
   @Test
-  void shouldReadResolveDocumentsTrue() {
+  void shouldReadAttachDocumentsTrue() {
     // given
     final Properties properties = new Properties();
-    properties.setProperty("judge.resolveDocuments", "true");
+    properties.setProperty("judge.attachDocuments", "true");
 
     // when
     final JudgeProperties judgeProperties = new JudgeProperties(properties);
 
     // then
-    assertThat(judgeProperties.isResolveDocuments()).isTrue();
+    assertThat(judgeProperties.isAttachDocuments()).isTrue();
   }
 
   @Test
-  void shouldTreatNonTrueResolveDocumentsValueAsFalse() {
+  void shouldTreatNonTrueAttachDocumentsValueAsFalse() {
     // given: Boolean.parseBoolean returns false for any non-"true" string, so non-boolean input
     // is silently coerced to false rather than rejected.
     final Properties properties = new Properties();
-    properties.setProperty("judge.resolveDocuments", "not-a-boolean");
+    properties.setProperty("judge.attachDocuments", "not-a-boolean");
 
     // when
     final JudgeProperties judgeProperties = new JudgeProperties(properties);
 
     // then
-    assertThat(judgeProperties.isResolveDocuments()).isFalse();
+    assertThat(judgeProperties.isAttachDocuments()).isFalse();
   }
 
   @Test

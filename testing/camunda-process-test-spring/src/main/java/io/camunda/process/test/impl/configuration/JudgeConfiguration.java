@@ -27,7 +27,7 @@ import org.springframework.util.StringUtils;
 public class JudgeConfiguration {
 
   private static final double DEFAULT_THRESHOLD = JudgeConfig.DEFAULT_THRESHOLD;
-  private static final boolean DEFAULT_RESOLVE_DOCUMENTS = JudgeConfig.DEFAULT_RESOLVE_DOCUMENTS;
+  private static final boolean DEFAULT_ATTACH_DOCUMENTS = JudgeConfig.DEFAULT_ATTACH_DOCUMENTS;
 
   /** The confidence threshold for the AI judge to consider an assertion as passed. */
   private double threshold = DEFAULT_THRESHOLD;
@@ -36,11 +36,11 @@ public class JudgeConfiguration {
   private String customPrompt;
 
   /**
-   * Whether Camunda document references found in the asserted variable should be resolved and their
-   * content provided to the judge as additional context. Disabled by default to avoid unnecessary
-   * token cost.
+   * Whether Camunda document references found in the asserted variable should be downloaded and
+   * attached to the judge call as structured content blocks. Disabled by default to avoid
+   * unnecessary token cost.
    */
-  private boolean resolveDocuments = DEFAULT_RESOLVE_DOCUMENTS;
+  private boolean attachDocuments = DEFAULT_ATTACH_DOCUMENTS;
 
   @NestedConfigurationProperty
   private ChatModelConfiguration chatModel = new ChatModelConfiguration();
@@ -61,12 +61,12 @@ public class JudgeConfiguration {
     this.customPrompt = customPrompt;
   }
 
-  public boolean isResolveDocuments() {
-    return resolveDocuments;
+  public boolean isAttachDocuments() {
+    return attachDocuments;
   }
 
-  public void setResolveDocuments(final boolean resolveDocuments) {
-    this.resolveDocuments = resolveDocuments;
+  public void setAttachDocuments(final boolean attachDocuments) {
+    this.attachDocuments = attachDocuments;
   }
 
   public ChatModelConfiguration getChatModel() {

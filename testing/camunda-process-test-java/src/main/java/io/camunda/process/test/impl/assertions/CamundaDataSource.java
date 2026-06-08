@@ -54,8 +54,7 @@ public class CamundaDataSource {
   }
 
   public byte[] getDocumentContent(final DocumentReferenceResponse reference) {
-    try (final InputStream stream =
-        client.newDocumentContentGetRequest(reference).send().join()) {
+    try (final InputStream stream = client.newDocumentContentGetRequest(reference).send().join()) {
       return readAllBytes(stream);
     } catch (final Exception e) {
       throw new IllegalStateException(

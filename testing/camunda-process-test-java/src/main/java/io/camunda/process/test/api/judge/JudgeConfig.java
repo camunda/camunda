@@ -35,8 +35,8 @@ public interface JudgeConfig {
   /** The default threshold score (0-1) above which a judge evaluation passes. */
   double DEFAULT_THRESHOLD = 0.5;
 
-  /** The default value for {@link #isResolveDocuments()}. */
-  boolean DEFAULT_RESOLVE_DOCUMENTS = false;
+  /** The default value for {@link #isAttachDocuments()}. */
+  boolean DEFAULT_ATTACH_DOCUMENTS = false;
 
   /**
    * Creates a new JudgeConfig with default settings and no chat model. A chat model must be set via
@@ -45,7 +45,7 @@ public interface JudgeConfig {
    * @return a new JudgeConfig instance with default settings
    */
   static JudgeConfig defaults() {
-    return new JudgeConfigImpl(null, DEFAULT_THRESHOLD, null, DEFAULT_RESOLVE_DOCUMENTS);
+    return new JudgeConfigImpl(null, DEFAULT_THRESHOLD, null, DEFAULT_ATTACH_DOCUMENTS);
   }
 
   /**
@@ -58,7 +58,7 @@ public interface JudgeConfig {
     if (chatModel == null) {
       throw new IllegalArgumentException("chatModel must not be null");
     }
-    return new JudgeConfigImpl(chatModel, DEFAULT_THRESHOLD, null, DEFAULT_RESOLVE_DOCUMENTS);
+    return new JudgeConfigImpl(chatModel, DEFAULT_THRESHOLD, null, DEFAULT_ATTACH_DOCUMENTS);
   }
 
   /**
@@ -102,28 +102,28 @@ public interface JudgeConfig {
   JudgeConfig withCustomPrompt(String customPrompt);
 
   /**
-   * Returns a new JudgeConfig with the given document-resolution toggle, keeping all other
+   * Returns a new JudgeConfig with the given document-attachment toggle, keeping all other
    * settings.
    *
-   * <p>When enabled, Camunda document references found in the asserted variable are resolved and
-   * their content is provided to the judge as additional context. This allows the judge to reason
-   * about binary artifacts (images, PDFs, etc.) that the agent produced as tool call results or
-   * received as user input.
+   * <p>When enabled, Camunda document references found in the asserted variable are downloaded and
+   * their content is attached to the judge call as structured content blocks. This allows the judge
+   * to reason about binary artifacts (images, PDFs, etc.) that the agent produced as tool call
+   * results or received as user input.
    *
    * <p>Disabled by default to avoid unnecessary token cost. Enable on demand for assertions that
    * need to reason about document content.
    *
-   * <p>Document resolution requires the configured {@link ChatModelAdapter} to also implement
-   * {@link MultimodalChatModelAdapter} so the resolved content can be attached as structured
-   * content blocks. The built-in LangChain4j providers already do this; custom presets can opt in
-   * by implementing {@link MultimodalChatModelAdapter} directly. If the toggle is enabled but the
-   * adapter does not implement {@link MultimodalChatModelAdapter}, document resolution is skipped
-   * with a warning and the judge sees only the raw variable JSON.
+   * <p>Document attachment requires the configured {@link ChatModelAdapter} to also implement
+   * {@link MultimodalChatModelAdapter} so the content can be attached as structured content blocks.
+   * The built-in LangChain4j providers already do this; custom presets can opt in by implementing
+   * {@link MultimodalChatModelAdapter} directly. If the toggle is enabled but the adapter does not
+   * implement {@link MultimodalChatModelAdapter}, document attachment is skipped with a warning and
+   * the judge sees only the raw variable JSON.
    *
-   * @param resolveDocuments {@code true} to resolve and include document content
+   * @param attachDocuments {@code true} to download and attach document content to the judge call
    * @return a new JudgeConfig instance with the updated toggle
    */
-  JudgeConfig withResolveDocuments(boolean resolveDocuments);
+  JudgeConfig withAttachDocuments(boolean attachDocuments);
 
   /**
    * Returns the chat model adapter, or {@code null} if not yet configured.
@@ -147,11 +147,11 @@ public interface JudgeConfig {
   Optional<String> getCustomPrompt();
 
   /**
-   * Returns whether Camunda document references found in the asserted variable should be resolved
-   * and their content provided to the judge as additional context.
+   * Returns whether Camunda document references found in the asserted variable should be downloaded
+   * and attached to the judge call as structured content blocks.
    *
-   * @return {@code true} if document resolution is enabled
-   * @see #withResolveDocuments(boolean)
+   * @return {@code true} if document attachment is enabled
+   * @see #withAttachDocuments(boolean)
    */
-  boolean isResolveDocuments();
+  boolean isAttachDocuments();
 }
