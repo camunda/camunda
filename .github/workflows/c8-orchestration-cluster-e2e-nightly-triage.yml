@@ -285,7 +285,7 @@ jobs:
                   | sub("^qa/c8-orchestration-cluster-e2e-test-suite/"; "")
                 )
               | .error = ((.error // "unknown error")
-                  | gsub("\\[[0-9;]*[A-Za-z]"; "")
+                  | gsub("\u001b\\[[0-9;]*[A-Za-z]"; "")
                   | explode | map(select(. > 31 and . != 127)) | implode
                   | .[0:600])
               | select(.file != null and .file != "")
