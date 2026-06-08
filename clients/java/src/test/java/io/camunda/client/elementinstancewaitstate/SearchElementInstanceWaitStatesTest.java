@@ -15,6 +15,7 @@
  */
 package io.camunda.client.elementinstancewaitstate;
 
+import static io.camunda.client.util.assertions.SortAssert.assertSort;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
@@ -26,17 +27,22 @@ import io.camunda.client.api.search.enums.WaitStateType;
 import io.camunda.client.api.search.response.JobWaitStateDetails;
 import io.camunda.client.api.search.response.MessageWaitStateDetails;
 import io.camunda.client.api.search.response.SearchResponse;
+import io.camunda.client.impl.search.request.SearchRequestSort;
+import io.camunda.client.impl.search.request.SearchRequestSortMapper;
 import io.camunda.client.protocol.rest.ElementInstanceWaitStateFilter;
 import io.camunda.client.protocol.rest.ElementInstanceWaitStateQuery;
 import io.camunda.client.protocol.rest.ElementInstanceWaitStateQueryResult;
 import io.camunda.client.protocol.rest.JobKindEnum;
 import io.camunda.client.protocol.rest.JobListenerEventTypeEnum;
 import io.camunda.client.protocol.rest.SearchQueryPageResponse;
+import io.camunda.client.protocol.rest.SortOrderEnum;
 import io.camunda.client.protocol.rest.WaitStateElementTypeEnum;
 import io.camunda.client.protocol.rest.WaitStateTypeEnum;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayPaths;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 import org.junit.jupiter.api.Test;
 
 public class SearchElementInstanceWaitStatesTest extends ClientRestTest {
@@ -104,6 +110,40 @@ public class SearchElementInstanceWaitStatesTest extends ClientRestTest {
     assertThat(filter).isNotNull();
     assertThat(filter.getElementType().get$Eq()).isEqualTo(WaitStateElementTypeEnum.SERVICE_TASK);
     assertThat(filter.getWaitStateType().get$Eq()).isEqualTo(WaitStateTypeEnum.JOB);
+  }
+
+  @Test
+  void shouldSearchWithAllSortFields() {
+    // given
+    gatewayService.onSearchElementInstanceWaitStatesRequest(buildEmptyResponse());
+
+    // when
+    client
+        .newElementInstanceWaitStateSearchRequest()
+        .sort(
+            s ->
+                s.elementInstanceKey()
+                    .asc()
+                    .processInstanceKey()
+                    .desc()
+                    .rootProcessInstanceKey()
+                    .asc()
+                    .elementId()
+                    .desc())
+        .send()
+        .join();
+
+    // then
+    final ElementInstanceWaitStateQuery request =
+        gatewayService.getLastRequest(ElementInstanceWaitStateQuery.class);
+    final List<SearchRequestSort> sorts =
+        SearchRequestSortMapper.fromElementInstanceWaitStateSearchQuerySortRequest(
+            Objects.requireNonNull(request.getSort()));
+    assertThat(sorts).hasSize(4);
+    assertSort(sorts.get(0), "elementInstanceKey", SortOrderEnum.ASC);
+    assertSort(sorts.get(1), "processInstanceKey", SortOrderEnum.DESC);
+    assertSort(sorts.get(2), "rootProcessInstanceKey", SortOrderEnum.ASC);
+    assertSort(sorts.get(3), "elementId", SortOrderEnum.DESC);
   }
 
   @Test

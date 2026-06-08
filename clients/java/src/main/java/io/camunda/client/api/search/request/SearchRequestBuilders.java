@@ -60,6 +60,7 @@ import io.camunda.client.api.search.sort.DecisionDefinitionSort;
 import io.camunda.client.api.search.sort.DecisionInstanceSort;
 import io.camunda.client.api.search.sort.DecisionRequirementsSort;
 import io.camunda.client.api.search.sort.ElementInstanceSort;
+import io.camunda.client.api.search.sort.ElementInstanceWaitStateSort;
 import io.camunda.client.api.search.sort.GlobalTaskListenerSort;
 import io.camunda.client.api.search.sort.GroupSort;
 import io.camunda.client.api.search.sort.GroupUserSort;
@@ -127,6 +128,7 @@ import io.camunda.client.impl.search.sort.DecisionDefinitionSortImpl;
 import io.camunda.client.impl.search.sort.DecisionInstanceSortImpl;
 import io.camunda.client.impl.search.sort.DecisionRequirementsSortImpl;
 import io.camunda.client.impl.search.sort.ElementInstanceSortImpl;
+import io.camunda.client.impl.search.sort.ElementInstanceWaitStateSortImpl;
 import io.camunda.client.impl.search.sort.GlobalTaskListenerSortImpl;
 import io.camunda.client.impl.search.sort.GroupSortImpl;
 import io.camunda.client.impl.search.sort.GroupUserSortImpl;
@@ -550,6 +552,13 @@ public final class SearchRequestBuilders {
         new io.camunda.client.impl.search.filter.ElementInstanceWaitStateFilterImpl();
     fn.accept(filter);
     return filter;
+  }
+
+  public static ElementInstanceWaitStateSort elementInstanceWaitStateSort(
+      final Consumer<ElementInstanceWaitStateSort> fn) {
+    final ElementInstanceWaitStateSort sort = new ElementInstanceWaitStateSortImpl();
+    fn.accept(sort);
+    return sort;
   }
 
   public static AuditLogSort auditLogSort(final Consumer<AuditLogSort> fn) {

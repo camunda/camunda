@@ -389,4 +389,13 @@ public final class SortOptionBuilders {
       final Function<DeployedResourceSort.Builder, ObjectBuilder<DeployedResourceSort>> fn) {
     return fn.apply(deployedResource()).build();
   }
+
+  public static WaitStateSort.Builder waitState() {
+    return new WaitStateSort.Builder();
+  }
+
+  public static WaitStateSort waitState(
+      final Function<WaitStateSort.Builder, ObjectBuilder<WaitStateSort>> fn) {
+    return fn.apply(waitState()).build();
+  }
 }

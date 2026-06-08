@@ -57,7 +57,6 @@ import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.search.query.UserQuery;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
-import io.camunda.search.sort.NoSort;
 import io.camunda.search.sort.SortOption;
 import io.camunda.search.sort.SortOptionBuilders;
 import io.camunda.zeebe.util.Either;
@@ -1157,10 +1156,20 @@ public final class SearchQueryRequestMapper {
       return Either.right(SearchQueryBuilders.elementInstanceWaitStateSearchQuery().build());
     }
 
+    final var filterResult =
+        SearchQueryFilterMapper.toElementInstanceWaitStateFilter(request.getFilter());
+    final var sortResult =
+        SearchQuerySortRequestMapper.toSearchQuerySort(
+            SearchQuerySortRequestMapper.fromElementInstanceWaitStateQuerySortRequest(
+                request.getSort()),
+            SortOptionBuilders::waitState,
+            SearchQuerySortRequestMapper::applyWaitStateSortField);
+    final var pageResult = toSearchQueryPage(request.getPage());
+
     return buildSearchQuery(
-        SearchQueryFilterMapper.toElementInstanceWaitStateFilter(request.getFilter()),
-        Either.right(NoSort.NO_SORT),
-        toSearchQueryPage(request.getPage()),
+        filterResult,
+        sortResult,
+        pageResult,
         SearchQueryBuilders::elementInstanceWaitStateSearchQuery);
   }
 }
