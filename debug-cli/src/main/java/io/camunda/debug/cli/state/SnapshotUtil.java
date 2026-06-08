@@ -53,15 +53,17 @@ public class SnapshotUtil {
       final Path rootDirectory,
       final String stringSnapshotId,
       final long lastFollowupEventPosition) {
+    final var snapshotId = FileBasedSnapshotId.ofFileName(stringSnapshotId).getOrThrow();
+
+    // Preserve the source snapshot's broker id; hardcoding 0 here would mislabel snapshots on every
+    // broker whose node id is not 0 (the broker id is part of the snapshot folder name).
     final var snapshotStore =
         new FileBasedSnapshotStoreImpl(
-            0,
+            snapshotId.getBrokerId(),
             rootDirectory,
             new ChecksumProviderRocksDBImpl(),
             new CurrentThreadConcurrencyControl(),
             new SnapshotMetrics(new SimpleMeterRegistry()));
-
-    final var snapshotId = FileBasedSnapshotId.ofFileName(stringSnapshotId).getOrThrow();
 
     final var transientSnapshot =
         snapshotStore
