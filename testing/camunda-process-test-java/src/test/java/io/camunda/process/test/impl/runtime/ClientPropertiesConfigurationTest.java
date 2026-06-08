@@ -31,8 +31,6 @@ import org.junit.jupiter.api.Test;
  */
 public class ClientPropertiesConfigurationTest {
 
-  private final GitPropertiesUtil emptyGitProperties = new GitPropertiesUtil(new Properties());
-
   @Test
   void shouldApplyRestAddressFromClientProperties() {
     // given
@@ -332,7 +330,7 @@ public class ClientPropertiesConfigurationTest {
 
   private CamundaClientConfiguration buildClientConfiguration(final Properties properties) {
     final ContainerRuntimePropertiesUtil propertiesUtil =
-        new ContainerRuntimePropertiesUtil(properties, emptyGitProperties);
+        new ContainerRuntimePropertiesUtil(properties);
     final CamundaClient client = propertiesUtil.getCamundaClientBuilderFactory().get().build();
     try {
       return client.getConfiguration();
