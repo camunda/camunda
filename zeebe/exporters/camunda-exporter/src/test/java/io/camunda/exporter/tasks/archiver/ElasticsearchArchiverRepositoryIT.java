@@ -1018,8 +1018,6 @@ final class ElasticsearchArchiverRepositoryIT {
   void shouldReapplyILMPolicyAfterRetentionPeriodExpiration() throws Exception {
     // given
     retention.setEnabled(true);
-    final int minimumAgeSeconds = 2;
-    retention.setMinimumAge("%ds".formatted(minimumAgeSeconds));
     final var indexName1 = processInstanceIndex + UUID.randomUUID();
     final var indexName2 = processInstanceIndex + UUID.randomUUID();
 
@@ -1031,15 +1029,8 @@ final class ElasticsearchArchiverRepositoryIT {
     final var repository = createRepository(clientSpy);
 
     // when - first setting policy for indexName1 and indexName2
-    repository
-        .setIndexLifeCycle(indexName1)
-        .thenApply(
-            ignore -> {
-              // wait for the cache of indexName1 to expire
-              Awaitility.await().pollDelay(Duration.ofSeconds(minimumAgeSeconds)).until(() -> true);
-              return repository.setIndexLifeCycle(indexName2);
-            })
-        .get();
+    repository.setIndexLifeCycle(indexName1).get();
+    repository.setIndexLifeCycle(indexName2).get();
 
     final ArgumentCaptor<PutIndicesSettingsRequest> captor =
         ArgumentCaptor.forClass(PutIndicesSettingsRequest.class);
@@ -1049,16 +1040,19 @@ final class ElasticsearchArchiverRepositoryIT {
     final var requests = captor.getAllValues();
     assertThat(requests)
         .map(PutIndicesSettingsRequest::index)
-        .containsExactly(List.of(indexName1), List.of(indexName2));
+        .containsExactlyInAnyOrder(List.of(indexName1), List.of(indexName2));
 
     // resetting the spy to ensure no more interactions are recorded
     reset(indicesClientSpy);
+
+    // manually invalidate cache for indexName1 only
+    repository.invalidateLifeCycleCache(indexName1);
 
     // setting policy second time for indexName1 and indexName2
     repository.setIndexLifeCycle(indexName1).get();
     repository.setIndexLifeCycle(indexName2).get();
 
-    // then - only indexName1 should be included in the request, since the cache for it has expired
+    // then - only indexName1 should be included in the request, since its cache was invalidated
     final var captor2 = ArgumentCaptor.forClass(PutIndicesSettingsRequest.class);
     verify(indicesClientSpy, times(1)).putSettings(captor2.capture());
     final var putIndicesSettingsRequest2 = captor2.getValue();

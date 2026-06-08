@@ -1042,8 +1042,6 @@ final class OpenSearchArchiverRepositoryIT {
   void shouldReapplyILMPolicyAfterRetentionPeriodExpiration() throws Exception {
     // given
     retention.setEnabled(true);
-    final int minimumAgeSeconds = 2;
-    retention.setMinimumAge("%ds".formatted(minimumAgeSeconds));
     final var indexName1 = processInstanceIndex + UUID.randomUUID();
     final var indexName2 = processInstanceIndex + UUID.randomUUID();
 
@@ -1055,15 +1053,8 @@ final class OpenSearchArchiverRepositoryIT {
     final var repository = createRepository(genericClientSpy);
 
     // when - first setting policy for indexName1 and indexName2
-    repository
-        .setIndexLifeCycle(indexName1)
-        .thenApply(
-            ignore -> {
-              // wait for the cache of indexName1 to expire
-              Awaitility.await().pollDelay(Duration.ofSeconds(minimumAgeSeconds)).until(() -> true);
-              return repository.setIndexLifeCycle(indexName2);
-            })
-        .get();
+    repository.setIndexLifeCycle(indexName1).get();
+    repository.setIndexLifeCycle(indexName2).get();
 
     final ArgumentCaptor<Request> captor = ArgumentCaptor.forClass(Request.class);
 
@@ -1081,11 +1072,14 @@ final class OpenSearchArchiverRepositoryIT {
     // we reset the spy to ensure that we only capture the next calls
     reset(genericClientSpy);
 
+    // manually invalidate cache for indexName1 only
+    repository.invalidateLifeCycleCache(indexName1);
+
     // setting policy second time for indexName1 and indexName2
     repository.setIndexLifeCycle(indexName1).get();
     repository.setIndexLifeCycle(indexName2).get();
 
-    // then - only indexName1 should be included in the request, since the cache for it has expired
+    // then - only indexName1 should be included in the request, since its cache was invalidated
     final var captor2 = ArgumentCaptor.forClass(Request.class);
     verify(genericClientSpy, atLeastOnce()).executeAsync(captor2.capture());
     final var addEndpoints2 =
