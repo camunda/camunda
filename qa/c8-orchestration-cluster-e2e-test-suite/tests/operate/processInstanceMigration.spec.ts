@@ -145,10 +145,23 @@ test.describe.serial('Process Instance Migration', () => {
       await sleep(3000);
     });
 
-    await test.step('Verify target process is preselected with auto-mapping and Complete Migration', async () => {
+    await test.step('Select target process and verify auto-mapping, then Complete Migration', async () => {
+      await operateProcessMigrationModePage.targetProcessCombobox.click();
+      await operateProcessMigrationModePage
+        .getOptionByName(targetBpmnProcessId)
+        .click();
+
       await expect(
         operateProcessMigrationModePage.targetProcessCombobox,
       ).toHaveValue(targetBpmnProcessId, {timeout: 60000});
+
+      // Selecting the target process auto-selects the latest version, which
+      // triggers auto-mapping of flow nodes once the target diagram has loaded.
+      // Wait for the first mapping before verifying the full set.
+      await operateProcessMigrationModePage.waitForFlowNodeAutoMapping(
+        'Target flow node for Check payment',
+        'checkPayment',
+      );
 
       await operateProcessMigrationModePage.verifyFlowNodeMappings([
         {
@@ -648,7 +661,9 @@ test.describe.serial('Process Instance Migration', () => {
       await waitForAssertion({
         assertion: async () => {
           await operateDiagramPage.clickFlowNode('BusinessRuleTask2');
-          await operateDiagramPage.verifyIncidentInPopover(/invalid.*decision/i);
+          await operateDiagramPage.verifyIncidentInPopover(
+            /invalid.*decision/i,
+          );
         },
         onFailure: async () => {
           await page.reload();

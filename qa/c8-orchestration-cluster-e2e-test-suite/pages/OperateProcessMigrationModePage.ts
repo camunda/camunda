@@ -103,6 +103,16 @@ export class OperateProcessMigrationModePage {
     }
   }
 
+  async waitForFlowNodeAutoMapping(
+    label: string | RegExp,
+    targetValue: string,
+    timeout = 60000,
+  ): Promise<void> {
+    await expect(this.page.getByLabel(label)).toHaveValue(targetValue, {
+      timeout,
+    });
+  }
+
   async migrateProcess(version?: string): Promise<void> {
     await this.clickTargetVersionCombo();
     if (version) {
