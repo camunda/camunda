@@ -93,23 +93,21 @@ class SimilarityEvaluationTest {
 
     // then
     assertThat(result.getScore()).isEqualTo(0.8);
-    assertThat(result.getRawScore()).isCloseTo(0.8, within(1e-9));
   }
 
   @Test
   void shouldRoundScoreToTwoDecimalPlaces() {
-    // given
-    final SimilarityEvaluation.Result result = new SimilarityEvaluation.Result(0.6951);
+    // given — 0.695 is the HALF_UP tie case: third decimal exactly 5 rounds up
+    final SimilarityEvaluation.Result result = new SimilarityEvaluation.Result(0.695);
 
     // then
     assertThat(result.getScore()).isEqualTo(0.70);
-    assertThat(result.getRawScore()).isEqualTo(0.6951);
   }
 
   @Test
   void shouldPassWhenScoreRoundsUpToThreshold() {
-    // given — raw score 0.6951 rounds to 0.70, which meets the threshold
-    final SimilarityEvaluation.Result result = new SimilarityEvaluation.Result(0.6951);
+    // given — 0.695 rounds to 0.70, which meets the threshold
+    final SimilarityEvaluation.Result result = new SimilarityEvaluation.Result(0.695);
 
     // then
     assertThat(result.passed(0.70)).isTrue();
@@ -122,6 +120,24 @@ class SimilarityEvaluationTest {
 
     // then
     assertThat(result.passed(0.70)).isFalse();
+  }
+
+  @Test
+  void shouldPassWhenThresholdRoundsDownToScore() {
+    // given — score 0.70, threshold 0.7049 rounds down to 0.70 → passes
+    final SimilarityEvaluation.Result result = new SimilarityEvaluation.Result(0.70);
+
+    // then
+    assertThat(result.passed(0.7049)).isTrue();
+  }
+
+  @Test
+  void shouldNotPassWhenThresholdRoundsUpAboveScore() {
+    // given — score 0.70, threshold 0.705 rounds up to 0.71 → fails
+    final SimilarityEvaluation.Result result = new SimilarityEvaluation.Result(0.70);
+
+    // then
+    assertThat(result.passed(0.705)).isFalse();
   }
 
   @Test

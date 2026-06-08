@@ -55,12 +55,10 @@ public class SimilarityEvaluation {
   /** The result of a semantic similarity evaluation, containing a score. */
   public static class Result {
 
-    private final double rawScore;
-    private final double score;
+    private final BigDecimal score;
 
-    public Result(final double rawScore) {
-      this.rawScore = rawScore;
-      this.score = BigDecimal.valueOf(rawScore).setScale(2, RoundingMode.HALF_UP).doubleValue();
+    public Result(final double score) {
+      this.score = BigDecimal.valueOf(score).setScale(2, RoundingMode.HALF_UP);
     }
 
     /**
@@ -69,29 +67,20 @@ public class SimilarityEvaluation {
      * @return the rounded score
      */
     public double getScore() {
-      return score;
-    }
-
-    /**
-     * Returns the raw similarity score with full precision.
-     *
-     * @return the raw score
-     */
-    public double getRawScore() {
-      return rawScore;
+      return score.doubleValue();
     }
 
     /**
      * Returns whether the evaluation passed the given threshold. Both the score and threshold are
-     * compared at 2 decimal places.
+     * compared at 2 decimal places using exact decimal arithmetic.
      *
      * @param threshold the threshold score (0-1)
      * @return true if the score is greater than or equal to the threshold
      */
     public boolean passed(final double threshold) {
-      final double roundedThreshold =
-          BigDecimal.valueOf(threshold).setScale(2, RoundingMode.HALF_UP).doubleValue();
-      return score >= roundedThreshold;
+      final BigDecimal roundedThreshold =
+          BigDecimal.valueOf(threshold).setScale(2, RoundingMode.HALF_UP);
+      return score.compareTo(roundedThreshold) >= 0;
     }
   }
 }
