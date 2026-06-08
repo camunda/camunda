@@ -96,7 +96,7 @@ done
 # Without allow-jit the hardened runtime blocks pthread_jit_write_protect_np,
 # which crashes libjvm.dylib during Threads::create_vm.
 ##############################################
-JRE_ENTITLEMENTS="$(mktemp --suffix=.plist)"
+JRE_ENTITLEMENTS="$(mktemp "${TMPDIR:-/tmp}/jre-entitlements.XXXXXX").plist"
 cat > "$JRE_ENTITLEMENTS" << 'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
