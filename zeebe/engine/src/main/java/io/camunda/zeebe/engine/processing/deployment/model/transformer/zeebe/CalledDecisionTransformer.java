@@ -35,6 +35,8 @@ public final class CalledDecisionTransformer {
     executableElement.setBindingType(bindingType);
 
     final var versionTag = calledDecision.getVersionTag();
-    executableElement.setVersionTag(versionTag);
+    if (versionTag != null && !versionTag.isBlank()) {
+      executableElement.setVersionTag(expressionLanguage.parseExpression(versionTag));
+    }
   }
 }
