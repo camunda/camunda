@@ -18,15 +18,20 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.Map;
-import org.junit.jupiter.api.Disabled;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
 class BrokerContainerConfigIT {
 
+  private static final Logger LOG = LoggerFactory.getLogger(BrokerContainerConfigIT.class);
   private static final String CONFIG_PATH = "/usr/local/camunda/config/application.yml";
   private static final String CUSTOM_CLUSTER_NAME = "config-test-cluster";
   private static final int CUSTOM_PARTITION_COUNT = 3;
@@ -35,6 +40,7 @@ class BrokerContainerConfigIT {
   @Container
   private final BrokerContainer broker =
       new BrokerContainer(CamundaContainer.getBrokerImageName())
+          .withLogConsumer(new Slf4jLogConsumer(LOG))
           .withoutTopologyCheck()
           .withUnifiedConfig(
               cfg -> {
@@ -48,7 +54,6 @@ class BrokerContainerConfigIT {
           .withProperty("zeebe.broker.gateway.enable", true);
 
   @Test
-  @Disabled("https://github.com/camunda/camunda/issues/54702")
   @SuppressWarnings("unchecked")
   void shouldUploadConfigWithCustomUnifiedConfigValues() throws Exception {
     // given — the container is already started with the custom config by @Container
@@ -106,18 +111,27 @@ class BrokerContainerConfigIT {
           .contains("_links");
 
       // when — request the health endpoint
-      final var healthRequest =
-          HttpRequest.newBuilder().uri(monitoringBaseUri.resolve("/actuator/health")).GET().build();
-      final var healthResponse =
-          httpClient.send(healthRequest, HttpResponse.BodyHandlers.ofString());
+      Awaitility.await()
+          .atMost(Duration.ofSeconds(20))
+          .pollInterval(Duration.ofSeconds(1))
+          .untilAsserted(
+              () -> {
+                final var healthRequest =
+                    HttpRequest.newBuilder()
+                        .uri(monitoringBaseUri.resolve("/actuator/health"))
+                        .GET()
+                        .build();
+                final var healthResponse =
+                    httpClient.send(healthRequest, HttpResponse.BodyHandlers.ofString());
 
-      // then — the health endpoint should be accessible
-      assertThat(healthResponse.statusCode())
-          .as("actuator health endpoint should return HTTP 200")
-          .isEqualTo(200);
-      assertThat(healthResponse.body())
-          .as("health response should contain status field")
-          .contains("status");
+                // then — the health endpoint should be accessible
+                assertThat(healthResponse.statusCode())
+                    .as("actuator health endpoint should return HTTP 200")
+                    .isEqualTo(200);
+                assertThat(healthResponse.body())
+                    .as("health response should contain status field")
+                    .contains("status");
+              });
     }
   }
 }
