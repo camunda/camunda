@@ -188,13 +188,13 @@ const Filters: React.FC = observer(() => {
                           />
                         )}
                       </Field>
-                      <Field name="requestSource">
+                      <Field name="inboundChannelType">
                         {({input}) => (
                           <TextInputField
                             {...input}
-                            id="requestSource"
+                            id="inboundChannelType"
                             size="sm"
-                            labelText="Request source"
+                            labelText="Inbound channel"
                             type="text"
                             placeholder="e.g. MCP"
                           />

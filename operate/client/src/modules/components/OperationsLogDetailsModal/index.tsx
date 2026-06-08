@@ -193,18 +193,23 @@ const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
             </FirstColumn>
             <SecondColumn>{formatDate(auditLog.timestamp)}</SecondColumn>
           </VerticallyAlignedRow>
-          {auditLog.requestSource && (
+          {auditLog.inboundChannelType && (
             <VerticallyAlignedRow>
               <FirstColumn noWrap>
                 <IconText>
                   <Application />
-                  Request source
+                  Inbound channel
                 </IconText>
               </FirstColumn>
               <SecondColumn>
                 <CodeSnippet type="inline" wrapText>
-                  {auditLog.requestSource}
+                  {auditLog.inboundChannelType}
                 </CodeSnippet>
+                {auditLog.inboundChannelToolName && (
+                  <CodeSnippet type="inline" wrapText>
+                    {auditLog.inboundChannelToolName}
+                  </CodeSnippet>
+                )}
               </SecondColumn>
             </VerticallyAlignedRow>
           )}

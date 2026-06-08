@@ -15,7 +15,8 @@ import {
   type QueryAuditLogsRequestBody,
   auditLogSortFieldEnum,
 } from '@camunda/camunda-api-zod-schemas/8.10/audit-log';
-import {Container, EmptyMessageContainer} from './styled';
+import McpIcon from 'modules/components/Icon/mcp.svg?react';
+import {Container, EmptyMessageContainer, InboundChannel} from './styled';
 import {PaginatedSortableTable} from 'modules/components/PaginatedSortableTable';
 import {getSortParams} from 'modules/utils/filter';
 import {useLocation} from 'react-router-dom';
@@ -73,9 +74,9 @@ const headerColumns = [
     sortKey: 'actorId',
   },
   {
-    header: 'Request Source',
-    key: 'requestSource',
-    sortKey: 'requestSource',
+    header: 'Inbound channel',
+    key: 'inboundChannelType',
+    sortKey: 'inboundChannelType',
   },
   {
     header: 'Date',
@@ -201,7 +202,18 @@ const OperationsLogTab: React.FC = observer(() => {
         entityType: spaceAndCapitalize(item.entityType.toString()),
         entityKey: <CellEntityKey item={item} />,
         user: <CellActor item={item} />,
-        requestSource: item.requestSource ?? '–',
+        inboundChannelType: item.inboundChannelType ? (
+          <InboundChannel>
+            {item.inboundChannelType === 'MCP' ? (
+              <McpIcon />
+            ) : (
+              item.inboundChannelType
+            )}
+            {item.inboundChannelToolName && (
+              <small>{item.inboundChannelToolName}</small>
+            )}
+          </InboundChannel>
+        ) : '–',
         timestamp: formatDate(item.timestamp),
         comment: (
           <Button

@@ -20,7 +20,8 @@ import {tracking} from 'modules/tracking';
 import {notificationsStore} from 'modules/stores/notifications';
 import {logger} from 'modules/logger';
 import {spaceAndCapitalize} from 'modules/utils/spaceAndCapitalize';
-import {Container} from './styled';
+import McpIcon from 'modules/components/Icon/mcp.svg?react';
+import {Container, InboundChannel} from './styled';
 import {PanelHeader as BasePanelHeader} from 'modules/components/PanelHeader';
 import {
   DetailsModal,
@@ -88,9 +89,9 @@ const headerColumns = [
     sortKey: 'actorId',
   },
   {
-    header: 'Request source',
-    key: 'requestSource',
-    sortKey: 'requestSource',
+    header: 'Inbound channel',
+    key: 'inboundChannelType',
+    sortKey: 'inboundChannelType',
   },
   {
     header: 'Date',
@@ -161,7 +162,7 @@ const InstancesTable: React.FC = observer(() => {
               }
             : undefined,
         actorId: filterValues.actorId,
-        requestSource: filterValues.requestSource,
+        inboundChannelType: filterValues.inboundChannelType,
       },
     };
   }, [
@@ -254,7 +255,18 @@ const InstancesTable: React.FC = observer(() => {
           ),
           details: <CellDetails item={item} />,
           user: <CellActor item={item} />,
-          requestSource: item.requestSource ?? '-',
+          inboundChannelType: item.inboundChannelType ? (
+            <InboundChannel>
+              {item.inboundChannelType === 'MCP' ? (
+                <McpIcon />
+              ) : (
+                item.inboundChannelType
+              )}
+              {item.inboundChannelToolName && (
+                <small>{item.inboundChannelToolName}</small>
+              )}
+            </InboundChannel>
+          ) : '-',
           timestamp: formatDate(item.timestamp),
           comment: (
             <CellComment item={item} setDetailsModal={setDetailsModal} />

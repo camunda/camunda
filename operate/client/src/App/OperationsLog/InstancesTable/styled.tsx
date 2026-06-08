@@ -45,10 +45,17 @@ const TooltipCodeSnippet = styled(CodeSnippet)`
   color: var(--cds-text-secondary);
 `;
 
+const InboundChannel = styled.span`
+  display: flex;
+  align-items: center;
+  gap: var(--cds-spacing-02);
+`;
+
 export {
   Container,
   OperationLogName,
   PropertyText,
   AuthorTooltip,
   TooltipCodeSnippet,
+  InboundChannel,
 };

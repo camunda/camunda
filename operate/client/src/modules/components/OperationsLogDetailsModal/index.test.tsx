@@ -43,7 +43,8 @@ const baseAuditLog: AuditLog = {
   relatedEntityType: null,
   entityDescription: null,
   agentElementId: null,
-  requestSource: null,
+  inboundChannelType: null,
+  inboundChannelToolName: null,
 };
 
 const Wrapper: React.FC<{children: React.ReactNode}> = ({children}) => (
@@ -122,25 +123,44 @@ describe('DetailsModal', () => {
     expect(link).toHaveAttribute('href', '/batch-operations/999');
   });
 
-  it('renders requestSource when set', () => {
+  it('renders inboundChannelType when set', () => {
     render(
       <DetailsModal
         isOpen
         onClose={() => {}}
-        auditLog={{...baseAuditLog, requestSource: 'MCP'}}
+        auditLog={{...baseAuditLog, inboundChannelType: 'MCP'}}
       />,
       {wrapper: Wrapper},
     );
 
-    expect(screen.getByText('Request source')).toBeInTheDocument();
+    expect(screen.getByText('Inbound channel')).toBeInTheDocument();
     expect(screen.getByText('MCP')).toBeInTheDocument();
   });
 
-  it('does not render requestSource row when null', () => {
+  it('renders inboundChannelToolName when set', () => {
+    render(
+      <DetailsModal
+        isOpen
+        onClose={() => {}}
+        auditLog={{
+          ...baseAuditLog,
+          inboundChannelType: 'MCP',
+          inboundChannelToolName: 'get-process',
+        }}
+      />,
+      {wrapper: Wrapper},
+    );
+
+    expect(screen.getByText('Inbound channel')).toBeInTheDocument();
+    expect(screen.getByText('MCP')).toBeInTheDocument();
+    expect(screen.getByText('get-process')).toBeInTheDocument();
+  });
+
+  it('does not render inbound channel row when null', () => {
     render(<DetailsModal isOpen onClose={() => {}} auditLog={baseAuditLog} />, {
       wrapper: Wrapper,
     });
 
-    expect(screen.queryByText('Request source')).not.toBeInTheDocument();
+    expect(screen.queryByText('Inbound channel')).not.toBeInTheDocument();
   });
 });

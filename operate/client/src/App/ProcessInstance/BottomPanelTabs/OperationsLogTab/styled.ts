@@ -30,4 +30,10 @@ const EmptyMessageContainer = styled.div`
   height: 100%;
 `;
 
-export {Container, EmptyMessageContainer};
+const InboundChannel = styled.span`
+  display: flex;
+  align-items: center;
+  gap: var(--cds-spacing-02);
+`;
+
+export {Container, EmptyMessageContainer, InboundChannel};
