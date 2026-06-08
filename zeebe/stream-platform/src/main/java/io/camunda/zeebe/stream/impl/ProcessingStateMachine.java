@@ -383,6 +383,20 @@ public final class ProcessingStateMachine {
         }
       }
 
+      // Skip commands with unknown types - this is expected during rolling upgrades
+      // when a newer version introduces record types that older versions don't recognize
+      if (command.getValueType() == ValueType.SBE_UNKNOWN
+          || command.getValueType() == ValueType.NULL_VAL) {
+        LOG.warn(
+            "Skipping command with unrecognized type at position {} (valueType: {}, recordType: {}). "
+                + "This is expected during rolling upgrades when processing records from a newer version.",
+            command.getPosition(),
+            command.getValueType(),
+            command.getRecordType());
+        processedCommandsCount++;
+        continue;
+      }
+
       currentProcessor =
           recordProcessors.stream()
               .filter(p -> p.accepts(command.getValueType()))

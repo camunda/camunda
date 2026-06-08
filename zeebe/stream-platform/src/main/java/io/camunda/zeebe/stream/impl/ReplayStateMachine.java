@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.impl.encoding.RecordMetadataBlock;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -237,6 +238,19 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
           currentTypedEvent.getPosition(),
           currentTypedEvent.getIntent(),
           currentTypedEvent.getValueType());
+
+      // Skip records with unknown types - this is expected during rolling upgrades
+      // when a newer version introduces record types that older versions don't recognize
+      if (currentTypedEvent.getValueType() == ValueType.SBE_UNKNOWN
+          || currentTypedEvent.getValueType() == ValueType.NULL_VAL) {
+        LOG.warn(
+            "Skipping record with unrecognized type at position {} (valueType: {}, recordType: {}). "
+                + "This is expected during rolling upgrades when processing records from a newer version.",
+            currentTypedEvent.getPosition(),
+            currentTypedEvent.getValueType(),
+            currentTypedEvent.getRecordType());
+        return;
+      }
 
       final var processor =
           recordProcessors.stream()
