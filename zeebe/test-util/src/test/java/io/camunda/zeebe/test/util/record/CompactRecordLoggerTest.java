@@ -195,9 +195,44 @@ class CompactRecordLoggerTest {
       assertThat(result)
           .isEqualTo(
               """
-              K1#2 ASSISTANT COMMITTED K2 K3#1 tokens:100/50 ms:1234
+              K1#2 ASSISTANT COMMITTED @K2 K3#1 tokens:100/50 ms:1234
                      I will analyze the customer data
                      calling tools: getAccount, getOrderDetails""");
+    }
+
+    @Test
+    void shouldSummarizeAgentHistoryToolResultRecord() {
+      // given
+      final var logger = new CompactRecordLogger(List.of());
+      final var record =
+          ImmutableRecord.builder()
+              .withValueType(ValueType.AGENT_HISTORY)
+              .withValue(
+                  ImmutableAgentHistoryRecordValue.builder()
+                      .withAgentInstanceKey(1L)
+                      .withElementInstanceKey(2L)
+                      .withJobKey(3L)
+                      .withRole(AgentHistoryRole.TOOL_RESULT)
+                      .withCommitStatus(AgentHistoryCommitStatus.COMMITTED)
+                      .withJobLease("1")
+                      .withIteration(3)
+                      .addContent(
+                          ImmutableAgentHistoryMessageContentValue.builder()
+                              .withContentType(AgentHistoryContentType.OBJECT)
+                              .withObject(Map.of("orderId", "12345"))
+                              .build())
+                      .build())
+              .build();
+
+      // when
+      final String result = logger.summarizeAgentHistory(record);
+
+      // then
+      assertThat(result)
+          .isEqualTo(
+              """
+              K1#3 TOOL_RESULT COMMITTED @K2 K3#1
+                     {orderId=12345}""");
     }
   }
 }
