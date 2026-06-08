@@ -26,7 +26,7 @@ public class AzuriteContainer extends GenericContainer<AzuriteContainer> {
           .waitingFor(
               Wait.forLogMessage(
                   ".*Azurite Blob service successfully listens on http://0.0.0.0:10000*\n", 1))
-          .withCommand("azurite-blob --blobHost 0.0.0.0");
+          .withCommand("azurite-blob --blobHost 0.0.0.0 --skipApiVersionCheck");
 
   public AzuriteContainer() {
     AZURITE_CONTAINER.start();

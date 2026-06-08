@@ -36,7 +36,7 @@ public final class AzuriteContainer extends GenericContainer<AzuriteContainer> {
   public AzuriteContainer() {
     super("mcr.microsoft.com/azure-storage/azurite");
     withExposedPorts(BLOB_PORT);
-    withCommand("azurite-blob", "--blobHost", "0.0.0.0");
+    withCommand("azurite-blob", "--blobHost", "0.0.0.0", "--skipApiVersionCheck");
     waitingFor(
         Wait.forLogMessage(
             ".*Azurite Blob service successfully listens on http://0.0.0.0:10000.*\n", 1));
