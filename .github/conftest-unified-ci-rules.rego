@@ -29,6 +29,7 @@ warn[msg] {
 
 deny[msg] {
     is_push_or_schedule_or_bestpractices_workflow
+    not is_generated_agentic_workflow
 
     count(get_jobs_without_cihealth(input.jobs)) > 0
 
@@ -336,4 +337,9 @@ is_push_or_schedule_or_bestpractices_workflow {
 is_push_or_schedule_or_bestpractices_workflow {
     # only enforced on workflows that opted-in
     input.env.GHA_BEST_PRACTICES_LINTER == "enabled"
+}
+
+# we ignore generatic GitHub Agentic workflow files as we do not control them
+is_generated_agentic_workflow {
+    regex.match("(^|/)[^/]+\\.lock\\.ya?ml$", data.conftest.file.name)
 }
