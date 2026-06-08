@@ -92,6 +92,27 @@ find "$C8RUN_DIR" -maxdepth 1 \( -type f -o -type d \) -print0 | while IFS= read
 done
 
 ##############################################
+# JRE entitlements — required for JVM JIT on Apple Silicon.
+# Without allow-jit the hardened runtime blocks pthread_jit_write_protect_np,
+# which crashes libjvm.dylib during Threads::create_vm.
+##############################################
+JRE_ENTITLEMENTS="$(mktemp "${TMPDIR:-/tmp}/jre-entitlements.XXXXXX").plist"
+cat > "$JRE_ENTITLEMENTS" << 'PLIST'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>com.apple.security.cs.allow-jit</key>
+    <true/>
+    <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+    <true/>
+    <key>com.apple.security.cs.disable-library-validation</key>
+    <true/>
+</dict>
+</plist>
+PLIST
+
+##############################################
 # B) Functions to sign Mach-O + jars
 ##############################################
 sign_macho_in_folder() {
@@ -120,7 +141,14 @@ sign_macho_in_folder() {
       fi
       if file -b "$candidate" | grep -q "Mach-O"; then
         echo "    Signing Mach-O: $candidate"
-        if codesign --verbose=4 --force --options runtime --timestamp --sign "$CERT_NAME" "$candidate"; then
+        # Binaries inside the bundled JRE need JIT entitlements so the JVM can
+        # call pthread_jit_write_protect_np under the hardened runtime on Apple Silicon.
+        local entitlements_flag=()
+        if [[ "$candidate" == */jre/* ]]; then
+          entitlements_flag=(--entitlements "$JRE_ENTITLEMENTS")
+        fi
+        if codesign --verbose=4 --force --options runtime --timestamp \
+            "${entitlements_flag[@]}" --sign "$CERT_NAME" "$candidate"; then
           ((signed_count++))
         else
           echo "[Error] Mach-O sign failed: $candidate"
@@ -221,7 +249,7 @@ echo "All done. Final archive with excluded items is: $FINAL_ZIP"
 ##############################################
 # Cleanup
 ##############################################
-rm -rf "$TMP_EXCLUDE_DIR" "$TMP_NOTARIZE_DIR"
+rm -rf "$TMP_EXCLUDE_DIR" "$TMP_NOTARIZE_DIR" "$JRE_ENTITLEMENTS"
 
 cat <<EOM
 Note: c8run_complete.zip includes the previously excluded items, which remain
