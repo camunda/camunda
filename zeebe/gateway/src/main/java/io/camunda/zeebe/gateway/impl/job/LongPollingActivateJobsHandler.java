@@ -382,7 +382,7 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
 
   private void tryCleanupJobTypeState(final String jobType) {
     jobTypeState.computeIfPresent(
-        jobType, (k, s) -> s.hasActiveRequests() || s.pendingRequestsCount() > 0 ? s : null);
+        jobType, (k, s) -> s.hasActiveRequests() || s.hasPendingRequests() ? s : null);
   }
 
   private void probe() {
