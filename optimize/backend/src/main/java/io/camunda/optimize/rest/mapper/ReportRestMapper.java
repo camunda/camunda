@@ -105,8 +105,7 @@ public class ReportRestMapper {
       final LocalizationService localizationService) {
     if (isManagementOrInstantPreviewOrAgenticReport(reportDefinitionDto)) {
       final String validLocale = localizationService.validateAndReturnValidLocale(locale);
-      final var data =
-          ((SingleProcessReportDefinitionRequestDto) reportDefinitionDto).getData();
+      final var data = ((SingleProcessReportDefinitionRequestDto) reportDefinitionDto).getData();
       if (data.isManagementReport()) {
         Optional.ofNullable(
                 localizationService.getLocalizationForManagementReportCode(
@@ -229,7 +228,9 @@ public class ReportRestMapper {
       return false;
     }
     final var data = ((SingleProcessReportDefinitionRequestDto) reportDefinitionDto).getData();
-    return data.isManagementReport() || data.isInstantPreviewReport() || data.isAgenticControlReport();
+    return data.isManagementReport()
+        || data.isInstantPreviewReport()
+        || data.isAgenticControlReport();
   }
 
   private void localizeReportData(

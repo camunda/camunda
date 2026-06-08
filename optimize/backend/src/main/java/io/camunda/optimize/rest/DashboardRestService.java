@@ -136,6 +136,16 @@ public class DashboardRestService {
     return dashboardDefinition;
   }
 
+  @GetMapping(path = "/agentic")
+  public AuthorizedDashboardDefinitionResponseDto getAgenticDashboard(
+      final HttpServletRequest request) {
+    final AuthorizedDashboardDefinitionResponseDto dashboardDefinition =
+        dashboardService.getAgenticDashboard();
+    dashboardRestMapper.prepareRestResponse(
+        dashboardDefinition, request.getHeader(X_OPTIMIZE_CLIENT_LOCALE));
+    return dashboardDefinition;
+  }
+
   @PutMapping(path = "/{id}")
   public void updateDashboard(
       @PathVariable("id") final String dashboardId,

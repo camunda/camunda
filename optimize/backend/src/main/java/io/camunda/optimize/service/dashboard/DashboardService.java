@@ -364,6 +364,12 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     return new AuthorizedDashboardDefinitionResponseDto(RoleType.VIEWER, dashboard);
   }
 
+  public AuthorizedDashboardDefinitionResponseDto getAgenticDashboard() {
+    final DashboardDefinitionRestDto dashboard =
+        getDashboardDefinitionAsService(AgenticControlDashboardService.AGENTIC_DASHBOARD_ID);
+    return new AuthorizedDashboardDefinitionResponseDto(RoleType.VIEWER, dashboard);
+  }
+
   public void verifyUserHasAccessToDashboardCollection(
       final String userId, final DashboardDefinitionRestDto dashboard) {
     getUserRoleType(userId, dashboard);
