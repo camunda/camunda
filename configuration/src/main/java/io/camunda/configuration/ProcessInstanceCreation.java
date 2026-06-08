@@ -14,35 +14,10 @@ import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_MESSAGE_START_
 import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_MESSAGE_START_LOCK_RELEASE_POLL_INTERVAL;
 import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_MESSAGE_START_LOCK_RELEASE_POLL_MAX_BACKOFF;
 
-import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import java.time.Duration;
-import java.util.Set;
 
 public class ProcessInstanceCreation {
-  private static final String PREFIX = "camunda.process-instance-creation";
   private static final boolean DEFAULT_BUSINESS_ID_UNIQUENESS_ENABLED = false;
-  private static final Set<String> LEGACY_BUSINESS_ID_UNIQUENESS_ENABLED_PROPERTIES =
-      Set.of(
-          "zeebe.broker.experimental.engine.processInstanceCreation.businessIdUniquenessEnabled");
-  private static final Set<String> LEGACY_MESSAGE_START_DEDUP_EXPIRATION_SWEEP_INTERVAL_PROPERTIES =
-      Set.of(
-          "zeebe.broker.experimental.engine.processInstanceCreation.messageStartDedupExpirationSweepInterval");
-  private static final Set<String>
-      LEGACY_MESSAGE_START_DEDUP_EXPIRATION_SWEEP_BATCH_LIMIT_PROPERTIES =
-          Set.of(
-              "zeebe.broker.experimental.engine.processInstanceCreation.messageStartDedupExpirationSweepBatchLimit");
-  private static final Set<String> LEGACY_MESSAGE_START_ASK_RETRY_INTERVAL_PROPERTIES =
-      Set.of(
-          "zeebe.broker.experimental.engine.processInstanceCreation.messageStartAskRetryInterval");
-  private static final Set<String> LEGACY_MESSAGE_START_LOCK_RELEASE_POLL_INTERVAL_PROPERTIES =
-      Set.of(
-          "zeebe.broker.experimental.engine.processInstanceCreation.messageStartLockReleasePollInterval");
-  private static final Set<String> LEGACY_MESSAGE_START_LOCK_RELEASE_POLL_MAX_BACKOFF_PROPERTIES =
-      Set.of(
-          "zeebe.broker.experimental.engine.processInstanceCreation.messageStartLockReleasePollMaxBackoff");
-  private static final Set<String> LEGACY_MESSAGE_START_LOCK_RELEASE_POLL_BATCH_LIMIT_PROPERTIES =
-      Set.of(
-          "zeebe.broker.experimental.engine.processInstanceCreation.messageStartLockReleasePollBatchLimit");
 
   /**
    * Controls uniqueness enforcement of business IDs across active process instances.
@@ -105,12 +80,7 @@ public class ProcessInstanceCreation {
       DEFAULT_MESSAGE_START_LOCK_RELEASE_POLL_BATCH_LIMIT;
 
   public boolean isBusinessIdUniquenessEnabled() {
-    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
-        PREFIX + ".business-id-uniqueness-enabled",
-        businessIdUniquenessEnabled,
-        Boolean.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_BUSINESS_ID_UNIQUENESS_ENABLED_PROPERTIES);
+    return businessIdUniquenessEnabled;
   }
 
   public void setBusinessIdUniquenessEnabled(final boolean businessIdUniquenessEnabled) {
@@ -118,12 +88,7 @@ public class ProcessInstanceCreation {
   }
 
   public Duration getMessageStartDedupExpirationSweepInterval() {
-    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
-        PREFIX + ".message-start-dedup-expiration-sweep-interval",
-        messageStartDedupExpirationSweepInterval,
-        Duration.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_MESSAGE_START_DEDUP_EXPIRATION_SWEEP_INTERVAL_PROPERTIES);
+    return messageStartDedupExpirationSweepInterval;
   }
 
   public void setMessageStartDedupExpirationSweepInterval(
@@ -132,12 +97,7 @@ public class ProcessInstanceCreation {
   }
 
   public int getMessageStartDedupExpirationSweepBatchLimit() {
-    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
-        PREFIX + ".message-start-dedup-expiration-sweep-batch-limit",
-        messageStartDedupExpirationSweepBatchLimit,
-        Integer.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_MESSAGE_START_DEDUP_EXPIRATION_SWEEP_BATCH_LIMIT_PROPERTIES);
+    return messageStartDedupExpirationSweepBatchLimit;
   }
 
   public void setMessageStartDedupExpirationSweepBatchLimit(
@@ -146,12 +106,7 @@ public class ProcessInstanceCreation {
   }
 
   public Duration getMessageStartAskRetryInterval() {
-    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
-        PREFIX + ".message-start-ask-retry-interval",
-        messageStartAskRetryInterval,
-        Duration.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_MESSAGE_START_ASK_RETRY_INTERVAL_PROPERTIES);
+    return messageStartAskRetryInterval;
   }
 
   public void setMessageStartAskRetryInterval(final Duration messageStartAskRetryInterval) {
@@ -159,12 +114,7 @@ public class ProcessInstanceCreation {
   }
 
   public Duration getMessageStartLockReleasePollInterval() {
-    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
-        PREFIX + ".message-start-lock-release-poll-interval",
-        messageStartLockReleasePollInterval,
-        Duration.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_MESSAGE_START_LOCK_RELEASE_POLL_INTERVAL_PROPERTIES);
+    return messageStartLockReleasePollInterval;
   }
 
   public void setMessageStartLockReleasePollInterval(
@@ -173,12 +123,7 @@ public class ProcessInstanceCreation {
   }
 
   public Duration getMessageStartLockReleasePollMaxBackoff() {
-    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
-        PREFIX + ".message-start-lock-release-poll-max-backoff",
-        messageStartLockReleasePollMaxBackoff,
-        Duration.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_MESSAGE_START_LOCK_RELEASE_POLL_MAX_BACKOFF_PROPERTIES);
+    return messageStartLockReleasePollMaxBackoff;
   }
 
   public void setMessageStartLockReleasePollMaxBackoff(
@@ -187,12 +132,7 @@ public class ProcessInstanceCreation {
   }
 
   public int getMessageStartLockReleasePollBatchLimit() {
-    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
-        PREFIX + ".message-start-lock-release-poll-batch-limit",
-        messageStartLockReleasePollBatchLimit,
-        Integer.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_MESSAGE_START_LOCK_RELEASE_POLL_BATCH_LIMIT_PROPERTIES);
+    return messageStartLockReleasePollBatchLimit;
   }
 
   public void setMessageStartLockReleasePollBatchLimit(
