@@ -152,9 +152,11 @@ test.describe.serial('Process Instance Migration', () => {
       // select the target process (which also auto-maps the flow nodes verified
       // below) to make the step deterministic.
       await operateProcessMigrationModePage.targetProcessCombobox.click();
+      // The option may take up to 60s to appear under import lag; override the
+      // default 10s actionTimeout to match the tolerance used by toHaveValue below.
       await operateProcessMigrationModePage
         .getOptionByName(targetBpmnProcessId)
-        .click();
+        .click({timeout: 60000});
 
       await expect(
         operateProcessMigrationModePage.targetProcessCombobox,
