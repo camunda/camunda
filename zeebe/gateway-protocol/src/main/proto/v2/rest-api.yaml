@@ -87,6 +87,10 @@ paths:
     $ref: 'agent-instances.yaml#/paths/~1agent-instances~1{agentInstanceKey}'
   /agent-instances/search:
     $ref: 'agent-instances.yaml#/paths/~1agent-instances~1search'
+  /agent-instances/{agentInstanceKey}/history:
+    $ref: 'agent-instances.yaml#/paths/~1agent-instances~1{agentInstanceKey}~1history'
+  /agent-instances/{agentInstanceKey}/history/search:
+    $ref: 'agent-instances.yaml#/paths/~1agent-instances~1{agentInstanceKey}~1history~1search'
 
   # Audit Log endpoints
   /audit-logs/search:

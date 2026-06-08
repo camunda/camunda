@@ -200,6 +200,12 @@
       "shape": "external-entity",
       "identifiers": ["ClientId"],
       "description": "An OAuth client. Minted outside the Camunda REST API: by Console in SaaS, by the configured external IdP (EntraID, Keycloak, Okta, …) in Self-Managed with OIDC. Not modelled at all under Self-Managed Basic auth, where m2m apps are users instead. Referenced by the client-membership edges only — never established or fetched via this API."
+    },
+    {
+      "name": "AgentInstanceIteration",
+      "shape": "entity",
+      "identifiers": ["IterationId"],
+      "description": "A logical grouping of one LLM call, its tool dispatches, and their results within an agent instance's conversation history. Identified by a client-minted IterationId supplied by the AI Agent Connector when appending history items."
     }
   ]
 

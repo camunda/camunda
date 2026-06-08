@@ -173,6 +173,117 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.10"
 
+  /agent-instances/{agentInstanceKey}/history:
+    post:
+      x-eventually-consistent: false
+      security:
+        - bearerAuth: []
+        - basicAuth: []
+      tags:
+        - Agent instance
+      operationId: createAgentInstanceHistoryItem
+      summary: Create agent instance history item
+      description: |
+        Appends a single history item to an agent instance's conversation history.
+        The created item has commitStatus PENDING until the job identified by jobLease
+        completes successfully, at which point it transitions to COMMITTED. If the job
+        fails or is superseded by a retry, the item is marked DISCARDED.
+      x-semantic-establishes:
+        kind: AgentInstanceIteration
+        identifiedBy:
+          - { in: body, name: iteration, semanticType: IterationId }
+      parameters:
+        - name: agentInstanceKey
+          in: path
+          required: true
+          description: The key of the agent instance to append the history item to.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/AgentInstanceKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentInstanceHistoryItemRequest'
+      responses:
+        "201":
+          description: The history item was created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentInstanceHistoryItemCreationResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: |
+            The agent instance with the given key was not found, or the specified
+            jobKey does not correspond to an active job.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.10"
+
+  /agent-instances/{agentInstanceKey}/history/search:
+    post:
+      x-eventually-consistent: true
+      security:
+        - bearerAuth: []
+        - basicAuth: []
+      tags:
+        - Agent instance
+      operationId: searchAgentInstanceHistory
+      summary: Search agent instance history
+      description: |
+        Searches the conversation history of an agent instance. Committed items
+        are returned by default.
+      parameters:
+        - name: agentInstanceKey
+          in: path
+          required: true
+          description: The key of the agent instance whose history to search.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/AgentInstanceKey'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentInstanceHistorySearchQuery'
+      responses:
+        "200":
+          description: The agent instance history search result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentInstanceHistorySearchQueryResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: |
+            The agent instance with the given key was not found.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.10"
+
 ## Schema definitions
 
 components:
@@ -640,3 +751,436 @@ components:
             $ref: '#/components/schemas/AgentInstanceStatusEnum'
         $like:
           $ref: 'filters.yaml#/components/schemas/LikeFilter'
+
+    ## History schemas
+
+    AgentInstanceHistoryItemRequest:
+      description: Request to append a single history item to an agent instance's conversation history.
+      type: object
+      required:
+        - elementInstanceKey
+        - jobKey
+        - jobLease
+        - role
+        - content
+        - producedAt
+      properties:
+        elementInstanceKey:
+          description: |
+            The key of the currently-active element instance.
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
+        jobKey:
+          description: The key of the current job activation during which this history item was produced.
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/JobKey'
+        jobLease:
+          description: Opaque lease token received from the job activation response.
+          type: string
+        iteration:
+          description: Sequential iteration number this item belongs to. Omit if not grouping items into iterations.
+          nullable: true
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/IterationId'
+        role:
+          description: The role of this history item in the conversation.
+          allOf:
+            - $ref: '#/components/schemas/AgentInstanceHistoryRoleEnum'
+        content:
+          description: The content blocks of this history item.
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentInstanceMessageContent'
+        toolCalls:
+          description: |
+            Tool calls associated with this history item.
+            For ASSISTANT items: tool calls dispatched by this LLM response, with arguments populated.
+            For TOOL_RESULT items: single-entry array referencing the originating tool call, with arguments null.
+            Omit for USER items.
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/AgentInstanceToolCall'
+        metrics:
+          description: Per-call token and latency metrics. Present on ASSISTANT items only.
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/AgentInstanceHistoryItemMetrics'
+        producedAt:
+          description: The connector-side timestamp of when this message was produced.
+          type: string
+          format: date-time
+
+    AgentInstanceHistoryItemCreationResult:
+      description: Response returned after successfully appending a history item.
+      type: object
+      x-semantic-provider:
+        - historyItemKey
+      required:
+        - historyItemKey
+      properties:
+        historyItemKey:
+          description: The system-generated key for the created history item.
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/AgentHistoryItemKey'
+
+    AgentInstanceHistorySearchQuerySortRequest:
+      type: object
+      required:
+        - field
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - producedAt
+            - historyItemKey
+            - iteration
+        order:
+          $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
+
+    AgentInstanceHistorySearchQuery:
+      description: Agent instance history search request.
+      type: object
+      additionalProperties: false
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryRequest'
+      properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentInstanceHistorySearchQuerySortRequest'
+        filter:
+          description: The history item search filters.
+          allOf:
+            - $ref: '#/components/schemas/AgentInstanceHistoryFilter'
+
+    AgentInstanceHistoryFilter:
+      description: Agent instance history item search filter.
+      type: object
+      properties:
+        historyItemKey:
+          description: The unique key of the history item.
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/AgentHistoryItemKeyFilterProperty'
+        role:
+          description: The role of the history item.
+          allOf:
+            - $ref: '#/components/schemas/AgentInstanceHistoryRoleFilterProperty'
+        elementInstanceKey:
+          description: The key of the element instance under which the history item was produced.
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ElementInstanceKeyFilterProperty'
+        jobKey:
+          description: The key of the job activation that produced the history item.
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/JobKeyFilterProperty'
+        iteration:
+          description: The iteration number.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/IntegerFilterProperty'
+        commitStatus:
+          description: |
+            The commit status of the history item. Defaults to COMMITTED only.
+            Include PENDING or DISCARDED explicitly to debug in-flight or failed activations.
+          allOf:
+            - $ref: '#/components/schemas/AgentInstanceHistoryCommitStatusFilterProperty'
+        producedAt:
+          description: The timestamp when the history item was produced.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/DateTimeFilterProperty'
+
+    AgentInstanceHistorySearchQueryResult:
+      description: Agent instance history search response.
+      type: object
+      required:
+        - items
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
+      properties:
+        items:
+          description: The matching history items.
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentInstanceHistoryItemResult'
+
+    AgentInstanceHistoryItemResult:
+      description: A single conversation history item belonging to an agent instance.
+      type: object
+      required:
+        - historyItemKey
+        - agentInstanceKey
+        - elementInstanceKey
+        - jobKey
+        - jobLease
+        - iteration
+        - role
+        - content
+        - toolCalls
+        - metrics
+        - commitStatus
+        - producedAt
+      properties:
+        historyItemKey:
+          description: The unique key for this history item. Stable and sortable by creation order.
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/AgentHistoryItemKey'
+        agentInstanceKey:
+          description: The key of the agent instance this item belongs to.
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/AgentInstanceKey'
+        elementInstanceKey:
+          description: The key of the AI Agent Task or ad-hoc sub-process element instance under which this item was produced.
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
+        jobKey:
+          description: The key of the job activation during which this item was produced.
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/JobKey'
+        jobLease:
+          description: The lease token of the activation that produced this item.
+          type: string
+        iteration:
+          description: The sequential iteration number this item belongs to. Null if not provided by the connector.
+          nullable: true
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/IterationId'
+        role:
+          description: The role of this history item in the conversation.
+          allOf:
+            - $ref: '#/components/schemas/AgentInstanceHistoryRoleEnum'
+        content:
+          description: The content blocks of this history item.
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentInstanceMessageContent'
+        toolCalls:
+          description: |
+            Tool calls for this item. Empty for USER items and ASSISTANT items with no tool dispatches.
+            ASSISTANT items: dispatched tool calls with arguments populated.
+            TOOL_RESULT items: single-entry array referencing the originating tool call (arguments null).
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentInstanceToolCall'
+        metrics:
+          description: Per-call token and latency metrics. Present on ASSISTANT items only.
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/AgentInstanceHistoryItemMetrics'
+        commitStatus:
+          description: The commit status of this history item.
+          allOf:
+            - $ref: '#/components/schemas/AgentInstanceHistoryCommitStatusEnum'
+        producedAt:
+          description: The connector-side timestamp of when this message was produced.
+          type: string
+          format: date-time
+    AgentInstanceHistoryRoleEnum:
+      description: The role of a history item in the agent conversation.
+      type: string
+      enum:
+        - USER
+        - ASSISTANT
+        - TOOL_RESULT
+
+    AgentInstanceHistoryCommitStatusEnum:
+      description: |
+        The commit status of a history item.
+        COMMITTED: the producing job completed successfully.
+        PENDING: the producing job is still active (in-flight).
+        DISCARDED: the producing job failed; this item was superseded by a later activation.
+      type: string
+      enum:
+        - COMMITTED
+        - PENDING
+        - DISCARDED
+
+    AgentInstanceMessageContent:
+      x-polymorphic-schema: true
+      description: A single content block within a history item. Discriminated by `contentType`.
+      discriminator:
+        propertyName: contentType
+        mapping:
+          TEXT: '#/components/schemas/AgentInstanceTextContent'
+          DOCUMENT: '#/components/schemas/AgentInstanceDocumentContent'
+          OBJECT: '#/components/schemas/AgentInstanceObjectContent'
+      oneOf:
+        - $ref: '#/components/schemas/AgentInstanceTextContent'
+        - $ref: '#/components/schemas/AgentInstanceDocumentContent'
+        - $ref: '#/components/schemas/AgentInstanceObjectContent'
+
+    AgentInstanceTextContent:
+      type: object
+      title: Text content
+      description: A plain-text content block.
+      additionalProperties: false
+      required:
+        - contentType
+        - text
+      properties:
+        contentType:
+          description: The content type discriminator.
+          type: string
+          example: TEXT
+        text:
+          description: The text content.
+          type: string
+
+    AgentInstanceDocumentContent:
+      type: object
+      title: Document content
+      description: A Camunda Document Store reference content block.
+      additionalProperties: false
+      required:
+        - contentType
+        - documentReference
+      properties:
+        contentType:
+          description: The content type discriminator.
+          type: string
+          example: DOCUMENT
+        documentReference:
+          description: A reference to a document stored in the Camunda Document Store.
+          allOf:
+            - $ref: 'documents.yaml#/components/schemas/DocumentReference'
+
+    AgentInstanceObjectContent:
+      type: object
+      title: Object content
+      description: An arbitrary structured content block.
+      additionalProperties: false
+      required:
+        - contentType
+        - object
+      properties:
+        contentType:
+          description: The content type discriminator.
+          type: string
+          example: OBJECT
+        object:
+          description: Arbitrary structured content.
+          type: object
+          additionalProperties: true
+
+    AgentInstanceMessageContentTypeEnum:
+      description: The content type discriminator for a history item content block.
+      type: string
+      enum:
+        - TEXT
+        - DOCUMENT
+        - OBJECT
+
+    AgentInstanceToolCall:
+      description: |
+        A tool call associated with a history item. Used in both ASSISTANT and TOOL_RESULT items.
+        ASSISTANT items carry arguments; TOOL_RESULT items carry arguments as null.
+      type: object
+      required:
+        - toolCallId
+        - toolName
+        - elementId
+        - arguments
+      properties:
+        toolCallId:
+          description: The LLM-assigned tool call ID. Correlates ASSISTANT items to their matching TOOL_RESULT items.
+          type: string
+        toolName:
+          description: The LLM-visible tool name.
+          type: string
+        elementId:
+          description: The BPMN element ID handling this tool.
+          type: string
+          nullable: true
+        arguments:
+          description: The tool call arguments as provided by the LLM. Null on TOOL_RESULT items.
+          type: object
+          nullable: true
+          additionalProperties: true
+
+    AgentInstanceHistoryItemMetrics:
+      description: Per-call token and latency metrics for an ASSISTANT history item.
+      type: object
+      required:
+        - inputTokens
+        - outputTokens
+        - durationMs
+      properties:
+        inputTokens:
+          description: Input tokens consumed by this LLM call.
+          type: integer
+          format: int64
+        outputTokens:
+          description: Output tokens produced by this LLM call.
+          type: integer
+          format: int64
+        durationMs:
+          description: Wall-clock duration of the LLM call in milliseconds.
+          type: integer
+          format: int64
+
+    ## History filters
+
+    AgentInstanceHistoryRoleFilterProperty:
+      description: AgentInstanceHistoryRoleEnum property with full advanced search capabilities.
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: '#/components/schemas/AgentInstanceHistoryRoleEnum'
+        - $ref: '#/components/schemas/AdvancedAgentInstanceHistoryRoleFilter'
+
+    AdvancedAgentInstanceHistoryRoleFilter:
+      title: Advanced filter
+      description: Advanced AgentInstanceHistoryRoleEnum filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/AgentInstanceHistoryRoleEnum'
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/AgentInstanceHistoryRoleEnum'
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentInstanceHistoryRoleEnum'
+
+    AgentInstanceHistoryCommitStatusFilterProperty:
+      description: AgentInstanceHistoryCommitStatusEnum property with full advanced search capabilities.
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: '#/components/schemas/AgentInstanceHistoryCommitStatusEnum'
+        - $ref: '#/components/schemas/AdvancedAgentInstanceHistoryCommitStatusFilter'
+
+    AdvancedAgentInstanceHistoryCommitStatusFilter:
+      title: Advanced filter
+      description: Advanced AgentInstanceHistoryCommitStatusEnum filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/AgentInstanceHistoryCommitStatusEnum'
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/AgentInstanceHistoryCommitStatusEnum'
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentInstanceHistoryCommitStatusEnum'
