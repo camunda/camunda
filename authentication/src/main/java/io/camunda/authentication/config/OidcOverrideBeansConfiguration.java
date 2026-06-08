@@ -26,7 +26,6 @@ import io.camunda.security.spring.converter.OidcTokenAuthenticationConverter;
 import io.camunda.security.spring.converter.OidcUserAuthenticationConverter;
 import io.camunda.security.spring.handler.OAuth2AuthenticationExceptionHandler;
 import io.camunda.security.spring.oidc.AssertionJwkProvider;
-import io.camunda.security.spring.oidc.JWSKeySelectorFactory;
 import io.camunda.security.spring.oidc.OidcAccessTokenDecoderFactory;
 import io.camunda.security.spring.oidc.TokenValidatorFactory;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
@@ -43,8 +42,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
@@ -76,9 +73,7 @@ import org.springframework.security.oauth2.core.http.converter.OAuth2AccessToken
 import org.springframework.security.oauth2.jose.jws.JwsAlgorithm;
 import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtDecoderFactory;
-import org.springframework.security.oauth2.jwt.SupplierJwtDecoder;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestTemplate;
@@ -244,20 +239,6 @@ public class OidcOverrideBeansConfiguration {
         buildPreferIdTokenClaimsByRegistrationId(oidcProviderRepository));
   }
 
-  private List<ClientRegistration> extractClientRegistrations(
-      final ClientRegistrationRepository clientRegistrationRepository) {
-    if (!(clientRegistrationRepository instanceof final Iterable<?> iterableRepository)) {
-      throw new IllegalStateException(
-          "Unable to extract OAuth 2.0 client registrations as clientRegistrationRepository %s is not iterable"
-              .formatted(clientRegistrationRepository.getClass()));
-    }
-
-    return StreamSupport.stream(iterableRepository.spliterator(), false)
-        .filter(ClientRegistration.class::isInstance)
-        .map(ClientRegistration.class::cast)
-        .toList();
-  }
-
   @Bean
   public TokenValidatorFactory tokenValidatorFactory(
       final CamundaSecurityLibraryProperties cslProperties,
@@ -301,52 +282,6 @@ public class OidcOverrideBeansConfiguration {
       throw new IllegalStateException("Unsupported signature algorithm: " + algorithm);
     }
     return value;
-  }
-
-  @Bean
-  public JWSKeySelectorFactory jwsKeySelectorFactory() {
-    return new JWSKeySelectorFactory();
-  }
-
-  @Bean
-  public OidcAccessTokenDecoderFactory accessTokenDecoderFactory(
-      final JWSKeySelectorFactory jwsKeySelectorFactory,
-      final TokenValidatorFactory tokenValidatorFactory) {
-    return new OidcAccessTokenDecoderFactory(jwsKeySelectorFactory, tokenValidatorFactory);
-  }
-
-  @Bean
-  public JwtDecoder jwtDecoder(
-      final OidcAccessTokenDecoderFactory oidcAccessTokenDecoderFactory,
-      final ClientRegistrationRepository clientRegistrationRepository,
-      final OidcProviderConfigurationPort oidcProviderRepository) {
-    final var clientRegistrations = extractClientRegistrations(clientRegistrationRepository);
-
-    final var additionalJwkSetUrisByIssuer =
-        buildAdditionalJwkSetUrisByIssuer(oidcProviderRepository);
-
-    if (clientRegistrations.size() == 1) {
-      final var clientRegistration = clientRegistrations.getFirst();
-      final var additionalUris =
-          additionalJwkSetUrisByIssuer.get(clientRegistration.getProviderDetails().getIssuerUri());
-      LOG.info(
-          "Create Access Token JWT Decoder for OIDC Provider: {}",
-          clientRegistration.getRegistrationId());
-      return new SupplierJwtDecoder(
-          () ->
-              oidcAccessTokenDecoderFactory.createAccessTokenDecoder(
-                  clientRegistration, additionalUris));
-    } else {
-      LOG.info(
-          "Create Issuer Aware JWT Decoder for multiple OIDC Providers: [{}]",
-          clientRegistrations.stream()
-              .map(ClientRegistration::getRegistrationId)
-              .collect(Collectors.joining(", ")));
-      return new SupplierJwtDecoder(
-          () ->
-              oidcAccessTokenDecoderFactory.createIssuerAwareAccessTokenDecoder(
-                  clientRegistrations, additionalJwkSetUrisByIssuer));
-    }
   }
 
   private Map<String, List<String>> buildAdditionalJwkSetUrisByIssuer(

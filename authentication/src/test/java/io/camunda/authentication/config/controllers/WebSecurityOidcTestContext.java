@@ -15,12 +15,24 @@ import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
 import io.camunda.service.registry.DefaultServiceRegistry;
+import org.mockito.Mockito;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 
 /** Additional dependency beans for the OIDC setup */
 @Configuration
 public class WebSecurityOidcTestContext {
+
+  /**
+   * No-op {@link JwtDecoder} mock. These tests configure a non-functional JWK URI (e.g. {@code
+   * jwks.example.com}) and do not exercise JWT validation — they test filter-chain behaviour only.
+   * CSL's {@code @ConditionalOnMissingBean} default backs off when this bean is present.
+   */
+  @Bean
+  public JwtDecoder testJwtDecoder() {
+    return Mockito.mock(JwtDecoder.class);
+  }
 
   @Bean
   public MappingRuleServices createMappingRuleServices(
