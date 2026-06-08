@@ -15,8 +15,8 @@ import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.search.clients.auth.DefaultTenantAccessProvider;
 import io.camunda.search.clients.auth.DisabledTenantAccessProvider;
-import io.camunda.security.impl.AuthorizationChecker;
 import io.camunda.security.core.reader.TenantAccessProvider;
+import io.camunda.security.impl.AuthorizationChecker;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.runner.WebApplicationContextRunner;
 
