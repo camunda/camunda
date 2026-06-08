@@ -107,4 +107,18 @@ public abstract class AbstractBusinessRuleTaskBuilder<B extends AbstractBusiness
     calledDecision.setVersionTag(versionTag);
     return myself;
   }
+
+  /**
+   * Sets a dynamic versionTag for the decision that is called. The version tag is retrieved from
+   * the given expression.
+   *
+   * @param versionTagExpression the expression for the id of the decision
+   * @return the builder object
+   */
+  public B zeebeVersionTagExpression(final String versionTagExpression) {
+    final ZeebeCalledDecision calledDecision =
+        getCreateSingleExtensionElement(ZeebeCalledDecision.class);
+    calledDecision.setVersionTag(asZeebeExpression(versionTagExpression));
+    return myself;
+  }
 }

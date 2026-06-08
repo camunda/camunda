@@ -191,6 +191,83 @@ public class BusinessRuleTaskIncidentTest {
   }
 
   @Test
+  public void
+      shouldCreateIncidentIfDecisionWithVersionTagNotDeployedForBindingTypeVersionTagExpression() {
+    // given
+    engine.deployment().withXmlClasspathResource(DMN_RESOURCE).deploy();
+    engine
+        .deployment()
+        .withXmlResource(
+            processWithBusinessRuleTask(
+                b ->
+                    b.zeebeCalledDecisionId(DECISION_ID)
+                        .zeebeBindingType(ZeebeBindingType.versionTag)
+                        .zeebeVersionTagExpression("myvariable")
+                        .zeebeResultVariable(RESULT_VARIABLE)))
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("myvariable", "v1.0")
+            .create();
+
+    final var taskActivating =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(TASK_ELEMENT_ID)
+            .withElementType(BpmnElementType.BUSINESS_RULE_TASK)
+            .getFirst();
+
+    // then
+    assertIncidentCreated(processInstanceKey, taskActivating.getKey())
+        .hasErrorType(ErrorType.CALLED_DECISION_ERROR)
+        .hasErrorMessage(
+            """
+            Expected to evaluate decision with id 'jedi_or_sith' and version tag 'v1.0', but no such decision found. \
+            To resolve this incident, deploy a decision with the given id and version tag.\
+            """);
+  }
+
+  @Test
+  public void
+      shouldCreateIncidentIfDecisionWithVersionTagNotDeployedForBindingTypeVersionTagExpressionEmpty() {
+    // given
+    engine.deployment().withXmlClasspathResource(DMN_RESOURCE).deploy();
+    engine
+        .deployment()
+        .withXmlResource(
+            processWithBusinessRuleTask(
+                b ->
+                    b.zeebeCalledDecisionId(DECISION_ID)
+                        .zeebeBindingType(ZeebeBindingType.versionTag)
+                        .zeebeVersionTagExpression("myvariable")
+                        .zeebeResultVariable(RESULT_VARIABLE)))
+        .deploy();
+
+    // when
+    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    final var taskActivating =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(TASK_ELEMENT_ID)
+            .withElementType(BpmnElementType.BUSINESS_RULE_TASK)
+            .getFirst();
+
+    // then
+    assertIncidentCreated(processInstanceKey, taskActivating.getKey())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            """
+            Expected result of the expression 'myvariable' to be 'STRING', but was 'NULL'. The evaluation reported the following warnings:
+            [NO_VARIABLE_FOUND] No variable found with name 'myvariable'\
+            """);
+  }
+
+  @Test
   public void shouldCreateIncidentIfDecisionEvaluationFailed() {
     // given
     engine
