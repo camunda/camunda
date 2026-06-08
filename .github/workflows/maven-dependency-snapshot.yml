@@ -45,6 +45,17 @@ jobs:
           secrets: |
             secret/data/github.com/organizations/camunda NEXUS_USR;
             secret/data/github.com/organizations/camunda NEXUS_PSW;
+      - name: Configure Maven credentials
+        uses: s4u/maven-settings-action@894661b3ddae382f1ae8edbeab60987e08cf0788 # v4.0.0
+        with:
+          githubServer: false
+          servers: |
+            [{
+              "id": "camunda-nexus",
+              "username": "${{ steps.secrets.outputs.NEXUS_USR }}",
+              "password": "${{ steps.secrets.outputs.NEXUS_PSW }}"
+            }]
+          mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
       # Scope to shipped modules only (mirrors JAVA_PROJECTS in zeebe-snyk.yml).
       # -am resolves the full transitive tree including BOM-pinned versions.
       - name: Submit Maven dependency snapshot
@@ -52,14 +63,10 @@ jobs:
         with:
           token: ${{ github.token }}
           maven-args: >-
-            -s maven-settings.xml
             -pl bom,clients/java,clients/camunda-spring-boot-starter,zeebe/bpmn-model,zeebe/exporter-api,zeebe/gateway-protocol-impl,zeebe/protocol
             -am
             -Dquickly
           correlator: ${{ github.job }}-maven
-        env:
-          NEXUS_USR: ${{ steps.secrets.outputs.NEXUS_USR }}
-          NEXUS_PSW: ${{ steps.secrets.outputs.NEXUS_PSW }}
       - name: Observe build status
         if: always()
         continue-on-error: true
