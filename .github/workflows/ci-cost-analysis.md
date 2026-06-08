@@ -61,12 +61,11 @@ Use exactly one persistent issue for reporting:
    - The size of the runner change
    - The number of additional minutes per run
 
-4. **Generate report body** (HARD 8 KB budget — leave headroom under the 10 KB `update-issue` safe-output limit):
+4. **Generate report body**. The body must fit under the 10 KB `update-issue` safe-output limit; the structural caps below keep it well under that budget without measuring bytes:
    - A summary section with the total number of CI changes and how many are cost-relevant
-   - A table of cost-impacting changes with columns: File, Change Type, Impact Level, Description including link to commit or Pull Request
-   - Recommendations for cost optimization where applicable
-   - Do NOT inline diff snippets or `<details>` blocks — link to the commit or PR instead.
-   - After assembling, check the byte size of the body. If it exceeds 8192 bytes, drop the lowest-impact rows from the table until it fits. Never truncate mid-row, and note in the summary how many rows were omitted.
+   - A table of cost-impacting changes with columns: File, Change Type, Impact Level, Description including link to commit or Pull Request. Include at most **15 rows**, ranked by Impact Level (High → Medium → Low). Keep each Description cell under **200 characters**. If more than 15 cost-impacting changes were detected, note the omitted count in the summary.
+   - Up to **5 recommendations** for cost optimization where applicable, one short paragraph each.
+   - Do NOT inline diff snippets, `<details>` blocks, or per-change breakdowns — link to the commit or PR instead.
 
 5. **Upsert persistent issue**:
    - Search for an existing issue with exact title `Weekly CI Change Cost Impact Analysis`
