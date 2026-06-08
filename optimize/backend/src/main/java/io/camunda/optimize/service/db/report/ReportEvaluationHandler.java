@@ -163,49 +163,65 @@ public abstract class ReportEvaluationHandler {
     // from all tenants the given definition currently exists on
     if (reportEvaluationInfo.getReport().getData()
         instanceof final ProcessReportDataDto processReportData) {
-      if (processReportData.isManagementReport()) {
-        final List<ReportDataDefinitionDto> definitionsForManagementReport =
-            definitionService
-                .getFullyImportedDefinitions(
-                    DefinitionType.PROCESS, reportEvaluationInfo.getUserId())
-                .stream()
-                .map(
-                    def ->
-                        new ReportDataDefinitionDto(
-                            def.getKey(),
-                            def.getName(),
-                            List.of(ALL_VERSIONS),
-                            def.getTenants().stream()
-                                .map(TenantDto::getId)
-                                .collect(Collectors.toList()),
-                            def.getName()))
-                .collect(Collectors.toList());
-        processReportData.setDefinitions(definitionsForManagementReport);
+      if (processReportData.isAgenticControlReport()) {
+        final List<ReportDataDefinitionDto> scopedDefinitions =
+            Optional.ofNullable(reportEvaluationInfo.getAdditionalFilters())
+                .map(AdditionalProcessReportEvaluationFilterDto::getDefinitions)
+                .orElse(List.of());
+
+        if (!scopedDefinitions.isEmpty()) {
+          // L1: one or more processes selected — validate tenant access for each and combine
+          final List<ReportDataDefinitionDto> validatedDefs =
+              scopedDefinitions.stream()
+                  .flatMap(
+                      scopedDef ->
+                          definitionService
+                              .getDefinitionWithAvailableTenants(
+                                  DefinitionType.PROCESS,
+                                  scopedDef.getKey(),
+                                  reportEvaluationInfo.getUserId())
+                              .stream()
+                              .map(this::toReportDataDefinitionDto))
+                  .toList();
+          processReportData.setDefinitions(validatedDefs);
+        } else {
+          // L0: no process selected — fetch all fully-imported definitions
+          processReportData.setDefinitions(
+              allFullyImportedProcessDefinitions(reportEvaluationInfo.getUserId()));
+        }
+      } else if (processReportData.isManagementReport()) {
+        processReportData.setDefinitions(
+            allFullyImportedProcessDefinitions(reportEvaluationInfo.getUserId()));
       } else if (processReportData.isInstantPreviewReport()
           && !reportEvaluationInfo.isSharedReport()) {
         // Same logic as above, but just for the single process definition in the report
         final String key =
             ((SingleReportDataDto) reportEvaluationInfo.getReport().getData()).getDefinitionKey();
-        final List<ReportDataDefinitionDto> definitionForInstantPreviewReport =
+        processReportData.setDefinitions(
             definitionService
                 .getDefinitionWithAvailableTenants(
                     DefinitionType.PROCESS, key, reportEvaluationInfo.getUserId())
                 .stream()
-                .map(
-                    def ->
-                        new ReportDataDefinitionDto(
-                            def.getKey(),
-                            def.getName(),
-                            List.of(ALL_VERSIONS),
-                            def.getTenants().stream()
-                                .map(TenantDto::getId)
-                                .collect(Collectors.toList()),
-                            def.getName()))
-                .collect(Collectors.toList());
-
-        processReportData.setDefinitions(definitionForInstantPreviewReport);
+                .map(this::toReportDataDefinitionDto)
+                .toList());
       }
     }
+  }
+
+  private List<ReportDataDefinitionDto> allFullyImportedProcessDefinitions(final String userId) {
+    return definitionService.getFullyImportedDefinitions(DefinitionType.PROCESS, userId).stream()
+        .map(this::toReportDataDefinitionDto)
+        .toList();
+  }
+
+  private ReportDataDefinitionDto toReportDataDefinitionDto(
+      final io.camunda.optimize.dto.optimize.query.definition.DefinitionResponseDto def) {
+    return new ReportDataDefinitionDto(
+        def.getKey(),
+        def.getName(),
+        List.of(ALL_VERSIONS),
+        def.getTenants().stream().map(TenantDto::getId).toList(),
+        def.getName());
   }
 
   private CombinedReportEvaluationResult evaluateCombinedReport(

@@ -50,6 +50,7 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
   protected ProcessVisualization visualization;
   protected boolean managementReport = false;
   protected boolean instantPreviewReport = false;
+  protected boolean agenticControlReport = false;
 
   public ProcessReportDataDto(
       @Valid final List<ProcessFilterDto<?>> filter,
@@ -94,6 +95,11 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
       instantPreviewReport = b.instantPreviewReportValue;
     } else {
       instantPreviewReport = defaultInstantPreviewReport();
+    }
+    if (b.agenticControlReportSet) {
+      agenticControlReport = b.agenticControlReportValue;
+    } else {
+      agenticControlReport = defaultAgenticControlReport();
     }
   }
 
@@ -350,6 +356,14 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
     this.instantPreviewReport = instantPreviewReport;
   }
 
+  public boolean isAgenticControlReport() {
+    return agenticControlReport;
+  }
+
+  public void setAgenticControlReport(final boolean agenticControlReport) {
+    this.agenticControlReport = agenticControlReport;
+  }
+
   protected boolean canEqual(final Object other) {
     return other instanceof ProcessReportDataDto;
   }
@@ -362,6 +376,7 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
     final ProcessReportDataDto that = (ProcessReportDataDto) o;
     return managementReport == that.managementReport
         && instantPreviewReport == that.instantPreviewReport
+        && agenticControlReport == that.agenticControlReport
         && Objects.equals(filter, that.filter)
         && Objects.equals(view, that.view)
         && Objects.equals(groupBy, that.groupBy)
@@ -378,7 +393,8 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
         distributedBy,
         visualization,
         managementReport,
-        instantPreviewReport);
+        instantPreviewReport,
+        agenticControlReport);
   }
 
   @Override
@@ -397,6 +413,8 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
         + isManagementReport()
         + ", instantPreviewReport="
         + isInstantPreviewReport()
+        + ", agenticControlReport="
+        + isAgenticControlReport()
         + ")";
   }
 
@@ -417,6 +435,10 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
     return false;
   }
 
+  private static boolean defaultAgenticControlReport() {
+    return false;
+  }
+
   public static ProcessReportDataDtoBuilder<?, ?> builder() {
     return new ProcessReportDataDtoBuilderImpl();
   }
@@ -431,6 +453,7 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
     public static final String visualization = "visualization";
     public static final String managementReport = "managementReport";
     public static final String instantPreviewReport = "instantPreviewReport";
+    public static final String agenticControlReport = "agenticControlReport";
   }
 
   public abstract static class ProcessReportDataDtoBuilder<
@@ -448,6 +471,8 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
     private boolean managementReportSet;
     private boolean instantPreviewReportValue;
     private boolean instantPreviewReportSet;
+    private boolean agenticControlReportValue;
+    private boolean agenticControlReportSet;
 
     public B filter(@Valid final List<ProcessFilterDto<?>> filter) {
       filterValue = filter;
@@ -488,6 +513,12 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
       return self();
     }
 
+    public B agenticControlReport(final boolean agenticControlReport) {
+      agenticControlReportValue = agenticControlReport;
+      agenticControlReportSet = true;
+      return self();
+    }
+
     @Override
     protected abstract B self();
 
@@ -512,6 +543,8 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
           + managementReportValue
           + ", instantPreviewReportValue="
           + instantPreviewReportValue
+          + ", agenticControlReportValue="
+          + agenticControlReportValue
           + ")";
     }
   }
