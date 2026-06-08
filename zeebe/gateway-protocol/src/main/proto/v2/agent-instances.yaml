@@ -1096,15 +1096,15 @@ components:
         inputTokens:
           description: Input tokens consumed by this LLM call.
           type: integer
-          format: int32
+          format: int64
         outputTokens:
           description: Output tokens produced by this LLM call.
           type: integer
-          format: int32
+          format: int64
         durationMs:
           description: Wall-clock duration of the LLM call in milliseconds.
           type: integer
-          format: int32
+          format: int64
 
     ## History filters
 
