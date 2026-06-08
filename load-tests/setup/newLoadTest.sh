@@ -135,25 +135,6 @@ else
   exit 1
 fi
 
-# Generate credentials. These are baked into resources/camunda-credentials.yaml
-# and (for the orchestration OIDC secret) into load-test-values.yaml. Any
-# subsequent `make install` reapplies the same manifest, so the secret in the
-# cluster always matches the value the load test starter authenticates with.
-# `head -c 20` closes the pipe early; upstream `tr` then takes SIGPIPE and
-# returns 141 under `set -o pipefail`. Wrap in a subshell so the harmless
-# SIGPIPE doesn't trip `set -e` in the caller.
-gen_password() { ( set +o pipefail; LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c 20 ); }
-gen_token()    { openssl rand -hex 16; }
-
-IDENTITY_FIRSTUSER_PASSWORD=$(gen_password)
-IDENTITY_KEYCLOAK_ADMIN_PASSWORD=$(gen_password)
-IDENTITY_KEYCLOAK_POSTGRESQL_ADMIN_PASSWORD=$(gen_password)
-IDENTITY_KEYCLOAK_POSTGRESQL_USER_PASSWORD=$(gen_password)
-IDENTITY_POSTGRESQL_ADMIN_PASSWORD=$(gen_password)
-IDENTITY_POSTGRESQL_USER_PASSWORD=$(gen_password)
-IDENTITY_ADMIN_CLIENT_TOKEN=$(gen_token)
-IDENTITY_OPTIMIZE_CLIENT_TOKEN=$(gen_token)
-IDENTITY_ZEEBE_CLIENT_TOKEN=$(gen_token)
 
 # Scaffold the namespace folder with only the files this $secondaryStorage uses.
 # A namespace is bound to its storage at create time; to switch storage, create
@@ -217,6 +198,61 @@ if [[ "$enable_single_zone" != "true" ]]; then
   else
     sed -i    -e '/^  annotations:$/d' resources/namespace.yaml
   fi
+fi
+
+#############################################################################################
+################################ CREDENTIALS ################################################
+#############################################################################################
+
+function get_existing_secret() {
+  jsonObject=$1
+  key=$2
+  existing_secret=$(echo "$jsonObject" | jq --raw-output --arg key "$key" '.[$key] // empty' | base64 -d)
+  if [ -z "$existing_secret" ]; then
+    echo "ERROR: existing camunda-credentials secret is missing key '$key'."
+    exit 1
+  fi
+  echo "$existing_secret"
+}
+
+# Generate credentials. These are baked into resources/camunda-credentials.yaml
+# and (for the orchestration OIDC secret) into load-test-values.yaml. Any
+# subsequent `make install` reapplies the same manifest, so the secret in the
+# cluster always matches the value the load test starter authenticates with.
+# `head -c 20` closes the pipe early; upstream `tr` then takes SIGPIPE and
+# returns 141 under `set -o pipefail`. Wrap in a subshell so the harmless
+# SIGPIPE doesn't trip `set -e` in the caller.
+function gen_password() { ( set +o pipefail; LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c 20 ); }
+function gen_token()    { openssl rand -hex 16; }
+
+
+# If the secret already exists in the cluster, preserve all existing values to avoid breaking any live load test.
+# If the secret doesn't exist, generate new random values for all keys.
+# This might happend on CI/GitHub Workflows that update existing load tests but do not persist the credentials across runs.
+if kubectl -n "$namespace" get secret camunda-credentials >/dev/null 2>&1; then
+  echo "Secret 'camunda-credentials' already exists in namespace '$namespace'; preserving existing credentials."
+  jsonObject=$(kubectl -n "$namespace" get secret camunda-credentials -o jsonpath='{.data}')
+
+  IDENTITY_FIRSTUSER_PASSWORD=$(get_existing_secret "$jsonObject" "identity-firstuser-password")
+  IDENTITY_KEYCLOAK_ADMIN_PASSWORD=$(get_existing_secret "$jsonObject" "identity-keycloak-admin-password")
+  IDENTITY_KEYCLOAK_POSTGRESQL_ADMIN_PASSWORD=$(get_existing_secret "$jsonObject" "identity-keycloak-postgresql-admin-password")
+  IDENTITY_KEYCLOAK_POSTGRESQL_USER_PASSWORD=$(get_existing_secret "$jsonObject" "identity-keycloak-postgresql-user-password")
+  IDENTITY_POSTGRESQL_ADMIN_PASSWORD=$(get_existing_secret "$jsonObject" "identity-postgresql-admin-password")
+  IDENTITY_POSTGRESQL_USER_PASSWORD=$(get_existing_secret "$jsonObject" "identity-postgresql-user-password")
+  IDENTITY_ADMIN_CLIENT_TOKEN=$(get_existing_secret "$jsonObject" "identity-admin-client-token")
+  IDENTITY_OPTIMIZE_CLIENT_TOKEN=$(get_existing_secret "$jsonObject" "identity-optimize-client-token")
+  IDENTITY_ZEEBE_CLIENT_TOKEN=$(get_existing_secret "$jsonObject" "identity-zeebe-client-token")
+else
+  echo "Generating new credentials for secret 'camunda-credentials'."
+  IDENTITY_FIRSTUSER_PASSWORD=$(gen_password)
+  IDENTITY_KEYCLOAK_ADMIN_PASSWORD=$(gen_password)
+  IDENTITY_KEYCLOAK_POSTGRESQL_ADMIN_PASSWORD=$(gen_password)
+  IDENTITY_KEYCLOAK_POSTGRESQL_USER_PASSWORD=$(gen_password)
+  IDENTITY_POSTGRESQL_ADMIN_PASSWORD=$(gen_password)
+  IDENTITY_POSTGRESQL_USER_PASSWORD=$(gen_password)
+  IDENTITY_ADMIN_CLIENT_TOKEN=$(gen_token)
+  IDENTITY_OPTIMIZE_CLIENT_TOKEN=$(gen_token)
+  IDENTITY_ZEEBE_CLIENT_TOKEN=$(gen_token)
 fi
 
 # Bake the Zeebe OIDC secret into the load-test starter values.
