@@ -39,17 +39,10 @@ import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsRec
 import io.camunda.zeebe.protocol.record.value.management.CheckpointRecordValue;
 import io.camunda.zeebe.util.SemanticVersion;
 import io.camunda.zeebe.util.VersionUtil;
-import jakarta.json.spi.JsonProvider;
-import jakarta.json.stream.JsonParser;
 import java.io.IOException;
-import java.io.StringReader;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import org.opensearch.client.json.JsonData;
-import org.opensearch.client.json.jsonb.JsonbJsonpMapper;
-import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 
 /**
  * Buffers indexing requests of records. Each bulk operation is serialized before being buffered to
@@ -133,7 +126,7 @@ final class BulkIndexRequest {
   private static final String RESOURCE_ID_PROPERTY = "resourceId";
   private static final String TENANT_ID_PROPERTY = "tenantId";
 
-  private final List<BulkOperation> operations = new ArrayList<>();
+  private final List<IndexOperation> operations = new ArrayList<>();
 
   private BulkIndexAction lastIndexedMetadata;
   private int memoryUsageBytes = 0;
@@ -167,9 +160,10 @@ final class BulkIndexRequest {
           String.format("Failed to serialize record to JSON for indexing action %s", action), e);
     }
 
-    memoryUsageBytes += source.length;
+    final IndexOperation command = new IndexOperation(action, source);
+    memoryUsageBytes += command.source().length;
     lastIndexedMetadata = action;
-    operations.add(createBulkOperation(action, source));
+    operations.add(command);
     return true;
   }
 
@@ -185,23 +179,6 @@ final class BulkIndexRequest {
         // Read https://github.com/camunda/camunda/issues/10568 for details.
         .withAttribute(RECORD_SEQUENCE_PROPERTY, recordSequence.sequence())
         .writeValueAsBytes(record);
-  }
-
-  private BulkOperation createBulkOperation(final BulkIndexAction action, final byte[] source) {
-    // Use the already serialized JSON bytes to create JsonData, just parsing JSON string and
-    // then create JsonData from it.
-    final String jsonString = new String(source, StandardCharsets.UTF_8);
-    final JsonParser parser = JsonProvider.provider().createParser(new StringReader(jsonString));
-    final JsonData document = JsonData.from(parser, new JsonbJsonpMapper());
-
-    return new BulkOperation.Builder()
-        .index(
-            i ->
-                i.index(action.index())
-                    .routing(action.routing())
-                    .id(action.id())
-                    .document(document))
-        .build();
   }
 
   /** Returns the number of operations indexed so far. */
@@ -232,7 +209,7 @@ final class BulkIndexRequest {
   }
 
   /** Returns the currently indexed operations as an unmodifiable shallow copy. */
-  List<BulkOperation> bulkOperations() {
+  List<IndexOperation> bulkOperations() {
     return Collections.unmodifiableList(operations);
   }
 
@@ -251,6 +228,8 @@ final class BulkIndexRequest {
                 () -> new IllegalStateException("Expected to have a valid semantic version"));
     return semanticVersion.minor() < currentMinorVersion;
   }
+
+  record IndexOperation(BulkIndexAction metadata, byte[] source) {}
 
   @JsonAppend(attrs = {@JsonAppend.Attr(value = RECORD_SEQUENCE_PROPERTY)})
   @JsonIgnoreProperties({RECORD_AUTHORIZATIONS_PROPERTY, RECORD_AGENT_PROPERTY})

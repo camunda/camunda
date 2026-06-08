@@ -8,9 +8,11 @@
 package io.camunda.zeebe.exporter.opensearch;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.zeebe.exporter.opensearch.BulkIndexRequest.IndexOperation;
 import io.camunda.zeebe.exporter.opensearch.dto.BulkIndexAction;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
@@ -45,6 +47,7 @@ import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -54,8 +57,6 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.opensearch.client.json.JsonData;
-import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 
 @Execution(ExecutionMode.CONCURRENT)
 final class BulkIndexRequestTest {
@@ -161,14 +162,8 @@ final class BulkIndexRequestTest {
 
       // then
       assertThat(request.bulkOperations())
-          .extracting(BulkOperation::index)
-          .hasSize(1)
-          .allSatisfy(
-              indexOperation -> {
-                assertThat(indexOperation.index()).isEqualTo("index");
-                assertThat(indexOperation.id()).isEqualTo("id");
-                assertThat(indexOperation.routing()).isEqualTo("routing");
-              });
+          .extracting(IndexOperation::metadata)
+          .containsExactly(action);
       assertThat(request.lastIndexedMetadata()).isEqualTo(action);
       assertThat(request.isEmpty()).isFalse();
     }
@@ -192,19 +187,8 @@ final class BulkIndexRequestTest {
 
       // then
       assertThat(request.bulkOperations())
-          .extracting(BulkOperation::index)
-          .hasSize(2)
-          .satisfiesExactly(
-              indexOp1 -> {
-                assertThat(indexOp1.index()).isEqualTo("index");
-                assertThat(indexOp1.id()).isEqualTo("id");
-                assertThat(indexOp1.routing()).isEqualTo("routing");
-              },
-              indexOp2 -> {
-                assertThat(indexOp2.index()).isEqualTo("index2");
-                assertThat(indexOp2.id()).isEqualTo("id2");
-                assertThat(indexOp2.routing()).isEqualTo("routing2");
-              });
+          .extracting(IndexOperation::metadata)
+          .containsExactlyElementsOf(actions);
       assertThat(request.lastIndexedMetadata()).isEqualTo(actions.get(1));
       assertThat(request.isEmpty()).isFalse();
     }
@@ -225,15 +209,17 @@ final class BulkIndexRequestTest {
       request.index(action, record, new RecordSequence(PARTITION_ID, 1));
 
       // then
-      assertThat(request.bulkOperations()).hasSize(1);
-      final Map<String, Object> doc = getDocumentAsMap(request.bulkOperations().getFirst());
+      final var operations = request.bulkOperations();
+      assertThat(operations).hasSize(1);
 
-      // Verify key record properties are serialized
-      assertThat(doc.get("partitionId")).isEqualTo(record.getPartitionId());
-      assertThat(doc.get("position")).isEqualTo(record.getPosition());
-      assertThat(doc.get("sequence")).isEqualTo(2251799813685249L);
-      assertThat(doc.get("authorizations")).isNull();
-      assertThat(doc.get("agent")).isNull();
+      final var deserialized = deserializeSource(operations.getFirst());
+      // Verify key record properties are serialized correctly
+      assertThat(deserialized.getPartitionId()).isEqualTo(record.getPartitionId());
+      assertThat(deserialized.getPosition()).isEqualTo(record.getPosition());
+      assertThat(deserialized.getKey()).isEqualTo(record.getKey());
+      // Verify excluded fields are null/empty
+      assertThat(deserialized.getAuthorizations()).isEmpty();
+      assertThat(deserialized.getAgent()).isNull();
     }
 
     @Test
@@ -258,18 +244,12 @@ final class BulkIndexRequestTest {
       request.index(actions.get(1), records.get(1), recordSequences.get(1));
 
       // then
-      final var operations = request.bulkOperations();
-      assertThat(operations).hasSize(2);
-
-      final var doc1 = getDocumentAsMap(operations.get(0));
-      assertThat(doc1.get("sequence"))
-          .describedAs("Expect that the first record is serialized with sequence 10")
-          .isEqualTo(recordSequences.get(0).sequence());
-
-      final var doc2 = getDocumentAsMap(operations.get(1));
-      assertThat(doc2.get("sequence"))
-          .describedAs("Expect that the second record is serialized with sequence 20")
-          .isEqualTo(recordSequences.get(1).sequence());
+      assertThat(request.bulkOperations())
+          .hasSize(2)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("sequence"))
+          .describedAs("Expect that the records are serialized with the sequences")
+          .containsExactly(recordSequences.get(0).sequence(), recordSequences.get(1).sequence());
     }
 
     @Test
@@ -287,15 +267,18 @@ final class BulkIndexRequestTest {
       request.index(actions.getFirst(), records.getFirst(), new RecordSequence(PARTITION_ID, 10));
 
       // then
-      assertThat(request.bulkOperations()).hasSize(1);
-
-      final var doc = getDocumentAsMap(request.bulkOperations().getFirst());
-      assertThat(doc.get("authorizations"))
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("authorizations"))
           .describedAs("Expect that the records are NOT serialized with authorizations")
-          .isNull();
-      assertThat(doc.get("agent"))
+          .containsExactly(new Object[] {null});
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("agent"))
           .describedAs("Expect that the records are NOT serialized with agent")
-          .isNull();
+          .containsExactly(new Object[] {null});
     }
 
     @Test
@@ -316,12 +299,13 @@ final class BulkIndexRequestTest {
       request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
 
       // then
-      assertThat(request.bulkOperations()).hasSize(1);
-
-      final Map<String, Object> value = getValueFromFirstOperation(request);
-      assertThat(value.get("authInfo"))
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("authInfo"))
           .describedAs("Expect that the records are NOT serialized with authInfo")
-          .isNull();
+          .containsExactly(new Object[] {null});
     }
 
     @Test
@@ -342,12 +326,13 @@ final class BulkIndexRequestTest {
       request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
 
       // then
-      assertThat(request.bulkOperations()).hasSize(1);
-
-      final Map<String, Object> value = getValueFromFirstOperation(request);
-      assertThat(value.get("authInfo"))
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("authInfo"))
           .describedAs("Expect that the records are NOT serialized with authInfo")
-          .isNull();
+          .containsExactly(new Object[] {null});
     }
 
     @Test
@@ -370,11 +355,13 @@ final class BulkIndexRequestTest {
 
       // then
       assertThat(request.bulkOperations()).hasSize(1);
-
-      final Map<String, Object> value = getValueFromFirstOperation(request);
-      assertThat(value.get("checkpointType"))
-          .describedAs("Expect that the records are serialized without checkpointType")
-          .isNull();
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("checkpointType"))
+          .describedAs("Expect that the records are NOT serialized with checkpointType")
+          .containsExactly(new Object[] {null});
     }
 
     @Test
@@ -396,12 +383,13 @@ final class BulkIndexRequestTest {
       request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
 
       // then
-      assertThat(request.bulkOperations()).hasSize(1);
-
-      final Map<String, Object> value = getValueFromFirstOperation(request);
-      assertThat(value.get("checkpointType"))
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("checkpointType"))
           .describedAs("Expect that the records are serialized with checkpointType")
-          .isEqualTo(CheckpointType.SCHEDULED_BACKUP.name());
+          .containsExactly(CheckpointType.SCHEDULED_BACKUP.name());
     }
 
     @Test
@@ -424,12 +412,13 @@ final class BulkIndexRequestTest {
       request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
 
       // then
-      assertThat(request.bulkOperations()).hasSize(1);
-
-      final Map<String, Object> value = getValueFromFirstOperation(request);
-      assertThat(value.get("processDefinitionKey"))
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("processDefinitionKey"))
           .describedAs("Expect that the records are serialized without processDefinitionKey")
-          .isNull();
+          .containsExactly(new Object[] {null});
     }
 
     @Test
@@ -451,12 +440,13 @@ final class BulkIndexRequestTest {
       request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
 
       // then
-      assertThat(request.bulkOperations()).hasSize(1);
-
-      final Map<String, Object> value = getValueFromFirstOperation(request);
-      assertThat(value.get("processDefinitionKey"))
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("processDefinitionKey"))
           .describedAs("Expect that the records are serialized with processDefinitionKey")
-          .isEqualTo(12345);
+          .containsExactly(12345);
     }
 
     @Test
@@ -479,12 +469,13 @@ final class BulkIndexRequestTest {
       request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
 
       // then
-      assertThat(request.bulkOperations()).hasSize(1);
-
-      final Map<String, Object> value = getValueFromFirstOperation(request);
-      assertThat(value.get("processDefinitionKey"))
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("processDefinitionKey"))
           .describedAs("Expect that the records are serialized without processDefinitionKey")
-          .isNull();
+          .containsExactly(new Object[] {null});
     }
 
     @Test
@@ -506,12 +497,13 @@ final class BulkIndexRequestTest {
       request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
 
       // then
-      assertThat(request.bulkOperations()).hasSize(1);
-
-      final Map<String, Object> value = getValueFromFirstOperation(request);
-      assertThat(value.get("processDefinitionKey"))
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("processDefinitionKey"))
           .describedAs("Expect that the records are serialized with processDefinitionKey")
-          .isEqualTo(12345);
+          .containsExactly(12345);
     }
 
     @Test
@@ -536,12 +528,13 @@ final class BulkIndexRequestTest {
       request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
 
       // then
-      assertThat(request.bulkOperations()).hasSize(1);
-
-      final Map<String, Object> value = getValueFromFirstOperation(request);
-      assertThat(value.get("moveInstructions"))
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("moveInstructions"))
           .describedAs("Expect that the records are serialized without moveInstructions")
-          .isNull();
+          .containsExactly(new Object[] {null});
     }
 
     @Test
@@ -566,17 +559,19 @@ final class BulkIndexRequestTest {
       request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
 
       // then
-      assertThat(request.bulkOperations()).hasSize(1);
-
-      final Map<String, Object> value = getValueFromFirstOperation(request);
-      final List<Map<String, Object>> terminateInstructions =
-          (List<Map<String, Object>>) value.get("terminateInstructions");
-
-      assertThat(terminateInstructions).hasSize(1);
-      assertThat(terminateInstructions.getFirst().get("elementId"))
-          .describedAs("Expect that elementId is NOT serialized in terminateInstructions")
-          .isNull();
-      assertThat(terminateInstructions.getFirst().get("elementInstanceKey")).isEqualTo(5);
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("terminateInstructions"))
+          .extracting(
+              source -> {
+                final var values = (Map<String, Object>) (((List<Object>) source).getFirst());
+                return tuple(values.get("elementId"), values.get("elementInstanceKey"));
+              })
+          .describedAs(
+              "Expect that the records are serialized without elementId in terminateInstructions")
+          .containsExactly(tuple(null, 5));
     }
 
     @Test
@@ -600,17 +595,15 @@ final class BulkIndexRequestTest {
       request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
 
       // then
-      assertThat(request.bulkOperations()).hasSize(1);
-
-      final Map<String, Object> value = getValueFromFirstOperation(request);
-      final List<Map<String, Object>> moveInstructions =
-          (List<Map<String, Object>>) value.get("moveInstructions");
-
-      assertThat(moveInstructions)
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("moveInstructions"))
+          .extracting(source -> ((List<Object>) source).getFirst())
+          .extracting("sourceElementId", "targetElementId")
           .describedAs("Expect that the records are serialized with moveInstructions")
-          .hasSize(1);
-      assertThat(moveInstructions.getFirst().get("sourceElementId")).isEqualTo("foo");
-      assertThat(moveInstructions.getFirst().get("targetElementId")).isEqualTo("bar");
+          .containsExactly(tuple("foo", "bar"));
     }
 
     @Test
@@ -634,19 +627,16 @@ final class BulkIndexRequestTest {
       request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
 
       // then
-      assertThat(request.bulkOperations()).hasSize(1);
-
-      final Map<String, Object> value = getValueFromFirstOperation(request);
-      final List<Map<String, Object>> terminateInstructions =
-          (List<Map<String, Object>>) value.get("terminateInstructions");
-
-      assertThat(terminateInstructions)
-          .describedAs("Expect that the records are serialized with terminateInstructions")
-          .hasSize(1);
-      assertThat(terminateInstructions.getFirst().get("elementId"))
-          .describedAs("Expect that elementId IS serialized in terminateInstructions")
-          .isEqualTo("foo");
-      assertThat(terminateInstructions.getFirst().get("elementInstanceKey")).isEqualTo(5);
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("terminateInstructions"))
+          .extracting(source -> ((List<Object>) source).getFirst())
+          .extracting("elementId", "elementInstanceKey")
+          .describedAs(
+              "Expect that the records are serialized with elementId in terminateInstructions")
+          .containsExactly(tuple("foo", 5));
     }
 
     @ParameterizedTest
@@ -679,12 +669,13 @@ final class BulkIndexRequestTest {
       request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
 
       // then
-      assertThat(request.bulkOperations()).hasSize(1);
-
-      final Map<String, Object> value = getValueFromFirstOperation(request);
-      assertThat(value.get("rootProcessInstanceKey"))
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("rootProcessInstanceKey"))
           .describedAs("Expect that the records are serialized without rootProcessInstanceKey")
-          .isNull();
+          .containsExactly(new Object[] {null});
     }
 
     @ParameterizedTest
@@ -717,12 +708,13 @@ final class BulkIndexRequestTest {
       request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
 
       // then
-      assertThat(request.bulkOperations()).hasSize(1);
-
-      final Map<String, Object> value = getValueFromFirstOperation(request);
-      assertThat(value.get("rootProcessInstanceKey"))
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("rootProcessInstanceKey"))
           .describedAs("Expect that the records are serialized with rootProcessInstanceKey")
-          .isEqualTo(rootProcessInstanceKey);
+          .containsExactly(rootProcessInstanceKey);
     }
 
     @Test
@@ -741,13 +733,14 @@ final class BulkIndexRequestTest {
       request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
 
       // then
-      assertThat(request.bulkOperations()).hasSize(1);
-
-      final Map<String, Object> value = getValueFromFirstOperation(request);
-      assertThat(value.get("jobToUserTaskMigration"))
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("jobToUserTaskMigration"))
           .describedAs(
               "Expect that job records are serialized without jobToUserTaskMigration on previous version")
-          .isNull();
+          .containsExactly(new Object[] {null});
     }
 
     @Test
@@ -766,19 +759,29 @@ final class BulkIndexRequestTest {
       request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
 
       // then
-      assertThat(request.bulkOperations()).hasSize(1);
-
-      final Map<String, Object> value = getValueFromFirstOperation(request);
-      assertThat(value.get("jobToUserTaskMigration"))
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("jobToUserTaskMigration"))
           .describedAs(
               "Expect that job records are serialized with jobToUserTaskMigration on current version")
-          .isEqualTo(true);
+          .containsExactly(true);
     }
 
     private static long getRootProcessInstanceKey(final RecordValue recordValue) throws Exception {
       final var field = recordValue.getClass().getDeclaredField("rootProcessInstanceKey");
       field.setAccessible(true);
       return (long) field.get(recordValue);
+    }
+
+    private Record<?> deserializeSource(final IndexOperation operation) {
+      try {
+        return MAPPER.readValue(operation.source(), new TypeReference<>() {});
+      } catch (final IOException e) {
+        throw new UncheckedIOException(
+            String.format("Failed to deserialize operation [%s] source", operation.metadata()), e);
+      }
     }
 
     @ParameterizedTest
@@ -802,12 +805,13 @@ final class BulkIndexRequestTest {
       request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
 
       // then
-      assertThat(request.bulkOperations()).hasSize(1);
-
-      final Map<String, Object> value = getValueFromFirstOperation(request);
-      assertThat(value.get("businessId"))
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("businessId"))
           .describedAs("Expect that the records are serialized without businessId")
-          .isNull();
+          .containsExactly(new Object[] {null});
     }
 
     @ParameterizedTest
@@ -832,30 +836,19 @@ final class BulkIndexRequestTest {
       request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
 
       // then
-      assertThat(request.bulkOperations()).hasSize(1);
-
-      final Map<String, Object> value = getValueFromFirstOperation(request);
-      assertThat(value.get("businessId"))
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("businessId"))
           .describedAs("Expect that the records are serialized with businessId")
-          .isEqualTo(businessId);
+          .containsExactly(businessId);
     }
 
     private static String getBusinessId(final RecordValue recordValue) throws Exception {
       final var field = recordValue.getClass().getDeclaredField("businessId");
       field.setAccessible(true);
       return (String) field.get(recordValue);
-    }
-
-    private static Map<String, Object> getDocumentAsMap(final BulkOperation operation)
-        throws IOException {
-      return MAPPER.readValue(
-          ((JsonData) operation.index().document()).toJson().toString(), MAP_TYPE_REFERENCE);
-    }
-
-    private static Map<String, Object> getValueFromFirstOperation(final BulkIndexRequest request)
-        throws IOException {
-      final Map<String, Object> doc = getDocumentAsMap(request.bulkOperations().getFirst());
-      return (Map<String, Object>) doc.get("value");
     }
 
     @Test
@@ -880,13 +873,16 @@ final class BulkIndexRequestTest {
       request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
 
       // then
-      assertThat(request.bulkOperations()).hasSize(1);
-
-      final Map<String, Object> value = getValueFromFirstOperation(request);
-      assertThat(value)
-          .doesNotContainKey("bpmnProcessId")
-          .doesNotContainKey("elementInstanceKey")
-          .doesNotContainKey("rootProcessInstanceKey");
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .satisfies(
+              values ->
+                  assertThat((Map<String, Object>) values.getFirst())
+                      .doesNotContainKey("bpmnProcessId")
+                      .doesNotContainKey("elementInstanceKey")
+                      .doesNotContainKey("rootProcessInstanceKey"));
     }
 
     @Test
@@ -910,13 +906,14 @@ final class BulkIndexRequestTest {
       request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
 
       // then
-      assertThat(request.bulkOperations()).hasSize(1);
-
-      final Map<String, Object> value = getValueFromFirstOperation(request);
-      assertThat(value.get("bpmnProcessId"))
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("bpmnProcessId"))
           .describedAs(
               "Expect that migration records are serialized with bpmnProcessId on current version")
-          .isEqualTo("my-process");
+          .containsExactly("my-process");
     }
 
     @Test
@@ -940,14 +937,17 @@ final class BulkIndexRequestTest {
       request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
 
       // then
-      assertThat(request.bulkOperations()).hasSize(1);
-
-      final Map<String, Object> value = getValueFromFirstOperation(request);
-      assertThat(value)
-          .doesNotContainKey("bpmnProcessId")
-          .doesNotContainKey("elementInstanceKey")
-          .doesNotContainKey("rootProcessInstanceKey")
-          .doesNotContainKey("moveInstructions");
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .satisfies(
+              values ->
+                  assertThat((Map<String, Object>) values.getFirst())
+                      .doesNotContainKey("bpmnProcessId")
+                      .doesNotContainKey("elementInstanceKey")
+                      .doesNotContainKey("rootProcessInstanceKey")
+                      .doesNotContainKey("moveInstructions"));
     }
 
     @Test
@@ -970,13 +970,14 @@ final class BulkIndexRequestTest {
       request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
 
       // then
-      assertThat(request.bulkOperations()).hasSize(1);
-
-      final Map<String, Object> value = getValueFromFirstOperation(request);
-      assertThat(value.get("bpmnProcessId"))
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("bpmnProcessId"))
           .describedAs(
               "Expect that modification records are serialized with bpmnProcessId on current version")
-          .isEqualTo("my-process");
+          .containsExactly("my-process");
     }
 
     @ParameterizedTest
@@ -998,13 +999,14 @@ final class BulkIndexRequestTest {
       request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
 
       // then
-      assertThat(request.bulkOperations()).hasSize(1);
-
-      final Map<String, Object> value = getValueFromFirstOperation(request);
-      assertThat(value.get("elementInstanceKey"))
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("elementInstanceKey"))
           .describedAs(
               "Expect that records are serialized without elementInstanceKey on previous version")
-          .isNull();
+          .containsExactly(new Object[] {null});
     }
 
     @ParameterizedTest
@@ -1027,13 +1029,14 @@ final class BulkIndexRequestTest {
       request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
 
       // then
-      assertThat(request.bulkOperations()).hasSize(1);
-
-      final Map<String, Object> value = getValueFromFirstOperation(request);
-      assertThat(value.get("elementInstanceKey"))
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("elementInstanceKey"))
           .describedAs(
               "Expect that records are serialized with elementInstanceKey on current version")
-          .isNotNull();
+          .doesNotContainNull();
     }
 
     @Test
@@ -1061,13 +1064,16 @@ final class BulkIndexRequestTest {
       request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
 
       // then
-      assertThat(request.bulkOperations()).hasSize(1);
-
-      final Map<String, Object> value = getValueFromFirstOperation(request);
-      assertThat(value)
-          .doesNotContainKey("elementInstanceKey")
-          .doesNotContainKey("source")
-          .doesNotContainKey("rootProcessInstanceKey");
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .satisfies(
+              values ->
+                  assertThat((Map<String, Object>) values.getFirst())
+                      .doesNotContainKey("elementInstanceKey")
+                      .doesNotContainKey("source")
+                      .doesNotContainKey("rootProcessInstanceKey"));
     }
 
     @Test
@@ -1095,10 +1101,15 @@ final class BulkIndexRequestTest {
       request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
 
       // then
-      assertThat(request.bulkOperations()).hasSize(1);
-
-      final Map<String, Object> value = getValueFromFirstOperation(request);
-      assertThat(value).containsKey("source").containsKey("rootProcessInstanceKey");
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .satisfies(
+              values ->
+                  assertThat((Map<String, Object>) values.getFirst())
+                      .containsKey("source")
+                      .containsKey("rootProcessInstanceKey"));
     }
 
     @Test
@@ -1119,12 +1130,14 @@ final class BulkIndexRequestTest {
       request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
 
       // then
-      assertThat(request.bulkOperations()).hasSize(1);
-      final Map<String, Object> value = getValueFromFirstOperation(request);
-      assertThat(value.get("tenantFilter"))
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("tenantFilter"))
           .describedAs(
               "Expect that job batch records are serialized without tenantFilter on previous version")
-          .isNull();
+          .containsExactly(new Object[] {null});
     }
 
     @Test
@@ -1145,12 +1158,14 @@ final class BulkIndexRequestTest {
       request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
 
       // then
-      assertThat(request.bulkOperations()).hasSize(1);
-      final Map<String, Object> value = getValueFromFirstOperation(request);
-      assertThat(value.get("tenantFilter"))
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("tenantFilter"))
           .describedAs(
               "Expect that job batch records are serialized with tenantFilter on current version")
-          .isEqualTo(TenantFilter.PROVIDED.name());
+          .containsExactly(TenantFilter.PROVIDED.name());
     }
 
     @Test
@@ -1176,13 +1191,19 @@ final class BulkIndexRequestTest {
       request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
 
       // then
-      assertThat(request.bulkOperations()).hasSize(1);
-      final Map<String, Object> value = getValueFromFirstOperation(request);
-      final var jobs = (List<Map<String, Object>>) value.get("jobs");
-      assertThat(jobs).isNotNull().isNotEmpty();
-      assertThat(jobs.getFirst())
-          .doesNotContainKey("rootProcessInstanceKey")
-          .doesNotContainKey("jobToUserTaskMigration");
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .satisfies(
+              values -> {
+                final var value = (Map<String, Object>) values.getFirst();
+                final var jobs = (List<Map<String, Object>>) value.get("jobs");
+                assertThat(jobs).isNotEmpty();
+                assertThat(jobs.getFirst())
+                    .doesNotContainKey("rootProcessInstanceKey")
+                    .doesNotContainKey("jobToUserTaskMigration");
+              });
     }
 
     @Test
@@ -1207,13 +1228,19 @@ final class BulkIndexRequestTest {
       request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
 
       // then
-      assertThat(request.bulkOperations()).hasSize(1);
-      final Map<String, Object> value = getValueFromFirstOperation(request);
-      final var jobs = (List<Map<String, Object>>) value.get("jobs");
-      assertThat(jobs).isNotNull().isNotEmpty();
-      assertThat(jobs.getFirst())
-          .containsEntry("rootProcessInstanceKey", 42)
-          .containsEntry("jobToUserTaskMigration", true);
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .satisfies(
+              values -> {
+                final var value = (Map<String, Object>) values.getFirst();
+                final var jobs = (List<Map<String, Object>>) value.get("jobs");
+                assertThat(jobs).isNotEmpty();
+                assertThat(jobs.getFirst())
+                    .containsEntry("rootProcessInstanceKey", 42)
+                    .containsEntry("jobToUserTaskMigration", true);
+              });
     }
 
     @Test
@@ -1233,12 +1260,16 @@ final class BulkIndexRequestTest {
       request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
 
       // then
-      assertThat(request.bulkOperations()).hasSize(1);
-      final Map<String, Object> value = getValueFromFirstOperation(request);
-      assertThat(value)
-          .doesNotContainKey("tags")
-          .doesNotContainKey("listenersConfigKey")
-          .doesNotContainKey("rootProcessInstanceKey");
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .satisfies(
+              values ->
+                  assertThat((Map<String, Object>) values.getFirst())
+                      .doesNotContainKey("tags")
+                      .doesNotContainKey("listenersConfigKey")
+                      .doesNotContainKey("rootProcessInstanceKey"));
     }
 
     @Test
@@ -1257,11 +1288,13 @@ final class BulkIndexRequestTest {
       request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
 
       // then
-      assertThat(request.bulkOperations()).hasSize(1);
-      final Map<String, Object> value = getValueFromFirstOperation(request);
-      assertThat(value.get("tags"))
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("tags"))
           .describedAs("Expect that user task records are serialized with tags on current version")
-          .isNotNull();
+          .doesNotContainNull();
     }
 
     @Test
@@ -1284,12 +1317,14 @@ final class BulkIndexRequestTest {
       request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
 
       // then
-      assertThat(request.bulkOperations()).hasSize(1);
-      final Map<String, Object> value = getValueFromFirstOperation(request);
-      assertThat(value.get("deploymentKey"))
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("deploymentKey"))
           .describedAs(
               "Expect that decision requirements records are serialized without deploymentKey on previous version")
-          .isNull();
+          .containsExactly(new Object[] {null});
     }
 
     @Test
@@ -1312,12 +1347,14 @@ final class BulkIndexRequestTest {
       request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
 
       // then
-      assertThat(request.bulkOperations()).hasSize(1);
-      final Map<String, Object> value = getValueFromFirstOperation(request);
-      assertThat(value.get("deploymentKey"))
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("deploymentKey"))
           .describedAs(
               "Expect that decision requirements records are serialized with deploymentKey on current version")
-          .isEqualTo(99);
+          .containsExactly(99);
     }
 
     @Test
@@ -1336,12 +1373,14 @@ final class BulkIndexRequestTest {
       request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
 
       // then
-      assertThat(request.bulkOperations()).hasSize(1);
-      final Map<String, Object> value = getValueFromFirstOperation(request);
-      assertThat(value.get("deploymentKey"))
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("deploymentKey"))
           .describedAs(
               "Expect that deployment records are serialized without deploymentKey on previous version")
-          .isNull();
+          .containsExactly(new Object[] {null});
     }
 
     @Test
@@ -1360,12 +1399,14 @@ final class BulkIndexRequestTest {
       request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
 
       // then
-      assertThat(request.bulkOperations()).hasSize(1);
-      final Map<String, Object> value = getValueFromFirstOperation(request);
-      assertThat(value.get("deploymentKey"))
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("deploymentKey"))
           .describedAs(
               "Expect that deployment records are serialized with deploymentKey on current version")
-          .isEqualTo(42);
+          .containsExactly(42);
     }
 
     @Test
@@ -1390,14 +1431,18 @@ final class BulkIndexRequestTest {
       request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
 
       // then
-      assertThat(request.bulkOperations()).hasSize(1);
-      final Map<String, Object> value = getValueFromFirstOperation(request);
-      assertThat(value)
-          .doesNotContainKey("deleteHistory")
-          .doesNotContainKey("batchOperationKey")
-          .doesNotContainKey("batchOperationType")
-          .doesNotContainKey("resourceType")
-          .doesNotContainKey("resourceId");
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .satisfies(
+              values ->
+                  assertThat((Map<String, Object>) values.getFirst())
+                      .doesNotContainKey("deleteHistory")
+                      .doesNotContainKey("batchOperationKey")
+                      .doesNotContainKey("batchOperationType")
+                      .doesNotContainKey("resourceType")
+                      .doesNotContainKey("resourceId"));
     }
 
     @Test
@@ -1422,14 +1467,18 @@ final class BulkIndexRequestTest {
       request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
 
       // then
-      assertThat(request.bulkOperations()).hasSize(1);
-      final Map<String, Object> value = getValueFromFirstOperation(request);
-      assertThat(value)
-          .containsKey("deleteHistory")
-          .containsKey("batchOperationKey")
-          .containsKey("batchOperationType")
-          .containsKey("resourceType")
-          .containsKey("resourceId");
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .satisfies(
+              values ->
+                  assertThat((Map<String, Object>) values.getFirst())
+                      .containsKey("deleteHistory")
+                      .containsKey("batchOperationKey")
+                      .containsKey("batchOperationType")
+                      .containsKey("resourceType")
+                      .containsKey("resourceId"));
     }
 
     @Test
@@ -1453,12 +1502,14 @@ final class BulkIndexRequestTest {
       request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
 
       // then
-      assertThat(request.bulkOperations()).hasSize(1);
-      final Map<String, Object> value = getValueFromFirstOperation(request);
-      assertThat(value.get("processDefinitionKey"))
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("processDefinitionKey"))
           .describedAs(
               "Expect that message correlation records are serialized without processDefinitionKey on previous version")
-          .isNull();
+          .containsExactly(new Object[] {null});
     }
 
     @Test
@@ -1482,12 +1533,14 @@ final class BulkIndexRequestTest {
       request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
 
       // then
-      assertThat(request.bulkOperations()).hasSize(1);
-      final Map<String, Object> value = getValueFromFirstOperation(request);
-      assertThat(value.get("processDefinitionKey"))
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("processDefinitionKey"))
           .describedAs(
               "Expect that message correlation records are serialized with processDefinitionKey on current version")
-          .isEqualTo(99);
+          .containsExactly(99);
     }
 
     @Test
@@ -1510,12 +1563,14 @@ final class BulkIndexRequestTest {
       request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
 
       // then
-      assertThat(request.bulkOperations()).hasSize(1);
-      final Map<String, Object> value = getValueFromFirstOperation(request);
-      assertThat(value.get("processDefinitionKey"))
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("processDefinitionKey"))
           .describedAs(
               "Expect that process instance batch records are serialized without processDefinitionKey on previous version")
-          .isNull();
+          .containsExactly(new Object[] {null});
     }
 
     @Test
@@ -1538,12 +1593,14 @@ final class BulkIndexRequestTest {
       request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
 
       // then
-      assertThat(request.bulkOperations()).hasSize(1);
-      final Map<String, Object> value = getValueFromFirstOperation(request);
-      assertThat(value.get("processDefinitionKey"))
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("processDefinitionKey"))
           .describedAs(
               "Expect that process instance batch records are serialized with processDefinitionKey on current version")
-          .isEqualTo(88);
+          .containsExactly(88);
     }
 
     @Test
@@ -1566,12 +1623,14 @@ final class BulkIndexRequestTest {
       request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
 
       // then
-      assertThat(request.bulkOperations()).hasSize(1);
-      final Map<String, Object> value = getValueFromFirstOperation(request);
-      assertThat(value.get("processDefinitionKey"))
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("processDefinitionKey"))
           .describedAs(
               "Expect that runtime instruction records are serialized without processDefinitionKey on previous version")
-          .isNull();
+          .containsExactly(new Object[] {null});
     }
 
     @Test
@@ -1594,12 +1653,14 @@ final class BulkIndexRequestTest {
       request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
 
       // then
-      assertThat(request.bulkOperations()).hasSize(1);
-      final Map<String, Object> value = getValueFromFirstOperation(request);
-      assertThat(value.get("processDefinitionKey"))
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("processDefinitionKey"))
           .describedAs(
               "Expect that runtime instruction records are serialized with processDefinitionKey on current version")
-          .isEqualTo(77);
+          .containsExactly(77);
     }
 
     @Test
@@ -1626,13 +1687,17 @@ final class BulkIndexRequestTest {
       request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
 
       // then
-      assertThat(request.bulkOperations()).hasSize(1);
-      final Map<String, Object> value = getValueFromFirstOperation(request);
-      assertThat(value)
-          .doesNotContainKey("processDefinitionKey")
-          .doesNotContainKey("tenantId")
-          .doesNotContainKey("bpmnProcessId")
-          .doesNotContainKey("rootProcessInstanceKey");
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .satisfies(
+              values ->
+                  assertThat((Map<String, Object>) values.getFirst())
+                      .doesNotContainKey("processDefinitionKey")
+                      .doesNotContainKey("tenantId")
+                      .doesNotContainKey("bpmnProcessId")
+                      .doesNotContainKey("rootProcessInstanceKey"));
     }
 
     @Test
@@ -1659,11 +1724,15 @@ final class BulkIndexRequestTest {
       request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
 
       // then
-      assertThat(request.bulkOperations()).hasSize(1);
-      final Map<String, Object> value = getValueFromFirstOperation(request);
-      assertThat(value)
-          .containsEntry("processDefinitionKey", 55)
-          .containsEntry("tenantId", "my-tenant");
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .satisfies(
+              values ->
+                  assertThat((Map<String, Object>) values.getFirst())
+                      .containsEntry("processDefinitionKey", 55)
+                      .containsEntry("tenantId", "my-tenant"));
     }
 
     @Test
@@ -1687,12 +1756,16 @@ final class BulkIndexRequestTest {
       request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
 
       // then
-      assertThat(request.bulkOperations()).hasSize(1);
-      final Map<String, Object> value = getValueFromFirstOperation(request);
-      assertThat(value)
-          .doesNotContainKey("processDefinitionKey")
-          .doesNotContainKey("bpmnProcessId")
-          .doesNotContainKey("rootProcessInstanceKey");
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .satisfies(
+              values ->
+                  assertThat((Map<String, Object>) values.getFirst())
+                      .doesNotContainKey("processDefinitionKey")
+                      .doesNotContainKey("bpmnProcessId")
+                      .doesNotContainKey("rootProcessInstanceKey"));
     }
 
     @Test
@@ -1716,12 +1789,14 @@ final class BulkIndexRequestTest {
       request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
 
       // then
-      assertThat(request.bulkOperations()).hasSize(1);
-      final Map<String, Object> value = getValueFromFirstOperation(request);
-      assertThat(value.get("processDefinitionKey"))
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("processDefinitionKey"))
           .describedAs(
               "Expect that modification records are serialized with processDefinitionKey on current version")
-          .isEqualTo(66);
+          .containsExactly(66);
     }
 
     @Test
@@ -1753,14 +1828,16 @@ final class BulkIndexRequestTest {
       request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
 
       // then
-      assertThat(request.bulkOperations()).hasSize(1);
-      final Map<String, Object> value = getValueFromFirstOperation(request);
-      final var evaluatedDecisions = (List<Map<String, Object>>) value.get("evaluatedDecisions");
-      assertThat(evaluatedDecisions).isNotNull().isNotEmpty();
-      assertThat(evaluatedDecisions.getFirst())
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("evaluatedDecisions"))
+          .extracting(source -> ((List<Object>) source).getFirst())
+          .extracting(source -> ((Map<String, Object>) source).get("decisionEvaluationInstanceKey"))
           .describedAs(
               "Expect that evaluatedDecisions are serialized without decisionEvaluationInstanceKey on previous version")
-          .doesNotContainKey("decisionEvaluationInstanceKey");
+          .containsExactly(new Object[] {null});
     }
 
     @Test
@@ -1793,14 +1870,16 @@ final class BulkIndexRequestTest {
       request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
 
       // then - decisionEvaluationInstanceKey is always null because it has @JsonIgnore on the impl
-      assertThat(request.bulkOperations()).hasSize(1);
-      final Map<String, Object> value = getValueFromFirstOperation(request);
-      final var evaluatedDecisions = (List<Map<String, Object>>) value.get("evaluatedDecisions");
-      assertThat(evaluatedDecisions).isNotNull().isNotEmpty();
-      assertThat(evaluatedDecisions.getFirst().get("decisionEvaluationInstanceKey"))
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("evaluatedDecisions"))
+          .extracting(source -> ((List<Object>) source).getFirst())
+          .extracting(source -> ((Map<String, Object>) source).get("decisionEvaluationInstanceKey"))
           .describedAs(
               "Expect that decisionEvaluationInstanceKey is suppressed via @JsonIgnore on the impl class")
-          .isNull();
+          .containsExactly(new Object[] {null});
     }
 
     @Test
@@ -1822,12 +1901,16 @@ final class BulkIndexRequestTest {
       request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
 
       // then
-      assertThat(request.bulkOperations()).hasSize(1);
-      final Map<String, Object> value = getValueFromFirstOperation(request);
-      assertThat(value)
-          .doesNotContainKey("checkpointType")
-          .doesNotContainKey("checkpointTimestamp")
-          .doesNotContainKey("firstLogPosition");
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .satisfies(
+              values ->
+                  assertThat((Map<String, Object>) values.getFirst())
+                      .doesNotContainKey("checkpointType")
+                      .doesNotContainKey("checkpointTimestamp")
+                      .doesNotContainKey("firstLogPosition"));
     }
 
     @Test
@@ -1849,9 +1932,15 @@ final class BulkIndexRequestTest {
       request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
 
       // then
-      assertThat(request.bulkOperations()).hasSize(1);
-      final Map<String, Object> value = getValueFromFirstOperation(request);
-      assertThat(value).containsKey("checkpointType").containsKey("firstLogPosition");
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .satisfies(
+              values ->
+                  assertThat((Map<String, Object>) values.getFirst())
+                      .containsKey("checkpointType")
+                      .containsKey("firstLogPosition"));
     }
 
     @Test
@@ -1871,12 +1960,14 @@ final class BulkIndexRequestTest {
       request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
 
       // then
-      assertThat(request.bulkOperations()).hasSize(1);
-      final Map<String, Object> value = getValueFromFirstOperation(request);
-      assertThat(value.get("listenersConfigKey"))
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("listenersConfigKey"))
           .describedAs(
               "Expect that user task records are serialized with listenersConfigKey on current version")
-          .isEqualTo(42);
+          .containsExactly(42);
     }
 
     @Test
@@ -1902,12 +1993,19 @@ final class BulkIndexRequestTest {
       request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
 
       // then
-      assertThat(request.bulkOperations()).hasSize(1);
-      final Map<String, Object> value = getValueFromFirstOperation(request);
-      assertThat(value).doesNotContainKey("deploymentKey");
-      final var metadata = (List<Map<String, Object>>) value.get("decisionRequirementsMetadata");
-      assertThat(metadata).isNotNull().isNotEmpty();
-      assertThat(metadata.getFirst()).doesNotContainKey("deploymentKey");
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .satisfies(
+              values -> {
+                final var value = (Map<String, Object>) values.getFirst();
+                assertThat(value).doesNotContainKey("deploymentKey");
+                final var metadata =
+                    (List<Map<String, Object>>) value.get("decisionRequirementsMetadata");
+                assertThat(metadata).isNotNull().isNotEmpty();
+                assertThat(metadata.getFirst()).doesNotContainKey("deploymentKey");
+              });
     }
 
     @Test
@@ -1932,12 +2030,19 @@ final class BulkIndexRequestTest {
       request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
 
       // then
-      assertThat(request.bulkOperations()).hasSize(1);
-      final Map<String, Object> value = getValueFromFirstOperation(request);
-      assertThat(value).containsEntry("deploymentKey", 42);
-      final var metadata = (List<Map<String, Object>>) value.get("decisionRequirementsMetadata");
-      assertThat(metadata).isNotNull().isNotEmpty();
-      assertThat(metadata.getFirst()).containsEntry("deploymentKey", 42);
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .satisfies(
+              values -> {
+                final var value = (Map<String, Object>) values.getFirst();
+                assertThat(value).containsEntry("deploymentKey", 42);
+                final var metadata =
+                    (List<Map<String, Object>>) value.get("decisionRequirementsMetadata");
+                assertThat(metadata).isNotNull().isNotEmpty();
+                assertThat(metadata.getFirst()).containsEntry("deploymentKey", 42);
+              });
     }
   }
 }
