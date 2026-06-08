@@ -10,6 +10,7 @@ package io.camunda.service;
 import static com.tngtech.archunit.lang.SimpleConditionEvent.satisfied;
 import static com.tngtech.archunit.lang.SimpleConditionEvent.violated;
 
+import com.tngtech.archunit.core.domain.JavaConstructor;
 import com.tngtech.archunit.core.domain.JavaMethod;
 import com.tngtech.archunit.core.domain.JavaMethodCall;
 import com.tngtech.archunit.junit.AnalyzeClasses;
@@ -45,7 +46,7 @@ public final class ServiceSecurityContextArchTest {
    */
   @ArchTest
   public static final ArchRule
-      SERVICE_METHODS_MUST_USE_WITH_SECURITY_CONTEXT_BEFORE_SEARCH_CLIENT_CALLS =
+      R1_SERVICE_METHODS_MUST_USE_WITH_SECURITY_CONTEXT_BEFORE_SEARCH_CLIENT_CALLS =
           ArchRuleDefinition.methods()
               .that()
               .areDeclaredInClassesThat()
@@ -55,6 +56,27 @@ public final class ServiceSecurityContextArchTest {
                   "search client methods must be called with proper security context to ensure"
                       + " authorization checks are performed");
 
+  /**
+   * R2 — {@code ProcessDefinitionProvider} constructor must call {@code withSecurityContext} on the
+   * search client.
+   *
+   * <p>R1 exempts {@code ProcessDefinitionProvider} only because it sets the security context once
+   * in the constructor. This rule pins that assumption so removing the constructor call does not
+   * silently invalidate the exemption.
+   */
+  @ArchTest
+  public static final ArchRule
+      R2_PROCESS_DEFINITION_PROVIDER_CONSTRUCTOR_MUST_SET_SECURITY_CONTEXT =
+          ArchRuleDefinition.constructors()
+              .that()
+              .areDeclaredInClassesThat()
+              .haveFullyQualifiedName("io.camunda.service.cache.ProcessDefinitionProvider")
+              .should(callWithSecurityContextInConstructor())
+              .because(
+                  "ProcessDefinitionProvider is exempt from R1 only because its constructor calls"
+                      + " withSecurityContext — removing that call would bypass security checks"
+                      + " silently");
+
   private static ArchCondition<JavaMethod> useSecurityContextBeforeSearchClientCalls() {
     return new ArchCondition<JavaMethod>(
         "call withSecurityContext before calling search client data-fetching methods") {
@@ -62,7 +84,10 @@ public final class ServiceSecurityContextArchTest {
       public void check(final JavaMethod method, final ConditionEvents events) {
 
         // Exempt ProcessDefinitionProvider - it sets security context in constructor
-        if (method.getOwner().getSimpleName().equals("ProcessDefinitionProvider")) {
+        if (method
+            .getOwner()
+            .getName()
+            .equals("io.camunda.service.cache.ProcessDefinitionProvider")) {
           events.add(
               satisfied(
                   method,
@@ -160,5 +185,30 @@ public final class ServiceSecurityContextArchTest {
     final String methodName = call.getTarget().getName();
 
     return targetClassName.endsWith("SearchClient") && "withSecurityContext".equals(methodName);
+  }
+
+  private static ArchCondition<JavaConstructor> callWithSecurityContextInConstructor() {
+    return new ArchCondition<>("call withSecurityContext on a SearchClient in the constructor") {
+      @Override
+      public void check(final JavaConstructor constructor, final ConditionEvents events) {
+        final boolean callsWithSecurityContext =
+            constructor.getMethodCallsFromSelf().stream()
+                .anyMatch(ServiceSecurityContextArchTest::isWithSecurityContextCall);
+
+        if (callsWithSecurityContext) {
+          events.add(
+              satisfied(
+                  constructor,
+                  "ProcessDefinitionProvider constructor calls withSecurityContext on the search"
+                      + " client"));
+        } else {
+          events.add(
+              violated(
+                  constructor,
+                  "ProcessDefinitionProvider constructor does not call withSecurityContext on the"
+                      + " search client — the R1 exemption is no longer valid"));
+        }
+      }
+    };
   }
 }
