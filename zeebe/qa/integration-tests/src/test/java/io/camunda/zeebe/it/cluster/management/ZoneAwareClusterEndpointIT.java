@@ -36,11 +36,6 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
   }
 
   @Override
-  protected int minReplicationFactor() {
-    return 2;
-  }
-
-  @Override
   @SuppressWarnings("resource")
   protected TestCluster createCluster(
       final int brokerCount, final int partitionCount, final int replicationFactor) {
@@ -55,18 +50,8 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
   }
 
   @Override
-  protected MemberId memberIdForBroker(final int nodeIdx) {
-    return MemberId.from(ZONES[nodeIdx % ZONES.length], nodeIdx / ZONES.length);
-  }
-
-  private static List<Zone> zoneConfigs(final int brokerCount, final int replicationFactor) {
-    final var replicasZoneB = replicationFactor / 2;
-    final var replicasZoneA = replicationFactor - replicasZoneB;
-    final var brokersZoneB = brokerCount / ZONES.length;
-    final var brokersZoneA = brokerCount - brokersZoneB;
-    return List.of(
-        new Zone(ZONES[0], brokersZoneA, replicasZoneA, 100),
-        new Zone(ZONES[1], brokersZoneB, replicasZoneB, 10));
+  protected int minReplicationFactor() {
+    return 2;
   }
 
   @Override
@@ -99,6 +84,16 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
     assertThatCode(() -> actuator.patchCluster(request, true, false))
         .isInstanceOf(FeignException.BadRequest.class)
         .hasMessageContaining("zone-aware");
+  }
+
+  private static List<Zone> zoneConfigs(final int brokerCount, final int replicationFactor) {
+    final var replicasZoneB = replicationFactor / 2;
+    final var replicasZoneA = replicationFactor - replicasZoneB;
+    final var brokersZoneB = brokerCount / ZONES.length;
+    final var brokersZoneA = brokerCount - brokersZoneB;
+    return List.of(
+        new Zone(ZONES[0], brokersZoneA, replicasZoneA, 100),
+        new Zone(ZONES[1], brokersZoneB, replicasZoneB, 10));
   }
 
   @Test

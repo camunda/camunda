@@ -110,7 +110,12 @@ message TopologyChangeOperation {
     UpdateIncarnationNumberOperation updateIncarnationNumber = 18;
     PreScalingOperation preScaling = 19;
     PostScalingOperation postScaling = 20;
+    UpdatePartitionDistributorConfigOperation updatePartitionDistributorConfig = 21;
   }
+}
+
+message UpdatePartitionDistributorConfigOperation {
+  PartitionDistributorConfig config = 1;
 }
 
 message CompletedTopologyChangeOperation {

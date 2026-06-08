@@ -63,6 +63,10 @@ public sealed interface ClusterConfigurationChangeOperation {
   record UpdateRoutingState(MemberId memberId, Optional<RoutingState> routingState)
       implements ClusterConfigurationChangeOperation {}
 
+  record UpdatePartitionDistributorConfigOperation(
+      MemberId memberId, PartitionDistributorConfig config)
+      implements ClusterConfigurationChangeOperation {}
+
   /**
    * Represents an operation to update the incarnation number in the cluster configuration.
    *
