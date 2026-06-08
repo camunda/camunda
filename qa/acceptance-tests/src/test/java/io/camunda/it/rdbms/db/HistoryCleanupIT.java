@@ -26,6 +26,7 @@ import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import io.camunda.search.entities.BatchOperationType;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -81,11 +82,9 @@ public class HistoryCleanupIT {
 
     final var historyCleanupDate1 =
         jdbcTemplate.queryForObject(
-            "SELECT HISTORY_CLEANUP_DATE FROM "
-                + "PROCESS_INSTANCE"
-                + " WHERE PROCESS_INSTANCE_KEY = "
-                + processInstanceKey,
-            OffsetDateTime.class);
+            "SELECT HISTORY_CLEANUP_DATE FROM PROCESS_INSTANCE WHERE PROCESS_INSTANCE_KEY = ?",
+            OffsetDateTime.class,
+            processInstanceKey);
 
     assertThat(historyCleanupDate1)
         .describedAs("should update the history cleanup date for PROCESS_INSTANCE but date is null")
@@ -110,11 +109,9 @@ public class HistoryCleanupIT {
     // THEN
     final var historyCleanupDate =
         jdbcTemplate.queryForObject(
-            "SELECT HISTORY_CLEANUP_DATE FROM "
-                + "PROCESS_INSTANCE"
-                + " WHERE PROCESS_INSTANCE_KEY = "
-                + processInstanceKey,
-            OffsetDateTime.class);
+            "SELECT HISTORY_CLEANUP_DATE FROM PROCESS_INSTANCE WHERE PROCESS_INSTANCE_KEY = ?",
+            OffsetDateTime.class,
+            processInstanceKey);
 
     assertThat(historyCleanupDate)
         .describedAs(
@@ -162,11 +159,9 @@ public class HistoryCleanupIT {
 
   private OffsetDateTime getBatchOperationHistoryCleanupDate(final String batchOperationKey) {
     return jdbcTemplate.queryForObject(
-        "SELECT HISTORY_CLEANUP_DATE FROM BATCH_OPERATION "
-            + "WHERE BATCH_OPERATION_KEY = '"
-            + batchOperationKey
-            + "'",
-        OffsetDateTime.class);
+        "SELECT HISTORY_CLEANUP_DATE FROM BATCH_OPERATION WHERE BATCH_OPERATION_KEY = ?",
+        OffsetDateTime.class,
+        batchOperationKey);
   }
 
   @Test
@@ -184,10 +179,9 @@ public class HistoryCleanupIT {
     // THEN - verify cleanup date is calculated correctly
     final OffsetDateTime cleanupDate =
         jdbcTemplate.queryForObject(
-            "SELECT HISTORY_CLEANUP_DATE FROM DECISION_INSTANCE "
-                + "WHERE DECISION_INSTANCE_KEY = "
-                + decisionInstance.decisionInstanceKey(),
-            OffsetDateTime.class);
+            "SELECT HISTORY_CLEANUP_DATE FROM DECISION_INSTANCE WHERE DECISION_INSTANCE_KEY = ?",
+            OffsetDateTime.class,
+            decisionInstance.decisionInstanceKey());
 
     // The cleanup date should be evaluationDate + decisionInstanceTTL (default 30 days)
     final var expectedCleanupDate = evaluationDate.plusDays(30);
@@ -211,9 +205,9 @@ public class HistoryCleanupIT {
     // Verify it was created
     final var countBefore =
         jdbcTemplate.queryForObject(
-            "SELECT COUNT(*) FROM DECISION_INSTANCE WHERE DECISION_INSTANCE_KEY = "
-                + decisionInstance.decisionInstanceKey(),
-            Integer.class);
+            "SELECT COUNT(*) FROM DECISION_INSTANCE WHERE DECISION_INSTANCE_KEY = ?",
+            Integer.class,
+            decisionInstance.decisionInstanceKey());
     assertThat(countBefore).isEqualTo(1);
 
     // WHEN - Run cleanup with a date that should trigger deletion
@@ -224,9 +218,9 @@ public class HistoryCleanupIT {
     // THEN - Verify the standalone decision instance was deleted
     final var countAfter =
         jdbcTemplate.queryForObject(
-            "SELECT COUNT(*) FROM DECISION_INSTANCE WHERE DECISION_INSTANCE_KEY = "
-                + decisionInstance.decisionInstanceKey(),
-            Integer.class);
+            "SELECT COUNT(*) FROM DECISION_INSTANCE WHERE DECISION_INSTANCE_KEY = ?",
+            Integer.class,
+            decisionInstance.decisionInstanceKey());
     assertThat(countAfter)
         .describedAs("Standalone decision instance should be deleted during cleanup")
         .isEqualTo(0);
@@ -236,7 +230,7 @@ public class HistoryCleanupIT {
   public void shouldDeleteStandaloneDecisionAuditLogDuringCleanup() {
     // GIVEN - Create a standalone decision audit log with an expired cleanup date
     final var evaluationDate = OffsetDateTime.now().minusDays(40);
-    final var processInstanceKey = Math.abs(new java.util.Random().nextLong());
+    final var processInstanceKey = ThreadLocalRandom.current().nextLong(1, Long.MAX_VALUE);
     final var auditLog =
         AuditLogFixtures.createRandomized(
             b ->
@@ -250,8 +244,9 @@ public class HistoryCleanupIT {
     // Verify it was created
     final var countBefore =
         jdbcTemplate.queryForObject(
-            "SELECT COUNT(*) FROM AUDIT_LOG WHERE AUDIT_LOG_KEY = '" + auditLog.auditLogKey() + "'",
-            Integer.class);
+            "SELECT COUNT(*) FROM AUDIT_LOG WHERE AUDIT_LOG_KEY = ?",
+            Integer.class,
+            auditLog.auditLogKey());
     assertThat(countBefore).isEqualTo(1);
 
     // WHEN - Run cleanup with a date that should trigger deletion
@@ -262,8 +257,9 @@ public class HistoryCleanupIT {
     // THEN - Verify the standalone decision audit log was deleted
     final var countAfter =
         jdbcTemplate.queryForObject(
-            "SELECT COUNT(*) FROM AUDIT_LOG WHERE AUDIT_LOG_KEY = '" + auditLog.auditLogKey() + "'",
-            Integer.class);
+            "SELECT COUNT(*) FROM AUDIT_LOG WHERE AUDIT_LOG_KEY = ?",
+            Integer.class,
+            auditLog.auditLogKey());
     assertThat(countAfter)
         .describedAs("Standalone decision audit log should be deleted during cleanup")
         .isEqualTo(0);
@@ -286,9 +282,9 @@ public class HistoryCleanupIT {
     // Verify it was created
     final var countBefore =
         jdbcTemplate.queryForObject(
-            "SELECT COUNT(*) FROM DECISION_INSTANCE WHERE DECISION_INSTANCE_KEY = "
-                + decisionInstance.decisionInstanceKey(),
-            Integer.class);
+            "SELECT COUNT(*) FROM DECISION_INSTANCE WHERE DECISION_INSTANCE_KEY = ?",
+            Integer.class,
+            decisionInstance.decisionInstanceKey());
     assertThat(countBefore).isEqualTo(1);
 
     // WHEN - Run cleanup with a date that should trigger deletion
@@ -299,9 +295,9 @@ public class HistoryCleanupIT {
     // THEN - Verify the decision instance with PI was NOT deleted by standalone cleanup
     final var countAfter =
         jdbcTemplate.queryForObject(
-            "SELECT COUNT(*) FROM DECISION_INSTANCE WHERE DECISION_INSTANCE_KEY = "
-                + decisionInstance.decisionInstanceKey(),
-            Integer.class);
+            "SELECT COUNT(*) FROM DECISION_INSTANCE WHERE DECISION_INSTANCE_KEY = ?",
+            Integer.class,
+            decisionInstance.decisionInstanceKey());
     assertThat(countAfter)
         .describedAs(
             "Decision instance with process instance should NOT be deleted by standalone cleanup")
