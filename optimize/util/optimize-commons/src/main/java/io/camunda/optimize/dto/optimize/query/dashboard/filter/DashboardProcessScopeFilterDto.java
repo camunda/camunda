@@ -9,10 +9,5 @@ package io.camunda.optimize.dto.optimize.query.dashboard.filter;
 
 import io.camunda.optimize.dto.optimize.query.dashboard.filter.data.DashboardProcessScopeFilterDataDto;
 
-/**
- * Dashboard filter signalling that the dashboard exposes a process-scope filter — a process
- * ComboBox in the UI used to drill into a single process definition's metrics. Registered as the
- * {@code "processScope"} Jackson subtype on {@link DashboardFilterDto}.
- */
 public class DashboardProcessScopeFilterDto
     extends DashboardFilterDto<DashboardProcessScopeFilterDataDto> {}

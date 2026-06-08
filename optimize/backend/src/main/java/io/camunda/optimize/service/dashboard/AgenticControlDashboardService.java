@@ -10,7 +10,9 @@ package io.camunda.optimize.service.dashboard;
 import io.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import io.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardFilterDto;
 import io.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardInstanceEndDateFilterDto;
+import io.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardProcessScopeFilterDto;
 import io.camunda.optimize.dto.optimize.query.dashboard.filter.data.DashboardDateFilterDataDto;
+import io.camunda.optimize.dto.optimize.query.dashboard.filter.data.DashboardProcessScopeFilterDataDto;
 import io.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTileDto;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateUnit;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
@@ -85,8 +87,11 @@ public class AgenticControlDashboardService {
         new RollingDateFilterDataDto(
             new RollingDateFilterStartDto(INSTANCE_END_DATE_ROLLING_DAYS, DateUnit.DAYS));
     endDateFilter.setData(new DashboardDateFilterDataDto(rolling));
+    final DashboardProcessScopeFilterDto processScopeFilter = new DashboardProcessScopeFilterDto();
+    processScopeFilter.setData(new DashboardProcessScopeFilterDataDto(null));
     final List<DashboardFilterDto<?>> availableFilters = new ArrayList<>();
     availableFilters.add(endDateFilter);
+    availableFilters.add(processScopeFilter);
     return availableFilters;
   }
 }

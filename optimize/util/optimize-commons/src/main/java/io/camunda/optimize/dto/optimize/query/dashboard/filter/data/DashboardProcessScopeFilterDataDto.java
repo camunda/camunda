@@ -8,11 +8,53 @@
 package io.camunda.optimize.dto.optimize.query.dashboard.filter.data;
 
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterDataDto;
+import java.util.List;
+import java.util.Objects;
 
-/**
- * Marker payload for {@link
- * io.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardProcessScopeFilterDto}. The
- * process-scope filter currently has no user-configurable fields; the class exists so future
- * tickets can add fields (e.g. a default process key) without breaking the wire type.
- */
-public class DashboardProcessScopeFilterDataDto implements FilterDataDto {}
+public class DashboardProcessScopeFilterDataDto implements FilterDataDto {
+
+  private List<String> defaultValues;
+
+  public DashboardProcessScopeFilterDataDto(final List<String> defaultValues) {
+    this.defaultValues = defaultValues;
+  }
+
+  protected DashboardProcessScopeFilterDataDto() {}
+
+  public List<String> getDefaultValues() {
+    return defaultValues;
+  }
+
+  public void setDefaultValues(final List<String> defaultValues) {
+    this.defaultValues = defaultValues;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof DashboardProcessScopeFilterDataDto;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final DashboardProcessScopeFilterDataDto that = (DashboardProcessScopeFilterDataDto) o;
+    return Objects.equals(defaultValues, that.defaultValues);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(defaultValues);
+  }
+
+  @Override
+  public String toString() {
+    return "DashboardProcessScopeFilterDataDto(defaultValues=" + getDefaultValues() + ")";
+  }
+
+  @SuppressWarnings("checkstyle:ConstantName")
+  public static final class Fields {
+
+    public static final String defaultValues = "defaultValues";
+  }
+}

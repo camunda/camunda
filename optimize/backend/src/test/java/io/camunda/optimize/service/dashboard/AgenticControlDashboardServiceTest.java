@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import io.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardFilterDto;
 import io.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardInstanceEndDateFilterDto;
+import io.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardProcessScopeFilterDto;
 import io.camunda.optimize.dto.optimize.query.dashboard.filter.data.DashboardDateFilterDataDto;
 import io.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTileDto;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateUnit;
@@ -66,7 +67,7 @@ public class AgenticControlDashboardServiceTest {
   }
 
   @Test
-  void shouldSeedExactlyTheInstanceEndDateFilterOnColdStart() {
+  void shouldSeedInstanceEndDateFilterOnColdStart() {
     // given
     when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID)).thenReturn(Optional.empty());
 
@@ -76,8 +77,21 @@ public class AgenticControlDashboardServiceTest {
     // then
     final DashboardDefinitionRestDto saved = captureSavedDashboard();
     assertThat(saved.getAvailableFilters())
-        .singleElement()
-        .isInstanceOf(DashboardInstanceEndDateFilterDto.class);
+        .hasAtLeastOneElementOfType(DashboardInstanceEndDateFilterDto.class);
+  }
+
+  @Test
+  void shouldSeedProcessScopeFilterOnColdStart() {
+    // given
+    when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID)).thenReturn(Optional.empty());
+
+    // when
+    underTest.reconcile();
+
+    // then
+    final DashboardDefinitionRestDto saved = captureSavedDashboard();
+    assertThat(saved.getAvailableFilters())
+        .hasAtLeastOneElementOfType(DashboardProcessScopeFilterDto.class);
   }
 
   @Test
