@@ -110,6 +110,5 @@ export {
   useProcessInstancesSearchFilter,
   useProcessInstancesSearchSort,
   buildVariableEntry,
-  buildSmartVariableEntry,
   parseOneOfValues,
 };
