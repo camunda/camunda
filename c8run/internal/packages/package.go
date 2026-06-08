@@ -142,7 +142,7 @@ func createZipArchive(filesToArchive []string, outputPath, sourceRoot, targetRoo
 }
 
 func BuildJavaScripts() error {
-	javaVersionCmd := exec.Command("javac", "JavaVersion.java")
+	javaVersionCmd := exec.Command("javac", "--release", "21", "JavaVersion.java")
 	var out strings.Builder
 	var stderr strings.Builder
 	javaVersionCmd.Stdout = &out
@@ -151,7 +151,7 @@ func BuildJavaScripts() error {
 	if err != nil {
 		return fmt.Errorf("failed to compile JavaVersion : %w", err)
 	}
-	javaHomeCmd := exec.Command("javac", "JavaHome.java")
+	javaHomeCmd := exec.Command("javac", "--release", "21", "JavaHome.java")
 	javaHomeCmd.Stdout = &out
 	javaHomeCmd.Stderr = &stderr
 	err = javaHomeCmd.Run()
