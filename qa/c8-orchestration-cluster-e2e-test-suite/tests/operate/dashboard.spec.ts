@@ -170,9 +170,18 @@ test.describe('Dashboard', () => {
     await test.step('Select incident type B and verify details', async () => {
       await operateDashboardPage.gotoDashboardPage();
       await operateDashboardPage.clickIncidentByType(/type b/i);
-      await expect(
-        operateDashboardPage.processInstancesHeading(1, false),
-      ).toBeVisible();
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(
+            operateDashboardPage.processInstancesHeading(1, false),
+          ).toBeVisible();
+        },
+        onFailure: async () => {
+          console.log(
+            'Process instances heading not visible yet, retrying assertion...',
+          );
+        },
+      });
 
       await operateDashboardPage.clickViewInstanceLink();
       await expect(
