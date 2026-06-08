@@ -23,8 +23,9 @@ import java.util.Map;
 /**
  * Local DTO for deserializing Camunda document references from variable JSON. Avoids a compile-time
  * dependency on {@code io.camunda.client.impl.*} types. Unknown JSON fields (e.g. {@code
- * camunda.document.type}) are silently ignored via the ObjectMapper configuration in {@link
- * DocumentReferenceResolver}.
+ * camunda.document.type}) are silently ignored because deserialization goes through {@link
+ * io.camunda.process.test.impl.assertions.util.CamundaAssertJsonMapper}, which delegates to the
+ * Camunda client's {@code JsonMapper} with {@code FAIL_ON_UNKNOWN_PROPERTIES} disabled.
  */
 final class DocumentReferenceDto implements DocumentReferenceResponse {
 

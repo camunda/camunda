@@ -58,6 +58,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
   private final CamundaAssertJsonMapper jsonMapper;
   private final JudgeAssertj judgeAssertj;
   private final SemanticSimilarityAssertj similarityAssertj;
+  private final DocumentReferenceResolver documentReferenceResolver;
 
   public VariableAssertj(
       final CamundaDataSource dataSource,
@@ -72,6 +73,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
     this.jsonMapper = jsonMapper;
     judgeAssertj = new JudgeAssertj(judgeConfig);
     similarityAssertj = new SemanticSimilarityAssertj(semanticSimilarityConfig);
+    documentReferenceResolver = new DocumentReferenceResolver(dataSource, jsonMapper);
   }
 
   public void hasLocalVariableNames(
@@ -412,7 +414,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
     if (!judgeAssertj.isMultimodalDocumentResolutionEnabled()) {
       return Collections.emptyList();
     }
-    return new DocumentReferenceResolver(dataSource, jsonMapper).resolve(rawValue);
+    return documentReferenceResolver.resolve(rawValue);
   }
 
   private String assertVariableExists(

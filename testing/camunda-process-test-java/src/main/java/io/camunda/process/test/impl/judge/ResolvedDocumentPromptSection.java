@@ -72,6 +72,10 @@ public final class ResolvedDocumentPromptSection {
 
   private static void appendAttribute(
       final StringBuilder out, final String name, final String value) {
-    out.append(name).append("=\"").append(value == null ? "" : StringEscapeUtils.escapeJava(value)).append('"');
+    out.append(name).append("=\"").append(value == null ? "" : escapeMetadataValue(value)).append('"');
+  }
+
+  private static String escapeMetadataValue(final String value) {
+    return StringEscapeUtils.escapeJava(value).replace("<", "&lt;").replace(">", "&gt;");
   }
 }

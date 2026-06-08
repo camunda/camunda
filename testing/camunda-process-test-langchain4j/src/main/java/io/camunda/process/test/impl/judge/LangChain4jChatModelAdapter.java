@@ -124,12 +124,16 @@ public final class LangChain4jChatModelAdapter implements MultimodalChatModelAda
 
   private static String buildHeader(final ResolvedDocument d) {
     return "--- documentId=\""
-        + StringEscapeUtils.escapeJava(nullToEmpty(d.getReference().getDocumentId()))
+        + escapeMetadataValue(nullToEmpty(d.getReference().getDocumentId()))
         + "\" fileName=\""
-        + StringEscapeUtils.escapeJava(nullToEmpty(fileNameOf(d)))
+        + escapeMetadataValue(nullToEmpty(fileNameOf(d)))
         + "\" contentType=\""
-        + StringEscapeUtils.escapeJava(nullToEmpty(contentTypeOf(d)))
+        + escapeMetadataValue(nullToEmpty(contentTypeOf(d)))
         + "\" ---";
+  }
+
+  private static String escapeMetadataValue(final String value) {
+    return StringEscapeUtils.escapeJava(value).replace("<", "&lt;").replace(">", "&gt;");
   }
 
   private static String fileNameOf(final ResolvedDocument d) {
