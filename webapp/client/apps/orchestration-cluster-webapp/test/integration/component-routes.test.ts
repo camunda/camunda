@@ -115,7 +115,11 @@ test.describe('component routes', () => {
 		await expect(forbiddenPage.description).toBeVisible();
 	});
 
-	test('should show error page on /tasklist/processes when Tasklist is not active', async ({network, page, forbiddenPage}) => {
+	test('should show error page on /tasklist/processes when Tasklist is not active', async ({
+		network,
+		page,
+		forbiddenPage,
+	}) => {
 		network.use(
 			mockCurrentUserEndpoint({successResponse: HttpResponse.json(mockCurrentUser)}),
 			mockSystemConfigurationEndpoint({
