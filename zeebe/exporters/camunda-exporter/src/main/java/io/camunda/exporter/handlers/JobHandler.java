@@ -107,8 +107,13 @@ public class JobHandler implements ExportHandler<JobEntity, JobRecordValue> {
         .setErrorMessage(recordValue.getErrorMessage())
         .setErrorCode(recordValue.getErrorCode())
         .setCustomHeaders(recordValue.getCustomHeaders())
-        .setJobKind(recordValue.getJobKind().name())
-        .setFlowNodeId(recordValue.getElementId());
+        .setJobKind(recordValue.getJobKind().name());
+
+    // Skip setting flowNodeId for intents that may contain NO_CATCH_EVENT_FOUND sentinel
+    // to preserve the existing value in ES (partial update pattern)
+    if (!INTENTS_RETAINING_ELEMENT_ID.contains(record.getIntent())) {
+      entity.setFlowNodeId(recordValue.getElementId());
+    }
 
     if (record.getIntent().equals(JobIntent.CREATED)) {
       entity.setCreationTime(recordTimestampAsOffsetDateTime);
@@ -133,10 +138,6 @@ public class JobHandler implements ExportHandler<JobEntity, JobRecordValue> {
     final long jobDeadline = recordValue.getDeadline();
     if (jobDeadline >= 0) {
       entity.setDeadline(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(jobDeadline)));
-    }
-
-    if (INTENTS_RETAINING_ELEMENT_ID.contains(record.getIntent())) {
-      entity.setFlowNodeId(null);
     }
 
     if (FAILED_JOB_EVENTS.contains(record.getIntent())) {

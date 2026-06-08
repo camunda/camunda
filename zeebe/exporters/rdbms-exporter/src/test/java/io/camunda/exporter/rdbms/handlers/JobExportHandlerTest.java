@@ -27,6 +27,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.EnumSource.Mode;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -129,6 +131,56 @@ class JobExportHandlerTest {
     // then
     verify(jobWriter).create(jobDbModelCaptor.capture());
     assertThat(jobDbModelCaptor.getValue().priority()).isEqualTo(42);
+  }
+
+  @Test
+  void shouldSetElementIdOnCreated() {
+    // given
+    final var recordValue =
+        ImmutableJobRecordValue.builder()
+            .withJobKind(JobKind.BPMN_ELEMENT)
+            .withElementId("serviceTask")
+            .build();
+    final Record<JobRecordValue> record =
+        factory.generateRecord(
+            ValueType.JOB,
+            r ->
+                r.withIntent(JobIntent.CREATED)
+                    .withValueType(ValueType.JOB)
+                    .withValue(recordValue));
+
+    // when
+    handler.export(record);
+
+    // then
+    verify(jobWriter).create(jobDbModelCaptor.capture());
+    assertThat(jobDbModelCaptor.getValue().elementId()).isEqualTo("serviceTask");
+  }
+
+  @ParameterizedTest(name = "Should not set elementId for intent: {0}")
+  @EnumSource(
+      value = JobIntent.class,
+      names = {"FAILED", "ERROR_THROWN", "RETRIES_UPDATED"},
+      mode = Mode.INCLUDE)
+  void shouldNotSetElementIdForRetainingIntents(final JobIntent intent) {
+    // given
+    final var recordValue =
+        ImmutableJobRecordValue.builder()
+            .withJobKind(JobKind.BPMN_ELEMENT)
+            .withElementId("differentElementId")
+            .withRetries(1)
+            .build();
+    final Record<JobRecordValue> record =
+        factory.generateRecord(
+            ValueType.JOB,
+            r -> r.withIntent(intent).withValueType(ValueType.JOB).withValue(recordValue));
+
+    // when
+    handler.export(record);
+
+    // then - elementId not set in model, preserving persisted value via partial update
+    verify(jobWriter).update(jobDbModelCaptor.capture());
+    assertThat(jobDbModelCaptor.getValue().elementId()).isNull();
   }
 
   @Test

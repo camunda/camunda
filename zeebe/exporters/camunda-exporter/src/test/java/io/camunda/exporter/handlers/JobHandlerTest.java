@@ -349,9 +349,10 @@ final class JobHandlerTest {
   void shouldNotUpdateFlowNodeIdOnRetriesUpdated() {
     // given
     final long recordKey = 789;
+    final String existingFlowNodeId = "existingServiceTask";
     final var recordValue =
         ImmutableJobRecordValue.builder()
-            .withElementId("serviceTask")
+            .withElementId("differentElementId")
             .withRetries(3)
             .withJobKind(JobKind.BPMN_ELEMENT)
             .build();
@@ -363,13 +364,14 @@ final class JobHandlerTest {
                     .withKey(recordKey)
                     .withValueType(ValueType.JOB)
                     .withValue(recordValue));
-    final var entity = new JobEntity().setId(String.valueOf(recordKey));
+    final var entity =
+        new JobEntity().setId(String.valueOf(recordKey)).setFlowNodeId(existingFlowNodeId);
 
     // when
     underTest.updateEntity(record, entity);
 
-    // then - flowNodeId is null so flush() won't overwrite the stored value
-    assertThat(entity.getFlowNodeId()).isNull();
+    // then - pre-existing flowNodeId preserved; partial update must not overwrite it
+    assertThat(entity.getFlowNodeId()).isEqualTo(existingFlowNodeId);
   }
 
   @Test
