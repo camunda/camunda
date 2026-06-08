@@ -64,7 +64,6 @@ public class UserTaskRestrictionsIT {
   private static final String GROUP1 = "group1";
   private static final String GROUP2 = "group2";
   private static final String GROUP3_ID = "group3";
-  private static final String GROUP3_NAME = "Group 3";
 
   private static final String PROCESS_ID_1 = "processWithCandidateUsers";
   private static final BpmnModelInstance PROCESS_1 =
@@ -97,7 +96,7 @@ public class UserTaskRestrictionsIT {
           .moveToNode("startParallel")
           .userTask("group3Task")
           .zeebeUserTask()
-          .zeebeCandidateGroups(GROUP3_NAME)
+          .zeebeCandidateGroups(GROUP3_ID)
           .done();
 
   @UserDefinition
@@ -153,7 +152,7 @@ public class UserTaskRestrictionsIT {
   private static final TestGroup GROUP3_GROUP =
       new TestGroup(
           GROUP3_ID,
-          GROUP3_NAME,
+          GROUP3_ID,
           List.of(new Permissions(PROCESS_DEFINITION, READ_USER_TASK, List.of("*"))),
           List.of(new Membership(USER5, EntityType.USER)));
 
@@ -253,7 +252,8 @@ public class UserTaskRestrictionsIT {
           TestRestTasklistClient.OBJECT_MAPPER.readValue(
               user5Response.body(), TaskSearchResponse[].class);
       assertThat(tasksUser5).hasSize(1);
-      assertThat(tasksUser5[0].getCandidateGroups()).containsExactly(GROUP3_NAME);
+      // The engine resolves the group name to its ID at task creation time
+      assertThat(tasksUser5[0].getCandidateGroups()).containsExactly(GROUP3_ID);
     }
   }
 

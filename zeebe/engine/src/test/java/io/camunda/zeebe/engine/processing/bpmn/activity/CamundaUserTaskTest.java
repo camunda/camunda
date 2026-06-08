@@ -30,6 +30,8 @@ import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.ErrorType;
+import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
@@ -385,6 +387,100 @@ public final class CamundaUserTaskTest {
             .getFirst();
 
     Assertions.assertThat(userTask.getValue()).hasCandidateGroupsList("alice", "bob");
+  }
+
+  @Test
+  public void shouldResolveCandidateGroupNameToGroupId() {
+    // given
+    ENGINE.group().newGroup("front_support_retail_ch").withName("Front Support Retail CH").create();
+    ENGINE
+        .deployment()
+        .withXmlResource(process(t -> t.zeebeCandidateGroups("Front Support Retail CH")))
+        .deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final Record<UserTaskRecordValue> userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(userTask.getValue()).hasCandidateGroupsList("front_support_retail_ch");
+  }
+
+  @Test
+  public void shouldKeepCandidateGroupWhenNoManagedGroupMatches() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(process(t -> t.zeebeCandidateGroups("unmanaged-group")))
+        .deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final Record<UserTaskRecordValue> userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(userTask.getValue()).hasCandidateGroupsList("unmanaged-group");
+  }
+
+  @Test
+  public void shouldRaiseIncidentWhenCandidateGroupNameIsAmbiguous() {
+    // given
+    final var ambiguousName = "Support";
+    ENGINE.group().newGroup("support_a").withName(ambiguousName).create();
+    ENGINE.group().newGroup("support_b").withName(ambiguousName).create();
+    ENGINE
+        .deployment()
+        .withXmlResource(process(t -> t.zeebeCandidateGroups(ambiguousName)))
+        .deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    assertThat(incident.getValue().getErrorType()).isEqualTo(ErrorType.EXTRACT_VALUE_ERROR);
+    assertThat(incident.getValue().getErrorMessage()).contains(ambiguousName);
+  }
+
+  @Test
+  public void shouldResolveIncidentAfterAmbiguousCandidateGroupIsFixed() {
+    // given - an ambiguous candidate group name raises an incident on user task creation
+    final var ambiguousName = "Fixable Support";
+    ENGINE.group().newGroup("fixable_support_a").withName(ambiguousName).create();
+    ENGINE.group().newGroup("fixable_support_b").withName(ambiguousName).create();
+    ENGINE
+        .deployment()
+        .withXmlResource(process(t -> t.zeebeCandidateGroups(ambiguousName)))
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    // when - the ambiguity is removed so the name resolves uniquely, then the incident is resolved
+    ENGINE.group().deleteGroup("fixable_support_b").delete();
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
+
+    // then - the user task is created with the candidate group resolved to the remaining group's id
+    final Record<UserTaskRecordValue> userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(userTask.getValue()).hasCandidateGroupsList("fixable_support_a");
   }
 
   @Test
