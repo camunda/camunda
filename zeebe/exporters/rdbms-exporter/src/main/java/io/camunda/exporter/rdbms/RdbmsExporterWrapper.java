@@ -107,8 +107,7 @@ public class RdbmsExporterWrapper implements Exporter {
     final int partitionId = context.getPartitionId();
     final var physicalTenantId = RdbmsWriterConfig.DEFAULT_PHYSICAL_TENANT_ID;
     final var rdbmsWriterConfig =
-        config.createRdbmsWriterConfig(
-            partitionId, physicalTenantId, vendorDatabaseProperties, context.clock());
+        config.createRdbmsWriterConfig(partitionId, physicalTenantId, context.clock());
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(rdbmsWriterConfig);
 
     final var builder =
