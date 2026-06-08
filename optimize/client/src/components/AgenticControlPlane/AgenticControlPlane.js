@@ -44,16 +44,12 @@ export function AgenticControlPlane() {
   }, [mightFail]);
 
   const selectedPreset = DATE_PRESETS.find((p) => p.id === preset);
+  const definitions = processScope ? [{key: processScope, versions: ['all']}] : [];
   const filter = [presetToFilter(selectedPreset)];
 
   const scopedEvaluateReport = useCallback(
-    (id, tileFilter, query) =>
-      evaluateReport(
-        id,
-        tileFilter,
-        query,
-        processScope ? [{key: processScope, versions: ['all']}] : []
-      ),
+    (id, tileFilter, query) => evaluateReport(id, tileFilter, query, definitions),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [processScope]
   );
 
@@ -83,7 +79,12 @@ export function AgenticControlPlane() {
         processScope={processScope}
         onProcessScopeChange={setProcessScope}
       />
-      <DashboardRenderer loadTile={scopedEvaluateReport} tiles={visibleTiles} filter={filter} />
+      <DashboardRenderer
+        key={processScope ?? '__all__'}
+        loadTile={scopedEvaluateReport}
+        tiles={visibleTiles}
+        filter={filter}
+      />
     </div>
   );
 }

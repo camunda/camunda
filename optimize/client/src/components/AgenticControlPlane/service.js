@@ -6,16 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-// TODO: Replace stub with real API call once AgentDashboardService is ready:
-// import {get} from 'request';
-// export async function loadAgenticDashboard() {
-//   const response = await get('api/dashboard/agentic-control-plane-dashboard');
-//   return response.json();
-// }
+import {get} from 'request';
 
 export async function loadAgenticDashboard() {
-  return {
-    availableFilters: [{type: 'processScope'}],
-    tiles: [],
-  };
+  const response = await get('api/dashboard/agentic');
+  return response.json();
 }

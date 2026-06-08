@@ -20,7 +20,12 @@ export const DATE_PRESETS = [
   {id: '30d', translationKey: 'agenticControlPlane.presets.last30Days', value: 30, unit: 'days'},
   {id: '3m', translationKey: 'agenticControlPlane.presets.last3Months', value: 3, unit: 'months'},
   {id: '6m', translationKey: 'agenticControlPlane.presets.last6Months', value: 6, unit: 'months'},
-  {id: '12m', translationKey: 'agenticControlPlane.presets.last12Months', value: 12, unit: 'months'},
+  {
+    id: '12m',
+    translationKey: 'agenticControlPlane.presets.last12Months',
+    value: 12,
+    unit: 'months',
+  },
 ];
 
 export function FilterBar({preset, onPresetChange, processScope, onProcessScopeChange}) {
