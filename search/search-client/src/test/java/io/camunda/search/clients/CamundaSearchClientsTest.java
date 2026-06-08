@@ -22,7 +22,7 @@ import io.camunda.search.exception.CamundaSearchException.Reason;
 import io.camunda.search.exception.TenantAccessDeniedException;
 import io.camunda.search.query.ProcessDefinitionInstanceStatisticsQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
-import io.camunda.security.auth.SecurityContext;
+import io.camunda.security.core.auth.SecurityContext;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.security.reader.ResourceAccessController;
 import java.util.Map;

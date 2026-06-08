@@ -18,7 +18,7 @@ import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.SecurityContext;
+import io.camunda.security.core.auth.SecurityContext;
 import io.camunda.service.cache.ProcessDefinitionProvider.ProcessCacheData;
 import java.io.IOException;
 import java.io.InputStream;

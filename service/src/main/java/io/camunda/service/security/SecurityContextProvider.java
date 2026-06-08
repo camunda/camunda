@@ -8,10 +8,10 @@
 package io.camunda.service.security;
 
 import io.camunda.security.api.model.CamundaAuthentication;
-import io.camunda.security.auth.SecurityContext;
-import io.camunda.security.auth.SecurityContext.Builder;
-import io.camunda.security.auth.condition.AuthorizationCondition;
 import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.security.core.auth.SecurityContext;
+import io.camunda.security.core.auth.SecurityContext.Builder;
+import io.camunda.security.core.auth.condition.AuthorizationCondition;
 
 public class SecurityContextProvider {
 

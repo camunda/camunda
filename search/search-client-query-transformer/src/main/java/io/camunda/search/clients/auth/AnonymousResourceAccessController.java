@@ -7,7 +7,7 @@
  */
 package io.camunda.search.clients.auth;
 
-import io.camunda.security.auth.SecurityContext;
+import io.camunda.security.core.auth.SecurityContext;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.security.reader.ResourceAccessController;
 import java.util.function.Function;

@@ -10,7 +10,7 @@ package io.camunda.search.clients;
 import io.camunda.search.entities.AgentInstanceEntity;
 import io.camunda.search.query.AgentInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.SecurityContext;
+import io.camunda.security.core.auth.SecurityContext;
 
 public interface AgentInstanceSearchClient {
 

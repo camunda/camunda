@@ -8,7 +8,7 @@
 package io.camunda.security.reader;
 
 import io.camunda.security.api.model.CamundaAuthentication;
-import io.camunda.security.auth.SecurityContext;
+import io.camunda.security.core.auth.SecurityContext;
 import java.util.function.Function;
 
 /**
@@ -44,8 +44,8 @@ public interface ResourceAccessController {
       SecurityContext securityContext, Function<ResourceAccessChecks, T> resourceChecksApplier);
 
   /**
-   * Returns true if the given {@link io.camunda.security.auth.SecurityContext securityContext} is
-   * supported by this {@link io.camunda.security.reader.ResourceAccessController} *
+   * Returns true if the given {@link io.camunda.security.core.auth.SecurityContext securityContext}
+   * is supported by this {@link io.camunda.security.reader.ResourceAccessController}.
    */
   boolean supports(SecurityContext securityContext);
 
