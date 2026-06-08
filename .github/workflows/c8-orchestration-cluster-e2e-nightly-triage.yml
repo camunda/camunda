@@ -271,10 +271,11 @@ jobs:
           # Filter out:
           #   - empty/malformed file fields
 
-          # Path normalization + error sanitization + truncation. Control characters
-          # (ANSI escape sequences, etc.) are stripped via explode/map/implode.
-          # Errors are truncated to 600 chars because workflow_dispatch inputs cap at
-          # ~64KB total payload -- long stack traces from many failures would otherwise overflow.
+          # Path normalization + error sanitization + truncation.
+          # ANSI SGR sequences (e.g. ESC[31m) are stripped with gsub so that fragments like
+          # "[31m" are not left behind; remaining C0 control chars are then dropped via
+          # explode/map/implode. Errors are truncated to 600 chars because workflow_dispatch
+          # inputs cap at ~64KB total payload.
           jq -s '
             map(
               .file as $f
@@ -284,6 +285,7 @@ jobs:
                   | sub("^qa/c8-orchestration-cluster-e2e-test-suite/"; "")
                 )
               | .error = ((.error // "unknown error")
+                  | gsub("\\[[0-9;]*[A-Za-z]"; "")
                   | explode | map(select(. > 31 and . != 127)) | implode
                   | .[0:600])
               | select(.file != null and .file != "")
