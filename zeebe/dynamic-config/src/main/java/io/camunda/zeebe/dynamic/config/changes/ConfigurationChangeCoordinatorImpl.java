@@ -21,6 +21,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.CompletedChange;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.util.Either;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -114,7 +115,13 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
                                     localMemberId)));
                         return;
                       }
-                      final var generatedOperations = request.operations(currentClusterTopology);
+                      Either<Exception, List<ClusterConfigurationChangeOperation>>
+                          generatedOperations;
+                      try {
+                        generatedOperations = request.operations(currentClusterTopology);
+                      } catch (final Exception e) {
+                        generatedOperations = Either.left(e);
+                      }
                       if (generatedOperations.isLeft()) {
                         failFuture(future, generatedOperations.getLeft());
                         return;
