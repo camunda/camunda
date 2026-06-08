@@ -41,8 +41,7 @@ let dockerProcess;
 let backendVersion;
 let elasticSearchVersion;
 let opensearchVersion;
-let zeebeVersion;
-let identityVersion;
+let camundaVersion;
 
 const commonEnv = {
   OPTIMIZE_API_ACCESS_TOKEN: 'secret',
@@ -69,7 +68,6 @@ const cloudEnv = {
 
 const selfManagedEnv = {
   SPRING_PROFILES_ACTIVE: 'ccsm',
-  ZEEBE_IMPORT_ENABLED: 'true',
   CAMUNDA_OPTIMIZE_ZEEBE_ENABLED: 'true',
   CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL: 'http://localhost:18080/auth/realms/camunda-platform',
   CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_BACKEND_URL:
@@ -87,7 +85,8 @@ const selfManagedEnv = {
   OPTIMIZE_OPENSEARCH_HOST: 'localhost',
   OPTIMIZE_OPENSEARCH_HTTP_PORT: '9200',
   CAMUNDA_OPTIMIZE_API_AUDIENCE: 'optimize',
-  CAMUNDA_OPTIMIZE_IMPORT_DATA_SKIP_DATA_AFTER_NESTED_DOC_LIMIT_REACHED: true,
+  CAMUNDA_OPTIMIZE_IMPORT_DATA_SKIP_DATA_AFTER_NESTED_DOC_LIMIT_REACHED: 'true',
+  OPTIMIZE_LOG_LEVEL: 'DEBUG',
   SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI:
     'http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/certs',
   MANAGEMENT_SERVER_PORT: '19600',
@@ -151,7 +150,7 @@ async function setupEnvironment() {
   await Promise.all([
     startDocker(),
     buildBackend().catch(() => {
-      console.err('Optimize build interrupted');
+      console.error('Optimize build interrupted');
     }),
   ]);
 }
@@ -167,7 +166,10 @@ function buildBackend() {
     );
 
     buildBackendProcess.stdout.on('data', (data) => server.addLog(data, 'backend'));
-    buildBackendProcess.stderr.on('data', (data) => server.addLog(data, 'backend', true));
+    buildBackendProcess.stderr.on('data', (data) => {
+      console.error(`backend build stderr: ${data}`);
+      server.addLog(data, 'backend', true);
+    });
     buildBackendProcess.on('close', (code) => {
       buildBackendProcess = null;
       if (code === 0) {
@@ -180,6 +182,7 @@ function buildBackend() {
 }
 
 function startDocker() {
+  console.log(`Starting docker with profile ${mode}:${database}...`);
   if (dockerProcess) {
     return Promise.resolve();
   }
@@ -192,10 +195,8 @@ function startDocker() {
         ...process.env, // https://github.com/nodejs/node/issues/12986#issuecomment-301101354
         ES_VERSION: elasticSearchVersion,
         OS_VERSION: opensearchVersion,
-        ZEEBE_VERSION: zeebeVersion,
-        IDENTITY_VERSION: identityVersion,
         // we assume that the version of operate is the same as zeebe
-        OPERATE_VERSION: zeebeVersion,
+        CAMUNDA_VERSION: camundaVersion,
         // to start only the opensearch services, we create profiles for mode + database
         // so we can better control which services are started
         COMPOSE_PROFILES: [`${mode}:${database}`].join(','),
@@ -203,14 +204,30 @@ function startDocker() {
     });
 
     dockerProcess.stdout.on('data', (data) => server.addLog(data, 'docker'));
-    dockerProcess.stderr.on('data', (data) => server.addLog(data, 'docker', true));
+    dockerProcess.stderr.on('data', (data) => {
+      process.stderr.write(`docker stderr: ${data}`);
+      server.addLog(data, 'docker', true);
+    });
 
     process.on('SIGINT', stopDocker);
     process.on('SIGTERM', stopDocker);
 
-    // wait for the zeebe rest endpoint to be up before resolving the promise
-    serverCheck('http://localhost:9600/ready', resolve);
+    waitForDockerDependencies().then(resolve);
   });
+}
+
+function waitForDockerDependencies() {
+  const dependencies = ['http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=1s'];
+
+  if (mode === 'self-managed') {
+    dependencies.push('http://localhost:18080/auth', 'http://localhost:9600/ready');
+  }
+
+  return Promise.all(dependencies.map(waitForServerCheck));
+}
+
+function waitForServerCheck(url) {
+  return new Promise((resolve) => serverCheck(url, resolve));
 }
 
 function setVersionInfo() {
@@ -225,8 +242,10 @@ function setVersionInfo() {
         const properties = data.project.properties;
         elasticSearchVersion = properties['elasticsearch.test.version'];
         opensearchVersion = properties['opensearch.test.version'];
-        zeebeVersion = properties['zeebe.version'];
-        identityVersion = properties['identity.version'];
+        camundaVersion = properties['camunda.docker.version'];
+        console.log(
+          `Backend version: ${backendVersion}, Elasticsearch version: ${elasticSearchVersion}, Opensearch version: ${opensearchVersion}, Camunda/Identity version: ${camundaVersion}`
+        );
         resolve();
       });
     });

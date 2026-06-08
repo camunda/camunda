@@ -13,7 +13,8 @@ services:
       - cluster.routing.allocation.disk.watermark.high.max_headroom=150GB
       - action.destructive_requires_name=false
       - http.port=9200
-      - ES_JAVA_OPTS=-Xms${ELASTIC_JVM_MEMORY:-1}g -Xmx${ELASTIC_JVM_MEMORY:-1}g
+      - ES_JAVA_OPTS=-Xms${ELASTIC_JVM_MEMORY:-1}g -Xmx${ELASTIC_JVM_MEMORY:-1}g -XX:+IgnoreUnrecognizedVMOptions -XX:UseSVE=0
+      - CLI_JAVA_OPTS=-XX:+IgnoreUnrecognizedVMOptions -XX:UseSVE=0
     ulimits:
       memlock:
         soft: -1
@@ -60,49 +61,6 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-  zeebe:
-    image: camunda/zeebe:${ZEEBE_VERSION:-8.5.0}
-    profiles: ['cloud', 'self-managed', 'cloud:elasticsearch', 'self-managed:elasticsearch']
-    container_name: zeebe
-    environment:
-      - 'JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m'
-    ports:
-      - '26500:26500'
-      - '9600:9600'
-    healthcheck:
-      test: ['CMD-SHELL', "timeout 10s bash -c ':> /dev/tcp/127.0.0.1/9600' || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-    restart: always
-    volumes:
-      - ../zeebe-application.yml:/usr/local/zeebe/config/application.yaml
-    depends_on:
-      - elasticsearch
-  zeebe-opensearch:
-    image: camunda/zeebe:${ZEEBE_VERSION:-8.5.0}
-    profiles: ['cloud:opensearch', 'self-managed:opensearch']
-    container_name: zeebe-opensearch
-    environment:
-      - 'JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m'
-      - ZEEBE_EXPORTER_CLASS_NAME=io.camunda.zeebe.exporter.opensearch.OpensearchExporter
-      - DATABASE_URL=http://opensearch
-      - DATABASE_PORT=9200
-    ports:
-      - 26500:26500
-      - 9600:9600
-    healthcheck:
-      test: ['CMD-SHELL', "timeout 10s bash -c ':> /dev/tcp/127.0.0.1/9600' || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-    restart: always
-    volumes:
-      - ../zeebe-application.yml:/usr/local/zeebe/config/application.yaml
-    depends_on:
-      - opensearch
   keycloak:
     container_name: keycloak
     image: camunda/keycloak:quay-26@sha256:72f3630dfb4cee43107327ab4ce6fe812be06fea7f5f4b047c3aba09c7017390
@@ -127,12 +85,13 @@ services:
       KC_HTTP_RELATIVE_PATH: /auth
       KC_HEALTH_ENABLED: 'true'
       KC_HOSTNAME_STRICT: 'false'
+      JAVA_OPTS_APPEND: '-Dquarkus.http.http2=false'
   identity:
     depends_on:
       - keycloak
     restart: on-failure
     container_name: identity
-    image: camunda/identity:${IDENTITY_VERSION:-8.5.0}
+    image: camunda/identity:${CAMUNDA_VERSION:-8.9.0}
     profiles: ['self-managed', 'self-managed:opensearch', 'self-managed:elasticsearch']
     ports:
       - '8081:8081'
@@ -179,65 +138,76 @@ services:
       KEYCLOAK_USERS_6_FIRST_NAME: 'demo'
       KEYCLOAK_USERS_6_ROLES_0: 'Optimize'
       KEYCLOAK_USERS_6_ROLES_1: 'Identity'
-  operate:
+      KEYCLOAK_USERS_6_ROLES_2: 'ManagementIdentity'
+  camunda:
     profiles: ['self-managed', 'self-managed:elasticsearch']
-    image: camunda/operate:${OPERATE_VERSION:-8.5.0}
-    container_name: operate
+    image: camunda/camunda:${CAMUNDA_VERSION:-8.9.0}
+    container_name: camunda
     environment:
-      - CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS=zeebe:26500
-      - CAMUNDA_OPERATE_ELASTICSEARCH_URL=http://elasticsearch:9200
-      - CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL=http://elasticsearch:9200
-      - CAMUNDA_OPERATE_ARCHIVER_WAITPERIODBEFOREARCHIVING=1m
-      - SPRING_PROFILES_ACTIVE=dev-data
-      - CAMUNDA_OPERATE_IDENTITY_ISSUER_URL=http://localhost:18080/auth/realms/camunda-platform
-      - CAMUNDA_OPERATE_IDENTITY_ISSUER_BACKEND_URL=http://localhost:18080/auth/realms/camunda-platform
-      - CAMUNDA_OPERATE_IDENTITY_CLIENT_ID=operate
-      - CAMUNDA_OPERATE_IDENTITY_CLIENT_SECRET=the-cake-is-alive
-      - CAMUNDA_OPERATE_IDENTITY_AUDIENCE=operate-api
-      - CAMUNDA_OPERATE_BACKUP_REPOSITORYNAME=test
-      - SERVER_SERVLET_CONTEXT_PATH=/
-      - CAMUNDA_OPERATE_CLUSTERNODE_PARTITIONIDS=1,2
+      - SPRING_PROFILES_ACTIVE=broker,operate,tasklist,consolidated-auth,dev-data
+      - CAMUNDA_SECURITY_AUTHENTICATION_METHOD=basic
+      - CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI=false
+      - CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED=true
+      - CAMUNDA_SECURITY_MULTITENANCY_CHECKSENABLED=false
+      - CAMUNDA_SECURITY_INITIALIZATION_USERS_0_USERNAME=demo
+      - CAMUNDA_SECURITY_INITIALIZATION_USERS_0_PASSWORD=demo
+      - CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME=Demo
+      - CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL=demo@example.com
+      - CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0=demo
+      - JAVA_TOOL_OPTIONS=-Xms1g -Xmx2g
+      - CAMUNDA_DATA_SECONDARYSTORAGE_TYPE=elasticsearch
+      - CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_URL=http://elasticsearch:9200
+      - JAVA_OPTS=-XX:+IgnoreUnrecognizedVMOptions -XX:UseSVE=0
     ports:
-      - '28080:8080'
+      - "26500:26500"
+      - "9600:9600"
+      - "8080:8080"
     healthcheck:
-      test: ['CMD-SHELL', "wget -O - -q 'http://localhost:8080/actuator/health/readiness'"]
+      test: ['CMD-SHELL', "wget -O - -q 'http://localhost:9600/actuator/health/readiness'"]
       interval: 30s
       timeout: 1s
       retries: 5
       start_period: 30s
     depends_on:
       - elasticsearch
-      - zeebe
     restart: always
-  operate-opensearch:
+    volumes:
+      - ../zeebe-application.yml:/usr/local/camunda/config/application.yaml
+  camunda-opensearch:
     profiles: ['self-managed:opensearch']
-    image: camunda/operate:${OPERATE_VERSION:-8.5.0}
-    container_name: operate-opensearch
+    image: camunda/camunda:${CAMUNDA_VERSION:-8.9.0}
+    container_name: camunda-opensearch
     environment:
-      - SERVER_PORT=8080
-      - CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS=zeebe-opensearch:26500
-      - CAMUNDA_OPERATE_OPENSEARCH_URL=http://opensearch:9200
-      - CAMUNDA_OPERATE_ZEEBEOPENSEARCH_URL=http://opensearch:9200
-      - CAMUNDA_OPERATE_DATABASE=opensearch
-      - CAMUNDA_OPERATE_ARCHIVER_WAITPERIODBEFOREARCHIVING=1m
-      - SPRING_PROFILES_ACTIVE=dev-data
-      - CAMUNDA_OPERATE_IDENTITY_ISSUER_URL=http://localhost:18080/auth/realms/camunda-platform
-      - CAMUNDA_OPERATE_IDENTITY_ISSUER_BACKEND_URL=http://localhost:18080/auth/realms/camunda-platform
-      - CAMUNDA_OPERATE_IDENTITY_CLIENT_ID=operate
-      - CAMUNDA_OPERATE_IDENTITY_CLIENT_SECRET=the-cake-is-alive
-      - CAMUNDA_OPERATE_IDENTITY_AUDIENCE=operate-api
-      - CAMUNDA_OPERATE_BACKUP_REPOSITORYNAME=test
-      - SERVER_SERVLET_CONTEXT_PATH=/
-      - CAMUNDA_OPERATE_CLUSTERNODE_PARTITIONIDS=1,2
+      - SPRING_PROFILES_ACTIVE=broker,operate,tasklist,consolidated-auth,dev-data
+      - CAMUNDA_SECURITY_AUTHENTICATION_METHOD=basic
+      - CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI=false
+      - CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED=true
+      - CAMUNDA_SECURITY_MULTITENANCY_CHECKSENABLED=false
+      - CAMUNDA_SECURITY_INITIALIZATION_USERS_0_USERNAME=demo
+      - CAMUNDA_SECURITY_INITIALIZATION_USERS_0_PASSWORD=demo
+      - CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME=Demo
+      - CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL=demo@example.com
+      - CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0=demo
+      - JAVA_TOOL_OPTIONS=-Xms1g -Xmx2g
+      - CAMUNDA_DATA_SECONDARYSTORAGE_TYPE=opensearch
+      - CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_URL=http://opensearch:9200
+      - DATABASE_URL=http://opensearch
+      - DATABASE_PORT=9200
+      - DATABASE_TYPE=opensearch
+      - ZEEBE_EXPORTER_CLASS_NAME=io.camunda.zeebe.exporter.opensearch.OpensearchExporter
+      - JAVA_OPTS=-XX:+IgnoreUnrecognizedVMOptions -XX:UseSVE=0
     ports:
-      - '28080:8080'
+      - "26500:26500"
+      - "9600:9600"
+      - "8080:8080"
     healthcheck:
-      test: ['CMD-SHELL', "wget -O - -q 'http://localhost:8080/actuator/health/readiness'"]
+      test: ['CMD-SHELL', "wget -O - -q 'http://localhost:9600/actuator/health/readiness'"]
       interval: 30s
       timeout: 1s
       retries: 5
       start_period: 30s
     depends_on:
       - opensearch
-      - zeebe-opensearch
     restart: always
+    volumes:
+      - ../zeebe-application.yml:/usr/local/camunda/config/application.yaml
