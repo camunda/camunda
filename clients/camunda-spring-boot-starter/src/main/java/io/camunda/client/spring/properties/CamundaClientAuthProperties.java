@@ -116,10 +116,9 @@ public class CamundaClientAuthProperties {
   private Duration readTimeout = DEFAULT_READ_TIMEOUT;
 
   /**
-   * The lead time before actual token expiry at which a background refresh is triggered. The token
-   * is still considered valid inside this window; this is a policy knob for how early refresh kicks
-   * in so callers don't have to block on a synchronous refresh at the cliff edge. Must be strictly
-   * larger than the internal expiry grace period.
+   * Controls how far before token expiry a background refresh is triggered. The token remains valid
+   * within this window, so callers don't block on a synchronous refresh at expiry. Must be strictly
+   * greater than the internal expiry grace period.
    */
   private Duration proactiveTokenRefreshThreshold = DEFAULT_PROACTIVE_TOKEN_REFRESH_THRESHOLD;
 
@@ -131,8 +130,8 @@ public class CamundaClientAuthProperties {
   private int tokenFetchMaxRetries = DEFAULT_TOKEN_FETCH_MAX_RETRIES;
 
   /**
-   * The initial backoff duration applied between token fetch retry attempts. Subsequent delays grow
-   * geometrically by {@link #tokenFetchBackoffMultiplier}.
+   * The initial backoff duration applied between token fetch retry attempts. Each subsequent delay
+   * is multiplied by {@code camunda.client.auth.token-fetch-backoff-multiplier}.
    */
   private Duration tokenFetchInitialBackoff = DEFAULT_TOKEN_FETCH_INITIAL_BACKOFF;
 
@@ -143,16 +142,17 @@ public class CamundaClientAuthProperties {
   private double tokenFetchBackoffMultiplier = DEFAULT_TOKEN_FETCH_BACKOFF_MULTIPLIER;
 
   /**
-   * The set of HTTP status codes from the token endpoint that should be retried with backoff. Any
-   * non-200 status code outside this set trips a non-retryable failure latch that fails fast for
-   * the duration of tokenFetchNonRetryableCooldown.
+   * The set of HTTP status codes from the token endpoint that are retried with backoff. Any other
+   * non-200 status code triggers the {@code camunda.client.auth.token-fetch-non-retryable-cooldown}
+   * cooldown.
    */
   private Set<Integer> tokenFetchRetryableStatusCodes = DEFAULT_TOKEN_FETCH_RETRYABLE_STATUS_CODES;
 
   /**
-   * Duration for which token fetches fail fast after the token endpoint returns a non-retryable
-   * response. After the cooldown elapses, the next call retries; if it fails again non-retryably,
-   * the latch re-arms with a new cooldown. Set to Duration.ZERO to disable the cooldown entirely.
+   * If the token endpoint returns a non-retryable response, subsequent token fetch attempts fail
+   * immediately without making a request. This property specifies the duration of this cooldown
+   * period. After the cooldown period elapses, the next request retries; if it also fails with a
+   * non-retryable error, the cooldown resets. Set to {@code Duration.ZERO} to disable the cooldown.
    */
   private Duration tokenFetchNonRetryableCooldown = DEFAULT_TOKEN_FETCH_NON_RETRYABLE_COOLDOWN;
 
