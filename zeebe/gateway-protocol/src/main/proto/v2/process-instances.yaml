@@ -159,6 +159,7 @@ paths:
       tags:
         - Process instance
       operationId: getProcessInstanceStatistics
+      x-permission-enforcement: filter
       x-required-permissions:
         - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_INSTANCE }
       security:
@@ -196,6 +197,7 @@ paths:
       tags:
         - Process instance
       operationId: searchProcessInstances
+      x-permission-enforcement: filter
       x-required-permissions:
         - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_INSTANCE }
       security:

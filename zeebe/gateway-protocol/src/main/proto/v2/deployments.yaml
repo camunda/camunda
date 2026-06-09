@@ -194,6 +194,7 @@ paths:
       tags:
         - Resource
       operationId: searchResources
+      x-permission-enforcement: filter
       x-required-permissions:
         - { resourceType: RESOURCE, permissionType: READ }
       security:

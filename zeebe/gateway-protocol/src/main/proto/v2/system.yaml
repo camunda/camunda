@@ -7,6 +7,7 @@ paths:
       tags:
         - System
       operationId: getUsageMetrics
+      x-permission-enforcement: filter
       x-required-permissions:
         - { resourceType: SYSTEM, permissionType: READ_USAGE_METRIC }
       security:

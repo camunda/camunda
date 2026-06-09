@@ -13,6 +13,10 @@
 //      AND a pair the resource type actually supports, as recorded in
 //      resource-permissions.json (which mirrors
 //      AuthorizationResourceType.buildResourcePermissionsMap()).
+//   3. Enforcement coherence: an operation marked `x-permission-enforcement:
+//      filter` must declare at least one required permission (a public endpoint
+//      has nothing to filter by). The enum itself is checked by the
+//      `permission-enforcement-shape` Spectral rule.
 //
 // Entry shapes (the structural schema is additionally enforced by the
 // `required-permissions-shape` Spectral rule):
@@ -145,7 +149,17 @@ module.exports = (input, _opts, _context) => {
         continue;
       }
 
-      // 2. Registry validity per entry.
+      // 2. Enforcement marker coherence: `filter` implies the endpoint scopes
+      //    results by permission, so it cannot be public.
+      const enforcement = op['x-permission-enforcement'];
+      if (enforcement === 'filter' && declared.length === 0) {
+        errors.push({
+          message: `${where} declares x-permission-enforcement: filter but has an empty x-required-permissions. A public endpoint has nothing to filter by; use 'reject' (or remove the marker) or declare the required permission(s).`,
+          path: ['paths', pathKey, method, 'x-permission-enforcement'],
+        });
+      }
+
+      // 3. Registry validity per entry.
       declared.forEach((entry, i) => {
         const loc = [...basePath, i];
         if (entry == null || typeof entry !== 'object') return; // shape rule handles

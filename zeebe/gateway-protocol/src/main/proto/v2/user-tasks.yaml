@@ -334,6 +334,7 @@ paths:
       tags:
         - User task
       operationId: searchUserTasks
+      x-permission-enforcement: filter
       x-required-permissions:
         - anyOf:
             - { resourceType: PROCESS_DEFINITION, permissionType: READ_USER_TASK }

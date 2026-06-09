@@ -190,6 +190,37 @@ Consequences for the guard design:
   runtime test that walks every operation's declared binding — is the recommended
   follow-up that would make this mapping deterministic rather than reviewed.
 
+**D9. Record the deny outcome (`reject` vs `filter`) as an optional
+`x-permission-enforcement` marker.**
+
+Knowing *what* permission an endpoint requires (D1–D7) is insufficient for a
+runtime auth test: the test must also know what a *denied* call looks like. As D8
+shows, that outcome is not uniform. We capture it with an optional operation-level
+marker:
+
+- **`reject`** (default when absent) — denial yields a `4xx` with no data: `403`
+  for writes, `404` for single-resource point reads (`get…ByKey`), where an
+  unauthorized resource is indistinguishable from a missing one.
+- **`filter`** — denial yields `200` with results scoped to the authorized subset
+  (possibly empty). This is the uniform contract of search-client-backed
+  collection/aggregate reads where authorization is pushed into the query as a
+  filter: the top-level `search…` collection queries, the membership/relation
+  `search…For{Group,Role,Tenant}` queries, the `…Statistics` / usage-metrics
+  aggregates, plus `activateJobs` (the authorize-by-filtering case from D8).
+  Sub-resource searches that gate on a parent `getByKey` first (e.g.
+  `searchProcessInstanceIncidents`, `searchUserTaskVariables`,
+  `searchUserTaskAuditLogs`) instead `reject` with the parent's `404`, so they are
+  left at the default.
+
+The marker is optional and defaults to `reject` to minimise churn and because a
+misclassification is *safe by construction*: the runtime oracle (api-test-generator#374)
+asserts the deny shape the marker claims, so any wrong classification surfaces as
+a test failure rather than a silent false-pass. The marker is the spec's *claim*;
+the runtime test is the *proof*. Endpoints whose deny outcome was not individually
+verified are left at the `reject` default and will be confirmed (or corrected) by
+the oracle. `verify-required-permissions` additionally rejects a `filter` marker on
+a public (`[]`) endpoint, which has nothing to filter by.
+
 ## Consequences
 
 - A documented, machine-readable endpoint → required-permission mapping exists

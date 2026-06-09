@@ -50,6 +50,7 @@ paths:
       tags:
         - Batch operation
       operationId: searchBatchOperations
+      x-permission-enforcement: filter
       x-required-permissions:
         - { resourceType: BATCH, permissionType: READ }
       security:
@@ -222,6 +223,7 @@ paths:
       tags:
         - Batch operation
       operationId: searchBatchOperationItems
+      x-permission-enforcement: filter
       x-required-permissions:
         - { resourceType: BATCH, permissionType: READ }
       security:

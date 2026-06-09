@@ -222,6 +222,27 @@ rules:
     then:
       function: verifyRequiredPermissions
 
+  # ── x-permission-enforcement (camunda/camunda#54727) ──
+  # Optional operation-level marker describing the *deny outcome* when the caller
+  # lacks the required permission(s):
+  #   - `reject` (default when absent): the caller receives a 4xx (403 for writes,
+  #     404/not-found for single-resource point reads) and no data.
+  #   - `filter`: the caller receives 200 with results scoped to the resources they
+  #     are authorized for (collection/aggregate reads pushed through the search
+  #     client as an authorization filter; also `activateJobs`).
+  # Consumed by the spec-driven runtime auth test (api-test-generator#374) to assert
+  # the correct deny shape. See docs/adr/security/001-endpoint-required-permission-mapping.md (D8).
+  permission-enforcement-shape:
+    description: "`x-permission-enforcement` must be either `reject` or `filter`."
+    severity: error
+    given: $.paths[*][get,put,post,patch,delete].x-permission-enforcement
+    then:
+      function: schema
+      functionOptions:
+        schema:
+          type: string
+          enum: [reject, filter]
+
   # ── x-semantic-establishes / x-semantic-requires (camunda/camunda#52272) ──
   # Three rules:
   #   1. Schema-shape lint for x-semantic-establishes (operation-level).

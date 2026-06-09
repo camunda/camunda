@@ -93,6 +93,7 @@ paths:
       tags:
         - Message subscription
       operationId: searchMessageSubscriptions
+      x-permission-enforcement: filter
       x-required-permissions:
         - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_INSTANCE }
       security:
@@ -142,6 +143,7 @@ paths:
       tags:
         - Message subscription
       operationId: searchCorrelatedMessageSubscriptions
+      x-permission-enforcement: filter
       x-required-permissions:
         - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_INSTANCE }
       security:

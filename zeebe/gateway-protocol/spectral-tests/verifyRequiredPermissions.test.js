@@ -7,15 +7,18 @@ const { lintFixture, filterByRule, filterByPathSegment } = require('./helpers');
 const FIXTURE = 'required-permissions';
 const VERIFY_RULE = 'verify-required-permissions';
 const SHAPE_RULE = 'required-permissions-shape';
+const ENFORCEMENT_RULE = 'permission-enforcement-shape';
 
 describe('verifyRequiredPermissions', () => {
   let verify;
   let shape;
+  let enforcement;
 
   before(() => {
     const allResults = lintFixture(FIXTURE);
     verify = filterByRule(allResults, VERIFY_RULE);
     shape = filterByRule(allResults, SHAPE_RULE);
+    enforcement = filterByRule(allResults, ENFORCEMENT_RULE);
   });
 
   const verifyFor = (operationId) =>
@@ -42,6 +45,22 @@ describe('verifyRequiredPermissions', () => {
     it('accepts an empty array (explicitly public)', () => {
       assert.equal(verifyFor('validPublic').length, 0);
       assert.equal(filterByPathSegment(shape, '/valid/public').length, 0);
+    });
+
+    it('accepts x-permission-enforcement: filter with a permission', () => {
+      assert.equal(verifyFor('validEnforcementFilter').length, 0);
+      assert.equal(
+        filterByPathSegment(enforcement, '/valid/enforcement-filter').length,
+        0,
+      );
+    });
+
+    it('accepts x-permission-enforcement: reject', () => {
+      assert.equal(verifyFor('validEnforcementReject').length, 0);
+      assert.equal(
+        filterByPathSegment(enforcement, '/valid/enforcement-reject').length,
+        0,
+      );
     });
   });
 
@@ -74,8 +93,14 @@ describe('verifyRequiredPermissions', () => {
       assert.match(v[0].message, /permissionType 'FLY' which is not supported/);
     });
 
-    it('produces exactly 4 verify violations total', () => {
-      assert.equal(verify.length, 4);
+    it('flags x-permission-enforcement: filter on a public ([]) endpoint', () => {
+      const v = verifyFor('invalidEnforcementPublicFilter');
+      assert.equal(v.length, 1);
+      assert.match(v[0].message, /filter but has an empty x-required-permissions/);
+    });
+
+    it('produces exactly 5 verify violations total', () => {
+      assert.equal(verify.length, 5);
     });
   });
 
@@ -96,6 +121,21 @@ describe('verifyRequiredPermissions', () => {
 
     it('produces exactly 3 shape violations total', () => {
       assert.equal(shape.length, 3);
+    });
+  });
+
+  // ── Enforcement marker shape (permission-enforcement-shape) ──────
+
+  describe('enforcement marker shape', () => {
+    it('flags an unknown x-permission-enforcement value', () => {
+      assert.equal(
+        filterByPathSegment(enforcement, '/invalid/enforcement-value').length,
+        1,
+      );
+    });
+
+    it('produces exactly 1 enforcement-shape violation total', () => {
+      assert.equal(enforcement.length, 1);
     });
   });
 });

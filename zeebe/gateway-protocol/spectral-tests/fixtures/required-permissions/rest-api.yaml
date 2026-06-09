@@ -117,3 +117,42 @@ paths:
             - { resourceType: USER_TASK, permissionType: UPDATE }
       responses:
         '204': { description: No content. }
+
+  # ── Valid: x-permission-enforcement: filter with a permission ──
+  /valid/enforcement-filter:
+    get:
+      operationId: validEnforcementFilter
+      x-permission-enforcement: filter
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_DEFINITION }
+      responses:
+        '200': { description: OK. }
+
+  # ── Valid: x-permission-enforcement: reject (explicit default) ─
+  /valid/enforcement-reject:
+    post:
+      operationId: validEnforcementReject
+      x-permission-enforcement: reject
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: CREATE_PROCESS_INSTANCE }
+      responses:
+        '204': { description: No content. }
+
+  # ── Invalid shape: unknown enforcement value ──────────────────
+  /invalid/enforcement-value:
+    get:
+      operationId: invalidEnforcementValue
+      x-permission-enforcement: block
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_DEFINITION }
+      responses:
+        '200': { description: OK. }
+
+  # ── Invalid: filter on a public (empty) endpoint ──────────────
+  /invalid/enforcement-public-filter:
+    get:
+      operationId: invalidEnforcementPublicFilter
+      x-permission-enforcement: filter
+      x-required-permissions: []
+      responses:
+        '200': { description: OK. }
