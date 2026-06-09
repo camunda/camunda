@@ -74,4 +74,15 @@ public interface ExecutionQueue {
    * @return true if the queue was flushed, false otherwise
    */
   boolean checkQueueForFlush();
+
+  /**
+   * Resets the queue to a clean state: discards all pending queue items and removes all registered
+   * pre-flush listeners, post-flush listeners, and in-transaction hooks.
+   *
+   * <p>Call this at the start of {@code open()} before registering new listeners to prevent
+   * duplicate registrations when an exporter is reopened after a recoverable failure. Also call it
+   * after catching a {@link PositionMismatchException} to discard stale writes before the next
+   * flush.
+   */
+  void reset();
 }

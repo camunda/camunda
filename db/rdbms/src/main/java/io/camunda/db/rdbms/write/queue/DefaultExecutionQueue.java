@@ -228,6 +228,17 @@ public class DefaultExecutionQueue implements ExecutionQueue {
     return false;
   }
 
+  @Override
+  public void reset() {
+    synchronized (queue) {
+      queue.clear();
+      currentQueueMemoryBytes = 0;
+    }
+    preFlushListeners.clear();
+    postFlushListeners.clear();
+    inTransactionHooks.clear();
+  }
+
   private int doFLush() {
     LOG.debug(
         "[RDBMS ExecutionQueue, Partition {}] Flushing execution queue with {} items",
