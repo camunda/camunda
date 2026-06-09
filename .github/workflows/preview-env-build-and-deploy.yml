@@ -63,6 +63,8 @@ jobs:
         )
       )
     name: Resolve Image Tag
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
@@ -93,6 +95,8 @@ jobs:
       )
     name: Build Camunda
     needs: [resolve-image-tag]
+    permissions:
+      contents: read
     runs-on: gcp-perf-core-8-default
     timeout-minutes: 20
     steps:
@@ -137,10 +141,12 @@ jobs:
       )
     name: Build Optimize
     needs: [resolve-image-tag]
+    permissions:
+      contents: read
     uses: ./.github/workflows/optimize-ci-build-reusable.yml
     secrets: inherit
     with:
-      branch: ${{ inputs.ref || github.head_ref || github.ref_name }}
+      branch: ${{ needs.resolve-image-tag.outputs.checkout-ref }}
       pushDocker: true
       version: ${{ needs.resolve-image-tag.outputs.image-tag }}
 

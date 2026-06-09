@@ -21,7 +21,7 @@ on:
   workflow_call:
     inputs:
       branch:
-        description: "The branch name to be used for the workflow"
+        description: "Git ref or commit SHA to be checked out for the workflow"
         required: true
         type: string
       pushDocker:
@@ -42,25 +42,26 @@ defaults:
 jobs:
   build:
     name: Build
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      # Setup: checkout branch
-      - name: Checkout '${{ inputs.branch }}' branch
+      # Setup: checkout exact provided ref/SHA
+      - name: Checkout '${{ inputs.branch }}'
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          ref: refs/heads/${{ inputs.branch }}
+          ref: ${{ inputs.branch }}
           fetch-depth: 0 # fetches all history for all branches and tags
 
       #########################################################################
       # Setup: define env variables
       - name: Set GitHub environment variables
         env:
-          BRANCH: ${{ inputs.branch }}
           VERSION: ${{ inputs.version }}
           REGISTRY: registry.camunda.cloud/team-camunda/optimize
         run: |
-          GIT_COMMIT_HASH=$(git rev-parse "$BRANCH")
+          GIT_COMMIT_HASH=$(git rev-parse HEAD)
           TAG="${VERSION:-pr-$GIT_COMMIT_HASH}"
           echo "GIT_COMMIT_HASH=$GIT_COMMIT_HASH" >> "$GITHUB_ENV"
           echo "IMAGE_TAG=$REGISTRY:$TAG" >> "$GITHUB_ENV"
