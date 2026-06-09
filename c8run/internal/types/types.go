@@ -24,7 +24,6 @@ type C8RunSettings struct {
 	SecondaryStorageType string
 	Username             string
 	Password             string
-	Docker               bool
 	StartupUrl           string
 	StartupMarkerPath    string
 	ExtraDrivers         []string

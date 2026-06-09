@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"os/signal"
 	"path/filepath"
 	"runtime"
@@ -16,7 +15,6 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/camunda/camunda/c8run/internal/health"
 	"github.com/camunda/camunda/c8run/internal/processmanagement"
 	"github.com/camunda/camunda/c8run/internal/shutdown"
 	"github.com/camunda/camunda/c8run/internal/start"
@@ -63,35 +61,6 @@ func validatePort(port int) error {
 	return nil
 }
 
-func runDockerCommand(composeExtractedFolder string, args ...string) error {
-	err := os.Chdir(composeExtractedFolder)
-	if err != nil {
-		return fmt.Errorf("failed to chdir to %s: %w", composeExtractedFolder, err)
-	}
-
-	_, err = exec.LookPath("docker")
-	if err != nil {
-		return err
-	}
-
-	composeCmd := exec.Command("docker", append([]string{"compose"}, args...)...)
-	composeCmd.Stdout = os.Stdout
-	composeCmd.Stderr = os.Stderr
-	composeCmd.Env = dockerCommandEnv(os.Environ())
-
-	err = composeCmd.Run()
-	if err != nil {
-		return err
-	}
-
-	err = os.Chdir("..")
-	if err != nil {
-		return fmt.Errorf("failed to chdir back: %w", err)
-	}
-
-	return nil
-}
-
 var helpTemplate = `Usage:
   %[1]s [command] [options]
 
@@ -107,14 +76,11 @@ Options:
   --keystorePassword <pw>  Password for the provided keystore
   --port <number>           Set the main Camunda port (default: 8080)
   --log-level <level>       Set log level (e.g., info, debug)
-  --docker                  Start using Docker Compose
 
 Examples:
   %[1]s start
-  %[1]s start --docker
   %[1]s start --config ./my-config.yaml
   %[1]s stop
-  %[1]s stop --docker
 
 Docs & Support:
   https://docs.camunda.io/docs/guides/getting-started-java-spring/
@@ -125,27 +91,6 @@ Docs & Support:
 func usage(exitcode int) {
 	fmt.Printf(helpTemplate, os.Args[0])
 	os.Exit(exitcode)
-}
-
-func dockerCommandEnv(baseEnv []string) []string {
-	dockerVersion := strings.TrimSpace(os.Getenv("CAMUNDA_DOCKER_VERSION"))
-	if dockerVersion == "" {
-		return baseEnv
-	}
-
-	env := append([]string(nil), baseEnv...)
-	return overrideEnvVar(env, "CAMUNDA_VERSION", dockerVersion)
-}
-
-func overrideEnvVar(env []string, key, value string) []string {
-	prefix := key + "="
-	for i := range env {
-		if strings.HasPrefix(env[i], prefix) {
-			env[i] = prefix + value
-			return env
-		}
-	}
-	return append(env, prefix+value)
 }
 
 type stringSliceFlag []string
@@ -178,38 +123,6 @@ func getBaseCommand() (string, error) {
 	}
 
 	return "", nil
-}
-
-func handleDockerCommand(settings types.C8RunSettings, baseCommand string, composeExtractedFolder string) error {
-	if !settings.Docker {
-		return nil
-	}
-
-	var err error
-	switch baseCommand {
-	case "start":
-		err = runDockerCommand(composeExtractedFolder, "up", "-d")
-		if err != nil {
-			return err
-		}
-		err = health.PrintStatus(settings)
-		if err == nil {
-			if markerErr := startupurl.MarkSeen(settings.StartupMarkerPath); markerErr != nil {
-				log.Warn().Err(markerErr).Str("path", settings.StartupMarkerPath).Msg("Failed to persist quickstart marker")
-			}
-		}
-	case "stop":
-		err = runDockerCommand(composeExtractedFolder, "down")
-	default:
-		err = fmt.Errorf("command invalid, only start and stop supported")
-	}
-
-	if err != nil {
-		return err
-	}
-
-	os.Exit(0)
-	return nil // This line will never be reached, but it's required to satisfy the function signature
 }
 
 const docsStartupURL = startupurl.DocsURL
@@ -263,7 +176,6 @@ func createStartFlagSet(settings *types.C8RunSettings) *flag.FlagSet {
 	startFlagSet.StringVar(&settings.Keystore, "keystore", "", "Provide a JKS filepath to enable TLS")
 	startFlagSet.StringVar(&settings.KeystorePassword, "keystorePassword", "", "Provide a password to unlock your JKS keystore")
 	startFlagSet.StringVar(&settings.LogLevel, "log-level", "", "Adjust the log level of Camunda")
-	startFlagSet.BoolVar(&settings.Docker, "docker", false, "Run Camunda from docker-compose.")
 	startFlagSet.StringVar(&settings.Username, "username", "demo", "Change the first users username (default: demo)")
 	startFlagSet.StringVar(&settings.Password, "password", "demo", "Change the first users password (default: demo)")
 	startFlagSet.StringVar(&settings.StartupUrl, "startup-url", "", "The URL to open after startup.")
@@ -276,7 +188,6 @@ func createDefaultStartupUrl(settings *types.C8RunSettings, camundaVersion strin
 
 func createStopFlagSet(settings *types.C8RunSettings) *flag.FlagSet {
 	stopFlagSet := flag.NewFlagSet("stop", flag.ExitOnError)
-	stopFlagSet.BoolVar(&settings.Docker, "docker", false, "Stop docker-compose distribution of camunda.")
 	return stopFlagSet
 }
 
@@ -288,7 +199,6 @@ func initialize(baseCommand string, baseDir string) *types.State {
 
 	camundaVersion := os.Getenv("CAMUNDA_VERSION")
 	connectorsVersion := os.Getenv("CONNECTORS_VERSION")
-	composeExtractedFolder := os.Getenv("COMPOSE_EXTRACTED_FOLDER")
 
 	connectorsPidPath := filepath.Join(baseDir, "connectors.process")
 	camundaPidPath := filepath.Join(baseDir, "camunda.process")
@@ -327,12 +237,6 @@ func initialize(baseCommand string, baseDir string) *types.State {
 	}
 
 	err = validateKeystore(settings, baseDir)
-	if err != nil {
-		fmt.Println(err.Error())
-		os.Exit(1)
-	}
-
-	err = handleDockerCommand(settings, baseCommand, composeExtractedFolder)
 	if err != nil {
 		fmt.Println(err.Error())
 		os.Exit(1)

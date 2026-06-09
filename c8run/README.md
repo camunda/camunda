@@ -1,6 +1,7 @@
 # Camunda 8 Run
 
 C8 Run is a packaged distribution of Camunda 8, which allows you to spin up Camunda 8 within seconds.
+It packages the local Java runtime only; the Docker Compose distribution is published separately.
 
 Please refer to the [local installation with Camunda 8 Run guide](https://docs.camunda.io/docs/next/self-managed/quickstart/developer-quickstart/c8run/) for further details.
 
