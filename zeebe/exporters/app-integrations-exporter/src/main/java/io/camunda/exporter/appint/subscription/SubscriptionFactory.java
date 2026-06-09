@@ -20,6 +20,7 @@ import io.camunda.exporter.appint.config.ConfigValidator;
 import io.camunda.exporter.appint.config.OAuthConfig;
 import io.camunda.exporter.appint.event.Event;
 import io.camunda.exporter.appint.mapper.SupportedRecordsMapper;
+import io.camunda.exporter.appint.metrics.AppIntegrationsExporterMetrics;
 import io.camunda.exporter.appint.transport.Authentication;
 import io.camunda.exporter.appint.transport.Authentication.ApiKey;
 import io.camunda.exporter.appint.transport.Authentication.OAuthCredentialsProvider;
@@ -48,11 +49,13 @@ public class SubscriptionFactory {
   }
 
   public static Subscription<Event> createDefault(
-      final Config config, final Consumer<Long> positionConsumer) {
+      final Config config,
+      final Consumer<Long> positionConsumer,
+      final AppIntegrationsExporterMetrics metrics) {
     ConfigValidator.validate(config);
     final Authentication auth;
     if (config.getOauth() != null) {
-      auth = new Authentication.OAuth(buildOAuthProvider(config.getOauth()));
+      auth = new Authentication.OAuth(buildOAuthProvider(config.getOauth(), metrics));
     } else if (config.getApiKey() != null) {
       auth = new ApiKey(config.getApiKey());
     } else {
@@ -65,7 +68,7 @@ public class SubscriptionFactory {
             config.getMaxRetries(),
             config.getRetryDelayMs(),
             config.getRequestTimeoutMs());
-    final var transport = new HttpTransportImpl(createJsonMapper(), httpTransportConfig);
+    final var transport = new HttpTransportImpl(createJsonMapper(), httpTransportConfig, metrics);
     final var mapper = new SupportedRecordsMapper();
     final var batchConfig =
         new BatchConfig(
@@ -73,10 +76,11 @@ public class SubscriptionFactory {
             config.getBatchSize(),
             config.getBatchIntervalMs(),
             config.isContinueOnError());
-    return new Subscription<>(transport, mapper, batchConfig, positionConsumer);
+    return new Subscription<>(transport, mapper, batchConfig, positionConsumer, metrics);
   }
 
-  private static OAuthCredentialsProvider buildOAuthProvider(final OAuthConfig cfg) {
+  private static OAuthCredentialsProvider buildOAuthProvider(
+      final OAuthConfig cfg, final AppIntegrationsExporterMetrics metrics) {
     final Duration connectTimeout =
         ofNullable(cfg.getConnectTimeoutMs()).map(Duration::ofMillis).orElse(null);
     final Duration readTimeout =
@@ -89,6 +93,7 @@ public class SubscriptionFactory {
         cfg.getScope(),
         cfg.getResource(),
         connectTimeout,
-        readTimeout);
+        readTimeout,
+        metrics);
   }
 }

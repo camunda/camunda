@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.camunda.exporter.appint.config.Config;
 import io.camunda.exporter.appint.config.OAuthConfig;
+import io.camunda.exporter.appint.metrics.AppIntegrationsExporterMetrics;
 import io.camunda.exporter.appint.transport.Authentication;
 import io.camunda.exporter.appint.transport.HttpTransportImpl;
 import java.lang.reflect.Field;
@@ -32,7 +33,9 @@ class SubscriptionFactoryAuthTest {
                     .setAuthorizationServerUrl("https://auth.example.com/oauth/token"));
 
     // when
-    final var subscription = SubscriptionFactory.createDefault(config, position -> {});
+    final var subscription =
+        SubscriptionFactory.createDefault(
+            config, position -> {}, AppIntegrationsExporterMetrics.disabled());
 
     // then
     final Authentication auth = extractAuthentication(subscription);
@@ -47,7 +50,9 @@ class SubscriptionFactoryAuthTest {
     final Config config = new Config().setUrl("http://example.com").setApiKey("key");
 
     // when
-    final var subscription = SubscriptionFactory.createDefault(config, position -> {});
+    final var subscription =
+        SubscriptionFactory.createDefault(
+            config, position -> {}, AppIntegrationsExporterMetrics.disabled());
 
     // then
     final Authentication auth = extractAuthentication(subscription);
@@ -62,7 +67,9 @@ class SubscriptionFactoryAuthTest {
     final Config config = new Config().setUrl("http://example.com");
 
     // when
-    final var subscription = SubscriptionFactory.createDefault(config, position -> {});
+    final var subscription =
+        SubscriptionFactory.createDefault(
+            config, position -> {}, AppIntegrationsExporterMetrics.disabled());
 
     // then
     final Authentication auth = extractAuthentication(subscription);

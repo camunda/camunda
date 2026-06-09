@@ -16,6 +16,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
+import io.camunda.exporter.appint.metrics.AppIntegrationsExporterMetrics;
 import io.camunda.exporter.appint.subscription.SubscriptionFactory;
 import io.camunda.exporter.appint.transport.Authentication.OAuth;
 import io.camunda.exporter.appint.transport.Authentication.OAuthCredentialsProvider;
@@ -40,7 +41,11 @@ class HttpTransportOAuthTest {
     final OAuthCredentialsProvider provider =
         headerConsumer -> headerConsumer.accept("Authorization", "Bearer test-token");
     final var httpConfig = new HttpTransportConfig(url, new OAuth(provider), 2, 50, 500);
-    final var transport = new HttpTransportImpl(SubscriptionFactory.createJsonMapper(), httpConfig);
+    final var transport =
+        new HttpTransportImpl(
+            SubscriptionFactory.createJsonMapper(),
+            httpConfig,
+            AppIntegrationsExporterMetrics.disabled());
 
     // when
     transport.send(new ArrayList<>());
@@ -66,7 +71,11 @@ class HttpTransportOAuthTest {
           headerConsumer.accept("Authorization", "Bearer late-token");
         };
     final var httpConfig = new HttpTransportConfig(url, new OAuth(flakyProvider), 2, 50, 500);
-    final var transport = new HttpTransportImpl(SubscriptionFactory.createJsonMapper(), httpConfig);
+    final var transport =
+        new HttpTransportImpl(
+            SubscriptionFactory.createJsonMapper(),
+            httpConfig,
+            AppIntegrationsExporterMetrics.disabled());
 
     // when
     transport.send(new ArrayList<>());

@@ -20,10 +20,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
+import io.camunda.exporter.appint.metrics.AppIntegrationsExporterMetrics;
 import io.camunda.exporter.appint.subscription.SubscriptionFactory;
 import io.camunda.exporter.appint.transport.Authentication.ApiKey;
 import io.camunda.exporter.appint.transport.Authentication.OAuth;
 import io.camunda.exporter.appint.transport.Authentication.OAuthCredentialsProvider;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
@@ -51,13 +53,21 @@ class HttpTransportOAuth401Test {
 
     final RotatingProvider provider = new RotatingProvider();
     final var httpConfig = new HttpTransportConfig(url, new OAuth(provider), 2, 50, 500);
-    final var transport = new HttpTransportImpl(SubscriptionFactory.createJsonMapper(), httpConfig);
+    final var registry = new SimpleMeterRegistry();
+    final var transport =
+        new HttpTransportImpl(
+            SubscriptionFactory.createJsonMapper(),
+            httpConfig,
+            new AppIntegrationsExporterMetrics(registry));
 
     // when
     transport.send(new ArrayList<>());
 
     // then — the token was invalidated once and the retry carried the fresh token
     assertThat(provider.invalidations.get()).isEqualTo(1);
+    assertThat(
+            registry.get("zeebe.app.integrations.exporter.export.unauthorized").counter().count())
+        .isEqualTo(1.0);
     wireMock.verify(
         exactly(1),
         postRequestedFor(urlEqualTo("/")).withHeader("Authorization", equalTo("Bearer stale")));
@@ -72,7 +82,11 @@ class HttpTransportOAuth401Test {
     final String url = "http://localhost:" + wireMock.getPort();
     wireMock.stubFor(post("/").willReturn(aResponse().withStatus(401)));
     final var httpConfig = new HttpTransportConfig(url, new ApiKey("test-key"), 2, 50, 500);
-    final var transport = new HttpTransportImpl(SubscriptionFactory.createJsonMapper(), httpConfig);
+    final var transport =
+        new HttpTransportImpl(
+            SubscriptionFactory.createJsonMapper(),
+            httpConfig,
+            AppIntegrationsExporterMetrics.disabled());
 
     // when / then
     assertThatCode(() -> transport.send(new ArrayList<>()))

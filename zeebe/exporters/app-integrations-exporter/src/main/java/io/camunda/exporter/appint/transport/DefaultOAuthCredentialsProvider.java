@@ -10,8 +10,11 @@ package io.camunda.exporter.appint.transport;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.exporter.appint.metrics.AppIntegrationsExporterMetrics;
+import io.camunda.exporter.appint.metrics.AppIntegrationsExporterMetrics.Phase;
 import io.camunda.exporter.appint.transport.Authentication.OAuthCredentialsProvider;
 import java.io.IOException;
+import java.net.SocketTimeoutException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -27,6 +30,7 @@ import java.util.function.BiConsumer;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
@@ -80,6 +84,7 @@ public final class DefaultOAuthCredentialsProvider implements OAuthCredentialsPr
 
   private final CloseableHttpClient httpClient;
   private final ScheduledExecutorService scheduler;
+  private final AppIntegrationsExporterMetrics metrics;
   private volatile boolean closed;
 
   public DefaultOAuthCredentialsProvider(
@@ -90,7 +95,8 @@ public final class DefaultOAuthCredentialsProvider implements OAuthCredentialsPr
       final String scope,
       final String resource,
       final Duration connectTimeout,
-      final Duration readTimeout) {
+      final Duration readTimeout,
+      final AppIntegrationsExporterMetrics metrics) {
     this.authorizationServerUrl =
         Objects.requireNonNull(authorizationServerUrl, "authorizationServerUrl");
     this.clientId = Objects.requireNonNull(clientId, "clientId");
@@ -100,6 +106,7 @@ public final class DefaultOAuthCredentialsProvider implements OAuthCredentialsPr
     this.resource = resource;
     this.connectTimeout = connectTimeout;
     this.readTimeout = readTimeout;
+    this.metrics = metrics;
 
     // Build the shared client once; it is thread-safe and reused by both the background refresher
     // thread and any synchronous fetch, avoiding per-request connection and TLS setup.
@@ -205,6 +212,18 @@ public final class DefaultOAuthCredentialsProvider implements OAuthCredentialsPr
   }
 
   private CachedToken fetchToken() throws IOException {
+    try {
+      return doFetchToken();
+    } catch (final SocketTimeoutException | ConnectTimeoutException e) {
+      metrics.recordTimeout(Phase.TOKEN);
+      throw e;
+    } catch (final IOException e) {
+      metrics.recordTokenFetchFailed();
+      throw e;
+    }
+  }
+
+  private CachedToken doFetchToken() throws IOException {
     final HttpPost post = new HttpPost(authorizationServerUrl);
     post.setHeader("Content-Type", CONTENT_TYPE_FORM);
     post.setHeader("Accept", "application/json");
