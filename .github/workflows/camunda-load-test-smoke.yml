@@ -92,12 +92,55 @@ jobs:
       # Issues with the load test applications, should ideally catched with integration tests.
       orchestration-tag: ${{ needs.utils-get-snapshot-docker-tag.outputs.version_tag }}
 
-
-  verify-and-cleanup:
-    name: Verify and cleanup
+  verify-install:
+    name: Verify Install
     needs: [sanitize-branch-name, smoke-install]
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    uses: ./.github/workflows/camunda-verify-load-test.yml
+    secrets: inherit
+    with:
+      namespace: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
+
+  # This is to validate whether the load test can be updated successfully, without issues in the update process itself.
+  # To prevent regressions like regenerating credentials on every update, which can cause downtime and failed updates.
+  smoke-update:
+    name: Smoke update
+    needs: [sanitize-branch-name, utils-get-snapshot-docker-tag, verify-install]
+    uses: ./.github/workflows/camunda-load-test.yml
+    secrets: inherit
+    with:
+      name: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
+      ref: ${{ github.event.pull_request.head.ref || github.event.inputs.ref }}
+      scenario: realistic
+      secondary-storage-type: elasticsearch
+      # Short TTL acts as a safety net; verify-and-cleanup deletes the namespace explicitly.
+      ttl: 1
+      # We make use of the official docker image (SNAPSHOT TAG) this is to reduce CI runtime and feedback cycle.
+      # Setting the focus only on the installation and connectivity part of the load test.
+      # Issues with the load test applications, should ideally catched with integration tests.
+      orchestration-tag: ${{ needs.utils-get-snapshot-docker-tag.outputs.version_tag }}
+
+  verify-update:
+    name: Verify update
+    needs: [sanitize-branch-name, smoke-update]
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    uses: ./.github/workflows/camunda-verify-load-test.yml
+    secrets: inherit
+    with:
+      namespace: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
+
+  cleanup:
+    name: Cleanup
+    needs: [sanitize-branch-name, verify-update]
     if: always()
-    uses: ./.github/workflows/camunda-verify-and-cleanup-load-test.yml
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/camunda-delete-load-test.yml
     secrets: inherit
     with:
       namespace: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
