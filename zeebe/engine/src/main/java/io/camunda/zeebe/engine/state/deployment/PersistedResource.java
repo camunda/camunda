@@ -33,7 +33,7 @@ public class PersistedResource extends UnpackedObject
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final LongProperty deploymentKeyProp = new LongProperty("deploymentKey", -1L);
   private final StringProperty versionTagProp = new StringProperty("versionTag", "");
-  private final StringProperty resourceProp = new StringProperty("resource", "");
+  private final BinaryProperty resourceProp = new BinaryProperty("resource", new UnsafeBuffer());
 
   public PersistedResource() {
     super(9);
@@ -58,7 +58,7 @@ public class PersistedResource extends UnpackedObject
     copy.tenantIdProp.setValue(getTenantId());
     copy.deploymentKeyProp.setValue(getDeploymentKey());
     copy.versionTagProp.setValue(getVersionTag());
-    copy.resourceProp.setValue(getResource());
+    copy.resourceProp.setValue(BufferUtil.cloneBuffer(resourceProp.getValue()));
     return copy;
   }
 
@@ -98,6 +98,10 @@ public class PersistedResource extends UnpackedObject
     return bufferAsString(resourceProp.getValue());
   }
 
+  public DirectBuffer getResourceBuffer() {
+    return resourceProp.getValue();
+  }
+
   @Override
   public PersistedResource wrap(final ResourceRecord record) {
     resourceIdProp.setValue(record.getResourceId());
@@ -108,7 +112,7 @@ public class PersistedResource extends UnpackedObject
     tenantIdProp.setValue(record.getTenantId());
     deploymentKeyProp.setValue(record.getDeploymentKey());
     versionTagProp.setValue(record.getVersionTag());
-    resourceProp.setValue(record.getResourceProp());
+    resourceProp.setValue(record.getResourceBuffer());
     return this;
   }
 

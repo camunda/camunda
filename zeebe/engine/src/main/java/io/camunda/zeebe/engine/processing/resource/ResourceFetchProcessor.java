@@ -83,7 +83,7 @@ public class ResourceFetchProcessor implements TypedRecordProcessor<ResourceReco
 
   private static ResourceRecord asResourceRecord(final PersistedResource resource) {
     return new ResourceRecord()
-        .setResource(BufferUtil.wrapString(resource.getResource()))
+        .setResource(resource.getResourceBuffer())
         .setResourceKey(resource.getResourceKey())
         .setResourceId(resource.getResourceId())
         .setResourceName(resource.getResourceName())
