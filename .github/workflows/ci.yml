@@ -1263,7 +1263,7 @@ jobs:
           fi
           ./gradlew --no-daemon --console=plain --max-workers=${{ matrix.maven-test-fork-count }} \
             -Pskip.fe.build -Pparallel.tests -Pjunit.thread.count=2 \
-            -Ptest.jvm.maxheap=6g \
+            -Ptest.max.forks=${{ matrix.maven-test-fork-count }} \
             -Dio.camunda.process.test.camundaDockerImageName="${{ env.CAMUNDA_DOCKER_IMAGE_NAME }}" \
             -Dio.camunda.process.test.camundaDockerImageVersion="${{ env.DOCKER_IMAGE_TAG }}" \
             -Dio.camunda.process.test.camundaVersion="${{ env.DOCKER_IMAGE_TAG }}" \

@@ -93,6 +93,7 @@ val itPatterns = listOf(
 
 tasks.withType<Test>().configureEach {
     enabled = !quickly.get()
+    maxParallelForks = testMaxForks
     jvmArgs(
         "--add-opens=java.base/java.io=ALL-UNNAMED",
         "--add-opens=java.base/java.lang=ALL-UNNAMED",
