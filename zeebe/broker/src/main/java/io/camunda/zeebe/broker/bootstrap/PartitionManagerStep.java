@@ -15,6 +15,7 @@ import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.partitioning.RecoveryPartitionManager;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.MemberState.State;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import org.jspecify.annotations.Nullable;
@@ -111,12 +112,16 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
     final var clusterConfiguration =
         brokerStartupContext.getClusterConfigurationService().getInitialClusterConfiguration();
 
+    final var clusterCfg = brokerStartupContext.getBrokerConfiguration().getCluster();
+
+    final var memberState =
+        clusterConfiguration.getMember(MemberId.from(clusterCfg.getZone(), clusterCfg.getNodeId()));
+
     if (PartitionManager.isDefaultPhysicalTenant(physicalTenantId)) {
       brokerStartupContext
           .getClusterConfigurationService()
           .registerInconsistentConfigurationListener(
               (newTopology, oldTopology) -> {
-                final var clusterCfg = brokerStartupContext.getBrokerConfiguration().getCluster();
                 shutdownOnInconsistentTopology(
                     clusterCfg.getZone(),
                     clusterCfg.getNodeId(),
@@ -126,7 +131,7 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
               });
     }
 
-    if (clusterConfiguration.recovery()) {
+    if (State.RECOVERING == memberState.state()) {
       LOGGER.info("Partition group in recovery, starting RecoveryPartitionManager");
       return recoveryPartitionManager(brokerStartupContext, topologyManager);
     } else {
