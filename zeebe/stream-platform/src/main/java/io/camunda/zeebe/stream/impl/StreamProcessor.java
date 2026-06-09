@@ -210,7 +210,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
         replayCompletedFuture.onComplete(
             (v, error) -> {
               if (error != null) {
-                LOG.error("The replay of events failed.", error);
+                logReplayFailed(error);
                 onFailure(error);
               }
             });
@@ -219,7 +219,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
         replayCompletedFuture.onComplete(
             (lastProcessingPositions, error) -> {
               if (error != null) {
-                LOG.error("The replay of events failed.", error);
+                logReplayFailed(error);
                 onFailure(error);
               } else {
                 onRecovered(lastProcessingPositions);
@@ -386,8 +386,32 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
             actor);
   }
 
+  private static boolean alreadyLoggedByProcessor(final Throwable error) {
+    for (Throwable cause = error; cause != null; cause = cause.getCause()) {
+      if (cause instanceof NoSuchProcessorException) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private void logReplayFailed(final Throwable error) {
+    if (alreadyLoggedByProcessor(error)) {
+      // a missing processor has already been logged by the replay state machine (as a warning for a
+      // record from a newer broker, or as an error otherwise); avoid repeating it here
+      LOG.debug("The replay of events stopped.", error);
+    } else {
+      LOG.error("The replay of events failed.", error);
+    }
+  }
+
   private void onFailure(final Throwable throwable) {
-    LOG.error("Actor {} failed in phase {}.", actorName, actor.getLifecyclePhase(), throwable);
+    if (alreadyLoggedByProcessor(throwable)) {
+      // see logReplayFailed: the missing processor was already logged at the appropriate level
+      LOG.debug("Actor {} stopped in phase {}.", actorName, actor.getLifecyclePhase(), throwable);
+    } else {
+      LOG.error("Actor {} failed in phase {}.", actorName, actor.getLifecyclePhase(), throwable);
+    }
 
     asyncScheduleServiceContext
         .closeActors(actor)
