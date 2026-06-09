@@ -10,8 +10,10 @@ package io.camunda.zeebe.dynamic.config.state;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedMap;
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.dynamic.config.PartitionDistributor;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.UpdateRoutingState;
 import io.camunda.zeebe.dynamic.config.state.MemberState.State;
+import io.camunda.zeebe.dynamic.config.util.RoundRobinPartitionDistributor;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -408,6 +410,12 @@ public record ClusterConfiguration(
 
   public boolean hasPartition(final int partitionId) {
     return members.values().stream().anyMatch(member -> member.hasPartition(partitionId));
+  }
+
+  public PartitionDistributor partitionDistributor() {
+    return partitionDistributorConfig()
+        .map(PartitionDistributorConfig::toDistributor)
+        .orElseGet(RoundRobinPartitionDistributor::new);
   }
 
   public int partitionCount() {

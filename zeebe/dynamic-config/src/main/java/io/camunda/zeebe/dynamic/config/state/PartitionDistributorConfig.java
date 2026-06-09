@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.dynamic.config.state;
 
+import io.camunda.zeebe.dynamic.config.PartitionDistributor;
+import io.camunda.zeebe.dynamic.config.util.RoundRobinPartitionDistributor;
+import io.camunda.zeebe.dynamic.config.util.ZoneAwarePartitionDistributor;
 import java.util.List;
 import org.jspecify.annotations.NullMarked;
 
@@ -17,6 +20,16 @@ import org.jspecify.annotations.NullMarked;
  */
 @NullMarked
 public sealed interface PartitionDistributorConfig {
+
+  default PartitionDistributor toDistributor() {
+    return switch (this) {
+      case final RoundRobinConfig ignored -> new RoundRobinPartitionDistributor();
+      case final ZoneAwareConfig zoneAware -> new ZoneAwarePartitionDistributor(zoneAware.zones());
+      case final FixedConfig ignored ->
+          throw new UnsupportedOperationException(
+              "FixedConfig cannot be resolved from gossiped state; mapping is broker-local");
+    };
+  }
 
   record RoundRobinConfig() implements PartitionDistributorConfig {}
 

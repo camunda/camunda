@@ -31,9 +31,6 @@ import io.camunda.zeebe.dynamic.config.metrics.TopologyManagerMetrics;
 import io.camunda.zeebe.dynamic.config.metrics.TopologyMetrics;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
-import io.camunda.zeebe.dynamic.config.util.RoundRobinPartitionDistributor;
-import io.camunda.zeebe.dynamic.config.util.ZoneAwarePartitionDistributor;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.AsyncClosable;
@@ -65,7 +62,6 @@ public final class ClusterConfigurationManagerService
   private final ClusterChangeExecutor clusterChangeExecutor;
   private final TopologyMetrics topologyMetrics;
   private final TopologyManagerMetrics topologyManagerMetrics;
-  private @Nullable StaticConfiguration staticConfiguration;
 
   public ClusterConfigurationManagerService(
       final Path dataRootDirectory,
@@ -111,10 +107,7 @@ public final class ClusterConfigurationManagerService
             communicationService,
             new ProtoBufSerializer(),
             new ClusterConfigurationManagementRequestsHandler(
-                configurationChangeCoordinator,
-                this::resolveDistributor,
-                localMemberId,
-                managerActor));
+                configurationChangeCoordinator, localMemberId, managerActor));
 
     clusterConfigurationManager.setConfigurationGossiper(
         clusterConfigurationGossiper::updateClusterConfiguration);
@@ -187,7 +180,6 @@ public final class ClusterConfigurationManagerService
   public ActorFuture<Void> start(
       final ActorSchedulingService actorSchedulingService,
       final StaticConfiguration staticConfiguration) {
-    this.staticConfiguration = staticConfiguration;
     return startGossiper(actorSchedulingService)
         .andThen(
             () -> startClusterTopologyServices(actorSchedulingService, staticConfiguration),
@@ -278,24 +270,5 @@ public final class ClusterConfigurationManagerService
   @Override
   public void removeUpdateListener(final ClusterConfigurationUpdateListener listener) {
     clusterConfigurationGossiper.removeUpdateListener(listener);
-  }
-
-  private PartitionDistributor resolveDistributor() {
-    // Reads from the persisted (actor-thread-safe) configuration directly to avoid async
-    // indirection. Called from the manager actor when handling a request.
-    final var config =
-        persistedClusterConfiguration.getConfiguration().partitionDistributorConfig();
-    if (config.isEmpty()) {
-      return new RoundRobinPartitionDistributor();
-    }
-    return switch (config.get()) {
-      case final PartitionDistributorConfig.RoundRobinConfig ignored ->
-          new RoundRobinPartitionDistributor();
-      case final PartitionDistributorConfig.ZoneAwareConfig zoneAware ->
-          new ZoneAwarePartitionDistributor(zoneAware.zones());
-      case final PartitionDistributorConfig.FixedConfig ignored ->
-          Objects.requireNonNull(staticConfiguration, "staticConfiguration not set")
-              .partitionDistributor();
-    };
   }
 }
