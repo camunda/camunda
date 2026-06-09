@@ -8,6 +8,7 @@
 package io.camunda.exporter.rdbms;
 
 import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
+import io.camunda.db.rdbms.exception.ExporterPositionMismatchException;
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics.FlushTrigger;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.ExporterPositionModel;
@@ -97,6 +98,7 @@ public final class RdbmsExporter {
 
   public void open(final Controller controller) {
     this.controller = controller;
+    rdbmsWriters.getExecutionQueue().reset();
     logInfo("Opening exporter with broker position {}", controller.getLastExportedRecordPosition());
 
     if (!rdbmsSchemaManagerRegistry.isInitialized(physicalTenantId)) {
@@ -247,6 +249,16 @@ public final class RdbmsExporter {
         if (flushed) {
           resetIntervalFlush();
         }
+      } catch (final ExporterPositionMismatchException e) {
+        logWarn(
+            "Exporter position conflict detected during flush — requesting reopen to re-sync from DB position.");
+        throw new ExporterException(
+            String.format(
+                "[RDBMS Exporter P%d T-%s] Flush failed due to exporter position conflict;"
+                    + " exporter will reopen to re-sync.",
+                partitionId, physicalTenantId),
+            e,
+            ExporterException.Compensation.REOPEN);
       } catch (final Exception e) {
         logWarn(
             "Failed to flush record for positions {} to {} to the database.",
