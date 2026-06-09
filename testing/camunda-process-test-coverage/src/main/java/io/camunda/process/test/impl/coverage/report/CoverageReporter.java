@@ -184,7 +184,7 @@ public class CoverageReporter {
             "Coverage: {1} \n"
                 + "========================\n"
                 + "{2}\n\n"
-                + " Coverage report: file://{0}/report.html\n",
+                + " Coverage report: file://{0}/report.html#/suite/{1}\n",
             resourceDirectory, suite.getId(), coverageText.toString());
     printStream.accept(message);
   }
