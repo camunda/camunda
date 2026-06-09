@@ -9,7 +9,7 @@ package io.camunda.search.clients.reader;
 
 import io.camunda.search.entities.DeployedResourceEntity;
 import io.camunda.search.query.DeployedResourceQuery;
-import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.core.authz.ResourceAccessChecks;
 
 public interface DeployedResourceReader
     extends SearchEntityReader<DeployedResourceEntity, DeployedResourceQuery> {

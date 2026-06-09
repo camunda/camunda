@@ -16,9 +16,9 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.sql.FormMapper;
 import io.camunda.search.query.FormQuery;
-import io.camunda.security.reader.AuthorizationCheck;
-import io.camunda.security.reader.ResourceAccessChecks;
-import io.camunda.security.reader.TenantCheck;
+import io.camunda.security.core.authz.AuthorizationCheck;
+import io.camunda.security.core.authz.ResourceAccessChecks;
+import io.camunda.security.core.authz.TenantCheck;
 import org.junit.jupiter.api.Test;
 
 class FormDbReaderTest {

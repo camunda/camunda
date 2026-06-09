@@ -17,7 +17,7 @@ import io.camunda.search.query.ProcessDefinitionMessageSubscriptionStatisticsQue
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.sort.ProcessDefinitionMessageSubscriptionStatisticsSort;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
-import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.core.authz.ResourceAccessChecks;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

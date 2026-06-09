@@ -26,7 +26,7 @@ import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
 import io.camunda.search.filter.AuditLogFilter;
 import io.camunda.security.core.auth.RequiredAuthorization;
-import io.camunda.security.reader.TenantCheck;
+import io.camunda.security.core.authz.TenantCheck;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogTenantScope;
 import java.util.Optional;

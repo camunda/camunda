@@ -17,7 +17,7 @@ import io.camunda.search.entities.ClusterVariableScope;
 import io.camunda.search.query.ClusterVariableQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
-import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.core.authz.ResourceAccessChecks;
 import io.camunda.util.ClusterVariableUtil;
 import java.util.List;
 import org.slf4j.Logger;

@@ -10,8 +10,8 @@ package io.camunda.authentication.service;
 import static io.camunda.service.authorization.Authorizations.COMPONENT_ACCESS_AUTHORIZATION;
 
 import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.core.authz.ResourceAccessProvider;
 import io.camunda.security.core.port.out.AuthorizedComponentsPort;
-import io.camunda.security.reader.ResourceAccessProvider;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import java.util.List;
 import org.springframework.stereotype.Service;

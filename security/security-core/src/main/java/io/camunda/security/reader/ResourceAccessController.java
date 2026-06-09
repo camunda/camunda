@@ -45,7 +45,7 @@ public interface ResourceAccessController {
 
   /**
    * Returns true if the given {@link io.camunda.security.core.auth.SecurityContext securityContext}
-   * is supported by this {@link io.camunda.security.reader.ResourceAccessController}.
+   * is supported by this {@link io.camunda.security.core.authz.ResourceAccessController}.
    */
   boolean supports(SecurityContext securityContext);
 

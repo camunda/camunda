@@ -9,9 +9,9 @@ package io.camunda.it.rdbms.db.fixtures;
 
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.core.auth.RequiredAuthorization;
-import io.camunda.security.reader.AuthorizationCheck;
-import io.camunda.security.reader.ResourceAccessChecks;
-import io.camunda.security.reader.TenantCheck;
+import io.camunda.security.core.authz.AuthorizationCheck;
+import io.camunda.security.core.authz.ResourceAccessChecks;
+import io.camunda.security.core.authz.TenantCheck;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.List;

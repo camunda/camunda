@@ -20,7 +20,7 @@ import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.AgentInstanceQuery;
 import io.camunda.search.sort.AgentInstanceSort;
 import io.camunda.search.sort.AgentInstanceSort.Builder;
-import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.core.authz.ResourceAccessChecks;
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
 import java.util.Comparator;

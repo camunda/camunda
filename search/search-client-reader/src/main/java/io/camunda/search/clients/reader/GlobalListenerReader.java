@@ -10,7 +10,7 @@ package io.camunda.search.clients.reader;
 import io.camunda.search.entities.GlobalListenerEntity;
 import io.camunda.search.entities.GlobalListenerType;
 import io.camunda.search.query.GlobalListenerQuery;
-import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.core.authz.ResourceAccessChecks;
 
 public interface GlobalListenerReader
     extends SearchEntityReader<GlobalListenerEntity, GlobalListenerQuery> {
