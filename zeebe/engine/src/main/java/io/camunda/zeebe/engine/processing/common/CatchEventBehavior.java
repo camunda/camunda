@@ -395,6 +395,7 @@ public final class CatchEventBehavior {
     subscription.setTenantId(context.getTenantId());
     subscription.setRootProcessInstanceKey(rootProcessInstanceKey);
     subscription.setBusinessId(businessId);
+    subscription.setElementType(event.getElementType());
 
     final var subscriptionKey = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(
@@ -410,7 +411,10 @@ public final class CatchEventBehavior {
         correlationKey,
         event.isInterrupting(),
         context.getTenantId(),
-        businessId);
+        businessId,
+        event.getId(),
+        rootProcessInstanceKey,
+        event.getElementType());
 
     final String subscriptionMessageName = subscription.getMessageName();
     final String tenantId = subscription.getTenantId();
@@ -684,7 +688,10 @@ public final class CatchEventBehavior {
       final DirectBuffer correlationKey,
       final boolean closeOnCorrelate,
       final String tenantId,
-      final DirectBuffer businessId) {
+      final DirectBuffer businessId,
+      final DirectBuffer elementId,
+      final long rootProcessInstanceKey,
+      final BpmnElementType elementType) {
     return subscriptionCommandSender.openMessageSubscription(
         subscriptionPartitionId,
         processInstanceKey,
@@ -695,7 +702,10 @@ public final class CatchEventBehavior {
         correlationKey,
         closeOnCorrelate,
         tenantId,
-        businessId);
+        businessId,
+        elementId,
+        rootProcessInstanceKey,
+        elementType);
   }
 
   public record CatchEvent(ExecutableCatchEvent element, DirectBuffer messageName, Timer timer) {
