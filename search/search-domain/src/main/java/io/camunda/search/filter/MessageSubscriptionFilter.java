@@ -33,7 +33,8 @@ public record MessageSubscriptionFilter(
     List<Operation<String>> processDefinitionNameOperations,
     List<Operation<Integer>> processDefinitionVersionOperations,
     List<Operation<String>> toolNameOperations,
-    List<Operation<String>> inboundConnectorTypeOperations)
+    List<Operation<String>> inboundConnectorTypeOperations,
+    List<Operation<Integer>> partitionIdOperations)
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<MessageSubscriptionFilter> {
@@ -54,6 +55,7 @@ public record MessageSubscriptionFilter(
     private List<Operation<Integer>> processDefinitionVersionOperations;
     private List<Operation<String>> toolNameOperations;
     private List<Operation<String>> inboundConnectorTypeOperations;
+    private List<Operation<Integer>> partitionIdOperations;
 
     public Builder messageSubscriptionKeys(final Long value, final Long... values) {
       return messageSubscriptionKeyOperations(FilterUtil.mapDefaultToOperation(value, values));
@@ -299,6 +301,21 @@ public record MessageSubscriptionFilter(
       return this;
     }
 
+    public Builder partitionIds(final Integer value, final Integer... values) {
+      return partitionIdOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    @SafeVarargs
+    public final Builder partitionIdOperations(
+        final Operation<Integer> operation, final Operation<Integer>... operations) {
+      return partitionIdOperations(collectValues(operation, operations));
+    }
+
+    public Builder partitionIdOperations(final List<Operation<Integer>> operations) {
+      partitionIdOperations = addValuesToList(partitionIdOperations, operations);
+      return this;
+    }
+
     @Override
     public MessageSubscriptionFilter build() {
       return new MessageSubscriptionFilter(
@@ -317,7 +334,8 @@ public record MessageSubscriptionFilter(
           Objects.requireNonNullElse(processDefinitionNameOperations, Collections.emptyList()),
           Objects.requireNonNullElse(processDefinitionVersionOperations, Collections.emptyList()),
           Objects.requireNonNullElse(toolNameOperations, Collections.emptyList()),
-          Objects.requireNonNullElse(inboundConnectorTypeOperations, Collections.emptyList()));
+          Objects.requireNonNullElse(inboundConnectorTypeOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(partitionIdOperations, Collections.emptyList()));
     }
   }
 }

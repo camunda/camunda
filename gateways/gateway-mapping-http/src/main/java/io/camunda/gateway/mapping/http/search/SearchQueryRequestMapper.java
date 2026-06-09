@@ -783,6 +783,19 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, MessageSubscriptionQuery> toMessageSubscriptionQuery(
+      final io.camunda.gateway.protocol.model.simple.@Nullable MessageSubscriptionSearchQuery
+          query) {
+    return toMessageSubscriptionQuery(
+        query == null
+            ? null
+            : MessageSubscriptionSearchQuery.Builder.create()
+                .filter(SimpleSearchQueryMapper.toMessageSubscriptionFilter(query.getFilter()))
+                .page(SimpleSearchQueryMapper.toPageRequest(query.getPage()))
+                .sort(query.getSort() == null ? List.of() : query.getSort())
+                .build());
+  }
+
+  public static Either<ProblemDetail, MessageSubscriptionQuery> toMessageSubscriptionQuery(
       final @Nullable MessageSubscriptionSearchQuery request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.messageSubscriptionSearchQuery().build());

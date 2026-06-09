@@ -290,4 +290,20 @@ public interface MessageSubscriptionFilter extends SearchRequestFilter {
    * @return the updated filter
    */
   MessageSubscriptionFilter inboundConnectorType(Consumer<StringProperty> fn);
+
+  /**
+   * Filter by partition ID.
+   *
+   * @param partitionId the partition ID
+   * @return the updated filter
+   */
+  MessageSubscriptionFilter partitionId(Integer partitionId);
+
+  /**
+   * Filter by partition ID using an {@link IntegerProperty} consumer.
+   *
+   * @param fn the partition ID {@link IntegerProperty} consumer
+   * @return the updated filter
+   */
+  MessageSubscriptionFilter partitionId(Consumer<IntegerProperty> fn);
 }

@@ -173,6 +173,12 @@
         <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
     </if>
+    <if test="filter.partitionIdOperations != null and !filter.partitionIdOperations.isEmpty()">
+      <foreach collection="filter.partitionIdOperations" item="operation">
+        AND PARTITION_ID
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
   </sql>
 
   <resultMap id="searchResultMap" type="io.camunda.db.rdbms.write.domain.MessageSubscriptionDbModel">

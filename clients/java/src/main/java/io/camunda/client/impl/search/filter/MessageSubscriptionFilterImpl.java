@@ -259,6 +259,19 @@ public class MessageSubscriptionFilterImpl
   }
 
   @Override
+  public MessageSubscriptionFilter partitionId(final Integer partitionId) {
+    return partitionId(f -> f.eq(partitionId));
+  }
+
+  @Override
+  public MessageSubscriptionFilter partitionId(final Consumer<IntegerProperty> fn) {
+    final IntegerProperty property = new IntegerPropertyImpl();
+    fn.accept(property);
+    filter.setPartitionId(provideSearchRequestProperty(property));
+    return this;
+  }
+
+  @Override
   protected io.camunda.client.protocol.rest.MessageSubscriptionFilter getSearchRequestProperty() {
     return filter;
   }

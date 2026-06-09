@@ -1147,6 +1147,9 @@ public class SearchQueryFilterMapper {
       ofNullable(filter.getInboundConnectorType())
           .map(mapToStringOperations())
           .ifPresent(builder::inboundConnectorTypeOperations);
+      ofNullable(filter.getPartitionId())
+          .map(mapToIntegerOperations("partitionId", validationErrors))
+          .ifPresent(builder::partitionIdOperations);
     }
     return validationErrors.isEmpty()
         ? Either.right(builder.build())

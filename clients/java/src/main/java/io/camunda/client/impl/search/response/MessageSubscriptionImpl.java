@@ -45,6 +45,7 @@ public class MessageSubscriptionImpl implements MessageSubscription {
   private final Map<String, String> toolProperties;
   private final String toolName;
   private final String inboundConnectorType;
+  private final Integer partitionId;
 
   public MessageSubscriptionImpl(final MessageSubscriptionResult item) {
     messageSubscriptionKey = ParseUtil.parseLongOrNull(item.getMessageSubscriptionKey());
@@ -67,6 +68,7 @@ public class MessageSubscriptionImpl implements MessageSubscription {
     toolProperties = item.getToolProperties();
     toolName = item.getToolName();
     inboundConnectorType = item.getInboundConnectorType();
+    partitionId = item.getPartitionId();
   }
 
   @Override
@@ -160,6 +162,11 @@ public class MessageSubscriptionImpl implements MessageSubscription {
   }
 
   @Override
+  public Integer getPartitionId() {
+    return partitionId;
+  }
+
+  @Override
   public int hashCode() {
     return Objects.hash(
         messageSubscriptionKey,
@@ -179,7 +186,8 @@ public class MessageSubscriptionImpl implements MessageSubscription {
         processDefinitionVersion,
         toolProperties,
         toolName,
-        inboundConnectorType);
+        inboundConnectorType,
+        partitionId);
   }
 
   @Override
@@ -208,6 +216,7 @@ public class MessageSubscriptionImpl implements MessageSubscription {
         && Objects.equals(processDefinitionVersion, subscription.processDefinitionVersion)
         && Objects.equals(toolProperties, subscription.toolProperties)
         && Objects.equals(toolName, subscription.toolName)
-        && Objects.equals(inboundConnectorType, subscription.inboundConnectorType);
+        && Objects.equals(inboundConnectorType, subscription.inboundConnectorType)
+        && Objects.equals(partitionId, subscription.partitionId);
   }
 }

@@ -26,6 +26,7 @@ import static io.camunda.webapps.schema.descriptors.template.MessageSubscription
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.PROCESS_DEFINITION_NAME;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.PROCESS_DEFINITION_VERSION;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.PROCESS_KEY;
+import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.PARTITION_ID;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.TOOL_NAME;
 
 import io.camunda.search.clients.query.SearchQuery;
@@ -64,7 +65,8 @@ public class MessageSubscriptionFilterTransformer
         stringOperations(PROCESS_DEFINITION_NAME, filter.processDefinitionNameOperations()),
         intOperations(PROCESS_DEFINITION_VERSION, filter.processDefinitionVersionOperations()),
         stringOperations(TOOL_NAME, filter.toolNameOperations()),
-        stringOperations(INBOUND_CONNECTOR_TYPE, filter.inboundConnectorTypeOperations()));
+        stringOperations(INBOUND_CONNECTOR_TYPE, filter.inboundConnectorTypeOperations()),
+        intOperations(PARTITION_ID, filter.partitionIdOperations()));
   }
 
   @Override

@@ -1234,6 +1234,7 @@ public final class SearchQueryResponseMapper {
         .processDefinitionName(messageSubscription.processDefinitionName())
         .processDefinitionVersion(messageSubscription.processDefinitionVersion())
         .processInstanceKey(keyToStringOrNull(messageSubscription.processInstanceKey()))
+        .partitionId(messageSubscription.partitionId())
         .tenantId(messageSubscription.tenantId())
         .toolName(messageSubscription.toolName())
         .build();

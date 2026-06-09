@@ -29,6 +29,7 @@ import io.camunda.gateway.protocol.model.ProcessInstanceFilterFields;
 import io.camunda.gateway.protocol.model.StringFilterProperty;
 import io.camunda.gateway.protocol.model.VariableValueFilterProperty;
 import io.camunda.gateway.protocol.model.simple.IncidentFilter;
+import io.camunda.gateway.protocol.model.simple.MessageSubscriptionFilter;
 import io.camunda.gateway.protocol.model.simple.SearchQueryPageRequest;
 import io.camunda.gateway.protocol.model.simple.SimpleDateTimeFilterProperty;
 import io.camunda.service.exception.ServiceError;
@@ -442,6 +443,66 @@ public class SimpleSearchQueryMapper {
                     .value(AdvancedStringFilter.Builder.create().$eq(simpleVar.getValue()).build())
                     .build())
         .toList();
+  }
+
+  public static io.camunda.gateway.protocol.model.MessageSubscriptionFilter toMessageSubscriptionFilter(
+      final @Nullable MessageSubscriptionFilter filter) {
+    final var filterModel =
+        io.camunda.gateway.protocol.model.MessageSubscriptionFilter.Builder.create().build();
+    if (filter != null) {
+      ofNullable(filter.getMessageSubscriptionKey())
+          .map(SimpleSearchQueryMapper::getBasicStringFilter)
+          .ifPresent(filterModel::messageSubscriptionKey);
+      ofNullable(filter.getProcessDefinitionKey())
+          .map(SimpleSearchQueryMapper::getBasicStringFilter)
+          .ifPresent(filterModel::processDefinitionKey);
+      ofNullable(filter.getProcessDefinitionId())
+          .map(SimpleSearchQueryMapper::getStringFilter)
+          .ifPresent(filterModel::processDefinitionId);
+      ofNullable(filter.getProcessInstanceKey())
+          .map(SimpleSearchQueryMapper::getBasicStringFilter)
+          .ifPresent(filterModel::processInstanceKey);
+      ofNullable(filter.getElementId())
+          .map(SimpleSearchQueryMapper::getStringFilter)
+          .ifPresent(filterModel::elementId);
+      ofNullable(filter.getElementInstanceKey())
+          .map(SimpleSearchQueryMapper::getBasicStringFilter)
+          .ifPresent(filterModel::elementInstanceKey);
+      ofNullable(filter.getMessageSubscriptionState())
+          .map(s -> io.camunda.gateway.protocol.model.AdvancedMessageSubscriptionStateFilter.Builder.create().$eq(s).build())
+          .ifPresent(filterModel::messageSubscriptionState);
+      ofNullable(filter.getLastUpdatedDate())
+          .map(SimpleSearchQueryMapper::getDateTimeFilter)
+          .ifPresent(filterModel::lastUpdatedDate);
+      ofNullable(filter.getMessageName())
+          .map(SimpleSearchQueryMapper::getStringFilter)
+          .ifPresent(filterModel::messageName);
+      ofNullable(filter.getCorrelationKey())
+          .map(SimpleSearchQueryMapper::getStringFilter)
+          .ifPresent(filterModel::correlationKey);
+      ofNullable(filter.getTenantId())
+          .map(SimpleSearchQueryMapper::getStringFilter)
+          .ifPresent(filterModel::tenantId);
+      ofNullable(filter.getMessageSubscriptionType())
+          .map(s -> io.camunda.gateway.protocol.model.AdvancedMessageSubscriptionTypeFilter.Builder.create().$eq(s).build())
+          .ifPresent(filterModel::messageSubscriptionType);
+      ofNullable(filter.getProcessDefinitionName())
+          .map(SimpleSearchQueryMapper::getStringFilter)
+          .ifPresent(filterModel::processDefinitionName);
+      ofNullable(filter.getProcessDefinitionVersion())
+          .map(SimpleSearchQueryMapper::getIntegerFilter)
+          .ifPresent(filterModel::processDefinitionVersion);
+      ofNullable(filter.getToolName())
+          .map(SimpleSearchQueryMapper::getStringFilter)
+          .ifPresent(filterModel::toolName);
+      ofNullable(filter.getInboundConnectorType())
+          .map(SimpleSearchQueryMapper::getStringFilter)
+          .ifPresent(filterModel::inboundConnectorType);
+      ofNullable(filter.getPartitionId())
+          .map(SimpleSearchQueryMapper::getIntegerFilter)
+          .ifPresent(filterModel::partitionId);
+    }
+    return filterModel;
   }
 
   private static StringFilterProperty getStringFilter(final @Nullable String value) {

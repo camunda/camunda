@@ -66,4 +66,6 @@ public interface MessageSubscription {
   String getToolName();
 
   String getInboundConnectorType();
+
+  Integer getPartitionId();
 }

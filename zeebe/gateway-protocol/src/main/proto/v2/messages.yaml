@@ -294,6 +294,7 @@ components:
         - messageSubscriptionKey
         - messageSubscriptionState
         - messageSubscriptionType
+        - partitionId
         - processDefinitionId
         - processDefinitionKey
         - processDefinitionName
@@ -356,6 +357,11 @@ components:
           description: The correlation key of the message subscription.
         messageSubscriptionType:
           $ref: '#/components/schemas/MessageSubscriptionTypeEnum'
+        partitionId:
+          description: The partition ID of the message subscription.
+          type: integer
+          format: int32
+          nullable: true
         toolProperties:
           type: object
           additionalProperties:
@@ -401,6 +407,8 @@ components:
         - propertyName: toolName
           addedInVersion: "8.10"
         - propertyName: inboundConnectorType
+          addedInVersion: "8.10"
+        - propertyName: partitionId
           addedInVersion: "8.10"
 
     MessageSubscriptionSearchQuerySortRequest:
@@ -517,6 +525,10 @@ components:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
           description: Filter by inbound connector type extracted from the `inbound.type` zeebe:property.
+        partitionId:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/IntegerFilterProperty'
+          description: The partition ID of the message subscription.
       x-properties-added-in-version:
         - propertyName: messageSubscriptionKey
           addedInVersion: "8.8"
@@ -549,6 +561,8 @@ components:
         - propertyName: toolName
           addedInVersion: "8.10"
         - propertyName: inboundConnectorType
+          addedInVersion: "8.10"
+        - propertyName: partitionId
           addedInVersion: "8.10"
 
     CorrelatedMessageSubscriptionSearchQueryResult:
