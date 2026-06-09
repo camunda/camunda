@@ -17,6 +17,7 @@ package io.camunda.process.test.impl.judge;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import io.camunda.client.api.response.DocumentReferenceResponse;
+import io.camunda.client.impl.response.DocumentReferenceResponseImpl;
 import io.camunda.process.test.api.judge.ResolvedDocument;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.assertions.util.CamundaAssertJsonMapper;
@@ -133,7 +134,8 @@ public final class DocumentReferenceResolver {
       final JsonNode referenceNode, final CamundaAssertJsonMapper jsonMapper) {
     final DocumentReferenceResponse reference;
     try {
-      reference = jsonMapper.readJson(referenceNode.toString(), DocumentReferenceDto.class);
+      reference =
+          jsonMapper.readJson(referenceNode.toString(), DocumentReferenceResponseImpl.class);
     } catch (final CamundaAssertJsonMapper.JsonMappingException e) {
       throw new IllegalStateException(
           "Failed to parse Camunda document reference: " + e.getMessage(), e);
@@ -159,17 +161,17 @@ public final class DocumentReferenceResolver {
     }
 
     @Override
+    public int hashCode() {
+      return Objects.hash(documentId, storeId);
+    }
+
+    @Override
     public boolean equals(final Object o) {
       if (!(o instanceof DocumentKey)) {
         return false;
       }
       final DocumentKey other = (DocumentKey) o;
       return Objects.equals(documentId, other.documentId) && Objects.equals(storeId, other.storeId);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(documentId, storeId);
     }
   }
 }
