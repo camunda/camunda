@@ -56,12 +56,13 @@ class PhysicalTenantSecurityConfigurationTest {
   }
 
   @Test
-  void shouldReturnOneDescriptorPerConfiguredTenantWithAssignedProviders() {
+  void shouldReturnOneDescriptorPerConfiguredTenant() {
     runner
         .withPropertyValues(
             "camunda.security.authentication.oidc.client-id=root-client",
             "camunda.security.authentication.oidc.issuer-uri=http://idp/root",
-            "camunda.physical-tenants.tenanta.security.authentication.providers.assigned[0]=oidc")
+            // tenanta has at least one physical-tenants key so it gets discovered
+            "camunda.physical-tenants.tenanta.security.authentication.method=oidc")
         .run(
             context -> {
               final var provider = context.getBean(CamundaSecurityScopeProvider.class);
