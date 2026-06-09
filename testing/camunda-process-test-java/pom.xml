@@ -16,12 +16,12 @@
   <properties>
     <version.java>8</version.java>
     <maven-commit-id-plugin-version>9.0.2</maven-commit-id-plugin-version>
-    <!-- Camunda Docker image properties. CI overrides the properties to use the current image. -->
+    <!-- Camunda/Connectors Docker image properties. CI overrides the properties to use the current image. -->
     <io.camunda.process.test.camundaDockerImageName>camunda/camunda</io.camunda.process.test.camundaDockerImageName>
     <io.camunda.process.test.camundaDockerImageVersion>${project.version}</io.camunda.process.test.camundaDockerImageVersion>
-    <!-- Connectors Docker image properties. CI overrides the properties to use the current image. -->
     <io.camunda.process.test.connectorsDockerImageName>camunda/connectors-bundle</io.camunda.process.test.connectorsDockerImageName>
-    <io.camunda.process.test.connectorsDockerImageVersion>${project.version}</io.camunda.process.test.connectorsDockerImageVersion>
+    <!-- Use a fixed Connectors Docker image version as it follows a different release cycle. Update to the latest available version. -->
+    <io.camunda.process.test.connectorsDockerImageVersion>8.9.5</io.camunda.process.test.connectorsDockerImageVersion>
   </properties>
 
   <dependencies>
