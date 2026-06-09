@@ -6,8 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useReducer} from 'react';
-import {Button} from '@carbon/react';
+import {useReducer, useState, lazy, Suspense} from 'react';
+import {Button, Modal, Switch} from '@carbon/react';
 import {Maximize} from '@carbon/react/icons';
 import {CopyButton} from 'modules/components/CopyButton';
 import {
@@ -16,9 +16,12 @@ import {
   ActorLabel,
   Message,
   MessageActions,
+  ModalContent,
+  ModalToolbar,
+  ViewSwitcher,
 } from './styled';
 import {MarkdownMessage} from './MarkdownMessage';
-import {RichTextEditorModal} from 'modules/components/RichTextEditorModal';
+import {containsMarkdown} from './containsMarkdown';
 
 type Actor = 'user' | 'assistant' | 'system';
 
@@ -39,6 +42,17 @@ type ConversationMessageProps = {
   messages: string[];
 };
 
+const RichTextEditor = lazy(async () => {
+  const [{loadMonaco}, {RichTextEditor}] = await Promise.all([
+    import('modules/loadMonaco'),
+    import('modules/components/RichTextEditor'),
+  ]);
+
+  loadMonaco();
+
+  return {default: RichTextEditor};
+});
+
 const ConversationMessage: React.FC<ConversationMessageProps> = ({
   actor,
   messages,
@@ -47,6 +61,7 @@ const ConversationMessage: React.FC<ConversationMessageProps> = ({
     messageDetailsReducer,
     initialMessageDetailsState,
   );
+  const [modalView, setModalView] = useState<'preview' | 'source'>('preview');
 
   return (
     <Container $actor={actor}>
@@ -69,14 +84,57 @@ const ConversationMessage: React.FC<ConversationMessageProps> = ({
           </MessageActions>
         </MessageBlock>
       ))}
-      <RichTextEditorModal
-        title={messageDetails.title}
-        language="markdown"
-        readOnly
-        value={messageDetails.message}
-        isVisible={messageDetails.state === 'visible'}
-        onClose={() => dispatch({type: 'hide'})}
-      />
+      {messageDetails.state === 'visible' && (
+        <Modal
+          open
+          modalHeading={messageDetails.title}
+          onRequestClose={() => {
+            dispatch({type: 'hide'});
+            setModalView('preview');
+          }}
+          size="lg"
+          passiveModal
+        >
+          {containsMarkdown(messageDetails.message) ? (
+            <>
+              <ModalToolbar>
+                <ViewSwitcher
+                  size="sm"
+                  onChange={({name}) =>
+                    setModalView(name as 'preview' | 'source')
+                  }
+                  selectedIndex={modalView === 'preview' ? 0 : 1}
+                >
+                  <Switch name="preview" text="Preview" />
+                  <Switch name="source" text="Source" />
+                </ViewSwitcher>
+                <CopyButton value={messageDetails.message} />
+              </ModalToolbar>
+              {modalView === 'preview' ? (
+                <ModalContent>
+                  <MarkdownMessage content={messageDetails.message} />
+                </ModalContent>
+              ) : (
+                <Suspense>
+                  <RichTextEditor
+                    value={messageDetails.message}
+                    readOnly
+                    language="markdown"
+                  />
+                </Suspense>
+              )}
+            </>
+          ) : (
+            <Suspense>
+              <RichTextEditor
+                value={messageDetails.message}
+                readOnly
+                language="markdown"
+              />
+            </Suspense>
+          )}
+        </Modal>
+      )}
     </Container>
   );
 };
