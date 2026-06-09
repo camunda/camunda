@@ -16,8 +16,7 @@ public enum DeployedResourceSearchColumn implements SearchColumn<DeployedResourc
   VERSION("version"),
   VERSION_TAG("versionTag"),
   DEPLOYMENT_KEY("deploymentKey"),
-  TENANT_ID("tenantId"),
-  RESOURCE_CONTENT("resourceContent");
+  TENANT_ID("tenantId");
 
   private final String property;
 

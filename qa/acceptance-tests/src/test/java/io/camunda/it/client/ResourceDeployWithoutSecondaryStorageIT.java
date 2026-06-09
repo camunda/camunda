@@ -45,6 +45,8 @@ class ResourceDeployWithoutSecondaryStorageIT {
   // Minimal valid 1×1 pixel PNG — first byte is 0x89 (non-UTF-8) to exercise binary round-trip
   private static final byte[] PNG_BYTES = loadPngBytes();
 
+  private static CamundaClient camundaClient;
+
   private static byte[] loadPngBytes() {
     try (final var stream =
         ResourceDeployWithoutSecondaryStorageIT.class.getResourceAsStream("/panda.png")) {
@@ -53,8 +55,6 @@ class ResourceDeployWithoutSecondaryStorageIT {
       throw new RuntimeException("Failed to load panda.png", e);
     }
   }
-
-  private static CamundaClient camundaClient;
 
   private static String loadRpaContent() {
     try (final var stream =

@@ -31,6 +31,9 @@
       <column name="TENANT_ID" type="NVARCHAR(${userCharColumnSize})"/>
       <column name="RESOURCE_CONTENT" type="BLOB"/>
     </createTable>
+    <modifySql dbms="h2">
+      <replace replace="BLOB" with="BINARY LARGE OBJECT"/>
+    </modifySql>
   </changeSet>
 
   <changeSet id="add_message_subscription_type_column" author="camunda">
