@@ -65,6 +65,7 @@ public class SecondaryStorageElasticsearchTest {
   private static final Map<String, Integer> EXPECTED_SHARDS_BY_INDEX_NAME = Map.of("my-index", 2);
 
   private static final boolean EXPECTED_HISTORY_PROCESS_INSTANCE_ENABLED = false;
+  private static final boolean EXPECTED_HISTORY_ARCHIVE_BY_ID_ENABLED = false;
   private static final String EXPECTED_HISTORY_ELS_ROLLOVER_DATE_FORMAT = "foo";
   private static final String EXPECTED_HISTORY_ROLLOVER_INTERVAL = "5d";
   private static final int EXPECTED_HISTORY_ROLLOVER_BATCH_SIZE = 200;
@@ -125,6 +126,8 @@ public class SecondaryStorageElasticsearchTest {
         "camunda.data.secondary-storage.elasticsearch.number-of-shards-per-index.my-index=2",
         "camunda.data.secondary-storage.elasticsearch.history.process-instance-enabled="
             + EXPECTED_HISTORY_PROCESS_INSTANCE_ENABLED,
+        "camunda.data.secondary-storage.elasticsearch.history.archive-by-id-enabled="
+            + EXPECTED_HISTORY_ARCHIVE_BY_ID_ENABLED,
         "camunda.data.secondary-storage.elasticsearch.date-format=" + EXPECTED_DATE_FORMAT,
         "camunda.data.secondary-storage.elasticsearch.socket-timeout="
             + EXPECTED_SOCKET_TIMEOUT
@@ -285,6 +288,8 @@ public class SecondaryStorageElasticsearchTest {
           .isEqualTo(EXPECTED_VARIABLE_SIZE_THRESHOLD);
       assertThat(exporterConfiguration.getHistory().isProcessInstanceEnabled())
           .isEqualTo(EXPECTED_HISTORY_PROCESS_INSTANCE_ENABLED);
+      assertThat(exporterConfiguration.getHistory().isArchiveByIdEnabled())
+          .isEqualTo(EXPECTED_HISTORY_ARCHIVE_BY_ID_ENABLED);
       assertThat(exporterConfiguration.getHistory().getElsRolloverDateFormat())
           .isEqualTo(EXPECTED_HISTORY_ELS_ROLLOVER_DATE_FORMAT);
       assertThat(exporterConfiguration.getHistory().getRolloverInterval())

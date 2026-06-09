@@ -20,12 +20,13 @@ public class DocumentBasedHistory {
   private static final boolean DEFAULT_HISTORY_PROCESS_INSTANCE_ENABLED = true;
   private static final ProcessInstanceRetentionMode
       DEFAULT_HISTORY_PROCESS_INSTANCE_RETENTION_MODE = ProcessInstanceRetentionMode.PI_HIERARCHY;
-  private static final boolean DEFAULT_HISTORY_ARCHIVE_BY_ID_ENABLED = false;
+  private static final boolean DEFAULT_HISTORY_ARCHIVE_BY_ID_ENABLED = true;
   private static final String DEFAULT_HISTORY_POLICY_NAME = "camunda-retention-policy";
   private static final String DEFAULT_HISTORY_ELS_ROLLOVER_DATE_FORMAT = "date";
   private static final String DEFAULT_HISTORY_ROLLOVER_INTERVAL = "1d";
   private static final int DEFAULT_HISTORY_ROLLOVER_BATCH_SIZE = 100;
-  private static final int DEFAULT_HISTORY_REINDEX_BATCH_SIZE = 2500;
+  private static final int DEFAULT_HISTORY_ARCHIVE_BY_ID_ROLLOVER_BATCH_SIZE = 500;
+  private static final int DEFAULT_HISTORY_ARCHIVE_BY_ID_REINDEX_BATCH_SIZE = 2500;
   private static final int DEFAULT_HISTORY_ARCHIVE_BY_ID_MAX_RETRY_ATTEMPTS = 3;
   private static final int DEFAULT_HISTORY_ARCHIVE_BY_ID_RETRY_DELAY_MS = 1000;
   private static final String DEFAULT_HISTORY_WAIT_PERIOD_BEFORE_ARCHIVING = "1h";
@@ -63,10 +64,10 @@ public class DocumentBasedHistory {
   private String rolloverInterval = DEFAULT_HISTORY_ROLLOVER_INTERVAL;
 
   /** Maximum number of process instances per archiving batch */
-  private int rolloverBatchSize = DEFAULT_HISTORY_ROLLOVER_BATCH_SIZE;
+  private Integer rolloverBatchSize;
 
   /** Maximum number of docs reindexed/deleted in a batch */
-  private int reindexBatchSize = DEFAULT_HISTORY_REINDEX_BATCH_SIZE;
+  private int reindexBatchSize = DEFAULT_HISTORY_ARCHIVE_BY_ID_REINDEX_BATCH_SIZE;
 
   /**
    * Grace period before archiving completed processes. Processes finished within this window are
@@ -159,6 +160,14 @@ public class DocumentBasedHistory {
   }
 
   public int getRolloverBatchSize() {
+    if (rolloverBatchSize == null) {
+      if (archiveByIdEnabled) {
+        rolloverBatchSize = DEFAULT_HISTORY_ARCHIVE_BY_ID_ROLLOVER_BATCH_SIZE;
+      } else {
+        rolloverBatchSize = DEFAULT_HISTORY_ROLLOVER_BATCH_SIZE;
+      }
+    }
+
     return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         prefix + ".rollover-batch-size",
         rolloverBatchSize,
