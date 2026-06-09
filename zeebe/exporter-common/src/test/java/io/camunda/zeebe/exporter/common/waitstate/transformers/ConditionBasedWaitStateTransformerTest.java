@@ -76,7 +76,6 @@ class ConditionBasedWaitStateTransformerTest {
   }
 
   @Test
-  @SuppressWarnings("unchecked")
   void shouldTriggerAddOnCreatedWithNonRootProcessInstance() {
     // given
     final ConditionalSubscriptionRecordValue value =
@@ -100,7 +99,6 @@ class ConditionBasedWaitStateTransformerTest {
   }
 
   @Test
-  @SuppressWarnings("unchecked")
   void shouldTriggerUpdateOnMigrated() {
     // given
     final ConditionalSubscriptionRecordValue value =
@@ -124,7 +122,6 @@ class ConditionBasedWaitStateTransformerTest {
   }
 
   @Test
-  @SuppressWarnings("unchecked")
   void shouldTriggerRemovalOnDeleted() {
     // given
     final ConditionalSubscriptionRecordValue value =
@@ -148,7 +145,6 @@ class ConditionBasedWaitStateTransformerTest {
   }
 
   @Test
-  @SuppressWarnings("unchecked")
   void shouldTriggerRemovalOnTriggeredWhenInterrupting() {
     // given
     final ConditionalSubscriptionRecordValue value =
@@ -173,7 +169,6 @@ class ConditionBasedWaitStateTransformerTest {
   }
 
   @Test
-  @SuppressWarnings("unchecked")
   void shouldNotTriggerRemovalOnTriggeredWhenNonInterrupting() {
     // given
     final ConditionalSubscriptionRecordValue value =
@@ -198,7 +193,6 @@ class ConditionBasedWaitStateTransformerTest {
   }
 
   @Test
-  @SuppressWarnings("unchecked")
   void shouldNotTriggerAnyActionForRootStartEvent() {
     // given — processInstanceKey == -1 marks a root-level start event
     final ConditionalSubscriptionRecordValue value =
