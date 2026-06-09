@@ -8,7 +8,12 @@
 
 import {getCurrentUser} from './authentication';
 import {activateAdHocSubProcessActivities} from './ad-hoc-sub-process';
-import {getAgentInstance, searchAgentInstances} from './agent-instance';
+import {
+	getAgentInstance,
+	searchAgentInstances,
+	createAgentInstanceHistoryItem,
+	searchAgentInstanceHistory,
+} from './agent-instance';
 import {
 	createAuthorization,
 	updateAuthorization,
@@ -193,6 +198,8 @@ const endpoints = {
 	activateAdHocSubProcessActivities,
 	getAgentInstance,
 	searchAgentInstances,
+	createAgentInstanceHistoryItem,
+	searchAgentInstanceHistory,
 	createAuthorization,
 	updateAuthorization,
 	getAuthorization,
@@ -427,6 +434,20 @@ export {
 	queryAgentInstancesRequestBodySchema,
 	queryAgentInstancesResponseBodySchema,
 	getAgentInstanceResponseBodySchema,
+	agentInstanceHistoryRoleSchema,
+	agentInstanceHistoryCommitStatusSchema,
+	agentInstanceTextContentSchema,
+	agentInstanceDocumentContentSchema,
+	agentInstanceObjectContentSchema,
+	agentInstanceMessageContentSchema,
+	agentInstanceToolCallSchema,
+	agentInstanceHistoryItemMetricsSchema,
+	agentInstanceHistoryItemSchema,
+	agentInstanceHistoryFilterSchema,
+	createAgentInstanceHistoryItemRequestBodySchema,
+	createAgentInstanceHistoryItemResponseBodySchema,
+	searchAgentInstanceHistoryRequestBodySchema,
+	searchAgentInstanceHistoryResponseBodySchema,
 	type AgentInstanceStatus,
 	type AgentInstanceDefinition,
 	type AgentInstanceMetrics,
@@ -436,6 +457,20 @@ export {
 	type QueryAgentInstancesRequestBody,
 	type QueryAgentInstancesResponseBody,
 	type GetAgentInstanceResponseBody,
+	type AgentInstanceHistoryRole,
+	type AgentInstanceHistoryCommitStatus,
+	type AgentInstanceTextContent,
+	type AgentInstanceDocumentContent,
+	type AgentInstanceObjectContent,
+	type AgentInstanceMessageContent,
+	type AgentInstanceToolCall,
+	type AgentInstanceHistoryItemMetrics,
+	type AgentInstanceHistoryItem,
+	type AgentInstanceHistoryFilter,
+	type CreateAgentInstanceHistoryItemRequestBody,
+	type CreateAgentInstanceHistoryItemResponseBody,
+	type SearchAgentInstanceHistoryRequestBody,
+	type SearchAgentInstanceHistoryResponseBody,
 } from './agent-instance';
 export {
 	activityTypeSchema,
