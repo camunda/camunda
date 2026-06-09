@@ -203,11 +203,12 @@ class OidcFlowTest {
     }
 
     @Test
-    public void shouldAllowAccessToProtectedWebEndpointWithValidUserToken() throws Exception {
-      // Given valid user credentials
+    public void shouldReturn401WhenBearerTokenPresentedToWebappPath() throws Exception {
+      // Given a valid user bearer token
       final String accessToken = getUserAccessToken();
 
-      // When using the token to access a protected web endpoint
+      // When presenting the token directly to a webapp path (ADR-0023: bearer validation lives on
+      // the API chain only; the webapp chain authenticates via oauth2Login / session)
       final MvcTestResult result =
           mockMvcTester
               .get()
@@ -216,8 +217,8 @@ class OidcFlowTest {
               .header("Authorization", "Bearer " + accessToken)
               .exchange();
 
-      // Then access is granted
-      assertThat(result).hasStatus(HttpStatus.OK).hasBodyTextEqualTo(DEFAULT_RESPONSE);
+      // Then the webapp chain rejects it with 401 rather than authenticating or redirecting
+      assertThat(result).hasStatus(HttpStatus.UNAUTHORIZED);
     }
 
     private String getUserAccessToken() throws IOException, InterruptedException {
