@@ -7,6 +7,7 @@ paths:
       tags:
         - Job
       operationId: activateJobs
+      x-permission-enforcement: filter
       x-required-permissions:
         - { resourceType: PROCESS_DEFINITION, permissionType: UPDATE_PROCESS_INSTANCE }
       security:
@@ -44,6 +45,7 @@ paths:
       tags:
         - Job
       operationId: searchJobs
+      x-permission-enforcement: filter
       x-required-permissions:
         - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_INSTANCE }
       security:

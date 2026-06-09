@@ -202,6 +202,7 @@ paths:
       tags:
         - Mapping rule
       operationId: searchMappingRule
+      x-permission-enforcement: filter
       x-required-permissions:
         - { resourceType: MAPPING_RULE, permissionType: READ }
       security:

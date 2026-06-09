@@ -54,6 +54,7 @@ paths:
       tags:
         - Role
       operationId: searchRoles
+      x-permission-enforcement: filter
       x-required-permissions:
         - { resourceType: ROLE, permissionType: READ }
       security:
@@ -333,6 +334,7 @@ paths:
       tags:
         - Role
       operationId: searchUsersForRole
+      x-permission-enforcement: filter
       x-required-permissions:
         - { resourceType: ROLE, permissionType: READ }
       security:
@@ -492,6 +494,7 @@ paths:
       tags:
         - Role
       operationId: searchClientsForRole
+      x-permission-enforcement: filter
       x-required-permissions:
         - { resourceType: ROLE, permissionType: READ }
       security:
@@ -657,6 +660,7 @@ paths:
       tags:
         - Role
       operationId: searchGroupsForRole
+      x-permission-enforcement: filter
       x-required-permissions:
         - { resourceType: ROLE, permissionType: READ }
       security:
@@ -816,6 +820,7 @@ paths:
       tags:
         - Role
       operationId: searchMappingRulesForRole
+      x-permission-enforcement: filter
       x-required-permissions:
         - { resourceType: MAPPING_RULE, permissionType: READ }
       security:

@@ -55,6 +55,7 @@ paths:
       tags:
         - User
       operationId: searchUsers
+      x-permission-enforcement: filter
       x-required-permissions:
         - { resourceType: USER, permissionType: READ }
       security:

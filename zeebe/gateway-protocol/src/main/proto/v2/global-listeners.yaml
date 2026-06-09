@@ -198,6 +198,7 @@ paths:
       tags:
         - Global listener
       operationId: searchGlobalTaskListeners
+      x-permission-enforcement: filter
       x-required-permissions:
         - { resourceType: GLOBAL_LISTENER, permissionType: READ_TASK_LISTENER }
       security:

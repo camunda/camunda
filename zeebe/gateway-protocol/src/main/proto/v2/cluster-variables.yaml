@@ -114,6 +114,7 @@ paths:
       tags:
         - Cluster Variable
       operationId: searchClusterVariables
+      x-permission-enforcement: filter
       x-required-permissions:
         - { resourceType: CLUSTER_VARIABLE, permissionType: READ }
       security:

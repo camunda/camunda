@@ -59,6 +59,7 @@ paths:
       tags:
         - Tenant
       operationId: searchTenants
+      x-permission-enforcement: filter
       x-required-permissions:
         - { resourceType: TENANT, permissionType: READ }
       security:
@@ -344,6 +345,7 @@ paths:
       tags:
         - Tenant
       operationId: searchUsersForTenant
+      x-permission-enforcement: filter
       x-required-permissions:
         - { resourceType: TENANT, permissionType: READ }
       security:
@@ -487,6 +489,7 @@ paths:
       tags:
         - Tenant
       operationId: searchClientsForTenant
+      x-permission-enforcement: filter
       x-required-permissions:
         - { resourceType: TENANT, permissionType: READ }
       security:
@@ -636,6 +639,7 @@ paths:
       tags:
         - Tenant
       operationId: searchGroupIdsForTenant
+      x-permission-enforcement: filter
       x-required-permissions:
         - { resourceType: TENANT, permissionType: READ }
       security:
@@ -675,6 +679,7 @@ paths:
       tags:
         - Tenant
       operationId: searchRolesForTenant
+      x-permission-enforcement: filter
       x-required-permissions:
         - { resourceType: ROLE, permissionType: READ }
       security:
@@ -919,6 +924,7 @@ paths:
       tags:
         - Tenant
       operationId: searchMappingRulesForTenant
+      x-permission-enforcement: filter
       x-required-permissions:
         - { resourceType: MAPPING_RULE, permissionType: READ }
       security:

@@ -171,6 +171,7 @@ paths:
       summary: Search authorizations
       description: Search for authorizations based on given criteria.
       operationId: searchAuthorizations
+      x-permission-enforcement: filter
       x-required-permissions:
         - { resourceType: AUTHORIZATION, permissionType: READ }
       security:

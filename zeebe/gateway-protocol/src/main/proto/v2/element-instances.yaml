@@ -7,6 +7,7 @@ paths:
       tags:
         - Element instance
       operationId: searchElementInstances
+      x-permission-enforcement: filter
       x-required-permissions:
         - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_INSTANCE }
       security:
@@ -43,6 +44,7 @@ paths:
       tags:
         - Element instance
       operationId: searchElementInstanceWaitStates
+      x-permission-enforcement: filter
       x-required-permissions:
         - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_INSTANCE }
       security:
