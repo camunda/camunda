@@ -181,7 +181,6 @@ public class ProtoBufSerializer
         routingState,
         clusterId,
         incarnationNumber,
-        recovery,
         partitionDistributorConfig);
   }
 
@@ -200,8 +199,7 @@ public class ProtoBufSerializer
         Topology.ClusterTopology.newBuilder()
             .setVersion(clusterConfiguration.version())
             .putAllMembers(members)
-            .setIncarnationNumber(clusterConfiguration.incarnationNumber())
-            .setRecovery(clusterConfiguration.recovery());
+            .setIncarnationNumber(clusterConfiguration.incarnationNumber());
 
     clusterConfiguration
         .lastChange()

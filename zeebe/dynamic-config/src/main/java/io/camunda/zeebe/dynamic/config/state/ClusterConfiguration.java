@@ -38,7 +38,6 @@ import java.util.stream.Stream;
  * @param incarnationNumber - represents the incarnation number of the cluster configuration
  *     <p>This class is immutable. Each mutable methods returns a new instance with the updated
  *     state.
- * @param recovery - indicates whether the cluster is in recovery mode
  */
 public record ClusterConfiguration(
     long version,
@@ -48,7 +47,6 @@ public record ClusterConfiguration(
     Optional<RoutingState> routingState,
     Optional<String> clusterId,
     long incarnationNumber,
-    boolean recovery,
     Optional<PartitionDistributorConfig> partitionDistributorConfig) {
 
   public static final int INITIAL_VERSION = 1;
@@ -64,8 +62,7 @@ public record ClusterConfiguration(
       final Optional<RoutingState> routingState,
       final Optional<String> clusterId,
       final long incarnationNumber,
-      final boolean recovery,
-      final Optional<PartitionDistributorConfig> partitionDistributorConfig) {
+      Optional<PartitionDistributorConfig> partitionDistributorConfig) {
     this(
         version,
         ImmutableSortedMap.copyOf(members),
@@ -74,8 +71,7 @@ public record ClusterConfiguration(
         routingState,
         clusterId,
         incarnationNumber,
-        recovery,
-        partitionDistributorConfig);
+        Optional<PartitionDistributorConfig> partitionDistributorConfig);
   }
 
   public ClusterConfiguration {
@@ -104,7 +100,6 @@ public record ClusterConfiguration(
         Optional.empty(),
         Optional.empty(),
         INITIAL_INCARNATION_NUMBER,
-        false,
         Optional.empty());
   }
 
@@ -121,7 +116,6 @@ public record ClusterConfiguration(
         Optional.empty(),
         Optional.empty(),
         INITIAL_INCARNATION_NUMBER,
-        false,
         Optional.empty());
   }
 
@@ -143,7 +137,6 @@ public record ClusterConfiguration(
         routingState,
         clusterId,
         incarnationNumber,
-        recovery,
         partitionDistributorConfig);
   }
 
@@ -156,7 +149,6 @@ public record ClusterConfiguration(
         Optional.of(updatedRoutingState),
         clusterId,
         incarnationNumber,
-        recovery,
         partitionDistributorConfig);
   }
 
@@ -224,7 +216,6 @@ public record ClusterConfiguration(
         routingState,
         clusterId,
         incarnationNumber,
-        recovery,
         partitionDistributorConfig);
   }
 
@@ -247,7 +238,6 @@ public record ClusterConfiguration(
           routingState,
           clusterId,
           incarnationNumber,
-          recovery,
           partitionDistributorConfig);
     }
   }
@@ -294,7 +284,6 @@ public record ClusterConfiguration(
           mergedRoutingState,
           clusterId,
           Math.max(incarnationNumber, other.incarnationNumber()),
-          recovery || other.recovery(),
           mergedDistributorConfig);
     }
   }
@@ -370,7 +359,6 @@ public record ClusterConfiguration(
             routingState,
             clusterId,
             incarnationNumber,
-            recovery,
             partitionDistributorConfig);
 
     if (!result.hasPendingChanges()) {
@@ -397,7 +385,6 @@ public record ClusterConfiguration(
           routingState,
           clusterId,
           incarnationNumber,
-          recovery,
           partitionDistributorConfig);
     }
 
@@ -508,7 +495,6 @@ public record ClusterConfiguration(
           routingState,
           clusterId,
           incarnationNumber,
-          recovery,
           partitionDistributorConfig);
     } else {
       return this;
@@ -529,7 +515,6 @@ public record ClusterConfiguration(
     private Optional<RoutingState> routingState = Optional.empty();
     private Optional<String> clusterId = Optional.empty();
     private long incarnationNumber = INITIAL_INCARNATION_NUMBER;
-    private boolean recovery = false;
     private Optional<PartitionDistributorConfig> partitionDistributorConfig = Optional.empty();
 
     /**
@@ -546,7 +531,6 @@ public record ClusterConfiguration(
       routingState = config.routingState;
       clusterId = config.clusterId;
       incarnationNumber = config.incarnationNumber;
-      recovery = config.recovery;
       partitionDistributorConfig = config.partitionDistributorConfig;
       return this;
     }
@@ -629,17 +613,6 @@ public record ClusterConfiguration(
     }
 
     /**
-     * Set recovery mode
-     *
-     * @param recovery whether recovery mode is enabled
-     * @return this builder
-     */
-    public Builder recovery(final boolean recovery) {
-      this.recovery = recovery;
-      return this;
-    }
-
-    /**
      * Sets the partition distributor config.
      *
      * @param partitionDistributorConfig the partition distributor config
@@ -665,7 +638,6 @@ public record ClusterConfiguration(
           routingState,
           clusterId,
           incarnationNumber,
-          recovery,
           partitionDistributorConfig);
     }
   }
