@@ -1401,7 +1401,7 @@ jobs:
       actions: read  # read the prior per-PR sticky-state run artifact via the Artifacts API
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        timeout-minutes: 1
+        timeout-minutes: 5
         with:
           # Sticky alert reconciliation uses `git log -L` for method-level
           # modification detection; needs full history reachable from HEAD.
