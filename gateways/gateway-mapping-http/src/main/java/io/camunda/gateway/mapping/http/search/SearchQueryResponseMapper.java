@@ -684,8 +684,9 @@ public final class SearchQueryResponseMapper {
               final var jobKind,
               final var listenerEventType,
               final var retries) ->
-          base.jobDetails(
+          base.details(
                   JobWaitStateDetails.Builder.create()
+                      .waitStateType(WaitStateTypeEnum.JOB.name())
                       .jobKey(keyToString(jobKey))
                       .jobType(jobType)
                       .jobKind(JobKindEnum.fromValue(jobKind.name()))
@@ -695,12 +696,11 @@ public final class SearchQueryResponseMapper {
                               : JobListenerEventTypeEnum.fromValue(listenerEventType.name()))
                       .retries(retries)
                       .build())
-              .messageDetails(null)
               .build();
       case WaitStateMessageDetails(final var messageName, final var correlationKey) ->
-          base.jobDetails(null)
-              .messageDetails(
+          base.details(
                   MessageWaitStateDetails.Builder.create()
+                      .waitStateType(WaitStateTypeEnum.MESSAGE.name())
                       .messageName(messageName)
                       .correlationKey(correlationKey)
                       .build())
