@@ -182,11 +182,17 @@ jobs:
               tableLines.push('| _no metrics scraped_ | - |');
             }
 
-            const dashboard = `https://dashboard.benchmark.camunda.cloud/d/zeebe-dashboard/zeebe?var-namespace=${namespace}`;
+            const endMs   = at ? Number(at) * 1000 : Date.now();
+            const startMs = endMs - durationSeconds * 1000;
+            const dashboard = `https://dashboard.benchmark.camunda.cloud/d/zeebe-dashboard/zeebe?var-namespace=${namespace}&from=${startMs}&to=${endMs}`;
+            // Render a Unix-epoch anchor as ISO 8601; pass an RFC3339 string through unchanged.
+            const atLabel = at
+              ? (Number.isNaN(Number(at)) ? at : new Date(Number(at) * 1000).toISOString())
+              : '';
             const body = [
               `## 🔍 Load Test Metrics`,
               '',
-              `Namespace: \`${namespace}\` · Window: ${durationSeconds}s${at ? ` ending at \`${at}\`` : ''}`,
+              `Namespace: \`${namespace}\` · Window: ${durationSeconds}s${atLabel ? ` ending at \`${atLabel}\`` : ''}`,
               '',
               ...tableLines,
               '',
