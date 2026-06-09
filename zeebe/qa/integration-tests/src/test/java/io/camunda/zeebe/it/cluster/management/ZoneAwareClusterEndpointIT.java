@@ -16,6 +16,7 @@ import io.camunda.configuration.Zone;
 import io.camunda.zeebe.management.cluster.BrokerId;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestBrokers;
+import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestPartitions;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import java.util.List;

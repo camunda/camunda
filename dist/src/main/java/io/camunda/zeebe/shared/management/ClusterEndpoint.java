@@ -41,6 +41,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -248,14 +249,14 @@ public class ClusterEndpoint {
       final Optional<Integer> newReplicationFactor =
           Optional.ofNullable(partitions)
               .map(ClusterConfigPatchRequestPartitions::getReplicationFactor);
+      final Map<String, Integer> newReplicationFactors =
+          partitions != null && partitions.getNewReplicationFactors() != null
+              ? partitions.getNewReplicationFactors()
+              : Map.of();
 
       if (isScale) {
         final String zone = brokers.getZone();
         final boolean zoneAware = isClusterZoneAware();
-        if (newReplicationFactor.isPresent() && zoneAware) {
-          return invalidRequest(
-              "Changing the replication factor is not supported on zone-aware clusters");
-        }
         if (zone != null) {
           if (!zoneAware) {
             return invalidRequest("'brokers.zone' is only valid on zone-aware clusters");
@@ -274,11 +275,13 @@ public class ClusterEndpoint {
               requestSender.scaleCluster(scaleRequest).join());
         }
       } else {
-        if (newReplicationFactor.isPresent() && isClusterZoneAware()) {
-          return invalidRequest(
-              "Changing the replication factor is not supported on zone-aware clusters");
-        }
-        return patchCluster(dryRun, request, brokers, newPartitionCount, newReplicationFactor);
+        return patchCluster(
+            dryRun,
+            request,
+            brokers,
+            newPartitionCount,
+            newReplicationFactor,
+            newReplicationFactors);
       }
 
     } catch (final Exception error) {
@@ -291,7 +294,8 @@ public class ClusterEndpoint {
       final ClusterConfigPatchRequest request,
       final ClusterConfigPatchRequestBrokers brokers,
       final Optional<Integer> newPartitionCount,
-      final Optional<Integer> newReplicationFactor) {
+      final Optional<Integer> newReplicationFactor,
+      final Map<String, Integer> newReplicationFactors) {
     final Set<MemberId> brokersToAdd =
         brokers != null
             ? request.getBrokers().getAdd().stream()
@@ -313,7 +317,12 @@ public class ClusterEndpoint {
         members -> {
           final var patchRequest =
               new ClusterPatchRequest(
-                  brokersToAdd, brokersToRemove, newPartitionCount, newReplicationFactor, dryRun);
+                  brokersToAdd,
+                  brokersToRemove,
+                  newPartitionCount,
+                  newReplicationFactor,
+                  newReplicationFactors,
+                  dryRun);
           return ClusterApiUtils.mapOperationResponse(
               requestSender.patchCluster(patchRequest).join());
         });
