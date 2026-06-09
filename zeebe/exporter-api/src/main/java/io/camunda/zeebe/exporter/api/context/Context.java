@@ -58,6 +58,14 @@ public interface Context {
   int getPartitionId();
 
   /**
+   * Returns the physical-tenant id this exporter instance serves. In the multi-physical-tenant
+   * broker, one exporter instance is started per physical-tenant per partition.
+   *
+   * @return the physical-tenant id.
+   */
+  String getPhysicalTenantId();
+
+  /**
    * Returns the cluster ID of the broker this exporter runs on. Falls back to the {@code
    * ZEEBE_BROKER_CLUSTER_CLUSTERID} environment variable for older brokers that don't provide it
    * natively.

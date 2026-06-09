@@ -30,6 +30,7 @@ public final class ExporterTestContext implements Context {
   private RecordFilter recordFilter;
   private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
   private int partitionId;
+  private String physicalTenantId = "default";
   private String clusterId = "";
   private String licenseKey;
   private InstantSource clock = InstantSource.system();
@@ -57,6 +58,17 @@ public final class ExporterTestContext implements Context {
   @Override
   public int getPartitionId() {
     return partitionId;
+  }
+
+  @Override
+  public String getPhysicalTenantId() {
+    return physicalTenantId;
+  }
+
+  public ExporterTestContext setPhysicalTenantId(final String physicalTenantId) {
+    this.physicalTenantId =
+        Objects.requireNonNull(physicalTenantId, "must specify a physical tenant id");
+    return this;
   }
 
   @Override

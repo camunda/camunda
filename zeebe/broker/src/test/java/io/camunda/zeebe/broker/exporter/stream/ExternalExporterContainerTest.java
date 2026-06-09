@@ -136,6 +136,7 @@ final class ExternalExporterContainerTest {
         new ExporterContainer(
             descriptor,
             0,
+            "default",
             "",
             null,
             new ExporterInitializationInfo(0, null),
@@ -166,6 +167,7 @@ final class ExternalExporterContainerTest {
         new ExporterContainer(
             descriptor,
             0,
+            "default",
             "",
             null,
             new ExporterInitializationInfo(0, null),

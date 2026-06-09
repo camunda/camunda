@@ -81,6 +81,15 @@ public final class ExporterTest {
     assertThat(exporter.isExported(record)).isFalse();
   }
 
+  @Test
+  public void shouldProvidePhysicalTenantFromContext() {
+    // given
+    final var context = new TestContext();
+
+    // then
+    assertThat(context.getPhysicalTenantId()).isEqualTo("default");
+  }
+
   private static final class TestExporterContainer {
     private final MessageExpiredSupportingExporter exporter;
     private final TestContext context;
@@ -148,6 +157,11 @@ public final class ExporterTest {
     @Override
     public int getPartitionId() {
       return 0;
+    }
+
+    @Override
+    public String getPhysicalTenantId() {
+      return "default";
     }
 
     @Override

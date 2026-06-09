@@ -17,6 +17,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.atomix.raft.RaftServer.Role;
+import io.atomix.raft.partition.RaftPartition;
+import io.atomix.raft.partition.RaftPartitionConfig;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
@@ -68,6 +70,12 @@ class ExporterDirectorPartitionTransitionStepTest {
         .thenReturn(TestActorFuture.completedFuture(null));
     transitionContext.setActorSchedulingService(actorSchedulingService);
     transitionContext.setBrokerCfg(new BrokerCfg());
+
+    final var raftPartition = mock(RaftPartition.class);
+    final var raftPartitionConfig = new RaftPartitionConfig();
+    raftPartitionConfig.setTenantName("default");
+    when(raftPartition.getPartitionConfig()).thenReturn(raftPartitionConfig);
+    transitionContext.setRaftPartition(raftPartition);
 
     when(exporterDirectorFromPrevRole.closeAsync())
         .thenReturn(TestActorFuture.completedFuture(null));

@@ -95,6 +95,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private ExporterStateDistributionService exporterDistributionService;
   private ScheduledTimer exporterDistributionTimer;
   private final int partitionId;
+  private final String physicalTenantId;
   private final EventFilter positionsToSkipFilter;
   private final MeterRegistry meterRegistry;
   private final @Nullable String licenseKey;
@@ -117,6 +118,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     name = context.getName();
     logStream = Objects.requireNonNull(context.getLogStream());
     partitionId = logStream.getPartitionId();
+    physicalTenantId = context.getTenantName();
     clusterId = context.getClusterId();
     licenseKey = context.getLicenseKey();
     meterRegistry = context.getMeterRegistry();
@@ -128,6 +130,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
                     new ExporterContainer(
                         descriptorEntry.getKey(),
                         partitionId,
+                        physicalTenantId,
                         clusterId,
                         licenseKey,
                         descriptorEntry.getValue(),
@@ -147,7 +150,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     final var exporterPositionsLegacySubject =
         String.format(LEGACY_EXPORTER_STATE_TOPIC_FORMAT, partitionId);
     final var exporterPositionsSubject =
-        String.format(EXPORTER_STATE_TOPIC_FORMAT, context.getTenantName(), partitionId);
+        String.format(EXPORTER_STATE_TOPIC_FORMAT, physicalTenantId, partitionId);
     exporterPositionsSendingSubject =
         context.isSendOnLegacySubject() ? exporterPositionsLegacySubject : exporterPositionsSubject;
     exporterPositionsReceivingSubjects =
@@ -352,6 +355,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
         new ExporterContainer(
             descriptor,
             partitionId,
+            physicalTenantId,
             clusterId,
             licenseKey,
             initializationInfo,
