@@ -99,7 +99,6 @@ class UserTaskBasedWaitStateTransformerTest {
   }
 
   @Test
-  @SuppressWarnings("unchecked")
   void shouldTriggerRemovalOnUserTaskCompletedAndCanceled() {
     // given
     final Record<UserTaskRecordValue> completed = userTaskRecord(UserTaskIntent.COMPLETED);
@@ -110,6 +109,38 @@ class UserTaskBasedWaitStateTransformerTest {
     assertThat(transformer.triggersRemoval(canceled)).isTrue();
     assertThat(transformer.triggersAdd(completed)).isFalse();
     assertThat(transformer.triggersAdd(canceled)).isFalse();
+  }
+
+  @Test
+  void shouldNormalizeEmptyDueDateToNull() {
+    // given — protocol default for dueDate is "" when not configured
+    final UserTaskRecordValue value =
+        ImmutableUserTaskRecordValue.builder()
+            .from(factory.generateObject(UserTaskRecordValue.class))
+            .withUserTaskKey(999L)
+            .withDueDate("")
+            .withElementId("no-due-date-task")
+            .withElementInstanceKey(300L)
+            .withProcessInstanceKey(200L)
+            .withRootProcessInstanceKey(100L)
+            .withTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+            .build();
+
+    final Record<UserTaskRecordValue> record =
+        factory.generateRecord(
+            ValueType.USER_TASK,
+            r ->
+                r.withKey(999L)
+                    .withRecordType(RecordType.EVENT)
+                    .withIntent(UserTaskIntent.CREATED)
+                    .withValue(value));
+
+    // when
+    final var entry = transformer.transform(record);
+
+    // then — empty string must be normalised to null so consumers can safely parse dueDate
+    final var details = (UserTaskWaitStateDetails) entry.getDetails();
+    assertThat(details.dueDate()).isNull();
   }
 
   private Record<UserTaskRecordValue> userTaskRecord(final UserTaskIntent intent) {

@@ -141,6 +141,11 @@ public class WaitStateUserTaskIT {
               assertThat(item.getWaitStateType()).isEqualTo(WaitStateType.USER_TASK);
               assertThat(item.getRootProcessInstanceKey())
                   .isEqualTo(String.valueOf(rootProcessInstanceKey));
+              // root-task and child-task have no due date configured — dueDate must be null,
+              // not an empty string
+              assertThat(item.getDetails())
+                  .isInstanceOfSatisfying(
+                      UserTaskWaitStateDetails.class, d -> assertThat(d.getDueDate()).isNull());
             });
     assertThat(byRoot.items())
         .extracting(ElementInstanceWaitStateResult::getElementId)
