@@ -16,14 +16,10 @@ import java.util.Set;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.context.properties.bind.BindResult;
-import org.springframework.boot.context.properties.bind.Bindable;
-import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.boot.context.properties.source.ConfigurationPropertyName;
 import org.springframework.boot.context.properties.source.ConfigurationPropertySource;
 import org.springframework.boot.context.properties.source.ConfigurationPropertySources;
 import org.springframework.boot.context.properties.source.IterableConfigurationPropertySource;
-import org.springframework.core.ResolvableType;
 import org.springframework.core.env.Environment;
 
 /**
@@ -34,9 +30,11 @@ import org.springframework.core.env.Environment;
  *
  * <ul>
  *   <li>A base path of {@code /physical-tenants/<id>}, matched by CSL against {@code basePath +
- *       apiPaths} to build a per-tenant API {@code SecurityFilterChain}.
- *   <li>A narrowed {@link io.camunda.security.api.model.config.AuthenticationConfiguration}
- *       containing only the providers assigned to that tenant, each merged with PT-side overrides.
+ *       apiPaths} to build a per-tenant API {@link
+ *       org.springframework.security.web.SecurityFilterChain}.
+ *   <li>A merged {@link io.camunda.security.api.model.config.AuthenticationConfiguration}
+ *       containing all cluster providers (root ∪ PT overlay), each merged with PT-side overrides;
+ *       per-PT provider selection is deferred to #54730.
  * </ul>
  *
  * <p><b>Empty-list behaviour:</b> if no {@code camunda.physical-tenants.*} entries are present in
@@ -76,12 +74,6 @@ public final class PhysicalTenantScopeProvider implements CamundaSecurityScopePr
 
     final List<ScopedSecurityDescriptor> result = new ArrayList<>();
     for (final String tenantId : tenantIds) {
-      final List<String> assigned = readAssigned(tenantId);
-      if (assigned == null || assigned.isEmpty()) {
-        LOG.debug(
-            "Physical tenant '{}' has no providers.assigned; skipping scoped chain.", tenantId);
-        continue;
-      }
       try {
         final var authConfig =
             PhysicalTenantAuthConfigurations.forPhysicalTenant(tenantId, environment);
@@ -131,15 +123,5 @@ public final class PhysicalTenantScopeProvider implements CamundaSecurityScopePr
       }
     }
     return tenants;
-  }
-
-  private List<String> readAssigned(final String tenantId) {
-    final Binder binder = Binder.get(environment);
-    final String prefix =
-        "camunda.physical-tenants." + tenantId + ".security.authentication.providers.assigned";
-    final Bindable<List<String>> bindable =
-        Bindable.of(ResolvableType.forClassWithGenerics(List.class, String.class));
-    final BindResult<List<String>> result = binder.bind(prefix, bindable);
-    return result.orElse(null);
   }
 }
