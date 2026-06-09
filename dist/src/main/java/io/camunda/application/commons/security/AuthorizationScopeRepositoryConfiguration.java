@@ -10,19 +10,18 @@ package io.camunda.application.commons.security;
 import io.camunda.search.clients.reader.AuthorizationReader;
 import io.camunda.security.core.port.out.AuthorizationScopeRepositoryPort;
 import io.camunda.security.impl.SearchAuthorizationScopeRepository;
-import io.camunda.security.spring.auth.AuthorizationCheckerConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
 
 /**
- * Wires the search-backed {@link AuthorizationScopeRepositoryPort} and imports CSL's {@link
- * AuthorizationCheckerConfiguration} so that an {@link
- * io.camunda.security.core.auth.AuthorizationChecker} bean is available to callers that depend on
- * it for authorization checks.
+ * Wires the search-backed {@link AuthorizationScopeRepositoryPort}. The {@link
+ * io.camunda.security.core.auth.AuthorizationChecker} bean is provided by CSL's {@link
+ * io.camunda.security.spring.CamundaSecurityAutoConfiguration} umbrella (activated via
+ * {@code @ImportAutoConfiguration} in WebSecurityConfig), which evaluates its
+ * {@code @ConditionalOnBean} after all regular configuration beans — including the port defined
+ * here — are registered.
  */
 @Configuration(proxyBeanMethods = false)
-@Import(AuthorizationCheckerConfiguration.class)
 public class AuthorizationScopeRepositoryConfiguration {
 
   /**
