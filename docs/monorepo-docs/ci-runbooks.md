@@ -102,26 +102,63 @@ Depends on the kind of failure.
 
 ---
 
-### Push `main` High Failure Rate
+### Base Branch Unsuccessful Job
 
-Unsuccessful [Unified CI](./ci.md#unified-ci) GHA jobs on push to `main` branch mean that artifacts
-might not get built nor uploaded. Those same jobs being green is a precondition for the
-[merge queue](./ci.md#github-merge-queue) — thus a high failure rate over the last hours can indicate
-a general CI instability e.g. with infrastructure or remote network services.
+Any unsuccessful GHA job on `push` or `schedule` to `main` or `stable/8.x` base branches means that
+artifacts might not get built or uploaded to artifact repositories, and indicates CI instability
+since we expect only green builds. Unlike merge-queue failures which block PRs, base-branch failures
+affect artifact availability and release readiness.
 
-This can prevent artifact uploads and needs to be investigated.
+Each alert instance is grouped by workflow job name and base branch, and includes:
+
+- Number of unsuccessful runs in the evaluation window
+- Links to failed workflow runs in the evaluation window (useful for root cause analysis)
+- Owner of the job (assigned by default)
+- Link to the Job Trends dashboard for the job (useful to verify recovery)
+- Associated failed test cases (if any)
 
 #### Troubleshooting
 
-Verify the high rate of unsuccessful GHA jobs (for push to `main`) over the last hours in the CI
-Health dashboard. Drill down into the list of recent unsuccessful jobs and check their GHA logs for
-common symptoms and correlate [known issues](./ci.md#issue-tracking).
+You can leverage [incident.io MCP](https://docs.incident.io/ai/remote-mcp) together with Claude for some steps:
 
-Check for [GitHub Actions outages](https://www.githubstatus.com/).
+0. **Ensure correct ownership information:** If this particular CI job is NOT owned by your team, do the following:
+   - Identify the owning team.
+   - Update the [.codeowners file](https://github.com/camunda/camunda/blob/main/.codeowners) to reflect right GitHub team handle for the GHA workflow YAML file path.
+   - Adjust the job-level `TEST_OWNER` environment variable in the GHA workflow YAML.
+   - Ask the medic of the owning team to take over incident command.
+
+1. **Verify the pattern**: Check the [Job Trends dashboard](https://dashboard.int.camunda.com/d/ch6qgkj/ci-job-trends-camunda-camunda) for the specific job and branch to understand whether this is a new regression or ongoing instability.
+
+2. **Identify the root cause**: Use the `/ci-fix-failure` skill or click the workflow run links in the alert to inspect job logs. Common causes include:
+   - Timeout (increase runner size or optimize the job)
+   - Flaky test failures (see [Flaky Test Gate](./flaky-test-gate.md) for test diagnostics)
+   - External service unavailability (Docker Hub, Maven Central, Nexus, etc. — check status pages)
+   - Infrastructure issues (self-hosted runner problems, disk space, etc.)
+   - For `check-licenses.yml` see [find specific FOSSA instructions](#check-licenses-workflow-high-failure-rate)
+
+3. **Check for related alerts**: If multiple jobs or workflows are failing simultaneously, there may be a common root cause (e.g., external service outage, infrastructure problem). Cross-reference recent incident reports.
+
+4. **Examine test failures**: If the alert includes unsuccessful test cases, use the test case names to determine whether:
+   - The test is new and unstable
+   - The test is a known flaky test (check [Flaky Test Gate baseline](./flaky-test-gate.md))
+   - The failure is environment-specific
 
 #### Solutions
 
-Depends on the kind of failure.
+**Immediate mitigation** ("stop the bleeding"):
+- If a test is blocking artifact builds, consider temporarily disabling it with a `@Disabled` annotation and a link to an incident ticket.
+- If a job is timing out, try increasing the runner size or optimizing the job logic.
+- If an external service is unavailable, wait for its recovery or find an alternative.
+
+**Root cause fix**:
+- Investigate the job logs and failing tests to understand the underlying issue.
+- For flaky tests, refer to the [Flaky Test Gate documentation](./flaky-test-gate.md) on how to fix or mark them.
+- For timeouts or performance issues, optimize the job (parallelization, caching, reducing scope).
+- For infrastructure issues, coordinate with the Infra team.
+
+**Validation**:
+- Monitor the [Job Trends dashboard](https://dashboard.int.camunda.com/d/ch6qgkj/ci-job-trends-camunda-camunda) to confirm the fix reduces the failure rate.
+- Ensure the job remains stable across multiple successful runs before closing the incident.
 
 ---
 
@@ -203,7 +240,7 @@ down development in the monorepo and should be addressed promptly.
 #### Troubleshooting
 
 Verify the [CI Health dashboard](https://dashboard.int.camunda.com/d/bdmo5l8puugaoc/ci-health-camunda-camunda-monorepo)
-for a high eviction rate over the last few hours. Identify affected PRs and check their GHA logs
+for a high eviction rate over the last few hours. Use the `/ci-fix-failure` skill. Identify affected PRs and check their GHA logs
 for common symptoms and correlate [known issues](./ci.md#issue-tracking).
 
 Check for [GitHub Actions outages](https://www.githubstatus.com/).

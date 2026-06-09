@@ -2,6 +2,49 @@
 
 This page collects processes we follow in the `camunda/camunda` monorepo.
 
+## Green Checks on `main` and `stable/*` Branches
+
+### Purpose
+
+This process ensures that `main` and `stable/*` base branches stay green continuously. Every build failure is unexpected and will be handled as a L1 incident.
+
+We use this process because:
+
+- These branches are our release and integration baseline, so red checks indicate reduced stability and threaten release-readiness.
+- For base branches, we expect no failing checks after CI stabilization work; every red check matters.
+- Some important scheduled workflows are not part of Unified CI, so Unified CI thresholds alone are not sufficient.
+
+### Approach
+
+We want a fast feedback loop for any failed check on base branches that leads to short-term fixes and mid-term improvement work to prevent recurrence and increase reliability.
+
+High-level steps:
+
+- Detect GHA job failures across `on: push` and `on: schedule` workflows on `main` and `stable/*`.
+- Alert immediately via Grafana on any unsuccessful job.
+- Create and route incidents to the right owners/medics based on `.codeowners`.
+- Drive mitigation (SLA: within 1 day) and resolution via the established incident process.
+- Keep base branches green over time instead of reacting ad hoc.
+
+### Implementation
+
+1. **Coverage enforcement:** [CI policy checks](https://github.com/camunda/camunda/blob/main/.github/conftest-unified-ci-rules.rego) ensure that all relevant GHA workflows/jobs submit CI Analytics data.
+2. **Detection:** CI Analytics data is [queried regularly by Grafana](https://github.com/camunda/infra-core/blob/stage/camunda-int/kustomize/prod/monitoring/dashboard.int.camunda.com/config/alerts-monorepo-ci.yml) for unsuccessful jobs on `main` and `stable/*` for push/schedule triggers.
+3. **Alerting:** Grafana raises `base-branch-unsuccessful-job` [alerts](https://github.com/camunda/infra-core/blob/stage/camunda-int/kustomize/prod/monitoring/dashboard.int.camunda.com/config/alerts-monorepo-ci.yml) for any detected red check. Alerts are enriched with context about failed GHA job links, unsuccessful test cases, and ownership information.
+4. **Incident propagation:** Alerts are propagated into incident.io, which groups them by base branch and GHA workflow job name and raises `C8 Monorepo CI` type incidents, severity L1.
+5. **Ownership routing:** Incidents are assigned to the responsible medic/owner based on ownership information from [.codeowners file](https://github.com/camunda/camunda/blob/main/.codeowners). If the attribution is incorrect, the assignee is responsible for updating the ownership information.
+6. **Response and resolution:** Medics can use `/ci-incident` guidance skill to follow [runbooks](./ci-runbooks.md#base-branch-unsuccessful-job) and the [CI incident management process](#ci-incident-management) to mitigate the problem and fix root causes. Those measures include stopping the bleeding, preventing the problem from happening again and increasing reliability constantly.
+7. **Verification:** Job trends and alert behavior are monitored by medic via Grafana until checks are consistently green again.
+
+### Operating Notes
+
+- Complements Unified CI SLOs monitoring by being stricter for base branches: alerts on every failure.
+- Focuses on reliability of release-critical (base) branches: covers push and scheduled triggers.
+- Remind ICs to prioritize quick mitigation ([with 1 day SLA](#sla)) via incident.io nudges.
+- Monitoring via daily Slack overview of open CI incidents with "mitigation overdue" warning.
+- If recurring test instability found, evaluate quarantine or other mitigations with clear ownership and follow-up.
+
+
 ## Renovate PR Handling
 
 We use [Renovate to automate dependency updates](./ci.md#renovate) in the `camunda/camunda` monorepo. However, not all updates can be automatically merged as-is due to breaking changes or adjustments needed to the code base.
