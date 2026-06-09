@@ -57,6 +57,7 @@ class ReplicationLogStatusProviderFactoryTest {
     when(vendorDatabaseProperties.databaseId()).thenReturn("postgresql");
     final var mapper = mock(ReplicationStatusMapper.class);
     when(mapper.isAurora()).thenReturn(true);
+    when(mapper.isAuroraGlobalDatabase()).thenReturn(true);
     final var factory = new ReplicationLogStatusProviderFactory(vendorDatabaseProperties, mapper);
 
     // when
@@ -67,12 +68,29 @@ class ReplicationLogStatusProviderFactoryTest {
   }
 
   @Test
+  void shouldFailForAuroraWithoutGlobalDatabase() {
+    // given
+    final var vendorDatabaseProperties = mock(VendorDatabaseProperties.class);
+    when(vendorDatabaseProperties.databaseId()).thenReturn("postgresql");
+    final var mapper = mock(ReplicationStatusMapper.class);
+    when(mapper.isAurora()).thenReturn(true);
+    when(mapper.isAuroraGlobalDatabase()).thenReturn(false);
+    final var factory = new ReplicationLogStatusProviderFactory(vendorDatabaseProperties, mapper);
+
+    // when / then
+    assertThatThrownBy(factory::create)
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("Replication monitoring requires AWS Aurora Global Database");
+  }
+
+  @Test
   void shouldCreateAuroraReplicationLogStatusProviderWhenMysqlAuroraDetected() {
     // given
     final var vendorDatabaseProperties = mock(VendorDatabaseProperties.class);
     when(vendorDatabaseProperties.databaseId()).thenReturn("mysql");
     final var mapper = mock(ReplicationStatusMapper.class);
     when(mapper.isAurora()).thenReturn(true);
+    when(mapper.isAuroraGlobalDatabase()).thenReturn(true);
     final var factory = new ReplicationLogStatusProviderFactory(vendorDatabaseProperties, mapper);
 
     // when
