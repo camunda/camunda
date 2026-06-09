@@ -10,6 +10,7 @@ package io.camunda.db.rdbms.read.mapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.db.rdbms.write.domain.WaitStateDbModel;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
+import io.camunda.search.entities.WaitStateConditionDetails;
 import io.camunda.search.entities.WaitStateDetails;
 import io.camunda.search.entities.WaitStateDetails.WaitStateType;
 import io.camunda.search.entities.WaitStateEntity;
@@ -63,6 +64,7 @@ public class WaitStateEntityMapper {
         case USER_TASK -> OBJECT_MAPPER.readValue(detailsJson, WaitStateUserTaskDetails.class);
         case TIMER -> OBJECT_MAPPER.readValue(detailsJson, WaitStateTimerDetails.class);
         case SIGNAL -> OBJECT_MAPPER.readValue(detailsJson, WaitStateSignalDetails.class);
+        case CONDITION -> OBJECT_MAPPER.readValue(detailsJson, WaitStateConditionDetails.class);
       };
     } catch (final Exception e) {
       LOG.warn("Failed to parse wait state details for type {}: {}", waitStateType, e.getMessage());
