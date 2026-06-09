@@ -858,6 +858,16 @@ components:
         - JOB
         - MESSAGE
 
+    BaseWaitStateDetails:
+      description: Common fields shared by all wait-state details variants.
+      type: object
+      required:
+        - waitStateType
+      properties:
+        waitStateType:
+          description: The wait state type discriminator.
+          type: string
+
     JobWaitStateDetails:
       type: object
       required:
@@ -867,11 +877,9 @@ components:
         - jobKind
         - listenerEventType
         - retries
+      allOf:
+        - $ref: '#/components/schemas/BaseWaitStateDetails'
       properties:
-        waitStateType:
-          description: The wait state type discriminator. Always JOB for this type.
-          type: string
-          example: JOB
         jobKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/JobKey'
@@ -900,11 +908,9 @@ components:
         - waitStateType
         - messageName
         - correlationKey
+      allOf:
+        - $ref: '#/components/schemas/BaseWaitStateDetails'
       properties:
-        waitStateType:
-          description: The wait state type discriminator. Always MESSAGE for this type.
-          type: string
-          example: MESSAGE
         messageName:
           description: The name of the message being awaited.
           type: string
