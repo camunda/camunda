@@ -6,13 +6,16 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import type {DocumentReference} from '@camunda/camunda-api-zod-schemas/8.10';
 import {
   parseDocumentVariable,
   toHumanReadableBytes,
 } from './parseDocumentVariable';
 import * as clientConfig from 'modules/utils/getClientConfig';
 
-const makeDocRef = (overrides: Record<string, unknown> = {}) => ({
+const makeDocRef = (
+  overrides: Record<string, unknown> = {},
+): DocumentReference => ({
   'camunda.document.type': 'camunda',
   storeId: 'in-memory',
   documentId: 'doc-123',
@@ -243,7 +246,7 @@ describe('parseDocumentVariable', () => {
 
   it('should detect a truncated single document reference', () => {
     const fullJson = JSON.stringify(makeDocRef());
-    const truncated = fullJson.slice(0, fullJson.length - 5);
+    const truncated = fullJson.slice(0, fullJson.length - 2);
     const result = parseDocumentVariable(truncated, true);
 
     assert(
@@ -285,7 +288,7 @@ describe('parseDocumentVariable', () => {
     expect(result).toBeNull();
   });
 
-  it('should detect a document reference without metadata', () => {
+  it('should return null for a document reference without metadata', () => {
     const value = JSON.stringify({
       'camunda.document.type': 'camunda',
       storeId: 'in-memory',
@@ -294,16 +297,7 @@ describe('parseDocumentVariable', () => {
     });
     const result = parseDocumentVariable(value, false);
 
-    expect(result).toEqual({
-      type: 'single',
-      document: {
-        link: '/v2/documents/doc-no-meta?storeId=in-memory&contentHash=sha256%3Aabc',
-        fileName: 'doc-no-meta',
-        type: 'unknown',
-        contentType: undefined,
-        size: undefined,
-      },
-    });
+    expect(result).toBeNull();
   });
 });
 

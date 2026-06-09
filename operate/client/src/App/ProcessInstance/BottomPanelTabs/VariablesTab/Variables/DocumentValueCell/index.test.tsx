@@ -18,6 +18,7 @@ describe('<DocumentValueCell />', () => {
         link: '/v2/documents/doc',
         fileName: 'photo.png',
         type: 'image',
+        contentType: 'image/png',
         size: 112640,
       },
     };
@@ -28,23 +29,6 @@ describe('<DocumentValueCell />', () => {
     expect(screen.getByText('110 KiB')).toBeInTheDocument();
   });
 
-  it('should render a single document without size', () => {
-    const result: DocumentParseResult = {
-      type: 'single',
-      document: {
-        link: '/v2/documents/doc',
-        fileName: 'report.pdf',
-        type: 'unknown',
-        size: undefined,
-      },
-    };
-
-    render(<DocumentValueCell result={result} />);
-
-    expect(screen.getByText('report.pdf')).toBeInTheDocument();
-    expect(screen.queryByText(/[BKM]B/)).not.toBeInTheDocument();
-  });
-
   it('should middle-truncate a long filename', () => {
     const longName = 'a'.repeat(40) + 'original-middle' + 'z'.repeat(40);
     const result: DocumentParseResult = {
@@ -53,6 +37,7 @@ describe('<DocumentValueCell />', () => {
         link: '/v2/documents/doc',
         fileName: longName,
         type: 'unknown',
+        contentType: 'application/octet-stream',
         size: 1000,
       },
     };
@@ -72,18 +57,21 @@ describe('<DocumentValueCell />', () => {
           link: '/v2/documents/doc-1',
           fileName: 'a.pdf',
           type: 'unknown',
+          contentType: 'application/octet-stream',
           size: 1000,
         },
         {
           link: '/v2/documents/doc-2',
           fileName: 'b.pdf',
           type: 'unknown',
+          contentType: 'application/octet-stream',
           size: 2000,
         },
         {
           link: '/v2/documents/doc-3',
           fileName: 'c.pdf',
           type: 'unknown',
+          contentType: 'application/octet-stream',
           size: 3000,
         },
       ],
@@ -103,12 +91,14 @@ describe('<DocumentValueCell />', () => {
           link: '/v2/documents/doc-1',
           fileName: 'a.pdf',
           type: 'unknown',
+          contentType: 'application/octet-stream',
           size: 1000,
         },
         {
           link: '/v2/documents/doc-2',
           fileName: 'b.pdf',
           type: 'unknown',
+          contentType: 'application/octet-stream',
           size: 2000,
         },
       ],
@@ -127,6 +117,7 @@ describe('<DocumentValueCell />', () => {
         link: '/v2/documents/doc',
         fileName: 'my-important-file.pdf',
         type: 'unknown',
+        contentType: 'application/octet-stream',
         size: 5000,
       },
     };

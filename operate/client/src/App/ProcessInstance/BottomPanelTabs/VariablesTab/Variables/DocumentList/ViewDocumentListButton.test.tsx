@@ -13,6 +13,7 @@ import {mockGetVariable} from 'modules/mocks/api/v2/variables/getVariable';
 import {createVariable} from 'modules/testUtils';
 import {ViewDocumentListButton} from './ViewDocumentListButton';
 import type {DocumentInfo} from '../DocumentValueCell/parseDocumentVariable';
+import type {DocumentReference} from '@camunda/camunda-api-zod-schemas/8.10';
 
 const VARIABLE_KEY = 'variable-key-123';
 
@@ -21,19 +22,22 @@ const preparsedDocuments: DocumentInfo[] = [
     link: '/v2/documents/1',
     fileName: 'photo.png',
     type: 'image',
+    contentType: 'image/png',
     size: 1024,
   },
   {
     link: '/v2/documents/2',
     fileName: 'report.pdf',
     type: 'unknown',
+    contentType: 'application/pdf',
     size: 2048,
   },
   {
     link: '/v2/documents/3',
     fileName: 'notes.txt',
     type: 'unknown',
-    size: undefined,
+    contentType: 'text/plain',
+    size: 256,
   },
 ];
 
@@ -42,11 +46,20 @@ const buildDocumentReference = (
   fileName: string,
   contentType: string,
   size: number,
-) => ({
+): DocumentReference => ({
   'camunda.document.type': 'camunda',
+  storeId: 'in-memory',
   documentId,
   contentHash: `hash-${documentId}`,
-  metadata: {fileName, contentType, size},
+  metadata: {
+    fileName,
+    contentType,
+    size,
+    expiresAt: null,
+    processDefinitionId: null,
+    processInstanceKey: null,
+    customProperties: {},
+  },
 });
 
 const fullVariableValue = JSON.stringify([
@@ -255,6 +268,7 @@ describe('<ViewDocumentListButton />', () => {
             link: '/v2/documents/long',
             fileName: longFileName,
             type: 'unknown',
+            contentType: 'application/octet-stream',
             size: 1024,
           },
         ]}

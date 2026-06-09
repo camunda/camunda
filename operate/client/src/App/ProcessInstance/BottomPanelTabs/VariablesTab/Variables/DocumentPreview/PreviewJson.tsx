@@ -10,7 +10,6 @@ import {lazy, Suspense} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import {InlineLoading, InlineNotification} from '@carbon/react';
 import {beautifyJSON} from 'modules/utils/editor/beautifyJSON';
-import type {DocumentInfo} from '../DocumentValueCell/parseDocumentVariable';
 import {PreviewJSONContainer} from './styled';
 import {queryKeys} from 'modules/queries/queryKeys';
 
@@ -24,17 +23,18 @@ const RichTextEditor = lazy(async () => {
 });
 
 type PreviewJsonProps = {
-  document: DocumentInfo;
+  src: string;
+  fileName: string;
 };
 
-const PreviewJson: React.FC<PreviewJsonProps> = ({document}) => {
+const PreviewJson: React.FC<PreviewJsonProps> = ({src, fileName}) => {
   const {data, isPending, isError} = useQuery({
-    queryKey: queryKeys.documents.content(document.link),
+    queryKey: queryKeys.documents.content(src),
     staleTime: 'static',
     queryFn: async ({signal}) => {
       // Note: Cannot use one of the request helpers here, because the link is
       // already prefixed with a configured context-path.
-      const response = await fetch(document.link, {
+      const response = await fetch(src, {
         credentials: 'include',
         headers: {Accept: 'application/json'},
         signal,
@@ -59,7 +59,7 @@ const PreviewJson: React.FC<PreviewJsonProps> = ({document}) => {
       {isError && (
         <InlineNotification
           kind="error"
-          subtitle={`Failed to load JSON preview for "${document.fileName}".`}
+          subtitle={`Failed to load JSON preview for "${fileName}".`}
           hideCloseButton
           lowContrast
         />

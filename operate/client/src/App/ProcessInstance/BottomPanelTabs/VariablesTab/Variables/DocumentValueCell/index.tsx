@@ -35,9 +35,7 @@ const DocumentValueCell: React.FC<Props> = ({result}) => {
         <DocumentFileName title={fileName}>
           {middleTruncate(fileName)}
         </DocumentFileName>
-        {size !== undefined && (
-          <DocumentSize>{toHumanReadableBytes(size)}</DocumentSize>
-        )}
+        <DocumentSize>{toHumanReadableBytes(size)}</DocumentSize>
       </DocumentCellContainer>
     );
   }

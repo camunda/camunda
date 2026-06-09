@@ -20,6 +20,26 @@ const pdfDocument: DocumentInfo = {
 };
 
 describe('<DownloadDocumentButton />', () => {
+  it('should render a disabled button when document has no link', () => {
+    const noLinkDocument: DocumentInfo = {
+      link: null,
+      fileName: 'no-hash.pdf',
+      type: 'pdf',
+      contentType: 'application/pdf',
+      size: 2048,
+    };
+
+    render(
+      <DownloadDocumentButton document={noLinkDocument} variableName="myPdf" />,
+    );
+
+    const button = screen.getByLabelText(
+      'Download document for variable myPdf',
+    );
+    expect(button).toBeDisabled();
+    expect(button.tagName).not.toBe('A');
+  });
+
   it('should render a download link with correct href and filename', () => {
     render(
       <DownloadDocumentButton document={pdfDocument} variableName="myPdf" />,
