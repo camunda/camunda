@@ -42,16 +42,18 @@ Use exactly one persistent issue for reporting:
 
 1. **Identify candidate files**: List candidate files with `git log --since="7 days ago" --name-only --diff-filter=ACMR --pretty=format: -- .github/workflows/ ':(exclude).github/workflows/*.lock.yml' | sort -u` on the `main` branch. Skip `*.lock.yml` files — they are generated from the corresponding source `.md` workflow file by `gh aw compile`, so analysing them duplicates work and inflates token consumption. The cost-relevant signal always lives in the source file.
 
-2. **Pre-filter to cost-relevant changes**: For each candidate file, check whether its diff over the last 7 days touches any cost-relevant key before reading the full diff. Run:
+2. **Pre-filter to cost-relevant changes**: For each candidate file, check whether its diff over the last 7 days mentions any cost-relevant key before reading the full diff. Run:
 
    ```sh
    git log --since="7 days ago" -p --no-color -- "<file>" \
-     | grep -E '^[+-][[:space:]]*(runs-on|timeout-minutes|jobs|matrix|concurrency|paths|paths-ignore|services|container|continue-on-error|schedule|on|run):'
+     | grep -E '(runs-on|timeout-minutes|matrix|concurrency|paths|paths-ignore|services|container|continue-on-error|schedule|run|jobs|on):'
    ```
 
-   Drop files where this returns nothing. Their changes are guaranteed not to be cost-relevant under this repo's cost model (pure comment, action SHA bumps, env tweaks without new commands, etc.). The `run:` token is intentionally included to keep new or expanded step commands in scope, even at the cost of some false positives.
+   Note that the regex deliberately does **not** require the keyword line itself to be added or removed — it matches anywhere in the diff output (added, removed, or context lines within a hunk). That way a change to a nested value (e.g. adding an entry under `matrix:` while `matrix:` itself is unchanged context) still keeps the file in scope.
 
-3. **Analyze each remaining file**: For every file that survived the pre-filter, use `git diff HEAD~...HEAD -- <file>` (or the appropriate range covering the last 7 days) to inspect the actual diffs. Look for the following cost-increasing patterns:
+   Drop files where this returns nothing. Such changes are **highly unlikely** to be cost-relevant under this repo's typical patterns (pure comments, action SHA bumps without new commands, formatting). They are not, however, guaranteed cost-free: `env:`/`with:`/`uses:` edits can materially change job runtime without touching any of the listed keys. We accept that risk in exchange for staying inside the agent's effective-token budget; if a future change is suspected to slip through, broaden the regex.
+
+3. **Analyze each remaining file**: For every file that survived the pre-filter, inspect its diff over the same 7-day window with `git log --since="7 days ago" -p --no-color -- <file>`. (Equivalent: derive a base commit with `base="$(git log --since='7 days ago' --format=%H -- <file> | tail -1)~"` and run `git diff "$base" -- <file>`.) Look for the following cost-increasing patterns:
 
    ### Cost-Increasing Patterns to Detect
 
