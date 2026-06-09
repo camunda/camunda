@@ -15,14 +15,12 @@
  */
 package io.camunda.client.api.search.response;
 
-import io.camunda.client.api.search.enums.WaitStateType;
+import java.util.List;
 
-/**
- * Wait-state-specific details of an element instance. Resolves to {@link JobWaitStateDetails},
- * {@link MessageWaitStateDetails}, or {@link ConditionWaitStateDetails} depending on {@link
- * #getWaitStateType()}.
- */
-public interface WaitStateDetails {
+/** Details of an element instance waiting on a condition. */
+public interface ConditionWaitStateDetails extends WaitStateDetails {
 
-  WaitStateType getWaitStateType();
+  String getExpression();
+
+  List<String> getEvents();
 }
