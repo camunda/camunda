@@ -29,7 +29,9 @@ public class StateUpdateKeyCommand implements Callable<Integer> {
 
   @Option(
       names = {"-r", "--root"},
-      description = "Path of the root of the data folder",
+      description =
+          "Path of the partition directory (the folder containing 'snapshots/'), e.g. "
+              + "<data>/raft-partition/partitions/<id>",
       required = true)
   private Path root;
 
@@ -86,32 +88,32 @@ public class StateUpdateKeyCommand implements Callable<Integer> {
     if (verbose) {
       err.println("\nOpening snapshot from: " + snapshotPath);
     }
-    final var db = snapshotUtil.openSnapshot(snapshotPath, runtimePath);
-    final var context = db.createContext();
+    try (final var db = snapshotUtil.openSnapshot(snapshotPath, runtimePath)) {
+      final var context = db.createContext();
 
-    final var dbKey = new DbKeyGenerator(partitionId, db, context);
+      final var dbKey = new DbKeyGenerator(partitionId, db, context);
 
-    if (verbose) {
-      err.println("\nExecuting key update transaction...");
+      if (verbose) {
+        err.println("\nExecuting key update transaction...");
+      }
+      context.runInTransaction(() -> overwriteKeys(dbKey));
+
+      final var lastFollowupEventPosition = SnapshotUtil.getLastFollowupEventPosition(snapshotPath);
+      if (verbose) {
+        err.println("\nTaking new snapshot...");
+      }
+      final var persistedSnapshot =
+          snapshotUtil.takeSnapshot(db, root, snapshotId, lastFollowupEventPosition);
+
+      out.println("\n=== Key update completed successfully ===");
+      out.println("Created new snapshot with updated key at: " + persistedSnapshot.getPath());
+      out.println("\nNext steps:");
+      out.println("1. Delete the previous snapshot: " + snapshotId);
+      out.println("2. Copy the data folder of partition to all replicas");
+      out.println("3. Restart the brokers to apply changes to the cluster");
+
+      return 0;
     }
-    context.runInTransaction(() -> context.getCurrentTransaction().run(() -> overwriteKeys(dbKey)));
-    context.getCurrentTransaction().commit();
-
-    final var lastFollowupEventPosition = SnapshotUtil.getLastFollowupEventPosition(snapshotPath);
-    if (verbose) {
-      err.println("\nTaking new snapshot...");
-    }
-    final var persistedSnapshot =
-        snapshotUtil.takeSnapshot(db, root, snapshotId, lastFollowupEventPosition);
-
-    out.println("\n=== Key update completed successfully ===");
-    out.println("Created new snapshot with updated key at: " + persistedSnapshot.getPath());
-    out.println("\nNext steps:");
-    out.println("1. Delete the previous snapshot: " + snapshotId);
-    out.println("2. Copy the data folder of partition to all replicas");
-    out.println("3. Restart the brokers to apply changes to the cluster");
-
-    return 0;
   }
 
   private void overwriteKeys(final DbKeyGenerator dbKey) {
