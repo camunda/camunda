@@ -13,6 +13,7 @@ import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.spec.MsgPackReader;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Map;
@@ -24,13 +25,21 @@ public class AuthInfo extends UnpackedObject {
 
   private final EnumProperty<AuthDataFormat> formatProp =
       new EnumProperty<>("format", AuthDataFormat.class, AuthDataFormat.UNKNOWN);
-
   private final StringProperty authDataProp = new StringProperty("authData", "").sanitized();
   private final DocumentProperty claimsProp = new DocumentProperty("claims").sanitized();
+
+  // fields  for caching
+  private transient boolean frozen;
+  private transient int cachedLength = -1;
+  private transient Map<String, Object> cachedDecodedMap;
 
   public AuthInfo() {
     super(3);
     declareProperty(formatProp).declareProperty(authDataProp).declareProperty(claimsProp);
+  }
+
+  public static AuthInfo empty() {
+    return EmptyAuthInfo.getInstance();
   }
 
   public AuthDataFormat getFormat() {
@@ -38,6 +47,7 @@ public class AuthInfo extends UnpackedObject {
   }
 
   public AuthInfo setFormat(final AuthDataFormat format) {
+    ensureMutable();
     formatProp.setValue(format);
     return this;
   }
@@ -47,6 +57,7 @@ public class AuthInfo extends UnpackedObject {
   }
 
   public AuthInfo setAuthData(final String authData) {
+    ensureMutable();
     authDataProp.setValue(authData);
     return this;
   }
@@ -56,26 +67,42 @@ public class AuthInfo extends UnpackedObject {
   }
 
   public AuthInfo setClaims(final DirectBuffer authInfo) {
+    ensureMutable();
     claimsProp.setValue(authInfo);
     return this;
   }
 
   public AuthInfo setClaims(final Map<String, Object> authInfo) {
+    ensureMutable();
     claimsProp.setValue(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(authInfo)));
     return this;
   }
 
   @Override
   public void reset() {
+    ensureMutable();
     formatProp.setValue(AuthDataFormat.UNKNOWN);
     authDataProp.setValue("");
     claimsProp.reset();
   }
 
   @Override
+  public void read(final MsgPackReader reader) {
+    ensureMutable();
+    super.read(reader);
+  }
+
+  @Override
   @JsonIgnore
   public int getEncodedLength() {
-    return super.getEncodedLength();
+    if (frozen) {
+      if (cachedLength < 0) {
+        cachedLength = super.getEncodedLength();
+      }
+      return cachedLength;
+    } else {
+      return super.getEncodedLength();
+    }
   }
 
   @Override
@@ -85,9 +112,32 @@ public class AuthInfo extends UnpackedObject {
   }
 
   @Override
+  public void wrap(final DirectBuffer buff, final int offset, final int length) {
+    ensureMutable();
+    super.wrap(buff, offset, length);
+  }
+
+  @Override
   @JsonIgnore
   public int getLength() {
-    return super.getLength();
+    return getEncodedLength();
+  }
+
+  /** Marks this instance as frozen. A frozen AuthInfo rejects mutation and caches decoded maps. */
+  public AuthInfo freeze() {
+    frozen = true;
+    return this;
+  }
+
+  @JsonIgnore
+  public boolean isFrozen() {
+    return frozen;
+  }
+
+  private void ensureMutable() {
+    if (frozen) {
+      throw new UnsupportedOperationException("Cannot mutate a frozen AuthInfo");
+    }
   }
 
   public DirectBuffer toDirectBuffer() {
@@ -99,21 +149,44 @@ public class AuthInfo extends UnpackedObject {
   }
 
   public Map<String, Object> toDecodedMap() {
-    if (getFormat() == AuthDataFormat.JWT) {
-      final String token = getAuthData();
-      return new JwtDecoder(token).decode().getClaims();
+    if (frozen && cachedDecodedMap != null) {
+      return cachedDecodedMap;
     }
-    return getClaims();
+    final Map<String, Object> result;
+    if (getFormat() == AuthDataFormat.JWT) {
+      result = new JwtDecoder(getAuthData()).decode().getClaims();
+    } else {
+      result = getClaims();
+    }
+    if (frozen) {
+      cachedDecodedMap = result;
+    }
+    return result;
   }
 
+  /**
+   * @param info the AuthInfo to copy if necessary
+   * @return Creates a new AuthInfo if the argument is not frozen by copying it. The returned value
+   *     is always frozen
+   */
   public static AuthInfo of(final AuthInfo info) {
     if (info == null) {
       return null;
     }
+    if (info.isFrozen()) {
+      return info;
+    }
 
     final var auth = new AuthInfo();
     auth.copyFrom(info);
-    return auth;
+    return auth.freeze();
+  }
+
+  public static AuthInfo ofClaims(final Map<String, Object> claims) {
+    if (claims == null || claims.isEmpty()) {
+      return empty();
+    }
+    return new AuthInfo().setClaims(Map.copyOf(claims)).freeze();
   }
 
   public boolean hasAnyClaims() {
