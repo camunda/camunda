@@ -137,7 +137,8 @@ public final class BpmnDecisionBehavior {
       case deployment -> getDecisionVersionInSameDeployment(decisionId, context);
       case latest -> getLatestDecisionVersion(decisionId, context.getTenantId());
       case versionTag ->
-          getLatestDecisionVersionWithVersionTag(decisionId, versionTag, context.getTenantId());
+          getLatestDecisionVersionWithVersionTag(
+              decisionId, versionTag, context.getElementInstanceKey(), context.getTenantId());
     };
   }
 
@@ -157,22 +158,16 @@ public final class BpmnDecisionBehavior {
   }
 
   private Either<Failure, PersistedDecision> getLatestDecisionVersionWithVersionTag(
-      final String decisionId, final Expression versionTag, final String tenantId) {
-    if (versionTag == null) {
-      return Either.left(
-          new Failure(
-              "Expected a version tag expression but none was provided for decision '%s'."
-                  .formatted(decisionId)));
-    }
-    if (!versionTag.isStatic()) {
-      // TODO(#52910): evaluate versionTag expression against process instance variables
-      return Either.left(
-          new Failure(
-              "Dynamic version tag expressions are not yet supported for decision '%s'."
-                  .formatted(decisionId)));
-    }
-    return decisionBehavior.findDecisionByIdAndVersionTagAndTenant(
-        decisionId, versionTag.getExpression(), tenantId);
+      final String decisionId,
+      final Expression versionTag,
+      final long scopeKey,
+      final String tenantId) {
+    return expressionBehavior
+        .evaluateStringExpression(versionTag, scopeKey, tenantId)
+        .flatMap(
+            evaluatedVersionTag ->
+                decisionBehavior.findDecisionByIdAndVersionTagAndTenant(
+                    decisionId, evaluatedVersionTag, tenantId));
   }
 
   private Either<Failure, String> evalDecisionIdExpression(
