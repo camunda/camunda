@@ -79,27 +79,6 @@ public interface AgentHistoryRecordValue extends RecordValue, TenantOwned, Proce
   /** Returns the metrics captured for this history entry. */
   AgentHistoryMetricsValue getMetrics();
 
-  /** Represents a document reference associated with a content block. */
-  @Value.Immutable
-  @ImmutableProtocol(builder = ImmutableAgentHistoryDocumentReferenceValue.Builder.class)
-  interface AgentHistoryDocumentReferenceValue {
-    /** Returns the unique identifier of the document. */
-    String getDocumentId();
-
-    /** Returns the identifier of the store where the document is held. */
-    String getStoreId();
-
-    /**
-     * Returns the content hash of the document.
-     *
-     * <p>Required to construct the document download URL via the Camunda Document Store REST API
-     * ({@code GET /v2/documents/{documentId}}). Without this hash the document cannot be retrieved
-     * from the record alone, because it is not derivable from {@code documentId} or {@code storeId}
-     * after the fact.
-     */
-    String getContentHash();
-  }
-
   /** Represents a single content block in a history entry message. */
   @Value.Immutable
   @ImmutableProtocol(builder = ImmutableAgentHistoryMessageContentValue.Builder.class)
@@ -111,7 +90,7 @@ public interface AgentHistoryRecordValue extends RecordValue, TenantOwned, Proce
     String getText();
 
     /** Returns the document reference; populated when contentType is DOCUMENT. */
-    AgentHistoryDocumentReferenceValue getDocumentReference();
+    DocumentReferenceValue getDocumentReference();
 
     /** Returns the structured object payload; populated when contentType is OBJECT. */
     Map<String, Object> getObject();
