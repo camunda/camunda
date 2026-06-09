@@ -46,25 +46,12 @@ class SearchAgentInstanceTest extends ClientRestTest {
   @Test
   void shouldSearchAgentInstances() {
     // when
-    client
-        .newAgentInstanceSearchRequest()
-        .filter(f -> f.status(AgentInstanceStatus.IDLE))
-        .sort(s -> s.creationDate().asc())
-        .send()
-        .join();
+    client.newAgentInstanceSearchRequest().send().join();
 
     // then
     final LoggedRequest restRequest = RestGatewayService.getLastRequest();
     assertThat(restRequest.getMethod()).isEqualTo(RequestMethod.POST);
     assertThat(restRequest.getUrl()).isEqualTo("/v2/agent-instances/search");
-  }
-
-  @Test
-  void shouldSearchAgentInstancesWithoutFilter() {
-    // when
-    client.newAgentInstanceSearchRequest().send().join();
-
-    // then
     final AgentInstanceSearchQuery request =
         gatewayService.getLastRequest(AgentInstanceSearchQuery.class);
     assertThat(request.getFilter()).isNull();
