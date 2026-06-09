@@ -106,6 +106,7 @@ const AdvancedStringFilterField: React.FC<FieldProps> = ({
       <Dropdown<AdvancedStringFilterOperator>
         id={`${input.name}.operator`}
         size="sm"
+        direction="top"
         titleText={`${label} filter type`}
         hideLabel
         label="Select operator"
