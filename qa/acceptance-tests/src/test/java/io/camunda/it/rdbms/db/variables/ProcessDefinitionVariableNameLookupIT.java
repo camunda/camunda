@@ -63,6 +63,48 @@ public class ProcessDefinitionVariableNameLookupIT {
   }
 
   @TestTemplate
+  public void shouldNotInsertDuplicateLookupEntryWithinSameWriterSession(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given: a single writer instance whose in-memory cache tracks seen (procDefKey, varName) pairs
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters writers = rdbmsService.createWriter(0L);
+    final long procDefKey = nextKey();
+    final String varName = "cached-" + nextStringId();
+
+    // when: two different process instances each contribute a variable with the same name,
+    // using the SAME writer (so the second create hits the in-memory cache instead of the DB)
+    final var instance1 =
+        ProcessInstanceFixtures.createRandomized(b -> b.processDefinitionKey(procDefKey));
+    ProcessInstanceFixtures.createAndSaveProcessInstance(writers, instance1);
+    writers
+        .getVariableWriter()
+        .create(
+            VariableFixtures.createRandomized(
+                b ->
+                    b.processInstanceKey(instance1.processInstanceKey())
+                        .processDefinitionKey(procDefKey)
+                        .name(varName)));
+
+    final var instance2 =
+        ProcessInstanceFixtures.createRandomized(b -> b.processDefinitionKey(procDefKey));
+    ProcessInstanceFixtures.createAndSaveProcessInstance(writers, instance2);
+    writers
+        .getVariableWriter()
+        .create(
+            VariableFixtures.createRandomized(
+                b ->
+                    b.processInstanceKey(instance2.processInstanceKey())
+                        .processDefinitionKey(procDefKey)
+                        .name(varName)));
+
+    writers.flush();
+
+    // then: the cache suppressed the second lookup INSERT — exactly one entry in the table
+    assertThat(lookupReader(testApplication).findVariableNames(procDefKey))
+        .containsExactly(varName);
+  }
+
+  @TestTemplate
   public void shouldDeleteAllLookupEntriesWhenProcessDefinitionDeleted(
       final CamundaRdbmsTestApplication testApplication) {
     // given
@@ -91,7 +133,7 @@ public class ProcessDefinitionVariableNameLookupIT {
    * Creates a persisted process instance and one variable linked to it (populating the lookup
    * table), and returns the process instance key.
    */
-  private long createInstanceWithVariable(
+  private void createInstanceWithVariable(
       final RdbmsService rdbmsService, final long processDefinitionKey, final String varName) {
 
     final RdbmsWriters writers = rdbmsService.createWriter(0L);
@@ -104,8 +146,6 @@ public class ProcessDefinitionVariableNameLookupIT {
         VariableFixtures.createRandomized(
             b -> b.processInstanceKey(processInstance.processInstanceKey()).name(varName));
     VariableFixtures.createAndSaveVariableWithLookup(rdbmsService, variable, processDefinitionKey);
-
-    return processInstance.processInstanceKey();
   }
 
   private ProcessDefinitionVariableNameLookupDbReader lookupReader(
