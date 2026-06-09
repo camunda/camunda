@@ -42,9 +42,9 @@ describe('verifyRequiredPermissions', () => {
       assert.equal(filterByPathSegment(shape, '/valid/dynamic').length, 0);
     });
 
-    it('accepts an empty array (explicitly public)', () => {
-      assert.equal(verifyFor('validPublic').length, 0);
-      assert.equal(filterByPathSegment(shape, '/valid/public').length, 0);
+    it('accepts an empty array (explicitly unrestricted)', () => {
+      assert.equal(verifyFor('validUnrestricted').length, 0);
+      assert.equal(filterByPathSegment(shape, '/valid/unrestricted').length, 0);
     });
 
     it('accepts x-permission-enforcement: filter with a permission', () => {
@@ -93,8 +93,8 @@ describe('verifyRequiredPermissions', () => {
       assert.match(v[0].message, /permissionType 'FLY' which is not supported/);
     });
 
-    it('flags x-permission-enforcement: filter on a public ([]) endpoint', () => {
-      const v = verifyFor('invalidEnforcementPublicFilter');
+    it('flags x-permission-enforcement: filter on an unrestricted ([]) endpoint', () => {
+      const v = verifyFor('invalidEnforcementUnrestrictedFilter');
       assert.equal(v.length, 1);
       assert.match(v[0].message, /filter but has an empty x-required-permissions/);
     });

@@ -74,13 +74,16 @@ Java-annotation channel.
 ```
 
 **D2. The extension is an array; semantics are AND across entries; an empty
-array means "no permission required" (public).**
+array means "no permission required" (unrestricted).**
 
 Requiring the key to be present on *every* operation (even when empty)
-distinguishes "explicitly public" from "forgot to annotate".
+distinguishes "explicitly unrestricted" from "forgot to annotate". Note that
+"unrestricted" is an *authorization* property — such an endpoint is still
+authenticated; it is not "public" in the unauthenticated sense (the term the
+cluster reserves for paths reachable without credentials).
 
 ```yaml
-# Explicitly public — no authorization enforced
+# Explicitly unrestricted — authenticated, but no specific permission required
 /topology:
   get:
     operationId: getTopology
@@ -166,13 +169,14 @@ layers, and reading any one of them in isolation is unsound:
    the processor invokes rather than the processor itself.
 
 Crucially, `@ExcludeAuthorizationCheck` on a command processor does **not** imply
-the endpoint is public — it can mean the check was deliberately moved elsewhere.
+the endpoint is unrestricted — it can mean the check was deliberately moved
+elsewhere.
 `activateJobs` is the canonical trap: `JobBatchActivateProcessor` is
 `@ExcludeAuthorizationCheck`, yet `JobBatchCollector` enforces
 `PROCESS_DEFINITION / UPDATE_PROCESS_INSTANCE` and *filters* the returned batch
 to jobs the caller may update (an authorize-by-filtering pattern, not
 authorize-by-rejection). A derivation strategy keyed on the processor annotation
-mis-classified it as public; it is corrected to `UPDATE_PROCESS_INSTANCE`.
+mis-classified it as unrestricted; it is corrected to `UPDATE_PROCESS_INSTANCE`.
 
 Consequences for the guard design:
 
@@ -219,7 +223,7 @@ a test failure rather than a silent false-pass. The marker is the spec's *claim*
 the runtime test is the *proof*. Endpoints whose deny outcome was not individually
 verified are left at the `reject` default and will be confirmed (or corrected) by
 the oracle. `verify-required-permissions` additionally rejects a `filter` marker on
-a public (`[]`) endpoint, which has nothing to filter by.
+an unrestricted (`[]`) endpoint, which has nothing to filter by.
 
 ## Consequences
 

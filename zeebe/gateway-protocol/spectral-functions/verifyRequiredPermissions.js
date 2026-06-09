@@ -7,15 +7,16 @@
 // Two responsibilities:
 //   1. Completeness (gap guard): every operation under `paths` MUST declare
 //      `x-required-permissions` (an array). An empty array means "explicitly
-//      public" — this distinguishes it from "forgot to annotate".
+//      unrestricted" (no specific permission required, though the endpoint is
+//      still authenticated) — this distinguishes it from "forgot to annotate".
 //   2. Registry validity: every static entry's `{resourceType, permissionType}`
 //      must be a member of the AuthorizationResourceType / PermissionType enums
 //      AND a pair the resource type actually supports, as recorded in
 //      resource-permissions.json (which mirrors
 //      AuthorizationResourceType.buildResourcePermissionsMap()).
 //   3. Enforcement coherence: an operation marked `x-permission-enforcement:
-//      filter` must declare at least one required permission (a public endpoint
-//      has nothing to filter by). The enum itself is checked by the
+//      filter` must declare at least one required permission (an unrestricted
+//      endpoint has nothing to filter by). The enum itself is checked by the
 //      `permission-enforcement-shape` Spectral rule.
 //
 // Entry shapes (the structural schema is additionally enforced by the
@@ -136,25 +137,25 @@ module.exports = (input, _opts, _context) => {
       // 1. Completeness.
       if (declared === undefined) {
         errors.push({
-          message: `${where} is missing x-required-permissions. Every operation must declare the permission(s) it enforces, or an empty array [] if it is public. See docs/adr/security/001-endpoint-required-permission-mapping.md.`,
+          message: `${where} is missing x-required-permissions. Every operation must declare the permission(s) it enforces, or an empty array [] if it is unrestricted (no specific permission required). See docs/adr/security/001-endpoint-required-permission-mapping.md.`,
           path: ['paths', pathKey, method],
         });
         continue;
       }
       if (!Array.isArray(declared)) {
         errors.push({
-          message: `${where} has a non-array x-required-permissions. It must be an array of permission entries (or [] for public).`,
+          message: `${where} has a non-array x-required-permissions. It must be an array of permission entries (or [] for unrestricted).`,
           path: basePath,
         });
         continue;
       }
 
       // 2. Enforcement marker coherence: `filter` implies the endpoint scopes
-      //    results by permission, so it cannot be public.
+      //    results by permission, so it cannot be unrestricted.
       const enforcement = op['x-permission-enforcement'];
       if (enforcement === 'filter' && declared.length === 0) {
         errors.push({
-          message: `${where} declares x-permission-enforcement: filter but has an empty x-required-permissions. A public endpoint has nothing to filter by; use 'reject' (or remove the marker) or declare the required permission(s).`,
+          message: `${where} declares x-permission-enforcement: filter but has an empty x-required-permissions. An unrestricted endpoint has nothing to filter by; use 'reject' (or remove the marker) or declare the required permission(s).`,
           path: ['paths', pathKey, method, 'x-permission-enforcement'],
         });
       }

@@ -215,7 +215,7 @@ rules:
             - required: [dynamic, note]
 
   verify-required-permissions:
-    description: "Every operation must declare `x-required-permissions` (or `[]` if public), and each static `{resourceType, permissionType}` pair must be valid per resource-permissions.json."
+    description: "Every operation must declare `x-required-permissions` (or `[]` if unrestricted), and each static `{resourceType, permissionType}` pair must be valid per resource-permissions.json."
     severity: error
     given: "$"
     message: "{{error}}"
