@@ -242,6 +242,23 @@ public final class VariableStateTest {
   }
 
   @Test
+  public void shouldCollectVariablesByNameWithDuplicateNamesInRequest() {
+    // given
+    declareScope(parent);
+
+    setVariableLocal(parent, wrapString("a"), asMsgPack("1"));
+    setVariableLocal(parent, wrapString("b"), asMsgPack("2"));
+
+    // when — "a" appears twice, as would happen if a client sends a duplicate fetchVariable name
+    final DirectBuffer variablesDocument =
+        variableState.getVariablesAsDocument(
+            parent, Arrays.asList(wrapString("a"), wrapString("b"), wrapString("a")));
+
+    // then — map32 header count must equal the number of entries written, not names.size()
+    assertEquality(variablesDocument, "{'a': 1, 'b': 2}");
+  }
+
+  @Test
   public void shouldSetLocalVariable() {
     // given
     declareScope(parent);
