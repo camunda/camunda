@@ -89,7 +89,7 @@ public class ActivatableJobsPushTest {
             .setTimeout(timeout)
             .setTenantIds(List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER))
             .setFetchVariables(
-                List.of(new StringValue("a"), new StringValue("b"), new StringValue("c")));
+                Set.of(new StringValue("a"), new StringValue("b"), new StringValue("c")));
     jobStream = JOB_STREAMER.addJobStream(BufferUtil.wrapString(jobType), jobActivationProperties);
   }
 
