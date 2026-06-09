@@ -166,6 +166,7 @@ public class SearchElementInstanceWaitStatesTest extends ClientRestTest {
     // given
     final io.camunda.client.protocol.rest.JobWaitStateDetails jobDetails =
         new io.camunda.client.protocol.rest.JobWaitStateDetails();
+    jobDetails.setWaitStateType("JOB");
     jobDetails.setJobKey("999");
     jobDetails.setJobType("payment");
     jobDetails.setJobKind(JobKindEnum.BPMN_ELEMENT);
@@ -180,7 +181,7 @@ public class SearchElementInstanceWaitStatesTest extends ClientRestTest {
     item.setElementInstanceKey("300");
     item.setElementId("task-1");
     item.setTenantId("<default>");
-    item.setJobDetails(jobDetails);
+    item.setDetails(jobDetails);
 
     final ElementInstanceWaitStateQueryResult response = buildEmptyResponse();
     response.addItemsItem(item);
@@ -215,6 +216,7 @@ public class SearchElementInstanceWaitStatesTest extends ClientRestTest {
     // given
     final io.camunda.client.protocol.rest.MessageWaitStateDetails messageDetails =
         new io.camunda.client.protocol.rest.MessageWaitStateDetails();
+    messageDetails.setWaitStateType("MESSAGE");
     messageDetails.setMessageName("order-received");
     messageDetails.setCorrelationKey("order-42");
 
@@ -225,7 +227,7 @@ public class SearchElementInstanceWaitStatesTest extends ClientRestTest {
     item.setElementInstanceKey("300");
     item.setElementId("receive-1");
     item.setTenantId("<default>");
-    item.setMessageDetails(messageDetails);
+    item.setDetails(messageDetails);
 
     final ElementInstanceWaitStateQueryResult response = buildEmptyResponse();
     response.addItemsItem(item);

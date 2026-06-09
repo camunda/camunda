@@ -15,11 +15,14 @@
  */
 package io.camunda.client.impl.search.response;
 
+import static io.camunda.client.protocol.rest.WaitStateTypeEnum.UNKNOWN_DEFAULT_OPEN_API;
+
 import io.camunda.client.api.search.enums.WaitStateElementType;
 import io.camunda.client.api.search.enums.WaitStateType;
 import io.camunda.client.api.search.response.ElementInstanceWaitStateResult;
 import io.camunda.client.api.search.response.WaitStateDetails;
 import io.camunda.client.impl.util.EnumUtil;
+import io.camunda.client.protocol.rest.WaitStateTypeEnum;
 
 public class ElementInstanceWaitStateResultImpl implements ElementInstanceWaitStateResult {
 
@@ -42,7 +45,7 @@ public class ElementInstanceWaitStateResultImpl implements ElementInstanceWaitSt
     elementId = item.getElementId();
     elementType = EnumUtil.convert(item.getElementType(), WaitStateElementType.class);
     tenantId = item.getTenantId();
-    details = extractDetails(waitStateType, item);
+    details = extractDetails(item.getDetails());
   }
 
   private static WaitStateType parseWaitStateType(final String value) {
@@ -57,17 +60,19 @@ public class ElementInstanceWaitStateResultImpl implements ElementInstanceWaitSt
   }
 
   private static WaitStateDetails extractDetails(
-      final WaitStateType waitStateType,
-      final io.camunda.client.protocol.rest.ElementInstanceWaitStateResult item) {
+      final io.camunda.client.protocol.rest.WaitStateDetails item) {
+
+    final WaitStateTypeEnum waitStateType =
+        (item != null && item.getWaitStateType() != null)
+            ? WaitStateTypeEnum.fromValue(item.getWaitStateType())
+            : UNKNOWN_DEFAULT_OPEN_API;
     switch (waitStateType) {
       case JOB:
-        return item.getJobDetails() == null
-            ? null
-            : new JobWaitStateDetailsImpl(item.getJobDetails());
+        return new JobWaitStateDetailsImpl(
+            (io.camunda.client.protocol.rest.JobWaitStateDetails) item);
       case MESSAGE:
-        return item.getMessageDetails() == null
-            ? null
-            : new MessageWaitStateDetailsImpl(item.getMessageDetails());
+        return new MessageWaitStateDetailsImpl(
+            (io.camunda.client.protocol.rest.MessageWaitStateDetails) item);
       default:
         return null;
     }
