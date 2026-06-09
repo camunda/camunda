@@ -2263,6 +2263,10 @@ jobs:
         id: build-optimize-fe
         with:
           directory: ./optimize/client
+      - name: Build zeebe-protocol from source
+        uses: ./.github/actions/run-maven
+        with:
+          parameters: install -pl zeebe/protocol -Dquickly
       - name: Generate Optimize production .tar.gz
         uses: ./.github/actions/run-maven
         with:
