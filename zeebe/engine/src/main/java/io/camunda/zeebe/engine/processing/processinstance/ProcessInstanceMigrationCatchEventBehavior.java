@@ -509,7 +509,8 @@ public class ProcessInstanceMigrationCatchEventBehavior {
             .setProcessInstanceKey(processMessageSubscriptionRecord.getProcessInstanceKey())
             .setMessageName(processMessageSubscriptionRecord.getMessageNameBuffer())
             .setCorrelationKey(processMessageSubscriptionRecord.getCorrelationKeyBuffer())
-            .setTenantId(processMessageSubscriptionRecord.getTenantId());
+            .setTenantId(processMessageSubscriptionRecord.getTenantId())
+            .setElementId(BufferUtil.wrapString(targetCatchEventId));
 
     if (interrupting != null) {
       processMessageSubscriptionRecord.setInterrupting(interrupting);
