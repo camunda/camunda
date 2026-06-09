@@ -11,6 +11,7 @@ import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.Agent;
+import io.camunda.zeebe.protocol.record.ChannelType;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -89,6 +90,16 @@ public class UnwrittenRecord implements TypedRecord {
   @Override
   public Agent getAgent() {
     return metadata.getAgent();
+  }
+
+  @Override
+  public ChannelType getRequestChannelType() {
+    return metadata.getRequestChannelType();
+  }
+
+  @Override
+  public String getRequestToolName() {
+    return metadata.getRequestToolName();
   }
 
   @Override

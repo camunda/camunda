@@ -12,6 +12,7 @@ import static io.camunda.zeebe.protocol.record.ExecuteCommandRequestEncoder.oper
 import static io.camunda.zeebe.protocol.record.ExecuteCommandRequestEncoder.partitionIdNullValue;
 
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.record.ChannelType;
 import io.camunda.zeebe.protocol.record.ExecuteCommandRequestDecoder;
 import io.camunda.zeebe.protocol.record.ExecuteCommandRequestEncoder;
 import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
@@ -19,7 +20,9 @@ import io.camunda.zeebe.protocol.record.MessageHeaderEncoder;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.util.buffer.BufferReader;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import java.nio.charset.StandardCharsets;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -38,6 +41,8 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
   private ValueType valueType;
   private Intent intent;
   private final AuthInfo authorization = new AuthInfo();
+  private ChannelType channelType;
+  private final DirectBuffer toolName = new UnsafeBuffer(0, 0);
 
   public ExecuteCommandRequest() {
     reset();
@@ -51,6 +56,8 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
     intent = Intent.UNKNOWN;
     value.wrap(0, 0);
     authorization.reset();
+    channelType = ChannelType.NULL_VAL;
+    toolName.wrap(0, 0);
 
     return this;
   }
@@ -142,6 +149,29 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
     return this;
   }
 
+  public ChannelType getChannelType() {
+    return channelType;
+  }
+
+  public ExecuteCommandRequest setChannelType(final ChannelType channelType) {
+    this.channelType = channelType == null ? ChannelType.NULL_VAL : channelType;
+    return this;
+  }
+
+  public String getToolName() {
+    return BufferUtil.bufferAsString(toolName);
+  }
+
+  public ExecuteCommandRequest setToolName(final String toolName) {
+    if (toolName == null) {
+      this.toolName.wrap(0, 0);
+    } else {
+      final byte[] bytes = toolName.getBytes(StandardCharsets.UTF_8);
+      this.toolName.wrap(bytes);
+    }
+    return this;
+  }
+
   @Override
   public void wrap(final DirectBuffer buffer, int offset, final int length) {
     reset();
@@ -159,6 +189,11 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
     operationReference = bodyDecoder.operationReference();
     valueType = bodyDecoder.valueType();
     intent = Intent.fromProtocolValue(valueType, bodyDecoder.intent());
+    final var decodedChannelType = bodyDecoder.channelType();
+    if (decodedChannelType != ChannelType.NULL_VAL
+        && decodedChannelType != ChannelType.SBE_UNKNOWN) {
+      channelType = decodedChannelType;
+    }
 
     offset += bodyDecoder.sbeBlockLength();
 
@@ -173,6 +208,12 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
 
     authorization.wrap(buffer, offset, authorizationLength);
     offset += authorizationLength;
+
+    final int toolNameLength = bodyDecoder.toolNameLength();
+    offset += ExecuteCommandRequestDecoder.toolNameHeaderLength();
+
+    toolName.wrap(buffer, offset, toolNameLength);
+    offset += toolNameLength;
 
     bodyDecoder.limit(offset);
 
@@ -191,7 +232,9 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
         + ExecuteCommandRequestEncoder.valueHeaderLength()
         + value.capacity()
         + ExecuteCommandRequestEncoder.authorizationHeaderLength()
-        + authorization.getLength();
+        + authorization.getLength()
+        + ExecuteCommandRequestEncoder.toolNameHeaderLength()
+        + toolName.capacity();
   }
 
   @Override
@@ -203,8 +246,10 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
         .operationReference(operationReference)
         .valueType(valueType)
         .intent(intent.value())
+        .channelType(channelType)
         .putValue(value, 0, value.capacity())
-        .putAuthorization(authorization.toDirectBuffer(), 0, authorization.getLength());
+        .putAuthorization(authorization.toDirectBuffer(), 0, authorization.getLength())
+        .putToolName(toolName, 0, toolName.capacity());
 
     return headerEncoder.encodedLength() + bodyEncoder.encodedLength();
   }

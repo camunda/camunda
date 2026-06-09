@@ -84,6 +84,8 @@ final class BulkIndexRequestTest {
     recordAsMap.put("sequence", recordSequence.sequence());
     recordAsMap.remove("authorizations");
     recordAsMap.remove("agent");
+    recordAsMap.remove("requestChannelType");
+    recordAsMap.remove("requestToolName");
     return MAPPER.writeValueAsBytes(recordAsMap).length;
   }
 
@@ -198,6 +200,8 @@ final class BulkIndexRequestTest {
       // Verify excluded fields are null/empty
       assertThat(deserialized.getAuthorizations()).isEmpty();
       assertThat(deserialized.getAgent()).isNull();
+      assertThat(deserialized.getRequestChannelType()).isNull();
+      assertThat(deserialized.getRequestToolName()).isNull();
     }
 
     @Test
@@ -256,6 +260,18 @@ final class BulkIndexRequestTest {
           .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
           .extracting(source -> source.get("agent"))
           .describedAs("Expect that the records are NOT serialized with agent")
+          .containsExactly(new Object[] {null});
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("requestChannelType"))
+          .describedAs("Expect that the records are NOT serialized with requestChannelType")
+          .containsExactly(new Object[] {null});
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("requestToolName"))
+          .describedAs("Expect that the records are NOT serialized with requestToolName")
           .containsExactly(new Object[] {null});
     }
 

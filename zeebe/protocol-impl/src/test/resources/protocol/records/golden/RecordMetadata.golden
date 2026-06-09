@@ -8,7 +8,9 @@
 package io.camunda.zeebe.protocol.impl.record;
 
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.encoding.AgentInfo;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
+import io.camunda.zeebe.protocol.record.ChannelType;
 import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
 import io.camunda.zeebe.protocol.record.MessageHeaderEncoder;
 import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
@@ -50,6 +52,9 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
   private final AuthInfo authorization = new AuthInfo();
   private RejectionType rejectionType;
   private final UnsafeBuffer rejectionReason = new UnsafeBuffer(0, 0);
+  private AgentInfo agent;
+  private ChannelType requestChannelType = ChannelType.NULL_VAL;
+  private final DirectBuffer requestToolName = new UnsafeBuffer(0, 0);
 
   // always the current version by default
   private int protocolVersion = Protocol.PROTOCOL_VERSION;
@@ -82,6 +87,11 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     rejectionType = decoder.rejectionType();
     operationReference = decoder.operationReference();
     batchOperationReference = decoder.batchOperationReference();
+    final var requestChannelType = decoder.requestChannelType();
+    if (requestChannelType != ChannelType.NULL_VAL
+        && requestChannelType != ChannelType.SBE_UNKNOWN) {
+      this.requestChannelType = requestChannelType;
+    }
 
     brokerVersion =
         Optional.ofNullable(decoder.brokerVersion())
@@ -117,6 +127,23 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     } else {
       decoder.skipAuthorization();
     }
+
+    final int agentLength = decoder.agentLength();
+    if (agentLength > 0) {
+      agent = new AgentInfo();
+      final var agentBuffer = new UnsafeBuffer();
+      decoder.wrapAgent(agentBuffer);
+      agent.wrap(agentBuffer);
+    } else {
+      decoder.skipAgent();
+    }
+
+    final int toolNameLength = decoder.requestToolNameLength();
+    if (toolNameLength > 0) {
+      decoder.wrapRequestToolName(requestToolName);
+    } else {
+      decoder.skipRequestToolName();
+    }
   }
 
   @Override
@@ -125,21 +152,16 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         + RecordMetadataEncoder.rejectionReasonHeaderLength()
         + rejectionReason.capacity()
         + RecordMetadataEncoder.authorizationHeaderLength()
-        + authorization.getLength();
+        + authorization.getLength()
+        + RecordMetadataEncoder.agentHeaderLength()
+        + (agent != null ? agent.getLength() : 0)
+        + RecordMetadataEncoder.requestToolNameHeaderLength()
+        + requestToolName.capacity();
   }
 
   @Override
-  public void write(final MutableDirectBuffer buffer, int offset) {
-    headerEncoder.wrap(buffer, offset);
-
-    headerEncoder
-        .blockLength(encoder.sbeBlockLength())
-        .templateId(encoder.sbeTemplateId())
-        .schemaId(encoder.sbeSchemaId())
-        .version(encoder.sbeSchemaVersion());
-
-    offset += headerEncoder.encodedLength();
-    encoder.wrap(buffer, offset);
+  public int write(final MutableDirectBuffer buffer, final int offset) {
+    encoder.wrapAndApplyHeader(buffer, offset, headerEncoder);
 
     // working with fixed-length fields
     encoder
@@ -152,7 +174,8 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         .rejectionType(rejectionType)
         .recordVersion(recordVersion)
         .operationReference(operationReference)
-        .batchOperationReference(batchOperationReference);
+        .batchOperationReference(batchOperationReference)
+        .requestChannelType(requestChannelType);
 
     encoder
         .brokerVersion()
@@ -162,7 +185,25 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
 
     // working with variable-length fields
     encoder.putRejectionReason(rejectionReason, 0, rejectionReason.capacity());
-    encoder.putAuthorization(authorization.toDirectBuffer(), 0, authorization.getLength());
+    BufferUtil.writeLengthPrefixed(
+        authorization,
+        encoder,
+        RecordMetadataEncoder.authorizationHeaderLength(),
+        RecordMetadataEncoder.BYTE_ORDER);
+
+    if (agent != null) {
+      BufferUtil.writeLengthPrefixed(
+          agent,
+          encoder,
+          RecordMetadataEncoder.agentHeaderLength(),
+          RecordMetadataEncoder.BYTE_ORDER);
+    } else {
+      encoder.agent("");
+    }
+
+    encoder.putRequestToolName(requestToolName, 0, requestToolName.capacity());
+
+    return headerEncoder.encodedLength() + encoder.encodedLength();
   }
 
   public long getRequestId() {
@@ -258,6 +299,44 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     return authorization;
   }
 
+  public AgentInfo getAgent() {
+    return agent;
+  }
+
+  public RecordMetadata agent(final AgentInfo agent) {
+    this.agent = agent;
+    return this;
+  }
+
+  public ChannelType getRequestChannelType() {
+    return requestChannelType == ChannelType.NULL_VAL ? null : requestChannelType;
+  }
+
+  public RecordMetadata requestChannelType(final ChannelType requestChannelType) {
+    this.requestChannelType =
+        requestChannelType == null ? ChannelType.NULL_VAL : requestChannelType;
+    return this;
+  }
+
+  public String getRequestToolName() {
+    return BufferUtil.bufferAsString(requestToolName);
+  }
+
+  public RecordMetadata requestToolName(final String requestToolName) {
+    if (requestToolName == null) {
+      this.requestToolName.wrap(0, 0);
+    } else {
+      final byte[] bytes = requestToolName.getBytes(StandardCharsets.UTF_8);
+      this.requestToolName.wrap(bytes);
+    }
+    return this;
+  }
+
+  public RecordMetadata requestToolName(final DirectBuffer buffer) {
+    requestToolName.wrap(BufferUtil.cloneBuffer(buffer));
+    return this;
+  }
+
   public RecordMetadata brokerVersion(final VersionInfo brokerVersion) {
     this.brokerVersion = brokerVersion;
     return this;
@@ -305,6 +384,9 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     rejectionType = RejectionType.NULL_VAL;
     rejectionReason.wrap(0, 0);
     authorization.reset();
+    agent = null;
+    requestChannelType = ChannelType.NULL_VAL;
+    requestToolName.wrap(0, 0);
     brokerVersion = CURRENT_BROKER_VERSION;
     recordVersion = DEFAULT_RECORD_VERSION;
     operationReference = RecordMetadataEncoder.operationReferenceNullValue();
@@ -327,7 +409,10 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         brokerVersion,
         recordVersion,
         operationReference,
-        batchOperationReference);
+        batchOperationReference,
+        agent,
+        requestChannelType,
+        requestToolName);
   }
 
   @Override
@@ -348,6 +433,9 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         && rejectionType == that.rejectionType
         && rejectionReason.equals(that.rejectionReason)
         && authorization.equals(that.authorization)
+        && Objects.equals(agent, that.agent)
+        && requestChannelType == that.requestChannelType
+        && requestToolName.equals(that.requestToolName)
         && brokerVersion.equals(that.brokerVersion)
         && recordVersion == that.recordVersion
         && operationReference == that.operationReference
@@ -384,6 +472,15 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     }
     if (batchOperationReference != RecordMetadataEncoder.batchOperationReferenceNullValue()) {
       builder.append(", batchOperationReference=").append(batchOperationReference);
+    }
+    if (agent != null) {
+      builder.append(", agent=").append(agent);
+    }
+    if (requestChannelType != ChannelType.NULL_VAL) {
+      builder.append(", requestChannelType=").append(requestChannelType);
+    }
+    if (requestToolName.capacity() > 0) {
+      builder.append(", requestToolName=").append(BufferUtil.bufferAsString(requestToolName));
     }
 
     builder.append('}');

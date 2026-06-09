@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
   xmlns:xi="http://www.w3.org/2001/XInclude" package="io.camunda.zeebe.protocol.record"
-  id="0" version="9"
+  id="0" version="10"
   description="Zeebe Protocol" byteOrder="littleEndian">
 
   <xi:include href="common-types.xml"/>
@@ -19,6 +19,14 @@
       <validValue name="PROCESS_NOT_FOUND">7</validValue>
       <validValue name="RESOURCE_EXHAUSTED">8</validValue>
       <validValue name="PARTITION_UNAVAILABLE">9</validValue>
+    </enum>
+
+    <enum name="ChannelType" encodingType="uint8"
+      description="The inbound channel through which a command was received">
+      <validValue name="GRPC">0</validValue>
+      <validValue name="MCP">1</validValue>
+      <validValue name="REST">2</validValue>
+      <validValue name="INTERNAL">3</validValue>
     </enum>
 
     <enum name="ValueType" encodingType="uint8" description="The type of a record value">
@@ -145,9 +153,13 @@
     <field name="intent" id="6" type="uint8"/>
     <!-- populated when the client passes an operation reference to the gateway-->
     <field name="operationReference" id="9" type="uint64" presence="optional" sinceVersion="5"/>
+    <!-- populated when set in a gateway for API requests -->
+    <field name="channelType" id="11" type="ChannelType" presence="optional" sinceVersion="10"/>
     <data name="value" id="7" type="varDataEncoding"/>
     <!-- populated when RecordType is COMMAND -->
     <data name="authorization" id="8" type="varDataEncoding" sinceVersion="4"/>
+    <!-- populated when set in a gateway for API requests; carries an optional tool name -->
+    <data name="toolName" id="10" type="varDataEncoding" sinceVersion="10"/>
   </sbe:message>
 
   <sbe:message name="ExecuteCommandResponse" id="21">
@@ -192,11 +204,15 @@
     <field name="operationReference" id="12" type="uint64" presence="optional" sinceVersion="5"/>
     <!-- populated when the record was created as part of a batch operation -->
     <field name="batchOperationReference" id="13" type="uint64" presence="optional" sinceVersion="6"/>
+    <!-- populated when set in a gateway for API requests -->
+    <field name="requestChannelType" id="16" type="ChannelType" presence="optional" sinceVersion="10"/>
     <!-- populated when RecordType is COMMAND_REJECTION, UTF-8-encoded String -->
     <data name="rejectionReason" id="8" type="varDataEncoding"/>
     <!-- populated when RecordType is COMMAND -->
     <data name="authorization" id="11" type="varDataEncoding" sinceVersion="4"/>
     <data name="agent" id="14" type="varDataEncoding" sinceVersion="7"/>
+    <!-- populated when set in a gateway for API requests; carries an optional tool name -->
+    <data name="requestToolName" id="15" type="varDataEncoding" sinceVersion="10"/>
   </sbe:message>
 
   <sbe:message name="BrokerInfo" id="201" description="Broker topology information">
