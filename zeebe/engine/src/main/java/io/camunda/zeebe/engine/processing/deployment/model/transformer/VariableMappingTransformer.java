@@ -102,37 +102,28 @@ public final class VariableMappingTransformer {
 
   private Expression buildLocalInputMappingExpression(
       final List<Mapping> mappings, final ExpressionLanguage expressionLanguage) {
-    return buildIncrementalMappingExpression(mappings, expressionLanguage, INPUT_RESULT_CONTEXT);
+    return buildIncrementalMappingExpression(
+        mappings, expressionLanguage, INPUT_RESULT_CONTEXT, true);
   }
 
   private Expression buildLocalOutputMappingExpression(
       final List<Mapping> mappings, final ExpressionLanguage expressionLanguage) {
-    return buildIncrementalMappingExpression(mappings, expressionLanguage, OUTPUT_RESULT_CONTEXT);
+    return buildIncrementalMappingExpression(
+        mappings, expressionLanguage, OUTPUT_RESULT_CONTEXT, false);
   }
 
   /**
-   * Builds an incremental mapping expression using {@code context put()}.
-   *
-   * <p>Each mapping first assigns the source expression to a local variable (so that subsequent
-   * mappings can reference it), then adds that variable to the accumulating result context.
-   *
-   * <p>This approach ensures:
-   *
-   * <ul>
-   *   <li>Mappings are evaluated in definition order
-   *   <li>Subsequent mappings can reference variables from previous mappings
-   *   <li>Nested target paths are handled correctly without premature evaluation
-   * </ul>
-   *
-   * @param mappings the list of mappings to process
-   * @param expressionLanguage the expression language to parse the result
-   * @param resultContextName the name of the accumulator context variable
-   * @return the parsed expression
+   * Builds a FEEL context expression that evaluates all mappings in order and returns the
+   * accumulated result. Each mapping is assigned to a local variable first, then added to the
+   * result via {@code context put()}. When {@code syncLocalKeys} is {@code true}, the top-level
+   * parent local variable is also updated after each nested-path assignment so that later mappings
+   * can reference it by path (e.g. {@code =a.b}).
    */
   private Expression buildIncrementalMappingExpression(
       final List<Mapping> mappings,
       final ExpressionLanguage expressionLanguage,
-      final String resultContextName) {
+      final String resultContextName,
+      final boolean syncLocalKeys) {
 
     if (mappings.isEmpty()) {
       return parseExpression("{}", expressionLanguage);
@@ -166,6 +157,12 @@ public final class VariableMappingTransformer {
         sb.append(
             String.format(
                 "%s:context put(%s,[%s],%s)", resultContextName, base, pathList, targetName));
+        // Re-sync the top-level parent so subsequent source expressions can traverse the
+        // nested path without hitting the stale scalar local variable.
+        if (syncLocalKeys) {
+          final var parentName = parts.getFirst();
+          sb.append(String.format(",%s:%s.%s", parentName, resultContextName, parentName));
+        }
       }
     }
 
