@@ -18,6 +18,8 @@ package io.camunda.process.test.impl.assertions;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.process.test.api.judge.ChatModelAdapter;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -173,21 +175,21 @@ class JudgeEvaluation {
   /** The result of an LLM-based evaluation, containing a score and reasoning. */
   static class Result {
 
-    private final double score;
+    private final BigDecimal score;
     private final String reasoning;
 
     public Result(final double score, final String reasoning) {
-      this.score = score;
+      this.score = BigDecimal.valueOf(score).setScale(2, RoundingMode.HALF_UP);
       this.reasoning = reasoning;
     }
 
     /**
-     * Returns the evaluation score between 0.0 and 1.0.
+     * Returns the evaluation score rounded to 2 decimal places.
      *
-     * @return the score
+     * @return the rounded score
      */
     public double getScore() {
-      return score;
+      return score.doubleValue();
     }
 
     /**
@@ -200,18 +202,21 @@ class JudgeEvaluation {
     }
 
     /**
-     * Returns whether the evaluation passed the given threshold.
+     * Returns whether the evaluation passed the given threshold. Both the score and threshold are
+     * compared at 2 decimal places using exact decimal arithmetic.
      *
      * @param threshold the threshold score (0-1)
      * @return true if the score is greater than or equal to the threshold
      */
     public boolean passed(final double threshold) {
-      return score >= threshold;
+      final BigDecimal roundedThreshold =
+          BigDecimal.valueOf(threshold).setScale(2, RoundingMode.HALF_UP);
+      return score.compareTo(roundedThreshold) >= 0;
     }
 
     @Override
     public String toString() {
-      return String.format("EvaluationResult{score=%.2f, reasoning='%s'}", score, reasoning);
+      return String.format("EvaluationResult{score=%.2f, reasoning='%s'}", getScore(), reasoning);
     }
   }
 }

@@ -17,6 +17,8 @@ package io.camunda.process.test.impl.assertions;
 
 import io.camunda.process.test.api.similarity.EmbeddingModelAdapter;
 import io.camunda.process.test.api.similarity.TextPreprocessor;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 
 /** An evaluation that uses text embeddings to assess semantic similarity between two texts. */
@@ -53,29 +55,32 @@ public class SimilarityEvaluation {
   /** The result of a semantic similarity evaluation, containing a score. */
   public static class Result {
 
-    private final double score;
+    private final BigDecimal score;
 
     public Result(final double score) {
-      this.score = score;
+      this.score = BigDecimal.valueOf(score).setScale(2, RoundingMode.HALF_UP);
     }
 
     /**
-     * Returns the similarity score between 0.0 and 1.0.
+     * Returns the similarity score rounded to 2 decimal places.
      *
-     * @return the score
+     * @return the rounded score
      */
     public double getScore() {
-      return score;
+      return score.doubleValue();
     }
 
     /**
-     * Returns whether the evaluation passed the given threshold.
+     * Returns whether the evaluation passed the given threshold. Both the score and threshold are
+     * compared at 2 decimal places using exact decimal arithmetic.
      *
      * @param threshold the threshold score (0-1)
      * @return true if the score is greater than or equal to the threshold
      */
     public boolean passed(final double threshold) {
-      return score >= threshold;
+      final BigDecimal roundedThreshold =
+          BigDecimal.valueOf(threshold).setScale(2, RoundingMode.HALF_UP);
+      return score.compareTo(roundedThreshold) >= 0;
     }
   }
 }

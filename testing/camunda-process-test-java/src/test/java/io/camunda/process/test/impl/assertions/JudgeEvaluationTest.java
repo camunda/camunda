@@ -115,4 +115,49 @@ class JudgeEvaluationTest {
         .cause()
         .hasMessageContaining("Empty response from judge");
   }
+
+  @Test
+  void shouldRoundScoreToTwoDecimalPlaces() {
+    // given — 0.695 is the HALF_UP tie case: third decimal exactly 5 rounds up
+    final JudgeEvaluation.Result result = new JudgeEvaluation.Result(0.695, "reasoning");
+
+    // then
+    assertThat(result.getScore()).isEqualTo(0.70);
+  }
+
+  @Test
+  void shouldPassWhenScoreRoundsUpToThreshold() {
+    // given — 0.695 rounds to 0.70, which meets the threshold
+    final JudgeEvaluation.Result result = new JudgeEvaluation.Result(0.695, "reasoning");
+
+    // then
+    assertThat(result.passed(0.70)).isTrue();
+  }
+
+  @Test
+  void shouldNotPassWhenScoreRoundsDownBelowThreshold() {
+    // given — raw score 0.6940 rounds to 0.69, which is below the threshold
+    final JudgeEvaluation.Result result = new JudgeEvaluation.Result(0.6940, "reasoning");
+
+    // then
+    assertThat(result.passed(0.70)).isFalse();
+  }
+
+  @Test
+  void shouldPassWhenThresholdRoundsDownToScore() {
+    // given — score 0.70, threshold 0.7049 rounds down to 0.70 → passes
+    final JudgeEvaluation.Result result = new JudgeEvaluation.Result(0.70, "reasoning");
+
+    // then
+    assertThat(result.passed(0.7049)).isTrue();
+  }
+
+  @Test
+  void shouldNotPassWhenThresholdRoundsUpAboveScore() {
+    // given — score 0.70, threshold 0.705 rounds up to 0.71 → fails
+    final JudgeEvaluation.Result result = new JudgeEvaluation.Result(0.70, "reasoning");
+
+    // then
+    assertThat(result.passed(0.705)).isFalse();
+  }
 }
