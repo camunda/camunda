@@ -46,6 +46,7 @@ import io.camunda.gateway.protocol.model.ClusterVariableResult;
 import io.camunda.gateway.protocol.model.ClusterVariableScopeEnum;
 import io.camunda.gateway.protocol.model.ClusterVariableSearchQueryResult;
 import io.camunda.gateway.protocol.model.ClusterVariableSearchResult;
+import io.camunda.gateway.protocol.model.ConditionWaitStateDetails;
 import io.camunda.gateway.protocol.model.CorrelatedMessageSubscriptionResult;
 import io.camunda.gateway.protocol.model.CorrelatedMessageSubscriptionSearchQueryResult;
 import io.camunda.gateway.protocol.model.DecisionDefinitionResult;
@@ -214,6 +215,7 @@ import io.camunda.search.entities.UsageMetricTUStatisticsEntity.UsageMetricTUSta
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
+import io.camunda.search.entities.WaitStateConditionDetails;
 import io.camunda.search.entities.WaitStateEntity;
 import io.camunda.search.entities.WaitStateJobDetails;
 import io.camunda.search.entities.WaitStateMessageDetails;
@@ -713,6 +715,19 @@ public final class SearchQueryResponseMapper {
                       .waitStateType(WaitStateTypeEnum.MESSAGE.name())
                       .messageName(messageName)
                       .correlationKey(correlationKey)
+                      .build())
+              .build();
+      case WaitStateConditionDetails(final var expression, final var events) ->
+          base.details(
+                  ConditionWaitStateDetails.Builder.create()
+                      .waitStateType(WaitStateTypeEnum.CONDITION.name())
+                      .expression(expression)
+                      .events(
+                          events == null
+                              ? null
+                              : events.stream()
+                                  .map(ConditionWaitStateDetails.EventsEnum::fromValue)
+                                  .collect(Collectors.toList()))
                       .build())
               .build();
       case WaitStateUserTaskDetails(final var taskKey, final var dueDate) ->
