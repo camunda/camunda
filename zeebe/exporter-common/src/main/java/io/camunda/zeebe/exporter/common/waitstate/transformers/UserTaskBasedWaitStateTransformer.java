@@ -27,8 +27,10 @@ public class UserTaskBasedWaitStateTransformer
   @Override
   public void extract(final Record<UserTaskRecordValue> record, final WaitStateEntry entry) {
     final UserTaskRecordValue value = record.getValue();
+    final String rawDueDate = value.getDueDate();
+    final String dueDate = rawDueDate == null || rawDueDate.isBlank() ? null : rawDueDate;
     entry
         .setElementType(BpmnElementType.USER_TASK)
-        .setDetails(new UserTaskWaitStateDetails(value.getUserTaskKey(), value.getDueDate()));
+        .setDetails(new UserTaskWaitStateDetails(value.getUserTaskKey(), dueDate));
   }
 }
