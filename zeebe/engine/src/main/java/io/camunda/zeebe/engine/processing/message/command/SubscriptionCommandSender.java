@@ -18,6 +18,7 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import org.agrona.DirectBuffer;
 
@@ -63,7 +64,10 @@ public class SubscriptionCommandSender {
       final DirectBuffer correlationKey,
       final boolean closeOnCorrelate,
       final String tenantId,
-      final DirectBuffer businessId) {
+      final DirectBuffer businessId,
+      final DirectBuffer elementId,
+      final long rootProcessInstanceKey,
+      final BpmnElementType elementType) {
     return handleFollowUpCommandBasedOnPartition(
         subscriptionPartitionId,
         ValueType.MESSAGE_SUBSCRIPTION,
@@ -78,7 +82,10 @@ public class SubscriptionCommandSender {
             .setCorrelationKey(correlationKey)
             .setInterrupting(closeOnCorrelate)
             .setTenantId(tenantId)
-            .setBusinessId(businessId));
+            .setBusinessId(businessId)
+            .setElementId(elementId)
+            .setRootProcessInstanceKey(rootProcessInstanceKey)
+            .setElementType(elementType));
   }
 
   /**
@@ -108,7 +115,10 @@ public class SubscriptionCommandSender {
       final DirectBuffer correlationKey,
       final boolean closeOnCorrelate,
       final String tenantId,
-      final DirectBuffer businessId) {
+      final DirectBuffer businessId,
+      final DirectBuffer elementId,
+      final long rootProcessInstanceKey,
+      final BpmnElementType elementType) {
     interPartitionCommandSender.sendCommand(
         subscriptionPartitionId,
         ValueType.MESSAGE_SUBSCRIPTION,
@@ -123,7 +133,10 @@ public class SubscriptionCommandSender {
             .setCorrelationKey(correlationKey)
             .setInterrupting(closeOnCorrelate)
             .setTenantId(tenantId)
-            .setBusinessId(businessId));
+            .setBusinessId(businessId)
+            .setElementId(elementId)
+            .setRootProcessInstanceKey(rootProcessInstanceKey)
+            .setElementType(elementType));
   }
 
   public boolean openProcessMessageSubscription(
