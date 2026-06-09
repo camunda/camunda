@@ -102,7 +102,8 @@ public final class VariableMappingTransformer {
 
   private Expression buildLocalInputMappingExpression(
       final List<Mapping> mappings, final ExpressionLanguage expressionLanguage) {
-    return buildIncrementalMappingExpression(mappings, expressionLanguage, INPUT_RESULT_CONTEXT);
+    return buildIncrementalMappingExpressionWithNestedVariableSupport(
+        mappings, expressionLanguage, INPUT_RESULT_CONTEXT);
   }
 
   private Expression buildLocalOutputMappingExpression(
@@ -172,6 +173,85 @@ public final class VariableMappingTransformer {
     sb.append(String.format("}.%s", resultContextName));
 
     return parseExpression(sb.toString(), expressionLanguage);
+  }
+
+  /**
+   * Builds an incremental mapping expression using {@code context put()}.
+   *
+   * <p>Each mapping first assigns the source expression to a local variable (so that subsequent
+   * mappings can reference it), then adds that variable to the accumulating result context.
+   *
+   * <p>This approach ensures:
+   *
+   * <ul>
+   *   <li>Mappings are evaluated in definition order
+   *   <li>Subsequent mappings can reference variables from previous mappings
+   *   <li>Nested target paths are handled correctly without premature evaluation
+   * </ul>
+   *
+   * Compared to {@link #buildIncrementalMappingExpression}, this method adds support for
+   * nested variable references in source expressions of subsequent mappings.
+   *
+   * @param mappings the list of mappings to process
+   * @param expressionLanguage the expression language to parse the result
+   * @param resultContextName the name of the accumulator context variable
+   * @return the parsed expression
+   */
+  private Expression buildIncrementalMappingExpressionWithNestedVariableSupport(
+      final List<Mapping> mappings,
+      final ExpressionLanguage expressionLanguage,
+      final String resultContextName) {
+
+    if (mappings.isEmpty()) {
+      return parseExpression("{}", expressionLanguage);
+    }
+
+    final var sb = new StringBuilder("{");
+
+    for (int i = 0; i < mappings.size(); i++) {
+      final var mapping = mappings.get(i);
+      final var parts = splitPathExpression(mapping.target());
+      final var sourceExpr = formatSourceExpression(mapping.source());
+      final var base = (i == 0) ? "{}" : resultContextName;
+
+      if (i > 0) {
+        sb.append(",");
+      }
+
+      // First, assign the variable so it's available in context for subsequent expressions
+      if (parts.size() == 1) {
+        sb.append(String.format("%s:%s,", mapping.target(), sourceExpr));
+      } else {
+        // If it is a nested variable, it is necessary to ensure that the root variable is available
+        // and then it should be updated with `context put` (assigning to the nested variable
+        // directly will create a new flat variable with "." in its name)
+        final var root = parts.getFirst();
+        sb.append(String.format("%s:get or else(%s,{}),", root, root));
+        final var subPath = parts.stream().skip(1).toList();
+        sb.append(buildContextUpdate(root, root, subPath, sourceExpr)).append(",");
+      }
+
+      // Then, add it to the result context referencing the just-assigned variable
+      sb.append(buildContextUpdate(resultContextName, base, parts, mapping.target()));
+    }
+
+    sb.append(String.format("}.%s", resultContextName));
+
+    return parseExpression(sb.toString(), expressionLanguage);
+  }
+
+  private String buildContextUpdate(
+      final String targetContext,
+      final String sourceContext,
+      final List<String> path,
+      final String value) {
+    final String pathList;
+    if (path.size() == 1) {
+      pathList = String.format("\"%s\"", path.getFirst());
+    } else {
+      pathList = path.stream().collect(Collectors.joining("\",\"", "[\"", "\"]"));
+    }
+    return String.format("%s:context put(%s,%s,%s)", targetContext, sourceContext, pathList, value);
   }
 
   private List<Mapping> toMappings(
