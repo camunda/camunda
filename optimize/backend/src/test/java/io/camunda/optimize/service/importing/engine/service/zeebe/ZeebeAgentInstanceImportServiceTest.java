@@ -618,7 +618,7 @@ class ZeebeAgentInstanceImportServiceTest {
     assertThat(agent.getStartDate())
         .as("startDate must only be seeded by a CREATED record")
         .isNull();
-    assertThat(agent.getDefinition().getModel())
+    assertThat(agent.getDefinition())
         .as("definition must only be mapped from a CREATED record")
         .isNull();
     assertThat(agent.getLastUpdatedDate()).isNotNull();
