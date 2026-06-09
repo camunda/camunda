@@ -12,6 +12,8 @@ import dev.failsafe.RetryPolicy;
 import dev.failsafe.Timeout;
 import dev.failsafe.TimeoutExceededException;
 import io.camunda.exporter.appint.event.Event;
+import io.camunda.exporter.appint.metrics.AppIntegrationsExporterMetrics;
+import io.camunda.exporter.appint.metrics.AppIntegrationsExporterMetrics.Phase;
 import io.camunda.exporter.appint.transport.Authentication.ApiKey;
 import java.io.IOException;
 import java.time.Duration;
@@ -42,10 +44,14 @@ public class HttpTransportImpl implements Transport<Event> {
   private final Authentication authentication;
   private final Timeout<Object> timeout;
   private final RetryPolicy<Object> retryPolicy;
+  private final AppIntegrationsExporterMetrics metrics;
 
   public HttpTransportImpl(
-      final JsonMapper jsonMapper, final HttpTransportConfig httpTransportConfig) {
+      final JsonMapper jsonMapper,
+      final HttpTransportConfig httpTransportConfig,
+      final AppIntegrationsExporterMetrics metrics) {
     this.jsonMapper = jsonMapper;
+    this.metrics = metrics;
 
     url = httpTransportConfig.url();
     authentication = httpTransportConfig.authentication();
@@ -68,8 +74,15 @@ public class HttpTransportImpl implements Transport<Event> {
   @Override
   public void send(final List<Event> events) {
     log.debug("Posting records to url: {}", url);
+    metrics.recordBatchSize(events.size());
     final var json = jsonMapper.toJson(new BatchRequest(events));
-    sendPostRequest(url, json);
+    try {
+      metrics.measureFlushDuration(() -> sendPostRequest(url, json));
+    } catch (final RuntimeException e) {
+      metrics.recordExportFailed();
+      throw e;
+    }
+    metrics.recordExported(events.size());
   }
 
   private void sendPostRequest(final String url, final String json) {
@@ -113,6 +126,7 @@ public class HttpTransportImpl implements Transport<Event> {
         .onFailure(
             event -> {
               if (event.getException() instanceof TimeoutExceededException) {
+                metrics.recordTimeout(Phase.EXPORT);
                 final HttpPost inFlight = currentRequest.get();
                 if (inFlight != null) {
                   abortRequest(inFlight);
@@ -143,6 +157,7 @@ public class HttpTransportImpl implements Transport<Event> {
       log.debug("Successfully posted records to: {}", responseReason);
     } else if (statusCode == 401 && authentication instanceof final Authentication.OAuth oauth) {
       log.debug("Received 401; invalidating OAuth token and retrying with a fresh token");
+      metrics.recordUnauthorized();
       oauth.credentialsProvider().invalidate();
       throw new TransportException(
           "Unauthorized (401); OAuth token invalidated, retrying with a fresh token");

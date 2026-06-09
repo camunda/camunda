@@ -18,6 +18,8 @@ import static org.awaitility.Awaitility.await;
 
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
+import io.camunda.exporter.appint.metrics.AppIntegrationsExporterMetrics;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.HashMap;
@@ -28,13 +30,14 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 class DefaultOAuthCredentialsProviderTest {
 
-  private static final String TOKEN_PATH = "/oauth/token";
-
   @RegisterExtension
   public static WireMockExtension wireMock =
       WireMockExtension.extensionOptions().options(wireMockConfig().dynamicPort()).build();
 
+  private static final String TOKEN_PATH = "/oauth/token";
+
   private DefaultOAuthCredentialsProvider provider;
+  private SimpleMeterRegistry registry;
 
   @AfterEach
   void tearDown() {
@@ -174,6 +177,10 @@ class DefaultOAuthCredentialsProviderTest {
         .atMost(Duration.ofSeconds(10))
         .ignoreExceptions()
         .untilAsserted(() -> assertThat(applyAndCaptureAuthorization()).isEqualTo("Bearer tok-A"));
+
+    // and the initial failure was recorded
+    assertThat(registry.get("zeebe.app.integrations.exporter.token.fetch.failed").counter().count())
+        .isGreaterThanOrEqualTo(1.0);
   }
 
   @Test
@@ -199,6 +206,7 @@ class DefaultOAuthCredentialsProviderTest {
   }
 
   private DefaultOAuthCredentialsProvider newProvider() {
+    registry = new SimpleMeterRegistry();
     return new DefaultOAuthCredentialsProvider(
         wireMock.baseUrl() + TOKEN_PATH,
         "client-id",
@@ -207,7 +215,8 @@ class DefaultOAuthCredentialsProviderTest {
         null,
         null,
         Duration.ofSeconds(5),
-        Duration.ofSeconds(5));
+        Duration.ofSeconds(5),
+        new AppIntegrationsExporterMetrics(registry));
   }
 
   private String applyAndCaptureAuthorization() throws IOException {

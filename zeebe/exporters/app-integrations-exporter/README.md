@@ -76,6 +76,26 @@ You can provide the API key via the `apiKey` configuration property. The exporte
 x-api-key: myAPIKey
 ```
 
+## Metrics
+
+The exporter publishes Micrometer metrics under the `zeebe.app.integrations.exporter` namespace.
+The `MeterRegistry` handed to the exporter is already partition scoped, so the metrics below carry
+no partition tag. In addition, the broker emits the standard per-exporter metrics (exporting
+latency, last exported position, exporter state, per-value-type event counters) for this exporter
+like for every other exporter.
+
+|                          Metric                          |         Type         |      Tags      |                           Description                           |
+|----------------------------------------------------------|----------------------|----------------|-----------------------------------------------------------------|
+| `zeebe.app.integrations.exporter.token.fetch.failed`     | counter              | —              | Failures while fetching a new OAuth token (non-timeout errors). |
+| `zeebe.app.integrations.exporter.timeout`                | counter              | `phase=token`  | Timeout reached while acquiring an OAuth token.                 |
+| `zeebe.app.integrations.exporter.timeout`                | counter              | `phase=export` | Timeout reached while exporting a batch.                        |
+| `zeebe.app.integrations.exporter.export.unauthorized`    | counter              | —              | `401 Unauthorized` responses received while exporting.          |
+| `zeebe.app.integrations.exporter.export.failed`          | counter              | —              | Failed batch export attempts.                                   |
+| `zeebe.app.integrations.exporter.records.exported`       | counter              | —              | Events successfully exported to the backend.                    |
+| `zeebe.app.integrations.exporter.batch.size`             | distribution summary | —              | Number of events per exported batch.                            |
+| `zeebe.app.integrations.exporter.flush.duration.seconds` | timer                | —              | Duration of exporting a batch to the backend.                   |
+| `zeebe.app.integrations.exporter.batches.in.flight`      | gauge                | —              | Number of batches currently being exported.                     |
+
 ## Development
 
 ### Build
