@@ -40,7 +40,7 @@ Use exactly one persistent issue for reporting:
 
 ## Steps
 
-1. **Identify changed workflow files**: Use `git log --since="7 days ago" --name-only --diff-filter=ACMR -- .github/workflows/` on the `main` branch to find all workflow files that were added, changed, or modified in the last week.
+1. **Identify changed workflow files**: Use `git log --since="7 days ago" --name-only --diff-filter=ACMR -- .github/workflows/ ':(exclude).github/workflows/*.lock.yml'` on the `main` branch to find all workflow files that were added, changed, or modified in the last week. Skip `*.lock.yml` files — they are generated from the corresponding source `.md` workflow file by `gh aw compile`, so analysing them duplicates work and inflates token consumption. The cost-relevant signal always lives in the source file.
 
 2. **Analyze each changed file**: For every changed workflow file, use `git diff HEAD~...HEAD -- <file>` (or the appropriate range covering the last 7 days) to inspect the actual diffs. Look for the following cost-increasing patterns:
 
