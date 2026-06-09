@@ -40,9 +40,20 @@ Use exactly one persistent issue for reporting:
 
 ## Steps
 
-1. **Identify changed workflow files**: Use `git log --since="7 days ago" --name-only --diff-filter=ACMR -- .github/workflows/` on the `main` branch to find all workflow files that were added, changed, or modified in the last week.
+1. **Identify candidate files**: List candidate files with `git log --since="7 days ago" --name-only --diff-filter=ACMR --pretty=format: -- .github/workflows/ ':(exclude).github/workflows/*.lock.yml' | sort -u` on the `main` branch. Skip `*.lock.yml` files — they are generated from the corresponding source `.md` workflow file by `gh aw compile`, so analysing them duplicates work and inflates token consumption. The cost-relevant signal always lives in the source file.
 
-2. **Analyze each changed file**: For every changed workflow file, use `git diff HEAD~...HEAD -- <file>` (or the appropriate range covering the last 7 days) to inspect the actual diffs. Look for the following cost-increasing patterns:
+2. **Pre-filter to cost-relevant changes**: For each candidate file, check whether its diff over the last 7 days mentions any cost-relevant key before reading the full diff. Run:
+
+   ```sh
+   git log --since="7 days ago" -p --no-color -- "<file>" \
+     | grep -E '(runs-on|timeout-minutes|matrix|concurrency|paths|paths-ignore|services|container|continue-on-error|schedule|run|jobs|on):'
+   ```
+
+   Note that the regex deliberately does **not** require the keyword line itself to be added or removed — it matches anywhere in the diff output (added, removed, or context lines within a hunk). That way a change to a nested value (e.g. adding an entry under `matrix:` while `matrix:` itself is unchanged context) still keeps the file in scope.
+
+   Drop files where this returns nothing. Such changes are **highly unlikely** to be cost-relevant under this repo's typical patterns (pure comments, action SHA bumps without new commands, formatting). They are not, however, guaranteed cost-free: `env:`/`with:`/`uses:` edits can materially change job runtime without touching any of the listed keys. We accept that risk in exchange for staying inside the agent's effective-token budget; if a future change is suspected to slip through, broaden the regex.
+
+3. **Analyze each remaining file**: For every file that survived the pre-filter, inspect its diff over the same 7-day window with `git log --since="7 days ago" -p --no-color -- <file>`. (Equivalent: derive a base commit with `base="$(git log --since='7 days ago' --format=%H -- <file> | tail -1)~"` and run `git diff "$base" -- <file>`.) Look for the following cost-increasing patterns:
 
    ### Cost-Increasing Patterns to Detect
 
@@ -60,20 +71,20 @@ Use exactly one persistent issue for reporting:
    - **Added retry logic**: Adding retry steps or `continue-on-error` that multiply execution time on paid-runner jobs
    - **Container or service additions**: New `services:` or `container:` definitions on paid-runner jobs that add overhead
 
-3. **Assess impact**: For each detected change, estimate the cost impact as **Low**, **Medium**, or **High** based on:
+4. **Assess impact**: For each detected change, estimate the cost impact as **Low**, **Medium**, or **High** based on:
    - How frequently the workflow runs (scheduled vs. per-push vs. per-PR)
    - The size of the paid-runner change (e.g., `gcp-core-2` → `gcp-core-16` is High; minor increase is Medium)
    - The number of additional paid-runner minutes per run
 
    Changes that only affect standard free GitHub-hosted runners have zero cost impact and must not appear in the report.
 
-4. **Generate report body**. The body must fit under the 10 KB `update-issue` safe-output limit; the structural caps below keep it well under that budget without measuring bytes:
+5. **Generate report body**. The body must fit under the 10 KB `update-issue` safe-output limit; the structural caps below keep it well under that budget without measuring bytes:
    - A summary section with the total number of CI changes and how many are cost-relevant
    - A table of cost-impacting changes with columns: File, Change Type, Impact Level, Description including link to commit or Pull Request. Include at most **15 rows**, ranked by Impact Level (High → Medium → Low). Keep each Description cell under **200 characters**. If more than 15 cost-impacting changes were detected, note the omitted count in the summary.
    - Up to **5 recommendations** for cost optimization where applicable, one short paragraph each.
    - Do NOT inline diff snippets, `<details>` blocks, or per-change breakdowns — link to the commit or PR instead.
 
-5. **Upsert persistent issue**:
+6. **Upsert persistent issue**:
    - Search for an existing issue with exact title `Weekly CI Change Cost Impact Analysis`
    - If it exists, replace its body with the newly generated report body using `update-issue`
    - If it does not exist, create it once with `create-issue` using that exact title, then ensure its body is the generated report
