@@ -70,6 +70,9 @@ public class ElementInstanceWaitStateResultImpl implements ElementInstanceWaitSt
       case SIGNAL:
         return new SignalWaitStateDetailsImpl(
             (io.camunda.client.protocol.rest.SignalWaitStateDetails) item);
+      case CONDITION:
+        return new ConditionWaitStateDetailsImpl(
+            (io.camunda.client.protocol.rest.ConditionWaitStateDetails) item);
       default:
         return null;
     }

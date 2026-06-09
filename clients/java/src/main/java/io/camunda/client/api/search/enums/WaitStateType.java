@@ -21,5 +21,6 @@ public enum WaitStateType {
   TIMER,
   USER_TASK,
   SIGNAL,
+  CONDITION,
   UNKNOWN_ENUM_VALUE;
 }
