@@ -10,6 +10,7 @@ package io.camunda.application.commons.security;
 import io.camunda.search.clients.reader.AuthorizationReader;
 import io.camunda.security.core.port.out.AuthorizationScopeRepositoryPort;
 import io.camunda.security.impl.SearchAuthorizationScopeRepository;
+import org.jspecify.annotations.NullMarked;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -21,6 +22,7 @@ import org.springframework.context.annotation.Configuration;
  * {@code @ConditionalOnBean} after all regular configuration beans — including the port defined
  * here — are registered.
  */
+@NullMarked
 @Configuration(proxyBeanMethods = false)
 public class AuthorizationScopeRepositoryConfiguration {
 
