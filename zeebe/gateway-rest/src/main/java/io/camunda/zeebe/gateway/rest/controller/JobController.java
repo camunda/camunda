@@ -45,7 +45,7 @@ import io.camunda.zeebe.gateway.rest.annotation.CamundaPatchMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
-import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
+import io.camunda.zeebe.gateway.rest.config.PhysicalTenantRestConfigProvider;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import io.camunda.zeebe.util.Either;
@@ -69,19 +69,19 @@ public class JobController {
   private final ServiceRegistry serviceRegistry;
   private final MultiTenancyConfiguration multiTenancyCfg;
   private final CamundaAuthenticationProvider authenticationProvider;
-  private final GatewayRestConfiguration gatewayRestConfiguration;
+  private final PhysicalTenantRestConfigProvider tenantRestConfigProvider;
 
   public JobController(
       final ServiceRegistry serviceRegistry,
       final ResponseObserverProvider responseObserverProvider,
       final MultiTenancyConfiguration multiTenancyCfg,
       final CamundaAuthenticationProvider authenticationProvider,
-      final GatewayRestConfiguration gatewayRestConfiguration) {
+      final PhysicalTenantRestConfigProvider tenantRestConfigProvider) {
     this.serviceRegistry = serviceRegistry;
     this.responseObserverProvider = responseObserverProvider;
     this.multiTenancyCfg = multiTenancyCfg;
     this.authenticationProvider = authenticationProvider;
-    this.gatewayRestConfiguration = gatewayRestConfiguration;
+    this.tenantRestConfigProvider = tenantRestConfigProvider;
   }
 
   @CamundaPostMapping(path = "/activation")
@@ -146,7 +146,7 @@ public class JobController {
       @RequestParam final OffsetDateTime to,
       @RequestParam(required = false) final String jobType,
       final HttpServletRequest request) {
-    return requireJobMetricsEnabled(request.getRequestURI())
+    return requireJobMetricsEnabled(physicalTenantId, request.getRequestURI())
         .flatMap(ok -> SearchQueryRequestMapper.toGlobalJobStatisticsQuery(from, to, jobType))
         .fold(RestErrorMapper::mapProblemToResponse, q -> getGlobalStatistics(physicalTenantId, q));
   }
@@ -157,7 +157,7 @@ public class JobController {
       @PhysicalTenantId final String physicalTenantId,
       @RequestBody final JobTypeStatisticsQuery request,
       final HttpServletRequest httpRequest) {
-    return requireJobMetricsEnabled(httpRequest.getRequestURI())
+    return requireJobMetricsEnabled(physicalTenantId, httpRequest.getRequestURI())
         .flatMap(ok -> SearchQueryRequestMapper.toJobTypeStatisticsQuery(request))
         .fold(RestErrorMapper::mapProblemToResponse, q -> getTypeStatistics(physicalTenantId, q));
   }
@@ -168,7 +168,7 @@ public class JobController {
       @PhysicalTenantId final String physicalTenantId,
       @RequestBody final JobWorkerStatisticsQuery request,
       final HttpServletRequest httpRequest) {
-    return requireJobMetricsEnabled(httpRequest.getRequestURI())
+    return requireJobMetricsEnabled(physicalTenantId, httpRequest.getRequestURI())
         .flatMap(ok -> SearchQueryRequestMapper.toJobWorkerStatisticsQuery(request))
         .fold(RestErrorMapper::mapProblemToResponse, q -> getWorkerStatistics(physicalTenantId, q));
   }
@@ -179,7 +179,7 @@ public class JobController {
       @PhysicalTenantId final String physicalTenantId,
       @RequestBody final JobTimeSeriesStatisticsQuery request,
       final HttpServletRequest httpRequest) {
-    return requireJobMetricsEnabled(httpRequest.getRequestURI())
+    return requireJobMetricsEnabled(physicalTenantId, httpRequest.getRequestURI())
         .flatMap(ok -> SearchQueryRequestMapper.toJobTimeSeriesStatisticsQuery(request))
         .fold(
             RestErrorMapper::mapProblemToResponse,
@@ -342,8 +342,9 @@ public class JobController {
     }
   }
 
-  private Either<ProblemDetail, Void> requireJobMetricsEnabled(final String requestUri) {
-    if (!gatewayRestConfiguration.getJobMetrics().isEnabled()) {
+  private Either<ProblemDetail, Void> requireJobMetricsEnabled(
+      final String physicalTenantId, final String requestUri) {
+    if (!tenantRestConfigProvider.forTenant(physicalTenantId).jobMetrics().enabled()) {
       final var problemDetail =
           CamundaProblemDetail.forStatusAndDetail(
               HttpStatus.FORBIDDEN, "Job metrics feature is disabled");

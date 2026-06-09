@@ -28,8 +28,7 @@ import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
-import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
-import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration.JobMetricsConfiguration;
+import io.camunda.zeebe.gateway.rest.config.PhysicalTenantRestConfigProvider;
 import io.camunda.zeebe.gateway.rest.config.WebappConfiguration;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
@@ -46,25 +45,25 @@ public class SystemController {
 
   private final ServiceRegistry serviceRegistry;
   private final CamundaAuthenticationProvider authenticationProvider;
-  private final GatewayRestConfiguration gatewayRestConfiguration;
   private final CamundaSecurityLibraryProperties cslProperties;
   private final WebappConfiguration webappConfiguration;
   private final long maxRequestSizeBytes;
+  private final PhysicalTenantRestConfigProvider tenantRestConfigProvider;
 
   public SystemController(
       final ServiceRegistry serviceRegistry,
       final CamundaAuthenticationProvider authenticationProvider,
-      final GatewayRestConfiguration gatewayRestConfiguration,
       @Autowired(required = false) final CamundaSecurityLibraryProperties cslProperties,
       @Autowired(required = false) final WebappConfiguration webappConfiguration,
-      @Value("${spring.servlet.multipart.max-request-size:4MB}") final DataSize maxRequestSize) {
+      @Value("${spring.servlet.multipart.max-request-size:4MB}") final DataSize maxRequestSize,
+      final PhysicalTenantRestConfigProvider tenantRestConfigProvider) {
     this.serviceRegistry = serviceRegistry;
     this.authenticationProvider = authenticationProvider;
-    this.gatewayRestConfiguration = gatewayRestConfiguration;
     this.cslProperties = cslProperties;
     this.webappConfiguration =
         webappConfiguration != null ? webappConfiguration : new WebappConfiguration();
     this.maxRequestSizeBytes = maxRequestSize.toBytes();
+    this.tenantRestConfigProvider = tenantRestConfigProvider;
   }
 
   @RequiresSecondaryStorage
@@ -81,16 +80,17 @@ public class SystemController {
   }
 
   @CamundaGetMapping(path = "/configuration")
-  public ResponseEntity<SystemConfigurationResponse> getSystemConfiguration() {
-    final JobMetricsConfiguration jobMetricsCfg = gatewayRestConfiguration.getJobMetrics();
+  public ResponseEntity<SystemConfigurationResponse> getSystemConfiguration(
+      @PhysicalTenantId final String physicalTenantId) {
+    final var jobMetrics = tenantRestConfigProvider.forTenant(physicalTenantId).jobMetrics();
     final var jobMetricsResponse =
         JobMetricsConfigurationResponse.Builder.create()
-            .enabled(jobMetricsCfg.isEnabled())
-            .exportInterval(jobMetricsCfg.getExportInterval().toString())
-            .maxWorkerNameLength(jobMetricsCfg.getMaxWorkerNameLength())
-            .maxJobTypeLength(jobMetricsCfg.getMaxJobTypeLength())
-            .maxTenantIdLength(jobMetricsCfg.getMaxTenantIdLength())
-            .maxUniqueKeys(jobMetricsCfg.getMaxUniqueKeys())
+            .enabled(jobMetrics.enabled())
+            .exportInterval(jobMetrics.exportInterval().toString())
+            .maxWorkerNameLength(jobMetrics.maxWorkerNameLength())
+            .maxJobTypeLength(jobMetrics.maxJobTypeLength())
+            .maxTenantIdLength(jobMetrics.maxTenantIdLength())
+            .maxUniqueKeys(jobMetrics.maxUniqueKeys())
             .build();
 
     return ResponseEntity.ok(
