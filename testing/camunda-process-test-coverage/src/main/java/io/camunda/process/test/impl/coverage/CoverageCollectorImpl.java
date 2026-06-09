@@ -68,10 +68,7 @@ public final class CoverageCollectorImpl implements CoverageCollector {
     final String testClassName = testClass.getName();
     Optional.ofNullable(COLLECTORS_BY_TEST_CLASS.get(testClassName))
         .ifPresent(
-            coverageReportCollector -> {
-              coverageReporter.reportSuiteCoverage(coverageReportCollector);
-              coverageReporter.printCoverage(coverageReportCollector);
-            });
+            coverageReportCollector -> coverageReporter.printCoverage(coverageReportCollector));
 
     return coverageReporter.createAggregatedReport(COLLECTORS_BY_TEST_CLASS.values());
   }

@@ -28,21 +28,6 @@ class CoverageReporterTest {
   @TempDir Path tempDir;
 
   @Test
-  void shouldNotWriteJsonSuiteReport() {
-    // given
-    final CoverageReporter reporter = new CoverageReporter(tempDir.toString(), null);
-    final CoverageReportCollector collector =
-        new CoverageReportCollector(
-            TestSuite.class, Collections.emptyList(), Collections.emptyList());
-
-    // when
-    reporter.reportSuiteCoverage(collector);
-
-    // then
-    assertThat(tempDir.resolve(TestSuite.class.getName()).resolve("report.json")).doesNotExist();
-  }
-
-  @Test
   void shouldWriteSingleAggregatedJsonReport() {
     // given
     final CoverageReporter reporter = new CoverageReporter(tempDir.toString(), null);

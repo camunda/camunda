@@ -18,11 +18,11 @@ package io.camunda.process.test.impl.coverage.report;
 import static java.util.Optional.ofNullable;
 
 import io.camunda.process.test.api.coverage.model.CoverageReport;
+import io.camunda.process.test.api.coverage.model.CoverageSuiteReport;
 import io.camunda.process.test.api.coverage.model.DecisionCoverage;
 import io.camunda.process.test.api.coverage.model.DecisionModel;
 import io.camunda.process.test.api.coverage.model.ProcessCoverage;
 import io.camunda.process.test.api.coverage.model.ProcessModel;
-import io.camunda.process.test.api.coverage.model.Suite;
 import io.camunda.process.test.impl.coverage.core.CoverageCreator;
 import io.camunda.process.test.impl.coverage.core.CoverageReportCollector;
 import io.camunda.process.test.impl.coverage.core.DecisionCoverageCreator;
@@ -44,8 +44,8 @@ import org.slf4j.LoggerFactory;
  * Generates and writes process coverage reports from collected coverage data.
  *
  * <p>This class is responsible for creating, storing, and displaying coverage reports in various
- * formats (JSON files and console output). It handles both individual test suite reports and
- * aggregated reports that combine results from multiple test runs.
+ * formats (JSON files and console output). It handles aggregated reports that combine results from
+ * multiple test runs.
  *
  * <p>Reports are written to the filesystem in a configurable directory structure and can also be
  * output to the console in a human-readable format.
@@ -87,7 +87,7 @@ public class CoverageReporter {
    */
   public CoverageReport createAggregatedReport(
       final Collection<CoverageReportCollector> reportCollectors) {
-    final Collection<Suite> suites =
+    final Collection<CoverageSuiteReport> suites =
         reportCollectors.stream()
             .map(CoverageReportCollector::getSuite)
             .collect(Collectors.toList());
@@ -110,8 +110,6 @@ public class CoverageReporter {
     return aggregatedReport;
   }
 
-  public void reportSuiteCoverage(final CoverageReportCollector coverageReportCollector) {}
-
   /**
    * Prints a human-readable coverage summary to the specified output stream.
    *
@@ -129,7 +127,7 @@ public class CoverageReporter {
   }
 
   public void printCoverage(final CoverageReportCollector coverageReportCollector) {
-    final Suite suite = coverageReportCollector.getSuite();
+    final CoverageSuiteReport suite = coverageReportCollector.getSuite();
     final Collection<ProcessCoverage> coverages =
         CoverageCreator.aggregateCoverages(
             suite.getRuns().stream()
