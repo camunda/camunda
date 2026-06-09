@@ -337,6 +337,9 @@ public interface BackupCompatibilityAcceptance {
             .withNetwork(getNetwork())
             .withEmbeddedGateway()
             .withTopologyCheck(new ZeebeTopologyWaitStrategy(1, 1, 1))
+            // Previous-version monolith needs 50–60 s to reach /ready on a contended CI
+            // runner; the default 1 min budget sits on the cliff and flakes.
+            .withStartupTimeout(Duration.ofSeconds(90))
             .withEnv("CAMUNDA_DATABASE_TYPE", "NONE")
             .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", "NONE")
             .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "true");
