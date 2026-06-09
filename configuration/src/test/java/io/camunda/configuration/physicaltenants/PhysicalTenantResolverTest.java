@@ -114,11 +114,15 @@ class PhysicalTenantResolverTest {
   @Test
   void shouldResolveDocumentConfigurationPerTenant() {
     // given root document configuration and a tenant override for one store property
+    // (each tenant also gets a distinct index-prefix so they pass cross-tenant isolation)
     setProperties(
         Map.of(
             "camunda.document.default-store-id", "aws1",
             "camunda.document.aws.aws1.bucket-name", "root-bucket",
-            "camunda.physical-tenants.tenanta.document.aws.aws1.bucket-name", "tenant-bucket"));
+            "camunda.data.secondary-storage.elasticsearch.index-prefix", "default",
+            "camunda.physical-tenants.tenanta.document.aws.aws1.bucket-name", "tenant-bucket",
+            "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.index-prefix",
+                "tenanta"));
 
     // when
     final PhysicalTenantResolver resolver = newResolver();
