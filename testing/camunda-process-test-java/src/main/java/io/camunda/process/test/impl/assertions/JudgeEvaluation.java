@@ -223,11 +223,6 @@ class JudgeEvaluation {
       return score.doubleValue();
     }
 
-    /**
-     * Returns the reasoning provided by the evaluator.
-     *
-     * @return the reasoning
-     */
     public String getReasoning() {
       return reasoning;
     }
