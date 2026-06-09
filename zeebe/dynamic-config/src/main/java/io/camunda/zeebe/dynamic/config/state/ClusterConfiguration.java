@@ -35,7 +35,6 @@ import java.util.stream.Stream;
  * @param incarnationNumber - represents the incarnation number of the cluster configuration
  *     <p>This class is immutable. Each mutable methods returns a new instance with the updated
  *     state.
- * @param recovery - indicates whether the cluster is in recovery mode
  */
 public record ClusterConfiguration(
     long version,
@@ -44,8 +43,7 @@ public record ClusterConfiguration(
     Optional<ClusterChangePlan> pendingChanges,
     Optional<RoutingState> routingState,
     Optional<String> clusterId,
-    long incarnationNumber,
-    boolean recovery) {
+    long incarnationNumber) {
 
   public static final int INITIAL_VERSION = 1;
   public static final long INITIAL_INCARNATION_NUMBER = 0;
@@ -59,8 +57,7 @@ public record ClusterConfiguration(
       final Optional<ClusterChangePlan> pendingChanges,
       final Optional<RoutingState> routingState,
       final Optional<String> clusterId,
-      final long incarnationNumber,
-      final boolean recovery) {
+      final long incarnationNumber) {
     this(
         version,
         ImmutableSortedMap.copyOf(members),
@@ -68,8 +65,7 @@ public record ClusterConfiguration(
         pendingChanges,
         routingState,
         clusterId,
-        incarnationNumber,
-        recovery);
+        incarnationNumber);
   }
 
   public ClusterConfiguration {
@@ -96,8 +92,7 @@ public record ClusterConfiguration(
         Optional.empty(),
         Optional.empty(),
         Optional.empty(),
-        INITIAL_INCARNATION_NUMBER,
-        false);
+        INITIAL_INCARNATION_NUMBER);
   }
 
   public boolean isUninitialized() {
@@ -112,8 +107,7 @@ public record ClusterConfiguration(
         Optional.empty(),
         Optional.empty(),
         Optional.empty(),
-        INITIAL_INCARNATION_NUMBER,
-        false);
+        INITIAL_INCARNATION_NUMBER);
   }
 
   public ClusterConfiguration addMember(final MemberId memberId, final MemberState state) {
@@ -133,8 +127,7 @@ public record ClusterConfiguration(
         pendingChanges,
         routingState,
         clusterId,
-        incarnationNumber,
-        recovery);
+        incarnationNumber);
   }
 
   public ClusterConfiguration setRoutingState(final RoutingState updatedRoutingState) {
@@ -145,8 +138,7 @@ public record ClusterConfiguration(
         pendingChanges,
         Optional.of(updatedRoutingState),
         clusterId,
-        incarnationNumber,
-        recovery);
+        incarnationNumber);
   }
 
   /**
@@ -191,8 +183,7 @@ public record ClusterConfiguration(
         pendingChanges,
         routingState,
         clusterId,
-        incarnationNumber,
-        recovery);
+        incarnationNumber);
   }
 
   public ClusterConfiguration startConfigurationChange(
@@ -213,8 +204,7 @@ public record ClusterConfiguration(
           Optional.of(ClusterChangePlan.init(newVersion, operations)),
           routingState,
           clusterId,
-          incarnationNumber,
-          recovery);
+          incarnationNumber);
     }
   }
 
@@ -253,8 +243,7 @@ public record ClusterConfiguration(
           mergedChanges,
           mergedRoutingState,
           clusterId,
-          Math.max(incarnationNumber, other.incarnationNumber()),
-          recovery || other.recovery());
+          Math.max(incarnationNumber, other.incarnationNumber()));
     }
   }
 
@@ -323,8 +312,7 @@ public record ClusterConfiguration(
             Optional.of(pendingChanges.orElseThrow().advance()),
             routingState,
             clusterId,
-            incarnationNumber,
-            recovery);
+            incarnationNumber);
 
     if (!result.hasPendingChanges()) {
       // The last change has been applied. Clean up the members that are marked as LEFT in the
@@ -349,8 +337,7 @@ public record ClusterConfiguration(
           Optional.empty(),
           routingState,
           clusterId,
-          incarnationNumber,
-          recovery);
+          incarnationNumber);
     }
 
     return result;
@@ -453,8 +440,7 @@ public record ClusterConfiguration(
           Optional.empty(),
           routingState,
           clusterId,
-          incarnationNumber,
-          recovery);
+          incarnationNumber);
     } else {
       return this;
     }
@@ -474,7 +460,6 @@ public record ClusterConfiguration(
     private Optional<RoutingState> routingState = Optional.empty();
     private Optional<String> clusterId = Optional.empty();
     private long incarnationNumber = INITIAL_INCARNATION_NUMBER;
-    private boolean recovery = false;
 
     /**
      * Copies all properties from the given ClusterConfiguration.
@@ -490,7 +475,6 @@ public record ClusterConfiguration(
       routingState = config.routingState;
       clusterId = config.clusterId;
       incarnationNumber = config.incarnationNumber;
-      recovery = config.recovery;
       return this;
     }
 
@@ -572,31 +556,13 @@ public record ClusterConfiguration(
     }
 
     /**
-     * Set recovery mode
-     *
-     * @param recovery whether recovery mode is enabled
-     * @return this builder
-     */
-    public Builder recovery(final boolean recovery) {
-      this.recovery = recovery;
-      return this;
-    }
-
-    /**
      * Builds and returns a new ClusterConfiguration instance.
      *
      * @return the new ClusterConfiguration
      */
     public ClusterConfiguration build() {
       return new ClusterConfiguration(
-          version,
-          members,
-          lastChange,
-          pendingChanges,
-          routingState,
-          clusterId,
-          incarnationNumber,
-          recovery);
+          version, members, lastChange, pendingChanges, routingState, clusterId, incarnationNumber);
     }
   }
 }
