@@ -62,6 +62,7 @@ const queryMessageSubscriptionRequestBodySchema = getQueryRequestBodySchema({
 			messageName: advancedStringFilterSchema,
 			correlationKey: advancedStringFilterSchema,
 			tenantId: advancedStringFilterSchema,
+			partitionId: advancedIntegerFilterSchema,
 		})
 		.partial(),
 });

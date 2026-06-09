@@ -37,6 +37,7 @@ const messageSubscriptionSchema = z.object({
 	messageName: z.string(),
 	correlationKey: z.string().nullable(),
 	tenantId: z.string(),
+	partitionId: z.number().int(),
 	rootProcessInstanceKey: z.string().nullable(),
 	toolProperties: z.record(z.string(), z.string()),
 	processDefinitionName: z.string().nullable(),
@@ -61,6 +62,7 @@ const queryMessageSubscriptionRequestBodySchema = getQueryRequestBodySchema({
 		'messageName',
 		'correlationKey',
 		'tenantId',
+		'partitionId',
 		'toolName',
 		'inboundConnectorType',
 	] as const,
@@ -80,6 +82,7 @@ const queryMessageSubscriptionRequestBodySchema = getQueryRequestBodySchema({
 			messageName: advancedStringFilterSchema,
 			correlationKey: advancedStringFilterSchema,
 			tenantId: advancedStringFilterSchema,
+			partitionId: advancedIntegerFilterSchema,
 			toolName: advancedStringFilterSchema,
 			inboundConnectorType: advancedStringFilterSchema,
 		})

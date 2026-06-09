@@ -6,7 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {endpoints as unifiedAPIEndpoints} from '@camunda/camunda-api-zod-schemas/8.10';
+import {
+	endpoints as unifiedAPIEndpoints,
+	type QueryMessageSubscriptionsRequestBody,
+} from '@camunda/camunda-api-zod-schemas/8.10';
 import {getBootConfig} from '#/shared/config/getBootConfig';
 import {mergePathname} from './mergePathname';
 
@@ -52,6 +55,14 @@ const endpoints = {
 			...BASE_REQUEST_OPTIONS,
 			method: unifiedAPIEndpoints.getSystemConfiguration.method,
 			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryMessageSubscriptions: (body: QueryMessageSubscriptionsRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryMessageSubscriptions.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryMessageSubscriptions.method,
+			headers: {'Content-Type': 'application/json'},
+			body: JSON.stringify(body),
 		}),
 };
 

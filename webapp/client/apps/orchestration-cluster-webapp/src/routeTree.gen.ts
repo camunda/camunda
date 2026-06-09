@@ -18,6 +18,7 @@ import { Route as AuthAdminRouteRouteImport } from './routes/_auth/admin/route'
 import { Route as AuthTasklistIndexRouteImport } from './routes/_auth/tasklist/index'
 import { Route as AuthOperateIndexRouteImport } from './routes/_auth/operate/index'
 import { Route as AuthAdminIndexRouteImport } from './routes/_auth/admin/index'
+import { Route as AuthAdminMcpProcessesRouteImport } from './routes/_auth/admin/mcp-processes'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -63,6 +64,11 @@ const AuthAdminIndexRoute = AuthAdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthAdminRouteRoute,
 } as any)
+const AuthAdminMcpProcessesRoute = AuthAdminMcpProcessesRouteImport.update({
+  id: '/mcp-processes',
+  path: '/mcp-processes',
+  getParentRoute: () => AuthAdminRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthIndexRoute
@@ -70,6 +76,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthAdminRouteRouteWithChildren
   '/operate': typeof AuthOperateRouteRouteWithChildren
   '/tasklist': typeof AuthTasklistRouteRouteWithChildren
+  '/admin/mcp-processes': typeof AuthAdminMcpProcessesRoute
   '/admin/': typeof AuthAdminIndexRoute
   '/operate/': typeof AuthOperateIndexRoute
   '/tasklist/': typeof AuthTasklistIndexRoute
@@ -77,6 +84,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/': typeof AuthIndexRoute
+  '/admin/mcp-processes': typeof AuthAdminMcpProcessesRoute
   '/admin': typeof AuthAdminIndexRoute
   '/operate': typeof AuthOperateIndexRoute
   '/tasklist': typeof AuthTasklistIndexRoute
@@ -89,6 +97,7 @@ export interface FileRoutesById {
   '/_auth/operate': typeof AuthOperateRouteRouteWithChildren
   '/_auth/tasklist': typeof AuthTasklistRouteRouteWithChildren
   '/_auth/': typeof AuthIndexRoute
+  '/_auth/admin/mcp-processes': typeof AuthAdminMcpProcessesRoute
   '/_auth/admin/': typeof AuthAdminIndexRoute
   '/_auth/operate/': typeof AuthOperateIndexRoute
   '/_auth/tasklist/': typeof AuthTasklistIndexRoute
@@ -101,11 +110,18 @@ export interface FileRouteTypes {
     | '/admin'
     | '/operate'
     | '/tasklist'
+    | '/admin/mcp-processes'
     | '/admin/'
     | '/operate/'
     | '/tasklist/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/login' | '/' | '/admin' | '/operate' | '/tasklist'
+  to:
+    | '/login'
+    | '/'
+    | '/admin/mcp-processes'
+    | '/admin'
+    | '/operate'
+    | '/tasklist'
   id:
     | '__root__'
     | '/_auth'
@@ -114,6 +130,7 @@ export interface FileRouteTypes {
     | '/_auth/operate'
     | '/_auth/tasklist'
     | '/_auth/'
+    | '/_auth/admin/mcp-processes'
     | '/_auth/admin/'
     | '/_auth/operate/'
     | '/_auth/tasklist/'
@@ -189,14 +206,23 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthAdminIndexRouteImport
       parentRoute: typeof AuthAdminRouteRoute
     }
+    '/_auth/admin/mcp-processes': {
+      id: '/_auth/admin/mcp-processes'
+      path: '/mcp-processes'
+      fullPath: '/admin/mcp-processes'
+      preLoaderRoute: typeof AuthAdminMcpProcessesRouteImport
+      parentRoute: typeof AuthAdminRouteRoute
+    }
   }
 }
 
 interface AuthAdminRouteRouteChildren {
+  AuthAdminMcpProcessesRoute: typeof AuthAdminMcpProcessesRoute
   AuthAdminIndexRoute: typeof AuthAdminIndexRoute
 }
 
 const AuthAdminRouteRouteChildren: AuthAdminRouteRouteChildren = {
+  AuthAdminMcpProcessesRoute: AuthAdminMcpProcessesRoute,
   AuthAdminIndexRoute: AuthAdminIndexRoute,
 }
 

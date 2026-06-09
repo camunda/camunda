@@ -7,13 +7,20 @@
  */
 
 import {queryOptions} from '@tanstack/react-query';
-import type {GetSystemConfigurationResponseBody, CurrentUser} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {
+	GetSystemConfigurationResponseBody,
+	CurrentUser,
+	QueryMessageSubscriptionsResponseBody,
+} from '@camunda/camunda-api-zod-schemas/8.10';
 import {request} from './request';
 import {endpoints} from './endpoints';
+
+const MCP_PARTITION_ID = 1;
 
 const queryKeys = {
 	currentUser: () => ['getCurrentUser'] as const,
 	systemConfiguration: () => ['systemConfiguration'] as const,
+	mcpProcessMessageSubscriptions: () => ['mcpProcessMessageSubscriptions'] as const,
 };
 
 const queries = {
@@ -43,6 +50,21 @@ const queries = {
 			},
 			staleTime: Infinity,
 			gcTime: Infinity,
+		}),
+	getMcpProcessMessageSubscriptions: () =>
+		queryOptions({
+			queryKey: queryKeys.mcpProcessMessageSubscriptions(),
+			queryFn: async (): Promise<QueryMessageSubscriptionsResponseBody> => {
+				const {response, error} = await request(
+					endpoints.queryMessageSubscriptions({
+						filter: {partitionId: MCP_PARTITION_ID},
+					}),
+				);
+				if (error !== null) {
+					throw error;
+				}
+				return response.json();
+			},
 		}),
 } as const;
 
