@@ -5,10 +5,8 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
+package io.camunda.optimize.dto.optimize.query.report.single.process.filter.data;
 
-import {get} from 'request';
+import io.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterDataDto;
 
-export async function loadAgenticDashboard() {
-  const response = await get('api/dashboard/agentic');
-  return response.json();
-}
+public class HasAgentInstancesFilterDataDto implements FilterDataDto {}

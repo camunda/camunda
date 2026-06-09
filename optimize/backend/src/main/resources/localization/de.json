@@ -1540,7 +1540,15 @@
     }
   },
   "agenticControl": {
-    "agenticControlPlaneDashboardName": "Agentic Control Dashboard"
+    "agenticControlPlaneDashboardName": "Agentic Control Dashboard",
+    "report": {
+      "agenticKpiExecutionCompletedName": "Abgeschlossene Agenten-Läufe",
+      "agenticKpiExecutionCompletedDescription": "Gesamtanzahl der abgeschlossenen agentischen Prozessinstanzen im gewählten Zeitraum.",
+      "agenticKpiExecutionAvgDurationName": "Durchschnittliche Ausführungsdauer",
+      "agenticKpiExecutionAvgDurationDescription": "Durchschnittliche Ausführungsdauer abgeschlossener agentischer Prozessinstanzen im gewählten Zeitraum.",
+      "agenticKpiExecutionIncidentRateName": "Vorfallsrate",
+      "agenticKpiExecutionIncidentRateDescription": "Anzahl der abgeschlossenen agentischen Prozessinstanzen mit einem gelösten Vorfall im gewählten Zeitraum."
+    }
   },
   "managementDashboard": {
     "dashboardName": "Adoption",
