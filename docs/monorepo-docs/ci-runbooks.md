@@ -102,26 +102,53 @@ Depends on the kind of failure.
 
 ---
 
-### Push `main` High Failure Rate
+### Base Branch Unsuccessful Job
 
-Unsuccessful [Unified CI](./ci.md#unified-ci) GHA jobs on push to `main` branch mean that artifacts
-might not get built nor uploaded. Those same jobs being green is a precondition for the
-[merge queue](./ci.md#github-merge-queue) — thus a high failure rate over the last hours can indicate
-a general CI instability e.g. with infrastructure or remote network services.
+Any unsuccessful GHA job on `push` or `schedule` to `main` or `stable/8.x` base branches means that
+artifacts might not get built or uploaded to the artifact repository, and indicates CI instability.
+Unlike merge-queue failures which block PRs, base-branch failures affect artifact availability and
+can cascade to downstream systems that depend on those artifacts.
 
-This can prevent artifact uploads and needs to be investigated.
+Each alert instance is grouped by job name and branch, and includes:
+- Number of unsuccessful runs in the evaluation window
+- Links to failed workflow runs in the evaluation window
+- Link to the Job Trends dashboard for the job
+- Associated failed test cases (if any)
 
 #### Troubleshooting
 
-Verify the high rate of unsuccessful GHA jobs (for push to `main`) over the last hours in the CI
-Health dashboard. Drill down into the list of recent unsuccessful jobs and check their GHA logs for
-common symptoms and correlate [known issues](./ci.md#issue-tracking).
+1. **Verify the pattern**: Check the [Job Trends dashboard](https://dashboard.int.camunda.com/d/ch6qgkj/ci-job-trends-camunda-camunda) for the specific job and branch to understand whether this is a new regression or ongoing instability.
 
-Check for [GitHub Actions outages](https://www.githubstatus.com/).
+2. **Identify the root cause**: Click the workflow run links in the alert to inspect job logs. Common causes include:
+   - Timeout (increase runner size or optimize the job)
+   - Flaky test failures (see [Flaky Test Gate](./flaky-test-gate.md) for test diagnostics)
+   - External service unavailability (Docker Hub, Maven Central, Nexus, etc. — check status pages)
+   - Infrastructure issues (self-hosted runner problems, disk space, etc.)
+   - For `check-licenses.yml` see [find specific FOSSA instructions](#check-licenses-workflow-high-failure-rate)
+
+3. **Check for related alerts**: If multiple jobs or workflows are failing simultaneously, there may be a common root cause (e.g., external service outage, infrastructure problem). Cross-reference recent incident reports.
+
+4. **Examine test failures**: If the alert includes unsuccessful test cases, use the test case names to determine whether:
+   - The test is new and unstable
+   - The test is a known flaky test (check [Flaky Test Gate baseline](./flaky-test-gate.md))
+   - The failure is environment-specific
 
 #### Solutions
 
-Depends on the kind of failure.
+**Immediate mitigation** ("stop the bleeding"):
+- If a test is blocking artifact builds, consider temporarily disabling it with a `@Disabled` annotation and a link to an incident ticket.
+- If a job is timing out, try increasing the runner size or optimizing the job logic.
+- If an external service is unavailable, wait for its recovery or find an alternative.
+
+**Root cause fix**:
+- Investigate the job logs and failing tests to understand the underlying issue.
+- For flaky tests, refer to the [Flaky Test Gate documentation](./flaky-test-gate.md) on how to fix or mark them.
+- For timeouts or performance issues, optimize the job (parallelization, caching, reducing scope).
+- For infrastructure issues, coordinate with the Infra team.
+
+**Validation**:
+- Monitor the [Job Trends dashboard](https://dashboard.int.camunda.com/d/ch6qgkj/ci-job-trends-camunda-camunda) to confirm the fix reduces the failure rate.
+- Ensure the job remains stable across multiple successful runs before closing the incident.
 
 ---
 
