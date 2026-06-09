@@ -36,9 +36,7 @@ test('should redirect to the initial page on success', async ({network, page, lo
 			successResponse: HttpResponse.json(createCurrentUser()),
 		}),
 		mockSystemConfigurationEndpoint({
-			successResponse: HttpResponse.json(
-				createSystemConfiguration({components: {active: ['operate']}}),
-			),
+			successResponse: HttpResponse.json(createSystemConfiguration({components: {active: ['operate']}})),
 		}),
 		mockLicenseEndpoint({
 			successResponse: HttpResponse.json(createLicense()),

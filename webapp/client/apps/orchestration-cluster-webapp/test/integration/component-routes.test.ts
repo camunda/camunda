@@ -24,9 +24,7 @@ test.describe('component routes', () => {
 				successResponse: HttpResponse.json(createCurrentUser()),
 			}),
 			mockSystemConfigurationEndpoint({
-				successResponse: HttpResponse.json(
-					createSystemConfiguration({components: {active: ['operate']}}),
-				),
+				successResponse: HttpResponse.json(createSystemConfiguration({components: {active: ['operate']}})),
 			}),
 			mockLicenseEndpoint({
 				successResponse: HttpResponse.json(createLicense()),
@@ -44,9 +42,7 @@ test.describe('component routes', () => {
 				successResponse: HttpResponse.json(createCurrentUser()),
 			}),
 			mockSystemConfigurationEndpoint({
-				successResponse: HttpResponse.json(
-					createSystemConfiguration({components: {active: ['tasklist']}}),
-				),
+				successResponse: HttpResponse.json(createSystemConfiguration({components: {active: ['tasklist']}})),
 			}),
 			mockLicenseEndpoint({
 				successResponse: HttpResponse.json(createLicense()),
@@ -64,9 +60,7 @@ test.describe('component routes', () => {
 				successResponse: HttpResponse.json(createCurrentUser()),
 			}),
 			mockSystemConfigurationEndpoint({
-				successResponse: HttpResponse.json(
-					createSystemConfiguration({components: {active: ['admin']}}),
-				),
+				successResponse: HttpResponse.json(createSystemConfiguration({components: {active: ['admin']}})),
 			}),
 			mockLicenseEndpoint({
 				successResponse: HttpResponse.json(createLicense()),
@@ -155,9 +149,7 @@ test.describe('component routes', () => {
 		network.use(
 			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
 			mockSystemConfigurationEndpoint({
-				successResponse: HttpResponse.json(
-					createSystemConfiguration({components: {active: ['tasklist']}}),
-				),
+				successResponse: HttpResponse.json(createSystemConfiguration({components: {active: ['tasklist']}})),
 			}),
 			mockLicenseEndpoint({successResponse: HttpResponse.json(createLicense())}),
 		);
@@ -171,9 +163,7 @@ test.describe('component routes', () => {
 		network.use(
 			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
 			mockSystemConfigurationEndpoint({
-				successResponse: HttpResponse.json(
-					createSystemConfiguration({components: {active: ['operate']}}),
-				),
+				successResponse: HttpResponse.json(createSystemConfiguration({components: {active: ['operate']}})),
 			}),
 			mockLicenseEndpoint({successResponse: HttpResponse.json(createLicense())}),
 		);
@@ -187,9 +177,7 @@ test.describe('component routes', () => {
 		network.use(
 			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
 			mockSystemConfigurationEndpoint({
-				successResponse: HttpResponse.json(
-					createSystemConfiguration({components: {active: ['admin']}}),
-				),
+				successResponse: HttpResponse.json(createSystemConfiguration({components: {active: ['admin']}})),
 			}),
 			mockLicenseEndpoint({successResponse: HttpResponse.json(createLicense())}),
 		);

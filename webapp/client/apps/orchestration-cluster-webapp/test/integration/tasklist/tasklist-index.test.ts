@@ -23,9 +23,7 @@ test.beforeEach(({network}) => {
 			successResponse: HttpResponse.json(createCurrentUser()),
 		}),
 		mockSystemConfigurationEndpoint({
-			successResponse: HttpResponse.json(
-				createSystemConfiguration({components: {active: ['tasklist']}}),
-			),
+			successResponse: HttpResponse.json(createSystemConfiguration({components: {active: ['tasklist']}})),
 		}),
 		mockLicenseEndpoint({
 			successResponse: HttpResponse.json(createLicense()),
