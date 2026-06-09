@@ -28,13 +28,16 @@ import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.ModifyProcessInstanceResponseImpl;
 import io.camunda.client.impl.util.ParseUtil;
-import io.camunda.client.protocol.rest.AncestorScopeInstruction;
+import io.camunda.client.protocol.rest.DirectAncestorKeyInstruction;
+import io.camunda.client.protocol.rest.InferredAncestorKeyInstruction;
 import io.camunda.client.protocol.rest.ModifyProcessInstanceVariableInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceModificationActivateInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceModificationInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceModificationMoveInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceModificationTerminateInstruction;
-import io.camunda.client.protocol.rest.SourceElementInstruction;
+import io.camunda.client.protocol.rest.SourceElementIdInstruction;
+import io.camunda.client.protocol.rest.SourceElementInstanceKeyInstruction;
+import io.camunda.client.protocol.rest.UseSourceParentKeyInstruction;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest;
@@ -141,10 +144,12 @@ public final class ModifyProcessInstanceCommandImpl
             .build(),
         new ProcessInstanceModificationMoveInstruction()
             .sourceElementInstruction(
-                new SourceElementInstruction().sourceType("byId").sourceElementId(sourceElementId))
+                new SourceElementIdInstruction()
+                    .sourceType("byId")
+                    .sourceElementId(sourceElementId))
             .targetElementId(targetElementId)
             .ancestorScopeInstruction(
-                new AncestorScopeInstruction()
+                new DirectAncestorKeyInstruction()
                     .ancestorScopeType("direct")
                     .ancestorElementInstanceKey(
                         ParseUtil.keyToString(ancestorElementInstanceKey))));
@@ -161,10 +166,12 @@ public final class ModifyProcessInstanceCommandImpl
             .build(),
         new ProcessInstanceModificationMoveInstruction()
             .sourceElementInstruction(
-                new SourceElementInstruction().sourceType("byId").sourceElementId(sourceElementId))
+                new SourceElementIdInstruction()
+                    .sourceType("byId")
+                    .sourceElementId(sourceElementId))
             .targetElementId(targetElementId)
             .ancestorScopeInstruction(
-                new AncestorScopeInstruction().ancestorScopeType("inferred")));
+                new InferredAncestorKeyInstruction().ancestorScopeType("inferred")));
   }
 
   @Override
@@ -178,10 +185,12 @@ public final class ModifyProcessInstanceCommandImpl
             .build(),
         new ProcessInstanceModificationMoveInstruction()
             .sourceElementInstruction(
-                new SourceElementInstruction().sourceType("byId").sourceElementId(sourceElementId))
+                new SourceElementIdInstruction()
+                    .sourceType("byId")
+                    .sourceElementId(sourceElementId))
             .targetElementId(targetElementId)
             .ancestorScopeInstruction(
-                new AncestorScopeInstruction().ancestorScopeType("sourceParent")));
+                new UseSourceParentKeyInstruction().ancestorScopeType("sourceParent")));
   }
 
   @Override
@@ -203,12 +212,12 @@ public final class ModifyProcessInstanceCommandImpl
             .build(),
         new ProcessInstanceModificationMoveInstruction()
             .sourceElementInstruction(
-                new SourceElementInstruction()
+                new SourceElementInstanceKeyInstruction()
                     .sourceType("byKey")
                     .sourceElementInstanceKey(ParseUtil.keyToString(sourceElementInstanceKey)))
             .targetElementId(targetElementId)
             .ancestorScopeInstruction(
-                new AncestorScopeInstruction()
+                new DirectAncestorKeyInstruction()
                     .ancestorScopeType("direct")
                     .ancestorElementInstanceKey(
                         ParseUtil.keyToString(ancestorElementInstanceKey))));
@@ -225,12 +234,12 @@ public final class ModifyProcessInstanceCommandImpl
             .build(),
         new ProcessInstanceModificationMoveInstruction()
             .sourceElementInstruction(
-                new SourceElementInstruction()
+                new SourceElementInstanceKeyInstruction()
                     .sourceType("byKey")
                     .sourceElementInstanceKey(ParseUtil.keyToString(sourceElementInstanceKey)))
             .targetElementId(targetElementId)
             .ancestorScopeInstruction(
-                new AncestorScopeInstruction().ancestorScopeType("inferred")));
+                new InferredAncestorKeyInstruction().ancestorScopeType("inferred")));
   }
 
   @Override
@@ -244,12 +253,12 @@ public final class ModifyProcessInstanceCommandImpl
             .build(),
         new ProcessInstanceModificationMoveInstruction()
             .sourceElementInstruction(
-                new SourceElementInstruction()
+                new SourceElementInstanceKeyInstruction()
                     .sourceType("byKey")
                     .sourceElementInstanceKey(ParseUtil.keyToString(sourceElementInstanceKey)))
             .targetElementId(targetElementId)
             .ancestorScopeInstruction(
-                new AncestorScopeInstruction().ancestorScopeType("sourceParent")));
+                new UseSourceParentKeyInstruction().ancestorScopeType("sourceParent")));
   }
 
   private ModifyProcessInstanceCommandStep3 addActivateInstruction(
