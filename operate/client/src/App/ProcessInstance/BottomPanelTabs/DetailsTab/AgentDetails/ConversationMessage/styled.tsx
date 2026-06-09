@@ -8,6 +8,7 @@
 
 import type {AgentInstanceHistoryRole} from '@camunda/camunda-api-zod-schemas/8.10';
 import styled from 'styled-components';
+import {ContentSwitcher} from '@carbon/react';
 
 type ActorType = AgentInstanceHistoryRole | 'SYSTEM';
 
@@ -138,6 +139,21 @@ const AttachmentButton = styled.button`
   }
 `;
 
+const ModalContent = styled(TextContent)`
+  max-height: 70vh;
+`;
+
+const ModalToolbar = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: var(--cds-spacing-05);
+`;
+
+const ViewSwitcher = styled(ContentSwitcher)`
+  width: 15rem;
+`;
+
 export {
   Container,
   MessageHeader,
@@ -150,4 +166,7 @@ export {
   AttachmentsContainer,
   AttachmentsLabel,
   AttachmentButton,
+  ModalContent,
+  ModalToolbar,
+  ViewSwitcher,
 };

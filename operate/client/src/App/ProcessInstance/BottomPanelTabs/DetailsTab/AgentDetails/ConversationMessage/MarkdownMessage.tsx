@@ -42,19 +42,19 @@ const MarkdownContainer = styled.div`
   gap: var(--cds-spacing-03);
 `;
 
-const Heading1 = styled.p`
+const Heading1 = styled.div`
   margin: 0;
   font-size: inherit;
   font-weight: var(--cds-heading-compact-02-font-weight);
 `;
 
-const Heading2 = styled.p`
+const Heading2 = styled.div`
   margin: 0;
   font-size: inherit;
   font-weight: var(--cds-heading-compact-02-font-weight);
 `;
 
-const Heading3 = styled.p`
+const Heading3 = styled.div`
   margin: 0;
   font-size: inherit;
   font-weight: var(--cds-heading-compact-01-font-weight);
@@ -63,7 +63,7 @@ const Heading3 = styled.p`
 const InlineCode = styled.code`
   padding: var(--cds-spacing-01) var(--cds-spacing-02);
   border-radius: 4px;
-  background-color: var(--cds-layer-03);
+  background-color: var(--cds-layer-accent-01);
   font-family: var(--cds-code-01-font-family);
   font-size: 0.85em;
 `;
@@ -72,7 +72,7 @@ const CodeBlock = styled.pre`
   margin: 0;
   padding: var(--cds-spacing-03);
   border-radius: 4px;
-  background-color: var(--cds-layer-03);
+  background-color: var(--cds-layer-accent-01);
   font-family: var(--cds-code-01-font-family);
   font-size: 0.85em;
   overflow-x: auto;
@@ -99,9 +99,11 @@ const OrderedList = styled.ol`
 `;
 
 const Paragraph = styled.p`
-  margin: 0;
-  font-size: inherit;
-  white-space: pre-line;
+  && {
+    white-space: pre-line;
+    margin: 0;
+    font-size: inherit;
+  }
 `;
 
 const Blockquote = styled.blockquote`
@@ -130,7 +132,7 @@ const Table = styled.table`
 
   th {
     font-weight: var(--cds-heading-compact-01-font-weight);
-    background-color: var(--cds-layer-03);
+    background-color: var(--cds-layer-accent-01);
   }
 `;
 
