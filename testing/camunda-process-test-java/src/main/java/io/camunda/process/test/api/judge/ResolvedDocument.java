@@ -16,42 +16,21 @@
 package io.camunda.process.test.api.judge;
 
 /**
- * A Camunda document reference paired with its downloaded binary content, passed to {@link
- * MultimodalChatModelAdapter#generate(String, java.util.List)} so a custom {@link ChatModelAdapter}
- * preset can attach the content as structured blocks for its target LLM API.
- *
- * <p>If a document cannot be downloaded the judge evaluation fails fast; a {@code ResolvedDocument}
- * therefore always carries both a reference and its content.
+ * A Camunda document reference paired with its downloaded binary content, handed to {@link
+ * MultimodalChatModelAdapter#generate(String, java.util.List)}. Document resolution is fail-fast,
+ * so {@link #getContent()} is always populated.
  */
 public interface ResolvedDocument {
 
-  /**
-   * @return the Camunda document id
-   */
   String getDocumentId();
 
-  /**
-   * @return the document store id, or {@code null} if not set
-   */
   String getStoreId();
 
-  /**
-   * @return the content hash, or {@code null} if not set
-   */
   String getContentHash();
 
-  /**
-   * @return the file name from document metadata, or {@code null} if not set
-   */
   String getFileName();
 
-  /**
-   * @return the MIME content type from document metadata, or {@code null} if not set
-   */
   String getContentType();
 
-  /**
-   * @return the downloaded binary content
-   */
   byte[] getContent();
 }

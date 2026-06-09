@@ -20,14 +20,8 @@ import java.util.List;
 import org.apache.commons.text.StringEscapeUtils;
 
 /**
- * Builds the {@code <resolved_documents>} section that is appended to the judge prompt when Camunda
- * documents have been resolved. The section identifies each document by its {@code documentId} so
- * the judge can match it back to the reference inside {@code <actual_value>}.
- *
- * <p>This decoration is only used by the multimodal call path. The actual binary content is
- * attached separately as structured content blocks by the {@link
- * io.camunda.process.test.api.judge.MultimodalChatModelAdapter} implementation; the section built
- * here only describes the documents textually so the judge can refer to them by id.
+ * Renders a {@code <resolved_documents>} textual section listing each document by id so the judge
+ * can correlate it with the binary blocks attached separately by the multimodal adapter.
  */
 public final class ResolvedDocumentPromptSection {
 
@@ -41,9 +35,7 @@ public final class ResolvedDocumentPromptSection {
 
   private ResolvedDocumentPromptSection() {}
 
-  /**
-   * @return the rendered section, or {@code null} if {@code documents} is empty
-   */
+  /** Returns the rendered section, or {@code null} if {@code documents} is empty. */
   public static String render(final List<ResolvedDocument> documents) {
     if (documents == null || documents.isEmpty()) {
       return null;

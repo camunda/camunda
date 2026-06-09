@@ -21,11 +21,9 @@ import java.time.OffsetDateTime;
 import java.util.Map;
 
 /**
- * Local DTO for deserializing Camunda document references from variable JSON. Avoids a compile-time
- * dependency on {@code io.camunda.client.impl.*} types. Unknown JSON fields (e.g. {@code
- * camunda.document.type}) are silently ignored because deserialization goes through {@link
- * io.camunda.process.test.impl.assertions.util.CamundaAssertJsonMapper}, which delegates to the
- * Camunda client's {@code JsonMapper} with {@code FAIL_ON_UNKNOWN_PROPERTIES} disabled.
+ * Local DTO for deserializing Camunda document references from variable JSON; avoids a compile-time
+ * dependency on {@code io.camunda.client.impl.*} types. Unknown JSON fields (e.g. the {@code
+ * camunda.document.type} discriminator) are silently ignored by the configured {@code JsonMapper}.
  */
 final class DocumentReferenceDto implements DocumentReferenceResponse {
 

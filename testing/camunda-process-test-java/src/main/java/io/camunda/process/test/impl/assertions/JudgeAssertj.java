@@ -59,10 +59,8 @@ class JudgeAssertj {
   }
 
   /**
-   * Returns whether document attachment should run for the next evaluation. True when the caller
-   * has opted in via {@link JudgeConfig#withAttachDocuments(boolean)} and the configured chat model
-   * can accept structured document content (i.e. implements {@link MultimodalChatModelAdapter}).
-   * Logs a one-line warning when the toggle is on but the adapter cannot consume documents, so the
+   * Returns {@code true} when document attachment is enabled and the configured adapter can consume
+   * it; logs a one-line warning when the toggle is on but the adapter is not multimodal so the
    * misconfiguration is visible.
    */
   boolean isDocumentAttachmentEnabled() {
@@ -98,12 +96,9 @@ class JudgeAssertj {
   }
 
   /**
-   * Evaluates the actual value against the expectation using the configured LLM judge.
-   *
-   * @param expectation the natural-language expectation
-   * @param actualValue the value to evaluate
-   * @param context additional context appended to error messages (e.g. {@code " for variable
-   *     'myVar'"}), or empty string for no context
+   * Evaluates the actual value against the expectation using the configured LLM judge. {@code
+   * context} is appended to failure messages (e.g. {@code " for variable 'myVar'"}); pass an empty
+   * string for none.
    */
   void evaluateExpectation(
       final String expectation, final String actualValue, final String context) {

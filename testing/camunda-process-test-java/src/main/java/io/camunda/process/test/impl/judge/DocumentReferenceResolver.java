@@ -33,16 +33,13 @@ import org.slf4j.LoggerFactory;
  * Detects Camunda document references inside a variable's JSON value and downloads their binary
  * content via the {@link CamundaDataSource}.
  *
- * <p>A document reference is any JSON object containing the discriminator field {@code
- * "camunda.document.type": "camunda"}. References are detected at any depth (top-level, nested
- * objects, arrays).
- *
  * <p>Resolution is fail-fast: any download or parse error throws an {@link IllegalStateException}
  * so the surrounding assertion surfaces the problem immediately instead of letting the judge
  * silently reason without the document content.
  */
 public final class DocumentReferenceResolver {
 
+  // Discriminator field/value identifying a Camunda document reference in variable JSON.
   static final String DOCUMENT_TYPE_FIELD = "camunda.document.type";
   static final String DOCUMENT_TYPE_VALUE = "camunda";
 
@@ -59,11 +56,9 @@ public final class DocumentReferenceResolver {
 
   /**
    * Parses the given variable JSON, locates Camunda document references, and downloads their
-   * content sequentially.
+   * content sequentially. References are detected at any depth (top-level, nested objects, arrays)
+   * and de-duplicated by {@code (documentId, storeId)} before download.
    *
-   * @param variableJson the raw JSON value of the asserted variable, may be any JSON shape
-   * @return the resolved documents in encounter order; may be empty if no references are found or
-   *     the JSON cannot be parsed
    * @throws IllegalStateException if any reference cannot be parsed or its content cannot be
    *     downloaded
    */
