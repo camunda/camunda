@@ -28,6 +28,7 @@ public class Camunda {
   @NestedConfigurationProperty private Security security = new Security();
   @NestedConfigurationProperty private Expression expression = new Expression();
   @NestedConfigurationProperty private License license = new License();
+  @NestedConfigurationProperty private Document document = new Document();
   @NestedConfigurationProperty private Webapps webapps = new Webapps();
 
   @NestedConfigurationProperty
@@ -136,5 +137,13 @@ public class Camunda {
 
   public void setLicense(final License license) {
     this.license = license;
+  }
+
+  public Document getDocument() {
+    return document;
+  }
+
+  public void setDocument(final Document document) {
+    this.document = document;
   }
 }

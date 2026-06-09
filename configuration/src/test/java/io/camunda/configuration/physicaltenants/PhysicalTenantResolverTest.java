@@ -100,6 +100,30 @@ class PhysicalTenantResolverTest {
   }
 
   @Test
+  void shouldResolveDocumentConfigurationPerTenant() {
+    // given root document configuration and a tenant override for one store property
+    setProperties(
+        Map.of(
+            "camunda.document.default-store-id", "aws1",
+            "camunda.document.aws.aws1.bucket-name", "root-bucket",
+            "camunda.physical-tenants.tenanta.document.aws.aws1.bucket-name", "tenant-bucket"));
+
+    // when
+    final PhysicalTenantResolver resolver = newResolver();
+    final Camunda defaultTenant =
+        resolver.forPhysicalTenant(PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID);
+    final Camunda tenantA = resolver.forPhysicalTenant("tenanta");
+
+    // then the default tenant keeps root values and tenant configuration is overlaid
+    assertThat(defaultTenant.getDocument().getDefaultStoreId()).isEqualTo("aws1");
+    assertThat(defaultTenant.getDocument().getAws().get("aws1").getBucketName())
+        .isEqualTo("root-bucket");
+    assertThat(tenantA.getDocument().getDefaultStoreId()).isEqualTo("aws1");
+    assertThat(tenantA.getDocument().getAws().get("aws1").getBucketName())
+        .isEqualTo("tenant-bucket");
+  }
+
+  @Test
   void shouldSynthesizeDefaultTenantFromRootWhenNoTenantsAreDeclared() {
     // given only root configuration is set
     setProperties(Map.of("camunda.cluster.size", 5));

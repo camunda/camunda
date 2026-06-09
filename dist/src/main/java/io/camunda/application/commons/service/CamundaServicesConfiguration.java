@@ -8,8 +8,8 @@
 package io.camunda.application.commons.service;
 
 import io.camunda.application.commons.condition.ConditionalOnAnyHttpGatewayEnabled;
+import io.camunda.application.commons.document.CamundaDocumentStoreConfigurationLoader;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
-import io.camunda.document.store.EnvironmentConfigurationLoader;
 import io.camunda.document.store.SimpleDocumentStoreRegistry;
 import io.camunda.gateway.protocol.model.JobActivationResult;
 import io.camunda.search.clients.SearchClientsProxy;
@@ -263,7 +263,8 @@ public class CamundaServicesConfiguration {
                       new DocumentServices(
                           brokerClient,
                           securityContextProvider,
-                          new SimpleDocumentStoreRegistry(new EnvironmentConfigurationLoader()),
+                          new SimpleDocumentStoreRegistry(
+                              new CamundaDocumentStoreConfigurationLoader(tenantConfig)),
                           authorizationChecker,
                           cslProperties.getAuthorizations(),
                           executor,
