@@ -14,6 +14,7 @@ import io.camunda.zeebe.protocol.impl.stream.job.JobActivationPropertiesImpl;
 import io.camunda.zeebe.protocol.record.value.TenantFilter;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -28,7 +29,7 @@ final class JobStreamServiceStepTest {
       final var properties =
           new JobActivationPropertiesImpl()
               .setTimeout(250)
-              .setFetchVariables(List.of(new StringValue("foo"), new StringValue("bar")))
+              .setFetchVariables(Set.of(new StringValue("foo"), new StringValue("bar")))
               .setWorker(worker, 0, worker.capacity())
               .setTenantIds(List.of("tenant1", "tenant2"))
               .setTenantFilter(TenantFilter.ASSIGNED);

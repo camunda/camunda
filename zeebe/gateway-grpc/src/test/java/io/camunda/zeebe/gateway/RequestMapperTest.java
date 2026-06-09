@@ -544,7 +544,29 @@ public class RequestMapperTest {
       // then
       assertThat(properties.fetchVariables())
           .extracting(BufferUtil::bufferAsString)
-          .containsExactly("var1", "var2");
+          .containsExactlyInAnyOrder("var1", "var2");
+    }
+
+    @Test
+    public void shouldDeduplicateFetchVariables() {
+      // given — the same variable name appears twice in the gRPC request
+      final var request =
+          StreamActivatedJobsRequest.newBuilder()
+              .setType("test-job")
+              .setWorker("test-worker")
+              .addTenantIds("tenant-a")
+              .addFetchVariable("var1")
+              .addFetchVariable("var2")
+              .addFetchVariable("var1")
+              .build();
+
+      // when
+      final var properties = RequestMapper.toJobActivationProperties(request, EMPTY_CLAIMS);
+
+      // then — only two unique names, not three; prevents off-by-one in DbVariableState map header
+      assertThat(properties.fetchVariables())
+          .extracting(BufferUtil::bufferAsString)
+          .containsExactlyInAnyOrder("var1", "var2");
     }
 
     @Test
