@@ -105,6 +105,7 @@ class Notifications {
 
 	reset = () => {
 		this.notifications = [];
+		this.#notificationsQueue = [];
 	};
 }
 
