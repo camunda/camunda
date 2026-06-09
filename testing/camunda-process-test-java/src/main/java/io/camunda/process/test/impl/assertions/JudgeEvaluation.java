@@ -18,11 +18,11 @@ package io.camunda.process.test.impl.assertions;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.process.test.api.judge.ChatModelAdapter;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import io.camunda.process.test.api.judge.MultimodalChatModelAdapter;
 import io.camunda.process.test.api.judge.ResolvedDocument;
 import io.camunda.process.test.impl.judge.ResolvedDocumentPromptSection;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -223,6 +223,11 @@ class JudgeEvaluation {
       return score.doubleValue();
     }
 
+    /**
+     * Returns the reasoning provided by the evaluator.
+     *
+     * @return the reasoning
+     */
     public String getReasoning() {
       return reasoning;
     }
