@@ -8,6 +8,7 @@
 package io.camunda.debug.cli;
 
 import io.camunda.debug.cli.sbe.SbeCommand;
+import io.camunda.debug.cli.state.StateCommand;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 
@@ -20,7 +21,8 @@ import picocli.CommandLine.Command;
       CommandLine.HelpCommand.class,
       TopologyMetaCommand.class,
       RaftCommand.class,
-      SbeCommand.class
+      SbeCommand.class,
+      StateCommand.class
     })
 public class Main {
 

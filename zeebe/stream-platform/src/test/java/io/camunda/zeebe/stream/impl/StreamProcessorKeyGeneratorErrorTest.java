@@ -39,7 +39,9 @@ final class StreamProcessorKeyGeneratorErrorTest {
     final var zeebeDb = streamPlatform.getZeebeDb();
     final DbKeyGenerator dbKeyGenerator = new DbKeyGenerator(1, zeebeDb, zeebeDb.createContext());
     // set the key generator to a value that will cause an overflow on next key generation
-    dbKeyGenerator.setKeyIfHigher(Protocol.encodePartitionId(1, (long) Math.pow(2, 51) - 1));
+    final var maxKeyValue = Protocol.encodePartitionId(1, (long) Math.pow(2, 51) - 1);
+    dbKeyGenerator.setMaxKeyValue(maxKeyValue);
+    dbKeyGenerator.setKeyIfHigher(maxKeyValue);
     when(mockedRecordProcessor.process(any(), any()))
         .thenAnswer(
             invocation -> {
