@@ -1006,7 +1006,10 @@ class OperateProcessInstancePage {
       await this.clickOnElementInDiagram(elementId);
     }
     await this.clickIncidentsTab();
-    await this.verifyIncidentCount(errorTypes.length);
+    // The incidents view header always reports the instance-wide incident
+    // total and is not filtered by the selected flow node, so it cannot be
+    // compared against the per-element errorTypes length. Verify instead that
+    // each expected incident row is present for the migrated instance.
     for (const errorType of errorTypes) {
       const incidentRow = await this.getIncidentRowByErrorType(errorType);
       await expect(incidentRow).toBeVisible({timeout: 30000});
