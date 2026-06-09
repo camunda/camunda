@@ -9,20 +9,34 @@ package io.camunda.configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.configuration.beanoverrides.GatewayRestPropertiesOverride;
-import io.camunda.configuration.beans.GatewayRestProperties;
+import java.time.Duration;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
-@SpringJUnitConfig({
-  UnifiedConfiguration.class,
-  GatewayRestPropertiesOverride.class,
-  UnifiedConfigurationHelper.class
-})
+@SpringJUnitConfig({UnifiedConfiguration.class, UnifiedConfigurationHelper.class})
 public class ApiRestProcessCacheTest {
+
+  @Nested
+  class WithDefaultValues {
+    final ProcessCache processCache;
+
+    WithDefaultValues(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.processCache = unifiedConfiguration.getCamunda().getApi().getRest().getProcessCache();
+    }
+
+    @Test
+    void shouldHaveDefaultMaxSize() {
+      assertThat(processCache.getMaxSize()).isEqualTo(100);
+    }
+
+    @Test
+    void shouldHaveDefaultExpirationIdle() {
+      assertThat(processCache.getExpirationIdle()).isEqualTo(Duration.ofMillis(0));
+    }
+  }
 
   @Nested
   @TestPropertySource(
@@ -31,20 +45,20 @@ public class ApiRestProcessCacheTest {
         "camunda.api.rest.process-cache.expiration-idle=10ms",
       })
   class WithOnlyUnifiedConfigSet {
-    final GatewayRestProperties gatewayRestProperties;
+    final ProcessCache processCache;
 
-    WithOnlyUnifiedConfigSet(@Autowired final GatewayRestProperties gatewayRestProperties) {
-      this.gatewayRestProperties = gatewayRestProperties;
+    WithOnlyUnifiedConfigSet(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.processCache = unifiedConfiguration.getCamunda().getApi().getRest().getProcessCache();
     }
 
     @Test
     void shouldSetMaxSize() {
-      assertThat(gatewayRestProperties.getProcessCache().getMaxSize()).isEqualTo(200);
+      assertThat(processCache.getMaxSize()).isEqualTo(200);
     }
 
     @Test
     void shouldSetExpirationIdle() {
-      assertThat(gatewayRestProperties.getProcessCache().getExpirationIdleMillis()).isEqualTo(10);
+      assertThat(processCache.getExpirationIdle()).isEqualTo(Duration.ofMillis(10));
     }
   }
 
@@ -55,20 +69,20 @@ public class ApiRestProcessCacheTest {
         "camunda.rest.processCache.expirationIdleMillis=20",
       })
   class WithOnlyLegacySet {
-    final GatewayRestProperties gatewayRestProperties;
+    final ProcessCache processCache;
 
-    WithOnlyLegacySet(@Autowired final GatewayRestProperties gatewayRestProperties) {
-      this.gatewayRestProperties = gatewayRestProperties;
+    WithOnlyLegacySet(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.processCache = unifiedConfiguration.getCamunda().getApi().getRest().getProcessCache();
     }
 
     @Test
-    void shouldSetMaxSize() {
-      assertThat(gatewayRestProperties.getProcessCache().getMaxSize()).isEqualTo(300);
+    void shouldSetMaxSizeFromLegacy() {
+      assertThat(processCache.getMaxSize()).isEqualTo(300);
     }
 
     @Test
-    void shouldSetExpirationIdle() {
-      assertThat(gatewayRestProperties.getProcessCache().getExpirationIdleMillis()).isEqualTo(20);
+    void shouldSetExpirationIdleFromLegacy() {
+      assertThat(processCache.getExpirationIdle()).isEqualTo(Duration.ofMillis(20));
     }
   }
 
@@ -83,20 +97,20 @@ public class ApiRestProcessCacheTest {
         "camunda.rest.processCache.expirationIdleMillis=20",
       })
   class WithNewAndLegacySet {
-    final GatewayRestProperties gatewayRestProperties;
+    final ProcessCache processCache;
 
-    WithNewAndLegacySet(@Autowired final GatewayRestProperties gatewayRestProperties) {
-      this.gatewayRestProperties = gatewayRestProperties;
+    WithNewAndLegacySet(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.processCache = unifiedConfiguration.getCamunda().getApi().getRest().getProcessCache();
     }
 
     @Test
-    void shouldSetMaxSizeFromNew() {
-      assertThat(gatewayRestProperties.getProcessCache().getMaxSize()).isEqualTo(200);
+    void shouldPreferNewMaxSize() {
+      assertThat(processCache.getMaxSize()).isEqualTo(200);
     }
 
     @Test
-    void shouldSetExpirationIdleFromNew() {
-      assertThat(gatewayRestProperties.getProcessCache().getExpirationIdleMillis()).isEqualTo(10);
+    void shouldPreferNewExpirationIdle() {
+      assertThat(processCache.getExpirationIdle()).isEqualTo(Duration.ofMillis(10));
     }
   }
 }

@@ -13,14 +13,9 @@ public class GatewayRestConfiguration {
 
   private static final int DEFAULT_MAX_NAME_FIELD_LENGTH = 32 * 1024;
 
-  private final ProcessCacheConfiguration processCache = new ProcessCacheConfiguration();
   private final ApiExecutorConfiguration apiExecutor = new ApiExecutorConfiguration();
   private final JobMetricsConfiguration jobMetrics = new JobMetricsConfiguration();
   private int maxNameFieldLength = DEFAULT_MAX_NAME_FIELD_LENGTH;
-
-  public ProcessCacheConfiguration getProcessCache() {
-    return processCache;
-  }
 
   public ApiExecutorConfiguration getApiExecutor() {
     return apiExecutor;
@@ -42,34 +37,6 @@ public class GatewayRestConfiguration {
 
   public void setMaxNameFieldLength(final int maxNameFieldLength) {
     this.maxNameFieldLength = maxNameFieldLength;
-  }
-
-  public static class ProcessCacheConfiguration {
-    private static final int DEFAULT_CACHE_SIZE = 100;
-
-    /**
-     * Process cache max size. Default value: {@link ProcessCacheConfiguration#DEFAULT_CACHE_SIZE}.
-     */
-    private int maxSize = DEFAULT_CACHE_SIZE;
-
-    /** Process cache expiration milliseconds. Default value: {@code null}. */
-    private Long expirationIdleMillis = null;
-
-    public int getMaxSize() {
-      return maxSize;
-    }
-
-    public void setMaxSize(final int maxSize) {
-      this.maxSize = maxSize;
-    }
-
-    public Long getExpirationIdleMillis() {
-      return expirationIdleMillis;
-    }
-
-    public void setExpirationIdleMillis(final Long expirationIdleMillis) {
-      this.expirationIdleMillis = expirationIdleMillis;
-    }
   }
 
   /**
