@@ -64,14 +64,14 @@ public final class DocumentReferenceResolver {
    *     downloaded
    */
   public List<ResolvedDocument> resolve(final String variableJson) {
-    final List<JsonNode> referenceNodes = findReferences(variableJson, jsonMapper);
+    final List<JsonNode> referenceNodes = findReferences(variableJson);
     if (referenceNodes.isEmpty()) {
       return Collections.emptyList();
     }
     LOG.debug("Found {} Camunda document reference(s) in variable", referenceNodes.size());
     final Map<DocumentKey, ResolvedDocument> seen = new LinkedHashMap<>();
     for (final JsonNode node : referenceNodes) {
-      final DocumentReferenceResponse ref = parseReference(node, jsonMapper);
+      final DocumentReferenceResponse ref = parseReference(node);
       final DocumentKey key = new DocumentKey(ref.getDocumentId(), ref.getStoreId());
       if (!seen.containsKey(key)) {
         seen.put(key, download(ref));
@@ -80,9 +80,8 @@ public final class DocumentReferenceResolver {
     return new ArrayList<>(seen.values());
   }
 
-  private static List<JsonNode> findReferences(
-      final String variableJson, final CamundaAssertJsonMapper jsonMapper) {
-    final JsonNode root = parseJsonOrNull(variableJson, jsonMapper);
+  private List<JsonNode> findReferences(final String variableJson) {
+    final JsonNode root = parseJsonOrNull(variableJson);
     if (root == null) {
       return Collections.emptyList();
     }
@@ -91,8 +90,7 @@ public final class DocumentReferenceResolver {
     return references;
   }
 
-  private static JsonNode parseJsonOrNull(
-      final String variableJson, final CamundaAssertJsonMapper jsonMapper) {
+  private JsonNode parseJsonOrNull(final String variableJson) {
     if (variableJson == null || variableJson.isEmpty()) {
       return null;
     }
@@ -130,8 +128,7 @@ public final class DocumentReferenceResolver {
         && DOCUMENT_TYPE_VALUE.equals(typeNode.asText());
   }
 
-  private static DocumentReferenceResponse parseReference(
-      final JsonNode referenceNode, final CamundaAssertJsonMapper jsonMapper) {
+  private DocumentReferenceResponse parseReference(final JsonNode referenceNode) {
     final DocumentReferenceResponse reference;
     try {
       reference =

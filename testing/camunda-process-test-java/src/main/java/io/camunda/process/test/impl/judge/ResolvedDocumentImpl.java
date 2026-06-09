@@ -15,6 +15,7 @@
  */
 package io.camunda.process.test.impl.judge;
 
+import io.camunda.client.api.response.DocumentMetadata;
 import io.camunda.client.api.response.DocumentReferenceResponse;
 import io.camunda.process.test.api.judge.ResolvedDocument;
 
@@ -28,12 +29,12 @@ public final class ResolvedDocumentImpl implements ResolvedDocument {
   private final byte[] content;
 
   public ResolvedDocumentImpl(final DocumentReferenceResponse reference, final byte[] content) {
-    this.documentId = reference.getDocumentId();
-    this.storeId = reference.getStoreId();
-    this.contentHash = reference.getContentHash();
-    this.fileName = reference.getMetadata() != null ? reference.getMetadata().getFileName() : null;
-    this.contentType =
-        reference.getMetadata() != null ? reference.getMetadata().getContentType() : null;
+    final DocumentMetadata metadata = reference.getMetadata();
+    documentId = reference.getDocumentId();
+    storeId = reference.getStoreId();
+    contentHash = reference.getContentHash();
+    fileName = metadata != null ? metadata.getFileName() : null;
+    contentType = metadata != null ? metadata.getContentType() : null;
     this.content = content;
   }
 
