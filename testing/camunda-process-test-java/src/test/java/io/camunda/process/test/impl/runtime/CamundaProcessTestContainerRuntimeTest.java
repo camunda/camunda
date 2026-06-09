@@ -177,6 +177,20 @@ public class CamundaProcessTestContainerRuntimeTest {
         .withImagePullPolicy(argThat(p -> p.getClass().equals(PullPolicy.alwaysPull().getClass())));
   }
 
+  @Test
+  void shouldUseDefaultPullPolicyWhenCamundaImageVersionIsNull() {
+    // when
+    CamundaProcessTestContainerRuntime.newBuilder()
+        .withContainerFactory(containerFactory)
+        .withCamundaDockerImageVersion(null)
+        .build();
+
+    // then
+    verify(camundaContainer)
+        .withImagePullPolicy(
+            argThat(p -> p.getClass().equals(PullPolicy.defaultPolicy().getClass())));
+  }
+
   // The ES container has been removed in favor of a H2 database solution. However, in the future ES
   // is going to be configurable as part of {@see https://github.com/camunda/camunda/issues/29854}
   @Disabled
