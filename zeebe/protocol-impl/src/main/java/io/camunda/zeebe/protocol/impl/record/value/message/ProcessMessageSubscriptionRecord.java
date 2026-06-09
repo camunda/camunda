@@ -10,12 +10,14 @@ package io.camunda.zeebe.protocol.impl.record.value.message;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
+import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -43,6 +45,7 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
   private static final StringValue ROOT_PROCESS_INSTANCE_KEY_KEY =
       new StringValue("rootProcessInstanceKey");
   private static final StringValue BUSINESS_ID_KEY = new StringValue("businessId");
+  private static final StringValue ELEMENT_TYPE_KEY = new StringValue("elementType");
 
   private final IntegerProperty subscriptionPartitionIdProp =
       new IntegerProperty(SUBSCRIPTION_PARTITION_ID_KEY);
@@ -62,9 +65,11 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
   private final LongProperty rootProcessInstanceKeyProp =
       new LongProperty(ROOT_PROCESS_INSTANCE_KEY_KEY, -1L);
   private final StringProperty businessIdProp = new StringProperty(BUSINESS_ID_KEY, "");
+  private final EnumProperty<BpmnElementType> elementTypeProp =
+      new EnumProperty<>(ELEMENT_TYPE_KEY, BpmnElementType.class, BpmnElementType.UNSPECIFIED);
 
   public ProcessMessageSubscriptionRecord() {
-    super(14);
+    super(15);
     declareProperty(subscriptionPartitionIdProp)
         .declareProperty(processInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
@@ -78,7 +83,8 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
         .declareProperty(elementIdProp)
         .declareProperty(tenantIdProp)
         .declareProperty(rootProcessInstanceKeyProp)
-        .declareProperty(businessIdProp);
+        .declareProperty(businessIdProp)
+        .declareProperty(elementTypeProp);
   }
 
   public void wrap(final ProcessMessageSubscriptionRecord record) {
@@ -96,6 +102,7 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
     setTenantId(record.getTenantId());
     setRootProcessInstanceKey(record.getRootProcessInstanceKey());
     setBusinessId(record.getBusinessIdBuffer());
+    setElementType(record.getElementType());
   }
 
   @JsonIgnore
@@ -270,6 +277,16 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
 
   public ProcessMessageSubscriptionRecord setBusinessId(final DirectBuffer businessId) {
     businessIdProp.setValue(businessId);
+    return this;
+  }
+
+  @Override
+  public BpmnElementType getElementType() {
+    return elementTypeProp.getValue();
+  }
+
+  public ProcessMessageSubscriptionRecord setElementType(final BpmnElementType elementType) {
+    elementTypeProp.setValue(elementType);
     return this;
   }
 }
