@@ -7,12 +7,11 @@
  */
 
 import {type Page} from '@playwright/test';
+import {View} from './BasePage';
 
-class Notifications {
-	private page: Page;
-
+class Notifications extends View {
 	constructor(page: Page) {
-		this.page = page;
+		super(page);
 	}
 
 	getByNotificationTitle(title: string) {
