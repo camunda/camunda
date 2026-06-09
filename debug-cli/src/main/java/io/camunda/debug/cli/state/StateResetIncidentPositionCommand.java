@@ -56,7 +56,9 @@ public class StateResetIncidentPositionCommand implements Callable<Integer> {
 
   @Option(
       names = {"-r", "--root"},
-      description = "Path of the root of the data folder",
+      description =
+          "Path of the partition directory (the folder containing 'snapshots/'), e.g. "
+              + "<data>/raft-partition/partitions/<id>",
       required = true)
   private Path root;
 
