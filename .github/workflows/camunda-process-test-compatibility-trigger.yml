@@ -32,7 +32,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh workflow run .github/workflows/camunda-process-test-compatibility.yml \
-            --ref ${{ matrix.branch }} \
             -f branch=${{ matrix.branch }} \
             -f camunda_image_version=${{ matrix.camunda_image_version }} \
             -f connectors_image_version=${{ matrix.connectors_image_version }} \
