@@ -34,12 +34,12 @@ For packaging changes:
   ```bash
   file c8run/JavaVersion.class | grep "version 65.0"
   ```
-  A higher version (e.g. 69 = Java 25) means the packager ran without an explicit `setup-java` step and the artifact will crash with `UnsupportedClassVersionError` on users with Java 21–24. The packaging step in both `setup-c8run/action.yml` and `c8run-build.yaml` must run `setup-java` (temurin 21) **before** invoking the packager.
+  A higher version (e.g. 69 = Java 25) means `BuildJavaScripts()` ran without `--release 21` or without a pinned Java version before the packager step. The artifact will crash with `UnsupportedClassVersionError` on users with Java 21–24. Two conditions must both hold: `BuildJavaScripts()` must pass `--release 21` to `javac`, and the packaging step in both `.github/actions/setup-c8run/action.yml` and `.github/workflows/c8run-build.yaml` must call `setup-java` (temurin 21) **before** invoking the packager — relying on the runner default is not safe.
 - For macOS builds, verify the bundled JRE is signed with JIT entitlements (required for JVM JIT under the hardened runtime on Apple Silicon):
   ```bash
   codesign -d --entitlements - c8run/jre/bin/java 2>&1 | grep "allow-jit"
   ```
-  Missing entitlements cause an immediate `EXC_BREAKPOINT` crash (`signal: trace/BPT trap`) during `Threads::create_vm` on M-series Macs. See `sign_and_notarize.sh` for the required plist.
+  Missing entitlements cause an immediate `EXC_BREAKPOINT` crash (`signal: trace/BPT trap`) during `Threads::create_vm` on M-series Macs. See `.github/actions/sign-and-notarize/sign_and_notarize.sh` for the required entitlements plist.
 
 ## E2E Tests
 
