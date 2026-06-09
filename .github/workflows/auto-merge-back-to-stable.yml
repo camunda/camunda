@@ -120,12 +120,14 @@ jobs:
           # - <version>: Main project version (X.Y.Z-SNAPSHOT)
           # - <backwards.compat.version>: Java API compatibility version
           # - <version.identity>: Identity component version (updated by automation)
+          # - <zeebe.version>: Used in Optimize (updated by automation)
           ALLOWED_PATTERNS=(
             '^\+\+\+'                              # Diff header
             '^---'                                 # Diff header
             '^[+-]\s*<version>'                    # Main version tag
             '^[+-]\s*<backwards\.compat\.version>' # Backwards compatibility version
             '^[+-]\s*<version\.identity>'          # Identity version
+            '^[+-]\s*<zeebe\.version>'             # Zeebe component version
           )
           
           # Build regex from allowed patterns (join with |)
