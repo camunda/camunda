@@ -13,11 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.search.enums;
+package io.camunda.client.api.search.response;
 
-public enum WaitStateType {
-  JOB,
-  MESSAGE,
-  USER_TASK,
-  UNKNOWN_ENUM_VALUE;
+/** Details of an element instance waiting on a native Camunda user task. */
+public interface UserTaskWaitStateDetails extends WaitStateDetails {
+
+  String getTaskKey();
+
+  String getDueDate();
 }
