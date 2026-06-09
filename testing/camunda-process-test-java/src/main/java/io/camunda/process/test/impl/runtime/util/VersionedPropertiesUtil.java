@@ -15,6 +15,7 @@
  */
 package io.camunda.process.test.impl.runtime.util;
 
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.regex.Matcher;
@@ -40,7 +41,7 @@ public class VersionedPropertiesUtil {
                 .map(SEMANTIC_VERSION_PATTERN::matcher)
                 .filter(Matcher::find)
                 .flatMap(matcher -> Optional.ofNullable(matcher.group(4)))
-                .filter(label -> label.contains(SNAPSHOT_VERSION))
+                .filter(label -> label.toUpperCase(Locale.ROOT).contains(SNAPSHOT_VERSION))
                 .map(snapshotLabel -> defaultValue)
                 .orElse(propertyValue),
         defaultValue);
