@@ -220,6 +220,11 @@ jobs:
         run: go build -o c8run.exe .\cmd\c8run
         working-directory: .\c8run
 
+      - uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          distribution: "temurin"
+          java-version: "21"
+
       - name: Build c8run packager
         run: go build -o packager.exe .\cmd\packager
         working-directory: .\c8run
