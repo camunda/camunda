@@ -33,6 +33,10 @@ import java.util.Properties;
  *
  * <p>The remote address properties are applied as overrides on top of all other properties to
  * preserve backwards compatibility.
+ *
+ * <p>Environment variable overrides are disabled by default to ensure the client connects to the
+ * process test runtime unless explicitly re-enabled via {@link
+ * ClientProperties#APPLY_ENVIRONMENT_VARIABLES_OVERRIDES}.
  */
 public class CamundaProcessTestClientProperties {
 
@@ -70,6 +74,7 @@ public class CamundaProcessTestClientProperties {
     final URI restOverride = remoteRestAddress;
     return () -> {
       final CamundaClientBuilder builder = createBaseBuilder(properties);
+      builder.applyEnvironmentVariableOverrides(false);
       builder.withProperties(properties);
       Optional.ofNullable(grpcOverride).ifPresent(builder::grpcAddress);
       Optional.ofNullable(restOverride).ifPresent(builder::restAddress);
