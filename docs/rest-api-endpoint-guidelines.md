@@ -1204,8 +1204,10 @@ truth for RBAC). See ADR
 
 **Every operation MUST declare `x-required-permissions`.** It is an array; the
 entries are ANDed. An empty array means the endpoint enforces no permission
-(public). Requiring the key even when empty distinguishes "explicitly public"
-from "forgot to annotate".
+(**unrestricted** — note this is an *authorization* property: the endpoint is
+still authenticated, it just needs no specific permission; it is not "public" in
+the unauthenticated sense). Requiring the key even when empty distinguishes
+"explicitly unrestricted" from "forgot to annotate".
 
 ```yaml
 # Static single permission — the common case
@@ -1215,7 +1217,7 @@ from "forgot to annotate".
     x-required-permissions:
       - { resourceType: PROCESS_DEFINITION, permissionType: CREATE_PROCESS_INSTANCE }
 
-# Explicitly public — no authorization enforced
+# Explicitly unrestricted — authenticated, but no specific permission required
 /topology:
   get:
     operationId: getTopology
@@ -1301,7 +1303,7 @@ x-required-permissions:
 
 The marker is **optional**: omit it for the common `reject` case, set it
 explicitly to `filter` where results are scoped. A `filter` endpoint must declare
-at least one required permission (a public `[]` endpoint has nothing to filter
+at least one required permission (an unrestricted `[]` endpoint has nothing to filter
 by) — `verify-required-permissions` enforces this.
 
 This classification is a *claim*; the deterministic *proof* is the spec-driven

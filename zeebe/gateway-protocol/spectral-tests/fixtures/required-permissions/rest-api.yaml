@@ -43,10 +43,10 @@ paths:
       responses:
         '204': { description: No content. }
 
-  # ── Valid: explicitly public (empty array) ────────────────────
-  /valid/public:
+  # ── Valid: explicitly unrestricted (empty array) ────────────────────
+  /valid/unrestricted:
     get:
-      operationId: validPublic
+      operationId: validUnrestricted
       x-required-permissions: []
       responses:
         '200': { description: OK. }
@@ -148,10 +148,10 @@ paths:
       responses:
         '200': { description: OK. }
 
-  # ── Invalid: filter on a public (empty) endpoint ──────────────
-  /invalid/enforcement-public-filter:
+  # ── Invalid: filter on an unrestricted (empty) endpoint ──────────────
+  /invalid/enforcement-unrestricted-filter:
     get:
-      operationId: invalidEnforcementPublicFilter
+      operationId: invalidEnforcementUnrestrictedFilter
       x-permission-enforcement: filter
       x-required-permissions: []
       responses:
