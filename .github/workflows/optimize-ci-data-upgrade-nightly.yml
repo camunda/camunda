@@ -1,31 +1,11 @@
-# description: Workflow for running CI tests for Optimize. Runs integration tests, database upgrade tests, and deploys a SNAPSHOT of Optimize on a push to main
-# test location: /optimize/backend/src/it/java, optimize/upgrade/src/test/java/io/camunda/optimize/upgrade
+# description: Workflow for database upgrade CI tests for Optimize nightly.
+# test location: optimize/upgrade/src/test/java/io/camunda/optimize/upgrade
 # type: CI
 # owner: @camunda/core-features
-name: "[Legacy] Optimize / Data Layer"
+name: "Optimize ES/OS Data Upgrade Tests (Nightly)"
 on:
-  pull_request:
-    paths:
-      - ".github/actions/**"
-      - ".github/workflows/optimize-*"
-      - "bom/*"
-      - "parent/*"
-      - "pom.xml"
-      - "optimize/**"
-      - "optimize.Dockerfile"
-  push:
-    branches:
-      - main
-      - stable/**
-      - release/**
-    paths:
-      - ".github/actions/**"
-      - ".github/workflows/optimize-*"
-      - "bom/*"
-      - "parent/*"
-      - "pom.xml"
-      - "optimize/**"
-      - "optimize.Dockerfile"
+  schedule:
+    - cron: "0 2 * * *"
   workflow_dispatch:
 
 # Will limit the workflow to 1 concurrent run per ref (branch / PR)
