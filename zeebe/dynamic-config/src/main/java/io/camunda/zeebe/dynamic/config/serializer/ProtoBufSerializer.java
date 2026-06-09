@@ -353,6 +353,7 @@ public class ProtoBufSerializer
       case JOINING -> Topology.State.JOINING;
       case LEAVING -> Topology.State.LEAVING;
       case LEFT -> Topology.State.LEFT;
+      case RECOVERING -> Topology.State.RECOVERING;
     };
   }
 
@@ -363,6 +364,7 @@ public class ProtoBufSerializer
       case JOINING -> MemberState.State.JOINING;
       case LEAVING -> MemberState.State.LEAVING;
       case LEFT -> MemberState.State.LEFT;
+      case RECOVERING -> MemberState.State.RECOVERING;
       case BOOTSTRAPPING ->
           throw new IllegalStateException("Member cannot be in BOOTSTRAPPING state");
     };
@@ -370,7 +372,7 @@ public class ProtoBufSerializer
 
   private PartitionState.State toPartitionState(final Topology.State state) {
     return switch (state) {
-      case UNRECOGNIZED, UNKNOWN, LEFT -> PartitionState.State.UNKNOWN;
+      case UNRECOGNIZED, UNKNOWN, LEFT, RECOVERING -> PartitionState.State.UNKNOWN;
       case ACTIVE -> PartitionState.State.ACTIVE;
       case JOINING -> PartitionState.State.JOINING;
       case LEAVING -> PartitionState.State.LEAVING;

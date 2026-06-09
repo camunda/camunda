@@ -200,6 +200,7 @@ enum State {
   LEAVING = 3;
   LEFT = 4;
   BOOTSTRAPPING = 5;
+  RECOVERING = 6;
 }
 
 enum ChangeStatus {

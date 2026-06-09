@@ -86,6 +86,17 @@ public record MemberState(
     return update(State.LEFT, partitions);
   }
 
+  public MemberState toRecovering() {
+    if (state == State.RECOVERING) {
+      return this;
+    }
+    if (state == State.LEFT) {
+      throw new IllegalStateException(
+          String.format("Cannot transition to RECOVERING when current state is %s", state));
+    }
+    return update(State.RECOVERING, partitions);
+  }
+
   public MemberState addPartition(final int partitionId, final PartitionState partitionState) {
     if (partitions.containsKey(partitionId)) {
       throw new IllegalStateException(
@@ -234,6 +245,7 @@ public record MemberState(
     JOINING,
     ACTIVE,
     LEAVING,
-    LEFT
+    LEFT,
+    RECOVERING
   }
 }
