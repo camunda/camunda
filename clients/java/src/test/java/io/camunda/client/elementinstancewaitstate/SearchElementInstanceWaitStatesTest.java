@@ -27,6 +27,7 @@ import io.camunda.client.api.search.enums.WaitStateType;
 import io.camunda.client.api.search.response.JobWaitStateDetails;
 import io.camunda.client.api.search.response.MessageWaitStateDetails;
 import io.camunda.client.api.search.response.SearchResponse;
+import io.camunda.client.api.search.response.UserTaskWaitStateDetails;
 import io.camunda.client.impl.search.request.SearchRequestSort;
 import io.camunda.client.impl.search.request.SearchRequestSortMapper;
 import io.camunda.client.protocol.rest.ElementInstanceWaitStateFilter;
@@ -245,6 +246,43 @@ public class SearchElementInstanceWaitStatesTest extends ClientRestTest {
     assertThat(details.getWaitStateType()).isEqualTo(WaitStateType.MESSAGE);
     assertThat(details.getMessageName()).isEqualTo("order-received");
     assertThat(details.getCorrelationKey()).isEqualTo("order-42");
+  }
+
+  @Test
+  public void shouldMapUserTaskResponseFields() {
+    // given
+    final io.camunda.client.protocol.rest.UserTaskWaitStateDetails userTaskDetails =
+        new io.camunda.client.protocol.rest.UserTaskWaitStateDetails();
+    userTaskDetails.setTaskKey("999");
+    userTaskDetails.setDueDate("2026-10-13T10:00:00+01:00");
+
+    final io.camunda.client.protocol.rest.ElementInstanceWaitStateResult item =
+        new io.camunda.client.protocol.rest.ElementInstanceWaitStateResult();
+    item.setWaitStateType(WaitStateTypeEnum.USER_TASK);
+    item.setProcessInstanceKey("200");
+    item.setElementInstanceKey("300");
+    item.setElementId("approve-1");
+    item.setTenantId("<default>");
+    item.setUserTaskDetails(userTaskDetails);
+
+    final ElementInstanceWaitStateQueryResult response = buildEmptyResponse();
+    response.addItemsItem(item);
+    gatewayService.onSearchElementInstanceWaitStatesRequest(response);
+
+    // when
+    final SearchResponse<io.camunda.client.api.search.response.ElementInstanceWaitStateResult>
+        result = client.newElementInstanceWaitStateSearchRequest().send().join();
+
+    // then
+    assertThat(result.items()).hasSize(1);
+    final io.camunda.client.api.search.response.ElementInstanceWaitStateResult mapped =
+        result.items().get(0);
+    assertThat(mapped.getWaitStateType()).isEqualTo(WaitStateType.USER_TASK);
+    assertThat(mapped.getDetails()).isInstanceOf(UserTaskWaitStateDetails.class);
+    final UserTaskWaitStateDetails details = (UserTaskWaitStateDetails) mapped.getDetails();
+    assertThat(details.getWaitStateType()).isEqualTo(WaitStateType.USER_TASK);
+    assertThat(details.getTaskKey()).isEqualTo("999");
+    assertThat(details.getDueDate()).isEqualTo("2026-10-13T10:00:00+01:00");
   }
 
   private static ElementInstanceWaitStateQueryResult buildEmptyResponse() {
