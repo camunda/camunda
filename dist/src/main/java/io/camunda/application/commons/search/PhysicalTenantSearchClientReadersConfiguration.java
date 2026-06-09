@@ -21,7 +21,7 @@ import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.connect.tenant.SearchClients;
 import io.camunda.search.es.clients.ElasticsearchSearchClient;
 import io.camunda.search.os.clients.OpensearchSearchClient;
-import io.camunda.security.reader.ResourceAccessController;
+import io.camunda.security.core.authz.ResourceAccessController;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import java.util.LinkedHashMap;

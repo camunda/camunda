@@ -20,7 +20,7 @@ import io.camunda.search.filter.TenantFilter;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
-import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.core.authz.ResourceAccessChecks;
 import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;

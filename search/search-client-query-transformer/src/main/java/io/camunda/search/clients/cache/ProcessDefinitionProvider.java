@@ -13,7 +13,7 @@ import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.sort.SortOptionBuilders;
-import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.core.authz.ResourceAccessChecks;
 import io.camunda.webapps.schema.entities.ProcessEntity;
 import java.util.ArrayList;
 import java.util.Collections;

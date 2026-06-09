@@ -14,7 +14,7 @@ import io.camunda.search.clients.reader.IncidentDocumentReader;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
-import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.core.authz.ResourceAccessChecks;
 import java.util.List;
 import java.util.Objects;
 import org.junit.jupiter.api.BeforeEach;

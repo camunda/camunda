@@ -17,7 +17,7 @@ import io.camunda.search.clients.reader.WaitStateReader;
 import io.camunda.search.entities.WaitStateEntity;
 import io.camunda.search.query.ElementInstanceWaitStateQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.core.authz.ResourceAccessChecks;
 import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;

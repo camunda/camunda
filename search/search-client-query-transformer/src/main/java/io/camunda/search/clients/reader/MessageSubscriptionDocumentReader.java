@@ -10,7 +10,7 @@ package io.camunda.search.clients.reader;
 import io.camunda.search.clients.SearchClientBasedQueryExecutor;
 import io.camunda.search.query.MessageSubscriptionQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.core.authz.ResourceAccessChecks;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionEntity;
 
