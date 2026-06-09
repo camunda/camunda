@@ -528,4 +528,40 @@ public class BusinessRuleTaskIncidentTest {
         .isTrue();
     assertIncidentCreated(processInstanceKey, taskActivating.getKey(), tenantId);
   }
+
+  @Test
+  public void shouldCreateIncidentIfVersionTagExpressionEvaluationFailed() {
+    // given
+    engine
+        .deployment()
+        .withXmlClasspathResource(DMN_RESOURCE)
+        .withXmlResource(
+            processWithBusinessRuleTask(
+                b ->
+                    b.zeebeCalledDecisionId(DECISION_ID)
+                        .zeebeBindingType(ZeebeBindingType.versionTag)
+                        .zeebeVersionTagExpression("versionTagVariable")
+                        .zeebeResultVariable(RESULT_VARIABLE)))
+        .deploy();
+
+    // when — no versionTagVariable set, expression evaluation fails
+    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    final var taskActivating =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(TASK_ELEMENT_ID)
+            .withElementType(BpmnElementType.BUSINESS_RULE_TASK)
+            .getFirst();
+
+    // then
+    assertIncidentCreated(processInstanceKey, taskActivating.getKey())
+        .hasErrorType(ErrorType.CALLED_DECISION_ERROR)
+        .hasErrorMessage(
+            """
+            Expected result of the expression 'versionTagVariable' to be 'STRING', but was 'NULL'. \
+            The evaluation reported the following warnings:
+            [NO_VARIABLE_FOUND] No variable found with name 'versionTagVariable'\
+            """);
+  }
 }
