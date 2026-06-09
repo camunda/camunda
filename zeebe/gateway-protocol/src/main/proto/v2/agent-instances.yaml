@@ -7,6 +7,8 @@ paths:
       tags:
         - Agent instance
       operationId: createAgentInstance
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: UPDATE_PROCESS_INSTANCE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -53,6 +55,8 @@ paths:
       tags:
         - Agent instance
       operationId: getAgentInstance
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_INSTANCE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -97,6 +101,8 @@ paths:
       tags:
         - Agent instance
       operationId: updateAgentInstance
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: UPDATE_PROCESS_INSTANCE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -145,6 +151,8 @@ paths:
       tags:
         - Agent instance
       operationId: searchAgentInstances
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_INSTANCE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -182,6 +190,8 @@ paths:
       tags:
         - Agent instance
       operationId: createAgentInstanceHistoryItem
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: UPDATE_PROCESS_INSTANCE }
       summary: Create agent instance history item
       description: |
         Appends a single history item to an agent instance's conversation history.
@@ -242,6 +252,8 @@ paths:
       tags:
         - Agent instance
       operationId: searchAgentInstanceHistory
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_INSTANCE }
       summary: Search agent instance history
       description: |
         Searches the conversation history of an agent instance. Committed items

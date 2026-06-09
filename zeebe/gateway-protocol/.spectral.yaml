@@ -15,6 +15,7 @@ functions:
   - verifySemanticKindsRegistered
   - verifyNoAmbiguousIdentifierProperty
   - verifySecurityDeclared
+  - verifyRequiredPermissions
 functionsDir: ./spectral-functions
 rules:
   # Tag validation
@@ -160,6 +161,66 @@ rules:
     message: "{{error}}"
     then:
       function: verifyAddedInVersion
+
+  # ── x-required-permissions (camunda/camunda#54727) ──
+  # Canonical endpoint -> required-permission(s) binding. Two rules:
+  #   1. Schema-shape lint for each entry (built-in `schema` function).
+  #   2. Completeness + registry-validity (custom verifyRequiredPermissions):
+  #      every operation must declare it, and each static pair must be valid
+  #      per resource-permissions.json.
+  # See docs/adr/security/001-endpoint-required-permission-mapping.md.
+  required-permissions-shape:
+    description: "Each `x-required-permissions` entry must conform to the documented schema."
+    severity: error
+    given: $.paths[*][get,put,post,patch,delete].x-required-permissions[*]
+    then:
+      function: schema
+      functionOptions:
+        schema:
+          type: object
+          additionalProperties: false
+          minProperties: 1
+          properties:
+            resourceType:
+              type: string
+              pattern: "^[A-Z][A-Z0-9_]+$"
+              description: A member of AuthorizationResourceType. Pairs with permissionType.
+            permissionType:
+              type: string
+              pattern: "^[A-Z][A-Z0-9_]+$"
+              description: A member of PermissionType supported by resourceType.
+            anyOf:
+              type: array
+              minItems: 2
+              description: OR-group — at least one of the listed permissions suffices.
+              items:
+                type: object
+                required: [resourceType, permissionType]
+                additionalProperties: false
+                properties:
+                  resourceType: { type: string, pattern: "^[A-Z][A-Z0-9_]+$" }
+                  permissionType: { type: string, pattern: "^[A-Z][A-Z0-9_]+$" }
+            dynamic:
+              type: boolean
+              description: Set to `true` when the required permission is resolved at runtime from the request body/path.
+            note:
+              type: string
+              minLength: 1
+              description: Required when `dynamic` is true — explains how the permission is resolved.
+          dependentRequired:
+            dynamic: [note]
+          oneOf:
+            - required: [resourceType, permissionType]
+            - required: [anyOf]
+            - required: [dynamic, note]
+
+  verify-required-permissions:
+    description: "Every operation must declare `x-required-permissions` (or `[]` if public), and each static `{resourceType, permissionType}` pair must be valid per resource-permissions.json."
+    severity: error
+    given: "$"
+    message: "{{error}}"
+    then:
+      function: verifyRequiredPermissions
 
   # ── x-semantic-establishes / x-semantic-requires (camunda/camunda#52272) ──
   # Three rules:

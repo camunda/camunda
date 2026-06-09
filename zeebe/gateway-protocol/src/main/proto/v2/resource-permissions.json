@@ -1,0 +1,66 @@
+{
+  "$comment": "Registry of valid (resourceType -> permissionType) pairs for the x-required-permissions OpenAPI vendor extension. Mirrors AuthorizationResourceType.buildResourcePermissionsMap() (security/security-protocol). Kept honest by ResourcePermissionsRegistryTest, which asserts this file equals the enum-derived map. Do not edit by hand without updating the enum; regenerate from the enum instead. UNSPECIFIED is intentionally omitted (internal default, never user-provided).",
+  "resourcePermissions": {
+    "AUDIT_LOG": ["READ"],
+    "AUTHORIZATION": ["CREATE", "DELETE", "READ", "UPDATE"],
+    "BATCH": [
+      "CREATE",
+      "CREATE_BATCH_OPERATION_CANCEL_PROCESS_INSTANCE",
+      "CREATE_BATCH_OPERATION_DELETE_DECISION_DEFINITION",
+      "CREATE_BATCH_OPERATION_DELETE_DECISION_INSTANCE",
+      "CREATE_BATCH_OPERATION_DELETE_PROCESS_DEFINITION",
+      "CREATE_BATCH_OPERATION_DELETE_PROCESS_INSTANCE",
+      "CREATE_BATCH_OPERATION_MIGRATE_PROCESS_INSTANCE",
+      "CREATE_BATCH_OPERATION_MODIFY_PROCESS_INSTANCE",
+      "CREATE_BATCH_OPERATION_RESOLVE_INCIDENT",
+      "READ",
+      "UPDATE"
+    ],
+    "CLUSTER_VARIABLE": ["CREATE", "DELETE", "READ", "UPDATE"],
+    "COMPONENT": ["ACCESS"],
+    "DECISION_DEFINITION": [
+      "CREATE_DECISION_INSTANCE",
+      "DELETE_DECISION_INSTANCE",
+      "READ_DECISION_DEFINITION",
+      "READ_DECISION_INSTANCE"
+    ],
+    "DECISION_REQUIREMENTS_DEFINITION": ["READ"],
+    "DOCUMENT": ["CREATE", "DELETE", "READ"],
+    "EXPRESSION": ["EVALUATE"],
+    "GLOBAL_LISTENER": [
+      "CREATE_TASK_LISTENER",
+      "DELETE_TASK_LISTENER",
+      "READ_TASK_LISTENER",
+      "UPDATE_TASK_LISTENER"
+    ],
+    "GROUP": ["CREATE", "DELETE", "READ", "UPDATE"],
+    "MAPPING_RULE": ["CREATE", "DELETE", "READ", "UPDATE"],
+    "MESSAGE": ["CREATE", "READ"],
+    "PROCESS_DEFINITION": [
+      "CANCEL_PROCESS_INSTANCE",
+      "CLAIM_USER_TASK",
+      "COMPLETE_USER_TASK",
+      "CREATE_PROCESS_INSTANCE",
+      "DELETE_PROCESS_INSTANCE",
+      "MODIFY_PROCESS_INSTANCE",
+      "READ_PROCESS_DEFINITION",
+      "READ_PROCESS_INSTANCE",
+      "READ_USER_TASK",
+      "UPDATE_PROCESS_INSTANCE",
+      "UPDATE_USER_TASK"
+    ],
+    "RESOURCE": [
+      "CREATE",
+      "DELETE_DRD",
+      "DELETE_FORM",
+      "DELETE_PROCESS",
+      "DELETE_RESOURCE",
+      "READ"
+    ],
+    "ROLE": ["CREATE", "DELETE", "READ", "UPDATE"],
+    "SYSTEM": ["READ", "READ_JOB_METRIC", "READ_USAGE_METRIC", "UPDATE"],
+    "TENANT": ["CREATE", "DELETE", "READ", "UPDATE"],
+    "USER": ["CREATE", "DELETE", "READ", "UPDATE"],
+    "USER_TASK": ["CLAIM", "COMPLETE", "READ", "UPDATE"]
+  }
+}

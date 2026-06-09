@@ -7,6 +7,8 @@ paths:
       tags:
         - Decision definition
       operationId: searchDecisionDefinitions
+      x-required-permissions:
+        - { resourceType: DECISION_DEFINITION, permissionType: READ_DECISION_DEFINITION }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -41,6 +43,8 @@ paths:
       tags:
         - Decision definition
       operationId: getDecisionDefinition
+      x-required-permissions:
+        - { resourceType: DECISION_DEFINITION, permissionType: READ_DECISION_DEFINITION }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -84,6 +88,8 @@ paths:
       tags:
         - Decision definition
       operationId: getDecisionDefinitionXML
+      x-required-permissions:
+        - { resourceType: DECISION_DEFINITION, permissionType: READ_DECISION_DEFINITION }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -127,6 +133,8 @@ paths:
       tags:
         - Decision definition
       operationId: evaluateDecision
+      x-required-permissions:
+        - { resourceType: DECISION_DEFINITION, permissionType: CREATE_DECISION_INSTANCE }
       security:
         - bearerAuth: []
         - basicAuth: []

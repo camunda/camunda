@@ -7,6 +7,8 @@ paths:
       tags:
         - Process instance
       operationId: createProcessInstance
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: CREATE_PROCESS_INSTANCE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -77,6 +79,8 @@ paths:
       tags:
         - Process instance
       operationId: getProcessInstance
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_INSTANCE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -118,6 +122,8 @@ paths:
       tags:
         - Process instance
       operationId: getProcessInstanceSequenceFlows
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_INSTANCE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -153,6 +159,8 @@ paths:
       tags:
         - Process instance
       operationId: getProcessInstanceStatistics
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_INSTANCE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -188,6 +196,8 @@ paths:
       tags:
         - Process instance
       operationId: searchProcessInstances
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_INSTANCE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -222,6 +232,8 @@ paths:
       tags:
         - Process instance
       operationId: searchProcessInstanceIncidents
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_INSTANCE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -275,6 +287,8 @@ paths:
       tags:
         - Process instance
       operationId: resolveProcessInstanceIncidents
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: UPDATE_PROCESS_INSTANCE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -316,6 +330,8 @@ paths:
       tags:
         - Process instance
       operationId: cancelProcessInstance
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: CANCEL_PROCESS_INSTANCE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -364,6 +380,10 @@ paths:
       tags:
         - Process instance
       operationId: cancelProcessInstancesBatchOperation
+      x-required-permissions:
+        - anyOf:
+            - { resourceType: BATCH, permissionType: CREATE }
+            - { resourceType: BATCH, permissionType: CREATE_BATCH_OPERATION_CANCEL_PROCESS_INSTANCE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -408,6 +428,10 @@ paths:
       tags:
         - Process instance
       operationId: resolveIncidentsBatchOperation
+      x-required-permissions:
+        - anyOf:
+            - { resourceType: BATCH, permissionType: CREATE }
+            - { resourceType: BATCH, permissionType: CREATE_BATCH_OPERATION_RESOLVE_INCIDENT }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -452,6 +476,10 @@ paths:
       tags:
         - Process instance
       operationId: migrateProcessInstancesBatchOperation
+      x-required-permissions:
+        - anyOf:
+            - { resourceType: BATCH, permissionType: CREATE }
+            - { resourceType: BATCH, permissionType: CREATE_BATCH_OPERATION_MIGRATE_PROCESS_INSTANCE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -496,6 +524,10 @@ paths:
       tags:
         - Process instance
       operationId: modifyProcessInstancesBatchOperation
+      x-required-permissions:
+        - anyOf:
+            - { resourceType: BATCH, permissionType: CREATE }
+            - { resourceType: BATCH, permissionType: CREATE_BATCH_OPERATION_MODIFY_PROCESS_INSTANCE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -542,6 +574,8 @@ paths:
       tags:
         - Process instance
       operationId: deleteProcessInstance
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: DELETE_PROCESS_INSTANCE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -591,6 +625,10 @@ paths:
       tags:
         - Process instance
       operationId: deleteProcessInstancesBatchOperation
+      x-required-permissions:
+        - anyOf:
+            - { resourceType: BATCH, permissionType: CREATE }
+            - { resourceType: BATCH, permissionType: CREATE_BATCH_OPERATION_DELETE_PROCESS_INSTANCE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -634,6 +672,8 @@ paths:
       tags:
         - Process instance
       operationId: migrateProcessInstance
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: UPDATE_PROCESS_INSTANCE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -690,6 +730,8 @@ paths:
       tags:
         - Process instance
       operationId: modifyProcessInstance
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: MODIFY_PROCESS_INSTANCE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -737,6 +779,8 @@ paths:
       tags:
         - Process instance
       operationId: getProcessInstanceCallHierarchy
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_INSTANCE }
       security:
         - bearerAuth: []
         - basicAuth: []

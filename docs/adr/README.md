@@ -18,4 +18,8 @@ ADR for that domain is written.
 
 ## Index
 
-<!-- ADRs will be listed here as they are created -->
+- `security/001-endpoint-required-permission-mapping.md` — canonical v2 REST
+  endpoint → required-permission mapping via the `x-required-permissions`
+  OpenAPI vendor extension, with Spectral gap guard and engine drift guard
+  (camunda/camunda#54727).
+

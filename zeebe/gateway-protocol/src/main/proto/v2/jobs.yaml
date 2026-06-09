@@ -7,6 +7,7 @@ paths:
       tags:
         - Job
       operationId: activateJobs
+      x-required-permissions: []
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -42,6 +43,8 @@ paths:
       tags:
         - Job
       operationId: searchJobs
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_INSTANCE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -76,6 +79,8 @@ paths:
       tags:
         - Job
       operationId: failJob
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: UPDATE_PROCESS_INSTANCE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -129,6 +134,8 @@ paths:
       tags:
         - Job
       operationId: throwJobError
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: UPDATE_PROCESS_INSTANCE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -180,6 +187,8 @@ paths:
       tags:
         - Job
       operationId: completeJob
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: UPDATE_PROCESS_INSTANCE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -230,6 +239,8 @@ paths:
       tags:
         - Job
       operationId: updateJob
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: UPDATE_PROCESS_INSTANCE }
       security:
         - bearerAuth: []
         - basicAuth: []
