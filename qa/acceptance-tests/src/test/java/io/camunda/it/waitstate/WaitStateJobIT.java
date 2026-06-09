@@ -233,20 +233,6 @@ public class WaitStateJobIT {
   }
 
   @Test
-  void shouldReturnEmptyForMessageWaitStateType() {
-    // when — no MESSAGE wait-state transformer exists yet, so the result must be empty
-    final var result =
-        camundaClient
-            .newElementInstanceWaitStateSearchRequest()
-            .filter(f -> f.waitStateType(WaitStateType.MESSAGE))
-            .send()
-            .join();
-
-    // then
-    assertThat(result.items()).isEmpty();
-  }
-
-  @Test
   void shouldFilterByElementId() {
     // when
     final var result =
