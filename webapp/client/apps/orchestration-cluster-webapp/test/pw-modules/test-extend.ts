@@ -11,12 +11,24 @@ import {defineNetworkFixture, type NetworkFixture} from '@msw/playwright';
 import type {AnyHandler} from 'msw';
 import AxeBuilder from '@axe-core/playwright';
 import {LoginPage} from '#/pages/Login.page';
+import {TasklistIndexPage} from '#/pages/TasklistIndex.page';
+import {TasklistProcessesPage} from '#/pages/TasklistProcesses.page';
+import {OperateIndexPage} from '#/pages/OperateIndex.page';
+import {AdminIndexPage} from '#/pages/AdminIndex.page';
+import {NotFoundPage} from '#/pages/NotFound.page';
+import {ForbiddenPage} from '#/pages/Forbidden.page';
 
 type Fixtures = {
 	handlers: Array<AnyHandler>;
 	network: NetworkFixture;
 	makeAxeBuilder: () => AxeBuilder;
 	loginPage: LoginPage;
+	tasklistIndexPage: TasklistIndexPage;
+	tasklistProcessesPage: TasklistProcessesPage;
+	operateIndexPage: OperateIndexPage;
+	adminIndexPage: AdminIndexPage;
+	notFoundPage: NotFoundPage;
+	forbiddenPage: ForbiddenPage;
 };
 
 const test = base.extend<Fixtures>({
@@ -26,6 +38,24 @@ const test = base.extend<Fixtures>({
 	},
 	loginPage: async ({page}, use) => {
 		await use(new LoginPage(page));
+	},
+	tasklistIndexPage: async ({page}, use) => {
+		await use(new TasklistIndexPage(page));
+	},
+	tasklistProcessesPage: async ({page}, use) => {
+		await use(new TasklistProcessesPage(page));
+	},
+	operateIndexPage: async ({page}, use) => {
+		await use(new OperateIndexPage(page));
+	},
+	adminIndexPage: async ({page}, use) => {
+		await use(new AdminIndexPage(page));
+	},
+	notFoundPage: async ({page}, use) => {
+		await use(new NotFoundPage(page));
+	},
+	forbiddenPage: async ({page}, use) => {
+		await use(new ForbiddenPage(page));
 	},
 	handlers: [[], {option: true}],
 	network: [

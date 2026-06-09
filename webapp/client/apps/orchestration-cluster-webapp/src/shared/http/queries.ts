@@ -7,13 +7,14 @@
  */
 
 import {queryOptions} from '@tanstack/react-query';
-import type {GetSystemConfigurationResponseBody, CurrentUser} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {GetSystemConfigurationResponseBody, CurrentUser, License} from '@camunda/camunda-api-zod-schemas/8.10';
 import {request} from './request';
 import {endpoints} from './endpoints';
 
 const queryKeys = {
 	currentUser: () => ['getCurrentUser'] as const,
 	systemConfiguration: () => ['systemConfiguration'] as const,
+	license: () => ['license'] as const,
 };
 
 const queries = {
@@ -36,6 +37,19 @@ const queries = {
 			queryKey: queryKeys.systemConfiguration(),
 			queryFn: async (): Promise<GetSystemConfigurationResponseBody> => {
 				const {response, error} = await request(endpoints.getSystemConfiguration());
+				if (error !== null) {
+					throw error;
+				}
+				return response.json();
+			},
+			staleTime: Infinity,
+			gcTime: Infinity,
+		}),
+	getLicense: () =>
+		queryOptions({
+			queryKey: queryKeys.license(),
+			queryFn: async (): Promise<License> => {
+				const {response, error} = await request(endpoints.getLicense());
 				if (error !== null) {
 					throw error;
 				}

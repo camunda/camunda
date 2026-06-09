@@ -8,24 +8,29 @@
 
 import type {GetSystemConfigurationResponseBody} from '@camunda/camunda-api-zod-schemas/8.10';
 
-const mockSystemConfiguration = {
-	jobMetrics: {
-		enabled: false,
-		exportInterval: 'PT10S',
-		maxWorkerNameLength: 128,
-		maxJobTypeLength: 256,
-		maxTenantIdLength: 64,
-		maxUniqueKeys: 100,
-	},
-	components: {active: []},
-	deployment: {
-		isMultiTenancyEnabled: false,
-		maxRequestSize: 0,
-	},
-	authentication: {canLogout: true, isLoginDelegated: false},
-	cloud: {
-		stage: null,
-	},
-} satisfies GetSystemConfigurationResponseBody;
+function createSystemConfiguration(
+	overrides?: Partial<GetSystemConfigurationResponseBody>,
+): GetSystemConfigurationResponseBody {
+	return {
+		jobMetrics: {
+			enabled: false,
+			exportInterval: 'PT10S',
+			maxWorkerNameLength: 128,
+			maxJobTypeLength: 256,
+			maxTenantIdLength: 64,
+			maxUniqueKeys: 100,
+		},
+		components: {active: []},
+		deployment: {
+			isMultiTenancyEnabled: false,
+			maxRequestSize: 0,
+		},
+		authentication: {canLogout: true, isLoginDelegated: false},
+		cloud: {
+			stage: null,
+		},
+		...overrides,
+	};
+}
 
-export {mockSystemConfiguration};
+export {createSystemConfiguration};

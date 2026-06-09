@@ -18,6 +18,7 @@ import { Route as AuthAdminRouteRouteImport } from './routes/_auth/admin/route'
 import { Route as AuthTasklistIndexRouteImport } from './routes/_auth/tasklist/index'
 import { Route as AuthOperateIndexRouteImport } from './routes/_auth/operate/index'
 import { Route as AuthAdminIndexRouteImport } from './routes/_auth/admin/index'
+import { Route as AuthTasklistProcessesRouteImport } from './routes/_auth/tasklist/processes'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -63,6 +64,11 @@ const AuthAdminIndexRoute = AuthAdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthAdminRouteRoute,
 } as any)
+const AuthTasklistProcessesRoute = AuthTasklistProcessesRouteImport.update({
+  id: '/processes',
+  path: '/processes',
+  getParentRoute: () => AuthTasklistRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthIndexRoute
@@ -70,6 +76,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthAdminRouteRouteWithChildren
   '/operate': typeof AuthOperateRouteRouteWithChildren
   '/tasklist': typeof AuthTasklistRouteRouteWithChildren
+  '/tasklist/processes': typeof AuthTasklistProcessesRoute
   '/admin/': typeof AuthAdminIndexRoute
   '/operate/': typeof AuthOperateIndexRoute
   '/tasklist/': typeof AuthTasklistIndexRoute
@@ -77,6 +84,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/': typeof AuthIndexRoute
+  '/tasklist/processes': typeof AuthTasklistProcessesRoute
   '/admin': typeof AuthAdminIndexRoute
   '/operate': typeof AuthOperateIndexRoute
   '/tasklist': typeof AuthTasklistIndexRoute
@@ -89,6 +97,7 @@ export interface FileRoutesById {
   '/_auth/operate': typeof AuthOperateRouteRouteWithChildren
   '/_auth/tasklist': typeof AuthTasklistRouteRouteWithChildren
   '/_auth/': typeof AuthIndexRoute
+  '/_auth/tasklist/processes': typeof AuthTasklistProcessesRoute
   '/_auth/admin/': typeof AuthAdminIndexRoute
   '/_auth/operate/': typeof AuthOperateIndexRoute
   '/_auth/tasklist/': typeof AuthTasklistIndexRoute
@@ -101,11 +110,18 @@ export interface FileRouteTypes {
     | '/admin'
     | '/operate'
     | '/tasklist'
+    | '/tasklist/processes'
     | '/admin/'
     | '/operate/'
     | '/tasklist/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/login' | '/' | '/admin' | '/operate' | '/tasklist'
+  to:
+    | '/login'
+    | '/'
+    | '/tasklist/processes'
+    | '/admin'
+    | '/operate'
+    | '/tasklist'
   id:
     | '__root__'
     | '/_auth'
@@ -114,6 +130,7 @@ export interface FileRouteTypes {
     | '/_auth/operate'
     | '/_auth/tasklist'
     | '/_auth/'
+    | '/_auth/tasklist/processes'
     | '/_auth/admin/'
     | '/_auth/operate/'
     | '/_auth/tasklist/'
@@ -189,6 +206,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthAdminIndexRouteImport
       parentRoute: typeof AuthAdminRouteRoute
     }
+    '/_auth/tasklist/processes': {
+      id: '/_auth/tasklist/processes'
+      path: '/processes'
+      fullPath: '/tasklist/processes'
+      preLoaderRoute: typeof AuthTasklistProcessesRouteImport
+      parentRoute: typeof AuthTasklistRouteRoute
+    }
   }
 }
 
@@ -216,10 +240,12 @@ const AuthOperateRouteRouteWithChildren =
   AuthOperateRouteRoute._addFileChildren(AuthOperateRouteRouteChildren)
 
 interface AuthTasklistRouteRouteChildren {
+  AuthTasklistProcessesRoute: typeof AuthTasklistProcessesRoute
   AuthTasklistIndexRoute: typeof AuthTasklistIndexRoute
 }
 
 const AuthTasklistRouteRouteChildren: AuthTasklistRouteRouteChildren = {
+  AuthTasklistProcessesRoute: AuthTasklistProcessesRoute,
   AuthTasklistIndexRoute: AuthTasklistIndexRoute,
 }
 

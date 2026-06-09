@@ -6,8 +6,14 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-const TasklistPage: React.FC = () => {
-	return <h1>Tasklist</h1>;
+import styles from './TasklistIndexPage.module.scss';
+
+const TasklistIndexPage: React.FC = () => {
+	return (
+		<main className={styles['container']}>
+			<h1>Tasklist</h1>
+		</main>
+	);
 };
 
-export {TasklistPage};
+export {TasklistIndexPage};

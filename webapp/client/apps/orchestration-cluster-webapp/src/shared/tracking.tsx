@@ -99,6 +99,14 @@ type Events =
 	| {
 			eventName: 'tasklist:os-notification-permission-requested';
 			outcome: NotificationPermission;
+	  }
+	| {
+			eventName: 'admin:navigation';
+			link: 'header-logo';
+	  }
+	| {
+			eventName: 'operate:navigation';
+			link: 'header-logo';
 	  };
 
 const STAGE_ENV = getStage(window.location.host);

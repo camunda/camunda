@@ -6,9 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {TasklistIndexPage} from '#/tasklist/pages/TasklistIndexPage';
 import {createFileRoute} from '@tanstack/react-router';
-import {TasklistPage} from '#/tasklist/pages/TasklistPage';
 
 export const Route = createFileRoute('/_auth/tasklist/')({
-	component: TasklistPage,
+	component: TasklistIndexPage,
 });

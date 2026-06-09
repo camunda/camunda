@@ -6,10 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {createFileRoute, Outlet} from '@tanstack/react-router';
+import {createFileRoute} from '@tanstack/react-router';
 import {getClientConfig} from '#/shared/config/getClientConfig';
 import {ComponentNotAvailableError, ForbiddenError} from '#/shared/errors';
 import {ForbiddenPage} from '#/shared/pages/ForbiddenPage';
+import {NotFoundPage} from '#/shared/pages/NotFoundPage';
 
 export const Route = createFileRoute('/_auth/operate')({
 	beforeLoad: () => {
@@ -23,7 +24,11 @@ export const Route = createFileRoute('/_auth/operate')({
 		}
 		throw error;
 	},
-	component: OperateLayout,
+	notFoundComponent: () => (
+		<main className="cds--content">
+			<NotFoundPage />
+		</main>
+	),
 	head: () => ({
 		meta: [
 			{
@@ -32,7 +37,3 @@ export const Route = createFileRoute('/_auth/operate')({
 		],
 	}),
 });
-
-function OperateLayout() {
-	return <Outlet />;
-}
