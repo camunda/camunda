@@ -39,7 +39,9 @@ public final class TestEnvironment {
         if (gradleWorkerIdPropName != null) {
           final String workerId = System.getProperty(gradleWorkerIdPropName);
           if (workerId != null) {
-            testForkNumber = Integer.parseInt(workerId) - 1;
+            final String maxForksStr = System.getProperty("test.maxForks");
+            final int maxForks = maxForksStr != null ? Integer.parseInt(maxForksStr) : 1;
+            testForkNumber = (Integer.parseInt(workerId) - 1) % maxForks;
           }
         } else {
           LOG.warn(

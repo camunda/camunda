@@ -96,9 +96,12 @@ tasks.withType<Test>().configureEach {
     maxParallelForks = testMaxForks
     // Pass the name of Gradle's internal per-worker ID property so TestEnvironment can resolve it
     // at runtime to a unique fork number, giving each worker its own SocketUtil port range.
+    // Also pass maxParallelForks so TestEnvironment can apply modulo and stay within SocketUtil's
+    // MAX_TEST_FORKS_PER_STAGE bound (Gradle worker IDs are globally cumulative, not per-task).
     systemProperty(
         "test.gradleWorkerIdProperty",
         org.gradle.api.internal.tasks.testing.worker.TestWorker.WORKER_ID_SYS_PROPERTY)
+    systemProperty("test.maxForks", maxParallelForks)
     jvmArgs(
         "--add-opens=java.base/java.io=ALL-UNNAMED",
         "--add-opens=java.base/java.lang=ALL-UNNAMED",
