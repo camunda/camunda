@@ -155,7 +155,7 @@ jobs:
     name: "Integration / OpenSearch ITs"
     if: inputs.runBeTests
     runs-on: gcp-core-32-longrunning
-    timeout-minutes: 30
+    timeout-minutes: 45
     permissions: { }  # GITHUB_TOKEN unused in this job
     env:
       TEST_OWNER: Core Features
@@ -395,7 +395,7 @@ jobs:
     name: "E2E / Self-Managed (Smoke)"
     if: inputs.runFeTests
     runs-on: gcp-perf-core-8-default
-    timeout-minutes: 45
+    timeout-minutes: 30
     permissions: { }
     env:
       TEST_TYPE: E2E
