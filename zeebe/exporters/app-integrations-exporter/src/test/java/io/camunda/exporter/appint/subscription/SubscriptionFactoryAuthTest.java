@@ -8,6 +8,7 @@
 package io.camunda.exporter.appint.subscription;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.camunda.exporter.appint.config.Config;
 import io.camunda.exporter.appint.config.OAuthConfig;
@@ -36,7 +37,8 @@ class SubscriptionFactoryAuthTest {
     // then
     final Authentication auth = extractAuthentication(subscription);
     assertThat(auth).isInstanceOf(Authentication.OAuth.class);
-    subscription.close();
+    // closing must also stop the provider's token-refresher thread without throwing
+    assertThatCode(subscription::close).doesNotThrowAnyException();
   }
 
   @Test

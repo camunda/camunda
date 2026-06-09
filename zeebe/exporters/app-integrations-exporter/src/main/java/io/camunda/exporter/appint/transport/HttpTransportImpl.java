@@ -141,6 +141,11 @@ public class HttpTransportImpl implements Transport<Event> {
     final String responseReason = response.getStatusLine().getReasonPhrase();
     if (statusCode >= 200 && statusCode < 300) {
       log.debug("Successfully posted records to: {}", responseReason);
+    } else if (statusCode == 401 && authentication instanceof final Authentication.OAuth oauth) {
+      log.debug("Received 401; invalidating OAuth token and retrying with a fresh token");
+      oauth.credentialsProvider().invalidate();
+      throw new TransportException(
+          "Unauthorized (401); OAuth token invalidated, retrying with a fresh token");
     } else if (statusCode >= 400 && statusCode < 500) {
       log.debug("Failed posting records. Status: {} reason: {}", statusCode, responseReason);
       throw new TransportClientException(
@@ -165,6 +170,9 @@ public class HttpTransportImpl implements Transport<Event> {
 
   @Override
   public void close() {
+    if (authentication instanceof final Authentication.OAuth oauth) {
+      oauth.credentialsProvider().close();
+    }
     try {
       httpClient.close();
     } catch (final Exception e) {

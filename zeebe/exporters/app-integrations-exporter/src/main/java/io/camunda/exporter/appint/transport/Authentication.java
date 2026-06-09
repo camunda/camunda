@@ -43,5 +43,14 @@ public sealed interface Authentication permits ApiKey, None, OAuth {
      * @throws IOException if obtaining credentials fails (e.g. token endpoint is unreachable)
      */
     void applyCredentials(BiConsumer<String, String> headerConsumer) throws IOException;
+
+    /**
+     * Marks the current credentials as invalid (e.g. after a {@code 401}) so the next {@link
+     * #applyCredentials} call obtains fresh credentials. No-op by default.
+     */
+    default void invalidate() {}
+
+    /** Releases any background resources (e.g. a token-refresh thread). No-op by default. */
+    default void close() {}
   }
 }
