@@ -13,12 +13,15 @@ import styles from './Header.module.scss';
 
 const LanguageSelector: React.FC = () => {
 	const {i18n, t} = useTranslation();
-	const selectedLanguage = i18n.resolvedLanguage ?? 'en';
+	const selectedLanguage = i18n.resolvedLanguage;
 
 	const handleLanguageChange = (e: OnChangeData<SelectionOption>) => {
-		const newLanguage = e.selectedItem?.id ?? 'en';
-		i18n.changeLanguage(newLanguage);
-		localStorage.setItem('language', newLanguage);
+		const newLanguage = e.selectedItem?.id;
+
+		if (newLanguage !== undefined) {
+			i18n.changeLanguage(newLanguage);
+			localStorage.setItem('language', newLanguage);
+		}
 	};
 
 	return (
