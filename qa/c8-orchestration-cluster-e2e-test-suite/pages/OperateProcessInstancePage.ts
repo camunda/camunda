@@ -1006,7 +1006,14 @@ class OperateProcessInstancePage {
       await this.clickOnElementInDiagram(elementId);
     }
     await this.clickIncidentsTab();
-    await this.verifyIncidentCount(errorTypes.length);
+    // When a flow node is selected the incidents view switches to the
+    // element-scoped query, so the header count reflects only the selected
+    // element's incidents. That query may still be resolving (the header can
+    // briefly show the stale instance-wide total), so poll the count until it
+    // settles instead of reading it once.
+    await expect
+      .poll(() => this.getIncidentCount(), {timeout: 30000})
+      .toBe(errorTypes.length);
     for (const errorType of errorTypes) {
       const incidentRow = await this.getIncidentRowByErrorType(errorType);
       await expect(incidentRow).toBeVisible({timeout: 30000});
