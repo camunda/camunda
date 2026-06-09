@@ -135,7 +135,7 @@ describe('<DocumentValueCell />', () => {
     expect(screen.getByTitle('my-important-file.pdf')).toBeInTheDocument();
   });
 
-  it('should render an expired tag for an expired documents', () => {
+  it('should render an expired tag for expired documents', () => {
     const result: DocumentParseResult = {
       type: 'single',
       document: {
@@ -153,7 +153,7 @@ describe('<DocumentValueCell />', () => {
     expect(screen.getByText('Expired')).toBeInTheDocument();
   });
 
-  it('should not render an expired tag for a non-expired documents', () => {
+  it('should not render an expired tag for non-expired documents', () => {
     const result: DocumentParseResult = {
       type: 'single',
       document: {
