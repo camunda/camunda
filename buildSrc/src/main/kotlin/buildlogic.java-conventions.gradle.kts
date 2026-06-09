@@ -126,6 +126,8 @@ tasks.withType<Test>().configureEach {
         systemProperty("junit.jupiter.execution.parallel.config.fixed.parallelism", junitThreadCount)
     }
 
+    systemProperty("junit.jupiter.execution.timeout.default", "5 m")
+
     useJUnitPlatform()
 }
 
