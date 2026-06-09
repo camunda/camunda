@@ -250,6 +250,7 @@ public class DbVariableState implements MutableVariableState {
 
     writer.reserveMapHeader();
 
+    final MutableInteger written = new MutableInteger(0);
     visitVariables(
         scopeKey,
         name -> variablesToCollect.contains(name.getBuffer()),
@@ -258,10 +259,11 @@ public class DbVariableState implements MutableVariableState {
           writer.writeRaw(value.getValue());
 
           variablesToCollect.remove(name.getBuffer());
+          written.increment();
         },
         variablesToCollect::isEmpty);
 
-    writer.writeReservedMapHeader(0, names.size() - variablesToCollect.size());
+    writer.writeReservedMapHeader(0, written.get());
 
     resultView.wrap(documentResultBuffer, 0, writer.getOffset());
     return resultView;
