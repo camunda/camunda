@@ -14,23 +14,22 @@ import {
 	mockLogoutEndpoint,
 	mockSystemConfigurationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
-import {mockSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
-import {mockLicense} from '#/shared-test-modules/api-mocks/license';
-import {mockCurrentUser, mockPaidCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
+import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
+import {createLicense} from '#/shared-test-modules/api-mocks/license';
+import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
+
+const currentUserMock = createCurrentUser();
 
 test.beforeEach(({network}) => {
 	network.use(
 		mockCurrentUserEndpoint({
-			successResponse: HttpResponse.json(mockCurrentUser),
+			successResponse: HttpResponse.json(currentUserMock),
 		}),
 		mockSystemConfigurationEndpoint({
-			successResponse: HttpResponse.json({
-				...mockSystemConfiguration,
-				components: {active: ['tasklist']},
-			}),
+			successResponse: HttpResponse.json(createSystemConfiguration({components: {active: ['tasklist']}})),
 		}),
 		mockLicenseEndpoint({
-			successResponse: HttpResponse.json(mockLicense),
+			successResponse: HttpResponse.json(createLicense()),
 		}),
 	);
 });
@@ -63,7 +62,7 @@ test.describe('user sidebar', () => {
 		await tasklistIndexPage.goto();
 		await tasklistIndexPage.header.openUserSidebar();
 
-		await expect(page.getByText(mockCurrentUser.displayName)).toBeVisible();
+		await expect(page.getByText(currentUserMock.displayName)).toBeVisible();
 	});
 
 	test('should display the language selector', async ({tasklistIndexPage}) => {
@@ -106,7 +105,7 @@ test.describe('info sidebar', () => {
 	test('should show Feedback and Support link for paid plan users', async ({network, tasklistIndexPage}) => {
 		network.use(
 			mockCurrentUserEndpoint({
-				successResponse: HttpResponse.json(mockPaidCurrentUser),
+				successResponse: HttpResponse.json(createCurrentUser({salesPlanType: 'paid-cc'})),
 			}),
 		);
 

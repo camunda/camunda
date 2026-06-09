@@ -13,9 +13,9 @@ import {
 	mockLicenseEndpoint,
 	mockSystemConfigurationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
-import {mockSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
-import {mockLicense} from '#/shared-test-modules/api-mocks/license';
-import {mockCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
+import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
+import {createLicense} from '#/shared-test-modules/api-mocks/license';
+import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 
 test('should match the 404 page snapshot', async ({page, notFoundPage}) => {
 	await page.goto('/nonexistent-path');
@@ -26,11 +26,11 @@ test('should match the 404 page snapshot', async ({page, notFoundPage}) => {
 
 test('should match the forbidden page snapshot', async ({network, page, forbiddenPage}) => {
 	network.use(
-		mockCurrentUserEndpoint({successResponse: HttpResponse.json(mockCurrentUser)}),
+		mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
 		mockSystemConfigurationEndpoint({
-			successResponse: HttpResponse.json(mockSystemConfiguration),
+			successResponse: HttpResponse.json(createSystemConfiguration()),
 		}),
-		mockLicenseEndpoint({successResponse: HttpResponse.json(mockLicense)}),
+		mockLicenseEndpoint({successResponse: HttpResponse.json(createLicense())}),
 	);
 
 	await page.goto('/operate');

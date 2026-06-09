@@ -8,11 +8,14 @@
 
 import type {License} from '@camunda/camunda-api-zod-schemas/8.10';
 
-const mockLicense = {
-	validLicense: true,
-	licenseType: 'production',
-	isCommercial: true,
-	expiresAt: null,
-} satisfies License;
+function createLicense(overrides?: Partial<License>): License {
+	return {
+		validLicense: true,
+		licenseType: 'production',
+		isCommercial: true,
+		expiresAt: null,
+		...overrides,
+	};
+}
 
-export {mockLicense};
+export {createLicense};

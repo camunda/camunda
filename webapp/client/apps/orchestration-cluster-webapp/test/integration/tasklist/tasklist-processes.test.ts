@@ -13,23 +13,22 @@ import {
 	mockLicenseEndpoint,
 	mockSystemConfigurationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
-import {mockSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
-import {mockLicense} from '#/shared-test-modules/api-mocks/license';
-import {mockCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
+import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
+import {createLicense} from '#/shared-test-modules/api-mocks/license';
+import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 
 test.beforeEach(({network}) => {
 	network.use(
 		mockCurrentUserEndpoint({
-			successResponse: HttpResponse.json(mockCurrentUser),
+			successResponse: HttpResponse.json(createCurrentUser()),
 		}),
 		mockSystemConfigurationEndpoint({
-			successResponse: HttpResponse.json({
-				...mockSystemConfiguration,
-				components: {active: ['tasklist']},
-			}),
+			successResponse: HttpResponse.json(
+				createSystemConfiguration({components: {active: ['tasklist']}}),
+			),
 		}),
 		mockLicenseEndpoint({
-			successResponse: HttpResponse.json(mockLicense),
+			successResponse: HttpResponse.json(createLicense()),
 		}),
 	);
 });

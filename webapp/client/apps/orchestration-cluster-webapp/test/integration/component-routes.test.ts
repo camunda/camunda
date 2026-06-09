@@ -13,24 +13,23 @@ import {
 	mockLicenseEndpoint,
 	mockSystemConfigurationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
-import {mockSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
-import {mockLicense} from '#/shared-test-modules/api-mocks/license';
-import {mockCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
+import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
+import {createLicense} from '#/shared-test-modules/api-mocks/license';
+import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 
 test.describe('component routes', () => {
 	test('should render Operate when component is active', async ({network, page}) => {
 		network.use(
 			mockCurrentUserEndpoint({
-				successResponse: HttpResponse.json(mockCurrentUser),
+				successResponse: HttpResponse.json(createCurrentUser()),
 			}),
 			mockSystemConfigurationEndpoint({
-				successResponse: HttpResponse.json({
-					...mockSystemConfiguration,
-					components: {active: ['operate']},
-				}),
+				successResponse: HttpResponse.json(
+					createSystemConfiguration({components: {active: ['operate']}}),
+				),
 			}),
 			mockLicenseEndpoint({
-				successResponse: HttpResponse.json(mockLicense),
+				successResponse: HttpResponse.json(createLicense()),
 			}),
 		);
 
@@ -42,16 +41,15 @@ test.describe('component routes', () => {
 	test('should render Tasklist when component is active', async ({network, page}) => {
 		network.use(
 			mockCurrentUserEndpoint({
-				successResponse: HttpResponse.json(mockCurrentUser),
+				successResponse: HttpResponse.json(createCurrentUser()),
 			}),
 			mockSystemConfigurationEndpoint({
-				successResponse: HttpResponse.json({
-					...mockSystemConfiguration,
-					components: {active: ['tasklist']},
-				}),
+				successResponse: HttpResponse.json(
+					createSystemConfiguration({components: {active: ['tasklist']}}),
+				),
 			}),
 			mockLicenseEndpoint({
-				successResponse: HttpResponse.json(mockLicense),
+				successResponse: HttpResponse.json(createLicense()),
 			}),
 		);
 
@@ -63,16 +61,15 @@ test.describe('component routes', () => {
 	test('should render Admin when component is active', async ({network, page}) => {
 		network.use(
 			mockCurrentUserEndpoint({
-				successResponse: HttpResponse.json(mockCurrentUser),
+				successResponse: HttpResponse.json(createCurrentUser()),
 			}),
 			mockSystemConfigurationEndpoint({
-				successResponse: HttpResponse.json({
-					...mockSystemConfiguration,
-					components: {active: ['admin']},
-				}),
+				successResponse: HttpResponse.json(
+					createSystemConfiguration({components: {active: ['admin']}}),
+				),
 			}),
 			mockLicenseEndpoint({
-				successResponse: HttpResponse.json(mockLicense),
+				successResponse: HttpResponse.json(createLicense()),
 			}),
 		);
 
@@ -83,12 +80,12 @@ test.describe('component routes', () => {
 
 	test('should show error page when Tasklist is not active', async ({network, page, forbiddenPage}) => {
 		network.use(
-			mockCurrentUserEndpoint({successResponse: HttpResponse.json(mockCurrentUser)}),
+			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
 			mockSystemConfigurationEndpoint({
-				successResponse: HttpResponse.json(mockSystemConfiguration),
+				successResponse: HttpResponse.json(createSystemConfiguration()),
 			}),
 			mockLicenseEndpoint({
-				successResponse: HttpResponse.json(mockLicense),
+				successResponse: HttpResponse.json(createLicense()),
 			}),
 		);
 
@@ -100,12 +97,12 @@ test.describe('component routes', () => {
 
 	test('should show error page when Admin is not active', async ({network, page, forbiddenPage}) => {
 		network.use(
-			mockCurrentUserEndpoint({successResponse: HttpResponse.json(mockCurrentUser)}),
+			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
 			mockSystemConfigurationEndpoint({
-				successResponse: HttpResponse.json(mockSystemConfiguration),
+				successResponse: HttpResponse.json(createSystemConfiguration()),
 			}),
 			mockLicenseEndpoint({
-				successResponse: HttpResponse.json(mockLicense),
+				successResponse: HttpResponse.json(createLicense()),
 			}),
 		);
 
@@ -121,12 +118,12 @@ test.describe('component routes', () => {
 		forbiddenPage,
 	}) => {
 		network.use(
-			mockCurrentUserEndpoint({successResponse: HttpResponse.json(mockCurrentUser)}),
+			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
 			mockSystemConfigurationEndpoint({
-				successResponse: HttpResponse.json(mockSystemConfiguration),
+				successResponse: HttpResponse.json(createSystemConfiguration()),
 			}),
 			mockLicenseEndpoint({
-				successResponse: HttpResponse.json(mockLicense),
+				successResponse: HttpResponse.json(createLicense()),
 			}),
 		);
 
@@ -139,13 +136,13 @@ test.describe('component routes', () => {
 	test('should redirect to login when system configuration endpoint fails', async ({network, page}) => {
 		network.use(
 			mockCurrentUserEndpoint({
-				successResponse: HttpResponse.json(mockCurrentUser),
+				successResponse: HttpResponse.json(createCurrentUser()),
 			}),
 			mockSystemConfigurationEndpoint({
 				successResponse: new HttpResponse(null, {status: 500}),
 			}),
 			mockLicenseEndpoint({
-				successResponse: HttpResponse.json(mockLicense),
+				successResponse: HttpResponse.json(createLicense()),
 			}),
 		);
 
@@ -156,14 +153,13 @@ test.describe('component routes', () => {
 
 	test('should show 404 page for unknown tasklist route', async ({network, page, notFoundPage}) => {
 		network.use(
-			mockCurrentUserEndpoint({successResponse: HttpResponse.json(mockCurrentUser)}),
+			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
 			mockSystemConfigurationEndpoint({
-				successResponse: HttpResponse.json({
-					...mockSystemConfiguration,
-					components: {active: ['tasklist']},
-				}),
+				successResponse: HttpResponse.json(
+					createSystemConfiguration({components: {active: ['tasklist']}}),
+				),
 			}),
-			mockLicenseEndpoint({successResponse: HttpResponse.json(mockLicense)}),
+			mockLicenseEndpoint({successResponse: HttpResponse.json(createLicense())}),
 		);
 
 		await page.goto('/tasklist/nonexistent');
@@ -173,14 +169,13 @@ test.describe('component routes', () => {
 
 	test('should show 404 page for unknown operate route', async ({network, page, notFoundPage}) => {
 		network.use(
-			mockCurrentUserEndpoint({successResponse: HttpResponse.json(mockCurrentUser)}),
+			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
 			mockSystemConfigurationEndpoint({
-				successResponse: HttpResponse.json({
-					...mockSystemConfiguration,
-					components: {active: ['operate']},
-				}),
+				successResponse: HttpResponse.json(
+					createSystemConfiguration({components: {active: ['operate']}}),
+				),
 			}),
-			mockLicenseEndpoint({successResponse: HttpResponse.json(mockLicense)}),
+			mockLicenseEndpoint({successResponse: HttpResponse.json(createLicense())}),
 		);
 
 		await page.goto('/operate/nonexistent');
@@ -190,14 +185,13 @@ test.describe('component routes', () => {
 
 	test('should show 404 page for unknown admin route', async ({network, page, notFoundPage}) => {
 		network.use(
-			mockCurrentUserEndpoint({successResponse: HttpResponse.json(mockCurrentUser)}),
+			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
 			mockSystemConfigurationEndpoint({
-				successResponse: HttpResponse.json({
-					...mockSystemConfiguration,
-					components: {active: ['admin']},
-				}),
+				successResponse: HttpResponse.json(
+					createSystemConfiguration({components: {active: ['admin']}}),
+				),
 			}),
-			mockLicenseEndpoint({successResponse: HttpResponse.json(mockLicense)}),
+			mockLicenseEndpoint({successResponse: HttpResponse.json(createLicense())}),
 		);
 
 		await page.goto('/admin/nonexistent');

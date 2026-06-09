@@ -8,22 +8,20 @@
 
 import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.10';
 
-const mockCurrentUser = {
-	username: 'demo',
-	displayName: 'Demo User',
-	email: 'demo@camunda.com',
-	salesPlanType: null,
-	authorizedComponents: ['*'],
-	roles: [],
-	c8Links: {},
-	tenants: [],
-	groups: [],
-	canLogout: true,
-} satisfies CurrentUser;
+function createCurrentUser(overrides?: Partial<CurrentUser>): CurrentUser {
+	return {
+		username: 'demo',
+		displayName: 'Demo User',
+		email: 'demo@camunda.com',
+		salesPlanType: null,
+		authorizedComponents: ['*'],
+		roles: [],
+		c8Links: {},
+		tenants: [],
+		groups: [],
+		canLogout: true,
+		...overrides,
+	};
+}
 
-const mockPaidCurrentUser = {
-	...mockCurrentUser,
-	salesPlanType: 'paid-cc',
-} satisfies CurrentUser;
-
-export {mockCurrentUser, mockPaidCurrentUser};
+export {createCurrentUser};

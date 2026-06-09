@@ -14,9 +14,9 @@ import {
 	mockLoginEndpoint,
 	mockSystemConfigurationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
-import {mockSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
-import {mockLicense} from '#/shared-test-modules/api-mocks/license';
-import {mockCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
+import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
+import {createLicense} from '#/shared-test-modules/api-mocks/license';
+import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 
 test('should redirect to the initial page on success', async ({network, page, loginPage}) => {
 	network.use(
@@ -33,16 +33,15 @@ test('should redirect to the initial page on success', async ({network, page, lo
 
 	network.use(
 		mockCurrentUserEndpoint({
-			successResponse: HttpResponse.json(mockCurrentUser),
+			successResponse: HttpResponse.json(createCurrentUser()),
 		}),
 		mockSystemConfigurationEndpoint({
-			successResponse: HttpResponse.json({
-				...mockSystemConfiguration,
-				components: {active: ['operate']},
-			}),
+			successResponse: HttpResponse.json(
+				createSystemConfiguration({components: {active: ['operate']}}),
+			),
 		}),
 		mockLicenseEndpoint({
-			successResponse: HttpResponse.json(mockLicense),
+			successResponse: HttpResponse.json(createLicense()),
 		}),
 	);
 
@@ -53,6 +52,9 @@ test('should redirect to the initial page on success', async ({network, page, lo
 });
 
 test('should redirect to the referrer page', async ({network, page, loginPage}) => {
+	const systemConfigurationMock = createSystemConfiguration({components: {active: ['operate']}});
+	const licenseMock = createLicense();
+
 	network.use(
 		mockCurrentUserEndpoint({
 			successResponse: new HttpResponse(null, {status: 401}),
@@ -61,13 +63,10 @@ test('should redirect to the referrer page', async ({network, page, loginPage}) 
 			successResponse: new HttpResponse(null, {status: 200}),
 		}),
 		mockSystemConfigurationEndpoint({
-			successResponse: HttpResponse.json({
-				...mockSystemConfiguration,
-				components: {active: ['operate']},
-			}),
+			successResponse: HttpResponse.json(systemConfigurationMock),
 		}),
 		mockLicenseEndpoint({
-			successResponse: HttpResponse.json(mockLicense),
+			successResponse: HttpResponse.json(licenseMock),
 		}),
 	);
 
@@ -76,16 +75,13 @@ test('should redirect to the referrer page', async ({network, page, loginPage}) 
 
 	network.use(
 		mockCurrentUserEndpoint({
-			successResponse: HttpResponse.json(mockCurrentUser),
+			successResponse: HttpResponse.json(createCurrentUser()),
 		}),
 		mockSystemConfigurationEndpoint({
-			successResponse: HttpResponse.json({
-				...mockSystemConfiguration,
-				components: {active: ['operate']},
-			}),
+			successResponse: HttpResponse.json(systemConfigurationMock),
 		}),
 		mockLicenseEndpoint({
-			successResponse: HttpResponse.json(mockLicense),
+			successResponse: HttpResponse.json(licenseMock),
 		}),
 	);
 
