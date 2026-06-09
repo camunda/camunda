@@ -71,7 +71,16 @@ public final class ReschedulingTask implements RunnableTask {
         .thenApplyAsync(this::onWorkPerformed, executor)
         .exceptionallyAsync(this::onError, executor)
         .thenAcceptAsync(this::reschedule, executor)
-        .thenAccept(unused -> executionCounter.incrementAndGet());
+        .thenAccept(unused -> executionCounter.incrementAndGet())
+        .exceptionally(
+            error -> {
+              logger.error(
+                  "Unexpected error occurred while rescheduling task {} (bug in error handling code?);"
+                      + " task will NOT be retried",
+                  task,
+                  error);
+              return null;
+            });
   }
 
   @Override
