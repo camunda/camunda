@@ -7,19 +7,19 @@
  */
 
 import {type Page} from '@playwright/test';
+import {BasePage} from './BasePage';
 import {Header} from './Header';
 
-class TasklistProcessesPage {
-	private readonly page: Page;
+class TasklistProcessesPage extends BasePage {
 	readonly header: Header;
 
 	constructor(page: Page) {
-		this.page = page;
+		super(page);
 		this.header = new Header(page);
 	}
 
 	async goto() {
-		await this.page.goto('/tasklist/processes');
+		return this.page.goto('/tasklist/processes');
 	}
 
 	get heading() {

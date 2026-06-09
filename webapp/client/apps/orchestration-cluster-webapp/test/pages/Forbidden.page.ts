@@ -7,14 +7,14 @@
  */
 
 import {type Page} from '@playwright/test';
+import {View} from './BasePage';
 import {Header} from './Header';
 
-class ForbiddenPage {
-	private readonly page: Page;
+class ForbiddenPage extends View {
 	readonly header: Header;
 
 	constructor(page: Page) {
-		this.page = page;
+		super(page);
 		this.header = new Header(page);
 	}
 

@@ -7,19 +7,19 @@
  */
 
 import {type Page} from '@playwright/test';
+import {BasePage} from './BasePage';
 import {Header} from './Header';
 
-class OperateIndexPage {
-	private readonly page: Page;
+class OperateIndexPage extends BasePage {
 	readonly header: Header;
 
 	constructor(page: Page) {
-		this.page = page;
+		super(page);
 		this.header = new Header(page, 'Camunda Operate');
 	}
 
 	async goto() {
-		await this.page.goto('/operate');
+		return this.page.goto('/operate');
 	}
 
 	get heading() {

@@ -7,16 +7,15 @@
  */
 
 import {type Page} from '@playwright/test';
+import {BasePage} from './BasePage';
 
-class LoginPage {
-	private page: Page;
-
+class LoginPage extends BasePage {
 	constructor(page: Page) {
-		this.page = page;
+		super(page);
 	}
 
 	async goto() {
-		await this.page.goto('/login');
+		return this.page.goto('/login');
 	}
 
 	get submitButton() {

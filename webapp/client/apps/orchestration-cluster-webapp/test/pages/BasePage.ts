@@ -6,25 +6,18 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {type Page} from '@playwright/test';
-import {BasePage} from './BasePage';
-import {Header} from './Header';
+import type {Page, Response} from '@playwright/test';
 
-class AdminIndexPage extends BasePage {
-	readonly header: Header;
+abstract class View {
+	protected readonly page: Page;
 
 	constructor(page: Page) {
-		super(page);
-		this.header = new Header(page, 'Camunda Admin');
-	}
-
-	async goto() {
-		return this.page.goto('/admin');
-	}
-
-	get heading() {
-		return this.page.getByRole('heading', {name: 'Admin'});
+		this.page = page;
 	}
 }
 
-export {AdminIndexPage};
+abstract class BasePage extends View {
+	abstract goto(...args: unknown[]): Promise<Response | null>;
+}
+
+export {BasePage, View};

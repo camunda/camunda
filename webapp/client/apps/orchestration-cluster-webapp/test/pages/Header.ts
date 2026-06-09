@@ -7,13 +7,13 @@
  */
 
 import {type Page} from '@playwright/test';
+import {View} from './BasePage';
 
-class Header {
-	private page: Page;
+class Header extends View {
 	private brandingName: string | undefined;
 
 	constructor(page: Page, brandingName?: string) {
-		this.page = page;
+		super(page);
 		this.brandingName = brandingName;
 	}
 

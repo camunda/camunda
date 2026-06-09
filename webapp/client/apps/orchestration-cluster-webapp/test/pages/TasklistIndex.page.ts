@@ -7,19 +7,19 @@
  */
 
 import {type Page} from '@playwright/test';
+import {BasePage} from './BasePage';
 import {Header} from './Header';
 
-class TasklistIndexPage {
-	private readonly page: Page;
+class TasklistIndexPage extends BasePage {
 	readonly header: Header;
 
 	constructor(page: Page) {
-		this.page = page;
+		super(page);
 		this.header = new Header(page, 'Camunda Tasklist');
 	}
 
 	async goto() {
-		await this.page.goto('/tasklist');
+		return this.page.goto('/tasklist');
 	}
 
 	get heading() {
