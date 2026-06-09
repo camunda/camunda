@@ -1,0 +1,453 @@
+# Default load test values for Camunda Platform Chart.
+# https://github.com/camunda/camunda-platform-helm
+#
+# This file is used to override the default values of the chart.
+# The values are optimized for running the load tests with a Camunda cluster on GKE.
+#
+# This is a YAML-formatted file.
+# Per default we run with the Orchestration Cluster, Optimize, Connectors, and Identity
+# Keycloak as identity provider with OIDC authentication, but you can easily
+# switch to other configurations by changing the values in this file or by overriding them via the
+# command line when installing the chart.
+
+########################################################################################
+################################################### Global cluster configuration
+########################################################################################
+global:
+  commonLabels:
+    camunda.io/created-by: __AUTHOR__
+    camunda.io/purpose: load-test
+
+  # Disable global ingress
+  ingress:
+    enabled: false
+  image:
+    # Image.repository defines the repository from which to fetch the docker images
+    repository: "registry.camunda.cloud/team-zeebe"
+    # Image.tag defines the tag / version which should be used in the chart
+    tag: 8.7.0
+    ## @param global.image.pullPolicy defines the image pull policy which should be used https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
+    pullPolicy: Always
+    ## @param global.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
+    pullSecrets:
+      - name: harbor-registry
+
+  identity:
+    auth:
+      enabled: true
+      zeebe:
+        existingSecret:
+          name: camunda-credentials
+        existingSecretKey: identity-zeebe-client-token
+      optimize:
+        clientId: optimize
+        existingSecret: camunda-credentials
+        existingSecretKey: identity-optimize-client-token
+      operate:
+        clientId: operate
+        existingSecret: camunda-credentials
+        existingSecretKey: identity-operate-client-token
+      tasklist:
+        clientId: tasklist
+        existingSecret: camunda-credentials
+        existingSecretKey: identity-tasklist-client-token
+      connectors:
+        clientId: connectors
+        existingSecret: camunda-credentials
+        existingSecretKey: identity-connectors-client-token
+  # To override the names - and remove the release name from the names
+  # Allows shorter names like zeebe-0, zeebe-1, etc.
+  # Especially useful for the services, which are just zeebe-gateway and zeebe
+  zeebeClusterName: zeebe
+
+identity:
+  enabled: true
+  fullnameOverride: identity # we override the names for simplicity of the deployment
+  firstUser:
+    existingSecret: camunda-credentials
+    existingSecretKey: identity-firstuser-password
+  env:
+    # https://docs.camunda.io/docs/8.7/self-managed/identity/miscellaneous/configure-logging/#stackdriver
+    - name: IDENTITY_LOG_APPENDER
+      value: Stackdriver
+  nodeSelector:
+    topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
+  tolerations:
+    - key: nodepool
+      operator: Equal
+      value: n2-standard-4
+      effect: NoSchedule
+
+optimize:
+  enabled: true
+  fullnameOverride: optimize # we override the names for simplicity of the deployment
+  resources:
+    requests:
+      cpu: 1
+      memory: 2Gi
+    limits:
+      cpu: 2
+      memory: 4Gi
+
+  # Optimize reads historyCleanup only from environment-config.yaml (its custom config loader),
+  # not from application.yml via spring.config.import.
+  # To provide a different/additional configuration from the default configuration, we therefore
+  # have to override the full environment-config.yaml via `configuration` and repeat the default
+  # configuration: to see the differences compared to the default one, see the marker in the
+  # configuration itself.
+  # ES host/port use Optimize's ${VAR:default} placeholder syntax so they stay dynamic at
+  # runtime (the deployment sets OPTIMIZE_ELASTICSEARCH_HOST / OPTIMIZE_ELASTICSEARCH_HTTP_PORT).
+  configuration: |
+    zeebe:
+      enabled: true
+      partitionCount: 3
+      name: "zeebe-record"
+    es:
+      connection:
+        nodes:
+          - host: "${OPTIMIZE_ELASTICSEARCH_HOST:localhost}"
+            httpPort: ${OPTIMIZE_ELASTICSEARCH_HTTP_PORT:9200}
+    spring:
+      servlet:
+        multipart:
+          max-file-size: "10MB"
+          max-request-size: "10MB"
+      profiles:
+        active: "ccsm"
+    security:
+      auth:
+        cookie:
+          same-site:
+            enabled: false
+        ccsm:
+          redirectRootUrl: "http://localhost:8083"
+    api:
+      audience: "optimize-api"
+      jwtSetUri: "http://keycloak/auth/realms/camunda-platform/protocol/openid-connect/certs"
+
+    ## Changed from the default configuration
+    # Configure and enable the process data cleanup
+    historyCleanup:
+      cronTrigger: '*/30 * * * *'
+      ttl: 'P1D'
+      processDataCleanup:
+        enabled: true
+  env:
+    # https://docs.camunda.io/docs/8.7/self-managed/optimize-deployment/configuration/logging/#google-stackdriver-json-logging
+    - name: JSON_LOGGING
+      value: "true"
+
+    # Configure Optimize to use the full size of the ES/OS cluster it connects
+    # to. Otherwise, the default configuration of 1 primary + 1 replica creates
+    # bottlenecks on 2 nodes and doesn't spread the disk usage correctly across
+    # the cluster.
+    # Ideally, this value should default to the number of Elasticsearch nodes
+    # in the cluster.
+    - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SETTINGS_INDEX_NUMBER_OF_SHARDS
+      value: "3" # default 1
+
+    # Improve performances of Optimize for the load tests.
+    # This is load-test specific and different configuration of cluster
+    # configuration (different hardware resources for instance) and/or type of
+    # workload may benefit (or even require) from a different value here.
+    - name: CAMUNDA_OPTIMIZE_ZEEBE_MAX_IMPORT_PAGE_SIZE
+      value: "1000" # default 200
+
+  nodeSelector:
+    topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
+
+  tolerations:
+    - key: nodepool
+      operator: Equal
+      value: n2-standard-4
+      effect: NoSchedule
+
+identityKeycloak:
+  enabled: true
+  fullnameOverride: keycloak # we override the names for simplicity of the deployment
+  auth:
+    adminUser: admin
+    existingSecret: camunda-credentials
+    passwordSecretKey: identity-keycloak-admin-password
+  nodeSelector:
+    component: benchmark-n2-standard-4
+    topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
+  tolerations:
+    - key: nodepool
+      operator: Equal
+      value: n2-standard-4
+      effect: NoSchedule
+  extraEnvVars:
+    # https://www.keycloak.org/server/logging#_console
+    - name: KC_LOG_CONSOLE_OUTPUT
+      value: json
+  postgresql:
+    fullnameOverride: keycloak-postgresql # we override the names for simplicity of the deployment
+    auth:
+      existingSecret: camunda-credentials
+      secretKeys:
+        adminPasswordKey: identity-keycloak-postgresql-admin-password
+        userPasswordKey: identity-keycloak-postgresql-user-password
+
+
+operate:
+  enabled: true
+  fullnameOverride: operate # we override the names for simplicity of the deployment
+  resources:
+    requests:
+      cpu: 600m
+      memory: 400Mi
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+  # Retention can be used to define the data in Elasticsearch (ILM).
+  retention:
+    enabled: true
+    minimumAge: 1d
+  env:
+    # https://docs.camunda.io/docs/8.7/self-managed/operate-deployment/operate-configuration/#json-logging-configuration
+    - name: OPERATE_LOG_APPENDER
+      value: Stackdriver
+  nodeSelector:
+    topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
+  tolerations:
+    - key: nodepool
+      operator: Equal
+      value: n2-standard-4
+      effect: NoSchedule
+
+tasklist:
+  enabled: true
+  fullnameOverride: tasklist # we override the names for simplicity of the deployment
+  resources:
+    requests:
+      cpu: 400m
+      memory: 1Gi
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+  # Retention can be used to define the data in Elasticsearch (ILM).
+  retention:
+    enabled: true
+  env:
+    # https://docs.camunda.io/docs/8.7/self-managed/tasklist-deployment/tasklist-configuration/#json-logging-configuration
+    - name: TASKLIST_LOG_APPENDER
+      value: Stackdriver
+  nodeSelector:
+    topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
+  tolerations:
+    - key: nodepool
+      operator: Equal
+      value: n2-standard-4
+      effect: NoSchedule
+
+connectors:
+  enabled: true
+  fullnameOverride: connectors # we override the names for simplicity of the deployment
+  resources:
+    requests:
+      cpu: 1
+      memory: 1Gi
+    limits:
+      cpu: 2
+      memory: 2Gi
+  env:
+    # https://docs.camunda.io/docs/self-managed/components/connectors/connectors-configuration/#google-stackdriver-json-logging
+    - name: CONNECTORS_LOG_APPENDER
+      value: stackdriver
+  nodeSelector:
+    topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
+  tolerations:
+    - key: nodepool
+      operator: Equal
+      value: n2-standard-4
+      effect: NoSchedule
+
+webModeler:
+  enabled: false
+
+postgresql:
+  enabled: false
+
+zeebe:
+  # Image configuration to configure the zeebe image specifics
+  image:
+    registry: docker.io
+    repository: camunda/zeebe
+    tag: 8.7-SNAPSHOT
+  # ClusterSize defines the amount of brokers (=replicas), which are deployed via helm
+  clusterSize: "3"
+  # PartitionCount defines how many zeebe partitions are set up in the cluster
+  partitionCount: "3"
+  # ReplicationFactor defines how each partition is replicated, the value defines the number of nodes
+  replicationFactor: "3"
+  # CpuThreadCount defines how many threads can be used for the processing on each broker pod
+  cpuThreadCount: "3"
+  # IoThreadCount defines how many threads can be used for the exporting on each broker pod
+  ioThreadCount: "3"
+  # Resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
+  resources:
+    requests:
+      cpu: 3000m
+      memory: 4Gi
+    limits:
+      cpu: 3000m
+      memory: 4Gi
+
+  nodeSelector:
+    component: benchmark-n2-standard-4
+    topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
+
+  tolerations:
+    - key: nodepool
+      operator: Equal
+      value: n2-standard-4
+      effect: NoSchedule
+
+  # PvcSize defines the persistent volume claim size, which is used by each broker pod https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims
+  pvcSize: "64Gi"
+  # PvcStorageClassName can be used to set the storage class name which should be used by the persistent volume claim. It is recommended to use a storage class, which is backed with a SSD.
+  # It is recommended to use a storage class, which is backed with a SSD. Set to "-" to disable use of default storage class.
+  pvcStorageClassName: benchmark-ssd-zonal-v1
+  # ContainerSecurityContext defines the security options the Zeebe broker container should be run with
+  containerSecurityContext:
+    ## @param securityContext.allowPrivilegeEscalation
+    allowPrivilegeEscalation: true
+    ## @param securityContext.privileged
+    privileged: true
+    ## @param securityContext.readOnlyRootFilesystem
+    readOnlyRootFilesystem: true
+    ## @param securityContext.runAsUser
+    runAsUser: 1000
+    capabilities:
+      add: ["NET_ADMIN"]
+  javaOpts: >-
+    -XX:MaxRAMPercentage=25.0
+    -XX:+ExitOnOutOfMemoryError
+    -XX:+HeapDumpOnOutOfMemoryError
+    -XX:HeapDumpPath=/usr/local/zeebe/data
+    -XX:ErrorFile=/usr/local/zeebe/data/zeebe_error%p.log
+    -Xlog:gc*:file=/usr/local/zeebe/data/gc.log:time:filecount=7,filesize=8M
+
+  # We set extra configuration to configure additional settings for Broker and Gateway, that are part
+  # of the orchestration cluster.
+  # This allows adding configurations without the need of overwriting all environment variables from the Platform chart.
+  extraConfiguration:
+    application.yml: |
+      zeebe.broker.experimental.consistencyChecks.enablePreconditions: "true"
+      zeebe.broker.experimental.consistencyChecks.enableForeignKeyChecks: "true"
+      zeebe.broker.executionMetricsExporterEnabled: "true"
+      zeebe.broker.data.diskUsageCommandWatermark: "0.8"
+      zeebe.broker.data.diskUsageReplicationWatermark: "0.9"
+
+      # Configure a rate limit for all writes, so that we can visualize flow control metrics.
+      zeebe.broker.flowControl.write.enabled: "true"
+      zeebe.broker.flowControl.write.limit: 4000
+    # This file is loaded after application.yml (higher priority). It is empty by default,
+    # but can be overridden via --set-file for specific scenarios (e.g. max)
+    # to change settings like disabling consistency checks without duplicating the full application.yml content.
+    application-override.yml: "# no overrides"
+
+  # Zeebe config
+  extraVolumes:
+    - name: logs
+      emptyDir: {}
+  ## @param zeebe.extraVolumeMounts can be used to mount extra volumes for the broker pods
+  extraVolumeMounts:
+    - name: logs
+      mountPath: /usr/local/zeebe/logs
+  # Retention can be used to define the data in Elasticsearch (ILM).
+  retention:
+    ## @param zeebe.retention.enabled if true, the ILM Policy is created and applied to the index templates.
+    enabled: true
+    ## @param zeebe.retention.minimumAge defines how old the data must be, before the data is deleted as a duration.
+    minimumAge: 1d # Optimize needs time to import data before ILM cleanup
+  # @param core.env can be used to set extra environment variables in each broker container
+  env:
+    # Enable JSON logging for google cloud stackdriver
+    - name: ZEEBE_LOG_APPENDER
+      value: Stackdriver
+    - name: ZEEBE_LOG_STACKDRIVER_SERVICENAME
+      value: zeebe
+    - name: ZEEBE_LOG_STACKDRIVER_SERVICEVERSION
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.namespace
+    - name: ATOMIX_LOG_LEVEL
+      value: INFO
+    # To be able to load a separate/additional configuration
+    # See https://github.com/camunda/camunda-platform-helm/issues/2197
+    - name: SPRING_CONFIG_ADDITIONALLOCATION
+      # application-override.yml is listed second so it has higher priority and can override application.yml.
+      # Marked optional so Spring does not fail if this file is not mounted in a given deployment configuration.
+      value: "/usr/local/zeebe/config/application.yml,optional:/usr/local/zeebe/config/application-override.yml"
+
+zeebeGateway:
+  # Replicas defines how many standalone gateways are deployed
+  replicas: 2
+
+  # Image configuration to configure the zeebe-gateway image specifics
+  image:
+    # Image.repository defines which image repository to use
+    repository: camunda/zeebe
+    # Image.registry defines which image registry to use
+    registry: docker.io
+    # Image.tag defines the tag / version which should be used in the chart
+    tag: 8.7-SNAPSHOT
+  # LogLevel defines the log level which is used by the gateway
+  logLevel: debug
+
+  # We set extra configuration to configure additional settings for Broker and Gateway, that are part
+  # of the orchestration cluster.
+  # This allows adding configurations without the need of overwriting all environment variables from the Platform chart.
+  extraConfiguration:
+    application.yml: |
+      zeebe.gateway.monitoring.enabled: "true"
+      zeebe.gateway.threads.managementThreads: "1"
+
+  # Zeebe config
+  extraVolumes:
+    - name: logs
+      emptyDir: {}
+  ## @param zeebeGateway.extraVolumeMounts can be used to mount extra volumes for the broker pods
+  extraVolumeMounts:
+    - name: logs
+      mountPath: /usr/local/zeebe/logs
+
+  # Env can be used to set extra environment variables in each gateway container
+  env:
+    - name: ZEEBE_LOG_APPENDER
+      value: Stackdriver
+    - name: ZEEBE_LOG_STACKDRIVER_SERVICENAME
+      value: zeebe
+    - name: ZEEBE_LOG_STACKDRIVER_SERVICEVERSION
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.namespace
+    - name: ATOMIX_LOG_LEVEL
+      value: INFO
+    # To be able to load a separate/additional configuration
+    # See https://github.com/camunda/camunda-platform-helm/issues/2197
+    - name: SPRING_CONFIG_ADDITIONALLOCATION
+      value: "/usr/local/zeebe/config/application.yml"
+    - name: CAMUNDA_REST_QUERY_ENABLED
+      value: "true"
+
+  nodeSelector:
+    topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
+
+  # Resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
+  resources:
+    limits:
+      cpu: 450m
+      memory: 1Gi
+    requests:
+      cpu: 450m
+      memory: 1Gi
+
+# Change these settings to configure a different way to collect metrics
+prometheusServiceMonitor:
+  enabled: true
+  labels:
+    release: monitoring
+  scrapeInterval: 30s

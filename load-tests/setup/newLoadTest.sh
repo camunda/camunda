@@ -47,7 +47,20 @@ fi
 ### First parameter is used as namespace name
 ### For a new namespace a new folder will be created
 
-helm_chart="camunda-platform-8.10"
+# Config source directory — set LOAD_TEST_CONFIG_DIR to use a branch-specific
+# layout (e.g. "stable-8.7") instead of the default one. The workflow computes
+# this from github.ref_name and falls back to "default" when no matching
+# directory exists. See .github/workflows/camunda-load-test.yml.
+config_dir="${LOAD_TEST_CONFIG_DIR:-default}"
+
+# Helm chart name: read from <config_dir>/helm-chart.txt when present so each
+# versioned config folder can pin its own chart without touching this script.
+if [[ -f "${config_dir}/helm-chart.txt" ]]; then
+  helm_chart=$(cat "${config_dir}/helm-chart.txt")
+else
+  helm_chart="camunda-platform-8.10"
+fi
+
 namespace="$1"
 
 # Add c8- prefix if not present
@@ -152,34 +165,34 @@ mkdir -p "$namespace"
 # (defaults + override + load-test + stable), and the matching
 # camunda-platform-values-${secondaryStorage}.yaml. Flat layout so the
 # per-namespace Makefile's -f <file>.yaml references resolve unchanged.
-cp -v  default/Makefile                              "$namespace/"
-cp -rv default/resources/                            "$namespace/"
-cp -v  default/values/camunda-platform-override-values.yaml "$namespace/"
-cp -v  default/values/load-test-values.yaml                 "$namespace/"
-cp -v  default/values/values-stable.yaml                    "$namespace/"
-cp -v "default/values/camunda-platform-values-defaults.yaml" "$namespace/"
-cp -v "default/values/camunda-platform-values-${secondaryStorage}.yaml" "$namespace/"
+cp -v  "${config_dir}/Makefile"                              "$namespace/"
+cp -rv "${config_dir}/resources/"                            "$namespace/"
+cp -v  "${config_dir}/values/camunda-platform-override-values.yaml" "$namespace/"
+cp -v  "${config_dir}/values/load-test-values.yaml"                 "$namespace/"
+cp -v  "${config_dir}/values/values-stable.yaml"                    "$namespace/"
+cp -v  "${config_dir}/values/camunda-platform-values-defaults.yaml" "$namespace/"
+cp -v  "${config_dir}/values/camunda-platform-values-${secondaryStorage}.yaml" "$namespace/"
 
 # Storage-specific copies. databases/ is created only for mssql/oracle.
 case "$secondaryStorage" in
   elasticsearch|opensearch)
-    cp -v default/values/prometheus-elasticsearch-exporter-values.yaml "$namespace/"
+    cp -v "${config_dir}/values/prometheus-elasticsearch-exporter-values.yaml" "$namespace/"
     ;;
   postgresql|mysql|mariadb)
-    cp -v default/values/camunda-platform-values-rdbms.yaml                 "$namespace/"
+    cp -v "${config_dir}/values/camunda-platform-values-rdbms.yaml"                 "$namespace/"
     ;;
   mssql|oracle)
-    cp -v default/values/camunda-platform-values-rdbms.yaml                 "$namespace/"
+    cp -v "${config_dir}/values/camunda-platform-values-rdbms.yaml"                 "$namespace/"
     mkdir -p "$namespace/databases"
-    cp -v "default/databases/${secondaryStorage}.yaml"                       "$namespace/databases/"
+    cp -v "${config_dir}/databases/${secondaryStorage}.yaml"                        "$namespace/databases/"
     ;;
 esac
 
 if [[ "$enable_optimize" == "true" ]]; then
   # Optimize needs specifically Elasticsearch (independently from the secondary
   # storage configuration).
-  cp -v default/values/camunda-platform-values-optimize-elasticsearch.yaml "$namespace/"
-  cp -v default/values/prometheus-elasticsearch-exporter-values.yaml "$namespace/"
+  cp -v "${config_dir}/values/camunda-platform-values-optimize-elasticsearch.yaml" "$namespace/"
+  cp -v "${config_dir}/values/prometheus-elasticsearch-exporter-values.yaml"       "$namespace/"
 fi
 
 cd "$namespace"

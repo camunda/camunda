@@ -530,6 +530,20 @@ jobs:
           # The namespace label created-by will not be able resolve the actual user which triggered
           # the GitHub action by default. We need to correctly configure the git user here to make it work
           git config user.name ${{ github.actor }}
+
+          # Resolve a version-specific config directory from the running branch.
+          # "stable/8.7" → "stable-8.7", "main" or any other branch → "default".
+          # This lets stable branches carry their own Helm values and Makefile on
+          # main without requiring cross-branch backports. See #54234 / #54235.
+          branch="${{ github.ref_name }}"
+          config_subdir=$(echo "$branch" | sed 's|stable/|stable-|;s|/|-|g')
+          if [[ -d "${config_subdir}" ]]; then
+            export LOAD_TEST_CONFIG_DIR="${config_subdir}"
+            echo "Using branch-specific config directory: ${config_subdir}"
+          else
+            echo "No branch-specific config directory found for '${branch}'; using default"
+          fi
+
           # Render the load-test folder. newLoadTest.sh no longer creates the namespace — that
           # happens on `make install` via `kubectl apply -f resources/namespace.yaml`.
           ./newLoadTest.sh ${{ env.NAMESPACE }} ${{ inputs.secondary-storage-type }} ${{ inputs.ttl }} ${{ inputs.enable-optimize }}
