@@ -8,6 +8,7 @@
 package io.camunda.application.commons.rest;
 
 import io.camunda.application.commons.condition.ConditionalOnAnyHttpGatewayEnabled;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.camunda.zeebe.gateway.rest.config.PhysicalTenantRestConfigProvider;
@@ -26,13 +27,22 @@ public class PhysicalTenantRestConfiguration {
   public PhysicalTenantRestConfigProvider physicalTenantRestConfigProvider(
       final PhysicalTenantResolver physicalTenantResolver,
       final GatewayRestConfiguration gatewayRestConfiguration) {
-    final int maxNameFieldLength = gatewayRestConfiguration.getMaxNameFieldLength();
+    final int globalMaxNameFieldLength = gatewayRestConfiguration.getMaxNameFieldLength();
     final Map<String, TenantRestConfig> configs = new HashMap<>();
     physicalTenantResolver
         .getAll()
         .forEach(
             (tenantId, tenantConfig) -> {
               final var jm = tenantConfig.getMonitoring().getMetrics().getJobMetrics();
+              final int maxNameFieldLength =
+                  tenantConfig.getData().getSecondaryStorage().getType()
+                          == SecondaryStorageType.rdbms
+                      ? tenantConfig
+                          .getData()
+                          .getSecondaryStorage()
+                          .getRdbms()
+                          .getMaxVarcharFieldLength()
+                      : globalMaxNameFieldLength;
               configs.put(
                   tenantId,
                   new TenantRestConfig(
