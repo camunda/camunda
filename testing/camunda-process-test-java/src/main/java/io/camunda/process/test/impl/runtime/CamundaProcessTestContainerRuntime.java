@@ -277,6 +277,9 @@ public class CamundaProcessTestContainerRuntime
   }
 
   static boolean shouldAlwaysPullImage(final String imageVersion) {
+    if (imageVersion == null) {
+      return false;
+    }
     final String normalizedVersion = imageVersion.toLowerCase(Locale.ROOT);
     return normalizedVersion.contains("snapshot") || normalizedVersion.contains("latest");
   }
