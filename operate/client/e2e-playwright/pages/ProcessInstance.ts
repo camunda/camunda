@@ -38,6 +38,7 @@ export class ProcessInstance {
   readonly listenerTypeFilter: Locator;
   readonly resetZoomButton: Locator;
   readonly variablesEditor: InstanceType<typeof JSONEditor>;
+  readonly previewEditor: InstanceType<typeof JSONEditor>;
 
   constructor(page: Page) {
     this.page = page;
@@ -76,6 +77,7 @@ export class ProcessInstance {
       name: 'Reset diagram zoom',
     });
     this.variablesEditor = new JSONEditor(page);
+    this.previewEditor = new JSONEditor(page);
   }
 
   getEditVariableFieldSelector(variableName: string) {
