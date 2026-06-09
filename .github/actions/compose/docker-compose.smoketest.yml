@@ -65,7 +65,7 @@ services:
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/auth/realms/camunda-platform/protocol/openid-connect/certs
       - OPTIMIZE_LOG_LEVEL=DEBUG
     depends_on:
-      - zeebe
+      - camunda
       - identity
       - elasticsearch
     ports:
@@ -79,11 +79,14 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
-  zeebe:
-    image: camunda/zeebe:${ZEEBE_VERSION:-latest}
-    container_name: zeebe
+  camunda:
+    image: camunda/camunda:${ZEEBE_VERSION:-latest}
+    container_name: camunda
     environment:
+      - SPRING_PROFILES_ACTIVE=broker
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
+      - CAMUNDA_DATA_SECONDARYSTORAGE_TYPE=elasticsearch
+      - CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_URL=http://elasticsearch:9200
     ports:
       - "26500:26500"
       - "9600:9600"
@@ -99,7 +102,7 @@ services:
       start_period: 30s
     restart: always
     volumes:
-      - ../../../optimize/zeebe-application.yml:/usr/local/zeebe/config/application.yaml
+      - ../../../optimize/zeebe-application.yml:/usr/local/camunda/config/application.yaml
     depends_on:
       - elasticsearch
   keycloak:

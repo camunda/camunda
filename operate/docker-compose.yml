@@ -30,21 +30,22 @@ services:
     links:
       - elasticsearch
 
-  zeebe:
-    container_name: zeebe
-    image: camunda/zeebe:SNAPSHOT
+  camunda:
+    container_name: camunda
+    image: camunda/camunda:SNAPSHOT
     environment:
-      - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
-      - ZEEBE_HOST=${ZEEBE_HOST:-}
+      - SPRING_PROFILES_ACTIVE=broker,operate,tasklist,consolidated-auth,dev-data
+      - JAVA_TOOL_OPTIONS=-Xms512m -Xmx2g
       - ZEEBE_BROKER_CLUSTER_PARTITIONS_COUNT=4
-      #- "JAVA_OPTS=-agentlib:jdwp=transport=dt_socket,address=8000,server=y,suspend=n"
+      - CAMUNDA_DATA_SECONDARYSTORAGE_TYPE=elasticsearch
+      - CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_URL=http://elasticsearch:9200
     ports:
       - 26500:26500
-      - 8000:8000
-      - 8085:8080
+      - 9600:9600
+      - 8080:8080
+    depends_on:
+      - elasticsearch
     restart: always
-    volumes:
-      - ./config/zeebe.cfg.yaml:/usr/local/zeebe/config/application.yaml
 
   ldap-test-server:
     container_name: ldap-test-server
@@ -87,50 +88,24 @@ services:
       - "9601:9600" # required for Performance Analyzer
     volumes:
       - ./os-snapshots:/usr/local/os-snapshots
-  zeebe-opensearch:
-    container_name: zeebe-opensearch
-    image: camunda/zeebe:SNAPSHOT
+
+  camunda-opensearch:
+    container_name: camunda-opensearch
+    image: camunda/camunda:SNAPSHOT
     environment:
-      - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
-      - ZEEBE_HOST=${ZEEBE_HOST:-}
+      - SPRING_PROFILES_ACTIVE=broker,operate,tasklist,consolidated-auth,dev-data
+      - JAVA_TOOL_OPTIONS=-Xms512m -Xmx2g
       - ZEEBE_BROKER_CLUSTER_PARTITIONS_COUNT=4
-      - ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME=io.camunda.exporter.CamundaExporter
-      - CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_URL=http://opensearch:9200
-      - ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL=http://opensearch:9200
-      - CAMUNDA_TASKLIST_OPENSEARCH_URL=http://opensearch:9200
-      - CAMUNDA_OPERATE_OPENSEARCH_URL=http://opensearch:9200
-      - CAMUNDA_DATABASE_URL=http://opensearch:9200
-      - ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_TYPE=opensearch
       - CAMUNDA_DATA_SECONDARYSTORAGE_TYPE=opensearch
-      - CAMUNDA_DATABASE_TYPE=opensearch
-      - CAMUNDA_TASKLIST_DATABASE=opensearch
-      - CAMUNDA_OPERATE_DATABASE=opensearch
+      - CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_URL=http://opensearch:9200
+      - ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME=io.camunda.exporter.CamundaExporter
+      - ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL=http://opensearch:9200
+      - ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_TYPE=opensearch
       - ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_SIZE=1
     ports:
       - 26500:26500
-      - 8000:8000
-    restart: always
-  operate-opensearch:
-    image: camunda/operate:8.9.5
-    container_name: operate-opensearch
-    environment:
-      - SERVER_PORT=8080
-      - LOGGING_LEVEL_IO_CAMUNDA_OPERATE=INFO
-      # Unified configuration and compatibility properties for DB type
-      - CAMUNDA_DATA_SECONDARYSTORAGE_TYPE=opensearch
-      - CAMUNDA_OPERATE_DATABASE=opensearch
-      - CAMUNDA_TASKLIST_DATABASE=opensearch
-      - CAMUNDA_DATABASE_TYPE=opensearch
-      # ---
-      - CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS=zeebe-opensearch:26500
-      - CAMUNDA_OPERATE_OPENSEARCH_URL=http://opensearch:9200
-      - CAMUNDA_OPERATE_ZEEBEOPENSEARCH_URL=http://opensearch:9200
-      - CAMUNDA_OPERATE_ZEEBE_COMPATIBILITY_ENABLED=true
-      - SPRING_PROFILES_ACTIVE=dev-data
-      - CAMUNDA_OPERATE_BACKUP_REPOSITORYNAME=test
-      - SERVER_SERVLET_CONTEXT_PATH=/
-    ports:
+      - 9600:9600
       - 8080:8080
     depends_on:
       - opensearch
-      - zeebe-opensearch
+    restart: always
