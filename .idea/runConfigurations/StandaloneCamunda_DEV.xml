@@ -2,20 +2,20 @@
   <configuration default="false" name="StandaloneCamunda DEV" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
     <option name="ACTIVE_PROFILES" value="identity,tasklist,operate,broker,consolidated-auth,dev,insecure" />
     <envs>
-      <env name="CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_WAITFORIMPORTERS" value="false" />
+      <env name="CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_FLUSHINTERVAL" value="PT0.5S" />
+      <env name="CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_URL" value="jdbc:h2:file:./camunda-data/h2db" />
+      <env name="CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_USERNAME" value="sa" />
+      <env name="CAMUNDA_DATA_SECONDARYSTORAGE_TYPE" value="rdbms" />
+      <env name="CAMUNDA_MCP_ENABLED" value="true" />
       <env name="CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0_" value="demo" />
       <env name="CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL" value="demo@example.com" />
       <env name="CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME" value="Demo" />
       <env name="CAMUNDA_SECURITY_INITIALIZATION_USERS_0_PASSWORD" value="demo" />
       <env name="CAMUNDA_SECURITY_INITIALIZATION_USERS_0_USERNAME" value="demo" />
-      <env name="ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL" value="http://localhost:9200" />
-      <env name="ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_SHOULDWAITFORIMPORTERS" value="false" />
-      <env name="ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME" value="io.camunda.exporter.CamundaExporter" />
-      <env name="CAMUNDA_MCP_ENABLED" value="true" />
     </envs>
-    <option name="VM_PARAMETERS" value="--add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/jdk.internal.misc=ALL-UNNAMED" />
-    <module name="camunda-zeebe" />
+    <module name="camunda-zeebe.main" />
     <option name="SPRING_BOOT_MAIN_CLASS" value="io.camunda.application.StandaloneCamunda" />
+    <option name="VM_PARAMETERS" value="--add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/jdk.internal.misc=ALL-UNNAMED" />
     <extension name="net.ashald.envfile">
       <option name="IS_ENABLED" value="false" />
       <option name="IS_SUBST" value="false" />
