@@ -156,6 +156,7 @@ public class WaitStateEntry {
     TIMER,
     SIGNAL,
     INCIDENT,
-    CALL_ACTIVITY
+    CALL_ACTIVITY,
+    CONDITION
   }
 }

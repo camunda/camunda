@@ -29,7 +29,8 @@ public final class WaitStateTransformerRegistry {
         UserTaskBasedWaitStateTransformer::new,
         TimerBasedWaitStateTransformer::new,
         SignalBasedWaitStateTransformer::new,
-        MessageBasedWaitStateTransformer::new);
+        MessageBasedWaitStateTransformer::new,
+        ConditionBasedWaitStateTransformer::new);
   }
 
   /**

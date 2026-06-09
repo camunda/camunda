@@ -1,0 +1,18 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.exporter.common.waitstate.transformers;
+
+import io.camunda.zeebe.exporter.common.waitstate.WaitStateDetails;
+import java.util.List;
+
+/**
+ * Wait-state details for condition-based element waits (conditional intermediate catch events,
+ * conditional boundary events, and conditional start events in event subprocesses).
+ */
+public record ConditionWaitStateDetails(String expression, List<String> events)
+    implements WaitStateDetails {}

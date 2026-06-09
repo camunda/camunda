@@ -9,6 +9,7 @@ package io.camunda.zeebe.exporter.common.waitstate;
 
 import io.camunda.zeebe.exporter.common.waitstate.WaitStateEntry.WaitStateType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.ConditionalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
@@ -59,6 +60,13 @@ public final class WaitStateConfigs {
           .withUpdateIntents(SignalSubscriptionIntent.MIGRATED)
           .withRemoveIntents(SignalSubscriptionIntent.DELETED)
           .withWaitStateType(WaitStateType.SIGNAL);
+
+  public static final WaitStateTransformerConfig CONDITION_CONFIG =
+      WaitStateTransformerConfig.of(ValueType.CONDITIONAL_SUBSCRIPTION)
+          .withAddIntents(ConditionalSubscriptionIntent.CREATED)
+          .withUpdateIntents(ConditionalSubscriptionIntent.MIGRATED)
+          .withRemoveIntents(ConditionalSubscriptionIntent.DELETED)
+          .withWaitStateType(WaitStateType.CONDITION);
 
   private WaitStateConfigs() {}
 }
