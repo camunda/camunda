@@ -17,7 +17,7 @@ import io.camunda.search.entities.GlobalListenerEntity;
 import io.camunda.search.entities.GlobalListenerType;
 import io.camunda.search.query.GlobalListenerQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.core.authz.ResourceAccessChecks;
 import io.camunda.util.GlobalListenerUtil;
 import java.util.List;
 import org.slf4j.Logger;

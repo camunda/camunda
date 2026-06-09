@@ -22,7 +22,7 @@ import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.GroupMemberQuery;
 import io.camunda.search.sort.GroupMemberSort;
 import io.camunda.security.api.model.authz.EntityType;
-import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.core.authz.ResourceAccessChecks;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 import org.junit.jupiter.api.Tag;

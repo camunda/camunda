@@ -16,7 +16,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.db.rdbms.sql.UsageMetricTUMapper;
 import io.camunda.db.rdbms.write.domain.UsageMetricTUDbModel.UsageMetricTUStatisticsDbModel;
 import io.camunda.search.query.UsageMetricsTUQuery;
-import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.core.authz.ResourceAccessChecks;
 import org.junit.jupiter.api.Test;
 
 class UsageMetricTUDbReaderTest {

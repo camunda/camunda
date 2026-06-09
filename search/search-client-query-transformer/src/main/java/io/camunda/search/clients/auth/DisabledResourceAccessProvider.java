@@ -12,8 +12,8 @@ import static io.camunda.security.core.auth.RequiredAuthorization.withRequiredAu
 
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.core.auth.RequiredAuthorization;
-import io.camunda.security.reader.ResourceAccess;
-import io.camunda.security.reader.ResourceAccessProvider;
+import io.camunda.security.core.authz.ResourceAccess;
+import io.camunda.security.core.authz.ResourceAccessProvider;
 
 public class DisabledResourceAccessProvider implements ResourceAccessProvider {
 

@@ -19,9 +19,9 @@ import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.query.ProcessDefinitionFlowNodeStatisticsQuery;
 import io.camunda.security.core.auth.RequiredAuthorization;
-import io.camunda.security.reader.AuthorizationCheck;
-import io.camunda.security.reader.ResourceAccessChecks;
-import io.camunda.security.reader.TenantCheck;
+import io.camunda.security.core.authz.AuthorizationCheck;
+import io.camunda.security.core.authz.ResourceAccessChecks;
+import io.camunda.security.core.authz.TenantCheck;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -153,7 +153,8 @@ class ProcessDefinitionStatisticsDbReaderTest {
     final ProcessDefinitionFlowNodeStatisticsQuery query =
         new ProcessDefinitionFlowNodeStatisticsQuery(
             new ProcessDefinitionStatisticsFilter.Builder(123L).build());
-    final var dbQuery = new ProcessDefinitionStatisticsDbQuery(query.filter(), List.of(), null);
+    final var dbQuery =
+        new ProcessDefinitionStatisticsDbQuery(query.filter(), List.of(), List.of());
     final var expected =
         List.of(
             new ProcessFlowNodeStatisticsEntity("node1", 10L, 5L, 2L, 3L),

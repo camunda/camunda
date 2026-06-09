@@ -13,7 +13,7 @@ import io.camunda.search.filter.AuthorizationFilter;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.api.model.authz.EntityType;
-import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.core.authz.ResourceAccessChecks;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;

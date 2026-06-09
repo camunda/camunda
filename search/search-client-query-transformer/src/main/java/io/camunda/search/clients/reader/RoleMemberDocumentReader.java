@@ -12,7 +12,7 @@ import io.camunda.search.entities.RoleMemberEntity;
 import io.camunda.search.query.RoleMemberQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.api.model.authz.EntityType;
-import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.core.authz.ResourceAccessChecks;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.util.Set;
 import java.util.stream.Collectors;

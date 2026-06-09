@@ -28,7 +28,7 @@ import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.core.auth.SecurityContext;
-import io.camunda.security.reader.ResourceAccessController;
+import io.camunda.security.core.authz.ResourceAccessController;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import jakarta.annotation.Resource;
