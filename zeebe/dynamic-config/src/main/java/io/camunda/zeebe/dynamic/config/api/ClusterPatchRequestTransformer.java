@@ -122,7 +122,7 @@ public final class ClusterPatchRequestTransformer implements ConfigurationChange
               "Use 'partitions.newReplicationFactors' to change the replication factor on zone-aware clusters"));
     }
 
-    return new ScaleRequestTransformer(newSetOfMembers, newReplicationFactor)
+    return new ScaleRequestTransformer(newSetOfMembers, newReplicationFactor, newPartitionCount)
         .operations(clusterConfiguration);
   }
 }
