@@ -29,7 +29,7 @@ import org.jspecify.annotations.NullMarked;
  * naming all the colliding tenants — not as O(n²) pairwise messages.
  */
 @NullMarked
-public class SecondaryStorageIsolationValidation implements CrossTenantValidation {
+class SecondaryStorageIsolationValidation implements CrossTenantValidation {
 
   @Override
   public void validate(final Map<String, Camunda> resolvedByTenant) {

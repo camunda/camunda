@@ -36,7 +36,7 @@ import org.jspecify.annotations.NullMarked;
  * (or fixing those beans) is tracked separately and is out of scope here.
  */
 @NullMarked
-public class SecondaryStorageTypeHomogeneityValidation implements CrossTenantValidation {
+class SecondaryStorageTypeHomogeneityValidation implements CrossTenantValidation {
 
   @Override
   public void validate(final Map<String, Camunda> resolvedByTenant) {
