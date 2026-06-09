@@ -25,8 +25,9 @@ import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.service.UsageMetricsServices;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
-import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
-import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration.JobMetricsConfiguration;
+import io.camunda.zeebe.gateway.rest.config.PhysicalTenantRestConfigProvider;
+import io.camunda.zeebe.gateway.rest.config.PhysicalTenantRestConfigProvider.JobMetrics;
+import io.camunda.zeebe.gateway.rest.config.PhysicalTenantRestConfigProvider.TenantRestConfig;
 import io.camunda.zeebe.gateway.rest.config.WebappConfiguration;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.time.Duration;
@@ -38,6 +39,7 @@ import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
@@ -84,9 +86,9 @@ public class SystemControllerTest extends RestControllerTest {
 
   @MockitoBean UsageMetricsServices usageMetricsServices;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
-  @MockitoBean GatewayRestConfiguration gatewayRestConfiguration;
   @MockitoBean CamundaSecurityLibraryProperties cslProperties;
   @MockitoBean ServiceRegistry serviceRegistry;
+  @MockitoBean PhysicalTenantRestConfigProvider tenantRestConfigProvider;
 
   // WebappConfiguration is provided by SystemControllerTestConfiguration
   @Autowired WebappConfiguration webappConfiguration;
@@ -94,6 +96,9 @@ public class SystemControllerTest extends RestControllerTest {
   @BeforeEach
   void setupUsageMetricsServices() {
     when(serviceRegistry.usageMetricsServices(any())).thenReturn(usageMetricsServices);
+    Mockito.lenient()
+        .when(tenantRestConfigProvider.forTenant(any()))
+        .thenReturn(new TenantRestConfig(32 * 1024, JobMetrics.DEFAULT));
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
   }
@@ -354,9 +359,7 @@ public class SystemControllerTest extends RestControllerTest {
 
   @Test
   void shouldReturnDefaultJobMetricsConfiguration() {
-    // given
-    final var jobMetricsCfg = new JobMetricsConfiguration();
-    when(gatewayRestConfiguration.getJobMetrics()).thenReturn(jobMetricsCfg);
+    // given the default job-metrics configuration bound to the tenant's JobServices in setup()
 
     // when/then
     webClient
@@ -388,14 +391,10 @@ public class SystemControllerTest extends RestControllerTest {
   @Test
   void shouldReturnCustomJobMetricsConfiguration() {
     // given
-    final var jobMetricsCfg = new JobMetricsConfiguration();
-    jobMetricsCfg.setEnabled(false);
-    jobMetricsCfg.setExportInterval(Duration.ofMinutes(10));
-    jobMetricsCfg.setMaxWorkerNameLength(50);
-    jobMetricsCfg.setMaxJobTypeLength(200);
-    jobMetricsCfg.setMaxTenantIdLength(15);
-    jobMetricsCfg.setMaxUniqueKeys(5000);
-    when(gatewayRestConfiguration.getJobMetrics()).thenReturn(jobMetricsCfg);
+    when(tenantRestConfigProvider.forTenant(any()))
+        .thenReturn(
+            new TenantRestConfig(
+                32 * 1024, new JobMetrics(false, Duration.ofMinutes(10), 50, 200, 15, 5000)));
 
     // when/then
     webClient
@@ -427,9 +426,10 @@ public class SystemControllerTest extends RestControllerTest {
   @Test
   void shouldReturnDisabledJobMetricsConfiguration() {
     // given
-    final var jobMetricsCfg = new JobMetricsConfiguration();
-    jobMetricsCfg.setEnabled(false);
-    when(gatewayRestConfiguration.getJobMetrics()).thenReturn(jobMetricsCfg);
+    when(tenantRestConfigProvider.forTenant(any()))
+        .thenReturn(
+            new TenantRestConfig(
+                32 * 1024, new JobMetrics(false, Duration.ofMinutes(5), 100, 100, 30, 9500)));
 
     // when/then
     webClient
@@ -459,9 +459,6 @@ public class SystemControllerTest extends RestControllerTest {
   @Test
   void shouldReturnWebappConfigurationWithAllComponentsEnabled() {
     // given
-    final var jobMetricsCfg = new JobMetricsConfiguration();
-    when(gatewayRestConfiguration.getJobMetrics()).thenReturn(jobMetricsCfg);
-
     final var securityCfg = new CamundaSecurityLibraryProperties();
     when(cslProperties.getMultiTenancy()).thenReturn(securityCfg.getMultiTenancy());
     when(cslProperties.getSaas()).thenReturn(securityCfg.getSaas());
@@ -504,9 +501,6 @@ public class SystemControllerTest extends RestControllerTest {
   @Test
   void shouldReturnWebappConfigurationWithSomeComponentsDisabled() {
     // given
-    final var jobMetricsCfg = new JobMetricsConfiguration();
-    when(gatewayRestConfiguration.getJobMetrics()).thenReturn(jobMetricsCfg);
-
     webappConfiguration.setActiveComponents(List.of("operate"));
 
     // when/then
@@ -532,9 +526,6 @@ public class SystemControllerTest extends RestControllerTest {
   @Test
   void shouldReturnWebappConfigurationWithMultiTenancyEnabled() {
     // given
-    final var jobMetricsCfg = new JobMetricsConfiguration();
-    when(gatewayRestConfiguration.getJobMetrics()).thenReturn(jobMetricsCfg);
-
     final var securityCfg = new CamundaSecurityLibraryProperties();
     final var multiTenancyCfg = new MultiTenancyConfiguration();
     multiTenancyCfg.setChecksEnabled(true);
@@ -564,9 +555,6 @@ public class SystemControllerTest extends RestControllerTest {
   @Test
   void shouldReturnWebappConfigurationWithSaaSSettings() {
     // given
-    final var jobMetricsCfg = new JobMetricsConfiguration();
-    when(gatewayRestConfiguration.getJobMetrics()).thenReturn(jobMetricsCfg);
-
     final var saasCfg = new SaasConfiguration();
     saasCfg.setOrganizationId("org-123");
     saasCfg.setClusterId("cluster-456");
@@ -595,9 +583,6 @@ public class SystemControllerTest extends RestControllerTest {
   @Test
   void shouldReturnWebappConfigurationWhenOptionalDependenciesAreMissing() {
     // given
-    final var jobMetricsCfg = new JobMetricsConfiguration();
-    when(gatewayRestConfiguration.getJobMetrics()).thenReturn(jobMetricsCfg);
-
     // Mock beans (cslProperties) are not explicitly stubbed,
     // so they return null for method calls. Environment is provided by test config,
     // so components are detected with default values.

@@ -20,7 +20,9 @@ import io.camunda.service.MessageServices.PublicationMessageRequest;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
-import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
+import io.camunda.zeebe.gateway.rest.config.PhysicalTenantRestConfigProvider;
+import io.camunda.zeebe.gateway.rest.config.PhysicalTenantRestConfigProvider.JobMetrics;
+import io.camunda.zeebe.gateway.rest.config.PhysicalTenantRestConfigProvider.TenantRestConfig;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -33,10 +35,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
@@ -44,7 +43,6 @@ import org.springframework.test.web.reactive.server.WebTestClient.ResponseSpec;
 
 @ExtendWith(MockitoExtension.class)
 @WebMvcTest(MessageController.class)
-@Import(MessageControllerTest.TestConfig.class)
 public class MessageControllerTest extends RestControllerTest {
 
   private static final String MESSAGE_BASE_URL = "/v2/messages";
@@ -60,12 +58,16 @@ public class MessageControllerTest extends RestControllerTest {
   @MockitoBean MultiTenancyConfiguration multiTenancyCfg;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
   @MockitoBean ServiceRegistry serviceRegistry;
+  @MockitoBean PhysicalTenantRestConfigProvider tenantRestConfigProvider;
   @Captor ArgumentCaptor<CorrelateMessageRequest> correlationRequestCaptor;
   @Captor ArgumentCaptor<PublicationMessageRequest> publicationRequestCaptor;
 
   @BeforeEach
   void setup() {
     Mockito.lenient().when(serviceRegistry.messageServices(any())).thenReturn(messageServices);
+    Mockito.lenient()
+        .when(tenantRestConfigProvider.forTenant(any()))
+        .thenReturn(new TenantRestConfig(32 * 1024, JobMetrics.DEFAULT));
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
   }
@@ -570,15 +572,5 @@ public class MessageControllerTest extends RestControllerTest {
             .setTimeToLive(123L)
             .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     return CompletableFuture.completedFuture(new BrokerResponse<>(record, 1, 123));
-  }
-
-  @TestConfiguration
-  static class TestConfig {
-    @Bean
-    GatewayRestConfiguration gatewayRestConfiguration() {
-      final var config = new GatewayRestConfiguration();
-      config.setMaxNameFieldLength(32 * 1024);
-      return config;
-    }
   }
 }

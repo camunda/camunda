@@ -25,7 +25,9 @@ import io.camunda.security.api.model.config.MultiTenancyConfiguration;
 import io.camunda.service.JobServices;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
-import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
+import io.camunda.zeebe.gateway.rest.config.PhysicalTenantRestConfigProvider;
+import io.camunda.zeebe.gateway.rest.config.PhysicalTenantRestConfigProvider.JobMetrics;
+import io.camunda.zeebe.gateway.rest.config.PhysicalTenantRestConfigProvider.TenantRestConfig;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
@@ -123,14 +125,16 @@ public class JobQueryControllerTest extends RestControllerTest {
   @MockitoBean MultiTenancyConfiguration multiTenancyCfg;
   @MockitoBean ResponseObserverProvider responseObserverProvider;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
-  @MockitoBean GatewayRestConfiguration gatewayRestConfiguration;
   @MockitoBean ServiceRegistry serviceRegistry;
+  @MockitoBean PhysicalTenantRestConfigProvider tenantRestConfigProvider;
 
   @BeforeEach
   void setupJobServices() {
     Mockito.doReturn(jobServices).when(serviceRegistry).jobServices(any());
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
+    when(tenantRestConfigProvider.forTenant(any()))
+        .thenReturn(new TenantRestConfig(32 * 1024, JobMetrics.DEFAULT));
   }
 
   @Test

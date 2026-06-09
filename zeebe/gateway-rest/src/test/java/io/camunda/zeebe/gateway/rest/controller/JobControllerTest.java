@@ -32,12 +32,15 @@ import io.camunda.service.JobServices.ActivateJobsRequest;
 import io.camunda.service.JobServices.UpdateJobChangeset;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
-import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
+import io.camunda.zeebe.gateway.rest.config.PhysicalTenantRestConfigProvider;
+import io.camunda.zeebe.gateway.rest.config.PhysicalTenantRestConfigProvider.JobMetrics;
+import io.camunda.zeebe.gateway.rest.config.PhysicalTenantRestConfigProvider.TenantRestConfig;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultCorrections;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.value.TenantFilter;
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
@@ -65,17 +68,17 @@ public class JobControllerTest extends RestControllerTest {
   @MockitoBean MultiTenancyConfiguration multiTenancyCfg;
   @MockitoBean ResponseObserverProvider responseObserverProvider;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
-  @MockitoBean GatewayRestConfiguration gatewayRestConfiguration;
   @MockitoBean ServiceRegistry serviceRegistry;
+  @MockitoBean PhysicalTenantRestConfigProvider tenantRestConfigProvider;
 
   @BeforeEach
   void setup() {
     Mockito.doReturn(jobServices).when(serviceRegistry).jobServices(any());
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-    final var jobMetricsCfg = new GatewayRestConfiguration.JobMetricsConfiguration();
-    jobMetricsCfg.setEnabled(true);
-    when(gatewayRestConfiguration.getJobMetrics()).thenReturn(jobMetricsCfg);
+    Mockito.lenient()
+        .when(tenantRestConfigProvider.forTenant(any()))
+        .thenReturn(new TenantRestConfig(32 * 1024, JobMetrics.DEFAULT));
   }
 
   @Test
@@ -2477,9 +2480,10 @@ public class JobControllerTest extends RestControllerTest {
       final String requestBody,
       final String expectedInstance) {
     // given
-    final var disabledCfg = new GatewayRestConfiguration.JobMetricsConfiguration();
-    disabledCfg.setEnabled(false);
-    when(gatewayRestConfiguration.getJobMetrics()).thenReturn(disabledCfg);
+    when(tenantRestConfigProvider.forTenant(any()))
+        .thenReturn(
+            new TenantRestConfig(
+                32 * 1024, new JobMetrics(false, Duration.ofMinutes(5), 100, 100, 30, 9500)));
 
     // when/then
     final var requestSpec =
