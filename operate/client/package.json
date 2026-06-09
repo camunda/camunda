@@ -38,8 +38,10 @@
     "react-error-boundary": "6.1.1",
     "react-final-form": "7.0.0",
     "react-final-form-arrays": "4.0.0",
+    "react-markdown": "10.1.0",
     "react-router-dom": "7.16.0",
     "react-transition-group": "4.4.5",
+    "remark-gfm": "4.0.1",
     "styled-components": "6.4.2",
     "tiny-svg": "4.1.4",
     "zod": "4.4.3"
