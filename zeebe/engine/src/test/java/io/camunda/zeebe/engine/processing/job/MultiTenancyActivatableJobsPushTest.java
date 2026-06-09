@@ -35,6 +35,7 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.agrona.DirectBuffer;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -92,7 +93,7 @@ public class MultiTenancyActivatableJobsPushTest {
             .setWorker(worker, 0, worker.capacity())
             .setTimeout(timeout)
             .setFetchVariables(
-                List.of(new StringValue("a"), new StringValue("b"), new StringValue("c")))
+                Set.of(new StringValue("a"), new StringValue("b"), new StringValue("c")))
             .setClaims(authorizationClaims)
             .setTenantIds(List.of(tenantIdA));
 
@@ -101,7 +102,7 @@ public class MultiTenancyActivatableJobsPushTest {
             .setWorker(worker, 0, worker.capacity())
             .setTimeout(timeout)
             .setFetchVariables(
-                List.of(new StringValue("a"), new StringValue("b"), new StringValue("c")))
+                Set.of(new StringValue("a"), new StringValue("b"), new StringValue("c")))
             .setClaims(authorizationClaims)
             .setTenantIds(List.of(tenantIdB));
 
@@ -163,7 +164,7 @@ public class MultiTenancyActivatableJobsPushTest {
             .setWorker(worker, 0, worker.capacity())
             .setTimeout(timeout)
             .setFetchVariables(
-                List.of(new StringValue("a"), new StringValue("b"), new StringValue("c")))
+                Set.of(new StringValue("a"), new StringValue("b"), new StringValue("c")))
             .setClaims(authorizationClaims)
             .setTenantFilter(TenantFilter.ASSIGNED);
 
@@ -173,7 +174,7 @@ public class MultiTenancyActivatableJobsPushTest {
             .setWorker(worker, 0, worker.capacity())
             .setTimeout(timeout)
             .setFetchVariables(
-                List.of(new StringValue("a"), new StringValue("b"), new StringValue("c")))
+                Set.of(new StringValue("a"), new StringValue("b"), new StringValue("c")))
             .setClaims(authorizationClaims)
             .setTenantIds(List.of(tenantIdB));
 
@@ -236,7 +237,7 @@ public class MultiTenancyActivatableJobsPushTest {
             .setWorker(worker, 0, worker.capacity())
             .setTimeout(timeout)
             .setFetchVariables(
-                List.of(new StringValue("a"), new StringValue("b"), new StringValue("c")))
+                Set.of(new StringValue("a"), new StringValue("b"), new StringValue("c")))
             .setClaims(authorizationClaims)
             .setTenantIds(List.of(tenantIdA))
             .setTenantFilter(TenantFilter.ASSIGNED);
@@ -247,7 +248,7 @@ public class MultiTenancyActivatableJobsPushTest {
             .setWorker(worker, 0, worker.capacity())
             .setTimeout(timeout)
             .setFetchVariables(
-                List.of(new StringValue("a"), new StringValue("b"), new StringValue("c")))
+                Set.of(new StringValue("a"), new StringValue("b"), new StringValue("c")))
             .setClaims(authorizationClaims)
             .setTenantIds(List.of(tenantIdB));
 
@@ -309,7 +310,7 @@ public class MultiTenancyActivatableJobsPushTest {
         new JobActivationPropertiesImpl()
             .setWorker(worker, 0, worker.capacity())
             .setTimeout(timeout)
-            .setFetchVariables(List.of(new StringValue("a")))
+            .setFetchVariables(Set.of(new StringValue("a")))
             .setClaims(authorizationClaims)
             .setTenantIds(List.of(tenantIdA));
 
@@ -318,7 +319,7 @@ public class MultiTenancyActivatableJobsPushTest {
         new JobActivationPropertiesImpl()
             .setWorker(worker, 0, worker.capacity())
             .setTimeout(timeout)
-            .setFetchVariables(List.of(new StringValue("a")))
+            .setFetchVariables(Set.of(new StringValue("a")))
             .setClaims(Map.of(Authorization.AUTHORIZED_ANONYMOUS_USER, true))
             .setTenantFilter(TenantFilter.ASSIGNED);
 

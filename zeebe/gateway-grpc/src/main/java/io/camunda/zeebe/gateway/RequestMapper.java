@@ -71,6 +71,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.apache.commons.lang3.StringUtils;
@@ -475,7 +476,10 @@ public final class RequestMapper extends RequestUtil {
     jobActivationProperties
         .setWorker(worker, 0, worker.capacity())
         .setTimeout(request.getTimeout())
-        .setFetchVariables(request.getFetchVariableList().stream().map(StringValue::new).toList())
+        .setFetchVariables(
+            request.getFetchVariableList().stream()
+                .map(StringValue::new)
+                .collect(Collectors.toUnmodifiableSet()))
         .setTenantIds(tenantIds)
         .setTenantFilter(tenantFilter)
         .setClaims(claims);
