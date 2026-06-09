@@ -12,6 +12,8 @@ import static org.mockito.Mockito.mock;
 
 import io.camunda.search.clients.reader.AuthorizationReader;
 import io.camunda.security.core.authz.AuthorizationChecker;
+import io.camunda.security.core.port.out.AuthorizationScopeRepositoryPort;
+import io.camunda.security.impl.SearchAuthorizationScopeRepository;
 import io.camunda.security.spring.authz.AuthorizationCheckerConfiguration;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -26,8 +28,21 @@ class AuthorizationScopeRepositoryConfigurationTest {
           .withConfiguration(AutoConfigurations.of(AuthorizationCheckerConfiguration.class));
 
   @Test
+  void shouldRegisterAuthorizationScopeRepositoryPortBean() {
+    // given — AuthorizationScopeRepositoryConfiguration provides the port bean
+
+    // when / then
+    runner.run(
+        ctx -> {
+          assertThat(ctx).hasSingleBean(AuthorizationScopeRepositoryPort.class);
+          assertThat(ctx.getBean(AuthorizationScopeRepositoryPort.class))
+              .isInstanceOf(SearchAuthorizationScopeRepository.class);
+        });
+  }
+
+  @Test
   void shouldRegisterAuthorizationCheckerBeanViaUmbrella() {
-    // given — port defined in regular @Configuration, checker provided by CSL umbrella auto-config
+    // given — checker provided by CSL umbrella auto-config, conditional on the port being present
 
     // when / then
     runner.run(ctx -> assertThat(ctx).hasSingleBean(AuthorizationChecker.class));
