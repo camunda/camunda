@@ -1,3 +1,4 @@
+# NOTE: not migrated to camunda/camunda — zeebe version is parameterized (${ZEEBE_VERSION:-latest}) and may resolve to a pre-8.9 release; used by CI smoke tests against arbitrary release artifacts
 services:
   elasticsearch:
     container_name: elasticsearch

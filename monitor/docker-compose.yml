@@ -1,3 +1,4 @@
+# NOTE: not migrated to camunda/camunda — zeebe version is parameterized (${ZEEBE_VERSION:-SNAPSHOT}) and may resolve to a pre-8.9 release; migrate in a follow-up once version is pinned to >=8.9
 version: '3'
 
 volumes:

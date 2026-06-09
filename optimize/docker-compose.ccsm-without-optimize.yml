@@ -1,3 +1,4 @@
+# NOTE: not migrated to camunda/camunda — all services are pinned to :latest which is not guaranteed to be >=8.9; migrate in a follow-up once confirmed 8.9+-only
 # You can add the following environment variables to your CCSM config to have Optimize running in your IDE
 
 ###################################
