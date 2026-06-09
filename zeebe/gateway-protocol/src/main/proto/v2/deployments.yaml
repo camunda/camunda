@@ -7,6 +7,8 @@ paths:
       tags:
         - Resource
       operationId: createDeployment
+      x-required-permissions:
+        - { resourceType: RESOURCE, permissionType: CREATE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -52,6 +54,8 @@ paths:
       tags:
         - Resource
       operationId: getResource
+      x-required-permissions:
+        - { resourceType: RESOURCE, permissionType: READ }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -94,6 +98,8 @@ paths:
       tags:
         - Resource
       operationId: getResourceContent
+      x-required-permissions:
+        - { resourceType: RESOURCE, permissionType: READ }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -144,6 +150,8 @@ paths:
       tags:
         - Resource
       operationId: getResourceContentBinary
+      x-required-permissions:
+        - { resourceType: RESOURCE, permissionType: READ }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -186,6 +194,8 @@ paths:
       tags:
         - Resource
       operationId: searchResources
+      x-required-permissions:
+        - { resourceType: RESOURCE, permissionType: READ }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -226,6 +236,9 @@ paths:
       tags:
         - Resource
       operationId: deleteResource
+      x-required-permissions:
+        - dynamic: true
+          note: Resolved from the deployed resource type — DELETE_PROCESS, DELETE_DRD, DELETE_FORM or DELETE_RESOURCE on RESOURCE.
       security:
         - bearerAuth: []
         - basicAuth: []

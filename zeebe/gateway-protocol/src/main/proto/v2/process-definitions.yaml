@@ -7,6 +7,8 @@ paths:
       tags:
         - Process definition
       operationId: searchProcessDefinitions
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_DEFINITION }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -41,6 +43,8 @@ paths:
       tags:
         - Process definition
       operationId: getProcessDefinition
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_DEFINITION }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -86,6 +90,8 @@ paths:
       tags:
         - Process definition
       operationId: getProcessDefinitionXML
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_DEFINITION }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -136,6 +142,8 @@ paths:
       tags:
         - Process definition
       operationId: getStartProcessForm
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_DEFINITION }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -181,6 +189,8 @@ paths:
       tags:
         - Process definition
       operationId: getProcessDefinitionStatistics
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_INSTANCE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -222,6 +232,8 @@ paths:
       tags:
         - Process definition
       operationId: getProcessDefinitionMessageSubscriptionStatistics
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_INSTANCE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -257,6 +269,8 @@ paths:
       tags:
         - Process definition
       operationId: getProcessDefinitionInstanceStatistics
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_INSTANCE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -292,6 +306,8 @@ paths:
       tags:
         - Process definition
       operationId: getProcessDefinitionInstanceVersionStatistics
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_INSTANCE }
       security:
         - bearerAuth: []
         - basicAuth: []

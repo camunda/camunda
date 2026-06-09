@@ -7,6 +7,8 @@ paths:
       tags:
         - Clock
       operationId: pinClock
+      x-required-permissions:
+        - { resourceType: SYSTEM, permissionType: UPDATE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -41,6 +43,8 @@ paths:
       tags:
         - Clock
       operationId: resetClock
+      x-required-permissions:
+        - { resourceType: SYSTEM, permissionType: UPDATE }
       security:
         - bearerAuth: []
         - basicAuth: []

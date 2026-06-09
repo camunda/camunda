@@ -6,6 +6,8 @@ paths:
       tags:
         - Authorization
       operationId: createAuthorization
+      x-required-permissions:
+        - { resourceType: AUTHORIZATION, permissionType: CREATE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -48,6 +50,8 @@ paths:
       tags:
         - Authorization
       operationId: updateAuthorization
+      x-required-permissions:
+        - { resourceType: AUTHORIZATION, permissionType: UPDATE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -88,6 +92,8 @@ paths:
       tags:
         - Authorization
       operationId: getAuthorization
+      x-required-permissions:
+        - { resourceType: AUTHORIZATION, permissionType: READ }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -126,6 +132,8 @@ paths:
       tags:
         - Authorization
       operationId: deleteAuthorization
+      x-required-permissions:
+        - { resourceType: AUTHORIZATION, permissionType: DELETE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -163,6 +171,8 @@ paths:
       summary: Search authorizations
       description: Search for authorizations based on given criteria.
       operationId: searchAuthorizations
+      x-required-permissions:
+        - { resourceType: AUTHORIZATION, permissionType: READ }
       security:
         - bearerAuth: []
         - basicAuth: []

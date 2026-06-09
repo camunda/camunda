@@ -7,6 +7,8 @@ paths:
       tags:
         - System
       operationId: getUsageMetrics
+      x-required-permissions:
+        - { resourceType: SYSTEM, permissionType: READ_USAGE_METRIC }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -86,6 +88,7 @@ paths:
       tags:
         - System
       operationId: getSystemConfiguration
+      x-required-permissions: []
       security:
         - bearerAuth: []
         - basicAuth: []

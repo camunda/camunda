@@ -4,6 +4,8 @@ paths:
   /cluster-variables/global:
     post:
       operationId: createGlobalClusterVariable
+      x-required-permissions:
+        - { resourceType: CLUSTER_VARIABLE, permissionType: CREATE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -47,6 +49,8 @@ paths:
   /cluster-variables/tenants/{tenantId}:
     post:
       operationId: createTenantClusterVariable
+      x-required-permissions:
+        - { resourceType: CLUSTER_VARIABLE, permissionType: CREATE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -110,6 +114,8 @@ paths:
       tags:
         - Cluster Variable
       operationId: searchClusterVariables
+      x-required-permissions:
+        - { resourceType: CLUSTER_VARIABLE, permissionType: READ }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -147,6 +153,8 @@ paths:
   /cluster-variables/global/{name}:
     get:
       operationId: getGlobalClusterVariable
+      x-required-permissions:
+        - { resourceType: CLUSTER_VARIABLE, permissionType: READ }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -190,6 +198,8 @@ paths:
       x-added-in-version: "8.9"
     put:
       operationId: updateGlobalClusterVariable
+      x-required-permissions:
+        - { resourceType: CLUSTER_VARIABLE, permissionType: UPDATE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -241,6 +251,8 @@ paths:
       x-added-in-version: "8.9"
     delete:
       operationId: deleteGlobalClusterVariable
+      x-required-permissions:
+        - { resourceType: CLUSTER_VARIABLE, permissionType: DELETE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -281,6 +293,8 @@ paths:
   /cluster-variables/tenants/{tenantId}/{name}:
     get:
       operationId: getTenantClusterVariable
+      x-required-permissions:
+        - { resourceType: CLUSTER_VARIABLE, permissionType: READ }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -331,6 +345,8 @@ paths:
       x-added-in-version: "8.9"
     put:
       operationId: updateTenantClusterVariable
+      x-required-permissions:
+        - { resourceType: CLUSTER_VARIABLE, permissionType: UPDATE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -389,6 +405,8 @@ paths:
       x-added-in-version: "8.9"
     delete:
       operationId: deleteTenantClusterVariable
+      x-required-permissions:
+        - { resourceType: CLUSTER_VARIABLE, permissionType: DELETE }
       security:
         - bearerAuth: []
         - basicAuth: []

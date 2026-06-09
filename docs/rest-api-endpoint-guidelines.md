@@ -1195,6 +1195,75 @@ TenantId:
 
 `x-semantic-provider` and `x-semantic-client-minted` are **not** lint-enforced — they're consumer-only signals. Add them by review.
 
+### 2.19 Required-permission annotations (`x-required-permissions`)
+
+Declares the authorization permission(s) a given operation enforces — the
+canonical, machine-readable endpoint → permission binding (single source of
+truth for RBAC). See ADR
+[`docs/adr/security/001-endpoint-required-permission-mapping.md`](adr/security/001-endpoint-required-permission-mapping.md).
+
+**Every operation MUST declare `x-required-permissions`.** It is an array; the
+entries are ANDed. An empty array means the endpoint enforces no permission
+(public). Requiring the key even when empty distinguishes "explicitly public"
+from "forgot to annotate".
+
+```yaml
+# Static single permission — the common case
+/process-instances:
+  post:
+    operationId: createProcessInstance
+    x-required-permissions:
+      - { resourceType: PROCESS_DEFINITION, permissionType: CREATE_PROCESS_INSTANCE }
+
+# Explicitly public — no authorization enforced
+/topology:
+  get:
+    operationId: getTopology
+    x-required-permissions: []
+```
+
+Three entry shapes are supported:
+
+|  Shape  |                             YAML                             |                              Meaning                               |
+|---------|--------------------------------------------------------------|--------------------------------------------------------------------|
+| static  | `{ resourceType: X, permissionType: Y }`                     | A concrete permission. Both are enum members and a **valid pair**. |
+| any-of  | `{ anyOf: [ {resourceType, permissionType}, ... ] }`         | At least one of the listed permissions suffices (OR).              |
+| dynamic | `{ dynamic: true, note: "<how it is resolved at runtime>" }` | Permission resolved from the request body/path at runtime.         |
+
+```yaml
+# any-of (e.g. a user task readable via the process or the task itself)
+x-required-permissions:
+  - anyOf:
+      - { resourceType: PROCESS_DEFINITION, permissionType: READ_USER_TASK }
+      - { resourceType: USER_TASK, permissionType: READ }
+
+# dynamic (e.g. resource deletion — permission depends on the resource type)
+x-required-permissions:
+  - dynamic: true
+    note: Resolved from the deployed resource type — DELETE_PROCESS, DELETE_DRD, DELETE_FORM or DELETE_RESOURCE on RESOURCE.
+```
+
+`resourceType` must be a member of `AuthorizationResourceType`, `permissionType`
+a member of `PermissionType`, and the **pair** one the resource type actually
+supports. Valid pairs are recorded in
+[`resource-permissions.json`](../zeebe/gateway-protocol/src/main/proto/v2/resource-permissions.json),
+which mirrors `AuthorizationResourceType.buildResourcePermissionsMap()` and is
+kept honest by `ResourcePermissionsRegistryTest`.
+
+#### What the Spectral rules enforce
+
+- `required-permissions-shape` (severity `error`) — each entry matches the
+  documented schema (exactly one of: a static `{resourceType, permissionType}`
+  pair, an `anyOf` group, or `{dynamic: true, note}`).
+- `verify-required-permissions` (severity `error`, custom JS function) — every
+  operation under `paths` declares `x-required-permissions`, and every static
+  `{resourceType, permissionType}` pair is a valid pair per
+  `resource-permissions.json`. Adding a new endpoint without a declared binding
+  is therefore a lint error, not a style nit.
+
+The engine remains the sole **enforcer**; the declared mapping is kept honest by
+a separate drift guard (see the ADR).
+
 ---
 
 ## 3. Spectral linting & custom rules

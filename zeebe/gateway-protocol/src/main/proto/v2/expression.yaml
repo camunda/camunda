@@ -4,6 +4,10 @@ paths:
   /expression/evaluation:
     post:
       operationId: evaluateExpression
+      x-required-permissions:
+        - { resourceType: EXPRESSION, permissionType: EVALUATE }
+        - dynamic: true
+          note: When the expression is evaluated in the scope of a process instance (scopeKey resolves to an instance), additionally requires READ_PROCESS_INSTANCE on PROCESS_DEFINITION for that process. Skipped when unscoped.
       security:
         - bearerAuth: []
         - basicAuth: []

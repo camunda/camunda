@@ -7,6 +7,8 @@ paths:
       tags:
         - User
       operationId: createUser
+      x-required-permissions:
+        - { resourceType: USER, permissionType: CREATE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -53,6 +55,8 @@ paths:
       tags:
         - User
       operationId: searchUsers
+      x-required-permissions:
+        - { resourceType: USER, permissionType: READ }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -86,6 +90,8 @@ paths:
       tags:
         - User
       operationId: getUser
+      x-required-permissions:
+        - { resourceType: USER, permissionType: READ }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -128,6 +134,8 @@ paths:
       tags:
         - User
       operationId: updateUser
+      x-required-permissions:
+        - { resourceType: USER, permissionType: UPDATE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -178,6 +186,8 @@ paths:
       tags:
         - User
       operationId: deleteUser
+      x-required-permissions:
+        - { resourceType: USER, permissionType: DELETE }
       security:
         - bearerAuth: []
         - basicAuth: []

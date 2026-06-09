@@ -7,6 +7,9 @@ paths:
       tags:
         - Setup
       operationId: createAdminUser
+      x-required-permissions:
+        - dynamic: true
+          note: First-admin bootstrap — allowed anonymously until an initial admin exists; otherwise requires USER CREATE and ROLE UPDATE.
       # Bootstrapping endpoint — declared unauthenticated at runtime via
       # SecurityPathAdapter (uses an anonymous authentication context to
       # create the initial admin user). `security: []` overrides the

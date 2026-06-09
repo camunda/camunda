@@ -7,6 +7,8 @@ paths:
       tags:
         - Conditional
       operationId: evaluateConditionals
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: CREATE_PROCESS_INSTANCE }
       security:
         - bearerAuth: []
         - basicAuth: []
