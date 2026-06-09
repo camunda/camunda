@@ -30,7 +30,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
-import org.apache.commons.text.StringEscapeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,8 +66,8 @@ public final class LangChain4jChatModelAdapter implements MultimodalChatModelAda
                 + "their content. Each block is identified by its documentId so you can match it "
                 + "back to the reference in <actual_value>."));
 
-    for (final ResolvedDocument d : documents) {
-      parts.addAll(toContentParts(d));
+    for (final ResolvedDocument document : documents) {
+      parts.addAll(toContentParts(document));
     }
 
     final List<ChatMessage> messages = new ArrayList<>();
@@ -78,81 +77,70 @@ public final class LangChain4jChatModelAdapter implements MultimodalChatModelAda
     return response.aiMessage().text();
   }
 
-  private static List<Content> toContentParts(final ResolvedDocument d) {
+  private static List<Content> toContentParts(final ResolvedDocument document) {
     final List<Content> parts = new ArrayList<>();
-    parts.add(TextContent.from(buildHeader(d)));
-
-    final String contentType = d.getContentType();
-
-    if (isImage(contentType)) {
-      final String base64 = Base64.getEncoder().encodeToString(d.getContent());
-      parts.add(ImageContent.from(base64, contentType));
-
-      return parts;
-    }
-
-    if (isPDF(contentType)) {
-      final String base64 = Base64.getEncoder().encodeToString(d.getContent());
-      parts.add(
-          PdfFileContent.from(PdfFile.builder().base64Data(base64).mimeType(contentType).build()));
-
-      return parts;
-    }
-    if (isTextLike(contentType)) {
-      parts.add(TextContent.from(new String(d.getContent(), StandardCharsets.UTF_8)));
-
-      return parts;
-    }
-
-    LOG.debug(
-        "Document '{}' has content type '{}' which is not natively supported as a content "
-            + "block; including a placeholder text marker only",
-        d.getDocumentId(),
-        contentType);
-
     parts.add(
-        TextContent.from(
-            "[binary content of type "
-                + (contentType == null ? "unknown" : contentType)
-                + " omitted; the LLM provider does not support this content type as a block]"));
+        TextContent.from("--- " + DocumentMetadataFormatter.formatAttributes(document) + " ---"));
+
+    final String contentType = document.getContentType();
+    final byte[] content = document.getContent();
+    switch (DocumentKind.from(contentType)) {
+      case IMAGE:
+        parts.add(ImageContent.from(Base64.getEncoder().encodeToString(content), contentType));
+        break;
+      case PDF:
+        parts.add(
+            PdfFileContent.from(
+                PdfFile.builder()
+                    .base64Data(Base64.getEncoder().encodeToString(content))
+                    .mimeType(contentType)
+                    .build()));
+        break;
+      case TEXT:
+        parts.add(TextContent.from(new String(content, StandardCharsets.UTF_8)));
+        break;
+      case OTHER:
+      default:
+        LOG.debug(
+            "Document '{}' has content type '{}' which is not natively supported as a content "
+                + "block; including a placeholder text marker only",
+            document.getDocumentId(),
+            contentType);
+        parts.add(
+            TextContent.from(
+                "[binary content of type "
+                    + (contentType == null ? "unknown" : contentType)
+                    + " omitted; the LLM provider does not support this content type as a block]"));
+        break;
+    }
     return parts;
   }
 
-  private static boolean isPDF(final String contentType) {
-    return "application/pdf".equalsIgnoreCase(contentType);
-  }
+  private enum DocumentKind {
+    IMAGE,
+    PDF,
+    TEXT,
+    OTHER;
 
-  private static String buildHeader(final ResolvedDocument d) {
-    return "--- documentId=\""
-        + escapeMetadataValue(nullToEmpty(d.getDocumentId()))
-        + "\" fileName=\""
-        + escapeMetadataValue(nullToEmpty(d.getFileName()))
-        + "\" contentType=\""
-        + escapeMetadataValue(nullToEmpty(d.getContentType()))
-        + "\" ---";
-  }
-
-  private static String escapeMetadataValue(final String value) {
-    return StringEscapeUtils.escapeJava(value).replace("<", "&lt;").replace(">", "&gt;");
-  }
-
-  private static String nullToEmpty(final String s) {
-    return s == null ? "" : s;
-  }
-
-  private static boolean isImage(final String contentType) {
-    return contentType != null && contentType.toLowerCase().startsWith("image/");
-  }
-
-  private static boolean isTextLike(final String contentType) {
-    if (contentType == null) {
-      return false;
+    static DocumentKind from(final String contentType) {
+      if (contentType == null) {
+        return OTHER;
+      }
+      final String ct = contentType.toLowerCase();
+      if (ct.startsWith("image/")) {
+        return IMAGE;
+      }
+      if ("application/pdf".equals(ct)) {
+        return PDF;
+      }
+      if (ct.startsWith("text/")
+          || "application/json".equals(ct)
+          || "application/xml".equals(ct)
+          || "application/yaml".equals(ct)
+          || "application/x-yaml".equals(ct)) {
+        return TEXT;
+      }
+      return OTHER;
     }
-    final String ct = contentType.toLowerCase();
-    return ct.startsWith("text/")
-        || "application/json".equals(ct)
-        || "application/xml".equals(ct)
-        || "application/yaml".equals(ct)
-        || "application/x-yaml".equals(ct);
   }
 }

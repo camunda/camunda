@@ -17,7 +17,6 @@ package io.camunda.process.test.impl.judge;
 
 import io.camunda.process.test.api.judge.ResolvedDocument;
 import java.util.List;
-import org.apache.commons.text.StringEscapeUtils;
 
 /**
  * Renders a {@code <resolved_documents>} textual section listing each document by id so the judge
@@ -43,30 +42,9 @@ public final class ResolvedDocumentPromptSection {
     final StringBuilder section = new StringBuilder();
     section.append(SECTION_OPEN).append('\n').append(PREAMBLE).append("\n\n");
     for (final ResolvedDocument doc : documents) {
-      section.append(describe(doc)).append('\n');
+      section.append("- ").append(DocumentMetadataFormatter.formatAttributes(doc)).append('\n');
     }
     section.append(SECTION_CLOSE);
     return section.toString();
-  }
-
-  private static String describe(final ResolvedDocument doc) {
-    final StringBuilder line = new StringBuilder();
-    line.append("- ");
-    appendAttribute(line, "documentId", doc.getDocumentId());
-    appendAttribute(line, " fileName", doc.getFileName());
-    appendAttribute(line, " contentType", doc.getContentType());
-    return line.toString();
-  }
-
-  private static void appendAttribute(
-      final StringBuilder out, final String name, final String value) {
-    out.append(name)
-        .append("=\"")
-        .append(value == null ? "" : escapeMetadataValue(value))
-        .append('"');
-  }
-
-  private static String escapeMetadataValue(final String value) {
-    return StringEscapeUtils.escapeJava(value).replace("<", "&lt;").replace(">", "&gt;");
   }
 }
