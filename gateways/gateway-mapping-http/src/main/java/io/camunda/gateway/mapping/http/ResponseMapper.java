@@ -433,12 +433,13 @@ public final class ResponseMapper {
   public static String toGetResourceContentResponse(
       final DeployedResourceEntity deployedResourceEntity) {
     return new String(
-        requireNonNull(deployedResourceEntity.resourceContent()), StandardCharsets.UTF_8);
+        requireNonNull(deployedResourceEntity.resourceContent(), "resourceContent"),
+        StandardCharsets.UTF_8);
   }
 
   public static byte[] toGetResourceContentBinaryResponse(
       final DeployedResourceEntity deployedResourceEntity) {
-    return requireNonNull(deployedResourceEntity.resourceContent());
+    return requireNonNull(deployedResourceEntity.resourceContent(), "resourceContent");
   }
 
   public static MessagePublicationResult toMessagePublicationResponse(

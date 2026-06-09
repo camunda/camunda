@@ -123,6 +123,7 @@ import io.camunda.zeebe.test.util.JsonUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -4700,7 +4701,7 @@ final class JsonSerializableToJsonTest {
                   .setDeploymentKey(456L)
                   .setTenantId("<default>")
                   .setChecksum(wrapString("checksum"))
-                  .setResource(wrapArray("content".getBytes()));
+                  .setResource(wrapArray("content".getBytes(StandardCharsets.UTF_8)));
               return record;
             },
         """
