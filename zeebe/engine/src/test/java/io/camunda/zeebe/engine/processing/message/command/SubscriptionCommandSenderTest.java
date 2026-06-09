@@ -23,6 +23,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
@@ -50,6 +51,9 @@ public class SubscriptionCommandSenderTest {
   private static final long DEFAULT_PROCESS_DEFINITION_KEY = 222;
   private static final DirectBuffer DEFAULT_MESSAGE_NAME = BufferUtil.wrapString("msg");
   private static final DirectBuffer DEFAULT_BUSINESS_ID = BufferUtil.wrapString("");
+  private static final DirectBuffer DEFAULT_ELEMENT_ID = BufferUtil.wrapString("catch-1");
+  private static final long DEFAULT_ROOT_PROCESS_INSTANCE_KEY = 100L;
+  private static final BpmnElementType DEFAULT_ELEMENT_TYPE = BpmnElementType.RECEIVE_TASK;
   private static final DirectBuffer DEFAULT_START_EVENT_ID = BufferUtil.wrapString("start");
   private static final long DEFAULT_MESSAGE_START_SUBSCRIPTION_KEY = 333;
   private static final String DEFAULT_TENANT = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
@@ -247,7 +251,10 @@ public class SubscriptionCommandSenderTest {
         DEFAULT_CORRELATION_KEY,
         true,
         TenantOwned.DEFAULT_TENANT_IDENTIFIER,
-        DEFAULT_BUSINESS_ID);
+        DEFAULT_BUSINESS_ID,
+        DEFAULT_ELEMENT_ID,
+        DEFAULT_ROOT_PROCESS_INSTANCE_KEY,
+        DEFAULT_ELEMENT_TYPE);
 
     // then
     verify(mockProcessingResultBuilder).appendPostCommitTask(any());
@@ -269,7 +276,10 @@ public class SubscriptionCommandSenderTest {
         DEFAULT_CORRELATION_KEY,
         true,
         TenantOwned.DEFAULT_TENANT_IDENTIFIER,
-        DEFAULT_BUSINESS_ID);
+        DEFAULT_BUSINESS_ID,
+        DEFAULT_ELEMENT_ID,
+        DEFAULT_ROOT_PROCESS_INSTANCE_KEY,
+        DEFAULT_ELEMENT_TYPE);
 
     // then
     verify(mockProcessingResultBuilder, never()).appendPostCommitTask(any());
@@ -291,7 +301,10 @@ public class SubscriptionCommandSenderTest {
         DEFAULT_CORRELATION_KEY,
         true,
         TenantOwned.DEFAULT_TENANT_IDENTIFIER,
-        DEFAULT_BUSINESS_ID);
+        DEFAULT_BUSINESS_ID,
+        DEFAULT_ELEMENT_ID,
+        DEFAULT_ROOT_PROCESS_INSTANCE_KEY,
+        DEFAULT_ELEMENT_TYPE);
 
     // then
     verify(mockInterPartitionCommandSender)
