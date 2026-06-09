@@ -182,13 +182,11 @@ jobs:
               tableLines.push('| _no metrics scraped_ | - |');
             }
 
-            const endMs   = at ? Number(at) * 1000 : Date.now();
+            // `at` may be a Unix-epoch (seconds) or an RFC3339 string — resolve both to epoch ms.
+            const endMs   = at ? (Number.isNaN(Number(at)) ? Date.parse(at) : Number(at) * 1000) : Date.now();
             const startMs = endMs - durationSeconds * 1000;
             const dashboard = `https://dashboard.benchmark.camunda.cloud/d/zeebe-dashboard/zeebe?var-namespace=${namespace}&from=${startMs}&to=${endMs}`;
-            // Render a Unix-epoch anchor as ISO 8601; pass an RFC3339 string through unchanged.
-            const atLabel = at
-              ? (Number.isNaN(Number(at)) ? at : new Date(Number(at) * 1000).toISOString())
-              : '';
+            const atLabel = at ? new Date(endMs).toISOString() : '';
             const body = [
               `## 🔍 Load Test Metrics`,
               '',
