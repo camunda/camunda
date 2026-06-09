@@ -15,6 +15,6 @@
 		1fr;
 	grid-template-rows: 100%;
 	height: 100%;
-	padding-top: layout.to-rem(48px);
+	padding-top: var(--cds-spacing-09);
 	box-sizing: border-box;
 }
