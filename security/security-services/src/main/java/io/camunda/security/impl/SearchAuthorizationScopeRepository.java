@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.jspecify.annotations.NullMarked;
 
 /**
  * Search-backed implementation of {@link AuthorizationScopeRepositoryPort} that delegates all
@@ -29,7 +30,12 @@ import java.util.stream.Collectors;
  * <p>Each method issues an {@link AuthorizationQuery} without resource-access checks ({@link
  * ResourceAccessChecks#disabled()}), because this class <em>is</em> the authorization data source —
  * applying access control recursively here would cause infinite recursion.
+ *
+ * <p>Callers are responsible for short-circuiting when {@code ownerIds} is empty (e.g. anonymous
+ * principals); CSL's {@link io.camunda.security.core.authz.AuthorizationChecker} performs this
+ * guard before invoking any port method.
  */
+@NullMarked
 public class SearchAuthorizationScopeRepository implements AuthorizationScopeRepositoryPort {
 
   private final AuthorizationReader authorizationReader;
