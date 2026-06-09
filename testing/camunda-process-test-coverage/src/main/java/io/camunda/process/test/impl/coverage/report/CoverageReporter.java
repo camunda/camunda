@@ -81,8 +81,7 @@ public class CoverageReporter {
   /**
    * Reports coverage data by writing it to JSON files.
    *
-   * <p>Creates both a suite-specific report and updates the aggregated report that combines all
-   * test runs.
+   * <p>Creates the aggregated report that combines all test runs.
    *
    * @param reportCollectors The collector containing coverage data to report
    */
@@ -111,15 +110,7 @@ public class CoverageReporter {
     return aggregatedReport;
   }
 
-  public void reportSuiteCoverage(final CoverageReportCollector coverageReportCollector) {
-    final CoverageReport suiteReport =
-        CoverageReportCreator.createAggregatedCoverageReport(
-            java.util.Collections.singletonList(coverageReportCollector.getSuite()),
-            coverageReportCollector.getModels(),
-            coverageReportCollector.getDecisionModels());
-
-    writeJsonReport(coverageReportCollector.getSuite().getId(), suiteReport);
-  }
+  public void reportSuiteCoverage(final CoverageReportCollector coverageReportCollector) {}
 
   /**
    * Prints a human-readable coverage summary to the specified output stream.
@@ -187,11 +178,6 @@ public class CoverageReporter {
                 + " Coverage report: file://{0}/report.html\n",
             resourceDirectory, suite.getId(), coverageText.toString());
     printStream.accept(message);
-  }
-
-  private void writeJsonReport(final String suiteId, final CoverageReport report) {
-    final File destFile = new File(resourceDirectory, suiteId + "/report.json");
-    writeContent(destFile, () -> CoverageReportUtil.toJson(report));
   }
 
   private void writeJsonReport(final CoverageReport aggregatedReport) {
