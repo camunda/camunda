@@ -30,11 +30,11 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 class DefaultOAuthCredentialsProviderTest {
 
-  private static final String TOKEN_PATH = "/oauth/token";
-
   @RegisterExtension
   public static WireMockExtension wireMock =
       WireMockExtension.extensionOptions().options(wireMockConfig().dynamicPort()).build();
+
+  private static final String TOKEN_PATH = "/oauth/token";
 
   private DefaultOAuthCredentialsProvider provider;
   private SimpleMeterRegistry registry;

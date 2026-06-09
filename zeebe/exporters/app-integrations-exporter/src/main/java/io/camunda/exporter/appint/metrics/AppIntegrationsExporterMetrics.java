@@ -124,10 +124,8 @@ public class AppIntegrationsExporterMetrics {
   }
 
   public void recordTimeout(final Phase phase) {
-    switch (phase) {
-      case EXPORT -> exportTimeout.increment();
-      case TOKEN -> tokenTimeout.increment();
-    }
+    final Counter counter = phase == Phase.TOKEN ? tokenTimeout : exportTimeout;
+    counter.increment();
   }
 
   public void incrementBatchesInFlight() {
