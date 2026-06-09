@@ -20,7 +20,6 @@ import static org.assertj.core.api.Assertions.fail;
 import io.camunda.process.test.api.judge.JudgeConfig;
 import io.camunda.process.test.api.judge.MultimodalChatModelAdapter;
 import io.camunda.process.test.api.judge.ResolvedDocument;
-import java.util.Collections;
 import java.util.List;
 import java.util.function.UnaryOperator;
 import org.slf4j.Logger;
@@ -98,13 +97,8 @@ class JudgeAssertj {
   /**
    * Evaluates the actual value against the expectation using the configured LLM judge. {@code
    * context} is appended to failure messages (e.g. {@code " for variable 'myVar'"}); pass an empty
-   * string for none.
+   * string for none. Pass an empty list when no documents have been resolved.
    */
-  void evaluateExpectation(
-      final String expectation, final String actualValue, final String context) {
-    evaluateExpectation(expectation, actualValue, context, Collections.emptyList());
-  }
-
   void evaluateExpectation(
       final String expectation,
       final String actualValue,
