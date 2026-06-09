@@ -113,6 +113,8 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
     actor.run(
         () -> {
           if (!request.isOpen()) {
+            delegate.onCompleted(
+                requestState.getRemainingAmount(), requestState.wasResourceExhaustedPresent());
             return;
           }
 
