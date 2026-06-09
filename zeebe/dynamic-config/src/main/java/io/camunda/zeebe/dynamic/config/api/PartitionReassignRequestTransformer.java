@@ -21,6 +21,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.AwaitRedistributionCompletion;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.AwaitRelocationCompletion;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.StartPartitionScaleUp;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
@@ -40,14 +41,24 @@ public class PartitionReassignRequestTransformer implements ConfigurationChangeR
   final Set<MemberId> members;
   private final Optional<Integer> newReplicationFactor;
   private final Optional<Integer> newPartitionCount;
+  private final Optional<PartitionDistributorConfig> configOverride;
 
   public PartitionReassignRequestTransformer(
       final Set<MemberId> members,
       final Optional<Integer> newReplicationFactor,
       final Optional<Integer> newPartitionCount) {
+    this(members, newReplicationFactor, newPartitionCount, Optional.empty());
+  }
+
+  public PartitionReassignRequestTransformer(
+      final Set<MemberId> members,
+      final Optional<Integer> newReplicationFactor,
+      final Optional<Integer> newPartitionCount,
+      final Optional<PartitionDistributorConfig> configOverride) {
     this.members = members;
     this.newReplicationFactor = newReplicationFactor;
     this.newPartitionCount = newPartitionCount;
+    this.configOverride = configOverride;
   }
 
   public PartitionReassignRequestTransformer(final Set<MemberId> members) {
@@ -127,11 +138,12 @@ public class PartitionReassignRequestTransformer implements ConfigurationChangeR
     final var allPartitions =
         Stream.of(oldPartitions, newPartitions).flatMap(List::stream).toList();
 
+    final var distributor =
+        configOverride
+            .map(PartitionDistributorConfig::toDistributor)
+            .orElseGet(currentConfiguration::partitionDistributor);
     final var newDistribution =
-        currentConfiguration
-            .partitionDistributor()
-            .distributePartitions(brokers, allPartitions, replicationFactor)
-            .stream()
+        distributor.distributePartitions(brokers, allPartitions, replicationFactor).stream()
             .collect(Collectors.toMap(PartitionMetadata::id, p -> p));
 
     for (final PartitionId partition : oldPartitions) {

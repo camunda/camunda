@@ -158,7 +158,8 @@ public final class ClusterConfigurationManagementRequestsHandler
             clusterPatchRequest.membersToAdd(),
             clusterPatchRequest.membersToRemove(),
             clusterPatchRequest.newPartitionCount(),
-            clusterPatchRequest.newReplicationFactor()));
+            clusterPatchRequest.newReplicationFactor(),
+            clusterPatchRequest.newReplicationFactors()));
   }
 
   @Override

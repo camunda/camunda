@@ -13,6 +13,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PostScalingOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PreScalingOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,6 +26,7 @@ public class ScaleRequestTransformer implements ConfigurationChangeRequest {
   private final Set<MemberId> members;
   private final Optional<Integer> newReplicationFactor;
   private final Optional<Integer> newPartitionCount;
+  private final Optional<PartitionDistributorConfig> configOverride;
   private final ArrayList<ClusterConfigurationChangeOperation> generatedOperations =
       new ArrayList<>();
 
@@ -41,9 +43,18 @@ public class ScaleRequestTransformer implements ConfigurationChangeRequest {
       final Set<MemberId> members,
       final Optional<Integer> newReplicationFactor,
       final Optional<Integer> newPartitionCount) {
+    this(members, newReplicationFactor, newPartitionCount, Optional.empty());
+  }
+
+  public ScaleRequestTransformer(
+      final Set<MemberId> members,
+      final Optional<Integer> newReplicationFactor,
+      final Optional<Integer> newPartitionCount,
+      final Optional<PartitionDistributorConfig> configOverride) {
     this.members = members;
     this.newReplicationFactor = newReplicationFactor;
     this.newPartitionCount = newPartitionCount;
+    this.configOverride = configOverride;
   }
 
   @Override
@@ -69,7 +80,7 @@ public class ScaleRequestTransformer implements ConfigurationChangeRequest {
         .flatMap(
             ignore ->
                 new PartitionReassignRequestTransformer(
-                        members, newReplicationFactor, newPartitionCount)
+                        members, newReplicationFactor, newPartitionCount, configOverride)
                     .operations(clusterConfiguration))
         .map(this::addToOperations)
         // then remove members that are not part of the new configuration

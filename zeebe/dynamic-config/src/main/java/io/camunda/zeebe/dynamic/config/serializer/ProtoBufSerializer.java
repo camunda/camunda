@@ -1008,6 +1008,7 @@ public class ProtoBufSerializer
         .forEach(memberId -> builder.addMembersToAdd(memberId.id()));
     clusterPatchRequest.membersToRemove().stream()
         .forEach(memberId -> builder.addMembersToRemove(memberId.id()));
+    builder.putAllNewReplicationFactors(clusterPatchRequest.newReplicationFactors());
 
     return builder.build().toByteArray();
   }
@@ -1215,6 +1216,7 @@ public class ProtoBufSerializer
               .collect(Collectors.toSet()),
           newPartitionCount,
           newReplicationFactor,
+          Map.copyOf(clusterPatchRequest.getNewReplicationFactorsMap()),
           clusterPatchRequest.getDryRun());
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);

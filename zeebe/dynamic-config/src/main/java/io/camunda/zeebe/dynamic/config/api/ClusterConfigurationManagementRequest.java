@@ -9,10 +9,13 @@ package io.camunda.zeebe.dynamic.config.api;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import org.jspecify.annotations.NullMarked;
 
 /** Defines the supported requests for the configuration management. */
+@NullMarked
 public sealed interface ClusterConfigurationManagementRequest {
 
   /**
@@ -58,8 +61,20 @@ public sealed interface ClusterConfigurationManagementRequest {
       Set<MemberId> membersToRemove,
       Optional<Integer> newPartitionCount,
       Optional<Integer> newReplicationFactor,
+      Map<String, Integer> newReplicationFactors,
       boolean dryRun)
-      implements ClusterConfigurationManagementRequest {}
+      implements ClusterConfigurationManagementRequest {
+
+    public ClusterPatchRequest(
+        final Set<MemberId> membersToAdd,
+        final Set<MemberId> membersToRemove,
+        final Optional<Integer> newPartitionCount,
+        final Optional<Integer> newReplicationFactor,
+        final boolean dryRun) {
+      this(
+          membersToAdd, membersToRemove, newPartitionCount, newReplicationFactor, Map.of(), dryRun);
+    }
+  }
 
   record UpdateRoutingStateRequest(Optional<RoutingState> routingState, boolean dryRun)
       implements ClusterConfigurationManagementRequest {}
