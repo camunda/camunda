@@ -95,6 +95,7 @@ import io.camunda.zeebe.protocol.record.value.ConditionalSubscriptionRecordValue
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
+import io.camunda.zeebe.protocol.record.value.DocumentReferenceValue;
 import io.camunda.zeebe.protocol.record.value.ErrorRecordValue;
 import io.camunda.zeebe.protocol.record.value.EscalationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ExpressionRecordValue;
@@ -604,8 +605,9 @@ public class CompactRecordLogger {
           }
           case DOCUMENT -> {
             final var docRef = block.getDocumentReference();
-            if (docRef != null && !StringUtils.isEmpty(docRef.getDocumentId())) {
-              result.append(indent).append("doc:").append(docRef.getDocumentId());
+            final var docSummary = summarizeDocumentReference(docRef);
+            if (!docSummary.isEmpty()) {
+              result.append(indent).append(docSummary);
             }
           }
           case OBJECT -> {
@@ -630,6 +632,22 @@ public class CompactRecordLogger {
     }
 
     return result.toString();
+  }
+
+  private String summarizeDocumentReference(final DocumentReferenceValue ref) {
+    if (ref == null || StringUtils.isEmpty(ref.getDocumentId())) {
+      return "";
+    }
+    final var sb =
+        new StringBuilder()
+            .append("doc:")
+            .append(StringUtils.isEmpty(ref.getStoreId()) ? "" : ref.getStoreId() + "/")
+            .append(ref.getDocumentId());
+    final var meta = ref.getMetadata();
+    if (meta != null && !StringUtils.isEmpty(meta.getFileName())) {
+      sb.append(" (").append(meta.getFileName()).append(")");
+    }
+    return sb.toString();
   }
 
   private String summarizeDeployment(final Record<?> record) {
