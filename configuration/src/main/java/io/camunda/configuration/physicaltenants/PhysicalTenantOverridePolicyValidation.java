@@ -24,26 +24,25 @@ import org.springframework.boot.context.properties.source.IterableConfigurationP
 import org.springframework.core.env.Environment;
 
 /**
- * Override policy for physical-tenant configuration: a small <em>deny-list</em> of cluster-wide
+ * Override policy for physical-tenant configuration: an explicit <em>deny-list</em> of cluster-wide
  * properties that may not be overridden under {@code camunda.physical-tenants.<id>.*}. Every other
  * property is freely overridable (the physical-tenant model is "override anything except cluster
  * identity", so an allow-list would be enormous and perpetually out of date).
  *
  * <p>Enforcement is pure <em>key inspection</em> over the declared {@code physical-tenants.<id>.*}
  * keys — the same walk {@link PhysicalTenantResolver#discover(Environment)} does — with no value
- * comparison and no binding. A tenant that declares any key under a non-overridable subtree fails
- * resolution.
+ * comparison and no binding. A tenant that declares any key at or under a non-overridable property
+ * fails resolution.
  *
- * <p>Non-overridable subtrees:
+ * <p>The list below enumerates every non-overridable child of {@code camunda.cluster}, {@code
+ * camunda.system} and {@code camunda.license} (see {@link io.camunda.configuration.Camunda}). It is
+ * a flat enumeration rather than the broader subtrees plus carve-outs: the overridable properties
+ * ({@code cluster.partition-count}, {@code cluster.replication-factor}, {@code
+ * system.clock-controlled}) are simply absent from the list. Matching is by ancestor, so listing a
+ * parent (e.g. {@code cluster.network}) also forbids all of its descendants.
  *
- * <ul>
- *   <li>{@code cluster.*} — broker topology (nodeId, size, contact points). Shared by the whole
- *       physical cluster, <em>except</em> {@code cluster.partition-count} and {@code
- *       cluster.replication-factor}, which stay overridable per tenant.
- *   <li>{@code system.*} — system/process-wide settings, <em>except</em> {@code
- *       system.clock-controlled}, which stays overridable so a tenant can run a controlled clock.
- *   <li>{@code license.*} — one license per installation.
- * </ul>
+ * <p>Keep this list in sync with {@code Camunda}'s {@code cluster}, {@code system} and {@code
+ * license} sections when properties are added or removed.
  */
 @NullMarked
 final class PhysicalTenantOverridePolicyValidation {
@@ -51,13 +50,40 @@ final class PhysicalTenantOverridePolicyValidation {
   private static final ConfigurationPropertyName PHYSICAL_TENANTS_NAME =
       ConfigurationPropertyName.of(Camunda.PREFIX + ".physical-tenants");
 
-  /** Cluster-wide subtrees that may not be overridden per physical tenant. */
+  /**
+   * Cluster-wide properties that may not be overridden per physical tenant. Enumerated from {@code
+   * camunda.cluster.*}, {@code camunda.system.*} and {@code camunda.license.*}; the overridable
+   * carve-outs ({@code cluster.partition-count}, {@code cluster.replication-factor}, {@code
+   * system.clock-controlled}) are intentionally omitted.
+   */
   private static final List<ConfigurationPropertyName> NON_OVERRIDABLE =
-      Stream.of("cluster", "system", "license").map(ConfigurationPropertyName::of).toList();
-
-  /** Carve-outs that remain overridable even though their parent subtree is non-overridable. */
-  private static final List<ConfigurationPropertyName> OVERRIDABLE_EXCEPTIONS =
-      Stream.of("cluster.partition-count", "cluster.replication-factor", "system.clock-controlled")
+      Stream.of(
+              // camunda.cluster.* — broker topology / cluster identity
+              "cluster.metadata",
+              "cluster.network",
+              "cluster.initial-contact-points",
+              "cluster.node-id-provider",
+              "cluster.node-id",
+              "cluster.size",
+              "cluster.membership",
+              "cluster.name",
+              "cluster.cluster-id",
+              "cluster.gateway-id",
+              "cluster.raft",
+              "cluster.compression-algorithm",
+              "cluster.global-listeners",
+              "cluster.partitioning",
+              "cluster.zone",
+              "cluster.send-on-legacy-subject",
+              "cluster.receive-on-legacy-subject",
+              // camunda.system.* — system / process-wide settings
+              "system.cpu-thread-count",
+              "system.io-thread-count",
+              "system.actor",
+              "system.upgrade",
+              "system.restore",
+              // camunda.license.* — one license per installation
+              "license.key")
           .map(ConfigurationPropertyName::of)
           .toList();
 
@@ -99,13 +125,13 @@ final class PhysicalTenantOverridePolicyValidation {
     }
   }
 
-  private static boolean isNonOverridable(final ConfigurationPropertyName relative) {
-    final boolean clusterWide =
-        NON_OVERRIDABLE.stream().anyMatch(prefix -> isUnder(prefix, relative));
-    if (!clusterWide) {
-      return false;
-    }
-    return OVERRIDABLE_EXCEPTIONS.stream().noneMatch(exception -> isUnder(exception, relative));
+  /**
+   * Whether the given property name — expressed <em>relative to {@code camunda.}</em> (e.g. {@code
+   * cluster.size}) — is non-overridable per physical tenant. Visible for testing so the golden-file
+   * test can classify the full configuration surface through the real policy.
+   */
+  static boolean isNonOverridable(final ConfigurationPropertyName relative) {
+    return NON_OVERRIDABLE.stream().anyMatch(prefix -> isUnder(prefix, relative));
   }
 
   private static boolean isUnder(
