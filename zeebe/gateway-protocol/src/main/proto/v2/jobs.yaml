@@ -7,7 +7,8 @@ paths:
       tags:
         - Job
       operationId: activateJobs
-      x-required-permissions: []
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: UPDATE_PROCESS_INSTANCE }
       security:
         - bearerAuth: []
         - basicAuth: []

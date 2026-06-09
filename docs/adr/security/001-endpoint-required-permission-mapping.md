@@ -149,6 +149,47 @@ operations out of inline processor code into a place keyed by command intent /
 operation, so the drift guard can be fully static for writes as well. Not
 required to land this issue; tracked as follow-up.
 
+**D8. The initial mapping is a reviewed approximation, not a deterministic
+derivation — its only sound oracle is runtime enforcement.**
+
+There is no single static signal from which the endpoint → permission binding
+can be mechanically derived today. Authorization is enforced at three different
+layers, and reading any one of them in isolation is unsound:
+
+1. **Service pre-checks.** Some operations gate on a service-layer call before
+   the command is sent (e.g. `searchUserTaskAuditLogs` gates on
+   `UserTaskServices.getByKey`, then queries audit logs anonymously — the real
+   permission is the user-task read check, not an audit-log one).
+2. **Command processor body.** The common case: the processor builds an
+   `AuthorizationRequest` with an explicit `(resourceType, permissionType)`.
+3. **Processor collaborators / behaviours.** The permission can live in a helper
+   the processor invokes rather than the processor itself.
+
+Crucially, `@ExcludeAuthorizationCheck` on a command processor does **not** imply
+the endpoint is public — it can mean the check was deliberately moved elsewhere.
+`activateJobs` is the canonical trap: `JobBatchActivateProcessor` is
+`@ExcludeAuthorizationCheck`, yet `JobBatchCollector` enforces
+`PROCESS_DEFINITION / UPDATE_PROCESS_INSTANCE` and *filters* the returned batch
+to jobs the caller may update (an authorize-by-filtering pattern, not
+authorize-by-rejection). A derivation strategy keyed on the processor annotation
+mis-classified it as public; it is corrected to `UPDATE_PROCESS_INSTANCE`.
+
+Consequences for the guard design:
+
+- The static Tier-1 test (`ResourcePermissionsRegistryTest`) only proves every
+  declared pair is *valid vocabulary*; it cannot prove the pair is the one the
+  engine actually enforces.
+- Until D7 makes the write-side binding statically extractable, the only
+  deterministic correlation oracle is **runtime**: provision a principal with
+  exactly the declared `x-required-permissions` and assert access is granted, and
+  denied without it. The per-resource auth IT suite
+  (`qa/acceptance-tests/.../it/auth/`) is that oracle today, but it is organised
+  by resource rather than driven by `operationId`, so coverage is not guaranteed
+  to be complete (e.g. job activation is exercised via streaming, not a
+  `activateJobs`-specific deny-path test). Closing that gap — a spec-driven
+  runtime test that walks every operation's declared binding — is the recommended
+  follow-up that would make this mapping deterministic rather than reviewed.
+
 ## Consequences
 
 - A documented, machine-readable endpoint → required-permission mapping exists
