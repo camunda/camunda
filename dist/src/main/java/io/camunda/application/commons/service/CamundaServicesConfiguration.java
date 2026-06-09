@@ -61,6 +61,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
+import io.camunda.zeebe.gateway.rest.config.PhysicalTenantRestConfigProvider;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -113,16 +114,13 @@ public class CamundaServicesConfiguration {
       final SearchClientsProxy searchClients,
       final AuthorizationChecker authorizationChecker,
       final CamundaSecurityLibraryProperties cslProperties,
-      final GatewayRestConfiguration gatewayRestConfiguration,
+      final PhysicalTenantRestConfigProvider physicalTenantRestConfigProvider,
       final BrokerTopologyManager brokerTopologyManager,
       final MeterRegistry meterRegistry,
       final Environment environment,
       final ManagementServices managementServices,
       final ApiServicesExecutorProvider executor) {
 
-    // TODO check we can maxNameFieldLength per tenant. Currently, it is only set in rdbms
-    // configuration in UC
-    final int maxNameFieldLength = gatewayRestConfiguration.getMaxNameFieldLength();
     final boolean secondaryStorageEnabled =
         DatabaseTypeUtils.isSecondaryStorageEnabled(environment);
 
@@ -133,6 +131,8 @@ public class CamundaServicesConfiguration {
         .getAll()
         .forEach(
             (tenantId, tenantConfig) -> {
+              final int maxNameFieldLength =
+                  physicalTenantRestConfigProvider.forTenant(tenantId).maxNameFieldLength();
               final var search = searchClients.withPhysicalTenant(tenantId);
 
               // -- per-tenant BrokerRequestAuthorizationConverter --
