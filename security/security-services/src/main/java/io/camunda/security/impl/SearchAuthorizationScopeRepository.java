@@ -22,6 +22,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * Search-backed implementation of {@link AuthorizationScopeRepositoryPort} that delegates all
+ * authorization scope queries to the {@link AuthorizationReader} search infrastructure.
+ *
+ * <p>Each method issues an {@link AuthorizationQuery} without resource-access checks ({@link
+ * ResourceAccessChecks#disabled()}), because this class <em>is</em> the authorization data source —
+ * applying access control recursively here would cause infinite recursion.
+ */
 public class SearchAuthorizationScopeRepository implements AuthorizationScopeRepositoryPort {
 
   private final AuthorizationReader authorizationReader;
@@ -30,6 +38,12 @@ public class SearchAuthorizationScopeRepository implements AuthorizationScopeRep
     this.authorizationReader = authorizationReader;
   }
 
+  /**
+   * {@inheritDoc}
+   *
+   * <p>Results are post-filtered by {@code permissionType} to exclude records that matched the
+   * index filter on resource type but do not carry the requested permission.
+   */
   @Override
   public List<AuthorizationScope> findAuthorizedScopes(
       final Map<EntityType, Set<String>> ownerIds,
@@ -50,6 +64,12 @@ public class SearchAuthorizationScopeRepository implements AuthorizationScopeRep
         .toList();
   }
 
+  /**
+   * {@inheritDoc}
+   *
+   * <p>Issues a page-size-1 query so the search backend can short-circuit after finding the first
+   * matching record.
+   */
   @Override
   public boolean hasAuthorizedScope(
       final Map<EntityType, Set<String>> ownerIds,
@@ -69,6 +89,12 @@ public class SearchAuthorizationScopeRepository implements AuthorizationScopeRep
     return authorizationReader.search(query, ResourceAccessChecks.disabled()).total() > 0;
   }
 
+  /**
+   * {@inheritDoc}
+   *
+   * <p>Collects the union of {@link PermissionType} values across all matching authorization
+   * records.
+   */
   @Override
   public Set<PermissionType> findPermissionTypes(
       final Map<EntityType, Set<String>> ownerIds,

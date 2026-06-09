@@ -15,10 +15,20 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
+/**
+ * Wires the search-backed {@link AuthorizationScopeRepositoryPort} and imports CSL's {@link
+ * AuthorizationCheckerConfiguration} so that an {@link
+ * io.camunda.security.core.auth.AuthorizationChecker} bean is available to callers that depend on
+ * it for authorization checks.
+ */
 @Configuration(proxyBeanMethods = false)
 @Import(AuthorizationCheckerConfiguration.class)
 public class AuthorizationScopeRepositoryConfiguration {
 
+  /**
+   * Creates the {@link AuthorizationScopeRepositoryPort} backed by the search-layer {@link
+   * AuthorizationReader}.
+   */
   @Bean
   public AuthorizationScopeRepositoryPort authorizationScopeRepositoryPort(
       final AuthorizationReader authorizationReader) {
