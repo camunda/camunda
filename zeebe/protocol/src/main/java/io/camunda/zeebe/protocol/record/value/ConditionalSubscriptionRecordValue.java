@@ -95,4 +95,9 @@ public interface ConditionalSubscriptionRecordValue
    * @return true if the condition is interrupting, false otherwise
    */
   boolean isInterrupting();
+
+  /**
+   * @return the BPMN element type of the element this subscription belongs to
+   */
+  BpmnElementType getElementType();
 }

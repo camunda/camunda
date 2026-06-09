@@ -4299,7 +4299,8 @@ final class JsonSerializableToJsonTest {
                     .setVariableNames(List.of("x", "y"))
                     .setVariableEvents(List.of("CREATED", "UPDATED"))
                     .setInterrupting(true)
-                    .setRootProcessInstanceKey(999L),
+                    .setRootProcessInstanceKey(999L)
+                    .setElementType(BpmnElementType.INTERMEDIATE_CATCH_EVENT),
         """
                 {
                   "tenantId":"tenant-1",
@@ -4314,6 +4315,7 @@ final class JsonSerializableToJsonTest {
                   "bpmnProcessId":"process-1",
                   "processDefinitionKey":456,
                   "rootProcessInstanceKey":999,
+                  "elementType":"INTERMEDIATE_CATCH_EVENT",
                   "elementId":"catchEvent"
                 }
                 """
@@ -4341,6 +4343,7 @@ final class JsonSerializableToJsonTest {
                   "bpmnProcessId":"",
                   "processDefinitionKey":-1,
                   "rootProcessInstanceKey":-1,
+                  "elementType":"UNSPECIFIED",
                   "elementId":""
                 }
                 """

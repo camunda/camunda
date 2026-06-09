@@ -533,7 +533,8 @@ public final class CatchEventBehavior {
         .setVariableNames(conditional.getVariableNames())
         .setVariableEvents(conditional.getVariableEvents())
         .setTenantId(context.getTenantId())
-        .setRootProcessInstanceKey(context.getRootProcessInstanceKey());
+        .setRootProcessInstanceKey(context.getRootProcessInstanceKey())
+        .setElementType(event.getElementType());
 
     final var subscriptionKey = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(
