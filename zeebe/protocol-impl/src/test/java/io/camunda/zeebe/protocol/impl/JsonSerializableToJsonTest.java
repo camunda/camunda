@@ -4298,7 +4298,8 @@ final class JsonSerializableToJsonTest {
                     .setCondition(BufferUtil.wrapString("=x > 5"))
                     .setVariableNames(List.of("x", "y"))
                     .setVariableEvents(List.of("CREATED", "UPDATED"))
-                    .setInterrupting(true),
+                    .setInterrupting(true)
+                    .setRootProcessInstanceKey(999L),
         """
                 {
                   "tenantId":"tenant-1",
@@ -4311,7 +4312,9 @@ final class JsonSerializableToJsonTest {
                   "variableNames":["x","y"],
                   "variableEvents":["CREATED","UPDATED"],
                   "bpmnProcessId":"process-1",
-                  "processDefinitionKey":456
+                  "processDefinitionKey":456,
+                  "rootProcessInstanceKey":999,
+                  "elementId":"catchEvent"
                 }
                 """
       },
@@ -4336,7 +4339,9 @@ final class JsonSerializableToJsonTest {
                   "variableNames":[],
                   "variableEvents":[],
                   "bpmnProcessId":"",
-                  "processDefinitionKey":-1
+                  "processDefinitionKey":-1,
+                  "rootProcessInstanceKey":-1,
+                  "elementId":""
                 }
                 """
       },
