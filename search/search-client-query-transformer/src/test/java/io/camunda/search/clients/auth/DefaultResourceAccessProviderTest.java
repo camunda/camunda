@@ -20,7 +20,7 @@ import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.authz.AuthorizationScope;
 import io.camunda.security.core.auth.RequiredAuthorization;
-import io.camunda.security.impl.AuthorizationChecker;
+import io.camunda.security.core.authz.AuthorizationChecker;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;

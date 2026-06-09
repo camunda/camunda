@@ -24,7 +24,7 @@ import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.security.api.model.config.AuthorizationsConfiguration;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.core.auth.RequiredAuthorization;
-import io.camunda.security.impl.AuthorizationChecker;
+import io.camunda.security.core.authz.AuthorizationChecker;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.security.SecurityContextProvider;
