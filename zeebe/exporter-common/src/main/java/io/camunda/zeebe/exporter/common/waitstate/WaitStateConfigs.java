@@ -9,6 +9,7 @@ package io.camunda.zeebe.exporter.common.waitstate;
 
 import io.camunda.zeebe.exporter.common.waitstate.WaitStateEntry.WaitStateType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.ConditionalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 
@@ -32,6 +33,17 @@ public final class WaitStateConfigs {
               BpmnElementType.SEND_TASK,
               BpmnElementType.BUSINESS_RULE_TASK)
           .withWaitStateType(WaitStateType.JOB);
+
+  public static final WaitStateTransformerConfig CONDITION_CONFIG =
+      WaitStateTransformerConfig.of(ValueType.CONDITIONAL_SUBSCRIPTION)
+          .withAddIntents(ConditionalSubscriptionIntent.CREATED)
+          .withUpdateIntents(ConditionalSubscriptionIntent.MIGRATED)
+          .withRemoveIntents(ConditionalSubscriptionIntent.DELETED)
+          .withSupportedElementTypes(
+              BpmnElementType.INTERMEDIATE_CATCH_EVENT,
+              BpmnElementType.BOUNDARY_EVENT,
+              BpmnElementType.START_EVENT)
+          .withWaitStateType(WaitStateType.CONDITION);
 
   private WaitStateConfigs() {}
 }

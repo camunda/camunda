@@ -123,6 +123,7 @@ class WaitStateEntryTest {
             WaitStateType.TIMER,
             WaitStateType.SIGNAL,
             WaitStateType.INCIDENT,
-            WaitStateType.CALL_ACTIVITY);
+            WaitStateType.CALL_ACTIVITY,
+            WaitStateType.CONDITION);
   }
 }
