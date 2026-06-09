@@ -8,6 +8,8 @@
 
 import {isValidJSON} from 'modules/utils';
 import type {VariableCondition} from 'modules/stores/variableFilter';
+import {IS_VARIABLE_FILTER_V2_ENABLED} from 'modules/feature-flags';
+import {smartTransformValue} from 'modules/utils/smartTransform';
 import type {DraftCondition} from './constants';
 
 type RowErrors = {
@@ -28,6 +30,14 @@ const validateCondition = (condition: DraftCondition): RowErrors => {
   ) {
     if (!condition.value?.trim()) {
       errors.value = 'Value is required';
+    } else if (IS_VARIABLE_FILTER_V2_ENABLED) {
+      if (condition.operator !== 'contains') {
+        try {
+          smartTransformValue(condition.value);
+        } catch (e) {
+          errors.value = e instanceof Error ? e.message : 'Invalid value';
+        }
+      }
     } else if (condition.operator === 'oneOf') {
       let parsed: unknown;
       try {

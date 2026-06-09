@@ -14,6 +14,11 @@ import {useMemo} from 'react';
 import {useSearchParams} from 'react-router-dom';
 import type {VariableCondition} from 'modules/stores/variableFilter';
 import type {QueryProcessInstancesRequestBody} from '@camunda/camunda-api-zod-schemas/8.10';
+import {IS_VARIABLE_FILTER_V2_ENABLED} from 'modules/feature-flags';
+import {
+  smartTransformValue,
+  toStringFilterProperty,
+} from 'modules/utils/smartTransform';
 
 type VariableEntry = NonNullable<
   NonNullable<QueryProcessInstancesRequestBody['filter']>['variables']
@@ -34,6 +39,13 @@ function useProcessInstancesSearchFilter(conditions?: VariableCondition[]) {
 }
 
 function buildVariableEntry(condition: VariableCondition): VariableEntry {
+  if (IS_VARIABLE_FILTER_V2_ENABLED) {
+    return buildSmartVariableEntry(condition);
+  }
+  return buildLegacyVariableEntry(condition);
+}
+
+function buildLegacyVariableEntry(condition: VariableCondition): VariableEntry {
   switch (condition.operator) {
     case 'equals':
       return {name: condition.name, value: condition.value};
@@ -51,6 +63,23 @@ function buildVariableEntry(condition: VariableCondition): VariableEntry {
     case 'doesNotExist':
       return {name: condition.name, value: {$exists: false}};
   }
+}
+
+function buildSmartVariableEntry(condition: VariableCondition): VariableEntry {
+  if (
+    condition.operator === 'exists' ||
+    condition.operator === 'doesNotExist'
+  ) {
+    return {
+      name: condition.name,
+      value: toStringFilterProperty(condition.operator, undefined),
+    };
+  }
+  const transformed = smartTransformValue(condition.value);
+  return {
+    name: condition.name,
+    value: toStringFilterProperty(condition.operator, transformed),
+  };
 }
 
 function parseOneOfValues(raw: string): string[] {

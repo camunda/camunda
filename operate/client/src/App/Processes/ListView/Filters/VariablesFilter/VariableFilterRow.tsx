@@ -11,6 +11,7 @@ import {Close, Maximize} from '@carbon/react/icons';
 import {Field, useForm} from 'react-final-form';
 import {IconTextInput} from 'modules/components/IconInput';
 import type {VariableFilterOperator} from 'modules/stores/variableFilter';
+import {IS_VARIABLE_FILTER_V2_ENABLED} from 'modules/feature-flags';
 import {VARIABLE_FILTER_OPERATORS} from './constants';
 import {FilterRow, ValueFieldContainer, DeleteButton} from './styled';
 
@@ -27,9 +28,11 @@ const getValuePlaceholder = (operator: VariableFilterOperator): string => {
     case 'contains':
       return 'search text';
     case 'oneOf':
-      return '["val1", "val2"]';
+      return IS_VARIABLE_FILTER_V2_ENABLED ? 'val1, val2' : '["val1", "val2"]';
     default:
-      return 'value in JSON format';
+      return IS_VARIABLE_FILTER_V2_ENABLED
+        ? 'e.g. true, 42, hello'
+        : 'value in JSON format';
   }
 };
 
