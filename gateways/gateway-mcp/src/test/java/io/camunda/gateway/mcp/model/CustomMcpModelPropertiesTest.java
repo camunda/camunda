@@ -14,6 +14,7 @@ import static org.assertj.core.api.Fail.fail;
 import io.camunda.gateway.mcp.config.CamundaMcpJackson3Module;
 import io.camunda.gateway.mcp.config.schema.CamundaJsonSchemaGenerator;
 import io.camunda.gateway.protocol.model.simple.IncidentFilter;
+import io.camunda.gateway.protocol.model.simple.MessageSubscriptionFilter;
 import io.camunda.gateway.protocol.model.simple.ProcessDefinitionFilter;
 import io.camunda.gateway.protocol.model.simple.ProcessInstanceCreationInstruction;
 import io.camunda.gateway.protocol.model.simple.ProcessInstanceFilter;
@@ -53,6 +54,25 @@ public class CustomMcpModelPropertiesTest {
                 "processDefinitionKey",
                 "processInstanceKey",
                 "state")),
+        Arguments.argumentSet(
+            "MessageSubscriptionFilter",
+            MessageSubscriptionFilter.class,
+            Set.of(
+                "messageSubscriptionKey",
+                "processDefinitionKey",
+                "processDefinitionId",
+                "processInstanceKey",
+                "elementId",
+                "elementInstanceKey",
+                "messageSubscriptionState",
+                "lastUpdatedDate",
+                "messageName",
+                "correlationKey",
+                "messageSubscriptionType",
+                "processDefinitionName",
+                "processDefinitionVersion",
+                "toolName",
+                "inboundConnectorType")),
         Arguments.argumentSet(
             "ProcessDefinitionFilter",
             ProcessDefinitionFilter.class,

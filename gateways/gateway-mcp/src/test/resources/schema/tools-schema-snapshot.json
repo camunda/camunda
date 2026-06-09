@@ -215,6 +215,172 @@
       }
     },
     {
+      "name": "searchMessageSubscriptions",
+      "title": "searchMessageSubscriptions",
+      "description": "Search for message subscriptions restricted to partition 1. Note: Results are eventually consistent and may not immediately reflect recent changes.",
+      "inputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "filter": {
+            "type": "object",
+            "properties": {
+              "correlationKey": {
+                "type": "string",
+                "description": "The correlation key of the message subscription."
+              },
+              "elementId": {
+                "type": "string",
+                "description": "The element ID associated with this message subscription."
+              },
+              "elementInstanceKey": {
+                "type": "string",
+                "description": "The element instance key associated with this message subscription."
+              },
+              "inboundConnectorType": {
+                "type": "string",
+                "description": "Filter by inbound connector type extracted from the `inbound.type` zeebe:property."
+              },
+              "lastUpdatedDate": {
+                "type": "object",
+                "properties": {
+                  "from": {
+                    "type": "string",
+                    "description": "Filter from this time (inclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
+                  },
+                  "to": {
+                    "type": "string",
+                    "description": "Filter up to this time (exclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
+                  }
+                },
+                "description": "The last updated date of the message subscription."
+              },
+              "messageName": {
+                "type": "string",
+                "description": "The name of the message associated with the message subscription."
+              },
+              "messageSubscriptionKey": {
+                "type": "string",
+                "description": "The message subscription key associated with this message subscription."
+              },
+              "messageSubscriptionState": {
+                "type": "string",
+                "enum": [
+                  "CORRELATED",
+                  "CREATED",
+                  "DELETED",
+                  "MIGRATED"
+                ],
+                "description": "The message subscription state."
+              },
+              "messageSubscriptionType": {
+                "type": "string",
+                "enum": [
+                  "START_EVENT",
+                  "PROCESS_EVENT"
+                ],
+                "description": "The type of message subscription to filter by. When omitted, both `START_EVENT` and `PROCESS_EVENT` are returned. Only available for data created with Camunda 8.10 or later. "
+              },
+              "processDefinitionId": {
+                "type": "string",
+                "description": "The process definition ID associated with this message subscription."
+              },
+              "processDefinitionKey": {
+                "type": "string",
+                "description": "The process definition key associated with this correlated message subscription. This only works for data created with 8.9 and later."
+              },
+              "processDefinitionName": {
+                "type": "string",
+                "description": "The name of the process definition associated with this message subscription."
+              },
+              "processDefinitionVersion": {
+                "type": "integer",
+                "format": "int32",
+                "description": "The version of the process definition associated with this message subscription."
+              },
+              "processInstanceKey": {
+                "type": "string",
+                "description": "The process instance key associated with this message subscription."
+              },
+              "toolName": {
+                "type": "string",
+                "description": "Filter by tool name extracted from the `io.camunda.tool:name` zeebe:property."
+              }
+            },
+            "description": "The message subscription search filters."
+          },
+          "page": {
+            "type": "object",
+            "properties": {
+              "after": {
+                "type": "string",
+                "description": "Use the `endCursor` value from the previous response to fetch the next page of results."
+              },
+              "before": {
+                "type": "string",
+                "description": "Use the `startCursor` value from the previous response to fetch the previous page of results."
+              },
+              "from": {
+                "type": "integer",
+                "format": "int32",
+                "description": "The index of items to start searching from."
+              },
+              "limit": {
+                "type": "integer",
+                "format": "int32",
+                "description": "The maximum number of items to return in one request."
+              }
+            },
+            "description": "Pagination criteria."
+          },
+          "sort": {
+            "description": "Sort field criteria.",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "field": {
+                  "type": "string",
+                  "enum": [
+                    "messageSubscriptionKey",
+                    "processDefinitionId",
+                    "processDefinitionName",
+                    "processDefinitionVersion",
+                    "processInstanceKey",
+                    "elementId",
+                    "elementInstanceKey",
+                    "messageSubscriptionState",
+                    "messageSubscriptionType",
+                    "lastUpdatedDate",
+                    "messageName",
+                    "correlationKey",
+                    "tenantId",
+                    "toolName",
+                    "inboundConnectorType"
+                  ],
+                  "description": "The field to sort by."
+                },
+                "order": {
+                  "type": "string",
+                  "enum": [
+                    "ASC",
+                    "DESC"
+                  ]
+                }
+              },
+              "required": [
+                "field"
+              ]
+            }
+          }
+        },
+        "required": []
+      },
+      "annotations": {
+        "readOnlyHint": true
+      }
+    },
+    {
       "name": "getProcessDefinition",
       "title": "getProcessDefinition",
       "description": "Get process definition by key. Note: Results are eventually consistent and may not immediately reflect recent changes.",

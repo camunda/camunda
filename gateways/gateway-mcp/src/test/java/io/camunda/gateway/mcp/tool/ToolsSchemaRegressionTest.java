@@ -10,6 +10,7 @@ package io.camunda.gateway.mcp.tool;
 import io.camunda.gateway.mcp.OperationalToolsTest;
 import io.camunda.gateway.mcp.tool.cluster.ClusterTools;
 import io.camunda.gateway.mcp.tool.incident.IncidentTools;
+import io.camunda.gateway.mcp.tool.message.MessageSubscriptionTools;
 import io.camunda.gateway.mcp.tool.process.definition.ProcessDefinitionTools;
 import io.camunda.gateway.mcp.tool.process.instance.ProcessInstanceTools;
 import io.camunda.gateway.mcp.tool.usertask.UserTaskTools;
@@ -18,6 +19,7 @@ import io.camunda.gateway.protocol.model.JobActivationResult;
 import io.camunda.security.api.model.config.MultiTenancyConfiguration;
 import io.camunda.service.IncidentServices;
 import io.camunda.service.JobServices;
+import io.camunda.service.MessageSubscriptionServices;
 import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.TopologyServices;
@@ -62,6 +64,7 @@ import tools.jackson.databind.node.ObjectNode;
     classes = {
       ClusterTools.class,
       IncidentTools.class,
+      MessageSubscriptionTools.class,
       ProcessDefinitionTools.class,
       ProcessInstanceTools.class,
       UserTaskTools.class,
@@ -78,6 +81,7 @@ class ToolsSchemaRegressionTest extends OperationalToolsTest {
   @MockitoBean private TopologyServices topologyServices;
   @MockitoBean private IncidentServices incidentServices;
   @MockitoBean private JobServices<JobActivationResult> jobServices;
+  @MockitoBean private MessageSubscriptionServices messageSubscriptionServices;
   @MockitoBean private ProcessDefinitionServices processDefinitionServices;
   @MockitoBean private ProcessInstanceServices processInstanceServices;
   @MockitoBean private UserTaskServices userTaskServices;
