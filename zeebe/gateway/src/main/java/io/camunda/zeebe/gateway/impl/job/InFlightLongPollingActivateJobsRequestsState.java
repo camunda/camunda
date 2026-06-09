@@ -93,6 +93,18 @@ public final class InFlightLongPollingActivateJobsRequestsState<T> {
     return !activeRequests.isEmpty();
   }
 
+  public boolean hasPendingRequests() {
+    return !pendingRequests.isEmpty();
+  }
+
+  int activeRequestsCount() {
+    return activeRequests.size();
+  }
+
+  int pendingRequestsCount() {
+    return pendingRequests.size();
+  }
+
   private void updatePendingMetrics() {
     metrics.setBlockedRequestsCount(jobType, pendingRequests.size());
   }
