@@ -1261,7 +1261,7 @@ jobs:
           if [[ -n "${{ matrix.gradle-test-exclude }}" ]]; then
             GRADLE_ARGS+=("-Pit.exclude.tests=${{ matrix.gradle-test-exclude }}")
           fi
-          ./gradlew --no-daemon --console=plain --max-workers=${{ matrix.maven-test-fork-count }} \
+          ./gradlew --no-daemon --console=plain --profile --max-workers=${{ matrix.maven-test-fork-count }} \
             -Pskip.fe.build -Pparallel.tests -Pjunit.thread.count=2 \
             -Ptest.max.forks=${{ matrix.maven-test-fork-count }} \
             -Dio.camunda.process.test.camundaDockerImageName="${{ env.CAMUNDA_DOCKER_IMAGE_NAME }}" \

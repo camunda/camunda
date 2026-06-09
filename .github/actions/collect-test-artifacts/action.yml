@@ -18,6 +18,7 @@ inputs:
       **/build/test-results/test/
       **/build/test-results/ut/
       **/build/test-results/it/
+      **/build/reports/profile/
       **/*.log
   retention-days:
     description: 'Number of days to keep the test artifact'
