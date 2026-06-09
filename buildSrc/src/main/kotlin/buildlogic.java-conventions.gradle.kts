@@ -94,6 +94,11 @@ val itPatterns = listOf(
 tasks.withType<Test>().configureEach {
     enabled = !quickly.get()
     maxParallelForks = testMaxForks
+    // Pass the name of Gradle's internal per-worker ID property so TestEnvironment can resolve it
+    // at runtime to a unique fork number, giving each worker its own SocketUtil port range.
+    systemProperty(
+        "test.gradleWorkerIdProperty",
+        org.gradle.api.internal.tasks.testing.worker.TestWorker.WORKER_ID_SYS_PROPERTY)
     jvmArgs(
         "--add-opens=java.base/java.io=ALL-UNNAMED",
         "--add-opens=java.base/java.lang=ALL-UNNAMED",
