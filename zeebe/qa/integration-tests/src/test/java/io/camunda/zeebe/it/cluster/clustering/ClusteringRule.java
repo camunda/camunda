@@ -313,7 +313,16 @@ public class ClusteringRule extends ExternalResource {
               return null;
             })
         .join();
-    systemContexts.values().forEach(ctx -> ctx.getScheduler().stop());
+    systemContexts
+        .values()
+        .forEach(
+            ctx -> {
+              try {
+                ctx.getScheduler().close();
+              } catch (final Exception e) {
+                LOG.error("Failed to close scheduler", e);
+              }
+            });
     systemContexts.clear();
     brokers.clear();
     brokerCfgs.clear();

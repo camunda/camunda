@@ -66,15 +66,16 @@ public final class RestoreTest {
     // then
     final var leaderLogStream = clusteringRule.getLogStream(1);
 
-    final var reader = leaderLogStream.newLogStreamReader();
-    reader.seekToFirstEvent();
-    assertThat(reader.hasNext()).isTrue();
+    try (final var reader = leaderLogStream.newLogStreamReader()) {
+      reader.seekToFirstEvent();
+      assertThat(reader.hasNext()).isTrue();
 
-    var previousPosition = -1L;
-    while (reader.hasNext()) {
-      final var position = reader.next().getPosition();
-      assertThat(position).isGreaterThan(previousPosition);
-      previousPosition = position;
+      var previousPosition = -1L;
+      while (reader.hasNext()) {
+        final var position = reader.next().getPosition();
+        assertThat(position).isGreaterThan(previousPosition);
+        previousPosition = position;
+      }
     }
   }
 

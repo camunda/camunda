@@ -49,7 +49,7 @@ final class ControlledActorClockEndpointIT {
 
   @AutoClose private final CamundaClient camundaClient = broker.newClientBuilder().build();
 
-  private final HttpClient httpClient = HttpClient.newHttpClient();
+  @AutoClose private final HttpClient httpClient = HttpClient.newHttpClient();
 
   @Test
   void testPinningTime() throws IOException, InterruptedException {
