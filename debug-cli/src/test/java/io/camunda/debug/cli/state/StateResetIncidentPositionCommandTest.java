@@ -54,7 +54,7 @@ class StateResetIncidentPositionCommandTest {
   }
 
   @Test
-  void shouldResetIncidentPositionToDefault() throws IOException {
+  void shouldResetIncidentPositionToDefault() throws Exception {
     // given
     final Path partitionRoot = tempDir.resolve("partitionRoot");
     final var initialSnapshot = takeInitialSnapshot(partitionRoot);
@@ -85,7 +85,7 @@ class StateResetIncidentPositionCommandTest {
   }
 
   @Test
-  void shouldResetIncidentPositionToExplicitValue() throws IOException {
+  void shouldResetIncidentPositionToExplicitValue() throws Exception {
     // given
     final Path partitionRoot = tempDir.resolve("partitionRoot");
     final var initialSnapshot = takeInitialSnapshot(partitionRoot);
@@ -135,24 +135,25 @@ class StateResetIncidentPositionCommandTest {
   }
 
   private PersistedSnapshot takeInitialSnapshot(final Path partitionRoot) {
-    final var initialRuntime = newDbFactory().createDb(tempDir.resolve("initialRuntime").toFile());
+    try (final var initialRuntime =
+        newDbFactory().createDb(tempDir.resolve("initialRuntime").toFile())) {
+      final var context = initialRuntime.createContext();
+      final DbString exporterKey = new DbString();
+      final ColumnFamily<DbString, ExporterStateEntry> exporterColumnFamily =
+          initialRuntime.createColumnFamily(
+              ZbColumnFamilies.EXPORTER, context, exporterKey, new ExporterStateEntry());
 
-    final var context = initialRuntime.createContext();
-    final DbString exporterKey = new DbString();
-    final ColumnFamily<DbString, ExporterStateEntry> exporterColumnFamily =
-        initialRuntime.createColumnFamily(
-            ZbColumnFamilies.EXPORTER, context, exporterKey, new ExporterStateEntry());
+      context.runInTransaction(
+          () -> {
+            final var entry = new ExporterStateEntry();
+            entry.setPosition(EXPORTER_POSITION);
+            entry.setMetadata(new UnsafeBuffer(initialMetadataJson()));
+            exporterKey.wrapString(EXPORTER_ID);
+            exporterColumnFamily.upsert(exporterKey, entry);
+          });
 
-    context.runInTransaction(
-        () -> {
-          final var entry = new ExporterStateEntry();
-          entry.setPosition(EXPORTER_POSITION);
-          entry.setMetadata(new UnsafeBuffer(initialMetadataJson()));
-          exporterKey.wrapString(EXPORTER_ID);
-          exporterColumnFamily.upsert(exporterKey, entry);
-        });
-
-    return new SnapshotUtil().takeSnapshot(initialRuntime, partitionRoot, "1-1-1-1-1", 1L);
+      return new SnapshotUtil().takeSnapshot(initialRuntime, partitionRoot, "1-1-1-1-1", 1L);
+    }
   }
 
   private byte[] initialMetadataJson() {
@@ -175,27 +176,28 @@ class StateResetIncidentPositionCommandTest {
    * inside the read transaction (the entry's buffers are only valid while the transaction is open).
    */
   private ExporterSnapshotState readState(
-      final Path partitionRoot, final PersistedSnapshot initialSnapshot) {
+      final Path partitionRoot, final PersistedSnapshot initialSnapshot) throws Exception {
     final var newSnapshotPath = newSnapshotPath(partitionRoot, initialSnapshot);
-    final ZeebeDb db =
-        new SnapshotUtil().openSnapshot(newSnapshotPath, tempDir.resolve("openedRuntime"));
-    final var context = db.createContext();
-    final DbString exporterKey = new DbString();
-    final ColumnFamily<DbString, ExporterStateEntry> exporterColumnFamily =
-        db.createColumnFamily(
-            ZbColumnFamilies.EXPORTER, context, exporterKey, new ExporterStateEntry());
+    try (final ZeebeDb db =
+        new SnapshotUtil().openSnapshot(newSnapshotPath, tempDir.resolve("openedRuntime"))) {
+      final var context = db.createContext();
+      final DbString exporterKey = new DbString();
+      final ColumnFamily<DbString, ExporterStateEntry> exporterColumnFamily =
+          db.createColumnFamily(
+              ZbColumnFamilies.EXPORTER, context, exporterKey, new ExporterStateEntry());
 
-    final AtomicReference<ExporterSnapshotState> holder = new AtomicReference<>();
-    context.runInTransaction(
-        () -> {
-          exporterKey.wrapString(EXPORTER_ID);
-          final var entry = exporterColumnFamily.get(exporterKey);
-          final var buffer = entry.getMetadata();
-          final byte[] metadata = new byte[buffer.capacity()];
-          buffer.getBytes(0, metadata);
-          holder.set(new ExporterSnapshotState(entry.getPosition(), metadata));
-        });
-    return holder.get();
+      final AtomicReference<ExporterSnapshotState> holder = new AtomicReference<>();
+      context.runInTransaction(
+          () -> {
+            exporterKey.wrapString(EXPORTER_ID);
+            final var entry = exporterColumnFamily.get(exporterKey);
+            final var buffer = entry.getMetadata();
+            final byte[] metadata = new byte[buffer.capacity()];
+            buffer.getBytes(0, metadata);
+            holder.set(new ExporterSnapshotState(entry.getPosition(), metadata));
+          });
+      return holder.get();
+    }
   }
 
   private JsonNode metadataOf(final ExporterSnapshotState state) throws IOException {
