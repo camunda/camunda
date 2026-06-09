@@ -153,6 +153,7 @@ import io.camunda.gateway.protocol.model.UserSearchResult;
 import io.camunda.gateway.protocol.model.UserTaskResult;
 import io.camunda.gateway.protocol.model.UserTaskSearchQueryResult;
 import io.camunda.gateway.protocol.model.UserTaskStateEnum;
+import io.camunda.gateway.protocol.model.UserTaskWaitStateDetails;
 import io.camunda.gateway.protocol.model.VariableResult;
 import io.camunda.gateway.protocol.model.VariableSearchQueryResult;
 import io.camunda.gateway.protocol.model.VariableSearchResult;
@@ -211,6 +212,7 @@ import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.entities.WaitStateEntity;
 import io.camunda.search.entities.WaitStateJobDetails;
 import io.camunda.search.entities.WaitStateMessageDetails;
+import io.camunda.search.entities.WaitStateUserTaskDetails;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.security.api.model.user.CamundaUserDTO;
@@ -703,6 +705,14 @@ public final class SearchQueryResponseMapper {
                       .waitStateType(WaitStateTypeEnum.MESSAGE.name())
                       .messageName(messageName)
                       .correlationKey(correlationKey)
+                      .build())
+              .build();
+      case WaitStateUserTaskDetails(final var taskKey, final var dueDate) ->
+          base.details(
+                  UserTaskWaitStateDetails.Builder.create()
+                      .waitStateType(WaitStateTypeEnum.USER_TASK.name())
+                      .taskKey(keyToString(taskKey))
+                      .dueDate(dueDate == null || dueDate.isBlank() ? null : dueDate)
                       .build())
               .build();
     };
