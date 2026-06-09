@@ -6,14 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {type Page} from '@playwright/test';
 import {BasePage} from './BasePage';
 
 class LoginPage extends BasePage {
-	constructor(page: Page) {
-		super(page);
-	}
-
 	async goto() {
 		return this.page.goto('/login');
 	}

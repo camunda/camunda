@@ -6,14 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {type Page} from '@playwright/test';
 import {View} from './BasePage';
 
 class Notifications extends View {
-	constructor(page: Page) {
-		super(page);
-	}
-
 	getByNotificationTitle(title: string) {
 		return this.page.getByRole('status').filter({hasText: title});
 	}
