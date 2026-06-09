@@ -17,6 +17,8 @@ import io.camunda.zeebe.el.ResultType;
 import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.VariableMappingTransformer;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeMapping;
+import io.camunda.zeebe.test.util.MsgPackUtil;
+import io.camunda.zeebe.util.Either;
 import java.time.InstantSource;
 import java.util.List;
 import org.junit.Test;
@@ -122,6 +124,29 @@ public final class VariableMappingTransformerTest {
                 + "carriageReturn:\"Hello\rWorld\",_camunda_input_context:context put(_camunda_input_context,\"carriageReturn\",carriageReturn),"
                 + "doubleQoutes:\"\\\"My Name is \\\"Zeebe\\\", nice to meet you\\\"\",_camunda_input_context:context put(_camunda_input_context,\"doubleQoutes\",doubleQoutes),"
                 + "encodedQuotes:\"My Name is &#34;Zeebe&#34;, nice to meet you\",_camunda_input_context:context put(_camunda_input_context,\"encodedQuotes\",encodedQuotes)}._camunda_input_context");
+  }
+
+  @Test
+  public void shouldResolveNestedTargetPathInSubsequentInputSourceExpression() {
+    // given — "a" is mapped first, then nested "a.b" is set, then "c" uses "a.b" as source
+    final var mappings =
+        List.of(
+            mapping("=\"placeholder\"", "a"),
+            mapping("={\"key\":\"value\"}", "a.b"),
+            mapping("=1", "a.c"),
+            mapping("=a.b", "c"));
+    final var expression = transformer.transformInputMappings(mappings, expressionLanguage);
+
+    // when
+    final var result = expressionLanguage.evaluateExpression(expression, name -> Either.left(null));
+
+    // then
+    assertThat(result.isFailure())
+        .describedAs("Expected valid result: %s", result.getFailureMessage())
+        .isFalse();
+    assertThat(result.getType()).isEqualTo(ResultType.OBJECT);
+    MsgPackUtil.assertEquality(
+        result.toBuffer(), "{'a':{'b':{'key':'value'},'c':1},'c':{'key':'value'}}");
   }
 
   private static ZeebeMapping mapping(final String source, final String target) {
