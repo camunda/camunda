@@ -66,10 +66,9 @@ public final class ContainerRuntimePropertiesUtil {
 
   private final String elasticsearchVersion;
 
-  public ContainerRuntimePropertiesUtil(
-      final Properties properties, final GitPropertiesUtil gitProperties) {
+  public ContainerRuntimePropertiesUtil(final Properties properties) {
 
-    final VersionedPropertiesUtil versionedPropsReader = new VersionedPropertiesUtil(gitProperties);
+    final VersionedPropertiesUtil versionedPropsReader = new VersionedPropertiesUtil();
 
     elasticsearchVersion =
         getPropertyOrDefault(
@@ -102,15 +101,12 @@ public final class ContainerRuntimePropertiesUtil {
   }
 
   public static ContainerRuntimePropertiesUtil readProperties() {
-    return new ContainerRuntimePropertiesUtil(
-        readPropertiesFileWithUserOverrides(BASE_DIR), new GitPropertiesUtil());
+    return new ContainerRuntimePropertiesUtil(readPropertiesFileWithUserOverrides(BASE_DIR));
   }
 
-  static ContainerRuntimePropertiesUtil readProperties(
-      final String directoryOverride, final GitPropertiesUtil gitProperties) {
-
+  static ContainerRuntimePropertiesUtil readProperties(final String directoryOverride) {
     return new ContainerRuntimePropertiesUtil(
-        readPropertiesFileWithUserOverrides(directoryOverride), gitProperties);
+        readPropertiesFileWithUserOverrides(directoryOverride));
   }
 
   private static Properties readPropertiesFileWithUserOverrides(final String dir) {
