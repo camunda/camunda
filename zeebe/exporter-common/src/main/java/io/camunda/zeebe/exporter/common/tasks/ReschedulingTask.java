@@ -45,7 +45,8 @@ public final class ReschedulingTask implements RunnableTask {
 
     periodicLogger = new ReschedulingTaskLogger(logger, true);
     idleStrategy = new ExponentialBackoff(maxDelayBetweenRunsMs, delayBetweenRunsMs, 1.2, 0);
-    errorStrategy = new ExponentialBackoff(10_000, delayBetweenRunsMs, 1.2, 0);
+    errorStrategy =
+        new ExponentialBackoff(Math.max(10_000, delayBetweenRunsMs), delayBetweenRunsMs, 1.2, 0);
   }
 
   @Override
