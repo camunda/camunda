@@ -15,9 +15,8 @@ import io.camunda.client.api.response.BrokerInfo;
 import io.camunda.client.api.response.PartitionBrokerRole;
 import io.camunda.client.api.response.PartitionInfo;
 import io.camunda.client.api.response.Topology;
-import io.camunda.zeebe.broker.Broker;
-import io.camunda.zeebe.gateway.Gateway;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
+import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import java.net.URISyntaxException;
@@ -100,15 +99,10 @@ public final class TopologyClusterTest {
       assertThat(topology.getClusterSize()).isEqualTo(CLUSTER.brokers().size());
       assertThat(topology.getPartitionsCount()).isEqualTo(CLUSTER.partitionsCount());
       assertThat(topology.getReplicationFactor()).isEqualTo(CLUSTER.replicationFactor());
-      // NOTE: this fails in Intellij because we don't have access to the package version but it
-      // works
-      // when run from the CLI
-      assertThat(topology.getGatewayVersion())
-          .isEqualTo(Gateway.class.getPackage().getImplementationVersion());
+      assertThat(topology.getGatewayVersion()).isEqualTo(VersionUtil.getVersion());
 
       for (final BrokerInfo broker : topology.getBrokers()) {
-        assertThat(broker.getVersion())
-            .isEqualTo(Broker.class.getPackage().getImplementationVersion());
+        assertThat(broker.getVersion()).isEqualTo(VersionUtil.getVersion());
       }
     }
   }
