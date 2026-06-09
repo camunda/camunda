@@ -38,6 +38,8 @@ public class ConditionalSubscriptionRecord extends UnifiedRecordValue
   private static final StringValue VARIABLE_NAMES_KEY = new StringValue("variableNames");
   private static final StringValue VARIABLE_EVENTS_KEY = new StringValue("variableEvents");
   private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
+  private static final StringValue ROOT_PROCESS_INSTANCE_KEY_KEY =
+      new StringValue("rootProcessInstanceKey");
 
   // default to -1 for root level start events
   private final LongProperty scopeKeyProp = new LongProperty(SCOPE_KEY_KEY, -1L);
@@ -57,9 +59,11 @@ public class ConditionalSubscriptionRecord extends UnifiedRecordValue
       new ArrayProperty<>(VARIABLE_EVENTS_KEY, StringValue::new);
   private final StringProperty tenantIdProp =
       new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  private final LongProperty rootProcessInstanceKeyProp =
+      new LongProperty(ROOT_PROCESS_INSTANCE_KEY_KEY, -1L);
 
   public ConditionalSubscriptionRecord() {
-    super(11);
+    super(12);
     declareProperty(scopeKeyProp)
         .declareProperty(processInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
@@ -70,7 +74,8 @@ public class ConditionalSubscriptionRecord extends UnifiedRecordValue
         .declareProperty(conditionProp)
         .declareProperty(variableNamesProp)
         .declareProperty(variableEventsProp)
-        .declareProperty(tenantIdProp);
+        .declareProperty(tenantIdProp)
+        .declareProperty(rootProcessInstanceKeyProp);
   }
 
   public void wrap(final ConditionalSubscriptionRecord record) {
@@ -85,6 +90,7 @@ public class ConditionalSubscriptionRecord extends UnifiedRecordValue
     setVariableNames(record.getVariableNames());
     setVariableEvents(record.getVariableEvents());
     tenantIdProp.setValue(record.getTenantId());
+    rootProcessInstanceKeyProp.setValue(record.getRootProcessInstanceKey());
   }
 
   /**
@@ -227,5 +233,20 @@ public class ConditionalSubscriptionRecord extends UnifiedRecordValue
   public ConditionalSubscriptionRecord setTenantId(final String tenantId) {
     tenantIdProp.setValue(tenantId);
     return this;
+  }
+
+  @Override
+  public long getRootProcessInstanceKey() {
+    return rootProcessInstanceKeyProp.getValue();
+  }
+
+  public ConditionalSubscriptionRecord setRootProcessInstanceKey(final long key) {
+    rootProcessInstanceKeyProp.setValue(key);
+    return this;
+  }
+
+  @Override
+  public String getElementId() {
+    return getCatchEventId();
   }
 }
