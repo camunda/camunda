@@ -225,7 +225,7 @@ jobs:
 
       - name: "Parse pom.xml for versions"
         id: "pom_info"
-        uses: YunaBraska/java-info-action@575e99f42f2915cc62410c7917fef5558257042c # 3.0.1
+        uses: YunaBraska/java-info-action@06acbcb53e1e6234536ce18519dcd5d24a7e5fbe # 3.0.7
         with:
           work-dir: ./optimize
 
@@ -270,11 +270,11 @@ jobs:
         run: |
           while : ; do
             count=$(curl -s -X GET "http://localhost:9200/optimize-process-definition/_count" | jq '.count')
-            if [[ $count -eq 49 ]]; then
+            if [[ $count -eq 17 ]]; then
               echo "Import Completed"
               break
             fi
-            echo "Index has $count entities. Waiting for 49..."
+            echo "Index has $count entities. Waiting for 17..."
             sleep 10
           done
 
@@ -286,7 +286,7 @@ jobs:
         run: yarn run e2e:ci:sm:smoke:headless
 
       - name: Upload logs
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
           name: optimize-e2e-smoke-logs
