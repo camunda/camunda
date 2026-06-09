@@ -97,6 +97,26 @@ public final class ClusterTopologyDomain extends DomainContextBase {
   }
 
   @Provide
+  Arbitrary<PartitionDistributorConfig> partitionDistributorConfig() {
+    return Arbitraries.of(
+        new PartitionDistributorConfig.RoundRobinConfig(),
+        new PartitionDistributorConfig.FixedConfig(),
+        new PartitionDistributorConfig.ZoneAwareConfig(
+            List.of(new PartitionDistributorConfig.ZoneSpec("zone-a", 2, 1000))),
+        new PartitionDistributorConfig.ZoneAwareConfig(
+            List.of(
+                new PartitionDistributorConfig.ZoneSpec("zone-a", 2, 1000),
+                new PartitionDistributorConfig.ZoneSpec("zone-b", 1, 500))),
+        new PartitionDistributorConfig.ZoneAwareConfig(
+            List.of(
+                new PartitionDistributorConfig.ZoneSpec("zone-a", 2, 1000),
+                new PartitionDistributorConfig.ZoneSpec("zone-b", 2, 500),
+                new PartitionDistributorConfig.ZoneSpec("zone-c", 1, 200))),
+        new PartitionDistributorConfig.ZoneAwareConfig(
+            List.of(new PartitionDistributorConfig.ZoneSpec("zone-a", 2, 1000))));
+  }
+
+  @Provide
   Arbitrary<Optional<PartitionDistributorConfig>> partitionDistributorConfigs() {
     return Arbitraries.of(
         Optional.empty(),
