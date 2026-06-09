@@ -299,7 +299,7 @@ class DocumentResourceAccessControllerTest {
     // then
     final var result = reference.get();
     assertThat(result.tenantCheck().enabled()).isTrue();
-    assertThat(result.tenantCheck().tenantIds()).isNull();
+    assertThat(result.tenantCheck().tenantIds()).isEmpty();
   }
 
   @Test
