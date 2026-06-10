@@ -85,7 +85,7 @@ services:
       KEYCLOAK_CLIENTS_0_PERMISSIONS_0_RESOURCE_SERVER_ID: zeebe-api
       KEYCLOAK_CLIENTS_0_PERMISSIONS_0_DEFINITION: write:*
       MULTITENANCY_ENABLED: true
-    env_file: .env.test
+    env_file: config/.env.test
     healthcheck:
       test:
         [

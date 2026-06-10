@@ -1,4 +1,3 @@
-# NOTE: not migrated to camunda/camunda — zeebe version is parameterized (${ZEEBE_VERSION:-SNAPSHOT}) and may resolve to a pre-8.9 release; migrate in a follow-up once version is pinned to >=8.9
 version: '3'
 
 volumes:
@@ -39,8 +38,15 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=camunda
       - GF_USERS_ALLOW_SIGN_UP=false
 
-  zeebe:
-    image: camunda/zeebe:${ZEEBE_VERSION:-SNAPSHOT}
-    container_name: zeebe
+  camunda:
+    image: camunda/camunda:${ZEEBE_VERSION:-SNAPSHOT}
+    container_name: camunda
+    environment:
+      - SPRING_PROFILES_ACTIVE=broker
+      # Use an in-memory RDBMS backend so the broker starts without an external database.
+      # This stack is only used for Prometheus/Grafana monitoring of the Zeebe engine metrics.
+      - CAMUNDA_DATA_SECONDARYSTORAGE_TYPE=rdbms
+      - CAMUNDA_DATABASE_URL=jdbc:h2:mem:camunda;DB_CLOSE_DELAY=-1
+      - ZEEBE_BROKER_EXPORTERS_RDBMS_CLASSNAME=io.camunda.exporter.rdbms.RdbmsExporter
     ports:
       - 9600:9600
