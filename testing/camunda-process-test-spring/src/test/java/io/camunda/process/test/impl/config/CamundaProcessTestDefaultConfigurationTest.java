@@ -21,8 +21,10 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.CredentialsProvider;
+import io.camunda.client.impl.CamundaClientEnvironmentVariables;
 import io.camunda.client.impl.NoopCredentialsProvider;
 import io.camunda.client.impl.oauth.OAuthCredentialsProvider;
+import io.camunda.client.impl.util.Environment;
 import io.camunda.client.spring.configuration.CamundaClientAllAutoConfiguration;
 import io.camunda.client.spring.configuration.MetricsDefaultConfiguration;
 import io.camunda.client.spring.testsupport.CamundaSpringProcessTestContext;
@@ -123,6 +125,19 @@ public class CamundaProcessTestDefaultConfigurationTest {
     void shouldApplyKeepAlive() {
       final CamundaClientConfiguration config = buildConfiguration();
       assertThat(config.getKeepAlive()).isEqualTo(Duration.ofSeconds(45));
+    }
+
+    @Test
+    void shouldDisableEnvironmentVariableOverridesByDefault() {
+      final Environment environment = Environment.system();
+      environment.put(CamundaClientEnvironmentVariables.REST_ADDRESS_VAR, "http://env-host:8080");
+
+      try {
+        final CamundaClientConfiguration config = buildConfiguration();
+        assertThat(config.getRestAddress()).isEqualTo(URI.create("http://custom-host:8080"));
+      } finally {
+        environment.remove(CamundaClientEnvironmentVariables.REST_ADDRESS_VAR);
+      }
     }
 
     @Test
