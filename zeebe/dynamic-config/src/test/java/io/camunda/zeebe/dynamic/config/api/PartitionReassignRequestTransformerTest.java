@@ -12,9 +12,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.FixedConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.RoundRobinConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
@@ -301,6 +303,26 @@ class PartitionReassignRequestTransformerTest {
     final var newTopology = TestTopologyChangeSimulator.apply(oldTopology, operations);
     final var newDistribution = ConfigurationUtil.getPartitionDistributionFrom(newTopology, "temp");
     assertThat(newDistribution).isEqualTo(oldDistribution);
+  }
+
+  @Test
+  void shouldRejectReassignWhenClusterUsesFixedDistribution() {
+    // given a cluster whose topology declares FixedConfig
+    final var members = getClusterMembers(3);
+    final var oldDistribution =
+        new RoundRobinPartitionDistributor()
+            .distributePartitions(members, getSortedPartitionIds(3), 3);
+    final var oldTopology =
+        ConfigurationUtil.getClusterConfigFrom(oldDistribution, partitionConfig, "temp")
+            .setPartitionDistributorConfig(new FixedConfig());
+
+    // when
+    final var result =
+        new PartitionReassignRequestTransformer(members, Optional.of(3), Optional.of(3))
+            .operations(oldTopology);
+
+    // then
+    EitherAssert.assertThat(result).isLeft().left().isInstanceOf(InvalidRequest.class);
   }
 
   private List<PartitionId> getSortedPartitionIds(final int partitionCount) {

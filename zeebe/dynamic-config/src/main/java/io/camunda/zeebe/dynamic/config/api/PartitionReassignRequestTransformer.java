@@ -138,6 +138,13 @@ public class PartitionReassignRequestTransformer implements ConfigurationChangeR
     final var allPartitions =
         Stream.of(oldPartitions, newPartitions).flatMap(List::stream).toList();
 
+    final var effectiveConfig = configOverride.or(currentConfiguration::partitionDistributorConfig);
+    if (effectiveConfig.orElse(null) instanceof PartitionDistributorConfig.FixedConfig) {
+      return Either.left(
+          new InvalidRequest(
+              "Cannot reassign partitions: the cluster uses a fixed partition distribution"
+                  + " defined in each broker's static configuration"));
+    }
     final var distributor =
         configOverride
             .map(PartitionDistributorConfig::toDistributor)
