@@ -171,6 +171,25 @@ In the GitHub workflow, set the `enable-optimize` input to `false`.
 Shared baseline configuration is in `camunda-platform-values-defaults.yaml`; storage-specific overrides are in `camunda-platform-values-${secondaryStorage}.yaml` (both copied to your namespace folder).
 You can also modify the Makefile to pass additional Helm arguments if needed.
 
+#### Optional chaos killer
+
+Manual load-test setups also support an optional chaos-killer CronJob. When
+enabled, it lists pods in the namespace, expands a space-separated list of shell
+patterns, and deletes **one random matching pod per run**.
+
+The default target patterns are:
+
+- `camunda-*`
+- `elastic-*`
+- `postgresql-*`
+
+You can override them via the generated `Makefile`, for example:
+
+```sh
+make install chaos_enabled=true \
+  chaos_target_patterns="camunda-* elastic-* postgresql-* keycloak-*"
+```
+
 #### Use different Camunda Snapshot
 
 If you want to use your own or a different Camunda snapshot, then you could do the following.

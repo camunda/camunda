@@ -5,6 +5,8 @@ enable_optimize ?= __ENABLE_OPTIMIZE__
 curl_image ?= curlimages/curl:7.87.0
 camunda_management_url ?= http://camunda:9600
 prometheus_elasticsearch_exporter_chart_version ?= 7.2.1
+chaos_enabled ?= __CHAOS__
+chaos_target_patterns ?= camunda-* elastic-* postgresql-*
 # Optional: additional Helm configuration for the Camunda Platform release.
 # Use this to pass extra `--set`/`-f` flags, for example:
 #   make install additional_platform_configuration="--set zeebeGateway.env[0].name=FOO --set zeebeGateway.env[0].value=bar"
@@ -95,13 +97,13 @@ endif
 all: install
 
 .PHONY: install
-install: check-deadline create-namespace create-credentials install-storage install-platform install-load-test install-elasticsearch-exporter
+install: check-deadline create-namespace create-credentials install-storage install-platform install-load-test install-elasticsearch-exporter setup-chaos-killer
 
 .PHONY: install-stable
-install-stable: check-deadline create-namespace create-credentials install-storage install-platform-stable install-load-test install-elasticsearch-exporter
+install-stable: check-deadline create-namespace create-credentials install-storage install-platform-stable install-load-test install-elasticsearch-exporter setup-chaos-killer
 
 # Fail fast if the namespace TTL deadline (read from resources/namespace.yaml,
-# the single source of truth) is today or in the past — the TTL cleanup
+# the single source of truth) is today or in the past - the TTL cleanup
 # workflow will delete the namespace and undo the install. To extend, edit
 # `deadline-date` in resources/namespace.yaml and `make create-namespace`.
 .PHONY: check-deadline
@@ -241,6 +243,22 @@ setup-leader-balancer:
 		echo "Leader balancer cronjob already exists"; \
 	fi
 
+# Setup optional chaos killer cronjob for pod restarts (e.g. PostgreSQL outages)
+.PHONY: setup-chaos-killer
+setup-chaos-killer:
+ifeq ($(chaos_enabled),true)
+	@if [ -z "$(strip $(chaos_target_patterns))" ]; then \
+		echo "ERROR: chaos_target_patterns must contain at least one pattern when chaos_enabled=true."; \
+		exit 1; \
+	fi
+	@echo "Applying chaos killer resources for namespace $(namespace) (patterns: $(strip $(chaos_target_patterns)))"; \
+	sed \
+		-e 's|__CHAOS_TARGET_PATTERNS__|$(strip $(chaos_target_patterns))|g' \
+		resources/chaos-killer.yaml | kubectl apply --namespace $(namespace) -f -
+else
+	@echo "Skipping chaos killer setup (chaos_enabled=$(chaos_enabled))"
+endif
+
 # Generates templates from the Camunda Platform helm chart
 .PHONY: template
 template:
@@ -297,6 +315,7 @@ clean:
 	-kubectl delete -n $(namespace) pvc -l app.kubernetes.io/instance=$(namespace)
 	-kubectl delete -n $(namespace) pvc -l app=elasticsearch-master
 	-kubectl delete -n $(namespace) cronjob leader-balancer
+	-kubectl delete -n $(namespace) cronjob,serviceaccount,role,rolebinding chaos-killer --ignore-not-found
 # Clean up secondary storage based on helm charts
 ifneq ($(filter $(secondary_storage),postgresql mysql mariadb),)
 	@echo "Cleaning up $(secondary_storage) database for namespace $(namespace)..."

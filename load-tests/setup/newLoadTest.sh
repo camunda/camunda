@@ -7,7 +7,7 @@ set -eo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: newLoadTest.sh <namespace> [secondaryStorage] [ttl_days] [enable_optimize] [enable_single_zone]
+Usage: newLoadTest.sh <namespace> [secondaryStorage] [ttl_days] [enable_optimize] [enable_single_zone] [enable_chaos]
 
 Arguments:
   namespace                       Base namespace name. Will be prefixed with "c8-" if missing.
@@ -15,6 +15,7 @@ Arguments:
   ttl_days                        Optional. Positive integer for namespace TTL in days. Default: 1.
   enable_optimize                 Optional. true|false to enable Optimize. Default: true.
   enable_single_zone              Optional. true|false to deploy the cluster on a single zone. Default: true.
+  enable_chaos                    Optional. true|false to randomly kill pods. Default: false.
 
 Options:
   -h, --help         Show this help message.
@@ -99,6 +100,9 @@ fi
 enable_single_zone="${5:-true}"
 enable_single_zone=$(echo "$enable_single_zone" | tr '[:upper:]' '[:lower:]')
 
+enable_chaos="${6:-false}"
+enable_chaos=$(echo "$enable_chaos" | tr '[:upper:]' '[:lower:]')
+
 # Pick a "random" zone, selected from the input value.
 function hashmod_zone() {
     local input="${1?"Specify an initial value to compute the zone from"}"
@@ -153,7 +157,7 @@ mkdir -p "$namespace"
 # camunda-platform-values-${secondaryStorage}.yaml. Flat layout so the
 # per-namespace Makefile's -f <file>.yaml references resolve unchanged.
 cp -v  default/Makefile                              "$namespace/"
-cp -rv default/resources/                            "$namespace/"
+cp -rv default/resources/                            "$namespace/resources"
 cp -v  default/values/camunda-platform-override-values.yaml "$namespace/"
 cp -v  default/values/load-test-values.yaml                 "$namespace/"
 cp -v  default/values/values-stable.yaml                    "$namespace/"
@@ -187,9 +191,10 @@ cd "$namespace"
 # Bake values into the rendered Makefile. The deadline lives only in
 # resources/namespace.yaml (single source of truth) — check-deadline parses
 # it out of there so the user only edits one place to extend the TTL.
-sed_inplace "s/__NAMESPACE__/$namespace/"           Makefile
-sed_inplace "s/__STORAGE_TYPE__/$secondaryStorage/" Makefile
+sed_inplace "s/__NAMESPACE__/$namespace/"             Makefile
+sed_inplace "s/__STORAGE_TYPE__/$secondaryStorage/"   Makefile
 sed_inplace "s/__ENABLE_OPTIMIZE__/$enable_optimize/" Makefile
+sed_inplace "s/__CHAOS__/$enable_chaos/"              Makefile
 
 # Bake values into the resource manifests and the platform/load-test values.
 # Values shared with the chart (NAMESPACE, AVAILABILITY_ZONE, AUTHOR) flow into
