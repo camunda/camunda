@@ -25,6 +25,18 @@ import org.agrona.concurrent.UnsafeBuffer;
  * <p>Keyed by {@code (messageKey, processDefinitionKey)} — the pair that uniquely identifies an
  * outstanding ask from this partition. When any of the three reply intents is applied, the entry is
  * removed.
+ *
+ * <p>The {@code retryBackoffMillis} field is {@code P_K}-local retry bookkeeping — the current
+ * back-off <em>magnitude</em> — not part of the cross-partition request. It is deliberately absent
+ * from {@link #wrap(MessageStartProcessInstanceRequestRecord)} and {@link
+ * #populateRecord(MessageStartProcessInstanceRequestRecord)}: an un-replied ask carries no back-off
+ * (default {@code 0} keeps it eligible for base-interval re-send), and a rejected ask has its
+ * magnitude doubled (capped) by the rejection applier on each rejection reply — a pure function of
+ * the prior persisted value, needing no clock or event timestamp. The scheduler derives the
+ * next-retry time as {@code lastSent + max(baseInterval, retryBackoffMillis)}. Persisting the
+ * magnitude — rather than holding it in the transient send tracker — keeps a long-blocked ask from
+ * resetting to base-interval storming on every leader change. It defaults to {@code 0} so values
+ * persisted before this field existed decode unchanged.
  */
 public final class MessageStartProcessInstanceAsk extends UnpackedObject implements DbValue {
 
@@ -42,9 +54,10 @@ public final class MessageStartProcessInstanceAsk extends UnpackedObject impleme
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final LongProperty messageDeadlineProp = new LongProperty("messageDeadline", -1L);
+  private final LongProperty retryBackoffMillisProp = new LongProperty("retryBackoffMillis", 0L);
 
   public MessageStartProcessInstanceAsk() {
-    super(11);
+    super(12);
     declareProperty(messageKeyProp)
         .declareProperty(messageNameProp)
         .declareProperty(correlationKeyProp)
@@ -55,7 +68,8 @@ public final class MessageStartProcessInstanceAsk extends UnpackedObject impleme
         .declareProperty(messageStartEventSubscriptionKeyProp)
         .declareProperty(variablesProp)
         .declareProperty(tenantIdProp)
-        .declareProperty(messageDeadlineProp);
+        .declareProperty(messageDeadlineProp)
+        .declareProperty(retryBackoffMillisProp);
   }
 
   /**
@@ -226,6 +240,20 @@ public final class MessageStartProcessInstanceAsk extends UnpackedObject impleme
 
   public MessageStartProcessInstanceAsk setMessageDeadline(final long messageDeadline) {
     messageDeadlineProp.setValue(messageDeadline);
+    return this;
+  }
+
+  /**
+   * The current retry back-off magnitude in millis. {@code 0} for an un-replied ask; doubled (up to
+   * a cap) by the rejection applier on each rejection reply. The scheduler derives the next-retry
+   * time as {@code lastSent + max(baseInterval, retryBackoffMillis)}.
+   */
+  public long getRetryBackoffMillis() {
+    return retryBackoffMillisProp.getValue();
+  }
+
+  public MessageStartProcessInstanceAsk setRetryBackoffMillis(final long retryBackoffMillis) {
+    retryBackoffMillisProp.setValue(retryBackoffMillis);
     return this;
   }
 

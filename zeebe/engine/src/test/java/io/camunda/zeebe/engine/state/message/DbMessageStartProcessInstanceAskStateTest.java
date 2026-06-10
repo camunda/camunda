@@ -129,6 +129,49 @@ public class DbMessageStartProcessInstanceAskStateTest {
     assertThat(populatedRecord.getMessageDeadline()).isEqualTo(99999L);
   }
 
+  @Test
+  public void shouldDefaultBackoffMagnitudeToZeroForFreshAsk() {
+    // given a fresh ask sourced from a request record (no back-off ever applied)
+    final var ask = new MessageStartProcessInstanceAsk().wrap(createRecord(1L, 2L, "b", "p"));
+
+    // then the P_K-local retry bookkeeping defaults to zero, keeping the ask eligible for
+    // base-interval re-send and ensuring values persisted before this field existed decode
+    // unchanged
+    assertThat(ask.getRetryBackoffMillis()).isZero();
+  }
+
+  @Test
+  public void shouldPersistBackoffMagnitude() {
+    // given
+    final var state = stateRule.getProcessingState().getMessageStartProcessInstanceAskState();
+    final var ask =
+        new MessageStartProcessInstanceAsk()
+            .wrap(createRecord(123L, 456L, "b", "p"))
+            .setRetryBackoffMillis(4000L);
+
+    // when
+    state.put(ask);
+
+    // then the back-off magnitude survives the RocksDB round-trip
+    final var retrieved = state.get(123L, 456L);
+    assertThat(retrieved.getRetryBackoffMillis()).isEqualTo(4000L);
+  }
+
+  @Test
+  public void shouldPreserveBackoffMagnitudeOnCopy() {
+    // given
+    final var ask =
+        new MessageStartProcessInstanceAsk()
+            .wrap(createRecord(1L, 2L, "b", "p"))
+            .setRetryBackoffMillis(8000L);
+
+    // when
+    final var copy = ask.copy();
+
+    // then
+    assertThat(copy.getRetryBackoffMillis()).isEqualTo(8000L);
+  }
+
   private MessageStartProcessInstanceRequestRecord createRecord(
       final long messageKey,
       final long processDefinitionKey,
