@@ -7,7 +7,6 @@
 cluster.cluster-id
 cluster.compression-algorithm
 cluster.gateway-id
-cluster.global-listeners.user-task
 cluster.initial-contact-points
 cluster.membership.broadcast-disputes
 cluster.membership.broadcast-updates

@@ -21,6 +21,7 @@ api.rest.executor.max-pool-size-multiplier
 api.rest.executor.queue-capacity
 api.rest.process-cache.expiration-idle
 api.rest.process-cache.max-size
+cluster.global-listeners.user-task
 cluster.partition-count
 cluster.replication-factor
 data.audit-log.client.categories

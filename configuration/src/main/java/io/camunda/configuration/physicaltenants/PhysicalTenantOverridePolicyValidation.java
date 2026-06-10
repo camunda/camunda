@@ -71,7 +71,6 @@ final class PhysicalTenantOverridePolicyValidation {
               "cluster.gateway-id",
               "cluster.raft",
               "cluster.compression-algorithm",
-              "cluster.global-listeners",
               "cluster.partitioning",
               "cluster.zone",
               "cluster.send-on-legacy-subject",
