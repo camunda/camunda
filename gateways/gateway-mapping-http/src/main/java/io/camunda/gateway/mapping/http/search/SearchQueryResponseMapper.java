@@ -670,7 +670,6 @@ public final class SearchQueryResponseMapper {
     final var elementType = WaitStateElementTypeEnum.fromValue(item.elementType().name());
     final var base =
         ElementInstanceWaitStateResult.Builder.create()
-            .waitStateType(WaitStateTypeEnum.fromValue(item.details().waitStateType().name()))
             .processInstanceKey(keyToString(item.processInstanceKey()))
             .elementInstanceKey(keyToString(item.elementInstanceKey()))
             .elementId(item.elementId())

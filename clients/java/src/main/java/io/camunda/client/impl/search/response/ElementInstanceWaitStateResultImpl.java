@@ -26,7 +26,6 @@ import io.camunda.client.protocol.rest.WaitStateTypeEnum;
 
 public class ElementInstanceWaitStateResultImpl implements ElementInstanceWaitStateResult {
 
-  private final WaitStateType waitStateType;
   private final String rootProcessInstanceKey;
   private final String processInstanceKey;
   private final String elementInstanceKey;
@@ -37,8 +36,6 @@ public class ElementInstanceWaitStateResultImpl implements ElementInstanceWaitSt
 
   public ElementInstanceWaitStateResultImpl(
       final io.camunda.client.protocol.rest.ElementInstanceWaitStateResult item) {
-    waitStateType =
-        parseWaitStateType(item.getWaitStateType() != null ? item.getWaitStateType().name() : null);
     rootProcessInstanceKey = item.getRootProcessInstanceKey();
     processInstanceKey = item.getProcessInstanceKey();
     elementInstanceKey = item.getElementInstanceKey();
@@ -46,17 +43,6 @@ public class ElementInstanceWaitStateResultImpl implements ElementInstanceWaitSt
     elementType = EnumUtil.convert(item.getElementType(), WaitStateElementType.class);
     tenantId = item.getTenantId();
     details = extractDetails(item.getDetails());
-  }
-
-  private static WaitStateType parseWaitStateType(final String value) {
-    if (value == null) {
-      return WaitStateType.UNKNOWN_ENUM_VALUE;
-    }
-    try {
-      return WaitStateType.valueOf(value);
-    } catch (final IllegalArgumentException e) {
-      return WaitStateType.UNKNOWN_ENUM_VALUE;
-    }
   }
 
   private static WaitStateDetails extractDetails(
@@ -80,7 +66,7 @@ public class ElementInstanceWaitStateResultImpl implements ElementInstanceWaitSt
 
   @Override
   public WaitStateType getWaitStateType() {
-    return waitStateType;
+    return details.getWaitStateType();
   }
 
   @Override

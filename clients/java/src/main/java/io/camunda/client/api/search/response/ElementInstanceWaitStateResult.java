@@ -36,8 +36,7 @@ public interface ElementInstanceWaitStateResult {
 
   /**
    * Returns the wait-state-specific details, or {@code null} if absent. Resolves to {@link
-   * JobWaitStateDetails} or {@link MessageWaitStateDetails} depending on {@link
-   * #getWaitStateType()}.
+   * JobWaitStateDetails} or {@link MessageWaitStateDetails}.
    */
   WaitStateDetails getDetails();
 }

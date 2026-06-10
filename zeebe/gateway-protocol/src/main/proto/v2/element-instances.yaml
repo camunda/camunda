@@ -796,7 +796,6 @@ components:
       description: An element instance waiting state.
       type: object
       required:
-        - waitStateType
         - processInstanceKey
         - elementInstanceKey
         - elementId
@@ -805,10 +804,6 @@ components:
         - rootProcessInstanceKey
         - details
       properties:
-        waitStateType:
-          description: The type of waiting state an element instance is in.
-          allOf:
-            - $ref: '#/components/schemas/WaitStateTypeEnum'
         rootProcessInstanceKey:
           description: Key of the root process instance.
           nullable: true
