@@ -18,6 +18,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * Represents the authentication context for a user or client in Camunda, including (where
@@ -27,6 +28,12 @@ import java.util.function.Function;
  * <p>Either {@code authenticatedUsername} or {@code authenticatedClientId} must be set, but not
  * both, unless the authentication represents an anonymous user {@code anonymousUser} in which case
  * both can be null.
+ *
+ * <p>Membership fields ({@code authenticatedGroupIds}, {@code authenticatedRoleIds}, {@code
+ * authenticatedTenantIds}, {@code authenticatedMappingRuleIds}) may be supplied eagerly via the
+ * corresponding builder methods, or lazily via the {@code *Supplier} builder methods. Lazy fields
+ * are resolved at most once on the first read operation against the returned list; the public
+ * accessor signature is unchanged in both cases.
  */
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 public record CamundaAuthentication(
@@ -72,6 +79,10 @@ public record CamundaAuthentication(
     private final List<String> roleIds = new ArrayList<>();
     private final List<String> tenants = new ArrayList<>();
     private final List<String> mappingRules = new ArrayList<>();
+    private Supplier<List<String>> groupIdsSupplier;
+    private Supplier<List<String>> roleIdsSupplier;
+    private Supplier<List<String>> tenantsSupplier;
+    private Supplier<List<String>> mappingRulesSupplier;
     private Map<String, Object> claims;
 
     public Builder user(final String value) {
@@ -100,6 +111,11 @@ public record CamundaAuthentication(
       return this;
     }
 
+    public Builder groupIdsSupplier(final Supplier<List<String>> supplier) {
+      groupIdsSupplier = supplier;
+      return this;
+    }
+
     public Builder role(final String value) {
       return roleIds(Collections.singletonList(value));
     }
@@ -108,6 +124,11 @@ public record CamundaAuthentication(
       if (values != null) {
         roleIds.addAll(values);
       }
+      return this;
+    }
+
+    public Builder roleIdsSupplier(final Supplier<List<String>> supplier) {
+      roleIdsSupplier = supplier;
       return this;
     }
 
@@ -122,6 +143,11 @@ public record CamundaAuthentication(
       return this;
     }
 
+    public Builder tenantsSupplier(final Supplier<List<String>> supplier) {
+      tenantsSupplier = supplier;
+      return this;
+    }
+
     public Builder mappingRule(final String mappingRule) {
       return mappingRule(Collections.singletonList(mappingRule));
     }
@@ -130,6 +156,11 @@ public record CamundaAuthentication(
       if (values != null) {
         mappingRules.addAll(values);
       }
+      return this;
+    }
+
+    public Builder mappingRulesSupplier(final Supplier<List<String>> supplier) {
+      mappingRulesSupplier = supplier;
       return this;
     }
 
@@ -143,11 +174,25 @@ public record CamundaAuthentication(
           username,
           clientId,
           anonymous,
-          unmodifiableList(groupIds),
-          unmodifiableList(roleIds),
-          unmodifiableList(tenants),
-          unmodifiableList(mappingRules),
+          resolveMembershipField("groupIds", groupIds, groupIdsSupplier),
+          resolveMembershipField("roleIds", roleIds, roleIdsSupplier),
+          resolveMembershipField("tenants", tenants, tenantsSupplier),
+          resolveMembershipField("mappingRules", mappingRules, mappingRulesSupplier),
           claims);
+    }
+
+    private static List<String> resolveMembershipField(
+        final String fieldName, final List<String> eager, final Supplier<List<String>> supplier) {
+      if (supplier == null) {
+        return unmodifiableList(eager);
+      }
+      if (!eager.isEmpty()) {
+        throw new IllegalStateException(
+            "Both eager values and a supplier were set for '"
+                + fieldName
+                + "'. Use one or the other.");
+      }
+      return new LazyList<>(supplier);
     }
   }
 }
