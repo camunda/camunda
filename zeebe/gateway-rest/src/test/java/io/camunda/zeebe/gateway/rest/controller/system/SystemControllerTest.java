@@ -96,8 +96,7 @@ public class SystemControllerTest extends RestControllerTest {
   @BeforeEach
   void setupUsageMetricsServices() {
     when(serviceRegistry.usageMetricsServices(any())).thenReturn(usageMetricsServices);
-    Mockito.lenient()
-        .when(tenantRestConfigProvider.forTenant(any()))
+    when(tenantRestConfigProvider.forTenant(any()))
         .thenReturn(new TenantRestConfig(32 * 1024, JobMetrics.DEFAULT));
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);

@@ -64,9 +64,8 @@ public class MessageControllerTest extends RestControllerTest {
 
   @BeforeEach
   void setup() {
-    Mockito.lenient().when(serviceRegistry.messageServices(any())).thenReturn(messageServices);
-    Mockito.lenient()
-        .when(tenantRestConfigProvider.forTenant(any()))
+    when(serviceRegistry.messageServices(any())).thenReturn(messageServices);
+    when(tenantRestConfigProvider.forTenant(any()))
         .thenReturn(new TenantRestConfig(32 * 1024, JobMetrics.DEFAULT));
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
