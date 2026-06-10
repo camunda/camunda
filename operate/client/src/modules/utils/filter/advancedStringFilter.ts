@@ -28,6 +28,7 @@ const advancedStringFilterSchema = z.object({
   $notIn: z.array(z.string().min(1)).min(1).optional(),
   $like: z.string().optional(),
 }) satisfies z.ZodType<AdvancedStringFilter>;
+const advancedStringFilterKeySchema = z.keyof(advancedStringFilterSchema);
 
 /** Turns an operator value pair into a URL-ready string. */
 function encodeFilterOperation(
@@ -46,7 +47,7 @@ function splitEncodedFilterOperation(encodedOperation: string) {
 
   const operator = `$${encodedOperation.slice(0, separatorIndex)}`;
   const value = encodedOperation.slice(separatorIndex + 1);
-  const result = z.keyof(advancedStringFilterSchema).safeParse(operator);
+  const result = advancedStringFilterKeySchema.safeParse(operator);
   if (!result.success) {
     return null;
   }
