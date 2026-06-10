@@ -122,6 +122,13 @@ public class DefaultMembershipService implements MembershipService {
 
     synchronized List<String> mappingRules() {
       if (mappingRules == null) {
+        // Mapping rules match JWT/OIDC claims to internal identities. With no claims (e.g. the
+        // BASIC-auth path that calls this service with an empty map) nothing can match, so skip
+        // the DB query.
+        if (tokenClaims.isEmpty()) {
+          mappingRules = List.of();
+          return mappingRules;
+        }
         final var ids =
             mappingRuleServices
                 .getMatchingMappingRules(tokenClaims, CamundaAuthentication.anonymous())
