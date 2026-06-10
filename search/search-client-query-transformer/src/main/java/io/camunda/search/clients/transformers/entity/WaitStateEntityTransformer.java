@@ -34,6 +34,7 @@ public class WaitStateEntityTransformer
         value.getElementId(),
         toFlowNodeType(value.getElementType()),
         value.getRootProcessInstanceKey(),
+        value.getBpmnProcessId(),
         parseDetails(value.getWaitStateType(), value.getDetails()),
         value.getTenantId());
   }

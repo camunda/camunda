@@ -29,6 +29,9 @@ public class WaitStateEntity extends AbstractExporterEntity<WaitStateEntity> {
   private String elementType;
 
   @SinceVersion(value = "8.10.0", requireDefault = false)
+  private String bpmnProcessId;
+
+  @SinceVersion(value = "8.10.0", requireDefault = false)
   private String waitStateType;
 
   @SinceVersion(value = "8.10.0", requireDefault = false)
@@ -82,6 +85,15 @@ public class WaitStateEntity extends AbstractExporterEntity<WaitStateEntity> {
 
   public WaitStateEntity setElementType(final String elementType) {
     this.elementType = elementType;
+    return this;
+  }
+
+  public String getBpmnProcessId() {
+    return bpmnProcessId;
+  }
+
+  public WaitStateEntity setBpmnProcessId(final String bpmnProcessId) {
+    this.bpmnProcessId = bpmnProcessId;
     return this;
   }
 

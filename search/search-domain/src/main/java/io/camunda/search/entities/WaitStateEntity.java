@@ -20,6 +20,7 @@ public record WaitStateEntity(
     String elementId,
     FlowNodeType elementType,
     @Nullable Long rootProcessInstanceKey,
+    String bpmnProcessId,
     WaitStateDetails details,
     String tenantId) {
 
@@ -28,6 +29,7 @@ public record WaitStateEntity(
     Objects.requireNonNull(elementInstanceKey, "elementInstanceKey");
     Objects.requireNonNull(elementId, "elementId");
     Objects.requireNonNull(elementType, "elementType");
+    Objects.requireNonNull(bpmnProcessId, "bpmnProcessId");
     Objects.requireNonNull(tenantId, "tenantId");
     Objects.requireNonNull(details, "details");
   }
@@ -38,6 +40,7 @@ public record WaitStateEntity(
     private @Nullable String elementId;
     private @Nullable FlowNodeType elementType;
     private @Nullable Long rootProcessInstanceKey;
+    private @Nullable String bpmnProcessId;
     private @Nullable WaitStateDetails details;
     private @Nullable String tenantId;
 
@@ -66,6 +69,11 @@ public record WaitStateEntity(
       return this;
     }
 
+    public Builder bpmnProcessId(final String bpmnProcessId) {
+      this.bpmnProcessId = bpmnProcessId;
+      return this;
+    }
+
     public Builder details(final WaitStateDetails details) {
       this.details = details;
       return this;
@@ -83,7 +91,8 @@ public record WaitStateEntity(
           Objects.requireNonNull(elementInstanceKey, "elementInstanceKey"),
           Objects.requireNonNull(elementId, "elementId"),
           Objects.requireNonNull(elementType, "elementType"),
-          Objects.requireNonNull(rootProcessInstanceKey, "rootProcessInstanceKey"),
+          rootProcessInstanceKey,
+          Objects.requireNonNull(bpmnProcessId, "bpmnProcessId"),
           Objects.requireNonNull(details, "details"),
           Objects.requireNonNull(tenantId, "tenantId"));
     }
