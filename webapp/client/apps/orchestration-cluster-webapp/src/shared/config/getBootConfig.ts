@@ -48,4 +48,3 @@ const getBootConfig = (() => {
 })();
 
 export {getBootConfig};
-export type {BootConfig};

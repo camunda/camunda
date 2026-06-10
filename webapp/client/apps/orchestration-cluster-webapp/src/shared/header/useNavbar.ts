@@ -133,4 +133,3 @@ function useNavbar(currentUser: CurrentUser): NavbarConfig {
 }
 
 export {useNavbar};
-export type {NavbarConfig};
