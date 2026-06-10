@@ -218,6 +218,50 @@ public final class VariableInputMappingTest {
     assertThat(zJson.path("b").path("c").isNull()).isTrue();
   }
 
+  @Test
+  public void shouldReferencePreviousMappingWithNestedTarget() {
+    // given
+    final String processId = "proc" + COUNTER.incrementAndGet();
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .subProcess(
+                "sub",
+                sub ->
+                    sub.zeebeInputExpression("\"value\"", "nested.variable")
+                        .zeebeInputExpression("nested.variable", "x")
+                        .embeddedSubProcess()
+                        .startEvent()
+                        .endEvent())
+            .endEvent()
+            .done();
+
+    ENGINE_RULE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE_RULE.processInstance().ofBpmnProcessId(processId).create();
+
+    // then
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId(processId)
+        .await();
+
+    assertVariableValue(processInstanceKey, "x", "\"value\"");
+
+    final String nestedValue =
+        RecordingExporter.variableRecords(VariableIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withName("nested")
+            .getFirst()
+            .getValue()
+            .getValue();
+
+    final JsonNode nestedJson = parseJson(nestedValue);
+    assertThat(nestedJson.path("variable").asText()).isEqualTo("value");
+  }
+
   private void assertVariableValue(
       final long processInstanceKey, final String variableName, final String expectedValue) {
     final String actualValue =
@@ -234,7 +278,7 @@ public final class VariableInputMappingTest {
   private JsonNode parseJson(final String json) {
     try {
       return OBJECT_MAPPER.readTree(json);
-    } catch (JsonProcessingException e) {
+    } catch (final JsonProcessingException e) {
       throw new RuntimeException("Failed to parse JSON: " + json, e);
     }
   }
