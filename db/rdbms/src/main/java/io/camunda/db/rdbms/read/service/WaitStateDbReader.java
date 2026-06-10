@@ -17,6 +17,7 @@ import io.camunda.search.clients.reader.WaitStateReader;
 import io.camunda.search.entities.WaitStateEntity;
 import io.camunda.search.query.ElementInstanceWaitStateQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.core.authz.ResourceAccessChecks;
 import java.util.List;
 import java.util.Optional;
@@ -45,11 +46,16 @@ public class WaitStateDbReader extends AbstractEntityReader<WaitStateEntity>
       return buildSearchQueryResult(0, List.of(), dbSort);
     }
 
+    final var authorizedResourceIds =
+        resourceAccessChecks
+            .getAuthorizedResourceIdsByType()
+            .getOrDefault(AuthorizationResourceType.PROCESS_DEFINITION.name(), List.of());
     final var dbPage = convertPaging(dbSort, query.page());
     final var dbQuery =
         WaitStateDbQuery.of(
             b ->
                 b.filter(query.filter())
+                    .authorizedResourceIds(authorizedResourceIds)
                     .authorizedTenantIds(resourceAccessChecks.getAuthorizedTenantIds())
                     .sort(dbSort)
                     .page(dbPage));

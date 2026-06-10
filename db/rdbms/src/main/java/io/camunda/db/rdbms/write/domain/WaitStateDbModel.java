@@ -24,6 +24,7 @@ public record WaitStateDbModel(
     String elementId,
     String elementType,
     String waitStateType,
+    String processDefinitionId,
     String details,
     String tenantId,
     Integer partitionId) {
@@ -37,6 +38,7 @@ public record WaitStateDbModel(
     private String elementId;
     private String elementType;
     private String waitStateType;
+    private String processDefinitionId;
     private String details;
     private String tenantId;
     private Integer partitionId;
@@ -76,6 +78,11 @@ public record WaitStateDbModel(
       return this;
     }
 
+    public Builder processDefinitionId(final String bpmnProcessId) {
+      processDefinitionId = bpmnProcessId;
+      return this;
+    }
+
     public Builder details(final String details) {
       this.details = details;
       return this;
@@ -101,6 +108,7 @@ public record WaitStateDbModel(
           elementId,
           elementType,
           waitStateType,
+          processDefinitionId,
           details,
           tenantId,
           partitionId);
