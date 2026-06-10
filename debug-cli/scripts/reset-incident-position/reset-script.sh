@@ -2,7 +2,7 @@
 #
 # Camunda Exporter Incident-Position Reset Script
 #
-# Resets an exporter's lastIncidentUpdatePosition on all partition replicas hosted
+# Resets an exporter's lastIncidentUpdatePosition on the partition replicas hosted
 # by ONE broker by:
 #   1. Backing up the existing snapshots of each partition
 #   2. Running cdbg state reset-incident-position on each partition's snapshot
@@ -12,40 +12,60 @@
 # brokers: the EXPORTER column family is replica-local state, so every broker
 # patches its own snapshots. Run one Job per broker (the generator does this).
 #
+# The same PARTITION_POSITIONS is applied to every broker's Job. A partition that
+# is not hosted on this broker (replicationFactor < clusterSize) is skipped with a
+# log line, not treated as an error.
+#
 # This script is designed to run inside a Kubernetes Job with the broker's PVC
 # mounted at /mnt/broker-${BROKER_ID}.
 #
 # Required Environment Variables:
-#   BROKER_ID      - Broker whose PVC is mounted (0, 1, 2, ...)
-#   NEW_POSITION   - New lastIncidentUpdatePosition (-1 reprocesses all incidents)
+#   BROKER_ID           - Broker whose PVC is mounted (0, 1, 2, ...)
+#   PARTITION_POSITIONS - Space-separated partitionId:position tuples giving the new
+#                         lastIncidentUpdatePosition per partition, e.g. "1:13417758 3:-1".
+#                         Position -1 reprocesses all incidents for that partition.
 #
 # Optional Environment Variables:
 #   EXPORTER_ID    - Exporter id to patch (default: camundaexporter)
-#   PARTITION_IDS  - Space-separated partition ids to patch (default: all partitions
-#                    found on this broker's PVC)
-#   SNAPSHOT_ID    - Specific snapshot to use; only valid when patching a single
-#                    partition (default: auto-detect, fails if multiple snapshots)
+#   SNAPSHOT_ID    - Specific snapshot to use; only valid when PARTITION_POSITIONS has a
+#                    single tuple (default: auto-detect, fails if multiple snapshots)
+#   NAMESPACE      - Namespace (only used to print an accurate cleanup hint; injected
+#                    by the generator)
+#   PVC_NAME       - This broker's PVC claim name (only used to print an accurate cleanup
+#                    hint; injected by the generator)
 #
 
 set -euo pipefail
 
 : "${BROKER_ID:?BROKER_ID must be set}"
-: "${NEW_POSITION:?NEW_POSITION must be set}"
+: "${PARTITION_POSITIONS:?PARTITION_POSITIONS must be set (e.g. \"1:13417758 3:-1\")}"
 EXPORTER_ID="${EXPORTER_ID:-camundaexporter}"
-PARTITION_IDS="${PARTITION_IDS:-}" # Optional, auto-detected when empty
-SNAPSHOT_ID="${SNAPSHOT_ID:-}"     # Optional override
+SNAPSHOT_ID="${SNAPSHOT_ID:-}" # Optional override
+
+# Only used to print an accurate cleanup hint if a previous run left a backup.
+# Injected by the generator; fall back to placeholders for standalone runs.
+CLEANUP_NAMESPACE="${NAMESPACE:-<namespace>}"
+CLEANUP_PVC="${PVC_NAME:-<pvc-name-for-broker-${BROKER_ID}>}"
 
 BROKER_MOUNT="/mnt/broker-${BROKER_ID}"
 PARTITIONS_PATH="${BROKER_MOUNT}/raft-partition/partitions"
 
+# Validate the PARTITION_POSITIONS tuples up front, before touching any data.
+for tuple in $PARTITION_POSITIONS; do
+        if [[ ! "$tuple" =~ ^[^:]+:[^:]+$ ]]; then
+                echo "ERROR: Invalid PARTITION_POSITIONS entry '${tuple}'"
+                echo "Expected space-separated partitionId:position tuples, e.g. \"1:13417758 3:-1\""
+                exit 1
+        fi
+done
+
 echo "============================================="
 echo "=== Incident-Position Reset Job Starting ==="
 echo "============================================="
-echo "Broker ID:      ${BROKER_ID}"
-echo "Exporter ID:    ${EXPORTER_ID}"
-echo "New Position:   ${NEW_POSITION}"
-echo "Partition IDs:  ${PARTITION_IDS:-<auto-detect all on this broker>}"
-echo "Snapshot:       ${SNAPSHOT_ID:-<auto-detect latest>}"
+echo "Broker ID:            ${BROKER_ID}"
+echo "Exporter ID:          ${EXPORTER_ID}"
+echo "Partition positions:  ${PARTITION_POSITIONS}"
+echo "Snapshot:             ${SNAPSHOT_ID:-<auto-detect latest>}"
 echo "============================================="
 echo ""
 
@@ -54,46 +74,54 @@ if [ ! -d "${PARTITIONS_PATH}" ]; then
         exit 1
 fi
 
-# Auto-detect partitions hosted by this broker if not provided
-if [ -z "${PARTITION_IDS}" ]; then
-        PARTITION_IDS=$(find "${PARTITIONS_PATH}" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | sort -n | tr '\n' ' ')
-        PARTITION_IDS="${PARTITION_IDS% }"
-        if [ -z "${PARTITION_IDS}" ]; then
-                echo "ERROR: No partitions found in ${PARTITIONS_PATH}"
-                exit 1
-        fi
-        echo "Auto-detected partitions on broker ${BROKER_ID}: ${PARTITION_IDS}"
-        echo ""
-fi
-
-if [ -n "${SNAPSHOT_ID}" ] && [ "$(echo "${PARTITION_IDS}" | wc -w)" -gt 1 ]; then
-        echo "ERROR: SNAPSHOT_ID can only be used when patching a single partition"
+if [ -n "${SNAPSHOT_ID}" ] && [ "$(echo "${PARTITION_POSITIONS}" | wc -w)" -gt 1 ]; then
+        echo "ERROR: SNAPSHOT_ID can only be used when PARTITION_POSITIONS has a single tuple"
         exit 1
 fi
 
-# Check for leftovers of a previous failed run before touching anything
-for partition_id in $PARTITION_IDS; do
+# Check for leftovers of a previous failed run before touching anything.
+for tuple in $PARTITION_POSITIONS; do
+        partition_id="${tuple%%:*}"
         BACKUP_PATH="${PARTITIONS_PATH}/${partition_id}/snapshots-backup"
         if [ -d "${BACKUP_PATH}" ]; then
+                PVC_RELATIVE_BACKUP="raft-partition/partitions/${partition_id}/snapshots-backup"
                 echo "ERROR: Existing backup found at ${BACKUP_PATH}"
                 echo ""
-                echo "This indicates a previous reset attempt may have failed."
-                echo "Manually review and remove existing backups before retrying:"
-                echo "  kubectl exec <pod> -- rm -rf ${BACKUP_PATH}"
+                echo "A previous reset attempt for partition ${partition_id} appears to have failed."
+                echo "The cluster is scaled down, so there is NO broker pod to exec into. Inspect and"
+                echo "rename (do not delete) the leftover from a throwaway pod that mounts this broker's"
+                echo "PVC, then re-run this Job. For example, with the PVC mounted at /mnt:"
                 echo ""
-                echo "Only remove these backups if you're certain they're no longer needed!"
+                echo "  PVC claim:  ${CLEANUP_PVC}"
+                echo "  Namespace:  ${CLEANUP_NAMESPACE}"
+                echo "  Command:    mv /mnt/${PVC_RELATIVE_BACKUP} /mnt/${PVC_RELATIVE_BACKUP}-old-<timestamp>"
+                echo ""
+                echo "Only proceed once you have confirmed the leftover is from a failed attempt."
                 exit 1
         fi
 done
 
-for partition_id in $PARTITION_IDS; do
+PATCHED_SUMMARY=()
+SKIPPED_SUMMARY=()
+
+for tuple in $PARTITION_POSITIONS; do
+        partition_id="${tuple%%:*}"
+        new_position="${tuple##*:}"
         PARTITION_PATH="${PARTITIONS_PATH}/${partition_id}"
         SNAPSHOTS_PATH="${PARTITION_PATH}/snapshots"
         RUNTIME_PATH="/tmp/reset-runtime-${partition_id}"
 
         echo "============================================="
-        echo "=== Partition ${partition_id} ==="
+        echo "=== Partition ${partition_id} (-> ${new_position}) ==="
         echo "============================================="
+
+        # Skip partitions this broker does not host (replicationFactor < clusterSize).
+        if [ ! -d "${PARTITION_PATH}" ]; then
+                echo "Partition ${partition_id} is not hosted on broker ${BROKER_ID}; skipping."
+                echo ""
+                SKIPPED_SUMMARY+=("${partition_id} (not hosted on this broker)")
+                continue
+        fi
 
         # Step 1: Determine snapshot to use
         if [ -n "${SNAPSHOT_ID}" ]; then
@@ -122,7 +150,7 @@ for partition_id in $PARTITION_IDS; do
                                 echo "  - ${snapshot_name} (${SIZE}, modified: ${MODIFIED})"
                         done
                         echo ""
-                        echo "Re-run for this single partition with PARTITION_IDS=${partition_id} and SNAPSHOT_ID=<snapshot-name>"
+                        echo "Re-run for this single partition with PARTITION_POSITIONS=\"${partition_id}:${new_position}\" and SNAPSHOT_ID=<snapshot-name>"
                         exit 1
                 else
                         SELECTED_SNAPSHOT=$(basename "${snapshots[0]}")
@@ -143,7 +171,7 @@ for partition_id in $PARTITION_IDS; do
         CDBG_CMD="${CDBG_CMD} --runtime ${RUNTIME_PATH}"
         CDBG_CMD="${CDBG_CMD} --snapshot ${SELECTED_SNAPSHOT}"
         CDBG_CMD="${CDBG_CMD} --exporter-id ${EXPORTER_ID}"
-        CDBG_CMD="${CDBG_CMD} --position ${NEW_POSITION}"
+        CDBG_CMD="${CDBG_CMD} --position ${new_position}"
         CDBG_CMD="${CDBG_CMD} --verbose"
 
         echo "Running: ${CDBG_CMD}"
@@ -159,20 +187,50 @@ for partition_id in $PARTITION_IDS; do
         echo "Original snapshot removed; remaining snapshots:"
         ls -la "${SNAPSHOTS_PATH}/"
         echo ""
+
+        PATCHED_SUMMARY+=("${partition_id} (-> ${new_position})")
 done
 
 echo "============================================="
-echo "=== Reset Complete on broker ${BROKER_ID} ==="
+echo "=== Reset Summary — broker ${BROKER_ID} ==="
 echo "============================================="
-echo "Patched exporter '${EXPORTER_ID}' to lastIncidentUpdatePosition=${NEW_POSITION}"
-echo "on partitions: ${PARTITION_IDS}"
+if [ ${#PATCHED_SUMMARY[@]} -gt 0 ]; then
+        echo "Patched exporter '${EXPORTER_ID}' on:"
+        for entry in "${PATCHED_SUMMARY[@]}"; do
+                echo "  - partition ${entry}"
+        done
+else
+        echo "Patched: none"
+fi
+if [ ${#SKIPPED_SUMMARY[@]} -gt 0 ]; then
+        echo "Skipped:"
+        for entry in "${SKIPPED_SUMMARY[@]}"; do
+                echo "  - partition ${entry}"
+        done
+fi
+echo "============================================="
+
+if [ ${#PATCHED_SUMMARY[@]} -eq 0 ]; then
+        echo ""
+        echo "WARNING: broker ${BROKER_ID} hosts none of the requested partitions"
+        echo "(${PARTITION_POSITIONS}). Patched 0 partitions on this broker."
+        echo "This is expected when replicationFactor < clusterSize and this broker is"
+        echo "simply not a replica of those partitions. If you DID expect partitions here,"
+        echo "re-check PARTITION_POSITIONS and the broker -> partition placement."
+        echo ""
+fi
+
 echo ""
-echo "IMPORTANT: this fix is per-replica. Make sure the Jobs for ALL brokers"
-echo "complete before restarting the cluster."
+echo "IMPORTANT: this fix is per-replica. Make sure the Jobs for ALL brokers complete"
+echo "before restarting the cluster, and confirm every targeted partition was patched"
+echo "on at least one broker (each Job's summary above shows what it patched)."
 echo ""
-echo "Backups are preserved in each partition's 'snapshots-backup' directory."
-echo "After verifying the recovery, clean them up manually:"
-for partition_id in $PARTITION_IDS; do
-        echo "  kubectl exec \${POD_PREFIX}-${BROKER_ID} -n \${NAMESPACE} -- rm -rf /usr/local/camunda/data/raft-partition/partitions/${partition_id}/snapshots-backup"
-done
+if [ ${#PATCHED_SUMMARY[@]} -gt 0 ]; then
+        echo "Backups are preserved in each patched partition's 'snapshots-backup' directory."
+        echo "After verifying the recovery (cluster restarted), clean them up manually:"
+        for entry in "${PATCHED_SUMMARY[@]}"; do
+                pid="${entry%% *}"
+                echo "  kubectl exec \${POD_PREFIX}-${BROKER_ID} -n \${NAMESPACE} -- rm -rf /usr/local/camunda/data/raft-partition/partitions/${pid}/snapshots-backup"
+        done
+fi
 echo "============================================="
