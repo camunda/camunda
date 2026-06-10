@@ -118,6 +118,7 @@ public class DefaultMembershipServiceTest {
 
     // then — the resolver is constructed against empty claims as a USER principal, so the
     // group lookup runs against an ownerType map seeded only with the USER entry
+    verify(mappingRuleServices, never()).getMatchingMappingRules(any(), any());
     verify(groupServices).getGroupsByMemberTypeAndMemberIds(any(), any());
   }
 }
