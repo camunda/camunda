@@ -180,6 +180,7 @@ public class SearchElementInstanceWaitStatesTest extends ClientRestTest {
     item.setElementInstanceKey("300");
     item.setElementId("task-1");
     item.setTenantId("<default>");
+    item.setBpmnProcessId("payment-process");
     item.setDetails(jobDetails);
 
     final ElementInstanceWaitStateQueryResult response = buildEmptyResponse();
@@ -199,6 +200,7 @@ public class SearchElementInstanceWaitStatesTest extends ClientRestTest {
     assertThat(mapped.getElementInstanceKey()).isEqualTo("300");
     assertThat(mapped.getElementId()).isEqualTo("task-1");
     assertThat(mapped.getTenantId()).isEqualTo("<default>");
+    assertThat(mapped.getBpmnProcessId()).isEqualTo("payment-process");
     assertThat(mapped.getDetails()).isInstanceOf(JobWaitStateDetails.class);
     final JobWaitStateDetails details = (JobWaitStateDetails) mapped.getDetails();
     assertThat(details.getWaitStateType()).isEqualTo(WaitStateType.JOB);

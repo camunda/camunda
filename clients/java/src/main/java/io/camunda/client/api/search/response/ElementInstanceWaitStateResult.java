@@ -34,6 +34,8 @@ public interface ElementInstanceWaitStateResult {
 
   String getTenantId();
 
+  String getBpmnProcessId();
+
   /**
    * Returns the wait-state-specific details, or {@code null} if absent. Resolves to {@link
    * JobWaitStateDetails} or {@link MessageWaitStateDetails}.

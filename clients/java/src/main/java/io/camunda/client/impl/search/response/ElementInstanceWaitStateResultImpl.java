@@ -32,6 +32,7 @@ public class ElementInstanceWaitStateResultImpl implements ElementInstanceWaitSt
   private final String elementId;
   private final WaitStateElementType elementType;
   private final String tenantId;
+  private final String bpmnProcessId;
   private final WaitStateDetails details;
 
   public ElementInstanceWaitStateResultImpl(
@@ -42,6 +43,7 @@ public class ElementInstanceWaitStateResultImpl implements ElementInstanceWaitSt
     elementId = item.getElementId();
     elementType = EnumUtil.convert(item.getElementType(), WaitStateElementType.class);
     tenantId = item.getTenantId();
+    bpmnProcessId = item.getBpmnProcessId();
     details = extractDetails(item.getDetails());
   }
 
@@ -97,6 +99,11 @@ public class ElementInstanceWaitStateResultImpl implements ElementInstanceWaitSt
   @Override
   public String getTenantId() {
     return tenantId;
+  }
+
+  @Override
+  public String getBpmnProcessId() {
+    return bpmnProcessId;
   }
 
   @Override
