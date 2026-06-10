@@ -101,7 +101,7 @@ public final class LangChain4jChatModelAdapter implements MultimodalChatModelAda
         break;
       case OTHER:
       default:
-        LOG.debug(
+        LOG.warn(
             "Document '{}' has content type '{}' which is not natively supported as a content "
                 + "block; including a placeholder text marker only",
             document.getDocumentId(),
