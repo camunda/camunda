@@ -26,7 +26,7 @@ fixture('Dashboard')
   })
   .afterEach(cleanEntities);
 
-test('create a dashboard and reports from a template', async (t) => {
+test.meta({type: 'smoke'})('create a dashboard and reports from a template', async (t) => {
   await t.click(Common.createNewButton).click(Common.menuOption('Collection'));
   await t.click(Common.modalConfirmButton);
   await t.click(Common.modalConfirmButton);
@@ -109,7 +109,7 @@ test('create a dashboard and reports from a template', async (t) => {
   await t.expect(Common.listItem('dashboard').visible).ok();
 });
 
-test('create a report and add it to the Dashboard', async (t) => {
+test.meta({type: 'smoke'})('create a report and add it to the Dashboard', async (t) => {
   await u.createNewReport(t);
   await u.selectReportDefinition(t, 'Order process');
   await u.selectView(t, 'Raw data');
@@ -158,7 +158,7 @@ test('cancel changes', async (t) => {
 //   await t.expect(e.fullscreenContent.getStyleProperty('background-color')).eql('#222');
 // });
 
-test('sharing', async (t) => {
+test.meta({type: 'smoke'})('sharing', async (t) => {
   await t.resizeWindow(1300, 750);
   await t.click(Common.createNewButton);
   await t.click(Common.menuOption('Dashboard'));
