@@ -51,6 +51,7 @@ Rewrite tests using the new patterns (Vitest browser mode, MSW via worker fixtur
 ### 6. Run local checks
 
     # From webapp/client/
+    npm run prettier:format  # Auto-format (always use this script, never npx prettier)
     npm run lint
 
     # From webapp/client/apps/orchestration-cluster-webapp/

@@ -239,6 +239,8 @@ npm run test:visual         # Visual regression (requires Docker for containeriz
 npm run test:a11y           # Accessibility (light + dark themes)
 ```
 
+Format changed files via `npm run prettier:format` from `webapp/client/` — never invoke Prettier directly.
+
 ## Template references
 
 - `test/integration/about.test.ts` — integration test with MSW.

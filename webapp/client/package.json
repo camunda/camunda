@@ -23,7 +23,8 @@
 		"format": "prettier --write .",
 		"build": "npm run build --workspaces --if-present",
 		"prepublishOnly": "node scripts/prepublishOnly.js",
-		"publish:zod-schemas": "npm run prepublishOnly && npm publish -w @camunda/camunda-api-zod-schemas"
+		"publish:zod-schemas": "npm run prepublishOnly && npm publish -w @camunda/camunda-api-zod-schemas",
+		"prettier:format": "prettier --write ."
 	},
 	"packageManager": "npm@11.16.0",
 	"devDependencies": {
