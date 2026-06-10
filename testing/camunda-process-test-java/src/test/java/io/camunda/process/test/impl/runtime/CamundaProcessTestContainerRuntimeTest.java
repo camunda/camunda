@@ -34,7 +34,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.images.PullPolicy;
 
 @ExtendWith(MockitoExtension.class)
