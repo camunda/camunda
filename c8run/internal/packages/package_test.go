@@ -180,6 +180,38 @@ func TestMergeModulesAddsRuntimeJREModules(t *testing.T) {
 	}
 }
 
+func TestRocksdbNativeLibName(t *testing.T) {
+	tests := []struct {
+		osType   string
+		arch     string
+		expected string
+	}{
+		{"linux", "x86_64", "librocksdb-jni-linux64.so"},
+		{"linux", "aarch64", "librocksdb-jni-linux-aarch64.so"},
+		{"darwin", "x86_64", "librocksdb-jni-osx-x86_64.jnilib"},
+		{"darwin", "aarch64", "librocksdb-jni-osx-arm64.jnilib"},
+		{"windows", "x86_64", "librocksdb-jni-win64.dll"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.osType+"/"+tt.arch, func(t *testing.T) {
+			got, err := rocksdbNativeLibName(tt.osType, tt.arch)
+			if err != nil {
+				t.Fatalf("rocksdbNativeLibName(%q, %q) error: %v", tt.osType, tt.arch, err)
+			}
+			if got != tt.expected {
+				t.Fatalf("rocksdbNativeLibName(%q, %q) = %q, want %q", tt.osType, tt.arch, got, tt.expected)
+			}
+		})
+	}
+}
+
+func TestRocksdbNativeLibNameUnknownPlatformErrors(t *testing.T) {
+	_, err := rocksdbNativeLibName("freebsd", "x86_64")
+	if err == nil {
+		t.Fatal("expected error for unknown os/arch, got nil")
+	}
+}
+
 func TestMaterializeSymlinksReplacesSymlinkWithRegularFile(t *testing.T) {
 	// given
 	root := t.TempDir()

@@ -165,6 +165,30 @@ func setOsSpecificValues() (string, string, string, string, func(string, string)
 	}
 }
 
+func rocksdbNativeLibName(osType, arch string) (string, error) {
+	switch osType {
+	case "linux":
+		switch arch {
+		case "x86_64":
+			return "librocksdb-jni-linux64.so", nil
+		case "aarch64":
+			return "librocksdb-jni-linux-aarch64.so", nil
+		}
+	case "darwin":
+		switch arch {
+		case "x86_64":
+			return "librocksdb-jni-osx-x86_64.jnilib", nil
+		case "aarch64":
+			return "librocksdb-jni-osx-arm64.jnilib", nil
+		}
+	case "windows":
+		if arch == "x86_64" {
+			return "librocksdb-jni-win64.dll", nil
+		}
+	}
+	return "", fmt.Errorf("no RocksDB native lib mapping for os=%s arch=%s", osType, arch)
+}
+
 func getJavaArtifactsToken() (string, error) {
 	javaArtifactsUser := os.Getenv("JAVA_ARTIFACTS_USER")
 	javaArtifactsPassword := os.Getenv("JAVA_ARTIFACTS_PASSWORD")
