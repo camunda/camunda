@@ -19,6 +19,7 @@ import {loadAgenticDashboard} from './service';
 
 import './AgenticControlPlane.scss';
 
+
 function presetToFilter(preset) {
   return {
     type: 'instanceEndDate',
@@ -67,6 +68,11 @@ export function AgenticControlPlane() {
     return true;
   });
 
+  const sections = [
+    {key: 'kpi', loadTile: scopedEvaluateReport},
+    {key: 'token', titleKey: 'agenticControlPlane.tokenUsage', loadTile: scopedEvaluateReport},
+  ];
+
   return (
     <div className="AgenticControlPlane">
       <div className="AgenticControlPlane__header">
@@ -79,12 +85,29 @@ export function AgenticControlPlane() {
         processScope={processScope}
         onProcessScopeChange={setProcessScope}
       />
-      <DashboardRenderer
-        key={processScope ?? '__all__'}
-        loadTile={scopedEvaluateReport}
-        tiles={visibleTiles}
-        filter={filter}
-      />
+      {sections.map(({key, titleKey, loadTile}) => {
+        const tiles = visibleTiles?.filter(
+          (tile) => (tile.configuration?.section ?? 'kpi') === key
+        );
+        return (
+          <div key={key}>
+            {titleKey && (
+              <>
+                <h3 className="AgenticControlPlane__section-title">{t(titleKey)}</h3>
+                <hr className="AgenticControlPlane__section-divider" />
+              </>
+            )}
+            <div className={`AgenticControlPlane__${key}-section`}>
+              <DashboardRenderer
+                key={`${processScope ?? '__all__'}-${key}`}
+                loadTile={loadTile}
+                tiles={tiles}
+                filter={filter}
+              />
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
