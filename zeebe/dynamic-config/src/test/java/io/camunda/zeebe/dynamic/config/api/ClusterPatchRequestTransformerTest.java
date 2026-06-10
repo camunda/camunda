@@ -8,6 +8,7 @@
 package io.camunda.zeebe.dynamic.config.api;
 
 import static io.camunda.zeebe.test.util.asserts.EitherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
@@ -32,7 +33,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.assertj.core.api.Assertions;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
 final class ClusterPatchRequestTransformerTest {
@@ -241,7 +242,15 @@ final class ClusterPatchRequestTransformerTest {
             .operations(currentTopology);
 
     // then
-    assertThat(result).isLeft().left().isInstanceOf(InvalidRequest.class);
+    assertThat(result)
+        .isLeft()
+        .left()
+        .isInstanceOf(InvalidRequest.class)
+        .satisfies(
+            e ->
+                assertThat(e)
+                    .hasMessageContaining("newReplicationFactors")
+                    .hasMessageContaining("supported on zone-aware clusters"));
   }
 
   @Test
@@ -256,8 +265,15 @@ final class ClusterPatchRequestTransformerTest {
             .operations(currentTopology);
 
     // then
-    assertThat(result).isLeft().left().isInstanceOf(InvalidRequest.class);
-    Assertions.assertThat(result.getLeft()).hasMessageContaining("zone-x");
+    assertThat(result)
+        .isLeft()
+        .left()
+        .isInstanceOf(InvalidRequest.class)
+        .satisfies(
+            e ->
+                assertThat(e)
+                    .hasMessageContaining(
+                        "Unknown zones in 'partitions.newReplicationFactors': [zone-x]. Known zones: [zone-a, zone-b]"));
   }
 
   @Test
@@ -272,7 +288,15 @@ final class ClusterPatchRequestTransformerTest {
             .operations(currentTopology);
 
     // then
-    assertThat(result).isLeft().left().isInstanceOf(InvalidRequest.class);
+    assertThat(result)
+        .isLeft()
+        .left()
+        .isInstanceOf(InvalidRequest.class)
+        .satisfies(
+            e ->
+                assertThat(e)
+                    .hasMessageContaining(
+                        "Changing the replication factor is not supported on zone-aware clusters"));
   }
 
   @Test
@@ -293,7 +317,7 @@ final class ClusterPatchRequestTransformerTest {
     // then the first operation gossips the new distributor config
     assertThat(result).isRight();
     final var operations = result.get();
-    Assertions.assertThat(operations)
+    assertThat(operations)
         .isNotEmpty()
         .first()
         .isEqualTo(
@@ -336,28 +360,25 @@ final class ClusterPatchRequestTransformerTest {
     // then operations apply cleanly and produce the expected zone-aware distribution
     assertThat(result).isRight();
     final var operations = result.get();
-    Assertions.assertThat(operations.get(0))
-        .isInstanceOf(UpdatePartitionDistributorConfigOperation.class);
+    assertThat(operations.get(0)).isInstanceOf(UpdatePartitionDistributorConfigOperation.class);
 
     final var newTopology = TestTopologyChangeSimulator.apply(currentTopology, operations);
+    final var newMembers =
+        Stream.concat(Stream.of(newMember), oldMembers.stream()).collect(Collectors.toSet());
     final var expectedDistribution =
         newConfig
             .toDistributor()
-            .distributePartitions(
-                Set.of(
-                    MemberId.from("zone-a", 0),
-                    MemberId.from("zone-a", 1),
-                    newMember,
-                    MemberId.from("zone-b", 0)),
-                getSortedPartitionIds(newPartitionCount),
-                4);
+            .distributePartitions(newMembers, getSortedPartitionIds(newPartitionCount), 4);
     final var newDistribution = ConfigurationUtil.getPartitionDistributionFrom(newTopology, "temp");
-    Assertions.assertThat(newDistribution)
+    assertThat(newDistribution)
         .usingRecursiveComparison()
         .ignoringCollectionOrder()
         .isEqualTo(expectedDistribution);
-    Assertions.assertThat(newTopology.partitionDistributorConfig()).contains(newConfig);
-    Assertions.assertThat(newTopology.partitionCount()).isEqualTo(newPartitionCount);
+    assertThat(newTopology.partitionDistributorConfig()).contains(newConfig);
+    assertThat(newTopology.partitionCount()).isEqualTo(newPartitionCount);
+    assertThat(newTopology.minReplicationFactor())
+        .isEqualTo(4)
+        .isEqualTo(newConfig.replicationFactor());
   }
 
   private ClusterConfiguration zoneAwareTopology() {
@@ -398,19 +419,19 @@ final class ClusterPatchRequestTransformerTest {
 
     // then
     final var newDistribution = ConfigurationUtil.getPartitionDistributionFrom(newTopology, "temp");
-    Assertions.assertThat(newDistribution)
+    assertThat(newDistribution)
         .usingRecursiveComparison()
         .ignoringCollectionOrder()
         .isEqualTo(expectedNewDistribution);
-    Assertions.assertThat(newTopology.members().keySet())
+    assertThat(newTopology.members().keySet())
         .describedAs("Expected cluster members")
         .containsExactlyInAnyOrderElementsOf(expectedMembers);
-    Assertions.assertThat(newTopology.partitionCount()).isEqualTo(partitionCount);
+    assertThat(newTopology.partitionCount()).isEqualTo(partitionCount);
     if (oldPartitionCount == partitionCount) {
-      Assertions.assertThat(operations)
+      assertThat(operations)
           .allSatisfy(
               op ->
-                  Assertions.assertThat(op)
+                  assertThat(op)
                       .isNotInstanceOfAny(
                           ScaleUpOperation.class, PartitionBootstrapOperation.class));
     } else if (partitionCount > oldPartitionCount) {
@@ -419,7 +440,7 @@ final class ClusterPatchRequestTransformerTest {
               .filter(ScaleUpOperation.class::isInstance)
               .map(Object::getClass)
               .collect(Collectors.toSet());
-      Assertions.assertThat(scaleUpInstances)
+      assertThat(scaleUpInstances)
           .isEqualTo(
               Set.of(
                   ScaleUpOperation.StartPartitionScaleUp.class,

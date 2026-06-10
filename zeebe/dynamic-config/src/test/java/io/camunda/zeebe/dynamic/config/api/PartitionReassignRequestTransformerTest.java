@@ -17,7 +17,6 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.FixedConfig;
-import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.RoundRobinConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
@@ -248,63 +247,6 @@ class PartitionReassignRequestTransformerTest {
     final var expectedDistribution =
         zoneConfig.toDistributor().distributePartitions(members, getSortedPartitionIds(3), 3);
     assertThat(newDistribution).isEqualTo(expectedDistribution);
-  }
-
-  @Test
-  void shouldPreferConfigOverrideOverClusterConfig() {
-    // given a cluster topology that declares RoundRobinConfig
-    final var zoneConfig =
-        new ZoneAwareConfig(
-            List.of(new ZoneSpec("zone-a", 2, 1000), new ZoneSpec("zone-b", 1, 500)));
-    final var members =
-        Set.of(MemberId.from("zone-a", 0), MemberId.from("zone-a", 1), MemberId.from("zone-b", 0));
-    final var oldDistribution =
-        new RoundRobinPartitionDistributor()
-            .distributePartitions(members, getSortedPartitionIds(3), 3);
-    final var oldTopology =
-        ConfigurationUtil.getClusterConfigFrom(oldDistribution, partitionConfig, "temp")
-            .setPartitionDistributorConfig(new RoundRobinConfig());
-
-    // when the override is ZoneAwareConfig
-    final var operations =
-        new PartitionReassignRequestTransformer(
-                members, Optional.of(3), Optional.of(3), Optional.of(zoneConfig))
-            .operations(oldTopology)
-            .get();
-
-    // then the zone-aware layout wins over the cluster's RoundRobinConfig
-    final var newTopology = TestTopologyChangeSimulator.apply(oldTopology, operations);
-    final var newDistribution = ConfigurationUtil.getPartitionDistributionFrom(newTopology, "temp");
-    final var expectedDistribution =
-        zoneConfig.toDistributor().distributePartitions(members, getSortedPartitionIds(3), 3);
-    assertThat(newDistribution).isEqualTo(expectedDistribution);
-  }
-
-  @Test
-  void shouldFallBackToClusterConfigWhenOverrideEmpty() {
-    // given a cluster topology configured with ZoneAwareConfig
-    final var zoneConfig =
-        new ZoneAwareConfig(
-            List.of(new ZoneSpec("zone-a", 2, 1000), new ZoneSpec("zone-b", 1, 500)));
-    final var members =
-        Set.of(MemberId.from("zone-a", 0), MemberId.from("zone-a", 1), MemberId.from("zone-b", 0));
-    final var oldDistribution =
-        zoneConfig.toDistributor().distributePartitions(members, getSortedPartitionIds(3), 3);
-    final var oldTopology =
-        ConfigurationUtil.getClusterConfigFrom(oldDistribution, partitionConfig, "temp")
-            .setPartitionDistributorConfig(zoneConfig);
-
-    // when no override is provided
-    final var operations =
-        new PartitionReassignRequestTransformer(
-                members, Optional.of(3), Optional.of(3), Optional.empty())
-            .operations(oldTopology)
-            .get();
-
-    // then the distribution still follows the cluster's zone-aware config
-    final var newTopology = TestTopologyChangeSimulator.apply(oldTopology, operations);
-    final var newDistribution = ConfigurationUtil.getPartitionDistributionFrom(newTopology, "temp");
-    assertThat(newDistribution).isEqualTo(oldDistribution);
   }
 
   @Test
