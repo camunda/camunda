@@ -108,9 +108,9 @@ public final class ValidationHelper {
     if (data instanceof SingleReportDataDto) {
       final SingleReportDataDto singleReportData = (SingleReportDataDto) data;
       if (data instanceof ProcessReportDataDto
-          && !((ProcessReportDataDto) data).isManagementReport()) {
-        // it is valid for management reports to not have a key if the user has no authorization for
-        // any processes
+          && !((ProcessReportDataDto) data).isSystemGeneratedReport()) {
+        // system-generated reports (management, instant preview, agentic control) have their
+        // definitions injected at query time, so an empty key is valid when no definitions exist
         ensureNotNull("definitionKey", singleReportData.getDefinitionKey());
       }
       ensureNotNull("definitionVersions", singleReportData.getDefinitionVersions());

@@ -8,10 +8,21 @@
 package io.camunda.optimize;
 
 import static io.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CCSM_PROFILE;
+import static io.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
 
+import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import io.camunda.optimize.dto.optimize.ProcessInstanceConstants;
+import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import io.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
+import io.camunda.optimize.service.db.DatabaseClient;
+import io.camunda.optimize.service.db.writer.ProcessDefinitionWriter;
+import io.camunda.optimize.service.db.writer.ProcessInstanceWriter;
 import io.camunda.optimize.service.util.IdGenerator;
 import io.camunda.optimize.service.util.importing.ZeebeConstants;
+import java.time.OffsetDateTime;
 import java.util.HashMap;
+import java.util.List;
+import java.util.UUID;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -99,5 +110,63 @@ public abstract class AbstractBrokerlessZeebeCCSMIT extends AbstractIT {
   protected void importAllZeebeEntitiesFromLastIndex() {
     embeddedOptimizeExtension.importAllZeebeEntitiesFromLastIndex();
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+  }
+
+  /**
+   * Persists the given process instances directly into the Optimize process-instance index, then
+   * refreshes all indices so subsequent reads in the same test see the data immediately. Use this
+   * when you want to test report logic without going through the Zeebe import pipeline.
+   *
+   * <p>Also persists a minimal process definition for each unique definition key+version in the
+   * list, so report evaluation via allFullyImportedProcessDefinitions() can find them.
+   */
+  protected void persistProcessInstances(final List<ProcessInstanceDto> instances) {
+    final List<ProcessDefinitionOptimizeDto> definitions =
+        instances.stream()
+            .filter(i -> i.getProcessDefinitionKey() != null)
+            .map(
+                i ->
+                    ProcessDefinitionOptimizeDto.builder()
+                        .id(i.getProcessDefinitionId())
+                        .key(i.getProcessDefinitionKey())
+                        .version(i.getProcessDefinitionVersion())
+                        .name(i.getProcessDefinitionKey())
+                        .dataSource(i.getDataSource())
+                        .tenantId(ZEEBE_DEFAULT_TENANT_ID)
+                        .bpmn20Xml("<definitions/>")
+                        .build())
+            .distinct()
+            .toList();
+    embeddedOptimizeExtension
+        .getBean(ProcessDefinitionWriter.class)
+        .importProcessDefinitions(definitions);
+
+    final ProcessInstanceWriter writer =
+        embeddedOptimizeExtension.getBean(ProcessInstanceWriter.class);
+    final DatabaseClient dbClient = embeddedOptimizeExtension.getBean(DatabaseClient.class);
+    final var requests = writer.generateProcessInstanceImports(instances, "test-source-index");
+    dbClient.executeImportRequestsAsBulk(
+        "test process instances",
+        requests,
+        embeddedOptimizeExtension
+            .getConfigurationService()
+            .getSkipDataAfterNestedDocLimitReached());
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+  }
+
+  /** Returns a builder for a minimal completed {@link ProcessInstanceDto}. */
+  protected static ProcessInstanceDto.ProcessInstanceDtoBuilder completedInstance(
+      final String processDefinitionKey) {
+    return ProcessInstanceDto.builder()
+        .processInstanceId(UUID.randomUUID().toString())
+        .processDefinitionKey(processDefinitionKey)
+        .processDefinitionVersion("1")
+        .processDefinitionId(processDefinitionKey + ":1:1")
+        .tenantId(ZEEBE_DEFAULT_TENANT_ID)
+        .state(ProcessInstanceConstants.COMPLETED_STATE)
+        .dataSource(new ZeebeDataSourceDto("test-source", 1))
+        .startDate(OffsetDateTime.now().minusHours(2))
+        .endDate(OffsetDateTime.now().minusHours(1))
+        .duration(3_600_000L);
   }
 }
