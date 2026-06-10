@@ -251,6 +251,7 @@ public record ClusterConfiguration(
    *
    * @param other ClusterConfiguration to merge
    * @return merged ClusterConfiguration
+   * @throws IllegalStateException when the two configurations cannot be merged
    */
   public ClusterConfiguration merge(final ClusterConfiguration other) {
     if (version > other.version) {
@@ -275,7 +276,7 @@ public record ClusterConfiguration(
       final var mergedDistributorConfig =
           Stream.of(partitionDistributorConfig, other.partitionDistributorConfig)
               .flatMap(Optional::stream)
-              .findFirst();
+              .reduce(PartitionDistributorConfig::merge);
 
       return new ClusterConfiguration(
           version,
