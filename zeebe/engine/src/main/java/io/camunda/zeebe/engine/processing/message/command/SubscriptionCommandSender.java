@@ -10,14 +10,17 @@ package io.camunda.zeebe.engine.processing.message.command;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartCorrelationKeyLockReleaseRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartProcessInstanceRequestRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.intent.MessageStartCorrelationKeyLockReleaseIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.value.MessageStartCorrelationKeyLockReleaseRecordValue.MessageStartLockReleaseHolderValue;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import org.agrona.DirectBuffer;
 
@@ -478,6 +481,55 @@ public class SubscriptionCommandSender {
         Protocol.decodePartitionId(request.getMessageKey()),
         ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
         intent,
+        reply);
+  }
+
+  /**
+   * Dispatches a batched holder-liveness {@link MessageStartCorrelationKeyLockReleaseIntent#QUERY}
+   * from {@code P_K} to {@code P_B}. Sent directly (bypassing the writers' post-commit task)
+   * because it originates from the scheduled poll task on {@code P_K} that walks the
+   * cross-partition lock entries; mirrors {@link #sendDirectStartProcessInstanceRequest}.
+   *
+   * <p>Every holder in {@code query} targets the same {@code targetPartitionId} (each holder
+   * instance key's partition bits identify {@code P_B}), so one command covers all of {@code P_K}'s
+   * locks for that partition. The {@code requestKey} on {@code query} encodes {@code P_K} so {@code
+   * P_B} can route each {@code RELEASE} reply back.
+   */
+  public void sendDirectCorrelationKeyLockReleaseQuery(
+      final int targetPartitionId, final MessageStartCorrelationKeyLockReleaseRecord query) {
+    interPartitionCommandSender.sendCommand(
+        targetPartitionId,
+        ValueType.MESSAGE_START_CORRELATION_KEY_LOCK_RELEASE,
+        MessageStartCorrelationKeyLockReleaseIntent.QUERY,
+        query);
+  }
+
+  /**
+   * Sends the {@link MessageStartCorrelationKeyLockReleaseIntent#RELEASE} reply from {@code P_B}
+   * back to {@code P_K} after a holder-liveness query found {@code holder}'s instance is no longer
+   * active. The target partition is derived from {@code requestKey} — the originating partition
+   * {@code P_K} is encoded in it by Zeebe's key-partitioning.
+   *
+   * <p>The reply carries the single gone {@code holder} so the {@code P_K} handler can locate the
+   * correlation-key lock entry to release (via {@code bpmnProcessId} + {@code correlationKey}) and
+   * scope the buffered-message rescan (via {@code tenantId}) without any further cross-partition
+   * lookup. {@code P_B} sends this reply only for holders that are gone; for ones still active it
+   * stays silent and {@code P_K} re-polls.
+   */
+  public boolean sendCorrelationKeyLockRelease(
+      final long requestKey, final MessageStartLockReleaseHolderValue holder) {
+    final MessageStartCorrelationKeyLockReleaseRecord reply =
+        new MessageStartCorrelationKeyLockReleaseRecord().setRequestKey(requestKey);
+    reply
+        .addHolder()
+        .setProcessInstanceKey(holder.getProcessInstanceKey())
+        .setBpmnProcessId(holder.getBpmnProcessId())
+        .setCorrelationKey(holder.getCorrelationKey())
+        .setTenantId(holder.getTenantId());
+    return handleFollowUpCommandBasedOnPartition(
+        Protocol.decodePartitionId(requestKey),
+        ValueType.MESSAGE_START_CORRELATION_KEY_LOCK_RELEASE,
+        MessageStartCorrelationKeyLockReleaseIntent.RELEASE,
         reply);
   }
 

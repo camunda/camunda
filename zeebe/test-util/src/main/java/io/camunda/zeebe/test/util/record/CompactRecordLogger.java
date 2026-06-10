@@ -111,6 +111,7 @@ import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageCorrelationRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageRecordValue;
+import io.camunda.zeebe.protocol.record.value.MessageStartCorrelationKeyLockReleaseRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageStartProcessInstanceRequestRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
@@ -270,6 +271,9 @@ public class CompactRecordLogger {
     valueLoggers.put(
         ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
         this::summarizeMessageStartProcessInstanceRequest);
+    valueLoggers.put(
+        ValueType.MESSAGE_START_CORRELATION_KEY_LOCK_RELEASE,
+        this::summarizeMessageStartCorrelationKeyLockRelease);
     valueLoggers.put(ValueType.MESSAGE_SUBSCRIPTION, this::summarizeMessageSubscription);
     valueLoggers.put(ValueType.PROCESS_INSTANCE, this::summarizeProcessInstance);
     valueLoggers.put(ValueType.PROCESS_INSTANCE_BATCH, this::summarizeProcessInstanceBatch);
@@ -927,6 +931,27 @@ public class CompactRecordLogger {
     }
 
     return result.append(formatTenant(value)).toString();
+  }
+
+  private String summarizeMessageStartCorrelationKeyLockRelease(final Record<?> record) {
+    final var value = (MessageStartCorrelationKeyLockReleaseRecordValue) record.getValue();
+
+    final var result =
+        new StringBuilder().append("req[").append(shortenKey(value.getRequestKey())).append("]");
+
+    for (final var holder : value.getHolders()) {
+      result
+          .append(" holder")
+          .append(
+              summarizeProcessInformation(
+                  holder.getBpmnProcessId(), holder.getProcessInstanceKey()));
+      if (!StringUtils.isEmpty(holder.getCorrelationKey())) {
+        result.append(" correlationKey: ").append(holder.getCorrelationKey());
+      }
+      result.append(formatTenant(holder));
+    }
+
+    return result.toString();
   }
 
   private String summarizeMessageSubscription(final Record<?> record) {

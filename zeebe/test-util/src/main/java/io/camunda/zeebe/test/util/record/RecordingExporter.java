@@ -37,6 +37,7 @@ import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageStartCorrelationKeyLockReleaseIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
@@ -95,6 +96,7 @@ import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageCorrelationRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageRecordValue;
+import io.camunda.zeebe.protocol.record.value.MessageStartCorrelationKeyLockReleaseRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageStartProcessInstanceRequestRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
@@ -271,6 +273,20 @@ public final class RecordingExporter implements Exporter {
       messageStartProcessInstanceRequestRecords(
           final MessageStartProcessInstanceRequestIntent intent) {
     return messageStartProcessInstanceRequestRecords().withIntent(intent);
+  }
+
+  public static MessageStartCorrelationKeyLockReleaseRecordStream
+      messageStartCorrelationKeyLockReleaseRecords() {
+    return new MessageStartCorrelationKeyLockReleaseRecordStream(
+        records(
+            ValueType.MESSAGE_START_CORRELATION_KEY_LOCK_RELEASE,
+            MessageStartCorrelationKeyLockReleaseRecordValue.class));
+  }
+
+  public static MessageStartCorrelationKeyLockReleaseRecordStream
+      messageStartCorrelationKeyLockReleaseRecords(
+          final MessageStartCorrelationKeyLockReleaseIntent intent) {
+    return messageStartCorrelationKeyLockReleaseRecords().withIntent(intent);
   }
 
   public static MessageCorrelationRecordStream messageCorrelationRecords() {

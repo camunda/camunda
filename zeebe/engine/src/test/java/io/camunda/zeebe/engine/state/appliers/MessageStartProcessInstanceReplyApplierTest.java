@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.state.appliers;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -84,7 +85,7 @@ public final class MessageStartProcessInstanceReplyApplierTest {
     }
 
     @Test
-    void shouldRecordCrossPartitionBusinessIdWhenLockEntryExists() {
+    void shouldRecordCrossPartitionHolderWhenLockEntryExists() {
       // given the CORRELATED applier (run before this one) has written the lock entry
       final var applier = newApplier();
       final var record = createRecord();
@@ -99,14 +100,15 @@ public final class MessageStartProcessInstanceReplyApplierTest {
 
       // then
       verify(mockMessageState)
-          .putCrossPartitionStartLockBusinessId(
+          .putCrossPartitionStartLock(
               eq(BufferUtil.wrapString(BPMN_PROCESS_ID)),
               eq(BufferUtil.wrapString(CORRELATION_KEY)),
-              eq(BufferUtil.wrapString(BUSINESS_ID)));
+              eq(PROCESS_INSTANCE_KEY),
+              eq(TENANT));
     }
 
     @Test
-    void shouldNotRecordCrossPartitionBusinessIdWhenLockEntryAbsent() {
+    void shouldNotRecordCrossPartitionHolderWhenLockEntryAbsent() {
       // given no local lock entry -- e.g., this applier is firing on P_B where the holder PI is
       // local but no CORRELATED applier wrote a lock entry, or on the first STARTED firing in
       // single-partition mode before CORRELATED has run.
@@ -118,11 +120,11 @@ public final class MessageStartProcessInstanceReplyApplierTest {
       applier.applyState(1L, record);
 
       // then
-      verify(mockMessageState, never()).putCrossPartitionStartLockBusinessId(any(), any(), any());
+      verify(mockMessageState, never()).putCrossPartitionStartLock(any(), any(), anyLong(), any());
     }
 
     @Test
-    void shouldNotRecordCrossPartitionBusinessIdWhenCorrelationKeyEmpty() {
+    void shouldNotRecordCrossPartitionHolderWhenCorrelationKeyEmpty() {
       // given a record without a correlation key (start event without a correlation key) -- no
       // lock entry can exist for this case
       final var applier = newApplier();
@@ -133,7 +135,7 @@ public final class MessageStartProcessInstanceReplyApplierTest {
       applier.applyState(1L, record);
 
       // then
-      verify(mockMessageState, never()).putCrossPartitionStartLockBusinessId(any(), any(), any());
+      verify(mockMessageState, never()).putCrossPartitionStartLock(any(), any(), anyLong(), any());
     }
 
     private MessageStartProcessInstanceStartedV1Applier newApplier() {

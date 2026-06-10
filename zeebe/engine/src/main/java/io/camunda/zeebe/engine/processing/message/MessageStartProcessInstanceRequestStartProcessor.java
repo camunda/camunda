@@ -40,11 +40,10 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
  *       path.
  *   <li>{@link MessageStartProcessInstanceRequestIntent#STARTED} so the existing applier clears the
  *       pending-ask entry on {@code P_K} (stopping the retry scheduler) and, when the holder
- *       carries a non-empty {@code (correlationKey, businessId)}, additionally records the holder's
- *       {@code businessId} on a parallel CF. That businessId discriminator is what lets the
- *       pull-based release loop (later increment) identify {@code P_B = hash(businessId)} for this
- *       lock entry — both lock and Business-Id-uniqueness release are driven by the same
- *       PI-completion event on {@code P_B}, so a single pull releases both.
+ *       carries a non-empty {@code (correlationKey, businessId)}, additionally records the holder
+ *       instance on a parallel CF. That holder-instance discriminator is what lets the pull-based
+ *       release loop poll {@code P_B} (derived from the holder instance key) for the holder's
+ *       completion, so the correlation-key lock can be released once the holder is gone.
  *   <li>{@link MessageIntent#EXPIRED} for the buffered message itself. The cross-partition
  *       handshake consumed the publish; leaving it in the buffer would let the next polling cycle
  *       re-evaluate it, which is unnecessary work (correlation has already happened) and would
@@ -61,8 +60,8 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
  * org.agrona.DirectBuffer)} so retries skip it. The EXPIRED write is guarded by {@link
  * MessageState#getMessage(long)} — once the buffer is removed the message no longer exists, so the
  * follow-up event is suppressed to avoid emitting a spurious EXPIRED for a key the engine can no
- * longer resolve. The STARTED applier's writes (pending-ask removal and businessId discriminator)
- * are unconditionally idempotent via {@code deleteIfExists} and {@code upsert}.
+ * longer resolve. The STARTED applier's writes (pending-ask removal and holder-instance
+ * discriminator) are unconditionally idempotent via {@code deleteIfExists} and {@code upsert}.
  */
 @ExcludeAuthorizationCheck
 public final class MessageStartProcessInstanceRequestStartProcessor

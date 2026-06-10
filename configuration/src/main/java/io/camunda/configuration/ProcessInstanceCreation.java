@@ -10,27 +10,14 @@ package io.camunda.configuration;
 import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_MESSAGE_START_ASK_RETRY_INTERVAL;
 import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_MESSAGE_START_DEDUP_EXPIRATION_SWEEP_BATCH_LIMIT;
 import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_MESSAGE_START_DEDUP_EXPIRATION_SWEEP_INTERVAL;
+import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_MESSAGE_START_LOCK_RELEASE_POLL_BATCH_LIMIT;
+import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_MESSAGE_START_LOCK_RELEASE_POLL_INTERVAL;
+import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_MESSAGE_START_LOCK_RELEASE_POLL_MAX_BACKOFF;
 
-import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import java.time.Duration;
-import java.util.Set;
 
 public class ProcessInstanceCreation {
-  private static final String PREFIX = "camunda.process-instance-creation";
   private static final boolean DEFAULT_BUSINESS_ID_UNIQUENESS_ENABLED = false;
-  private static final Set<String> LEGACY_BUSINESS_ID_UNIQUENESS_ENABLED_PROPERTIES =
-      Set.of(
-          "zeebe.broker.experimental.engine.processInstanceCreation.businessIdUniquenessEnabled");
-  private static final Set<String> LEGACY_MESSAGE_START_DEDUP_EXPIRATION_SWEEP_INTERVAL_PROPERTIES =
-      Set.of(
-          "zeebe.broker.experimental.engine.processInstanceCreation.messageStartDedupExpirationSweepInterval");
-  private static final Set<String>
-      LEGACY_MESSAGE_START_DEDUP_EXPIRATION_SWEEP_BATCH_LIMIT_PROPERTIES =
-          Set.of(
-              "zeebe.broker.experimental.engine.processInstanceCreation.messageStartDedupExpirationSweepBatchLimit");
-  private static final Set<String> LEGACY_MESSAGE_START_ASK_RETRY_INTERVAL_PROPERTIES =
-      Set.of(
-          "zeebe.broker.experimental.engine.processInstanceCreation.messageStartAskRetryInterval");
 
   /**
    * Controls uniqueness enforcement of business IDs across active process instances.
@@ -67,13 +54,33 @@ public class ProcessInstanceCreation {
    */
   private Duration messageStartAskRetryInterval = DEFAULT_MESSAGE_START_ASK_RETRY_INTERVAL;
 
+  /**
+   * Base poll interval for the cross-partition correlation-key lock-release scheduler on {@code
+   * P_K}. {@code P_K} polls {@code P_B} for the completion of each remotely-created holder
+   * instance; this value drives the scheduler's tick frequency and the base interval before
+   * back-off applies.
+   */
+  private Duration messageStartLockReleasePollInterval =
+      DEFAULT_MESSAGE_START_LOCK_RELEASE_POLL_INTERVAL;
+
+  /**
+   * Upper bound on the per-lock exponential back-off of the cross-partition correlation-key
+   * lock-release poll on {@code P_K}, so a long-running holder is not polled at the base rate
+   * indefinitely.
+   */
+  private Duration messageStartLockReleasePollMaxBackoff =
+      DEFAULT_MESSAGE_START_LOCK_RELEASE_POLL_MAX_BACKOFF;
+
+  /**
+   * Upper bound on the number of holders batched into a single cross-partition correlation-key
+   * lock-release query per target partition each poll cycle on {@code P_K}. Remaining due holders
+   * are polled on the next tick.
+   */
+  private int messageStartLockReleasePollBatchLimit =
+      DEFAULT_MESSAGE_START_LOCK_RELEASE_POLL_BATCH_LIMIT;
+
   public boolean isBusinessIdUniquenessEnabled() {
-    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
-        PREFIX + ".business-id-uniqueness-enabled",
-        businessIdUniquenessEnabled,
-        Boolean.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_BUSINESS_ID_UNIQUENESS_ENABLED_PROPERTIES);
+    return businessIdUniquenessEnabled;
   }
 
   public void setBusinessIdUniquenessEnabled(final boolean businessIdUniquenessEnabled) {
@@ -81,12 +88,7 @@ public class ProcessInstanceCreation {
   }
 
   public Duration getMessageStartDedupExpirationSweepInterval() {
-    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
-        PREFIX + ".message-start-dedup-expiration-sweep-interval",
-        messageStartDedupExpirationSweepInterval,
-        Duration.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_MESSAGE_START_DEDUP_EXPIRATION_SWEEP_INTERVAL_PROPERTIES);
+    return messageStartDedupExpirationSweepInterval;
   }
 
   public void setMessageStartDedupExpirationSweepInterval(
@@ -95,12 +97,7 @@ public class ProcessInstanceCreation {
   }
 
   public int getMessageStartDedupExpirationSweepBatchLimit() {
-    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
-        PREFIX + ".message-start-dedup-expiration-sweep-batch-limit",
-        messageStartDedupExpirationSweepBatchLimit,
-        Integer.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_MESSAGE_START_DEDUP_EXPIRATION_SWEEP_BATCH_LIMIT_PROPERTIES);
+    return messageStartDedupExpirationSweepBatchLimit;
   }
 
   public void setMessageStartDedupExpirationSweepBatchLimit(
@@ -109,15 +106,37 @@ public class ProcessInstanceCreation {
   }
 
   public Duration getMessageStartAskRetryInterval() {
-    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
-        PREFIX + ".message-start-ask-retry-interval",
-        messageStartAskRetryInterval,
-        Duration.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_MESSAGE_START_ASK_RETRY_INTERVAL_PROPERTIES);
+    return messageStartAskRetryInterval;
   }
 
   public void setMessageStartAskRetryInterval(final Duration messageStartAskRetryInterval) {
     this.messageStartAskRetryInterval = messageStartAskRetryInterval;
+  }
+
+  public Duration getMessageStartLockReleasePollInterval() {
+    return messageStartLockReleasePollInterval;
+  }
+
+  public void setMessageStartLockReleasePollInterval(
+      final Duration messageStartLockReleasePollInterval) {
+    this.messageStartLockReleasePollInterval = messageStartLockReleasePollInterval;
+  }
+
+  public Duration getMessageStartLockReleasePollMaxBackoff() {
+    return messageStartLockReleasePollMaxBackoff;
+  }
+
+  public void setMessageStartLockReleasePollMaxBackoff(
+      final Duration messageStartLockReleasePollMaxBackoff) {
+    this.messageStartLockReleasePollMaxBackoff = messageStartLockReleasePollMaxBackoff;
+  }
+
+  public int getMessageStartLockReleasePollBatchLimit() {
+    return messageStartLockReleasePollBatchLimit;
+  }
+
+  public void setMessageStartLockReleasePollBatchLimit(
+      final int messageStartLockReleasePollBatchLimit) {
+    this.messageStartLockReleasePollBatchLimit = messageStartLockReleasePollBatchLimit;
   }
 }

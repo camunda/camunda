@@ -51,6 +51,7 @@ import io.camunda.zeebe.protocol.record.intent.JobMetricsBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageStartCorrelationKeyLockReleaseIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
@@ -114,6 +115,7 @@ public final class EventAppliers implements EventApplier {
     registerMessageSubscriptionAppliers(state);
     registerMessageStartEventSubscriptionAppliers(state);
     registerMessageStartProcessInstanceRequestAppliers(state);
+    registerMessageStartCorrelationKeyLockReleaseAppliers(state);
 
     registerJobIntentEventAppliers(state);
     registerVariableEventAppliers(state);
@@ -449,9 +451,11 @@ public final class EventAppliers implements EventApplier {
 
   private void registerMessageAppliers(final MutableProcessingState state) {
     register(MessageIntent.PUBLISHED, new MessagePublishedApplier(state.getMessageState()));
+    register(MessageIntent.EXPIRED, 1, new MessageExpiredApplier(state.getMessageState()));
     register(
         MessageIntent.EXPIRED,
-        new MessageExpiredApplier(
+        2,
+        new MessageExpiredV2Applier(
             state.getMessageState(), state.getMessageStartProcessInstanceAskState()));
   }
 
@@ -554,6 +558,26 @@ public final class EventAppliers implements EventApplier {
         MessageStartProcessInstanceRequestIntent.NO_SUBSCRIPTION_REJECTED,
         new MessageStartProcessInstanceNoSubscriptionRejectedV1Applier(
             state.getMessageStartProcessInstanceAskState()));
+  }
+
+  /**
+   * Appliers for the pull-based correlation-key lock release lookup. Both event intents are
+   * introduced together with this feature and have no prior stream history, so a single V1 applier
+   * per intent is sufficient.
+   *
+   * <ul>
+   *   <li>{@code QUERIED}: acknowledgement event on {@code P_B} with no state effect.
+   *   <li>{@code RELEASED}: applied on {@code P_K} for each holder reported gone; removes the
+   *       active process-instance lock and the cross-partition lock marker for that correlation
+   *       key. The buffered-message pick-up is not done here but in the RELEASE command processor.
+   * </ul>
+   */
+  private void registerMessageStartCorrelationKeyLockReleaseAppliers(
+      final MutableProcessingState state) {
+    register(MessageStartCorrelationKeyLockReleaseIntent.QUERIED, NOOP_EVENT_APPLIER);
+    register(
+        MessageStartCorrelationKeyLockReleaseIntent.RELEASED,
+        new MessageStartCorrelationKeyLockReleaseReleasedV1Applier(state.getMessageState()));
   }
 
   private void registerIncidentEventAppliers(final MutableProcessingState state) {

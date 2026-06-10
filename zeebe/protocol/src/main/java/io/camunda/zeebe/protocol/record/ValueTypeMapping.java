@@ -52,6 +52,7 @@ import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageStartCorrelationKeyLockReleaseIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
@@ -117,6 +118,7 @@ import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageCorrelationRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageRecordValue;
+import io.camunda.zeebe.protocol.record.value.MessageStartCorrelationKeyLockReleaseRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageStartProcessInstanceRequestRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
@@ -235,6 +237,11 @@ public final class ValueTypeMapping {
         new Mapping<>(
             MessageStartProcessInstanceRequestRecordValue.class,
             MessageStartProcessInstanceRequestIntent.class));
+    mapping.put(
+        ValueType.MESSAGE_START_CORRELATION_KEY_LOCK_RELEASE,
+        new Mapping<>(
+            MessageStartCorrelationKeyLockReleaseRecordValue.class,
+            MessageStartCorrelationKeyLockReleaseIntent.class));
     mapping.put(
         ValueType.MESSAGE_SUBSCRIPTION,
         new Mapping<>(MessageSubscriptionRecordValue.class, MessageSubscriptionIntent.class));

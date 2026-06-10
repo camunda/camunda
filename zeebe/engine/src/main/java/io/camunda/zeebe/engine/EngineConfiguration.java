@@ -80,6 +80,23 @@ public final class EngineConfiguration {
    */
   public static final Duration DEFAULT_MESSAGE_START_ASK_RETRY_INTERVAL = Duration.ofSeconds(10);
 
+  /**
+   * Base cadence at which {@code P_K} polls {@code P_B} for the completion of a cross-partition
+   * message-start holder instance, and the interval at which a newly observed lock entry is first
+   * polled. Each lock entry then backs off exponentially up to {@link
+   * #DEFAULT_MESSAGE_START_LOCK_RELEASE_POLL_MAX_BACKOFF} so a long-running holder does not produce
+   * steady-state polling at the base rate.
+   */
+  public static final Duration DEFAULT_MESSAGE_START_LOCK_RELEASE_POLL_INTERVAL =
+      Duration.ofSeconds(1);
+
+  /** Maximum back-off interval a single cross-partition lock entry's release poll grows to. */
+  public static final Duration DEFAULT_MESSAGE_START_LOCK_RELEASE_POLL_MAX_BACKOFF =
+      Duration.ofSeconds(30);
+
+  /** Maximum number of holder instances batched into a single release query to one partition. */
+  public static final int DEFAULT_MESSAGE_START_LOCK_RELEASE_POLL_BATCH_LIMIT = 64;
+
   public static final boolean DEFAULT_ENABLE_RPA_REEXPORT_MIGRATION = true;
 
   private int maxIdFieldLength = DEFAULT_MAX_ID_FIELD_LENGTH;
@@ -146,6 +163,12 @@ public final class EngineConfiguration {
   private int messageStartDedupExpirationSweepBatchLimit =
       DEFAULT_MESSAGE_START_DEDUP_EXPIRATION_SWEEP_BATCH_LIMIT;
   private Duration messageStartAskRetryInterval = DEFAULT_MESSAGE_START_ASK_RETRY_INTERVAL;
+  private Duration messageStartLockReleasePollInterval =
+      DEFAULT_MESSAGE_START_LOCK_RELEASE_POLL_INTERVAL;
+  private Duration messageStartLockReleasePollMaxBackoff =
+      DEFAULT_MESSAGE_START_LOCK_RELEASE_POLL_MAX_BACKOFF;
+  private int messageStartLockReleasePollBatchLimit =
+      DEFAULT_MESSAGE_START_LOCK_RELEASE_POLL_BATCH_LIMIT;
 
   public int getMessagesTtlCheckerBatchLimit() {
     return messagesTtlCheckerBatchLimit;
@@ -561,6 +584,42 @@ public final class EngineConfiguration {
   public EngineConfiguration setMessageStartAskRetryInterval(
       final Duration messageStartAskRetryInterval) {
     this.messageStartAskRetryInterval = messageStartAskRetryInterval;
+    return this;
+  }
+
+  /**
+   * Base cadence at which {@code P_K} polls {@code P_B} for a cross-partition message-start
+   * holder's completion, and the interval at which a newly observed lock entry is first polled.
+   */
+  public Duration getMessageStartLockReleasePollInterval() {
+    return messageStartLockReleasePollInterval;
+  }
+
+  public EngineConfiguration setMessageStartLockReleasePollInterval(
+      final Duration messageStartLockReleasePollInterval) {
+    this.messageStartLockReleasePollInterval = messageStartLockReleasePollInterval;
+    return this;
+  }
+
+  /** Maximum back-off interval a single cross-partition lock entry's release poll grows to. */
+  public Duration getMessageStartLockReleasePollMaxBackoff() {
+    return messageStartLockReleasePollMaxBackoff;
+  }
+
+  public EngineConfiguration setMessageStartLockReleasePollMaxBackoff(
+      final Duration messageStartLockReleasePollMaxBackoff) {
+    this.messageStartLockReleasePollMaxBackoff = messageStartLockReleasePollMaxBackoff;
+    return this;
+  }
+
+  /** Maximum number of holder instances batched into a single release query to one partition. */
+  public int getMessageStartLockReleasePollBatchLimit() {
+    return messageStartLockReleasePollBatchLimit;
+  }
+
+  public EngineConfiguration setMessageStartLockReleasePollBatchLimit(
+      final int messageStartLockReleasePollBatchLimit) {
+    this.messageStartLockReleasePollBatchLimit = messageStartLockReleasePollBatchLimit;
     return this;
   }
 

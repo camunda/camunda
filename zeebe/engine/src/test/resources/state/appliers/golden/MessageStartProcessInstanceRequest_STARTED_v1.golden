@@ -18,11 +18,14 @@ import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceReques
  * Records the state effects of a successful cross-partition message-start {@link
  * MessageStartProcessInstanceRequestIntent#STARTED} reply.
  *
- * <p>The same applier fires on both partitions involved in the handshake -- and, in
- * single-partition deployments, fires twice on the same stream (once for the local {@code STARTED}
- * that the request processor writes immediately after activation, once for the {@code STARTED} that
- * the reply processor writes on top of the {@code START} reply command). Each side-effect below is
- * designed to be safe under every combination:
+ * <p>The handshake — and therefore this applier — is engaged only when the holder's {@code
+ * businessId} hashes to a different partition than the message's correlation key ({@code P_B !=
+ * P_K}). Single-partition deployments, and the case where {@code businessId} and correlation key
+ * happen to hash to the same partition, take the local message-start path instead and never reach
+ * this applier. When engaged, the applier fires once on each side: on {@code P_B} for the local
+ * {@code STARTED} the request processor writes right after activation, and on {@code P_K} for the
+ * {@code STARTED} the start-reply processor writes after {@code CORRELATED}. Each side-effect below
+ * is designed to be safe on both sides:
  *
  * <ul>
  *   <li><b>Dedup upsert on {@code P_B}.</b> Writes {@code (processDefinitionKey, messageKey) ->
@@ -41,21 +44,24 @@ import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceReques
  *   <li><b>Pending-ask removal on {@code P_K}.</b> Always called; {@code remove} is a no-op when
  *       the entry is absent. On {@code P_B} there is no pending-ask, so this is also a harmless
  *       no-op.
- *   <li><b>Cross-partition businessId discriminator on {@code P_K}.</b> Marks the local
+ *   <li><b>Cross-partition holder-instance discriminator on {@code P_K}.</b> Marks the local
  *       correlation-key lock entry that the {@link MessageStartEventSubscriptionCorrelatedApplier}
- *       wrote when the reply processor emitted {@code CORRELATED}. Only written when the lock entry
- *       actually exists locally -- this skips both the {@code P_B} side in multi-partition mode (no
- *       lock entry there) and the first of the two {@code STARTED} firings in single-partition mode
- *       ({@code CORRELATED} has not run yet). The lock-entry presence is the natural discriminator
- *       and avoids needing routing info inside the applier. The write itself is {@code upsert} and
- *       therefore idempotent under retry.
+ *       wrote when the reply processor emitted {@code CORRELATED}, recording the holder instance's
+ *       {@code (processInstanceKey, tenantId)}. Only written when the lock entry exists locally: on
+ *       {@code P_B} the lock entry never exists ({@code CORRELATED} runs on {@code P_K}), so this
+ *       is skipped there; on {@code P_K} the start-reply processor writes {@code CORRELATED} before
+ *       {@code STARTED}, so the entry is present. The lock-entry presence is the natural
+ *       discriminator and avoids needing routing info inside the applier. The write itself is
+ *       {@code upsert} and therefore idempotent under retry.
  * </ul>
  *
- * <p>The lock-entry presence + businessId discriminator together encode the lock-release contract
- * documented at {@link io.camunda.zeebe.engine.processing.message.MessageCorrelateBehavior}: every
- * active root PI with a {@code businessId} lives on {@code P_B = hash(businessId)}, and {@code P_K}
- * keeps a local correlation-key lock so further triggers with the same correlation key are buffered
- * regardless of their {@code businessId}.
+ * <p>The lock-entry presence + holder-instance discriminator together encode the lock-release
+ * contract documented at {@link
+ * io.camunda.zeebe.engine.processing.message.MessageCorrelateBehavior}: every active root PI with a
+ * {@code businessId} lives on {@code P_B = hash(businessId)}, and {@code P_K} keeps a local
+ * correlation-key lock so further triggers with the same correlation key are buffered regardless of
+ * their {@code businessId}. The recorded holder instance is what the pull-based release loop polls
+ * {@code P_B} for to decide when that lock can be released.
  */
 final class MessageStartProcessInstanceStartedV1Applier
     implements TypedEventApplier<
@@ -92,8 +98,11 @@ final class MessageStartProcessInstanceStartedV1Applier
         && businessId.capacity() > 0
         && messageState.existActiveProcessInstance(
             value.getTenantId(), value.getBpmnProcessIdBuffer(), correlationKey)) {
-      messageState.putCrossPartitionStartLockBusinessId(
-          value.getBpmnProcessIdBuffer(), correlationKey, businessId);
+      messageState.putCrossPartitionStartLock(
+          value.getBpmnProcessIdBuffer(),
+          correlationKey,
+          value.getProcessInstanceKey(),
+          value.getTenantId());
     }
   }
 }

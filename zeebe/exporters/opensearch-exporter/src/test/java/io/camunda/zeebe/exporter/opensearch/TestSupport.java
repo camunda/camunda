@@ -55,6 +55,8 @@ final class TestSupport {
       case MESSAGE_START_EVENT_SUBSCRIPTION -> config.messageStartEventSubscription = value;
       case MESSAGE_START_PROCESS_INSTANCE_REQUEST ->
           config.messageStartProcessInstanceRequest = value;
+      case MESSAGE_START_CORRELATION_KEY_LOCK_RELEASE ->
+          config.messageStartCorrelationKeyLockRelease = value;
       case PROCESS_EVENT -> config.processEvent = value;
       case DEPLOYMENT_DISTRIBUTION -> config.deploymentDistribution = value;
       case ESCALATION -> config.escalation = value;

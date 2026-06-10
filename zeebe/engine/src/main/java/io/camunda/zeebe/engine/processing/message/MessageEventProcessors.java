@@ -26,6 +26,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.MessageBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageStartCorrelationKeyLockReleaseIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -196,6 +197,21 @@ public final class MessageEventProcessors {
             ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
             MessageStartProcessInstanceRequestIntent.REJECT_NO_SUBSCRIPTION,
             new MessageStartProcessInstanceRequestRejectNoSubscriptionProcessor(writers.state()))
+        // Holder-liveness release query handler on P_B - answers whether a cross-partition
+        // message-start holder instance is still active, so P_K can release its correlation-key
+        // lock. The queries are dispatched by CrossPartitionMessageStartLockReleaseScheduler below.
+        .onCommand(
+            ValueType.MESSAGE_START_CORRELATION_KEY_LOCK_RELEASE,
+            MessageStartCorrelationKeyLockReleaseIntent.QUERY,
+            new MessageStartCorrelationKeyLockReleaseQueryProcessor(
+                elementInstanceState, bannedInstanceState, subscriptionCommandSender, writers))
+        // Holder-completion release handler on P_K - on a RELEASE reply from P_B, releases the
+        // correlation-key lock and picks up the next buffered message for that key.
+        .onCommand(
+            ValueType.MESSAGE_START_CORRELATION_KEY_LOCK_RELEASE,
+            MessageStartCorrelationKeyLockReleaseIntent.RELEASE,
+            new MessageStartCorrelationKeyLockReleaseReleaseProcessor(
+                messageState, bpmnBehaviors.bufferedMessageStartEventBehavior(), writers))
         .withListener(
             new MessageTimeToLiveCheckScheduler(
                 config.getMessagesTtlCheckerInterval(),
@@ -212,8 +228,16 @@ public final class MessageEventProcessors {
         .withListener(
             new PendingMessageStartAskCheckScheduler(
                 subscriptionCommandSender,
-                processingState.getMessageStartProcessInstanceAskState(),
+                scheduledTaskStateFactory.get().getMessageStartProcessInstanceAskState(),
                 routingInfo,
-                config::getMessageStartAskRetryInterval));
+                config::getMessageStartAskRetryInterval))
+        .withListener(
+            new CrossPartitionMessageStartLockReleaseScheduler(
+                partitionId,
+                subscriptionCommandSender,
+                scheduledTaskStateFactory.get().getMessageState(),
+                config::getMessageStartLockReleasePollInterval,
+                config::getMessageStartLockReleasePollMaxBackoff,
+                config::getMessageStartLockReleasePollBatchLimit));
   }
 }

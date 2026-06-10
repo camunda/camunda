@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.jobmetrics.JobMetricsBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartCorrelationKeyLockReleaseRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartProcessInstanceRequestRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBatchRecord;
@@ -44,6 +45,7 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.JobMetricsBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageStartCorrelationKeyLockReleaseIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
@@ -64,6 +66,7 @@ import io.camunda.zeebe.protocol.record.value.JobMetricsBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageRecordValue;
+import io.camunda.zeebe.protocol.record.value.MessageStartCorrelationKeyLockReleaseRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageStartProcessInstanceRequestRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
@@ -149,6 +152,14 @@ public final class RecordToWrite implements LogAppendEntry {
       final MessageStartProcessInstanceRequestRecordValue request) {
     recordMetadata.valueType(ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST).intent(intent);
     unifiedRecordValue = (MessageStartProcessInstanceRequestRecord) request;
+    return this;
+  }
+
+  public RecordToWrite messageStartCorrelationKeyLockRelease(
+      final MessageStartCorrelationKeyLockReleaseIntent intent,
+      final MessageStartCorrelationKeyLockReleaseRecordValue query) {
+    recordMetadata.valueType(ValueType.MESSAGE_START_CORRELATION_KEY_LOCK_RELEASE).intent(intent);
+    unifiedRecordValue = (MessageStartCorrelationKeyLockReleaseRecord) query;
     return this;
   }
 

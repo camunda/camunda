@@ -247,6 +247,9 @@ process-instance-creation.business-id-uniqueness-enabled
 process-instance-creation.message-start-ask-retry-interval
 process-instance-creation.message-start-dedup-expiration-sweep-batch-limit
 process-instance-creation.message-start-dedup-expiration-sweep-interval
+process-instance-creation.message-start-lock-release-poll-batch-limit
+process-instance-creation.message-start-lock-release-poll-interval
+process-instance-creation.message-start-lock-release-poll-max-backoff
 processing.enable-async-message-ttl-checker
 processing.enable-async-scheduled-tasks
 processing.enable-async-timer-duedate-checker

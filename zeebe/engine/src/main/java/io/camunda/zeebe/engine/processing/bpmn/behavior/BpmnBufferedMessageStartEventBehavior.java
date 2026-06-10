@@ -10,6 +10,9 @@ package io.camunda.zeebe.engine.processing.bpmn.behavior;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
+import io.camunda.zeebe.engine.processing.message.MessageCorrelateBehavior;
+import io.camunda.zeebe.engine.processing.message.MessageCorrelateBehavior.MessageData;
+import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.BannedInstanceState;
@@ -19,6 +22,7 @@ import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.message.StoredMessage;
+import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -35,7 +39,7 @@ public final class BpmnBufferedMessageStartEventBehavior {
   private final BannedInstanceState bannedInstanceState;
   private final boolean businessIdUniquenessEnabled;
 
-  private final EventHandle eventHandle;
+  private final MessageCorrelateBehavior messageCorrelateBehavior;
   private final InstantSource clock;
 
   public BpmnBufferedMessageStartEventBehavior(
@@ -44,6 +48,8 @@ public final class BpmnBufferedMessageStartEventBehavior {
       final EventTriggerBehavior eventTriggerBehavior,
       final BpmnStateBehavior stateBehavior,
       final Writers writers,
+      final SubscriptionCommandSender commandSender,
+      final RoutingInfo routingInfo,
       final InstantSource clock,
       final boolean businessIdUniquenessEnabled) {
     messageState = processingState.getMessageState();
@@ -54,7 +60,7 @@ public final class BpmnBufferedMessageStartEventBehavior {
     this.businessIdUniquenessEnabled = businessIdUniquenessEnabled;
     this.clock = clock;
 
-    eventHandle =
+    final var eventHandle =
         new EventHandle(
             keyGenerator,
             processingState.getEventScopeInstanceState(),
@@ -62,6 +68,23 @@ public final class BpmnBufferedMessageStartEventBehavior {
             processState,
             eventTriggerBehavior,
             stateBehavior);
+
+    // Reuse the live-publish correlation logic for the buffered pick-up so a buffered message whose
+    // businessId belongs to another partition is re-routed through the cross-partition handshake
+    // instead of being started locally (which would bypass P_B's uniqueness check).
+    messageCorrelateBehavior =
+        new MessageCorrelateBehavior(
+            messageStartEventSubscriptionState,
+            messageState,
+            eventHandle,
+            writers.state(),
+            processingState.getMessageSubscriptionState(),
+            commandSender,
+            elementInstanceState,
+            bannedInstanceState,
+            businessIdUniquenessEnabled,
+            routingInfo,
+            processingState.getPartitionId());
   }
 
   public Optional<DirectBuffer> findCorrelationKey(final BpmnElementContext context) {
@@ -77,30 +100,48 @@ public final class BpmnBufferedMessageStartEventBehavior {
       // - other messages with same correlation key are not correlated to this process until this
       // instance is ended (process-correlation-key lock)
       // - now, after the instance is ended, correlate the next buffered message
-      correlateNextBufferedMessage(correlationKey, context);
+      correlateNextBufferedMessage(
+          context.getBpmnProcessId(), correlationKey, context.getTenantId());
     }
   }
 
-  private void correlateNextBufferedMessage(
-      final DirectBuffer correlationKey, final BpmnElementContext context) {
+  /**
+   * Picks the next eligible buffered message-start message for the given {@code (process,
+   * correlationKey)} and triggers it, if any.
+   *
+   * <p>Takes {@code bpmnProcessId} and {@code tenantId} directly rather than a {@link
+   * BpmnElementContext} so it can be driven from contexts that have no completing element instance
+   * to hand. Today the local process-correlation-key lock release runs on process-instance
+   * completion (which supplies a context); the cross-partition lock release runs from a poll
+   * response on {@code P_K} (which does not). Both need the same buffer pick-up behaviour.
+   */
+  public void correlateNextBufferedMessage(
+      final DirectBuffer bpmnProcessId, final DirectBuffer correlationKey, final String tenantId) {
 
-    final var bpmnProcessId = context.getBpmnProcessId();
-    final var process =
-        processState.getLatestProcessVersionByProcessId(bpmnProcessId, context.getTenantId());
+    final var process = processState.getLatestProcessVersionByProcessId(bpmnProcessId, tenantId);
 
     findNextMessageToCorrelate(process, correlationKey)
         .ifPresent(
             messageCorrelation -> {
               final var storedMessage = messageState.getMessage(messageCorrelation.messageKey);
+              final var message = storedMessage.getMessage();
 
-              eventHandle.triggerMessageStartEvent(
+              // Route the picked-up message exactly as a fresh publish would be: a businessId that
+              // hashes to another partition is delegated to P_B via the cross-partition ask rather
+              // than started locally, so the buffered pick-up cannot bypass the uniqueness
+              // handshake
+              // or violate the invariant that every businessId-carrying PI lives on P_B.
+              messageCorrelateBehavior.triggerOrDelegateStartEvent(
+                  new MessageData(
+                      storedMessage.getMessageKey(),
+                      message.getNameBuffer(),
+                      message.getCorrelationKeyBuffer(),
+                      message.getVariablesBuffer(),
+                      message.getTenantId(),
+                      message.getBusinessIdBuffer(),
+                      message.getDeadline()),
                   messageCorrelation.subscriptionKey,
-                  messageCorrelation.subscriptionRecord,
-                  storedMessage.getMessageKey(),
-                  storedMessage.getMessage().getNameBuffer(),
-                  storedMessage.getMessage().getCorrelationKeyBuffer(),
-                  storedMessage.getMessage().getVariablesBuffer(),
-                  storedMessage.getMessage().getBusinessIdBuffer());
+                  messageCorrelation.subscriptionRecord);
             });
   }
 

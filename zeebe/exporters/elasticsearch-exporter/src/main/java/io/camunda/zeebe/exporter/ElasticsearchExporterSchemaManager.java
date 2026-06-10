@@ -151,6 +151,9 @@ public class ElasticsearchExporterSchemaManager {
       if (index.messageStartProcessInstanceRequest) {
         createValueIndexTemplate(ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST, version);
       }
+      if (index.messageStartCorrelationKeyLockRelease) {
+        createValueIndexTemplate(ValueType.MESSAGE_START_CORRELATION_KEY_LOCK_RELEASE, version);
+      }
       if (index.processEvent) {
         createValueIndexTemplate(ValueType.PROCESS_EVENT, version);
       }
