@@ -23,15 +23,19 @@ type WaitStateType = z.infer<typeof waitStateTypeSchema>;
 const waitStateDetailsSchema = z.record(z.string(), z.unknown());
 type WaitStateDetails = z.infer<typeof waitStateDetailsSchema>;
 
-const elementInstanceInspectionSchema = z.object({
-	rootProcessInstanceKey: z.string(),
-	processInstanceKey: z.string(),
-	elementInstanceKey: z.string(),
-	elementId: z.string(),
-	elementType: elementInstanceTypeSchema,
-	waitStateType: waitStateTypeSchema,
-	details: waitStateDetailsSchema,
-});
+const elementInstanceInspectionSchema = z
+	.object({
+		rootProcessInstanceKey: z.string(),
+		processInstanceKey: z.string(),
+		elementInstanceKey: z.string(),
+		elementId: z.string(),
+		elementType: elementInstanceTypeSchema,
+		details: waitStateDetailsSchema,
+	})
+	.transform((data) => ({
+		...data,
+		waitStateType: data.details['waitStateType'] as WaitStateType,
+	}));
 type ElementInstanceInspection = z.infer<typeof elementInstanceInspectionSchema>;
 
 const queryElementInstanceInspectionFilterSchema = z
