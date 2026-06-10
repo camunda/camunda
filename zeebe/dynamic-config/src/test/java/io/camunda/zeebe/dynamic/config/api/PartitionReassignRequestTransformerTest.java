@@ -209,7 +209,8 @@ class PartitionReassignRequestTransformerTest {
         new PartitionReassignRequestTransformer(
             getClusterMembers(newClusterSize),
             Optional.of(newReplicationFactor),
-            Optional.of(newPartitionCount));
+            Optional.of(newPartitionCount),
+            Optional.empty());
     final var operations = request.operations(oldClusterTopology).get();
 
     // apply operations to generate new topology
@@ -295,7 +296,8 @@ class PartitionReassignRequestTransformerTest {
 
     // when no override is provided
     final var operations =
-        new PartitionReassignRequestTransformer(members, Optional.of(3), Optional.of(3))
+        new PartitionReassignRequestTransformer(
+                members, Optional.of(3), Optional.of(3), Optional.empty())
             .operations(oldTopology)
             .get();
 
@@ -318,7 +320,8 @@ class PartitionReassignRequestTransformerTest {
 
     // when
     final var result =
-        new PartitionReassignRequestTransformer(members, Optional.of(3), Optional.of(3))
+        new PartitionReassignRequestTransformer(
+                members, Optional.of(3), Optional.of(3), Optional.empty())
             .operations(oldTopology);
 
     // then

@@ -46,13 +46,6 @@ public class PartitionReassignRequestTransformer implements ConfigurationChangeR
   public PartitionReassignRequestTransformer(
       final Set<MemberId> members,
       final Optional<Integer> newReplicationFactor,
-      final Optional<Integer> newPartitionCount) {
-    this(members, newReplicationFactor, newPartitionCount, Optional.empty());
-  }
-
-  public PartitionReassignRequestTransformer(
-      final Set<MemberId> members,
-      final Optional<Integer> newReplicationFactor,
       final Optional<Integer> newPartitionCount,
       final Optional<PartitionDistributorConfig> configOverride) {
     this.members = members;
@@ -62,7 +55,7 @@ public class PartitionReassignRequestTransformer implements ConfigurationChangeR
   }
 
   public PartitionReassignRequestTransformer(final Set<MemberId> members) {
-    this(members, Optional.empty(), Optional.empty());
+    this(members, Optional.empty(), Optional.empty(), Optional.empty());
   }
 
   @Override
