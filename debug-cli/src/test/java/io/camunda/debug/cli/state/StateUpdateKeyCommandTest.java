@@ -10,20 +10,12 @@ package io.camunda.debug.cli.state;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.debug.cli.Main;
-import io.camunda.zeebe.db.AccessMetricsConfiguration;
-import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
-import io.camunda.zeebe.db.ConsistencyChecksSettings;
-import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
-import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
-import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreImpl;
 import io.camunda.zeebe.stream.impl.state.DbKeyGenerator;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -76,15 +68,8 @@ class StateUpdateKeyCommandTest {
     assertThat(exitCode).isZero();
 
     // open the snapshot and verify the key
-    // find the new snapshot id
     final var newSnapshotPath =
-        Files.list(partitionRoot.resolve(FileBasedSnapshotStoreImpl.SNAPSHOTS_DIRECTORY))
-            .filter(Files::isDirectory)
-            .filter(
-                directoryName ->
-                    !directoryName.getFileName().toString().equals(initialSnapshot.getId()))
-            .findFirst()
-            .get();
+        SnapshotTestUtil.newSnapshotPath(partitionRoot, initialSnapshot.getId());
 
     final var snapshotUtil = new SnapshotUtil();
     final var runtimeDb =
@@ -96,20 +81,15 @@ class StateUpdateKeyCommandTest {
   }
 
   private PersistedSnapshot takeInitialSnapshot(final Path partitionRoot) {
-    final var zeebeDbFactory =
-        new ZeebeRocksDbFactory<>(
-            new RocksDbConfiguration().setWalDisabled(false),
-            new ConsistencyChecksSettings(true, true),
-            new AccessMetricsConfiguration(Kind.NONE, 1),
-            SimpleMeterRegistry::new);
+    try (final var initialRuntime =
+        SnapshotTestUtil.newDbFactory().createDb(tempDir.resolve("initialRuntime").toFile())) {
 
-    final var initialRuntime = zeebeDbFactory.createDb(tempDir.resolve("initialRuntime").toFile());
+      final var keyGen = new DbKeyGenerator(1, initialRuntime, initialRuntime.createContext());
 
-    final var keyGen = new DbKeyGenerator(1, initialRuntime, initialRuntime.createContext());
+      assertThat(keyGen.nextKey()).isEqualTo(Protocol.encodePartitionId(1, 1L));
 
-    assertThat(keyGen.nextKey()).isEqualTo(Protocol.encodePartitionId(1, 1L));
-
-    return new SnapshotUtil().takeSnapshot(initialRuntime, partitionRoot, "1-1-1-1-1", 1L);
+      return new SnapshotUtil().takeSnapshot(initialRuntime, partitionRoot, "1-1-1-1-1", 1L);
+    }
   }
 
   @ParameterizedTest

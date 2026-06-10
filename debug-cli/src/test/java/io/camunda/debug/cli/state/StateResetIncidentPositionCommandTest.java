@@ -12,37 +12,38 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.camunda.zeebe.db.AccessMetricsConfiguration;
-import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
+import io.camunda.zeebe.broker.exporter.stream.ExporterStateEntry;
 import io.camunda.zeebe.db.ColumnFamily;
-import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbString;
-import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
-import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
-import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreImpl;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
-import java.nio.file.Files;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import picocli.CommandLine;
 
 class StateResetIncidentPositionCommandTest {
 
-  private static final String EXPORTER_ID = "camundaexporter";
+  private static final String EXPORTER_ID = StateResetIncidentPositionCommand.DEFAULT_EXPORTER_ID;
   private static final long EXPORTER_POSITION = 210_000_000L;
   private static final long CORRUPTED_INCIDENT_POSITION = 214_000_000L;
   private static final long FIRST_USER_TASK_KEY = 123L;
 
   CommandLine commandLine;
   @TempDir Path tempDir;
+  StringWriter err;
+  StringWriter out;
   private final ObjectMapper objectMapper = new ObjectMapper();
 
   @BeforeEach
@@ -50,23 +51,29 @@ class StateResetIncidentPositionCommandTest {
     // Root the command at StateCommand directly so picocli does not eagerly load the sibling
     // TopologyMetaCommand (and its protobuf dependencies) that live under the top-level Main
     // command.
-    commandLine = new CommandLine(new StateCommand());
+    err = new StringWriter();
+    out = new StringWriter();
+    commandLine =
+        new CommandLine(new StateCommand())
+            .setErr(new PrintWriter(err))
+            .setOut(new PrintWriter(out));
   }
 
-  @Test
-  void shouldResetIncidentPositionToDefault() throws Exception {
+  @ParameterizedTest
+  @ValueSource(longs = {-1L, 85_000_000L})
+  void shouldResetIncidentPosition(final long targetPosition) throws Exception {
     // given
     final Path partitionRoot = tempDir.resolve("partitionRoot");
     final var initialSnapshot = takeInitialSnapshot(partitionRoot);
 
-    // when - no --position, so it defaults to -1
+    // when - no --exporter-id, so it defaults to camundaexporter
     final int exitCode =
         commandLine.execute(
             "reset-incident-position",
             "-v",
             "-r",
             partitionRoot.toString(),
-            "--exporter-id=" + EXPORTER_ID,
+            "--position=" + targetPosition,
             "--snapshot=" + initialSnapshot.getId().toString(),
             "--runtime=" + tempDir.resolve("runtime"));
 
@@ -77,19 +84,24 @@ class StateResetIncidentPositionCommandTest {
     final var metadata = metadataOf(state);
     assertThat(
             metadata.get(StateResetIncidentPositionCommand.LAST_INCIDENT_UPDATE_POSITION).asLong())
-        .isEqualTo(-1L);
+        .isEqualTo(targetPosition);
     assertThat(state.position()).isEqualTo(EXPORTER_POSITION);
     // unrelated metadata is preserved
     assertThat(metadata.get("firstUserTaskKeys").get("ZEEBE_USER_TASK").asLong())
         .isEqualTo(FIRST_USER_TASK_KEY);
+    // stdout carries only the machine-readable path of the new snapshot
+    final var newSnapshotPath =
+        SnapshotTestUtil.newSnapshotPath(partitionRoot, initialSnapshot.getId());
+    assertThat(out.toString().trim()).isEqualTo(newSnapshotPath.toString());
+    assertThat(err.toString()).doesNotContain("WARNING");
   }
 
   @Test
-  void shouldResetIncidentPositionToExplicitValue() throws Exception {
+  void shouldWarnWhenPositionAboveExporterPosition() throws Exception {
     // given
     final Path partitionRoot = tempDir.resolve("partitionRoot");
     final var initialSnapshot = takeInitialSnapshot(partitionRoot);
-    final long target = 85_000_000L;
+    final long target = EXPORTER_POSITION + 1;
 
     // when
     final int exitCode =
@@ -97,20 +109,20 @@ class StateResetIncidentPositionCommandTest {
             "reset-incident-position",
             "-r",
             partitionRoot.toString(),
-            "--exporter-id=" + EXPORTER_ID,
             "--position=" + target,
             "--snapshot=" + initialSnapshot.getId().toString(),
             "--runtime=" + tempDir.resolve("runtime"));
 
-    // then
+    // then - the value is written as requested, but a warning is logged
     assertThat(exitCode).isZero();
+    assertThat(err.toString()).contains("WARNING").contains("exporterPosition");
 
     final var state = readState(partitionRoot, initialSnapshot);
-    final var metadata = metadataOf(state);
     assertThat(
-            metadata.get(StateResetIncidentPositionCommand.LAST_INCIDENT_UPDATE_POSITION).asLong())
+            metadataOf(state)
+                .get(StateResetIncidentPositionCommand.LAST_INCIDENT_UPDATE_POSITION)
+                .asLong())
         .isEqualTo(target);
-    assertThat(state.position()).isEqualTo(EXPORTER_POSITION);
   }
 
   @Test
@@ -126,17 +138,45 @@ class StateResetIncidentPositionCommandTest {
             "-r",
             partitionRoot.toString(),
             "--exporter-id=unknownExporter",
+            "--position=-1",
             "--snapshot=" + initialSnapshot.getId().toString(),
             "--runtime=" + tempDir.resolve("runtime"));
 
     // then
     assertThat(exitCode).isOne();
-    assertThat(listSnapshots(partitionRoot)).containsExactly(initialSnapshot.getId().toString());
+    assertThat(SnapshotTestUtil.listSnapshots(partitionRoot))
+        .containsExactly(initialSnapshot.getId().toString());
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"root", "position", "snapshot", "runtime"})
+  void shouldFailIfRequiredArgumentIsNotSet(final String optionToSkip) {
+    // given
+    final var options = new ArrayList<>(List.of("reset-incident-position"));
+    final var requiredOptions =
+        List.of(
+            "--root=rootFolder",
+            "--position=-1",
+            "--snapshot=exampleId",
+            "--runtime=" + tempDir.resolve("runtime"));
+
+    options.addAll(
+        requiredOptions.stream()
+            // skip the option if matches
+            .filter(o -> !o.split("=")[0].equals("--" + optionToSkip))
+            .toList());
+
+    // when
+    final int exitCode = commandLine.execute(options.toArray(String[]::new));
+
+    // then
+    assertThat(exitCode).isPositive();
+    assertThat(err.toString()).contains("Missing required option: '--%s=".formatted(optionToSkip));
   }
 
   private PersistedSnapshot takeInitialSnapshot(final Path partitionRoot) {
     try (final var initialRuntime =
-        newDbFactory().createDb(tempDir.resolve("initialRuntime").toFile())) {
+        SnapshotTestUtil.newDbFactory().createDb(tempDir.resolve("initialRuntime").toFile())) {
       final var context = initialRuntime.createContext();
       final DbString exporterKey = new DbString();
       final ColumnFamily<DbString, ExporterStateEntry> exporterColumnFamily =
@@ -177,7 +217,8 @@ class StateResetIncidentPositionCommandTest {
    */
   private ExporterSnapshotState readState(
       final Path partitionRoot, final PersistedSnapshot initialSnapshot) throws Exception {
-    final var newSnapshotPath = newSnapshotPath(partitionRoot, initialSnapshot);
+    final var newSnapshotPath =
+        SnapshotTestUtil.newSnapshotPath(partitionRoot, initialSnapshot.getId());
     try (final ZeebeDb db =
         new SnapshotUtil().openSnapshot(newSnapshotPath, tempDir.resolve("openedRuntime"))) {
       final var context = db.createContext();
@@ -202,35 +243,6 @@ class StateResetIncidentPositionCommandTest {
 
   private JsonNode metadataOf(final ExporterSnapshotState state) throws IOException {
     return objectMapper.readTree(state.metadata());
-  }
-
-  private Path newSnapshotPath(final Path partitionRoot, final PersistedSnapshot initialSnapshot) {
-    try {
-      return Files.list(partitionRoot.resolve(FileBasedSnapshotStoreImpl.SNAPSHOTS_DIRECTORY))
-          .filter(Files::isDirectory)
-          .filter(dir -> !dir.getFileName().toString().equals(initialSnapshot.getId()))
-          .findFirst()
-          .orElseThrow();
-    } catch (final IOException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  private java.util.List<String> listSnapshots(final Path partitionRoot) {
-    try (final var stream =
-        Files.list(partitionRoot.resolve(FileBasedSnapshotStoreImpl.SNAPSHOTS_DIRECTORY))) {
-      return stream.filter(Files::isDirectory).map(dir -> dir.getFileName().toString()).toList();
-    } catch (final IOException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  private ZeebeRocksDbFactory<ZbColumnFamilies> newDbFactory() {
-    return new ZeebeRocksDbFactory<>(
-        new RocksDbConfiguration().setWalDisabled(false),
-        new ConsistencyChecksSettings(true, true),
-        new AccessMetricsConfiguration(Kind.NONE, 1),
-        SimpleMeterRegistry::new);
   }
 
   private record ExporterSnapshotState(long position, byte[] metadata) {}
