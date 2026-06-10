@@ -12,6 +12,7 @@ import static io.camunda.optimize.service.dashboard.AgenticControlDashboardServi
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -27,9 +28,14 @@ import io.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardInstance
 import io.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardProcessScopeFilterDto;
 import io.camunda.optimize.dto.optimize.query.dashboard.filter.data.DashboardDateFilterDataDto;
 import io.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTileDto;
+import io.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
+import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
+import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateUnit;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.RollingDateFilterDataDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import io.camunda.optimize.service.db.reader.DashboardReader;
 import io.camunda.optimize.service.db.writer.DashboardWriter;
 import io.camunda.optimize.service.db.writer.ReportWriter;
@@ -78,7 +84,7 @@ public class AgenticControlDashboardServiceTest {
     assertThat(saved.isAgenticControlDashboard()).isTrue();
     assertThat(saved.isManagementDashboard()).isFalse();
     assertThat(saved.getCollectionId()).isNull();
-    assertThat(saved.getTiles()).hasSize(5);
+    assertThat(saved.getTiles()).hasSize(7);
   }
 
   @Test
@@ -165,7 +171,9 @@ public class AgenticControlDashboardServiceTest {
             AgenticControlDashboardService.KPI_AVG_DURATION_REPORT_ID,
             AgenticControlDashboardService.KPI_INCIDENT_RATE_REPORT_ID,
             AgenticControlDashboardService.KPI_AVG_TOKENS_REPORT_ID,
-            AgenticControlDashboardService.KPI_MEDIAN_TOKENS_REPORT_ID);
+            AgenticControlDashboardService.KPI_MEDIAN_TOKENS_REPORT_ID,
+            AgenticControlDashboardService.KPI_P50_DURATION_REPORT_ID,
+            AgenticControlDashboardService.KPI_P95_DURATION_REPORT_ID);
   }
 
   @Test
@@ -226,7 +234,7 @@ public class AgenticControlDashboardServiceTest {
     underTest.reconcile();
 
     // then reports are upserted and dashboard tiles are updated, but dashboard is not recreated
-    verify(reportWriter, org.mockito.Mockito.times(5))
+    verify(reportWriter, org.mockito.Mockito.times(7))
         .createOrUpdateSingleProcessReport(any(), any(), any(), any(), any(), any());
     verify(dashboardWriter, never()).saveDashboard(any());
     verify(dashboardWriter).updateDashboard(any(), any());
@@ -315,8 +323,97 @@ public class AgenticControlDashboardServiceTest {
               AgenticControlDashboardService.KPI_EXECUTION_AVG_DURATION_NAME,
               AgenticControlDashboardService.KPI_EXECUTION_AVG_DURATION_DESCRIPTION,
               AgenticControlDashboardService.KPI_EXECUTION_INCIDENT_RATE_NAME,
-              AgenticControlDashboardService.KPI_EXECUTION_INCIDENT_RATE_DESCRIPTION);
+              AgenticControlDashboardService.KPI_EXECUTION_INCIDENT_RATE_DESCRIPTION,
+              AgenticControlDashboardService.KPI_DURATION_P50_NAME,
+              AgenticControlDashboardService.KPI_DURATION_P50_DESCRIPTION,
+              AgenticControlDashboardService.KPI_DURATION_P95_NAME,
+              AgenticControlDashboardService.KPI_DURATION_P95_DESCRIPTION);
     }
+  }
+
+  @Test
+  void shouldSeedP50DurationReportWithCorrectConfig() {
+    // given
+    when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID)).thenReturn(Optional.empty());
+    final ArgumentCaptor<ProcessReportDataDto> dataCaptor =
+        ArgumentCaptor.forClass(ProcessReportDataDto.class);
+
+    // when
+    underTest.reconcile();
+
+    // then the P50 report is upserted with the correct deterministic ID and localization keys
+    verify(reportWriter)
+        .createOrUpdateSingleProcessReport(
+            eq(AgenticControlDashboardService.KPI_P50_DURATION_REPORT_ID),
+            isNull(),
+            dataCaptor.capture(),
+            eq(AgenticControlDashboardService.KPI_DURATION_P50_NAME),
+            eq(AgenticControlDashboardService.KPI_DURATION_P50_DESCRIPTION),
+            isNull());
+
+    final ProcessReportDataDto p50Data = dataCaptor.getValue();
+    assertThat(p50Data.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
+    assertThat(p50Data.getView().getProperties()).contains(ViewProperty.DURATION);
+    assertThat(p50Data.getConfiguration().getAggregationTypes())
+        .containsExactly(new AggregationDto(AggregationType.PERCENTILE, 50.0));
+    assertThat(p50Data.isAgenticControlReport()).isTrue();
+  }
+
+  @Test
+  void shouldSeedP95DurationReportWithCorrectConfig() {
+    // given
+    when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID)).thenReturn(Optional.empty());
+    final ArgumentCaptor<ProcessReportDataDto> dataCaptor =
+        ArgumentCaptor.forClass(ProcessReportDataDto.class);
+
+    // when
+    underTest.reconcile();
+
+    // then the P95 report is upserted with the correct deterministic ID and localization keys
+    verify(reportWriter)
+        .createOrUpdateSingleProcessReport(
+            eq(AgenticControlDashboardService.KPI_P95_DURATION_REPORT_ID),
+            isNull(),
+            dataCaptor.capture(),
+            eq(AgenticControlDashboardService.KPI_DURATION_P95_NAME),
+            eq(AgenticControlDashboardService.KPI_DURATION_P95_DESCRIPTION),
+            isNull());
+
+    final ProcessReportDataDto p95Data = dataCaptor.getValue();
+    assertThat(p95Data.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
+    assertThat(p95Data.getView().getProperties()).contains(ViewProperty.DURATION);
+    assertThat(p95Data.getConfiguration().getAggregationTypes())
+        .containsExactly(new AggregationDto(AggregationType.PERCENTILE, 95.0));
+    assertThat(p95Data.isAgenticControlReport()).isTrue();
+  }
+
+  @Test
+  void shouldUpsertP50AndP95ReportsOnWarmRestart() {
+    // given — dashboard already exists (warm restart)
+    when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID))
+        .thenReturn(Optional.of(new DashboardDefinitionRestDto()));
+
+    // when
+    underTest.reconcile();
+
+    // then both duration percentile reports are upserted even when the dashboard is not recreated
+    verify(reportWriter)
+        .createOrUpdateSingleProcessReport(
+            eq(AgenticControlDashboardService.KPI_P50_DURATION_REPORT_ID),
+            any(),
+            any(),
+            any(),
+            any(),
+            any());
+    verify(reportWriter)
+        .createOrUpdateSingleProcessReport(
+            eq(AgenticControlDashboardService.KPI_P95_DURATION_REPORT_ID),
+            any(),
+            any(),
+            any(),
+            any(),
+            any());
+    verify(dashboardWriter, never()).saveDashboard(any());
   }
 
   @SuppressWarnings("unchecked")
