@@ -145,6 +145,66 @@ test.describe('Process Instances Filters', () => {
     });
   });
 
+  test('Variable filtering via inline single-condition form', async ({
+    page,
+    operateProcessesPage,
+    operateFiltersPanelPage,
+  }) => {
+    test.slow();
+    const orderProcessInstanceKey =
+      orderProcessInstance.processInstanceKey.toString();
+
+    await test.step('Open Variables filter and use inline form', async () => {
+      await operateFiltersPanelPage.clickCompletedInstancesCheckbox();
+      await operateFiltersPanelPage.displayOptionalFilter('Variables');
+      await expect(
+        operateFiltersPanelPage.singleConditionNameInput,
+      ).toBeVisible();
+      await expect(
+        operateFiltersPanelPage.singleConditionValueInput,
+      ).toBeVisible();
+
+      await operateFiltersPanelPage.fillSingleConditionInline(
+        'filtersTest',
+        '123',
+      );
+    });
+
+    await test.step('Inline filter narrows the list', async () => {
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(page.getByText('1 result')).toBeVisible();
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
+      await expect(
+        operateProcessesPage.processInstancesTable.getByText(
+          orderProcessInstanceKey,
+          {exact: true},
+        ),
+      ).toBeVisible({timeout: 60000});
+    });
+
+    await test.step('Escalating to modal pre-fills the inline values', async () => {
+      await operateFiltersPanelPage.openVariableFilterModal();
+      await expect(
+        operateFiltersPanelPage.variableFilterDialog.getByTestId(
+          'variable-filter-name-0',
+        ),
+      ).toHaveValue('filtersTest');
+      await expect(
+        operateFiltersPanelPage.variableFilterDialog.getByTestId(
+          'variable-filter-value-0',
+        ),
+      ).toHaveValue('123');
+      await operateFiltersPanelPage.variableFilterDialog
+        .getByRole('button', {name: 'Cancel'})
+        .click();
+    });
+  });
+
   test('Variable filtering with single and multiple values', async ({
     page,
     operateProcessesPage,

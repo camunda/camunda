@@ -399,7 +399,7 @@ describe('buildMutationRequestBody', () => {
     expect(body).toEqual({
       filter: {
         variables: [
-          {name: 'foo', value: '"a"'},
+          {name: 'foo', value: {$eq: '"a"'}},
           {name: 'bar', value: {$neq: '"b"'}},
         ],
         state: {$eq: 'ACTIVE'},
@@ -489,7 +489,7 @@ describe('buildMutationRequestBody', () => {
         variables: [
           {
             name: 'status',
-            value: '"pending"',
+            value: {$eq: '"pending"'},
           },
         ],
       },

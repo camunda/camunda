@@ -12,7 +12,6 @@ import truncate from 'lodash/truncate';
 import {Button} from '@carbon/react';
 import {Edit} from '@carbon/react/icons';
 import {Paths} from 'modules/Routes';
-import {IS_VARIABLE_FILTER_V2_ENABLED} from 'modules/feature-flags';
 import {Title} from 'modules/components/FiltersPanel/styled';
 import {
   variableFilterStore,
@@ -46,17 +45,15 @@ const ChipListView: React.FC = observer(() => {
 
   return (
     <>
-      {conditions.length > 0 && (
-        <ConditionList aria-label="Active variable filters">
-          {conditions.map((condition) => (
-            <ConditionItem
-              key={`${condition.name}-${condition.operator}-${condition.value}`}
-            >
-              {getConditionLabel(condition)}
-            </ConditionItem>
-          ))}
-        </ConditionList>
-      )}
+      <ConditionList aria-label="Active variable filters">
+        {conditions.map((condition) => (
+          <ConditionItem
+            key={`${condition.name}-${condition.operator}-${condition.value}`}
+          >
+            {getConditionLabel(condition)}
+          </ConditionItem>
+        ))}
+      </ConditionList>
       <Button
         kind="ghost"
         size="sm"
@@ -64,7 +61,7 @@ const ChipListView: React.FC = observer(() => {
         onClick={openModal}
         data-testid="open-variable-filter-modal"
       >
-        {conditions.length === 0 ? 'Add conditions' : 'Edit conditions'}
+        Edit conditions
       </Button>
     </>
   );
@@ -73,10 +70,9 @@ const ChipListView: React.FC = observer(() => {
 const VariableFilter: React.FC = observer(() => {
   const {conditions} = variableFilterStore;
 
-  const inlineFormApplicable =
+  const showInlineForm =
     conditions.length === 0 ||
     (conditions.length === 1 && conditions[0]?.operator === 'equals');
-  const showInlineForm = IS_VARIABLE_FILTER_V2_ENABLED && inlineFormApplicable;
 
   return (
     <>
