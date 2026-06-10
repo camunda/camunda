@@ -53,6 +53,10 @@ public sealed interface PartitionDistributorConfig {
     public ZoneAwareConfig {
       zones = List.copyOf(zones);
     }
+
+    public int replicationFactor() {
+      return zones.stream().mapToInt(ZoneSpec::numberOfReplicas).sum();
+    }
   }
 
   /**
