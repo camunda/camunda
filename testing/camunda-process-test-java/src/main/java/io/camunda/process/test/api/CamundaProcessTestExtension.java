@@ -54,6 +54,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
@@ -379,7 +380,11 @@ public class CamundaProcessTestExtension
           new CamundaDataSource(camundaProcessTestContext.createClient());
       final CoverageTestData coverageData = CoverageTestDataCollector.collectData(dataSource);
       coverageCollector.collectTestRunCoverage(
-          context.getRequiredTestClass(), getCoverageTestName(context), coverageData);
+          context.getRequiredTestClass(),
+          getCoverageTestName(context),
+          getDisplayName(context),
+          getTestParameters(context),
+          coverageData);
     } catch (final Throwable t) {
       LOG.warn("Failed to collect test process coverage, skipping.", t);
     }
@@ -407,6 +412,34 @@ public class CamundaProcessTestExtension
     }
 
     return prefix + context.getDisplayName();
+  }
+
+  /**
+   * Returns the {@code @DisplayName} annotation value for the test method, or {@code null} if no
+   * explicit display name is set.
+   */
+  private static String getDisplayName(final ExtensionContext context) {
+    return context
+        .getTestMethod()
+        .flatMap(m -> AnnotationUtils.findAnnotation(m, DisplayName.class))
+        .map(DisplayName::value)
+        .orElse(null);
+  }
+
+  /**
+   * Returns the parameter representation for a parameterized test invocation (e.g. {@code "[1]
+   * value1"}), or {@code null} for non-parameterized tests.
+   *
+   * <p>A parameterized test invocation shares its test method with its parent context (the
+   * template), so this is detected by checking whether the parent's test method equals the current
+   * context's test method.
+   */
+  private static String getTestParameters(final ExtensionContext context) {
+    return context
+        .getParent()
+        .filter(parent -> parent.getTestMethod().equals(context.getTestMethod()))
+        .map(ignored -> context.getDisplayName())
+        .orElse(null);
   }
 
   private void printTestResults() {

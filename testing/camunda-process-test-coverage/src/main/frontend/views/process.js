@@ -12,6 +12,21 @@ import { escapeHtml, toPercent, progressBarHtml, badgeHtml, coverageClass, statC
 import { renderBpmnDiagram } from '../bpmn.js';
 
 /**
+ * Returns an HTML string for the process heading: name as primary, ID as secondary if different.
+ * @param {string} processId
+ * @param {Array<object>} processModels
+ * @returns {string}
+ */
+function processHeading(processId, processModels) {
+  const model = (processModels || []).find((m) => m.processDefinitionId === processId);
+  const name = model?.processName;
+  if (name && name !== processId) {
+    return `${escapeHtml(name)}<br><small class="text-muted fw-normal">${escapeHtml(processId)}</small>`;
+  }
+  return escapeHtml(processId);
+}
+
+/**
  * Renders the process details view into #content.
  * @param {string} processId
  * @param {object} data window.COVERAGE_DATA
@@ -66,7 +81,7 @@ export async function renderProcess(processId, data, context = null) {
   let html = breadcrumbHtml + `
     <h2 class="view-title">
       <i class="bi bi-diagram-3-fill me-2" aria-hidden="true"></i>
-      ${escapeHtml(processId)}
+      ${processHeading(processId, processModels)}
     </h2>`;
 
   if (cov) {

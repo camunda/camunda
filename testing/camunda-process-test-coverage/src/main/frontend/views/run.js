@@ -14,6 +14,10 @@ import {
   badgeHtml,
   coverageClass,
   statCard,
+  processLabel,
+  decisionLabel,
+  runPrimaryLabel,
+  runSecondaryLabel,
 } from '../utils.js';
 
 /**
@@ -46,6 +50,10 @@ export function renderRun(suiteId, runIndex, data) {
       : 0;
 
   const sid = encodeURIComponent(suite.id);
+  const processModels = data.processModels || [];
+  const decisionModels = data.decisionModels || [];
+  const primaryLabel = runPrimaryLabel(run);
+  const secondaryLabel = runSecondaryLabel(run);
 
   let html = `
     <nav aria-label="breadcrumb" class="mb-3">
@@ -53,13 +61,15 @@ export function renderRun(suiteId, runIndex, data) {
         <li class="breadcrumb-item">
           <a href="#/suite/${sid}">${escapeHtml(suite.name)}</a>
         </li>
-        <li class="breadcrumb-item active" aria-current="page">${escapeHtml(run.name)}</li>
+        <li class="breadcrumb-item active" aria-current="page">${escapeHtml(primaryLabel)}</li>
       </ol>
     </nav>
 
     <h2 class="view-title">
       <i class="bi bi-file-earmark-code-fill me-2 text-info" aria-hidden="true"></i>
-      ${escapeHtml(run.name)}
+      ${escapeHtml(primaryLabel)}
+      ${secondaryLabel ? `<br><small class="text-muted fw-normal fs-6">${escapeHtml(secondaryLabel)}</small>` : ''}
+      ${run.testParameters ? `<br><small class="text-muted fw-normal fs-6 font-monospace">${escapeHtml(run.testParameters)}</small>` : ''}
     </h2>
 
     <div class="row g-3 mb-4">
@@ -86,12 +96,15 @@ export function renderRun(suiteId, runIndex, data) {
 
     for (const cov of sortedProcesses) {
       const pid = encodeURIComponent(cov.processDefinitionId);
+      const name = processLabel(cov.processDefinitionId, processModels);
+      const showId = name !== cov.processDefinitionId;
       html += `
             <tr class="clickable-row"
                 onclick="navigate('/suite/${sid}/run/${runIndex}/process/${pid}')">
               <td>
                 <i class="bi bi-diagram-3-fill me-2 text-primary" aria-hidden="true"></i>
-                ${escapeHtml(cov.processDefinitionId)}
+                <strong>${escapeHtml(name)}</strong>
+                ${showId ? `<br><small class="text-muted">${escapeHtml(cov.processDefinitionId)}</small>` : ''}
               </td>
               <td>${progressBarHtml(cov.coverage)}</td>
               <td>${badgeHtml(cov.coverage)}</td>
@@ -117,12 +130,15 @@ export function renderRun(suiteId, runIndex, data) {
 
     for (const cov of sortedDecisions) {
       const did = encodeURIComponent(cov.decisionDefinitionId);
+      const name = decisionLabel(cov.decisionDefinitionId, decisionModels);
+      const showId = name !== cov.decisionDefinitionId;
       html += `
             <tr class="clickable-row"
                 onclick="navigate('/suite/${sid}/run/${runIndex}/decision/${did}')">
               <td>
                 <i class="bi bi-table me-2 text-success" aria-hidden="true"></i>
-                ${escapeHtml(cov.decisionDefinitionId)}
+                <strong>${escapeHtml(name)}</strong>
+                ${showId ? `<br><small class="text-muted">${escapeHtml(cov.decisionDefinitionId)}</small>` : ''}
               </td>
               <td>${progressBarHtml(cov.coverage)}</td>
               <td>${badgeHtml(cov.coverage)}</td>

@@ -411,7 +411,7 @@ public class ExecutionListenerTest {
 
     // then
     verify(processCoverageBuilder).build();
-    verify(processCoverage).collectTestRunCoverage(any(), any(), any());
+    verify(processCoverage).collectTestRunCoverage(any(), any(), any(), any(), any());
     verify(processCoverage).generateReport(any());
   }
 

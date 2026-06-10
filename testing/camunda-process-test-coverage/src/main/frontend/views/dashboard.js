@@ -11,6 +11,10 @@ import {
   badgeHtml,
   coverageClass,
   statCard,
+  processLabel,
+  decisionLabel,
+  runPrimaryLabel,
+  runSecondaryLabel,
 } from '../utils.js';
 
 /**
@@ -21,6 +25,8 @@ export function renderDashboard(data) {
   const suites = data.suites || [];
   const globalCoverages = data.processCoverages || [];
   const globalDecisionCoverages = data.decisionCoverages || [];
+  const processModels = data.processModels || [];
+  const decisionModels = data.decisionModels || [];
 
   const totalSuites = suites.length;
   const totalProcesses = globalCoverages.length;
@@ -69,11 +75,14 @@ export function renderDashboard(data) {
 
     for (const cov of sortedProcesses) {
       const pid = encodeURIComponent(cov.processDefinitionId);
+      const name = processLabel(cov.processDefinitionId, processModels);
+      const showId = name !== cov.processDefinitionId;
       html += `
             <tr class="clickable-row" onclick="navigate('/process/${pid}')">
               <td>
                 <i class="bi bi-diagram-3-fill me-2 text-primary" aria-hidden="true"></i>
-                <strong>${escapeHtml(cov.processDefinitionId)}</strong>
+                <strong>${escapeHtml(name)}</strong>
+                ${showId ? `<br><small class="text-muted">${escapeHtml(cov.processDefinitionId)}</small>` : ''}
               </td>
               <td>${progressBarHtml(cov.coverage)}</td>
               <td>${badgeHtml(cov.coverage)}</td>
@@ -98,11 +107,14 @@ export function renderDashboard(data) {
 
     for (const cov of sortedDecisions) {
       const did = encodeURIComponent(cov.decisionDefinitionId);
+      const name = decisionLabel(cov.decisionDefinitionId, decisionModels);
+      const showId = name !== cov.decisionDefinitionId;
       html += `
             <tr class="clickable-row" onclick="navigate('/decision/${did}')">
               <td>
                 <i class="bi bi-table me-2 text-success" aria-hidden="true"></i>
-                <strong>${escapeHtml(cov.decisionDefinitionId)}</strong>
+                <strong>${escapeHtml(name)}</strong>
+                ${showId ? `<br><small class="text-muted">${escapeHtml(cov.decisionDefinitionId)}</small>` : ''}
               </td>
               <td>${progressBarHtml(cov.coverage)}</td>
               <td>${badgeHtml(cov.coverage)}</td>

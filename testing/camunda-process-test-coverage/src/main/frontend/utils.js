@@ -4,6 +4,55 @@
 
 'use strict';
 
+/**
+ * Returns the best display label for a process: name if available, otherwise the definition ID.
+ * @param {string} processDefinitionId
+ * @param {Array<object>} processModels
+ * @returns {string}
+ */
+export function processLabel(processDefinitionId, processModels) {
+  const model = (processModels || []).find(
+    (m) => m.processDefinitionId === processDefinitionId
+  );
+  return (model && model.processName) ? model.processName : processDefinitionId;
+}
+
+/**
+ * Returns the best display label for a decision: name if available, otherwise the definition ID.
+ * @param {string} decisionDefinitionId
+ * @param {Array<object>} decisionModels
+ * @returns {string}
+ */
+export function decisionLabel(decisionDefinitionId, decisionModels) {
+  const model = (decisionModels || []).find(
+    (m) => m.decisionDefinitionId === decisionDefinitionId
+  );
+  return (model && model.decisionName) ? model.decisionName : decisionDefinitionId;
+}
+
+/**
+ * Returns the primary display label for a test run.
+ * Uses the display name if set, otherwise the run name.
+ * @param {object} run CoverageRunReport
+ * @returns {string}
+ */
+export function runPrimaryLabel(run) {
+  return run.displayName || run.name;
+}
+
+/**
+ * Returns the secondary label for a test run (shown when a display name is set).
+ * Returns the method name only when it differs from the primary label.
+ * @param {object} run CoverageRunReport
+ * @returns {string|null}
+ */
+export function runSecondaryLabel(run) {
+  if (run.displayName && run.displayName !== run.name) {
+    return run.name;
+  }
+  return null;
+}
+
 /** Camunda brand colours */
 export const COLORS = {
   blue: '#0072CE',

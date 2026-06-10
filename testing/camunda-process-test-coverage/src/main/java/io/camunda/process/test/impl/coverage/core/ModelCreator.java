@@ -90,6 +90,7 @@ public class ModelCreator {
 
     return ImmutableProcessModel.builder()
         .processDefinitionId(processDefinition.getProcessDefinitionId())
+        .processName(processDefinition.getName())
         .totalElementCount(definitionFlowNodes.size() + definitionSequenceFlows.size())
         .version(String.valueOf(processDefinition.getVersion()))
         .xml(Bpmn.convertToString(modelInstance))

@@ -11,6 +11,10 @@ import {
   badgeHtml,
   coverageClass,
   statCard,
+  processLabel,
+  decisionLabel,
+  runPrimaryLabel,
+  runSecondaryLabel,
 } from '../utils.js';
 
 /**
@@ -30,6 +34,8 @@ export function renderSuite(suiteId, data) {
   const suiteDecisionCoverages = suite.decisionCoverages || [];
   const runs = suite.runs || [];
   const sid = encodeURIComponent(suite.id);
+  const processModels = data.processModels || [];
+  const decisionModels = data.decisionModels || [];
 
   const allCoverages = [...suiteCoverages, ...suiteDecisionCoverages];
   const avgCoverage =
@@ -67,11 +73,14 @@ export function renderSuite(suiteId, data) {
 
     for (const cov of sortedProcesses) {
       const pid = encodeURIComponent(cov.processDefinitionId);
+      const name = processLabel(cov.processDefinitionId, processModels);
+      const showId = name !== cov.processDefinitionId;
       html += `
             <tr class="clickable-row" onclick="navigate('/suite/${sid}/process/${pid}')">
               <td>
                 <i class="bi bi-diagram-3-fill me-2 text-primary" aria-hidden="true"></i>
-                ${escapeHtml(cov.processDefinitionId)}
+                <strong>${escapeHtml(name)}</strong>
+                ${showId ? `<br><small class="text-muted">${escapeHtml(cov.processDefinitionId)}</small>` : ''}
               </td>
               <td>${progressBarHtml(cov.coverage)}</td>
               <td>${badgeHtml(cov.coverage)}</td>
@@ -97,11 +106,14 @@ export function renderSuite(suiteId, data) {
 
     for (const cov of sortedDecisions) {
       const did = encodeURIComponent(cov.decisionDefinitionId);
+      const name = decisionLabel(cov.decisionDefinitionId, decisionModels);
+      const showId = name !== cov.decisionDefinitionId;
       html += `
             <tr class="clickable-row" onclick="navigate('/suite/${sid}/decision/${did}')">
               <td>
                 <i class="bi bi-table me-2 text-success" aria-hidden="true"></i>
-                ${escapeHtml(cov.decisionDefinitionId)}
+                <strong>${escapeHtml(name)}</strong>
+                ${showId ? `<br><small class="text-muted">${escapeHtml(cov.decisionDefinitionId)}</small>` : ''}
               </td>
               <td>${progressBarHtml(cov.coverage)}</td>
               <td>${badgeHtml(cov.coverage)}</td>
@@ -130,11 +142,15 @@ export function renderSuite(suiteId, data) {
         runAllCoverages.length > 0
           ? runAllCoverages.reduce((s, c) => s + c.coverage, 0) / runAllCoverages.length
           : 0;
+      const primary = runPrimaryLabel(run);
+      const secondary = runSecondaryLabel(run);
       html += `
             <tr class="clickable-row" onclick="navigate('/suite/${sid}/run/${runIndex}')">
               <td>
                 <i class="bi bi-file-earmark-code-fill me-2 text-info" aria-hidden="true"></i>
-                <strong>${escapeHtml(run.name)}</strong>
+                <strong>${escapeHtml(primary)}</strong>
+                ${secondary ? `<br><small class="text-muted">${escapeHtml(secondary)}</small>` : ''}
+                ${run.testParameters ? `<br><small class="text-muted font-monospace">${escapeHtml(run.testParameters)}</small>` : ''}
               </td>
               <td>${progressBarHtml(runAvg)}</td>
               <td>${badgeHtml(runAvg)}</td>
