@@ -20,6 +20,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.ClientProperties;
+import io.camunda.client.impl.CamundaClientEnvironmentVariables;
+import io.camunda.client.impl.util.Environment;
 import java.net.URI;
 import java.time.Duration;
 import java.util.Properties;
@@ -314,6 +316,45 @@ public class ClientPropertiesConfigurationTest {
 
     // then
     assertThat(config.getRestAddress()).isEqualTo(URI.create("http://remote-host:8080"));
+  }
+
+  @Test
+  void shouldDisableEnvironmentVariableOverridesByDefault() {
+    // given
+    final Environment environment = Environment.system();
+    environment.put(CamundaClientEnvironmentVariables.REST_ADDRESS_VAR, "http://env-host:8080");
+    final Properties properties = buildVersionProperties();
+    properties.setProperty(ClientProperties.REST_ADDRESS, "http://properties-host:8080");
+
+    try {
+      // when
+      final CamundaClientConfiguration config = buildClientConfiguration(properties);
+
+      // then
+      assertThat(config.getRestAddress()).isEqualTo(URI.create("http://properties-host:8080"));
+    } finally {
+      environment.remove(CamundaClientEnvironmentVariables.REST_ADDRESS_VAR);
+    }
+  }
+
+  @Test
+  void shouldAllowEnablingEnvironmentVariableOverridesViaClientProperties() {
+    // given
+    final Environment environment = Environment.system();
+    environment.put(CamundaClientEnvironmentVariables.REST_ADDRESS_VAR, "http://env-host:8080");
+    final Properties properties = buildVersionProperties();
+    properties.setProperty(ClientProperties.REST_ADDRESS, "http://properties-host:8080");
+    properties.setProperty(ClientProperties.APPLY_ENVIRONMENT_VARIABLES_OVERRIDES, "true");
+
+    try {
+      // when
+      final CamundaClientConfiguration config = buildClientConfiguration(properties);
+
+      // then
+      assertThat(config.getRestAddress()).isEqualTo(URI.create("http://env-host:8080"));
+    } finally {
+      environment.remove(CamundaClientEnvironmentVariables.REST_ADDRESS_VAR);
+    }
   }
 
   @Test
