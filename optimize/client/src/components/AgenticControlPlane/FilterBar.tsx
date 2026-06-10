@@ -11,6 +11,7 @@ import {ComboBox, MenuItemSelectable} from '@carbon/react';
 
 import {MenuDropdown} from 'components';
 import {loadDefinitions} from 'services';
+import type {Definition} from 'services';
 import {t} from 'translation';
 
 import './FilterBar.scss';
@@ -26,11 +27,23 @@ export const DATE_PRESETS = [
     value: 12,
     unit: 'months',
   },
-];
+] as const;
 
-export function FilterBar({preset, onPresetChange, processScope, onProcessScopeChange}) {
-  const selected = DATE_PRESETS.find((p) => p.id === preset);
-  const [processDefinitions, setProcessDefinitions] = useState([]);
+interface FilterBarProps {
+  preset: string;
+  onPresetChange: (id: string) => void;
+  processScope: string | null;
+  onProcessScopeChange: (key: string | null) => void;
+}
+
+export function FilterBar({
+  preset,
+  onPresetChange,
+  processScope,
+  onProcessScopeChange,
+}: FilterBarProps) {
+  const selected = DATE_PRESETS.find((p) => p.id === preset)!;
+  const [processDefinitions, setProcessDefinitions] = useState<Definition[]>([]);
 
   useEffect(() => {
     loadDefinitions('process', null).then(setProcessDefinitions);
@@ -40,8 +53,8 @@ export function FilterBar({preset, onPresetChange, processScope, onProcessScopeC
 
   return (
     <div className="FilterBar">
-      <div className="FilterBar__processScope">
-        <span className="FilterBar__label">{t('agenticControlPlane.processFilter.label')}</span>
+      <div className="processScope">
+        <span className="label">{t('agenticControlPlane.processFilter.label')}</span>
         <ComboBox
           id="process-scope-filter"
           size="sm"
@@ -49,17 +62,17 @@ export function FilterBar({preset, onPresetChange, processScope, onProcessScopeC
           itemToString={(item) => item?.name ?? item?.key ?? ''}
           selectedItem={selectedProcess}
           onChange={({selectedItem}) => onProcessScopeChange?.(selectedItem?.key ?? null)}
-          placeholder={t('agenticControlPlane.processFilter.placeholder')}
+          placeholder={t('agenticControlPlane.processFilter.placeholder') as string}
           titleText=""
         />
       </div>
-      <div className="FilterBar__dateRange">
-        <span className="FilterBar__label">{t('agenticControlPlane.dateRange')}</span>
-        <MenuDropdown label={t(selected.translationKey)} size="sm">
+      <div className="dateRange">
+        <span className="label">{t('agenticControlPlane.dateRange')}</span>
+        <MenuDropdown label={t(selected.translationKey) as string} size="sm">
           {DATE_PRESETS.map((p) => (
             <MenuItemSelectable
               key={p.id}
-              label={t(p.translationKey)}
+              label={t(p.translationKey) as string}
               selected={p.id === preset}
               onChange={() => onPresetChange(p.id)}
             />

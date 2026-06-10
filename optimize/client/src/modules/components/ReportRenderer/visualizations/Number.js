@@ -127,7 +127,9 @@ export function Number({report, formatter, mightFail}) {
 
           return (
             <React.Fragment key={idx}>
-              <div className="data">{formatValue(measure.data, valueFormat ?? measure.property, precision)}</div>
+              <div className="data">
+                {formatValue(measure.data, valueFormat ?? measure.property, precision)}
+              </div>
               <div className="label">{viewString}</div>
             </React.Fragment>
           );

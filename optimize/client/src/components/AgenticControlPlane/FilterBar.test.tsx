@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {runAllEffects} from 'react';
+import {runAllEffects} from '__mocks__/react';
 import {shallow} from 'enzyme';
 import {ComboBox, MenuItemSelectable} from '@carbon/react';
 
@@ -57,7 +57,7 @@ it('should show the active preset label in the dropdown trigger', () => {
 it('should call onPresetChange with the preset id when an option is selected', () => {
   const node = shallow(<FilterBar {...props} />);
 
-  node.find(MenuItemSelectable).at(0).prop('onChange')();
+  (node.find(MenuItemSelectable).at(0).prop('onChange') as () => void)();
 
   expect(props.onPresetChange).toHaveBeenCalledWith('7d');
 });
@@ -88,7 +88,11 @@ it('should call onProcessScopeChange with the definition key when a process is s
 
   await runAllEffects();
 
-  node.find(ComboBox).prop('onChange')({selectedItem: {key: 'process-a', name: 'Process A'}});
+  (
+    node.find(ComboBox).prop('onChange') as (e: {
+      selectedItem: {key: string; name: string} | null;
+    }) => void
+  )({selectedItem: {key: 'process-a', name: 'Process A'}});
 
   expect(props.onProcessScopeChange).toHaveBeenCalledWith('process-a');
 });
@@ -98,7 +102,7 @@ it('should call onProcessScopeChange with null when the ComboBox is cleared', as
 
   await runAllEffects();
 
-  node.find(ComboBox).prop('onChange')({selectedItem: null});
+  (node.find(ComboBox).prop('onChange') as (e: {selectedItem: null}) => void)({selectedItem: null});
 
   expect(props.onProcessScopeChange).toHaveBeenCalledWith(null);
 });
