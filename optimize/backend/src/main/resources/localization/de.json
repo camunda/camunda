@@ -5,6 +5,7 @@
     "title": "Agentic control plane",
     "description": "Überwachen Sie die Einführung, das Verhalten und die Zuverlässigkeit von KI-Agenten sowie den Token-Verbrauch prozessübergreifend.",
     "dateRange": "Zeitraum",
+    "tokenUsage": "Token-Nutzung",
     "presets": {
       "last7Days": "Letzte 7 Tage",
       "last30Days": "Letzte 30 Tage",
@@ -299,7 +300,9 @@
       "multi": "Anzahl und Dauer",
       "evaluationCount": "Evaluierungsanzahl",
       "variable": "Variable",
-      "process": "Prozessansicht"
+      "process": "Prozessansicht",
+      "agentInstance": "Agenteninstanz",
+      "totalTokens": "Tokens insgesamt"
     },
     "groupBy": {
       "label": "Gruppiere nach",
@@ -1547,7 +1550,11 @@
       "agenticKpiExecutionAvgDurationName": "Durchschnittliche Ausführungsdauer",
       "agenticKpiExecutionAvgDurationDescription": "Durchschnittliche Ausführungsdauer abgeschlossener agentischer Prozessinstanzen im gewählten Zeitraum.",
       "agenticKpiExecutionIncidentRateName": "Vorfallsrate",
-      "agenticKpiExecutionIncidentRateDescription": "Anzahl der abgeschlossenen agentischen Prozessinstanzen mit einem gelösten Vorfall im gewählten Zeitraum."
+      "agenticKpiExecutionIncidentRateDescription": "Anzahl der abgeschlossenen agentischen Prozessinstanzen mit einem gelösten Vorfall im gewählten Zeitraum.",
+      "agenticKpiExecutionAvgTokensName": "Durchschnittliche Tokens pro Ausführung",
+      "agenticKpiExecutionAvgTokensDescription": "Durchschnittliche Gesamtanzahl der verbrauchten Tokens pro abgeschlossener agentischer Prozessinstanz im gewählten Zeitraum.",
+      "agenticKpiExecutionMedianTokensName": "Mediane Tokens pro Ausführung",
+      "agenticKpiExecutionMedianTokensDescription": "Median der verbrauchten Tokens pro abgeschlossener agentischer Prozessinstanz im gewählten Zeitraum."
     }
   },
   "managementDashboard": {
