@@ -62,6 +62,7 @@ jobs:
       webapp-client-changes: ${{ steps.filter.outputs.webapp-client-changes }}
       docs-changes: ${{ steps.filter.outputs.docs-changes }}
       c8-e2e-test-suite-changes: ${{ steps.filter.outputs.c8-e2e-test-suite-changes }}
+      forward-compat-tests-changes: ${{ steps.filter.outputs.forward-compat-tests-changes }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -1771,6 +1772,14 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
+  forward-compat-tests:
+    if: needs.detect-changes.outputs.forward-compat-tests-changes == 'true'
+    name: "C8 Forward Compatibility"
+    needs: [ detect-changes ]
+    uses: ./.github/workflows/ci-c8-forward-compatibility-tests.yml
+    secrets: inherit
+    permissions: { }
+
   protobuf-checks:
     name: "Protobuf Backwards Compatibility"
     needs: [ detect-changes ]
@@ -2036,6 +2045,7 @@ jobs:
       - detect-changes
       - detect-new-flaky-tests
       - docker-checks
+      - forward-compat-tests
       - general-unit-tests
       - generate-db-versions
       - history-tests

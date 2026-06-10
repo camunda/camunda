@@ -231,6 +231,15 @@ outputs:
         steps.ci-github-actions.outputs.ci-relevant == 'true' ||
         steps.filter-c8-e2e-test-suite.outputs.c8-e2e-test-suite-change == 'true'
       }}
+  forward-compat-tests-changes:
+    description: Output whether the C8 REST API forward compatibility tests should be run based on GitHub event and files changed
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
+        steps.filter-c8-e2e-test-suite.outputs.c8-e2e-test-suite-change == 'true'
+      }}
 
 runs:
   using: composite
