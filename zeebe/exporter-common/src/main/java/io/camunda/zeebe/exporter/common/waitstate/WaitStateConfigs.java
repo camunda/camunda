@@ -10,7 +10,6 @@ package io.camunda.zeebe.exporter.common.waitstate;
 import io.camunda.zeebe.exporter.common.waitstate.WaitStateEntry.WaitStateType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
-import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 
 /**
  * Predefined {@link WaitStateTransformerConfig}s for common use cases, e.g. for jobs. These can be
@@ -26,11 +25,6 @@ public final class WaitStateConfigs {
           .withAddIntents(JobIntent.CREATED)
           .withUpdateIntents(JobIntent.MIGRATED)
           .withRemoveIntents(JobIntent.COMPLETED, JobIntent.CANCELED)
-          .withSupportedElementTypes(
-              BpmnElementType.SERVICE_TASK,
-              BpmnElementType.SCRIPT_TASK,
-              BpmnElementType.SEND_TASK,
-              BpmnElementType.BUSINESS_RULE_TASK)
           .withWaitStateType(WaitStateType.JOB);
 
   private WaitStateConfigs() {}

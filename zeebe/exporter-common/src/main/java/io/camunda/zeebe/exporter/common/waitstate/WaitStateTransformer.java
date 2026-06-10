@@ -49,12 +49,6 @@ public interface WaitStateTransformer<R extends RecordValue & WaitStateRelated> 
           e);
     }
 
-    final var elementType = waitStateEntry.getElementType();
-    if (elementType == null || !config().supportedElementTypes().contains(elementType)) {
-      final var errorMsg = "Undefined or unsupported element type: %s".formatted(elementType);
-      LOG.error(errorMsg);
-    }
-
     return waitStateEntry;
   }
 
