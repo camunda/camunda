@@ -298,6 +298,7 @@
       <column name="ELEMENT_ID" type="NVARCHAR(${userCharColumnSize})"/>
       <column name="ELEMENT_TYPE" type="VARCHAR(50)"/>
       <column name="WAIT_STATE_TYPE" type="VARCHAR(50)"/>
+      <column name="PROCESS_DEFINITION_ID" type="NVARCHAR(${userCharColumnSize})"/>
       <column name="DETAILS" type="CLOB"/>
       <column name="TENANT_ID" type="NVARCHAR(${userCharColumnSize})"/>
       <column name="PARTITION_ID" type="NUMBER"/>
