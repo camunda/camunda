@@ -627,6 +627,12 @@ test.describe
 
     await taskPanelPage.goToTaskDetails(bobUserTaskKey);
 
+    // Alice is not the assignee, so the Complete Task button is rendered in a
+    // disabled state ("Task is not assigned"), which prevents her from
+    // completing Bob's task. Wait for the task details panel to finish loading
+    // before asserting — otherwise the button may not be rendered yet and the
+    // assertion times out with "element(s) not found".
+    await expect(taskDetailsPage.detailsInfo).toBeVisible({timeout: 30000});
     await expect(taskDetailsPage.completeTaskButton).toBeDisabled();
   });
 });
