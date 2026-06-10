@@ -37,6 +37,7 @@ import io.camunda.process.test.impl.coverage.core.DecisionCoverageCreator;
 import io.camunda.process.test.impl.coverage.data.ImmutableCoverageDecisionInstanceData;
 import io.camunda.process.test.impl.coverage.data.ImmutableCoverageProcessInstanceData;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 
@@ -120,5 +121,54 @@ class CoverageCreatorTest {
     assertThat(coverage.getMatchedRuleIds()).containsExactly("rule-1", "rule-2");
     assertThat(coverage.getMatchedRuleIndices()).containsExactly(1, 2);
     assertThat(coverage.getCoverage()).isEqualTo(1.0);
+  }
+
+  @Test
+  void shouldCollectEventBasedGatewayFlows() {
+    // given: a BPMN model with an event-based gateway
+    final BpmnModelInstance model =
+        Bpmn.createExecutableProcess("test-with-event-based-gateway")
+            .startEvent("StartEvent")
+            .eventBasedGateway("Gateway")
+            .sequenceFlowId("Flow_Timer")
+            .intermediateCatchEvent("Timer_Event")
+            .timerWithDuration("PT2S")
+            .endEvent("End_Event")
+            .done();
+
+    final ProcessInstance processInstance = mock(ProcessInstance.class);
+    when(processInstance.getProcessDefinitionId()).thenReturn("test-with-event-based-gateway");
+
+    final ElementInstance gatewayInstance = mock(ElementInstance.class);
+    when(gatewayInstance.getElementId()).thenReturn("Gateway");
+    when(gatewayInstance.getType()).thenReturn(ElementInstanceType.EVENT_BASED_GATEWAY);
+    when(gatewayInstance.getState()).thenReturn(ElementInstanceState.COMPLETED);
+
+    final ElementInstance timerInstance = mock(ElementInstance.class);
+    when(timerInstance.getElementId()).thenReturn("Timer_Event");
+    when(timerInstance.getType()).thenReturn(ElementInstanceType.INTERMEDIATE_CATCH_EVENT);
+    when(timerInstance.getState()).thenReturn(ElementInstanceState.COMPLETED);
+
+    final ProcessModel processModel =
+        ImmutableProcessModel.builder()
+            .processDefinitionId("test-with-event-based-gateway")
+            .totalElementCount(6)
+            .version("1")
+            .xml(Bpmn.convertToString(model))
+            .build();
+
+    final ImmutableCoverageProcessInstanceData processInstanceData =
+        ImmutableCoverageProcessInstanceData.builder()
+            .processInstance(processInstance)
+            .addElementInstances(gatewayInstance)
+            .addElementInstances(timerInstance)
+            .build();
+
+    // when
+    final ProcessCoverage coverage =
+        CoverageCreator.createCoverage(processInstanceData, processModel);
+
+    // then: the sequence flow from the event-based gateway to the timer event is added
+    assertThat(coverage.getTakenSequenceFlows()).contains("Flow_Timer");
   }
 }

@@ -48,6 +48,7 @@ import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
 import io.camunda.process.test.impl.extension.ConditionalBehaviorEngine;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
 import io.camunda.process.test.utils.DevAwaitBehavior;
+import io.camunda.zeebe.model.bpmn.Bpmn;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -895,6 +896,65 @@ public class CompleteJobTest {
 
       // and: completion command was never sent
       verify(camundaClient, org.mockito.Mockito.never()).newCompleteCommand(JOB_KEY);
+    }
+  }
+
+  @Nested
+  class CompleteJobWithExampleData {
+
+    private static final Long PROCESS_DEFINITION_KEY = 200L;
+    private static final String PROCESS_ID = "test-process";
+    private static final String ELEMENT_ID = "send-email";
+    private static final String EXAMPLE_DATA = "{\"send_status\": 200}";
+
+    @BeforeEach
+    void setup() {
+      camundaProcessTestContext =
+          new CamundaProcessTestContextImpl(
+              camundaProcessTestRuntime,
+              clientCreationCallback,
+              clockClient,
+              DevAwaitBehavior::expectSuccess,
+              jsonMapper,
+              new ConditionalBehaviorEngine());
+
+      when(camundaClient
+              .newJobSearchRequest()
+              .filter(jobFilterCaptor.capture())
+              .send()
+              .join()
+              .items())
+          .thenReturn(Collections.singletonList(job));
+
+      when(job.getJobKey()).thenReturn(JOB_KEY);
+      when(job.getType()).thenReturn(JOB_TYPE);
+      when(job.getProcessDefinitionKey()).thenReturn(PROCESS_DEFINITION_KEY);
+      when(job.getProcessDefinitionId()).thenReturn(PROCESS_ID);
+      when(job.getElementId()).thenReturn(ELEMENT_ID);
+
+      final String bpmnXml =
+          Bpmn.convertToString(
+              Bpmn.createExecutableProcess(PROCESS_ID)
+                  .startEvent()
+                  .serviceTask(
+                      ELEMENT_ID,
+                      t ->
+                          t.zeebeJobType(JOB_TYPE)
+                              .zeebeProperty("camundaModeler:exampleOutputJson", EXAMPLE_DATA))
+                  .endEvent()
+                  .done());
+
+      when(camundaClient.newProcessDefinitionGetXmlRequest(PROCESS_DEFINITION_KEY).send().join())
+          .thenReturn(bpmnXml);
+    }
+
+    @Test
+    void shouldCompleteJobWithExampleData() {
+      // when
+      camundaProcessTestContext.completeJobWithExampleData(JOB_TYPE);
+
+      // then: the job is completed with the example data from the BPMN model
+      verify(camundaClient.newCompleteCommand(JOB_KEY).variables(EXAMPLE_DATA)).send();
     }
   }
 }
