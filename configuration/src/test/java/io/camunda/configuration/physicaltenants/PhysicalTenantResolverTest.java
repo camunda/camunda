@@ -48,35 +48,45 @@ class PhysicalTenantResolverTest {
     environment.getPropertySources().addFirst(new MapPropertySource("test", properties));
   }
 
+  private static String indexPrefixOf(final Camunda camunda) {
+    return camunda.getData().getSecondaryStorage().getElasticsearch().getIndexPrefix();
+  }
+
   @Test
   void shouldResolveOneCamundaPerDiscoveredTenant() {
-    // given two tenants under the physical-tenants prefix
+    // given two tenants under the physical-tenants prefix, each overriding an overridable property
+    // (the index prefix) with a distinct value so they also pass cross-tenant isolation
     setProperties(
         Map.of(
-            "camunda.physical-tenants.tenanta.cluster.size", 2,
-            "camunda.physical-tenants.tenantb.cluster.size", 4));
+            "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.index-prefix",
+            "tenanta",
+            "camunda.physical-tenants.tenantb.data.secondary-storage.elasticsearch.index-prefix",
+            "tenantb"));
 
     // when
     final Map<String, Camunda> resolved = newResolver().getAll();
 
     // then both declared tenants are present (alongside the synthesized 'default')
-    assertThat(resolved.get("tenanta").getCluster().getSize()).isEqualTo(2);
-    assertThat(resolved.get("tenantb").getCluster().getSize()).isEqualTo(4);
+    assertThat(indexPrefixOf(resolved.get("tenanta"))).isEqualTo("tenanta");
+    assertThat(indexPrefixOf(resolved.get("tenantb"))).isEqualTo("tenantb");
   }
 
   @Test
   void shouldSeedTenantWithRootValuesForNonOverriddenProperties() {
-    // given a root value plus a tenant override on a sibling field
+    // given root cluster values plus a tenant override on an overridable cluster field
+    // (partition-count) and a distinct storage location so it does not collide with 'default'
     setProperties(
         Map.of(
             "camunda.cluster.size", 5,
             "camunda.cluster.replication-factor", 3,
-            "camunda.physical-tenants.tenanta.cluster.partition-count", 7));
+            "camunda.physical-tenants.tenanta.cluster.partition-count", 7,
+            "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.index-prefix",
+                "tenanta"));
 
     // when
     final Camunda tenantA = newResolver().forPhysicalTenant("tenanta");
 
-    // then non-overridden fields equal the root, overridden fields equal the tenant value
+    // then non-overridden cluster fields equal the root, the overridden field equals the tenant
     assertThat(tenantA.getCluster().getSize()).isEqualTo(5);
     assertThat(tenantA.getCluster().getReplicationFactor()).isEqualTo(3);
     assertThat(tenantA.getCluster().getPartitionCount()).isEqualTo(7);
@@ -85,28 +95,34 @@ class PhysicalTenantResolverTest {
   @Test
   void shouldFallBackToLegacyPropertiesForNonOverriddenProperties() {
     // given a legacy broker property is set, the unified property is not set,
-    // and the tenant overrides only an unrelated field
+    // and the tenant overrides only an unrelated, overridable field
     setProperties(
         Map.of(
-            "zeebe.broker.cluster.partitionsCount", 9,
-            "camunda.physical-tenants.tenanta.cluster.size", 4));
+            "zeebe.broker.cluster.partitionsCount",
+            9,
+            "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.index-prefix",
+            "tenanta"));
 
     // when
     final Camunda tenantA = newResolver().forPhysicalTenant("tenanta");
 
     // then the legacy fallback applies for the non-overridden property at getter time
     assertThat(tenantA.getCluster().getPartitionCount()).isEqualTo(9);
-    assertThat(tenantA.getCluster().getSize()).isEqualTo(4);
+    assertThat(indexPrefixOf(tenantA)).isEqualTo("tenanta");
   }
 
   @Test
   void shouldResolveDocumentConfigurationPerTenant() {
     // given root document configuration and a tenant override for one store property
+    // (each tenant also gets a distinct index-prefix so they pass cross-tenant isolation)
     setProperties(
         Map.of(
             "camunda.document.default-store-id", "aws1",
             "camunda.document.aws.aws1.bucket-name", "root-bucket",
-            "camunda.physical-tenants.tenanta.document.aws.aws1.bucket-name", "tenant-bucket"));
+            "camunda.data.secondary-storage.elasticsearch.index-prefix", "default",
+            "camunda.physical-tenants.tenanta.document.aws.aws1.bucket-name", "tenant-bucket",
+            "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.index-prefix",
+                "tenanta"));
 
     // when
     final PhysicalTenantResolver resolver = newResolver();
@@ -155,11 +171,14 @@ class PhysicalTenantResolverTest {
 
   @Test
   void shouldSynthesizeDefaultTenantFromRootWhenOtherTenantsAreDeclared() {
-    // given a tenant other than 'default' is declared with an override
+    // given a root (cluster-wide) value plus a tenant declared with an overridable override and a
+    // distinct storage location so it does not collide with the synthesized 'default'
     setProperties(
         Map.of(
-            "camunda.cluster.size", 5,
-            "camunda.physical-tenants.tenanta.cluster.size", 2));
+            "camunda.cluster.size",
+            5,
+            "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.index-prefix",
+            "tenanta"));
 
     // when
     final PhysicalTenantResolver resolver = newResolver();
@@ -173,27 +192,80 @@ class PhysicalTenantResolverTest {
                 .getCluster()
                 .getSize())
         .isEqualTo(5);
-    assertThat(resolver.forPhysicalTenant("tenanta").getCluster().getSize()).isEqualTo(2);
+    // the declared tenant inherits the root cluster size and carries its own storage override
+    assertThat(resolver.forPhysicalTenant("tenanta").getCluster().getSize()).isEqualTo(5);
+    assertThat(indexPrefixOf(resolver.forPhysicalTenant("tenanta"))).isEqualTo("tenanta");
   }
 
   @Test
   void shouldHonorExplicitlyDeclaredDefaultTenantOverrides() {
-    // given the user explicitly declares a 'default' tenant with an override
+    // given the user explicitly declares a 'default' tenant with an overridable override
     setProperties(
         Map.of(
-            "camunda.cluster.size", 5,
-            "camunda.physical-tenants.default.cluster.size", 9));
+            "camunda.physical-tenants.default.data.secondary-storage.elasticsearch.index-prefix",
+            "custom"));
 
     // when
     final PhysicalTenantResolver resolver = newResolver();
 
     // then the explicit declaration wins and is not clobbered by synthesis
     assertThat(
-            resolver
-                .forPhysicalTenant(PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID)
-                .getCluster()
-                .getSize())
-        .isEqualTo(9);
+            indexPrefixOf(
+                resolver.forPhysicalTenant(PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID)))
+        .isEqualTo("custom");
+  }
+
+  @Test
+  void shouldRejectTenantsResolvingToTheSameSecondaryStorage() {
+    // given two tenants explicitly pointing at the same Elasticsearch url with the same (empty)
+    // index prefix — they would write into the same database
+    setProperties(
+        Map.of(
+            "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.url",
+                "http://shared:9200",
+            "camunda.physical-tenants.tenantb.data.secondary-storage.elasticsearch.url",
+                "http://shared:9200"));
+
+    // when / then resolution fails fast at boot
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(this::newResolver)
+        .withMessageContaining("secondary-storage location");
+  }
+
+  @Test
+  void shouldRejectTenantsWithIncompatibleSecondaryStorageTypes() {
+    // given one tenant on Elasticsearch and one on RDBMS (incompatible compatibility classes),
+    // each with a distinct storage location so the isolation rule passes first
+    setProperties(
+        Map.of(
+            "camunda.physical-tenants.tenanta.data.secondary-storage.type", "elasticsearch",
+            "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.index-prefix",
+                "tenanta",
+            "camunda.physical-tenants.tenantb.data.secondary-storage.type", "rdbms",
+            "camunda.physical-tenants.tenantb.data.secondary-storage.rdbms.url",
+                "jdbc:h2:mem:tenantb"));
+
+    // when / then resolution fails fast at boot
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(this::newResolver)
+        .withMessageContaining("compatible secondary-storage type");
+  }
+
+  @Test
+  void shouldResolveWhenTenantsUseDistinctSecondaryStorage() {
+    // given two tenants on the same Elasticsearch cluster but with distinct index prefixes
+    // (and the synthesized 'default' keeps the empty prefix) — no collision
+    setProperties(
+        Map.of(
+            "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.index-prefix",
+                "tenanta",
+            "camunda.physical-tenants.tenantb.data.secondary-storage.elasticsearch.index-prefix",
+                "tenantb"));
+
+    // when / then resolution succeeds
+    final PhysicalTenantResolver resolver = newResolver();
+    assertThat(resolver.getAll())
+        .containsOnlyKeys("tenanta", "tenantb", PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID);
   }
 
   @Test

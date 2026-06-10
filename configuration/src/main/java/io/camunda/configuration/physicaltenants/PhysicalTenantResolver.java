@@ -13,6 +13,7 @@ import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
@@ -57,6 +58,17 @@ public final class PhysicalTenantResolver {
       ConfigurationPropertyName.of(PHYSICAL_TENANTS_PREFIX);
   private static final Pattern VALID_TENANT_ID = Pattern.compile("[a-z0-9]+");
 
+  /**
+   * Cross-tenant rules run at the end of {@link #of(Environment, Camunda)} so a multi-tenant
+   * deployment that would write into a shared or incompatible secondary storage fails fast at boot.
+   * There is intentionally no opt-out toggle — hard isolation between physical tenants is the
+   * point.
+   */
+  private static final List<CrossTenantValidation> CROSS_TENANT_VALIDATIONS =
+      List.of(
+          new SecondaryStorageIsolationValidation(),
+          new SecondaryStorageTypeHomogeneityValidation());
+
   private final Map<String, Camunda> resolved;
 
   private PhysicalTenantResolver(final Map<String, Camunda> resolved) {
@@ -64,9 +76,11 @@ public final class PhysicalTenantResolver {
   }
 
   public static PhysicalTenantResolver of(final Environment environment, final Camunda camunda) {
+    final Set<String> physicalTenantIds = discover(environment);
+    PhysicalTenantOverridePolicyValidation.validate(environment);
     final Map<String, Camunda> resolvedPhysicalTenants = new LinkedHashMap<>();
     final Binder binder = Binder.get(environment);
-    for (final String physicalTenantId : discover(environment)) {
+    for (final String physicalTenantId : physicalTenantIds) {
       final Camunda physicalTenant = new Camunda();
       binder.bind(Camunda.PREFIX, Bindable.ofInstance(physicalTenant));
       binder.bind(
@@ -76,6 +90,7 @@ public final class PhysicalTenantResolver {
     if (!resolvedPhysicalTenants.containsKey(DEFAULT_PHYSICAL_TENANT_ID)) {
       resolvedPhysicalTenants.put(DEFAULT_PHYSICAL_TENANT_ID, camunda);
     }
+    CROSS_TENANT_VALIDATIONS.forEach(validation -> validation.validate(resolvedPhysicalTenants));
     return new PhysicalTenantResolver(resolvedPhysicalTenants);
   }
 
