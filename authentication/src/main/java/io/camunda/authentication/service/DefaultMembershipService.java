@@ -108,6 +108,11 @@ public class DefaultMembershipService implements MembershipService {
     @Override
     public synchronized List<String> mappingRules() {
       if (mappingRules == null) {
+        if (tokenClaims.isEmpty()) {
+          mappingRules = List.of();
+          return mappingRules;
+        }
+
         final var ids =
             mappingRuleServices
                 .getMatchingMappingRules(tokenClaims, CamundaAuthentication.anonymous())
