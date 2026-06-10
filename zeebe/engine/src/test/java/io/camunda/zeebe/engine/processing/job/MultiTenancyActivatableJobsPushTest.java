@@ -31,6 +31,7 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.agrona.DirectBuffer;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -85,7 +86,7 @@ public class MultiTenancyActivatableJobsPushTest {
             .setWorker(worker, 0, worker.capacity())
             .setTimeout(timeout)
             .setFetchVariables(
-                List.of(new StringValue("a"), new StringValue("b"), new StringValue("c")))
+                Set.of(new StringValue("a"), new StringValue("b"), new StringValue("c")))
             .setClaims(authorizationClaims)
             .setTenantIds(List.of(tenantIdA));
 
@@ -94,7 +95,7 @@ public class MultiTenancyActivatableJobsPushTest {
             .setWorker(worker, 0, worker.capacity())
             .setTimeout(timeout)
             .setFetchVariables(
-                List.of(new StringValue("a"), new StringValue("b"), new StringValue("c")))
+                Set.of(new StringValue("a"), new StringValue("b"), new StringValue("c")))
             .setClaims(authorizationClaims)
             .setTenantIds(List.of(tenantIdB));
 

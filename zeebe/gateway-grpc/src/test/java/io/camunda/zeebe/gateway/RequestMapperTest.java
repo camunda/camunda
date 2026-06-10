@@ -7,9 +7,13 @@
  */
 package io.camunda.zeebe.gateway;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.core.JsonParseException;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StreamActivatedJobsRequest;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 public class RequestMapperTest {
@@ -58,5 +62,26 @@ public class RequestMapperTest {
     assertThatThrownBy(() -> RequestMapper.ensureJsonSet(BIG_INTEGER))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("MessagePack cannot serialize BigInteger larger than 2^64-1");
+  }
+
+  @Test
+  public void shouldDeduplicateFetchVariables() {
+    // given — the same variable name appears twice in the gRPC request
+    final var request =
+        StreamActivatedJobsRequest.newBuilder()
+            .setType("test-job")
+            .setWorker("test-worker")
+            .addFetchVariable("var1")
+            .addFetchVariable("var2")
+            .addFetchVariable("var1")
+            .build();
+
+    // when
+    final var properties = RequestMapper.toJobActivationProperties(request, Map.of());
+
+    // then — only two unique names, not three; prevents off-by-one in DbVariableState map header
+    assertThat(properties.fetchVariables())
+        .extracting(BufferUtil::bufferAsString)
+        .containsExactlyInAnyOrder("var1", "var2");
   }
 }

@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -52,7 +53,7 @@ public class JobActivationPropertiesImpl extends UnpackedObject implements JobAc
     return this;
   }
 
-  public JobActivationPropertiesImpl setFetchVariables(final Collection<StringValue> variables) {
+  public JobActivationPropertiesImpl setFetchVariables(final Set<StringValue> variables) {
     fetchVariablesProp.reset();
     variables.forEach(variable -> fetchVariablesProp.add().wrap(variable));
     return this;
