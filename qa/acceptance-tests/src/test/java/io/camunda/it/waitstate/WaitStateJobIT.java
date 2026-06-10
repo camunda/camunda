@@ -39,13 +39,15 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Verifies the element instance wait-state search command against all job-based wait-state element
- * types. The main process ({@code waitStateProcess}) forks into seven parallel branches covering:
+ * types. The main process ({@code waitStateProcess}) forks into ten parallel branches covering:
  * service task, send task, script task, business-rule task (all {@code BPMN_ELEMENT} jobs), a
  * subprocess with a start execution listener ({@code EXECUTION_LISTENER}), a Zeebe user task with a
- * creating task listener ({@code TASK_LISTENER}), and an ad-hoc subprocess ({@code
- * AD_HOC_SUB_PROCESS}). A second process ({@code waitStateProcessWithListener}) exercises a
- * process-level start execution listener ({@code PROCESS} element type). Jobs are intentionally
- * never activated or completed so all wait states persist for the duration of the test.
+ * creating task listener ({@code TASK_LISTENER}), a legacy job-based user task ({@code
+ * BPMN_ELEMENT}), an intermediate message throw event ({@code BPMN_ELEMENT}), an end message throw
+ * event ({@code BPMN_ELEMENT}), and an ad-hoc subprocess ({@code AD_HOC_SUB_PROCESS}). A second
+ * process ({@code waitStateProcessWithListener}) exercises a process-level start execution listener
+ * ({@code PROCESS} element type). Jobs are intentionally never activated or completed so all wait
+ * states persist for the duration of the test.
  */
 @MultiDbTest
 public class WaitStateJobIT {
@@ -60,13 +62,15 @@ public class WaitStateJobIT {
   private static final String SUBPROCESS_EL = "subprocess-el";
   private static final String USER_TASK_TL = "user-task-tl";
   private static final String JOB_USER_TASK = "job-user-task";
+  private static final String INT_MSG_THROW = "int-msg-throw";
+  private static final String END_MSG_EVENT = "end-msg-event";
   private static final String AHSP = "ahsp";
 
   private static CamundaClient camundaClient;
 
   @BeforeAll
   static void beforeAll() {
-    // Main process: 7 parallel branches, one per supported job-based element type.
+    // Main process: 10 parallel branches, one per supported job-based element type.
     final BpmnModelInstance mainProcess =
         Bpmn.createExecutableProcess(PROCESS_ID)
             .startEvent()
@@ -98,6 +102,15 @@ public class WaitStateJobIT {
             .userTask(JOB_USER_TASK) // legacy job-worker user task; job type =
             // Protocol.USER_TASK_JOB_TYPE
             .moveToNode("fork")
+            .intermediateThrowEvent(INT_MSG_THROW)
+            .message("int-msg")
+            .zeebeJobType("int-msg-svc")
+            .endEvent()
+            .moveToNode("fork")
+            .endEvent(END_MSG_EVENT)
+            .message("end-msg")
+            .zeebeJobType("end-msg-svc")
+            .moveToNode("fork")
             .adHocSubProcess(AHSP, a -> a.task("ahsp-inner"))
             .zeebeJobType("ahsp-job")
             .done();
@@ -118,8 +131,8 @@ public class WaitStateJobIT {
     startProcessInstance(camundaClient, PROCESS_LISTENER_PROCESS_ID);
     waitForProcessInstancesToStart(camundaClient, 2);
 
-    // 8 from the main process + 1 from the process-level listener process.
-    waitForWaitStates(9);
+    // 10 from the main process + 1 from the process-level listener process.
+    waitForWaitStates(11);
   }
 
   @Test
@@ -128,7 +141,7 @@ public class WaitStateJobIT {
     final var result = camundaClient.newElementInstanceWaitStateSearchRequest().send().join();
 
     // then
-    assertThat(result.items()).hasSize(9);
+    assertThat(result.items()).hasSize(11);
     assertThat(result.items())
         .allSatisfy(item -> assertThat(item.getWaitStateType()).isEqualTo(WaitStateType.JOB));
     assertThat(result.items())
@@ -142,6 +155,8 @@ public class WaitStateJobIT {
             WaitStateElementType.SUB_PROCESS, // ad-hoc subprocess
             WaitStateElementType.USER_TASK, // native user task task listener
             WaitStateElementType.USER_TASK, // job-based user task
+            WaitStateElementType.INTERMEDIATE_THROW_EVENT,
+            WaitStateElementType.END_EVENT,
             WaitStateElementType.PROCESS);
   }
 
@@ -188,6 +203,14 @@ public class WaitStateJobIT {
             JobKind.BPMN_ELEMENT,
             1),
         Arguments.of(
+            WaitStateElementType.INTERMEDIATE_THROW_EVENT,
+            INT_MSG_THROW,
+            "int-msg-svc",
+            JobKind.BPMN_ELEMENT,
+            3),
+        Arguments.of(
+            WaitStateElementType.END_EVENT, END_MSG_EVENT, "end-msg-svc", JobKind.BPMN_ELEMENT, 3),
+        Arguments.of(
             WaitStateElementType.SUB_PROCESS, AHSP, "ahsp-job", JobKind.AD_HOC_SUB_PROCESS, 3),
         Arguments.of(
             WaitStateElementType.PROCESS,
@@ -208,7 +231,7 @@ public class WaitStateJobIT {
             .join();
 
     // then
-    assertThat(result.items()).hasSize(9);
+    assertThat(result.items()).hasSize(11);
   }
 
   @Test
