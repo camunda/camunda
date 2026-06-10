@@ -37,14 +37,6 @@ public final class ClusterPatchRequestTransformer implements ConfigurationChange
       final Set<MemberId> membersToAdd,
       final Set<MemberId> membersToRemove,
       final Optional<Integer> newPartitionCount,
-      final Optional<Integer> newReplicationFactor) {
-    this(membersToAdd, membersToRemove, newPartitionCount, newReplicationFactor, Map.of());
-  }
-
-  public ClusterPatchRequestTransformer(
-      final Set<MemberId> membersToAdd,
-      final Set<MemberId> membersToRemove,
-      final Optional<Integer> newPartitionCount,
       final Optional<Integer> newReplicationFactor,
       final Map<String, Integer> newReplicationFactors) {
     this.membersToAdd = membersToAdd;
