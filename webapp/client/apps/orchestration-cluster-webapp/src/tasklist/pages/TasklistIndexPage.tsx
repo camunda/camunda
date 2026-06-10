@@ -14,7 +14,7 @@ import {NoTasks} from '#/tasklist/modules/available-tasks/components/NoTasks';
 import {Options} from '#/tasklist/modules/available-tasks/components/Options';
 import styles from './TasklistIndexPage.module.scss';
 
-function TasklistIndexPage() {
+const TasklistIndexPage: React.FC = () => {
 	const {t} = useTranslation();
 
 	return (
@@ -30,6 +30,6 @@ function TasklistIndexPage() {
 			<div className={styles.detailsPanel} />
 		</main>
 	);
-}
+};
 
 export {TasklistIndexPage};
