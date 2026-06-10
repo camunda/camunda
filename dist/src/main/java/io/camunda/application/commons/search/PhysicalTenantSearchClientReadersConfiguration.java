@@ -91,7 +91,11 @@ public class PhysicalTenantSearchClientReadersConfiguration {
                 "Missing IndexDescriptors for physical tenant '" + tenantId + "'");
           }
           final var processCacheConfig =
-              physicalTenantResolver.getAll().get(tenantId).getApi().getRest().getProcessCache();
+              physicalTenantResolver
+                  .forPhysicalTenant(tenantId)
+                  .getApi()
+                  .getRest()
+                  .getProcessCache();
           final var cacheConfig =
               new ProcessCache.Configuration(
                   processCacheConfig.getMaxSize(),
