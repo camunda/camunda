@@ -23,7 +23,6 @@ import io.camunda.process.test.api.coverage.model.ImmutableCoverageReport;
 import io.camunda.process.test.api.coverage.model.ImmutableCoverageSuiteReport;
 import io.camunda.process.test.api.coverage.model.ProcessCoverage;
 import io.camunda.process.test.api.coverage.model.ProcessModel;
-import io.camunda.process.test.api.coverage.model.Suite;
 import io.camunda.process.test.impl.coverage.core.CoverageCreator;
 import io.camunda.process.test.impl.coverage.core.DecisionCoverageCreator;
 import java.util.Collection;
@@ -33,7 +32,7 @@ import java.util.stream.Collectors;
 /** Utility class for creating and aggregating coverage reports. */
 public class CoverageReportCreator {
   public static CoverageSuiteReport createSuiteCoverageReport(
-      final Suite suite,
+      final CoverageSuiteReport suite,
       final Collection<ProcessModel> processModels,
       final Collection<DecisionModel> decisionModels) {
     final java.util.List<ProcessCoverage> processCoverages =
@@ -52,7 +51,7 @@ public class CoverageReportCreator {
   }
 
   public static CoverageReport createAggregatedCoverageReport(
-      final Collection<Suite> suites,
+      final Collection<CoverageSuiteReport> suites,
       final Collection<ProcessModel> processModels,
       final Collection<DecisionModel> decisionModels) {
     final java.util.List<CoverageSuiteReport> suiteReports =
@@ -78,7 +77,8 @@ public class CoverageReportCreator {
    * @param suites Collection of test suites to extract coverage data from
    * @return A flat collection of all ProcessCoverage objects from all test runs
    */
-  private static Collection<ProcessCoverage> allProcessCoverages(final Collection<Suite> suites) {
+  private static Collection<ProcessCoverage> allProcessCoverages(
+      final Collection<CoverageSuiteReport> suites) {
     return suites.stream()
         .flatMap(suite -> suite.getRuns().stream().flatMap(r -> r.getProcessCoverages().stream()))
         .collect(Collectors.toList());
@@ -90,7 +90,8 @@ public class CoverageReportCreator {
    * @param suites Collection of test suites to extract decision coverage data from
    * @return A flat collection of all DecisionCoverage objects from all test runs
    */
-  private static Collection<DecisionCoverage> allDecisionCoverages(final Collection<Suite> suites) {
+  private static Collection<DecisionCoverage> allDecisionCoverages(
+      final Collection<CoverageSuiteReport> suites) {
     return suites.stream()
         .flatMap(suite -> suite.getRuns().stream().flatMap(r -> r.getDecisionCoverages().stream()))
         .collect(Collectors.toList());

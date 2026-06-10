@@ -18,15 +18,15 @@ package io.camunda.process.test.impl.coverage.report;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.process.test.api.coverage.model.CoverageReport;
+import io.camunda.process.test.api.coverage.model.CoverageSuiteReport;
 import io.camunda.process.test.api.coverage.model.DecisionModel;
 import io.camunda.process.test.api.coverage.model.ImmutableCoverageRunReport;
+import io.camunda.process.test.api.coverage.model.ImmutableCoverageSuiteReport;
 import io.camunda.process.test.api.coverage.model.ImmutableDecisionCoverage;
 import io.camunda.process.test.api.coverage.model.ImmutableDecisionModel;
 import io.camunda.process.test.api.coverage.model.ImmutableProcessCoverage;
 import io.camunda.process.test.api.coverage.model.ImmutableProcessModel;
-import io.camunda.process.test.api.coverage.model.ImmutableSuite;
 import io.camunda.process.test.api.coverage.model.ProcessModel;
-import io.camunda.process.test.api.coverage.model.Suite;
 import java.util.Collections;
 import org.junit.jupiter.api.Test;
 
@@ -49,8 +49,8 @@ class CoverageReportCreatorTest {
             .version("1")
             .xml("<dmn>decision</dmn>")
             .build();
-    final Suite suite =
-        ImmutableSuite.builder()
+    final CoverageSuiteReport suite =
+        ImmutableCoverageSuiteReport.builder()
             .id("suite")
             .name("Suite")
             .addRuns(
