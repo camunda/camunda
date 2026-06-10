@@ -265,7 +265,6 @@ public class MappingRuleIT {
         mappingRuleReader.search(
             new MappingRuleQuery(
                 new MappingRuleFilter.Builder()
-                    .mappingRuleKey(randomizedMappingRule.mappingRuleKey())
                     .mappingRuleId(randomizedMappingRule.mappingRuleId())
                     .claimName(randomizedMappingRule.claimName())
                     .claimValue(randomizedMappingRule.claimValue())

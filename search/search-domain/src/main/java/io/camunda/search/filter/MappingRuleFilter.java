@@ -15,7 +15,6 @@ import java.util.Set;
 
 public record MappingRuleFilter(
     String mappingRuleId,
-    Long mappingRuleKey,
     String claimName,
     List<String> claimNames,
     String claimValue,
@@ -30,7 +29,6 @@ public record MappingRuleFilter(
   public MappingRuleFilter.Builder toBuilder() {
     return new Builder()
         .mappingRuleId(mappingRuleId)
-        .mappingRuleKey(mappingRuleKey)
         .claimName(claimName)
         .claimNames(claimNames)
         .claimValue(claimValue)
@@ -45,7 +43,6 @@ public record MappingRuleFilter(
   public static final class Builder implements ObjectBuilder<MappingRuleFilter> {
     private String mappingRuleId;
     private Set<String> mappingRuleIds;
-    private Long mappingRuleKey;
     private String claimName;
     private List<String> claimNames;
     private String claimValue;
@@ -57,11 +54,6 @@ public record MappingRuleFilter(
 
     public Builder mappingRuleId(final String value) {
       mappingRuleId = value;
-      return this;
-    }
-
-    public Builder mappingRuleKey(final Long value) {
-      mappingRuleKey = value;
       return this;
     }
 
@@ -114,7 +106,6 @@ public record MappingRuleFilter(
     public MappingRuleFilter build() {
       return new MappingRuleFilter(
           mappingRuleId,
-          mappingRuleKey,
           claimName,
           claimNames,
           claimValue,
