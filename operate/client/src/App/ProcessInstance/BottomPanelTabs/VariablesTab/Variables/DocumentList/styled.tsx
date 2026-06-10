@@ -31,9 +31,13 @@ const DocumentListItem = styled.li`
 const DocumentInfo = styled.div`
   flex: 1;
   min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--cds-spacing-01);
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  grid-auto-flow: column;
+  column-gap: var(--cds-spacing-03);
+  row-gap: var(--cds-spacing-01);
+  justify-items: start;
 `;
 
 const DocumentFileName = styled.span`

@@ -24,6 +24,7 @@ const preparsedDocuments: DocumentInfo[] = [
     type: 'image',
     contentType: 'image/png',
     size: 1024,
+    isExpired: false,
   },
   {
     link: '/v2/documents/2',
@@ -31,6 +32,7 @@ const preparsedDocuments: DocumentInfo[] = [
     type: 'unknown',
     contentType: 'application/pdf',
     size: 2048,
+    isExpired: false,
   },
   {
     link: '/v2/documents/3',
@@ -38,6 +40,7 @@ const preparsedDocuments: DocumentInfo[] = [
     type: 'unknown',
     contentType: 'text/plain',
     size: 256,
+    isExpired: false,
   },
 ];
 
@@ -270,6 +273,7 @@ describe('<ViewDocumentListButton />', () => {
             type: 'unknown',
             contentType: 'application/octet-stream',
             size: 1024,
+            isExpired: false,
           },
         ]}
         isLowerBound={false}

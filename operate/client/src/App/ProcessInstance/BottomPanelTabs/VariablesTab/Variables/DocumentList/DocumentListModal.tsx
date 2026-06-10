@@ -7,7 +7,7 @@
  */
 
 import {useMemo} from 'react';
-import {Modal} from '@carbon/react';
+import {Modal, Tag} from '@carbon/react';
 import type {StateProps} from 'modules/components/ModalStateManager';
 import {useVariable} from 'modules/queries/variables/useVariable';
 import {
@@ -86,6 +86,11 @@ const DocumentListModal: React.FC<StateProps & Props> = ({
                 {middleTruncate(document.fileName)}
               </DocumentFileName>
               <DocumentSize>{toHumanReadableBytes(document.size)}</DocumentSize>
+              {document.isExpired && (
+                <Tag type="red" size="sm">
+                  Expired
+                </Tag>
+              )}
             </DocumentInfoBlock>
             <PreviewDocumentButton
               document={document}

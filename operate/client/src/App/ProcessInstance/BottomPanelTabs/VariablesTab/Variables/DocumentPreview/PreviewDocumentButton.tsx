@@ -13,19 +13,28 @@ import type {DocumentInfo} from '../DocumentValueCell/parseDocumentVariable';
 import {DocumentPreviewModal} from './DocumentPreviewModal';
 import {tracking} from 'modules/tracking';
 
+function getTooltipText(document: DocumentInfo): string {
+  switch (true) {
+    case document.isExpired:
+      return 'Document has expired';
+    case document.link === null:
+      return 'Preview not available for this document';
+    case document.type === 'unknown':
+      return 'Preview not available for this document type';
+    default:
+      return 'Preview';
+  }
+}
+
 type Props = {
   document: DocumentInfo;
   variableName: string;
 };
 
 const PreviewDocumentButton: React.FC<Props> = ({document, variableName}) => {
-  const isDisabled = document.link === null || document.type === 'unknown';
-  const tooltipText =
-    document.link === null
-      ? 'Preview not available for this document'
-      : document.type !== 'unknown'
-        ? 'Preview'
-        : 'Preview not available for this document type';
+  const isDisabled =
+    document.link === null || document.isExpired || document.type === 'unknown';
+  const tooltipText = getTooltipText(document);
 
   return (
     <ModalStateManager

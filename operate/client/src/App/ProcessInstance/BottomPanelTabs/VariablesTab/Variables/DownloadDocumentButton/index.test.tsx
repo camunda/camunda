@@ -17,6 +17,7 @@ const pdfDocument: DocumentInfo = {
   type: 'pdf',
   contentType: 'application/pdf',
   size: 2048,
+  isExpired: false,
 };
 
 describe('<DownloadDocumentButton />', () => {
@@ -27,6 +28,7 @@ describe('<DownloadDocumentButton />', () => {
       type: 'pdf',
       contentType: 'application/pdf',
       size: 2048,
+      isExpired: false,
     };
 
     render(
@@ -48,6 +50,31 @@ describe('<DownloadDocumentButton />', () => {
     const link = screen.getByLabelText('Download document for variable myPdf');
     expect(link).toHaveAttribute('href', '/v2/documents/pdf');
     expect(link).toHaveAttribute('download', 'report.pdf');
+  });
+
+  it('should render a disabled button with expired tooltip when document is expired', () => {
+    const expiredDocument: DocumentInfo = {
+      link: '/v2/documents/pdf',
+      fileName: 'expired.pdf',
+      type: 'pdf',
+      contentType: 'application/pdf',
+      size: 2048,
+      isExpired: true,
+    };
+
+    render(
+      <DownloadDocumentButton
+        document={expiredDocument}
+        variableName="myPdf"
+      />,
+    );
+
+    const button = screen.getByLabelText(
+      'Download document for variable myPdf',
+    );
+    expect(button).toBeDisabled();
+    expect(button.tagName).not.toBe('A');
+    expect(screen.getByText('Document has expired')).toBeInTheDocument();
   });
 
   it('should track document-downloaded events', async () => {

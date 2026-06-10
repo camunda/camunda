@@ -24,6 +24,7 @@ type DocumentInfo = {
   type: DocumentType;
   contentType: string;
   size: number;
+  isExpired: boolean;
 };
 
 type DocumentParseResult =
@@ -60,12 +61,17 @@ function toDocumentInfo(ref: DocumentReference): DocumentInfo {
         )
       : null;
 
+  const isExpired =
+    ref.metadata.expiresAt !== null &&
+    Date.parse(ref.metadata.expiresAt) < Date.now();
+
   return {
     link,
     fileName: ref.metadata.fileName ?? ref.documentId,
     type: getDocumentType(ref.metadata.contentType),
     contentType: ref.metadata.contentType,
     size: ref.metadata.size,
+    isExpired,
   };
 }
 

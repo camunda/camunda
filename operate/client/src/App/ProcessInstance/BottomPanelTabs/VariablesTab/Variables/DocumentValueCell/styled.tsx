@@ -33,8 +33,8 @@ const DocumentFileName = styled.span`
 `;
 
 const DocumentSize = styled.span`
-  ${styles.bodyShort01};
-  color: var(--cds-text-secondary);
+  ${styles.caption01};
+  color: var(--cds-text-helper);
   flex-shrink: 0;
 `;
 
