@@ -18,6 +18,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 
 public final class ReschedulingTask implements RunnableTask {
+  private static final long ERROR_DELAY_MS = 10_000L;
   private final BackgroundTask task;
   private final int minimumWorkCount;
   private final ScheduledExecutorService executor;
@@ -45,7 +46,14 @@ public final class ReschedulingTask implements RunnableTask {
 
     periodicLogger = new ReschedulingTaskLogger(logger, true);
     idleStrategy = new ExponentialBackoff(maxDelayBetweenRunsMs, delayBetweenRunsMs, 1.2, 0);
-    errorStrategy = new ExponentialBackoff(10_000, delayBetweenRunsMs, 1.2, 0);
+    // some tasks have a really long delayBetweenRunsMs, so we need to tweak
+    // those delays for the error backoff.
+    errorStrategy =
+        new ExponentialBackoff(
+            Math.max(ERROR_DELAY_MS, delayBetweenRunsMs),
+            Math.min(ERROR_DELAY_MS, delayBetweenRunsMs),
+            1.2,
+            0);
   }
 
   @Override
@@ -71,7 +79,16 @@ public final class ReschedulingTask implements RunnableTask {
         .thenApplyAsync(this::onWorkPerformed, executor)
         .exceptionallyAsync(this::onError, executor)
         .thenAcceptAsync(this::reschedule, executor)
-        .thenAccept(unused -> executionCounter.incrementAndGet());
+        .thenAccept(unused -> executionCounter.incrementAndGet())
+        .exceptionally(
+            error -> {
+              logger.error(
+                  "Unexpected error occurred while rescheduling task {} (bug in error handling code?);"
+                      + " task will NOT be retried",
+                  task,
+                  error);
+              return null;
+            });
   }
 
   @Override
