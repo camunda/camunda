@@ -211,6 +211,19 @@ public class OpensearchEngineClient implements SearchEngineClient {
   }
 
   @Override
+  public Set<String> getAliases(final String indexName) {
+    try {
+      return client.indices().getAlias(req -> req.index(indexName)).result().values().stream()
+          .flatMap(indexAliases -> indexAliases.aliases().keySet().stream())
+          .collect(Collectors.toSet());
+    } catch (final IOException | OpenSearchException e) {
+      final var errMsg = String.format("Failed to retrieve aliases for index '%s'", indexName);
+      LOG.error(errMsg, e);
+      throw new SearchEngineException(errMsg, e);
+    }
+  }
+
+  @Override
   public void putSettings(
       final List<IndexDescriptor> indexDescriptors, final Map<String, String> toAppendSettings) {
     final var request = putIndexSettingsRequest(indexDescriptors, toAppendSettings);

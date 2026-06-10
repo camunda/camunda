@@ -10,6 +10,8 @@ package io.camunda.webapps.backup;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.search.connect.configuration.ConnectConfiguration;
+import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.webapps.backup.BackupException.IndexNotFoundException;
 import io.camunda.webapps.backup.BackupService.SnapshotRequest;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
@@ -65,8 +67,18 @@ public class BackupServiceImplTest {
       };
 
   public BackupServiceImpl makeBackupService(final BackupPriorities backupPriorities) {
+    final ConnectConfiguration connectConfiguration = new ConnectConfiguration();
+    final SearchEngineConfiguration searchEngineConfiguration =
+        new SearchEngineConfiguration(connectConfiguration, null, null, null);
+
     return new BackupServiceImpl(
-        executor, backupPriorities, backupRepositoryProps, backupRepository);
+        executor,
+        backupPriorities,
+        backupRepositoryProps,
+        backupRepository,
+        searchEngineConfiguration,
+        List.of(),
+        List.of());
   }
 
   @BeforeEach
@@ -84,7 +96,9 @@ public class BackupServiceImplTest {
   @Test
   public void shouldCreateBackupWithAllIndices() {
     // when
-    final var backup = backupService.takeBackup(new TakeBackupRequestDto().setBackupId(1L));
+    final var backup =
+        backupService.takeBackup(
+            new TakeBackupRequestDto().setBackupId(1L).setSkipSchemaCheck(true));
 
     // then
     assertThat(backup.getScheduledSnapshots())
@@ -134,7 +148,9 @@ public class BackupServiceImplTest {
             new BackupPriorities(
                 List.of(() -> "prio1"), List.of(() -> "prio2"), List.of(() -> "prio3"), List.of()));
     // backup #1 is taken with only 3 parts
-    final var response = backupService.takeBackup(new TakeBackupRequestDto().setBackupId(1L));
+    final var response =
+        backupService.takeBackup(
+            new TakeBackupRequestDto().setBackupId(1L).setSkipSchemaCheck(true));
     assertThat(response.getScheduledSnapshots()).hasSize(3);
 
     // when
