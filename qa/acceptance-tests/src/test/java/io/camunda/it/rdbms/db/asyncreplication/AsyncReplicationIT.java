@@ -20,8 +20,6 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-// Tests in this class form a lifecycle sequence and must run in order:
-// (1) replica removed → exporter pauses; (2) replica restored → exporter resumes.
 @TestMethodOrder(OrderAnnotation.class)
 public abstract class AsyncReplicationIT extends AbstractAsyncReplicationIT {
 
@@ -99,3 +97,4 @@ class MssqlAsyncReplicationIT extends AsyncReplicationIT {
     return new MSSQLReplicationClusterContainer();
   }
 }
+

@@ -1,0 +1,228 @@
+---
+# description: Provisions an ephemeral AWS Aurora Global Database (two regions) using the
+# aurora-global Terraform module from camunda/camunda-deployment-references and runs the
+# AuroraAsyncReplicationIT acceptance test against it through an SSM port-forwarding tunnel.
+# The infrastructure is destroyed at the end of the run.
+# test location: qa/acceptance-tests/src/test/java/io/camunda/it/rdbms/db/asyncreplication
+# type: CI
+# owner: @camunda/zeebe-distributed-platform
+
+name: Aurora Async Replication Test
+
+on:
+  pull_request:
+    paths:
+      - '**/*Aurora*.java'
+      - '.github/workflows/aurora-async-replication-test.yml'
+      - '.github/terraform/aurora-replication-it/**'
+  workflow_dispatch:
+    inputs:
+      deployment_references_ref:
+        description: 'Ref of camunda/camunda-deployment-references to use (PR #2277 branch until merged)'
+        type: string
+        required: false
+        default: 'feat/ecs-dual-region-rdbms'
+      skip_destroy:
+        description: 'Keep the Aurora infrastructure after the run (for debugging; destroy manually!)'
+        type: boolean
+        required: false
+        default: false
+
+concurrency:
+  group: aurora-async-replication-test
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  AWS_REGION: eu-west-1
+  TF_DIR: .github/terraform/aurora-replication-it
+  TF_IN_AUTOMATION: 'true'
+  TF_INPUT: 'false'
+  TF_VAR_primary_region: eu-west-1
+  TF_VAR_secondary_region: eu-west-2
+  LOCAL_DB_PORT: '15432'
+
+jobs:
+  aurora-it:
+    name: Provision Aurora and run AuroraAsyncReplicationIT
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    permissions: {}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+        with:
+          test_owner: '@camunda/zeebe-distributed-platform'
+          test_product: zeebe
+          test_type: integration
+
+      - name: Checkout camunda-deployment-references
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          repository: camunda/camunda-deployment-references
+          ref: ${{ inputs.deployment_references_ref || 'feat/ecs-dual-region-rdbms' }}
+          path: camunda-deployment-references
+
+      - name: Import secrets from Vault
+        id: secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/zeebe/ci/common AWS_CORE_FOUNDATION_ACCESS_KEY | AWS_ACCESS_KEY_ID;
+            secret/data/products/zeebe/ci/common AWS_CORE_FOUNDATION_SECRET_KEY | AWS_SECRET_ACCESS_KEY;
+
+      - name: Configure AWS CLI
+        uses: aws-actions/configure-aws-credentials@99214aa6889fcddfa57764031d71add364327e59 # v6.1.3
+        with:
+          aws-access-key-id: ${{ steps.secrets.outputs.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ steps.secrets.outputs.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Increase SSM session timeout
+        # Default SSM session duration is 60 min; our test can run 90+ min.
+        # Set to 4h so the port-forwarding session is never killed mid-test.
+        run: |
+          aws ssm update-service-setting \
+            --setting-id /ssm/managed-instance/session-timeout \
+            --setting-value 240 || echo "::warning::Could not update SSM session timeout (check IAM permissions)"
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_wrapper: false
+
+      - name: Install AWS Session Manager plugin
+        run: |
+          curl -fsSL "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb" \
+            -o /tmp/session-manager-plugin.deb
+          sudo dpkg -i /tmp/session-manager-plugin.deb
+          session-manager-plugin --version
+
+      - uses: ./.github/actions/setup-build
+        with:
+          dockerhub-readonly: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+
+      - name: Generate Terraform variables
+        id: tfvars
+        run: |
+          set -euo pipefail
+          NAME_PREFIX="aurora-it-${{ github.run_id }}"
+          MASTER_PASSWORD="$(openssl rand -hex 24)"
+          echo "::add-mask::${MASTER_PASSWORD}"
+          {
+            echo "TF_VAR_name_prefix=${NAME_PREFIX}"
+            echo "TF_VAR_master_password=${MASTER_PASSWORD}"
+          } >> "$GITHUB_ENV"
+          echo "name_prefix=${NAME_PREFIX}" >> "$GITHUB_OUTPUT"
+
+      - name: Provision Aurora Global Database
+        working-directory: ${{ env.TF_DIR }}
+        run: |
+          terraform init
+          terraform apply -auto-approve
+
+      - name: Start SSM port-forwarding tunnel to Aurora primary
+        working-directory: ${{ env.TF_DIR }}
+        run: |
+          set -euo pipefail
+          ENDPOINT="$(terraform output -raw primary_cluster_endpoint)"
+          BASTION_ID="$(terraform output -raw bastion_instance_id)"
+
+          nohup aws ssm start-session \
+            --target "${BASTION_ID}" \
+            --document-name AWS-StartPortForwardingSessionToRemoteHost \
+            --parameters "host=${ENDPOINT},portNumber=5432,localPortNumber=${LOCAL_DB_PORT}" \
+            > /tmp/ssm-tunnel.log 2>&1 &
+
+          # Wait until the local port accepts connections
+          for _ in $(seq 1 60); do
+            if (exec 3<>"/dev/tcp/127.0.0.1/${LOCAL_DB_PORT}") 2>/dev/null; then
+              exec 3>&-
+              echo "✅ Tunnel established on localhost:${LOCAL_DB_PORT}"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::SSM tunnel did not come up"
+          cat /tmp/ssm-tunnel.log
+          exit 1
+
+      - name: Start SSM tunnel keepalive
+        # SSM idle timeout is ~20 min. pg_isready sends real data through the tunnel
+        # (unlike nc which only tests the local TCP port), keeping the session alive.
+        # The session duration limit is raised to 4h in the earlier step.
+        run: |
+          while true; do
+            sleep 30
+            pg_isready -h 127.0.0.1 -p ${{ env.LOCAL_DB_PORT }} -q 2>/dev/null \
+              || echo "$(date -u) SSM keepalive: pg_isready failed"
+          done &
+
+      - name: Build dependencies
+        uses: ./.github/actions/run-maven
+        with:
+          parameters: install -pl qa/acceptance-tests -am -Dquickly
+
+      - name: Run AuroraAsyncReplicationIT
+        env:
+          TEST_AURORA_JDBC_URL: jdbc:postgresql://localhost:${{ env.LOCAL_DB_PORT }}/postgres
+          TEST_AURORA_USERNAME: camunda_admin
+          TEST_AURORA_PASSWORD: ${{ env.TF_VAR_master_password }}
+          TEST_AURORA_STOP_REPLICA_CMD: >-
+            terraform -chdir=${{ github.workspace }}/${{ env.TF_DIR }}
+            apply -auto-approve -var=secondary_num_instances=0
+          TEST_AURORA_START_REPLICA_CMD: >-
+            terraform -chdir=${{ github.workspace }}/${{ env.TF_DIR }}
+            apply -auto-approve -var=secondary_num_instances=1
+        uses: ./.github/actions/run-maven
+        with:
+          threads: '1'
+          parameters: >-
+            verify -pl qa/acceptance-tests
+            -Prdbms-aurora
+            -DskipUTs -DskipChecks -DskipTests=false
+
+      - name: Upload test reports and SSM logs
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: aurora-it-reports
+          path: |
+            qa/acceptance-tests/target/failsafe-reports/
+            /tmp/ssm-tunnel.log
+          retention-days: 7
+
+      - name: Destroy Aurora infrastructure
+        if: always() && inputs.skip_destroy != true
+        working-directory: ${{ env.TF_DIR }}
+        run: terraform destroy -auto-approve
+
+      - name: Warn about kept infrastructure
+        if: always() && inputs.skip_destroy == true
+        run: |
+          echo "::warning::Aurora infrastructure '${{ steps.tfvars.outputs.name_prefix }}' was NOT destroyed. Destroy it manually."
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
