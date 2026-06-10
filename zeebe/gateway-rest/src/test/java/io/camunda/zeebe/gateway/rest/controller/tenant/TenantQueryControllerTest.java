@@ -12,6 +12,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.GroupEntity;
@@ -29,6 +30,7 @@ import io.camunda.search.sort.TenantSort;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
+import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.service.GroupServices;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
@@ -45,6 +47,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -54,6 +57,10 @@ import org.springframework.test.json.JsonCompareMode;
 public class TenantQueryControllerTest extends RestControllerTest {
   private static final String TENANT_BASE_URL = "/v2/tenants";
   private static final String SEARCH_TENANT_URL = "%s/search".formatted(TENANT_BASE_URL);
+  // When building the expected error messages including this regex, for some reason the backslashes
+  // disappear and have to be doubled to prevent that.
+  private static final String TENANT_ID_PATTERN =
+      IdentifierValidator.TENANT_ID_MASK.pattern().replace("\\", "\\\\");
   private static final Pattern ID_PATTERN =
       Pattern.compile(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX);
 
@@ -753,5 +760,37 @@ public class TenantQueryControllerTest extends RestControllerTest {
                       "instance": "%s"
                     }""",
                 SEARCH_TENANT_URL)));
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"users", "clients", "mapping-rules", "groups", "roles"})
+  void shouldRejectSearchByTenantWithMalformedTenantId(final String subResource) {
+    // given
+    final var tenantId = "tenantId!";
+    final var path = "%s/%s/%s/search".formatted(TENANT_BASE_URL, tenantId, subResource);
+
+    // when / then
+    webClient
+        .post()
+        .uri(path)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{}")
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "The provided tenantId contains illegal characters. It must match the pattern '%s'.",
+              "instance": "%s"
+            }"""
+                .formatted(TENANT_ID_PATTERN, path),
+            JsonCompareMode.STRICT);
+    verifyNoInteractions(tenantServices, mappingRuleServices, groupServices, roleServices);
   }
 }

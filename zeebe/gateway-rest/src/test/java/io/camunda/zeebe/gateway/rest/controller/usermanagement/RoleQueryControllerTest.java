@@ -11,6 +11,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.MappingRuleEntity;
@@ -38,6 +39,8 @@ import java.util.List;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -515,5 +518,37 @@ public class RoleQueryControllerTest extends RestControllerTest {
                     .filter(f -> f.roleId(roleId).memberType(EntityType.GROUP))
                     .build()),
             any());
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"users", "clients", "mapping-rules", "groups"})
+  void shouldRejectSearchByRoleWithMalformedRoleId(final String subResource) {
+    // given
+    final var roleId = "roleId!";
+    final var path = "%s/%s/%s/search".formatted(ROLE_BASE_URL, roleId, subResource);
+
+    // when / then
+    webClient
+        .post()
+        .uri(path)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{}")
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "The provided roleId contains illegal characters. It must match the pattern '%s'.",
+              "instance": "%s"
+            }"""
+                .formatted(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX, path),
+            JsonCompareMode.STRICT);
+    verifyNoInteractions(roleServices, mappingRuleServices);
   }
 }

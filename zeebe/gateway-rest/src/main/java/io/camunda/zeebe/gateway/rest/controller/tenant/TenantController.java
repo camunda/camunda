@@ -142,6 +142,10 @@ public class TenantController {
       @PhysicalTenantId final String physicalTenantId,
       @PathVariable final String tenantId,
       @RequestBody(required = false) final TenantUserSearchQueryRequest query) {
+    final var idProblem = tenantMapper.validateTenantId(tenantId);
+    if (idProblem.isPresent()) {
+      return RestErrorMapper.mapProblemToResponse(idProblem.get());
+    }
     return SearchQueryRequestMapper.toTenantMemberQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
@@ -237,6 +241,10 @@ public class TenantController {
       @PhysicalTenantId final String physicalTenantId,
       @PathVariable final String tenantId,
       @RequestBody(required = false) final MappingRuleSearchQueryRequest query) {
+    final var idProblem = tenantMapper.validateTenantId(tenantId);
+    if (idProblem.isPresent()) {
+      return RestErrorMapper.mapProblemToResponse(idProblem.get());
+    }
     return SearchQueryRequestMapper.toMappingRuleQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
@@ -286,6 +294,10 @@ public class TenantController {
       @PhysicalTenantId final String physicalTenantId,
       @PathVariable final String tenantId,
       @RequestBody(required = false) final TenantGroupSearchQueryRequest query) {
+    final var idProblem = tenantMapper.validateTenantId(tenantId);
+    if (idProblem.isPresent()) {
+      return RestErrorMapper.mapProblemToResponse(idProblem.get());
+    }
     return SearchQueryRequestMapper.toTenantMemberQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
@@ -312,6 +324,10 @@ public class TenantController {
       @PhysicalTenantId final String physicalTenantId,
       @PathVariable final String tenantId,
       @RequestBody(required = false) final RoleSearchQueryRequest query) {
+    final var idProblem = tenantMapper.validateTenantId(tenantId);
+    if (idProblem.isPresent()) {
+      return RestErrorMapper.mapProblemToResponse(idProblem.get());
+    }
     return SearchQueryRequestMapper.toRoleQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
@@ -324,6 +340,10 @@ public class TenantController {
       @PhysicalTenantId final String physicalTenantId,
       @PathVariable final String tenantId,
       @RequestBody(required = false) final TenantClientSearchQueryRequest query) {
+    final var idProblem = tenantMapper.validateTenantId(tenantId);
+    if (idProblem.isPresent()) {
+      return RestErrorMapper.mapProblemToResponse(idProblem.get());
+    }
     return SearchQueryRequestMapper.toTenantMemberQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,

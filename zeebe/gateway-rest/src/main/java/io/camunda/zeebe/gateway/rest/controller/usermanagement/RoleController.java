@@ -162,6 +162,10 @@ public class RoleController {
       @PhysicalTenantId final String physicalTenantId,
       @PathVariable final String roleId,
       @RequestBody(required = false) final RoleUserSearchQueryRequest query) {
+    final var idProblem = roleMapper.validateRoleId(roleId);
+    if (idProblem.isPresent()) {
+      return RestErrorMapper.mapProblemToResponse(idProblem.get());
+    }
     return SearchQueryRequestMapper.toRoleMemberQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
@@ -188,6 +192,10 @@ public class RoleController {
       @PhysicalTenantId final String physicalTenantId,
       @PathVariable final String roleId,
       @RequestBody(required = false) final RoleClientSearchQueryRequest query) {
+    final var idProblem = roleMapper.validateRoleId(roleId);
+    if (idProblem.isPresent()) {
+      return RestErrorMapper.mapProblemToResponse(idProblem.get());
+    }
     return SearchQueryRequestMapper.toRoleMemberQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
@@ -221,6 +229,10 @@ public class RoleController {
       @PhysicalTenantId final String physicalTenantId,
       @PathVariable final String roleId,
       @RequestBody(required = false) final MappingRuleSearchQueryRequest query) {
+    final var idProblem = roleMapper.validateRoleId(roleId);
+    if (idProblem.isPresent()) {
+      return RestErrorMapper.mapProblemToResponse(idProblem.get());
+    }
     return SearchQueryRequestMapper.toMappingRuleQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
@@ -357,7 +369,10 @@ public class RoleController {
       @PhysicalTenantId final String physicalTenantId,
       @PathVariable final String roleId,
       @RequestBody(required = false) final RoleGroupSearchQueryRequest query) {
-
+    final var idProblem = roleMapper.validateRoleId(roleId);
+    if (idProblem.isPresent()) {
+      return RestErrorMapper.mapProblemToResponse(idProblem.get());
+    }
     return SearchQueryRequestMapper.toRoleMemberQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,

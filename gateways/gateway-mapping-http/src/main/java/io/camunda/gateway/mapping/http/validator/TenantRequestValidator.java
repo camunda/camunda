@@ -32,6 +32,10 @@ public final class TenantRequestValidator {
     return validate(() -> tenantValidator.validateUpdate(request.getName()));
   }
 
+  public Optional<ProblemDetail> validateTenantId(final String tenantId) {
+    return validate(() -> tenantValidator.validateId(tenantId));
+  }
+
   public Optional<ProblemDetail> validateMemberRequest(
       final String tenantId, final String memberId, final EntityType memberType) {
     return validate(() -> tenantValidator.validateTenantMember(tenantId, memberId, memberType));

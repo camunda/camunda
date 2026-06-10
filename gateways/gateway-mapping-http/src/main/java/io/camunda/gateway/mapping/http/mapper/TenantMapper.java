@@ -15,6 +15,7 @@ import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.service.TenantServices.TenantMemberRequest;
 import io.camunda.service.TenantServices.TenantRequest;
 import io.camunda.zeebe.util.Either;
+import java.util.Optional;
 import org.springframework.http.ProblemDetail;
 
 public class TenantMapper {
@@ -23,6 +24,10 @@ public class TenantMapper {
 
   public TenantMapper(final TenantRequestValidator tenantRequestValidator) {
     this.tenantRequestValidator = tenantRequestValidator;
+  }
+
+  public Optional<ProblemDetail> validateTenantId(final String tenantId) {
+    return tenantRequestValidator.validateTenantId(tenantId);
   }
 
   public Either<ProblemDetail, TenantRequest> toTenantCreateDto(

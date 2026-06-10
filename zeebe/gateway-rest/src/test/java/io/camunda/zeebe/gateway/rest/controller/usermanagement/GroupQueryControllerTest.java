@@ -12,6 +12,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -45,6 +46,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -981,5 +983,37 @@ public class GroupQueryControllerTest extends RestControllerTest {
                       "instance": "%s"
                     }""",
                 endpoint)));
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"users", "clients", "mapping-rules", "roles"})
+  void shouldRejectSearchByGroupWithMalformedGroupId(final String subResource) {
+    // given
+    final var groupId = "groupId!";
+    final var path = "%s/%s/%s/search".formatted(GROUP_BASE_URL, groupId, subResource);
+
+    // when / then
+    webClient
+        .post()
+        .uri(path)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{}")
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "The provided groupId contains illegal characters. It must match the pattern '%s'.",
+              "instance": "%s"
+            }"""
+                .formatted(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX, path),
+            JsonCompareMode.STRICT);
+    verifyNoInteractions(groupServices, mappingServices, roleServices);
   }
 }

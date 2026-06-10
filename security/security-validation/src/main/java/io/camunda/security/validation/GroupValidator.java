@@ -32,6 +32,12 @@ public final class GroupValidator {
     return identifierValidator.validateMembers(memberIds, memberType);
   }
 
+  public List<String> validateId(final String groupId) {
+    final List<String> violations = new ArrayList<>();
+    validateGroupId(groupId, violations);
+    return violations;
+  }
+
   public List<String> validateMember(
       final String roleId, final String memberId, final EntityType memberType) {
     final List<String> violations = new ArrayList<>();
