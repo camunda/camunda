@@ -6,30 +6,31 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useEffect, useRef} from 'react';
 import {Button, Stack, TextInput} from '@carbon/react';
 import {Add} from '@carbon/react/icons';
 import {useNavigate, useLocation} from 'react-router-dom';
 import {observer} from 'mobx-react-lite';
-import {Field, Form, useForm} from 'react-final-form';
+import {Field, useForm, useFormState} from 'react-final-form';
 import type {FieldValidator} from 'final-form';
 import {variableFilterStore} from 'modules/stores/variableFilter';
 import {Paths} from 'modules/Routes';
 import {smartTransformValue} from 'modules/utils/smartTransform';
-import {AutoSubmit} from 'modules/components/AutoSubmit';
 import {promisifyValidator} from 'modules/utils/validators/promisifyValidator';
 import {mergeValidators} from 'modules/utils/validators/mergeValidators';
 import {InlineButtonRow} from './styled';
 
 const VALIDATION_TIMEOUT = 750;
 
-type FormValues = {
-  name?: string;
-  value?: string;
+type AllValues = {
+  variableName?: string;
+  variableValues?: string;
 };
 
 const validateNameComplete: FieldValidator<string | undefined> =
   promisifyValidator((name = '', allValues) => {
-    const value = (allValues as FormValues | undefined)?.value?.trim() ?? '';
+    const value =
+      (allValues as AllValues | undefined)?.variableValues?.trim() ?? '';
     const trimmedName = name.trim();
     if ((trimmedName === '' && value === '') || trimmedName !== '') {
       return undefined;
@@ -39,7 +40,8 @@ const validateNameComplete: FieldValidator<string | undefined> =
 
 const validateValueComplete: FieldValidator<string | undefined> =
   promisifyValidator((value = '', allValues) => {
-    const name = (allValues as FormValues | undefined)?.name?.trim() ?? '';
+    const name =
+      (allValues as AllValues | undefined)?.variableName?.trim() ?? '';
     const trimmedValue = value.trim();
     if ((name === '' && trimmedValue === '') || trimmedValue !== '') {
       return undefined;
@@ -60,25 +62,91 @@ const validateValueParseable: FieldValidator<string | undefined> =
     }
   }, VALIDATION_TIMEOUT);
 
-const sameAsStored = (values: FormValues): boolean => {
-  const current = variableFilterStore.conditions[0];
-  if (!current || variableFilterStore.conditions.length !== 1) {
-    return false;
-  }
-  return (
-    current.name === (values.name ?? '').trim() &&
-    current.operator === 'equals' &&
-    current.value === (values.value ?? '')
-  );
-};
-
-const InlineForm: React.FC = () => {
+const SingleConditionForm: React.FC = observer(() => {
   const navigate = useNavigate();
   const location = useLocation();
-  const form = useForm<FormValues>();
+  const form = useForm();
+  const {conditions} = variableFilterStore;
+  const seed = conditions[0];
 
-  const openModal = async () => {
-    await form.submit();
+  const lastSyncRef = useRef({name: '', value: ''});
+  useEffect(() => {
+    const seedName = seed?.name ?? '';
+    const seedValue = seed?.value ?? '';
+    if (
+      seedName === lastSyncRef.current.name &&
+      seedValue === lastSyncRef.current.value
+    ) {
+      return;
+    }
+    lastSyncRef.current = {name: seedName, value: seedValue};
+    form.batch(() => {
+      form.change('variableName', seedName);
+      form.change('variableValues', seedValue);
+    });
+  }, [seed?.name, seed?.value, form]);
+
+  const {values, errors, validating} = useFormState<AllValues>({
+    subscription: {values: true, errors: true, validating: true},
+  });
+  const rawName = values?.['variableName'] ?? '';
+  const rawValue = values?.['variableValues'] ?? '';
+  const nameError = errors?.['variableName'];
+  const valueError = errors?.['variableValues'];
+
+  useEffect(() => {
+    if (validating) {
+      return;
+    }
+    const trimmedName = rawName.trim();
+    const bothEmpty = !trimmedName && rawValue.trim() === '';
+
+    if (bothEmpty) {
+      if (variableFilterStore.conditions.length > 0) {
+        lastSyncRef.current = {name: '', value: ''};
+        variableFilterStore.setConditions([]);
+      }
+      return;
+    }
+
+    if (nameError !== undefined || valueError !== undefined) {
+      return;
+    }
+
+    const current = variableFilterStore.conditions[0];
+    if (
+      current?.name === trimmedName &&
+      current?.operator === 'equals' &&
+      current?.value === rawValue &&
+      variableFilterStore.conditions.length === 1
+    ) {
+      return;
+    }
+    lastSyncRef.current = {name: trimmedName, value: rawValue};
+    variableFilterStore.setConditions([
+      {name: trimmedName, operator: 'equals', value: rawValue},
+    ]);
+  }, [rawName, rawValue, nameError, valueError, validating]);
+
+  const openModal = () => {
+    const state = form.getState();
+    const currentValues = state.values as AllValues | undefined;
+    const rawName = (currentValues?.variableName ?? '').trim();
+    const rawValue = currentValues?.variableValues ?? '';
+    if (rawName || rawValue.trim()) {
+      const current = variableFilterStore.conditions[0];
+      const same =
+        current?.name === rawName &&
+        current?.operator === 'equals' &&
+        current?.value === rawValue &&
+        variableFilterStore.conditions.length === 1;
+      if (!same) {
+        lastSyncRef.current = {name: rawName, value: rawValue};
+        variableFilterStore.setConditions([
+          {name: rawName, operator: 'equals', value: rawValue},
+        ]);
+      }
+    }
     navigate({
       pathname: Paths.processesVariables(),
       search: location.search,
@@ -87,9 +155,8 @@ const InlineForm: React.FC = () => {
 
   return (
     <Stack gap={3}>
-      <AutoSubmit />
       <Field<string | undefined>
-        name="name"
+        name="variableName"
         validate={validateNameComplete}
         subscription={{
           value: true,
@@ -106,12 +173,6 @@ const InlineForm: React.FC = () => {
             value={input.value}
             onChange={input.onChange}
             onBlur={input.onBlur}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                form.submit();
-              }
-            }}
             invalid={!meta.dirtySinceLastSubmit && meta.error !== undefined}
             invalidText={meta.dirtySinceLastSubmit ? undefined : meta.error}
             autoComplete="off"
@@ -120,7 +181,7 @@ const InlineForm: React.FC = () => {
         )}
       </Field>
       <Field<string | undefined>
-        name="value"
+        name="variableValues"
         validate={mergeValidators(
           validateValueComplete,
           validateValueParseable,
@@ -140,12 +201,6 @@ const InlineForm: React.FC = () => {
             value={input.value}
             onChange={input.onChange}
             onBlur={input.onBlur}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                form.submit();
-              }
-            }}
             invalid={!meta.dirtySinceLastSubmit && meta.error !== undefined}
             invalidText={meta.dirtySinceLastSubmit ? undefined : meta.error}
             autoComplete="off"
@@ -165,40 +220,6 @@ const InlineForm: React.FC = () => {
         </Button>
       </InlineButtonRow>
     </Stack>
-  );
-};
-
-const SingleConditionForm: React.FC = observer(() => {
-  const seed = variableFilterStore.conditions[0];
-  const initialValues: FormValues = {
-    name: seed?.name ?? '',
-    value: seed?.value ?? '',
-  };
-
-  const handleSubmit = (values: FormValues) => {
-    const trimmedName = (values.name ?? '').trim();
-    const rawValue = values.value ?? '';
-    const bothEmpty = !trimmedName && rawValue.trim() === '';
-
-    if (bothEmpty) {
-      if (variableFilterStore.conditions.length > 0) {
-        variableFilterStore.setConditions([]);
-      }
-      return;
-    }
-    if (sameAsStored(values)) {
-      return;
-    }
-
-    variableFilterStore.setConditions([
-      {name: trimmedName, operator: 'equals', value: rawValue},
-    ]);
-  };
-
-  return (
-    <Form<FormValues> onSubmit={handleSubmit} initialValues={initialValues}>
-      {() => <InlineForm />}
-    </Form>
   );
 });
 
