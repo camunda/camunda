@@ -15,15 +15,17 @@
  */
 package io.camunda.client.impl.search.response;
 
+import static io.camunda.client.protocol.rest.WaitStateTypeEnum.UNKNOWN_DEFAULT_OPEN_API;
+
 import io.camunda.client.api.search.enums.WaitStateElementType;
 import io.camunda.client.api.search.enums.WaitStateType;
 import io.camunda.client.api.search.response.ElementInstanceWaitStateResult;
 import io.camunda.client.api.search.response.WaitStateDetails;
 import io.camunda.client.impl.util.EnumUtil;
+import io.camunda.client.protocol.rest.WaitStateTypeEnum;
 
 public class ElementInstanceWaitStateResultImpl implements ElementInstanceWaitStateResult {
 
-  private final WaitStateType waitStateType;
   private final String rootProcessInstanceKey;
   private final String processInstanceKey;
   private final String elementInstanceKey;
@@ -34,40 +36,29 @@ public class ElementInstanceWaitStateResultImpl implements ElementInstanceWaitSt
 
   public ElementInstanceWaitStateResultImpl(
       final io.camunda.client.protocol.rest.ElementInstanceWaitStateResult item) {
-    waitStateType =
-        parseWaitStateType(item.getWaitStateType() != null ? item.getWaitStateType().name() : null);
     rootProcessInstanceKey = item.getRootProcessInstanceKey();
     processInstanceKey = item.getProcessInstanceKey();
     elementInstanceKey = item.getElementInstanceKey();
     elementId = item.getElementId();
     elementType = EnumUtil.convert(item.getElementType(), WaitStateElementType.class);
     tenantId = item.getTenantId();
-    details = extractDetails(waitStateType, item);
-  }
-
-  private static WaitStateType parseWaitStateType(final String value) {
-    if (value == null) {
-      return WaitStateType.UNKNOWN_ENUM_VALUE;
-    }
-    try {
-      return WaitStateType.valueOf(value);
-    } catch (final IllegalArgumentException e) {
-      return WaitStateType.UNKNOWN_ENUM_VALUE;
-    }
+    details = extractDetails(item.getDetails());
   }
 
   private static WaitStateDetails extractDetails(
-      final WaitStateType waitStateType,
-      final io.camunda.client.protocol.rest.ElementInstanceWaitStateResult item) {
+      final io.camunda.client.protocol.rest.WaitStateDetails item) {
+
+    final WaitStateTypeEnum waitStateType =
+        (item != null && item.getWaitStateType() != null)
+            ? WaitStateTypeEnum.fromValue(item.getWaitStateType())
+            : UNKNOWN_DEFAULT_OPEN_API;
     switch (waitStateType) {
       case JOB:
-        return item.getJobDetails() == null
-            ? null
-            : new JobWaitStateDetailsImpl(item.getJobDetails());
+        return new JobWaitStateDetailsImpl(
+            (io.camunda.client.protocol.rest.JobWaitStateDetails) item);
       case MESSAGE:
-        return item.getMessageDetails() == null
-            ? null
-            : new MessageWaitStateDetailsImpl(item.getMessageDetails());
+        return new MessageWaitStateDetailsImpl(
+            (io.camunda.client.protocol.rest.MessageWaitStateDetails) item);
       default:
         return null;
     }
@@ -75,7 +66,7 @@ public class ElementInstanceWaitStateResultImpl implements ElementInstanceWaitSt
 
   @Override
   public WaitStateType getWaitStateType() {
-    return waitStateType;
+    return details.getWaitStateType();
   }
 
   @Override

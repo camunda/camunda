@@ -166,6 +166,7 @@ public class SearchElementInstanceWaitStatesTest extends ClientRestTest {
     // given
     final io.camunda.client.protocol.rest.JobWaitStateDetails jobDetails =
         new io.camunda.client.protocol.rest.JobWaitStateDetails();
+    jobDetails.setWaitStateType("JOB");
     jobDetails.setJobKey("999");
     jobDetails.setJobType("payment");
     jobDetails.setJobKind(JobKindEnum.BPMN_ELEMENT);
@@ -174,13 +175,12 @@ public class SearchElementInstanceWaitStatesTest extends ClientRestTest {
 
     final io.camunda.client.protocol.rest.ElementInstanceWaitStateResult item =
         new io.camunda.client.protocol.rest.ElementInstanceWaitStateResult();
-    item.setWaitStateType(WaitStateTypeEnum.JOB);
     item.setProcessInstanceKey("200");
     item.setRootProcessInstanceKey("100");
     item.setElementInstanceKey("300");
     item.setElementId("task-1");
     item.setTenantId("<default>");
-    item.setJobDetails(jobDetails);
+    item.setDetails(jobDetails);
 
     final ElementInstanceWaitStateQueryResult response = buildEmptyResponse();
     response.addItemsItem(item);
@@ -194,7 +194,6 @@ public class SearchElementInstanceWaitStatesTest extends ClientRestTest {
     assertThat(result.items()).hasSize(1);
     final io.camunda.client.api.search.response.ElementInstanceWaitStateResult mapped =
         result.items().get(0);
-    assertThat(mapped.getWaitStateType()).isEqualTo(WaitStateType.JOB);
     assertThat(mapped.getProcessInstanceKey()).isEqualTo("200");
     assertThat(mapped.getRootProcessInstanceKey()).isEqualTo("100");
     assertThat(mapped.getElementInstanceKey()).isEqualTo("300");
@@ -215,17 +214,17 @@ public class SearchElementInstanceWaitStatesTest extends ClientRestTest {
     // given
     final io.camunda.client.protocol.rest.MessageWaitStateDetails messageDetails =
         new io.camunda.client.protocol.rest.MessageWaitStateDetails();
+    messageDetails.setWaitStateType("MESSAGE");
     messageDetails.setMessageName("order-received");
     messageDetails.setCorrelationKey("order-42");
 
     final io.camunda.client.protocol.rest.ElementInstanceWaitStateResult item =
         new io.camunda.client.protocol.rest.ElementInstanceWaitStateResult();
-    item.setWaitStateType(WaitStateTypeEnum.MESSAGE);
     item.setProcessInstanceKey("200");
     item.setElementInstanceKey("300");
     item.setElementId("receive-1");
     item.setTenantId("<default>");
-    item.setMessageDetails(messageDetails);
+    item.setDetails(messageDetails);
 
     final ElementInstanceWaitStateQueryResult response = buildEmptyResponse();
     response.addItemsItem(item);
@@ -239,7 +238,6 @@ public class SearchElementInstanceWaitStatesTest extends ClientRestTest {
     assertThat(result.items()).hasSize(1);
     final io.camunda.client.api.search.response.ElementInstanceWaitStateResult mapped =
         result.items().get(0);
-    assertThat(mapped.getWaitStateType()).isEqualTo(WaitStateType.MESSAGE);
     assertThat(mapped.getDetails()).isInstanceOf(MessageWaitStateDetails.class);
     final MessageWaitStateDetails details = (MessageWaitStateDetails) mapped.getDetails();
     assertThat(details.getWaitStateType()).isEqualTo(WaitStateType.MESSAGE);

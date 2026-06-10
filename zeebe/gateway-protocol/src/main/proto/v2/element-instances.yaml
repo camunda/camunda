@@ -796,20 +796,14 @@ components:
       description: An element instance waiting state.
       type: object
       required:
-        - waitStateType
         - processInstanceKey
         - elementInstanceKey
         - elementId
         - elementType
         - tenantId
         - rootProcessInstanceKey
-        - jobDetails
-        - messageDetails
+        - details
       properties:
-        waitStateType:
-          description: The type of waiting state an element instance is in.
-          allOf:
-            - $ref: '#/components/schemas/WaitStateTypeEnum'
         rootProcessInstanceKey:
           description: Key of the root process instance.
           nullable: true
@@ -835,16 +829,22 @@ components:
           description: The tenant ID of the element instance.
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/TenantId'
-        jobDetails:
-          description: Job details, present when waitStateType is JOB.
-          nullable: true
+        details:
+          description: Wait-state-specific details, resolved by waitStateType.
           allOf:
-            - $ref: '#/components/schemas/JobWaitStateDetails'
-        messageDetails:
-          description: Message details, present when waitStateType is MESSAGE.
-          nullable: true
-          allOf:
-            - $ref: '#/components/schemas/MessageWaitStateDetails'
+            - $ref: '#/components/schemas/WaitStateDetails'
+
+    WaitStateDetails:
+      x-polymorphic-schema: true
+      description: Wait-state-specific details of an element instance.
+      discriminator:
+        propertyName: waitStateType
+        mapping:
+          JOB: '#/components/schemas/JobWaitStateDetails'
+          MESSAGE: '#/components/schemas/MessageWaitStateDetails'
+      oneOf:
+        - $ref: '#/components/schemas/JobWaitStateDetails'
+        - $ref: '#/components/schemas/MessageWaitStateDetails'
 
     WaitStateTypeEnum:
       description: The type of waiting state an element instance is in.
@@ -853,14 +853,27 @@ components:
         - JOB
         - MESSAGE
 
+    BaseWaitStateDetails:
+      description: Common fields shared by all wait-state details variants.
+      type: object
+      required:
+        - waitStateType
+      properties:
+        waitStateType:
+          description: The wait state type discriminator.
+          type: string
+
     JobWaitStateDetails:
       type: object
       required:
+        - waitStateType
         - jobKey
         - jobType
         - jobKind
         - listenerEventType
         - retries
+      allOf:
+        - $ref: '#/components/schemas/BaseWaitStateDetails'
       properties:
         jobKey:
           allOf:
@@ -887,8 +900,11 @@ components:
     MessageWaitStateDetails:
       type: object
       required:
+        - waitStateType
         - messageName
         - correlationKey
+      allOf:
+        - $ref: '#/components/schemas/BaseWaitStateDetails'
       properties:
         messageName:
           description: The name of the message being awaited.

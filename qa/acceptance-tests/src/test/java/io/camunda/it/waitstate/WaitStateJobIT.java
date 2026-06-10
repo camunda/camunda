@@ -143,8 +143,6 @@ public class WaitStateJobIT {
     // then
     assertThat(result.items()).hasSize(11);
     assertThat(result.items())
-        .allSatisfy(item -> assertThat(item.getWaitStateType()).isEqualTo(WaitStateType.JOB));
-    assertThat(result.items())
         .extracting(ElementInstanceWaitStateResult::getElementType)
         .containsExactlyInAnyOrder(
             WaitStateElementType.SERVICE_TASK,
@@ -494,7 +492,6 @@ public class WaitStateJobIT {
     // then
     assertThat(result.items()).hasSize(1);
     final var item = result.items().getFirst();
-    assertThat(item.getWaitStateType()).isEqualTo(WaitStateType.JOB);
     assertThat(item.getElementId()).isEqualTo(expectedElementId);
     assertThat(item.getElementType()).isEqualTo(elementType);
     assertThat(item.getDetails()).isInstanceOf(JobWaitStateDetails.class);

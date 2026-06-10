@@ -26,6 +26,9 @@
     <version.java>8</version.java>
     <license.header.file>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header.file>
     <openapi.dir>${maven.multiModuleProjectDirectory}/zeebe/gateway-protocol/src/main/proto/v2</openapi.dir>
+    <!-- Roaster builds the emitted Java AST inside the maven-antrun-plugin classpath;
+         only used by this module so the version is local. -->
+    <version.roaster>2.31.0.Final</version.roaster>
   </properties>
 
   <dependencies>
@@ -386,6 +389,27 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-antrun-plugin</artifactId>
+        <dependencies>
+          <!-- snakeyaml powers DiscriminatorModelPostProcessor's spec loading; roaster builds
+               the emitted Java AST. Listed here because the antrun plugin classloader does not
+               see project compile dependencies. Versions come from parent's
+               dependencyManagement; roaster is local to this module (version.roaster property). -->
+          <dependency>
+            <groupId>org.yaml</groupId>
+            <artifactId>snakeyaml</artifactId>
+            <version>${version.snakeyaml}</version>
+          </dependency>
+          <dependency>
+            <groupId>org.jboss.forge.roaster</groupId>
+            <artifactId>roaster-api</artifactId>
+            <version>${version.roaster}</version>
+          </dependency>
+          <dependency>
+            <groupId>org.jboss.forge.roaster</groupId>
+            <artifactId>roaster-jdt</artifactId>
+            <version>${version.roaster}</version>
+          </dependency>
+        </dependencies>
         <executions>
           <execution>
             <id>strip-jsonformat-from-generated-sources</id>
@@ -398,6 +422,27 @@
                 <replaceregexp flags="g" match="@JsonFormat\(shape=JsonFormat\.Shape\.OBJECT\)\n" replace="">
                   <fileset dir="${project.build.directory}/generated-sources/openapi" includes="**/*.java"/>
                 </replaceregexp>
+              </target>
+            </configuration>
+          </execution>
+          <execution>
+            <id>apply-discriminator-post-processor</id>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <phase>process-sources</phase>
+            <configuration>
+              <target>
+                <mkdir dir="${project.build.directory}/tool-classes"/>
+                <javac classpathref="maven.plugin.classpath" debug="true" destdir="${project.build.directory}/tool-classes" encoding="UTF-8" includeantruntime="false" release="21" srcdir="${project.basedir}/src/tool/java"/>
+                <java classname="io.camunda.client.protocol.tools.DiscriminatorModelPostProcessor" failonerror="true" fork="true">
+                  <classpath>
+                    <pathelement location="${project.build.directory}/tool-classes"/>
+                    <path refid="maven.plugin.classpath"/>
+                  </classpath>
+                  <arg value="${openapi.dir}"/>
+                  <arg value="${project.build.directory}/generated-sources/openapi/src/main/io/camunda/client/protocol/rest"/>
+                </java>
               </target>
             </configuration>
           </execution>
