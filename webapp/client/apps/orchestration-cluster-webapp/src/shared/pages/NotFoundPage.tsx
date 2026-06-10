@@ -16,14 +16,14 @@ const NotFoundPage: React.FC = () => {
 	const {t} = useTranslation();
 
 	return (
-		<div className={styles['page']}>
-			<Layer withBackground className={styles['card']}>
+		<div className={styles.page}>
+			<Layer withBackground className={styles.card}>
 				<Stack orientation="horizontal" gap={6}>
 					<SvgErrorRobot aria-hidden />
 					<Stack gap={6}>
 						<Stack gap={3}>
-							<h1 className={styles['heading']}>{t('notFoundPageTitle')}</h1>
-							<p className={styles['description']}>{t('notFoundPageDescription')}</p>
+							<h1 className={styles.heading}>{t('notFoundPageTitle')}</h1>
+							<p className={styles.description}>{t('notFoundPageDescription')}</p>
 						</Stack>
 						<Button as={Link} to="/">
 							{t('notFoundPageButtonLabel')}

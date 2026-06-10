@@ -20,7 +20,7 @@
 		"noImplicitReturns": true,
 		"noUnusedLocals": true,
 		"noUnusedParameters": true,
-		"noPropertyAccessFromIndexSignature": true,
+		"noPropertyAccessFromIndexSignature": false,
 		"noUncheckedIndexedAccess": true,
 		"allowUnreachableCode": false,
 		"allowJs": true

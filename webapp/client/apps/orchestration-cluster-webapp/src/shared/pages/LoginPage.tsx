@@ -28,7 +28,7 @@ const LoginPage: React.FC = () => {
 	const {t} = useTranslation();
 
 	return (
-		<Grid as="main" condensed className={styles['container']!}>
+		<Grid as="main" condensed className={styles.container}>
 			<h1 className="cds--visually-hidden">Login</h1>
 			<Form<FormValues>
 				onSubmit={async ({username, password}) => {
@@ -90,15 +90,15 @@ const LoginPage: React.FC = () => {
 							onSubmit={handleSubmit}
 						>
 							<Stack>
-								<div className={styles['logo']}>
+								<div className={styles.logo}>
 									<CamundaLogo aria-label={t('loginLogoLabel')} />
 								</div>
 							</Stack>
 							<Stack gap={3}>
-								<div className={styles['error']}>
+								<div className={styles.error}>
 									{submitError && <InlineNotification title={submitError} hideCloseButton kind="error" role="alert" />}
 								</div>
-								<div className={styles['field']}>
+								<div className={styles.field}>
 									<Field<FormValues['username']> name="username" type="text">
 										{({input, meta}) => (
 											<TextInput
@@ -114,7 +114,7 @@ const LoginPage: React.FC = () => {
 										)}
 									</Field>
 								</div>
-								<div className={styles['field']}>
+								<div className={styles.field}>
 									<Field<FormValues['password']> name="password" type="password">
 										{({input, meta}) => (
 											<PasswordInput
@@ -139,7 +139,7 @@ const LoginPage: React.FC = () => {
 									type="submit"
 									disabled={submitting}
 									renderIcon={submitting ? LoadingSpinner : undefined}
-									className={styles['button']!}
+									className={styles.button}
 								>
 									{submitting ? t('loginLoggingInMessage') : t('loginButtonLabel')}
 								</Button>
@@ -149,7 +149,7 @@ const LoginPage: React.FC = () => {
 					);
 				}}
 			</Form>
-			<Column sm={4} md={8} lg={16} as="span" className={styles['copyrightNotice']!}>
+			<Column sm={4} md={8} lg={16} as="span" className={styles.copyrightNotice}>
 				{getCurrentCopyrightNoticeText()}
 			</Column>
 		</Grid>
