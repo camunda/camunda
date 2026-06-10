@@ -28,6 +28,9 @@ defaults:
   run:
     shell: bash
 
+env:
+  TEST_OWNER: '@camunda/core-features'
+
 jobs:
   prepare-matrix:
     name: Prepare Version Matrix

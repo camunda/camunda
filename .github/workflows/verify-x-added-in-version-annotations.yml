@@ -17,6 +17,9 @@ defaults:
   run:
     shell: bash
 
+env:
+  TEST_OWNER: '@camunda/core-features'
+
 jobs:
   verify:
     runs-on: ubuntu-latest
