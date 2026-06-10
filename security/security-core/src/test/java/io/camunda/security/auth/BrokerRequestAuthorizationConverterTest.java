@@ -193,6 +193,7 @@ public class BrokerRequestAuthorizationConverterTest {
     final var brokerRequestAuth = converter.convert(authentication);
 
     // then — entry is present; touching the value resolves the supplier exactly once
+    assertThat(invoked).isFalse();
     assertThat(brokerRequestAuth).containsKey(USER_GROUPS_CLAIMS);
     assertThat(brokerRequestAuth).containsEntry(USER_GROUPS_CLAIMS, List.of("group1", "group2"));
     assertThat(invoked).isTrue();
