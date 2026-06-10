@@ -53,7 +53,6 @@ public class BrokerRequestAuthorizationConverter {
 
     final var username = authentication.authenticatedUsername();
     final var clientId = authentication.authenticatedClientId();
-    final var groups = authentication.authenticatedGroupIds();
     final var claims = authentication.claims();
 
     if (username != null) {
@@ -65,7 +64,11 @@ public class BrokerRequestAuthorizationConverter {
     }
 
     if (!camundaGroupsEnabled) {
-      authorization.put(USER_GROUPS_CLAIMS, groups);
+      // authenticatedGroupIds() is lazy on the CamundaAuthentication record; resolve it only on
+      // the OIDC token-claim path where the engine consumes group membership. On the
+      // camundaGroupsEnabled path the engine resolves groups itself, so reading the field here
+      // would trigger an avoidable DB lookup on every broker request.
+      authorization.put(USER_GROUPS_CLAIMS, authentication.authenticatedGroupIds());
     }
 
     if (claims != null) {

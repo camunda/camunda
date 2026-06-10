@@ -21,6 +21,7 @@ import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Test;
 
 public class BrokerRequestAuthorizationConverterTest {
@@ -138,6 +139,63 @@ public class BrokerRequestAuthorizationConverterTest {
     assertThat(brokerRequestAuth).hasSize(2);
     assertThat(brokerRequestAuth).containsEntry(IS_CAMUNDA_GROUPS_ENABLED, true);
     assertThat(brokerRequestAuth).containsEntry(IS_CAMUNDA_USERS_ENABLED, true);
+  }
+
+  @Test
+  void shouldNotInvokeGroupsSupplierWhenCamundaGroupsEnabled() {
+    // given — default config: BASIC auth, no OIDC groupsClaim, so camundaGroupsEnabled=true and
+    // the engine looks up groups itself.
+    final var invoked = new AtomicBoolean();
+    final var authentication =
+        CamundaAuthentication.of(
+            b ->
+                b.user("foo")
+                    .groupIdsSupplier(
+                        () -> {
+                          invoked.set(true);
+                          return List.of("group1");
+                        }));
+    final var converter = new BrokerRequestAuthorizationConverter(new SecurityConfiguration());
+
+    // when
+    final var brokerRequestAuth = converter.convert(authentication);
+
+    // then
+    assertThat(invoked).isFalse();
+    assertThat(brokerRequestAuth).doesNotContainKey(USER_GROUPS_CLAIMS);
+    assertThat(brokerRequestAuth).containsEntry(AUTHORIZED_USERNAME, "foo");
+  }
+
+  @Test
+  void shouldStoreLazyGroupsWhenCamundaGroupsDisabled() {
+    // given — OIDC with groupsClaim (camundaGroupsEnabled=false); the engine consumes the groups,
+    // so they must end up in the authorization map. Resolution itself stays deferred until the
+    // downstream consumer reads the list.
+    final var invoked = new AtomicBoolean();
+    final var oidcConfiguration = new OidcAuthenticationConfiguration();
+    oidcConfiguration.setGroupsClaim("groups");
+    final var securityConfiguration = new SecurityConfiguration();
+    securityConfiguration.getAuthentication().setOidc(oidcConfiguration);
+    securityConfiguration.getAuthentication().setMethod(OIDC);
+
+    final var authentication =
+        CamundaAuthentication.of(
+            b ->
+                b.user("foo")
+                    .groupIdsSupplier(
+                        () -> {
+                          invoked.set(true);
+                          return List.of("group1", "group2");
+                        }));
+    final var converter = new BrokerRequestAuthorizationConverter(securityConfiguration);
+
+    // when
+    final var brokerRequestAuth = converter.convert(authentication);
+
+    // then — entry is present; touching the value resolves the supplier exactly once
+    assertThat(brokerRequestAuth).containsKey(USER_GROUPS_CLAIMS);
+    assertThat(brokerRequestAuth).containsEntry(USER_GROUPS_CLAIMS, List.of("group1", "group2"));
+    assertThat(invoked).isTrue();
   }
 
   @Test
