@@ -88,6 +88,14 @@ describe('<AdvancedStringFilter />', () => {
     expect(submittedValues).toEqual({});
   });
 
+  it('preserves the dropdown selection when the input is emptied', async () => {
+    const {user} = renderField('like_order-123');
+
+    await user.clear(screen.getByLabelText('Business ID'));
+
+    expect(screen.getByRole('combobox')).toHaveTextContent('contains');
+  });
+
   it('preserves the dropdown selection across operator-only changes with an empty value', async () => {
     const {user} = renderField();
 

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect, useMemo, useState} from 'react';
+import {useState} from 'react';
 import {Dropdown} from '@carbon/react';
 import {Field, type FieldInputProps} from 'react-final-form';
 import {TextInputField} from 'modules/components/TextInputField';
@@ -64,21 +64,11 @@ const AdvancedStringFilterField: React.FC<FieldProps> = ({
   label,
   selectableOperators,
 }) => {
-  const {filterOperator, filterValue} = useMemo(() => {
-    const filter = splitEncodedFilterOperation(input.value ?? '');
-    return {filterOperator: filter?.operator, filterValue: filter?.value};
-  }, [input.value]);
+  const filter = splitEncodedFilterOperation(input.value ?? '');
 
-  // The selected operator is stored and synced locally to be able to change it without a value.
-  // Only with a selected value, it gets synced to the form state and URL.
-  const [selectedOperator, setSelectedOperator] = useState(
-    filterOperator ?? '$eq',
-  );
-  useEffect(() => {
-    if (filterOperator && filterOperator !== selectedOperator) {
-      setSelectedOperator(filterOperator);
-    }
-  }, [filterOperator, selectedOperator]);
+  const [fallbackOperator, setFallbackOperator] =
+    useState<AdvancedStringFilterOperator>('$eq');
+  const selectedOperator = filter?.operator ?? fallbackOperator;
 
   const handleOperatorChange = (
     newOperator: AdvancedStringFilterOperator | null,
@@ -86,14 +76,15 @@ const AdvancedStringFilterField: React.FC<FieldProps> = ({
     if (newOperator === null) {
       return;
     }
-    setSelectedOperator(newOperator);
-    if (filterValue) {
-      input.onChange(encodeFilterOperation(newOperator, filterValue));
+    setFallbackOperator(newOperator);
+    if (filter?.value) {
+      input.onChange(encodeFilterOperation(newOperator, filter.value));
     }
   };
 
   const handleValueChange = (newValue: string) => {
     if (newValue === '') {
+      setFallbackOperator(selectedOperator);
       input.onChange(undefined);
       return;
     }
@@ -122,7 +113,7 @@ const AdvancedStringFilterField: React.FC<FieldProps> = ({
         labelText=""
         hideLabel
         placeholder={OPERATOR_CONFIG[selectedOperator].placeholder}
-        value={filterValue ?? ''}
+        value={filter?.value ?? ''}
         onChange={(event) => handleValueChange(event.target.value)}
         onBlur={input.onBlur}
         autoFocus
