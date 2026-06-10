@@ -55,7 +55,7 @@ Rewrite tests using the new patterns (Vitest browser mode, MSW via worker fixtur
     npm run lint
 
     # From webapp/client/apps/orchestration-cluster-webapp/
-    npm run typecheck
+    npm run typecheck        # TypeScript across all tsconfigs (always use this script, never npx tsc)
     npm run test:unit
 
 ## Pattern transformations

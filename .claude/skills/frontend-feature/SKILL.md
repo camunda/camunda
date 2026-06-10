@@ -92,7 +92,7 @@ Run these commands:
     npm run lint             # ESLint + Prettier + Knip (workspace; Knip fails on unused exports/dependencies)
 
     # From webapp/client/apps/orchestration-cluster-webapp/
-    npm run typecheck        # TypeScript across all tsconfigs
+    npm run typecheck        # TypeScript across all tsconfigs (always use this script, never npx tsc)
     npm run test:unit        # Vitest browser mode (headless Chromium)
 
 ## Canonical docs
