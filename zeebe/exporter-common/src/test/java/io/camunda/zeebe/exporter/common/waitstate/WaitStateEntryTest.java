@@ -40,6 +40,7 @@ class WaitStateEntryTest {
             .setElementId("task-1")
             .setElementType(BpmnElementType.SERVICE_TASK)
             .setWaitStateType(WaitStateType.JOB)
+            .setBpmnProcessId("myProcess")
             .setDetails(details)
             .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
             .setPartitionId(1L);
@@ -51,6 +52,7 @@ class WaitStateEntryTest {
     assertThat(entry.getElementId()).isEqualTo("task-1");
     assertThat(entry.getElementType()).isEqualTo(BpmnElementType.SERVICE_TASK);
     assertThat(entry.getWaitStateType()).isEqualTo(WaitStateType.JOB);
+    assertThat(entry.getBpmnProcessId()).isEqualTo("myProcess");
     assertThat(entry.getDetails()).isEqualTo(details);
     assertThat(entry.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     assertThat(entry.getPartitionId()).isEqualTo(1L);
@@ -103,6 +105,7 @@ class WaitStateEntryTest {
     assertThat(entry.getProcessInstanceKey()).isEqualTo(200L);
     assertThat(entry.getElementInstanceKey()).isEqualTo(300L);
     assertThat(entry.getElementId()).isEqualTo("task-1");
+    assertThat(entry.getBpmnProcessId()).isEqualTo(value.getBpmnProcessId());
     assertThat(entry.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     assertThat(entry.getPartitionId()).isEqualTo(record.getPartitionId());
 

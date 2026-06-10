@@ -117,6 +117,7 @@ class JobWaitStateHandlerTest {
             .withElementInstanceKey(300L)
             .withProcessInstanceKey(200L)
             .withRootProcessInstanceKey(100L)
+            .withBpmnProcessId("payment-process")
             .withTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
             .build();
     final var record =
@@ -140,6 +141,7 @@ class JobWaitStateHandlerTest {
     assertThat(entity.getElementId()).isEqualTo("task-payment");
     assertThat(entity.getElementType()).isEqualTo(BpmnElementType.SERVICE_TASK.name());
     assertThat(entity.getWaitStateType()).isEqualTo(WaitStateType.JOB.name());
+    assertThat(entity.getBpmnProcessId()).isEqualTo("payment-process");
     assertThat(entity.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
     // then — details serialised as JSON with all fields

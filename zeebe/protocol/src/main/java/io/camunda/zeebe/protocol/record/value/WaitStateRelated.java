@@ -39,6 +39,11 @@ public interface WaitStateRelated {
   String getElementId();
 
   /**
+   * @return the BPMN process id of the process that contains this waiting element
+   */
+  String getBpmnProcessId();
+
+  /**
    * @return the tenant id that owns this waiting-state element
    */
   String getTenantId();

@@ -137,6 +137,7 @@ class WaitStateAddHandlerTest {
             .withElementInstanceKey(300L)
             .withProcessInstanceKey(200L)
             .withRootProcessInstanceKey(100L)
+            .withBpmnProcessId("payment-process")
             .withTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
             .build();
     final Record<JobRecordValue> record =
@@ -161,6 +162,7 @@ class WaitStateAddHandlerTest {
     assertThat(model.elementId()).isEqualTo("task-payment");
     assertThat(model.elementType()).isEqualTo(BpmnElementType.SERVICE_TASK.name());
     assertThat(model.waitStateType()).isEqualTo(WaitStateType.JOB.name());
+    assertThat(model.processDefinitionId()).isEqualTo("payment-process");
     assertThat(model.tenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     assertThat(model.partitionId()).isEqualTo(record.getPartitionId());
     assertThat(model.details())

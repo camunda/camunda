@@ -32,6 +32,7 @@ public class WaitStateEntry {
   private String elementId;
   private BpmnElementType elementType;
   private WaitStateType waitStateType;
+  private String bpmnProcessId;
   private WaitStateDetails details;
   private String tenantId;
   private long partitionId;
@@ -90,6 +91,15 @@ public class WaitStateEntry {
     return this;
   }
 
+  public String getBpmnProcessId() {
+    return bpmnProcessId;
+  }
+
+  public WaitStateEntry setBpmnProcessId(final String bpmnProcessId) {
+    this.bpmnProcessId = bpmnProcessId;
+    return this;
+  }
+
   public WaitStateDetails getDetails() {
     return details;
   }
@@ -134,6 +144,7 @@ public class WaitStateEntry {
         .setProcessInstanceKey(value.getProcessInstanceKey())
         .setElementInstanceKey(value.getElementInstanceKey())
         .setElementId(value.getElementId())
+        .setBpmnProcessId(value.getBpmnProcessId())
         .setTenantId(value.getTenantId())
         .setPartitionId(record.getPartitionId());
   }
