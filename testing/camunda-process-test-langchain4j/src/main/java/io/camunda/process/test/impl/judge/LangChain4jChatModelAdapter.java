@@ -116,7 +116,7 @@ public final class LangChain4jChatModelAdapter implements MultimodalChatModelAda
     return parts;
   }
 
-  private enum DocumentKind {
+  enum DocumentKind {
     IMAGE,
     PDF,
     TEXT,
@@ -138,6 +138,10 @@ public final class LangChain4jChatModelAdapter implements MultimodalChatModelAda
           || "application/xml".equals(ct)
           || "application/yaml".equals(ct)
           || "application/x-yaml".equals(ct)) {
+        return TEXT;
+      }
+      // RFC 6839 structured-syntax suffixes — picks up vendor types automatically.
+      if (ct.endsWith("+json") || ct.endsWith("+xml") || ct.endsWith("+yaml")) {
         return TEXT;
       }
       return OTHER;
