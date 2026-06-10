@@ -23,6 +23,7 @@ import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptio
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -69,13 +70,62 @@ final class MessageSubscriptionFromMessageStartEventSubscriptionHandlerTest {
   }
 
   @ParameterizedTest
-  @EnumSource(MessageStartEventSubscriptionIntent.class)
+  @EnumSource(
+      value = MessageStartEventSubscriptionIntent.class,
+      names = {"CORRELATED"},
+      mode = EnumSource.Mode.EXCLUDE)
   void shouldHandleIntents(final Intent intent) {
     // given
-    final Record<MessageStartEventSubscriptionRecordValue> record = generateRecord(intent);
+    final Record<MessageStartEventSubscriptionRecordValue> record =
+        factory.generateRecord(
+            ValueType.MESSAGE_START_EVENT_SUBSCRIPTION,
+            r -> r.withIntent(intent).withPartitionId(Protocol.DEPLOYMENT_PARTITION));
 
     // when - then
     assertThat(underTest.handlesRecord(record)).isTrue();
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = MessageStartEventSubscriptionIntent.class,
+      names = {"CORRELATED"},
+      mode = EnumSource.Mode.EXCLUDE)
+  void shouldNotHandleRecordFromNonDeploymentPartition(final Intent intent) {
+    // given — any partition other than the deployment partition
+    final int nonDeploymentPartition = Protocol.DEPLOYMENT_PARTITION + 1;
+    final Record<MessageStartEventSubscriptionRecordValue> record =
+        factory.generateRecord(
+            ValueType.MESSAGE_START_EVENT_SUBSCRIPTION,
+            r -> r.withIntent(intent).withPartitionId(nonDeploymentPartition));
+
+    // when - then
+    assertThat(underTest.handlesRecord(record)).isFalse();
+  }
+
+  @Test
+  void shouldNotHandleCorrelatedIntentOnDeploymentPartition() {
+    // given
+    final Record<MessageStartEventSubscriptionRecordValue> record =
+        factory.generateRecord(
+            ValueType.MESSAGE_START_EVENT_SUBSCRIPTION,
+            r ->
+                r.withIntent(MessageStartEventSubscriptionIntent.CORRELATED)
+                    .withPartitionId(Protocol.DEPLOYMENT_PARTITION));
+    // when - then
+    assertThat(underTest.handlesRecord(record)).isFalse();
+  }
+
+  @Test
+  void shouldNotHandleCorrelatedIntentOnNonDeploymentPartition() {
+    // given
+    final Record<MessageStartEventSubscriptionRecordValue> record =
+        factory.generateRecord(
+            ValueType.MESSAGE_START_EVENT_SUBSCRIPTION,
+            r ->
+                r.withIntent(MessageStartEventSubscriptionIntent.CORRELATED)
+                    .withPartitionId(Protocol.DEPLOYMENT_PARTITION + 1));
+    // when - then
+    assertThat(underTest.handlesRecord(record)).isFalse();
   }
 
   @Test

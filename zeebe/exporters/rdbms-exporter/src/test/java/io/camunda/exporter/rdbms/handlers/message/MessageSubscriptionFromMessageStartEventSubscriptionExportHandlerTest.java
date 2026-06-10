@@ -22,6 +22,7 @@ import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionT
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -55,15 +56,36 @@ final class MessageSubscriptionFromMessageStartEventSubscriptionExportHandlerTes
           writer, processCache, new ExtensionPropertyConfiguration());
 
   @ParameterizedTest
-  @EnumSource(MessageStartEventSubscriptionIntent.class)
+  @EnumSource(
+      value = MessageStartEventSubscriptionIntent.class,
+      names = {"CORRELATED"},
+      mode = EnumSource.Mode.EXCLUDE)
   void shouldHandleIntents(final Intent intent) {
     // given
     final Record<MessageStartEventSubscriptionRecordValue> record =
         factory.generateRecord(
-            ValueType.MESSAGE_START_EVENT_SUBSCRIPTION, b -> b.withIntent(intent));
+            ValueType.MESSAGE_START_EVENT_SUBSCRIPTION,
+            b -> b.withIntent(intent).withPartitionId(Protocol.DEPLOYMENT_PARTITION));
 
     // when / then
     assertThat(underTest.canExport(record)).isTrue();
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = MessageStartEventSubscriptionIntent.class,
+      names = {"CORRELATED"},
+      mode = EnumSource.Mode.EXCLUDE)
+  void shouldNotExportForNonDeploymentPartition(final Intent intent) {
+    // given — any partition other than the deployment partition
+    final int nonDeploymentPartition = Protocol.DEPLOYMENT_PARTITION + 1;
+    final Record<MessageStartEventSubscriptionRecordValue> record =
+        factory.generateRecord(
+            ValueType.MESSAGE_START_EVENT_SUBSCRIPTION,
+            b -> b.withIntent(intent).withPartitionId(nonDeploymentPartition));
+
+    // when / then
+    assertThat(underTest.canExport(record)).isFalse();
   }
 
   @Test
@@ -72,7 +94,9 @@ final class MessageSubscriptionFromMessageStartEventSubscriptionExportHandlerTes
     final Record<MessageStartEventSubscriptionRecordValue> record =
         factory.generateRecord(
             ValueType.MESSAGE_START_EVENT_SUBSCRIPTION,
-            b -> b.withIntent(MessageStartEventSubscriptionIntent.CREATED));
+            b ->
+                b.withIntent(MessageStartEventSubscriptionIntent.CREATED)
+                    .withPartitionId(Protocol.DEPLOYMENT_PARTITION));
     when(processCache.get(record.getValue().getProcessDefinitionKey()))
         .thenReturn(Optional.empty());
 
@@ -84,29 +108,14 @@ final class MessageSubscriptionFromMessageStartEventSubscriptionExportHandlerTes
   }
 
   @Test
-  void shouldCallUpdateForCorrelatedIntent() {
-    // given
-    final Record<MessageStartEventSubscriptionRecordValue> record =
-        factory.generateRecord(
-            ValueType.MESSAGE_START_EVENT_SUBSCRIPTION,
-            b -> b.withIntent(MessageStartEventSubscriptionIntent.CORRELATED));
-    when(processCache.get(record.getValue().getProcessDefinitionKey()))
-        .thenReturn(Optional.empty());
-
-    // when
-    underTest.export(record);
-
-    // then
-    verify(writer).update(any());
-  }
-
-  @Test
   void shouldCallUpdateForDeletedIntent() {
     // given
     final Record<MessageStartEventSubscriptionRecordValue> record =
         factory.generateRecord(
             ValueType.MESSAGE_START_EVENT_SUBSCRIPTION,
-            b -> b.withIntent(MessageStartEventSubscriptionIntent.DELETED));
+            b ->
+                b.withIntent(MessageStartEventSubscriptionIntent.DELETED)
+                    .withPartitionId(Protocol.DEPLOYMENT_PARTITION));
     when(processCache.get(record.getValue().getProcessDefinitionKey()))
         .thenReturn(Optional.empty());
 
@@ -127,7 +136,7 @@ final class MessageSubscriptionFromMessageStartEventSubscriptionExportHandlerTes
     // given
     final long recordKey = 100L;
     final long pdKey = 200L;
-    final int partitionId = 3;
+    final int partitionId = Protocol.DEPLOYMENT_PARTITION;
     final long timestamp = Instant.now().toEpochMilli();
     final String elementId = "startEvent1";
     final String bpmnProcessId = "process1";
@@ -202,8 +211,8 @@ final class MessageSubscriptionFromMessageStartEventSubscriptionExportHandlerTes
             (BiConsumer<MessageSubscriptionWriter, ArgumentCaptor<MessageSubscriptionDbModel>>)
                 (writer, captor) -> verify(writer).create(captor.capture())),
         Arguments.of(
-            MessageStartEventSubscriptionIntent.CORRELATED,
-            MessageSubscriptionState.CORRELATED,
+            MessageStartEventSubscriptionIntent.DELETED,
+            MessageSubscriptionState.DELETED,
             (BiConsumer<MessageSubscriptionWriter, ArgumentCaptor<MessageSubscriptionDbModel>>)
                 (writer, captor) -> verify(writer).update(captor.capture())));
   }
@@ -222,7 +231,10 @@ final class MessageSubscriptionFromMessageStartEventSubscriptionExportHandlerTes
     final Record<MessageStartEventSubscriptionRecordValue> record =
         factory.generateRecord(
             ValueType.MESSAGE_START_EVENT_SUBSCRIPTION,
-            r -> r.withIntent(MessageStartEventSubscriptionIntent.CREATED).withValue(recordValue));
+            r ->
+                r.withIntent(MessageStartEventSubscriptionIntent.CREATED)
+                    .withPartitionId(Protocol.DEPLOYMENT_PARTITION)
+                    .withValue(recordValue));
     when(processCache.get(pdKey)).thenReturn(Optional.empty());
 
     // when
