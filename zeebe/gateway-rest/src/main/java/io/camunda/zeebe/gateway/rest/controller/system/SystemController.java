@@ -82,15 +82,15 @@ public class SystemController {
   @CamundaGetMapping(path = "/configuration")
   public ResponseEntity<SystemConfigurationResponse> getSystemConfiguration(
       @PhysicalTenantId final String physicalTenantId) {
-    final var jobMetrics = tenantRestConfigProvider.forTenant(physicalTenantId).jobMetrics();
+    final var jobMetrics = tenantRestConfigProvider.forTenant(physicalTenantId).getJobMetrics();
     final var jobMetricsResponse =
         JobMetricsConfigurationResponse.Builder.create()
-            .enabled(jobMetrics.enabled())
-            .exportInterval(jobMetrics.exportInterval().toString())
-            .maxWorkerNameLength(jobMetrics.maxWorkerNameLength())
-            .maxJobTypeLength(jobMetrics.maxJobTypeLength())
-            .maxTenantIdLength(jobMetrics.maxTenantIdLength())
-            .maxUniqueKeys(jobMetrics.maxUniqueKeys())
+            .enabled(jobMetrics.isEnabled())
+            .exportInterval(jobMetrics.getExportInterval().toString())
+            .maxWorkerNameLength(jobMetrics.getMaxWorkerNameLength())
+            .maxJobTypeLength(jobMetrics.getMaxJobTypeLength())
+            .maxTenantIdLength(jobMetrics.getMaxTenantIdLength())
+            .maxUniqueKeys(jobMetrics.getMaxUniqueKeys())
             .build();
 
     return ResponseEntity.ok(

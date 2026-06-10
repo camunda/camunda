@@ -25,9 +25,8 @@ import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.service.UsageMetricsServices;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.camunda.zeebe.gateway.rest.config.PhysicalTenantRestConfigProvider;
-import io.camunda.zeebe.gateway.rest.config.PhysicalTenantRestConfigProvider.JobMetrics;
-import io.camunda.zeebe.gateway.rest.config.PhysicalTenantRestConfigProvider.TenantRestConfig;
 import io.camunda.zeebe.gateway.rest.config.WebappConfiguration;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.time.Duration;
@@ -39,7 +38,6 @@ import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
@@ -96,8 +94,7 @@ public class SystemControllerTest extends RestControllerTest {
   @BeforeEach
   void setupUsageMetricsServices() {
     when(serviceRegistry.usageMetricsServices(any())).thenReturn(usageMetricsServices);
-    when(tenantRestConfigProvider.forTenant(any()))
-        .thenReturn(new TenantRestConfig(32 * 1024, JobMetrics.DEFAULT));
+    when(tenantRestConfigProvider.forTenant(any())).thenReturn(new GatewayRestConfiguration());
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
   }
@@ -390,10 +387,14 @@ public class SystemControllerTest extends RestControllerTest {
   @Test
   void shouldReturnCustomJobMetricsConfiguration() {
     // given
-    when(tenantRestConfigProvider.forTenant(any()))
-        .thenReturn(
-            new TenantRestConfig(
-                32 * 1024, new JobMetrics(false, Duration.ofMinutes(10), 50, 200, 15, 5000)));
+    final var customCfg = new GatewayRestConfiguration();
+    customCfg.getJobMetrics().setEnabled(false);
+    customCfg.getJobMetrics().setExportInterval(Duration.ofMinutes(10));
+    customCfg.getJobMetrics().setMaxWorkerNameLength(50);
+    customCfg.getJobMetrics().setMaxJobTypeLength(200);
+    customCfg.getJobMetrics().setMaxTenantIdLength(15);
+    customCfg.getJobMetrics().setMaxUniqueKeys(5000);
+    when(tenantRestConfigProvider.forTenant(any())).thenReturn(customCfg);
 
     // when/then
     webClient
@@ -425,10 +426,9 @@ public class SystemControllerTest extends RestControllerTest {
   @Test
   void shouldReturnDisabledJobMetricsConfiguration() {
     // given
-    when(tenantRestConfigProvider.forTenant(any()))
-        .thenReturn(
-            new TenantRestConfig(
-                32 * 1024, new JobMetrics(false, Duration.ofMinutes(5), 100, 100, 30, 9500)));
+    final var disabledCfg = new GatewayRestConfiguration();
+    disabledCfg.getJobMetrics().setEnabled(false);
+    when(tenantRestConfigProvider.forTenant(any())).thenReturn(disabledCfg);
 
     // when/then
     webClient

@@ -7,12 +7,14 @@
  */
 package io.camunda.configuration.beanoverrides;
 
+import io.camunda.configuration.Camunda;
 import io.camunda.configuration.Executor;
 import io.camunda.configuration.JobMetricsConfig;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.beans.GatewayRestProperties;
 import io.camunda.configuration.beans.LegacyGatewayRestProperties;
+import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration.ApiExecutorConfiguration;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration.JobMetricsConfiguration;
 import org.springframework.beans.BeanUtils;
@@ -42,11 +44,8 @@ public class GatewayRestPropertiesOverride {
   public GatewayRestProperties gatewayRestProperties() {
     final GatewayRestProperties override = new GatewayRestProperties();
     BeanUtils.copyProperties(legacyGatewayRestProperties, override);
-
     populateFromExecutor(override);
-    populateFromJobMetrics(override);
-    populateFromValidators(override);
-
+    new Converter(unifiedConfiguration.getCamunda()).applyTo(override);
     return override;
   }
 
@@ -59,31 +58,44 @@ public class GatewayRestPropertiesOverride {
     apiExecutorConfiguration.setQueueCapacity(executor.getQueueCapacity());
   }
 
-  private void populateFromJobMetrics(final GatewayRestProperties override) {
-    final JobMetricsConfig jobMetrics =
-        unifiedConfiguration.getCamunda().getMonitoring().getMetrics().getJobMetrics();
-    final JobMetricsConfiguration jobMetricsConfiguration = override.getJobMetrics();
-    jobMetricsConfiguration.setExportInterval(jobMetrics.getExportInterval());
-    jobMetricsConfiguration.setMaxWorkerNameLength(jobMetrics.getMaxWorkerNameLength());
-    jobMetricsConfiguration.setMaxJobTypeLength(jobMetrics.getMaxJobTypeLength());
-    jobMetricsConfiguration.setMaxTenantIdLength(jobMetrics.getMaxTenantIdLength());
-    jobMetricsConfiguration.setMaxUniqueKeys(jobMetrics.getMaxUniqueKeys());
-    jobMetricsConfiguration.setEnabled(jobMetrics.isEnabled());
-  }
+  /** Maps a {@link Camunda} configuration into a {@link GatewayRestConfiguration}. */
+  public static final class Converter {
 
-  private void populateFromValidators(final GatewayRestProperties override) {
-    if (unifiedConfiguration.getCamunda().getData().getSecondaryStorage().getType()
-        != SecondaryStorageType.rdbms) {
-      return;
+    private final Camunda camunda;
+
+    public Converter(final Camunda camunda) {
+      this.camunda = camunda;
     }
 
-    final var maxNameFieldLength =
-        unifiedConfiguration
-            .getCamunda()
-            .getData()
-            .getSecondaryStorage()
-            .getRdbms()
-            .getMaxVarcharFieldLength();
-    override.setMaxNameFieldLength(maxNameFieldLength);
+    public GatewayRestConfiguration convert() {
+      final GatewayRestConfiguration config = new GatewayRestConfiguration();
+      applyTo(config);
+      return config;
+    }
+
+    public void applyTo(final GatewayRestConfiguration override) {
+      populateFromJobMetrics(override);
+      populateFromValidators(override);
+    }
+
+    private void populateFromJobMetrics(final GatewayRestConfiguration override) {
+      final JobMetricsConfig jobMetrics = camunda.getMonitoring().getMetrics().getJobMetrics();
+      final JobMetricsConfiguration jobMetricsConfiguration = override.getJobMetrics();
+      jobMetricsConfiguration.setExportInterval(jobMetrics.getExportInterval());
+      jobMetricsConfiguration.setMaxWorkerNameLength(jobMetrics.getMaxWorkerNameLength());
+      jobMetricsConfiguration.setMaxJobTypeLength(jobMetrics.getMaxJobTypeLength());
+      jobMetricsConfiguration.setMaxTenantIdLength(jobMetrics.getMaxTenantIdLength());
+      jobMetricsConfiguration.setMaxUniqueKeys(jobMetrics.getMaxUniqueKeys());
+      jobMetricsConfiguration.setEnabled(jobMetrics.isEnabled());
+    }
+
+    private void populateFromValidators(final GatewayRestConfiguration override) {
+      if (camunda.getData().getSecondaryStorage().getType() != SecondaryStorageType.rdbms) {
+        return;
+      }
+      final var maxNameFieldLength =
+          camunda.getData().getSecondaryStorage().getRdbms().getMaxVarcharFieldLength();
+      override.setMaxNameFieldLength(maxNameFieldLength);
+    }
   }
 }

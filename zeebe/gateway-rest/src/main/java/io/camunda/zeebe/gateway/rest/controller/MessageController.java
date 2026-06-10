@@ -55,7 +55,7 @@ public class MessageController {
     return RequestMapper.toMessagePublicationRequest(
             publicationRequest,
             multiTenancyCfg.isChecksEnabled(),
-            tenantRestConfigProvider.forTenant(physicalTenantId).maxNameFieldLength())
+            tenantRestConfigProvider.forTenant(physicalTenantId).getMaxNameFieldLength())
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
             mapped -> publishMessage(serviceRegistry.messageServices(physicalTenantId), mapped));
@@ -68,7 +68,7 @@ public class MessageController {
     return RequestMapper.toMessageCorrelationRequest(
             correlationRequest,
             multiTenancyCfg.isChecksEnabled(),
-            tenantRestConfigProvider.forTenant(physicalTenantId).maxNameFieldLength())
+            tenantRestConfigProvider.forTenant(physicalTenantId).getMaxNameFieldLength())
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
             mapped -> correlateMessage(serviceRegistry.messageServices(physicalTenantId), mapped));

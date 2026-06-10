@@ -344,7 +344,7 @@ public class JobController {
 
   private Either<ProblemDetail, Void> requireJobMetricsEnabled(
       final String physicalTenantId, final String requestUri) {
-    if (!tenantRestConfigProvider.forTenant(physicalTenantId).jobMetrics().enabled()) {
+    if (!tenantRestConfigProvider.forTenant(physicalTenantId).getJobMetrics().isEnabled()) {
       final var problemDetail =
           CamundaProblemDetail.forStatusAndDetail(
               HttpStatus.FORBIDDEN, "Job metrics feature is disabled");

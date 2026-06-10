@@ -132,7 +132,7 @@ public class CamundaServicesConfiguration {
         .forEach(
             (tenantId, tenantConfig) -> {
               final int maxNameFieldLength =
-                  physicalTenantRestConfigProvider.forTenant(tenantId).maxNameFieldLength();
+                  physicalTenantRestConfigProvider.forTenant(tenantId).getMaxNameFieldLength();
               final var search = searchClients.withPhysicalTenant(tenantId);
 
               // -- per-tenant BrokerRequestAuthorizationConverter --

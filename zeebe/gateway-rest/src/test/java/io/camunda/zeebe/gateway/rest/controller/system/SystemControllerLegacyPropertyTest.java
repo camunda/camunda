@@ -13,9 +13,8 @@ import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.UsageMetricsServices;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.camunda.zeebe.gateway.rest.config.PhysicalTenantRestConfigProvider;
-import io.camunda.zeebe.gateway.rest.config.PhysicalTenantRestConfigProvider.JobMetrics;
-import io.camunda.zeebe.gateway.rest.config.PhysicalTenantRestConfigProvider.TenantRestConfig;
 import io.camunda.zeebe.gateway.rest.config.WebappConfiguration;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -50,7 +49,7 @@ public class SystemControllerLegacyPropertyTest extends RestControllerTest {
     // given: WebappConfiguration already resolved (translation from legacy keys done by
     // WebappPropertiesOverride at runtime; here we supply the resolved values directly)
     when(tenantRestConfigProvider.forTenant(Mockito.any()))
-        .thenReturn(new TenantRestConfig(32 * 1024, JobMetrics.DEFAULT));
+        .thenReturn(new GatewayRestConfiguration());
 
     // when/then
     webClient

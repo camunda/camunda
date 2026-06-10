@@ -9,16 +9,16 @@ package io.camunda.application.commons.rest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.JobMetricsConfig;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
-import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
-import io.camunda.zeebe.gateway.rest.config.PhysicalTenantRestConfigProvider.JobMetrics;
 import java.time.Duration;
 import java.util.Map;
+import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,7 +36,6 @@ class PhysicalTenantRestConfigurationTest {
       new PhysicalTenantRestConfiguration();
 
   @Mock private PhysicalTenantResolver physicalTenantResolver;
-  @Mock private GatewayRestConfiguration gatewayRestConfiguration;
 
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   private Camunda tenantA;
@@ -49,7 +48,6 @@ class PhysicalTenantRestConfigurationTest {
 
   @BeforeEach
   void setUp() {
-    when(gatewayRestConfiguration.getMaxNameFieldLength()).thenReturn(8192);
     stubJobMetrics(tenantA, jobMetricsConfigA);
     stubJobMetrics(tenantB, jobMetricsConfigB);
     stubDefaultJobMetricsValues(jobMetricsConfigA);
@@ -57,19 +55,17 @@ class PhysicalTenantRestConfigurationTest {
   }
 
   @Test
-  void shouldUseGlobalMaxNameFieldLengthForNonRdbmsTenant() {
+  void shouldUseDefaultMaxNameFieldLengthForNonRdbmsTenant() {
     // given
     when(tenantA.getData().getSecondaryStorage().getType())
         .thenReturn(SecondaryStorageType.elasticsearch);
-    when(physicalTenantResolver.getAll()).thenReturn(Map.of("tenant-es", tenantA));
+    stubMapValues(Map.of("tenant-es", tenantA));
 
     // when
-    final var provider =
-        configuration.physicalTenantRestConfigProvider(
-            physicalTenantResolver, gatewayRestConfiguration);
+    final var provider = configuration.physicalTenantRestConfigProvider(physicalTenantResolver);
 
     // then
-    assertThat(provider.forTenant("tenant-es").maxNameFieldLength()).isEqualTo(8192);
+    assertThat(provider.forTenant("tenant-es").getMaxNameFieldLength()).isEqualTo(32 * 1024);
   }
 
   @Test
@@ -78,15 +74,13 @@ class PhysicalTenantRestConfigurationTest {
     when(tenantA.getData().getSecondaryStorage().getType()).thenReturn(SecondaryStorageType.rdbms);
     when(tenantA.getData().getSecondaryStorage().getRdbms().getMaxVarcharFieldLength())
         .thenReturn(4000);
-    when(physicalTenantResolver.getAll()).thenReturn(Map.of("tenant-rdbms", tenantA));
+    stubMapValues(Map.of("tenant-rdbms", tenantA));
 
     // when
-    final var provider =
-        configuration.physicalTenantRestConfigProvider(
-            physicalTenantResolver, gatewayRestConfiguration);
+    final var provider = configuration.physicalTenantRestConfigProvider(physicalTenantResolver);
 
     // then
-    assertThat(provider.forTenant("tenant-rdbms").maxNameFieldLength()).isEqualTo(4000);
+    assertThat(provider.forTenant("tenant-rdbms").getMaxNameFieldLength()).isEqualTo(4000);
   }
 
   @Test
@@ -100,16 +94,19 @@ class PhysicalTenantRestConfigurationTest {
     when(jobMetricsConfigA.getMaxJobTypeLength()).thenReturn(200);
     when(jobMetricsConfigA.getMaxTenantIdLength()).thenReturn(15);
     when(jobMetricsConfigA.getMaxUniqueKeys()).thenReturn(5000);
-    when(physicalTenantResolver.getAll()).thenReturn(Map.of("tenant-1", tenantA));
+    stubMapValues(Map.of("tenant-1", tenantA));
 
     // when
-    final var provider =
-        configuration.physicalTenantRestConfigProvider(
-            physicalTenantResolver, gatewayRestConfiguration);
+    final var provider = configuration.physicalTenantRestConfigProvider(physicalTenantResolver);
 
     // then
-    assertThat(provider.forTenant("tenant-1").jobMetrics())
-        .isEqualTo(new JobMetrics(false, Duration.ofMinutes(10), 50, 200, 15, 5000));
+    final var jm = provider.forTenant("tenant-1").getJobMetrics();
+    assertThat(jm.isEnabled()).isFalse();
+    assertThat(jm.getExportInterval()).isEqualTo(Duration.ofMinutes(10));
+    assertThat(jm.getMaxWorkerNameLength()).isEqualTo(50);
+    assertThat(jm.getMaxJobTypeLength()).isEqualTo(200);
+    assertThat(jm.getMaxTenantIdLength()).isEqualTo(15);
+    assertThat(jm.getMaxUniqueKeys()).isEqualTo(5000);
   }
 
   @Test
@@ -117,10 +114,8 @@ class PhysicalTenantRestConfigurationTest {
     // given
     when(tenantA.getData().getSecondaryStorage().getType())
         .thenReturn(SecondaryStorageType.elasticsearch);
-    when(physicalTenantResolver.getAll()).thenReturn(Map.of("known-tenant", tenantA));
-    final var provider =
-        configuration.physicalTenantRestConfigProvider(
-            physicalTenantResolver, gatewayRestConfiguration);
+    stubMapValues(Map.of("known-tenant", tenantA));
+    final var provider = configuration.physicalTenantRestConfigProvider(physicalTenantResolver);
 
     // when / then
     assertThatThrownBy(() -> provider.forTenant("unknown-tenant"))
@@ -136,17 +131,14 @@ class PhysicalTenantRestConfigurationTest {
     when(tenantB.getData().getSecondaryStorage().getType()).thenReturn(SecondaryStorageType.rdbms);
     when(tenantB.getData().getSecondaryStorage().getRdbms().getMaxVarcharFieldLength())
         .thenReturn(4000);
-    when(physicalTenantResolver.getAll())
-        .thenReturn(Map.of("es-tenant", tenantA, "rdbms-tenant", tenantB));
+    stubMapValues(Map.of("es-tenant", tenantA, "rdbms-tenant", tenantB));
 
     // when
-    final var provider =
-        configuration.physicalTenantRestConfigProvider(
-            physicalTenantResolver, gatewayRestConfiguration);
+    final var provider = configuration.physicalTenantRestConfigProvider(physicalTenantResolver);
 
     // then
-    assertThat(provider.forTenant("es-tenant").maxNameFieldLength()).isEqualTo(8192);
-    assertThat(provider.forTenant("rdbms-tenant").maxNameFieldLength()).isEqualTo(4000);
+    assertThat(provider.forTenant("es-tenant").getMaxNameFieldLength()).isEqualTo(32 * 1024);
+    assertThat(provider.forTenant("rdbms-tenant").getMaxNameFieldLength()).isEqualTo(4000);
   }
 
   @Test
@@ -154,15 +146,24 @@ class PhysicalTenantRestConfigurationTest {
     // given
     when(tenantA.getData().getSecondaryStorage().getType())
         .thenReturn(SecondaryStorageType.elasticsearch);
-    when(physicalTenantResolver.getAll()).thenReturn(Map.of("tenant-a", tenantA));
-    final var provider =
-        configuration.physicalTenantRestConfigProvider(
-            physicalTenantResolver, gatewayRestConfiguration);
+    stubMapValues(Map.of("tenant-a", tenantA));
+    final var provider = configuration.physicalTenantRestConfigProvider(physicalTenantResolver);
 
     // when / then
     assertThat(provider.forTenant("tenant-a")).isNotNull();
     assertThatThrownBy(() -> provider.forTenant("tenant-b"))
         .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  private void stubMapValues(final Map<String, Camunda> tenants) {
+    when(physicalTenantResolver.mapValues(any()))
+        .thenAnswer(
+            inv -> {
+              final var mapper = (Function<Camunda, Object>) inv.getArgument(0);
+              final var result = new java.util.LinkedHashMap<String, Object>();
+              tenants.forEach((id, camunda) -> result.put(id, mapper.apply(camunda)));
+              return result;
+            });
   }
 
   private static void stubJobMetrics(final Camunda tenantConfig, final JobMetricsConfig config) {

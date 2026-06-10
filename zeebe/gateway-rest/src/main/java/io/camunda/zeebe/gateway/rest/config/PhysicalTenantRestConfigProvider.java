@@ -7,24 +7,8 @@
  */
 package io.camunda.zeebe.gateway.rest.config;
 
-import java.time.Duration;
-
 /** Resolves the REST-layer configuration view for a given physical tenant. */
 public interface PhysicalTenantRestConfigProvider {
 
-  TenantRestConfig forTenant(String physicalTenantId);
-
-  record TenantRestConfig(int maxNameFieldLength, JobMetrics jobMetrics) {}
-
-  record JobMetrics(
-      boolean enabled,
-      Duration exportInterval,
-      int maxWorkerNameLength,
-      int maxJobTypeLength,
-      int maxTenantIdLength,
-      int maxUniqueKeys) {
-
-    public static final JobMetrics DEFAULT =
-        new JobMetrics(true, Duration.ofMinutes(5), 100, 100, 30, 9500);
-  }
+  GatewayRestConfiguration forTenant(String physicalTenantId);
 }
