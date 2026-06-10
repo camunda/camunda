@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.0.72
+
+### 🚀 Enhancements
+
+- Add agent instance history API schemas and endpoints for 8.10 ([#52123](https://github.com/camunda/camunda/issues/52123))
+  - `agentInstanceHistoryRoleSchema` enum (`USER`, `ASSISTANT`, `TOOL_RESULT`) and `agentInstanceHistoryCommitStatusSchema` enum (`COMMITTED`, `PENDING`, `DISCARDED`)
+  - `agentInstanceMessageContentSchema` — discriminated union of `agentInstanceTextContentSchema`, `agentInstanceDocumentContentSchema`, and `agentInstanceObjectContentSchema` on `contentType`
+  - `agentInstanceToolCallSchema` and `agentInstanceHistoryItemMetricsSchema` for tool calls and per-item LLM metrics
+  - `agentInstanceHistoryItemSchema` — full history item with key, role, content, toolCalls, metrics, commitStatus, and producedAt
+  - `POST /v2/agent-instances/{agentInstanceKey}/history` endpoint for creating a history item
+  - `POST /v2/agent-instances/{agentInstanceKey}/history/search` endpoint for querying history items
+
+### ❤️ Contributors
+
+- Christoph Fricke ([@christoph-fricke](https://github.com/christoph-fricke))
+
 ## v0.0.71
 
 ### 🩹 Fixes
