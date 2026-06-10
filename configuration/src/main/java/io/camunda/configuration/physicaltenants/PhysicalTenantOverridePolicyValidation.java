@@ -25,9 +25,10 @@ import org.springframework.core.env.Environment;
 
 /**
  * Override policy for physical-tenant configuration: an explicit <em>deny-list</em> of cluster-wide
- * properties that may not be overridden under {@code camunda.physical-tenants.<id>.*}. Every other
- * property is freely overridable (the physical-tenant model is "override anything except cluster
- * identity", so an allow-list would be enormous and perpetually out of date).
+ * and identity-security properties that may not be overridden under {@code
+ * camunda.physical-tenants.<id>.*}. Every other property is freely overridable (the physical-tenant
+ * model is "override anything except cluster identity and security policy", so an allow-list would
+ * be enormous and perpetually out of date).
  *
  * <p>Enforcement is pure <em>key inspection</em> over the declared {@code physical-tenants.<id>.*}
  * keys — the same walk {@link PhysicalTenantResolver#discover(Environment)} does — with no value
@@ -35,14 +36,15 @@ import org.springframework.core.env.Environment;
  * fails resolution.
  *
  * <p>The list below enumerates every non-overridable child of {@code camunda.cluster}, {@code
- * camunda.system} and {@code camunda.license} (see {@link io.camunda.configuration.Camunda}). It is
- * a flat enumeration rather than the broader subtrees plus carve-outs: the overridable properties
- * ({@code cluster.partition-count}, {@code cluster.replication-factor}, {@code
- * system.clock-controlled}) are simply absent from the list. Matching is by ancestor, so listing a
- * parent (e.g. {@code cluster.network}) also forbids all of its descendants.
+ * camunda.system}, {@code camunda.license}, and the identity-security subtrees of {@code
+ * camunda.security} (see {@link io.camunda.configuration.Camunda}). It is a flat enumeration rather
+ * than broader subtrees plus carve-outs: the overridable properties ({@code
+ * cluster.partition-count}, {@code cluster.replication-factor}, {@code system.clock-controlled})
+ * are simply absent from the list. Matching is by ancestor, so listing a parent (e.g. {@code
+ * cluster.network}) also forbids all of its descendants.
  *
- * <p>Keep this list in sync with {@code Camunda}'s {@code cluster}, {@code system} and {@code
- * license} sections when properties are added or removed.
+ * <p>Keep this list in sync with {@code Camunda}'s {@code cluster}, {@code system}, {@code
+ * license}, and {@code security} sections when properties are added or removed.
  */
 @NullMarked
 final class PhysicalTenantOverridePolicyValidation {
@@ -51,9 +53,10 @@ final class PhysicalTenantOverridePolicyValidation {
       ConfigurationPropertyName.of(Camunda.PREFIX + ".physical-tenants");
 
   /**
-   * Cluster-wide properties that may not be overridden per physical tenant. Enumerated from {@code
-   * camunda.cluster.*}, {@code camunda.system.*} and {@code camunda.license.*}; the overridable
-   * carve-outs ({@code cluster.partition-count}, {@code cluster.replication-factor}, {@code
+   * Cluster-wide and identity-security properties that may not be overridden per physical tenant.
+   * Enumerated from {@code camunda.cluster.*}, {@code camunda.system.*}, {@code camunda.license.*},
+   * and the identity-security subtrees of {@code camunda.security.*}; the overridable carve-outs
+   * ({@code cluster.partition-count}, {@code cluster.replication-factor}, {@code
    * system.clock-controlled}) are intentionally omitted.
    */
   private static final List<ConfigurationPropertyName> NON_OVERRIDABLE =
@@ -86,7 +89,15 @@ final class PhysicalTenantOverridePolicyValidation {
               // camunda.api.*
               "api.rest.executor",
               // camunda.data.* cluster wide
-              "data.secondary-storage.rdbms.max-varchar-field-length")
+              "data.secondary-storage.rdbms.max-varchar-field-length",
+              // camunda.security.* — identity-security settings that must apply uniformly
+              "security.authentication.method",
+              "security.authentication.unprotected-api",
+              "security.csrf",
+              "security.http-headers",
+              // forward declaration — property lands with #54898
+              "security.cluster-admin",
+              "security.multi-tenancy")
           .map(ConfigurationPropertyName::of)
           .toList();
 
@@ -108,8 +119,9 @@ final class PhysicalTenantOverridePolicyValidation {
               .map(entry -> entry.getKey() + "=" + entry.getValue())
               .collect(Collectors.joining(", "));
       throw new UnifiedConfigurationException(
-          "Cluster-wide properties may not be overridden per physical tenant; configure them once "
-              + "under the root 'camunda.*'. Forbidden tenant-level overrides: "
+          "Cluster-wide and identity security properties may not be overridden per physical "
+              + "tenant; configure them once under the root 'camunda.*'. "
+              + "Forbidden tenant-level overrides: "
               + detail);
     }
   }
