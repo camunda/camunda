@@ -9,6 +9,7 @@ package io.camunda.it.auditlog;
 
 import static io.camunda.it.auditlog.AuditLogUtils.DEFAULT_USERNAME;
 import static io.camunda.it.auditlog.AuditLogUtils.TENANT_A;
+import static io.camunda.it.util.TestHelper.waitForDecisionInstanceCount;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
@@ -533,6 +534,10 @@ public class AuditLogResourceOperationsIT {
             .join();
 
     final var decisionEvaluationKey = decisionEvaluation.getDecisionEvaluationKey();
+
+    // wait for the decision instance to be indexed in secondary storage before deleting;
+    // the delete API requires the instance to exist in secondary storage (eventual consistency)
+    waitForDecisionInstanceCount(client, f -> f.decisionInstanceKey(decisionEvaluationKey), 1);
 
     // when - delete the decision instance history
     client.newDeleteDecisionInstanceCommand(decisionEvaluationKey).send().join();
