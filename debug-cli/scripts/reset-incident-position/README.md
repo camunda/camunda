@@ -37,13 +37,17 @@ Before starting, you need:
 
 - **NAMESPACE**: Kubernetes namespace where Camunda is deployed
 - **BROKER_IDS**: Space-separated list of broker IDs to patch (usually all brokers, e.g., "0 1 2")
-- **NEW_POSITION**: New `lastIncidentUpdatePosition`. Use `-1` to reprocess all incidents from the
-  start (idempotent, safest); use an explicit position only when a full reprocess is too costly.
+- **PARTITION_POSITIONS**: Space-separated `partitionId:position` tuples giving the new
+  `lastIncidentUpdatePosition` **per partition**, e.g. `"1:13417758 3:-1"`. Each partition has its
+  own log positions, so the position is set per partition. Use `-1` for a partition to reprocess all
+  its incidents from the start (idempotent, safest); use an explicit position only when a full
+  reprocess is too costly. The same value is applied to every broker's Job; a partition not hosted
+  on a given broker is skipped with a log line, not treated as an error.
 - **CONTAINER_IMAGE**: The Camunda container image (e.g., "camunda/camunda:8.8.1")
 - **EXPORTER_ID**: Id the exporter is configured under in `zeebe.broker.exporters`
   (optional, default: `camundaexporter`)
-- **PARTITION_IDS**: Partitions to patch (optional - by default each Job auto-detects and patches
-  every partition on its broker's PVC, which is correct when all partitions are affected)
+- **IMAGE_PULL_SECRET**: `imagePullSecrets` name for pulling the image from a private registry
+  (optional, default: none)
 
 > [!NOTE]
 > You can use [../detect-config.sh](../detect-config.sh) to auto-detect `NAMESPACE`,
@@ -60,8 +64,12 @@ holds two partition replicas and there are 6 replicas to patch:
 | P2        | node1, node2 |   | node1 | P1, P2 |
 | P3        | node2, node0 |   | node2 | P2, P3 |
 
-Running the generated Jobs with `BROKER_IDS="0 1 2"` and auto-detected partitions covers all 6
-replicas: the Job for node0 patches P1+P3, node1 patches P1+P2, node2 patches P2+P3.
+Running the generated Jobs with `BROKER_IDS="0 1 2"` and `PARTITION_POSITIONS="1:<p1> 2:<p2> 3:<p3>"`
+covers all 6 replicas: the Job for node0 patches P1+P3, node1 patches P1+P2, node2 patches P2+P3.
+Every Job gets the full tuple list but patches only the partitions present on its own PVC and
+**skips the rest with a log line** (e.g. node0 skips P2). If a broker happens to host none of the
+requested partitions, its Job completes with a warning, having patched nothing — so confirm each
+targeted partition shows as patched in at least one Job's summary before restarting the cluster.
 
 ## Reset Steps
 
@@ -88,12 +96,12 @@ backups). This is a **manual prerequisite** step - follow your organization's ba
 ```bash
 export NAMESPACE="camunda"
 export BROKER_IDS="0 1 2"
-export NEW_POSITION="-1"
+export PARTITION_POSITIONS="1:13417758 3:-1"
 export CONTAINER_IMAGE="camunda/camunda:8.8.1"
 
 # Optional (have defaults)
 export EXPORTER_ID="camundaexporter"            # default: "camundaexporter"
-export PARTITION_IDS="1 3"                      # default: auto-detect all partitions per broker
+export IMAGE_PULL_SECRET="harbor-registry"      # default: none (set for private registries)
 export STATEFULSET_NAME="camunda"               # default: "camunda"
 export PVC_PREFIX="data-camunda"                # default: "data-${STATEFULSET_NAME}"
 
@@ -101,7 +109,8 @@ export PVC_PREFIX="data-camunda"                # default: "data-${STATEFULSET_N
 # Output: generated/reset-incident-position-jobs-20260610-143022.yaml
 ```
 
-The file contains **one Job per broker**. Each Job will, for every partition on that broker's PVC:
+The file contains **one Job per broker**. Each Job will, for every requested partition present on
+that broker's PVC (skipping the ones it does not host):
 
 1. Backup the existing snapshots to `partitions/<id>/snapshots-backup` on the PVC
 2. Run `cdbg state reset-incident-position` on the partition's snapshot
@@ -127,10 +136,13 @@ done
 > [!IMPORTANT]
 > All Jobs must complete successfully before restarting the cluster. If a Job fails, check its
 > logs, fix the cause and re-run it (delete the failed Job first; the script refuses to run if a
-> `snapshots-backup` directory from a previous attempt still exists).
+> `snapshots-backup` directory from a previous attempt still exists). Because the cluster is scaled
+> down during the reset, there is **no broker pod to `kubectl exec` into** at that point — removing
+> or renaming a leftover backup requires a throwaway pod that mounts the broker's PVC. The failing
+> Job's log prints the exact PVC claim, namespace and `mv` command to use.
 
 If a partition has multiple snapshots the Job fails and lists them; re-run that broker's Job with
-`PARTITION_IDS=<partition>` and `SNAPSHOT_ID=<snapshot-name>` set.
+`PARTITION_POSITIONS="<partition>:<position>"` and `SNAPSHOT_ID=<snapshot-name>` set.
 
 ### 6. Clean Up the Jobs
 

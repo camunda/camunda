@@ -6,23 +6,29 @@ set -euo pipefail
 # ====================================================
 #
 # Generates one Kubernetes Job PER BROKER that resets an exporter's
-# lastIncidentUpdatePosition on every partition replica hosted by that broker.
+# lastIncidentUpdatePosition on the requested partition replicas hosted by that
+# broker.
 #
 # The EXPORTER column family is replica-local state, so - unlike the
 # key-recovery procedure - every broker must patch its own snapshots and
 # nothing is copied between brokers. One Job per broker also avoids mounting
 # several ReadWriteOnce (and possibly zonal) PVCs into a single pod.
 #
+# The same PARTITION_POSITIONS is applied to every broker's Job. A partition not
+# hosted on a given broker (replicationFactor < clusterSize) is skipped by the
+# reset script, not treated as an error.
+#
 # Required variables:
 #   NAMESPACE              - Kubernetes namespace
 #   BROKER_IDS             - Space-separated broker IDs to patch (e.g., "0 1 2")
-#   NEW_POSITION           - New lastIncidentUpdatePosition (-1 reprocesses all incidents)
+#   PARTITION_POSITIONS    - Space-separated partitionId:position tuples giving the new
+#                            lastIncidentUpdatePosition per partition, e.g. "1:13417758 3:-1".
+#                            Position -1 reprocesses all incidents for that partition.
 #   CONTAINER_IMAGE        - Container image (e.g., "camunda/camunda:8.8.1")
 #
 # Optional variables:
 #   EXPORTER_ID            - Exporter id to patch (default: "camundaexporter")
-#   PARTITION_IDS          - Space-separated partition ids (default: auto-detect all
-#                            partitions on each broker's PVC)
+#   IMAGE_PULL_SECRET      - imagePullSecrets name for a private registry (default: none)
 #   STATEFULSET_NAME       - StatefulSet name (default: "camunda")
 #   PVC_PREFIX             - PVC name prefix (default: "data-${STATEFULSET_NAME}")
 #   CONTAINER_USER_ID      - User ID (default: 1000)
@@ -34,7 +40,7 @@ set -euo pipefail
 # Usage:
 #   export NAMESPACE="camunda"
 #   export BROKER_IDS="0 1 2"
-#   export NEW_POSITION="-1"
+#   export PARTITION_POSITIONS="1:13417758 3:-1"
 #   export CONTAINER_IMAGE="camunda/camunda:8.8.1"
 #   ./generate-reset-job.sh
 #
@@ -43,12 +49,21 @@ set -euo pipefail
 # Validate required variables
 : "${NAMESPACE:?ERROR: NAMESPACE is required}"
 : "${BROKER_IDS:?ERROR: BROKER_IDS is required (space-separated, e.g., '0 1 2')}"
-: "${NEW_POSITION:?ERROR: NEW_POSITION is required (-1 reprocesses all incidents)}"
+: "${PARTITION_POSITIONS:?ERROR: PARTITION_POSITIONS is required (e.g., '1:13417758 3:-1')}"
 : "${CONTAINER_IMAGE:?ERROR: CONTAINER_IMAGE is required (e.g., 'camunda/camunda:8.8.1')}"
+
+# Validate the PARTITION_POSITIONS tuples so a typo is caught here, not at Job runtime
+for tuple in $PARTITION_POSITIONS; do
+        if [[ ! "$tuple" =~ ^[^:]+:[^:]+$ ]]; then
+                echo "ERROR: Invalid PARTITION_POSITIONS entry '${tuple}'" >&2
+                echo "Expected space-separated partitionId:position tuples, e.g. '1:13417758 3:-1'" >&2
+                exit 1
+        fi
+done
 
 # Optional variables with defaults
 EXPORTER_ID="${EXPORTER_ID:-camundaexporter}"
-PARTITION_IDS="${PARTITION_IDS:-}"
+IMAGE_PULL_SECRET="${IMAGE_PULL_SECRET:-}"
 STATEFULSET_NAME="${STATEFULSET_NAME:-camunda}"
 PVC_PREFIX="${PVC_PREFIX:-data-${STATEFULSET_NAME}}"
 CONTAINER_USER_ID="${CONTAINER_USER_ID:-1000}"
@@ -100,6 +115,16 @@ generate_job_for_broker() {
 	        runAsGroup: ${CONTAINER_GROUP_ID}
 	        fsGroup: ${CONTAINER_FS_GROUP}
 	        runAsNonRoot: true
+	EOF
+
+        if [ -n "${IMAGE_PULL_SECRET}" ]; then
+                cat <<-EOF
+		      imagePullSecrets:
+		        - name: ${IMAGE_PULL_SECRET}
+		EOF
+        fi
+
+        cat <<-EOF
 	      containers:
 	        - name: reset
 	          image: ${CONTAINER_IMAGE}
@@ -113,20 +138,14 @@ generate_job_for_broker() {
 	              value: "${broker_id}"
 	            - name: EXPORTER_ID
 	              value: "${EXPORTER_ID}"
-	            - name: NEW_POSITION
-	              value: "${NEW_POSITION}"
+	            - name: PARTITION_POSITIONS
+	              value: "${PARTITION_POSITIONS}"
+	            - name: NAMESPACE
+	              value: "${NAMESPACE}"
+	            - name: PVC_NAME
+	              value: "${PVC_PREFIX}-${broker_id}"
 	            - name: CAMUNDA_LOG_FILE_APPENDER_ENABLED
 	              value: "false"
-	EOF
-
-        if [ -n "${PARTITION_IDS}" ]; then
-                cat <<-EOF
-		            - name: PARTITION_IDS
-		              value: "${PARTITION_IDS}"
-		EOF
-        fi
-
-        cat <<-EOF
 	          resources:
 	            requests:
 	              memory: 500Mi
