@@ -101,13 +101,25 @@ public class BackupServiceImpl implements BackupService {
         final Collection<IndexDescriptor> allDescriptors =
             Stream.concat(indexDescriptors.stream(), templateDescriptors.stream()).toList();
 
-        try (final SchemaManager schemaManager = buildSchemaManager()) {
+        ClientAdapter clientAdapter = null;
+        SchemaManager schemaManager = null;
+        try {
+          clientAdapter = ClientAdapter.of(searchEngineConfiguration.connect());
+          schemaManager = buildSchemaManager(clientAdapter);
+
           if (!schemaManager.validateIndices(allDescriptors).isEmpty()) {
             throw new InvalidRequestException("Indexes validation failed when taking a backup");
           }
 
           if (!schemaManager.isAliasIntegrityValid(allDescriptors)) {
             throw new InvalidRequestException("Aliases validation failed when taking a backup");
+          }
+        } finally {
+          if (schemaManager != null) {
+            schemaManager.close();
+          }
+          if (clientAdapter != null && clientAdapter.getSearchEngineClient() != null) {
+            clientAdapter.getSearchEngineClient().close();
           }
         }
       }
@@ -116,8 +128,7 @@ public class BackupServiceImpl implements BackupService {
     }
   }
 
-  private SchemaManager buildSchemaManager() {
-    final ClientAdapter clientAdapter = ClientAdapter.of(searchEngineConfiguration.connect());
+  private SchemaManager buildSchemaManager(final ClientAdapter clientAdapter) {
     return new SchemaManager(
         clientAdapter.getSearchEngineClient(),
         indexDescriptors,
