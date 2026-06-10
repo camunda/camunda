@@ -212,9 +212,10 @@ jobs:
           NOTIFY_ORIGINAL: "false"
           TARGET_BACKPORT_PR: ${{ inputs.target_backport_pr || '' }}
           WORKFLOW_RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          STALE_DATA: ${{ needs.collect-stale-backports.outputs.stale_data }}
         run: |
           chmod +x .ci/scripts/stale-backport-scripts/notify-stale-backports.sh
-          stale_data='${{ needs.collect-stale-backports.outputs.stale_data }}'
+          stale_data="$STALE_DATA"
           if [[ -n "$TARGET_BACKPORT_PR" ]]; then
             echo "🎯 Filtering to backport PR #${TARGET_BACKPORT_PR} only"
             stale_data=$(printf '%s' "$stale_data" | jq --arg pr "$TARGET_BACKPORT_PR" '
@@ -302,9 +303,10 @@ jobs:
           REPOSITORIES: "camunda/camunda,camunda/zeebe-process-test"
           SLACK_USER_MAP_FILE: /tmp/slack-user-map.json
           SLACK_USER_MAP_FALLBACK: ${{ env.SLACK_USER_MAP_FALLBACK }}
+          STALE_DATA: ${{ needs.collect-stale-backports.outputs.stale_data }}
         run: |
           chmod +x .ci/scripts/stale-backport-scripts/format-slack-report.sh
-          payload=$(echo '${{ needs.collect-stale-backports.outputs.stale_data }}' | \
+          payload=$(printf '%s' "$STALE_DATA" | \
             .ci/scripts/stale-backport-scripts/format-slack-report.sh)
 
           {
