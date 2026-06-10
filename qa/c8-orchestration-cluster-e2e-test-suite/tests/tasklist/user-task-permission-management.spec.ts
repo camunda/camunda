@@ -627,7 +627,11 @@ test.describe
 
     await taskPanelPage.goToTaskDetails(bobUserTaskKey);
 
-    await expect(taskDetailsPage.completeTaskButton).toBeDisabled();
+    // Alice is not the assignee and has no permission to read the task's
+    // variables or process definition, so the task body — and with it the
+    // Complete Task button — is never rendered for her, preventing completion.
+    await expect(taskDetailsPage.detailsInfo).toBeVisible({timeout: 30000});
+    await expect(taskDetailsPage.completeTaskButton).toBeHidden();
   });
 });
 
