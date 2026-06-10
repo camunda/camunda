@@ -7,9 +7,10 @@
  */
 package io.camunda.configuration;
 
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
-public class Security {
+public class Security extends CamundaSecurityLibraryProperties {
 
   /** TLS configuration. */
   @NestedConfigurationProperty private Tls transportLayerSecurity = new Tls();

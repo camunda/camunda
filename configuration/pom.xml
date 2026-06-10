@@ -207,6 +207,17 @@
       <groupId>io.camunda</groupId>
       <artifactId>dynamic-node-id-provider</artifactId>
     </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-library-spring-boot-starter</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-library-api</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
