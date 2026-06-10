@@ -282,7 +282,7 @@ Benchmark clusters have authentication enabled. Logging into Operate, Tasklist a
 
 ```sh
 kubectl -n <namespace> port-forward svc/camunda 8080:8080 &
-kubectl -n <namespace> port-forward pod/keycloak-0 18080:8080 &
+kubectl -n <namespace> port-forward svc/keycloak 18080:8080 &
 wait
 ```
 
@@ -293,6 +293,28 @@ kubectl -n <namespace> get secret camunda-credentials -o jsonpath="{.data.identi
 ```
 
 3. Open <http://localhost:8080> and log in with user `demo` and the password from the previous step.
+
+#### Using c8ctl (CLI access)
+
+To use [c8ctl](https://github.com/camunda/c8ctl) against the cluster, port-forward the REST gateway and Keycloak, then export the credentials from the namespace secrets:
+
+```sh
+kubectl -n <namespace> port-forward svc/camunda-gateway 8080:8080 &
+kubectl -n <namespace> port-forward svc/keycloak 18080:8080 &
+
+export CAMUNDA_BASE_URL=http://localhost:8080
+export CAMUNDA_OAUTH_URL=http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/token
+export CAMUNDA_CLIENT_ID=orchestration
+export CAMUNDA_CLIENT_SECRET=$(kubectl -n <namespace> get secret camunda-credentials \
+  -o jsonpath='{.data.orchestration-security-authentication-oidc-secret}' | base64 --decode)
+export CAMUNDA_TOKEN_AUDIENCE=orchestration-api
+```
+
+Verify the connection:
+
+```sh
+c8 list pd
+```
 
 ### How to clean up a load test
 
