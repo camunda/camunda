@@ -39,6 +39,9 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 public class ContainerRuntimePropertiesUtilTest {
 
+  /** The expected Camunda/Connectors Docker image version of this branch. */
+  private static final String DEFAULT_SNAPSHOT_IMAGE_VERSION = "8.9-SNAPSHOT";
+
   @Test
   void shouldReturnDefaults() {
     // given
@@ -51,10 +54,12 @@ public class ContainerRuntimePropertiesUtilTest {
     // then
     assertThat(propertiesUtil.getElasticsearchVersion()).isEqualTo("8.13.0");
     assertThat(propertiesUtil.getCamundaDockerImageName()).isEqualTo("camunda/camunda");
-    assertThat(propertiesUtil.getCamundaDockerImageVersion()).isEqualTo("SNAPSHOT");
+    assertThat(propertiesUtil.getCamundaDockerImageVersion())
+        .isEqualTo(DEFAULT_SNAPSHOT_IMAGE_VERSION);
     assertThat(propertiesUtil.getConnectorsDockerImageName())
         .isEqualTo("camunda/connectors-bundle");
-    assertThat(propertiesUtil.getConnectorsDockerImageVersion()).isEqualTo("SNAPSHOT");
+    assertThat(propertiesUtil.getConnectorsDockerImageVersion())
+        .isEqualTo(DEFAULT_SNAPSHOT_IMAGE_VERSION);
 
     assertThat(propertiesUtil.getCoverageReportProperties().getCoverageReportDirectory())
         .isEqualTo("target/coverage-report");
@@ -91,25 +96,12 @@ public class ContainerRuntimePropertiesUtilTest {
     // then
     assertThat(propertiesUtil.getElasticsearchVersion()).isEqualTo("8.13.0");
     assertThat(propertiesUtil.getCamundaDockerImageName()).isEqualTo("camunda/camunda");
-    assertThat(propertiesUtil.getCamundaDockerImageVersion()).isEqualTo("SNAPSHOT");
+    assertThat(propertiesUtil.getCamundaDockerImageVersion())
+        .isEqualTo(DEFAULT_SNAPSHOT_IMAGE_VERSION);
     assertThat(propertiesUtil.getConnectorsDockerImageName())
         .isEqualTo("camunda/connectors-bundle");
-    assertThat(propertiesUtil.getConnectorsDockerImageVersion()).isEqualTo("SNAPSHOT");
-  }
-
-  @ParameterizedTest
-  @CsvSource({"SNAPSHOT"})
-  void shouldReturnDefaultVersions(final String expectedVersion) {
-    // given
-    final Properties properties = new Properties();
-
-    // when
-    final ContainerRuntimePropertiesUtil propertiesUtil =
-        new ContainerRuntimePropertiesUtil(properties);
-
-    // then
-    assertThat(propertiesUtil.getCamundaDockerImageVersion()).isEqualTo(expectedVersion);
-    assertThat(propertiesUtil.getConnectorsDockerImageVersion()).isEqualTo(expectedVersion);
+    assertThat(propertiesUtil.getConnectorsDockerImageVersion())
+        .isEqualTo(DEFAULT_SNAPSHOT_IMAGE_VERSION);
   }
 
   @ParameterizedTest
@@ -162,10 +154,10 @@ public class ContainerRuntimePropertiesUtilTest {
     // patch releases
     "8.8.1, 8.8.1",
     // SNAPSHOT versions
-    "8.9.0-SNAPSHOT, SNAPSHOT",
-    "8.8.1-SNAPSHOT, SNAPSHOT",
-    "8.8.2-SNAPSHOT, SNAPSHOT",
-    "8.9.0-snapshot, SNAPSHOT",
+    "8.9.0-SNAPSHOT, " + DEFAULT_SNAPSHOT_IMAGE_VERSION,
+    "8.8.1-SNAPSHOT, " + DEFAULT_SNAPSHOT_IMAGE_VERSION,
+    "8.8.2-SNAPSHOT, " + DEFAULT_SNAPSHOT_IMAGE_VERSION,
+    "8.9.0-snapshot, " + DEFAULT_SNAPSHOT_IMAGE_VERSION,
     // rc/alpha versions
     "8.8.0-rc1, 8.8.0-rc1",
     "8.8.0-alpha1, 8.8.0-alpha1",
@@ -220,10 +212,10 @@ public class ContainerRuntimePropertiesUtilTest {
     // patch releases
     "8.8.1, 8.8.1",
     // SNAPSHOT versions
-    "8.9.0-SNAPSHOT, SNAPSHOT",
-    "8.8.1-SNAPSHOT, SNAPSHOT",
-    "8.8.2-SNAPSHOT, SNAPSHOT",
-    "8.9.0-snapshot, SNAPSHOT",
+    "8.9.0-SNAPSHOT, " + DEFAULT_SNAPSHOT_IMAGE_VERSION,
+    "8.8.1-SNAPSHOT, " + DEFAULT_SNAPSHOT_IMAGE_VERSION,
+    "8.8.2-SNAPSHOT, " + DEFAULT_SNAPSHOT_IMAGE_VERSION,
+    "8.9.0-snapshot, " + DEFAULT_SNAPSHOT_IMAGE_VERSION,
     // rc/alpha versions
     "8.8.0-rc1, 8.8.0-rc1",
     "8.8.0-alpha1, 8.8.0-alpha1",
