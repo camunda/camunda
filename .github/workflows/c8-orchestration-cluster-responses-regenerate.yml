@@ -23,6 +23,9 @@ permissions:
   contents: read
   pull-requests: write
 
+env:
+  TEST_OWNER: '@camunda/core-features'
+
 jobs:
   regenerate:
     name: Regenerate responses (${{ matrix.ref }})

@@ -12,6 +12,9 @@ on:
 permissions:
   contents: read
 
+env:
+  TEST_OWNER: '@camunda/core-features'
+
 jobs:
   request-validation-tests:
     name: V2 Stateless Tests (${{ matrix.branch }})

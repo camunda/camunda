@@ -81,6 +81,9 @@ defaults:
 
 permissions: {}
 
+env:
+  TEST_OWNER: '@camunda/monorepo-devops-team'
+
 jobs:
   collect-stale-backports:
     name: Collect stale backport PRs

@@ -31,6 +31,7 @@ defaults:
     shell: bash
 
 env:
+  TEST_OWNER: '@camunda/camundaex'
   FLAKY_TEST_RERUN_COUNT: '3'
 
 jobs:

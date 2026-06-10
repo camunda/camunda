@@ -8,6 +8,9 @@ on:
     # Run daily at 02:00 UTC
     - cron: "0 2 * * *"
 
+env:
+  TEST_OWNER: '@camunda/camundaex'
+
 jobs:
   trigger-stable-8-8:
     runs-on: ubuntu-latest
