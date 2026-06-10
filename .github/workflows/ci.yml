@@ -2270,7 +2270,8 @@ jobs:
       - name: Generate Optimize production .tar.gz
         uses: ./.github/actions/run-maven
         with:
-          parameters: install -f optimize -DskipTests -Dskip.docker -PskipFrontendBuild,runAssembly -T1
+          parameters: install -f optimize -DskipTests -Dskip.docker -PskipFrontendBuild,runAssembly
+          threads: 1
       - uses: ./.github/actions/build-platform-docker
         id: build-optimize-docker
         with:
