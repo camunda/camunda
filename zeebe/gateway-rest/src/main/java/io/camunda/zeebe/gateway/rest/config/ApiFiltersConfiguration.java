@@ -45,7 +45,7 @@ public class ApiFiltersConfiguration {
         new FilterRegistrationBean<>();
     registration.setFilter(
         new EndpointAccessErrorFilter(objectMapper, GROUPS_API_DISABLED_ERROR_MESSAGE));
-    registration.addUrlPatterns("/v2/groups/*");
+    registration.addUrlPatterns("/v2/groups/*", "/physical-tenants/*/v2/groups/*");
     registration.setOrder(1);
     return registration;
   }
@@ -58,7 +58,7 @@ public class ApiFiltersConfiguration {
         new FilterRegistrationBean<>();
     registration.setFilter(
         new EndpointAccessErrorFilter(objectMapper, USERS_API_DISABLED_ERROR_MESSAGE));
-    registration.addUrlPatterns("/v2/users/*");
+    registration.addUrlPatterns("/v2/users/*", "/physical-tenants/*/v2/users/*");
     registration.setOrder(1);
     return registration;
   }
@@ -71,7 +71,7 @@ public class ApiFiltersConfiguration {
         new FilterRegistrationBean<>();
     registration.setFilter(
         new EndpointAccessErrorFilter(objectMapper, TENANTS_API_DISABLED_ERROR_MESSAGE));
-    registration.addUrlPatterns("/v2/tenants/*");
+    registration.addUrlPatterns("/v2/tenants/*", "/physical-tenants/*/v2/tenants/*");
     registration.setOrder(1);
     return registration;
   }
