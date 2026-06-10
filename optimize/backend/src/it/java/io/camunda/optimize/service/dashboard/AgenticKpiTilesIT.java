@@ -12,6 +12,8 @@ import static io.camunda.optimize.service.dashboard.AgenticControlDashboardServi
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.KPI_COMPLETED_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.KPI_INCIDENT_RATE_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.KPI_MEDIAN_TOKENS_REPORT_ID;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.KPI_P50_DURATION_REPORT_ID;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.KPI_P95_DURATION_REPORT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 
@@ -93,6 +95,52 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
 
     final Double result = evaluateNumber(KPI_AVG_DURATION_REPORT_ID, noExtraFilters());
     assertThat(result).isCloseTo(7_200_000.0, within(1.0));
+  }
+
+  // ---------------------------------------------------------------------------
+  // P50 duration (median)
+  // ---------------------------------------------------------------------------
+
+  @Test
+  void shouldComputeP50DurationOfCompletedAgenticInstances() {
+    // durations: 1h, 2h, 3h, 4h, 5h → P50 = 3h = 10_800_000 ms
+    final ProcessInstanceDto inst1 = agenticInstance(PROC_KEY, 0L, 0L).duration(3_600_000L).build();
+    final ProcessInstanceDto inst2 = agenticInstance(PROC_KEY, 0L, 0L).duration(7_200_000L).build();
+    final ProcessInstanceDto inst3 =
+        agenticInstance(PROC_KEY, 0L, 0L).duration(10_800_000L).build();
+    final ProcessInstanceDto inst4 =
+        agenticInstance(PROC_KEY, 0L, 0L).duration(14_400_000L).build();
+    final ProcessInstanceDto inst5 =
+        agenticInstance(PROC_KEY, 0L, 0L).duration(18_000_000L).build();
+
+    persistProcessInstances(List.of(inst1, inst2, inst3, inst4, inst5));
+
+    final Double result = evaluateNumber(KPI_P50_DURATION_REPORT_ID, noExtraFilters());
+    // ES percentile approximation — allow small delta
+    assertThat(result).isCloseTo(10_800_000.0, within(10_000.0));
+  }
+
+  // ---------------------------------------------------------------------------
+  // P95 duration
+  // ---------------------------------------------------------------------------
+
+  @Test
+  void shouldComputeP95DurationOfCompletedAgenticInstances() {
+    // durations: 1h, 2h, 3h, 4h, 5h → P95 ≈ 5h = 18_000_000 ms
+    final ProcessInstanceDto inst1 = agenticInstance(PROC_KEY, 0L, 0L).duration(3_600_000L).build();
+    final ProcessInstanceDto inst2 = agenticInstance(PROC_KEY, 0L, 0L).duration(7_200_000L).build();
+    final ProcessInstanceDto inst3 =
+        agenticInstance(PROC_KEY, 0L, 0L).duration(10_800_000L).build();
+    final ProcessInstanceDto inst4 =
+        agenticInstance(PROC_KEY, 0L, 0L).duration(14_400_000L).build();
+    final ProcessInstanceDto inst5 =
+        agenticInstance(PROC_KEY, 0L, 0L).duration(18_000_000L).build();
+
+    persistProcessInstances(List.of(inst1, inst2, inst3, inst4, inst5));
+
+    final Double result = evaluateNumber(KPI_P95_DURATION_REPORT_ID, noExtraFilters());
+    // ES percentile approximation — allow generous delta for P95 with small dataset
+    assertThat(result).isCloseTo(18_000_000.0, within(1_000_000.0));
   }
 
   // ---------------------------------------------------------------------------
@@ -342,6 +390,52 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
   }
 
   @Test
+  void shouldApplyDateFilterToP50Duration() {
+    // within window: duration 1h
+    final ProcessInstanceDto recent =
+        agenticInstance(PROC_KEY, 0L, 0L)
+            .startDate(OffsetDateTime.now().minusHours(3))
+            .endDate(OffsetDateTime.now().minusHours(2))
+            .duration(3_600_000L)
+            .build();
+    // outside window: duration 5h — should not affect P50
+    final ProcessInstanceDto old =
+        agenticInstance(PROC_KEY, 0L, 0L)
+            .startDate(OffsetDateTime.now().minusDays(10))
+            .endDate(OffsetDateTime.now().minusDays(9))
+            .duration(18_000_000L)
+            .build();
+
+    persistProcessInstances(List.of(recent, old));
+
+    assertThat(evaluateNumber(KPI_P50_DURATION_REPORT_ID, rollingEndDateFilter(1L, DateUnit.DAYS)))
+        .isCloseTo(3_600_000.0, within(1.0));
+  }
+
+  @Test
+  void shouldApplyDateFilterToP95Duration() {
+    // within window: duration 1h
+    final ProcessInstanceDto recent =
+        agenticInstance(PROC_KEY, 0L, 0L)
+            .startDate(OffsetDateTime.now().minusHours(3))
+            .endDate(OffsetDateTime.now().minusHours(2))
+            .duration(3_600_000L)
+            .build();
+    // outside window: duration 5h — should not affect P95
+    final ProcessInstanceDto old =
+        agenticInstance(PROC_KEY, 0L, 0L)
+            .startDate(OffsetDateTime.now().minusDays(10))
+            .endDate(OffsetDateTime.now().minusDays(9))
+            .duration(18_000_000L)
+            .build();
+
+    persistProcessInstances(List.of(recent, old));
+
+    assertThat(evaluateNumber(KPI_P95_DURATION_REPORT_ID, rollingEndDateFilter(1L, DateUnit.DAYS)))
+        .isCloseTo(3_600_000.0, within(1.0));
+  }
+
+  @Test
   void shouldApplyDateFilterToIncidentRate() {
     // within window: 1 resolved incident
     final String recentId = UUID.randomUUID().toString();
@@ -508,6 +602,46 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
                 KPI_AVG_DURATION_REPORT_ID,
                 withDefinitions(List.of(new ReportDataDefinitionDto(procKeyA)))))
         .isCloseTo(7_200_000.0, within(1.0));
+  }
+
+  @Test
+  void shouldApplyDefinitionFilterToP50Duration() {
+    final String procKeyA = "proc-p50-dur-a";
+    final String procKeyB = "proc-p50-dur-b";
+
+    // procKeyA: durations 1h and 3h → P50 = 2h = 7_200_000 ms
+    // procKeyB: duration 10h — should be excluded
+    persistProcessInstances(
+        List.of(
+            agenticInstance(procKeyA, 0L, 0L).duration(3_600_000L).build(),
+            agenticInstance(procKeyA, 0L, 0L).duration(10_800_000L).build(),
+            agenticInstance(procKeyB, 0L, 0L).duration(36_000_000L).build()));
+
+    assertThat(
+            evaluateNumber(
+                KPI_P50_DURATION_REPORT_ID,
+                withDefinitions(List.of(new ReportDataDefinitionDto(procKeyA)))))
+        .isCloseTo(7_200_000.0, within(10_000.0));
+  }
+
+  @Test
+  void shouldApplyDefinitionFilterToP95Duration() {
+    final String procKeyA = "proc-p95-dur-a";
+    final String procKeyB = "proc-p95-dur-b";
+
+    // procKeyA: durations 1h and 3h → P95 ≈ 3h = 10_800_000 ms
+    // procKeyB: duration 10h — should be excluded
+    persistProcessInstances(
+        List.of(
+            agenticInstance(procKeyA, 0L, 0L).duration(3_600_000L).build(),
+            agenticInstance(procKeyA, 0L, 0L).duration(10_800_000L).build(),
+            agenticInstance(procKeyB, 0L, 0L).duration(36_000_000L).build()));
+
+    assertThat(
+            evaluateNumber(
+                KPI_P95_DURATION_REPORT_ID,
+                withDefinitions(List.of(new ReportDataDefinitionDto(procKeyA)))))
+        .isCloseTo(10_800_000.0, within(1_000_000.0));
   }
 
   @Test
