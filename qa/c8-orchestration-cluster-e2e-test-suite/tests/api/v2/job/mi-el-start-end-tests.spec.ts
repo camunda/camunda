@@ -168,9 +168,7 @@ test.describe
         await assertStatusCode(failRes, 204);
 
         // Regression check #1 (#54238 fixed): /jobs/search must return HTTP 200
-        // even when an EL job is in FAILED state. Before the fix, null elementId
-        // (flowNodeId) caused HTTP 500. Assert state=FAILED, elementId='miTask'
-        // (not null/empty), confirming the fix and making the check precise.
+        // even when an EL job is in FAILED state.
         await expect(async () => {
           const res = await request.post(buildUrl('/jobs/search'), {
             headers: jsonHeaders(),
@@ -229,8 +227,7 @@ test.describe
         await assertStatusCode(updateRes, 204);
 
         // Regression check #2 (#54238 fixed): /jobs/search must return HTTP 200
-        // even when the EL job is in RETRIES_UPDATED state. Assert state on the
-        // specific job to confirm it is in RETRIES_UPDATED and the search works.
+        // even when the EL job is in RETRIES_UPDATED state.
         await expect(async () => {
           const res = await request.post(buildUrl('/jobs/search'), {
             headers: jsonHeaders(),
