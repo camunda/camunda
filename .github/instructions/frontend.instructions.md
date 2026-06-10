@@ -69,7 +69,7 @@ see `docs/monorepo-docs/frontend/`.
 # From webapp/client/
 npm ci                    # Install dependencies (workspace)
 npm run dev:oc            # Dev server on :3000
-npm run lint              # ESLint + Prettier
+npm run lint              # ESLint + Prettier + Knip (unused exports/dependencies)
 
 # From webapp/client/apps/orchestration-cluster-webapp/
 npm run typecheck         # TypeScript across all tsconfigs

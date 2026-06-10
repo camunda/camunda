@@ -88,7 +88,7 @@ When a feature is not ready for users but code needs to merge to `main`, gate it
 Run these commands:
 
     # From webapp/client/
-    npm run lint             # ESLint + Prettier (workspace)
+    npm run lint             # ESLint + Prettier + Knip (workspace; Knip fails on unused exports/dependencies)
 
     # From webapp/client/apps/orchestration-cluster-webapp/
     npm run typecheck        # TypeScript across all tsconfigs

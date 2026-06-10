@@ -114,7 +114,7 @@ When you encounter a MobX store in legacy code, don't port it. Decompose it by a
 | Hardcoded `px` / `rem` values | Carbon spacing tokens (`var(--cds-spacing-05)`, `$spacing-05`) |
 | Carbon token CSS vars (`--cds-border-subtle-01`) | Same — keep using Carbon CSS custom properties |
 
-SCSS modules use bracket notation for class access: `className={styles['container']!}`. The `!` is a TypeScript non-null assertion because CSS module types are optional by default.
+SCSS modules use dot notation for class access: `className={styles.container}`.
 
 ### Component structure
 
