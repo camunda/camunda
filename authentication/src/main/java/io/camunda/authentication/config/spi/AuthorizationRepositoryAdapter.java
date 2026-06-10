@@ -32,10 +32,10 @@ import org.slf4j.LoggerFactory;
  * the library's data shape. The library's {@code ResourcePermissionService} consumes the returned
  * records to answer "does this principal have permission P on resource R of type T?".
  *
- * <p>Owner-id resolution mirrors {@code io.camunda.security.impl.AuthorizationChecker}: direct
- * grants on the user/client plus grants reachable via the principal's groups, roles, and mapping
- * rules. Lookups bypass tenant/resource access checks because this port is consulted to compute
- * those checks itself ({@link ResourceAccessChecks#disabled()}).
+ * <p>Owner-id resolution mirrors {@code io.camunda.security.core.authz.AuthorizationChecker}:
+ * direct grants on the user/client plus grants reachable via the principal's groups, roles, and
+ * mapping rules. Lookups bypass tenant/resource access checks because this port is consulted to
+ * compute those checks itself ({@link ResourceAccessChecks#disabled()}).
  *
  * <p>The injected {@link AuthorizationReader} is wired with Spring's {@code @Lazy} at the bean
  * method (see {@code WebSecurityConfig.authorizationRepositoryPort}) so the {@code SearchClients}
