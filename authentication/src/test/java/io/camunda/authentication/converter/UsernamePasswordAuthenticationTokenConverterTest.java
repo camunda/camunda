@@ -10,13 +10,13 @@ package io.camunda.authentication.converter;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.authentication.service.MembershipService;
-import io.camunda.authentication.service.MembershipService.PrincipalType;
-import io.camunda.security.auth.CamundaAuthentication;
-import java.util.Map;
+import io.camunda.authentication.service.MembershipService.MembershipResolver;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -28,11 +28,13 @@ import org.springframework.security.oauth2.client.authentication.OAuth2Authentic
 public class UsernamePasswordAuthenticationTokenConverterTest {
 
   @Mock private MembershipService membershipService;
+  @Mock private MembershipResolver resolver;
   private UsernamePasswordAuthenticationTokenConverter authenticationConverter;
 
   @BeforeEach
   void setup() throws Exception {
     MockitoAnnotations.openMocks(this).close();
+    when(membershipService.newResolver("test-user")).thenReturn(resolver);
     authenticationConverter = new UsernamePasswordAuthenticationTokenConverter(membershipService);
   }
 
@@ -61,23 +63,48 @@ public class UsernamePasswordAuthenticationTokenConverterTest {
   }
 
   @Test
-  void shouldDelegateToMembershipServiceWithEmptyClaimsAndUserPrincipal() {
+  void shouldBuildAuthenticationFromResolver() {
     // given
-    final var expected = CamundaAuthentication.of(b -> b.user("test-user"));
-    when(membershipService.resolveMemberships(any(), any(), any())).thenReturn(expected);
-    final var authentication = getUsernamePasswordAuthentication("test-user", "test-password");
+    when(resolver.groups()).thenReturn(List.of("g1"));
+    when(resolver.roles()).thenReturn(List.of("r1"));
+    when(resolver.tenants()).thenReturn(List.of("t1"));
 
     // when
-    final var camundaAuthentication = authenticationConverter.convert(authentication);
+    final var auth = authenticationConverter.convert(usernamePassword("test-user"));
 
-    // then — converter passes the username through with empty claims as a USER principal,
-    // and returns whatever the service produced.
-    verify(membershipService).resolveMemberships(Map.of(), "test-user", PrincipalType.USER);
-    assertThat(camundaAuthentication).isSameAs(expected);
+    // then — username plus the three resolver-backed memberships are wired through
+    assertThat(auth.authenticatedUsername()).isEqualTo("test-user");
+    assertThat(auth.authenticatedGroupIds()).containsExactly("g1");
+    assertThat(auth.authenticatedRoleIds()).containsExactly("r1");
+    assertThat(auth.authenticatedTenantIds()).containsExactly("t1");
   }
 
-  private Authentication getUsernamePasswordAuthentication(
-      final String username, final String password) {
-    return new UsernamePasswordAuthenticationToken(username, password);
+  @Test
+  void shouldNotWireMappingRulesSupplierForBasicAuth() {
+    // given — BASIC auth has no token claims, so mappingRules must remain empty without ever
+    // calling the resolver.
+    // when
+    final var auth = authenticationConverter.convert(usernamePassword("test-user"));
+
+    // then
+    assertThat(auth.authenticatedMappingRuleIds()).isEmpty();
+    verify(resolver, never()).mappingRules();
+  }
+
+  @Test
+  void shouldRequestResolverFromServiceWithUsername() {
+    // given
+    final var authentication = usernamePassword("test-user");
+
+    // when
+    authenticationConverter.convert(authentication);
+
+    // then — converter delegates resolver creation to the service using the username overload
+    verify(membershipService).newResolver("test-user");
+    verify(membershipService, never()).newResolver(any(), any(), any());
+  }
+
+  private Authentication usernamePassword(final String username) {
+    return new UsernamePasswordAuthenticationToken(username, "ignored");
   }
 }

@@ -8,10 +8,8 @@
 package io.camunda.authentication.converter;
 
 import io.camunda.authentication.service.MembershipService;
-import io.camunda.authentication.service.MembershipService.PrincipalType;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationConverter;
-import java.util.Map;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 
@@ -31,7 +29,15 @@ public class UsernamePasswordAuthenticationTokenConverter
 
   @Override
   public CamundaAuthentication convert(final Authentication authentication) {
-    return membershipService.resolveMemberships(
-        Map.of(), authentication.getName(), PrincipalType.USER);
+    final var username = authentication.getName();
+    final var resolver = membershipService.newResolver(username);
+    // BASIC auth has no token claims to match mapping rules against, so we deliberately skip
+    // wiring mappingRulesSupplier — authenticatedMappingRuleIds() will simply return List.of().
+    return CamundaAuthentication.of(
+        a ->
+            a.user(username)
+                .groupIdsSupplier(resolver::groups)
+                .roleIdsSupplier(resolver::roles)
+                .tenantsSupplier(resolver::tenants));
   }
 }
