@@ -31,7 +31,6 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.util.List;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
@@ -137,8 +136,6 @@ public class WaitStateAuthorizationsIT {
     assertThat(result.items().getFirst().getElementId()).isEqualTo("task");
   }
 
-  @Disabled(
-      "Wait-state search authorization not yet enforced — see https://github.com/camunda/camunda/issues/54604")
   @Test
   void shouldDenyUserAuthorizedForOtherProcess(
       @Authenticated(OTHER_PROCESS_USER) final CamundaClient client) {
