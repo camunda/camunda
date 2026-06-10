@@ -31,9 +31,10 @@ import org.jspecify.annotations.NullMarked;
  * ResourceAccessChecks#disabled()}), because this class <em>is</em> the authorization data source —
  * applying access control recursively here would cause infinite recursion.
  *
- * <p>Callers are responsible for short-circuiting when {@code ownerIds} is empty (e.g. anonymous
- * principals); CSL's {@link io.camunda.security.core.authz.AuthorizationChecker} performs this
- * guard before invoking any port method.
+ * <p>This implementation defensively short-circuits when {@code ownerIds} is empty (e.g. anonymous
+ * principals), returning empty results; CSL's {@link
+ * io.camunda.security.core.authz.AuthorizationChecker} also performs this guard before invoking any
+ * port method.
  */
 @NullMarked
 public class SearchAuthorizationScopeRepository implements AuthorizationScopeRepositoryPort {
@@ -55,6 +56,9 @@ public class SearchAuthorizationScopeRepository implements AuthorizationScopeRep
       final Map<EntityType, Set<String>> ownerIds,
       final AuthorizationResourceType resourceType,
       final PermissionType permissionType) {
+    if (ownerIds.isEmpty()) {
+      return List.of();
+    }
     final var query =
         AuthorizationQuery.of(
             q ->
@@ -82,6 +86,9 @@ public class SearchAuthorizationScopeRepository implements AuthorizationScopeRep
       final AuthorizationResourceType resourceType,
       final PermissionType permissionType,
       final List<String> resourceIds) {
+    if (ownerIds.isEmpty()) {
+      return false;
+    }
     final var query =
         AuthorizationQuery.of(
             q ->
@@ -106,6 +113,9 @@ public class SearchAuthorizationScopeRepository implements AuthorizationScopeRep
       final Map<EntityType, Set<String>> ownerIds,
       final AuthorizationResourceType resourceType,
       final List<String> resourceIds) {
+    if (ownerIds.isEmpty()) {
+      return Set.of();
+    }
     final var query =
         AuthorizationQuery.of(
             q ->
