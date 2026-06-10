@@ -26,4 +26,17 @@
     color: var(--cds-text-secondary);
     margin: 0 0 0.5rem;
   }
+
+  &__section-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 1rem 0 0.25rem;
+    color: var(--cds-text-primary);
+  }
+
+  &__section-divider {
+    border: none;
+    border-top: 1px solid var(--cds-border-subtle-01, var(--silver-darken-80));
+    margin: 0;
+  }
 }

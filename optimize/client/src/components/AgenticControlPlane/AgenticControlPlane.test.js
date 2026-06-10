@@ -64,7 +64,7 @@ it('should pass the default Last 30 days filter to DashboardRenderer', async () 
 
   await runAllEffects();
 
-  expect(node.find('DashboardRenderer').prop('filter')).toEqual([
+  const expectedFilter = [
     {
       type: 'instanceEndDate',
       filterLevel: 'instance',
@@ -76,7 +76,9 @@ it('should pass the default Last 30 days filter to DashboardRenderer', async () 
         includeUndefined: false,
       },
     },
-  ]);
+  ];
+  expect(node.find('.AgenticControlPlane__kpi-section').find('DashboardRenderer').prop('filter')).toEqual(expectedFilter);
+  expect(node.find('.AgenticControlPlane__token-section').find('DashboardRenderer').prop('filter')).toEqual(expectedFilter);
 });
 
 it('should update the filter when the date preset changes', async () => {
@@ -86,7 +88,7 @@ it('should update the filter when the date preset changes', async () => {
 
   node.find('FilterBar').prop('onPresetChange')('7d');
 
-  expect(node.find('DashboardRenderer').prop('filter')).toEqual([
+  const expectedFilter = [
     {
       type: 'instanceEndDate',
       filterLevel: 'instance',
@@ -98,7 +100,9 @@ it('should update the filter when the date preset changes', async () => {
         includeUndefined: false,
       },
     },
-  ]);
+  ];
+  expect(node.find('.AgenticControlPlane__kpi-section').find('DashboardRenderer').prop('filter')).toEqual(expectedFilter);
+  expect(node.find('.AgenticControlPlane__token-section').find('DashboardRenderer').prop('filter')).toEqual(expectedFilter);
 });
 
 it('should render the page header with title and description', async () => {
@@ -118,14 +122,14 @@ it('should pass the loaded tiles to DashboardRenderer', async () => {
 
   await runAllEffects();
 
-  expect(node.find('DashboardRenderer').prop('tiles')).toEqual(tiles);
+  expect(node.find('.AgenticControlPlane__kpi-section').find('DashboardRenderer').prop('tiles')).toEqual(tiles);
 });
 
 it('should hide visibleInL0Only tiles when a process is selected', async () => {
   const tiles = [
-    {id: 'l0-tile', configuration: {visibleInL0Only: true}},
-    {id: 'l1-tile', configuration: {visibleInL1Only: true}},
-    {id: 'common-tile', configuration: {}},
+    {id: 'l0-tile', configuration: {visibleInL0Only: true}, position: {x: 0, y: 0}},
+    {id: 'l1-tile', configuration: {visibleInL1Only: true}, position: {x: 1, y: 0}},
+    {id: 'common-tile', configuration: {}, position: {x: 2, y: 0}},
   ];
   loadAgenticDashboard.mockReturnValueOnce({tiles, availableFilters: []});
 
@@ -134,22 +138,22 @@ it('should hide visibleInL0Only tiles when a process is selected', async () => {
 
   node.find('FilterBar').prop('onProcessScopeChange')('my-process');
 
-  const visibleTiles = node.find('DashboardRenderer').prop('tiles');
+  const visibleTiles = node.find('.AgenticControlPlane__kpi-section').find('DashboardRenderer').prop('tiles');
   expect(visibleTiles.map((t) => t.id)).toEqual(['l1-tile', 'common-tile']);
 });
 
 it('should hide visibleInL1Only tiles when no process is selected (L0)', async () => {
   const tiles = [
-    {id: 'l0-tile', configuration: {visibleInL0Only: true}},
-    {id: 'l1-tile', configuration: {visibleInL1Only: true}},
-    {id: 'common-tile', configuration: {}},
+    {id: 'l0-tile', configuration: {visibleInL0Only: true}, position: {x: 0, y: 0}},
+    {id: 'l1-tile', configuration: {visibleInL1Only: true}, position: {x: 1, y: 0}},
+    {id: 'common-tile', configuration: {}, position: {x: 2, y: 0}},
   ];
   loadAgenticDashboard.mockReturnValueOnce({tiles, availableFilters: []});
 
   const node = shallow(<AgenticControlPlane />);
   await runAllEffects();
 
-  const visibleTiles = node.find('DashboardRenderer').prop('tiles');
+  const visibleTiles = node.find('.AgenticControlPlane__kpi-section').find('DashboardRenderer').prop('tiles');
   expect(visibleTiles.map((t) => t.id)).toEqual(['l0-tile', 'common-tile']);
 });
 
@@ -159,7 +163,7 @@ it('should include definitions in evaluate calls when a process is selected', as
 
   node.find('FilterBar').prop('onProcessScopeChange')('my-process');
 
-  const loadTile = node.find('DashboardRenderer').prop('loadTile');
+  const loadTile = node.find('.AgenticControlPlane__kpi-section').find('DashboardRenderer').prop('loadTile');
   loadTile('report-id', [], {});
 
   expect(evaluateReport).toHaveBeenCalledWith('report-id', [], {}, [
@@ -171,7 +175,7 @@ it('should pass empty definitions in evaluate calls when no process is selected'
   const node = shallow(<AgenticControlPlane />);
   await runAllEffects();
 
-  const loadTile = node.find('DashboardRenderer').prop('loadTile');
+  const loadTile = node.find('.AgenticControlPlane__kpi-section').find('DashboardRenderer').prop('loadTile');
   loadTile('report-id', [], {});
 
   expect(evaluateReport).toHaveBeenCalledWith('report-id', [], {}, []);

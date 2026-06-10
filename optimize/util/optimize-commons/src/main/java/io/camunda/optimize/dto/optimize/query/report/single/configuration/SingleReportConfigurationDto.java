@@ -65,6 +65,7 @@ public class SingleReportConfigurationDto implements Combinable {
   private Boolean stackedBar = false;
   private Boolean horizontalBar = false;
   private Boolean logScale = false;
+  private String valueFormat = null;
 
   public SingleReportConfigurationDto(
       final String color,
@@ -93,7 +94,8 @@ public class SingleReportConfigurationDto implements Combinable {
       final MeasureVisualizationsDto measureVisualizations,
       final Boolean stackedBar,
       final Boolean horizontalBar,
-      final Boolean logScale) {
+      final Boolean logScale,
+      final String valueFormat) {
     if (groupByDateVariableUnit == null) {
       throw new IllegalArgumentException("groupByDateVariableUnit must not be null");
     }
@@ -129,6 +131,7 @@ public class SingleReportConfigurationDto implements Combinable {
     this.stackedBar = stackedBar;
     this.horizontalBar = horizontalBar;
     this.logScale = logScale;
+    this.valueFormat = valueFormat;
   }
 
   public SingleReportConfigurationDto() {}
@@ -381,6 +384,14 @@ public class SingleReportConfigurationDto implements Combinable {
     this.logScale = logScale;
   }
 
+  public String getValueFormat() {
+    return valueFormat;
+  }
+
+  public void setValueFormat(final String valueFormat) {
+    this.valueFormat = valueFormat;
+  }
+
   protected boolean canEqual(final Object other) {
     return other instanceof SingleReportConfigurationDto;
   }
@@ -417,7 +428,8 @@ public class SingleReportConfigurationDto implements Combinable {
         && Objects.equals(measureVisualizations, that.measureVisualizations)
         && Objects.equals(stackedBar, that.stackedBar)
         && Objects.equals(horizontalBar, that.horizontalBar)
-        && Objects.equals(logScale, that.logScale);
+        && Objects.equals(logScale, that.logScale)
+        && Objects.equals(valueFormat, that.valueFormat);
   }
 
   @Override
@@ -449,7 +461,8 @@ public class SingleReportConfigurationDto implements Combinable {
         measureVisualizations,
         stackedBar,
         horizontalBar,
-        logScale);
+        logScale,
+        valueFormat);
   }
 
   @Override
@@ -508,6 +521,8 @@ public class SingleReportConfigurationDto implements Combinable {
         + getHorizontalBar()
         + ", logScale="
         + getLogScale()
+        + ", valueFormat="
+        + getValueFormat()
         + ")";
   }
 
@@ -620,6 +635,10 @@ public class SingleReportConfigurationDto implements Combinable {
     return false;
   }
 
+  private static String defaultValueFormat() {
+    return null;
+  }
+
   public static SingleReportConfigurationDtoBuilder builder() {
     return new SingleReportConfigurationDtoBuilder();
   }
@@ -654,6 +673,7 @@ public class SingleReportConfigurationDto implements Combinable {
     public static final String stackedBar = "stackedBar";
     public static final String horizontalBar = "horizontalBar";
     public static final String logScale = "logScale";
+    public static final String valueFormat = "valueFormat";
   }
 
   public static class SingleReportConfigurationDtoBuilder {
@@ -712,6 +732,8 @@ public class SingleReportConfigurationDto implements Combinable {
     private boolean horizontalBarSet;
     private Boolean logScaleValue;
     private boolean logScaleSet;
+    private String valueFormatValue;
+    private boolean valueFormatSet;
 
     SingleReportConfigurationDtoBuilder() {}
 
@@ -897,6 +919,12 @@ public class SingleReportConfigurationDto implements Combinable {
       return this;
     }
 
+    public SingleReportConfigurationDtoBuilder valueFormat(final String valueFormat) {
+      valueFormatValue = valueFormat;
+      valueFormatSet = true;
+      return this;
+    }
+
     public SingleReportConfigurationDto build() {
       String colorValue = this.colorValue;
       if (!colorSet) {
@@ -1010,6 +1038,10 @@ public class SingleReportConfigurationDto implements Combinable {
       if (!logScaleSet) {
         logScaleValue = SingleReportConfigurationDto.defaultLogScale();
       }
+      String valueFormatValue = this.valueFormatValue;
+      if (!valueFormatSet) {
+        valueFormatValue = SingleReportConfigurationDto.defaultValueFormat();
+      }
       return new SingleReportConfigurationDto(
           colorValue,
           aggregationTypesValue,
@@ -1037,7 +1069,8 @@ public class SingleReportConfigurationDto implements Combinable {
           measureVisualizationsValue,
           stackedBarValue,
           horizontalBarValue,
-          logScaleValue);
+          logScaleValue,
+          valueFormatValue);
     }
 
     @Override
@@ -1096,6 +1129,8 @@ public class SingleReportConfigurationDto implements Combinable {
           + horizontalBarValue
           + ", logScaleValue="
           + logScaleValue
+          + ", valueFormatValue="
+          + valueFormatValue
           + ")";
     }
   }

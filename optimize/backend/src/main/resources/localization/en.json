@@ -5,6 +5,7 @@
     "title": "Agentic control plane",
     "description": "Monitor AI agent adoption, token spend, behavior, and reliability across your processes.",
     "dateRange": "Date range",
+    "tokenUsage": "Token usage",
     "presets": {
       "last7Days": "Last 7 days",
       "last30Days": "Last 30 days",
@@ -299,7 +300,9 @@
       "multi": "Count and duration",
       "evaluationCount": "Evaluation count",
       "variable": "Variable",
-      "process": "Process view"
+      "process": "Process view",
+      "agentInstance": "Agent instance",
+      "totalTokens": "Total tokens"
     },
     "groupBy": {
       "label": "Group by",
@@ -1547,7 +1550,11 @@
       "agenticKpiExecutionAvgDurationName": "Avg execution duration",
       "agenticKpiExecutionAvgDurationDescription": "Average execution duration of completed agentic process instances in the selected period.",
       "agenticKpiExecutionIncidentRateName": "Incident rate",
-      "agenticKpiExecutionIncidentRateDescription": "Number of completed agentic process instances that encountered a resolved incident in the selected period."
+      "agenticKpiExecutionIncidentRateDescription": "Number of completed agentic process instances that encountered a resolved incident in the selected period.",
+      "agenticKpiExecutionAvgTokensName": "Avg tokens per execution",
+      "agenticKpiExecutionAvgTokensDescription": "Average total tokens consumed per completed agentic process instance in the selected period.",
+      "agenticKpiExecutionMedianTokensName": "Median tokens per execution",
+      "agenticKpiExecutionMedianTokensDescription": "Median total tokens consumed per completed agentic process instance in the selected period."
     }
   },
   "managementDashboard": {

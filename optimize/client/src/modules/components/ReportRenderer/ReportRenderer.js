@@ -10,7 +10,7 @@ import React from 'react';
 import deepEqual from 'fast-deep-equal';
 
 import {ErrorBoundary} from 'components';
-import {formatters, getReportResult} from 'services';
+import {formatters, getReportResult, reportConfig} from 'services';
 import {t} from 'translation';
 
 import ProcessReportRenderer from './ProcessReportRenderer';
@@ -91,11 +91,14 @@ export default React.memo(ReportRenderer, (prevProps, nextProps) => {
 });
 
 function checkProcessReport(data) {
+  const viewEntry = reportConfig.view.find(({matcher}) => matcher(data));
+  const definitionsRequired = viewEntry?.requiresDefinition !== false;
   if (
-    isEmpty(data.definitions) ||
-    isEmpty(data.definitions?.[0].key) ||
-    isEmpty(data.definitions?.[0].versions) ||
-    isEmpty(data.definitions?.[0].tenantIds)
+    definitionsRequired &&
+    (isEmpty(data.definitions) ||
+      isEmpty(data.definitions?.[0].key) ||
+      isEmpty(data.definitions?.[0].versions) ||
+      isEmpty(data.definitions?.[0].tenantIds))
   ) {
     return <p>{t('report.noDefinitionMessage.process')}</p>;
   } else {

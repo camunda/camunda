@@ -22,6 +22,7 @@ jest.mock('services', () => {
       convertDurationToSingleNumber: () => 12,
       frequency: (data) => data,
       duration: (data) => data,
+      compact: (v) => (v == null ? '--' : `${v}K`),
     },
     reportConfig: {
       view: [
@@ -188,4 +189,34 @@ it('should call loadVariables for process variable report', () => {
       {processDefinitionKey: 'aKey', processDefinitionVersions: ['1'], tenantIds: ['tenantId']},
     ],
   });
+});
+
+it('should apply valueFormat from configuration instead of measure property', () => {
+  const node = shallow(
+    <Number
+      report={{
+        ...report,
+        data: {
+          ...report.data,
+          configuration: {targetValue: {active: false}, valueFormat: 'compact'},
+        },
+        result: {measures: [{property: 'totalTokens', data: 150000}]},
+      }}
+    />
+  );
+
+  expect(node.find('.data')).toIncludeText('150000K');
+});
+
+it('should fall back to measure property formatter when valueFormat is not set', () => {
+  const node = shallow(
+    <Number
+      report={{
+        ...report,
+        result: {measures: [{property: 'frequency', data: 42}]},
+      }}
+    />
+  );
+
+  expect(node.find('.data')).toIncludeText('42');
 });

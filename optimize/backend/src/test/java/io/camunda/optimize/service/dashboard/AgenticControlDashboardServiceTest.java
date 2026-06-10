@@ -78,7 +78,7 @@ public class AgenticControlDashboardServiceTest {
     assertThat(saved.isAgenticControlDashboard()).isTrue();
     assertThat(saved.isManagementDashboard()).isFalse();
     assertThat(saved.getCollectionId()).isNull();
-    assertThat(saved.getTiles()).hasSize(3);
+    assertThat(saved.getTiles()).hasSize(5);
   }
 
   @Test
@@ -134,7 +134,7 @@ public class AgenticControlDashboardServiceTest {
     underTest.reconcile();
     underTest.reconcile();
 
-    // then — reports are upserted on every call, dashboard is never recreated
+    // then — reports are upserted on every call, dashboard is updated but never recreated
     verify(reportWriter, org.mockito.Mockito.times(2))
         .createOrUpdateSingleProcessReport(
             org.mockito.ArgumentMatchers.eq(AgenticControlDashboardService.KPI_COMPLETED_REPORT_ID),
@@ -144,6 +144,7 @@ public class AgenticControlDashboardServiceTest {
             any(),
             any());
     verify(dashboardWriter, never()).saveDashboard(any());
+    verify(dashboardWriter, org.mockito.Mockito.times(2)).updateDashboard(any(), any());
   }
 
   @Test
@@ -162,7 +163,9 @@ public class AgenticControlDashboardServiceTest {
         .containsExactlyInAnyOrder(
             AgenticControlDashboardService.KPI_COMPLETED_REPORT_ID,
             AgenticControlDashboardService.KPI_AVG_DURATION_REPORT_ID,
-            AgenticControlDashboardService.KPI_INCIDENT_RATE_REPORT_ID);
+            AgenticControlDashboardService.KPI_INCIDENT_RATE_REPORT_ID,
+            AgenticControlDashboardService.KPI_AVG_TOKENS_REPORT_ID,
+            AgenticControlDashboardService.KPI_MEDIAN_TOKENS_REPORT_ID);
   }
 
   @Test
@@ -222,11 +225,11 @@ public class AgenticControlDashboardServiceTest {
     // when
     underTest.reconcile();
 
-    // then reports are upserted (so config changes are applied) but dashboard is not touched
-    verify(reportWriter, org.mockito.Mockito.times(3))
+    // then reports are upserted and dashboard tiles are updated, but dashboard is not recreated
+    verify(reportWriter, org.mockito.Mockito.times(5))
         .createOrUpdateSingleProcessReport(any(), any(), any(), any(), any(), any());
     verify(dashboardWriter, never()).saveDashboard(any());
-    verify(dashboardWriter, never()).updateDashboard(any(), any());
+    verify(dashboardWriter).updateDashboard(any(), any());
     verify(dashboardWriter, never()).deleteDashboard(any());
   }
 
