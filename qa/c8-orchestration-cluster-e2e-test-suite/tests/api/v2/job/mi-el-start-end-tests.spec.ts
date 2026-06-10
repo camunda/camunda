@@ -168,7 +168,9 @@ test.describe
         await assertStatusCode(failRes, 204);
 
         // Regression check #1 (#54238 fixed): /jobs/search must return HTTP 200
-        // even when an EL job is in FAILED state.
+        // even when an EL job is in FAILED state. Before the fix, null elementId
+        // (flowNodeId) caused HTTP 500. Assert state=FAILED, elementId='miTask'
+        // (not null/empty), confirming the fix and making the check precise.
         await expect(async () => {
           const res = await request.post(buildUrl('/jobs/search'), {
             headers: jsonHeaders(),
@@ -178,10 +180,11 @@ test.describe
           const items = (await res.json()).items as Array<{
             jobKey: string;
             elementId: string;
+            state: string;
           }>;
           const failedJob = items.find((j) => j.jobKey === String(jobKey));
           expect(failedJob).toBeDefined();
-          // elementId must be "miTask" (not null/empty); null caused HTTP 500 before fix
+          expect(failedJob?.state).toBe('FAILED');
           expect(failedJob?.elementId).toBe('miTask');
         }).toPass(extendedAssertionOptions);
 
@@ -226,14 +229,22 @@ test.describe
         await assertStatusCode(updateRes, 204);
 
         // Regression check #2 (#54238 fixed): /jobs/search must return HTTP 200
-        // even when the EL job is in RETRIES_UPDATED state.
-        await expectJobsByType(
-          request,
-          piKey,
-          startElJobType,
-          3,
-          extendedAssertionOptions,
-        );
+        // even when the EL job is in RETRIES_UPDATED state. Assert state on the
+        // specific job to confirm it is in RETRIES_UPDATED and the search works.
+        await expect(async () => {
+          const res = await request.post(buildUrl('/jobs/search'), {
+            headers: jsonHeaders(),
+            data: {filter: {processInstanceKey: piKey, type: startElJobType}},
+          });
+          await assertStatusCode(res, 200);
+          const items = (await res.json()).items as Array<{
+            jobKey: string;
+            state: string;
+          }>;
+          const retriedJob = items.find((j) => j.jobKey === String(jobKey));
+          expect(retriedJob).toBeDefined();
+          expect(retriedJob?.state).toBe('RETRIES_UPDATED');
+        }).toPass(extendedAssertionOptions);
 
         const resolveRes = await request.post(
           buildUrl(`/incidents/${incidents[0].incidentKey}/resolution`),
@@ -242,21 +253,19 @@ test.describe
         await assertStatusCode(resolveRes, 204);
 
         // All 3 start EL jobs (1 retried + 2 fresh) are activatable after resolution.
-        await expectJobsByType(
-          request,
-          piKey,
-          startElJobType,
-          3,
-          extendedAssertionOptions,
-        );
-        const allStartJobs = await activateJobsByType(
-          request,
-          startElJobType,
-          piKey,
-          [],
-          3,
-        );
-        expect(allStartJobs).toHaveLength(3);
+        // Wrapped in toPass because activation filters client-side by PI key and
+        // may return fewer than 3 on the first call if not all jobs are activatable yet.
+        let allStartJobs: Awaited<ReturnType<typeof activateJobsByType>> = [];
+        await expect(async () => {
+          allStartJobs = await activateJobsByType(
+            request,
+            startElJobType,
+            piKey,
+            [],
+            3,
+          );
+          expect(allStartJobs).toHaveLength(3);
+        }).toPass(extendedAssertionOptions);
         for (const j of allStartJobs) {
           await completeJob(request, j.jobKey);
         }
