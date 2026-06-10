@@ -12,7 +12,9 @@ services:
       - cluster.routing.allocation.disk.watermark.high=95%
       - cluster.routing.allocation.disk.watermark.high.max_headroom=150GB
       - action.destructive_requires_name=false
+      - search.max_open_scroll_context=1000
       - http.port=9200
+      - path.repo=/var/tmp
       - ES_JAVA_OPTS=-Xms${ELASTIC_JVM_MEMORY:-1}g -Xmx${ELASTIC_JVM_MEMORY:-1}g -XX:+IgnoreUnrecognizedVMOptions -XX:UseSVE=0
       - CLI_JAVA_OPTS=-XX:+IgnoreUnrecognizedVMOptions -XX:UseSVE=0
     ulimits:
@@ -26,10 +28,10 @@ services:
     cpu_count: 4
     mem_limit: 2g
     healthcheck:
-      test: ['CMD-SHELL', 'curl -f http://localhost:9200/_cat/health | grep -q green']
+      test: ['CMD-SHELL', 'curl -f http://localhost:9200/_cat/health | grep -qE "green|yellow"']
       interval: 30s
       timeout: 5s
-      retries: 3
+      retries: 5
   opensearch:
     image: opensearchproject/opensearch:${OS_VERSION:-2.17.0}
     container_name: opensearch
@@ -91,7 +93,7 @@ services:
       - keycloak
     restart: on-failure
     container_name: identity
-    image: camunda/identity:${CAMUNDA_VERSION:-8.8.0}
+    image: camunda/identity:${CAMUNDA_VERSION:-8.8.11}
     profiles: ['self-managed', 'self-managed:opensearch', 'self-managed:elasticsearch']
     ports:
       - '8081:8081'
@@ -141,12 +143,12 @@ services:
       KEYCLOAK_USERS_6_ROLES_2: 'ManagementIdentity'
   camunda:
     profiles: ['self-managed', 'self-managed:elasticsearch']
-    image: camunda/camunda:${CAMUNDA_VERSION:-8.8.0}
+    image: camunda/camunda:${CAMUNDA_VERSION:-8.8.11}
     container_name: camunda
     environment:
       - SPRING_PROFILES_ACTIVE=broker,operate,tasklist,consolidated-auth,dev-data
       - CAMUNDA_SECURITY_AUTHENTICATION_METHOD=basic
-      - CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI=false
+      - CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI=true
       - CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED=true
       - CAMUNDA_SECURITY_MULTITENANCY_CHECKSENABLED=false
       - CAMUNDA_SECURITY_INITIALIZATION_USERS_0_USERNAME=demo
@@ -165,22 +167,23 @@ services:
     healthcheck:
       test: ['CMD-SHELL', "wget -O - -q 'http://localhost:9600/actuator/health/readiness'"]
       interval: 30s
-      timeout: 1s
+      timeout: 10s
       retries: 5
-      start_period: 30s
+      start_period: 60s
     depends_on:
-      - elasticsearch
+      elasticsearch:
+        condition: service_healthy
     restart: always
     volumes:
       - ../zeebe-application.yml:/usr/local/camunda/config/application.yaml
   camunda-opensearch:
     profiles: ['self-managed:opensearch']
-    image: camunda/camunda:${CAMUNDA_VERSION:-8.8.0}
+    image: camunda/camunda:${CAMUNDA_VERSION:-8.8.11}
     container_name: camunda-opensearch
     environment:
       - SPRING_PROFILES_ACTIVE=broker,operate,tasklist,consolidated-auth,dev-data
       - CAMUNDA_SECURITY_AUTHENTICATION_METHOD=basic
-      - CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI=false
+      - CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI=true
       - CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED=true
       - CAMUNDA_SECURITY_MULTITENANCY_CHECKSENABLED=false
       - CAMUNDA_SECURITY_INITIALIZATION_USERS_0_USERNAME=demo
@@ -203,11 +206,12 @@ services:
     healthcheck:
       test: ['CMD-SHELL', "wget -O - -q 'http://localhost:9600/actuator/health/readiness'"]
       interval: 30s
-      timeout: 1s
+      timeout: 10s
       retries: 5
-      start_period: 30s
+      start_period: 60s
     depends_on:
-      - opensearch
+      opensearch:
+        condition: service_healthy
     restart: always
     volumes:
       - ../zeebe-application.yml:/usr/local/camunda/config/application.yaml

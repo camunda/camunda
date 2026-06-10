@@ -83,7 +83,7 @@ jobs:
         uses: YunaBraska/java-info-action@06acbcb53e1e6234536ce18519dcd5d24a7e5fbe # 3.0.7
         with:
           work-dir: ./optimize
-      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: ${{ steps.pom_info.outputs.x_version_node }}
       - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
@@ -141,7 +141,7 @@ jobs:
           directory: optimize/client
       - name: Import Snyk token from Vault
         id: snyk-secrets
-        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -191,7 +191,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Print metadata
         uses: ./.github/actions/print-metadata
-      - uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
+      - uses: hadolint/hadolint-action@2332a7b74a6de0dda2e2221d575162eba76ba5e5 # v3.3.0
         with:
           dockerfile: ${{ matrix.dockerfile }}
           ignore: DL3018,DL3008
@@ -283,32 +283,7 @@ jobs:
         with:
           directory: ./optimize/client
 
-      - name: Start Elasticsearch
-        run: |
-          docker compose -f optimize/client/docker-compose.yml \
-            --project-name e2e \
-            --profile self-managed \
-            up elasticsearch -d
-
-      - name: Wait for Elasticsearch to be healthy
-        run: |
-          TIMEOUT=300
-          endTime=$(( $(date +%s) + TIMEOUT ))
-          while [ "$(date +%s)" -lt "$endTime" ]; do
-            status=$(docker compose -f optimize/client/docker-compose.yml --project-name e2e ps --format json \
-              | jq -rn '[inputs] | flatten | .[] | select(.Service == "elasticsearch") | .Status' 2>/dev/null || echo "")
-            if [[ "$status" =~ \(healthy\) ]]; then
-              echo "Elasticsearch is healthy"
-              exit 0
-            fi
-            echo "Elasticsearch status: ${status:-unknown}. Waiting..."
-            sleep 10
-          done
-          echo "Elasticsearch not healthy after ${TIMEOUT}s"
-          docker compose -f optimize/client/docker-compose.yml --project-name e2e logs elasticsearch
-          exit 1
-
-      - name: Start services (Camunda, Keycloak and Identity)
+      - name: Start services (Camunda, Keycloak, Identity and Elasticsearch)
         uses: ./.github/actions/compose
         with:
           compose_file: optimize/client/docker-compose.yml
@@ -402,13 +377,14 @@ jobs:
       TEST_OWNER: Core Features
       TEST_TYPE: E2E
     steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - name: Import secrets
         id: vault_secrets
-        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
