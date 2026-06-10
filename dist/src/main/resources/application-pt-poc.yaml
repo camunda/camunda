@@ -1,0 +1,114 @@
+camunda:
+  data:
+    secondary-storage:
+      # type defaults to elasticsearch in code; declared explicitly for clarity.
+      type: elasticsearch
+      elasticsearch:
+        # Local single-node dev ES — no auth, no TLS.
+        url: http://localhost:9200
+        # Single-node cluster: replicas must be 0 or indices go yellow/unassigned.
+        number-of-replicas: 0
+        create-schema: true
+        # Give the root/default tenant its own index prefix so its indices don't
+        # collide with tenanta's when the exporter writes to the same ES node.
+        index-prefix: ptdefault
+  security:
+    # Authorizations enabled, with alice and bob granted the admin role via the initialization
+    # block below. Their usernames resolve from the OIDC `preferred_username` claim (see
+    # `username-claim` on the providers) — the default `sub` claim would be the Keycloak UUID.
+    # NOTE: authorization grants are read from secondary storage (ES); they only take effect once
+    # the broker exporter is healthy and the initialization data has been exported.
+    authorizations:
+      enabled: true
+    initialization:
+      defaultRoles:
+        admin:
+          users:
+            - alice
+            - bob
+    authentication:
+      method: oidc
+      # Root declares two OIDC providers:
+      #   - "oidc" (the flat default slot): the default Keycloak realm on :8081
+      #   - "tenanta" (named slot): the tenanta Keycloak realm on :8082, viewed as default's
+      #     secondary provider. Root "tenanta" uses the DEFAULT tenant's client at that realm
+      #     (camunda-pt-default-via-tenanta-client / audience pt-default-via-tenanta-aud).
+      #     The tenanta PT overrides clientId/secret/audiences below to its own client.
+      #
+      # Because CSL's per-scope token validator now reads the scope's own provider config
+      # (audiences included), audience isolation works automatically from these declarations:
+      # default PT accepts pt-default-via-tenanta-aud; tenanta PT accepts pt-tenanta-aud.
+      # Both share issuer http://localhost:8082/realms/tenanta — audience is what isolates them.
+      oidc:                # default slot — registration id "oidc"
+        # Resolve the username from preferred_username (e.g. "alice") rather than the default
+        # `sub` (a Keycloak UUID), so the admin-role grant in initialization matches.
+        username-claim: preferred_username
+        client-id: camunda-pt-default-client
+        client-secret: default-secret
+        issuer-uri: http://localhost:8081/realms/default
+        audiences: [pt-default-aud]
+        # CSL builds full ClientRegistrations (authorization_code grant), which require a
+        # non-empty redirect-uri even though the API smoke only exercises bearer auth.
+        redirect-uri: "{baseUrl}/sso-callback"
+      providers:
+        oidc:
+          tenanta:
+            # Root "tenanta" provider: the default tenant's view of the tenanta IdP.
+            # Uses default's own client at the tenanta Keycloak realm and default's audience.
+            # The tenanta PT overrides clientId/secret/audiences from its physical-tenants
+            # overlay below.
+            # Resolve "bob" from preferred_username rather than the default `sub` UUID.
+            username-claim: preferred_username
+            client-id: camunda-pt-default-via-tenanta-client
+            client-secret: default-via-tenanta-secret
+            issuer-uri: http://localhost:8082/realms/tenanta
+            audiences: [pt-default-via-tenanta-aud]
+            redirect-uri: "{baseUrl}/sso-callback"
+  physical-tenants:
+    default:
+      security:
+        authentication:
+          # With `assigned` removed, the default PT now receives all cluster providers plus its
+          # own overlay. Both root providers (`oidc` and `tenanta`) are included automatically;
+          # isolation comes from audience values declared in each provider's configuration.
+          providers: {}
+    tenanta:
+      data:
+        secondary-storage:
+          elasticsearch:
+            # tenanta uses a distinct prefix to isolate its indices from default's.
+            index-prefix: pttenanta
+      security:
+        authentication:
+          providers:
+            # tenanta PT overlay: overrides the `tenanta` provider's client/secret/audiences.
+            # With `assigned` removed, the tenanta PT receives all root providers plus this
+            # overlay. The overlay ensures tenanta uses its own client and audience at the
+            # tenanta Keycloak realm; issuerUri inherits from root.
+            oidc:
+              tenanta:
+                # PT-side override: tenanta tenant uses its OWN client at the tenanta
+                # Keycloak realm (camunda-pt-tenanta-client) and audience pt-tenanta-aud.
+                # issuerUri inherits from root (http://localhost:8082/realms/tenanta).
+                client-id: camunda-pt-tenanta-client
+                client-secret: tenanta-secret
+                audiences: [pt-tenanta-aud]
+
+server:
+  port: 8080
+
+logging:
+  file:
+    name: /tmp/oc.log
+  level:
+    io.camunda.authentication.pt: DEBUG
+    # DEBUG to diagnose per-scope audience isolation: io.camunda.security surfaces CSL's per-scope
+    # JwtDecoder/validator construction, and org.springframework.security logs which SecurityFilterChain
+    # matches each request ("Securing GET /physical-tenants/tenanta/..."), so we can tell whether the
+    # per-scope chain or the cluster chain handled a tenant-prefixed request.
+    io.camunda.security: DEBUG
+    org.springframework.security: DEBUG
+    # DEBUG to surface the exact index/property the CamundaExporter's schema-readiness check
+    # (validateIndexMappings) flags as a mapping diff — the cause of repeated
+    # "Schema is not ready for use" on the broker exporter.
+    io.camunda.search.schema: DEBUG
