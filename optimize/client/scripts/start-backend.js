@@ -7,7 +7,7 @@
  */
 
 import {spawn} from 'child_process';
-import {resolve as _resolve, dirname} from 'path';
+import {dirname, resolve as _resolve} from 'path';
 import {readFile} from 'fs';
 import {parseString} from 'xml2js';
 import {fileURLToPath} from 'url';
@@ -69,6 +69,7 @@ const cloudEnv = {
 const selfManagedEnv = {
   SPRING_PROFILES_ACTIVE: 'ccsm',
   CAMUNDA_OPTIMIZE_ZEEBE_ENABLED: 'true',
+  CAMUNDA_OPTIMIZE_ZEEBE_REST_ADDRESS: 'http://localhost:8080',
   CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL: 'http://localhost:18080/auth/realms/camunda-platform',
   CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_BACKEND_URL:
     'http://localhost:18080/auth/realms/camunda-platform',
@@ -104,7 +105,7 @@ function startBackend() {
     };
 
     backendProcess = spawnWithArgs(
-      `mvn -f optimize-distro/pom.xml exec:java -Dexec.mainClass="io.camunda.optimize.Main"`,
+      `./mvnw -f optimize/backend/pom.xml spring-boot:run -Dspring-boot.run.additionalClasspathElements=optimize/client/demo-data`,
       {
         cwd: _resolve(__dirname, '..', '..', '..'),
         shell: true,
@@ -112,7 +113,6 @@ function startBackend() {
           ...process.env,
           ...commonEnv,
           ...engineEnv[mode],
-          CLASSPATH_PREFIX: 'optimize/client/demo-data'
         },
       }
     );
@@ -221,7 +221,11 @@ function waitForDockerDependencies() {
   const dependencies = ['http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=1s'];
 
   if (mode === 'self-managed') {
-    dependencies.push('http://localhost:18080/auth', 'http://localhost:9600/ready');
+    dependencies.push(
+      'http://localhost:18080/auth',
+      'http://localhost:9600/ready',
+      'http://localhost:8080/v2/topology'
+    );
   }
 
   return Promise.all(dependencies.map(waitForServerCheck));
