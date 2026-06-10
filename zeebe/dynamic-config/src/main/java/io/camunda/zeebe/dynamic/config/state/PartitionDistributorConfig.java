@@ -31,6 +31,22 @@ public sealed interface PartitionDistributorConfig {
     };
   }
 
+  /**
+   * Merges this config with another one gossiped at the same cluster configuration version. Updates
+   * to the config always bump the cluster configuration version, so two configs at the same version
+   * must be identical; a conflict indicates diverging static configurations.
+   */
+  default PartitionDistributorConfig merge(final PartitionDistributorConfig other) {
+    if (equals(other)) {
+      return this;
+    }
+    throw new IllegalStateException(
+        "Cannot merge two different partition distributor configs with the same version: "
+            + this
+            + " and "
+            + other);
+  }
+
   record RoundRobinConfig() implements PartitionDistributorConfig {}
 
   record ZoneAwareConfig(List<ZoneSpec> zones) implements PartitionDistributorConfig {
