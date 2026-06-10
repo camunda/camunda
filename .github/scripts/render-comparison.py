@@ -11,6 +11,7 @@ import json
 import math
 import os
 import sys
+from datetime import datetime, timedelta
 from typing import Any
 
 
@@ -124,13 +125,28 @@ def render_row(q: dict, ctx: dict) -> str:
     )
 
 
+def daily_window_start(daily_at: str, duration_seconds: int) -> str | None:
+    # daily_at anchors the *end* of the PromQL range vector; the window starts
+    # duration_seconds earlier. Returns None on parse failure so the header
+    # falls back to omitting the window range rather than misreporting it.
+    if not daily_at:
+        return None
+    try:
+        end = datetime.fromisoformat(daily_at.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    start = end - timedelta(seconds=duration_seconds)
+    return start.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
 def render_body(ctx: dict) -> str:
     storage = ctx["storage_type"]
     heading = f"## 📈 Load Test Metrics - {storage}" if storage else "## 📈 Load Test Metrics"
     daily_at = ctx["daily_at"]
+    window_start = daily_window_start(daily_at, ctx["duration_seconds"])
     daily_line = (
         f"Daily reference: `{ctx['daily_namespace']}`"
-        + (f" · last 30 min ending `{daily_at}`" if daily_at else "")
+        + (f" · first 30 min from `{window_start}`" if window_start else "")
         if ctx["daily_namespace"]
         else "_No completed daily-on-main run found; Daily column shows `-`._"
     )
