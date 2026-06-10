@@ -92,13 +92,28 @@ jobs:
       build-frontend: true
       load-test-load: --set global.preferRest.enabled=true
 
-  # Wait 3 hours to let both load tests reach a stable operating state before
-  # taking the metrics snapshot. Skipped if both setup jobs failed (no tests running).
-  soak:
-    name: Soak (3 hours)
+  # Warmup buffer before soak starts. Splitting this out as its own job makes
+  # `soak.started_at` (read by the PR load-test workflow's resolve-daily-namespace
+  # step via the GitHub jobs API) line up with the moment warmup ends and steady
+  # measurement begins. Skipped if both setup jobs failed (no tests running).
+  prepare-soak:
+    name: Warmup before soak
     runs-on: ubuntu-latest
     needs: [ setup-max-load-test, setup-max-rest-load-test ]
     if: needs.setup-max-load-test.result == 'success' || needs.setup-max-rest-load-test.result == 'success'
+    timeout-minutes: 20
+    permissions: { }
+    steps:
+      - name: Warmup sleep
+        run: sleep 900  # 15 min for deploy + producing-load + initial stabilize
+
+  # Wait 3 hours to let both load tests reach a stable operating state before
+  # taking the metrics snapshot. `soak.started_at` is consumed by the PR load
+  # test as the post-warmup anchor — do not collapse this back into prepare-soak.
+  soak:
+    name: Soak (3 hours)
+    runs-on: ubuntu-latest
+    needs: prepare-soak
     timeout-minutes: 195
     permissions: { }
     outputs:
