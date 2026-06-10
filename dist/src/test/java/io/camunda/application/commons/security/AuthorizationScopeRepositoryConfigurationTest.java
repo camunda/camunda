@@ -14,9 +14,7 @@ import io.camunda.search.clients.reader.AuthorizationReader;
 import io.camunda.security.core.authz.AuthorizationChecker;
 import io.camunda.security.core.port.out.AuthorizationScopeRepositoryPort;
 import io.camunda.security.impl.SearchAuthorizationScopeRepository;
-import io.camunda.security.spring.authz.AuthorizationCheckerConfiguration;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 class AuthorizationScopeRepositoryConfigurationTest {
@@ -24,8 +22,7 @@ class AuthorizationScopeRepositoryConfigurationTest {
   private final ApplicationContextRunner runner =
       new ApplicationContextRunner()
           .withBean(AuthorizationReader.class, () -> mock(AuthorizationReader.class))
-          .withUserConfiguration(AuthorizationScopeRepositoryConfiguration.class)
-          .withConfiguration(AutoConfigurations.of(AuthorizationCheckerConfiguration.class));
+          .withUserConfiguration(AuthorizationScopeRepositoryConfiguration.class);
 
   @Test
   void shouldRegisterAuthorizationScopeRepositoryPortBean() {
