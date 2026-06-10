@@ -1427,7 +1427,10 @@ final class JsonSerializableToJsonTest {
                   .setProcessInstanceKey(processInstanceKey)
                   .setCorrelationKey(wrapString(correlationKey))
                   .setVariables(VARIABLES_MSGPACK)
-                  .setBusinessId("biz-42");
+                  .setBusinessId("biz-42")
+                  .setElementId("catch-1")
+                  .setRootProcessInstanceKey(99L)
+                  .setElementType(BpmnElementType.RECEIVE_TASK);
             },
         """
                 {
@@ -1443,7 +1446,10 @@ final class JsonSerializableToJsonTest {
                   },
                   "interrupting": true,
                   "tenantId": "<default>",
-                  "businessId": "biz-42"
+                  "businessId": "biz-42",
+                  "elementId": "catch-1",
+                  "rootProcessInstanceKey": 99,
+                  "elementType": "RECEIVE_TASK"
                 }
                 """
       },
@@ -1474,7 +1480,10 @@ final class JsonSerializableToJsonTest {
                   "variables": {},
                   "interrupting": true,
                   "tenantId": "<default>",
-                  "businessId": ""
+                  "businessId": "",
+                  "elementId": "",
+                  "rootProcessInstanceKey": -1,
+                  "elementType": "UNSPECIFIED"
                 }
                 """
       },
@@ -1510,7 +1519,8 @@ final class JsonSerializableToJsonTest {
                   .setCorrelationKey(wrapString(correlationKey))
                   .setElementId(wrapString("A"))
                   .setRootProcessInstanceKey(rootProcessInstanceKey)
-                  .setBusinessId("biz-42");
+                  .setBusinessId("biz-42")
+                  .setElementType(BpmnElementType.RECEIVE_TASK);
             },
         """
                 {
@@ -1528,7 +1538,8 @@ final class JsonSerializableToJsonTest {
                   "interrupting": true,
                   "tenantId": "<default>",
                   "rootProcessInstanceKey": 5678,
-                  "businessId": "biz-42"
+                  "businessId": "biz-42",
+                  "elementType": "RECEIVE_TASK"
                 }
                 """
       },
@@ -1563,7 +1574,8 @@ final class JsonSerializableToJsonTest {
                   "interrupting": true,
                   "tenantId": "<default>",
                   "rootProcessInstanceKey": -1,
-                  "businessId": ""
+                  "businessId": "",
+                  "elementType": "UNSPECIFIED"
                 }
                 """
       },

@@ -98,4 +98,9 @@ public interface ProcessMessageSubscriptionRecordValue
    * @since 8.10
    */
   String getBusinessId();
+
+  /**
+   * @return the BPMN element type of the catch element that opened this subscription
+   */
+  BpmnElementType getElementType();
 }

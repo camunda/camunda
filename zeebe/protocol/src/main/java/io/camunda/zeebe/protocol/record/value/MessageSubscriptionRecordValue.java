@@ -28,7 +28,7 @@ import org.immutables.value.Value;
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableMessageSubscriptionRecordValue.Builder.class)
 public interface MessageSubscriptionRecordValue
-    extends RecordValueWithVariables, ProcessInstanceRelated, TenantOwned {
+    extends RecordValueWithVariables, ProcessInstanceRelated, TenantOwned, WaitStateRelated {
 
   /**
    * @return the process instance key tied to the subscription
@@ -87,4 +87,29 @@ public interface MessageSubscriptionRecordValue
    * @since 8.10
    */
   String getBusinessId();
+
+  /**
+   * @return the id of the BPMN element tied to the subscription, or an empty string if not set
+   */
+  @Override
+  String getElementId();
+
+  /**
+   * Returns the key of the root process instance in the hierarchy. For top-level process instances,
+   * this is equal to {@link #getProcessInstanceKey()}. For child process instances (created via
+   * call activities), this is the key of the topmost parent process instance.
+   *
+   * <p>Important: This value is only set for process instance records created after version 8.9.0
+   * and part of hierarchies created after that version. For older process instances, the method
+   * will return -1.
+   *
+   * @return the key of the root process instance, or {@code -1} if not set
+   */
+  @Override
+  long getRootProcessInstanceKey();
+
+  /**
+   * @return the BPMN element type of the element tied to the subscription
+   */
+  BpmnElementType getElementType();
 }
