@@ -18,6 +18,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 
 public final class ReschedulingTask implements RunnableTask {
+  private static final long ERROR_DELAY_MS = 10_000L;
   private final BackgroundTask task;
   private final int minimumWorkCount;
   private final ScheduledExecutorService executor;
@@ -45,8 +46,14 @@ public final class ReschedulingTask implements RunnableTask {
 
     periodicLogger = new ReschedulingTaskLogger(logger, true);
     idleStrategy = new ExponentialBackoff(maxDelayBetweenRunsMs, delayBetweenRunsMs, 1.2, 0);
+    // some tasks have a really long delayBetweenRunsMs, so we need to tweak
+    // those delays for the error backoff.
     errorStrategy =
-        new ExponentialBackoff(Math.max(10_000, delayBetweenRunsMs), delayBetweenRunsMs, 1.2, 0);
+        new ExponentialBackoff(
+            Math.max(ERROR_DELAY_MS, delayBetweenRunsMs),
+            Math.min(ERROR_DELAY_MS, delayBetweenRunsMs),
+            1.2,
+            0);
   }
 
   @Override
