@@ -24,7 +24,7 @@ import org.springframework.web.method.support.ModelAndViewContainer;
  *
  * <p>The interceptor that populates the request attribute runs before this resolver, so the value
  * is always present (defaulting to {@link PhysicalTenantContext#DEFAULT_PHYSICAL_TENANT_ID} when
- * the request did not carry the {@code /v2/physical-tenants/{physicalTenantId}/...} prefix).
+ * the request did not carry the {@code /physical-tenants/{physicalTenantId}/v2/...} prefix).
  */
 public class PhysicalTenantIdArgumentResolver implements HandlerMethodArgumentResolver {
 

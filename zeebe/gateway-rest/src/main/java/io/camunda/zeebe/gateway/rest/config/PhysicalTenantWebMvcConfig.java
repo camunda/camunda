@@ -28,7 +28,7 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
  * <p>{@link WebMvcRegistrations#getRequestMappingHandlerMapping()} is the supported extension point
  * for replacing the auto-configured {@link RequestMappingHandlerMapping}, so every future
  * {@code @CamundaRestController} automatically gets the {@code
- * /v2/physical-tenants/{physicalTenantId}/...} sibling registration.
+ * /physical-tenants/{physicalTenantId}/v2/...} sibling registration.
  */
 @Configuration
 public class PhysicalTenantWebMvcConfig implements WebMvcConfigurer {

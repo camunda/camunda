@@ -16,7 +16,7 @@ import java.lang.annotation.Target;
 /**
  * Marker for {@code @CamundaRestController}s that expose cluster-level concerns and therefore must
  * not be exposed under the per-physical-tenant path prefix ({@code
- * /v2/physical-tenants/{physicalTenantId}/...}).
+ * /physical-tenants/{physicalTenantId}/v2/...}).
  *
  * <p>Annotated controllers keep their original path mapping only.
  */
