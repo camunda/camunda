@@ -5,12 +5,13 @@ import random
 
 
 class Index:
-    def __init__(self, name):
+    def __init__(self, name, creation_time):
         self.name = name
         self.process_instances = {}
         self.ilm_deadline = None
         self.ordinal = None
         self.latest_process_instance_end_date = None
+        self.creation_time = creation_time
 
     @property
     def is_main(self):
@@ -51,6 +52,7 @@ class Simulation:
         self.indexes_dropped_by_ilm = 0
         self.docs_dropped_by_ilm = 0
         self.operations_cost_estimate = 0
+        self.oldest_index_age = 0
 
     def new_ordinal_process_instance(self, duration):
       index = self.add_new_process_instance(f"ordinal-{self.current_ordinal:05}", duration)
@@ -80,6 +82,12 @@ class Simulation:
         if next_ordinal != self.current_ordinal:
           verbose(f"Rolling over to ordinal index: {next_ordinal} at time {self.current_time}")
         self.current_ordinal = next_ordinal
+
+        for index in self.indexes.values():
+          # skip indexes with no actual data
+          if index.process_instances:
+            age = self.current_time - index.creation_time
+            self.oldest_index_age = max(age, self.oldest_index_age)
 
     def get_ordinal_indexes(self):
       return [index for index in self.indexes.values() if index.is_ordinal]
@@ -138,7 +146,7 @@ class Simulation:
     def _ensure_index_exists(self, index_name):
       index = self.indexes.get(index_name)
       if index is None:
-        index = Index(index_name)
+        index = Index(index_name, self.current_time)
         self.indexes[index_name] = index
       return index
 
@@ -327,6 +335,7 @@ def main(args):
     ####
     ("Total indexes", len(sim.indexes)),
     ("Max process instances", max_num_processes),
+    ("Oldest index age", sim.oldest_index_age),
     ("Indexes with ILM deadline", sim.get_count_indexes_with_ilm_deadline()),
     ("Indexes dropped by ILM", sim.indexes_dropped_by_ilm),
     ("Docs dropped by ILM", sim.docs_dropped_by_ilm),
