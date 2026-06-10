@@ -47,6 +47,8 @@ public class AuditLogEntityMapper {
         .relatedEntityKey(auditLogDbModel.relatedEntityKey())
         .entityDescription(auditLogDbModel.entityDescription())
         .historyCleanupDate(auditLogDbModel.historyCleanupDate())
+        .inboundChannelType(auditLogDbModel.inboundChannelType())
+        .inboundChannelToolName(auditLogDbModel.inboundChannelToolName())
         .build();
   }
 }

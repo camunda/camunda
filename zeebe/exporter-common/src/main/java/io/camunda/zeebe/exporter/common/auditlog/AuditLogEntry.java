@@ -14,6 +14,7 @@ import io.camunda.search.entities.AuditLogEntity.AuditLogOperationType;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo.AuditLogActor;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo.AuditLogTenant;
 import io.camunda.zeebe.protocol.record.Agent;
+import io.camunda.zeebe.protocol.record.ChannelType;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
 import io.camunda.zeebe.protocol.record.RecordValue;
@@ -23,6 +24,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;
 import io.camunda.zeebe.util.DateUtil;
 import java.time.OffsetDateTime;
 import java.util.Optional;
+import org.apache.commons.lang3.StringUtils;
 
 public class AuditLogEntry {
 
@@ -104,6 +106,10 @@ public class AuditLogEntry {
 
   private Agent agent;
 
+  private ChannelType inboundChannelType;
+
+  private String inboundChannelToolName;
+
   public String getEntityKey() {
     return entityKey;
   }
@@ -122,8 +128,22 @@ public class AuditLogEntry {
     return this;
   }
 
-  public AuditLogEntry setAgent(final Optional<Agent> agent) {
-    this.agent = agent.orElse(null);
+  public ChannelType getInboundChannelType() {
+    return inboundChannelType;
+  }
+
+  public AuditLogEntry setInboundChannelType(final ChannelType inboundChannelType) {
+    this.inboundChannelType = inboundChannelType;
+    return this;
+  }
+
+  public String getInboundChannelToolName() {
+    return inboundChannelToolName;
+  }
+
+  public AuditLogEntry setInboundChannelToolName(final String inboundChannelToolName) {
+    this.inboundChannelToolName =
+        StringUtils.isEmpty(inboundChannelToolName) ? null : inboundChannelToolName;
     return this;
   }
 
@@ -408,6 +428,8 @@ public class AuditLogEntry {
             .setOperationType(info.operationType())
             .setActor(info.actor())
             .setAgent(record.getAgent())
+            .setInboundChannelType(record.getRequestChannelType())
+            .setInboundChannelToolName(record.getRequestToolName())
             .setTenant(AuditLogTenant.of(record))
             .setBatchOperationKey(getBatchOperationKey(record))
             .setProcessInstanceKey(getProcessInstanceKey(record))

@@ -78,6 +78,8 @@ public class AuditLogControllerTest extends RestControllerTest {
             "decisionDefinitionKey": "333",
             "decisionEvaluationKey": "444",
             "agentElementId": null,
+            "inboundChannelType": null,
+            "inboundChannelToolName": null,
             "deploymentKey": null,
             "entityDescription": null,
             "formKey": null,
@@ -123,6 +125,8 @@ public class AuditLogControllerTest extends RestControllerTest {
         "decisionDefinitionKey": "333",
         "decisionEvaluationKey": "444",
         "agentElementId": null,
+        "inboundChannelType": null,
+        "inboundChannelToolName": null,
         "deploymentKey": null,
         "entityDescription": null,
         "formKey": null,
@@ -371,7 +375,7 @@ public class AuditLogControllerTest extends RestControllerTest {
                   "type": "about:blank",
                   "title": "Bad Request",
                   "status": 400,
-                  "detail": "Unexpected value 'operationKey' for enum field 'field'. Use any of the following values: [actorId, actorType, auditLogKey, batchOperationKey, batchOperationType, category, decisionDefinitionId, decisionDefinitionKey, decisionEvaluationKey, decisionRequirementsId, decisionRequirementsKey, elementInstanceKey, entityKey, entityType, jobKey, operationType, processDefinitionId, processDefinitionKey, processInstanceKey, result, tenantId, timestamp, userTaskKey]",
+                  "detail": "Unexpected value 'operationKey' for enum field 'field'. Use any of the following values: [actorId, actorType, auditLogKey, batchOperationKey, batchOperationType, category, decisionDefinitionId, decisionDefinitionKey, decisionEvaluationKey, decisionRequirementsId, decisionRequirementsKey, elementInstanceKey, entityKey, entityType, jobKey, operationType, processDefinitionId, processDefinitionKey, processInstanceKey, inboundChannelType, inboundChannelToolName, result, tenantId, timestamp, userTaskKey]",
                   "instance": "%s"
                 }""",
             AUDIT_LOGS_SEARCH_URL);

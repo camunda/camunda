@@ -69,7 +69,9 @@ public class AuditLogFilterTransformer extends IndexFilterTransformer<AuditLogFi
         longOperations(USER_TASK_KEY, filter.userTaskKeyOperations()),
         stringOperations(RELATED_ENTITY_TYPE, filter.relatedEntityTypeOperations()),
         stringOperations(RELATED_ENTITY_KEY, filter.relatedEntityKeyOperations()),
-        stringOperations(ENTITY_DESCRIPTION, filter.entityDescriptionOperations()));
+        stringOperations(ENTITY_DESCRIPTION, filter.entityDescriptionOperations()),
+        stringOperations(INBOUND_CHANNEL_TYPE, filter.inboundChannelTypeOperations()),
+        stringOperations(INBOUND_CHANNEL_TOOL_NAME, filter.inboundChannelToolNameOperations()));
   }
 
   /*

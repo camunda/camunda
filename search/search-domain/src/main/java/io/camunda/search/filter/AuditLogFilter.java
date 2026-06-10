@@ -47,7 +47,9 @@ public record AuditLogFilter(
     List<Operation<Long>> resourceKeyOperations,
     List<Operation<String>> relatedEntityKeyOperations,
     List<Operation<String>> relatedEntityTypeOperations,
-    List<Operation<String>> entityDescriptionOperations)
+    List<Operation<String>> entityDescriptionOperations,
+    List<Operation<String>> inboundChannelTypeOperations,
+    List<Operation<String>> inboundChannelToolNameOperations)
     implements FilterBase {
 
   public static AuditLogFilter of(
@@ -86,7 +88,9 @@ public record AuditLogFilter(
         .resourceKeyOperations(resourceKeyOperations)
         .relatedEntityKeyOperations(relatedEntityKeyOperations)
         .relatedEntityTypeOperations(relatedEntityTypeOperations)
-        .entityDescriptionOperations(entityDescriptionOperations);
+        .entityDescriptionOperations(entityDescriptionOperations)
+        .inboundChannelTypeOperations(inboundChannelTypeOperations)
+        .inboundChannelToolNameOperations(inboundChannelToolNameOperations);
   }
 
   public static final class Builder implements ObjectBuilder<AuditLogFilter> {
@@ -120,6 +124,8 @@ public record AuditLogFilter(
     private List<Operation<String>> entityDescriptionOperations;
     private List<Operation<String>> relatedEntityTypeOperations;
     private List<Operation<String>> relatedEntityKeyOperations;
+    private List<Operation<String>> inboundChannelTypeOperations;
+    private List<Operation<String>> inboundChannelToolNameOperations;
 
     public Builder auditLogKeyOperations(final List<Operation<String>> operations) {
       if (operations != null) {
@@ -470,6 +476,30 @@ public record AuditLogFilter(
       return entityDescriptionOperations(List.of(FilterUtil.mapDefaultToOperation(value, values)));
     }
 
+    public Builder inboundChannelTypeOperations(final List<Operation<String>> operations) {
+      if (operations != null) {
+        inboundChannelTypeOperations = addValuesToList(inboundChannelTypeOperations, operations);
+      }
+      return this;
+    }
+
+    public Builder inboundChannelTypes(final String value, final String... values) {
+      return inboundChannelTypeOperations(List.of(FilterUtil.mapDefaultToOperation(value, values)));
+    }
+
+    public Builder inboundChannelToolNameOperations(final List<Operation<String>> operations) {
+      if (operations != null) {
+        inboundChannelToolNameOperations =
+            addValuesToList(inboundChannelToolNameOperations, operations);
+      }
+      return this;
+    }
+
+    public Builder inboundChannelToolNames(final String value, final String... values) {
+      return inboundChannelToolNameOperations(
+          List.of(FilterUtil.mapDefaultToOperation(value, values)));
+    }
+
     @Override
     public AuditLogFilter build() {
       return new AuditLogFilter(
@@ -502,7 +532,9 @@ public record AuditLogFilter(
           Objects.requireNonNullElse(resourceKeyOperations, List.of()),
           Objects.requireNonNullElse(relatedEntityKeyOperations, List.of()),
           Objects.requireNonNullElse(relatedEntityTypeOperations, List.of()),
-          Objects.requireNonNullElse(entityDescriptionOperations, List.of()));
+          Objects.requireNonNullElse(entityDescriptionOperations, List.of()),
+          Objects.requireNonNullElse(inboundChannelTypeOperations, List.of()),
+          Objects.requireNonNullElse(inboundChannelToolNameOperations, List.of()));
     }
   }
 }

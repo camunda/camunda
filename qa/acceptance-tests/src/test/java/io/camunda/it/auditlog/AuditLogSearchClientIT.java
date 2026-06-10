@@ -722,6 +722,48 @@ public class AuditLogSearchClientIT {
             });
   }
 
+  @Test
+  void shouldSearchAuditLogsByInboundChannelTypeNotPresent(
+      @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
+    // when
+    final var auditLogItems =
+        client
+            .newAuditLogSearchRequest()
+            .filter(f -> f.inboundChannelType(p -> p.exists(false)))
+            .page(p -> p.limit(5))
+            .send()
+            .join();
+
+    // then
+    assertThat(auditLogItems.items()).isNotEmpty();
+    assertThat(auditLogItems.items())
+        .allSatisfy(
+            log -> {
+              assertThat(log.getInboundChannelType()).isNull();
+            });
+  }
+
+  @Test
+  void shouldSearchAuditLogsByInboundChannelToolNameNotPresent(
+      @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
+    // when
+    final var auditLogItems =
+        client
+            .newAuditLogSearchRequest()
+            .filter(f -> f.inboundChannelToolName(p -> p.exists(false)))
+            .page(p -> p.limit(5))
+            .send()
+            .join();
+
+    // then
+    assertThat(auditLogItems.items()).isNotEmpty();
+    assertThat(auditLogItems.items())
+        .allSatisfy(
+            log -> {
+              assertThat(log.getInboundChannelToolName()).isNull();
+            });
+  }
+
   // ========================================================================================
   // Helper Methods
   // ========================================================================================

@@ -1306,6 +1306,12 @@ public class SearchQueryFilterMapper {
     ofNullable(filter.getEntityDescription())
         .map(mapToStringOperations())
         .ifPresent(builder::entityDescriptionOperations);
+    ofNullable(filter.getInboundChannelType())
+        .map(mapToStringOperations())
+        .ifPresent(builder::inboundChannelTypeOperations);
+    ofNullable(filter.getInboundChannelToolName())
+        .map(mapToStringOperations())
+        .ifPresent(builder::inboundChannelToolNameOperations);
     return validationErrors.isEmpty()
         ? Either.right(builder.build())
         : Either.left(validationErrors);

@@ -132,7 +132,9 @@ class BatchInsertMergerTest {
             null,
             null,
             1,
-            OffsetDateTime.now());
+            OffsetDateTime.now(),
+            null,
+            null);
 
     final var auditLog2 =
         new AuditLogDbModel(
@@ -172,7 +174,9 @@ class BatchInsertMergerTest {
             null,
             null,
             1,
-            OffsetDateTime.now());
+            OffsetDateTime.now(),
+            null,
+            null);
 
     final var merger = new InsertAuditLogMerger(auditLog2, 50);
     final var parameter = new BatchInsertDto<>(List.of(auditLog1));

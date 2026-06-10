@@ -107,6 +107,12 @@
       },
       "entityDescription": {
         "type": "keyword"
+      },
+      "inboundChannelType": {
+        "type": "keyword"
+      },
+      "inboundChannelToolName": {
+        "type": "keyword"
       }
     }
   }

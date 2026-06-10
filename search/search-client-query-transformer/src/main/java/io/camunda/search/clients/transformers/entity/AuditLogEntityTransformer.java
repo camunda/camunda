@@ -51,7 +51,9 @@ public class AuditLogEntityTransformer
         mapEntityType(value.getRelatedEntityType()),
         value.getRelatedEntityKey(),
         value.getEntityDescription(),
-        null);
+        null,
+        value.getInboundChannelType(),
+        value.getInboundChannelToolName());
   }
 
   private AuditLogEntity.AuditLogEntityType mapEntityType(

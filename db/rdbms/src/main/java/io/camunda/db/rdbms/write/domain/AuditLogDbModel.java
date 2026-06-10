@@ -51,7 +51,9 @@ public record AuditLogDbModel(
     String relatedEntityKey,
     String entityDescription,
     int partitionId,
-    OffsetDateTime historyCleanupDate)
+    OffsetDateTime historyCleanupDate,
+    String inboundChannelType,
+    String inboundChannelToolName)
     implements DbModel<AuditLogDbModel> {
 
   @Override
@@ -98,7 +100,9 @@ public record AuditLogDbModel(
         .entityDescription(entityDescription)
         .partitionId(partitionId)
         .historyCleanupDate(historyCleanupDate)
-        .rootProcessInstanceKey(rootProcessInstanceKey);
+        .rootProcessInstanceKey(rootProcessInstanceKey)
+        .inboundChannelType(inboundChannelType)
+        .inboundChannelToolName(inboundChannelToolName);
   }
 
   public AuditLogDbModel truncateEntityDescription(final int sizeLimit, final Integer byteLimit) {
@@ -152,6 +156,8 @@ public record AuditLogDbModel(
     private String entityDescription;
     private int partitionId;
     private OffsetDateTime historyCleanupDate;
+    private String inboundChannelType;
+    private String inboundChannelToolName;
 
     public Builder() {}
 
@@ -340,6 +346,16 @@ public record AuditLogDbModel(
       return this;
     }
 
+    public Builder inboundChannelType(final String inboundChannelType) {
+      this.inboundChannelType = inboundChannelType;
+      return this;
+    }
+
+    public Builder inboundChannelToolName(final String inboundChannelToolName) {
+      this.inboundChannelToolName = inboundChannelToolName;
+      return this;
+    }
+
     @Override
     public AuditLogDbModel build() {
       return new AuditLogDbModel(
@@ -379,7 +395,9 @@ public record AuditLogDbModel(
           relatedEntityKey,
           entityDescription,
           partitionId,
-          historyCleanupDate);
+          historyCleanupDate,
+          inboundChannelType,
+          inboundChannelToolName);
     }
   }
 }

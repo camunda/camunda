@@ -113,7 +113,10 @@ public class AuditLogExportHandler<R extends RecordValue> implements RdbmsExport
             .resourceKey(log.getResourceKey())
             .relatedEntityKey(log.getRelatedEntityKey())
             .relatedEntityType(log.getRelatedEntityType())
-            .partitionId(record.getPartitionId());
+            .partitionId(record.getPartitionId())
+            .inboundChannelType(
+                log.getInboundChannelType() != null ? log.getInboundChannelType().name() : null)
+            .inboundChannelToolName(log.getInboundChannelToolName());
 
     return auditLog.build();
   }

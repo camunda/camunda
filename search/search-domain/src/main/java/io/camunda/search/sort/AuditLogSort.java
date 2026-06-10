@@ -119,6 +119,16 @@ public record AuditLogSort(List<FieldSorting> orderings) implements SortOption {
       return this;
     }
 
+    public Builder inboundChannelType() {
+      currentOrdering = new FieldSorting("inboundChannelType", null);
+      return this;
+    }
+
+    public Builder inboundChannelToolName() {
+      currentOrdering = new FieldSorting("inboundChannelToolName", null);
+      return this;
+    }
+
     public Builder result() {
       currentOrdering = new FieldSorting("result", null);
       return this;
