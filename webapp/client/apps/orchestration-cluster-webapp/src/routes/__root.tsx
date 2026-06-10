@@ -16,7 +16,7 @@ import {GenericErrorPage} from '#/shared/pages/GenericErrorPage';
 import {Notifications} from '#/shared/notifications/components/Notifications';
 import {NetworkStatusWatcher} from '#/shared/notifications/components/NetworkStatusWatcher';
 
-export const Route = createRootRouteWithContext<{
+const Route = createRootRouteWithContext<{
 	queryClient: QueryClient;
 }>()({
 	notFoundComponent: NotFoundPage,
@@ -61,3 +61,5 @@ function RootDocument() {
 		</>
 	);
 }
+
+export {Route};

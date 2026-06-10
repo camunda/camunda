@@ -18,7 +18,7 @@ import {getBootConfig} from '#/shared/config/getBootConfig';
 import {tracking} from '#/shared/tracking';
 import {NotFoundPage} from '#/shared/pages/NotFoundPage';
 
-export const Route = createFileRoute('/_auth')({
+const Route = createFileRoute('/_auth')({
 	beforeLoad: async ({location, context: {queryClient}}) => {
 		try {
 			const [currentUser, systemConfig] = await Promise.all([
@@ -97,3 +97,5 @@ function RouteComponent() {
 		</>
 	);
 }
+
+export {Route};

@@ -134,7 +134,9 @@ const Header: React.FC<Props> = observer(({currentUser, license}) => {
 					themeSelector: {
 						currentTheme: selectedTheme,
 						onChange: (theme: string) => {
-							changeTheme(theme as 'system' | 'dark' | 'light');
+							if (theme === 'system' || theme === 'dark' || theme === 'light') {
+								changeTheme(theme);
+							}
 						},
 					},
 					customSection: <LanguageSelector />,
