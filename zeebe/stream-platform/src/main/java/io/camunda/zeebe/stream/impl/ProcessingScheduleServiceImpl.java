@@ -94,6 +94,20 @@ public class ProcessingScheduleServiceImpl
   }
 
   @Override
+  public void runAtFixedRate(final Duration delay, final Runnable task) {
+    runDelayed(
+        delay,
+        guardRunnable(
+            () -> {
+              try {
+                task.run();
+              } finally {
+                runAtFixedRate(delay, task);
+              }
+            }));
+  }
+
+  @Override
   public void runAtFixedRate(final Duration delay, final Task task) {
     runDelayed(
         delay,
@@ -151,6 +165,25 @@ public class ProcessingScheduleServiceImpl
           }
         });
     return scheduledTask;
+  }
+
+  Runnable guardRunnable(final Runnable task) {
+    return () -> {
+      if (abortCondition.getAsBoolean()) {
+        // it might be that we are closing, then we should just stop
+        return;
+      }
+
+      final var currentStreamProcessorPhase = streamProcessorPhaseSupplier.get();
+      if (currentStreamProcessorPhase != Phase.PROCESSING) {
+        LOG.trace(
+            "Not able to execute scheduled task right now. [streamProcessorPhase: {}]",
+            currentStreamProcessorPhase);
+        return;
+      }
+
+      task.run();
+    };
   }
 
   Runnable toRunnable(final Task task) {
