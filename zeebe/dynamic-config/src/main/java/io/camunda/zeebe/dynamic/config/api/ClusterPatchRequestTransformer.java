@@ -107,8 +107,7 @@ public final class ClusterPatchRequestTransformer implements ConfigurationChange
     }
 
     // For non-zone-aware or no per-zone RF change: reject plain RF changes on zone-aware clusters.
-    if (newReplicationFactor.isPresent()
-        && clusterConfiguration.members().keySet().stream().anyMatch(m -> m.zone() != null)) {
+    if (newReplicationFactor.isPresent() && clusterConfiguration.isZoneAware()) {
       return Either.left(
           new InvalidRequest(
               "Use 'partitions.newReplicationFactors' to change the replication factor on zone-aware clusters"));
