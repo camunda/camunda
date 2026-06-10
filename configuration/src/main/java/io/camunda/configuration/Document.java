@@ -55,12 +55,14 @@ public class Document {
   @NestedConfigurationProperty private Map<String, InMemoryStore> inMemory = new LinkedHashMap<>();
 
   public String getDefaultStoreId() {
-    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
-        "camunda.document.default-store-id",
-        defaultStoreId,
-        String.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        Set.of("DOCUMENT_DEFAULT_STORE_ID"));
+    final String value =
+        UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
+            "camunda.document.default-store-id",
+            defaultStoreId,
+            String.class,
+            BackwardsCompatibilityMode.SUPPORTED,
+            Set.of("DOCUMENT_DEFAULT_STORE_ID"));
+    return value != null ? value.toLowerCase() : null;
   }
 
   public void setDefaultStoreId(final String defaultStoreId) {
