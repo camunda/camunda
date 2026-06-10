@@ -8,6 +8,7 @@
 package io.camunda.optimize.service.dashboard;
 
 import io.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
+import io.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionUpdateDto;
 import io.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardFilterDto;
 import io.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardInstanceEndDateFilterDto;
 import io.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardProcessScopeFilterDto;
@@ -18,6 +19,9 @@ import io.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardTileType;
 import io.camunda.optimize.dto.optimize.query.dashboard.tile.DimensionDto;
 import io.camunda.optimize.dto.optimize.query.dashboard.tile.PositionDto;
 import io.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
+import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
+import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
+import io.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateUnit;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.RollingDateFilterDataDto;
@@ -35,7 +39,9 @@ import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -61,6 +67,13 @@ public class AgenticControlDashboardService {
       "agenticKpiExecutionIncidentRateName";
   public static final String KPI_EXECUTION_INCIDENT_RATE_DESCRIPTION =
       "agenticKpiExecutionIncidentRateDescription";
+  public static final String KPI_EXECUTION_AVG_TOKENS_NAME = "agenticKpiExecutionAvgTokensName";
+  public static final String KPI_EXECUTION_AVG_TOKENS_DESCRIPTION =
+      "agenticKpiExecutionAvgTokensDescription";
+  public static final String KPI_EXECUTION_MEDIAN_TOKENS_NAME =
+      "agenticKpiExecutionMedianTokensName";
+  public static final String KPI_EXECUTION_MEDIAN_TOKENS_DESCRIPTION =
+      "agenticKpiExecutionMedianTokensDescription";
 
   // Deterministic report IDs — derived from fixed seed strings so IDs are stable across restarts
   // and DB reimports. Same seed always produces the same UUID (UUID v3 / name-based).
@@ -72,6 +85,11 @@ public class AgenticControlDashboardService {
           .toString();
   public static final String KPI_INCIDENT_RATE_REPORT_ID =
       UUID.nameUUIDFromBytes("agentic-kpi-incident-rate".getBytes(StandardCharsets.UTF_8))
+          .toString();
+  public static final String KPI_AVG_TOKENS_REPORT_ID =
+      UUID.nameUUIDFromBytes("agentic-kpi-avg-tokens".getBytes(StandardCharsets.UTF_8)).toString();
+  public static final String KPI_MEDIAN_TOKENS_REPORT_ID =
+      UUID.nameUUIDFromBytes("agentic-kpi-median-tokens".getBytes(StandardCharsets.UTF_8))
           .toString();
 
   private static final long INSTANCE_END_DATE_ROLLING_DAYS = 30L;
@@ -105,17 +123,22 @@ public class AgenticControlDashboardService {
   }
 
   public void reconcile() {
-    // Always upsert the three KPI reports so config changes are applied on every restart.
+    // Always upsert the five KPI reports so config changes are applied on every restart.
     // Report IDs are deterministic so upserts are safe and tile references never orphan.
     final List<DashboardReportTileDto> tiles = new ArrayList<>();
     tiles.add(buildCompletedInstancesReport());
     tiles.add(buildAvgDurationReport());
     tiles.add(buildIncidentRateReport());
+    tiles.add(buildAvgTokensReport());
+    tiles.add(buildMedianTokensReport());
 
-    // Only create the dashboard itself if it is absent — the stable tile IDs mean we never
-    // need to recreate it just to keep tile→report references consistent.
+    // Always upsert the dashboard too — tile list can grow across versions and the cold-start
+    // guard would leave an existing deployment stuck on the old layout.
+    final DashboardDefinitionRestDto dashboard = buildAgentDashboard(tiles);
     if (dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID).isEmpty()) {
-      dashboardWriter.saveDashboard(buildAgentDashboard(tiles));
+      dashboardWriter.saveDashboard(dashboard);
+    } else {
+      dashboardWriter.updateDashboard(toUpdateDto(dashboard), AGENTIC_DASHBOARD_ID);
     }
   }
 
@@ -177,7 +200,7 @@ public class AgenticControlDashboardService {
     final ProcessReportDataDto reportData =
         ProcessReportDataDto.builder()
             .definitions(Collections.emptyList())
-            .view(new ProcessViewDto(ProcessViewEntity.PROCESS_INSTANCE, ViewProperty.PERCENTAGE))
+            .view(new ProcessViewDto(ProcessViewEntity.PROCESS_INSTANCE, ViewProperty.FREQUENCY))
             .groupBy(new NoneGroupByDto())
             .distributedBy(new NoneDistributedByDto())
             .visualization(ProcessVisualization.NUMBER)
@@ -200,6 +223,57 @@ public class AgenticControlDashboardService {
         KPI_EXECUTION_INCIDENT_RATE_DESCRIPTION,
         null);
     return buildTile(KPI_INCIDENT_RATE_REPORT_ID, new PositionDto(12, 0), new DimensionDto(6, 2));
+  }
+
+  private DashboardReportTileDto buildAvgTokensReport() {
+    return buildTokensReport(
+        KPI_AVG_TOKENS_REPORT_ID,
+        new AggregationDto(AggregationType.AVERAGE),
+        new PositionDto(0, 2),
+        KPI_EXECUTION_AVG_TOKENS_NAME,
+        KPI_EXECUTION_AVG_TOKENS_DESCRIPTION);
+  }
+
+  private DashboardReportTileDto buildMedianTokensReport() {
+    return buildTokensReport(
+        KPI_MEDIAN_TOKENS_REPORT_ID,
+        new AggregationDto(AggregationType.PERCENTILE, 50.0),
+        new PositionDto(9, 2),
+        KPI_EXECUTION_MEDIAN_TOKENS_NAME,
+        KPI_EXECUTION_MEDIAN_TOKENS_DESCRIPTION);
+  }
+
+  private DashboardReportTileDto buildTokensReport(
+      final String id,
+      final AggregationDto aggregation,
+      final PositionDto position,
+      final String nameKey,
+      final String descriptionKey) {
+    final ProcessReportDataDto reportData =
+        ProcessReportDataDto.builder()
+            .definitions(Collections.emptyList())
+            .view(new ProcessViewDto(ProcessViewEntity.AGENT_INSTANCE, ViewProperty.TOTAL_TOKENS))
+            .groupBy(new NoneGroupByDto())
+            .distributedBy(new NoneDistributedByDto())
+            .visualization(ProcessVisualization.NUMBER)
+            .configuration(
+                SingleReportConfigurationDto.builder()
+                    .aggregationTypes(new LinkedHashSet<>(Collections.singletonList(aggregation)))
+                    .precision(2)
+                    .valueFormat("compact")
+                    .build())
+            .filter(
+                ProcessFilterBuilder.filter()
+                    .completedInstancesOnly()
+                    .add()
+                    .hasAgentInstances()
+                    .add()
+                    .buildList())
+            .agenticControlReport(true)
+            .build();
+    reportWriter.createOrUpdateSingleProcessReport(
+        id, null, reportData, nameKey, descriptionKey, null);
+    return buildTile(id, position, new DimensionDto(9, 2), Map.of("section", "token"));
   }
 
   private DashboardDefinitionRestDto buildAgentDashboard(final List<DashboardReportTileDto> tiles) {
@@ -229,11 +303,28 @@ public class AgenticControlDashboardService {
 
   private DashboardReportTileDto buildTile(
       final String reportId, final PositionDto position, final DimensionDto dimensions) {
+    return buildTile(reportId, position, dimensions, null);
+  }
+
+  private DashboardReportTileDto buildTile(
+      final String reportId,
+      final PositionDto position,
+      final DimensionDto dimensions,
+      final Object configuration) {
     return DashboardReportTileDto.builder()
         .id(reportId)
         .type(DashboardTileType.OPTIMIZE_REPORT)
         .position(position)
         .dimensions(dimensions)
+        .configuration(configuration)
         .build();
+  }
+
+  private DashboardDefinitionUpdateDto toUpdateDto(final DashboardDefinitionRestDto source) {
+    final DashboardDefinitionUpdateDto updateDto = new DashboardDefinitionUpdateDto();
+    updateDto.setName(source.getName());
+    updateDto.setTiles(source.getTiles());
+    updateDto.setAvailableFilters(source.getAvailableFilters());
+    return updateDto;
   }
 }

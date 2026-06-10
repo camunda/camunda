@@ -18,23 +18,24 @@ import io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 public final class AgentMetricScripts {
 
   /**
-   * Total tokens is derived (not a raw Zeebe field): the sum of the input and output token fields.
-   * The {@code .empty} guard handles non-agent docs that lack the fields — the index mapping's
-   * {@code null_value(0L)} only substitutes explicit nulls, not missing fields, so without the
-   * guard the script would throw on such docs.
+   * Returns the pre-computed {@code agentTotalTokens} value, or {@code null} when the instance has
+   * no agent activity (null or empty {@code agentInstances} array).
+   *
+   * <p>The array is read from {@code _source} because nested fields are not accessible via doc
+   * values in aggregation scripts. Instances without agent activity are excluded from
+   * avg/percentile aggregations so they do not skew the median. Instances with agent activity but
+   * zero tokens legitimately contribute 0 and are included.
    */
   public static final String TOTAL_TOKENS =
-      "long inputTokens = doc['"
-          + ProcessInstanceIndex.AGENT_TOTAL_INPUT_TOKENS
+      "def instances = params._source['"
+          + ProcessInstanceIndex.AGENT_INSTANCES
+          + "'];"
+          + "if (instances == null || instances.size() == 0) return null;"
+          + "return doc['"
+          + ProcessInstanceIndex.AGENT_TOTAL_TOKENS
           + "'].empty ? 0L : doc['"
-          + ProcessInstanceIndex.AGENT_TOTAL_INPUT_TOKENS
-          + "'].value;"
-          + "long outputTokens = doc['"
-          + ProcessInstanceIndex.AGENT_TOTAL_OUTPUT_TOKENS
-          + "'].empty ? 0L : doc['"
-          + ProcessInstanceIndex.AGENT_TOTAL_OUTPUT_TOKENS
-          + "'].value;"
-          + "return inputTokens + outputTokens;";
+          + ProcessInstanceIndex.AGENT_TOTAL_TOKENS
+          + "'].value;";
 
   private AgentMetricScripts() {}
 }

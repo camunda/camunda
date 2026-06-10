@@ -27,17 +27,10 @@ class ProcessViewAgentTotalTokensInterpreterOSTest {
   }
 
   @Test
-  void getAggregationScriptReferencesInputTokensField() {
+  void getAggregationScriptReferencesTotalTokensField() {
     final var script = interpreter.getAggregationScript();
     assertThat(script).isNotNull();
-    assertThat(script.inline().source()).contains(ProcessInstanceIndex.AGENT_TOTAL_INPUT_TOKENS);
-  }
-
-  @Test
-  void getAggregationScriptReferencesOutputTokensField() {
-    final var script = interpreter.getAggregationScript();
-    assertThat(script).isNotNull();
-    assertThat(script.inline().source()).contains(ProcessInstanceIndex.AGENT_TOTAL_OUTPUT_TOKENS);
+    assertThat(script.inline().source()).contains(ProcessInstanceIndex.AGENT_TOTAL_TOKENS);
   }
 
   @Test
