@@ -30,6 +30,7 @@ export {Popover} from './Popover';
 export {TenantInfo} from './TenantInfo';
 export {VersionPopover, TenantPopover} from './DefinitionSelection';
 export {CopyToClipboard} from './CopyToClipboard';
+export {DashboardRenderer} from './DashboardRenderer';
 export {ShareEntity} from './ShareEntity';
 export {ErrorPage} from './ErrorPage';
 export {ErrorBoundary} from './ErrorBoundary';

@@ -19,8 +19,19 @@ import {loadAgenticDashboard} from './service';
 
 import './AgenticControlPlane.scss';
 
+interface RollingFilter {
+  type: 'instanceEndDate';
+  filterLevel: 'instance';
+  data: {
+    type: 'rolling';
+    start: {value: number; unit: string};
+    end: null;
+    excludeUndefined: boolean;
+    includeUndefined: boolean;
+  };
+}
 
-function presetToFilter(preset) {
+function presetToFilter(preset: (typeof DATE_PRESETS)[number]): RollingFilter {
   return {
     type: 'instanceEndDate',
     filterLevel: 'instance',
@@ -36,20 +47,22 @@ function presetToFilter(preset) {
 
 export function AgenticControlPlane() {
   const [preset, setPreset] = useState('30d');
-  const [dashboard, setDashboard] = useState(null);
-  const [processScope, setProcessScope] = useState(null);
+  const [dashboard, setDashboard] = useState<{tiles: unknown[]} | null>(null);
+  const [processScope, setProcessScope] = useState<string | null>(null);
   const {mightFail} = useErrorHandling();
 
   useEffect(() => {
     mightFail(loadAgenticDashboard(), setDashboard, showError);
   }, [mightFail]);
 
-  const selectedPreset = DATE_PRESETS.find((p) => p.id === preset);
+  const selectedPreset = DATE_PRESETS.find((p) => p.id === preset)!;
   const definitions = processScope ? [{key: processScope, versions: ['all']}] : [];
   const filter = [presetToFilter(selectedPreset)];
 
   const scopedEvaluateReport = useCallback(
-    (id, tileFilter, query) => evaluateReport(id, tileFilter, query, definitions),
+    (id: string, tileFilter: unknown, query: unknown) =>
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      evaluateReport(id as any, tileFilter as any, query as any, definitions),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [processScope]
   );
@@ -58,7 +71,7 @@ export function AgenticControlPlane() {
     return <Loading />;
   }
 
-  const visibleTiles = dashboard.tiles?.filter((tile) => {
+  const visibleTiles = (dashboard.tiles as any[])?.filter((tile) => {
     if (processScope && tile.configuration?.visibleInL0Only) {
       return false;
     }
@@ -75,9 +88,9 @@ export function AgenticControlPlane() {
 
   return (
     <div className="AgenticControlPlane">
-      <div className="AgenticControlPlane__header">
-        <h1 className="AgenticControlPlane__title">{t('agenticControlPlane.title')}</h1>
-        <p className="AgenticControlPlane__description">{t('agenticControlPlane.description')}</p>
+      <div className="header">
+        <h1 className="title">{t('agenticControlPlane.title')}</h1>
+        <p className="description">{t('agenticControlPlane.description')}</p>
       </div>
       <FilterBar
         preset={preset}
@@ -93,11 +106,11 @@ export function AgenticControlPlane() {
           <div key={key}>
             {titleKey && (
               <>
-                <h3 className="AgenticControlPlane__section-title">{t(titleKey)}</h3>
-                <hr className="AgenticControlPlane__section-divider" />
+                <h3 className="section-title">{t(titleKey)}</h3>
+                <hr className="section-divider" />
               </>
             )}
-            <div className={`AgenticControlPlane__${key}-section`}>
+            <div className={`${key}-section`}>
               <DashboardRenderer
                 key={`${processScope ?? '__all__'}-${key}`}
                 loadTile={loadTile}

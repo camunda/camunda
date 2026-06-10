@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {runAllEffects} from 'react';
+import {runAllEffects} from '__mocks__/react';
 import {shallow} from 'enzyme';
 
 import {evaluateReport} from 'services';
@@ -33,7 +33,7 @@ jest.mock('./service', () => ({
 
 beforeEach(() => {
   jest.clearAllMocks();
-  loadAgenticDashboard.mockReturnValue({tiles: [], availableFilters: []});
+  (loadAgenticDashboard as jest.Mock).mockReturnValue({tiles: [], availableFilters: []});
 });
 
 it('should show a loading state while the dashboard is being fetched', () => {
@@ -77,8 +77,12 @@ it('should pass the default Last 30 days filter to DashboardRenderer', async () 
       },
     },
   ];
-  expect(node.find('.AgenticControlPlane__kpi-section').find('DashboardRenderer').prop('filter')).toEqual(expectedFilter);
-  expect(node.find('.AgenticControlPlane__token-section').find('DashboardRenderer').prop('filter')).toEqual(expectedFilter);
+  expect(
+    node.find('.kpi-section').find('DashboardRenderer').prop('filter')
+  ).toEqual(expectedFilter);
+  expect(
+    node.find('.token-section').find('DashboardRenderer').prop('filter')
+  ).toEqual(expectedFilter);
 });
 
 it('should update the filter when the date preset changes', async () => {
@@ -86,7 +90,7 @@ it('should update the filter when the date preset changes', async () => {
 
   await runAllEffects();
 
-  node.find('FilterBar').prop('onPresetChange')('7d');
+  (node.find('FilterBar').prop('onPresetChange') as (v: string) => void)('7d');
 
   const expectedFilter = [
     {
@@ -101,8 +105,12 @@ it('should update the filter when the date preset changes', async () => {
       },
     },
   ];
-  expect(node.find('.AgenticControlPlane__kpi-section').find('DashboardRenderer').prop('filter')).toEqual(expectedFilter);
-  expect(node.find('.AgenticControlPlane__token-section').find('DashboardRenderer').prop('filter')).toEqual(expectedFilter);
+  expect(
+    node.find('.kpi-section').find('DashboardRenderer').prop('filter')
+  ).toEqual(expectedFilter);
+  expect(
+    node.find('.token-section').find('DashboardRenderer').prop('filter')
+  ).toEqual(expectedFilter);
 });
 
 it('should render the page header with title and description', async () => {
@@ -110,19 +118,21 @@ it('should render the page header with title and description', async () => {
 
   await runAllEffects();
 
-  expect(node.find('.AgenticControlPlane__title')).toExist();
-  expect(node.find('.AgenticControlPlane__description')).toExist();
+  expect(node.find('.title')).toExist();
+  expect(node.find('.description')).toExist();
 });
 
 it('should pass the loaded tiles to DashboardRenderer', async () => {
   const tiles = [{id: 'report-1', position: {x: 0, y: 0}, dimensions: {width: 4, height: 3}}];
-  loadAgenticDashboard.mockReturnValueOnce({tiles, availableFilters: []});
+  (loadAgenticDashboard as jest.Mock).mockReturnValueOnce({tiles, availableFilters: []});
 
   const node = shallow(<AgenticControlPlane />);
 
   await runAllEffects();
 
-  expect(node.find('.AgenticControlPlane__kpi-section').find('DashboardRenderer').prop('tiles')).toEqual(tiles);
+  expect(
+    node.find('.kpi-section').find('DashboardRenderer').prop('tiles')
+  ).toEqual(tiles);
 });
 
 it('should hide visibleInL0Only tiles when a process is selected', async () => {
@@ -131,14 +141,17 @@ it('should hide visibleInL0Only tiles when a process is selected', async () => {
     {id: 'l1-tile', configuration: {visibleInL1Only: true}, position: {x: 1, y: 0}},
     {id: 'common-tile', configuration: {}, position: {x: 2, y: 0}},
   ];
-  loadAgenticDashboard.mockReturnValueOnce({tiles, availableFilters: []});
+  (loadAgenticDashboard as jest.Mock).mockReturnValueOnce({tiles, availableFilters: []});
 
   const node = shallow(<AgenticControlPlane />);
   await runAllEffects();
 
-  node.find('FilterBar').prop('onProcessScopeChange')('my-process');
+  (node.find('FilterBar').prop('onProcessScopeChange') as (v: string) => void)('my-process');
 
-  const visibleTiles = node.find('.AgenticControlPlane__kpi-section').find('DashboardRenderer').prop('tiles');
+  const visibleTiles = node
+    .find('.kpi-section')
+    .find('DashboardRenderer')
+    .prop('tiles') as {id: string}[];
   expect(visibleTiles.map((t) => t.id)).toEqual(['l1-tile', 'common-tile']);
 });
 
@@ -148,12 +161,15 @@ it('should hide visibleInL1Only tiles when no process is selected (L0)', async (
     {id: 'l1-tile', configuration: {visibleInL1Only: true}, position: {x: 1, y: 0}},
     {id: 'common-tile', configuration: {}, position: {x: 2, y: 0}},
   ];
-  loadAgenticDashboard.mockReturnValueOnce({tiles, availableFilters: []});
+  (loadAgenticDashboard as jest.Mock).mockReturnValueOnce({tiles, availableFilters: []});
 
   const node = shallow(<AgenticControlPlane />);
   await runAllEffects();
 
-  const visibleTiles = node.find('.AgenticControlPlane__kpi-section').find('DashboardRenderer').prop('tiles');
+  const visibleTiles = node
+    .find('.kpi-section')
+    .find('DashboardRenderer')
+    .prop('tiles') as {id: string}[];
   expect(visibleTiles.map((t) => t.id)).toEqual(['l0-tile', 'common-tile']);
 });
 
@@ -161,9 +177,12 @@ it('should include definitions in evaluate calls when a process is selected', as
   const node = shallow(<AgenticControlPlane />);
   await runAllEffects();
 
-  node.find('FilterBar').prop('onProcessScopeChange')('my-process');
+  (node.find('FilterBar').prop('onProcessScopeChange') as (v: string) => void)('my-process');
 
-  const loadTile = node.find('.AgenticControlPlane__kpi-section').find('DashboardRenderer').prop('loadTile');
+  const loadTile = node
+    .find('.kpi-section')
+    .find('DashboardRenderer')
+    .prop('loadTile') as (id: string, filter: unknown[], params: unknown) => void;
   loadTile('report-id', [], {});
 
   expect(evaluateReport).toHaveBeenCalledWith('report-id', [], {}, [
@@ -175,7 +194,10 @@ it('should pass empty definitions in evaluate calls when no process is selected'
   const node = shallow(<AgenticControlPlane />);
   await runAllEffects();
 
-  const loadTile = node.find('.AgenticControlPlane__kpi-section').find('DashboardRenderer').prop('loadTile');
+  const loadTile = node
+    .find('.kpi-section')
+    .find('DashboardRenderer')
+    .prop('loadTile') as (id: string, filter: unknown[], params: unknown) => void;
   loadTile('report-id', [], {});
 
   expect(evaluateReport).toHaveBeenCalledWith('report-id', [], {}, []);
