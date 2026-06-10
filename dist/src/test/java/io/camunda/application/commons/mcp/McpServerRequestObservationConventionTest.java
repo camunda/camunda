@@ -45,6 +45,24 @@ class McpServerRequestObservationConventionTest {
     assertThat(keyValues).isEmpty();
   }
 
+  @Test
+  void doesNotTrackPhysicalTenantNonMcpPathAsMcp() {
+    // given
+    final ContentCachingRequestWrapper request = mock(ContentCachingRequestWrapper.class);
+    final ServerRequestObservationContext observationContext =
+        mock(ServerRequestObservationContext.class);
+    when(request.getMethod()).thenReturn(HttpMethod.POST.name());
+    when(request.getServletPath()).thenReturn("/physical-tenants/tenant-a/v2/something");
+    when(observationContext.getCarrier()).thenReturn(request);
+
+    // when
+    final KeyValues keyValues =
+        McpServerRequestObservationConvention.getMcpRequestLowCardinalityValues(
+            observationContext, JSON_MAPPER);
+    // then
+    assertThat(keyValues).isEmpty();
+  }
+
   @ParameterizedTest
   @MethodSource("mcpRequestCases")
   void tracksMcpDetailsInObservationTags(
@@ -101,6 +119,20 @@ class McpServerRequestObservationConventionTest {
         Arguments.of(
             "/mcp/processes/tenant/tenant1",
             "{\"method\":\"tools/call\",\"params\":{\"name\":\"deploy\"}}",
-            "/mcp/processes/tenant/tenant1/tools/call/deploy"));
+            "/mcp/processes/tenant/tenant1/tools/call/deploy"),
+        // /physical-tenants/{tenantId}/mcp paths
+        Arguments.of("/physical-tenants/tenant-a/mcp", null, "/physical-tenants/tenant-a/mcp"),
+        Arguments.of(
+            "/physical-tenants/tenant-a/mcp/cluster",
+            null,
+            "/physical-tenants/tenant-a/mcp/cluster"),
+        Arguments.of(
+            "/physical-tenants/tenant-a/mcp/cluster",
+            "{\"method\":\"tools/list\"}",
+            "/physical-tenants/tenant-a/mcp/cluster/tools/list"),
+        Arguments.of(
+            "/physical-tenants/tenant-a/mcp/cluster",
+            "{\"method\":\"tools/call\",\"params\":{\"name\":\"start\"}}",
+            "/physical-tenants/tenant-a/mcp/cluster/tools/call/start"));
   }
 }
