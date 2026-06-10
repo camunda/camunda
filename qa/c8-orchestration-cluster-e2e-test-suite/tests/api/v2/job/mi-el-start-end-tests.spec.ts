@@ -167,6 +167,24 @@ test.describe
         );
         await assertStatusCode(failRes, 204);
 
+        // Regression check #1 (#54238 fixed): /jobs/search must return HTTP 200
+        // even when an EL job is in FAILED state.
+        await expect(async () => {
+          const res = await request.post(buildUrl('/jobs/search'), {
+            headers: jsonHeaders(),
+            data: {filter: {processInstanceKey: piKey, type: startElJobType}},
+          });
+          await assertStatusCode(res, 200);
+          const items = (await res.json()).items as Array<{
+            jobKey: string;
+            elementId: string;
+          }>;
+          const failedJob = items.find((j) => j.jobKey === String(jobKey));
+          expect(failedJob).toBeDefined();
+          // elementId must be "miTask" (not null/empty); null caused HTTP 500 before fix
+          expect(failedJob?.elementId).toBe('miTask');
+        }).toPass(extendedAssertionOptions);
+
         const incidents = await searchIncidentByPIK(request, {
           processInstanceKey: piKey,
         });
@@ -201,37 +219,14 @@ test.describe
           extendedAssertionOptions,
         );
 
-        // TODO: #54238: https://github.com/camunda/camunda/issues/54238
-        // /jobs/search returns HTTP 500 in FAILED/RETRIES_UPDATED state (ES-only,
-        // null flowNodeId). Workaround: activate before searching to avoid those states.
         const updateRes = await request.patch(buildUrl(`/jobs/${jobKey}`), {
           headers: jsonHeaders(),
           data: {changeset: {retries: 1}},
         });
         await assertStatusCode(updateRes, 204);
 
-        const resolveRes = await request.post(
-          buildUrl(`/incidents/${incidents[0].incidentKey}/resolution`),
-          {headers: jsonHeaders()},
-        );
-        await assertStatusCode(resolveRes, 204);
-
-        // TODO: #54238 workaround — activate before searching.
-        // After incident resolution all 3 start EL jobs are activatable:
-        // 1 retried + 2 fresh (never-activated) instances. Activating first
-        // moves them all out of FAILED/RETRIES_UPDATED state so that the
-        // subsequent /jobs/search call returns 200 instead of 500.
-        let allStartJobs: Awaited<ReturnType<typeof activateJobsByType>> = [];
-        await expect(async () => {
-          allStartJobs = await activateJobsByType(
-            request,
-            startElJobType,
-            piKey,
-          );
-          expect(allStartJobs).toHaveLength(3);
-        }).toPass(extendedAssertionOptions);
-
-        // Search after activation: no jobs in FAILED/RETRIES_UPDATED state.
+        // Regression check #2 (#54238 fixed): /jobs/search must return HTTP 200
+        // even when the EL job is in RETRIES_UPDATED state.
         await expectJobsByType(
           request,
           piKey,
@@ -240,6 +235,28 @@ test.describe
           extendedAssertionOptions,
         );
 
+        const resolveRes = await request.post(
+          buildUrl(`/incidents/${incidents[0].incidentKey}/resolution`),
+          {headers: jsonHeaders()},
+        );
+        await assertStatusCode(resolveRes, 204);
+
+        // All 3 start EL jobs (1 retried + 2 fresh) are activatable after resolution.
+        await expectJobsByType(
+          request,
+          piKey,
+          startElJobType,
+          3,
+          extendedAssertionOptions,
+        );
+        const allStartJobs = await activateJobsByType(
+          request,
+          startElJobType,
+          piKey,
+          [],
+          3,
+        );
+        expect(allStartJobs).toHaveLength(3);
         for (const j of allStartJobs) {
           await completeJob(request, j.jobKey);
         }
