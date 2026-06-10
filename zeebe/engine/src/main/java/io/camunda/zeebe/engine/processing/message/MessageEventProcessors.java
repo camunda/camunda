@@ -228,14 +228,14 @@ public final class MessageEventProcessors {
         .withListener(
             new PendingMessageStartAskCheckScheduler(
                 subscriptionCommandSender,
-                processingState.getMessageStartProcessInstanceAskState(),
+                scheduledTaskStateFactory.get().getMessageStartProcessInstanceAskState(),
                 routingInfo,
                 config::getMessageStartAskRetryInterval))
         .withListener(
             new CrossPartitionMessageStartLockReleaseScheduler(
                 partitionId,
                 subscriptionCommandSender,
-                messageState,
+                scheduledTaskStateFactory.get().getMessageState(),
                 config::getMessageStartLockReleasePollInterval,
                 config::getMessageStartLockReleasePollMaxBackoff,
                 config::getMessageStartLockReleasePollBatchLimit));
