@@ -28,6 +28,8 @@ public class McpServerRequestObservationConvention
 
   public static final String URI_MCP_PREFIX = "/mcp";
 
+  private static final String PHYSICAL_TENANT_PATH_PREFIX = "/physical-tenants/";
+
   private static final Logger LOGGER =
       LoggerFactory.getLogger(McpServerRequestObservationConvention.class);
 
@@ -83,7 +85,23 @@ public class McpServerRequestObservationConvention
 
   private static boolean isMcpRequest(final HttpServletRequest carrier) {
     final String servletPath = carrier.getServletPath();
-    return servletPath != null && servletPath.startsWith(URI_MCP_PREFIX);
+    return servletPath != null && isMcpPath(servletPath);
+  }
+
+  static boolean isMcpPath(final String servletPath) {
+    if (servletPath.startsWith(URI_MCP_PREFIX)) {
+      return true;
+    }
+    // /physical-tenants/{tenantId}/mcp[/...]
+    if (!servletPath.startsWith(PHYSICAL_TENANT_PATH_PREFIX)) {
+      return false;
+    }
+    final int slashAfterTenant = servletPath.indexOf('/', PHYSICAL_TENANT_PATH_PREFIX.length());
+    if (slashAfterTenant < 0) {
+      return false;
+    }
+    final String rest = servletPath.substring(slashAfterTenant);
+    return rest.startsWith(URI_MCP_PREFIX);
   }
 
   private static String getRequestBody(final HttpServletRequest carrier) {
