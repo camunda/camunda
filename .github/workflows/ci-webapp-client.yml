@@ -11,7 +11,7 @@ on:
 env:
   GHA_BEST_PRACTICES_LINTER: enabled
   TEST_PRODUCT: Orchestration Cluster Webapp
-  TEST_OWNER: Orchestration Cluster
+  TEST_OWNER: '@camunda/orchestration-cluster'
 
 jobs:
   typecheck:
