@@ -168,9 +168,18 @@ public final class BpmnBufferedMessageStartEventBehavior {
                 // visitor returns true so the scan continues to subsequent buffered entries for
                 // the same correlation key — the queue itself is not stalled, only the skipped
                 // entry is left in the buffer until its TTL or until another K-keyed completion
-                // triggers a rescan. A businessId-keyed retry (so the skipped entry can be picked
-                // up the moment the holding PI ends, regardless of correlation key) is the job of
-                // the release-driven retry path added in a later increment.
+                // triggers a rescan.
+                //
+                // This correlation-key-keyed scan cannot, on its own, pick up such a skipped entry
+                // the moment its businessId frees: the unblocking event (the holder PI completing)
+                // is businessId-scoped and may carry a different correlation key, or none at all,
+                // so
+                // it need not trigger a rescan for this correlation key at all. Closing that
+                // liveness gap requires a businessId-keyed retry, which is owned by the pending
+                // message-start ask registry rather than by this buffer. That retry is not yet
+                // wired up for rejected starts (planned work — the cross-partition message-start
+                // rejection-retry increment). Until it lands, a skipped entry relies on its TTL or
+                // an incidental same-correlation-key completion, exactly as described above.
                 if (storedMessage.getMessage().getDeadline() > clock.millis()
                     && !messageState.existMessageCorrelation(
                         storedMessage.getMessageKey(), process.getBpmnProcessId())
