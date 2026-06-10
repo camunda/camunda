@@ -73,6 +73,10 @@ public final class ExponentialBackoff implements LongUnaryOperator {
     this.backoffFactor = backoffFactor;
     this.jitterFactor = jitterFactor;
     this.random = random;
+    if (minDelay > maxDelay) {
+      throw new IllegalArgumentException(
+          "minDelay (" + minDelay + "ms) must be <= maxDelay (" + maxDelay + "ms)");
+    }
   }
 
   @Override
