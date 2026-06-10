@@ -25,6 +25,8 @@ export function getFormatter(measure) {
       return formatters.duration;
     case 'percentage':
       return formatters.percentage;
+    case 'compact':
+      return formatters.compact;
     default:
       return (v) => v;
   }

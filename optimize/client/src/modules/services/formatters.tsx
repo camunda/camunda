@@ -483,6 +483,16 @@ export function createDurationFormattingOptions(
   };
 }
 
+export function compact(value?: number | string | null): string {
+  if ((!value && value !== 0) || Number.isNaN(Number(value))) {
+    return '--';
+  }
+  return new Intl.NumberFormat(undefined, {
+    notation: 'compact',
+    maximumFractionDigits: 1,
+  }).format(Number(value));
+}
+
 export function formatFileName(name: string) {
   return name.replace(/[^a-zA-Z0-9-_.]/gi, '_').toLowerCase();
 }

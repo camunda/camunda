@@ -23,7 +23,7 @@ import './Number.scss';
 
 export function Number({report, formatter, mightFail}) {
   const {data, result} = report;
-  const {targetValue, precision} = data.configuration;
+  const {targetValue, precision, valueFormat} = data.configuration;
   const [processVariable, setProcessVariable] = useState();
   const processVariableReport = data.view.entity === 'variable';
   const isMultiMeasure = result?.measures.length > 1;
@@ -107,14 +107,17 @@ export function Number({report, formatter, mightFail}) {
           } else {
             const view = reportConfig.view.find(({matcher}) => matcher(data));
             let measureString = '';
-            measureString = t(
-              'report.view.' + (measure.property === 'frequency' ? 'count' : 'duration')
-            );
-            if (view.key === 'incident' && measure.property === 'duration') {
+            const propertyKey = measure.property === 'frequency' ? 'count' : measure.property;
+            try {
+              measureString = t(`report.view.${propertyKey}`);
+            } catch {
+              measureString = propertyKey;
+            }
+            if (view?.key === 'incident' && measure.property === 'duration') {
               measureString = t('report.view.resolutionDuration');
             }
 
-            viewString = `${view.label()} ${measureString}`;
+            viewString = view ? `${view.label()} ${measureString}` : measureString;
           }
 
           if (measure.property === 'duration' || data.view.entity === 'variable') {
@@ -124,7 +127,7 @@ export function Number({report, formatter, mightFail}) {
 
           return (
             <React.Fragment key={idx}>
-              <div className="data">{formatValue(measure.data, measure.property, precision)}</div>
+              <div className="data">{formatValue(measure.data, valueFormat ?? measure.property, precision)}</div>
               <div className="label">{viewString}</div>
             </React.Fragment>
           );
