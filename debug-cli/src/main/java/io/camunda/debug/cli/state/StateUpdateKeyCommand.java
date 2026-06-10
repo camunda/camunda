@@ -7,47 +7,15 @@
  */
 package io.camunda.debug.cli.state;
 
-import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreImpl;
+import io.camunda.zeebe.db.TransactionContext;
+import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.stream.impl.state.DbKeyGenerator;
-import java.nio.file.Path;
-import java.util.concurrent.Callable;
+import java.io.PrintWriter;
 import picocli.CommandLine.Command;
-import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Option;
-import picocli.CommandLine.ParentCommand;
-import picocli.CommandLine.Spec;
 
 @Command(name = "update-key", description = "Overwrite the next key in the state")
-public class StateUpdateKeyCommand implements Callable<Integer> {
-
-  @Option(
-      names = {"-v", "--verbose"},
-      description = "Enable verbose output")
-  protected boolean verbose;
-
-  @Spec CommandSpec spec;
-
-  @Option(
-      names = {"-r", "--root"},
-      description =
-          "Path of the partition directory (the folder containing 'snapshots/'), e.g. "
-              + "<data>/raft-partition/partitions/<id>",
-      required = true)
-  private Path root;
-
-  @ParentCommand private StateCommand parentCommand;
-
-  @Option(
-      names = {"--runtime"},
-      description = "Path to the temporary runtime directory",
-      required = true)
-  private Path runtimePath;
-
-  @Option(
-      names = {"-s", "--snapshot"},
-      description = "Path to the source snapshot directory",
-      required = true)
-  private String snapshotId;
+public class StateUpdateKeyCommand extends SnapshotEditCommand {
 
   @Option(
       names = {"-k", "--key"},
@@ -64,72 +32,45 @@ public class StateUpdateKeyCommand implements Callable<Integer> {
   private int partitionId;
 
   @Override
-  public Integer call() throws Exception {
-    final var out = spec.commandLine().getOut();
-    final var err = spec.commandLine().getErr();
+  String operationName() {
+    return "key update";
+  }
 
-    out.println("=== Starting key update process ===");
+  @Override
+  String runbookReference() {
+    return "debug-cli/scripts/overwrite-key/README.md";
+  }
 
-    if (verbose) {
-      err.println("Partition ID: " + partitionId);
-      err.println("Target key: " + key);
-      if (maxKey != null) {
-        err.println("Target max key: " + maxKey);
-      }
-      err.println("Root path: " + root);
-      err.println("Snapshot ID: " + snapshotId);
-      err.println("Runtime path: " + runtimePath);
-    }
-
-    final var snapshotUtil = new SnapshotUtil();
-    final var snapshotPath =
-        root.resolve(FileBasedSnapshotStoreImpl.SNAPSHOTS_DIRECTORY).resolve(snapshotId);
-
-    if (verbose) {
-      err.println("\nOpening snapshot from: " + snapshotPath);
-    }
-    try (final var db = snapshotUtil.openSnapshot(snapshotPath, runtimePath)) {
-      final var context = db.createContext();
-
-      final var dbKey = new DbKeyGenerator(partitionId, db, context);
-
-      if (verbose) {
-        err.println("\nExecuting key update transaction...");
-      }
-      context.runInTransaction(() -> overwriteKeys(dbKey));
-
-      final var lastFollowupEventPosition = SnapshotUtil.getLastFollowupEventPosition(snapshotPath);
-      if (verbose) {
-        err.println("\nTaking new snapshot...");
-      }
-      final var persistedSnapshot =
-          snapshotUtil.takeSnapshot(db, root, snapshotId, lastFollowupEventPosition);
-
-      out.println("\n=== Key update completed successfully ===");
-      out.println("Created new snapshot with updated key at: " + persistedSnapshot.getPath());
-      out.println("\nNext steps:");
-      out.println("1. Delete the previous snapshot: " + snapshotId);
-      out.println("2. Copy the data folder of partition to all replicas");
-      out.println("3. Restart the brokers to apply changes to the cluster");
-
-      return 0;
+  @Override
+  void printVerboseOptions(final PrintWriter err) {
+    err.println("Partition ID: " + partitionId);
+    err.println("Target key: " + key);
+    if (maxKey != null) {
+      err.println("Target max key: " + maxKey);
     }
   }
 
+  @Override
+  String edit(final ZeebeDb db, final TransactionContext context) {
+    final var dbKey = new DbKeyGenerator(partitionId, db, context);
+    context.runInTransaction(() -> overwriteKeys(dbKey));
+    return null;
+  }
+
   private void overwriteKeys(final DbKeyGenerator dbKey) {
-    final var out = spec.commandLine().getOut();
+    final var err = err();
     final var currentKey = dbKey.getCurrentKey();
     if (maxKey != null) {
       // Have to first set maxKey to ensure that  currentKey <= maxKey
-      out.println("  Setting max key to: " + maxKey);
+      err.println("  Setting max key to: " + maxKey);
       dbKey.setMaxKeyValue(maxKey);
-      out.println("  ✓ Max key set successfully");
+      err.println("  ✓ Max key set successfully");
     }
 
-    out.println("  Current key: " + currentKey);
-    out.println("  New key: " + key);
+    err.println("  Current key: " + currentKey);
+    err.println("  New key: " + key);
 
     dbKey.overwriteKey(key);
-    out.println("  ✓ Key overwritten successfully");
+    err.println("  ✓ Key overwritten successfully");
   }
 }

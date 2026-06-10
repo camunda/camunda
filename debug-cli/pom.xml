@@ -116,7 +116,7 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-msgpack-value</artifactId>
+      <artifactId>zeebe-broker</artifactId>
     </dependency>
 
     <dependency>
