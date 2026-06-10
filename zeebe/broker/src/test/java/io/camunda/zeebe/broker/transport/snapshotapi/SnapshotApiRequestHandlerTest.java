@@ -111,8 +111,7 @@ public class SnapshotApiRequestHandlerTest {
             clusterService,
             scheduler.getActorScheduler(),
             brokerTopology,
-            metrics,
-            TopicSupplier.withLegacyTopicName());
+            metrics);
     brokerClient.start();
 
     serverTransport =

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.transport;
 
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 
 public interface ClientRequest extends BufferWriter {
@@ -20,4 +21,12 @@ public interface ClientRequest extends BufferWriter {
    * @return the type of this request
    */
   RequestType getRequestType();
+
+  /**
+   * @return the partition group (physical tenant) this request targets; defaults to {@code
+   *     "default"} for backward compatibility
+   */
+  default String getPartitionGroup() {
+    return Protocol.DEFAULT_PARTITION_GROUP_NAME;
+  }
 }

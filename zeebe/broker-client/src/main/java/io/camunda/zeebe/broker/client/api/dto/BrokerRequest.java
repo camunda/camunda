@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.client.api.dto;
 import io.atomix.cluster.BrokerMemberId;
 import io.camunda.zeebe.broker.client.api.RequestDispatchStrategy;
 import io.camunda.zeebe.broker.client.api.UnsupportedBrokerResponseException;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.encoding.ErrorResponse;
 import io.camunda.zeebe.protocol.record.ErrorResponseDecoder;
 import io.camunda.zeebe.protocol.record.ErrorResponseEncoder;
@@ -18,6 +19,7 @@ import io.camunda.zeebe.transport.ClientRequest;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -34,9 +36,24 @@ public abstract class BrokerRequest<T> implements ClientRequest {
   protected final int schemaId;
   protected final int templateId;
 
+  private String partitionGroup = Protocol.DEFAULT_PARTITION_GROUP_NAME;
+
   public BrokerRequest(final int schemaId, final int templateId) {
     this.schemaId = schemaId;
     this.templateId = templateId;
+  }
+
+  @Override
+  public String getPartitionGroup() {
+    return partitionGroup;
+  }
+
+  public void setPartitionGroup(final String partitionGroup) {
+    Objects.requireNonNull(partitionGroup, "partitionGroup must not be null");
+    if (partitionGroup.isBlank()) {
+      throw new IllegalArgumentException("partitionGroup must not be blank");
+    }
+    this.partitionGroup = partitionGroup;
   }
 
   public Optional<BrokerMemberId> getBrokerId() {

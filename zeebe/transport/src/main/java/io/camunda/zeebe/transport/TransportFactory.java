@@ -50,13 +50,7 @@ public final class TransportFactory {
   }
 
   public ClientTransport createClientTransport(final MessagingService messagingService) {
-    return createClientTransport(messagingService, TopicSupplier.withLegacyTopicName());
-  }
-
-  public ClientTransport createClientTransport(
-      final MessagingService messagingService, final TopicSupplier topicSupplier) {
-    final var atomixClientTransportAdapter =
-        new AtomixClientTransportAdapter(messagingService, topicSupplier);
+    final var atomixClientTransportAdapter = new AtomixClientTransportAdapter(messagingService);
     actorSchedulingService.submitActor(atomixClientTransportAdapter);
     return atomixClientTransportAdapter;
   }

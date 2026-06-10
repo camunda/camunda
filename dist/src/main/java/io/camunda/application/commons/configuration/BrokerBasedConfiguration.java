@@ -66,10 +66,7 @@ public class BrokerBasedConfiguration {
 
   @Bean
   public BrokerClientCfg brokerClientConfig() {
-    return new BrokerClientCfg(
-        properties.getGateway().getCluster().getRequestTimeout(),
-        properties.getExperimental().isSendOnLegacySubject(),
-        properties.getExperimental().getDefaultTenantName());
+    return new BrokerClientCfg(properties.getGateway().getCluster().getRequestTimeout());
   }
 
   @Bean
