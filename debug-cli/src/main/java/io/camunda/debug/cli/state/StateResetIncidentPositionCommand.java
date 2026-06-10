@@ -10,20 +10,18 @@ package io.camunda.debug.cli.state;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.camunda.zeebe.broker.exporter.stream.ExporterStateEntry;
 import io.camunda.zeebe.db.ColumnFamily;
+import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
-import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreImpl;
 import java.io.IOException;
-import java.nio.file.Path;
-import java.util.concurrent.Callable;
+import java.io.PrintWriter;
+import java.util.concurrent.atomic.AtomicReference;
 import org.agrona.concurrent.UnsafeBuffer;
 import picocli.CommandLine.Command;
-import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Option;
-import picocli.CommandLine.ParentCommand;
-import picocli.CommandLine.Spec;
 
 /**
  * Offline recovery command: lowers an exporter's {@code lastIncidentUpdatePosition} in a stopped
@@ -41,134 +39,70 @@ import picocli.CommandLine.Spec;
     name = "reset-incident-position",
     description =
         "Reset an exporter's lastIncidentUpdatePosition in an offline snapshot, preserving its exporterPosition")
-public class StateResetIncidentPositionCommand implements Callable<Integer> {
+public class StateResetIncidentPositionCommand extends SnapshotEditCommand {
 
   static final String LAST_INCIDENT_UPDATE_POSITION = "lastIncidentUpdatePosition";
+  static final String DEFAULT_EXPORTER_ID = "camundaexporter";
   private static final long UNSET_POSITION = -1L;
-  private static final String DEFAULT_RESET_POSITION = "-1";
-
-  @Option(
-      names = {"-v", "--verbose"},
-      description = "Enable verbose output")
-  protected boolean verbose;
-
-  @Spec CommandSpec spec;
-
-  @Option(
-      names = {"-r", "--root"},
-      description =
-          "Path of the partition directory (the folder containing 'snapshots/'), e.g. "
-              + "<data>/raft-partition/partitions/<id>",
-      required = true)
-  private Path root;
-
-  @ParentCommand private StateCommand parentCommand;
-
-  @Option(
-      names = {"--runtime"},
-      description = "Path to the temporary runtime directory",
-      required = true)
-  private Path runtimePath;
-
-  @Option(
-      names = {"-s", "--snapshot"},
-      description = "Id of the source snapshot directory",
-      required = true)
-  private String snapshotId;
 
   @Option(
       names = {"-e", "--exporter-id"},
-      description = "Id of the exporter whose cursor should be reset",
-      required = true)
+      description =
+          "Id of the exporter whose cursor should be reset, i.e. the key the exporter is "
+              + "configured under in zeebe.broker.exporters (default: ${DEFAULT-VALUE})",
+      defaultValue = DEFAULT_EXPORTER_ID)
   private String exporterId;
 
   @Option(
       names = {"--position"},
       description =
-          "New lastIncidentUpdatePosition value. Defaults to -1 (reprocess all incidents from the "
-              + "start).",
-      defaultValue = DEFAULT_RESET_POSITION)
+          "New lastIncidentUpdatePosition value. Use -1 to reprocess all incidents from the start.",
+      required = true)
   private long newPosition;
 
   private final ObjectMapper objectMapper = new ObjectMapper();
-  private String validationError;
 
   @Override
-  public Integer call() throws Exception {
-    final var out = spec.commandLine().getOut();
-    final var err = spec.commandLine().getErr();
-
-    out.println("=== Starting exporter incident-position reset ===");
-    validationError = null;
-
-    if (verbose) {
-      err.println("Exporter ID: " + exporterId);
-      err.println("New lastIncidentUpdatePosition: " + newPosition);
-      err.println("Root path: " + root);
-      err.println("Snapshot ID: " + snapshotId);
-      err.println("Runtime path: " + runtimePath);
-    }
-
-    final var snapshotUtil = new SnapshotUtil();
-    final var snapshotPath =
-        root.resolve(FileBasedSnapshotStoreImpl.SNAPSHOTS_DIRECTORY).resolve(snapshotId);
-
-    if (verbose) {
-      err.println("\nOpening snapshot from: " + snapshotPath);
-    }
-    // try-with-resources so the RocksDB instance (and its file locks on --runtime) is always
-    // released, including on the validation-error return path.
-    try (final ZeebeDb db = snapshotUtil.openSnapshot(snapshotPath, runtimePath)) {
-      final var context = db.createContext();
-
-      final DbString exporterKey = new DbString();
-      final ColumnFamily<DbString, ExporterStateEntry> exporterColumnFamily =
-          db.createColumnFamily(
-              ZbColumnFamilies.EXPORTER, context, exporterKey, new ExporterStateEntry());
-
-      if (verbose) {
-        err.println("\nExecuting exporter metadata update transaction...");
-      }
-      context.runInTransaction(() -> resetIncidentPosition(exporterColumnFamily, exporterKey));
-
-      if (validationError != null) {
-        err.println("Error: " + validationError);
-        return 1;
-      }
-
-      final var lastFollowupEventPosition = SnapshotUtil.getLastFollowupEventPosition(snapshotPath);
-      if (verbose) {
-        err.println("\nTaking new snapshot...");
-      }
-      final var persistedSnapshot =
-          snapshotUtil.takeSnapshot(db, root, snapshotId, lastFollowupEventPosition);
-
-      out.println("\n=== Exporter incident-position reset completed successfully ===");
-      out.println("Created new snapshot at: " + persistedSnapshot.getPath());
-      out.println("\nNext steps:");
-      out.println("1. Delete the previous snapshot: " + snapshotId);
-      out.println("2. Restart this broker so it recovers from the patched snapshot");
-      out.println(
-          "3. Repeat on every replica of this partition: run against each broker's own latest "
-              + "snapshot.");
-
-      return 0;
-    }
+  String operationName() {
+    return "exporter incident-position reset";
   }
 
-  private void resetIncidentPosition(
+  @Override
+  String runbookReference() {
+    return "debug-cli/scripts/reset-incident-position/README.md";
+  }
+
+  @Override
+  void printVerboseOptions(final PrintWriter err) {
+    err.println("Exporter ID: " + exporterId);
+    err.println("New lastIncidentUpdatePosition: " + newPosition);
+  }
+
+  @Override
+  String edit(final ZeebeDb db, final TransactionContext context) {
+    final DbString exporterKey = new DbString();
+    final ColumnFamily<DbString, ExporterStateEntry> exporterColumnFamily =
+        db.createColumnFamily(
+            ZbColumnFamilies.EXPORTER, context, exporterKey, new ExporterStateEntry());
+
+    final var error = new AtomicReference<String>();
+    context.runInTransaction(
+        () -> error.set(resetIncidentPosition(exporterColumnFamily, exporterKey)));
+    return error.get();
+  }
+
+  /** Applies the edit and returns {@code null} on success or a validation-error message. */
+  private String resetIncidentPosition(
       final ColumnFamily<DbString, ExporterStateEntry> exporterColumnFamily,
       final DbString exporterKey) {
-    final var out = spec.commandLine().getOut();
+    final var err = err();
 
     exporterKey.wrapString(exporterId);
     final var entry = exporterColumnFamily.get(exporterKey);
     if (entry == null) {
-      validationError =
-          "No state found for exporter '"
-              + exporterId
-              + "' in the EXPORTER column family of this snapshot";
-      return;
+      return "No state found for exporter '"
+          + exporterId
+          + "' in the EXPORTER column family of this snapshot";
     }
 
     final long exporterPosition = entry.getPosition();
@@ -177,8 +111,7 @@ public class StateResetIncidentPositionCommand implements Callable<Integer> {
     try {
       metadataNode = readMetadata(entry);
     } catch (final IOException e) {
-      validationError = "Failed to parse exporter metadata JSON: " + e.getMessage();
-      return;
+      return "Failed to parse exporter metadata JSON: " + e.getMessage();
     }
 
     final long currentIncidentPosition =
@@ -186,9 +119,20 @@ public class StateResetIncidentPositionCommand implements Callable<Integer> {
             ? metadataNode.get(LAST_INCIDENT_UPDATE_POSITION).asLong()
             : UNSET_POSITION;
 
-    out.println("  Exporter exporterPosition (preserved): " + exporterPosition);
-    out.println("  Current lastIncidentUpdatePosition: " + currentIncidentPosition);
-    out.println("  New lastIncidentUpdatePosition: " + newPosition);
+    err.println("  Exporter exporterPosition (preserved): " + exporterPosition);
+    err.println("  Current lastIncidentUpdatePosition: " + currentIncidentPosition);
+    err.println("  New lastIncidentUpdatePosition: " + newPosition);
+
+    if (newPosition > exporterPosition) {
+      err.println(
+          "WARNING: the new lastIncidentUpdatePosition ("
+              + newPosition
+              + ") is above the exporter's exporterPosition ("
+              + exporterPosition
+              + "). This leaves the incident-update cursor ahead of the exported log position, so "
+              + "incident updates below the new value are silently skipped - the exact situation "
+              + "this command is meant to repair.");
+    }
 
     metadataNode.put(LAST_INCIDENT_UPDATE_POSITION, newPosition);
 
@@ -196,14 +140,14 @@ public class StateResetIncidentPositionCommand implements Callable<Integer> {
     try {
       patched = objectMapper.writeValueAsBytes(metadataNode);
     } catch (final JsonProcessingException e) {
-      validationError = "Failed to serialize patched exporter metadata: " + e.getMessage();
-      return;
+      return "Failed to serialize patched exporter metadata: " + e.getMessage();
     }
 
     entry.setMetadata(new UnsafeBuffer(patched));
     exporterKey.wrapString(exporterId);
     exporterColumnFamily.upsert(exporterKey, entry);
-    out.println("  ✓ lastIncidentUpdatePosition updated successfully");
+    err.println("  ✓ lastIncidentUpdatePosition updated successfully");
+    return null;
   }
 
   private ObjectNode readMetadata(final ExporterStateEntry entry) throws IOException {
