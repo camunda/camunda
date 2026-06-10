@@ -12,7 +12,6 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedExce
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.UpdatePartitionDistributorConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
@@ -23,7 +22,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
@@ -87,22 +85,13 @@ public final class ClusterPatchRequestTransformer implements ConfigurationChange
 
       return switch (buildZoneAwareConfig(existingConfig, newReplicationFactors)) {
         case Either.Left(final var error) -> Either.left(error);
-        case Either.Right(final var newConfig) -> {
-          final var coordinatorId =
-              ClusterConfigurationCoordinatorSupplier.of(() -> clusterConfiguration)
-                  .getDefaultCoordinator();
-          final int totalRf = newConfig.zones().stream().mapToInt(ZoneSpec::numberOfReplicas).sum();
-          yield new ScaleRequestTransformer(
-                  newSetOfMembers, Optional.of(totalRf), newPartitionCount, Optional.of(newConfig))
-              .operations(clusterConfiguration)
-              .map(
-                  ops ->
-                      Stream.concat(
-                              Stream.of(
-                                  new UpdatePartitionDistributorConfig(coordinatorId, newConfig)),
-                              ops.stream())
-                          .toList());
-        }
+        case Either.Right(final var partitionDistributorConfig) ->
+            new ScaleRequestTransformer(
+                    newSetOfMembers,
+                    Optional.of(partitionDistributorConfig.replicationFactor()),
+                    newPartitionCount,
+                    Optional.of(partitionDistributorConfig))
+                .operations(clusterConfiguration);
       };
     }
 

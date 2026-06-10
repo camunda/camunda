@@ -13,6 +13,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PostScalingOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PreScalingOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.UpdatePartitionDistributorConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
@@ -66,6 +67,11 @@ public class ScaleRequestTransformer implements ConfigurationChangeRequest {
     final MemberId coordinatorId =
         ClusterConfigurationCoordinatorSupplier.of(() -> clusterConfiguration)
             .getDefaultCoordinator();
+
+    configOverride
+        .map(cfg -> new UpdatePartitionDistributorConfig(coordinatorId, cfg))
+        .ifPresent(generatedOperations::add);
+
     final boolean isBrokerScaling = !clusterConfiguration.members().keySet().equals(members);
     if (isBrokerScaling) {
       final var preScaleOperation = new PreScalingOperation(coordinatorId, members);
@@ -79,6 +85,8 @@ public class ScaleRequestTransformer implements ConfigurationChangeRequest {
         // then reassign partitions
         .flatMap(
             ignore ->
+                // Note that configOverride must be threaded through everywhere is needed otherwise
+                // a stale ClusterConfiguration is used
                 new PartitionReassignRequestTransformer(
                         members, newReplicationFactor, newPartitionCount, configOverride)
                     .operations(clusterConfiguration))
