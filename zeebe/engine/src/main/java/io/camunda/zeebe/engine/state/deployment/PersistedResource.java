@@ -94,10 +94,6 @@ public class PersistedResource extends UnpackedObject
     return deploymentKeyProp.getValue();
   }
 
-  public String getResource() {
-    return bufferAsString(resourceProp.getValue());
-  }
-
   public DirectBuffer getResourceBuffer() {
     return resourceProp.getValue();
   }

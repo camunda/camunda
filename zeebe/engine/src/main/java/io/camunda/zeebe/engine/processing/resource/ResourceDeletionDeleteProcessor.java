@@ -72,7 +72,6 @@ import io.camunda.zeebe.protocol.record.value.ResourceType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
-import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -567,7 +566,7 @@ public class ResourceDeletionDeleteProcessor
             .setResourceKey(persistedResource.getResourceKey())
             .setTenantId(persistedResource.getTenantId())
             .setResourceName(persistedResource.getResourceName())
-            .setResource(BufferUtil.wrapString(persistedResource.getResource()))
+            .setResource(persistedResource.getResourceBuffer())
             .setChecksum(persistedResource.getChecksum())
             .setVersion(persistedResource.getVersion())
             .setVersionTag(persistedResource.getVersionTag())
