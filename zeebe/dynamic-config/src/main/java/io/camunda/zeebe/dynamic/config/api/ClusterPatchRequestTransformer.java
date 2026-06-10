@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public final class ClusterPatchRequestTransformer implements ConfigurationChangeRequest {
 
@@ -87,6 +88,18 @@ public final class ClusterPatchRequestTransformer implements ConfigurationChange
                 "'partitions.newReplicationFactors' is only supported on zone-aware clusters"));
       }
       final var zoneAwareConfig = (PartitionDistributorConfig.ZoneAwareConfig) existingConfig.get();
+      final var knownZones =
+          zoneAwareConfig.zones().stream().map(ZoneSpec::name).collect(Collectors.toSet());
+      final var unknownZones =
+          newReplicationFactors.keySet().stream().filter(z -> !knownZones.contains(z)).toList();
+      if (!unknownZones.isEmpty()) {
+        return Either.left(
+            new InvalidRequest(
+                "Unknown zones in 'partitions.newReplicationFactors': "
+                    + unknownZones
+                    + ". Known zones: "
+                    + knownZones));
+      }
       final var updatedZones =
           zoneAwareConfig.zones().stream()
               .map(

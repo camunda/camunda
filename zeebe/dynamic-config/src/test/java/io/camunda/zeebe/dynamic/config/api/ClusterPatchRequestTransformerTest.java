@@ -243,6 +243,22 @@ final class ClusterPatchRequestTransformerTest {
   }
 
   @Test
+  void shouldRejectUnknownZoneInNewReplicationFactors() {
+    // given a zone-aware cluster with zones zone-a and zone-b
+    final var currentTopology = zoneAwareTopology();
+
+    // when requesting a replica count for a zone that does not exist
+    final var result =
+        new ClusterPatchRequestTransformer(
+                Set.of(), Set.of(), Optional.empty(), Optional.empty(), Map.of("zone-x", 2))
+            .operations(currentTopology);
+
+    // then
+    assertThat(result).isLeft().left().isInstanceOf(InvalidRequest.class);
+    Assertions.assertThat(result.getLeft()).hasMessageContaining("zone-x");
+  }
+
+  @Test
   void shouldRejectPlainReplicationFactorOnZoneAwareCluster() {
     // given a zone-aware cluster
     final var currentTopology = zoneAwareTopology();
@@ -275,37 +291,14 @@ final class ClusterPatchRequestTransformerTest {
     // then the first operation gossips the new distributor config
     assertThat(result).isRight();
     final var operations = result.get();
-    Assertions.assertThat(operations).isNotEmpty();
-    Assertions.assertThat(operations.get(0)).isInstanceOf(UpdatePartitionDistributorConfig.class);
-    final var updateOp = (UpdatePartitionDistributorConfig) operations.get(0);
-    Assertions.assertThat(updateOp.config())
+    Assertions.assertThat(operations)
+        .isNotEmpty()
+        .first()
         .isEqualTo(
-            new ZoneAwareConfig(
-                List.of(new ZoneSpec("zone-a", 3, 1000), new ZoneSpec("zone-b", 1, 500))));
-  }
-
-  @Test
-  void shouldUpdateOnlySpecifiedZoneReplicationFactor() {
-    // given a zone-aware cluster with two zones
-    final var currentTopology = zoneAwareTopology();
-
-    // when only zone-a's replication factor is changed
-    final var result =
-        new ClusterPatchRequestTransformer(
-                Set.of(MemberId.from("zone-a", 2)),
-                Set.of(),
-                Optional.empty(),
-                Optional.empty(),
-                Map.of("zone-a", 3))
-            .operations(currentTopology);
-
-    // then zone-b's spec stays unchanged
-    assertThat(result).isRight();
-    final var updateOp = (UpdatePartitionDistributorConfig) result.get().get(0);
-    final var newConfig = (ZoneAwareConfig) updateOp.config();
-    Assertions.assertThat(newConfig.zones())
-        .contains(new ZoneSpec("zone-b", 1, 500))
-        .contains(new ZoneSpec("zone-a", 3, 1000));
+            new UpdatePartitionDistributorConfig(
+                currentTopology.members().firstKey(),
+                new ZoneAwareConfig(
+                    List.of(new ZoneSpec("zone-a", 3, 1000), new ZoneSpec("zone-b", 1, 500)))));
   }
 
   @Test
