@@ -13,6 +13,7 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.PartitionDistributor;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.UpdateRoutingState;
 import io.camunda.zeebe.dynamic.config.state.MemberState.State;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
 import io.camunda.zeebe.dynamic.config.util.RoundRobinPartitionDistributor;
 import java.util.List;
 import java.util.Map;
@@ -328,6 +329,11 @@ public record ClusterConfiguration(
       return Optional.empty();
     }
     return Optional.of(pendingChanges.orElseThrow().nextPendingOperation());
+  }
+
+  public boolean isZoneAware() {
+    return members().keySet().stream().anyMatch(m -> m.zone() != null)
+        || partitionDistributorConfig.map(ZoneAwareConfig.class::isInstance).orElse(false);
   }
 
   /**
