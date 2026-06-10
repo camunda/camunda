@@ -177,6 +177,14 @@ for v in versions["mssql"]:
         "it-database-type":       "rdbms_mssql",
     })
 
+for v in versions["azure-sql"]:
+    rdbms_matrix["include"].append({
+        "database-name":          f"Azure SQL {v}",
+        "database-type":          "azure-sql",
+        "database-image-version": v,
+        "it-database-type":       "rdbms_mssql",
+    })
+
 for v in versions["oracle"]:
     major = v.split(".")[0].split("-")[0]  # "23.26.1-slim-faststart" -> "23"; "21-slim-faststart" -> "21"
     meta  = oracle_meta.get(major, {"name": f"Oracle {major}", "type": "oracle"})

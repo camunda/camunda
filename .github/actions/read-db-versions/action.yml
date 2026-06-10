@@ -27,7 +27,7 @@ outputs:
 
   # ── Matrix outputs ────────────────────────────────────────────────────────────
   # Each is a JSON object ({ include: [...] }) ready for strategy.matrix via fromJSON().
-  # rdbms-matrix:   one entry per version of PostgreSQL, MySQL, MariaDB, MSSQL, Oracle.
+  # rdbms-matrix:   one entry per version of PostgreSQL, MySQL, MariaDB, MSSQL, Azure SQL, Oracle.
   #                 Fields: database-name, database-type, database-image-version, it-database-type.
   #                 Used by zeebe-rdbms-integration-tests.yml.
   # es-os-matrix:   min and max entries per supported major series of ES8, ES9, OS2, OS3.
