@@ -18,6 +18,7 @@ This is fundamentally different from the `@testing-library/react` + `vi.mock()` 
 - For components that need routing context (pages, components using `<Link>`, `useNavigate`, route hooks), use `renderWithRouter(Component, {path, initialEntry?})` from `#/vitest-modules/render-with-router` instead of bare `render()`. It mounts the component in a minimal isolated route tree backed by an in-memory history — no full `routeTree.gen` is loaded, no `beforeLoad` runs.
 - Both `render()` and `renderWithRouter()` return the `screen` object — you MUST capture the return value: `const screen = await renderWithRouter(MyPage, {path: '/my-path'})`. There is no global `screen` import.
 - Use `expect.element()` for DOM assertions — it retries automatically until the assertion passes or times out. This replaces the `waitFor` / `findBy*` / `screen.findByRole` patterns you may know from Testing Library. There is no `waitFor` here.
+- Perform all UI interactions (clicks, typing, filling, selecting, tabbing, hovering) with `userEvent` imported from `vitest/browser` — e.g. `await userEvent.click(screen.getByRole('button', {name: /save/i}))`, `await userEvent.fill(screen.getByLabelText('Name'), 'value')`. It dispatches a realistic full browser event sequence (pointer, mouse, focus, input). Keep using `screen.getBy*` for queries and `expect.element()` for assertions — `userEvent` is only for interactions. Do NOT use locator `.click()` or `.fill()` methods directly.
 - Mock HTTP through the `worker` fixture using endpoint mocks from `#/shared-test-modules/mock-handlers`. Each mock is an individually named export (e.g., `mockCurrentUserEndpoint`, `mockLoginEndpoint`) created with `createEndpointMock` from `#/shared-test-modules/mock-endpoint`. Both unit and Playwright tests use the same definitions. All endpoint mocks must be defined in `apps/orchestration-cluster-webapp/shared-test-modules/mock-handlers.ts` — never create `createEndpointMock` calls inline in test files. Never use `vi.mock()` for API calls; it couples tests to implementation details and breaks on refactors.
 - Prefer testing library selectors: `getByRole`, `getByLabelText`, `getByText`. They enforce accessible markup and survive structural refactors. Avoid `querySelector` and `getByTestId` — they test DOM structure, not behavior.
 - Co-locate test files with source: a test for `src/shared/foo/bar.tsx` sits at `src/shared/foo/bar.test.tsx`; a test for `src/operate/components/Foo.tsx` sits next to it at `src/operate/components/Foo.test.tsx`. Pod areas follow their own conventions for test placement.
@@ -76,13 +77,14 @@ Use `renderWithRouter(Component, {path, initialEntry?})` — it mounts the compo
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {describe, expect} from 'vitest';
+import {userEvent} from 'vitest/browser';
 import {LoginPage} from './LoginPage';
 
 describe('<Login />', () => {
   it('should not allow the form to be submitted with empty fields', async () => {
     const screen = await renderWithRouter(LoginPage, {path: '/login'});
 
-    await screen.getByRole('button', {name: /login/i}).click();
+    await userEvent.click(screen.getByRole('button', {name: /login/i}));
 
     await expect.element(screen.getByLabelText(/username/i)).toBeInvalid();
     await expect.element(screen.getByLabelText(/^password$/i)).toBeInvalid();
@@ -108,11 +110,44 @@ await expect.element(screen.getByText('Loading...')).not.toBeVisible();
 
 `expect.element()` is always async and retries — no need to wrap in `waitFor` or use `findBy*`.
 
+## User interactions
+
+All interactions use `userEvent` from `vitest/browser`. It accepts both `Element` and `Locator` (the return type of `screen.getBy*`).
+
+```ts
+import {userEvent} from 'vitest/browser';
+
+// Click
+await userEvent.click(screen.getByRole('button', {name: /submit/i}));
+
+// Fill an input (clears existing value first)
+await userEvent.fill(screen.getByLabelText('Name'), 'Alice');
+
+// Type without clearing (appends to existing value)
+await userEvent.type(screen.getByLabelText('Name'), ' Bob');
+
+// Clear an input
+await userEvent.clear(screen.getByLabelText('Name'));
+
+// Select options in a <select>
+await userEvent.selectOptions(screen.getByRole('combobox'), ['option-value']);
+
+// Keyboard
+await userEvent.keyboard('{Enter}');
+
+// Tab
+await userEvent.tab();
+
+// Hover / unhover
+await userEvent.hover(screen.getByText('Tooltip trigger'));
+await userEvent.unhover(screen.getByText('Tooltip trigger'));
+```
+
 ## Common gotchas
 
 - **No `waitFor` or `findBy*`**: `expect.element()` handles async natively. Writing `await waitFor(() => ...)` will error — it doesn't exist in this setup.
 - **No `queryByText` / `queryByRole`**: these don't exist. Use `getByText` / `getByRole` with `expect.element(...).not.toBeVisible()` for absence checks.
-- **No `user` fixture**: there is no `userEvent` or `user` fixture. Interact directly via locators: `screen.getByRole('button').click()`, `screen.getByLabelText('Name').fill('value')`.
+- **`userEvent` is not a fixture — import it directly**: `import {userEvent} from 'vitest/browser';`. Use `userEvent.click()`, `userEvent.fill()`, `userEvent.type()`, etc. for all interactions. Do not use locator `.click()` or `.fill()` methods — they bypass the realistic event sequence that `userEvent` provides.
 - **Endpoint mocks are functions**: always call them with a config object — `mockCurrentUserEndpoint({successResponse: HttpResponse.json({})})`, not `mockCurrentUserEndpoint` bare.
 - **No jsdom APIs**: tests run in a real browser, so `document.querySelector` technically works but defeats the purpose. Use `screen.getBy*` queries.
 - **`msw/browser`, not `msw/node`**: the MSW worker runs in the browser via `setupWorker`. If you see imports from `msw/node`, that's wrong.
