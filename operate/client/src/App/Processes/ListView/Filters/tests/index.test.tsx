@@ -201,7 +201,7 @@ describe('Filters', () => {
       errorMessage: 'an error',
       elementId: 'ServiceTask_0kt6c5i',
       batchOperationKey: '90fdfe82-090b-4d84-af31-5db612514191',
-      businessId: 'order-12345',
+      businessId: 'eq_order-12345',
       active: 'true',
       incidents: 'true',
       completed: 'true',
@@ -283,11 +283,7 @@ describe('Filters', () => {
 
     await user.click(screen.getByRole('button', {name: 'More Filters'}));
     await user.click(screen.getByText('Business ID'));
-    await user.type(
-      screen.getByLabelText(/^business id$/i),
-
-      MOCK_VALUES.businessId,
-    );
+    await user.type(screen.getByLabelText(/^business id$/i), 'order-12345');
 
     await user.click(screen.getByRole('button', {name: 'More Filters'}));
     await user.click(screen.getByText('Failed job but retries left'));

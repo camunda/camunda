@@ -59,4 +59,20 @@ describe('parseProcessInstancesSearchFilter', () => {
       batchOperationKey: {$eq: 'batch-123'},
     });
   });
+
+  it('should map businessId filter to an advanced string filter', () => {
+    const result = parseProcessInstancesSearchFilter(
+      params({active: 'true', businessId: 'eq_order-123___like_order'}),
+    );
+    expect(result).toMatchObject({
+      businessId: {$eq: 'order-123', $like: '*order*'},
+    });
+  });
+
+  it('omits businessId when the value is malformed', () => {
+    const result = parseProcessInstancesSearchFilter(
+      params({active: 'true', businessId: 'legacy-bare-value'}),
+    );
+    expect(result).not.toHaveProperty('businessId');
+  });
 });

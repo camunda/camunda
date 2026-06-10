@@ -39,6 +39,7 @@ import {
 } from 'modules/components/FiltersPanel/styled';
 import {VariableFilter} from './VariablesFilter';
 import {variableFilterStore} from 'modules/stores/variableFilter';
+import {AdvancedStringFilter} from 'modules/components/AdvancedStringFilter';
 
 type OptionalFilter =
   | 'variable'
@@ -92,7 +93,6 @@ const OPTIONAL_FILTER_FIELDS: Record<
   businessId: {
     keys: ['businessId'],
     label: 'Business ID',
-    type: 'text',
   },
   batchOperationKey: {
     keys: ['batchOperationKey'],
@@ -217,6 +217,14 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
                 switch (filter) {
                   case 'variable':
                     return <VariableFilter />;
+                  case 'businessId':
+                    return (
+                      <AdvancedStringFilter
+                        name={filter}
+                        label={OPTIONAL_FILTER_FIELDS[filter].label}
+                        selectableOperators={['$eq', '$like', '$in']}
+                      />
+                    );
                   case 'startDateRange':
                     return (
                       <DateRangeField
