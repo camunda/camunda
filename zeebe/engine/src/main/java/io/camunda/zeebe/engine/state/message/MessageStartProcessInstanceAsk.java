@@ -26,17 +26,18 @@ import org.agrona.concurrent.UnsafeBuffer;
  * outstanding ask from this partition. When any of the three reply intents is applied, the entry is
  * removed.
  *
- * <p>The {@code retryBackoffMillis} field is {@code P_K}-local retry bookkeeping — the current
- * back-off <em>magnitude</em> — not part of the cross-partition request. It is deliberately absent
+ * <p>The {@code rejectionCount} field is {@code P_K}-local retry bookkeeping — how many times this
+ * ask has been rejected so far — not part of the cross-partition request. It is deliberately absent
  * from {@link #wrap(MessageStartProcessInstanceRequestRecord)} and {@link
- * #populateRecord(MessageStartProcessInstanceRequestRecord)}: an un-replied ask carries no back-off
- * (default {@code 0} keeps it eligible for base-interval re-send), and a rejected ask has its
- * magnitude doubled (capped) by the rejection applier on each rejection reply — a pure function of
- * the prior persisted value, needing no clock or event timestamp. The scheduler derives the
- * next-retry time as {@code lastSent + max(baseInterval, retryBackoffMillis)}. Persisting the
- * magnitude — rather than holding it in the transient send tracker — keeps a long-blocked ask from
- * resetting to base-interval storming on every leader change. It defaults to {@code 0} so values
- * persisted before this field existed decode unchanged.
+ * #populateRecord(MessageStartProcessInstanceRequestRecord)}: an un-replied ask carries a count of
+ * {@code 0} (the base re-send cadence), and each rejection reply increments it via the rejection
+ * applier — a pure, clock-free function of the prior persisted value, so it stays deterministic on
+ * replay. The applier stores only the count, not a back-off duration: deriving the duration needs
+ * the configured base/cap, and appliers must not read mutable config. The scheduler (which may read
+ * config) turns the count into the next-retry interval, {@code min(baseInterval * 2^rejectionCount,
+ * cap)}. Persisting the count — rather than holding it in the transient send tracker — keeps a
+ * long-blocked ask from resetting to base-interval storming on every leader change. It defaults to
+ * {@code 0} so values persisted before this field existed decode unchanged.
  */
 public final class MessageStartProcessInstanceAsk extends UnpackedObject implements DbValue {
 
@@ -54,7 +55,7 @@ public final class MessageStartProcessInstanceAsk extends UnpackedObject impleme
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final LongProperty messageDeadlineProp = new LongProperty("messageDeadline", -1L);
-  private final LongProperty retryBackoffMillisProp = new LongProperty("retryBackoffMillis", 0L);
+  private final LongProperty rejectionCountProp = new LongProperty("rejectionCount", 0L);
 
   public MessageStartProcessInstanceAsk() {
     super(12);
@@ -69,7 +70,7 @@ public final class MessageStartProcessInstanceAsk extends UnpackedObject impleme
         .declareProperty(variablesProp)
         .declareProperty(tenantIdProp)
         .declareProperty(messageDeadlineProp)
-        .declareProperty(retryBackoffMillisProp);
+        .declareProperty(rejectionCountProp);
   }
 
   /**
@@ -244,16 +245,16 @@ public final class MessageStartProcessInstanceAsk extends UnpackedObject impleme
   }
 
   /**
-   * The current retry back-off magnitude in millis. {@code 0} for an un-replied ask; doubled (up to
-   * a cap) by the rejection applier on each rejection reply. The scheduler derives the next-retry
-   * time as {@code lastSent + max(baseInterval, retryBackoffMillis)}.
+   * How many times this ask has been rejected. {@code 0} for an un-replied ask; incremented by the
+   * rejection applier on each rejection reply. The scheduler turns it into the next-retry interval,
+   * {@code min(baseInterval * 2^rejectionCount, cap)}.
    */
-  public long getRetryBackoffMillis() {
-    return retryBackoffMillisProp.getValue();
+  public long getRejectionCount() {
+    return rejectionCountProp.getValue();
   }
 
-  public MessageStartProcessInstanceAsk setRetryBackoffMillis(final long retryBackoffMillis) {
-    retryBackoffMillisProp.setValue(retryBackoffMillis);
+  public MessageStartProcessInstanceAsk setRejectionCount(final long rejectionCount) {
+    rejectionCountProp.setValue(rejectionCount);
     return this;
   }
 

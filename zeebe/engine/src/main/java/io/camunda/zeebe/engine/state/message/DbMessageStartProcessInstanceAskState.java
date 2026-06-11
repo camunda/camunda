@@ -34,6 +34,14 @@ import java.util.List;
 public final class DbMessageStartProcessInstanceAskState
     implements MutableMessageStartProcessInstanceAskState, StreamProcessorLifecycleAware {
 
+  /**
+   * Upper bound on the persisted rejection count. The scheduler derives the back-off interval as
+   * {@code min(baseInterval * 2^rejectionCount, cap)}, which saturates at the cap long before this
+   * bound; capping the stored count keeps the value bounded for a very long-blocked ask and avoids
+   * any overflow when the scheduler computes {@code 2^rejectionCount}.
+   */
+  private static final long MAX_REJECTION_COUNT = 30L;
+
   private final DbLong messageKey = new DbLong();
   private final DbLong processDefinitionKey = new DbLong();
   private final DbCompositeKey<DbLong, DbLong> key =
@@ -106,6 +114,22 @@ public final class DbMessageStartProcessInstanceAskState
     this.processDefinitionKey.wrapLong(processDefinitionKey);
     columnFamily.deleteIfExists(key);
     transientState.remove(new PendingAskKey(messageKey, processDefinitionKey));
+  }
+
+  @Override
+  public void backOff(final long messageKey, final long processDefinitionKey) {
+    final var ask = get(messageKey, processDefinitionKey);
+    if (ask == null) {
+      // The ask was already removed (e.g. by a racing success or message expiry); nothing to do.
+      return;
+    }
+    ask.setRejectionCount(Math.min(ask.getRejectionCount() + 1, MAX_REJECTION_COUNT));
+    this.messageKey.wrapLong(messageKey);
+    this.processDefinitionKey.wrapLong(processDefinitionKey);
+    columnFamily.upsert(key, ask);
+    // Intentionally leave the transient last-sent tracking untouched: the scheduler uses it as the
+    // in-flight guard, and resetting it here would make the ask immediately eligible again and
+    // defeat the back-off the incremented count is meant to produce.
   }
 
   @Override
