@@ -439,7 +439,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
       final Map<String, String> inclusionFilters,
       final Map<String, String> exclusionFilters,
       final List<FieldValue> searchAfter,
-      final Integer size) {
+      final int size) {
     final Query query = buildFilterQuery(idFieldName, ids, inclusionFilters, exclusionFilters);
     final SearchRequest.Builder requestBuilder =
         new SearchRequest.Builder()
