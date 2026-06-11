@@ -413,11 +413,20 @@ public abstract class ReportEvaluationHandler {
             reportDefinitionDto.getId());
       }
     }
-    if (additionalFilters != null
-        && additionalFilters.getGroupByDateUnit() != null
-        && reportDefinitionDto
-            instanceof final SingleProcessReportDefinitionRequestDto definitionDto
-        && definitionDto.getData().getGroupBy() instanceof final EndDateGroupByDto endDateGroupBy
+    overrideGroupByDateUnit(reportDefinitionDto, additionalFilters);
+  }
+
+  private void overrideGroupByDateUnit(
+      final ReportDefinitionDto<?> reportDefinitionDto,
+      final AdditionalProcessReportEvaluationFilterDto additionalFilters) {
+    if (additionalFilters == null || additionalFilters.getGroupByDateUnit() == null) {
+      return;
+    }
+    if (!(reportDefinitionDto
+        instanceof final SingleProcessReportDefinitionRequestDto definitionDto)) {
+      return;
+    }
+    if (definitionDto.getData().getGroupBy() instanceof final EndDateGroupByDto endDateGroupBy
         && endDateGroupBy.getValue() instanceof final DateGroupByValueDto dateValue) {
       dateValue.setUnit(additionalFilters.getGroupByDateUnit());
     }
