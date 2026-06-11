@@ -35,8 +35,9 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
- * Reproduces the gap described in <a
- * href="https://github.com/camunda/camunda/issues/49963">#49963</a>.
+ * Verifies the fix for <a href="https://github.com/camunda/camunda/issues/49963">#49963</a>: user
+ * task search by process-instance variables works for instances migrated from a process version
+ * without user tasks into a version with user tasks.
  *
  * <p>Scenario:
  *
@@ -59,14 +60,11 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  *
  * <ul>
  *   <li>the <b>localVariables</b> filter finds the task — the user task's own input variable is
- *       exported normally at activation (works without any fix);
- *   <li>the <b>processInstanceVariables</b> filter does <b>not</b> find the task — the
- *       pre-migration process variable was skipped and never back-filled (the #49963 gap).
+ *       exported normally at activation;
+ *   <li>the <b>processInstanceVariables</b> filter also finds the task — it is resolved against the
+ *       variable store (which is complete for all instances) instead of the {@code tasklist-task}
+ *       variable join, which is the #49963 fix.
  * </ul>
- *
- * <p>The process-instance-variable assertion is therefore a <b>characterization</b> of current
- * (buggy) behavior: it asserts the result is empty. Once #49963 is fixed, flip that assertion to
- * expect the task to be found.
  */
 @Testcontainers
 @ZeebeIntegration
@@ -132,7 +130,7 @@ public class UserTaskMigrationVariableSearchIT {
   }
 
   @Test
-  void shouldFindMigratedTaskByLocalVariableButNotByProcessVariable() {
+  void shouldFindMigratedTaskByLocalAndProcessInstanceVariable() {
     // given - v1 has NO user task: start -> service task (waits on a job) -> end
     final BpmnModelInstance v1 =
         Bpmn.createExecutableProcess(PROCESS_V1_ID)
@@ -251,10 +249,9 @@ public class UserTaskMigrationVariableSearchIT {
                     .describedAs("local variable filter should find the migrated user task")
                     .hasSize(1));
 
-    // and - the PROCESS-INSTANCE variable filter does NOT find the task today.
-    // The pre-migration process variable was skipped from tasklist-task (no user task in v1) and
-    // migration does not back-fill it. This is the #49963 gap.
-    // CHARACTERIZATION: once #49963 is fixed, change this assertion to expect hasSize(1).
+    // and - the PROCESS-INSTANCE variable filter also finds the task. The pre-migration process
+    // variable was skipped from tasklist-task (no user task in v1) and migration does not
+    // back-fill it, but the filter is resolved against the variable store instead (#49963).
     final var byProcessVariable =
         client
             .newUserTaskSearchRequest()
@@ -267,8 +264,8 @@ public class UserTaskMigrationVariableSearchIT {
             .join();
     assertThat(byProcessVariable.items())
         .describedAs(
-            "process-instance variable filter cannot match a migrated instance's pre-migration "
-                + "variables until #49963 is fixed")
-        .isEmpty();
+            "process-instance variable filter should find the migrated user task even though "
+                + "the variable was never written to the task index (#49963)")
+        .hasSize(1);
   }
 }
