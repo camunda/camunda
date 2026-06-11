@@ -71,7 +71,15 @@ type Events =
     }
   | {
       eventName: 'navigation';
-      link: 'header-logo' | 'header-tasks' | 'header-processes';
+      link:
+        | 'header-logo'
+        | 'header-tasks'
+        | 'header-tasks-all-open'
+        | 'header-tasks-assigned-to-me'
+        | 'header-tasks-unassigned'
+        | 'header-tasks-completed'
+        | `header-tasks-custom-${string}`
+        | 'header-processes';
     }
   | {
       eventName: 'app-switcher-item-clicked';

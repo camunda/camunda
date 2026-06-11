@@ -11,6 +11,7 @@
 .splitPane {
   --header-height: 48px;
   width: 100%;
+  margin-top: var(--c3-header-height, var(--header-height));
   height: calc(100% - var(--header-height));
   padding: 0;
   display: flex;
