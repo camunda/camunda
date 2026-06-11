@@ -25,7 +25,6 @@ import truncate from 'lodash/truncate';
 import {beautifyJSON} from 'modules/utils/editor/beautifyJSON';
 import {Paths} from 'modules/Routes';
 import {CopyButton} from 'modules/components/CopyButton';
-import {IS_VARIABLE_FILTER_V2_ENABLED} from 'modules/feature-flags';
 import {VariableFilterRow} from './VariableFilterRow';
 import {
   variableFilterStore,
@@ -109,8 +108,6 @@ const VariableFilterModal: React.FC = observer(() => {
   const [tab, setTab] = useState<Tab>('fields');
   const [jsonError, setJsonError] = useState<string | null>(null);
   const [jsonParseWarning, setJsonParseWarning] = useState<string | null>(null);
-
-  const showSwitcher = IS_VARIABLE_FILTER_V2_ENABLED;
 
   useEffect(() => {
     if (isEditorValid) {
@@ -287,23 +284,21 @@ const VariableFilterModal: React.FC = observer(() => {
                     Define one or more conditions to filter process instances by
                     variable values. All conditions are combined with AND logic.
                   </Description>
-                  {showSwitcher && (
-                    <SwitcherWrap>
-                      <ContentSwitcher
-                        size="sm"
-                        selectedIndex={tab === 'fields' ? 0 : 1}
-                        onChange={(e) => {
-                          handleTabChange(
-                            e.index === 0 ? 'fields' : 'json',
-                            form,
-                          );
-                        }}
-                      >
-                        <Switch name="fields" text="Fields" />
-                        <Switch name="json" text="JSON" />
-                      </ContentSwitcher>
-                    </SwitcherWrap>
-                  )}
+                  <SwitcherWrap>
+                    <ContentSwitcher
+                      size="sm"
+                      selectedIndex={tab === 'fields' ? 0 : 1}
+                      onChange={(e) => {
+                        handleTabChange(
+                          e.index === 0 ? 'fields' : 'json',
+                          form,
+                        );
+                      }}
+                    >
+                      <Switch name="fields" text="Fields" />
+                      <Switch name="json" text="JSON" />
+                    </ContentSwitcher>
+                  </SwitcherWrap>
                   {tab === 'fields' ? (
                     <>
                       {jsonParseWarning !== null && (

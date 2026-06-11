@@ -126,7 +126,7 @@ describe('useBatchOperationMutationRequestBody', () => {
         variables: [
           {
             name: 'testVar',
-            value: '"value1"',
+            value: {$eq: '"value1"'},
           },
         ],
       },
@@ -146,7 +146,7 @@ describe('useBatchOperationMutationRequestBody', () => {
     expect(result.current).toEqual({
       filter: {
         variables: [
-          {name: 'testVar', value: '"value1"'},
+          {name: 'testVar', value: {$eq: '"value1"'}},
           {name: 'status', value: {$neq: '"draft"'}},
         ],
       },
@@ -174,7 +174,7 @@ describe('useBatchOperationMutationRequestBody', () => {
         variables: [
           {
             name: 'status',
-            value: '"active"',
+            value: {$eq: '"active"'},
           },
         ],
       },

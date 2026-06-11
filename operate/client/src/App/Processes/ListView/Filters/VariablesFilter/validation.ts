@@ -6,9 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {isValidJSON} from 'modules/utils';
 import type {VariableCondition} from 'modules/stores/variableFilter';
-import {IS_VARIABLE_FILTER_V2_ENABLED} from 'modules/feature-flags';
 import {smartTransformValue} from 'modules/utils/smartTransform';
 import type {DraftCondition} from './constants';
 
@@ -31,47 +29,17 @@ const validateCondition = (condition: DraftCondition): RowErrors => {
     if (!condition.value?.trim()) {
       errors.value = 'Value is required';
     } else if (condition.operator !== 'contains') {
-      const error = IS_VARIABLE_FILTER_V2_ENABLED
-        ? validateSmartValue(condition.value)
-        : validateLegacyValue(condition.operator, condition.value);
-      if (error !== undefined) {
-        errors.value = error;
+      // `contains` skips value-shape validation — its value is a raw
+      // substring passed straight through to $like. See smartTransform.ts.
+      try {
+        smartTransformValue(condition.value);
+      } catch (e) {
+        errors.value = e instanceof Error ? e.message : 'Invalid value';
       }
     }
   }
 
   return errors;
-};
-
-const validateSmartValue = (value: string): string | undefined => {
-  try {
-    smartTransformValue(value);
-    return undefined;
-  } catch (e) {
-    return e instanceof Error ? e.message : 'Invalid value';
-  }
-};
-
-const validateLegacyValue = (
-  operator: Exclude<
-    DraftCondition['operator'],
-    'exists' | 'doesNotExist' | 'contains'
-  >,
-  value: string,
-): string | undefined => {
-  if (operator === 'oneOf') {
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(value);
-    } catch {
-      // handled below
-    }
-    if (!Array.isArray(parsed)) {
-      return 'Value must be a JSON array (e.g. ["val1", "val2"])';
-    }
-    return undefined;
-  }
-  return isValidJSON(value) ? undefined : 'Value must be valid JSON';
 };
 
 const hasErrors = (errors: RowErrors) => Object.keys(errors).length > 0;

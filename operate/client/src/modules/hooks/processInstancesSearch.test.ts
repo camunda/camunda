@@ -6,136 +6,179 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {buildVariableEntry, parseOneOfValues} from './processInstancesSearch';
+import {buildVariableEntry} from './processInstancesSearch';
 import type {VariableCondition} from 'modules/stores/variableFilter';
 
-const mockCondition = {
-  name: 'status',
-  operator: 'equals',
-  value: '"active"',
-} satisfies VariableCondition;
-
 describe('buildVariableEntry', () => {
-  it('should build equals entry as plain string value', () => {
-    expect(buildVariableEntry(mockCondition)).toEqual({
-      name: 'status',
-      value: '"active"',
-    });
-  });
-
-  it('should build notEqual entry as {$neq}', () => {
+  it('equals: should auto-quote a bare string', () => {
     expect(
       buildVariableEntry({
-        ...mockCondition,
-        operator: 'notEqual',
-        value: '"inactive"',
-      }),
-    ).toEqual({
-      name: 'status',
-      value: {$neq: '"inactive"'},
-    });
-  });
-
-  it('should build contains entry as {$like: "*value*"}', () => {
-    expect(
-      buildVariableEntry({
-        ...mockCondition,
-        operator: 'contains',
+        name: 'status',
+        operator: 'equals',
         value: 'active',
       }),
-    ).toEqual({
-      name: 'status',
-      value: {$like: '*active*'},
-    });
+    ).toEqual({name: 'status', value: {$eq: '"active"'}});
   });
 
-  it('should build oneOf entry as {$in: [...]} from JSON array', () => {
+  it('equals: should accept an already-quoted JSON string and re-encode it', () => {
     expect(
       buildVariableEntry({
-        ...mockCondition,
+        name: 'status',
+        operator: 'equals',
+        value: '"active"',
+      }),
+    ).toEqual({name: 'status', value: {$eq: '"active"'}});
+  });
+
+  it('equals: should JSON-encode a number typed without quotes', () => {
+    expect(
+      buildVariableEntry({
+        name: 'amount',
+        operator: 'equals',
+        value: '42',
+      }),
+    ).toEqual({name: 'amount', value: {$eq: '42'}});
+  });
+
+  it('equals: should JSON-encode a boolean', () => {
+    expect(
+      buildVariableEntry({
+        name: 'flag',
+        operator: 'equals',
+        value: 'true',
+      }),
+    ).toEqual({name: 'flag', value: {$eq: 'true'}});
+  });
+
+  it('notEqual: should auto-quote a bare string', () => {
+    expect(
+      buildVariableEntry({
+        name: 'status',
+        operator: 'notEqual',
+        value: 'inactive',
+      }),
+    ).toEqual({name: 'status', value: {$neq: '"inactive"'}});
+  });
+
+  it('notEqual: should JSON-encode a boolean', () => {
+    expect(
+      buildVariableEntry({
+        name: 'flag',
+        operator: 'notEqual',
+        value: 'true',
+      }),
+    ).toEqual({name: 'flag', value: {$neq: 'true'}});
+  });
+
+  it('contains: should pass raw text through $like with wildcards', () => {
+    expect(
+      buildVariableEntry({
+        name: 'desc',
+        operator: 'contains',
+        value: 'order',
+      }),
+    ).toEqual({name: 'desc', value: {$like: '*order*'}});
+  });
+
+  it.each([
+    ['hello, "world', '*hello, "world*'],
+    ['{json}', '*{json}*'],
+    ['"quoted"', '*"quoted"*'],
+    ['[1,2,3]', '*[1,2,3]*'],
+    ['a, b', '*a, b*'],
+  ])(
+    'contains: should preserve structural characters in the substring (%j)',
+    (input, expected) => {
+      expect(
+        buildVariableEntry({
+          name: 'desc',
+          operator: 'contains',
+          value: input,
+        }),
+      ).toEqual({name: 'desc', value: {$like: expected}});
+    },
+  );
+
+  it('oneOf: should accept a JSON array literal and JSON-stringify each value', () => {
+    expect(
+      buildVariableEntry({
+        name: 'tag',
         operator: 'oneOf',
-        value: '["active","pending"]',
+        value: '["gold","silver"]',
       }),
     ).toEqual({
-      name: 'status',
-      value: {$in: ['"active"', '"pending"']},
+      name: 'tag',
+      value: {$in: ['"gold"', '"silver"']},
     });
   });
 
-  it('should build exists entry as {$exists: true}', () => {
+  it('oneOf: should split a comma list into a JSON-encoded $in array', () => {
     expect(
       buildVariableEntry({
-        ...mockCondition,
+        name: 'tag',
+        operator: 'oneOf',
+        value: 'gold, silver, bronze',
+      }),
+    ).toEqual({
+      name: 'tag',
+      value: {$in: ['"gold"', '"silver"', '"bronze"']},
+    });
+  });
+
+  it('oneOf: should handle a JSON array of numbers', () => {
+    expect(
+      buildVariableEntry({
+        name: 'priority',
+        operator: 'oneOf',
+        value: '[1,2,3]',
+      }),
+    ).toEqual({
+      name: 'priority',
+      value: {$in: ['1', '2', '3']},
+    });
+  });
+
+  it('exists: should emit $exists true regardless of stored value', () => {
+    expect(
+      buildVariableEntry({
+        name: 'x',
         operator: 'exists',
         value: '',
       }),
-    ).toEqual({
-      name: 'status',
-      value: {$exists: true},
-    });
+    ).toEqual({name: 'x', value: {$exists: true}});
   });
 
-  it('should build doesNotExist entry as {$exists: false}', () => {
+  it('doesNotExist: should emit $exists false', () => {
     expect(
       buildVariableEntry({
-        ...mockCondition,
+        name: 'x',
         operator: 'doesNotExist',
         value: '',
       }),
-    ).toEqual({
-      name: 'status',
-      value: {$exists: false},
-    });
-  });
-});
-
-describe('parseOneOfValues', () => {
-  it('should parse a JSON array of strings and JSON-stringify each value', () => {
-    expect(parseOneOfValues('["a","b","c"]')).toEqual(['"a"', '"b"', '"c"']);
+    ).toEqual({name: 'x', value: {$exists: false}});
   });
 
-  it('should fall back to comma-split for non-JSON input', () => {
-    expect(parseOneOfValues('a, b, c')).toEqual(['a', 'b', 'c']);
-  });
-
-  it('should filter out empty entries from comma-split', () => {
-    expect(parseOneOfValues('a,,b')).toEqual(['a', 'b']);
-  });
-
-  it('should handle a JSON array of numbers by converting to strings', () => {
-    expect(parseOneOfValues('[1,2,3]')).toEqual(['1', '2', '3']);
-  });
-});
-
-describe('buildVariableEntry — multi-condition', () => {
-  it('should produce one entry per condition with mixed operators', () => {
+  it('multi-condition: should produce one entry per condition with mixed operators', () => {
     const conditions: VariableCondition[] = [
-      {name: 'status', operator: 'equals', value: '"active"'},
+      {name: 'status', operator: 'equals', value: 'active'},
       {name: 'region', operator: 'contains', value: 'eu'},
       {name: 'priority', operator: 'exists', value: ''},
     ];
 
     expect(conditions.map(buildVariableEntry)).toEqual([
-      {name: 'status', value: '"active"'},
+      {name: 'status', value: {$eq: '"active"'}},
       {name: 'region', value: {$like: '*eu*'}},
       {name: 'priority', value: {$exists: true}},
     ]);
   });
 
-  it('should produce byte-equivalent output to legacy path for single equals', () => {
-    const condition: VariableCondition = {
-      name: 'myVar',
-      operator: 'equals',
-      value: '"hello"',
-    };
-
-    const mvfResult = buildVariableEntry(condition);
-
-    const legacyResult = {
-      name: 'myVar',
-      value: '"hello"',
-    };
-
-    expect(mvfResult).toEqual(legacyResult);
+  it('should return null for an unparseable value (non-contains)', () => {
+    expect(
+      buildVariableEntry({
+        name: 'broken',
+        operator: 'equals',
+        value: '"NEW',
+      }),
+    ).toBeNull();
   });
 });

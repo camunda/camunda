@@ -14,7 +14,6 @@ import {useMemo} from 'react';
 import {useSearchParams} from 'react-router-dom';
 import type {VariableCondition} from 'modules/stores/variableFilter';
 import type {QueryProcessInstancesRequestBody} from '@camunda/camunda-api-zod-schemas/8.10';
-import {IS_VARIABLE_FILTER_V2_ENABLED} from 'modules/feature-flags';
 import {logger} from 'modules/logger';
 import {
   smartTransformValue,
@@ -45,34 +44,6 @@ function useProcessInstancesSearchFilter(conditions?: VariableCondition[]) {
 }
 
 function buildVariableEntry(
-  condition: VariableCondition,
-): VariableEntry | null {
-  return IS_VARIABLE_FILTER_V2_ENABLED
-    ? buildSmartVariableEntry(condition)
-    : buildLegacyVariableEntry(condition);
-}
-
-function buildLegacyVariableEntry(condition: VariableCondition): VariableEntry {
-  switch (condition.operator) {
-    case 'equals':
-      return {name: condition.name, value: condition.value};
-    case 'notEqual':
-      return {name: condition.name, value: {$neq: condition.value}};
-    case 'contains':
-      return {name: condition.name, value: {$like: `*${condition.value}*`}};
-    case 'oneOf':
-      return {
-        name: condition.name,
-        value: {$in: parseOneOfValues(condition.value)},
-      };
-    case 'exists':
-      return {name: condition.name, value: {$exists: true}};
-    case 'doesNotExist':
-      return {name: condition.name, value: {$exists: false}};
-  }
-}
-
-function buildSmartVariableEntry(
   condition: VariableCondition,
 ): VariableEntry | null {
   if (
@@ -107,21 +78,6 @@ function buildSmartVariableEntry(
   };
 }
 
-function parseOneOfValues(raw: string): string[] {
-  try {
-    const parsed = JSON.parse(raw) as unknown;
-    if (Array.isArray(parsed)) {
-      return parsed.map((v) => JSON.stringify(v));
-    }
-  } catch {
-    // fall through to comma-split
-  }
-  return raw
-    .split(',')
-    .map((v) => v.trim())
-    .filter(Boolean);
-}
-
 function useProcessInstancesSearchSort() {
   const [searchParams] = useSearchParams();
 
@@ -135,5 +91,4 @@ export {
   useProcessInstancesSearchFilter,
   useProcessInstancesSearchSort,
   buildVariableEntry,
-  parseOneOfValues,
 };

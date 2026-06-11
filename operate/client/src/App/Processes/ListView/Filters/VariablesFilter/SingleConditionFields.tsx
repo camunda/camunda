@@ -67,6 +67,9 @@ const validateValueParseable: FieldValidator<string | undefined> =
 
 const commitToStore = (name: string, value: string): boolean => {
   const trimmedName = name.trim();
+  if (!trimmedName && value.trim() === '') {
+    return false;
+  }
   const current = variableFilterStore.conditions[0];
   if (
     current?.name === trimmedName &&

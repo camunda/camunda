@@ -40,6 +40,8 @@ export class OperateFiltersPanelPage {
   readonly startDateFilter: Locator;
   readonly openVariableFilterModalButton: Locator;
   readonly variableFilterDialog: Locator;
+  readonly singleConditionNameInput: Locator;
+  readonly singleConditionValueInput: Locator;
   readonly moreFiltersButton: Locator;
   readonly dateFilterDialog: Locator;
   readonly fromTimeInput: Locator;
@@ -112,6 +114,8 @@ export class OperateFiltersPanelPage {
     this.variableFilterDialog = page.getByRole('dialog', {
       name: 'Filter by variable',
     });
+    this.singleConditionNameInput = page.getByTestId('single-condition-name');
+    this.singleConditionValueInput = page.getByTestId('single-condition-value');
     this.moreFiltersButton = this.page.getByRole('button', {
       name: 'More Filters',
     });
@@ -192,6 +196,12 @@ export class OperateFiltersPanelPage {
   async openVariableFilterModal() {
     await this.openVariableFilterModalButton.click();
     await expect(this.variableFilterDialog).toBeVisible();
+  }
+
+  async fillSingleConditionInline(name: string, value: string) {
+    await this.singleConditionNameInput.fill(name);
+    await this.singleConditionValueInput.fill(value);
+    await this.page.waitForTimeout(900);
   }
 
   async fillConditionRow(index: number, name: string, value: string) {

@@ -251,7 +251,7 @@ describe('<VariableFilterModal />', () => {
     ).toBeInTheDocument();
   });
 
-  it('should show JSON error when value is not valid JSON on Apply', async () => {
+  it('should accept a bare string value via smart-transform on Apply', async () => {
     const {user} = render(<VariableFilterModal />, {wrapper: getWrapper()});
 
     await user.type(
@@ -264,11 +264,29 @@ describe('<VariableFilterModal />', () => {
     );
     await user.click(screen.getByRole('button', {name: 'Apply'}));
 
-    expect(screen.getByText('Value must be valid JSON')).toBeInTheDocument();
+    expect(variableFilterStore.conditions).toEqual([
+      {name: 'myVar', operator: 'equals', value: 'not-json'},
+    ]);
+  });
+
+  it('should reject unparseable structural input (e.g. unterminated string)', async () => {
+    const {user} = render(<VariableFilterModal />, {wrapper: getWrapper()});
+
+    await user.type(
+      screen.getAllByRole('textbox', {name: 'Name'})[0]!,
+      'myVar',
+    );
+    await user.type(
+      screen.getAllByRole('textbox', {name: 'Value'})[0]!,
+      '{{not-json',
+    );
+    await user.click(screen.getByRole('button', {name: 'Apply'}));
+
+    expect(screen.getByText(/Invalid value/i)).toBeInTheDocument();
     expect(variableFilterStore.conditions).toHaveLength(0);
   });
 
-  it('should not show JSON error for contains operator', async () => {
+  it('should not show value error for contains operator', async () => {
     const {user} = render(<VariableFilterModal />, {wrapper: getWrapper()});
 
     await user.type(
@@ -284,9 +302,7 @@ describe('<VariableFilterModal />', () => {
 
     await user.click(screen.getByRole('button', {name: 'Apply'}));
 
-    expect(
-      screen.queryByText('Value must be valid JSON'),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/Invalid value/i)).not.toBeInTheDocument();
     expect(variableFilterStore.conditions).toHaveLength(1);
   });
 
