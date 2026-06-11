@@ -38,6 +38,28 @@ val openapiDir = "${project.rootDir}/zeebe/gateway-protocol/src/main/proto/v2"
 val rawGeneratedOpenApiDir = layout.buildDirectory.dir("generated/openapi-raw")
 val generatedOpenApiSources = layout.buildDirectory.dir("generated/openapi/src/main/java")
 
+val discriminatorToolClasspath by configurations.creating
+
+val compileDiscriminatorTool by tasks.registering(JavaCompile::class) {
+    source = fileTree("src/tool/java")
+    classpath = discriminatorToolClasspath
+    destinationDirectory.set(layout.buildDirectory.dir("tool-classes"))
+    options.release.set(21)
+}
+
+val runDiscriminatorPostProcessor by tasks.registering(JavaExec::class) {
+    dependsOn("openApiGenerate", compileDiscriminatorTool)
+    classpath = discriminatorToolClasspath + files(layout.buildDirectory.dir("tool-classes"))
+    mainClass.set("io.camunda.client.protocol.tools.DiscriminatorModelPostProcessor")
+    args(
+        openapiDir,
+        rawGeneratedOpenApiDir.get().dir("src/main/java/io/camunda/client/protocol/rest").asFile.absolutePath,
+    )
+    inputs.dir(openapiDir)
+    inputs.dir(rawGeneratedOpenApiDir)
+    outputs.dir(rawGeneratedOpenApiDir)
+}
+
 openApiGenerate {
     generatorName.set("java")
     inputSpec.set("$openapiDir/rest-api.yaml")
@@ -140,7 +162,7 @@ tasks.named("compileJava") {
 }
 
 val stripJsonFormatFromGeneratedOpenApiSources by tasks.registering(Sync::class) {
-    dependsOn("openApiGenerate")
+    dependsOn(runDiscriminatorPostProcessor)
     from(rawGeneratedOpenApiDir.map { it.dir("src/main/java") })
     into(generatedOpenApiSources)
     include("**/*.java")
@@ -156,6 +178,10 @@ tasks.named<ProcessResources>("processResources") {
 }
 
 dependencies {
+    discriminatorToolClasspath(libs.org.jboss.forge.roaster.roaster.api)
+    discriminatorToolClasspath(libs.org.jboss.forge.roaster.roaster.jdt)
+    discriminatorToolClasspath(libs.org.yaml.snakeyaml)
+
     implementation(project(":zeebe-bpmn-model"))
     api(libs.com.fasterxml.jackson.core.jackson.core)
     api(libs.com.fasterxml.jackson.core.jackson.databind)
