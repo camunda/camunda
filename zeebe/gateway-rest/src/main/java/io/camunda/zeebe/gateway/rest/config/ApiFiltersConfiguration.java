@@ -15,10 +15,14 @@ import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.spring.annotation.ConditionalOnAuthenticationMethod;
 import io.camunda.zeebe.gateway.rest.controller.EndpointAccessErrorFilter;
 import io.camunda.zeebe.util.VisibleForTesting;
+import java.util.Arrays;
+import java.util.List;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.util.pattern.PathPattern;
+import org.springframework.web.util.pattern.PathPatternParser;
 
 @Configuration
 public class ApiFiltersConfiguration {
@@ -37,6 +41,12 @@ public class ApiFiltersConfiguration {
       "Tenants API is disabled. Enable the API by setting '%s' to true."
           .formatted(API_ENABLED_PROPERTY);
 
+  private static final PathPatternParser PATTERN_PARSER = new PathPatternParser();
+
+  private static List<PathPattern> patterns(final String... patterns) {
+    return Arrays.stream(patterns).map(PATTERN_PARSER::parse).toList();
+  }
+
   @ConditionalOnExpression("'${camunda.security.authentication.oidc.groupsClaim:}' != ''")
   @Bean
   public FilterRegistrationBean<EndpointAccessErrorFilter> disableGroupApiFilter(
@@ -44,8 +54,11 @@ public class ApiFiltersConfiguration {
     final FilterRegistrationBean<EndpointAccessErrorFilter> registration =
         new FilterRegistrationBean<>();
     registration.setFilter(
-        new EndpointAccessErrorFilter(objectMapper, GROUPS_API_DISABLED_ERROR_MESSAGE));
-    registration.addUrlPatterns("/v2/groups/*", "/physical-tenants/*/v2/groups/*");
+        new EndpointAccessErrorFilter(
+            objectMapper,
+            GROUPS_API_DISABLED_ERROR_MESSAGE,
+            patterns("/v2/groups/**", "/physical-tenants/*/v2/groups/**")));
+    registration.addUrlPatterns("/*");
     registration.setOrder(1);
     return registration;
   }
@@ -57,8 +70,11 @@ public class ApiFiltersConfiguration {
     final FilterRegistrationBean<EndpointAccessErrorFilter> registration =
         new FilterRegistrationBean<>();
     registration.setFilter(
-        new EndpointAccessErrorFilter(objectMapper, USERS_API_DISABLED_ERROR_MESSAGE));
-    registration.addUrlPatterns("/v2/users/*", "/physical-tenants/*/v2/users/*");
+        new EndpointAccessErrorFilter(
+            objectMapper,
+            USERS_API_DISABLED_ERROR_MESSAGE,
+            patterns("/v2/users/**", "/physical-tenants/*/v2/users/**")));
+    registration.addUrlPatterns("/*");
     registration.setOrder(1);
     return registration;
   }
@@ -70,8 +86,11 @@ public class ApiFiltersConfiguration {
     final FilterRegistrationBean<EndpointAccessErrorFilter> registration =
         new FilterRegistrationBean<>();
     registration.setFilter(
-        new EndpointAccessErrorFilter(objectMapper, TENANTS_API_DISABLED_ERROR_MESSAGE));
-    registration.addUrlPatterns("/v2/tenants/*", "/physical-tenants/*/v2/tenants/*");
+        new EndpointAccessErrorFilter(
+            objectMapper,
+            TENANTS_API_DISABLED_ERROR_MESSAGE,
+            patterns("/v2/tenants/**", "/physical-tenants/*/v2/tenants/**")));
+    registration.addUrlPatterns("/*");
     registration.setOrder(1);
     return registration;
   }
