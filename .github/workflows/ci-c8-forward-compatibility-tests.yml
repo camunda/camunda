@@ -27,18 +27,16 @@ defaults:
     shell: bash
 
 jobs:
-  prepare-matrix:
-    name: Prepare Version Matrix
+  forward-compatibility-api-tests:
+    name: Forward Compatibility API Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 30
     permissions: {}
-    outputs:
-      matrix: ${{ steps.matrix.outputs.matrix }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Generate matrix
-        id: matrix
+      - name: Resolve server image
+        id: resolve
         env:
           EVENT_NAME: ${{ github.event_name }}
           INPUT_SERVER_BRANCH: ${{ inputs.server_branch }}
@@ -67,13 +65,9 @@ jobs:
             echo "Manual trigger: Testing Server=$SERVER_BRANCH with Tests=$TEST_BRANCH"
             SERVER_IMAGE=$(resolve_image "$SERVER_BRANCH")
             echo "Resolved server image: $SERVER_IMAGE"
-            MATRIX_JSON=$(jq -nc \
-              --arg server "$SERVER_BRANCH" \
-              --arg test "$TEST_BRANCH" \
-              --arg image "$SERVER_IMAGE" \
-              '{"include": [{"server_branch": $server, "test_branch": $test, "server_image": $image}]}')
           else
-            # PR / merge queue: test the PR branch against the next server version.
+            # PR / merge queue (via workflow_call from ci.yml):
+            # Test the PR branch against the next server version.
             # The base branch determines which server image to use:
             #   PR → main          → server = SNAPSHOT (main)
             #   PR → stable/8.8    → server = 8.9-SNAPSHOT (next minor)
@@ -89,7 +83,7 @@ jobs:
             echo "Test ref: $TEST_REF"
 
             if [[ "$BASE_REF" == "main" ]]; then
-              SERVER_LABEL="main"
+              SERVER_BRANCH="main"
               SERVER_IMAGE="camunda/camunda:SNAPSHOT"
             elif [[ "$BASE_REF" =~ ^stable/([0-9]+)\.([0-9]+)$ ]]; then
               MAJOR="${BASH_REMATCH[1]}"
@@ -98,11 +92,11 @@ jobs:
               NEXT_BRANCH="stable/${MAJOR}.${NEXT_MINOR}"
 
               if git ls-remote --exit-code --heads origin "refs/heads/${NEXT_BRANCH}" > /dev/null 2>&1; then
-                SERVER_LABEL="${NEXT_BRANCH}"
+                SERVER_BRANCH="${NEXT_BRANCH}"
                 SERVER_IMAGE="camunda/camunda:${MAJOR}.${NEXT_MINOR}-SNAPSHOT"
               else
                 # Next minor has no stable branch yet — main is the next version
-                SERVER_LABEL="main"
+                SERVER_BRANCH="main"
                 SERVER_IMAGE="camunda/camunda:SNAPSHOT"
               fi
             else
@@ -110,59 +104,30 @@ jobs:
               exit 1
             fi
 
-            echo "Resolved: base=$BASE_REF → server=$SERVER_LABEL ($SERVER_IMAGE), tests=$TEST_REF"
-            MATRIX_JSON=$(jq -nc \
-              --arg server "$SERVER_LABEL" \
-              --arg test "$TEST_REF" \
-              --arg image "$SERVER_IMAGE" \
-              '{"include": [{"server_branch": $server, "test_branch": $test, "server_image": $image}]}')
+            TEST_BRANCH="$TEST_REF"
+            echo "Resolved: base=$BASE_REF → server=$SERVER_BRANCH ($SERVER_IMAGE), tests=$TEST_BRANCH"
           fi
 
-          echo "Matrix: $MATRIX_JSON"
-          echo "matrix=$MATRIX_JSON" >> "$GITHUB_OUTPUT"
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          echo "server_branch=$SERVER_BRANCH" >> "$GITHUB_OUTPUT"
+          echo "server_image=$SERVER_IMAGE" >> "$GITHUB_OUTPUT"
+          echo "test_branch=$TEST_BRANCH" >> "$GITHUB_OUTPUT"
 
-  forward-compatibility-api-tests:
-    name: "Server: ${{ matrix.server_branch }} / Tests: ${{ matrix.test_branch }}"
-    needs: prepare-matrix
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    permissions: {}
-    strategy:
-      fail-fast: false
-      matrix: ${{ fromJson(needs.prepare-matrix.outputs.matrix) }}
-    steps:
       - name: Print test configuration
         run: |
           echo "===== Forward Compatibility Test Configuration ====="
-          echo "Server branch: ${{ matrix.server_branch }}"
-          echo "Server image:  ${{ matrix.server_image }}"
-          echo "Test branch:   ${{ matrix.test_branch }}"
+          echo "Server branch: ${{ steps.resolve.outputs.server_branch }}"
+          echo "Server image:  ${{ steps.resolve.outputs.server_image }}"
+          echo "Test branch:   ${{ steps.resolve.outputs.test_branch }}"
           echo "===================================================="
-
-      # For PRs/merge queue: default checkout gets the PR code (what we want to test).
-      # For workflow_dispatch: checkout the explicitly specified test branch.
-      - name: Checkout test code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          ref: ${{ github.event_name == 'workflow_dispatch' && matrix.test_branch || '' }}
 
       - name: Pull server Docker image
         run: |
-          echo "Pulling image: ${{ matrix.server_image }}"
+          echo "Pulling image: ${{ steps.resolve.outputs.server_image }}"
           # Retry to absorb transient Docker Hub registry timeouts
           # (e.g. "Get https://registry-1.docker.io/v2/: context deadline exceeded").
           attempts=3
           for attempt in $(seq 1 "$attempts"); do
-            if docker pull "${{ matrix.server_image }}"; then
+            if docker pull "${{ steps.resolve.outputs.server_image }}"; then
               echo "Image pulled on attempt ${attempt}."
               exit 0
             fi
@@ -176,7 +141,7 @@ jobs:
           exit 1
 
       - name: Start Camunda
-        run: CAMUNDA_DOCKER_IMAGE=${{ matrix.server_image }} DATABASE=elasticsearch docker compose up -d camunda
+        run: CAMUNDA_DOCKER_IMAGE=${{ steps.resolve.outputs.server_image }} DATABASE=elasticsearch docker compose up -d camunda
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
       - name: List running Docker containers
@@ -239,7 +204,7 @@ jobs:
           CAMUNDA_BASIC_AUTH_USERNAME: "demo"
           CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
           INCLUDE_SLACK_REPORTER: "false"
-          VERSION: "Forward Compat - Server: ${{ matrix.server_branch }} / Tests: ${{ matrix.test_branch }}"
+          VERSION: "Forward Compat - Server: ${{ steps.resolve.outputs.server_branch }} / Tests: ${{ steps.resolve.outputs.test_branch }}"
           API_TESTS_ONLY: "true"
           DATABASE: "Elasticsearch"
           AJB_ALLOW_EXTRA_FIELDS: "true"
@@ -247,19 +212,20 @@ jobs:
           FORWARD_COMPAT_MODE: "true"
         run: |
           echo "Running forward compatibility API tests"
-          echo "Server built from: ${{ matrix.server_branch }}"
-          echo "Tests checked out from: ${{ matrix.test_branch }}"
+          echo "Server built from: ${{ steps.resolve.outputs.server_branch }}"
+          echo "Tests checked out from: ${{ steps.resolve.outputs.test_branch }}"
           npm run test -- --project=api-tests --retries=4 tests/api/v2/
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Sanitize branch names for artifact names
         id: sanitize
         if: always()
+        env:
+          SERVER_BRANCH: ${{ steps.resolve.outputs.server_branch }}
+          TEST_BRANCH: ${{ steps.resolve.outputs.test_branch }}
         run: |
-          server="${{ matrix.server_branch }}"
-          test="${{ matrix.test_branch }}"
-          safe_server="${server//\//-}"
-          safe_test="${test//\//-}"
+          safe_server="${SERVER_BRANCH//\//-}"
+          safe_test="${TEST_BRANCH//\//-}"
           echo "safe_server=$safe_server" >> "$GITHUB_OUTPUT"
           echo "safe_test=$safe_test" >> "$GITHUB_OUTPUT"
 
@@ -286,7 +252,6 @@ jobs:
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
-          job_name: "forward-compatibility-api-tests/server-${{ matrix.server_branch }}/tests-${{ matrix.test_branch }}"
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
