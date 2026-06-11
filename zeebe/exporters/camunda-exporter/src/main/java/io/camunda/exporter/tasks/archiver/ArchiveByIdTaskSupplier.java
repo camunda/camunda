@@ -107,7 +107,7 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
                       ex -> {
                         if (isRetryableError(ex)
                             && retryCount.incrementAndGet()
-                                < config.getArchiveByIdMaxRetryAttempts()) {
+                                <= config.getArchiveByIdMaxRetryAttempts()) {
                           metrics.recordArchiverBatchRetry();
                           logger.trace(
                               "Encountered retryable error when archiving docs from '{}' to '{}', "

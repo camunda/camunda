@@ -263,7 +263,7 @@ public class ExporterConfiguration {
     private String usageMetricsRolloverInterval = "1M";
     private int rolloverBatchSize = 100;
     private int reindexBatchSize = 2500;
-    private int archiveByIdMaxRetryAttempts = 3;
+    private int archiveByIdMaxRetryAttempts = 2;
     private int archiveByIdRetryDelayMs = 1000;
     private String waitPeriodBeforeArchiving = "1h";
     private int delayBetweenRuns = 2000;
