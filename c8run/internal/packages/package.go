@@ -435,7 +435,7 @@ func verifyClassFileVersion(classFile string) error {
 	expected := 44 + helperJavaRelease
 	if major != expected {
 		return fmt.Errorf(
-			"%s compiled for Java %d (class file version %d), expected Java %d (version %d); "+
+			"%s compiled for Java %d (class file version %d), expected Java %d (class file version %d); "+
 				"ensure javac is invoked with --release %d",
 			classFile, major-44, major, helperJavaRelease, expected, helperJavaRelease,
 		)

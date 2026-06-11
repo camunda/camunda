@@ -435,12 +435,13 @@ func TestStripRocksDbNativeLibsErrorsWhenJarMissing(t *testing.T) {
 }
 
 func TestVerifyClassFileVersionAcceptsJava21Class(t *testing.T) {
-	// given — minimal class file header with major version 65 (Java 21)
+	// given — minimal class file header with major version matching helperJavaRelease
 	dir := t.TempDir()
 	classFile := filepath.Join(dir, "JavaVersion.class")
 	// Java class file: magic (0xCAFEBABE), minor version (0x0000), major version big-endian
-	// Java 21 = major 65 = 0x0041
-	data := []byte{0xCA, 0xFE, 0xBA, 0xBE, 0x00, 0x00, 0x00, 0x41}
+	// Major version = 44 + Java version; derive from helperJavaRelease so this stays correct if the target changes.
+	expectedMajor := 44 + helperJavaRelease
+	data := []byte{0xCA, 0xFE, 0xBA, 0xBE, 0x00, 0x00, byte(expectedMajor >> 8), byte(expectedMajor)}
 	if err := os.WriteFile(classFile, data, 0o644); err != nil {
 		t.Fatalf("failed to write class file: %v", err)
 	}
@@ -450,15 +451,16 @@ func TestVerifyClassFileVersionAcceptsJava21Class(t *testing.T) {
 
 	// then
 	if err != nil {
-		t.Fatalf("expected no error for Java 21 class file, got: %v", err)
+		t.Fatalf("expected no error for Java %d class file, got: %v", helperJavaRelease, err)
 	}
 }
 
 func TestVerifyClassFileVersionRejectsWrongVersion(t *testing.T) {
-	// given — class file compiled for Java 25 (major version 69 = 0x0045)
+	// given — class file compiled for a Java version above helperJavaRelease
 	dir := t.TempDir()
 	classFile := filepath.Join(dir, "JavaVersion.class")
-	data := []byte{0xCA, 0xFE, 0xBA, 0xBE, 0x00, 0x00, 0x00, 0x45}
+	wrongMajor := 44 + helperJavaRelease + 4
+	data := []byte{0xCA, 0xFE, 0xBA, 0xBE, 0x00, 0x00, byte(wrongMajor >> 8), byte(wrongMajor)}
 	if err := os.WriteFile(classFile, data, 0o644); err != nil {
 		t.Fatalf("failed to write class file: %v", err)
 	}
@@ -468,7 +470,7 @@ func TestVerifyClassFileVersionRejectsWrongVersion(t *testing.T) {
 
 	// then
 	if err == nil {
-		t.Fatal("expected error for Java 25 class file, got nil")
+		t.Fatalf("expected error for Java %d class file, got nil", helperJavaRelease+4)
 	}
 	if !strings.Contains(err.Error(), "expected Java 21") {
 		t.Fatalf("expected error to mention 'expected Java 21', got: %v", err)
