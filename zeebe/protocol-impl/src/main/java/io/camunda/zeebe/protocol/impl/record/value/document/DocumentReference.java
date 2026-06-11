@@ -5,25 +5,30 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.protocol.impl.record.value.agenthistory;
+package io.camunda.zeebe.protocol.impl.record.value.document;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.ObjectValue;
-import io.camunda.zeebe.protocol.record.value.AgentHistoryRecordValue.AgentHistoryDocumentReferenceValue;
+import io.camunda.zeebe.protocol.record.value.DocumentReferenceValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 
 @JsonIgnoreProperties({"encodedLength", "empty"})
-public final class AgentHistoryDocumentReference extends ObjectValue
-    implements AgentHistoryDocumentReferenceValue {
+public final class DocumentReference extends ObjectValue implements DocumentReferenceValue {
 
   private final StringProperty documentIdProp = new StringProperty("documentId", "");
   private final StringProperty storeIdProp = new StringProperty("storeId", "");
   private final StringProperty contentHashProp = new StringProperty("contentHash", "");
+  private final ObjectProperty<DocumentReferenceMetadata> metadataProp =
+      new ObjectProperty<>("metadata", new DocumentReferenceMetadata());
 
-  public AgentHistoryDocumentReference() {
-    super(3);
-    declareProperty(documentIdProp).declareProperty(storeIdProp).declareProperty(contentHashProp);
+  public DocumentReference() {
+    super(4);
+    declareProperty(documentIdProp)
+        .declareProperty(storeIdProp)
+        .declareProperty(contentHashProp)
+        .declareProperty(metadataProp);
   }
 
   @Override
@@ -31,7 +36,7 @@ public final class AgentHistoryDocumentReference extends ObjectValue
     return BufferUtil.bufferAsString(documentIdProp.getValue());
   }
 
-  public AgentHistoryDocumentReference setDocumentId(final String documentId) {
+  public DocumentReference setDocumentId(final String documentId) {
     documentIdProp.setValue(documentId);
     return this;
   }
@@ -41,7 +46,7 @@ public final class AgentHistoryDocumentReference extends ObjectValue
     return BufferUtil.bufferAsString(storeIdProp.getValue());
   }
 
-  public AgentHistoryDocumentReference setStoreId(final String storeId) {
+  public DocumentReference setStoreId(final String storeId) {
     storeIdProp.setValue(storeId);
     return this;
   }
@@ -51,14 +56,20 @@ public final class AgentHistoryDocumentReference extends ObjectValue
     return BufferUtil.bufferAsString(contentHashProp.getValue());
   }
 
-  public AgentHistoryDocumentReference setContentHash(final String contentHash) {
+  public DocumentReference setContentHash(final String contentHash) {
     contentHashProp.setValue(contentHash);
     return this;
   }
 
-  public void copy(final AgentHistoryDocumentReferenceValue other) {
+  @Override
+  public DocumentReferenceMetadata getMetadata() {
+    return metadataProp.getValue();
+  }
+
+  public void copy(final DocumentReferenceValue other) {
     setDocumentId(other.getDocumentId());
     setStoreId(other.getStoreId());
     setContentHash(other.getContentHash());
+    getMetadata().copy(other.getMetadata());
   }
 }

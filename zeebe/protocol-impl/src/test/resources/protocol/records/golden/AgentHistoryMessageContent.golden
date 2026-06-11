@@ -15,6 +15,7 @@ import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.ObjectValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.impl.record.value.document.DocumentReference;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryContentType;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRecordValue.AgentHistoryMessageContentValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -29,8 +30,8 @@ public final class AgentHistoryMessageContent extends ObjectValue
       new EnumProperty<>(
           "contentType", AgentHistoryContentType.class, AgentHistoryContentType.UNSPECIFIED);
   private final StringProperty textProp = new StringProperty("text", "");
-  private final ObjectProperty<AgentHistoryDocumentReference> documentReferenceProp =
-      new ObjectProperty<>("documentReference", new AgentHistoryDocumentReference());
+  private final ObjectProperty<DocumentReference> documentReferenceProp =
+      new ObjectProperty<>("documentReference", new DocumentReference());
   private final DocumentProperty objectProp = new DocumentProperty("object");
 
   public AgentHistoryMessageContent() {
@@ -62,7 +63,7 @@ public final class AgentHistoryMessageContent extends ObjectValue
   }
 
   @Override
-  public AgentHistoryDocumentReference getDocumentReference() {
+  public DocumentReference getDocumentReference() {
     return documentReferenceProp.getValue();
   }
 

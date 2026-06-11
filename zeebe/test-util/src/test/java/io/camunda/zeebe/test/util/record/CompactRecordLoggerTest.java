@@ -18,6 +18,8 @@ import io.camunda.zeebe.protocol.record.value.ImmutableAgentHistoryEmbeddedToolC
 import io.camunda.zeebe.protocol.record.value.ImmutableAgentHistoryMessageContentValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableAgentHistoryMetricsValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableAgentHistoryRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableDocumentReferenceMetadataValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableDocumentReferenceValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableUsageMetricRecordValue;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.EventType;
@@ -233,6 +235,63 @@ class CompactRecordLoggerTest {
               """
               K1#3 TOOL_RESULT COMMITTED @K2 K3#1
                      {orderId=12345}""");
+    }
+
+    @Test
+    void shouldSummarizeAgentHistoryDocumentContent() {
+      // given
+      final var logger = new CompactRecordLogger(List.of());
+      final var record =
+          ImmutableRecord.builder()
+              .withValueType(ValueType.AGENT_HISTORY)
+              .withValue(
+                  ImmutableAgentHistoryRecordValue.builder()
+                      .withAgentInstanceKey(1L)
+                      .withElementInstanceKey(2L)
+                      .withJobKey(3L)
+                      .withRole(AgentHistoryRole.ASSISTANT)
+                      .withCommitStatus(AgentHistoryCommitStatus.COMMITTED)
+                      .withJobLease("1")
+                      .withIteration(1)
+                      .addContent(
+                          ImmutableAgentHistoryMessageContentValue.builder()
+                              .withContentType(AgentHistoryContentType.DOCUMENT)
+                              .withDocumentReference(
+                                  ImmutableDocumentReferenceValue.builder()
+                                      .withDocumentId("doc-001")
+                                      .withStoreId("gcs-store")
+                                      .withContentHash("sha256-abc")
+                                      .withMetadata(
+                                          ImmutableDocumentReferenceMetadataValue.builder()
+                                              .withFileName("invoice.pdf")
+                                              .build())
+                                      .build())
+                              .build())
+                      .addContent(
+                          ImmutableAgentHistoryMessageContentValue.builder()
+                              .withContentType(AgentHistoryContentType.DOCUMENT)
+                              .withDocumentReference(
+                                  ImmutableDocumentReferenceValue.builder()
+                                      .withDocumentId("doc-002")
+                                      .withStoreId("s3-store")
+                                      .withContentHash("sha256-xyz")
+                                      .withMetadata(
+                                          ImmutableDocumentReferenceMetadataValue.builder().build())
+                                      .build())
+                              .build())
+                      .build())
+              .build();
+
+      // when
+      final String result = logger.summarizeAgentHistory(record);
+
+      // then
+      assertThat(result)
+          .isEqualTo(
+              """
+              K1#1 ASSISTANT COMMITTED @K2 K3#1
+                     doc:gcs-store/doc-001 (invoice.pdf)
+                     doc:s3-store/doc-002""");
     }
   }
 }
