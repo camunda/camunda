@@ -517,6 +517,16 @@
                   "nullable": true
                 },
                 {
+                  "name": "inboundChannelToolName",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "inboundChannelType",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
                   "name": "jobKey",
                   "type": "string",
                   "nullable": true
@@ -750,6 +760,16 @@
           },
           {
             "name": "formKey",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "inboundChannelToolName",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "inboundChannelType",
             "type": "string",
             "nullable": true
           },
@@ -8534,6 +8554,16 @@
                 },
                 {
                   "name": "formKey",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "inboundChannelToolName",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "inboundChannelType",
                   "type": "string",
                   "nullable": true
                 },
