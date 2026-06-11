@@ -15,6 +15,7 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -48,6 +49,13 @@ final class HandlerRegistry {
     context.setFilter(
         new AnalyticsRecordFilter(handlers.keySet(), acceptedIntents, context.getPartitionId()));
     return this;
+  }
+
+  /** Returns all registered (ValueType, Intent) pairs. Package-private for use in tests. */
+  Set<Map.Entry<ValueType, Intent>> registrations() {
+    return handlers.entrySet().stream()
+        .flatMap(e -> e.getValue().keySet().stream().map(intent -> Map.entry(e.getKey(), intent)))
+        .collect(Collectors.toUnmodifiableSet());
   }
 
   /** Routes the record to its handler. Does nothing if no handler is registered. */
