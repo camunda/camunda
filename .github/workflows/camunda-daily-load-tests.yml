@@ -101,9 +101,14 @@ jobs:
     if: needs.setup-max-load-test.result == 'success' || needs.setup-max-rest-load-test.result == 'success'
     timeout-minutes: 195
     permissions: { }
+    outputs:
+      soak_end_epoch: ${{ steps.timing.outputs.soak_end_epoch }}
     steps:
       - name: Wait 3 hours for soak period
         run: sleep 10800
+      - name: Record soak end time
+        id: timing
+        run: echo "soak_end_epoch=$(date +%s)" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           sparse-checkout: .github
@@ -128,6 +133,7 @@ jobs:
     with:
       namespace: c8-${{ needs.benchmark-data.outputs.benchmark }}
       duration-seconds: '10800'
+      at: ${{ needs.soak.outputs.soak_end_epoch }}
 
   collect-metrics-rest:
     name: Collect metrics (REST)
@@ -138,6 +144,7 @@ jobs:
     with:
       namespace: c8-${{ needs.benchmark-data.outputs.benchmark }}-rest
       duration-seconds: '10800'
+      at: ${{ needs.soak.outputs.soak_end_epoch }}
 
   # Upload both metrics JSON files as a workflow artifact (90-day retention).
   upload-metrics:
@@ -181,7 +188,7 @@ jobs:
   notify-results:
     name: Notify Slack with results
     runs-on: ubuntu-latest
-    needs: [ benchmark-data, collect-metrics-grpc, collect-metrics-rest ]
+    needs: [ benchmark-data, soak, collect-metrics-grpc, collect-metrics-rest ]
     # Post if at least one side collected metrics; the skipped side renders as n/a.
     if: always() && (needs.collect-metrics-grpc.result == 'success' || needs.collect-metrics-rest.result == 'success')
     timeout-minutes: 5
@@ -209,6 +216,7 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ steps.slack-secrets.outputs.SLACK_ZEEBOT_RELIABILITY_TESTING_ALERTS_WEBHOOK_URL }}
           REPO: ${{ github.repository }}
           RUN_ID: ${{ github.run_id }}
+          SOAK_END_EPOCH: ${{ needs.soak.outputs.soak_end_epoch }}
         run: python3 .github/scripts/post-load-test-results-to-slack.py
       - name: Observe build status
         if: always()

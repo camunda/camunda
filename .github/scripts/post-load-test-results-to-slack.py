@@ -25,6 +25,7 @@ Optional:
 import json
 import os
 import socket
+import time
 import urllib.error
 import urllib.request
 
@@ -81,8 +82,11 @@ rows   = [
 ]
 table  = '\n'.join([header, sep] + rows)
 
-grpc_dash = f'https://dashboard.benchmark.camunda.cloud/d/zeebe-dashboard/zeebe?var-namespace={grpc_ns}'
-rest_dash = f'https://dashboard.benchmark.camunda.cloud/d/zeebe-dashboard/zeebe?var-namespace={rest_ns}'
+soak_end  = int(os.environ.get('SOAK_END_EPOCH') or time.time())
+from_ms   = (soak_end - 10800) * 1000
+to_ms     = soak_end * 1000
+grpc_dash = f'https://dashboard.benchmark.camunda.cloud/d/zeebe-dashboard/zeebe?var-namespace={grpc_ns}&from={from_ms}&to={to_ms}'
+rest_dash = f'https://dashboard.benchmark.camunda.cloud/d/zeebe-dashboard/zeebe?var-namespace={rest_ns}&from={from_ms}&to={to_ms}'
 run_url   = f'https://github.com/{repo}/actions/runs/{run_id}'
 
 payload = {
