@@ -16,6 +16,7 @@ import io.atomix.cluster.BrokerMemberId;
 import io.atomix.cluster.messaging.ClusterEventService;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.impl.NettyMessagingService;
+import io.atomix.primitive.partition.PartitionId;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.broker.client.api.BrokerClientRequestMetrics;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
@@ -23,6 +24,7 @@ import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.impl.BrokerClientImpl;
 import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotTransferServiceClient;
 import io.camunda.zeebe.broker.transport.commandapi.CommandResponseWriterImpl;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.scaling.ScaleRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -40,7 +42,6 @@ import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.impl.AtomixClientTransportAdapter;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
-import io.camunda.zeebe.transport.impl.AtomixServerTransport.TopicSupplier;
 import io.camunda.zeebe.transport.impl.ServerResponseImpl;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -68,6 +69,8 @@ public class SnapshotApiRequestHandlerTest {
   @AutoClose MeterRegistry registry = new SimpleMeterRegistry();
   @TempDir Path temporaryFolder;
   final int partitionId = 1;
+  final PartitionId partition =
+      PartitionId.from(Protocol.DEFAULT_PARTITION_GROUP_NAME, partitionId);
   FileBasedSnapshotStore senderSnapshotStore;
   FileBasedSnapshotStore receiverSnapshotStore;
   private AtomixClientTransportAdapter clientTransport;
@@ -116,10 +119,7 @@ public class SnapshotApiRequestHandlerTest {
 
     serverTransport =
         submitActor(
-            new AtomixServerTransport(
-                messagingService,
-                new SnowflakeIdGenerator(1L),
-                List.of(TopicSupplier.withLegacyTopicName(), TopicSupplier.withPrefix("default"))));
+            new AtomixServerTransport(messagingService, new SnowflakeIdGenerator(1L), true));
 
     scaleUpProgressInvocationCount = new AtomicInteger();
 
@@ -145,7 +145,7 @@ public class SnapshotApiRequestHandlerTest {
             1,
             SnapshotCopyUtil::copyAllFiles,
             snapshotHandler);
-    snapshotHandler.addTransferService(1, transferService);
+    snapshotHandler.addTransferService(partition, transferService);
 
     receiverSnapshotStore =
         submitActor(
@@ -213,7 +213,7 @@ public class SnapshotApiRequestHandlerTest {
 
   private void mockBootstrappedAtWith(final long position) {
     serverTransport.subscribe(
-        1,
+        partition,
         RequestType.COMMAND,
         (output, partition, requestId, buffer, offset, length) -> {
           // assume the request is a GetScaleUpProgress

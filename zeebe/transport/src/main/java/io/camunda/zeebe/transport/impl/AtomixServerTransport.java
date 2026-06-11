@@ -8,17 +8,20 @@
 package io.camunda.zeebe.transport.impl;
 
 import io.atomix.cluster.messaging.MessagingService;
+import io.atomix.primitive.partition.PartitionId;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.transport.RequestHandler;
 import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.ServerResponse;
 import io.camunda.zeebe.transport.ServerTransport;
-import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.BiFunction;
-import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.IdGenerator;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -29,24 +32,25 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
   private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
   private static final String LEGACY_API_TOPIC_FORMAT = "%s-api-%d";
   private static final String API_TOPIC_FORMAT = "%s-%s-api-%d";
-  private static final String ERROR_MSG_MISSING_PARTITION_MAP =
-      "Node already unsubscribed from partition %d, this can only happen when atomix does not cleanly remove its handlers.";
+  private static final String ERROR_MSG_NOT_SUBSCRIBED =
+      "Node already unsubscribed from topic %s, this can only happen when atomix does not cleanly remove its handlers.";
 
-  private final Int2ObjectHashMap<Long2ObjectHashMap<CompletableFuture<byte[]>>>
-      partitionsRequestMap;
+  private final Long2ObjectHashMap<CompletableFuture<byte[]>> pendingRequests;
+  private final Map<PartitionId, Set<String>> subscribedTopics;
   private final MessagingService messagingService;
 
   private final IdGenerator requestIdGenerator;
-  private final List<TopicSupplier> topicSuppliers;
+  private final boolean receiveOnLegacySubject;
 
   public AtomixServerTransport(
       final MessagingService messagingService,
       final IdGenerator requestIdGenerator,
-      final List<TopicSupplier> topicSuppliers) {
+      final boolean receiveOnLegacySubject) {
     this.messagingService = messagingService;
     this.requestIdGenerator = requestIdGenerator;
-    partitionsRequestMap = new Int2ObjectHashMap<>();
-    this.topicSuppliers = topicSuppliers;
+    this.receiveOnLegacySubject = receiveOnLegacySubject;
+    pendingRequests = new Long2ObjectHashMap<>();
+    subscribedTopics = new HashMap<>();
   }
 
   @Override
@@ -59,9 +63,11 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
     actor
         .call(
             () -> {
-              for (final int partitionId : partitionsRequestMap.keySet()) {
-                removePartition(partitionId);
-              }
+              subscribedTopics.values().stream()
+                  .flatMap(Set::stream)
+                  .forEach(this::unregisterHandler);
+              subscribedTopics.clear();
+              pendingRequests.clear();
               actor.close();
             })
         .join();
@@ -69,48 +75,48 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
 
   @Override
   public ActorFuture<Void> subscribe(
-      final int partitionId, final RequestType requestType, final RequestHandler requestHandler) {
+      final PartitionId partitionId,
+      final RequestType requestType,
+      final RequestHandler requestHandler) {
     return actor.call(
         () -> {
-          partitionsRequestMap.computeIfAbsent(partitionId, id -> new Long2ObjectHashMap<>());
-          topicSuppliers.stream()
-              .map(s -> s.apply(partitionId, requestType))
-              .forEach(t -> registerHandler(t, partitionId, requestType, requestHandler));
+          final var topics = topicNames(partitionId, requestType);
+          topics.forEach(topic -> registerHandler(topic, partitionId, requestHandler));
+          subscribedTopics.computeIfAbsent(partitionId, id -> new HashSet<>()).addAll(topics);
         });
   }
 
   @Override
-  public ActorFuture<Void> unsubscribe(final int partitionId, final RequestType requestType) {
-    return actor.call(() -> removeRequestHandlers(partitionId, requestType));
+  public ActorFuture<Void> unsubscribe(
+      final PartitionId partitionId, final RequestType requestType) {
+    return actor.call(
+        () -> {
+          final var topics = topicNames(partitionId, requestType);
+          topics.forEach(this::unregisterHandler);
+          final var registered = subscribedTopics.get(partitionId);
+          if (registered != null) {
+            topics.forEach(registered::remove);
+            if (registered.isEmpty()) {
+              subscribedTopics.remove(partitionId);
+            }
+          }
+        });
+  }
+
+  private List<String> topicNames(final PartitionId partitionId, final RequestType requestType) {
+    final var topic = topicName(partitionId.group(), partitionId.id(), requestType);
+    if (receiveOnLegacySubject
+        && Protocol.DEFAULT_PARTITION_GROUP_NAME.equals(partitionId.group())) {
+      return List.of(topic, legacyTopicName(partitionId.id(), requestType));
+    }
+    return List.of(topic);
   }
 
   private void registerHandler(
-      final String topic,
-      final int partitionId,
-      final RequestType requestType,
-      final RequestHandler handler) {
+      final String topic, final PartitionId partitionId, final RequestHandler handler) {
     LOG.trace("Subscribe for topic {}", topic);
     messagingService.registerHandler(
-        topic,
-        (sender, request) ->
-            handleAtomixRequest(request, topic, partitionId, requestType, handler));
-  }
-
-  private void removePartition(final int partitionId) {
-    // to unsubscribe from the partition, we can simply unsubscribe from all possible request types
-    // for that partition id, even if we're not yet subscribed to some
-    Arrays.stream(RequestType.values())
-        .forEach(requestType -> removeRequestHandlers(partitionId, requestType));
-    final var requestMap = partitionsRequestMap.remove(partitionId);
-    if (requestMap != null) {
-      requestMap.clear();
-    }
-  }
-
-  private void removeRequestHandlers(final int partitionId, final RequestType requestType) {
-    topicSuppliers.stream()
-        .map(s -> s.apply(partitionId, requestType))
-        .forEach(this::unregisterHandler);
+        topic, (sender, request) -> handleAtomixRequest(request, topic, partitionId, handler));
   }
 
   private void unregisterHandler(final String topic) {
@@ -121,16 +127,15 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
   private CompletableFuture<byte[]> handleAtomixRequest(
       final byte[] requestBytes,
       final String topicName,
-      final int partitionId,
-      final RequestType requestType,
+      final PartitionId partitionId,
       final RequestHandler requestHandler) {
     final var completableFuture = new CompletableFuture<byte[]>();
     actor.call(
         () -> {
           final long requestId = requestIdGenerator.nextId();
-          final var requestMap = partitionsRequestMap.get(partitionId);
-          if (requestMap == null) {
-            final var errorMsg = String.format(ERROR_MSG_MISSING_PARTITION_MAP, partitionId);
+          final var topics = subscribedTopics.get(partitionId);
+          if (topics == null || !topics.contains(topicName)) {
+            final var errorMsg = String.format(ERROR_MSG_NOT_SUBSCRIBED, topicName);
             LOG.trace(errorMsg);
             completableFuture.completeExceptionally(new IllegalStateException(errorMsg));
             return;
@@ -139,7 +144,7 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
           try {
             requestHandler.onRequest(
                 this,
-                partitionId,
+                partitionId.id(),
                 requestId,
                 new UnsafeBuffer(requestBytes),
                 0,
@@ -148,7 +153,7 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
               LOG.trace("Handled request {} for topic {}", requestId, topicName);
             }
             // we only add the request to the map after successful handling
-            requestMap.put(requestId, completableFuture);
+            pendingRequests.put(requestId, completableFuture);
           } catch (final Exception exception) {
             LOG.error(
                 "Unexpected exception on handling request for partition {}.",
@@ -164,7 +169,6 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
   @Override
   public void sendResponse(final ServerResponse response) {
     final var requestId = response.getRequestId();
-    final var partitionId = response.getPartitionId();
     final var length = response.getLength();
     final var bytes = new byte[length];
 
@@ -174,16 +178,7 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
 
     actor.run(
         () -> {
-          final var requestMap = partitionsRequestMap.get(partitionId);
-          if (requestMap == null) {
-            LOG.warn(
-                "Node is no longer leader for partition {}, tried to respond on request with id {}",
-                partitionId,
-                requestId);
-            return;
-          }
-
-          final var completableFuture = requestMap.remove(requestId);
+          final var completableFuture = pendingRequests.remove(requestId);
           if (completableFuture != null) {
             if (LOG.isTraceEnabled()) {
               LOG.trace("Send response to request {}", requestId);
@@ -191,7 +186,10 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
 
             completableFuture.complete(bytes);
           } else if (LOG.isTraceEnabled()) {
-            LOG.trace("Wasn't able to send response to request {}", requestId);
+            LOG.trace(
+                "Wasn't able to send response to request {} of partition {}",
+                requestId,
+                response.getPartitionId());
           }
         });
   }
@@ -203,18 +201,5 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
 
   static String legacyTopicName(final int partitionId, final RequestType requestType) {
     return String.format(LEGACY_API_TOPIC_FORMAT, requestType.getId(), partitionId);
-  }
-
-  public interface TopicSupplier extends BiFunction<Integer, RequestType, String> {
-    @Override
-    String apply(Integer partitionId, RequestType requestType);
-
-    static TopicSupplier withLegacyTopicName() {
-      return AtomixServerTransport::legacyTopicName;
-    }
-
-    static TopicSupplier withPrefix(final String prefix) {
-      return (p, r) -> topicName(prefix, p, r);
-    }
   }
 }

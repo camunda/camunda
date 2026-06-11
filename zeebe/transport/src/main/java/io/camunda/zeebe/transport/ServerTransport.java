@@ -7,20 +7,21 @@
  */
 package io.camunda.zeebe.transport;
 
+import io.atomix.primitive.partition.PartitionId;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 
 public interface ServerTransport extends ServerOutput, AutoCloseable {
 
   /**
    * Subscribes to the given partition and call's the given handler on each new request of the given
-   * type.
+   * type. The partition's group determines the topics to listen on.
    *
    * @param partitionId the partition, for which should be subscribed
    * @param requestType the type of request that should be handled
    * @param requestHandler the handler which should be called.
    */
   ActorFuture<Void> subscribe(
-      int partitionId, RequestType requestType, RequestHandler requestHandler);
+      PartitionId partitionId, RequestType requestType, RequestHandler requestHandler);
 
   /**
    * Unsubscribe from the given partition, the registered handler will no longer be called on new
@@ -29,5 +30,5 @@ public interface ServerTransport extends ServerOutput, AutoCloseable {
    * @param partitionId the partition, from which we should unsubscribe
    * @param requestType
    */
-  ActorFuture<Void> unsubscribe(int partitionId, RequestType requestType);
+  ActorFuture<Void> unsubscribe(PartitionId partitionId, RequestType requestType);
 }

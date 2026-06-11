@@ -13,6 +13,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.atomix.raft.RaftServer.Role;
+import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.TestPartitionTransitionContext;
@@ -49,6 +50,9 @@ final class BackupApiRequestHandlerStepTest {
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   BrokerCfg brokerCfg;
 
+  @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+  RaftPartition raftPartition;
+
   private final TestPartitionTransitionContext transitionContext =
       new TestPartitionTransitionContext();
   private BackupApiRequestHandlerStep step;
@@ -62,6 +66,7 @@ final class BackupApiRequestHandlerStepTest {
     transitionContext.setActorSchedulingService(actorSchedulingService);
     transitionContext.setBrokerCfg(brokerCfg);
     transitionContext.setZeebeDb(zeebeDb);
+    transitionContext.setRaftPartition(raftPartition);
 
     step = new BackupApiRequestHandlerStep();
   }

@@ -17,10 +17,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 
+import io.atomix.primitive.partition.PartitionId;
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.system.configuration.QueryApiCfg;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.logstreams.log.LogStream;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -41,6 +43,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 public class CommandApiServiceImplTest {
+
+  private static final PartitionId PARTITION_ID =
+      PartitionId.from(Protocol.DEFAULT_PARTITION_GROUP_NAME, 1);
 
   @Mock private ServerTransport serverTransport;
   @Mock private QueryApiCfg queryApi;
@@ -63,7 +68,8 @@ public class CommandApiServiceImplTest {
             withSettings().strictness(org.mockito.quality.Strictness.LENIENT));
     when(cc.createCompletedFuture()).thenReturn(CompletableActorFuture.completed(null));
     commandApiService =
-        new CommandApiServiceImpl(1, serverTransport, scheduler.getActorScheduler(), queryApi);
+        new CommandApiServiceImpl(
+            PARTITION_ID, serverTransport, scheduler.getActorScheduler(), queryApi);
     when(transitionContext.getCommandApiService()).thenReturn(commandApiService);
     when(transitionContext.getConcurrencyControl()).thenReturn(cc);
     scheduler.submitActor(commandApiService);
@@ -92,8 +98,8 @@ public class CommandApiServiceImplTest {
 
     // then
     verify(logStream, times(1)).newLogStreamWriter();
-    verify(serverTransport, times(1)).subscribe(eq(1), eq(RequestType.QUERY), any());
-    verify(serverTransport, times(1)).subscribe(eq(1), eq(RequestType.COMMAND), any());
+    verify(serverTransport, times(1)).subscribe(eq(PARTITION_ID), eq(RequestType.QUERY), any());
+    verify(serverTransport, times(1)).subscribe(eq(PARTITION_ID), eq(RequestType.COMMAND), any());
 
     // when - transitions to follower/candidate: deactivate handlers but keep transport subscription
     final var prepareFollowerFuture =
@@ -102,8 +108,8 @@ public class CommandApiServiceImplTest {
     prepareFollowerFuture.join();
 
     // then - transport subscription is kept
-    verify(serverTransport, never()).unsubscribe(eq(1), eq(RequestType.QUERY));
-    verify(serverTransport, never()).unsubscribe(eq(1), eq(RequestType.COMMAND));
+    verify(serverTransport, never()).unsubscribe(eq(PARTITION_ID), eq(RequestType.QUERY));
+    verify(serverTransport, never()).unsubscribe(eq(PARTITION_ID), eq(RequestType.COMMAND));
   }
 
   @Test
@@ -129,8 +135,8 @@ public class CommandApiServiceImplTest {
     prepareInactiveFuture.join();
 
     // then - transport subscription is removed
-    verify(serverTransport, times(1)).unsubscribe(eq(1), eq(RequestType.QUERY));
-    verify(serverTransport, times(1)).unsubscribe(eq(1), eq(RequestType.COMMAND));
+    verify(serverTransport, times(1)).unsubscribe(eq(PARTITION_ID), eq(RequestType.QUERY));
+    verify(serverTransport, times(1)).unsubscribe(eq(PARTITION_ID), eq(RequestType.COMMAND));
   }
 
   @RegressionTest("https://github.com/camunda/camunda/issues/25897")
@@ -150,8 +156,8 @@ public class CommandApiServiceImplTest {
     transitionFollowerFuture.join();
 
     // then - no unsubscribe yet (kept subscription for graceful rejection)
-    verify(serverTransport, never()).unsubscribe(eq(1), eq(RequestType.QUERY));
-    verify(serverTransport, never()).unsubscribe(eq(1), eq(RequestType.COMMAND));
+    verify(serverTransport, never()).unsubscribe(eq(PARTITION_ID), eq(RequestType.QUERY));
+    verify(serverTransport, never()).unsubscribe(eq(PARTITION_ID), eq(RequestType.COMMAND));
 
     // when - transitions to INACTIVE
     final var unregisterFuture =
@@ -165,8 +171,8 @@ public class CommandApiServiceImplTest {
     transitionInactiveFuture.join();
 
     // then - unsubscribed exactly once
-    verify(serverTransport, times(1)).unsubscribe(eq(1), eq(RequestType.QUERY));
-    verify(serverTransport, times(1)).unsubscribe(eq(1), eq(RequestType.COMMAND));
+    verify(serverTransport, times(1)).unsubscribe(eq(PARTITION_ID), eq(RequestType.QUERY));
+    verify(serverTransport, times(1)).unsubscribe(eq(PARTITION_ID), eq(RequestType.COMMAND));
   }
 
   @RegressionTest("https://github.com/camunda/camunda/issues/25897")
@@ -179,8 +185,8 @@ public class CommandApiServiceImplTest {
     commandApiService.registerHandlers(1, logStream, transitionContext.getQueryService());
     scheduler.workUntilDone();
 
-    verify(serverTransport, times(1)).subscribe(eq(1), eq(RequestType.QUERY), any());
-    verify(serverTransport, times(1)).subscribe(eq(1), eq(RequestType.COMMAND), any());
+    verify(serverTransport, times(1)).subscribe(eq(PARTITION_ID), eq(RequestType.QUERY), any());
+    verify(serverTransport, times(1)).subscribe(eq(PARTITION_ID), eq(RequestType.COMMAND), any());
 
     // when - closing the actor
     final ActorFuture<Void> closeFuture = commandApiService.closeAsync();
@@ -188,7 +194,7 @@ public class CommandApiServiceImplTest {
     closeFuture.join();
 
     // then - subscriptions are cleaned up
-    verify(serverTransport, times(1)).unsubscribe(eq(1), eq(RequestType.QUERY));
-    verify(serverTransport, times(1)).unsubscribe(eq(1), eq(RequestType.COMMAND));
+    verify(serverTransport, times(1)).unsubscribe(eq(PARTITION_ID), eq(RequestType.QUERY));
+    verify(serverTransport, times(1)).unsubscribe(eq(PARTITION_ID), eq(RequestType.COMMAND));
   }
 }

@@ -9,7 +9,9 @@ package io.camunda.zeebe.test.broker.protocol.brokerapi;
 
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.Member;
+import io.atomix.primitive.partition.PartitionId;
 import io.atomix.utils.net.Address;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.Loggers;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -21,7 +23,6 @@ import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.ServerTransport;
 import io.camunda.zeebe.transport.TransportFactory;
-import io.camunda.zeebe.transport.impl.AtomixServerTransport.TopicSupplier;
 import io.camunda.zeebe.util.VersionUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -98,12 +99,13 @@ public final class StubBroker implements AutoCloseable {
     final var requestIdGenerator = new SnowflakeIdGenerator(nodeId);
     serverTransport =
         transportFactory.createServerTransport(
-            cluster.getMessagingService(),
-            requestIdGenerator,
-            List.of(TopicSupplier.withLegacyTopicName(), TopicSupplier.withPrefix("default")));
+            cluster.getMessagingService(), requestIdGenerator, true);
 
     channelHandler = new StubRequestHandler(msgPackHelper);
-    serverTransport.subscribe(partitionId, RequestType.COMMAND, channelHandler);
+    serverTransport.subscribe(
+        PartitionId.from(Protocol.DEFAULT_PARTITION_GROUP_NAME, partitionId),
+        RequestType.COMMAND,
+        channelHandler);
 
     writeBrokerInfoProperties();
     return this;

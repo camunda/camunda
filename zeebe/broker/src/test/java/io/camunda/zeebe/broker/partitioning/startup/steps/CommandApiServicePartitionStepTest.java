@@ -16,10 +16,13 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.atomix.primitive.partition.PartitionId;
+import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.zeebe.broker.partitioning.startup.PartitionStartupContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceImpl;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
@@ -47,11 +50,16 @@ class CommandApiServicePartitionStepTest {
     mockSchedulingService = mock(ActorSchedulingService.class);
     mockDiskSpaceUsageMonitor = mock(DiskSpaceUsageMonitor.class);
 
+    final var partitionMetadata = mock(PartitionMetadata.class);
+    when(partitionMetadata.id())
+        .thenReturn(PartitionId.from(Protocol.DEFAULT_PARTITION_GROUP_NAME, PARTITION_ID));
+
     when(mockContext.concurrencyControl()).thenReturn(CONCURRENCY_CONTROL);
     when(mockContext.schedulingService()).thenReturn(mockSchedulingService);
     when(mockContext.diskSpaceUsageMonitor()).thenReturn(mockDiskSpaceUsageMonitor);
     when(mockContext.gatewayBrokerTransport()).thenReturn(mock(AtomixServerTransport.class));
     when(mockContext.brokerConfig()).thenReturn(new BrokerCfg());
+    when(mockContext.partitionMetadata()).thenReturn(partitionMetadata);
 
     when(mockSchedulingService.submitActor(any()))
         .thenReturn(CONCURRENCY_CONTROL.completedFuture(null));

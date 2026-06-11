@@ -33,7 +33,7 @@ public final class CommandApiServicePartitionStep implements StartupStep<Partiti
 
     final var commandApiService =
         new CommandApiServiceImpl(
-            context.partitionId(),
+            context.partitionMetadata().id(),
             context.gatewayBrokerTransport(),
             context.schedulingService(),
             context.brokerConfig().getExperimental().getQueryApi());

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.transport.snapshotapi;
 
+import io.atomix.primitive.partition.PartitionId;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotRequest.DeleteSnapshotForBootstrapRequest;
 import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotRequest.GetSnapshotChunk;
@@ -35,8 +36,7 @@ public class SnapshotApiRequestHandler
     extends AsyncApiRequestHandler<SnapshotApiRequestReader, SnapshotApiResponseWriter> {
 
   private static final Logger LOG = LoggerFactory.getLogger(SnapshotApiRequestHandler.class);
-  private final ConcurrentMap<Integer, SnapshotSenderService> transferServices =
-      new ConcurrentHashMap<>();
+  private final ConcurrentMap<Integer, Registration> transferServices = new ConcurrentHashMap<>();
   private final ServerTransport serverTransport;
   private final BrokerClient brokerClient;
 
@@ -48,17 +48,19 @@ public class SnapshotApiRequestHandler
   }
 
   public void addTransferService(
-      final int partitionId, final SnapshotSenderService transferService) {
+      final PartitionId partitionId, final SnapshotSenderService transferService) {
     serverTransport.subscribe(partitionId, RequestType.SNAPSHOT, this);
-    transferServices.put(partitionId, transferService);
+    transferServices.put(partitionId.id(), new Registration(partitionId, transferService));
     LOG.debug("Added SnapshotTransferService for partition {}.", partitionId);
   }
 
-  public void removeTransferService(final int partitionId) {
+  public void removeTransferService(final PartitionId partitionId) {
     serverTransport.unsubscribe(partitionId, RequestType.SNAPSHOT);
-    final var service = transferServices.remove(partitionId);
+    final var registration = transferServices.remove(partitionId.id());
     LOG.debug("Removed SnapshotTransferService for partition {}.", partitionId);
-    AsyncClosable.closeHelper(service);
+    if (registration != null) {
+      AsyncClosable.closeHelper(registration.service());
+    }
   }
 
   @Override
@@ -68,11 +70,12 @@ public class SnapshotApiRequestHandler
       final SnapshotApiRequestReader requestReader,
       final SnapshotApiResponseWriter responseWriter,
       final ErrorResponseWriter errorWriter) {
-    final var service = transferServices.get(partitionId);
-    if (service == null) {
+    final var registration = transferServices.get(partitionId);
+    if (registration == null) {
       return CompletableActorFuture.completed(
           Either.left(errorWriter.partitionUnavailable(partitionId)));
     } else {
+      final var service = registration.service();
       final var request = requestReader.getRequest();
       return switch (request) {
         case final GetSnapshotChunk snapshotChunkRequest ->
@@ -162,7 +165,8 @@ public class SnapshotApiRequestHandler
     LOG.debug(
         "Closing SnapshotApiRequestHandler. Removing transfer services. Registered partitions {}",
         transferServices.keySet());
-    transferServices.forEach((partitionId, service) -> removeTransferService(partitionId));
+    transferServices.forEach(
+        (partitionId, registration) -> removeTransferService(registration.partitionId()));
     super.close();
   }
 
@@ -181,4 +185,6 @@ public class SnapshotApiRequestHandler
         .whenCompleteAsync(lastProcessedPosition, actor);
     return lastProcessedPosition;
   }
+
+  private record Registration(PartitionId partitionId, SnapshotSenderService service) {}
 }
