@@ -9,6 +9,9 @@ package io.camunda.it.rollingupdate;
 
 import static io.camunda.application.commons.security.CamundaSecurityConfiguration.AUTHORIZATION_CHECKS_ENV_VAR;
 import static io.camunda.application.commons.security.CamundaSecurityConfiguration.UNPROTECTED_API_ENV_VAR;
+import static io.camunda.it.util.TestHelper.activateAndCompleteJobs;
+import static io.camunda.it.util.TestHelper.completeUserTask;
+import static io.camunda.it.util.TestHelper.publishMessage;
 import static io.camunda.zeebe.test.util.testcontainers.TestSearchContainers.CAMUNDA_DATABASE;
 import static io.camunda.zeebe.test.util.testcontainers.TestSearchContainers.CAMUNDA_PASSWORD;
 import static io.camunda.zeebe.test.util.testcontainers.TestSearchContainers.CAMUNDA_USER;
@@ -32,6 +35,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -49,37 +53,100 @@ import org.testcontainers.containers.Network;
 /**
  * Rolling update test for secondary storage across mixed-version upgrades.
  *
+ * <p>The test drives a richer process through multiple lifecycle stages — service task (job),
+ * message subscription, and user task — to exercise INSERT and UPDATE paths for all major
+ * secondary-storage entity types across a rolling-update version boundary.
+ *
  * <p>The same scenario is parameterized across all supported secondary storage implementations
  * (RDBMS, Elasticsearch, and OpenSearch) to avoid duplicated test logic.
  */
 final class SecondaryStorageRollingUpdateIT {
 
-  private static final BpmnModelInstance PROCESS =
-      Bpmn.createExecutableProcess("process")
+  // ---------------------------------------------------------------------------
+  // Process model
+  // ---------------------------------------------------------------------------
+
+  private static final String PROCESS_ID = "rolling-update-process";
+  private static final String MESSAGE_NAME = "approval-message";
+  private static final String CORRELATION_KEY_VAR = "correlationKey";
+  private static final String PREPARE_JOB_TYPE = "prepare";
+  private static final String FINALIZE_JOB_TYPE = "finalize";
+
+  /**
+   * A process that covers the main secondary-storage entity types:
+   *
+   * <ul>
+   *   <li>Service task → job
+   *   <li>Input/output variable mappings → variables
+   *   <li>Intermediate message catch event → message subscription
+   *   <li>User task (Zeebe native) → user task
+   *   <li>Version tag on process definition → tags
+   * </ul>
+   *
+   * <pre>
+   * start → serviceTask("prepare") → catchEvent("waitForApproval") → userTask("review")
+   *       → serviceTask("finalize") → end
+   * </pre>
+   */
+  private static final BpmnModelInstance RICH_PROCESS =
+      Bpmn.createExecutableProcess(PROCESS_ID)
+          .versionTag("v1.0")
+          .zeebeProperty("owner", "test-rolling-update")
           .startEvent()
-          .serviceTask("task1", s -> s.zeebeJobType("firstTask"))
-          .serviceTask("task2", s -> s.zeebeJobType("secondTask"))
+          .serviceTask(
+              "prepare",
+              t ->
+                  t.zeebeJobType(PREPARE_JOB_TYPE)
+                      .zeebeInput(CORRELATION_KEY_VAR, "corrKey")
+                      .zeebeOutputExpression("\"done\"", "prepareResult"))
+          .intermediateCatchEvent(
+              "waitForApproval",
+              e -> e.message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKeyExpression("corrKey")))
+          .userTask(
+              "review",
+              u -> u.zeebeUserTask().zeebeAssignee("demo").zeebeCandidateGroups("reviewers"))
+          .serviceTask("finalize", t -> t.zeebeJobType(FINALIZE_JOB_TYPE))
           .endEvent()
           .done();
+
+  // ---------------------------------------------------------------------------
+  // Test matrix
+  // ---------------------------------------------------------------------------
+
+  /**
+   * When set to {@code true} (via {@code -DrollingUpdateTest.devMode=true}), the matrix is reduced
+   * to a single combination: RDBMS storage × the latest patch of the previous minor version. This
+   * makes local development iteration significantly faster without spinning up all three storage
+   * backends across all previous patch versions.
+   */
+  private static final boolean DEV_MODE = Boolean.getBoolean("rollingUpdateTest.devMode");
 
   private static final List<StorageTestCase> STORAGE_TEST_CASES =
       List.of(
           StorageTestCase.rdbms(), StorageTestCase.elasticsearch(), StorageTestCase.opensearch());
 
   static Stream<Arguments> versionAndStorageMatrix() throws IOException, InterruptedException {
-    final var previousPatches = ExporterMigrationTestHelper.fetchAllPatchesFromPreviousMinor();
+    final List<String> versions =
+        DEV_MODE
+            ? ExporterMigrationTestHelper.fetchLatestPatchFromPreviousMinor()
+            : ExporterMigrationTestHelper.fetchAllPatchesFromPreviousMinor();
 
-    return previousPatches.stream()
+    final List<StorageTestCase> storages =
+        DEV_MODE ? List.of(StorageTestCase.rdbms()) : STORAGE_TEST_CASES;
+
+    return versions.stream()
         .flatMap(
-            fromVersion -> {
-              return STORAGE_TEST_CASES.stream().map(storage -> Arguments.of(fromVersion, storage));
-            });
+            fromVersion -> storages.stream().map(storage -> Arguments.of(fromVersion, storage)));
   }
+
+  // ---------------------------------------------------------------------------
+  // Test
+  // ---------------------------------------------------------------------------
 
   @ParameterizedTest(name = "storage={1}, from {0} to CURRENT", allowZeroInvocations = true)
   @Tag("dl-nightly")
   @MethodSource("versionAndStorageMatrix")
-  void shouldPreserveProcessInstancesInSecondaryStorageDuringRollingUpdate(
+  void shouldPreserveSecondaryStorageEntitiesDuringRollingUpdate(
       final String from, final StorageTestCase storage) {
     final String to = "SNAPSHOT";
 
@@ -107,49 +174,82 @@ final class SecondaryStorageRollingUpdateIT {
       final GatewayNode<?> oldVersionGateway = cluster.getGateways().get(String.valueOf(oldNodeId));
       final GatewayNode<?> newVersionGateway = cluster.getGateways().get(String.valueOf(newNodeId));
 
-      // given: cluster has two nodes with fixed versions
       updateBroker(oldVersionBroker, oldNodeId, from, storage);
       updateBroker(newVersionBroker, newNodeId, from, storage);
 
-      // --- Phase 1: start both nodes on old version with staggered startup to allow for liquibase
-      // bootstrapping without race conditions ---
+      // === Phase 1: both brokers on old version — deploy, start, drive to message subscription ===
       final CompletableFuture<Void> oldVersionStartFuture =
           CompletableFuture.runAsync(oldVersionBroker::start);
       awaitSecondOldBrokerStartDelay();
       newVersionBroker.start();
       oldVersionStartFuture.join();
-      final long phase1Key;
-      try (final var client = newClient(oldVersionGateway)) {
-        deployProcess(client);
-        phase1Key = createProcessInstance(client);
 
+      final long processDefinitionKey;
+      final long phase1Key;
+      final String correlationKey = UUID.randomUUID().toString();
+
+      try (final var client = newClient(oldVersionGateway)) {
+        processDefinitionKey = deployRichProcess(client);
+        phase1Key = createRichProcessInstance(client, correlationKey);
+
+        // process definition and instance are immediately visible
+        awaitProcessDefinitionInSecondaryStorage(client, processDefinitionKey);
         awaitProcessInstanceInSecondaryStorage(client, phase1Key);
+        // initial variables set at instance creation
+        awaitVariableInSecondaryStorage(client, phase1Key, CORRELATION_KEY_VAR);
+        awaitVariableInSecondaryStorage(client, phase1Key, "inputData");
+
+        // complete the "prepare" job — process parks at the message catch event
+        activateAndCompleteJobs(client, PREPARE_JOB_TYPE, "rolling-update-worker", 1);
+
+        // output variable written by the job and message subscription now active
+        awaitVariableInSecondaryStorage(client, phase1Key, "prepareResult");
+        awaitMessageSubscriptionInSecondaryStorage(client, phase1Key, MESSAGE_NAME);
       }
 
-      // --- Phase 2: upgrade ---
+      // === Phase 2: upgrade new broker, stop old — correlate message, user task becomes active ===
       newVersionBroker.stop();
       updateBroker(newVersionBroker, newNodeId, to, storage);
       newVersionBroker.start();
       oldVersionBroker.stop();
 
       final long phase2Key;
-      try (final var phase2Client = newClient(newVersionGateway)) {
-        phase2Key = createProcessInstance(phase2Client);
+      try (final var client = newClient(newVersionGateway)) {
+        // entities written in Phase 1 must survive the version boundary
+        awaitProcessDefinitionInSecondaryStorage(client, processDefinitionKey);
+        awaitProcessInstanceInSecondaryStorage(client, phase1Key);
+        awaitVariableInSecondaryStorage(client, phase1Key, CORRELATION_KEY_VAR);
+        awaitVariableInSecondaryStorage(client, phase1Key, "prepareResult");
+        awaitMessageSubscriptionInSecondaryStorage(client, phase1Key, MESSAGE_NAME);
 
-        awaitProcessInstanceInSecondaryStorage(phase2Client, phase1Key);
-        awaitProcessInstanceInSecondaryStorage(phase2Client, phase2Key);
+        // unblock the message catch event → user task becomes active
+        publishMessage(client, MESSAGE_NAME, correlationKey);
+        awaitUserTaskInSecondaryStorage(client, phase1Key);
+
+        // create a second instance to exercise writes on the mixed-version cluster
+        phase2Key = createRichProcessInstance(client, UUID.randomUUID().toString());
+        awaitProcessInstanceInSecondaryStorage(client, phase2Key);
       }
 
-      // --- Phase 3: old node on new schema ---
+      // === Phase 3: old broker restarts on new schema — complete process, verify new writes ===
       oldVersionBroker.start();
       newVersionBroker.stop();
 
-      try (final var phase3Client = newClient(oldVersionGateway)) {
-        final long phase3Key = createProcessInstance(phase3Client);
+      try (final var client = newClient(oldVersionGateway)) {
+        // all prior entities must still be queryable on the updated schema
+        awaitProcessDefinitionInSecondaryStorage(client, processDefinitionKey);
+        awaitProcessInstanceInSecondaryStorage(client, phase1Key);
+        awaitProcessInstanceInSecondaryStorage(client, phase2Key);
+        awaitVariableInSecondaryStorage(client, phase1Key, CORRELATION_KEY_VAR);
+        awaitVariableInSecondaryStorage(client, phase1Key, "prepareResult");
 
-        awaitProcessInstanceInSecondaryStorage(phase3Client, phase1Key);
-        awaitProcessInstanceInSecondaryStorage(phase3Client, phase2Key);
-        awaitProcessInstanceInSecondaryStorage(phase3Client, phase3Key);
+        // complete the user task and finalize the process
+        completeUserTask(client, phase1Key);
+        activateAndCompleteJobs(client, FINALIZE_JOB_TYPE, "rolling-update-worker", 1);
+
+        // create a third instance to prove new writes work on the updated schema
+        final long phase3Key = createRichProcessInstance(client, UUID.randomUUID().toString());
+        awaitProcessInstanceInSecondaryStorage(client, phase3Key);
       }
     } finally {
       cluster.stop();
@@ -159,13 +259,62 @@ final class SecondaryStorageRollingUpdateIT {
     }
   }
 
-  private void updateBroker(
-      final BrokerNode<?> broker,
-      final int id,
-      final String version,
-      final StorageTestCase storage) {
-    ClusterHelper.updateBroker(broker, id, version);
-    applySecondaryStorageEnv(broker, storage);
+  // ---------------------------------------------------------------------------
+  // Process helpers
+  // ---------------------------------------------------------------------------
+
+  private long deployRichProcess(final CamundaClient client) {
+    final var deployment =
+        client
+            .newDeployResourceCommand()
+            .addProcessModel(RICH_PROCESS, "rolling-update-process.bpmn")
+            .send()
+            .join(30, TimeUnit.SECONDS);
+    return deployment.getProcesses().getFirst().getProcessDefinitionKey();
+  }
+
+  private long createRichProcessInstance(final CamundaClient client, final String correlationKey) {
+    return Awaitility.await("process instance creation")
+        .atMost(Duration.ofSeconds(60))
+        .pollInterval(Duration.ofMillis(100))
+        .ignoreExceptions()
+        .until(
+            () ->
+                client
+                    .newCreateInstanceCommand()
+                    .bpmnProcessId(PROCESS_ID)
+                    .latestVersion()
+                    .variables(Map.of(CORRELATION_KEY_VAR, correlationKey, "inputData", "hello"))
+                    .send()
+                    .join(),
+            Objects::nonNull)
+        .getProcessInstanceKey();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Await helpers — verify entity visibility in secondary storage
+  // ---------------------------------------------------------------------------
+
+  private void awaitProcessDefinitionInSecondaryStorage(
+      final CamundaClient client, final long processDefinitionKey) {
+    Awaitility.await(
+            "process definition %d visible in secondary storage".formatted(processDefinitionKey))
+        .atMost(Duration.ofSeconds(60))
+        .pollInterval(Duration.ofMillis(500))
+        .untilAsserted(
+            () -> {
+              final var result =
+                  client
+                      .newProcessDefinitionSearchRequest()
+                      .filter(f -> f.processDefinitionKey(processDefinitionKey))
+                      .send()
+                      .join();
+              assertThat(result.items())
+                  .as(
+                      "process definition %d should be present in secondary storage",
+                      processDefinitionKey)
+                  .hasSize(1);
+            });
   }
 
   private void awaitProcessInstanceInSecondaryStorage(
@@ -190,6 +339,89 @@ final class SecondaryStorageRollingUpdateIT {
             });
   }
 
+  private void awaitVariableInSecondaryStorage(
+      final CamundaClient client, final long processInstanceKey, final String variableName) {
+    Awaitility.await(
+            "variable '%s' for process instance %d visible in secondary storage"
+                .formatted(variableName, processInstanceKey))
+        .atMost(Duration.ofSeconds(60))
+        .pollInterval(Duration.ofMillis(500))
+        .untilAsserted(
+            () -> {
+              final var result =
+                  client
+                      .newVariableSearchRequest()
+                      .filter(f -> f.processInstanceKey(processInstanceKey).name(variableName))
+                      .send()
+                      .join();
+              assertThat(result.items())
+                  .as(
+                      "variable '%s' for process instance %d should be present in secondary storage",
+                      variableName, processInstanceKey)
+                  .hasSize(1);
+            });
+  }
+
+  private void awaitMessageSubscriptionInSecondaryStorage(
+      final CamundaClient client, final long processInstanceKey, final String messageName) {
+    Awaitility.await(
+            "message subscription '%s' for process instance %d visible in secondary storage"
+                .formatted(messageName, processInstanceKey))
+        .atMost(Duration.ofSeconds(60))
+        .pollInterval(Duration.ofMillis(500))
+        .untilAsserted(
+            () -> {
+              final var result =
+                  client
+                      .newMessageSubscriptionSearchRequest()
+                      .filter(
+                          f -> f.processInstanceKey(processInstanceKey).messageName(messageName))
+                      .send()
+                      .join();
+              assertThat(result.items())
+                  .as(
+                      "message subscription '%s' for process instance %d should be present in secondary storage",
+                      messageName, processInstanceKey)
+                  .hasSize(1);
+            });
+  }
+
+  private void awaitUserTaskInSecondaryStorage(
+      final CamundaClient client, final long processInstanceKey) {
+    Awaitility.await(
+            "user task for process instance %d visible in secondary storage"
+                .formatted(processInstanceKey))
+        .atMost(Duration.ofSeconds(60))
+        .pollInterval(Duration.ofMillis(500))
+        .untilAsserted(
+            () -> {
+              final var result =
+                  client
+                      .newUserTaskSearchRequest()
+                      .filter(f -> f.processInstanceKey(processInstanceKey))
+                      .send()
+                      .join();
+              assertThat(result.items())
+                  .as(
+                      "user task for process instance %d should be present in secondary storage",
+                      processInstanceKey)
+                  .hasSize(1);
+            });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Infrastructure helpers
+  // ---------------------------------------------------------------------------
+
+  private void updateBroker(
+      final BrokerNode<?> broker,
+      final int id,
+      final String version,
+      final StorageTestCase storage) {
+    ClusterHelper.updateBroker(broker, id, version);
+    applySecondaryStorageEnv(broker, storage);
+  }
+
   private void awaitSecondOldBrokerStartDelay() {
     final long delayStartNanos = System.nanoTime();
     Awaitility.await(
@@ -207,7 +439,7 @@ final class SecondaryStorageRollingUpdateIT {
       final List<String> initialContactPoints,
       final Collection<CamundaVolume> volumes,
       final StorageTestCase storage) {
-    io.camunda.container.ClusterHelper.configureBroker(broker, initialContactPoints, volumes);
+    ClusterHelper.configureBroker(broker, initialContactPoints, volumes);
     applySecondaryStorageEnv(broker, storage);
   }
 
@@ -231,15 +463,7 @@ final class SecondaryStorageRollingUpdateIT {
     }
   }
 
-  public static void deployProcess(final CamundaClient client) {
-    client
-        .newDeployResourceCommand()
-        .addProcessModel(PROCESS, "process.bpmn")
-        .send()
-        .join(10, TimeUnit.SECONDS);
-  }
-
-  public static CamundaClient newClient(final GatewayNode<?> gateway) {
+  private static CamundaClient newClient(final GatewayNode<?> gateway) {
     return CamundaClient.newClientBuilder()
         .preferRestOverGrpc(false)
         .grpcAddress(gateway.getGrpcAddress())
@@ -247,23 +471,9 @@ final class SecondaryStorageRollingUpdateIT {
         .build();
   }
 
-  public static long createProcessInstance(final CamundaClient client) {
-    return Awaitility.await("process instance creation")
-        .atMost(Duration.ofSeconds(60))
-        .pollInterval(Duration.ofMillis(100))
-        .ignoreExceptions()
-        .until(
-            () ->
-                client
-                    .newCreateInstanceCommand()
-                    .bpmnProcessId("process")
-                    .latestVersion()
-                    .variables(Map.of("foo", "bar"))
-                    .send()
-                    .join(),
-            Objects::nonNull)
-        .getProcessInstanceKey();
-  }
+  // ---------------------------------------------------------------------------
+  // Storage test cases
+  // ---------------------------------------------------------------------------
 
   private record StorageTestCase(
       String name,

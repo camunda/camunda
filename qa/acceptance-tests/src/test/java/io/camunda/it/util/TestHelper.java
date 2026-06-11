@@ -1677,6 +1677,41 @@ public final class TestHelper {
         page -> camundaClient.newCorrelatedMessageSubscriptionSearchRequest().page(page).execute());
   }
 
+  /**
+   * Publishes a message with a correlation key so that a running process instance waiting on a
+   * matching intermediate catch event will be unblocked.
+   *
+   * @param camundaClient the Camunda client
+   * @param messageName the name of the message to publish
+   * @param correlationKey the correlation key used to match the waiting process instance
+   */
+  public static void publishMessage(
+      final CamundaClient camundaClient, final String messageName, final String correlationKey) {
+    camundaClient
+        .newPublishMessageCommand()
+        .messageName(messageName)
+        .correlationKey(correlationKey)
+        .timeToLive(Duration.ofMinutes(5))
+        .send()
+        .join();
+  }
+
+  /**
+   * Waits for the first active user task on the given process instance (state {@code CREATED}) and
+   * completes it.
+   *
+   * @param camundaClient the Camunda client
+   * @param processInstanceKey the key of the process instance whose user task to complete
+   */
+  public static void completeUserTask(
+      final CamundaClient camundaClient, final long processInstanceKey) {
+    final var userTask =
+        waitForUserTask(
+            camundaClient,
+            f -> f.processInstanceKey(processInstanceKey).state(UserTaskState.CREATED));
+    camundaClient.newCompleteUserTaskCommand(userTask.getUserTaskKey()).send().join();
+  }
+
   public static void waitUntilAuthorizationVisible(
       final CamundaClient camundaClient, final String owner, final String resource) {
     Awaitility.await("should wait until authorization is visible")
