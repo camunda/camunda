@@ -383,4 +383,24 @@ public class DecisionInstanceIT {
     assertThat(searchResult.items().stream().map(DecisionInstanceEntity::decisionInstanceKey))
         .containsExactlyInAnyOrder(item1.decisionInstanceKey(), item3.decisionInstanceKey());
   }
+
+  @TestTemplate
+  public void shouldSaveDecisionInstancesWithLargeResultsAndFindDecisionInstanceById(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final DecisionInstanceDbReader decisionInstanceReader =
+        rdbmsService.getDecisionInstanceReader();
+
+    final var largeResult = "x".repeat(9000);
+
+    final var original = DecisionInstanceFixtures.createRandomized(b -> b.result(largeResult));
+    createAndSaveDecisionInstance(rdbmsWriters, original);
+    final var actual = decisionInstanceReader.findOne(original.decisionInstanceId()).orElseThrow();
+
+    assertThat(actual).isNotNull();
+    assertThat(actual.decisionInstanceId()).isEqualTo(original.decisionInstanceId());
+    assertThat(actual.decisionInstanceKey()).isEqualTo(original.decisionInstanceKey());
+    assertThat(actual.result()).isEqualTo(largeResult);
+  }
 }
