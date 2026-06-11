@@ -28,7 +28,7 @@ import tools.jackson.databind.json.JsonMapper;
 public class McpServerRequestObservationConvention
     extends DefaultServerRequestObservationConvention {
 
-  public static final String URI_MCP_PREFIX = "/mcp";
+  public static final String URI_MCP_PREFIX = "/mcp/";
 
   private static final Logger LOGGER =
       LoggerFactory.getLogger(McpServerRequestObservationConvention.class);
@@ -97,7 +97,7 @@ public class McpServerRequestObservationConvention
       return false;
     }
     final int slashAfterTenant = servletPath.indexOf('/', PHYSICAL_TENANTS_PATH_SEGMENT.length());
-    if (slashAfterTenant < 0) {
+    if (slashAfterTenant <= PHYSICAL_TENANTS_PATH_SEGMENT.length()) {
       return false;
     }
     final String rest = servletPath.substring(slashAfterTenant);
