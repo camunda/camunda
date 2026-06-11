@@ -8,7 +8,6 @@
 package io.camunda.zeebe.gateway.impl.broker.request;
 
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
@@ -22,9 +21,6 @@ public class BrokerUpdateAgentInstanceRequest extends BrokerExecuteCommand<Agent
     super(ValueType.AGENT_INSTANCE, AgentInstanceIntent.UPDATE);
     requestDto = record;
     request.setKey(record.getAgentInstanceKey());
-    // Route to the partition that owns the agent instance, decoded from the key.
-    // All keys in Zeebe encode the owning partition in their high bits.
-    request.setPartitionId(Protocol.decodePartitionId(record.getAgentInstanceKey()));
   }
 
   @Override

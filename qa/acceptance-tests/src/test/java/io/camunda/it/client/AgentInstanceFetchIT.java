@@ -57,7 +57,6 @@ public class AgentInstanceFetchIT {
             .startEvent()
             .adHocSubProcess(AGENT_ELEMENT_ID, p -> p.task("agentTask"))
             .zeebeJobType(JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX)
-            .moveToActivity(AGENT_ELEMENT_ID)
             .endEvent("end")
             .done();
 
