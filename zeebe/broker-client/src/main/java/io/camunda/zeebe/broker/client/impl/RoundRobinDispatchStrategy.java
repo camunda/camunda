@@ -12,21 +12,26 @@ import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.api.RequestDispatchStrategy;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling;
+import io.camunda.zeebe.protocol.Protocol;
+import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Return the next partition using a round-robin strategy, but skips the partitions where there is
  * no leader at the moment.
+ *
+ * <p>Round-robin state is kept per partition group: numeric partition IDs overlap across groups, so
+ * sharing one offset or partition ring between groups would let one group's traffic skew another's
+ * distribution.
  */
 public final class RoundRobinDispatchStrategy implements RequestDispatchStrategy {
 
-  /** Holds the current partition ring. Starts off uninitialized and is updated on every request. */
-  private final AtomicReference<VersionedPartitionRing> partitionRing =
-      new AtomicReference<>(VersionedPartitionRing.uninitialized());
-
-  private final AtomicLong offset;
+  private final ConcurrentMap<String, GroupState> groups = new ConcurrentHashMap<>();
+  private final int initialOffset;
 
   public RoundRobinDispatchStrategy() {
     this(0);
@@ -37,22 +42,24 @@ public final class RoundRobinDispatchStrategy implements RequestDispatchStrategy
       throw new IllegalArgumentException(
           "Expected initialOffset to be >= 0, but got %d".formatted(initialOffset));
     }
-    offset = new AtomicLong(initialOffset);
+    this.initialOffset = initialOffset;
   }
 
   @Override
   public int determinePartition(
       final BrokerTopologyManager topologyManager, final String partitionGroup) {
-    final BrokerClusterState topology = topologyManager.getTopology();
+    final BrokerClusterState topology = topologyManager.getTopology(partitionGroup);
 
     if (topology == null || !topology.isInitialized()) {
       return BrokerClusterState.PARTITION_ID_NULL;
     }
 
-    final var partitions = updatePartitionRing(topologyManager);
+    final var state =
+        groups.computeIfAbsent(partitionGroup, group -> new GroupState(initialOffset));
+    final var partitions = updatePartitionRing(topologyManager, partitionGroup, topology, state);
 
     for (int i = 0; i < topology.getPartitionsCount(); i++) {
-      final int partition = partitions.partitionAtOffset(offset.getAndIncrement());
+      final int partition = partitions.partitionAtOffset(state.offset().getAndIncrement());
       if (topology.getLeaderForPartition(partition) != null) {
         return partition;
       }
@@ -62,17 +69,28 @@ public final class RoundRobinDispatchStrategy implements RequestDispatchStrategy
   }
 
   /**
-   * Updates the partition ring. This either initializes the partition ring to span over all
-   * statically configured partitions when routing state is not available (i.e. partition scaling is
-   * not enabled) or creates a new partition ring to span over the active partitions from the latest
-   * routing state.
+   * Updates the partition ring of the given group. This either initializes the partition ring to
+   * span over all statically configured partitions when routing state is not available (i.e.
+   * partition scaling is not enabled) or creates a new partition ring to span over the active
+   * partitions from the latest routing state.
+   *
+   * <p>Routing state is only consulted for the default partition group: it is a single cluster-wide
+   * state that describes scaling of the default group, while all other groups have a static
+   * partition distribution.
    */
-  private PartitionRing updatePartitionRing(final BrokerTopologyManager topologyManager) {
-    final var routingState = topologyManager.getClusterConfiguration().routingState();
+  private PartitionRing updatePartitionRing(
+      final BrokerTopologyManager topologyManager,
+      final String partitionGroup,
+      final BrokerClusterState topology,
+      final GroupState state) {
+    final var routingState =
+        Protocol.DEFAULT_PARTITION_GROUP_NAME.equals(partitionGroup)
+            ? topologyManager.getClusterConfiguration().routingState()
+            : Optional.<RoutingState>empty();
     final long expectedVersion =
         routingState.map(RoutingState::version).orElse(VersionedPartitionRing.NO_ROUTING_STATE);
 
-    var currentValue = partitionRing.get();
+    var currentValue = state.partitionRing().get();
     if (currentValue.version() >= expectedVersion) {
       return currentValue.partitions();
     }
@@ -82,14 +100,28 @@ public final class RoundRobinDispatchStrategy implements RequestDispatchStrategy
             .map(RoutingState::requestHandling)
             .map(RequestHandling::activePartitions)
             .map(PartitionRing::of)
-            .orElseGet(() -> PartitionRing.all(topologyManager.getTopology().getPartitionsCount()));
+            .orElseGet(
+                () ->
+                    // the configured partition count is currently shared across all groups (see
+                    // BrokerTopologyManagerImpl); the leader check in determinePartition skips any
+                    // ring slots that don't exist in this group
+                    PartitionRing.all(topology.getPartitionsCount()));
     final var newValue = new VersionedPartitionRing(expectedVersion, newPartitionRing);
 
     while (currentValue.version() < expectedVersion) {
-      currentValue = partitionRing.compareAndExchange(currentValue, newValue);
+      currentValue = state.partitionRing().compareAndExchange(currentValue, newValue);
     }
 
     return newPartitionRing;
+  }
+
+  private record GroupState(
+      AtomicLong offset, AtomicReference<VersionedPartitionRing> partitionRing) {
+    GroupState(final int initialOffset) {
+      this(
+          new AtomicLong(initialOffset),
+          new AtomicReference<>(VersionedPartitionRing.uninitialized()));
+    }
   }
 
   record VersionedPartitionRing(long version, PartitionRing partitions) {

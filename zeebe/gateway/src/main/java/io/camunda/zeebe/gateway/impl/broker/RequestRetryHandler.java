@@ -87,7 +87,7 @@ public final class RequestRetryHandler {
           requestSender,
       final BrokerResponseConsumer<BrokerResponseT> responseConsumer,
       final Consumer<Throwable> throwableConsumer) {
-    final var topology = topologyManager.getTopology();
+    final var topology = topologyManager.getTopology(request.getPartitionGroup());
     if (topology == null || topology.getPartitionsCount() == 0) {
       throwableConsumer.accept(new NoTopologyAvailableException());
       return;

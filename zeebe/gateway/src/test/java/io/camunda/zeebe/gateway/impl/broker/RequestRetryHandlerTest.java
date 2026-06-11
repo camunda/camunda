@@ -158,6 +158,48 @@ final class RequestRetryHandlerTest {
     assertThat(brokerClient.sendCount.get()).isEqualTo(0);
   }
 
+  @Test
+  void shouldPassRequestPartitionGroupToFixedPartitionDispatchStrategy() {
+    // given - a request for a non-default group with its own dispatch strategy
+    final var groupRef = new AtomicReference<String>();
+    final var request =
+        new TestBrokerRequest(
+            Optional.of(
+                (__, partitionGroup) -> {
+                  groupRef.set(partitionGroup);
+                  return 2;
+                }));
+    request.setPartitionGroup("tenant-b");
+    brokerClient.setResponse(new BrokerResponse<>("result", 2, 1));
+
+    // when
+    retryHandler.sendRequest(request, (key, response) -> {}, error -> {});
+
+    // then - the strategy received the request's partition group
+    assertThat(groupRef).hasValue("tenant-b");
+  }
+
+  @Test
+  void shouldPassRequestPartitionGroupToRetryDispatchStrategy() {
+    // given - a request for a non-default group without its own dispatch strategy
+    final var groups = new ArrayList<String>();
+    final RequestDispatchStrategy recordingStrategy =
+        (__, partitionGroup) -> {
+          groups.add(partitionGroup);
+          return 1;
+        };
+    final var handler = new RequestRetryHandler(brokerClient, topologyManager, recordingStrategy);
+    final var request = new TestBrokerRequest(Optional.empty());
+    request.setPartitionGroup("tenant-b");
+    brokerClient.setResponse(new BrokerResponse<>("result", 1, 1));
+
+    // when
+    handler.sendRequest(request, (key, response) -> {}, error -> {});
+
+    // then - the retry strategy received the request's partition group
+    assertThat(groups).containsExactly("tenant-b");
+  }
+
   private static final class TestBrokerClient implements BrokerClient {
     final AtomicInteger sendCount = new AtomicInteger(0);
     final List<Integer> partitionsHit = new ArrayList<>();

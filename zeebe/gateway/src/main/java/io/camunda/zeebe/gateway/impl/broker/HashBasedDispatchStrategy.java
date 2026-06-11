@@ -50,7 +50,10 @@ public final class HashBasedDispatchStrategy implements RequestDispatchStrategy 
         .getClusterConfiguration()
         .routingState()
         .map(this::fromRoutingState)
-        .or(() -> Optional.ofNullable(topologyManager.getTopology()).map(this::fromTopology))
+        .or(
+            () ->
+                Optional.ofNullable(topologyManager.getTopology(partitionGroup))
+                    .map(this::fromTopology))
         .orElseThrow(
             () ->
                 new NoTopologyAvailableException(

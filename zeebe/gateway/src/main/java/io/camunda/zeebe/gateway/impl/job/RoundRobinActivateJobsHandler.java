@@ -75,7 +75,7 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
       final ResponseObserver<T> responseObserver,
       final Consumer<Runnable> setCancelHandler,
       final long requestTimeout) {
-    final var topology = topologyManager.getTopology();
+    final var topology = topologyManager.getTopology(request.getPartitionGroup());
     if (topology != null) {
       final var inflightRequest =
           new InflightActivateJobsRequest<>(
@@ -305,7 +305,8 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
     return new PartitionIdIterator(
         nextPartitionSupplier.determinePartition(topologyManager, partitionGroup),
         partitionsCount,
-        topologyManager);
+        topologyManager,
+        partitionGroup);
   }
 
   private record ResponseObserverDelegate(

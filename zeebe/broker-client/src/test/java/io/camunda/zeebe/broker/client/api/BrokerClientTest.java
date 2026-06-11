@@ -353,6 +353,44 @@ public final class BrokerClientTest {
   }
 
   @Test
+  void shouldPassPartitionGroupToDispatchStrategy() {
+    // given
+    final AtomicReference<String> groupRef = new AtomicReference<>();
+    final var request =
+        new TestCommand(
+            1L,
+            (topologyManager, partitionGroup) -> {
+              groupRef.set(partitionGroup);
+              return 1;
+            });
+    request.setPartitionGroup("tenant-b");
+
+    // when
+    final var responseFuture = client.sendRequest(request);
+
+    // then
+    assertThat(responseFuture).failsWithin(Duration.ofSeconds(10));
+    assertThat(groupRef).hasValue("tenant-b");
+  }
+
+  @Test
+  void shouldFailRequestAddressingPartitionOfUnknownGroup() {
+    // given - a request addressing a partition that only exists in the default group
+    final var request = new TestCommand();
+    request.setPartitionId(1);
+    request.setPartitionGroup("unknown-group");
+
+    // when
+    final Future<?> response = client.sendRequest(request);
+
+    // then
+    assertThat(response)
+        .failsWithin(Duration.ofSeconds(10))
+        .withThrowableThat()
+        .withCauseInstanceOf(PartitionNotFoundException.class);
+  }
+
+  @Test
   void shouldReceiveJobAvailableNotification() {
     // given
     final AtomicReference<String> messageRef = new AtomicReference<>();

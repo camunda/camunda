@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.transport.snapshotapi;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -103,6 +104,7 @@ public class SnapshotApiRequestHandlerTest {
     when(clusterState.getPartitions()).thenReturn(List.of(1));
 
     when(brokerTopology.getTopology()).thenReturn(clusterState);
+    when(brokerTopology.getTopology(anyString())).thenReturn(clusterState);
     final var metrics = mock(BrokerClientRequestMetrics.class);
     brokerClient =
         new BrokerClientImpl(
