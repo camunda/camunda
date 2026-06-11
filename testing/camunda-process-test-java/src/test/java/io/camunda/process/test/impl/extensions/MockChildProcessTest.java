@@ -16,7 +16,6 @@
 package io.camunda.process.test.impl.extensions;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -28,17 +27,18 @@ import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.impl.client.CamundaClockClient;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
-import io.camunda.process.test.impl.extension.ConditionalBehaviorEngine;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
 import io.camunda.process.test.utils.DevAwaitBehavior;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.instance.EndEvent;
 import io.camunda.zeebe.model.bpmn.instance.Process;
 import io.camunda.zeebe.model.bpmn.instance.ServiceTask;
-import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeIoMapping;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeOutput;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -57,6 +57,7 @@ public class MockChildProcessTest {
   @Mock private Consumer<AutoCloseable> clientCreationCallback;
   @Mock private CamundaClockClient clockClient;
   @Mock private JsonMapper jsonMapper;
+  @Mock private io.camunda.zeebe.client.api.JsonMapper zeebeJsonMapper;
   @Mock private CamundaClientBuilderFactory camundaClientBuilderFactory;
   @Mock private CamundaClientBuilder camundaClientBuilder;
 
@@ -79,9 +80,9 @@ public class MockChildProcessTest {
             camundaProcessTestRuntime,
             clientCreationCallback,
             clockClient,
-            DevAwaitBehavior::expectSuccess,
+            DevAwaitBehavior.expectSuccess(),
             jsonMapper,
-            new ConditionalBehaviorEngine());
+            zeebeJsonMapper);
   }
 
   @Test
@@ -109,6 +110,7 @@ public class MockChildProcessTest {
   void shouldMockChildProcessWithVariables() {
     // given
     final Map<String, Object> variables = Collections.singletonMap("result", "ok");
+    when(camundaClient.getConfiguration().getJsonMapper().toJson("ok")).thenReturn("\"ok\"");
 
     // when
     processTestContext.mockChildProcess(CHILD_PROCESS_ID, variables);
@@ -127,41 +129,20 @@ public class MockChildProcessTest {
 
     // the process has no service tasks (variables are set as end event outputs)
     assertThat(deployedModel.getModelElementsByType(ServiceTask.class)).isEmpty();
-  }
 
-  @Test
-  void shouldMockChildProcessWithVariableSupplier() {
-    // given
-    final Function<Map<String, Object>, Map<String, Object>> variableSupplier =
-        inputVars -> Collections.singletonMap("result", inputVars.getOrDefault("input", "default"));
-
-    // when
-    processTestContext.mockChildProcess(CHILD_PROCESS_ID, variableSupplier);
-
-    // then: a process with a service task for the variable supplier is deployed
-    verify(camundaClient.newDeployResourceCommand())
-        .addProcessModel(processModelCaptor.capture(), eq(CHILD_PROCESS_ID + ".bpmn"));
-
-    final BpmnModelInstance deployedModel = processModelCaptor.getValue();
-
-    // the process has the correct ID
-    assertThat(deployedModel.getModelElementsByType(Process.class))
-        .hasSize(1)
-        .first()
-        .satisfies(process -> assertThat(process.getId()).isEqualTo(CHILD_PROCESS_ID));
-
-    // the process has a service task used to supply variables
-    assertThat(deployedModel.getModelElementsByType(ServiceTask.class))
+    // the end event has output mappings for each variable
+    final EndEvent endEvent = deployedModel.getModelElementById("child-end");
+    assertThat(endEvent).isNotNull();
+    final ZeebeIoMapping ioMapping = endEvent.getSingleExtensionElement(ZeebeIoMapping.class);
+    assertThat(ioMapping).isNotNull();
+    final Collection<ZeebeOutput> outputs = ioMapping.getOutputs();
+    assertThat(outputs)
         .hasSize(1)
         .first()
         .satisfies(
-            serviceTask ->
-                assertThat(
-                        serviceTask.getSingleExtensionElement(ZeebeTaskDefinition.class).getType())
-                    .isEqualTo("variableSupplier_" + CHILD_PROCESS_ID));
-
-    // and the worker for the variable supplier is opened
-    verify(camundaClient.newWorker().jobType("variableSupplier_" + CHILD_PROCESS_ID).handler(any()))
-        .open();
+            output -> {
+              assertThat(output.getSource()).isEqualTo("=\"ok\"");
+              assertThat(output.getTarget()).isEqualTo("result");
+            });
   }
 }

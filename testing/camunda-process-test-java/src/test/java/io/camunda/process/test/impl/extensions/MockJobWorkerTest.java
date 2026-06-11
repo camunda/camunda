@@ -30,10 +30,11 @@ import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.mock.JobWorkerMockBuilder.JobWorkerMock;
 import io.camunda.process.test.impl.client.CamundaClockClient;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
-import io.camunda.process.test.impl.extension.ConditionalBehaviorEngine;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
 import io.camunda.process.test.utils.DevAwaitBehavior;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,6 +55,7 @@ public class MockJobWorkerTest {
   @Mock private Consumer<AutoCloseable> clientCreationCallback;
   @Mock private CamundaClockClient clockClient;
   @Mock private JsonMapper jsonMapper;
+  @Mock private io.camunda.zeebe.client.api.JsonMapper zeebeJsonMapper;
   @Mock private CamundaClientBuilderFactory camundaClientBuilderFactory;
   @Mock private CamundaClientBuilder camundaClientBuilder;
 
@@ -78,13 +80,13 @@ public class MockJobWorkerTest {
             camundaProcessTestRuntime,
             clientCreationCallback,
             clockClient,
-            DevAwaitBehavior::expectSuccess,
+            DevAwaitBehavior.expectSuccess(),
             jsonMapper,
-            new ConditionalBehaviorEngine());
+            zeebeJsonMapper);
   }
 
   @Test
-  void shouldHaveNoInvocationsInitially() {
+  void shouldHaveNoInvocationsInitially() throws Exception {
     // when: creating a mock worker via the context API
     final JobWorkerMock jobWorkerMock = processTestContext.mockJobWorker(JOB_TYPE).thenComplete();
 
@@ -93,49 +95,70 @@ public class MockJobWorkerTest {
     assertThat(jobWorkerMock.getActivatedJobs()).isEmpty();
 
     // and: the client opened the job worker with the expected job type
+    verify(camundaClient.newWorker().jobType(JOB_TYPE)).handler(handlerCaptor.capture());
     verify(camundaClient.newWorker().jobType(JOB_TYPE).handler(any())).open();
+
+    // and: invoking the handler completes the job with no variables
+    handlerCaptor.getValue().handle(camundaClient, activatedJob);
+    verify(camundaClient.newCompleteCommand(activatedJob).variables(new HashMap<>())).send();
   }
 
   @Test
-  void shouldOpenJobWorkerWithThenCompleteWithVariables() {
+  void shouldOpenJobWorkerWithThenCompleteWithVariables() throws Exception {
+    // given
+    final Map<String, Object> variables = Collections.singletonMap("result", "ok");
+
     // when
-    processTestContext
-        .mockJobWorker(JOB_TYPE)
-        .thenComplete(Collections.singletonMap("result", "ok"));
+    processTestContext.mockJobWorker(JOB_TYPE).thenComplete(variables);
 
     // then: the client opened the job worker with the expected job type
+    verify(camundaClient.newWorker().jobType(JOB_TYPE)).handler(handlerCaptor.capture());
     verify(camundaClient.newWorker().jobType(JOB_TYPE).handler(any())).open();
+
+    // and: invoking the handler completes the job with the given variables
+    handlerCaptor.getValue().handle(camundaClient, activatedJob);
+    verify(camundaClient.newCompleteCommand(activatedJob).variables(variables)).send();
   }
 
   @Test
-  void shouldOpenJobWorkerWithThenThrowBpmnError() {
+  void shouldOpenJobWorkerWithThenThrowBpmnError() throws Exception {
     // when
     processTestContext.mockJobWorker(JOB_TYPE).thenThrowBpmnError("error-code");
 
     // then: the client opened the job worker with the expected job type
+    verify(camundaClient.newWorker().jobType(JOB_TYPE)).handler(handlerCaptor.capture());
     verify(camundaClient.newWorker().jobType(JOB_TYPE).handler(any())).open();
+
+    // and: invoking the handler throws the BPMN error with no variables
+    handlerCaptor.getValue().handle(camundaClient, activatedJob);
+    verify(
+            camundaClient
+                .newThrowErrorCommand(activatedJob)
+                .errorCode("error-code")
+                .variables(new HashMap<>()))
+        .send();
   }
 
   @Test
-  void shouldOpenJobWorkerWithThenThrowBpmnErrorWithVariables() {
+  void shouldOpenJobWorkerWithThenThrowBpmnErrorWithVariables() throws Exception {
+    // given
+    final Map<String, Object> variables = Collections.singletonMap("error", true);
+
     // when
-    processTestContext
-        .mockJobWorker(JOB_TYPE)
-        .thenThrowBpmnError("error-code", Collections.singletonMap("error", true));
+    processTestContext.mockJobWorker(JOB_TYPE).thenThrowBpmnError("error-code", variables);
 
     // then: the client opened the job worker with the expected job type
+    verify(camundaClient.newWorker().jobType(JOB_TYPE)).handler(handlerCaptor.capture());
     verify(camundaClient.newWorker().jobType(JOB_TYPE).handler(any())).open();
-  }
 
-  @Test
-  void shouldOpenJobWorkerWithThenThrowBpmnErrorWithMessageAndVariables() {
-    // when
-    processTestContext
-        .mockJobWorker(JOB_TYPE)
-        .thenThrowBpmnError("error-code", "error message", Collections.singletonMap("error", true));
-
-    // then: the client opened the job worker with the expected job type
-    verify(camundaClient.newWorker().jobType(JOB_TYPE).handler(any())).open();
+    // and: invoking the handler throws the BPMN error with the given variables
+    handlerCaptor.getValue().handle(camundaClient, activatedJob);
+    verify(
+            camundaClient
+                .newThrowErrorCommand(activatedJob)
+                .errorCode("error-code")
+                .variables(variables))
+        .send();
   }
 
   @Test
