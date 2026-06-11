@@ -145,6 +145,8 @@ optimize:
     # in the cluster.
     - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SETTINGS_INDEX_NUMBER_OF_SHARDS
       value: "3" # default 1
+    - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SETTINGS_INDEX_NUMBER_OF_SHARDS
+      value: "3" # default 1
 
     # Improve performances of Optimize for the load tests.
     # This is load-test specific and different configuration of cluster
