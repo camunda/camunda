@@ -8,9 +8,11 @@
 package packages
 
 import (
+	"archive/zip"
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -188,6 +190,77 @@ func rocksdbNativeLibName(osType, arch string) (string, error) {
 		}
 	}
 	return "", fmt.Errorf("no RocksDB native lib mapping for os=%s arch=%s", osType, arch)
+}
+
+func rewriteZipKeepingNativeLib(jarPath, libName string) error {
+	r, err := zip.OpenReader(jarPath)
+	if err != nil {
+		return fmt.Errorf("failed to open jar %s: %w", jarPath, err)
+	}
+
+	tmpPath := jarPath + ".tmp"
+	tmpFile, err := os.Create(tmpPath)
+	if err != nil {
+		r.Close()
+		return fmt.Errorf("failed to create temp file %s: %w", tmpPath, err)
+	}
+
+	w := zip.NewWriter(tmpFile)
+	var nativeLibCount int
+	var copyErr error
+
+	for _, f := range r.File {
+		isNativeEntry := strings.HasPrefix(f.Name, "META-INF/native/") && !strings.HasSuffix(f.Name, "/")
+		if isNativeEntry {
+			if filepath.Base(f.Name) != libName {
+				continue
+			}
+			nativeLibCount++
+		}
+
+		fw, err := w.CreateHeader(&f.FileHeader)
+		if err != nil {
+			copyErr = fmt.Errorf("failed to create entry %s in temp jar: %w", f.Name, err)
+			break
+		}
+		rc, err := f.Open()
+		if err != nil {
+			copyErr = fmt.Errorf("failed to read entry %s from jar: %w", f.Name, err)
+			break
+		}
+		_, err = io.Copy(fw, rc)
+		rc.Close()
+		if err != nil {
+			copyErr = fmt.Errorf("failed to copy entry %s: %w", f.Name, err)
+			break
+		}
+	}
+	r.Close()
+
+	if copyErr != nil {
+		w.Close()
+		tmpFile.Close()
+		os.Remove(tmpPath)
+		return copyErr
+	}
+	if err := w.Close(); err != nil {
+		tmpFile.Close()
+		os.Remove(tmpPath)
+		return fmt.Errorf("failed to finalize temp jar: %w", err)
+	}
+	if err := tmpFile.Close(); err != nil {
+		os.Remove(tmpPath)
+		return fmt.Errorf("failed to close temp file: %w", err)
+	}
+	if nativeLibCount != 1 {
+		os.Remove(tmpPath)
+		return fmt.Errorf("expected exactly 1 native lib %q in jar, got %d: verify rocksdbNativeLibName mapping", libName, nativeLibCount)
+	}
+	if err := os.Rename(tmpPath, jarPath); err != nil {
+		os.Remove(tmpPath)
+		return fmt.Errorf("failed to replace jar with slimmed version: %w", err)
+	}
+	return nil
 }
 
 func getJavaArtifactsToken() (string, error) {

@@ -1,6 +1,7 @@
 package packages
 
 import (
+	"archive/zip"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -222,6 +223,107 @@ func TestRocksdbNativeLibNameUnknownPlatformErrors(t *testing.T) {
 				t.Fatalf("expected error for unsupported os/arch %s/%s, got nil", tt.osType, tt.arch)
 			}
 		})
+	}
+}
+
+func TestRewriteZipKeepingNativeLibStripsOtherPlatforms(t *testing.T) {
+	// given: fake JAR with all 5 native libs plus non-native entries
+	root := t.TempDir()
+	jarPath := filepath.Join(root, "rocksdbjni-9.0.0.jar")
+
+	f, err := os.Create(jarPath)
+	if err != nil {
+		t.Fatalf("failed to create temp jar: %v", err)
+	}
+	w := zip.NewWriter(f)
+	entries := []struct{ name, content string }{
+		{"META-INF/MANIFEST.MF", "Manifest-Version: 1.0\n"},
+		{"META-INF/native/librocksdb-jni-linux64.so", "linux64-binary"},
+		{"META-INF/native/librocksdb-jni-linux-aarch64.so", "linux-aarch64-binary"},
+		{"META-INF/native/librocksdb-jni-osx-arm64.jnilib", "osx-arm64-binary"},
+		{"META-INF/native/librocksdb-jni-osx-x86_64.jnilib", "osx-x86_64-binary"},
+		{"META-INF/native/librocksdb-jni-win64.dll", "win64-binary"},
+		{"org/rocksdb/RocksDB.class", "class-bytes"},
+	}
+	for _, e := range entries {
+		fw, err := w.Create(e.name)
+		if err != nil {
+			t.Fatalf("failed to create zip entry %s: %v", e.name, err)
+		}
+		if _, err := fw.Write([]byte(e.content)); err != nil {
+			t.Fatalf("failed to write zip entry %s: %v", e.name, err)
+		}
+	}
+	if err := w.Close(); err != nil {
+		t.Fatalf("failed to close zip writer: %v", err)
+	}
+	if err := f.Close(); err != nil {
+		t.Fatalf("failed to close jar file: %v", err)
+	}
+
+	// when
+	err = rewriteZipKeepingNativeLib(jarPath, "librocksdb-jni-linux64.so")
+
+	// then
+	if err != nil {
+		t.Fatalf("rewriteZipKeepingNativeLib returned error: %v", err)
+	}
+
+	r, err := zip.OpenReader(jarPath)
+	if err != nil {
+		t.Fatalf("failed to open rewritten jar: %v", err)
+	}
+	defer r.Close()
+
+	var keptNative []string
+	allKept := make(map[string]bool)
+	for _, entry := range r.File {
+		allKept[entry.Name] = true
+		if strings.HasPrefix(entry.Name, "META-INF/native/") {
+			keptNative = append(keptNative, entry.Name)
+		}
+	}
+
+	if len(keptNative) != 1 || keptNative[0] != "META-INF/native/librocksdb-jni-linux64.so" {
+		t.Fatalf("expected only linux64 native lib, got %v", keptNative)
+	}
+	for _, mustKeep := range []string{"META-INF/MANIFEST.MF", "org/rocksdb/RocksDB.class"} {
+		if !allKept[mustKeep] {
+			t.Fatalf("expected non-native entry %q to be preserved, got entries: %v", mustKeep, allKept)
+		}
+	}
+}
+
+func TestRewriteZipKeepingNativeLibErrorsWhenLibNotFound(t *testing.T) {
+	// given: JAR with only a different native lib (target is absent)
+	root := t.TempDir()
+	jarPath := filepath.Join(root, "rocksdbjni-9.0.0.jar")
+
+	f, err := os.Create(jarPath)
+	if err != nil {
+		t.Fatalf("failed to create temp jar: %v", err)
+	}
+	w := zip.NewWriter(f)
+	fw, err := w.Create("META-INF/native/librocksdb-jni-linux64.so")
+	if err != nil {
+		t.Fatalf("failed to create zip entry: %v", err)
+	}
+	if _, err := fw.Write([]byte("binary")); err != nil {
+		t.Fatalf("failed to write zip entry: %v", err)
+	}
+	if err := w.Close(); err != nil {
+		t.Fatalf("failed to close zip writer: %v", err)
+	}
+	if err := f.Close(); err != nil {
+		t.Fatalf("failed to close jar file: %v", err)
+	}
+
+	// when: ask for a lib name that isn't in the jar
+	err = rewriteZipKeepingNativeLib(jarPath, "librocksdb-jni-nonexistent.so")
+
+	// then
+	if err == nil {
+		t.Fatal("expected error when target native lib not found in jar, got nil")
 	}
 }
 
