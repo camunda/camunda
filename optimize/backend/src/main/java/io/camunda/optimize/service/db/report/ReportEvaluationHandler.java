@@ -35,6 +35,8 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepor
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.group.EndDateGroupByDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
 import io.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
 import io.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import io.camunda.optimize.dto.optimize.query.variable.VariableType;
@@ -410,6 +412,14 @@ public abstract class ReportEvaluationHandler {
             "Cannot add additional filters to report [{}] as it is not a process report",
             reportDefinitionDto.getId());
       }
+    }
+    if (additionalFilters != null
+        && additionalFilters.getGroupByDateUnit() != null
+        && reportDefinitionDto
+            instanceof final SingleProcessReportDefinitionRequestDto definitionDto
+        && definitionDto.getData().getGroupBy() instanceof final EndDateGroupByDto endDateGroupBy
+        && endDateGroupBy.getValue() instanceof final DateGroupByValueDto dateValue) {
+      dateValue.setUnit(additionalFilters.getGroupByDateUnit());
     }
   }
 }

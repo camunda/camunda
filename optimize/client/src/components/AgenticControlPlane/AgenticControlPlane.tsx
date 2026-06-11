@@ -41,6 +41,12 @@ interface RollingFilter {
   };
 }
 
+function presetToGroupByDateUnit(presetId: string): string {
+  if (presetId === '7d') return 'day';
+  if (presetId === '30d') return 'week';
+  return 'month';
+}
+
 function presetToFilter(preset: (typeof DATE_PRESETS)[number]): RollingFilter {
   return {
     type: 'instanceEndDate',
@@ -79,6 +85,16 @@ export function AgenticControlPlane() {
     [processScope]
   );
 
+  const scopedEvaluateTokenTrendReport = useCallback(
+    (
+      id: ReportEvaluationPayload,
+      tileFilter: Parameters<typeof evaluateReport>[1],
+      query: Parameters<typeof evaluateReport>[2]
+    ) => evaluateReport(id, tileFilter, query, definitions, presetToGroupByDateUnit(preset)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [processScope, preset]
+  );
+
   if (!dashboard) {
     return <Loading />;
   }
@@ -96,7 +112,12 @@ export function AgenticControlPlane() {
 
   const sections = [
     {key: 'kpi', loadTile: scopedEvaluateReport},
-    {key: 'token', titleKey: 'agenticControlPlane.tokenUsage', loadTile: scopedEvaluateReport},
+    {
+      key: 'token',
+      titleKey: 'agenticControlPlane.tokenUsage',
+      footnoteKey: 'agenticControl.report.agenticKpiTokenTrendFootnote',
+      loadTile: scopedEvaluateTokenTrendReport,
+    },
   ];
 
   return (
@@ -111,7 +132,7 @@ export function AgenticControlPlane() {
         processScope={processScope}
         onProcessScopeChange={setProcessScope}
       />
-      {sections.map(({key, titleKey, loadTile}) => {
+      {sections.map(({key, titleKey, footnoteKey, loadTile}) => {
         const tiles = visibleTiles?.filter(
           (tile) => ((tile.configuration as AgenticTileConfiguration | undefined)?.section ?? 'kpi') === key
         );
@@ -130,6 +151,7 @@ export function AgenticControlPlane() {
                 tiles={tiles}
                 filter={filter}
               />
+              {footnoteKey && <p className="section-footnote">{t(footnoteKey)}</p>}
             </div>
           </div>
         );
