@@ -9,6 +9,16 @@
 import {endpoints} from '@camunda/camunda-api-zod-schemas/8.10';
 import {createEndpointMock} from './mock-endpoint';
 
+const mockGetProcessDefinitionInstanceStatisticsEndpoint = createEndpointMock({
+	endpoint: endpoints.getProcessDefinitionInstanceStatistics.getUrl(),
+	method: 'POST',
+});
+
+const mockGetIncidentStatisticsByErrorEndpoint = createEndpointMock({
+	endpoint: endpoints.getIncidentProcessInstanceStatisticsByError.getUrl(),
+	method: 'POST',
+});
+
 const mockCurrentUserEndpoint = createEndpointMock({
 	endpoint: endpoints.getCurrentUser.getUrl(),
 	method: 'GET',
@@ -46,4 +56,6 @@ export {
 	mockSystemConfigurationEndpoint,
 	mockLicenseEndpoint,
 	mockSaasTokenEndpoint,
+	mockGetProcessDefinitionInstanceStatisticsEndpoint,
+	mockGetIncidentStatisticsByErrorEndpoint,
 };
