@@ -12,18 +12,6 @@ Note that this operation requires the cluster to be shut down while the reset is
 > [!IMPORTANT]
 > Cold backups are required from all the brokers
 
-## How this differs from the key-recovery procedure
-
-The cursor lives in **every replica's own snapshot** and is **not** part of the raft journal, so:
-
-- The leader/follower role is irrelevant — **all replicas of every affected partition** must be
-  patched, each on its **own** latest snapshot.
-- The patched snapshot is **never copied between brokers**: the partition folder also contains the
-  per-replica raft journal and metadata.
-- The generator therefore creates **one Job per broker**, each mounting only that broker's PVC and
-  patching all partition replicas found on it. This also avoids mounting several `ReadWriteOnce`
-  (and possibly zonal) PVCs into a single pod.
-
 ## Prerequisites
 
 - `bash` and common `unix` commands
