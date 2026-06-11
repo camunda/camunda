@@ -14,7 +14,8 @@ jobs:
   chatops-command-disable-cache:
     permissions:
       contents: write       # for git push
-      pull-requests: write  # for gh pr edit --add-label/--remove-label
+      pull-requests: write  # for gh pr edit
+      issues: write         # for label management (gh pr edit --add/remove-label uses Issues API)
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -47,13 +48,25 @@ jobs:
       env:
         GH_TOKEN: ${{ github.token }}
         PR_NUMBER: ${{ github.event.client_payload.pull_request.number }}
-        COMMENTER: ${{ github.event.client_payload.github.actor }}
-        HEAD_REPO: ${{ github.event.client_payload.pull_request.head.repo.full_name }}
+        COMMENT_ID: ${{ github.event.client_payload.github.payload.comment.id }}
       run: |
+        if [[ -z "$PR_NUMBER" ]]; then
+          echo "::error::Command was not executed on a PR"; exit 1
+        fi
+        # Derive PR data from API — not from attacker-controlled client_payload
+        PR_DATA=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER")
+        HEAD_REPO=$(echo "$PR_DATA" | jq -r '.head.repo.full_name')
+        PR_AUTHOR=$(echo "$PR_DATA" | jq -r '.user.login')
         if [ "$HEAD_REPO" != "$GITHUB_REPOSITORY" ]; then
           echo "::error::Refusing to push to fork PR ($HEAD_REPO)"; exit 1
         fi
-        PR_AUTHOR=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq '.user.login')
+        # Derive commenter from comment API and verify comment belongs to this PR
+        COMMENT_DATA=$(gh api "repos/$GITHUB_REPOSITORY/issues/comments/$COMMENT_ID")
+        COMMENTER=$(echo "$COMMENT_DATA" | jq -r '.user.login')
+        COMMENT_PR=$(echo "$COMMENT_DATA" | jq -r '.issue_url | split("/") | last')
+        if [ "$COMMENT_PR" != "$PR_NUMBER" ]; then
+          echo "::error::Comment $COMMENT_ID does not belong to PR #$PR_NUMBER"; exit 1
+        fi
         if [ "$COMMENTER" != "$PR_AUTHOR" ]; then
           echo "::error::Commenter ($COMMENTER) is not the PR author ($PR_AUTHOR)"; exit 1
         fi
