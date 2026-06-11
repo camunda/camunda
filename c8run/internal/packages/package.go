@@ -172,24 +172,31 @@ func rocksdbNativeLibName(osType, arch string) (string, error) {
 	case "linux":
 		switch arch {
 		case "x86_64":
-			return "librocksdb-jni-linux64.so", nil
+			return "librocksdbjni-linux64.so", nil
 		case "aarch64":
-			return "librocksdb-jni-linux-aarch64.so", nil
+			return "librocksdbjni-linux-aarch64.so", nil
 		}
 	case "darwin":
 		switch arch {
 		case "x86_64":
-			return "librocksdb-jni-osx-x86_64.jnilib", nil
+			return "librocksdbjni-osx-x86_64.jnilib", nil
 		case "aarch64":
-			return "librocksdb-jni-osx-arm64.jnilib", nil
+			return "librocksdbjni-osx-arm64.jnilib", nil
 		}
 	case "windows":
 		switch arch {
 		case "x86_64":
-			return "librocksdb-jni-win64.dll", nil
+			return "librocksdbjni-win64.dll", nil
 		}
 	}
 	return "", fmt.Errorf("no RocksDB native lib mapping for os=%s arch=%s", osType, arch)
+}
+
+func isRootNativeLib(name string) bool {
+	if strings.ContainsRune(name, '/') {
+		return false
+	}
+	return strings.HasSuffix(name, ".so") || strings.HasSuffix(name, ".jnilib") || strings.HasSuffix(name, ".dll")
 }
 
 func copyZipEntry(w *zip.Writer, f *zip.File) error {
@@ -237,9 +244,9 @@ func rewriteZipKeepingNativeLib(jarPath, libName string) error {
 	var copyErr error
 
 	for _, f := range r.File {
-		isNativeEntry := strings.HasPrefix(f.Name, "META-INF/native/") && !strings.HasSuffix(f.Name, "/")
+		isNativeEntry := isRootNativeLib(f.Name)
 		if isNativeEntry {
-			if filepath.Base(f.Name) != libName {
+			if f.Name != libName {
 				continue
 			}
 			nativeLibCount++

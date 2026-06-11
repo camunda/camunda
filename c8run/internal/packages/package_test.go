@@ -187,11 +187,11 @@ func TestRocksdbNativeLibName(t *testing.T) {
 		arch     string
 		expected string
 	}{
-		{"linux", "x86_64", "librocksdb-jni-linux64.so"},
-		{"linux", "aarch64", "librocksdb-jni-linux-aarch64.so"},
-		{"darwin", "x86_64", "librocksdb-jni-osx-x86_64.jnilib"},
-		{"darwin", "aarch64", "librocksdb-jni-osx-arm64.jnilib"},
-		{"windows", "x86_64", "librocksdb-jni-win64.dll"},
+		{"linux", "x86_64", "librocksdbjni-linux64.so"},
+		{"linux", "aarch64", "librocksdbjni-linux-aarch64.so"},
+		{"darwin", "x86_64", "librocksdbjni-osx-x86_64.jnilib"},
+		{"darwin", "aarch64", "librocksdbjni-osx-arm64.jnilib"},
+		{"windows", "x86_64", "librocksdbjni-win64.dll"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.osType+"/"+tt.arch, func(t *testing.T) {
@@ -238,11 +238,11 @@ func TestRewriteZipKeepingNativeLibStripsOtherPlatforms(t *testing.T) {
 	w := zip.NewWriter(f)
 	entries := []struct{ name, content string }{
 		{"META-INF/MANIFEST.MF", "Manifest-Version: 1.0\n"},
-		{"META-INF/native/librocksdb-jni-linux64.so", "linux64-binary"},
-		{"META-INF/native/librocksdb-jni-linux-aarch64.so", "linux-aarch64-binary"},
-		{"META-INF/native/librocksdb-jni-osx-arm64.jnilib", "osx-arm64-binary"},
-		{"META-INF/native/librocksdb-jni-osx-x86_64.jnilib", "osx-x86_64-binary"},
-		{"META-INF/native/librocksdb-jni-win64.dll", "win64-binary"},
+		{"librocksdbjni-linux64.so", "linux64-binary"},
+		{"librocksdbjni-linux-aarch64.so", "linux-aarch64-binary"},
+		{"librocksdbjni-osx-arm64.jnilib", "osx-arm64-binary"},
+		{"librocksdbjni-osx-x86_64.jnilib", "osx-x86_64-binary"},
+		{"librocksdbjni-win64.dll", "win64-binary"},
 		{"org/rocksdb/RocksDB.class", "class-bytes"},
 	}
 	for _, e := range entries {
@@ -262,7 +262,7 @@ func TestRewriteZipKeepingNativeLibStripsOtherPlatforms(t *testing.T) {
 	}
 
 	// when
-	err = rewriteZipKeepingNativeLib(jarPath, "librocksdb-jni-linux64.so")
+	err = rewriteZipKeepingNativeLib(jarPath, "librocksdbjni-linux64.so")
 
 	// then
 	if err != nil {
@@ -279,12 +279,12 @@ func TestRewriteZipKeepingNativeLibStripsOtherPlatforms(t *testing.T) {
 	allKept := make(map[string]bool)
 	for _, entry := range r.File {
 		allKept[entry.Name] = true
-		if strings.HasPrefix(entry.Name, "META-INF/native/") {
+		if isRootNativeLib(entry.Name) {
 			keptNative = append(keptNative, entry.Name)
 		}
 	}
 
-	if len(keptNative) != 1 || keptNative[0] != "META-INF/native/librocksdb-jni-linux64.so" {
+	if len(keptNative) != 1 || keptNative[0] != "librocksdbjni-linux64.so" {
 		t.Fatalf("expected only linux64 native lib, got %v", keptNative)
 	}
 	for _, mustKeep := range []string{"META-INF/MANIFEST.MF", "org/rocksdb/RocksDB.class"} {
@@ -304,7 +304,7 @@ func TestRewriteZipKeepingNativeLibErrorsWhenLibNotFound(t *testing.T) {
 		t.Fatalf("failed to create temp jar: %v", err)
 	}
 	w := zip.NewWriter(f)
-	fw, err := w.Create("META-INF/native/librocksdb-jni-linux64.so")
+	fw, err := w.Create("librocksdbjni-linux64.so")
 	if err != nil {
 		t.Fatalf("failed to create zip entry: %v", err)
 	}
@@ -319,7 +319,7 @@ func TestRewriteZipKeepingNativeLibErrorsWhenLibNotFound(t *testing.T) {
 	}
 
 	// when: ask for a lib name that isn't in the jar
-	err = rewriteZipKeepingNativeLib(jarPath, "librocksdb-jni-nonexistent.so")
+	err = rewriteZipKeepingNativeLib(jarPath, "librocksdbjni-nonexistent.so")
 
 	// then
 	if err == nil {
@@ -355,11 +355,11 @@ func TestStripRocksDbNativeLibsStripsJar(t *testing.T) {
 	}
 	w := zip.NewWriter(f)
 	for _, name := range []string{
-		"META-INF/native/librocksdb-jni-linux64.so",
-		"META-INF/native/librocksdb-jni-linux-aarch64.so",
-		"META-INF/native/librocksdb-jni-osx-arm64.jnilib",
-		"META-INF/native/librocksdb-jni-osx-x86_64.jnilib",
-		"META-INF/native/librocksdb-jni-win64.dll",
+		"librocksdbjni-linux64.so",
+		"librocksdbjni-linux-aarch64.so",
+		"librocksdbjni-osx-arm64.jnilib",
+		"librocksdbjni-osx-x86_64.jnilib",
+		"librocksdbjni-win64.dll",
 	} {
 		fw, err := w.Create(name)
 		if err != nil {
@@ -392,11 +392,11 @@ func TestStripRocksDbNativeLibsStripsJar(t *testing.T) {
 
 	var nativeLibs []string
 	for _, entry := range r.File {
-		if strings.HasPrefix(entry.Name, "META-INF/native/") {
+		if isRootNativeLib(entry.Name) {
 			nativeLibs = append(nativeLibs, entry.Name)
 		}
 	}
-	if len(nativeLibs) != 1 || nativeLibs[0] != "META-INF/native/librocksdb-jni-linux64.so" {
+	if len(nativeLibs) != 1 || nativeLibs[0] != "librocksdbjni-linux64.so" {
 		t.Fatalf("expected only linux64 native lib after strip, got %v", nativeLibs)
 	}
 }
