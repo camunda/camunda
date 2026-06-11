@@ -63,11 +63,18 @@ public final class DbMessageStartProcessInstanceAskState
 
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext context) {
-    // Rebuild the transient state from the persisted CF. All entries are added with lastSentTime=0
-    // so they are immediately eligible for re-send; the P_B dedup bounds the storm.
+    // Rebuild the transient last-sent tracking from the persisted CF. The back-off magnitude (the
+    // rejectionCount) survives in the CF; only the last-sent phase is rebuilt here. Fresh asks
+    // (never rejected) are seeded with lastSentTime=0 so they are immediately eligible, preserving
+    // at-least-once first delivery. Already-backed-off asks are seeded with the recovery time so
+    // they resume at their back-off cadence rather than every blocked ask re-probing P_B at once.
+    final long recoveryTime = context.getClock().millis();
     columnFamily.forEach(
-        (k, v) ->
-            transientState.add(new PendingAskKey(k.first().getValue(), k.second().getValue()), 0L));
+        (k, v) -> {
+          final long lastSentSeed = v.getRejectionCount() > 0 ? recoveryTime : 0L;
+          transientState.add(
+              new PendingAskKey(k.first().getValue(), k.second().getValue()), lastSentSeed);
+        });
   }
 
   @Override
@@ -84,15 +91,14 @@ public final class DbMessageStartProcessInstanceAskState
   }
 
   @Override
-  public Iterable<MessageStartProcessInstanceAsk> getPendingAsksPastDeadline(final long deadline) {
-    final List<MessageStartProcessInstanceAsk> result = new ArrayList<>();
-    for (final var askKey : transientState.entriesBefore(deadline)) {
+  public void forEachPendingAsk(final PendingAskVisitor visitor) {
+    for (final var entry : transientState.entries()) {
+      final var askKey = entry.getKey();
       final var ask = get(askKey.messageKey(), askKey.processDefinitionKey());
       if (ask != null) {
-        result.add(ask.copy());
+        visitor.visit(entry.getValue(), ask);
       }
     }
-    return result;
   }
 
   @Override
