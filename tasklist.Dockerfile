@@ -84,9 +84,6 @@ RUN addgroup --gid 1001 camunda && \
 COPY --link --chown=1001:0 zeebe/docker/utils/jvm.options ${TASKLIST_HOME}/config/jvm.options
 COPY --from=prepare --chown=1001:0 --chmod=0775 /tmp/tasklist ${TASKLIST_HOME}
 
-# rename tasklist-migrate script to migrate (as expected by SaaS)
-RUN mv ${TASKLIST_HOME}/bin/tasklist-migrate ${TASKLIST_HOME}/bin/migrate
-
 USER 1001:1001
 
 ENTRYPOINT ["/usr/local/tasklist/bin/tasklist"]

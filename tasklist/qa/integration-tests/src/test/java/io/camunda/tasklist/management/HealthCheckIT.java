@@ -18,7 +18,6 @@ import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.tasklist.JacksonConfig;
 import io.camunda.tasklist.TasklistPropertiesOverride;
-import io.camunda.tasklist.connect.ElasticsearchConnector;
 import io.camunda.tasklist.util.apps.nobeans.TestApplicationWithNoBeans;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -42,7 +41,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
     classes = {
       TestApplicationWithNoBeans.class,
       SearchEngineHealthIndicator.class,
-      ElasticsearchConnector.class,
       JacksonConfig.class,
       TasklistPropertiesOverride.class,
       UnifiedConfiguration.class,

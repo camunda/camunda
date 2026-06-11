@@ -7,6 +7,7 @@
  */
 package io.camunda.tasklist.data.os;
 
+import io.camunda.search.connect.tenant.SearchClients;
 import io.camunda.spring.utils.ConditionalOnWebappEnabled;
 import io.camunda.tasklist.data.DataGenerator;
 import io.camunda.tasklist.data.DevDataGeneratorAbstract;
@@ -16,8 +17,6 @@ import java.io.IOException;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Profile;
@@ -32,16 +31,18 @@ public class DevDataGeneratorOpenSearch extends DevDataGeneratorAbstract impleme
 
   private static final Logger LOGGER = LoggerFactory.getLogger(DevDataGeneratorOpenSearch.class);
 
-  @Autowired
-  @Qualifier("tasklistOsClient")
-  private OpenSearchClient tasklistOsClient;
+  private final OpenSearchClient opensearchClient;
+
+  public DevDataGeneratorOpenSearch(final SearchClients searchClients) {
+    opensearchClient = searchClients.osClients().get("default");
+  }
 
   @Override
   public boolean shouldCreateData() {
     try {
 
       final boolean exists =
-          tasklistOsClient
+          opensearchClient
                   .count(
                       b ->
                           b.index(

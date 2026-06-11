@@ -1,8 +1,0 @@
-{
-  "description": "Clean assignee because of changed format",
-  "@type": "processorStep",
-  "indexName": "task",
-  "version": "1.3.0",
-  "order": 0,
-  "content": "{ \"remove\": { \"field\": [\"assignee\"] } }"
-}

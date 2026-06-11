@@ -764,12 +764,6 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
-        <artifactId>tasklist-els-schema</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
         <artifactId>tasklist-qa-util</artifactId>
         <version>${project.version}</version>
       </dependency>

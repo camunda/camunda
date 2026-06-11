@@ -1,5 +1,0 @@
-query getVariables($taskId: String!, $variableNames: [String!]!){
-    variables(taskId: $taskId, variableNames: $variableNames) {
-        ... variableFields
-    }
-}
