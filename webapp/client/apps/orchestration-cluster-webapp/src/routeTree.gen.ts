@@ -19,6 +19,10 @@ import { Route as AuthTasklistIndexRouteImport } from './routes/_auth/tasklist/i
 import { Route as AuthOperateIndexRouteImport } from './routes/_auth/operate/index'
 import { Route as AuthAdminIndexRouteImport } from './routes/_auth/admin/index'
 import { Route as AuthTasklistProcessesRouteImport } from './routes/_auth/tasklist/processes'
+import { Route as AuthOperateProcessesRouteImport } from './routes/_auth/operate/processes'
+import { Route as AuthOperateOperationsLogRouteImport } from './routes/_auth/operate/operations-log'
+import { Route as AuthOperateDecisionsRouteImport } from './routes/_auth/operate/decisions'
+import { Route as AuthOperateBatchOperationsRouteImport } from './routes/_auth/operate/batch-operations'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -69,6 +73,28 @@ const AuthTasklistProcessesRoute = AuthTasklistProcessesRouteImport.update({
   path: '/processes',
   getParentRoute: () => AuthTasklistRouteRoute,
 } as any)
+const AuthOperateProcessesRoute = AuthOperateProcessesRouteImport.update({
+  id: '/processes',
+  path: '/processes',
+  getParentRoute: () => AuthOperateRouteRoute,
+} as any)
+const AuthOperateOperationsLogRoute =
+  AuthOperateOperationsLogRouteImport.update({
+    id: '/operations-log',
+    path: '/operations-log',
+    getParentRoute: () => AuthOperateRouteRoute,
+  } as any)
+const AuthOperateDecisionsRoute = AuthOperateDecisionsRouteImport.update({
+  id: '/decisions',
+  path: '/decisions',
+  getParentRoute: () => AuthOperateRouteRoute,
+} as any)
+const AuthOperateBatchOperationsRoute =
+  AuthOperateBatchOperationsRouteImport.update({
+    id: '/batch-operations',
+    path: '/batch-operations',
+    getParentRoute: () => AuthOperateRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthIndexRoute
@@ -76,6 +102,10 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthAdminRouteRouteWithChildren
   '/operate': typeof AuthOperateRouteRouteWithChildren
   '/tasklist': typeof AuthTasklistRouteRouteWithChildren
+  '/operate/batch-operations': typeof AuthOperateBatchOperationsRoute
+  '/operate/decisions': typeof AuthOperateDecisionsRoute
+  '/operate/operations-log': typeof AuthOperateOperationsLogRoute
+  '/operate/processes': typeof AuthOperateProcessesRoute
   '/tasklist/processes': typeof AuthTasklistProcessesRoute
   '/admin/': typeof AuthAdminIndexRoute
   '/operate/': typeof AuthOperateIndexRoute
@@ -84,6 +114,10 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/': typeof AuthIndexRoute
+  '/operate/batch-operations': typeof AuthOperateBatchOperationsRoute
+  '/operate/decisions': typeof AuthOperateDecisionsRoute
+  '/operate/operations-log': typeof AuthOperateOperationsLogRoute
+  '/operate/processes': typeof AuthOperateProcessesRoute
   '/tasklist/processes': typeof AuthTasklistProcessesRoute
   '/admin': typeof AuthAdminIndexRoute
   '/operate': typeof AuthOperateIndexRoute
@@ -97,6 +131,10 @@ export interface FileRoutesById {
   '/_auth/operate': typeof AuthOperateRouteRouteWithChildren
   '/_auth/tasklist': typeof AuthTasklistRouteRouteWithChildren
   '/_auth/': typeof AuthIndexRoute
+  '/_auth/operate/batch-operations': typeof AuthOperateBatchOperationsRoute
+  '/_auth/operate/decisions': typeof AuthOperateDecisionsRoute
+  '/_auth/operate/operations-log': typeof AuthOperateOperationsLogRoute
+  '/_auth/operate/processes': typeof AuthOperateProcessesRoute
   '/_auth/tasklist/processes': typeof AuthTasklistProcessesRoute
   '/_auth/admin/': typeof AuthAdminIndexRoute
   '/_auth/operate/': typeof AuthOperateIndexRoute
@@ -110,6 +148,10 @@ export interface FileRouteTypes {
     | '/admin'
     | '/operate'
     | '/tasklist'
+    | '/operate/batch-operations'
+    | '/operate/decisions'
+    | '/operate/operations-log'
+    | '/operate/processes'
     | '/tasklist/processes'
     | '/admin/'
     | '/operate/'
@@ -118,6 +160,10 @@ export interface FileRouteTypes {
   to:
     | '/login'
     | '/'
+    | '/operate/batch-operations'
+    | '/operate/decisions'
+    | '/operate/operations-log'
+    | '/operate/processes'
     | '/tasklist/processes'
     | '/admin'
     | '/operate'
@@ -130,6 +176,10 @@ export interface FileRouteTypes {
     | '/_auth/operate'
     | '/_auth/tasklist'
     | '/_auth/'
+    | '/_auth/operate/batch-operations'
+    | '/_auth/operate/decisions'
+    | '/_auth/operate/operations-log'
+    | '/_auth/operate/processes'
     | '/_auth/tasklist/processes'
     | '/_auth/admin/'
     | '/_auth/operate/'
@@ -213,6 +263,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthTasklistProcessesRouteImport
       parentRoute: typeof AuthTasklistRouteRoute
     }
+    '/_auth/operate/processes': {
+      id: '/_auth/operate/processes'
+      path: '/processes'
+      fullPath: '/operate/processes'
+      preLoaderRoute: typeof AuthOperateProcessesRouteImport
+      parentRoute: typeof AuthOperateRouteRoute
+    }
+    '/_auth/operate/operations-log': {
+      id: '/_auth/operate/operations-log'
+      path: '/operations-log'
+      fullPath: '/operate/operations-log'
+      preLoaderRoute: typeof AuthOperateOperationsLogRouteImport
+      parentRoute: typeof AuthOperateRouteRoute
+    }
+    '/_auth/operate/decisions': {
+      id: '/_auth/operate/decisions'
+      path: '/decisions'
+      fullPath: '/operate/decisions'
+      preLoaderRoute: typeof AuthOperateDecisionsRouteImport
+      parentRoute: typeof AuthOperateRouteRoute
+    }
+    '/_auth/operate/batch-operations': {
+      id: '/_auth/operate/batch-operations'
+      path: '/batch-operations'
+      fullPath: '/operate/batch-operations'
+      preLoaderRoute: typeof AuthOperateBatchOperationsRouteImport
+      parentRoute: typeof AuthOperateRouteRoute
+    }
   }
 }
 
@@ -229,10 +307,18 @@ const AuthAdminRouteRouteWithChildren = AuthAdminRouteRoute._addFileChildren(
 )
 
 interface AuthOperateRouteRouteChildren {
+  AuthOperateBatchOperationsRoute: typeof AuthOperateBatchOperationsRoute
+  AuthOperateDecisionsRoute: typeof AuthOperateDecisionsRoute
+  AuthOperateOperationsLogRoute: typeof AuthOperateOperationsLogRoute
+  AuthOperateProcessesRoute: typeof AuthOperateProcessesRoute
   AuthOperateIndexRoute: typeof AuthOperateIndexRoute
 }
 
 const AuthOperateRouteRouteChildren: AuthOperateRouteRouteChildren = {
+  AuthOperateBatchOperationsRoute: AuthOperateBatchOperationsRoute,
+  AuthOperateDecisionsRoute: AuthOperateDecisionsRoute,
+  AuthOperateOperationsLogRoute: AuthOperateOperationsLogRoute,
+  AuthOperateProcessesRoute: AuthOperateProcessesRoute,
   AuthOperateIndexRoute: AuthOperateIndexRoute,
 }
 
