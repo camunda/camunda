@@ -37,7 +37,10 @@
     di.STATE,
     di.TYPE, /* TODO really save it there? */
     di.EVALUATION_DATE,
-    coalesce(di.FULL_RESULT, di.RESULT) as RESULT,
+    <include refid="io.camunda.db.rdbms.sql.Commons.coalesceCLOB">
+      <property name="clobColumn" value="di.FULL_RESULT"/>
+      <property name="nonClobColumn" value="di.RESULT"/>
+    </include> AS RESULT,
     di.EVALUATION_FAILURE,
     di.EVALUATION_FAILURE_MESSAGE,
     di.TENANT_ID,
@@ -331,7 +334,10 @@
     DECISION_INSTANCE_ID,
     OUTPUT_ID,
     OUTPUT_NAME,
-    COALESCE(FULL_OUTPUT_VALUE, OUTPUT_VALUE) AS OUTPUT_VALUE,
+    <include refid="io.camunda.db.rdbms.sql.Commons.coalesceCLOB">
+      <property name="clobColumn" value="FULL_OUTPUT_VALUE"/>
+      <property name="nonClobColumn" value="OUTPUT_VALUE"/>
+    </include> AS OUTPUT_VALUE,
     RULE_ID,
     RULE_INDEX
     FROM ${prefix}DECISION_INSTANCE_OUTPUT
