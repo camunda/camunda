@@ -136,6 +136,21 @@ class PhysicalTenantOverridePolicyValidationTest {
   }
 
   @Test
+  void shouldRejectTenantOverridingApiRestExecutor() {
+    // given a tenant overriding the cluster-wide REST executor config
+    final MockEnvironment environment =
+        environmentWith(
+            Map.of(
+                "camunda.physical-tenants.tenanta.api.rest.executor.max-pool-size-multiplier", 16));
+
+    // when / then
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> PhysicalTenantOverridePolicyValidation.validate(environment))
+        .withMessageContaining("tenanta")
+        .withMessageContaining("api.rest.executor.max-pool-size-multiplier");
+  }
+
+  @Test
   void shouldRejectTenantOverridingRdbmsMaxVarcharFieldLength() {
     // given a tenant overriding the cluster-wide rdbms max varchar field length
     final MockEnvironment environment =
