@@ -83,6 +83,8 @@ final class PhysicalTenantOverridePolicyValidation {
               "system.restore",
               // camunda.license.* — one license per installation
               "license.key",
+              // camunda.api.*
+              "api.rest.executor",
               // camunda.data.* cluster wide
               "data.secondary-storage.rdbms.max-varchar-field-length")
           .map(ConfigurationPropertyName::of)
