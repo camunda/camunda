@@ -101,10 +101,10 @@ jobs:
           vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
           vault-url: ${{ secrets.VAULT_ADDR }}
       - name: Dump event issue JSON
+        env:
+          ISSUE_JSON: ${{ toJSON(github.event.issue) }}
         run: |
-          cat << 'EOF'
-          ${{ toJSON(github.event.issue) }}
-          EOF
+          echo "$ISSUE_JSON"
       - name: Fetch issue data
         id: fetch_data
         env:
