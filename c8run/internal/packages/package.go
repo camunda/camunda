@@ -197,12 +197,71 @@ func createZipArchive(filesToArchive []string, outputPath, sourceRoot, targetRoo
 }
 
 func BuildJavaScripts() error {
+<<<<<<< HEAD
 	javaVersionCmd := exec.Command("javac", "--release", "21", "JavaVersion.java")
 	var out strings.Builder
 	var stderr strings.Builder
 	javaVersionCmd.Stdout = &out
 	javaVersionCmd.Stderr = &stderr
 	err := javaVersionCmd.Run()
+=======
+	for _, javaFile := range []string{"JavaVersion.java", "JavaHome.java"} {
+		if err := compileJavaHelper(javaFile); err != nil {
+			return err
+		}
+		classFile := strings.TrimSuffix(javaFile, ".java") + ".class"
+		if err := verifyClassFileVersion(classFile); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func compileJavaHelper(javaFile string) error {
+	javaCmd := exec.Command("javac", buildJavaHelperArgs(javaFile)...)
+	var out strings.Builder
+	var stderr strings.Builder
+	javaCmd.Stdout = &out
+	javaCmd.Stderr = &stderr
+	if err := javaCmd.Run(); err != nil {
+		return fmt.Errorf("failed to compile %s: %w\n%s", javaFile, err, stderr.String())
+	}
+	return nil
+}
+
+func buildJavaHelperArgs(sourceFile string) []string {
+	return []string{"--release", strconv.Itoa(helperJavaRelease), sourceFile}
+}
+
+func verifyClassFileVersion(classFile string) error {
+	data, err := os.ReadFile(classFile)
+	if err != nil {
+		return fmt.Errorf("failed to read %s: %w", classFile, err)
+	}
+	// Java class file layout: magic 0xCAFEBABE (4 bytes), minor version (2 bytes), major version (2 bytes, big-endian).
+	// Major version = 44 + Java version, e.g. Java 21 → 65.
+	if len(data) < 8 || data[0] != 0xCA || data[1] != 0xFE || data[2] != 0xBA || data[3] != 0xBE {
+		return fmt.Errorf("%s is not a valid Java class file", classFile)
+	}
+	major := int(data[6])<<8 | int(data[7])
+	expected := 44 + helperJavaRelease
+	if major != expected {
+		return fmt.Errorf(
+			"%s compiled for Java %d (class file version %d), expected Java %d (version %d); "+
+				"ensure javac is invoked with --release %d",
+			classFile, major-44, major, helperJavaRelease, expected, helperJavaRelease,
+		)
+	}
+	return nil
+}
+
+func BuildJRE(camundaVersion, _ string) error {
+	if err := ensureJLinkVersion(); err != nil {
+		return err
+	}
+
+	modules, err := detectRequiredJREModules(camundaVersion)
+>>>>>>> ef5a7f86 (feat: verify JavaVersion.class file version matches helperJavaRelease after compilation)
 	if err != nil {
 		return fmt.Errorf("failed to compile JavaVersion : %w", err)
 	}
