@@ -140,14 +140,16 @@ jobs:
           echo "${BASTION_ID}" > /tmp/ssm-bastion-id
 
           # Supervise the tunnel: `aws ssm start-session` blocks until the session ends,
-          # then we restart it. The session dies mainly from the SSM idle timeout: when a
-          # test removes the replica the exporter intentionally stalls for minutes, DB
-          # traffic drops to ~zero, the session goes idle and is killed — leaving the local
-          # port unbound and every later query failing with "Connection refused". Restarting
-          # immediately rebinds port ${LOCAL_DB_PORT} (~2s) so HikariCP can refill its pool
-          # before the next test needs it. Also covers network drops and any max-duration
-          # cap. No pkill is needed — the plugin terminates on its own when the session
-          # drops, so there are no orphaned processes holding the port.
+          # then we restart it. Over a 90+ min run the session can drop from an SSM idle
+          # timeout or a network blip, leaving the local port unbound and later queries
+          # failing with "Connection refused". Restarting immediately rebinds port
+          # ${LOCAL_DB_PORT} (~2s) so HikariCP can refill its pool before the next query.
+          # No pkill is needed — the plugin terminates on its own when the session drops,
+          # so there are no orphaned processes holding the port. (The bastion staying put
+          # across the test's repeated `terraform apply`s is handled in main.tf via
+          # lifecycle.ignore_changes — without it the bastion is replaced mid-test and the
+          # cached instance id fails forever with "TargetNotConnected", which no amount of
+          # restarting here can fix.)
           #
           # The supervised script is single-quoted on purpose: ${LOCAL_DB_PORT} and the
           # $(cat ...) reads must be evaluated by the inner bash on every restart, not

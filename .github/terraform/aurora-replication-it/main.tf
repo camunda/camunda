@@ -227,6 +227,15 @@ resource "aws_instance" "bastion" {
   vpc_security_group_ids      = [aws_security_group.bastion.id]
   associate_public_ip_address = true
 
+  # The replica stop/start steps each re-run `terraform apply`, which re-reads the AMI
+  # (most_recent = true) and subnet (aws_subnets ordering is not guaranteed stable) data
+  # sources. A change in either forces a replacement of this instance — terminating the
+  # bastion mid-test, which drops the live SSM session and makes the cached instance id
+  # fail with "TargetNotConnected". Pin both so re-applies never recreate the bastion.
+  lifecycle {
+    ignore_changes = [ami, subnet_id]
+  }
+
   tags = {
     Name    = "${var.name_prefix}-bastion"
     Purpose = "aurora-async-replication-it"
