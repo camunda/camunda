@@ -220,7 +220,6 @@ public class ProcessEngineCoverageIT {
             testClass,
             testName,
             null,
-            null,
             CoverageTestDataCollector.collectData(new CamundaDataSource(client)));
     return coverageReport.getSuites().stream()
         .flatMap(report -> report.getRuns().stream())

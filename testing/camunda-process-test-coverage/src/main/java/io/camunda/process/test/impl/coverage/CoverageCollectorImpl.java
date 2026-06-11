@@ -51,7 +51,6 @@ public final class CoverageCollectorImpl implements CoverageCollector {
       final Class<?> testClass,
       final String runName,
       final String displayName,
-      final String testParameters,
       final CoverageTestData testData) {
 
     final String testClassName = testClass.getName();
@@ -62,7 +61,7 @@ public final class CoverageCollectorImpl implements CoverageCollector {
                 new CoverageReportCollector(
                     testClass, excludedProcessDefinitionIds, excludedDecisionDefinitionIds));
 
-    coverageReportCollector.collectTestRunCoverage(runName, displayName, testParameters, testData);
+    coverageReportCollector.collectTestRunCoverage(runName, displayName, testData);
     return coverageReporter.createSuiteCoverageReport(coverageReportCollector);
   }
 

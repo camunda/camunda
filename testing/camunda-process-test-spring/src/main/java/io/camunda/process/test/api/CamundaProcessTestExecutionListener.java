@@ -52,6 +52,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import org.junit.jupiter.api.DisplayName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.Ordered;
@@ -215,7 +216,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
       final String runName = testMethod.getName();
       final String displayName = getDisplayName(testMethod);
       coverageCollector.collectTestRunCoverage(
-          testContext.getTestClass(), runName, displayName, null, coverageTestData);
+          testContext.getTestClass(), runName, displayName, coverageTestData);
     } catch (final Throwable t) {
       LOG.warn("Failed to collect test process coverage, skipping.", t);
     }
@@ -382,23 +383,10 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
   /**
    * Returns the {@code @DisplayName} annotation value for the test method, or {@code null} if no
    * explicit display name is set.
-   *
-   * <p>This is resolved via reflection to avoid a compile-time dependency on JUnit Jupiter in the
-   * main scope of this module.
    */
   private static String getDisplayName(final java.lang.reflect.Method testMethod) {
-    try {
-      final Class<? extends java.lang.annotation.Annotation> displayNameClass =
-          Class.forName("org.junit.jupiter.api.DisplayName")
-              .asSubclass(java.lang.annotation.Annotation.class);
-      final java.lang.annotation.Annotation annotation = testMethod.getAnnotation(displayNameClass);
-      if (annotation == null) {
-        return null;
-      }
-      return (String) displayNameClass.getMethod("value").invoke(annotation);
-    } catch (final Exception e) {
-      return null;
-    }
+    final DisplayName annotation = testMethod.getAnnotation(DisplayName.class);
+    return annotation != null ? annotation.value() : null;
   }
 
   @Override

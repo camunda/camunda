@@ -383,7 +383,6 @@ public class CamundaProcessTestExtension
           context.getRequiredTestClass(),
           getCoverageTestName(context),
           getDisplayName(context),
-          getTestParameters(context),
           coverageData);
     } catch (final Throwable t) {
       LOG.warn("Failed to collect test process coverage, skipping.", t);
@@ -423,22 +422,6 @@ public class CamundaProcessTestExtension
         .getTestMethod()
         .flatMap(m -> AnnotationUtils.findAnnotation(m, DisplayName.class))
         .map(DisplayName::value)
-        .orElse(null);
-  }
-
-  /**
-   * Returns the parameter representation for a parameterized test invocation (e.g. {@code "[1]
-   * value1"}), or {@code null} for non-parameterized tests.
-   *
-   * <p>A parameterized test invocation shares its test method with its parent context (the
-   * template), so this is detected by checking whether the parent's test method equals the current
-   * context's test method.
-   */
-  private static String getTestParameters(final ExtensionContext context) {
-    return context
-        .getParent()
-        .filter(parent -> parent.getTestMethod().equals(context.getTestMethod()))
-        .map(ignored -> context.getDisplayName())
         .orElse(null);
   }
 

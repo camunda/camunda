@@ -41,17 +41,6 @@ public interface CoverageRunReport {
   @Nullable
   String getDisplayName();
 
-  /**
-   * Returns the parameter representation for a parameterized test invocation, or {@code null} for
-   * non-parameterized tests.
-   *
-   * <p>For parameterized tests, this contains the parameters used for a specific invocation (e.g.
-   * {@code "[1] value1, value2"}). Multiple invocations of the same test method share the same
-   * {@link #getName()} but have different parameter values.
-   */
-  @Nullable
-  String getTestParameters();
-
   /** Returns process coverage entries calculated for this run. */
   List<ProcessCoverage> getProcessCoverages();
 

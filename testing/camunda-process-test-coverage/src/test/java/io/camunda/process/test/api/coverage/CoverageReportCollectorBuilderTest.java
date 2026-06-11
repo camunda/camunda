@@ -76,8 +76,7 @@ class CoverageReportCollectorBuilderTest {
 
     // when
     final CoverageReport report =
-        coverageCollector.collectTestRunCoverage(
-            ExclusionTest.class, "run-1", null, null, testResults);
+        coverageCollector.collectTestRunCoverage(ExclusionTest.class, "run-1", null, testResults);
 
     // then
     assertThat(report.getSuites())
@@ -96,7 +95,7 @@ class CoverageReportCollectorBuilderTest {
 
     // when
     final CoverageReport report =
-        coverageCollector.collectTestRunCoverage(GivenRunTest.class, "run-1", null, null, testData);
+        coverageCollector.collectTestRunCoverage(GivenRunTest.class, "run-1", null, testData);
 
     // then
     assertThat(report.getSuites())
@@ -137,13 +136,11 @@ class CoverageReportCollectorBuilderTest {
         AggregatedReportTest.class,
         "run-1",
         null,
-        null,
         createProcessCoverageTestData("process-a", "taskA"));
     final CoverageReport report =
         coverageCollector.collectTestRunCoverage(
             AggregatedReportTest.class,
             "run-2",
-            null,
             null,
             createProcessCoverageTestData("process-b", "taskB"));
 

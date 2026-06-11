@@ -75,14 +75,9 @@ public final class CoverageReportCollector {
    * @param runName Identifier for the current test run (the test method name)
    * @param displayName Optional custom display name for the test case (e.g. from
    *     {@code @DisplayName}), or {@code null} if not set
-   * @param testParameters Optional parameter representation for a parameterized test invocation
-   *     (e.g. {@code "[1] value1"}), or {@code null} for non-parameterized tests
    */
   public void collectTestRunCoverage(
-      final String runName,
-      final String displayName,
-      final String testParameters,
-      final CoverageTestData testResults) {
+      final String runName, final String displayName, final CoverageTestData testResults) {
     final List<CoverageProcessInstanceData> filteredProcessInstanceData =
         testResults.getProcessInstanceData().stream()
             .filter(
@@ -108,7 +103,6 @@ public final class CoverageReportCollector {
         ImmutableCoverageRunReport.builder()
             .name(runName)
             .displayName(displayName)
-            .testParameters(testParameters)
             .addAllProcessCoverages(coverages)
             .addAllDecisionCoverages(decisionCoverages)
             .build());
