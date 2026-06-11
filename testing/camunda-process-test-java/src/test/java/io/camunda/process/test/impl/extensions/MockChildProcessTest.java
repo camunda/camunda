@@ -16,6 +16,7 @@
 package io.camunda.process.test.impl.extensions;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -33,7 +34,11 @@ import io.camunda.process.test.utils.DevAwaitBehavior;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.Process;
 import io.camunda.zeebe.model.bpmn.instance.ServiceTask;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
+import java.util.Collections;
+import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -98,5 +103,65 @@ public class MockChildProcessTest {
 
     // the process has no service tasks (it's a simple start → end)
     assertThat(deployedModel.getModelElementsByType(ServiceTask.class)).isEmpty();
+  }
+
+  @Test
+  void shouldMockChildProcessWithVariables() {
+    // given
+    final Map<String, Object> variables = Collections.singletonMap("result", "ok");
+
+    // when
+    processTestContext.mockChildProcess(CHILD_PROCESS_ID, variables);
+
+    // then: a start → end process with output variables is deployed
+    verify(camundaClient.newDeployResourceCommand())
+        .addProcessModel(processModelCaptor.capture(), eq(CHILD_PROCESS_ID + ".bpmn"));
+
+    final BpmnModelInstance deployedModel = processModelCaptor.getValue();
+
+    // the process has the correct ID
+    assertThat(deployedModel.getModelElementsByType(Process.class))
+        .hasSize(1)
+        .first()
+        .satisfies(process -> assertThat(process.getId()).isEqualTo(CHILD_PROCESS_ID));
+
+    // the process has no service tasks (variables are set as end event outputs)
+    assertThat(deployedModel.getModelElementsByType(ServiceTask.class)).isEmpty();
+  }
+
+  @Test
+  void shouldMockChildProcessWithVariableSupplier() {
+    // given
+    final Function<Map<String, Object>, Map<String, Object>> variableSupplier =
+        inputVars -> Collections.singletonMap("result", inputVars.getOrDefault("input", "default"));
+
+    // when
+    processTestContext.mockChildProcess(CHILD_PROCESS_ID, variableSupplier);
+
+    // then: a process with a service task for the variable supplier is deployed
+    verify(camundaClient.newDeployResourceCommand())
+        .addProcessModel(processModelCaptor.capture(), eq(CHILD_PROCESS_ID + ".bpmn"));
+
+    final BpmnModelInstance deployedModel = processModelCaptor.getValue();
+
+    // the process has the correct ID
+    assertThat(deployedModel.getModelElementsByType(Process.class))
+        .hasSize(1)
+        .first()
+        .satisfies(process -> assertThat(process.getId()).isEqualTo(CHILD_PROCESS_ID));
+
+    // the process has a service task used to supply variables
+    assertThat(deployedModel.getModelElementsByType(ServiceTask.class))
+        .hasSize(1)
+        .first()
+        .satisfies(
+            serviceTask ->
+                assertThat(
+                        serviceTask.getSingleExtensionElement(ZeebeTaskDefinition.class).getType())
+                    .isEqualTo("variableSupplier_" + CHILD_PROCESS_ID));
+
+    // and the worker for the variable supplier is opened
+    verify(camundaClient.newWorker().jobType("variableSupplier_" + CHILD_PROCESS_ID).handler(any()))
+        .open();
   }
 }

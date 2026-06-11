@@ -19,14 +19,14 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 
 /** Shared BPMN process model for conditional behavior IT tests. */
-final class ConditionalBehaviorTestProcess {
+public final class ConditionalBehaviorTestProcess {
 
-  static final String PROCESS_ID = "user-happiness-check";
-  static final String USER_TASK_ID = "State_Happiness";
-  static final String SERVICE_TASK_ID = "Export_Happiness";
-  static final String JOB_TYPE = "io.camunda:http-json:1";
+  public static final String PROCESS_ID = "user-happiness-check";
+  public static final String USER_TASK_ID = "State_Happiness";
+  public static final String SERVICE_TASK_ID = "Export_Happiness";
+  public static final String JOB_TYPE = "io.camunda:http-json:1";
 
-  static final BpmnModelInstance MODEL =
+  public static final BpmnModelInstance MODEL =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
           .userTask(USER_TASK_ID)
