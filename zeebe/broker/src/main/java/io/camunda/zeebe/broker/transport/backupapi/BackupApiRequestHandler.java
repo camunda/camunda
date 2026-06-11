@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.transport.backupapi;
 
+import io.atomix.primitive.partition.PartitionId;
 import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.api.BackupRangeStatus;
@@ -57,6 +58,7 @@ public final class BackupApiRequestHandler
   private final CheckpointState checkpointState;
   private final DbCheckpointMetadataState checkpointMetadataState;
   private final DbBackupRangeState backupRangeState;
+  private final PartitionId partition;
   private final int partitionId;
   private final boolean backupFeatureEnabled;
 
@@ -67,7 +69,7 @@ public final class BackupApiRequestHandler
       final CheckpointState checkpointState,
       final DbCheckpointMetadataState checkpointMetadataState,
       final DbBackupRangeState backupRangeState,
-      final int partitionId,
+      final PartitionId partition,
       final boolean backupFeatureEnabled) {
     super(BackupApiRequestReader::new, BackupApiResponseWriter::new);
     this.logStreamWriter = logStreamWriter;
@@ -76,17 +78,18 @@ public final class BackupApiRequestHandler
     this.checkpointState = checkpointState;
     this.checkpointMetadataState = checkpointMetadataState;
     this.backupRangeState = backupRangeState;
-    this.partitionId = partitionId;
+    this.partition = partition;
+    partitionId = partition.id();
     this.backupFeatureEnabled = backupFeatureEnabled;
-    transport.unsubscribe(partitionId, RequestType.BACKUP);
-    transport.subscribe(partitionId, RequestType.BACKUP, this);
+    transport.unsubscribe(partition, RequestType.BACKUP);
+    transport.subscribe(partition, RequestType.BACKUP, this);
   }
 
   @Override
   public void close() {
-    transport.unsubscribe(partitionId, RequestType.BACKUP);
+    transport.unsubscribe(partition, RequestType.BACKUP);
     // The broker is not the leader any more.
-    transport.subscribe(partitionId, RequestType.BACKUP, new NotPartitionLeaderHandler());
+    transport.subscribe(partition, RequestType.BACKUP, new NotPartitionLeaderHandler());
     super.close();
   }
 

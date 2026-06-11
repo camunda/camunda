@@ -23,7 +23,7 @@ public class SnapshotApiHandlerTransitionStep implements PartitionTransitionStep
   public ActorFuture<Void> prepareTransition(
       final PartitionTransitionContext context, final long term, final Role targetRole) {
     if (context.getCurrentRole().isLeader()) {
-      context.getSnapshotApiRequestHandler().removeTransferService(context.getPartitionId());
+      context.getSnapshotApiRequestHandler().removeTransferService(context.getRaftPartition().id());
     }
     return CompletableActorFuture.completed();
   }
@@ -40,7 +40,9 @@ public class SnapshotApiHandlerTransitionStep implements PartitionTransitionStep
               (from, to) ->
                   context.snapshotCopy().copySnapshot(from, to, Set.of(ColumnFamilyScope.GLOBAL)),
               context.getSnapshotApiRequestHandler());
-      context.getSnapshotApiRequestHandler().addTransferService(context.getPartitionId(), service);
+      context
+          .getSnapshotApiRequestHandler()
+          .addTransferService(context.getRaftPartition().id(), service);
     }
     return CompletableActorFuture.completed();
   }

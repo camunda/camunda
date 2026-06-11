@@ -49,12 +49,12 @@ public class AdminApiRequestHandler
 
   @Override
   protected void onActorStarting() {
-    transport.subscribe(raftPartition.id().id(), RequestType.ADMIN, this);
+    transport.subscribe(raftPartition.id(), RequestType.ADMIN, this);
   }
 
   @Override
   protected void onActorClosing() {
-    transport.unsubscribe(raftPartition.id().id(), RequestType.ADMIN);
+    transport.unsubscribe(raftPartition.id(), RequestType.ADMIN);
   }
 
   @Override

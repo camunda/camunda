@@ -12,7 +12,6 @@ import io.atomix.cluster.messaging.MessagingService;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.transport.impl.AtomixClientTransportAdapter;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
-import io.camunda.zeebe.transport.impl.AtomixServerTransport.TopicSupplier;
 import io.camunda.zeebe.transport.stream.api.ClientStreamMetrics;
 import io.camunda.zeebe.transport.stream.api.ClientStreamService;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamErrorHandler;
@@ -25,7 +24,6 @@ import io.camunda.zeebe.transport.stream.impl.RemoteStreamServiceImpl;
 import io.camunda.zeebe.transport.stream.impl.RemoteStreamTransport;
 import io.camunda.zeebe.transport.stream.impl.RemoteStreamerImpl;
 import io.camunda.zeebe.util.buffer.BufferWriter;
-import java.util.List;
 import java.util.function.Function;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.IdGenerator;
@@ -41,10 +39,10 @@ public final class TransportFactory {
   public ServerTransport createServerTransport(
       final MessagingService messagingService,
       final IdGenerator requestIdGenerator,
-      final List<TopicSupplier> topicSuppliers) {
+      final boolean receiveOnLegacySubject) {
 
     final var atomixServerTransport =
-        new AtomixServerTransport(messagingService, requestIdGenerator, topicSuppliers);
+        new AtomixServerTransport(messagingService, requestIdGenerator, receiveOnLegacySubject);
     actorSchedulingService.submitActor(atomixServerTransport);
     return atomixServerTransport;
   }

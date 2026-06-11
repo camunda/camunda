@@ -17,6 +17,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.atomix.primitive.partition.PartitionId;
 import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.api.BackupRangeStatus;
 import io.camunda.zeebe.backup.api.BackupStatus;
@@ -29,6 +30,7 @@ import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.WriteContext;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.encoding.BackupListResponse;
 import io.camunda.zeebe.protocol.impl.encoding.BackupRangesResponse;
 import io.camunda.zeebe.protocol.impl.encoding.BackupRangesResponse.CheckpointInfo;
@@ -102,7 +104,7 @@ class BackupApiRequestHandlerTest {
             checkpointState,
             checkpointMetadataState,
             backupRangeState,
-            1,
+            PartitionId.from(Protocol.DEFAULT_PARTITION_GROUP_NAME, 1),
             true);
     scheduler.submitActor(handler);
     scheduler.workUntilDone();

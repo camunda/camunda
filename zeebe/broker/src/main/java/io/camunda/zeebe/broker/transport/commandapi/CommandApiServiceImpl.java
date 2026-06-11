@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.transport.commandapi;
 
+import io.atomix.primitive.partition.PartitionId;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.system.configuration.QueryApiCfg;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
@@ -23,14 +24,14 @@ import io.camunda.zeebe.transport.ServerTransport;
 public final class CommandApiServiceImpl extends Actor
     implements DiskSpaceUsageListener, CommandApiService {
 
-  private final int partitionId;
+  private final PartitionId partitionId;
   private final ServerTransport serverTransport;
   private final CommandApiRequestHandler commandHandler;
   private final QueryApiRequestHandler queryHandler;
   private final ActorSchedulingService scheduler;
 
   public CommandApiServiceImpl(
-      final int partitionId,
+      final PartitionId partitionId,
       final ServerTransport serverTransport,
       final ActorSchedulingService scheduler,
       final QueryApiCfg queryApiCfg) {
@@ -54,7 +55,7 @@ public final class CommandApiServiceImpl extends Actor
 
   @Override
   protected void onActorClosing() {
-    unregisterHandlersActorless(partitionId);
+    unregisterHandlersActorless(partitionId.id());
     actor.runOnCompletion(
         commandHandler.closeAsync(),
         (ok, error) -> {
@@ -100,9 +101,9 @@ public final class CommandApiServiceImpl extends Actor
           // exception immediately
           final var logStreamWriter = logStream.newLogStreamWriter();
           queryHandler.addPartition(partitionId, queryService);
-          serverTransport.subscribe(partitionId, RequestType.QUERY, queryHandler);
+          serverTransport.subscribe(this.partitionId, RequestType.QUERY, queryHandler);
           commandHandler.addPartition(partitionId, logStreamWriter);
-          serverTransport.subscribe(partitionId, RequestType.COMMAND, commandHandler);
+          serverTransport.subscribe(this.partitionId, RequestType.COMMAND, commandHandler);
         });
   }
 
@@ -123,8 +124,8 @@ public final class CommandApiServiceImpl extends Actor
   private void unregisterHandlersActorless(final int partitionId) {
     commandHandler.removePartition(partitionId);
     queryHandler.removePartition(partitionId);
-    serverTransport.unsubscribe(partitionId, RequestType.COMMAND);
-    serverTransport.unsubscribe(partitionId, RequestType.QUERY);
+    serverTransport.unsubscribe(this.partitionId, RequestType.COMMAND);
+    serverTransport.unsubscribe(this.partitionId, RequestType.QUERY);
   }
 
   @Override
