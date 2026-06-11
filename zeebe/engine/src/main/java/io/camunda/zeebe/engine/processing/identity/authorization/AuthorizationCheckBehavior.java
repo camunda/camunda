@@ -13,6 +13,8 @@ import com.google.common.cache.LoadingCache;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.security.core.auth.MappingRuleMatcher;
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.metrics.AuthorizationCheckMetrics;
+import io.camunda.zeebe.engine.metrics.AuthorizationMetricsDoc.AuthorizationOutcome;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
 import io.camunda.zeebe.engine.processing.identity.authorization.aggregator.RejectionAggregator;
@@ -42,6 +44,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
@@ -62,11 +65,13 @@ public final class AuthorizationCheckBehavior {
   private final boolean multiTenancyEnabled;
 
   private final LoadingCache<AuthorizationRequest, Either<Rejection, Void>> authorizationsCache;
+  private final AuthorizationCheckMetrics metrics;
 
   public AuthorizationCheckBehavior(
       final ProcessingState processingState,
       final EngineSecurityConfig securityConfig,
-      final EngineConfiguration config) {
+      final EngineConfiguration config,
+      final AuthorizationCheckMetrics metrics) {
     final var authorizationState = processingState.getAuthorizationState();
     final var membershipState = processingState.getMembershipState();
 
@@ -100,6 +105,7 @@ public final class AuthorizationCheckBehavior {
                     return checkAuthorized(authorizationRequest);
                   }
                 });
+    this.metrics = Objects.requireNonNull(metrics, "AuthorizationCheckMetrics must not be null");
   }
 
   /**
@@ -118,9 +124,21 @@ public final class AuthorizationCheckBehavior {
     if (shouldSkipAllChecks()) {
       return AUTHORIZED;
     }
+    final long startNanos = System.nanoTime();
     try {
-      return authorizationsCache.get(request);
+      final var result = authorizationsCache.get(request);
+      metrics.record(
+          request.resourceType(),
+          request.permissionType(),
+          result.isRight() ? AuthorizationOutcome.AUTHORIZED : AuthorizationOutcome.DENIED,
+          System.nanoTime() - startNanos);
+      return result;
     } catch (final ExecutionException e) {
+      metrics.record(
+          request.resourceType(),
+          request.permissionType(),
+          AuthorizationOutcome.DENIED,
+          System.nanoTime() - startNanos);
       return Either.left(
           new Rejection(
               RejectionType.NOT_FOUND,

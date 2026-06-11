@@ -16,6 +16,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.security.configuration.EngineSecurityConfigurations;
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.metrics.AuthorizationCheckMetrics;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.property.UserTaskAuthorizationProperties;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
@@ -42,6 +43,7 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.test.util.Strings;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -72,7 +74,10 @@ final class AuthorizationCheckBehaviorGroupsClaimsTest {
     final var engineConfig = new EngineConfiguration();
     authorizationCheckBehavior =
         new AuthorizationCheckBehavior(
-            processingState, EngineSecurityConfigurations.defaultConfig(), engineConfig);
+            processingState,
+            EngineSecurityConfigurations.defaultConfig(),
+            engineConfig,
+            new AuthorizationCheckMetrics(new SimpleMeterRegistry()));
 
     userCreatedApplier = new UserCreatedApplier(processingState.getUserState());
     mappingRuleCreatedApplier =

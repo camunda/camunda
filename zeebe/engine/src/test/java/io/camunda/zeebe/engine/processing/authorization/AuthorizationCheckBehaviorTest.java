@@ -19,6 +19,7 @@ import static org.mockito.Mockito.when;
 import com.google.common.util.concurrent.UncheckedExecutionException;
 import io.camunda.security.configuration.EngineSecurityConfigurations;
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.metrics.AuthorizationCheckMetrics;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.property.ResourceAuthorizationProperties;
 import io.camunda.zeebe.engine.processing.identity.authorization.property.UserTaskAuthorizationProperties;
@@ -49,6 +50,7 @@ import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -82,7 +84,10 @@ final class AuthorizationCheckBehaviorTest {
     final var engineConfig = new EngineConfiguration();
     authorizationCheckBehavior =
         new AuthorizationCheckBehavior(
-            processingState, EngineSecurityConfigurations.defaultConfig(), engineConfig);
+            processingState,
+            EngineSecurityConfigurations.defaultConfig(),
+            engineConfig,
+            new AuthorizationCheckMetrics(new SimpleMeterRegistry()));
 
     userCreatedApplier = new UserCreatedApplier(processingState.getUserState());
     mappingRuleCreatedApplier =
@@ -1496,7 +1501,10 @@ final class AuthorizationCheckBehaviorTest {
     final var config = new EngineConfiguration().setAuthorizationsCacheTtl(Duration.ofSeconds(1));
     authorizationCheckBehavior =
         new AuthorizationCheckBehavior(
-            processingState, EngineSecurityConfigurations.defaultConfig(), config);
+            processingState,
+            EngineSecurityConfigurations.defaultConfig(),
+            config,
+            new AuthorizationCheckMetrics(new SimpleMeterRegistry()));
 
     final var user = createUser();
     final var resourceType = AuthorizationResourceType.RESOURCE;
