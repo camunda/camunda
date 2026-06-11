@@ -352,14 +352,22 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
             config,
             sourceIndexName,
             destinationIndexName,
-            searchAfter ->
+            (searchAfter, size) ->
                 getArchiveDocIdsBatch(
                     sourceIndexName,
+<<<<<<< HEAD
                     idFieldName,
                     ids,
                     inclusionFilters,
                     exclusionFilters,
                     searchAfter),
+=======
+                    keysByField,
+                    inclusionFilters,
+                    exclusionFilters,
+                    searchAfter,
+                    size),
+>>>>>>> 63e232b4 (feat: reduce batch size on each archiving retry to increase success chance)
             this::reindexDocumentsById,
             this::deleteDocumentsById,
             executor,
@@ -437,16 +445,24 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
       final List<String> ids,
       final Map<String, String> inclusionFilters,
       final Map<String, String> exclusionFilters,
+<<<<<<< HEAD
       final List<FieldValue> searchAfter) {
     final Query query = buildFilterQuery(idFieldName, ids, inclusionFilters, exclusionFilters);
     final SearchRequest.Builder requestBuilder =
         new SearchRequest.Builder()
+=======
+      final List<FieldValue> searchAfter,
+      final Integer size) {
+    final Query query = buildFilterQuery(keysByField, inclusionFilters, exclusionFilters);
+    final Builder requestBuilder =
+        new Builder()
+>>>>>>> 63e232b4 (feat: reduce batch size on each archiving retry to increase success chance)
             .index(sourceIndexName)
             .requestCache(false)
             .allowNoIndices(true)
             .ignoreUnavailable(true)
             .query(query)
-            .size(config.getReindexBatchSize())
+            .size(size)
             .source(s -> s.fetch(false))
             .sort(sort -> sort.field(field -> field.field("id").order(SortOrder.Asc)));
 
