@@ -25,6 +25,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiFunction;
 
 /**
  * Loads document store configuration from unified properties under {@code camunda.document.*}.
@@ -57,11 +58,11 @@ public final class CamundaDocumentStoreConfigurationLoader
     final Map<String, DocumentStoreConfigurationRecord> storesById = new LinkedHashMap<>();
 
     legacyConfiguration.documentStores().forEach(store -> storesById.put(store.id(), store));
-    document.getAws().forEach((id, store) -> storesById.put(id, toAwsStore(id, store)));
-    document.getGcp().forEach((id, store) -> storesById.put(id, toGcpStore(id, store)));
-    document.getAzure().forEach((id, store) -> storesById.put(id, toAzureStore(id, store)));
-    document.getLocal().forEach((id, store) -> storesById.put(id, toLocalStore(id, store)));
-    document.getInMemory().forEach((id, store) -> storesById.put(id, toInMemoryStore(id, store)));
+    registerStores(document.getAws(), storesById, this::toAwsStore);
+    registerStores(document.getGcp(), storesById, this::toGcpStore);
+    registerStores(document.getAzure(), storesById, this::toAzureStore);
+    registerStores(document.getLocal(), storesById, this::toLocalStore);
+    registerStores(document.getInMemory(), storesById, this::toInMemoryStore);
 
     return new DocumentStoreConfiguration(
         document.getDefaultStoreId(),
@@ -69,7 +70,15 @@ public final class CamundaDocumentStoreConfigurationLoader
         List.copyOf(storesById.values()));
   }
 
-  private static DocumentStoreConfigurationRecord toAwsStore(
+  private <T> void registerStores(
+      final Map<String, T> storeConfigs,
+      final Map<String, DocumentStoreConfigurationRecord> storesById,
+      final BiFunction<String, T, DocumentStoreConfigurationRecord> factory) {
+    storeConfigs.forEach(
+        (id, store) -> storesById.put(id.toLowerCase(), factory.apply(id.toLowerCase(), store)));
+  }
+
+  private DocumentStoreConfigurationRecord toAwsStore(
       final String storeId, final Document.AwsStore store) {
     final Map<String, String> properties = new LinkedHashMap<>();
     putResolved(properties, AWS, storeId, "bucket-name", "BUCKET", store.getBucketName());
@@ -79,7 +88,7 @@ public final class CamundaDocumentStoreConfigurationLoader
     return toRecord(storeId, AwsDocumentStoreProvider.class, properties);
   }
 
-  private static DocumentStoreConfigurationRecord toGcpStore(
+  private DocumentStoreConfigurationRecord toGcpStore(
       final String storeId, final Document.GcpStore store) {
     final Map<String, String> properties = new LinkedHashMap<>();
     putResolved(properties, GCP, storeId, "bucket-name", "BUCKET", store.getBucketName());
@@ -87,7 +96,7 @@ public final class CamundaDocumentStoreConfigurationLoader
     return toRecord(storeId, GcpDocumentStoreProvider.class, properties);
   }
 
-  private static DocumentStoreConfigurationRecord toAzureStore(
+  private DocumentStoreConfigurationRecord toAzureStore(
       final String storeId, final Document.AzureStore store) {
     final Map<String, String> properties = new LinkedHashMap<>();
     putResolved(
@@ -105,14 +114,14 @@ public final class CamundaDocumentStoreConfigurationLoader
     return toRecord(storeId, AzureBlobDocumentStoreProvider.class, properties);
   }
 
-  private static DocumentStoreConfigurationRecord toLocalStore(
+  private DocumentStoreConfigurationRecord toLocalStore(
       final String storeId, final Document.LocalStore store) {
     final Map<String, String> properties = new LinkedHashMap<>();
     putResolved(properties, LOCAL, storeId, "path", "PATH", store.getPath());
     return toRecord(storeId, LocalStorageDocumentStoreProvider.class, properties);
   }
 
-  private static DocumentStoreConfigurationRecord toInMemoryStore(
+  private DocumentStoreConfigurationRecord toInMemoryStore(
       final String storeId, final Document.InMemoryStore store) {
     return toRecord(storeId, InMemoryDocumentStoreProvider.class, Map.of());
   }

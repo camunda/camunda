@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.Document;
+import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.document.api.DocumentStoreConfiguration.DocumentStoreConfigurationRecord;
 import io.camunda.document.store.aws.AwsDocumentStoreProvider;
 import io.camunda.document.store.azure.AzureBlobDocumentStoreProvider;
@@ -18,6 +19,7 @@ import io.camunda.document.store.gcp.GcpDocumentStoreProvider;
 import io.camunda.document.store.localstorage.LocalStorageDocumentStoreProvider;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.springframework.mock.env.MockEnvironment;
 
 class CamundaDocumentStoreConfigurationLoaderTest {
 
@@ -86,34 +88,33 @@ class CamundaDocumentStoreConfigurationLoaderTest {
   }
 
   @Test
-  void shouldLoadLegacyOnlyStoreDefinitions() {
+  void shouldLoadOnlyLegacyStoreDefinitions() {
     // given
-    final Camunda camunda = new Camunda();
-    final var loader = new CamundaDocumentStoreConfigurationLoader(camunda);
-    System.setProperty("DOCUMENT_DEFAULT_STORE_ID", "LEGACY");
+    final var mockEnv = new MockEnvironment();
+    mockEnv.setProperty("DOCUMENT_DEFAULT_STORE_ID", "GCP");
+    UnifiedConfigurationHelper.setCustomEnvironment(mockEnv);
+
     System.setProperty(
-        "DOCUMENT_STORE_LEGACY_CLASS", "io.camunda.document.store.gcp.GcpDocumentStoreProvider");
-    System.setProperty("DOCUMENT_STORE_LEGACY_BUCKET", "legacy-bucket");
+        "DOCUMENT_STORE_GCP_CLASS", "io.camunda.document.store.gcp.GcpDocumentStoreProvider");
+    System.setProperty("DOCUMENT_STORE_GCP_BUCKET", "legacy-bucket");
 
     try {
       // when
-      final var configuration = loader.loadConfiguration();
+      final var configuration =
+          new CamundaDocumentStoreConfigurationLoader(new Camunda()).loadConfiguration();
 
       // then
-      // Root-level legacy fallback (defaultDocumentStoreId, threadPoolSize) is handled by
-      // Document.getDefaultStoreId() / getThreadPoolSize() via UnifiedConfigurationHelper, which
-      // requires a Spring environment — in this non-Spring unit test the helper returns null.
-      assertThat(configuration.defaultDocumentStoreId()).isNull();
+      assertThat(configuration.defaultDocumentStoreId()).isEqualTo("gcp");
       assertThat(configuration.threadPoolSize()).isNull();
       assertThat(configuration.documentStores())
           .extracting(DocumentStoreConfigurationRecord::id)
-          .containsExactly("legacy");
-      assertThat(store("legacy", configuration.documentStores()).properties())
+          .containsExactly("gcp");
+      assertThat(store("gcp", configuration.documentStores()).properties())
           .containsEntry("BUCKET", "legacy-bucket");
     } finally {
-      System.clearProperty("DOCUMENT_DEFAULT_STORE_ID");
-      System.clearProperty("DOCUMENT_STORE_LEGACY_CLASS");
-      System.clearProperty("DOCUMENT_STORE_LEGACY_BUCKET");
+      UnifiedConfigurationHelper.setCustomEnvironment(null);
+      System.clearProperty("DOCUMENT_STORE_GCP_CLASS");
+      System.clearProperty("DOCUMENT_STORE_GCP_BUCKET");
     }
   }
 
