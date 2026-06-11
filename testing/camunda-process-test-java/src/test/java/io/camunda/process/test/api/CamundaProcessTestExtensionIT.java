@@ -20,11 +20,6 @@ import static io.camunda.process.test.api.CamundaAssert.assertThatProcessInstanc
 import static io.camunda.process.test.api.CamundaAssert.assertThatUserTask;
 import static io.camunda.process.test.api.assertions.ElementSelectors.byId;
 import static io.camunda.process.test.api.assertions.ElementSelectors.byName;
-import static io.camunda.process.test.impl.extensions.ConditionalBehaviorTestProcess.JOB_TYPE;
-import static io.camunda.process.test.impl.extensions.ConditionalBehaviorTestProcess.MODEL;
-import static io.camunda.process.test.impl.extensions.ConditionalBehaviorTestProcess.PROCESS_ID;
-import static io.camunda.process.test.impl.extensions.ConditionalBehaviorTestProcess.SERVICE_TASK_ID;
-import static io.camunda.process.test.impl.extensions.ConditionalBehaviorTestProcess.USER_TASK_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
@@ -1157,6 +1152,11 @@ public class CamundaProcessTestExtensionIT {
   @Nested
   class ConditionalBehaviorTests {
 
+    private static final String PROCESS_ID = "user-happiness-check";
+    private static final String USER_TASK_ID = "State_Happiness";
+    private static final String SERVICE_TASK_ID = "Export_Happiness";
+    private static final String JOB_TYPE = "io.camunda:http-json:1";
+
     private final Map<String, Object> UNHAPPY = Collections.singletonMap("happy", false);
     private final Map<String, Object> HAPPY = Collections.singletonMap("happy", true);
     private final Map<String, Object> EXPORT_VARS = Collections.singletonMap("exportSuccess", true);
@@ -1164,7 +1164,11 @@ public class CamundaProcessTestExtensionIT {
     @BeforeEach
     void setupBehaviors() {
       // Deploy the process model
-      client.newDeployResourceCommand().addProcessModel(MODEL, PROCESS_ID + ".bpmn").send().join();
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(conditionalBehaviorProcess(), PROCESS_ID + ".bpmn")
+          .send()
+          .join();
 
       processTestContext
           .when(
@@ -1212,6 +1216,21 @@ public class CamundaProcessTestExtensionIT {
           .isCompleted()
           .hasVariable("happy", true)
           .hasVariable("exportSuccess", true);
+    }
+
+    private BpmnModelInstance conditionalBehaviorProcess() {
+      return Bpmn.createExecutableProcess(PROCESS_ID)
+          .startEvent()
+          .userTask(USER_TASK_ID)
+          .zeebeUserTask()
+          .exclusiveGateway("User_Happy_Gateway")
+          .conditionExpression("=happy")
+          .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType(JOB_TYPE).zeebeJobRetries("3"))
+          .endEvent()
+          .moveToLastExclusiveGateway()
+          .defaultFlow()
+          .connectTo(USER_TASK_ID)
+          .done();
     }
   }
 }

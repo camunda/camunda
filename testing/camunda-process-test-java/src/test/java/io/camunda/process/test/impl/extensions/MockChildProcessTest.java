@@ -32,9 +32,13 @@ import io.camunda.process.test.impl.extension.ConditionalBehaviorEngine;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
 import io.camunda.process.test.utils.DevAwaitBehavior;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.instance.EndEvent;
 import io.camunda.zeebe.model.bpmn.instance.Process;
 import io.camunda.zeebe.model.bpmn.instance.ServiceTask;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeIoMapping;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeOutput;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -109,6 +113,7 @@ public class MockChildProcessTest {
   void shouldMockChildProcessWithVariables() {
     // given
     final Map<String, Object> variables = Collections.singletonMap("result", "ok");
+    when(camundaClient.getConfiguration().getJsonMapper().toJson("ok")).thenReturn("\"ok\"");
 
     // when
     processTestContext.mockChildProcess(CHILD_PROCESS_ID, variables);
@@ -127,6 +132,21 @@ public class MockChildProcessTest {
 
     // the process has no service tasks (variables are set as end event outputs)
     assertThat(deployedModel.getModelElementsByType(ServiceTask.class)).isEmpty();
+
+    // the end event has output mappings for each variable
+    final EndEvent endEvent = deployedModel.getModelElementById("child-end");
+    assertThat(endEvent).isNotNull();
+    final ZeebeIoMapping ioMapping = endEvent.getSingleExtensionElement(ZeebeIoMapping.class);
+    assertThat(ioMapping).isNotNull();
+    final Collection<ZeebeOutput> outputs = ioMapping.getOutputs();
+    assertThat(outputs)
+        .hasSize(1)
+        .first()
+        .satisfies(
+            output -> {
+              assertThat(output.getSource()).isEqualTo("=\"ok\"");
+              assertThat(output.getTarget()).isEqualTo("result");
+            });
   }
 
   @Test
