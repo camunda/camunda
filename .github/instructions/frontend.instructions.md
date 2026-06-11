@@ -83,4 +83,5 @@ npm run test:visual       # Playwright visual regression (needs Docker)
 - Unit tests use Vitest Browser Mode (real Chromium), not jsdom. See `.claude/skills/frontend-unit-test/`.
 - Playwright tests (integration, visual, a11y) use MSW via `@msw/playwright`. See `.claude/skills/frontend-integration-test/`.
 - Follow the pod areas + shared + routes architecture. See `.claude/skills/frontend-feature/`.
+- For Tasklist pod work in `src/tasklist/`, see `.claude/skills/tasklist-frontend/`.
 - For migrating legacy Operate/Tasklist code to the unified app, see `.claude/skills/frontend-migrator/`.
