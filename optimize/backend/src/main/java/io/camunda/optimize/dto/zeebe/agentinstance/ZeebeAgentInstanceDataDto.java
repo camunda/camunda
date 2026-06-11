@@ -170,7 +170,7 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
 
   @Override
   public List<AgentInstanceToolValue> getTools() {
-    return new ArrayList<>(tools);
+    return tools != null ? new ArrayList<>(tools) : new ArrayList<>();
   }
 
   public void setTools(final List<AgentToolValueDto> tools) {
@@ -187,6 +187,7 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
     return Objects.hash(
         agentInstanceKey,
         elementInstanceKey,
+        elementInstanceKeys,
         elementId,
         processInstanceKey,
         rootProcessInstanceKey,
@@ -212,6 +213,7 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
         && rootProcessInstanceKey == that.rootProcessInstanceKey
         && processDefinitionKey == that.processDefinitionKey
         && processDefinitionVersion == that.processDefinitionVersion
+        && Objects.equals(elementInstanceKeys, that.elementInstanceKeys)
         && Objects.equals(elementId, that.elementId)
         && Objects.equals(bpmnProcessId, that.bpmnProcessId)
         && Objects.equals(tenantId, that.tenantId)
