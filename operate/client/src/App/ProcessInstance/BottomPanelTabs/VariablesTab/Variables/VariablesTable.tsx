@@ -8,7 +8,7 @@
 
 import {useMemo, useRef, useState} from 'react';
 import {useForm, useFormState} from 'react-final-form';
-import {Button} from '@carbon/react';
+import {Button, Search} from '@carbon/react';
 import {Edit} from '@carbon/react/icons';
 import {
   StructuredList,
@@ -18,6 +18,7 @@ import {
   FilterSwitcherButton,
   EmptyMessageWrapper,
   DimmableResults,
+  VariablesSearch,
 } from './styled';
 import {StructuredRows} from 'modules/components/StructuredList';
 import {EmptyMessage} from 'modules/components/EmptyMessage';
@@ -33,6 +34,7 @@ import {Operation} from './NewVariableModification/Operation';
 import {ViewFullVariableButton} from './ViewFullVariableButton';
 import {useIsProcessInstanceRunning} from 'modules/queries/processInstance/useIsProcessInstanceRunning';
 import {useVariables} from 'modules/queries/variables/useVariables';
+import {useDebouncedValue} from 'modules/hooks/useDebouncedValue';
 import {VariableValueCell} from './VariableValueCell';
 import {parseDocumentVariable} from './DocumentValueCell/parseDocumentVariable';
 import {DownloadDocumentButton} from './DownloadDocumentButton';
@@ -55,6 +57,8 @@ const VariablesTable: React.FC<Props> = ({
   const form = useForm<VariableFormValues>();
   const variableNameRef = useRef<HTMLDivElement>(null);
   const [showDocumentsOnly, setShowDocumentsOnly] = useState(false);
+  const [searchValue, setSearchValue] = useState('');
+  const debouncedSearchValue = useDebouncedValue(searchValue);
 
   const {
     data: variablesData,
@@ -65,9 +69,15 @@ const VariablesTable: React.FC<Props> = ({
   } = useVariables({
     documentsOnly: showDocumentsOnly,
     keepPreviousResults: true,
+    searchTerm: debouncedSearchValue,
   });
 
-  const isFilterLoading = isPlaceholderData;
+  // While a new filter query loads, the previous results are kept on screen
+  // (via `keepPreviousData`) and dimmed to signal that an update is in progress.
+  // The pending-debounce window is also treated as loading so the dim starts as
+  // soon as the user types, before the request is fired.
+  const isFilterLoading =
+    isPlaceholderData || searchValue !== debouncedSearchValue;
 
   const processedVariables = useMemo(() => {
     const allVariables =
@@ -204,6 +214,16 @@ const VariablesTable: React.FC<Props> = ({
   return (
     <>
       <FilterSwitcherContainer>
+        <VariablesSearch>
+          <Search
+            size="sm"
+            labelText="Search variables by name"
+            placeholder="Search variables by name"
+            value={searchValue}
+            onChange={(event) => setSearchValue(event.target.value)}
+            onClear={() => setSearchValue('')}
+          />
+        </VariablesSearch>
         <FilterSwitcher role="group" aria-label="Variable filter">
           <FilterSwitcherButton
             type="button"
@@ -224,12 +244,18 @@ const VariablesTable: React.FC<Props> = ({
         </FilterSwitcher>
       </FilterSwitcherContainer>
       {!isFilterLoading &&
-      showDocumentsOnly &&
+      (showDocumentsOnly || debouncedSearchValue.trim() !== '') &&
       variablesData !== undefined &&
       processedVariables.length === 0 &&
       !isFetchingNextPage ? (
         <EmptyMessageWrapper>
-          <EmptyMessage message="There are no document variables" />
+          <EmptyMessage
+            message={
+              debouncedSearchValue.trim() !== ''
+                ? 'No variables match your search'
+                : 'There are no document variables'
+            }
+          />
         </EmptyMessageWrapper>
       ) : (
         <DimmableResults $dimmed={isFilterLoading}>
