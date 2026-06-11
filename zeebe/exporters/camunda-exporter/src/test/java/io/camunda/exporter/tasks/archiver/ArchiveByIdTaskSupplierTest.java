@@ -228,8 +228,8 @@ class ArchiveByIdTaskSupplierTest {
 
   @Test
   void shouldReduceReindexBatchSizeAfterEachRetry() {
-    // given - maxRetryAttempts=3: retries while retryCount < 3, so 2 retries before the 3rd
-    // failure throws. Reindex fails on calls 1 and 2, succeeds from call 3 onward.
+    // given - maxRetryAttempts=3: allows up to 3 retries (throws on the 4th consecutive failure).
+    // Reindex fails on calls 1 and 2, succeeds from call 3 onward.
     final var retryableError = new CompletionException(new SocketTimeoutException("timeout"));
     final var reindexCallCount = new AtomicInteger(0);
     final var batchSize = new AtomicInteger(0);
