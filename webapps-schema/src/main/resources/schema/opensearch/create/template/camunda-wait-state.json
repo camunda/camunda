@@ -20,6 +20,9 @@
       "elementType": {
         "type": "keyword"
       },
+      "bpmnProcessId": {
+        "type": "keyword"
+      },
       "waitStateType": {
         "type": "keyword"
       },

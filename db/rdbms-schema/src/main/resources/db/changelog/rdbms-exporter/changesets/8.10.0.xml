@@ -298,10 +298,24 @@
       <column name="ELEMENT_ID" type="NVARCHAR(${userCharColumnSize})"/>
       <column name="ELEMENT_TYPE" type="VARCHAR(50)"/>
       <column name="WAIT_STATE_TYPE" type="VARCHAR(50)"/>
+      <column name="PROCESS_DEFINITION_ID" type="NVARCHAR(${userCharColumnSize})"/>
       <column name="DETAILS" type="CLOB"/>
       <column name="TENANT_ID" type="NVARCHAR(${userCharColumnSize})"/>
       <column name="PARTITION_ID" type="NUMBER"/>
     </createTable>
+  </changeSet>
+
+  <changeSet id="create_wait_state_process_definition_id_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_WAIT_STATE_PROCESS_DEFINITION_ID"
+          tableName="${prefix}WAIT_STATE"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}WAIT_STATE"
+      indexName="${prefix}IDX_WAIT_STATE_PROCESS_DEFINITION_ID">
+      <column name="PROCESS_DEFINITION_ID"/>
+    </createIndex>
   </changeSet>
 
   <changeSet id="create_wait_state_process_instance_key_index" author="camunda">

@@ -675,7 +675,8 @@ public final class SearchQueryResponseMapper {
             .elementId(item.elementId())
             .elementType(elementType)
             .tenantId(item.tenantId())
-            .rootProcessInstanceKey(rootKey);
+            .rootProcessInstanceKey(rootKey)
+            .bpmnProcessId(item.bpmnProcessId());
     return switch (item.details()) {
       case WaitStateJobDetails(
               final var jobKey,

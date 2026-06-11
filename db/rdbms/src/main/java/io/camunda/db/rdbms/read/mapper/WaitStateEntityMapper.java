@@ -30,6 +30,7 @@ public class WaitStateEntityMapper {
         dbModel.elementId(),
         toFlowNodeType(dbModel.elementType()),
         dbModel.rootProcessInstanceKey(),
+        dbModel.processDefinitionId(),
         parseDetails(dbModel.waitStateType(), dbModel.details()),
         dbModel.tenantId());
   }

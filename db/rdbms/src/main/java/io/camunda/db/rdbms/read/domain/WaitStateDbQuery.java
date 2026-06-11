@@ -17,6 +17,7 @@ import java.util.function.Function;
 
 public record WaitStateDbQuery(
     ElementInstanceWaitStateFilter filter,
+    List<String> authorizedResourceIds,
     List<String> authorizedTenantIds,
     DbQuerySorting<WaitStateEntity> sort,
     DbQueryPage page) {
@@ -32,6 +33,7 @@ public record WaitStateDbQuery(
         FilterBuilders.elementInstanceWaitState().build();
 
     private ElementInstanceWaitStateFilter filter;
+    private List<String> authorizedResourceIds;
     private List<String> authorizedTenantIds;
     private DbQuerySorting<WaitStateEntity> sort;
     private DbQueryPage page;
@@ -51,6 +53,11 @@ public record WaitStateDbQuery(
       return this;
     }
 
+    public Builder authorizedResourceIds(final List<String> value) {
+      authorizedResourceIds = value;
+      return this;
+    }
+
     public Builder authorizedTenantIds(final List<String> value) {
       authorizedTenantIds = value;
       return this;
@@ -60,8 +67,9 @@ public record WaitStateDbQuery(
     public WaitStateDbQuery build() {
       filter = Objects.requireNonNullElse(filter, EMPTY_FILTER);
       sort = Objects.requireNonNullElse(sort, new DbQuerySorting<>(List.of()));
+      authorizedResourceIds = Objects.requireNonNullElse(authorizedResourceIds, List.of());
       authorizedTenantIds = Objects.requireNonNullElse(authorizedTenantIds, List.of());
-      return new WaitStateDbQuery(filter, authorizedTenantIds, sort, page);
+      return new WaitStateDbQuery(filter, authorizedResourceIds, authorizedTenantIds, sort, page);
     }
   }
 }

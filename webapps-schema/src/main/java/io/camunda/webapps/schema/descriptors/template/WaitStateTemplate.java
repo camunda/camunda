@@ -25,6 +25,7 @@ public class WaitStateTemplate extends AbstractTemplateDescriptor
   public static final String ELEMENT_INSTANCE_KEY = "elementInstanceKey";
   public static final String ELEMENT_ID = "elementId";
   public static final String ELEMENT_TYPE = "elementType";
+  public static final String BPMN_PROCESS_ID = "bpmnProcessId";
   public static final String WAIT_STATE_TYPE = "waitStateType";
   public static final String DETAILS = "details";
   public static final String TENANT_ID = "tenantId";

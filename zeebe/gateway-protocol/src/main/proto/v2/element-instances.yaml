@@ -802,6 +802,7 @@ components:
         - elementType
         - tenantId
         - rootProcessInstanceKey
+        - bpmnProcessId
         - details
       properties:
         rootProcessInstanceKey:
@@ -829,6 +830,9 @@ components:
           description: The tenant ID of the element instance.
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+        bpmnProcessId:
+          description: The BPMN process ID of the process definition associated to this element instance.
+          type: string
         details:
           description: Wait-state-specific details, resolved by waitStateType.
           allOf:

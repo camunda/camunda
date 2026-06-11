@@ -85,6 +85,7 @@ public class WaitStateAddHandler<R extends RecordValue & WaitStateRelated>
         .setElementId(entry.getElementId())
         .setElementType(entry.getElementType() != null ? entry.getElementType().name() : null)
         .setWaitStateType(entry.getWaitStateType() != null ? entry.getWaitStateType().name() : null)
+        .setBpmnProcessId(entry.getBpmnProcessId())
         .setDetails(serializeDetails(entry.getDetails()))
         .setTenantId(entry.getTenantId())
         .setPartitionId(entry.getPartitionId());
