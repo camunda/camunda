@@ -241,9 +241,8 @@ done < <(find "$C8RUN_DIR" -name "*.app" -type d -print0)
 
 # Check 2 + 3: individual Mach-O files
 while IFS= read -r -d '' candidate; do
-  # skip files inside .app bundles (covered by --deep above) and inside .jar files
+  # skip files inside .app bundles (covered by --deep above)
   [[ "$candidate" == *.app/* ]] && continue
-  [[ "$candidate" == *.jar/* ]] && continue
   file -b "$candidate" | grep -q "Mach-O" || continue
 
   # 2. Valid signature
@@ -331,15 +330,19 @@ echo "All done. Final archive with excluded items is: $FINAL_ZIP"
 # time (e.g. a newly added binary that was missed by the entitlements loop).
 # Runs against the notarized, re-injected tree before any further packaging.
 ##############################################
-echo "=== Step F.5: JVM smoke test ==="
+echo "=== Step G: JVM smoke test ==="
 NOTARIZED_ROOT="$TMP_NOTARIZE_DIR/notarized/$C8RUN_BASENAME"
 smoke_tested=0
 for jre_pattern in "${JRE_PATH_PATTERNS[@]}"; do
   while IFS= read -r -d '' java_bin; do
     echo "  -> Running: $java_bin -version"
-    "$java_bin" -version
-    echo "  -> JVM smoke test passed: $java_bin"
-    smoke_tested=$((smoke_tested + 1))
+    if "$java_bin" -version; then
+      echo "  -> JVM smoke test passed: $java_bin"
+      smoke_tested=$((smoke_tested + 1))
+    else
+      echo "[Error] JVM smoke test FAILED: $java_bin"
+      exit 1
+    fi
   done < <(find "$NOTARIZED_ROOT" -path "*/${jre_pattern}/bin/java" -type f -print0)
 done
 if [ "$smoke_tested" -eq 0 ]; then
