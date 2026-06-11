@@ -350,14 +350,15 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
             config,
             sourceIndexName,
             destinationIndexName,
-            searchAfter ->
+            (searchAfter, size) ->
                 getArchiveDocIdsBatch(
                     sourceIndexName,
                     idFieldName,
                     ids,
                     inclusionFilters,
                     exclusionFilters,
-                    searchAfter),
+                    searchAfter,
+                    size),
             this::reindexDocumentsById,
             this::deleteDocumentsById,
             executor,
@@ -431,7 +432,8 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
       final List<String> ids,
       final Map<String, String> inclusionFilters,
       final Map<String, String> exclusionFilters,
-      final List<FieldValue> searchAfter) {
+      final List<FieldValue> searchAfter,
+      final Integer size) {
     final Query query = buildFilterQuery(idFieldName, ids, inclusionFilters, exclusionFilters);
     final SearchRequest.Builder requestBuilder =
         new SearchRequest.Builder()
@@ -440,7 +442,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
             .allowNoIndices(true)
             .ignoreUnavailable(true)
             .query(query)
-            .size(config.getReindexBatchSize())
+            .size(size)
             .source(s -> s.fetch(false))
             .sort(SortOptions.of(s -> s.field(f -> f.field("id").order(SortOrder.Asc))));
 
