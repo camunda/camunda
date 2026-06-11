@@ -39,16 +39,6 @@ public interface MessageStartProcessInstanceAskState {
   void forEach(AskVisitor visitor);
 
   /**
-   * Returns {@code true} if there are pending asks whose last-sent timestamp suggests they are
-   * ready for retry (i.e., past the retry deadline).
-   *
-   * @param deadline epoch millis; returns true if any pending ask has {@code lastSentTime <
-   *     deadline}
-   * @return {@code true} if at least one ask is past its retry deadline
-   */
-  boolean hasPendingAsksPastDeadline(long deadline);
-
-  /**
    * Returns all pending asks whose last-sent timestamp is before the given deadline; intended for
    * the scheduled retry loop.
    *
