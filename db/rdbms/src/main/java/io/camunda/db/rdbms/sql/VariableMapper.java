@@ -32,13 +32,15 @@ public interface VariableMapper extends ProcessInstanceDependantMapper {
    * Inserts a new lookup entry if no entry already exists for the given (processDefinitionKey,
    * varName) combination. No-op on conflict.
    */
-  void insertIfNotExists(ProcessDefinitionVariableNameLookupDbModel model);
+  void insertLookupIfNotExists(ProcessDefinitionVariableNameLookupDbModel model);
+
+  // --- PROCESS_DEF_VAR_NAME_LOOKUP ---
 
   /** Returns all variable names recorded for the given process definition key. */
-  List<String> findVariableNames(@Param("processDefinitionKey") long processDefinitionKey);
+  List<String> findLookupVariableNames(@Param("processDefinitionKey") long processDefinitionKey);
 
   /** Deletes all lookup entries for the given process definition keys. */
-  void deleteByProcessDefinitionKeys(List<Long> processDefinitionKeys);
+  void deleteLookupByProcessDefinitionKeys(List<Long> processDefinitionKeys);
 
   record MigrateToProcessDto(Long variableKey, String processDefinitionId) {
 
@@ -63,4 +65,5 @@ public interface VariableMapper extends ProcessInstanceDependantMapper {
       }
     }
   }
+
 }

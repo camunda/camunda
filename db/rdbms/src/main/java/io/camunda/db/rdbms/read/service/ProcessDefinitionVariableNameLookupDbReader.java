@@ -23,6 +23,6 @@ public class ProcessDefinitionVariableNameLookupDbReader {
    * none are found.
    */
   public List<String> findVariableNames(final long processDefinitionKey) {
-    return mapper.findVariableNames(processDefinitionKey);
+    return mapper.findLookupVariableNames(processDefinitionKey);
   }
 }

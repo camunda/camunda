@@ -62,7 +62,7 @@ public class VariableWriter extends ProcessInstanceDependant implements RdbmsWri
               new BatchInsertDto<>(truncatedVariable)));
     }
 
-    maybeRecordVariableName(variable);
+    maybeRecordVariableNameInLookup(variable);
   }
 
   public void update(final VariableDbModel variable) {
@@ -89,7 +89,7 @@ public class VariableWriter extends ProcessInstanceDependant implements RdbmsWri
                 .processDefinitionId(processDefinitionId)));
   }
 
-  private void maybeRecordVariableName(final VariableDbModel variable) {
+  private void maybeRecordVariableNameInLookup(final VariableDbModel variable) {
     final Long pdKey = variable.processDefinitionKey();
     if (pdKey == null || pdKey <= 0) {
       return;
@@ -101,7 +101,7 @@ public class VariableWriter extends ProcessInstanceDependant implements RdbmsWri
               ContextType.PROCESS_DEF_VAR_NAME_LOOKUP,
               WriteStatementType.INSERT,
               pdKey,
-              "io.camunda.db.rdbms.sql.VariableMapper.insertIfNotExists",
+              "io.camunda.db.rdbms.sql.VariableMapper.insertLookupIfNotExists",
               new ProcessDefinitionVariableNameLookupDbModel(pdKey, variable.name())));
     }
   }

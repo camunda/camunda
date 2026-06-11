@@ -197,10 +197,10 @@
       WHERE VAR_KEY = #{variableKey}
   </update>
 
-  <!-- ProcessDefinitionVariableNameLookup statements -->
+  <!-- PROCESS_DEF_VAR_NAME_LOOKUP -->
 
   <!-- PostgreSQL: ON CONFLICT DO NOTHING -->
-  <insert id="insertIfNotExists"
+  <insert id="insertLookupIfNotExists"
     parameterType="io.camunda.db.rdbms.write.domain.ProcessDefinitionVariableNameLookupDbModel"
     databaseId="postgresql">
     INSERT INTO ${prefix}PROCESS_DEF_VAR_NAME_LOOKUP (PROCESS_DEFINITION_KEY, VAR_NAME)
@@ -209,7 +209,7 @@
   </insert>
 
   <!-- MySQL: INSERT IGNORE -->
-  <insert id="insertIfNotExists"
+  <insert id="insertLookupIfNotExists"
     parameterType="io.camunda.db.rdbms.write.domain.ProcessDefinitionVariableNameLookupDbModel"
     databaseId="mysql">
     INSERT IGNORE INTO ${prefix}PROCESS_DEF_VAR_NAME_LOOKUP (PROCESS_DEFINITION_KEY, VAR_NAME)
@@ -217,7 +217,7 @@
   </insert>
 
   <!-- MariaDB: INSERT IGNORE -->
-  <insert id="insertIfNotExists"
+  <insert id="insertLookupIfNotExists"
     parameterType="io.camunda.db.rdbms.write.domain.ProcessDefinitionVariableNameLookupDbModel"
     databaseId="mariadb">
     INSERT IGNORE INTO ${prefix}PROCESS_DEF_VAR_NAME_LOOKUP (PROCESS_DEFINITION_KEY, VAR_NAME)
@@ -225,7 +225,7 @@
   </insert>
 
   <!-- H2: MERGE INTO without UPDATE (insert-only on no match) -->
-  <insert id="insertIfNotExists"
+  <insert id="insertLookupIfNotExists"
     parameterType="io.camunda.db.rdbms.write.domain.ProcessDefinitionVariableNameLookupDbModel"
     databaseId="h2">
     MERGE INTO ${prefix}PROCESS_DEF_VAR_NAME_LOOKUP t
@@ -238,7 +238,7 @@
   </insert>
 
   <!-- Oracle: MERGE INTO ... USING dual without UPDATE -->
-  <insert id="insertIfNotExists"
+  <insert id="insertLookupIfNotExists"
     parameterType="io.camunda.db.rdbms.write.domain.ProcessDefinitionVariableNameLookupDbModel"
     databaseId="oracle">
     MERGE INTO ${prefix}PROCESS_DEF_VAR_NAME_LOOKUP t
@@ -252,7 +252,7 @@
   </insert>
 
   <!-- MSSQL: MERGE without UPDATE -->
-  <insert id="insertIfNotExists"
+  <insert id="insertLookupIfNotExists"
     parameterType="io.camunda.db.rdbms.write.domain.ProcessDefinitionVariableNameLookupDbModel"
     databaseId="mssql">
     MERGE ${prefix}PROCESS_DEF_VAR_NAME_LOOKUP AS target
@@ -265,13 +265,13 @@
   </insert>
 
   <!-- Returns all variable names for the given process definition key. -->
-  <select id="findVariableNames" resultType="java.lang.String">
+  <select id="findLookupVariableNames" resultType="java.lang.String">
     SELECT VAR_NAME FROM ${prefix}PROCESS_DEF_VAR_NAME_LOOKUP
     WHERE PROCESS_DEFINITION_KEY = #{processDefinitionKey}
   </select>
 
   <!-- Removes all lookup entries for the given process definitions, used when a process definition is deleted. -->
-  <delete id="deleteByProcessDefinitionKeys">
+  <delete id="deleteLookupByProcessDefinitionKeys">
     DELETE FROM ${prefix}PROCESS_DEF_VAR_NAME_LOOKUP
     WHERE PROCESS_DEFINITION_KEY IN
     <foreach collection="list" item="key" open="(" close=")" separator=",">#{key}</foreach>

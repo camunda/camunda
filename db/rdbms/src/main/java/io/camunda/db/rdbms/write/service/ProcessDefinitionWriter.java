@@ -42,7 +42,7 @@ public class ProcessDefinitionWriter implements RdbmsWriter {
   }
 
   public void deleteByKeys(final List<Long> processDefinitionKeys) {
-    variableMapper.deleteByProcessDefinitionKeys(processDefinitionKeys);
+    variableMapper.deleteLookupByProcessDefinitionKeys(processDefinitionKeys);
     processDefinitionMapper.deleteByKeys(processDefinitionKeys);
   }
 }

@@ -96,9 +96,10 @@ class VariableWriterTest {
                         && queueItem.statementType() == WriteStatementType.INSERT
                         && queueItem
                             .statementId()
-                            .equals("io.camunda.db.rdbms.sql.VariableMapper.insertIfNotExists")
+                            .equals(
+                                "io.camunda.db.rdbms.sql.VariableMapper.insertLookupIfNotExists")
                         && queueItem.parameter()
-                            instanceof ProcessDefinitionVariableNameLookupDbModel m
+                            instanceof final ProcessDefinitionVariableNameLookupDbModel m
                         && m.processDefinitionKey() == 456L
                         && "amount".equals(m.varName())));
   }
