@@ -943,7 +943,7 @@ jobs:
         shell: bash
         run: >
           TASKS=$(echo "${{ matrix.maven-modules }}" | tr -d "'" | tr ',' '\n' | sed '/^$/d; s/$/:test/' | tr '\n' ' ') &&
-          ./gradlew --no-daemon --console=plain --max-workers=3 -Pskip.fe.build -Pskip.random.tests -Pparallel.tests -Pjunit.thread.count=16 -Ptest.jvm.maxheap=4g ${TASKS} | tee "${BUILD_OUTPUT_FILE_PATH}"
+          ./gradlew --no-daemon --console=plain --max-workers=3 -Pskip.fe.build -Pskip.random.tests -Pparallel.tests -Pjunit.thread.count=16 -Ptest.max.forks=3 -Ptest.jvm.maxheap=4g ${TASKS} | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Analyze Test Runs
         id: analyze-test-run
         if: always()
