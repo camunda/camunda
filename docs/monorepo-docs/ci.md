@@ -202,15 +202,27 @@ Related resources:
 
 ### Ownership
 
-Each CI test file has an owning team. The owning team can be found either through the `CODEOWNERS` file or on the metadata in the file itself. The `CODEOWNERS` file is organized and broken down by team, any additions to the file should follow that convention. The metadata on a GHA workflow file is used by a scraping tool so that it is easy to gather information about the current state of CI. You can look at the metadata for a quick overview of the owning team, where the tests live, how the test is called, and a description of what the file is actually testing
+Each CI test file has an owning team. The owning team can be found in `.codeowners` (lookup via `codeowners-cli owner <path>`) with the same value also in the metadata in the GHA workflow YAML file itself. `.codeowners` is the source-of-truth, the metadata is for human overview only:
+
+You can look at the metadata for a quick overview of the owning team, where the tests live, how the test is called, and a description of what the file is actually testing
+
+The owning team is the general point of contact for any questions or problems with the GHA workflow. Unless overwritten on the GHA job-level, the owning team will also own all job failures and their medic can be contacted to resolve those.
 
 Metadata follows this structure and is placed at the beginning of a GHA workflow file
 
 ```
 # <Description of what the GHA is running and what is being tested>
 # test location: <The filepath of the tests being run>
-# owner: <The name of the owning team>
+# owner: <The GitHub handle of the owning team>
 ```
+
+#### Automatic Alert Attribution
+
+For programmatic alert routing and medic assignment on CI incidents, each workflow also propagates the canonical GitHub team handle to [CI Analytics](#ci-health-metrics) via a workflow-level `env: TEST_OWNER:` block.
+
+The [`observe-build-status` action](#metrics-collection) reads this env var as the default for the `user_description` field it submits to CI Analytics. This can be overwritten on the job-level with more specific `env: TEST_OWNER:` blocks.
+
+See [Metrics Collection](#metrics-collection) for the concrete `env:` snippet, including how to override per-job and how to wire matrix-driven values.
 
 ### Legacy CI
 
@@ -355,6 +367,32 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 ```
+
+To attribute CI Analytics rows to an owning team, set a canonical handle as a workflow-level env var. This is read by `observe-build-status` as the default for its `user_description` input, so no inline argument is needed at the call site:
+
+```yaml
+# owner: @camunda/core-features
+env:
+  TEST_OWNER: '@camunda/core-features'
+```
+
+The handle must match with `.codeowners` (verify with `codeowners-cli owner <path>`). Override per job for outliers if necessary, including matrix-driven values:
+
+```yaml
+jobs:
+  per-suite-tests:
+    strategy:
+      matrix:
+        include:
+          - suite: CoreFeatures
+            owner: '@camunda/core-features'
+          - suite: DataLayer
+            owner: '@camunda/data-layer'
+    env:
+      TEST_OWNER: ${{ matrix.owner }}
+    # ...
+```
+
 
 Related resources:
 
