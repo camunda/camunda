@@ -31,8 +31,6 @@ const validateCondition = (condition: DraftCondition): RowErrors => {
     if (!condition.value?.trim()) {
       errors.value = 'Value is required';
     } else if (condition.operator !== 'contains') {
-      // `contains` skips value-shape validation in both V1 and V2 — see
-      // `smartTransform.ts` for the shared rationale.
       const error = IS_VARIABLE_FILTER_V2_ENABLED
         ? validateSmartValue(condition.value)
         : validateLegacyValue(condition.operator, condition.value);

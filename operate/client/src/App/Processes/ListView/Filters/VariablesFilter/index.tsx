@@ -73,7 +73,10 @@ const ChipListView: React.FC = observer(() => {
 const VariableFilter: React.FC = observer(() => {
   const {conditions} = variableFilterStore;
 
-  const showInlineForm = IS_VARIABLE_FILTER_V2_ENABLED && conditions.length < 2;
+  const inlineFormApplicable =
+    conditions.length === 0 ||
+    (conditions.length === 1 && conditions[0]?.operator === 'equals');
+  const showInlineForm = IS_VARIABLE_FILTER_V2_ENABLED && inlineFormApplicable;
 
   return (
     <>
