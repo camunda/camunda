@@ -12,6 +12,7 @@ import {Filter, SidePanelClose, SidePanelOpen} from '@carbon/react/icons';
 import {useTranslation} from 'react-i18next';
 import {cn} from '#/shared/cn';
 import styles from './CollapsiblePanel.module.scss';
+import {usePrevious} from '@uidotdev/usehooks';
 
 const BUILT_IN_FILTERS = [
 	{id: 'all-open', labelKey: 'taskFilterPanelAllOpenTasks'},
@@ -22,6 +23,7 @@ const BUILT_IN_FILTERS = [
 
 const CollapsiblePanel: React.FC = () => {
 	const [isCollapsed, setIsCollapsed] = useState(true);
+	const wasCollapsed = usePrevious(isCollapsed);
 	const {t} = useTranslation();
 
 	if (isCollapsed) {
@@ -46,6 +48,7 @@ const CollapsiblePanel: React.FC = () => {
 							}}
 							aria-controls="task-nav-bar"
 							aria-expanded="false"
+							autoFocus={wasCollapsed !== null && !wasCollapsed}
 						/>
 					</li>
 					<li>
@@ -80,6 +83,7 @@ const CollapsiblePanel: React.FC = () => {
 						}}
 						aria-controls="task-nav-bar"
 						aria-expanded="true"
+						autoFocus
 					/>
 				</div>
 				<div className={styles.scrollContainer}>
