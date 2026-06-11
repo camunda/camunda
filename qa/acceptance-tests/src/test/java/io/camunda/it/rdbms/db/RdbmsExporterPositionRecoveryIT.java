@@ -16,6 +16,7 @@ import com.google.common.collect.Iterables;
 import io.camunda.client.CamundaClient;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
+import io.camunda.zeebe.broker.exporter.metrics.MetricsExporter;
 import io.camunda.zeebe.broker.exporter.stream.ExporterMetricsDoc;
 import io.micrometer.core.instrument.Measurement;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -87,6 +88,7 @@ class RdbmsExporterPositionRecoveryIT {
     testInstance =
         new TestCamundaApplication()
             .withSecondaryStorageType(SecondaryStorageType.rdbms)
+            .withProperty("camunda.monitoring.metrics.enable-exporter-execution-metrics", true)
             .withProperty("camunda.data.secondary-storage.rdbms.url", postgres.getJdbcUrl())
             .withProperty("camunda.data.secondary-storage.rdbms.username", postgres.getUsername())
             .withProperty("camunda.data.secondary-storage.rdbms.password", postgres.getPassword())
@@ -116,9 +118,14 @@ class RdbmsExporterPositionRecoveryIT {
   @Test
   @Order(1)
   void shouldRecoverAfterPositionMismatchAndContinueExporting() throws Exception {
-    // given — note the current DB position before tamper
+    // given — note current positions before tamper
     final long positionBeforeTamper = getCurrentDbExporterPosition();
     assertThat(positionBeforeTamper).isGreaterThan(0);
+
+    // Capture the MetricsExporter baseline so we can prove it keeps advancing independently.
+    // It is auto-registered by BrokerCfg once execution metrics exporting is enabled in the test
+    // setup.
+    final long metricsPositionBeforeTamper = getCurrentMetricsExporterPosition();
 
     // Advance the DB position ahead to simulate another exporter instance writing ahead.
     // A small offset (+50) is used so that the 30 new process instances (~300 records) push
@@ -133,8 +140,8 @@ class RdbmsExporterPositionRecoveryIT {
       startProcessInstance(camundaClient, "service_tasks_v1", "{\"xyz\":\"foo\"}");
     }
 
-    // then — the exporter reopens, re-syncs from DB position, and eventually the DB position
-    // advances past the tampered value as new records (with positions > tamperedPosition) arrive
+    // then — the RDBMS exporter reopens, re-syncs from DB position, and eventually the DB
+    // position advances past the tampered value as new records arrive
     Awaitility.await("exporter recovers and advances position past tampered value")
         .atMost(Duration.ofMinutes(3))
         .untilAsserted(
@@ -144,6 +151,18 @@ class RdbmsExporterPositionRecoveryIT {
                         "DB exporter position must eventually exceed the tampered value, "
                             + "proving the exporter recovered and continued exporting")
                     .isGreaterThan(tamperedPosition));
+
+    // and — the MetricsExporter must keep advancing despite the RDBMS reopen; it shares the same
+    // actor loop but has its own ExporterContainer and is never closed or reopened as a side-effect
+    Awaitility.await("MetricsExporter continues to export after RDBMS reopen")
+        .atMost(Duration.ofMinutes(1))
+        .untilAsserted(
+            () ->
+                assertThat(getCurrentMetricsExporterPosition())
+                    .as(
+                        "MetricsExporter last-updated position must advance past its pre-tamper "
+                            + "baseline, proving it was not disrupted by the RDBMS exporter reopen")
+                    .isGreaterThan(metricsPositionBeforeTamper));
   }
 
   /**
@@ -151,9 +170,9 @@ class RdbmsExporterPositionRecoveryIT {
    *
    * <p>The in-transaction row-lock hook detects the divergence (DB &lt; {@code
    * lastFlushedPosition}) and raises a {@link
-   * io.camunda.db.rdbms.write.queue.PositionMismatchException}. On reopen the exporter finds DB
-   * &lt; broker and attempts a replay; but in this test environment the exporter is already in the
-   * exporting phase and replay is rejected. The exporter then fails hard with an {@link
+   * io.camunda.db.rdbms.exception.ExporterPositionMismatchException}. On reopen the exporter finds
+   * DB &lt; broker and attempts a replay; but in this test environment the exporter is already in
+   * the exporting phase and replay is rejected. The exporter then fails hard with an {@link
    * io.camunda.zeebe.exporter.api.ExporterException} rather than silently accepting a stale
    * baseline (which would risk data loss). This scenario requires log segments to be available in
    * production for automatic recovery.
@@ -222,13 +241,24 @@ class RdbmsExporterPositionRecoveryIT {
   }
 
   private long getCurrentAcknowledgedExporterPosition() {
-    return getMeterLong(ExporterMetricsDoc.LAST_UPDATED_EXPORTED_POSITION.getName());
+    return getMeterLong(ExporterMetricsDoc.LAST_UPDATED_EXPORTED_POSITION.getName(), "rdbms");
   }
 
-  private long getMeterLong(final String name) {
+  private long getCurrentMetricsExporterPosition() {
+    return getMeterLong(
+        ExporterMetricsDoc.LAST_UPDATED_EXPORTED_POSITION.getName(),
+        MetricsExporter.defaultExporterId());
+  }
+
+  private long getMeterLong(final String name, final String exporterId) {
     try {
       final var meters =
-          meterRegistry.get(name).tag("exporter", "rdbms").tag("partition", "1").meter().measure();
+          meterRegistry
+              .get(name)
+              .tag("exporter", exporterId)
+              .tag("partition", "1")
+              .meter()
+              .measure();
       final Measurement first = Iterables.getFirst(meters, null);
       return first == null ? 0L : (long) first.getValue();
     } catch (final Exception e) {
