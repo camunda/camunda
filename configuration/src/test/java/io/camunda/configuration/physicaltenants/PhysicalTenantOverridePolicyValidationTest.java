@@ -136,6 +136,22 @@ class PhysicalTenantOverridePolicyValidationTest {
   }
 
   @Test
+  void shouldRejectTenantOverridingRdbmsMaxVarcharFieldLength() {
+    // given a tenant overriding the cluster-wide rdbms max varchar field length
+    final MockEnvironment environment =
+        environmentWith(
+            Map.of(
+                "camunda.physical-tenants.tenanta.data.secondary-storage.rdbms.max-varchar-field-length",
+                4000));
+
+    // when / then
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> PhysicalTenantOverridePolicyValidation.validate(environment))
+        .withMessageContaining("tenanta")
+        .withMessageContaining("data.secondary-storage.rdbms.max-varchar-field-length");
+  }
+
+  @Test
   void shouldNotThrowWhenNoTenantsAreDeclared() {
     // given only root configuration
     final MockEnvironment environment = environmentWith(Map.of("camunda.cluster.size", 4));
