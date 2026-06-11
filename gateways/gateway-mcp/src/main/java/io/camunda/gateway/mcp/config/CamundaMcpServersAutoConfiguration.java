@@ -10,8 +10,8 @@ package io.camunda.gateway.mcp.config;
 import static io.camunda.gateway.mapping.http.physicaltenants.PhysicalTenantContext.PATH_VARIABLE_PHYSICAL_TENANT_ID;
 import static io.camunda.gateway.mapping.http.physicaltenants.PhysicalTenantContext.PHYSICAL_TENANT_URI_PREFIX;
 
-import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.gateway.mapping.http.physicaltenants.PhysicalTenantContext;
+import io.camunda.gateway.mapping.http.physicaltenants.PhysicalTenantIds;
 import io.camunda.gateway.mcp.ConditionalOnMcpGatewayEnabled;
 import io.camunda.gateway.mcp.config.server.RequestHandlerCustomizer;
 import io.camunda.gateway.mcp.config.server.ToolRepository;
@@ -154,8 +154,8 @@ public class CamundaMcpServersAutoConfiguration {
   public RouterFunction<ServerResponse> clusterRouterFunction(
       @Qualifier("clusterTransportProvider")
           final WebMvcStatelessServerTransport clusterTransportProvider,
-      final ObjectProvider<PhysicalTenantResolver> resolverProvider) {
-    return dualPathRouterFunction(clusterTransportProvider, resolverProvider);
+      final ObjectProvider<PhysicalTenantIds> tenantIdsProvider) {
+    return dualPathRouterFunction(clusterTransportProvider, tenantIdsProvider);
   }
 
   /**
@@ -170,8 +170,8 @@ public class CamundaMcpServersAutoConfiguration {
   public RouterFunction<ServerResponse> processesRouterFunction(
       @Qualifier("processesTransportProvider")
           final WebMvcStatelessServerTransport processesTransportProvider,
-      final ObjectProvider<PhysicalTenantResolver> resolverProvider) {
-    return dualPathRouterFunction(processesTransportProvider, resolverProvider);
+      final ObjectProvider<PhysicalTenantIds> tenantIdsProvider) {
+    return dualPathRouterFunction(processesTransportProvider, tenantIdsProvider);
   }
 
   // ---------------------------------------------------------------------------------------------
@@ -245,13 +245,13 @@ public class CamundaMcpServersAutoConfiguration {
    */
   private static RouterFunction<ServerResponse> dualPathRouterFunction(
       final WebMvcStatelessServerTransport transport,
-      final ObjectProvider<PhysicalTenantResolver> resolverProvider) {
+      final ObjectProvider<PhysicalTenantIds> tenantIdsProvider) {
     final RouterFunction<ServerResponse> base = transport.getRouterFunction();
 
     final RouterFunction<ServerResponse> global = base.filter(defaultTenantFilter());
     final RouterFunction<ServerResponse> tenant =
         RouterFunctions.nest(RequestPredicates.path(PHYSICAL_TENANT_URI_PREFIX), base)
-            .filter(tenantFilter(resolverProvider));
+            .filter(tenantFilter(tenantIdsProvider));
 
     return global.and(tenant);
   }
@@ -283,11 +283,11 @@ public class CamundaMcpServersAutoConfiguration {
    * resolved id on the request via {@link PhysicalTenantContext}.
    */
   static HandlerFilterFunction<ServerResponse, ServerResponse> tenantFilter(
-      final ObjectProvider<PhysicalTenantResolver> resolverProvider) {
-    final PhysicalTenantResolver resolver = resolverProvider.getIfAvailable();
+      final ObjectProvider<PhysicalTenantIds> tenantIdsProvider) {
+    final PhysicalTenantIds tenantIds = tenantIdsProvider.getIfAvailable();
     final var knownTenants =
-        resolver != null
-            ? resolver.getAll().keySet()
+        tenantIds != null
+            ? tenantIds.known()
             : Set.of(PhysicalTenantContext.DEFAULT_PHYSICAL_TENANT_ID);
     return (request, next) -> {
       final String tenantId = request.pathVariable(PATH_VARIABLE_PHYSICAL_TENANT_ID);
