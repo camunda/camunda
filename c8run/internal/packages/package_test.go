@@ -279,7 +279,7 @@ func TestRewriteZipKeepingNativeLibStripsOtherPlatforms(t *testing.T) {
 	allKept := make(map[string]bool)
 	for _, entry := range r.File {
 		allKept[entry.Name] = true
-		if isRootNativeLib(entry.Name) {
+		if isRocksdbNativeLib(entry.Name) {
 			keptNative = append(keptNative, entry.Name)
 		}
 	}
@@ -392,7 +392,7 @@ func TestStripRocksDbNativeLibsStripsJar(t *testing.T) {
 
 	var nativeLibs []string
 	for _, entry := range r.File {
-		if isRootNativeLib(entry.Name) {
+		if isRocksdbNativeLib(entry.Name) {
 			nativeLibs = append(nativeLibs, entry.Name)
 		}
 	}

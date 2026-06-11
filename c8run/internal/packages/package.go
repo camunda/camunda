@@ -192,7 +192,10 @@ func rocksdbNativeLibName(osType, arch string) (string, error) {
 	return "", fmt.Errorf("no RocksDB native lib mapping for os=%s arch=%s", osType, arch)
 }
 
-func isRootNativeLib(name string) bool {
+// isRocksdbNativeLib reports whether name is a RocksDB JNI native library entry.
+// rocksdbjni JARs pack native libs at the JAR root (no directory prefix).
+// Only call this on rocksdbjni-*.jar entries — other JARs may contain unrelated root-level natives.
+func isRocksdbNativeLib(name string) bool {
 	if strings.ContainsRune(name, '/') {
 		return false
 	}
@@ -245,7 +248,7 @@ func rewriteZipKeepingNativeLib(jarPath, libName string) error {
 	var copyErr error
 
 	for _, f := range r.File {
-		isNativeEntry := isRootNativeLib(f.Name)
+		isNativeEntry := isRocksdbNativeLib(f.Name)
 		if isNativeEntry {
 			if f.Name != libName {
 				continue
@@ -292,6 +295,8 @@ func rewriteZipKeepingNativeLib(jarPath, libName string) error {
 	return nil
 }
 
+// stripRocksDbNativeLibs must be called from the c8run working directory:
+// it globs camunda-zeebe-<version>/lib/rocksdbjni-*.jar relative to CWD.
 func stripRocksDbNativeLibs(camundaVersion, osType, arch string) error {
 	libName, err := rocksdbNativeLibName(osType, arch)
 	if err != nil {
