@@ -233,7 +233,7 @@ func rewriteZipKeepingNativeLib(jarPath, libName string) error {
 	tmpPath := jarPath + ".tmp"
 	tmpFile, err := os.Create(tmpPath)
 	if err != nil {
-		r.Close()
+		_ = r.Close()
 		return fmt.Errorf("failed to create temp file %s: %w", tmpPath, err)
 	}
 
@@ -262,25 +262,25 @@ func rewriteZipKeepingNativeLib(jarPath, libName string) error {
 	}
 
 	if copyErr != nil {
-		w.Close()
-		tmpFile.Close()
-		r.Close()
+		_ = w.Close()
+		_ = tmpFile.Close()
+		_ = r.Close()
 		removeTmp()
 		return copyErr
 	}
 	if err := w.Close(); err != nil {
-		tmpFile.Close()
-		r.Close()
+		_ = tmpFile.Close()
+		_ = r.Close()
 		removeTmp()
 		return fmt.Errorf("failed to finalize temp jar: %w", err)
 	}
 	if err := tmpFile.Close(); err != nil {
-		r.Close()
+		_ = r.Close()
 		removeTmp()
 		return fmt.Errorf("failed to close temp file: %w", err)
 	}
 	if nativeLibCount != 1 {
-		r.Close()
+		_ = r.Close()
 		removeTmp()
 		return fmt.Errorf("expected exactly 1 native lib %q in jar, got %d: verify rocksdbNativeLibName mapping", libName, nativeLibCount)
 	}
@@ -637,7 +637,7 @@ func New(camundaVersion, connectorsVersion string) error {
 	}
 
 	if err := stripRocksDbNativeLibs(camundaVersion, osType, architecture); err != nil {
-		return fmt.Errorf("Package %s: failed to strip RocksDB native libs: %w", osType, err)
+		return fmt.Errorf("package %s: failed to strip RocksDB native libs: %w", osType, err)
 	}
 
 	err = downloadAndExtract(connectorsFilePath, connectorsUrl, connectorsFilePath, ".", javaArtifactsToken, func(_, _ string) error { return nil })
