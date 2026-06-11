@@ -7,26 +7,63 @@
  */
 
 import {render} from 'vitest-browser-react';
-import {QueryClient} from '@tanstack/react-query';
-import {RouterProvider, createMemoryHistory, createRouter} from '@tanstack/react-router';
-import {routeTree} from '../routeTree.gen';
+import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {
+	Outlet,
+	RouterProvider,
+	createMemoryHistory,
+	createRootRouteWithContext,
+	createRoute,
+	createRouter,
+	type RegisteredRouter,
+} from '@tanstack/react-router';
 
-function createTestRouter(initialLocation = '/') {
-	return createRouter({
-		routeTree,
-		history: createMemoryHistory({initialEntries: [initialLocation]}),
-		context: {
-			queryClient: new QueryClient({
-				defaultOptions: {queries: {retry: false}},
-			}),
+type ValidRoutes = RegisteredRouter['routeTree']['types']['fileRouteTypes']['to'];
+
+async function renderWithRouter(
+	Component: React.ComponentType,
+	{
+		path,
+		initialEntry = path,
+	}: {
+		path: ValidRoutes;
+		initialEntry?: ValidRoutes;
+	},
+) {
+	const queryClient = new QueryClient({
+		defaultOptions: {
+			queries: {retry: false},
 		},
 	});
-}
 
-async function renderWithRouter(initialLocation = '/') {
-	const router = createTestRouter(initialLocation);
-	const screen = await render(<RouterProvider router={router} />);
-	return {...screen, router};
+	const rootRoute = createRootRouteWithContext<{queryClient: QueryClient}>()({
+		component: () => <Outlet />,
+	});
+
+	const testRoute = createRoute({
+		getParentRoute: () => rootRoute,
+		path,
+		component: () => <Component />,
+	});
+
+	const router = createRouter({
+		routeTree: rootRoute.addChildren([testRoute]),
+		history: createMemoryHistory({initialEntries: [initialEntry]}),
+		defaultPendingMinMs: 0,
+		context: {
+			queryClient,
+		},
+	});
+
+	await router.load();
+
+	const screen = await render(
+		<QueryClientProvider client={queryClient}>
+			<RouterProvider router={router} />
+		</QueryClientProvider>,
+	);
+
+	return {...screen, router, queryClient};
 }
 
 export {renderWithRouter};

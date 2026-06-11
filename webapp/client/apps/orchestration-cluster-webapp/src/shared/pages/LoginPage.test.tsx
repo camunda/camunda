@@ -6,25 +6,18 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {HttpResponse} from 'msw';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
-import {mockCurrentUserEndpoint} from '#/shared-test-modules/mock-handlers';
+import {LoginPage} from '#/shared/pages/LoginPage';
 import {describe, expect, vi} from 'vitest';
 
 describe('<Login />', () => {
-	it('should have the correct copyright notice', async ({worker}) => {
-		worker.use(
-			mockCurrentUserEndpoint({
-				successResponse: new HttpResponse(null, {status: 401}),
-			}),
-		);
-
+	it('should have the correct copyright notice', async () => {
 		vi.useFakeTimers();
 		const mockYear = 1984;
 		vi.setSystemTime(new Date(mockYear, 0));
 
-		const screen = await renderWithRouter('/login');
+		const screen = await renderWithRouter(LoginPage, {path: '/login'});
 
 		await expect
 			.element(screen.getByText(`© Camunda Services GmbH ${mockYear}. All rights reserved. | 0.0.0`))
@@ -32,14 +25,8 @@ describe('<Login />', () => {
 		vi.useRealTimers();
 	});
 
-	it('should not allow the form to be submitted with empty fields', async ({worker}) => {
-		worker.use(
-			mockCurrentUserEndpoint({
-				successResponse: new HttpResponse(null, {status: 401}),
-			}),
-		);
-
-		const screen = await renderWithRouter('/login');
+	it('should not allow the form to be submitted with empty fields', async () => {
+		const screen = await renderWithRouter(LoginPage, {path: '/login'});
 
 		await screen.getByRole('button', {name: /login/i}).click();
 
