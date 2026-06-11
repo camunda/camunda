@@ -20,7 +20,7 @@ import {
 } from 'modules/stores/variableFilter';
 import {VARIABLE_FILTER_OPERATORS} from './constants';
 import {ConditionList, ConditionItem} from './styled';
-import {SingleConditionForm} from './SingleConditionForm';
+import {SingleConditionFields} from './SingleConditionFields';
 
 const getConditionLabel = (condition: VariableCondition): string => {
   const config = VARIABLE_FILTER_OPERATORS.find(
@@ -78,7 +78,7 @@ const VariableFilter: React.FC = observer(() => {
   return (
     <>
       <Title>Variables</Title>
-      {showInlineForm ? <SingleConditionForm /> : <ChipListView />}
+      {showInlineForm ? <SingleConditionFields /> : <ChipListView />}
     </>
   );
 });
