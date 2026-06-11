@@ -273,7 +273,11 @@ func TestRewriteZipKeepingNativeLibStripsOtherPlatforms(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to open rewritten jar: %v", err)
 	}
-	defer r.Close()
+	defer func() {
+		if err := r.Close(); err != nil {
+			t.Errorf("failed to close rewritten jar: %v", err)
+		}
+	}()
 
 	var keptNative []string
 	allKept := make(map[string]bool)
@@ -388,7 +392,11 @@ func TestStripRocksDbNativeLibsStripsJar(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to open stripped jar: %v", err)
 	}
-	defer r.Close()
+	defer func() {
+		if err := r.Close(); err != nil {
+			t.Errorf("failed to close stripped jar: %v", err)
+		}
+	}()
 
 	var nativeLibs []string
 	for _, entry := range r.File {
