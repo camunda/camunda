@@ -61,7 +61,7 @@ import io.camunda.spring.utils.DatabaseTypeUtils;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
-import io.camunda.zeebe.gateway.rest.config.PhysicalTenantRestConfigProvider;
+import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -115,13 +115,14 @@ public class CamundaServicesConfiguration {
       final SearchClientsProxy searchClients,
       final AuthorizationChecker authorizationChecker,
       final CamundaSecurityLibraryProperties cslProperties,
-      final PhysicalTenantRestConfigProvider physicalTenantRestConfigProvider,
+      final GatewayRestConfiguration gatewayRestConfiguration,
       final BrokerTopologyManager brokerTopologyManager,
       final MeterRegistry meterRegistry,
       final Environment environment,
       final ManagementServices managementServices,
       final ApiServicesExecutorProvider executor) {
 
+    final int maxNameFieldLength = gatewayRestConfiguration.getMaxNameFieldLength();
     final boolean secondaryStorageEnabled =
         DatabaseTypeUtils.isSecondaryStorageEnabled(environment);
 
@@ -132,10 +133,6 @@ public class CamundaServicesConfiguration {
         .getAll()
         .forEach(
             (tenantId, tenantConfig) -> {
-              final int maxNameFieldLength =
-                  physicalTenantRestConfigProvider
-                      .forPhysicalTenant(tenantId)
-                      .getMaxNameFieldLength();
               final var search = searchClients.withPhysicalTenant(tenantId);
 
               // -- per-tenant BrokerRequestAuthorizationConverter --
