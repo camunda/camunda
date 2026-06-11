@@ -29,16 +29,21 @@ public final class TimerRecord extends UnifiedRecordValue implements TimerRecord
   private final LongProperty processDefinitionKeyProp = new LongProperty("processDefinitionKey");
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  private final LongProperty rootProcessInstanceKeyProp =
+      new LongProperty("rootProcessInstanceKey", -1L);
+  private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId", "");
 
   public TimerRecord() {
-    super(7);
+    super(9);
     declareProperty(elementInstanceKeyProp)
         .declareProperty(processInstanceKeyProp)
         .declareProperty(dueDateProp)
         .declareProperty(targetElementId)
         .declareProperty(repetitionsProp)
         .declareProperty(processDefinitionKeyProp)
-        .declareProperty(tenantIdProp);
+        .declareProperty(tenantIdProp)
+        .declareProperty(rootProcessInstanceKeyProp)
+        .declareProperty(bpmnProcessIdProp);
   }
 
   @JsonIgnore
@@ -113,6 +118,26 @@ public final class TimerRecord extends UnifiedRecordValue implements TimerRecord
 
   public TimerRecord setTenantId(final String tenantId) {
     tenantIdProp.setValue(tenantId);
+    return this;
+  }
+
+  @Override
+  public long getRootProcessInstanceKey() {
+    return rootProcessInstanceKeyProp.getValue();
+  }
+
+  public TimerRecord setRootProcessInstanceKey(final long rootProcessInstanceKey) {
+    rootProcessInstanceKeyProp.setValue(rootProcessInstanceKey);
+    return this;
+  }
+
+  @Override
+  public String getBpmnProcessId() {
+    return bufferAsString(bpmnProcessIdProp.getValue());
+  }
+
+  public TimerRecord setBpmnProcessId(final String bpmnProcessId) {
+    bpmnProcessIdProp.setValue(bpmnProcessId);
     return this;
   }
 }

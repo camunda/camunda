@@ -1602,7 +1602,10 @@ final class JsonSerializableToJsonTest {
                   "targetElementId": "node1",
                   "repetitions": 3,
                   "processDefinitionKey": 13,
-                  "tenantId": "<default>"
+                  "tenantId": "<default>",
+                  "rootProcessInstanceKey": -1,
+                  "bpmnProcessId": "",
+                  "elementId": "node1"
                 }
                 """
       },

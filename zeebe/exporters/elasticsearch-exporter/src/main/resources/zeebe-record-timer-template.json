@@ -28,6 +28,9 @@
             "targetElementId": {
               "type": "keyword"
             },
+            "elementId": {
+              "type": "keyword"
+            },
             "repetitions": {
               "type": "integer"
             },
@@ -38,6 +41,12 @@
               "type": "long"
             },
             "tenantId": {
+              "type": "keyword"
+            },
+            "rootProcessInstanceKey": {
+              "type": "long"
+            },
+            "bpmnProcessId": {
               "type": "keyword"
             }
           }
