@@ -8,11 +8,24 @@
 
 import {render, screen, waitFor} from 'modules/testing-library';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
+import {Form} from 'react-final-form';
+import {AutoSubmit} from 'modules/components/AutoSubmit';
 import {Paths} from 'modules/Routes';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {VariableFilter} from '.';
 import {VariableFilterModal} from './VariableFilterModal';
 import {variableFilterStore} from 'modules/stores/variableFilter';
+
+const FormShell: React.FC<{children: React.ReactNode}> = ({children}) => (
+  <Form onSubmit={() => {}}>
+    {({handleSubmit}) => (
+      <form onSubmit={handleSubmit}>
+        <AutoSubmit />
+        {children}
+      </form>
+    )}
+  </Form>
+);
 
 const getWrapper = (initialPath = Paths.processes()) => {
   const Wrapper: React.FC<{children: React.ReactNode}> = ({children}) => (
@@ -22,7 +35,7 @@ const getWrapper = (initialPath = Paths.processes()) => {
           path={Paths.processes()}
           element={
             <>
-              {children}
+              <FormShell>{children}</FormShell>
               <LocationLog />
             </>
           }
@@ -31,7 +44,7 @@ const getWrapper = (initialPath = Paths.processes()) => {
           path={Paths.processesVariables()}
           element={
             <>
-              {children}
+              <FormShell>{children}</FormShell>
               <VariableFilterModal />
               <LocationLog />
             </>

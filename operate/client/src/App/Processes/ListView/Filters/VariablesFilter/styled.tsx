@@ -107,6 +107,13 @@ const JsonEditorWrap = styled.div<{$invalid?: boolean}>`
   min-height: 280px;
 `;
 
+const InlineButtonRow = styled.div`
+  display: flex;
+  gap: var(--cds-spacing-03);
+  align-items: center;
+  justify-content: flex-end;
+`;
+
 export {
   ModalContent,
   Description,
@@ -119,4 +126,5 @@ export {
   ConditionRowsScroll,
   SwitcherWrap,
   JsonEditorWrap,
+  InlineButtonRow,
 };
