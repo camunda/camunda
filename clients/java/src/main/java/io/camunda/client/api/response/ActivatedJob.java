@@ -82,9 +82,7 @@ public interface ActivatedJob {
   /**
    * @return the priority of the job; higher values indicate higher priority
    */
-  default int getPriority() {
-    return 0;
-  }
+  int getPriority();
 
   /**
    * @return the unix timestamp until when the job is exclusively assigned to this worker (time unit
