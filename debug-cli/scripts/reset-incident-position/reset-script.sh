@@ -165,18 +165,22 @@ for tuple in $PARTITION_POSITIONS; do
         sync
         echo "Backup created"
 
-        # Step 3: Run cdbg to reset the incident position
-        CDBG_CMD="/usr/local/camunda/bin/cdbg state reset-incident-position"
-        CDBG_CMD="${CDBG_CMD} --root ${PARTITION_PATH}"
-        CDBG_CMD="${CDBG_CMD} --runtime ${RUNTIME_PATH}"
-        CDBG_CMD="${CDBG_CMD} --snapshot ${SELECTED_SNAPSHOT}"
-        CDBG_CMD="${CDBG_CMD} --exporter-id ${EXPORTER_ID}"
-        CDBG_CMD="${CDBG_CMD} --position ${new_position}"
-        CDBG_CMD="${CDBG_CMD} --verbose"
+        # Step 3: Run cdbg to reset the incident position. Build the command as an
+        # array and run it directly (no eval) so values are quoted properly and a
+        # space or shell metacharacter in any input cannot break or alter the call.
+        CDBG_CMD=(
+                /usr/local/camunda/bin/cdbg state reset-incident-position
+                --root "${PARTITION_PATH}"
+                --runtime "${RUNTIME_PATH}"
+                --snapshot "${SELECTED_SNAPSHOT}"
+                --exporter-id "${EXPORTER_ID}"
+                --position "${new_position}"
+                --verbose
+        )
 
-        echo "Running: ${CDBG_CMD}"
+        echo "Running: ${CDBG_CMD[*]}"
         echo ""
-        eval "${CDBG_CMD}"
+        "${CDBG_CMD[@]}"
         echo ""
 
         # Step 4: Delete the original snapshot since cdbg created a new one
