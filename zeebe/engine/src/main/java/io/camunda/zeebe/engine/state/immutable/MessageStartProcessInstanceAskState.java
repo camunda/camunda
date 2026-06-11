@@ -11,9 +11,10 @@ import io.camunda.zeebe.engine.state.message.MessageStartProcessInstanceAsk;
 
 /**
  * Read-only view of the pending cross-partition message-start ask state on {@code P_K}. An entry
- * exists for each outstanding ask (REQUEST sent, no reply yet). The entry is removed when any of
- * the three reply intents ({@code STARTED}, {@code UNIQUENESS_REJECTED}, {@code
- * NO_SUBSCRIPTION_REJECTED}) is applied locally.
+ * exists for each outstanding ask (REQUEST sent, no reply yet). The entry is removed when the ask
+ * succeeds ({@code STARTED} applied locally) or the buffered message expires; a rejection ({@code
+ * UNIQUENESS_REJECTED} / {@code NO_SUBSCRIPTION_REJECTED}) instead keeps the entry and increments
+ * its {@code rejectionCount} so it is retried under back-off.
  *
  * <p>Each entry is keyed by {@code (messageKey, processDefinitionKey)}; the pair uniquely
  * identifies an ask from this partition because a single message can only target one process

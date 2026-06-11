@@ -130,46 +130,102 @@ public class DbMessageStartProcessInstanceAskStateTest {
   }
 
   @Test
-  public void shouldDefaultBackoffMagnitudeToZeroForFreshAsk() {
-    // given a fresh ask sourced from a request record (no back-off ever applied)
+  public void shouldDefaultRejectionCountToZeroForFreshAsk() {
+    // given a fresh ask sourced from a request record (never rejected)
     final var ask = new MessageStartProcessInstanceAsk().wrap(createRecord(1L, 2L, "b", "p"));
 
-    // then the P_K-local retry bookkeeping defaults to zero, keeping the ask eligible for
-    // base-interval re-send and ensuring values persisted before this field existed decode
-    // unchanged
-    assertThat(ask.getRetryBackoffMillis()).isZero();
+    // then the P_K-local retry bookkeeping defaults to zero, keeping the ask at the base re-send
+    // cadence and ensuring values persisted before this field existed decode unchanged
+    assertThat(ask.getRejectionCount()).isZero();
   }
 
   @Test
-  public void shouldPersistBackoffMagnitude() {
+  public void shouldPersistRejectionCount() {
     // given
     final var state = stateRule.getProcessingState().getMessageStartProcessInstanceAskState();
     final var ask =
         new MessageStartProcessInstanceAsk()
             .wrap(createRecord(123L, 456L, "b", "p"))
-            .setRetryBackoffMillis(4000L);
+            .setRejectionCount(3L);
 
     // when
     state.put(ask);
 
-    // then the back-off magnitude survives the RocksDB round-trip
+    // then the rejection count survives the RocksDB round-trip
     final var retrieved = state.get(123L, 456L);
-    assertThat(retrieved.getRetryBackoffMillis()).isEqualTo(4000L);
+    assertThat(retrieved.getRejectionCount()).isEqualTo(3L);
   }
 
   @Test
-  public void shouldPreserveBackoffMagnitudeOnCopy() {
+  public void shouldPreserveRejectionCountOnCopy() {
     // given
     final var ask =
         new MessageStartProcessInstanceAsk()
             .wrap(createRecord(1L, 2L, "b", "p"))
-            .setRetryBackoffMillis(8000L);
+            .setRejectionCount(5L);
 
     // when
     final var copy = ask.copy();
 
     // then
-    assertThat(copy.getRetryBackoffMillis()).isEqualTo(8000L);
+    assertThat(copy.getRejectionCount()).isEqualTo(5L);
+  }
+
+  @Test
+  public void shouldIncrementRejectionCountOnBackOff() {
+    // given a pending ask with no rejections yet
+    final var state = stateRule.getProcessingState().getMessageStartProcessInstanceAskState();
+    state.put(new MessageStartProcessInstanceAsk().wrap(createRecord(1L, 2L, "b", "p")));
+
+    // when backed off twice
+    state.backOff(1L, 2L);
+    state.backOff(1L, 2L);
+
+    // then the persisted rejection count reflects both rejections
+    assertThat(state.get(1L, 2L).getRejectionCount()).isEqualTo(2L);
+  }
+
+  @Test
+  public void shouldNotResetSendEligibilityOnBackOff() {
+    // given a pending ask that has already been sent (transient last-sent advanced past any
+    // positive deadline)
+    final var state = stateRule.getProcessingState().getMessageStartProcessInstanceAskState();
+    state.put(new MessageStartProcessInstanceAsk().wrap(createRecord(1L, 2L, "b", "p")));
+    state.updateLastSentTime(1L, 2L, 10_000L);
+
+    // when the ask is backed off
+    state.backOff(1L, 2L);
+
+    // then back-off does not reset the transient send-tracking: the ask is still considered sent at
+    // 10_000 and is not made immediately eligible again (which would defeat the back-off)
+    assertThat(state.getPendingAsksPastDeadline(10_000L)).isEmpty();
+    assertThat(state.getPendingAsksPastDeadline(10_001L)).hasSize(1);
+  }
+
+  @Test
+  public void shouldBeNoOpWhenBackingOffMissingAsk() {
+    // given no pending ask for the key
+    final var state = stateRule.getProcessingState().getMessageStartProcessInstanceAskState();
+
+    // when / then no exception and nothing is created
+    state.backOff(7L, 8L);
+    assertThat(state.get(7L, 8L)).isNull();
+  }
+
+  @Test
+  public void shouldCapRejectionCount() {
+    // given a pending ask
+    final var state = stateRule.getProcessingState().getMessageStartProcessInstanceAskState();
+    state.put(new MessageStartProcessInstanceAsk().wrap(createRecord(1L, 2L, "b", "p")));
+
+    // when backed off far more often than the cap (30)
+    for (int i = 0; i < 100; i++) {
+      state.backOff(1L, 2L);
+    }
+
+    // then the persisted count saturates at the cap, so it never overflows when the scheduler
+    // computes 2^rejectionCount
+    assertThat(state.get(1L, 2L).getRejectionCount()).isEqualTo(30L);
   }
 
   private MessageStartProcessInstanceRequestRecord createRecord(
