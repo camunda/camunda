@@ -96,7 +96,11 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
   public CompletableFuture<Long> moveNextBatch() {
     final Stopwatch stopwatch = Stopwatch.createStarted();
     return idsSupplier
+<<<<<<< HEAD
         .apply(getLastSearchPosition(), batchSize.get())
+=======
+        .apply(getLastSearchPosition(), getBatchSize())
+>>>>>>> 63e232b4 (feat: reduce batch size on each archiving retry to increase success chance)
         .thenComposeAsync(
             response -> {
               if (response.isEmpty()) {
@@ -125,12 +129,20 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
 
                           logger.trace(
                               "Encountered retryable error when archiving docs from '{}' to '{}', "
+<<<<<<< HEAD
                                   + "retrying the batch (attempt {}/{}). Next batch size {}. Error: {}",
+=======
+                                  + "retrying the batch (next attempt {}/{} will use batch size {}). Error: {}",
+>>>>>>> 63e232b4 (feat: reduce batch size on each archiving retry to increase success chance)
                               sourceIdx,
                               destinationIdx,
                               retryCount.get(),
                               config.getArchiveByIdMaxRetryAttempts(),
+<<<<<<< HEAD
                               batchSize.get(),
+=======
+                              getBatchSize(),
+>>>>>>> 63e232b4 (feat: reduce batch size on each archiving retry to increase success chance)
                               ex.getMessage());
 
                           // Whilst this is crude, we exploit the fact the ES/OS visibility is
@@ -165,6 +177,7 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
     return lstResponse == null ? List.of() : lstResponse.searchAfter();
   }
 
+<<<<<<< HEAD
   private void adjustBatchSize(final Throwable ex) {
     if (batchSize.get() <= MINIMUM_BATCH_SIZE) {
       return;
@@ -174,6 +187,11 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
       batchSize.set(
           (int) Math.max(MINIMUM_BATCH_SIZE, batchSize.get() * BATCH_SIZE_REDUCTION_FACTOR));
     }
+=======
+  private int getBatchSize() {
+    // reduce the batch size on every retry to increase the chance of success
+    return Math.max(1, config.getReindexBatchSize() / (retryCount.get() + 1));
+>>>>>>> 63e232b4 (feat: reduce batch size on each archiving retry to increase success chance)
   }
 
   private CompletableFuture<Long> reindex(final ArchiveDocIdsBatch<SortFieldType> response) {

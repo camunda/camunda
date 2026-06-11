@@ -247,8 +247,13 @@ class ArchiveByIdTaskSupplierTest {
 
   @Test
   void shouldReduceReindexBatchSizeAfterEachRetry() {
+<<<<<<< HEAD
     // given - maxRetryAttempts=3: allows up to 3 retries (throws on the 4th consecutive failure).
     // Reindex fails on calls 1, 2, and 5, succeeds on other calls.
+=======
+    // given - maxRetryAttempts=3: retries while retryCount < 3, so 2 retries before the 3rd
+    // failure throws. Reindex fails on calls 1 and 2, succeeds from call 3 onward.
+>>>>>>> 63e232b4 (feat: reduce batch size on each archiving retry to increase success chance)
     final var retryableError = new CompletionException(new SocketTimeoutException("timeout"));
     final var reindexCallCount = new AtomicInteger(0);
     final var batchSize = new AtomicInteger(0);
@@ -261,6 +266,7 @@ class ArchiveByIdTaskSupplierTest {
             (searchAfter, size) -> {
               batchSize.set(size);
               return CompletableFuture.completedFuture(
+<<<<<<< HEAD
                   ArchiveDocIdsBatch.from(
                       List.of(IdWithRouting.of("doc1")), List.of(IdWithRouting.of("after1"))));
             },
@@ -373,6 +379,13 @@ class ArchiveByIdTaskSupplierTest {
             (source, dest, ids) -> {
               if (reindexCallCount.incrementAndGet() <= 2) {
                 return CompletableFuture.failedFuture(batchMismatchError);
+=======
+                  ArchiveDocIdsBatch.from(List.of("doc1"), List.of("after1")));
+            },
+            (source, dest, ids) -> {
+              if (reindexCallCount.incrementAndGet() <= 2) {
+                return CompletableFuture.failedFuture(retryableError);
+>>>>>>> 63e232b4 (feat: reduce batch size on each archiving retry to increase success chance)
               }
               return CompletableFuture.completedFuture((long) ids.size());
             },
@@ -381,6 +394,7 @@ class ArchiveByIdTaskSupplierTest {
             metrics,
             LOGGER);
 
+<<<<<<< HEAD
     // when - attempt 1 fails with non-SocketTimeout error
     assertThat(taskSupplier.moveNextBatch().join()).isEqualTo(0L);
     assertThat(batchSize.get()).isEqualTo(1200);
@@ -390,6 +404,21 @@ class ArchiveByIdTaskSupplierTest {
     assertThat(batchSize.get()).isEqualTo(1200);
 
     // when - attempt 3 succeeds: batch size still unchanged
+=======
+    // when - attempt 1 fails (retryCount: 0→1), full batch size used
+    assertThat(taskSupplier.moveNextBatch().join()).isEqualTo(0L);
+    assertThat(batchSize.get()).isEqualTo(1200);
+
+    // when - attempt 2 fails (retryCount: 1→2), batch size halved
+    assertThat(taskSupplier.moveNextBatch().join()).isEqualTo(0L);
+    assertThat(batchSize.get()).isEqualTo(600);
+
+    // when - attempt 3 succeeds (retryCount=2 at fetch → size/3), then resets to 0
+    assertThat(taskSupplier.moveNextBatch().join()).isEqualTo(1L);
+    assertThat(batchSize.get()).isEqualTo(400);
+
+    // when - next batch after success starts at full size again (retryCount reset to 0)
+>>>>>>> 63e232b4 (feat: reduce batch size on each archiving retry to increase success chance)
     assertThat(taskSupplier.moveNextBatch().join()).isEqualTo(1L);
     assertThat(batchSize.get()).isEqualTo(1200);
   }

@@ -449,7 +449,11 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
       final Map<String, String> inclusionFilters,
       final Map<String, String> exclusionFilters,
       final List<FieldValue> searchAfter,
+<<<<<<< HEAD
       final int size) {
+=======
+      final Integer size) {
+>>>>>>> 63e232b4 (feat: reduce batch size on each archiving retry to increase success chance)
     final Query query = buildFilterQuery(keysByField, inclusionFilters, exclusionFilters);
     final Builder requestBuilder =
         new SearchRequest.Builder()
