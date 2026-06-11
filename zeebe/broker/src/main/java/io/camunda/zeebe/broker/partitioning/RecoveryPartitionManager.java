@@ -36,10 +36,16 @@ import org.slf4j.LoggerFactory;
  * io.camunda.zeebe.scheduler.startup.StartupStep}s encapsulated in {@link RecoveryPartition},
  * mirroring the normal {@link Partition} bootstrapping approach.
  */
-public final class RecoveryPartitionManager extends AbstractPartitionManager {
+public final class RecoveryPartitionManager implements PartitionManager {
 
   private static final Logger LOG = LoggerFactory.getLogger(RecoveryPartitionManager.class);
   private final List<RecoveryPartition> recoveryPartitions = new ArrayList<>();
+  private final String partitionGroup;
+  private final ConcurrencyControl concurrencyControl;
+  private final ActorSchedulingService actorSchedulingService;
+  private final ClusterConfigurationService clusterConfigurationService;
+  private final ClusterMembershipService membershipService;
+  private final TopologyManagerImpl topologyManager;
   private final String dataDirectory;
   private final MeterRegistry meterRegistry;
 
@@ -50,17 +56,16 @@ public final class RecoveryPartitionManager extends AbstractPartitionManager {
       final ClusterConfigurationService clusterConfigurationService,
       final ClusterServices clusterServices,
       final ActorSchedulingService schedulingService,
-      final BrokerInfo brokerInfo,
-      final MeterRegistry meterRegistry) {
-    super(
-        partitionGroup,
-        concurrencyControl,
-        schedulingService,
-        clusterConfigurationService,
-        clusterServices.getMembershipService(),
-        brokerInfo);
+      final MeterRegistry meterRegistry,
+      final TopologyManagerImpl topologyManager) {
+    this.partitionGroup = partitionGroup;
+    this.concurrencyControl = concurrencyControl;
+    actorSchedulingService = schedulingService;
+    this.clusterConfigurationService = clusterConfigurationService;
+    this.topologyManager = topologyManager;
     this.dataDirectory = dataDirectory;
     this.meterRegistry = meterRegistry;
+    membershipService = clusterServices.getMembershipService();
   }
 
   @Override
@@ -171,5 +176,27 @@ public final class RecoveryPartitionManager extends AbstractPartitionManager {
 
   private Path partitionDirectory(final PartitionId partitionId) {
     return RaftPartitionFactory.getPartitionDirectory(partitionId, dataDirectory);
+  }
+
+  private MemberId localMemberId() {
+    return membershipService.getLocalMember().id();
+  }
+
+  /**
+   * Resolves the partitions of this partition group that the local broker is a member of, according
+   * to the current partition distribution.
+   */
+  private List<PartitionMetadata> localPartitions() {
+    final var localMemberId = localMemberId();
+    // The default physical tenant's partition distribution is the only one stored in dynamic
+    // config; other physical tenants derive their distribution by rewriting the group on every
+    // PartitionId.
+    return clusterConfigurationService
+        .getPartitionDistribution()
+        .withGroupName(partitionGroup)
+        .partitions()
+        .stream()
+        .filter(p -> p.members().contains(localMemberId))
+        .toList();
   }
 }

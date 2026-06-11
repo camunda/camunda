@@ -60,12 +60,18 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class PartitionManagerImpl extends AbstractPartitionManager
-    implements PartitionChangeExecutor, PartitionScalingChangeExecutor {
+public final class PartitionManagerImpl
+    implements PartitionManager, PartitionChangeExecutor, PartitionScalingChangeExecutor {
 
   public static final String DEFAULT_GROUP_NAME = Protocol.DEFAULT_PARTITION_GROUP_NAME;
   private static final Logger LOGGER = LoggerFactory.getLogger(PartitionManagerImpl.class);
 
+  private final String partitionGroup;
+  private final ConcurrencyControl concurrencyControl;
+  private final ActorSchedulingService actorSchedulingService;
+  private final ClusterConfigurationService clusterConfigurationService;
+  private final ClusterMembershipService membershipService;
+  private final TopologyManagerImpl topologyManager;
   private final BrokerHealthCheckService healthCheckService;
   private final Map<Integer, Partition> partitions = new ConcurrentHashMap<>();
   private final DiskSpaceUsageMonitor diskSpaceUsageMonitor;
@@ -99,14 +105,14 @@ public final class PartitionManagerImpl extends AbstractPartitionManager
       final RocksDbResources rocksDbResources,
       final EngineSecurityConfig securityConfig,
       final SearchClientsProxy searchClientsProxy,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
-    super(
-        partitionGroup,
-        concurrencyControl,
-        actorSchedulingService,
-        clusterConfigurationService,
-        clusterServices.getMembershipService(),
-        localBroker);
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
+      final TopologyManagerImpl topologyManager) {
+    this.partitionGroup = partitionGroup;
+    this.concurrencyControl = concurrencyControl;
+    this.actorSchedulingService = actorSchedulingService;
+    this.clusterConfigurationService = clusterConfigurationService;
+    membershipService = clusterServices.getMembershipService();
+    this.topologyManager = topologyManager;
     this.brokerCfg = brokerCfg;
     this.healthCheckService = healthCheckService;
     this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
@@ -660,6 +666,28 @@ public final class PartitionManagerImpl extends AbstractPartitionManager
     } else {
       return CompletableActorFuture.completed();
     }
+  }
+
+  private MemberId localMemberId() {
+    return membershipService.getLocalMember().id();
+  }
+
+  /**
+   * Resolves the partitions of this partition group that the local broker is a member of, according
+   * to the current partition distribution.
+   */
+  private List<PartitionMetadata> localPartitions() {
+    final var localMemberId = localMemberId();
+    // The default physical tenant's partition distribution is the only one stored in dynamic
+    // config; other physical tenants derive their distribution by rewriting the group on every
+    // PartitionId.
+    return clusterConfigurationService
+        .getPartitionDistribution()
+        .withGroupName(partitionGroup)
+        .partitions()
+        .stream()
+        .filter(p -> p.members().contains(localMemberId))
+        .toList();
   }
 
   public final class PartitionAlreadyExistsException extends RuntimeException {
