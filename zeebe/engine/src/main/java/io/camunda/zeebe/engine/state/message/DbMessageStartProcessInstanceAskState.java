@@ -84,11 +84,6 @@ public final class DbMessageStartProcessInstanceAskState
   }
 
   @Override
-  public boolean hasPendingAsksPastDeadline(final long deadline) {
-    return transientState.entriesBefore(deadline).iterator().hasNext();
-  }
-
-  @Override
   public Iterable<MessageStartProcessInstanceAsk> getPendingAsksPastDeadline(final long deadline) {
     final List<MessageStartProcessInstanceAsk> result = new ArrayList<>();
     for (final var askKey : transientState.entriesBefore(deadline)) {
@@ -98,6 +93,12 @@ public final class DbMessageStartProcessInstanceAskState
       }
     }
     return result;
+  }
+
+  @Override
+  public void updateLastSentTime(
+      final long messageKey, final long processDefinitionKey, final long lastSentTime) {
+    transientState.update(new PendingAskKey(messageKey, processDefinitionKey), lastSentTime);
   }
 
   @Override
@@ -145,11 +146,5 @@ public final class DbMessageStartProcessInstanceAskState
     for (final long pdk : processDefinitionKeysToRemove) {
       remove(messageKey, pdk);
     }
-  }
-
-  @Override
-  public void updateLastSentTime(
-      final long messageKey, final long processDefinitionKey, final long lastSentTime) {
-    transientState.update(new PendingAskKey(messageKey, processDefinitionKey), lastSentTime);
   }
 }
