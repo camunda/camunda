@@ -64,6 +64,7 @@ const VariablesTable: React.FC<Props> = ({
     isPlaceholderData,
   } = useVariables({
     documentsOnly: showDocumentsOnly,
+    keepPreviousResults: true,
   });
 
   const isFilterLoading = isPlaceholderData;
