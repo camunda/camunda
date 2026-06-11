@@ -8,7 +8,7 @@
 package io.camunda.db.rdbms.write.service;
 
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
-import io.camunda.db.rdbms.sql.ProcessDefinitionVariableNameLookupMapper;
+import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.db.rdbms.write.domain.ProcessDefinitionDbModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
@@ -20,15 +20,15 @@ public class ProcessDefinitionWriter implements RdbmsWriter {
 
   private final ExecutionQueue executionQueue;
   private final ProcessDefinitionMapper processDefinitionMapper;
-  private final ProcessDefinitionVariableNameLookupMapper nameLookupMapper;
+  private final VariableMapper variableMapper;
 
   public ProcessDefinitionWriter(
       final ProcessDefinitionMapper processDefinitionMapper,
-      final ProcessDefinitionVariableNameLookupMapper nameLookupMapper,
+      final VariableMapper variableMapper,
       final ExecutionQueue executionQueue) {
     this.executionQueue = executionQueue;
     this.processDefinitionMapper = processDefinitionMapper;
-    this.nameLookupMapper = nameLookupMapper;
+    this.variableMapper = variableMapper;
   }
 
   public void create(final ProcessDefinitionDbModel processDefinition) {
@@ -42,7 +42,7 @@ public class ProcessDefinitionWriter implements RdbmsWriter {
   }
 
   public void deleteByKeys(final List<Long> processDefinitionKeys) {
-    nameLookupMapper.deleteByProcessDefinitionKeys(processDefinitionKeys);
+    variableMapper.deleteByProcessDefinitionKeys(processDefinitionKeys);
     processDefinitionMapper.deleteByKeys(processDefinitionKeys);
   }
 }

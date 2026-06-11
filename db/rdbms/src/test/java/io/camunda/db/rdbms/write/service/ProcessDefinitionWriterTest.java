@@ -12,7 +12,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
-import io.camunda.db.rdbms.sql.ProcessDefinitionVariableNameLookupMapper;
+import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.db.rdbms.write.domain.ProcessDefinitionDbModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
@@ -25,9 +25,7 @@ class ProcessDefinitionWriterTest {
   private final ExecutionQueue executionQueue = mock(ExecutionQueue.class);
   private final ProcessDefinitionWriter writer =
       new ProcessDefinitionWriter(
-          mock(ProcessDefinitionMapper.class),
-          mock(ProcessDefinitionVariableNameLookupMapper.class),
-          executionQueue);
+          mock(ProcessDefinitionMapper.class), mock(VariableMapper.class), executionQueue);
 
   @Test
   void shouldCreateProcessDefinition() {

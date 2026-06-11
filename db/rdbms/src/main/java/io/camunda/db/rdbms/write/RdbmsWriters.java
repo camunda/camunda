@@ -23,7 +23,6 @@ import io.camunda.db.rdbms.sql.JobMapper;
 import io.camunda.db.rdbms.sql.JobMetricsBatchMapper;
 import io.camunda.db.rdbms.sql.MessageSubscriptionMapper;
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
-import io.camunda.db.rdbms.sql.ProcessDefinitionVariableNameLookupMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.PurgeMapper;
 import io.camunda.db.rdbms.sql.SequenceFlowMapper;
@@ -111,8 +110,7 @@ public class RdbmsWriters {
       final ClusterVariableMapper clusterVariableMapper,
       final HistoryDeletionMapper historyDeletionMapper,
       final AgentInstanceMapper agentInstanceMapper,
-      final WaitStateMapper waitStateMapper,
-      final ProcessDefinitionVariableNameLookupMapper pdVariableNameLookupMapper) {
+      final WaitStateMapper waitStateMapper) {
     this.executionQueue = executionQueue;
     this.exporterPositionService = exporterPositionService;
     this.vendorDatabaseProperties = vendorDatabaseProperties;
@@ -142,8 +140,7 @@ public class RdbmsWriters {
         new IncidentWriter(executionQueue, incidentMapper, vendorDatabaseProperties));
     writers.put(
         ProcessDefinitionWriter.class,
-        new ProcessDefinitionWriter(
-            processDefinitionMapper, pdVariableNameLookupMapper, executionQueue));
+        new ProcessDefinitionWriter(processDefinitionMapper, variableMapper, executionQueue));
     writers.put(
         ProcessInstanceWriter.class,
         new ProcessInstanceWriter(processInstanceMapper, executionQueue));

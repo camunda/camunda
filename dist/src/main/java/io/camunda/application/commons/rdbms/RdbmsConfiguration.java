@@ -81,7 +81,6 @@ import io.camunda.db.rdbms.sql.MappingRuleMapper;
 import io.camunda.db.rdbms.sql.MessageSubscriptionMapper;
 import io.camunda.db.rdbms.sql.PersistentWebSessionMapper;
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
-import io.camunda.db.rdbms.sql.ProcessDefinitionVariableNameLookupMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.ReplicationStatusMapper;
 import io.camunda.db.rdbms.sql.RoleMapper;
@@ -363,9 +362,8 @@ public class RdbmsConfiguration {
 
   @Bean
   public ProcessDefinitionVariableNameLookupDbReader processDefinitionVariableNameLookupDbReader(
-      final ProcessDefinitionVariableNameLookupMapper processDefinitionVariableNameLookupMapper) {
-    return new ProcessDefinitionVariableNameLookupDbReader(
-        processDefinitionVariableNameLookupMapper);
+      final VariableMapper variableMapper) {
+    return new ProcessDefinitionVariableNameLookupDbReader(variableMapper);
   }
 
   @Bean

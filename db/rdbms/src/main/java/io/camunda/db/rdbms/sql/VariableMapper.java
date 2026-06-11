@@ -8,11 +8,13 @@
 package io.camunda.db.rdbms.sql;
 
 import io.camunda.db.rdbms.read.domain.VariableDbQuery;
+import io.camunda.db.rdbms.write.domain.ProcessDefinitionVariableNameLookupDbModel;
 import io.camunda.db.rdbms.write.domain.VariableDbModel;
 import io.camunda.db.rdbms.write.queue.BatchInsertDto;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.util.ObjectBuilder;
 import java.util.List;
+import org.apache.ibatis.annotations.Param;
 
 public interface VariableMapper extends ProcessInstanceDependantMapper {
 
@@ -25,6 +27,18 @@ public interface VariableMapper extends ProcessInstanceDependantMapper {
   Long count(VariableDbQuery filter);
 
   List<VariableEntity> search(VariableDbQuery filter);
+
+  /**
+   * Inserts a new lookup entry if no entry already exists for the given (processDefinitionKey,
+   * varName) combination. No-op on conflict.
+   */
+  void insertIfNotExists(ProcessDefinitionVariableNameLookupDbModel model);
+
+  /** Returns all variable names recorded for the given process definition key. */
+  List<String> findVariableNames(@Param("processDefinitionKey") long processDefinitionKey);
+
+  /** Deletes all lookup entries for the given process definition keys. */
+  void deleteByProcessDefinitionKeys(List<Long> processDefinitionKeys);
 
   record MigrateToProcessDto(Long variableKey, String processDefinitionId) {
 

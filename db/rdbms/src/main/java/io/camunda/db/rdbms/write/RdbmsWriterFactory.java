@@ -68,7 +68,6 @@ public class RdbmsWriterFactory {
         bundle.clusterVariableMapper(),
         bundle.historyDeletionMapper(),
         bundle.agentInstanceMapper(),
-        bundle.waitStateMapper(),
-        bundle.processDefinitionVariableNameLookupMapper());
+        bundle.waitStateMapper());
   }
 }

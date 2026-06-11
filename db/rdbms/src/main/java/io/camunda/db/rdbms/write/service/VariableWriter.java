@@ -101,7 +101,7 @@ public class VariableWriter extends ProcessInstanceDependant implements RdbmsWri
               ContextType.PROCESS_DEF_VAR_NAME_LOOKUP,
               WriteStatementType.INSERT,
               pdKey,
-              "io.camunda.db.rdbms.sql.ProcessDefinitionVariableNameLookupMapper.insertIfNotExists",
+              "io.camunda.db.rdbms.sql.VariableMapper.insertIfNotExists",
               new ProcessDefinitionVariableNameLookupDbModel(pdKey, variable.name())));
     }
   }

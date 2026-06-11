@@ -24,7 +24,6 @@ import io.camunda.db.rdbms.sql.JobMapper;
 import io.camunda.db.rdbms.sql.JobMetricsBatchMapper;
 import io.camunda.db.rdbms.sql.MessageSubscriptionMapper;
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
-import io.camunda.db.rdbms.sql.ProcessDefinitionVariableNameLookupMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.PurgeMapper;
 import io.camunda.db.rdbms.sql.SequenceFlowMapper;
@@ -62,8 +61,7 @@ public record RdbmsMapperBundle(
     ClusterVariableMapper clusterVariableMapper,
     HistoryDeletionMapper historyDeletionMapper,
     AgentInstanceMapper agentInstanceMapper,
-    WaitStateMapper waitStateMapper,
-    ProcessDefinitionVariableNameLookupMapper processDefinitionVariableNameLookupMapper) {
+    WaitStateMapper waitStateMapper) {
 
   public static RdbmsMapperBundle from(
       final SqlSessionFactory sqlSessionFactory,
@@ -95,7 +93,6 @@ public record RdbmsMapperBundle(
         sqlSession.getMapper(ClusterVariableMapper.class),
         sqlSession.getMapper(HistoryDeletionMapper.class),
         sqlSession.getMapper(AgentInstanceMapper.class),
-        sqlSession.getMapper(WaitStateMapper.class),
-        sqlSession.getMapper(ProcessDefinitionVariableNameLookupMapper.class));
+        sqlSession.getMapper(WaitStateMapper.class));
   }
 }

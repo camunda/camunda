@@ -7,15 +7,14 @@
  */
 package io.camunda.db.rdbms.read.service;
 
-import io.camunda.db.rdbms.sql.ProcessDefinitionVariableNameLookupMapper;
+import io.camunda.db.rdbms.sql.VariableMapper;
 import java.util.List;
 
 public class ProcessDefinitionVariableNameLookupDbReader {
 
-  private final ProcessDefinitionVariableNameLookupMapper mapper;
+  private final VariableMapper mapper;
 
-  public ProcessDefinitionVariableNameLookupDbReader(
-      final ProcessDefinitionVariableNameLookupMapper mapper) {
+  public ProcessDefinitionVariableNameLookupDbReader(final VariableMapper mapper) {
     this.mapper = mapper;
   }
 
