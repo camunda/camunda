@@ -35,11 +35,10 @@ public class RecordingJobStreamer implements JobStreamer {
   @Override
   public Optional<JobStream> streamFor(
       final DirectBuffer jobType, final Predicate<JobActivationProperties> predicate) {
-    return Optional.ofNullable(
-        jobStreams.getOrDefault(jobType, new ArrayList<>()).stream()
-            .filter(jobStream -> predicate.test(jobStream.getProperties()))
-            .findAny()
-            .get());
+    return jobStreams.getOrDefault(jobType, new ArrayList<>()).stream()
+        .filter(jobStream -> predicate.test(jobStream.getProperties()))
+        .findAny()
+        .map(JobStream.class::cast);
   }
 
   public int notificationsForJob(final String jobType) {

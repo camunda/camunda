@@ -12,6 +12,7 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbForeignKey;
+import io.camunda.zeebe.db.impl.DbInt;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
@@ -60,6 +61,25 @@ public final class DbJobState implements JobState, MutableJobState {
           DbTenantAwareKey<DbCompositeKey<DbString, DbForeignKey<DbLong>>>, DbNil>
       activatableColumnFamily;
 
+  // invertedPriority = Integer.MAX_VALUE - priority so higher-priority entries sort first
+  // under RocksDB's unsigned byte comparator. For negative priorities the subtraction
+  // overflows (e.g. priority=-1 → invertedPriority=Integer.MIN_VALUE, stored as 0x80000000);
+  // this is intentional: 0x80000000 sorts after 0x7FFFFFFF (priority=0) in unsigned order,
+  // so negative-priority jobs correctly sort last.
+  private final DbInt invertedPriorityKey;
+  private final DbCompositeKey<DbInt, DbForeignKey<DbLong>> invertedPriorityJobKey;
+  private final DbCompositeKey<DbString, DbCompositeKey<DbInt, DbForeignKey<DbLong>>>
+      typePriorityJobKey;
+  private final DbTenantAwareKey<
+          DbCompositeKey<DbString, DbCompositeKey<DbInt, DbForeignKey<DbLong>>>>
+      tenantAwarePriorityKey;
+
+  // CF JOB_ACTIVATABLE_BY_PRIORITY: key = [type | invertedPriority | jobKey | tenantId]
+  private final ColumnFamily<
+          DbTenantAwareKey<DbCompositeKey<DbString, DbCompositeKey<DbInt, DbForeignKey<DbLong>>>>,
+          DbNil>
+      priorityActivatableColumnFamily;
+
   // timeout => key
   private final DbLong deadlineKey;
   private final DbCompositeKey<DbLong, DbForeignKey<DbLong>> deadlineJobKey;
@@ -96,6 +116,18 @@ public final class DbJobState implements JobState, MutableJobState {
             tenantAwareTypeJobKey,
             DbNil.INSTANCE);
 
+    invertedPriorityKey = new DbInt();
+    invertedPriorityJobKey = new DbCompositeKey<>(invertedPriorityKey, fkJob);
+    typePriorityJobKey = new DbCompositeKey<>(jobTypeKey, invertedPriorityJobKey);
+    tenantAwarePriorityKey =
+        new DbTenantAwareKey<>(tenantIdKey, typePriorityJobKey, PlacementType.SUFFIX);
+    priorityActivatableColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.JOB_ACTIVATABLE_BY_PRIORITY,
+            transactionContext,
+            tenantAwarePriorityKey,
+            DbNil.INSTANCE);
+
     deadlineKey = new DbLong();
     deadlineJobKey = new DbCompositeKey<>(deadlineKey, fkJob);
     deadlinesColumnFamily =
@@ -118,7 +150,6 @@ public final class DbJobState implements JobState, MutableJobState {
   @Override
   public void activate(final long key, final JobRecord record) {
     final DirectBuffer type = record.getTypeBuffer();
-    final String tenantId = record.getTenantId();
     final long deadline = record.getDeadline();
 
     validateParameters(type);
@@ -128,7 +159,7 @@ public final class DbJobState implements JobState, MutableJobState {
 
     updateJobState(State.ACTIVATED);
 
-    makeJobNotActivatable(type, tenantId);
+    makeJobNotActivatable(record);
 
     addJobDeadline(key, deadline);
   }
@@ -163,26 +194,23 @@ public final class DbJobState implements JobState, MutableJobState {
   @Override
   public void disable(final long key, final JobRecord record) {
     updateJob(key, record, State.FAILED);
-    makeJobNotActivatable(record.getTypeBuffer(), record.getTenantId());
+    makeJobNotActivatable(record);
   }
 
   @Override
   public void throwError(final long key, final JobRecord updatedValue) {
     updateJob(key, updatedValue, State.ERROR_THROWN);
-    makeJobNotActivatable(updatedValue.getTypeBuffer(), updatedValue.getTenantId());
+    makeJobNotActivatable(updatedValue);
   }
 
   @Override
   public void delete(final long key, final JobRecord record) {
-    final DirectBuffer type = record.getTypeBuffer();
-    final String tenantId = record.getTenantId();
-
     jobKey.wrapLong(key);
     jobsColumnFamily.deleteExisting(jobKey);
 
     statesJobColumnFamily.deleteExisting(fkJob);
 
-    makeJobNotActivatable(type, tenantId);
+    makeJobNotActivatable(record);
 
     removeJobDeadline(key, record.getDeadline());
     removeJobBackoff(key, record.getRecurringTime());
@@ -194,13 +222,13 @@ public final class DbJobState implements JobState, MutableJobState {
       if (updatedValue.getRetryBackoff() > 0) {
         addJobBackoff(key, updatedValue.getRecurringTime());
         updateJob(key, updatedValue, State.FAILED);
-        makeJobNotActivatable(updatedValue.getTypeBuffer(), updatedValue.getTenantId());
+        makeJobNotActivatable(updatedValue);
       } else {
         updateJob(key, updatedValue, State.ACTIVATABLE);
       }
     } else {
       updateJob(key, updatedValue, State.FAILED);
-      makeJobNotActivatable(updatedValue.getTypeBuffer(), updatedValue.getTenantId());
+      makeJobNotActivatable(updatedValue);
     }
   }
 
@@ -312,7 +340,7 @@ public final class DbJobState implements JobState, MutableJobState {
   private void createJob(final long key, final JobRecord record, final DirectBuffer type) {
     createJobRecord(key, record);
     initializeJobState();
-    makeJobActivatable(type, key, record.getTenantId());
+    makeJobActivatable(type, key, record.getTenantId(), record.getPriority());
   }
 
   private void updateJob(final long key, final JobRecord updatedValue, final State newState) {
@@ -325,7 +353,7 @@ public final class DbJobState implements JobState, MutableJobState {
     updateJobState(newState);
 
     if (newState == State.ACTIVATABLE) {
-      makeJobActivatable(type, key, updatedValue.getTenantId());
+      makeJobActivatable(type, key, updatedValue.getTenantId(), updatedValue.getPriority());
     }
 
     if (newState != State.ACTIVATED) {
@@ -408,18 +436,18 @@ public final class DbJobState implements JobState, MutableJobState {
       final BiFunction<Long, JobRecord, Boolean> callback) {
     jobTypeKey.wrapBuffer(type);
 
-    activatableColumnFamily.whileEqualPrefix(
-        jobTypeKey,
-        tenantAwareCompositeKey -> {
-          final DbLong jobKey = tenantAwareCompositeKey.wrappedKey().second().inner();
-          final String tenantId = tenantAwareCompositeKey.tenantKey().toString();
-
-          if (tenantIds.contains(tenantId)) {
-            return visitJob(jobKey.getValue(), callback::apply);
-          }
-          // we want to continue with the iteration
-          return true;
-        });
+    // Three-phase sequential read ensures correct activation order across the 8.10 upgrade
+    // boundary:
+    //   Phase 1: new jobs with priority > 0, highest first
+    //   Phase 2: legacy pre-8.10 jobs from JOB_ACTIVATABLE (implicit priority = 0, lower job
+    // keys)
+    //   Phase 3: new jobs with priority <= 0, highest first
+    // Each phase returns true if the batch still wants more jobs. Subsequent phases are skipped
+    // when the batch is full to avoid redundant state reads.
+    if (visitHighPriorityJobs(tenantIds, callback)
+        && visitLegacyActivatableJobs(tenantIds, callback)) {
+      visitNonPositivePriorityJobs(tenantIds, callback);
+    }
   }
 
   @Override
@@ -464,6 +492,107 @@ public final class DbJobState implements JobState, MutableJobState {
     return nextBackOffDueDate;
   }
 
+  /**
+   * Phase 1 — yields all priority > 0 jobs from {@code JOB_ACTIVATABLE_BY_PRIORITY} in descending
+   * priority order. Stops at the first entry where the actual priority drops to 0 or below.
+   *
+   * <p>The inverted-priority key scheme encodes {@code invertedPriority = Integer.MAX_VALUE -
+   * priority}, so RocksDB's ascending forward scan returns higher-priority entries first. The
+   * boundary is detected by recovering {@code actualPriority = Integer.MAX_VALUE -
+   * invertedPriority} using two's-complement arithmetic — this is intentional and correct for
+   * negative priorities; see the field comment on {@code invertedPriorityKey}.
+   *
+   * @return {@code true} if the batch still wants more jobs; {@code false} if the batch is full
+   */
+  private boolean visitHighPriorityJobs(
+      final List<String> tenantIds, final BiFunction<Long, JobRecord, Boolean> callback) {
+    final var batchNotFull = new boolean[] {true};
+    priorityActivatableColumnFamily.whileEqualPrefix(
+        jobTypeKey,
+        entry -> {
+          final var invertedPriorityAndJob = entry.wrappedKey().second();
+          final int priority = Integer.MAX_VALUE - invertedPriorityAndJob.first().getValue();
+          if (priority <= 0) {
+            return false; // reached priority=0 boundary; priority<=0 jobs served after legacy drain
+          }
+          if (!tenantIds.contains(entry.tenantKey().toString())) {
+            return true;
+          }
+          batchNotFull[0] =
+              visitJob(invertedPriorityAndJob.second().inner().getValue(), callback::apply);
+          return batchNotFull[0];
+        });
+    return batchNotFull[0];
+  }
+
+  /**
+   * Phase 2 — yields all pre-8.10 jobs from the legacy {@code JOB_ACTIVATABLE} column family.
+   *
+   * <p>Legacy jobs were written by Zeebe brokers prior to 8.10. They have no explicit priority and
+   * are treated as priority = 0. Because job keys are monotonically increasing, legacy jobs always
+   * have lower job keys than any 8.10 job. Draining them here — before the priority = 0 new jobs
+   * served in Phase 3 — preserves the intended {@code (priority DESC, jobKey ASC)} activation order
+   * across the upgrade boundary.
+   *
+   * <p>The {@code deleteIfExists} call in {@link #makeJobNotActivatable} ensures that a legacy job
+   * is removed from this CF the first time it is deactivated after the upgrade.
+   *
+   * @return {@code true} if the batch still wants more jobs; {@code false} if the batch is full
+   */
+  private boolean visitLegacyActivatableJobs(
+      final List<String> tenantIds, final BiFunction<Long, JobRecord, Boolean> callback) {
+    final var batchNotFull = new boolean[] {true};
+    activatableColumnFamily.whileEqualPrefix(
+        jobTypeKey,
+        entry -> {
+          if (!tenantIds.contains(entry.tenantKey().toString())) {
+            return true;
+          }
+          batchNotFull[0] =
+              visitJob(entry.wrappedKey().second().inner().getValue(), callback::apply);
+          return batchNotFull[0];
+        });
+    return batchNotFull[0];
+  }
+
+  /**
+   * Phase 3 — yields all priority ≤ 0 jobs from {@code JOB_ACTIVATABLE_BY_PRIORITY}.
+   *
+   * <p>Uses the three-argument {@link
+   * io.camunda.zeebe.db.ColumnFamily#whileEqualPrefix(io.camunda.zeebe.db.DbKey,
+   * io.camunda.zeebe.db.DbKey, io.camunda.zeebe.db.KeyValuePairVisitor)} overload to seek directly
+   * to the start of the priority = 0 range rather than re-scanning the priority > 0 entries already
+   * served in Phase 1.
+   *
+   * <p>The seek key is constructed by setting {@code invertedPriorityKey = Integer.MAX_VALUE} (the
+   * encoded form of priority = 0), {@code jobKey = 0} and {@code tenantIdKey = ""} — the
+   * lexicographic minimum within that range — so the iterator lands at the first real entry at or
+   * after that position.
+   *
+   * <p>Assumes {@code jobTypeKey} is already set by the caller (i.e., from {@link
+   * #forEachActivatableJobs}).
+   */
+  private void visitNonPositivePriorityJobs(
+      final List<String> tenantIds, final BiFunction<Long, JobRecord, Boolean> callback) {
+    // Seek-key setup mutates shared mutable fields (same pattern as makeJobActivatable and
+    // makeJobNotActivatable). After this method returns, invertedPriorityKey, jobKey, and
+    // tenantIdKey hold values from the seek or from the last iteration. Callers of write
+    // operations must re-wrap jobKey before use. This is the established contract in this class.
+    invertedPriorityKey.wrapInt(Integer.MAX_VALUE); // Integer.MAX_VALUE encodes priority = 0
+    jobKey.wrapLong(0L);
+    tenantIdKey.wrapString("");
+    priorityActivatableColumnFamily.whileEqualPrefix(
+        jobTypeKey,
+        tenantAwarePriorityKey,
+        entry -> {
+          if (!tenantIds.contains(entry.tenantKey().toString())) {
+            return true;
+          }
+          final var invertedPriorityAndJob = entry.wrappedKey().second();
+          return visitJob(invertedPriorityAndJob.second().inner().getValue(), callback::apply);
+        });
+  }
+
   boolean visitJob(final long jobKey, final BiPredicate<Long, JobRecord> callback) {
     final JobRecord job = getJob(jobKey);
     if (job == null) {
@@ -498,24 +627,37 @@ public final class DbJobState implements JobState, MutableJobState {
     statesJobColumnFamily.update(fkJob, jobState);
   }
 
-  private void makeJobActivatable(final DirectBuffer type, final long key, final String tenantId) {
+  private void makeJobActivatable(
+      final DirectBuffer type, final long key, final String tenantId, final int priority) {
     EnsureUtil.ensureNotNullOrEmpty("type", type);
     EnsureUtil.ensureNotNullOrEmpty("tenantId", tenantId);
 
     jobTypeKey.wrapBuffer(type);
     jobKey.wrapLong(key);
     tenantIdKey.wrapString(tenantId);
-    // Need to upsert here because jobs can be marked as failed (and thus made activatable)
-    // without activating them first
-    activatableColumnFamily.upsert(tenantAwareTypeJobKey, DbNil.INSTANCE);
+    // overflow for negative priorities is intentional (see invertedPriorityKey field comment above)
+    invertedPriorityKey.wrapInt(Integer.MAX_VALUE - priority);
+    // upsert because a failed job with retries can be made activatable multiple times
+    priorityActivatableColumnFamily.upsert(tenantAwarePriorityKey, DbNil.INSTANCE);
   }
 
-  private void makeJobNotActivatable(final DirectBuffer type, final String tenantId) {
+  // makeJobNotActivatable does NOT set jobKey. Callers are responsible for setting it
+  // (via jobKey.wrapLong or via updateJobRecord) before calling it.
+  private void makeJobNotActivatable(final JobRecord record) {
+    final DirectBuffer type = record.getTypeBuffer();
+    final String tenantId = record.getTenantId();
     EnsureUtil.ensureNotNullOrEmpty("type", type);
     EnsureUtil.ensureNotNullOrEmpty("tenantid", tenantId);
 
     jobTypeKey.wrapBuffer(type);
     tenantIdKey.wrapString(tenantId);
+    // overflow for negative priorities is intentional (see invertedPriorityKey field comment above)
+    invertedPriorityKey.wrapInt(Integer.MAX_VALUE - record.getPriority());
+    // Requires jobKey to already be set by the caller (directly or via updateJobRecord).
+    // This method does not set jobKey because it is not passed as a parameter.
+    priorityActivatableColumnFamily.deleteIfExists(tenantAwarePriorityKey);
+    // Legacy CF cleanup: pre-8.10 jobs live in JOB_ACTIVATABLE; deleteIfExists is a no-op
+    // when the key is absent. Do not remove this line!
     activatableColumnFamily.deleteIfExists(tenantAwareTypeJobKey);
   }
 
