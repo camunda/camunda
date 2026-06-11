@@ -241,7 +241,7 @@ public class AgenticControlDashboardService {
     final ProcessReportDataDto reportData =
         ProcessReportDataDto.builder()
             .definitions(Collections.emptyList())
-            .view(new ProcessViewDto(ProcessViewEntity.PROCESS_INSTANCE, ViewProperty.FREQUENCY))
+            .view(new ProcessViewDto(ProcessViewEntity.PROCESS_INSTANCE, ViewProperty.PERCENTAGE))
             .groupBy(new NoneGroupByDto())
             .distributedBy(new NoneDistributedByDto())
             .visualization(ProcessVisualization.NUMBER)
