@@ -206,9 +206,22 @@ func TestRocksdbNativeLibName(t *testing.T) {
 }
 
 func TestRocksdbNativeLibNameUnknownPlatformErrors(t *testing.T) {
-	_, err := rocksdbNativeLibName("freebsd", "x86_64")
-	if err == nil {
-		t.Fatal("expected error for unknown os/arch, got nil")
+	tests := []struct {
+		osType string
+		arch   string
+	}{
+		{"freebsd", "x86_64"},
+		{"windows", "arm64"},
+		{"linux", "i386"},
+		{"darwin", "i386"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.osType+"/"+tt.arch, func(t *testing.T) {
+			_, err := rocksdbNativeLibName(tt.osType, tt.arch)
+			if err == nil {
+				t.Fatalf("expected error for unsupported os/arch %s/%s, got nil", tt.osType, tt.arch)
+			}
+		})
 	}
 }
 

@@ -182,7 +182,8 @@ func rocksdbNativeLibName(osType, arch string) (string, error) {
 			return "librocksdb-jni-osx-arm64.jnilib", nil
 		}
 	case "windows":
-		if arch == "x86_64" {
+		switch arch {
+		case "x86_64":
 			return "librocksdb-jni-win64.dll", nil
 		}
 	}
