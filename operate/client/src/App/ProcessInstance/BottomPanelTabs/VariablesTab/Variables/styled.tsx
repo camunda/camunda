@@ -43,6 +43,13 @@ const EmptyMessageWrapper = styled.div`
   align-items: center;
 `;
 
+const DimmableResults = styled.div<{$dimmed: boolean}>`
+  height: 100%;
+  transition: opacity 150ms ease;
+  opacity: ${({$dimmed}) => ($dimmed ? 0.5 : 1)};
+  pointer-events: ${({$dimmed}) => ($dimmed ? 'none' : 'auto')};
+`;
+
 const FilterSwitcherContainer = styled.div`
   padding: var(--cds-spacing-05) var(--cds-spacing-05) 0;
 `;
@@ -85,6 +92,7 @@ export {
   VariableName,
   StructuredList,
   EmptyMessageWrapper,
+  DimmableResults,
   FilterSwitcherContainer,
   FilterSwitcher,
   FilterSwitcherButton,

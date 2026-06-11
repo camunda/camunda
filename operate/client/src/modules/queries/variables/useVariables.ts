@@ -7,7 +7,7 @@
  */
 
 import {type QueryVariablesResponseBody} from '@camunda/camunda-api-zod-schemas/8.10';
-import {useInfiniteQuery} from '@tanstack/react-query';
+import {keepPreviousData, useInfiniteQuery} from '@tanstack/react-query';
 import {searchVariables} from 'modules/api/v2/variables/searchVariables';
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
 import {useDisplayStatus, useVariableScopeKey} from 'modules/hooks/variables';
@@ -15,16 +15,20 @@ import {queryKeys} from '../queryKeys';
 
 const MAX_VARIABLES_PER_REQUEST = 50;
 
-
 const DOCUMENT_VALUE_FILTER = '*camunda.document.type*';
 
 function useVariables(options?: {
   refetchInterval?: number | false;
   documentsOnly?: boolean;
+  keepPreviousResults?: boolean;
 }) {
   const {processInstanceId = ''} = useProcessInstancePageParams();
   const scopeKey = useVariableScopeKey();
-  const {refetchInterval = false, documentsOnly = false} = options ?? {};
+  const {
+    refetchInterval = false,
+    documentsOnly = false,
+    keepPreviousResults = false,
+  } = options ?? {};
   const valueFilter = documentsOnly ? DOCUMENT_VALUE_FILTER : undefined;
   const result = useInfiniteQuery({
     queryKey: queryKeys.variables.searchWithFilter({
@@ -72,6 +76,7 @@ function useVariables(options?: {
 
       return previousPage;
     },
+    placeholderData: keepPreviousResults ? keepPreviousData : undefined,
     refetchInterval,
   });
   const displayStatus = useDisplayStatus({
