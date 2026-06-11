@@ -2,9 +2,10 @@
 """Resolve the daily-on-main load-test namespace + post-warmup anchor.
 
 Emits `namespace` (`c8-medic-daily-<date>-<sha>-test`, gRPC) and `at`
-(RFC3339 = soak.started_at + 1800s) to `$GITHUB_OUTPUT`. Empty on miss
-so the downstream comparison job skips cleanly. Falls back to the
-previous business day when today's daily isn't yet complete.
+(RFC3339 = soak.started_at + 30 min, so PromQL `[1800s] @ at` evaluates
+the first 30 min of soak) to `$GITHUB_OUTPUT`. Empty on miss so the
+downstream comparison job skips cleanly. Falls back to the previous
+business day when today's daily isn't yet complete.
 """
 
 from __future__ import annotations
@@ -19,7 +20,7 @@ WORKFLOW = "camunda-daily-load-tests.yml"
 ARTIFACT_PREFIX = "daily-load-test-metrics-"
 ARTIFACT_NAME_PREFIX = ARTIFACT_PREFIX + "medic-daily-"
 SOAK_JOB_NAME = "Soak (3 hours)"
-WARMUP_SECONDS = 1800
+METRICS_WINDOW_SECONDS = 1800  # PromQL [1800s] @ at evaluates [at-1800, at]
 TODAY_AVAILABLE_UTC_HOUR = 6  # daily cron 02:00 UTC + setup + 3h soak → ~05:30
 LOOKBACK_BUSINESS_DAYS = 7
 
@@ -128,7 +129,7 @@ def resolve(now: datetime) -> tuple[str, str] | None:
         except ValueError:
             warn(f"unparseable soak.started_at={soak_start!r} for run {rid}")
             continue
-        anchor = (start_dt + timedelta(seconds=WARMUP_SECONDS)).strftime(
+        anchor = (start_dt + timedelta(seconds=METRICS_WINDOW_SECONDS)).strftime(
             "%Y-%m-%dT%H:%M:%SZ"
         )
         namespace = f"c8-{benchmark}"
