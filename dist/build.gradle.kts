@@ -419,6 +419,7 @@ dependencies {
     implementation(libs.io.camunda.security.library.api)
     implementation(libs.io.camunda.security.library.core)
     implementation(libs.io.camunda.security.library.spring.boot.starter)
+    implementation(project(":document-api"))
     implementation(project(":document-store"))
     implementation(libs.org.slf4j.slf4j.api)
     implementation(libs.org.apache.logging.log4j.log4j.api)
