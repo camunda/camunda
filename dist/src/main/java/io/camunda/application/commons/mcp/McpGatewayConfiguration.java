@@ -7,6 +7,8 @@
  */
 package io.camunda.application.commons.mcp;
 
+import static io.camunda.gateway.mapping.http.physicaltenants.PhysicalTenantContext.PHYSICAL_TENANTS_PATH_SEGMENT;
+
 import io.camunda.gateway.mcp.ConditionalOnMcpGatewayEnabled;
 import io.camunda.gateway.mcp.config.CamundaMcpToolScannerAutoConfiguration;
 import io.camunda.gateway.mcp.config.CamundaMcpToolSpecificationsAutoConfiguration;
@@ -78,7 +80,7 @@ public class McpGatewayConfiguration {
             filterChain.doFilter(new ContentCachingRequestWrapper(request, 0), response);
           }
         });
-    registrationBean.addUrlPatterns("/mcp/*", "/physical-tenants/*/mcp/*");
+    registrationBean.addUrlPatterns("/mcp/*", PHYSICAL_TENANTS_PATH_SEGMENT + "*/mcp/*");
     registrationBean.setOrder(Ordered.HIGHEST_PRECEDENCE);
 
     return registrationBean;

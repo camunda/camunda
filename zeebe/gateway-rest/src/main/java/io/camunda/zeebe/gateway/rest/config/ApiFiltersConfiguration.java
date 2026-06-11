@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.config;
 
+import static io.camunda.gateway.mapping.http.physicaltenants.PhysicalTenantContext.PHYSICAL_TENANTS_PATH_SEGMENT;
 import static io.camunda.security.api.model.config.MultiTenancyConfiguration.API_ENABLED_PROPERTY;
 import static io.camunda.security.api.model.config.oidc.OidcConfiguration.GROUPS_CLAIM_PROPERTY;
 
@@ -57,7 +58,7 @@ public class ApiFiltersConfiguration {
         new EndpointAccessErrorFilter(
             objectMapper,
             GROUPS_API_DISABLED_ERROR_MESSAGE,
-            patterns("/v2/groups/**", "/physical-tenants/*/v2/groups/**")));
+            patterns("/v2/groups/**", PHYSICAL_TENANTS_PATH_SEGMENT + "*/v2/groups/**")));
     registration.addUrlPatterns("/*");
     registration.setOrder(1);
     return registration;
@@ -73,7 +74,7 @@ public class ApiFiltersConfiguration {
         new EndpointAccessErrorFilter(
             objectMapper,
             USERS_API_DISABLED_ERROR_MESSAGE,
-            patterns("/v2/users/**", "/physical-tenants/*/v2/users/**")));
+            patterns("/v2/users/**", PHYSICAL_TENANTS_PATH_SEGMENT + "*/v2/users/**")));
     registration.addUrlPatterns("/*");
     registration.setOrder(1);
     return registration;
@@ -89,7 +90,7 @@ public class ApiFiltersConfiguration {
         new EndpointAccessErrorFilter(
             objectMapper,
             TENANTS_API_DISABLED_ERROR_MESSAGE,
-            patterns("/v2/tenants/**", "/physical-tenants/*/v2/tenants/**")));
+            patterns("/v2/tenants/**", PHYSICAL_TENANTS_PATH_SEGMENT + "*/v2/tenants/**")));
     registration.addUrlPatterns("/*");
     registration.setOrder(1);
     return registration;

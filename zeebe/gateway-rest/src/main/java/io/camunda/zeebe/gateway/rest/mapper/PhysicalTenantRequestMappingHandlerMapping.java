@@ -7,7 +7,8 @@
  */
 package io.camunda.zeebe.gateway.rest.mapper;
 
-import io.camunda.gateway.mapping.http.physicaltenants.PhysicalTenantContext;
+import static io.camunda.gateway.mapping.http.physicaltenants.PhysicalTenantContext.PHYSICAL_TENANT_URI_PREFIX;
+
 import io.camunda.zeebe.gateway.rest.annotation.ClusterScoped;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import io.camunda.zeebe.util.VisibleForTesting;
@@ -19,10 +20,6 @@ import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
 public class PhysicalTenantRequestMappingHandlerMapping extends RequestMappingHandlerMapping {
-
-  /** Path segment prefixed before {@code /v2} in the physical-tenant addressing scheme. */
-  private static final String PREFIX_SEGMENT =
-      "physical-tenants/{" + PhysicalTenantContext.PATH_VARIABLE_PHYSICAL_TENANT_ID + "}";
 
   private static final String V2 = "/v2";
 
@@ -86,7 +83,7 @@ public class PhysicalTenantRequestMappingHandlerMapping extends RequestMappingHa
       // Avoid prefixing things like "/v2foo".
       return null;
     }
-    return "/" + PREFIX_SEGMENT + pattern;
+    return PHYSICAL_TENANT_URI_PREFIX + pattern;
   }
 
   private Class<?> resolveBeanType(final Object handler) {

@@ -7,6 +7,8 @@
  */
 package io.camunda.application.commons.mcp;
 
+import static io.camunda.gateway.mapping.http.physicaltenants.PhysicalTenantContext.PHYSICAL_TENANTS_PATH_SEGMENT;
+
 import io.micrometer.common.KeyValue;
 import io.micrometer.common.KeyValues;
 import jakarta.servlet.http.HttpServletRequest;
@@ -27,8 +29,6 @@ public class McpServerRequestObservationConvention
     extends DefaultServerRequestObservationConvention {
 
   public static final String URI_MCP_PREFIX = "/mcp";
-
-  private static final String PHYSICAL_TENANT_PATH_PREFIX = "/physical-tenants/";
 
   private static final Logger LOGGER =
       LoggerFactory.getLogger(McpServerRequestObservationConvention.class);
@@ -93,10 +93,10 @@ public class McpServerRequestObservationConvention
       return true;
     }
     // /physical-tenants/{tenantId}/mcp[/...]
-    if (!servletPath.startsWith(PHYSICAL_TENANT_PATH_PREFIX)) {
+    if (!servletPath.startsWith(PHYSICAL_TENANTS_PATH_SEGMENT)) {
       return false;
     }
-    final int slashAfterTenant = servletPath.indexOf('/', PHYSICAL_TENANT_PATH_PREFIX.length());
+    final int slashAfterTenant = servletPath.indexOf('/', PHYSICAL_TENANTS_PATH_SEGMENT.length());
     if (slashAfterTenant < 0) {
       return false;
     }
