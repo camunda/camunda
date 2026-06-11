@@ -36,7 +36,7 @@ test.describe('component routes', () => {
 		await expect(page.getByRole('heading', {name: 'Operate'})).toBeVisible();
 	});
 
-	test('should render Tasklist when component is active', async ({network, page}) => {
+	test('should render Tasklist when component is active', async ({network, page, tasklistIndexPage}) => {
 		network.use(
 			mockCurrentUserEndpoint({
 				successResponse: HttpResponse.json(createCurrentUser()),
@@ -51,7 +51,7 @@ test.describe('component routes', () => {
 
 		await page.goto('/tasklist');
 
-		await expect(page.getByRole('heading', {name: 'Tasklist'})).toBeVisible();
+		await expect(tasklistIndexPage.tasksPanelHeading('All open tasks')).toBeVisible();
 	});
 
 	test('should render Admin when component is active', async ({network, page}) => {

@@ -35,7 +35,7 @@ test.describe('Tasklist index page', () => {
 	test('should render Tasklist index page', async ({tasklistIndexPage}) => {
 		await tasklistIndexPage.goto();
 
-		await expect(tasklistIndexPage.heading).toBeVisible();
+		await expect(tasklistIndexPage.tasksPanelHeading('All open tasks')).toBeVisible();
 		await expect(tasklistIndexPage.header.branding).toBeVisible();
 	});
 

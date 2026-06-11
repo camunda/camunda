@@ -71,7 +71,7 @@ test.describe('notifications', () => {
 		page,
 	}) => {
 		await tasklistIndexPage.goto();
-		await expect(tasklistIndexPage.heading).toBeVisible();
+		await expect(tasklistIndexPage.tasksPanelHeading('All open tasks')).toBeVisible();
 
 		await page.context().setOffline(true);
 		await expect(
