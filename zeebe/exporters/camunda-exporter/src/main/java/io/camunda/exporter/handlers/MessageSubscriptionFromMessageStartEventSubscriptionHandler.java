@@ -16,6 +16,7 @@ import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptio
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -29,9 +30,7 @@ public class MessageSubscriptionFromMessageStartEventSubscriptionHandler
 
   static final Set<Intent> STATES =
       Set.of(
-          MessageStartEventSubscriptionIntent.CREATED,
-          MessageStartEventSubscriptionIntent.CORRELATED,
-          MessageStartEventSubscriptionIntent.DELETED);
+          MessageStartEventSubscriptionIntent.CREATED, MessageStartEventSubscriptionIntent.DELETED);
 
   private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
 
@@ -50,7 +49,11 @@ public class MessageSubscriptionFromMessageStartEventSubscriptionHandler
 
   @Override
   public boolean handlesRecord(final Record<MessageStartEventSubscriptionRecordValue> record) {
-    return STATES.contains(record.getIntent());
+    // Only export from the deployment partition (partition 1) to avoid writing N identical
+    // subscriptions when a deployment is distributed to N partitions and each partition creates
+    // its own local copy with a distinct key.
+    return STATES.contains(record.getIntent())
+        && record.getPartitionId() == Protocol.DEPLOYMENT_PARTITION;
   }
 
   @Override

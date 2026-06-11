@@ -10,6 +10,7 @@ package io.camunda.it.client;
 import static io.camunda.it.util.TestHelper.deployResource;
 import static io.camunda.it.util.TestHelper.startProcessInstance;
 import static io.camunda.it.util.TestHelper.startProcessInstanceWithMessage;
+import static io.camunda.it.util.TestHelper.waitForCorrelatedMessageSubscriptions;
 import static io.camunda.it.util.TestHelper.waitForMessageSubscriptions;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
 import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
@@ -63,8 +64,7 @@ public class MessageSubscriptionSearchIT {
         .send()
         .join();
 
-    waitForMessageSubscriptions(
-        camundaClient, f -> f.messageSubscriptionState(MessageSubscriptionState.CORRELATED), 2);
+    waitForCorrelatedMessageSubscriptions(camundaClient, 2);
 
     orderedMessageSubscriptions =
         camundaClient
@@ -130,8 +130,8 @@ public class MessageSubscriptionSearchIT {
             .send()
             .join();
 
-    // Then
-    assertThat(searchResponse.items()).hasSize(2);
+    // Then - yield the intermediate message subscription (start subscription state remains CREATED)
+    assertThat(searchResponse.items()).hasSize(1);
     assertThat(searchResponse.items().getFirst())
         .extracting("messageName", "messageSubscriptionState")
         .containsExactly("Message1", MessageSubscriptionState.CORRELATED);

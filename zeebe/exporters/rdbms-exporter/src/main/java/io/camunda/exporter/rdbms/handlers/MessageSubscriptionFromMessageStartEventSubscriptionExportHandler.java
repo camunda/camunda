@@ -17,6 +17,7 @@ import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionT
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
@@ -32,9 +33,7 @@ public class MessageSubscriptionFromMessageStartEventSubscriptionExportHandler
 
   private static final Set<Intent> STATES =
       Set.of(
-          MessageStartEventSubscriptionIntent.CREATED,
-          MessageStartEventSubscriptionIntent.CORRELATED,
-          MessageStartEventSubscriptionIntent.DELETED);
+          MessageStartEventSubscriptionIntent.CREATED, MessageStartEventSubscriptionIntent.DELETED);
 
   private final MessageSubscriptionWriter messageSubscriptionWriter;
   private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
@@ -51,7 +50,11 @@ public class MessageSubscriptionFromMessageStartEventSubscriptionExportHandler
 
   @Override
   public boolean canExport(final Record<MessageStartEventSubscriptionRecordValue> record) {
-    return STATES.contains(record.getIntent());
+    // Only export from the deployment partition (partition 1) to avoid writing N identical
+    // subscriptions when a deployment is distributed to N partitions and each partition creates
+    // its own local copy with a distinct key.
+    return STATES.contains(record.getIntent())
+        && record.getPartitionId() == Protocol.DEPLOYMENT_PARTITION;
   }
 
   @Override
@@ -60,8 +63,7 @@ public class MessageSubscriptionFromMessageStartEventSubscriptionExportHandler
       case MessageStartEventSubscriptionIntent.CREATED:
         messageSubscriptionWriter.create(map(record));
         break;
-      case MessageStartEventSubscriptionIntent.CORRELATED,
-      MessageStartEventSubscriptionIntent.DELETED:
+      case MessageStartEventSubscriptionIntent.DELETED:
         messageSubscriptionWriter.update(map(record));
         break;
       default:
