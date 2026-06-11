@@ -305,6 +305,19 @@
     </createTable>
   </changeSet>
 
+  <changeSet id="create_wait_state_process_definition_id_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_WAIT_STATE_PROCESS_DEFINITION_ID"
+          tableName="${prefix}WAIT_STATE"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}WAIT_STATE"
+      indexName="${prefix}IDX_WAIT_STATE_PROCESS_DEFINITION_ID">
+      <column name="PROCESS_DEFINITION_ID"/>
+    </createIndex>
+  </changeSet>
+
   <changeSet id="create_wait_state_process_instance_key_index" author="camunda">
     <preConditions onFail="MARK_RAN">
       <not>
