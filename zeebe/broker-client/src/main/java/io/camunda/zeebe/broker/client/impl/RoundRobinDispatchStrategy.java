@@ -41,7 +41,8 @@ public final class RoundRobinDispatchStrategy implements RequestDispatchStrategy
   }
 
   @Override
-  public int determinePartition(final BrokerTopologyManager topologyManager) {
+  public int determinePartition(
+      final BrokerTopologyManager topologyManager, final String partitionGroup) {
     final BrokerClusterState topology = topologyManager.getTopology();
 
     if (topology == null || !topology.isInitialized()) {

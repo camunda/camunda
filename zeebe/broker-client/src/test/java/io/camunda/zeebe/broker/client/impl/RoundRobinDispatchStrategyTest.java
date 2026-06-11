@@ -16,6 +16,7 @@ import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.ActivePartitions;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.AllPartitions;
+import io.camunda.zeebe.protocol.Protocol;
 import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -28,7 +29,8 @@ final class RoundRobinDispatchStrategyTest {
     final var topologyManager = new TestTopologyManager(null);
 
     // when
-    final var partitionId = dispatchStrategy.determinePartition(topologyManager);
+    final var partitionId =
+        dispatchStrategy.determinePartition(topologyManager, Protocol.DEFAULT_PARTITION_GROUP_NAME);
 
     // then - the null value will be used as fallback by the request manager to redirect to the
     // deployment partition
@@ -43,8 +45,14 @@ final class RoundRobinDispatchStrategyTest {
     topologyManager.addPartition(1, null).addPartition(2, ZERO).addPartition(3, ZERO);
 
     // when - then
-    assertThat(dispatchStrategy.determinePartition(topologyManager)).isEqualTo(2);
-    assertThat(dispatchStrategy.determinePartition(topologyManager)).isEqualTo(3);
+    assertThat(
+            dispatchStrategy.determinePartition(
+                topologyManager, Protocol.DEFAULT_PARTITION_GROUP_NAME))
+        .isEqualTo(2);
+    assertThat(
+            dispatchStrategy.determinePartition(
+                topologyManager, Protocol.DEFAULT_PARTITION_GROUP_NAME))
+        .isEqualTo(3);
   }
 
   @Test
@@ -66,10 +74,22 @@ final class RoundRobinDispatchStrategyTest {
                 .build());
 
     // when - then
-    assertThat(dispatchStrategy.determinePartition(topologyManager)).isEqualTo(1);
-    assertThat(dispatchStrategy.determinePartition(topologyManager)).isEqualTo(2);
-    assertThat(dispatchStrategy.determinePartition(topologyManager)).isEqualTo(1);
-    assertThat(dispatchStrategy.determinePartition(topologyManager)).isEqualTo(2);
+    assertThat(
+            dispatchStrategy.determinePartition(
+                topologyManager, Protocol.DEFAULT_PARTITION_GROUP_NAME))
+        .isEqualTo(1);
+    assertThat(
+            dispatchStrategy.determinePartition(
+                topologyManager, Protocol.DEFAULT_PARTITION_GROUP_NAME))
+        .isEqualTo(2);
+    assertThat(
+            dispatchStrategy.determinePartition(
+                topologyManager, Protocol.DEFAULT_PARTITION_GROUP_NAME))
+        .isEqualTo(1);
+    assertThat(
+            dispatchStrategy.determinePartition(
+                topologyManager, Protocol.DEFAULT_PARTITION_GROUP_NAME))
+        .isEqualTo(2);
   }
 
   @Test
@@ -93,10 +113,22 @@ final class RoundRobinDispatchStrategyTest {
                 .build());
 
     // when - then
-    assertThat(dispatchStrategy.determinePartition(topologyManager)).isEqualTo(1);
-    assertThat(dispatchStrategy.determinePartition(topologyManager)).isEqualTo(3);
-    assertThat(dispatchStrategy.determinePartition(topologyManager)).isEqualTo(1);
-    assertThat(dispatchStrategy.determinePartition(topologyManager)).isEqualTo(3);
+    assertThat(
+            dispatchStrategy.determinePartition(
+                topologyManager, Protocol.DEFAULT_PARTITION_GROUP_NAME))
+        .isEqualTo(1);
+    assertThat(
+            dispatchStrategy.determinePartition(
+                topologyManager, Protocol.DEFAULT_PARTITION_GROUP_NAME))
+        .isEqualTo(3);
+    assertThat(
+            dispatchStrategy.determinePartition(
+                topologyManager, Protocol.DEFAULT_PARTITION_GROUP_NAME))
+        .isEqualTo(1);
+    assertThat(
+            dispatchStrategy.determinePartition(
+                topologyManager, Protocol.DEFAULT_PARTITION_GROUP_NAME))
+        .isEqualTo(3);
   }
 
   @Test
@@ -118,8 +150,14 @@ final class RoundRobinDispatchStrategyTest {
             .build());
 
     // then
-    assertThat(dispatchStrategy.determinePartition(topologyManager)).isEqualTo(1);
-    assertThat(dispatchStrategy.determinePartition(topologyManager)).isEqualTo(3);
+    assertThat(
+            dispatchStrategy.determinePartition(
+                topologyManager, Protocol.DEFAULT_PARTITION_GROUP_NAME))
+        .isEqualTo(1);
+    assertThat(
+            dispatchStrategy.determinePartition(
+                topologyManager, Protocol.DEFAULT_PARTITION_GROUP_NAME))
+        .isEqualTo(3);
 
     // when -- updating to routing state version 2, with active partitions 1, 2 and 3
     topologyManager.withClusterConfiguration(
@@ -131,9 +169,21 @@ final class RoundRobinDispatchStrategyTest {
             .build());
 
     // then
-    assertThat(dispatchStrategy.determinePartition(topologyManager)).isEqualTo(3);
-    assertThat(dispatchStrategy.determinePartition(topologyManager)).isEqualTo(1);
-    assertThat(dispatchStrategy.determinePartition(topologyManager)).isEqualTo(2);
-    assertThat(dispatchStrategy.determinePartition(topologyManager)).isEqualTo(3);
+    assertThat(
+            dispatchStrategy.determinePartition(
+                topologyManager, Protocol.DEFAULT_PARTITION_GROUP_NAME))
+        .isEqualTo(3);
+    assertThat(
+            dispatchStrategy.determinePartition(
+                topologyManager, Protocol.DEFAULT_PARTITION_GROUP_NAME))
+        .isEqualTo(1);
+    assertThat(
+            dispatchStrategy.determinePartition(
+                topologyManager, Protocol.DEFAULT_PARTITION_GROUP_NAME))
+        .isEqualTo(2);
+    assertThat(
+            dispatchStrategy.determinePartition(
+                topologyManager, Protocol.DEFAULT_PARTITION_GROUP_NAME))
+        .isEqualTo(3);
   }
 }

@@ -60,7 +60,7 @@ final class RequestRetryHandlerTest {
   void shouldSendToFixedPartitionWhenDispatchStrategyIsPresent() {
     // given - a request with a specific dispatch strategy targeting partition 2
     final int targetPartition = 2;
-    final var request = new TestBrokerRequest(Optional.of(__ -> targetPartition));
+    final var request = new TestBrokerRequest(Optional.of((__, partitionGroup) -> targetPartition));
     brokerClient.setResponse(new BrokerResponse<>("result", targetPartition, 1));
 
     // when
@@ -76,7 +76,7 @@ final class RequestRetryHandlerTest {
   void shouldNotRetryOnOtherPartitionsWhenDispatchStrategyIsPresent() {
     // given - a request with a specific dispatch strategy that fails with a retryable error
     final int targetPartition = 2;
-    final var request = new TestBrokerRequest(Optional.of(__ -> targetPartition));
+    final var request = new TestBrokerRequest(Optional.of((__, partitionGroup) -> targetPartition));
     brokerClient.setError(new ConnectException("connection refused"));
 
     // when
@@ -125,7 +125,7 @@ final class RequestRetryHandlerTest {
   void shouldNotSpinWhenActivePartitionsFewerThanTopologyCount() {
     // given - topology reports 3 partitions, but the strategy always returns partition 1
     // (e.g. only one active partition in routing state)
-    final RequestDispatchStrategy fixedStrategy = ignored -> 1;
+    final RequestDispatchStrategy fixedStrategy = (ignored, partitionGroup) -> 1;
     final var handler = new RequestRetryHandler(brokerClient, topologyManager, fixedStrategy);
     final var request = new TestBrokerRequest(Optional.empty());
     brokerClient.setError(new ConnectException("connection refused"));
@@ -145,7 +145,7 @@ final class RequestRetryHandlerTest {
     final var request =
         new TestBrokerRequest(
             Optional.of(
-                __ -> {
+                (__, partitionGroup) -> {
                   throw new RuntimeException("no topology");
                 }));
 

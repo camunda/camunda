@@ -339,7 +339,7 @@ public final class BrokerClientTest {
     final var request =
         new TestCommand(
             1L,
-            topologyManager -> {
+            (topologyManager, partitionGroup) -> {
               managerRef.set(topologyManager);
               return 1;
             });
@@ -370,7 +370,7 @@ public final class BrokerClientTest {
   public void shouldThrowCorrectErrorForInactivePartitionAndNoLeaderRequest() {
     // given
     final var partitionId = 1;
-    final var request = new TestCommand(1, topologyManager -> partitionId);
+    final var request = new TestCommand(1, (topologyManager, partitionGroup) -> partitionId);
 
     // when
     broker.updateInfo(info -> info.setInactiveForPartition(partitionId));
@@ -392,7 +392,7 @@ public final class BrokerClientTest {
     // given
     final var partitionId = 1;
     final var leaderBrokerId = 2;
-    final var request = new TestCommand(1, topologyManager -> partitionId);
+    final var request = new TestCommand(1, (topologyManager, partitionGroup) -> partitionId);
 
     // when
     broker.updateInfo(info -> info.setInactiveForPartition(partitionId));
@@ -577,7 +577,7 @@ public final class BrokerClientTest {
     void shouldRouteRequestBasedOnDispatchStrategy() {
       // given - a second broker (1), which respond successfully for partition 2
       final BrokerResponse<?> response;
-      final var request = new TestCommand(1L, ignored -> 2);
+      final var request = new TestCommand(1L, (ignored, partitionGroup) -> 2);
 
       try (final var otherBroker = new StubBroker(1, 2).start()) {
         registerSuccessResponse(otherBroker);
@@ -600,7 +600,8 @@ public final class BrokerClientTest {
     void shouldRouteToDeploymentPartitionAsFallback() {
       // given - a dispatch strategy which returns "null"
       final BrokerResponse<?> response;
-      final var request = new TestCommand(1L, ignored -> BrokerClusterState.PARTITION_ID_NULL);
+      final var request =
+          new TestCommand(1L, (ignored, partitionGroup) -> BrokerClusterState.PARTITION_ID_NULL);
       registerSuccessResponse(broker);
 
       // when

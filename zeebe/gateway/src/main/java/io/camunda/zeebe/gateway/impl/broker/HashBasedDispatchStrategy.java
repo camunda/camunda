@@ -44,7 +44,8 @@ public final class HashBasedDispatchStrategy implements RequestDispatchStrategy 
   }
 
   @Override
-  public int determinePartition(final BrokerTopologyManager topologyManager) {
+  public int determinePartition(
+      final BrokerTopologyManager topologyManager, final String partitionGroup) {
     return topologyManager
         .getClusterConfiguration()
         .routingState()
