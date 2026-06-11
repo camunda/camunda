@@ -19,6 +19,7 @@ import {
   MeterAlt,
   Chip,
   DocumentBlank,
+  Chat,
 } from '@carbon/react/icons';
 import {
   AgentDetailsContainer,
@@ -33,6 +34,9 @@ import {TokensUsedMetric} from './AgentMetrics/TokensUsedMetric';
 import {ToolsCalledMetric} from './AgentMetrics/ToolsCalledMetric';
 import {SectionTitle} from './SectionTitle';
 import {ConversationMessage} from './ConversationMessage';
+import {ConversationHistory} from './ConversationHistory';
+import {IS_CONVERSATION_HISTORY_ENABLED} from 'modules/feature-flags';
+import {isAgentInstanceRunning} from 'modules/queries/agentInstances/useAgentInstance';
 
 const STATUS_LABELS: Record<AgentInstanceStatus, string> = {
   INITIALIZING: 'Initializing',
@@ -132,6 +136,21 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
             />
           </MetricsRow>
         </AccordionItem>
+        {IS_CONVERSATION_HISTORY_ENABLED && (
+          <AccordionItem
+            data-testid="agent-conversation-history-section"
+            title={
+              <SectionTitle icon={<Chat size={16} />}>
+                Conversation history
+              </SectionTitle>
+            }
+          >
+            <ConversationHistory
+              agentInstanceKey={agentInstance.agentInstanceKey}
+              enablePeriodicRefetch={isAgentInstanceRunning(agentInstance)}
+            />
+          </AccordionItem>
+        )}
         <AccordionItem
           data-testid="agent-system-prompt-section"
           title={
@@ -141,8 +160,8 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
           }
         >
           <ConversationMessage
-            actor="system"
-            messages={[definition.systemPrompt]}
+            actor="SYSTEM"
+            content={[{contentType: 'TEXT', text: definition.systemPrompt}]}
           />
         </AccordionItem>
         <AccordionItem
