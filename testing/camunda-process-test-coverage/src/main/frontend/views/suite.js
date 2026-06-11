@@ -80,7 +80,7 @@ export function renderSuite(suiteId, data) {
                 <i class="bi bi-diagram-3-fill me-2 text-primary" aria-hidden="true"></i>
                 <strong>${escapeHtml(processName || cov.processDefinitionId)}</strong>
               </td>
-              <td><small class="text-muted">${processName ? escapeHtml(cov.processDefinitionId) : ''}</small></td>
+              <td><small class="text-muted">${escapeHtml(cov.processDefinitionId)}</small></td>
               <td>${progressBarHtml(cov.coverage)}</td>
               <td>${badgeHtml(cov.coverage)}</td>
             </tr>`;
@@ -114,7 +114,7 @@ export function renderSuite(suiteId, data) {
                 <i class="bi bi-table me-2 text-success" aria-hidden="true"></i>
                 <strong>${escapeHtml(decisionName || cov.decisionDefinitionId)}</strong>
               </td>
-              <td><small class="text-muted">${decisionName ? escapeHtml(cov.decisionDefinitionId) : ''}</small></td>
+              <td><small class="text-muted">${escapeHtml(cov.decisionDefinitionId)}</small></td>
               <td>${progressBarHtml(cov.coverage)}</td>
               <td>${badgeHtml(cov.coverage)}</td>
             </tr>`;
@@ -151,7 +151,7 @@ export function renderSuite(suiteId, data) {
                 <i class="bi bi-file-earmark-code-fill me-2 text-info" aria-hidden="true"></i>
                 <strong>${escapeHtml(primary)}</strong>
               </td>
-              <td><small class="text-muted">${secondary ? escapeHtml(secondary) : ''}</small></td>
+              <td><small class="text-muted">${escapeHtml(run.name)}</small></td>
               <td>${progressBarHtml(runAvg)}</td>
               <td>${badgeHtml(runAvg)}</td>
             </tr>`;

@@ -21,7 +21,7 @@ function processHeading(processId, processModels) {
   const model = (processModels || []).find((m) => m.processDefinitionId === processId);
   const name = model?.processName;
   if (name && name !== processId) {
-    return `${escapeHtml(name)}<br><small class="text-muted fw-normal">Process definition ID: ${escapeHtml(processId)}</small>`;
+    return `${escapeHtml(name)}<br><small class="text-muted fw-normal">Process Definition ID: ${escapeHtml(processId)}</small>`;
   }
   return escapeHtml(processId);
 }

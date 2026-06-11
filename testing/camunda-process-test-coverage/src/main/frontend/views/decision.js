@@ -24,7 +24,7 @@ function decisionHeading(decisionId, decisionModels) {
   const model = (decisionModels || []).find((m) => m.decisionDefinitionId === decisionId);
   const name = model?.decisionName;
   if (name && name !== decisionId) {
-    return `${escapeHtml(name)}<br><small class="text-muted fw-normal">Decision definition ID: ${escapeHtml(decisionId)}</small>`;
+    return `${escapeHtml(name)}<br><small class="text-muted fw-normal">Decision Definition ID: ${escapeHtml(decisionId)}</small>`;
   }
   return escapeHtml(decisionId);
 }
