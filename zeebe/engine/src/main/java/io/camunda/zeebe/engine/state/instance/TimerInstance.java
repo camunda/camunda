@@ -32,9 +32,12 @@ public final class TimerInstance extends UnpackedObject implements DbValue, Tena
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final LongProperty dueDateProp = new LongProperty("dueDate", 0L);
   private final IntegerProperty repetitionsProp = new IntegerProperty("repetitions", 0);
+  private final LongProperty rootProcessInstanceKeyProp =
+      new LongProperty("rootProcessInstanceKey", NO_ELEMENT_INSTANCE);
+  private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId", "");
 
   public TimerInstance() {
-    super(8);
+    super(10);
     declareProperty(handlerNodeIdProp)
         .declareProperty(processDefinitionKeyProp)
         .declareProperty(keyProp)
@@ -42,7 +45,9 @@ public final class TimerInstance extends UnpackedObject implements DbValue, Tena
         .declareProperty(processInstanceKeyProp)
         .declareProperty(dueDateProp)
         .declareProperty(repetitionsProp)
-        .declareProperty(tenantIdProp);
+        .declareProperty(tenantIdProp)
+        .declareProperty(rootProcessInstanceKeyProp)
+        .declareProperty(bpmnProcessIdProp);
   }
 
   public long getElementInstanceKey() {
@@ -116,6 +121,24 @@ public final class TimerInstance extends UnpackedObject implements DbValue, Tena
 
   public TimerInstance setTenantId(final String tenantId) {
     tenantIdProp.setValue(tenantId);
+    return this;
+  }
+
+  public long getRootProcessInstanceKey() {
+    return rootProcessInstanceKeyProp.getValue();
+  }
+
+  public TimerInstance setRootProcessInstanceKey(final long rootProcessInstanceKey) {
+    rootProcessInstanceKeyProp.setValue(rootProcessInstanceKey);
+    return this;
+  }
+
+  public String getBpmnProcessId() {
+    return bufferAsString(bpmnProcessIdProp.getValue());
+  }
+
+  public TimerInstance setBpmnProcessId(final String bpmnProcessId) {
+    bpmnProcessIdProp.setValue(bpmnProcessId);
     return this;
   }
 }

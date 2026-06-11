@@ -612,7 +612,9 @@ public final class CatchEventBehavior {
         .setRepetitions(timer.getRepetitions())
         .setTargetElementId(timer.getHandlerNodeId())
         .setProcessDefinitionKey(timer.getProcessDefinitionKey())
-        .setTenantId(timer.getTenantId());
+        .setTenantId(timer.getTenantId())
+        .setRootProcessInstanceKey(timer.getRootProcessInstanceKey())
+        .setBpmnProcessId(timer.getBpmnProcessId());
 
     stateWriter.appendFollowUpEvent(timer.getKey(), TimerIntent.CANCELED, timerRecord);
   }

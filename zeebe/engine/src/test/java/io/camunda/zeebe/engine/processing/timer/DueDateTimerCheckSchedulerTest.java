@@ -54,6 +54,7 @@ class DueDateTimerCheckSchedulerTest {
       final var timerKey = 42L;
       when(mockTimer.getKey()).thenReturn(timerKey);
       when(mockTimer.getTenantId()).thenReturn(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+      when(mockTimer.getBpmnProcessId()).thenReturn("bpmnProcessId");
 
       final var testActorClock = new TestActorClock();
 
@@ -96,6 +97,7 @@ class DueDateTimerCheckSchedulerTest {
       final var timerKey = 42L;
       when(mockTimer.getKey()).thenReturn(timerKey);
       when(mockTimer.getTenantId()).thenReturn(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+      when(mockTimer.getBpmnProcessId()).thenReturn("bpmnProcessId");
 
       final var testActorClock = new TestActorClock();
 
