@@ -12,7 +12,6 @@ import {
   coverageClass,
   statCard,
   runPrimaryLabel,
-  runSecondaryLabel,
 } from '../utils.js';
 
 /**
@@ -144,7 +143,6 @@ export function renderSuite(suiteId, data) {
           ? runAllCoverages.reduce((s, c) => s + c.coverage, 0) / runAllCoverages.length
           : 0;
       const primary = runPrimaryLabel(run);
-      const secondary = runSecondaryLabel(run);
       html += `
             <tr class="clickable-row" onclick="navigate('/suite/${sid}/run/${runIndex}')">
               <td>

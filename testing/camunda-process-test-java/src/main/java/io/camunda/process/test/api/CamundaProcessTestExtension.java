@@ -410,7 +410,7 @@ public class CamundaProcessTestExtension
       parentContext = parentContext.getParent().orElse(null);
     }
 
-    return prefix + context.getDisplayName();
+    return prefix + context.getRequiredTestMethod().getName();
   }
 
   /**
