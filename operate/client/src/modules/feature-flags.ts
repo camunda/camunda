@@ -6,4 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-export {};
+const IS_CONVERSATION_HISTORY_ENABLED =
+  localStorage.getItem('FEATURE_CONVERSATION_HISTORY_ENABLED') === 'true';
+
+export {IS_CONVERSATION_HISTORY_ENABLED};
