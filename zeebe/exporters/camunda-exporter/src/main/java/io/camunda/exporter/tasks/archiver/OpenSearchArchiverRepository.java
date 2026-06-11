@@ -379,9 +379,14 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
             config,
             sourceIndexName,
             destinationIndexName,
-            searchAfter ->
+            (searchAfter, size) ->
                 getArchiveDocIdsBatch(
-                    sourceIndexName, keysByField, inclusionFilters, exclusionFilters, searchAfter),
+                    sourceIndexName,
+                    keysByField,
+                    inclusionFilters,
+                    exclusionFilters,
+                    searchAfter,
+                    size),
             this::reindexDocumentsById,
             this::deleteDocumentsById,
             executor,
@@ -458,7 +463,8 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
       final Map<String, List<String>> keysByField,
       final Map<String, String> inclusionFilters,
       final Map<String, String> exclusionFilters,
-      final List<FieldValue> searchAfter) {
+      final List<FieldValue> searchAfter,
+      final Integer size) {
     final Query query = buildFilterQuery(keysByField, inclusionFilters, exclusionFilters);
     final Builder requestBuilder =
         new Builder()
@@ -467,7 +473,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
             .allowNoIndices(true)
             .ignoreUnavailable(true)
             .query(query)
-            .size(config.getReindexBatchSize())
+            .size(size)
             .source(s -> s.fetch(false))
             .sort(sort -> sort.field(field -> field.field("id").order(SortOrder.Asc)));
 
