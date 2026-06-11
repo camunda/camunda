@@ -1554,7 +1554,11 @@
       "agenticKpiExecutionAvgTokensName": "Avg tokens per execution",
       "agenticKpiExecutionAvgTokensDescription": "Average total tokens consumed per completed agentic process instance in the selected period.",
       "agenticKpiExecutionMedianTokensName": "Median tokens per execution",
-      "agenticKpiExecutionMedianTokensDescription": "Median total tokens consumed per completed agentic process instance in the selected period."
+      "agenticKpiExecutionMedianTokensDescription": "Median total tokens consumed per completed agentic process instance in the selected period.",
+      "agenticKpiTokenTrendInputName": "Input Tokens",
+      "agenticKpiTokenTrendOutputName": "Output Tokens",
+      "agenticKpiTokenTrendName": "Token Trend",
+      "agenticKpiTokenTrendFootnote": "If token use rises without more executions, prompts may be growing or the model is producing longer outputs. Raise with engineering."
     }
   },
   "managementDashboard": {

@@ -18,6 +18,8 @@ import io.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTile
 import io.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardTileType;
 import io.camunda.optimize.dto.optimize.query.dashboard.tile.DimensionDto;
 import io.camunda.optimize.dto.optimize.query.dashboard.tile.PositionDto;
+import io.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
+import io.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
 import io.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
@@ -25,11 +27,14 @@ import io.camunda.optimize.dto.optimize.query.report.single.configuration.Single
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateUnit;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.RollingDateFilterDataDto;
+import io.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 import io.camunda.optimize.dto.optimize.query.report.single.process.distributed.NoneDistributedByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
+import io.camunda.optimize.dto.optimize.query.report.single.process.group.EndDateGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import io.camunda.optimize.service.db.reader.DashboardReader;
@@ -74,6 +79,9 @@ public class AgenticControlDashboardService {
       "agenticKpiExecutionMedianTokensName";
   public static final String KPI_EXECUTION_MEDIAN_TOKENS_DESCRIPTION =
       "agenticKpiExecutionMedianTokensDescription";
+  public static final String KPI_TOKEN_TREND_INPUT_NAME = "agenticKpiTokenTrendInputName";
+  public static final String KPI_TOKEN_TREND_OUTPUT_NAME = "agenticKpiTokenTrendOutputName";
+  public static final String KPI_TOKEN_TREND_NAME = "agenticKpiTokenTrendName";
 
   // Deterministic report IDs — derived from fixed seed strings so IDs are stable across restarts
   // and DB reimports. Same seed always produces the same UUID (UUID v3 / name-based).
@@ -90,6 +98,15 @@ public class AgenticControlDashboardService {
       UUID.nameUUIDFromBytes("agentic-kpi-avg-tokens".getBytes(StandardCharsets.UTF_8)).toString();
   public static final String KPI_MEDIAN_TOKENS_REPORT_ID =
       UUID.nameUUIDFromBytes("agentic-kpi-median-tokens".getBytes(StandardCharsets.UTF_8))
+          .toString();
+  public static final String TOKEN_TREND_INPUT_REPORT_ID =
+      UUID.nameUUIDFromBytes("agentic-token-trend-input".getBytes(StandardCharsets.UTF_8))
+          .toString();
+  public static final String TOKEN_TREND_OUTPUT_REPORT_ID =
+      UUID.nameUUIDFromBytes("agentic-token-trend-output".getBytes(StandardCharsets.UTF_8))
+          .toString();
+  public static final String TOKEN_TREND_COMBINED_REPORT_ID =
+      UUID.nameUUIDFromBytes("agentic-token-trend-combined".getBytes(StandardCharsets.UTF_8))
           .toString();
 
   private static final long INSTANCE_END_DATE_ROLLING_DAYS = 30L;
@@ -131,6 +148,7 @@ public class AgenticControlDashboardService {
     tiles.add(buildIncidentRateReport());
     tiles.add(buildAvgTokensReport());
     tiles.add(buildMedianTokensReport());
+    tiles.add(buildTokenTrendReport());
 
     // Always upsert the dashboard too — tile list can grow across versions and the cold-start
     // guard would leave an existing deployment stuck on the old layout.
@@ -274,6 +292,58 @@ public class AgenticControlDashboardService {
     reportWriter.createOrUpdateSingleProcessReport(
         id, null, reportData, nameKey, descriptionKey, null);
     return buildTile(id, position, new DimensionDto(9, 2), Map.of("section", "token"));
+  }
+
+  private DashboardReportTileDto buildTokenTrendReport() {
+    reportWriter.createOrUpdateSingleProcessReport(
+        TOKEN_TREND_INPUT_REPORT_ID,
+        null,
+        buildTokenTrendSubReportData(ViewProperty.INPUT_TOKENS),
+        KPI_TOKEN_TREND_INPUT_NAME,
+        null,
+        null);
+    reportWriter.createOrUpdateSingleProcessReport(
+        TOKEN_TREND_OUTPUT_REPORT_ID,
+        null,
+        buildTokenTrendSubReportData(ViewProperty.OUTPUT_TOKENS),
+        KPI_TOKEN_TREND_OUTPUT_NAME,
+        null,
+        null);
+
+    final CombinedReportDataDto combined = new CombinedReportDataDto();
+    combined.setVisualization(ProcessVisualization.LINE);
+    combined.setReports(
+        List.of(
+            new CombinedReportItemDto(TOKEN_TREND_INPUT_REPORT_ID, "#0062FF"),
+            new CombinedReportItemDto(TOKEN_TREND_OUTPUT_REPORT_ID, "#009D9A")));
+    reportWriter.createOrUpdateCombinedReport(
+        TOKEN_TREND_COMBINED_REPORT_ID, null, combined, KPI_TOKEN_TREND_NAME, null, null);
+
+    return buildTile(
+        TOKEN_TREND_COMBINED_REPORT_ID,
+        new PositionDto(0, 6),
+        new DimensionDto(18, 4),
+        Map.of("section", "token"));
+  }
+
+  private ProcessReportDataDto buildTokenTrendSubReportData(final ViewProperty tokenProperty) {
+    final EndDateGroupByDto groupBy = new EndDateGroupByDto();
+    groupBy.setValue(new DateGroupByValueDto(AggregateByDateUnit.WEEK));
+    return ProcessReportDataDto.builder()
+        .definitions(Collections.emptyList())
+        .view(new ProcessViewDto(ProcessViewEntity.AGENT_INSTANCE, tokenProperty))
+        .groupBy(groupBy)
+        .distributedBy(new NoneDistributedByDto())
+        .visualization(ProcessVisualization.LINE)
+        .filter(
+            ProcessFilterBuilder.filter()
+                .completedInstancesOnly()
+                .add()
+                .hasAgentInstances()
+                .add()
+                .buildList())
+        .agenticControlReport(true)
+        .build();
   }
 
   private DashboardDefinitionRestDto buildAgentDashboard(final List<DashboardReportTileDto> tiles) {
