@@ -57,7 +57,7 @@ services:
     cpu_count: 4
     mem_limit: 2g
     healthcheck:
-      test: ['CMD-SHELL', 'curl -f http://localhost:9200/_cat/health | grep -q green']
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cat/health | grep -qE 'green|yellow'"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -110,7 +110,7 @@ services:
       KEYCLOAK_USERS_0_USERNAME: 'ourief'
       KEYCLOAK_USERS_0_PASSWORD: 'ourief'
       KEYCLOAK_USERS_0_FIRST_NAME: 'ourief'
-      KEYCLOAK_USERS_0_ROLES_0: 'Identity'
+      KEYCLOAK_USERS_0_ROLES_0: 'ManagementIdentity'
       KEYCLOAK_USERS_0_ROLES_1: 'Optimize'
       KEYCLOAK_USERS_1_USERNAME: 'comentse'
       KEYCLOAK_USERS_1_PASSWORD: 'comentse'
@@ -137,8 +137,7 @@ services:
       KEYCLOAK_USERS_6_EMAIL: 'demo@example.com'
       KEYCLOAK_USERS_6_FIRST_NAME: 'demo'
       KEYCLOAK_USERS_6_ROLES_0: 'Optimize'
-      KEYCLOAK_USERS_6_ROLES_1: 'Identity'
-      KEYCLOAK_USERS_6_ROLES_2: 'ManagementIdentity'
+      KEYCLOAK_USERS_6_ROLES_1: 'ManagementIdentity'
   camunda:
     profiles: ['self-managed', 'self-managed:elasticsearch']
     image: camunda/camunda:${CAMUNDA_VERSION:-8.9.0}
