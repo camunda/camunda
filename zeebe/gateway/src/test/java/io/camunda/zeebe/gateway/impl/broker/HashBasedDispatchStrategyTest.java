@@ -107,7 +107,7 @@ final class HashBasedDispatchStrategyTest {
       implements BrokerTopologyManager {
 
     @Override
-    public BrokerClusterState getTopology() {
+    public BrokerClusterState getTopology(final String physicalTenantId) {
       return topology;
     }
 
