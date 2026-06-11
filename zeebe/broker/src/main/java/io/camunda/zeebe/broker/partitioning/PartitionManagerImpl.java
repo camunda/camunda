@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.partitioning;
 
+import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
@@ -25,6 +26,7 @@ import io.camunda.zeebe.broker.partitioning.startup.PartitionStartupContext;
 import io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory;
 import io.camunda.zeebe.broker.partitioning.startup.ZeebePartitionFactory;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
+import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
@@ -36,7 +38,6 @@ import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
@@ -63,7 +64,6 @@ import org.slf4j.LoggerFactory;
 public final class PartitionManagerImpl
     implements PartitionManager, PartitionChangeExecutor, PartitionScalingChangeExecutor {
 
-  public static final String DEFAULT_GROUP_NAME = Protocol.DEFAULT_PARTITION_GROUP_NAME;
   private static final Logger LOGGER = LoggerFactory.getLogger(PartitionManagerImpl.class);
 
   private final String partitionGroup;
@@ -152,28 +152,6 @@ public final class PartitionManagerImpl
     RocksDbSharedCacheMetrics.registerAllocationStrategy(
         brokerMeterRegistry,
         brokerCfg.getExperimental().getRocksdb().getMemoryAllocationStrategy());
-  }
-
-  public void start() {
-    submitTopologyManager();
-    final var localMemberId = localMemberId();
-    final var memberPartitions = localPartitions();
-
-    // BrokerHealthCheckService tracks a single set of bootstrap partitions. Only the default
-    // physical tenant participates in the broker health check for now; other tenants are invisible.
-    if (DEFAULT_GROUP_NAME.equals(partitionGroup)) {
-      healthCheckService.registerBootstrapPartitions(memberPartitions);
-    }
-    for (final var partitionMetadata : memberPartitions) {
-      final var initialPartitionConfig =
-          clusterConfigurationService
-              .getInitialClusterConfiguration()
-              .members()
-              .get(localMemberId)
-              .getPartition(partitionMetadata.id().id())
-              .config();
-      bootstrapPartition(partitionMetadata, initialPartitionConfig, false);
-    }
   }
 
   private ActorFuture<Void> bootstrapPartition(
@@ -311,6 +289,29 @@ public final class PartitionManagerImpl
   }
 
   @Override
+  public void start() {
+    final var localMemberId = localMemberId();
+    final var memberPartitions = localPartitions();
+
+    // BrokerHealthCheckService tracks a single set of bootstrap partitions. Only the default
+    // physical tenant participates in the broker health check for now; other tenants are invisible.
+    if (DEFAULT_GROUP_NAME.equals(partitionGroup)) {
+      healthCheckService.registerBootstrapPartitions(memberPartitions);
+      clusterConfigurationService.registerPartitionChangeExecutors(this, this);
+    }
+    for (final var partitionMetadata : memberPartitions) {
+      final var initialPartitionConfig =
+          clusterConfigurationService
+              .getInitialClusterConfiguration()
+              .members()
+              .get(localMemberId)
+              .getPartition(partitionMetadata.id().id())
+              .config();
+      bootstrapPartition(partitionMetadata, initialPartitionConfig, false);
+    }
+  }
+
+  @Override
   public ActorFuture<Void> stop() {
     final var result = concurrencyControl.<Void>createFuture();
     final var stop =
@@ -325,7 +326,7 @@ public final class PartitionManagerImpl
             result.completeExceptionally(error);
           } else {
             partitions.clear();
-            closeTopologyManager().onComplete(result);
+            result.complete(null);
           }
         });
     return result;

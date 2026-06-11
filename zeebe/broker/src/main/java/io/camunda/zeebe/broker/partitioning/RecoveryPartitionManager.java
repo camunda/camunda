@@ -7,14 +7,16 @@
  */
 package io.camunda.zeebe.broker.partitioning;
 
+import io.atomix.cluster.ClusterMembershipService;
+import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
+import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
-import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -25,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,7 +72,7 @@ public final class RecoveryPartitionManager implements PartitionManager {
   }
 
   @Override
-  public RaftPartition getRaftPartition(final int partitionId) {
+  public @Nullable RaftPartition getRaftPartition(final int partitionId) {
     return null;
   }
 
@@ -84,47 +87,24 @@ public final class RecoveryPartitionManager implements PartitionManager {
   }
 
   @Override
+  public void start() {
+    concurrencyControl.run(
+        () -> {
+          final var localPartitions = localPartitions();
+          if (localPartitions.isEmpty()) {
+            LOG.info("No local partitions to recover for partition group {}", partitionGroup);
+            return;
+          }
+          localPartitions.forEach(this::startPartition);
+        });
+  }
+
+  @Override
   public ActorFuture<Void> stop() {
     LOG.info("Stopping RecoveryPartitionManager");
     final var result = concurrencyControl.<Void>createFuture();
     concurrencyControl.run(() -> stopInternal(result));
     return result;
-  }
-
-  public ActorFuture<Void> start() {
-    final var result = concurrencyControl.<Void>createFuture();
-    concurrencyControl.run(() -> startInternal(result));
-    return result;
-  }
-
-  private void startInternal(final ActorFuture<Void> result) {
-    final var localPartitions = localPartitions();
-    if (localPartitions.isEmpty()) {
-      result.complete(null);
-      return;
-    }
-
-    submitTopologyManager();
-    final var startFutures = startPartitions(localPartitions);
-
-    concurrencyControl.runOnCompletion(
-        startFutures,
-        startError -> {
-          if (startError != null) {
-            result.completeExceptionally(startError);
-            return;
-          }
-          final var topologyUpdateFutures = deactivatePartitions(localPartitions);
-          concurrencyControl.runOnCompletion(
-              topologyUpdateFutures,
-              topologyError -> {
-                if (topologyError != null) {
-                  result.completeExceptionally(topologyError);
-                } else {
-                  result.complete(null);
-                }
-              });
-        });
   }
 
   private void stopInternal(final ActorFuture<Void> result) {
@@ -141,37 +121,42 @@ public final class RecoveryPartitionManager implements PartitionManager {
             LOG.error("Failed to stop recovery partitions", stopError);
             result.completeExceptionally(stopError);
           } else {
-            closeTopologyManager().onComplete(result);
+            LOG.info("Stopped recovery partitions");
+            result.complete(null);
           }
         });
   }
 
-  private List<ActorFuture<RecoveryPartition>> startPartitions(
-      final List<PartitionMetadata> localPartitions) {
-    final List<ActorFuture<RecoveryPartition>> startFutures = new ArrayList<>();
-    localPartitions.forEach(
-        m -> {
-          final var partitionId = m.id();
-          final var partitionDir = partitionDirectory(partitionId);
-          final var context =
-              new RecoveryPartitionStartupContext(
-                  partitionId,
-                  partitionDir,
-                  actorSchedulingService,
-                  topologyManager,
-                  meterRegistry,
-                  concurrencyControl);
+  private void startPartition(final PartitionMetadata partitionMetadata) {
+    final var partitionId = partitionMetadata.id();
+    final var partitionDir = partitionDirectory(partitionId);
+    final var context =
+        new RecoveryPartitionStartupContext(
+            partitionId,
+            partitionDir,
+            actorSchedulingService,
+            topologyManager,
+            meterRegistry,
+            concurrencyControl);
 
-          final var partition = RecoveryPartition.recovering(context);
-          recoveryPartitions.add(partition);
-          startFutures.add(partition.start());
+    final var partition = RecoveryPartition.recovering(context);
+    recoveryPartitions.add(partition);
+    LOG.info("Recovering partition {}", partitionId);
+    concurrencyControl.runOnCompletion(
+        partition.start(),
+        (started, error) -> {
+          if (error != null) {
+            LOG.error("Failed to start partition {} in recovery mode", partitionId, error);
+            recoveryPartitions.remove(partition);
+            return;
+          }
+          LOG.info("Partition {} in recovery, marking it inactive", partitionId);
+          deactivatePartition(partitionId);
         });
-    return startFutures;
   }
 
-  private List<ActorFuture<Void>> deactivatePartitions(
-      final List<PartitionMetadata> localPartitions) {
-    return localPartitions.stream().map(m -> topologyManager.setInactive(m.id().id())).toList();
+  private void deactivatePartition(final PartitionId partitionId) {
+    topologyManager.setInactive(partitionId.id());
   }
 
   private Path partitionDirectory(final PartitionId partitionId) {

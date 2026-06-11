@@ -21,6 +21,7 @@ import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
+import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.protocol.record.PartitionRole;
 import io.camunda.zeebe.scheduler.Actor;
@@ -75,6 +76,8 @@ final class RecoveryPartitionManagerTest {
         .thenReturn(new PartitionDistribution(Set.of(metadata, metadata2)));
 
     final var brokerInfo = new BrokerInfo(0, null, "localhost:26501").setPartitionGroup(GROUP);
+    final var topologyManager = new TopologyManagerImpl(membershipService, brokerInfo);
+    actorScheduler.submitActor(topologyManager).join();
 
     partitionManager =
         new RecoveryPartitionManager(
@@ -84,8 +87,8 @@ final class RecoveryPartitionManagerTest {
             clusterConfigurationService,
             clusterServices,
             actorScheduler,
-            brokerInfo,
-            new SimpleMeterRegistry());
+            new SimpleMeterRegistry(),
+            topologyManager);
   }
 
   private PartitionMetadata localPartitionMetadata(final int partitionId) {
@@ -111,7 +114,7 @@ final class RecoveryPartitionManagerTest {
   @Test
   void shouldDeactivateLocalPartitionsOnStart() {
     // when
-    partitionManager.start().join();
+    controlActor.run(() -> partitionManager.start());
 
     // then — both local partitions are published as INACTIVE in the broker's topology
     await()
@@ -130,7 +133,7 @@ final class RecoveryPartitionManagerTest {
   @Test
   void shouldNotStartRaftOrZeebePartitions() {
     // when
-    partitionManager.start().join();
+    controlActor.run(() -> partitionManager.start());
 
     // then — recovery mode never brings up Raft or Zeebe partitions
     assertThat(partitionManager.getRaftPartitions()).isEmpty();

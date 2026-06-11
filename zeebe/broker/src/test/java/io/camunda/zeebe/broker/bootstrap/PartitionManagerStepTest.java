@@ -70,7 +70,6 @@ class PartitionManagerStepTest {
 
     private ActorFuture<BrokerStartupContext> startupFuture;
     private ActorScheduler actorScheduler;
-    private ClusterConfigurationService clusterConfigurationService;
     private ClusterConfiguration mockClusterConfiguration;
 
     @BeforeEach
@@ -88,7 +87,8 @@ class PartitionManagerStepTest {
       testBrokerStartupContext.setAdminApiService(mock(AdminApiRequestHandler.class));
       testBrokerStartupContext.setBrokerAdminService(mock(BrokerAdminServiceImpl.class));
       testBrokerStartupContext.setJobStreamService(mock(JobStreamService.class));
-      clusterConfigurationService = mock(ClusterConfigurationService.class);
+      final ClusterConfigurationService clusterConfigurationService =
+          mock(ClusterConfigurationService.class);
       when(clusterConfigurationService.getPartitionDistribution())
           .thenReturn(PartitionDistribution.NO_PARTITIONS);
       mockClusterConfiguration = mock(ClusterConfiguration.class);
@@ -198,15 +198,19 @@ class PartitionManagerStepTest {
       when(mockPartitionManager.stop()).thenReturn(CompletableActorFuture.completed(null));
 
       testBrokerStartupContext = new MockBrokerStartupContext();
-      testBrokerStartupContext.setBrokerInfo(mock(BrokerInfo.class));
+      testBrokerStartupContext.setBrokerInfo(new BrokerInfo());
       testBrokerStartupContext.setBrokerConfiguration(TEST_BROKER_CONFIG);
       testBrokerStartupContext.setActorSchedulingService(mock(ActorScheduler.class));
       testBrokerStartupContext.setShutdownTimeout(TEST_SHUTDOWN_TIMEOUT);
 
-      testBrokerStartupContext.addPartitionManager(
-          PartitionManagerImpl.DEFAULT_GROUP_NAME, mockPartitionManager);
       testBrokerStartupContext.setClusterConfigurationService(
           mock(ClusterConfigurationService.class));
+      // Startup wires the step's topology manager. The mock actor scheduler makes the partition
+      // manager submission fail, so the step stores no manager; we inject the mock ourselves.
+      final ActorFuture<BrokerStartupContext> startupFuture = CONCURRENCY_CONTROL.createFuture();
+      sut.startupInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, startupFuture);
+      testBrokerStartupContext.addPartitionManager(
+          PartitionManagerImpl.DEFAULT_GROUP_NAME, mockPartitionManager);
       shutdownFuture = CONCURRENCY_CONTROL.createFuture();
     }
 

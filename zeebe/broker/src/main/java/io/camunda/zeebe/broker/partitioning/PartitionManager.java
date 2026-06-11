@@ -11,20 +11,24 @@ import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.util.Collection;
 import java.util.stream.Collectors;
+import org.jspecify.annotations.Nullable;
 
 public interface PartitionManager {
-  /**
-   * @return the partition with the given id or null if partition does not exist
-   */
-  RaftPartition getRaftPartition(int partitionId);
+  String DEFAULT_GROUP_NAME = Protocol.DEFAULT_PARTITION_GROUP_NAME;
 
   /**
    * @return the partition with the given id or null if partition does not exist
    */
-  default RaftPartition getRaftPartition(final PartitionId partitionId) {
+  @Nullable RaftPartition getRaftPartition(int partitionId);
+
+  /**
+   * @return the partition with the given id or null if partition does not exist
+   */
+  default @Nullable RaftPartition getRaftPartition(final PartitionId partitionId) {
     return getRaftPartition(partitionId.id());
   }
 
@@ -47,6 +51,12 @@ public interface PartitionManager {
    */
   Collection<ZeebePartition> getZeebePartitions();
 
+  void start();
+
   /** Stops partitions managed by this partition manager. */
   ActorFuture<Void> stop();
+
+  static boolean isDefaultPhysicalTenant(final String physicalTenantId) {
+    return PartitionManagerImpl.DEFAULT_GROUP_NAME.equals(physicalTenantId);
+  }
 }
