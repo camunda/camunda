@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {queryOptions, infiniteQueryOptions} from '@tanstack/react-query';
+import {queryOptions} from '@tanstack/react-query';
 import type {
 	GetSystemConfigurationResponseBody,
 	CurrentUser,
@@ -15,35 +15,18 @@ import type {
 	GetProcessDefinitionInstanceStatisticsResponseBody,
 	GetIncidentProcessInstanceStatisticsByErrorRequestBody,
 	GetIncidentProcessInstanceStatisticsByErrorResponseBody,
-	ProcessDefinitionInstanceStatistics,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {request} from './request';
 import {endpoints} from './endpoints';
-
-const DASHBOARD_PAGE_LIMIT = 50;
-const DASHBOARD_MAX_PAGES = 5;
-
-type RunningInstancesCount = {
-	total: number;
-	withIncidents: number;
-	withoutIncidents: number;
-};
-
-function aggregateRunningInstancesCount(items: ProcessDefinitionInstanceStatistics[]): RunningInstancesCount {
-	const withIncidents = items.reduce((sum, s) => sum + s.activeInstancesWithIncidentCount, 0);
-	const withoutIncidents = items.reduce((sum, s) => sum + s.activeInstancesWithoutIncidentCount, 0);
-	return {withIncidents, withoutIncidents, total: withIncidents + withoutIncidents};
-}
 
 const queryKeys = {
 	currentUser: () => ['getCurrentUser'] as const,
 	systemConfiguration: () => ['systemConfiguration'] as const,
 	license: () => ['license'] as const,
-	runningInstancesCount: () => ['runningInstancesCount'] as const,
-	processDefinitionStatisticsPaginated: (payload: Omit<GetProcessDefinitionInstanceStatisticsRequestBody, 'page'>) =>
-		['processDefinitionStatisticsPaginated', payload] as const,
-	incidentStatisticsByErrorPaginated: (payload: Omit<GetIncidentProcessInstanceStatisticsByErrorRequestBody, 'page'>) =>
-		['incidentStatisticsByErrorPaginated', payload] as const,
+	getProcessDefinitionInstanceStatistics: (body: GetProcessDefinitionInstanceStatisticsRequestBody) =>
+		['getProcessDefinitionInstanceStatistics', body] as const,
+	getIncidentProcessInstanceStatisticsByError: (body: GetIncidentProcessInstanceStatisticsByErrorRequestBody) =>
+		['getIncidentProcessInstanceStatisticsByError', body] as const,
 };
 
 const queries = {
@@ -88,87 +71,23 @@ const queries = {
 			gcTime: Infinity,
 		}),
 
-	getRunningInstancesCount: () =>
+	getProcessDefinitionInstanceStatistics: (body: GetProcessDefinitionInstanceStatisticsRequestBody) =>
 		queryOptions({
-			queryKey: queryKeys.runningInstancesCount(),
-			refetchInterval: 5000,
-			queryFn: async (): Promise<RunningInstancesCount> => {
-				const defaultBody: GetProcessDefinitionInstanceStatisticsRequestBody = {
-					sort: [{field: 'activeInstancesWithoutIncidentCount', order: 'desc'}],
-				};
-				const {response: firstResponse, error: firstError} = await request(
-					endpoints.getProcessDefinitionInstanceStatistics(defaultBody),
-				);
-				if (firstError !== null) throw firstError;
-				const first: GetProcessDefinitionInstanceStatisticsResponseBody = await firstResponse.json();
-
-				if (first.page.totalItems <= first.items.length) {
-					return aggregateRunningInstancesCount(first.items);
-				}
-
-				const {response: restResponse, error: restError} = await request(
-					endpoints.getProcessDefinitionInstanceStatistics({
-						...defaultBody,
-						page: {from: first.items.length, limit: first.page.totalItems},
-					}),
-				);
-				if (restError !== null) throw restError;
-				const rest: GetProcessDefinitionInstanceStatisticsResponseBody = await restResponse.json();
-				return aggregateRunningInstancesCount([...first.items, ...rest.items]);
-			},
-		}),
-
-	getProcessDefinitionStatisticsPaginated: (payload: Omit<GetProcessDefinitionInstanceStatisticsRequestBody, 'page'>) =>
-		infiniteQueryOptions({
-			queryKey: queryKeys.processDefinitionStatisticsPaginated(payload),
-			queryFn: async ({pageParam}): Promise<GetProcessDefinitionInstanceStatisticsResponseBody> => {
-				const {response, error} = await request(
-					endpoints.getProcessDefinitionInstanceStatistics({
-						...payload,
-						page: {from: pageParam, limit: DASHBOARD_PAGE_LIMIT},
-					}),
-				);
+			queryKey: queryKeys.getProcessDefinitionInstanceStatistics(body),
+			queryFn: async (): Promise<GetProcessDefinitionInstanceStatisticsResponseBody> => {
+				const {response, error} = await request(endpoints.getProcessDefinitionInstanceStatistics(body));
 				if (error !== null) throw error;
 				return response.json();
 			},
-			staleTime: 5000,
-			maxPages: DASHBOARD_MAX_PAGES,
-			initialPageParam: 0,
-			getNextPageParam: (lastPage, _allPages, lastPageParam) => {
-				const next = lastPageParam + DASHBOARD_PAGE_LIMIT;
-				return next >= lastPage.page.totalItems ? null : next;
-			},
-			getPreviousPageParam: (_firstPage, _allPages, firstPageParam) => {
-				const prev = firstPageParam - DASHBOARD_PAGE_LIMIT;
-				return prev < 0 ? null : prev;
-			},
 		}),
 
-	getIncidentStatisticsByErrorPaginated: (
-		payload: Omit<GetIncidentProcessInstanceStatisticsByErrorRequestBody, 'page'>,
-	) =>
-		infiniteQueryOptions({
-			queryKey: queryKeys.incidentStatisticsByErrorPaginated(payload),
-			queryFn: async ({pageParam}): Promise<GetIncidentProcessInstanceStatisticsByErrorResponseBody> => {
-				const {response, error} = await request(
-					endpoints.getIncidentProcessInstanceStatisticsByError({
-						...payload,
-						page: {from: pageParam, limit: DASHBOARD_PAGE_LIMIT},
-					}),
-				);
+	getIncidentProcessInstanceStatisticsByError: (body: GetIncidentProcessInstanceStatisticsByErrorRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.getIncidentProcessInstanceStatisticsByError(body),
+			queryFn: async (): Promise<GetIncidentProcessInstanceStatisticsByErrorResponseBody> => {
+				const {response, error} = await request(endpoints.getIncidentProcessInstanceStatisticsByError(body));
 				if (error !== null) throw error;
 				return response.json();
-			},
-			staleTime: 5000,
-			maxPages: DASHBOARD_MAX_PAGES,
-			initialPageParam: 0,
-			getNextPageParam: (lastPage, _allPages, lastPageParam) => {
-				const next = lastPageParam + DASHBOARD_PAGE_LIMIT;
-				return next >= lastPage.page.totalItems ? null : next;
-			},
-			getPreviousPageParam: (_firstPage, _allPages, firstPageParam) => {
-				const prev = firstPageParam - DASHBOARD_PAGE_LIMIT;
-				return prev < 0 ? null : prev;
 			},
 		}),
 } as const;
