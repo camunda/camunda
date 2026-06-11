@@ -23,7 +23,6 @@ import io.camunda.search.es.clients.ElasticsearchSearchClient;
 import io.camunda.search.os.clients.OpensearchSearchClient;
 import io.camunda.security.core.authz.ResourceAccessController;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
-import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -82,11 +81,7 @@ public class PhysicalTenantSearchClientReadersConfiguration {
   public Map<String, SearchClientReaders> physicalTenantSearchClientReaders(
       final Map<String, SearchClientBasedQueryExecutor> physicalTenantQueryExecutors,
       final Map<String, IndexDescriptors> physicalTenantScopedIndexDescriptors,
-      final GatewayRestConfiguration config) {
-    final var cacheConfig =
-        new ProcessCache.Configuration(
-            config.getProcessCache().getMaxSize(),
-            config.getProcessCache().getExpirationIdleMillis());
+      final PhysicalTenantResolver physicalTenantResolver) {
     final var readersByTenant = new LinkedHashMap<String, SearchClientReaders>();
     physicalTenantQueryExecutors.forEach(
         (tenantId, executor) -> {
@@ -95,6 +90,16 @@ public class PhysicalTenantSearchClientReadersConfiguration {
             throw new IllegalStateException(
                 "Missing IndexDescriptors for physical tenant '" + tenantId + "'");
           }
+          final var processCacheConfig =
+              physicalTenantResolver
+                  .forPhysicalTenant(tenantId)
+                  .getApi()
+                  .getRest()
+                  .getProcessCache();
+          final var cacheConfig =
+              new ProcessCache.Configuration(
+                  processCacheConfig.getMaxSize(),
+                  processCacheConfig.getExpirationIdle().toMillis());
           readersByTenant.put(
               tenantId, SearchClientReadersFactory.create(executor, descriptors, cacheConfig));
         });

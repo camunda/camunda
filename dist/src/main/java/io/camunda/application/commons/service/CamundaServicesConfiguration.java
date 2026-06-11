@@ -9,6 +9,7 @@ package io.camunda.application.commons.service;
 
 import io.camunda.application.commons.condition.ConditionalOnAnyHttpGatewayEnabled;
 import io.camunda.application.commons.document.CamundaDocumentStoreConfigurationLoader;
+import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.document.store.SimpleDocumentStoreRegistry;
 import io.camunda.gateway.protocol.model.JobActivationResult;
@@ -81,12 +82,13 @@ public class CamundaServicesConfiguration {
   // Cluster-wide executor, uses the node's availableProcessors
   @Bean
   public ApiServicesExecutorProvider apiServicesExecutor(
-      final GatewayRestConfiguration configuration) {
+      final UnifiedConfiguration unifiedConfiguration) {
+    final var executor = unifiedConfiguration.getCamunda().getApi().getRest().getExecutor();
     return new ApiServicesExecutorProvider(
-        configuration.getApiExecutor().getCorePoolSizeMultiplier(),
-        configuration.getApiExecutor().getMaxPoolSizeMultiplier(),
-        configuration.getApiExecutor().getKeepAliveSeconds(),
-        configuration.getApiExecutor().getQueueCapacity());
+        executor.getCorePoolSizeMultiplier(),
+        executor.getMaxPoolSizeMultiplier(),
+        executor.getKeepAlive().getSeconds(),
+        executor.getQueueCapacity());
   }
 
   /**
@@ -120,8 +122,6 @@ public class CamundaServicesConfiguration {
       final ManagementServices managementServices,
       final ApiServicesExecutorProvider executor) {
 
-    // TODO check we can maxNameFieldLength per tenant. Currently, it is only set in rdbms
-    // configuration in UC
     final int maxNameFieldLength = gatewayRestConfiguration.getMaxNameFieldLength();
     final boolean secondaryStorageEnabled =
         DatabaseTypeUtils.isSecondaryStorageEnabled(environment);

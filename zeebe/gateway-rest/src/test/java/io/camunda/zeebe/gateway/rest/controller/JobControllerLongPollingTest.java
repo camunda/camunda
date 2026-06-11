@@ -34,6 +34,7 @@ import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
 import io.camunda.zeebe.gateway.metrics.LongPollingMetrics;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
+import io.camunda.zeebe.gateway.rest.config.PhysicalTenantRestConfigProvider;
 import io.camunda.zeebe.gateway.rest.controller.util.ResettableJobActivationRequestResponseObserver;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -69,14 +70,16 @@ public class JobControllerLongPollingTest extends RestControllerTest {
   @MockitoSpyBean ResettableJobActivationRequestResponseObserver responseObserver;
   @MockitoBean MultiTenancyConfiguration multiTenancyCfg;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
-  @MockitoBean GatewayRestConfiguration gatewayRestConfiguration;
   @MockitoBean ServiceRegistry serviceRegistry;
+  @MockitoBean PhysicalTenantRestConfigProvider tenantRestConfigProvider;
 
   @BeforeEach
   void setup() {
     responseObserver.reset();
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
+    when(tenantRestConfigProvider.forPhysicalTenant(any()))
+        .thenReturn(new GatewayRestConfiguration());
     Mockito.doReturn(jobServices).when(serviceRegistry).jobServices(any());
   }
 

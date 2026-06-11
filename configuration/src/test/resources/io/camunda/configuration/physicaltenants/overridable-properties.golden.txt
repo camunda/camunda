@@ -15,10 +15,6 @@ api.long-polling.enabled
 api.long-polling.min-empty-responses
 api.long-polling.probe-timeout
 api.long-polling.timeout
-api.rest.executor.core-pool-size-multiplier
-api.rest.executor.keep-alive
-api.rest.executor.max-pool-size-multiplier
-api.rest.executor.queue-capacity
 api.rest.process-cache.expiration-idle
 api.rest.process-cache.max-size
 cluster.global-listeners.user-task
@@ -215,7 +211,6 @@ data.secondary-storage.rdbms.insert-batching.max-audit-log-insert-batch-size
 data.secondary-storage.rdbms.insert-batching.max-flow-node-insert-batch-size
 data.secondary-storage.rdbms.insert-batching.max-job-insert-batch-size
 data.secondary-storage.rdbms.insert-batching.max-variable-insert-batch-size
-data.secondary-storage.rdbms.max-varchar-field-length
 data.secondary-storage.rdbms.metrics.table-row-count-cache-duration
 data.secondary-storage.rdbms.password
 data.secondary-storage.rdbms.prefix

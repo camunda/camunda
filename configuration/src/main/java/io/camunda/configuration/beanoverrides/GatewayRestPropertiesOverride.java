@@ -7,16 +7,14 @@
  */
 package io.camunda.configuration.beanoverrides;
 
-import io.camunda.configuration.Executor;
+import io.camunda.configuration.Camunda;
 import io.camunda.configuration.JobMetricsConfig;
-import io.camunda.configuration.ProcessCache;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.beans.GatewayRestProperties;
 import io.camunda.configuration.beans.LegacyGatewayRestProperties;
-import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration.ApiExecutorConfiguration;
+import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration.JobMetricsConfiguration;
-import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration.ProcessCacheConfiguration;
 import org.springframework.beans.BeanUtils;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -44,57 +42,48 @@ public class GatewayRestPropertiesOverride {
   public GatewayRestProperties gatewayRestProperties() {
     final GatewayRestProperties override = new GatewayRestProperties();
     BeanUtils.copyProperties(legacyGatewayRestProperties, override);
-
-    populateFromProcessCache(override);
-    populateFromExecutor(override);
-    populateFromJobMetrics(override);
-    populateFromValidators(override);
-
+    new Converter(unifiedConfiguration.getCamunda()).applyTo(override);
     return override;
   }
 
-  private void populateFromProcessCache(final GatewayRestProperties override) {
-    final ProcessCache processCache =
-        unifiedConfiguration.getCamunda().getApi().getRest().getProcessCache();
-    final ProcessCacheConfiguration processCacheConfiguration = override.getProcessCache();
-    processCacheConfiguration.setMaxSize(processCache.getMaxSize());
-    processCacheConfiguration.setExpirationIdleMillis(processCache.getExpirationIdle().toMillis());
-  }
+  /** Maps a {@link Camunda} configuration into a {@link GatewayRestConfiguration}. */
+  public static final class Converter {
 
-  private void populateFromExecutor(final GatewayRestProperties override) {
-    final Executor executor = unifiedConfiguration.getCamunda().getApi().getRest().getExecutor();
-    final ApiExecutorConfiguration apiExecutorConfiguration = override.getApiExecutor();
-    apiExecutorConfiguration.setCorePoolSizeMultiplier(executor.getCorePoolSizeMultiplier());
-    apiExecutorConfiguration.setMaxPoolSizeMultiplier(executor.getMaxPoolSizeMultiplier());
-    apiExecutorConfiguration.setKeepAliveSeconds(executor.getKeepAlive().getSeconds());
-    apiExecutorConfiguration.setQueueCapacity(executor.getQueueCapacity());
-  }
+    private final Camunda camunda;
 
-  private void populateFromJobMetrics(final GatewayRestProperties override) {
-    final JobMetricsConfig jobMetrics =
-        unifiedConfiguration.getCamunda().getMonitoring().getMetrics().getJobMetrics();
-    final JobMetricsConfiguration jobMetricsConfiguration = override.getJobMetrics();
-    jobMetricsConfiguration.setExportInterval(jobMetrics.getExportInterval());
-    jobMetricsConfiguration.setMaxWorkerNameLength(jobMetrics.getMaxWorkerNameLength());
-    jobMetricsConfiguration.setMaxJobTypeLength(jobMetrics.getMaxJobTypeLength());
-    jobMetricsConfiguration.setMaxTenantIdLength(jobMetrics.getMaxTenantIdLength());
-    jobMetricsConfiguration.setMaxUniqueKeys(jobMetrics.getMaxUniqueKeys());
-    jobMetricsConfiguration.setEnabled(jobMetrics.isEnabled());
-  }
-
-  private void populateFromValidators(final GatewayRestProperties override) {
-    if (unifiedConfiguration.getCamunda().getData().getSecondaryStorage().getType()
-        != SecondaryStorageType.rdbms) {
-      return;
+    public Converter(final Camunda camunda) {
+      this.camunda = camunda;
     }
 
-    final var maxNameFieldLength =
-        unifiedConfiguration
-            .getCamunda()
-            .getData()
-            .getSecondaryStorage()
-            .getRdbms()
-            .getMaxVarcharFieldLength();
-    override.setMaxNameFieldLength(maxNameFieldLength);
+    public GatewayRestConfiguration convert() {
+      final GatewayRestConfiguration config = new GatewayRestConfiguration();
+      applyTo(config);
+      return config;
+    }
+
+    public void applyTo(final GatewayRestConfiguration override) {
+      populateFromJobMetrics(override);
+      populateFromValidators(override);
+    }
+
+    private void populateFromJobMetrics(final GatewayRestConfiguration override) {
+      final JobMetricsConfig jobMetrics = camunda.getMonitoring().getMetrics().getJobMetrics();
+      final JobMetricsConfiguration jobMetricsConfiguration = override.getJobMetrics();
+      jobMetricsConfiguration.setExportInterval(jobMetrics.getExportInterval());
+      jobMetricsConfiguration.setMaxWorkerNameLength(jobMetrics.getMaxWorkerNameLength());
+      jobMetricsConfiguration.setMaxJobTypeLength(jobMetrics.getMaxJobTypeLength());
+      jobMetricsConfiguration.setMaxTenantIdLength(jobMetrics.getMaxTenantIdLength());
+      jobMetricsConfiguration.setMaxUniqueKeys(jobMetrics.getMaxUniqueKeys());
+      jobMetricsConfiguration.setEnabled(jobMetrics.isEnabled());
+    }
+
+    private void populateFromValidators(final GatewayRestConfiguration override) {
+      if (camunda.getData().getSecondaryStorage().getType() != SecondaryStorageType.rdbms) {
+        return;
+      }
+      final var maxNameFieldLength =
+          camunda.getData().getSecondaryStorage().getRdbms().getMaxVarcharFieldLength();
+      override.setMaxNameFieldLength(maxNameFieldLength);
+    }
   }
 }

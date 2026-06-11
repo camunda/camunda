@@ -33,6 +33,7 @@ import io.camunda.service.JobServices.UpdateJobChangeset;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
+import io.camunda.zeebe.gateway.rest.config.PhysicalTenantRestConfigProvider;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultCorrections;
@@ -65,17 +66,16 @@ public class JobControllerTest extends RestControllerTest {
   @MockitoBean MultiTenancyConfiguration multiTenancyCfg;
   @MockitoBean ResponseObserverProvider responseObserverProvider;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
-  @MockitoBean GatewayRestConfiguration gatewayRestConfiguration;
   @MockitoBean ServiceRegistry serviceRegistry;
+  @MockitoBean PhysicalTenantRestConfigProvider tenantRestConfigProvider;
 
   @BeforeEach
   void setup() {
     Mockito.doReturn(jobServices).when(serviceRegistry).jobServices(any());
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-    final var jobMetricsCfg = new GatewayRestConfiguration.JobMetricsConfiguration();
-    jobMetricsCfg.setEnabled(true);
-    when(gatewayRestConfiguration.getJobMetrics()).thenReturn(jobMetricsCfg);
+    when(tenantRestConfigProvider.forPhysicalTenant(any()))
+        .thenReturn(new GatewayRestConfiguration());
   }
 
   @Test
@@ -2477,9 +2477,9 @@ public class JobControllerTest extends RestControllerTest {
       final String requestBody,
       final String expectedInstance) {
     // given
-    final var disabledCfg = new GatewayRestConfiguration.JobMetricsConfiguration();
-    disabledCfg.setEnabled(false);
-    when(gatewayRestConfiguration.getJobMetrics()).thenReturn(disabledCfg);
+    final var disabledCfg = new GatewayRestConfiguration();
+    disabledCfg.getJobMetrics().setEnabled(false);
+    when(tenantRestConfigProvider.forPhysicalTenant(any())).thenReturn(disabledCfg);
 
     // when/then
     final var requestSpec =
