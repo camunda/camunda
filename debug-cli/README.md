@@ -63,6 +63,52 @@ alias debug-cli="java -jar target/cdbg-${version}.jar"
   debug-cli sbe --schema /path/to/raft-entry-schema.xml -f /path/to/default-partition-1.meta --offset 1
   ```
 
+#### `state`
+
+- **Description:**
+  Offline manipulation of a stopped broker's RocksDB snapshot. Each subcommand opens the source
+  snapshot, applies the edit, and persists a new checksum-valid snapshot that preserves the
+  index/term/processed/exported positions. The broker must be stopped while these commands run.
+
+##### `state update-key`
+
+- **Description:** Overwrite the next key (and optionally the max key) in the key-generator column
+  family.
+- **Key options:** `-r/--root`, `--runtime`, `-s/--snapshot`, `--partition-id`, `-k/--key`,
+  `--max-key`.
+
+##### `state reset-incident-position`
+
+- **Description:**
+  Reset an exporter's `lastIncidentUpdatePosition` in the `EXPORTER` column family while preserving
+  its `exporterPosition`. Use this to recover after the incident-update cursor ends up ahead of the
+  exported log position (e.g. a faulty backup/restore), which makes `IncidentUpdateTask` silently
+  skip pending incident updates.
+- **Options:**
+  - `-r`, `--root`: Path of the partition folder (`…/raft-partition/partitions/<id>`); its
+    `snapshots/` subdirectory holds the snapshot named by `--snapshot`.
+  - `--runtime`: Path to a temporary runtime directory the command may create.
+  - `-s`, `--snapshot`: Id of the source snapshot directory.
+  - `-e`, `--exporter-id`: Id the exporter is configured under in `zeebe.broker.exporters`
+    (default: `camundaexporter`).
+  - `--position`: New `lastIncidentUpdatePosition` (required). Use `-1` to reprocess all incidents
+    from the start.
+  - `-v`, `--verbose`: Enable verbose output.
+- **Example:**
+
+  ```
+  debug-cli state reset-incident-position -r /path/to/partition-1 \
+    --snapshot 12-34-... --position -1 --runtime /tmp/runtime
+  ```
+- **Note:** The `EXPORTER` column family is partition-local and replicated, so run this against
+  **every replica** of the partition, each on its own latest snapshot. Do **not** copy the partition
+  data folder across brokers — it also contains the per-replica raft journal and metadata. After
+  patching, delete the previous snapshot and restart the broker.
+
+  The full cluster runbook, including scripts to generate the Kubernetes Jobs that apply the fix
+  to all broker PVCs, lives in
+  [scripts/reset-incident-position](./scripts/reset-incident-position/README.md).
+
 #### `help`
 
 - **Description:** Show help for the CLI or any subcommand.
