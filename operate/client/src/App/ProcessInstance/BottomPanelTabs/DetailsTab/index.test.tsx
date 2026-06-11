@@ -21,6 +21,7 @@ import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/
 import {mockSearchDecisionInstances} from 'modules/mocks/api/v2/decisionInstances/searchDecisionInstances';
 import {mockSearchUserTasks} from 'modules/mocks/api/v2/userTasks/searchUserTasks';
 import {mockSearchMessageSubscriptions} from 'modules/mocks/api/v2/messageSubscriptions/searchMessageSubscriptions';
+import {mockSearchElementInstanceInspection} from 'modules/mocks/api/v2/elementInstanceInspection/searchElementInstanceInspection';
 import {searchResult} from 'modules/testUtils';
 import * as clientConfig from 'modules/utils/getClientConfig';
 import type {
@@ -883,5 +884,59 @@ describe('<DetailsTab />', () => {
 
     expect(await screen.findByText('Element Instance Key')).toBeInTheDocument();
     expect(screen.getByText('child-1')).toBeInTheDocument();
+  });
+
+  it('should not render WaitingStatus when waitStatesEnabled is false', async () => {
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
+      waitStatesEnabled: false,
+    });
+
+    mockFetchElementInstance('123456789').withSuccess({
+      ...mockElementInstance,
+      state: 'ACTIVE',
+      endDate: null,
+    });
+
+    render(<DetailsTab />, {
+      wrapper: getWrapper('elementId=Task_1&elementInstanceKey=123456789'),
+    });
+
+    expect(await screen.findByText('Element Instance Key')).toBeInTheDocument();
+    expect(screen.queryByTestId('waiting-status')).not.toBeInTheDocument();
+  });
+
+  it('should render WaitingStatus with wait states when waitStatesEnabled is true and element is ACTIVE', async () => {
+    mockFetchElementInstance('123456789').withSuccess({
+      ...mockElementInstance,
+      state: 'ACTIVE',
+      endDate: null,
+    });
+    mockSearchElementInstanceInspection().withSuccess({
+      items: [
+        {
+          rootProcessInstanceKey: PROCESS_INSTANCE_ID,
+          processInstanceKey: PROCESS_INSTANCE_ID,
+          elementInstanceKey: '123456789',
+          elementId: 'Task_1',
+          elementType: 'SERVICE_TASK',
+          waitStateType: 'JOB',
+          details: {jobType: 'customJob'},
+        },
+      ],
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+
+    render(<DetailsTab />, {
+      wrapper: getWrapper('elementId=Task_1&elementInstanceKey=123456789'),
+    });
+
+    expect(await screen.findByTestId('waiting-status')).toBeInTheDocument();
+    expect(screen.getByText('Waiting for job: customJob')).toBeInTheDocument();
   });
 });
