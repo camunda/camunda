@@ -33,7 +33,7 @@
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>camunda-security-validation</artifactId>
+      <artifactId>camunda-security-library-validation</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
