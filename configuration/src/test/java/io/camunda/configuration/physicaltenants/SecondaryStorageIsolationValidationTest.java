@@ -14,26 +14,35 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.UnifiedConfigurationException;
+import io.camunda.configuration.UnifiedConfigurationHelper;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.mock.env.MockEnvironment;
 
 /**
  * Unit tests for the {@link SecondaryStorageIsolationValidation} cross-tenant rule: no two physical
  * tenants may resolve to the same {@link StorageIdentity} (they would silently double-write into
  * the same database location).
- *
- * <p>Hand-constructs {@link Camunda} instances directly — no Spring, no environment. With no custom
- * environment pinned, the legacy-fallback getters ({@code getType}, {@code getUrl}, {@code
- * getIndexPrefix}, ...) return the raw field values, so these tests exercise the extraction and
- * grouping logic in isolation.
  */
 class SecondaryStorageIsolationValidationTest {
 
   private final SecondaryStorageIsolationValidation validation =
       new SecondaryStorageIsolationValidation();
+
+  @BeforeEach
+  void setUp() {
+    UnifiedConfigurationHelper.setCustomEnvironment(new MockEnvironment());
+  }
+
+  @AfterEach
+  void tearDown() {
+    UnifiedConfigurationHelper.setCustomEnvironment(null);
+  }
 
   @Test
   void shouldRejectTwoTenantsSharingSameElasticsearchUrlAndIndexPrefix() {
