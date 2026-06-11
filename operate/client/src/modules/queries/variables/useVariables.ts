@@ -15,20 +15,29 @@ import {queryKeys} from '../queryKeys';
 
 const MAX_VARIABLES_PER_REQUEST = 50;
 
-function useVariables(options?: {refetchInterval?: number | false}) {
+
+const DOCUMENT_VALUE_FILTER = '*camunda.document.type*';
+
+function useVariables(options?: {
+  refetchInterval?: number | false;
+  documentsOnly?: boolean;
+}) {
   const {processInstanceId = ''} = useProcessInstancePageParams();
   const scopeKey = useVariableScopeKey();
-  const {refetchInterval = false} = options ?? {};
+  const {refetchInterval = false, documentsOnly = false} = options ?? {};
+  const valueFilter = documentsOnly ? DOCUMENT_VALUE_FILTER : undefined;
   const result = useInfiniteQuery({
     queryKey: queryKeys.variables.searchWithFilter({
       processInstanceKey: processInstanceId,
       scopeKey,
+      ...(valueFilter !== undefined ? {value: valueFilter} : {}),
     }),
     queryFn: async ({pageParam = 0}) => {
       const {response, error} = await searchVariables({
         filter: {
           processInstanceKey: {$eq: processInstanceId},
           scopeKey: {$eq: scopeKey ?? undefined},
+          ...(valueFilter !== undefined ? {value: {$like: valueFilter}} : {}),
         },
         page: {
           from: pageParam,
