@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.metrics.ProcessDefinitionMetrics;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
+import io.camunda.zeebe.engine.processing.agenthistory.AgentHistoryProcessors;
 import io.camunda.zeebe.engine.processing.agentinstance.AgentInstanceProcessors;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationSetupProcessors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
@@ -426,6 +427,9 @@ public final class EngineProcessors {
         clock);
 
     AgentInstanceProcessors.addAgentInstanceProcessors(
+        keyGenerator, typedRecordProcessors, writers, authCheckBehavior, processingState);
+
+    AgentHistoryProcessors.addAgentHistoryProcessors(
         keyGenerator, typedRecordProcessors, writers, authCheckBehavior, processingState);
 
     return typedRecordProcessors;
