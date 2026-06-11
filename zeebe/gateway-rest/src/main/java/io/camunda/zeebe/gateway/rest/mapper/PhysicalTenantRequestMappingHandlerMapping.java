@@ -51,7 +51,7 @@ public class PhysicalTenantRequestMappingHandlerMapping extends RequestMappingHa
   }
 
   @VisibleForTesting
-  protected RequestMappingInfo withPhysicalTenantPrefix(final RequestMappingInfo mapping) {
+  RequestMappingInfo withPhysicalTenantPrefix(final RequestMappingInfo mapping) {
     final Set<String> prefixedPaths = buildPrefixedPaths(mapping);
     return prefixedPaths.isEmpty()
         ? null
