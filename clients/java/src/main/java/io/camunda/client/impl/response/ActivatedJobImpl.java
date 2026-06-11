@@ -51,6 +51,7 @@ public final class ActivatedJobImpl implements ActivatedJob {
   private final String tenantId;
   private final String worker;
   private final int retries;
+  private final int priority;
   private final long deadline;
   private final String variables;
   private final UserTaskProperties userTask;
@@ -74,6 +75,7 @@ public final class ActivatedJobImpl implements ActivatedJob {
         customHeaders.isEmpty() ? new HashMap<>() : jsonMapper.fromJsonAsStringMap(customHeaders);
     worker = job.getWorker();
     retries = job.getRetries();
+    priority = job.getPriority();
     deadline = job.getDeadline();
     variables = job.getVariables();
     processInstanceKey = job.getProcessInstanceKey();
@@ -110,6 +112,7 @@ public final class ActivatedJobImpl implements ActivatedJob {
                                 : jsonMapper.toJson(e.getValue())));
     worker = getOrEmpty(job.getWorker());
     retries = getOrEmpty(job.getRetries());
+    priority = getOrZero(job.getPriority());
     deadline = getOrEmpty(job.getDeadline());
     variablesAsMap = job.getVariables() == null ? new HashMap<>() : job.getVariables();
     variables = jsonMapper.toJson(variablesAsMap);
@@ -184,6 +187,11 @@ public final class ActivatedJobImpl implements ActivatedJob {
   @Override
   public int getRetries() {
     return retries;
+  }
+
+  @Override
+  public int getPriority() {
+    return priority;
   }
 
   @Override
@@ -276,6 +284,10 @@ public final class ActivatedJobImpl implements ActivatedJob {
 
   private static Integer getOrEmpty(final Integer value) {
     return value == null ? -1 : value;
+  }
+
+  private static int getOrZero(final Integer value) {
+    return value == null ? 0 : value;
   }
 
   private static Long parseLongOrEmpty(final String value) {

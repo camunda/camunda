@@ -74,7 +74,8 @@ public final class ActivateJobsRestTest extends ClientRestTest {
             .tenantId("test-tenant-1")
             .kind(JobKindEnum.BPMN_ELEMENT)
             .listenerEventType(JobListenerEventTypeEnum.START)
-            .rootProcessInstanceKey("321");
+            .rootProcessInstanceKey("321")
+            .priority(15);
 
     final ActivatedJobResult activatedJob2 =
         new ActivatedJobResult()
@@ -94,7 +95,8 @@ public final class ActivateJobsRestTest extends ClientRestTest {
             .tenantId("test-tenant-2")
             .kind(JobKindEnum.BPMN_ELEMENT)
             .listenerEventType(JobListenerEventTypeEnum.END)
-            .rootProcessInstanceKey("444");
+            .rootProcessInstanceKey("444")
+            .priority(-3);
 
     gatewayService.onActivateJobsRequest(
         new JobActivationResult().addJobsItem(activatedJob1).addJobsItem(activatedJob2));
@@ -132,6 +134,7 @@ public final class ActivateJobsRestTest extends ClientRestTest {
     assertThat(job.getCustomHeaders()).isEqualTo(activatedJob1.getCustomHeaders());
     assertThat(job.getWorker()).isEqualTo(activatedJob1.getWorker());
     assertThat(job.getRetries()).isEqualTo(activatedJob1.getRetries());
+    assertThat(job.getPriority()).isEqualTo(activatedJob1.getPriority());
     assertThat(job.getDeadline()).isEqualTo(activatedJob1.getDeadline());
     assertThat(job.getVariablesAsMap()).isEqualTo(activatedJob1.getVariables());
     assertThat(job.getUserTask()).isNull();
@@ -158,6 +161,7 @@ public final class ActivateJobsRestTest extends ClientRestTest {
     assertThat(job.getCustomHeaders()).isEqualTo(activatedJob2.getCustomHeaders());
     assertThat(job.getWorker()).isEqualTo(activatedJob2.getWorker());
     assertThat(job.getRetries()).isEqualTo(activatedJob2.getRetries());
+    assertThat(job.getPriority()).isEqualTo(activatedJob2.getPriority());
     assertThat(job.getDeadline()).isEqualTo(activatedJob2.getDeadline());
     assertThat(job.getVariablesAsMap()).isEqualTo(activatedJob2.getVariables());
     assertThat(job.getUserTask()).isNull();
@@ -356,6 +360,18 @@ public final class ActivateJobsRestTest extends ClientRestTest {
 
     // then
     assertThat(request.getRequestTimeout()).isEqualTo(requestTimeout.toMillis());
+  }
+
+  @Test
+  void shouldReturnZeroPriorityWhenNotSet() {
+    // given
+    final ActivatedJobResult activatedJob = new ActivatedJobResult();
+
+    // when
+    final ActivatedJobImpl job = new ActivatedJobImpl(new CamundaObjectMapper(), activatedJob);
+
+    // then
+    assertThat(job.getPriority()).isEqualTo(0);
   }
 
   @Test
