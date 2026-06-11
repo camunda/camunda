@@ -13,23 +13,23 @@ Releases are owned by `@camunda/distribution` and triggered manually via the
 `EXCLUDE_PREFIXES` (`camunda-zeebe`, `connector-runtime-bundle`, `elasticsearch`), which are
 moved out before signing and re-injected after notarization unsigned.
 
-| Content type | How it is signed |
-|---|---|
-| `.app` bundles | `codesign --deep --options runtime` (covers all contents recursively) |
-| Mach-O files outside `.app` | `codesign --options runtime` |
-| Mach-O inside `.jar` files | Extracted, signed individually, jar rebuilt |
-| Mach-O under a JVM runtime path | Same as above **plus** JIT entitlements plist (see below) |
+|          Content type           |                           How it is signed                            |
+|---------------------------------|-----------------------------------------------------------------------|
+| `.app` bundles                  | `codesign --deep --options runtime` (covers all contents recursively) |
+| Mach-O files outside `.app`     | `codesign --options runtime`                                          |
+| Mach-O inside `.jar` files      | Extracted, signed individually, jar rebuilt                           |
+| Mach-O under a JVM runtime path | Same as above **plus** JIT entitlements plist (see below)             |
 
 ### JVM runtime entitlements
 
 Binaries inside a bundled JRE/JDK/runtime require three additional entitlements that the standard
 hardened runtime blocks:
 
-| Entitlement | Why required |
-|---|---|
-| `com.apple.security.cs.allow-jit` | JVM JIT compilation via `pthread_jit_write_protect_np` |
-| `com.apple.security.cs.allow-unsigned-executable-memory` | JIT code page allocation |
-| `com.apple.security.cs.disable-library-validation` | Native libraries loaded by the JVM |
+|                       Entitlement                        |                      Why required                      |
+|----------------------------------------------------------|--------------------------------------------------------|
+| `com.apple.security.cs.allow-jit`                        | JVM JIT compilation via `pthread_jit_write_protect_np` |
+| `com.apple.security.cs.allow-unsigned-executable-memory` | JIT code page allocation                               |
+| `com.apple.security.cs.disable-library-validation`       | Native libraries loaded by the JVM                     |
 
 Without these, `libjvm.dylib` crashes with `EXC_BREAKPOINT` during `Threads::create_vm` on
 Apple Silicon (see [#54877](https://github.com/camunda/camunda/issues/54877)).
