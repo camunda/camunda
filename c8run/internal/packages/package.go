@@ -290,6 +290,9 @@ func stripRocksDbNativeLibs(camundaVersion, osType, arch string) error {
 	if len(jars) == 0 {
 		return fmt.Errorf("stripRocksDbNativeLibs: no rocksdbjni jar found matching %s", pattern)
 	}
+	if len(jars) > 1 {
+		log.Warn().Strs("jars", jars).Msg("multiple rocksdbjni jars found; stripping only the first")
+	}
 
 	log.Info().Str("jar", jars[0]).Str("keeping", libName).Msg("stripping unused RocksDB native libs")
 	return rewriteZipKeepingNativeLib(jars[0], libName)
