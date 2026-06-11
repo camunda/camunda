@@ -10,7 +10,6 @@ package io.camunda.zeebe.it.cluster.management;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 import feign.FeignException;
-import io.atomix.cluster.BrokerMemberId;
 import io.atomix.cluster.MemberId;
 import io.camunda.configuration.Zone;
 import io.camunda.zeebe.management.cluster.BrokerId;
@@ -61,13 +60,12 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
 
   @Override
   protected BrokerId brokerId(final int nodeIdx) {
-    return new BrokerId.String(
-        BrokerMemberId.from(ZONES[nodeIdx % ZONES.length], nodeIdx / ZONES.length).toString());
+    return new BrokerId.String(memberIdForBroker(nodeIdx).toString());
   }
 
   @Override
   protected MemberId memberIdForBroker(final int nodeIdx) {
-    return MemberId.from(ZONES[0], nodeIdx);
+    return MemberId.from(zoneFor(nodeIdx), nodeIdx / ZONES.length);
   }
 
   @Override
@@ -84,6 +82,10 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
     assertThatCode(() -> actuator.patchCluster(request, true, false))
         .isInstanceOf(FeignException.BadRequest.class)
         .hasMessageContaining("zone-aware");
+  }
+
+  private String zoneFor(final int nodeIdx) {
+    return ZONES[nodeIdx % ZONES.length];
   }
 
   private static List<Zone> zoneConfigs(final int brokerCount, final int replicationFactor) {

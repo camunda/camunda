@@ -263,14 +263,16 @@ abstract class ClusterEndpointIT {
     try (final var cluster = createCluster(brokerCount())) {
       // given
       cluster.awaitCompleteTopology();
-      cluster.brokers().get(memberIdForBroker(1)).close();
-      final var actuator = ClusterActuator.of(cluster.availableGateway());
+      final var brokerId = memberIdForBroker(brokerCount() - 1);
+      cluster.brokers().get(brokerId).close();
+      final var gateway = cluster.availableGateway();
+      final var actuator = ClusterActuator.of(gateway);
 
       // when - force remove broker 1
-      final var response = actuator.scaleByBrokerIds(brokerIds(0), false, true);
-
+      final var remainingBrokers = brokerIds(IntStream.range(0, brokerCount() - 1).toArray());
+      final var response = actuator.scaleByBrokerIds(remainingBrokers, false, true);
       // then
-      assertThat(response.getExpectedTopology()).hasSize(1);
+      assertThat(response.getExpectedTopology()).hasSize(brokerCount() - 1);
     }
   }
 
