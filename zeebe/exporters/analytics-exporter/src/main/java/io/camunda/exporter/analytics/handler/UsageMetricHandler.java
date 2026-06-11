@@ -7,11 +7,11 @@
  */
 package io.camunda.exporter.analytics.handler;
 
-import static io.camunda.exporter.analytics.AnalyticsAttributes.EVENT_USAGE_METRIC_EXPORTED;
-import static io.camunda.exporter.analytics.AnalyticsAttributes.USAGE_METRIC_COUNT;
-import static io.camunda.exporter.analytics.AnalyticsAttributes.USAGE_METRIC_EVENT_TYPE;
-import static io.camunda.exporter.analytics.AnalyticsAttributes.USAGE_METRIC_INTERVAL_END;
-import static io.camunda.exporter.analytics.AnalyticsAttributes.USAGE_METRIC_INTERVAL_START;
+import static io.camunda.exporter.analytics.AnalyticsAttributes.Event.USAGE_METRIC_EXPORTED;
+import static io.camunda.exporter.analytics.AnalyticsAttributes.UsageMetric.COUNT;
+import static io.camunda.exporter.analytics.AnalyticsAttributes.UsageMetric.EVENT_TYPE;
+import static io.camunda.exporter.analytics.AnalyticsAttributes.UsageMetric.INTERVAL_END;
+import static io.camunda.exporter.analytics.AnalyticsAttributes.UsageMetric.INTERVAL_START;
 
 import io.camunda.exporter.analytics.AnalyticsHandler;
 import io.camunda.exporter.analytics.OtelSdkManager;
@@ -47,13 +47,13 @@ public final class UsageMetricHandler implements AnalyticsHandler<UsageMetricRec
         };
 
     otelSdkManager.logEvent(
-        EVENT_USAGE_METRIC_EXPORTED,
+        USAGE_METRIC_EXPORTED,
         record.getPosition(),
         log ->
-            log.setAttribute(USAGE_METRIC_EVENT_TYPE, value.getEventType().name())
-                .setAttribute(USAGE_METRIC_COUNT, count)
-                .setAttribute(USAGE_METRIC_INTERVAL_START, value.getStartTime())
-                .setAttribute(USAGE_METRIC_INTERVAL_END, value.getEndTime())
+            log.setAttribute(EVENT_TYPE, value.getEventType().name())
+                .setAttribute(COUNT, count)
+                .setAttribute(INTERVAL_START, value.getStartTime())
+                .setAttribute(INTERVAL_END, value.getEndTime())
                 .setTimestamp(record.getTimestamp(), TimeUnit.MILLISECONDS));
   }
 }

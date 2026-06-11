@@ -7,11 +7,9 @@
  */
 package io.camunda.exporter.analytics.handler;
 
-import static io.camunda.exporter.analytics.AnalyticsAttributes.BPMN_PROCESS_ID;
-import static io.camunda.exporter.analytics.AnalyticsAttributes.EVENT_PROCESS_INSTANCE_CREATED;
-import static io.camunda.exporter.analytics.AnalyticsAttributes.METRIC_PROCESS_INSTANCE_CREATED;
-import static io.camunda.exporter.analytics.AnalyticsAttributes.PROCESS_VERSION;
-import static io.camunda.exporter.analytics.AnalyticsAttributes.TENANT_ID;
+import static io.camunda.exporter.analytics.AnalyticsAttributes.Process.BPMN_PROCESS_ID;
+import static io.camunda.exporter.analytics.AnalyticsAttributes.Process.VERSION;
+import static io.camunda.exporter.analytics.AnalyticsAttributes.Tenant.ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.exporter.analytics.AnalyticsAttributes;
@@ -63,7 +61,7 @@ class ProcessInstanceCreationHandlerTest {
 
   private static Optional<MetricData> findCounter(final Collection<MetricData> metrics) {
     return metrics.stream()
-        .filter(m -> m.getName().equals(METRIC_PROCESS_INSTANCE_CREATED))
+        .filter(m -> m.getName().equals(AnalyticsAttributes.Metric.PROCESS_INSTANCE_CREATED))
         .findFirst();
   }
 
@@ -82,7 +80,8 @@ class ProcessInstanceCreationHandlerTest {
               log ->
                   assertThat(log.getAttributes().asMap())
                       .containsEntry(
-                          AnalyticsAttributes.EVENT_NAME, EVENT_PROCESS_INSTANCE_CREATED));
+                          AnalyticsAttributes.Event.NAME,
+                          AnalyticsAttributes.Event.PROCESS_INSTANCE_CREATED));
     }
   }
 
@@ -125,8 +124,8 @@ class ProcessInstanceCreationHandlerTest {
                           point -> {
                             final var attrs = point.getAttributes();
                             assertThat(attrs.get(BPMN_PROCESS_ID)).isNotNull();
-                            assertThat(attrs.get(PROCESS_VERSION)).isNotNull();
-                            assertThat(attrs.get(TENANT_ID)).isNotNull();
+                            assertThat(attrs.get(VERSION)).isNotNull();
+                            assertThat(attrs.get(ID)).isNotNull();
                           }));
     }
   }
