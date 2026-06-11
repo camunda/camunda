@@ -64,6 +64,7 @@ cluster.receive-on-legacy-subject
 cluster.send-on-legacy-subject
 cluster.size
 cluster.zone
+data.secondary-storage.rdbms.max-varchar-field-length
 license.key
 system.actor.idle.max-park-period
 system.actor.idle.max-spins

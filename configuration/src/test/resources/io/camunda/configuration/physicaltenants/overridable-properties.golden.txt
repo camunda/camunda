@@ -215,7 +215,6 @@ data.secondary-storage.rdbms.insert-batching.max-audit-log-insert-batch-size
 data.secondary-storage.rdbms.insert-batching.max-flow-node-insert-batch-size
 data.secondary-storage.rdbms.insert-batching.max-job-insert-batch-size
 data.secondary-storage.rdbms.insert-batching.max-variable-insert-batch-size
-data.secondary-storage.rdbms.max-varchar-field-length
 data.secondary-storage.rdbms.metrics.table-row-count-cache-duration
 data.secondary-storage.rdbms.password
 data.secondary-storage.rdbms.prefix
