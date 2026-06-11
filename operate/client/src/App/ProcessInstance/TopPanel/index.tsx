@@ -72,6 +72,7 @@ import {isRequestError} from 'modules/request';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {useDrillDownNavigation} from 'modules/hooks/useDrilldownNavigation';
 import {getAncestorScopeType} from 'modules/utils/processInstanceDetailsDiagram';
+import {getClientConfig} from 'modules/utils/getClientConfig';
 
 const OVERLAY_TYPE_STATE = 'elementState';
 const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';
@@ -94,6 +95,7 @@ type ModificationBadgePayload = {
 };
 
 const TopPanel: React.FC = observer(() => {
+  const clientConfig = getClientConfig();
   const {
     clearSelection,
     selectedElementId,
@@ -123,7 +125,8 @@ const TopPanel: React.FC = observer(() => {
   const {data: processInstance} = useProcessInstance();
   const {data: inspectionData} = useElementInstanceInspection({
     processInstanceKey: processInstanceId,
-    enabled: processInstance?.state === 'ACTIVE',
+    enabled:
+      clientConfig.waitStatesEnabled && processInstance?.state === 'ACTIVE',
   });
   const {data: agentInstancesData} = useProcessInstanceAgentInstances();
   const modificationsByElement = useModificationsByElement();
