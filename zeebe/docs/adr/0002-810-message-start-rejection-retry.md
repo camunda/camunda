@@ -36,9 +36,15 @@ messageKey)` dedup row on `P_B` makes the retried ask idempotent — no duplicat
 
 **D3. Retries use capped exponential back-off, advanced by the event applier.** Back-off prevents a
 long-blocked message from storming `P_B`. Because schedulers may not mutate persisted state, the
-back-off is event-sourced: the rejection applier advances it on each rejection reply (using the
-deterministic event timestamp); the scheduler only reads the resulting next-retry deadline and keeps
-its transient send-tracking.
+back-off is event-sourced as a per-ask **magnitude**: the rejection applier doubles a persisted
+back-off magnitude (capped) on each rejection reply. This advance is a pure function of the prior
+persisted value and the configured bounds — it needs no clock and no event timestamp, so it is
+trivially deterministic on replay. The scheduler derives the next-retry time from that magnitude
+plus its transient last-sent tracking, re-sending an ask once `lastSent + max(baseInterval,
+magnitude)` has passed; the transient also serves as the in-flight guard between a send and its
+reply. On recovery the magnitude survives in persisted state while the transient last-sent is
+rebuilt, so a long-blocked ask resumes at its backed-off cadence rather than resetting to a
+base-interval storm (at the cost of a bounded one-interval phase imprecision after a leader change).
 
 **D4. The rejection registry is the single owner of this retry.** The pending-ask state owns retrying
 rejected starts; the correlation-key buffer no longer re-attempts them. The buffer keys on
