@@ -8,7 +8,6 @@
 package io.camunda.db.rdbms.write.service;
 
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
-import io.camunda.db.rdbms.sql.ProcessDefinitionVariableNameLookupMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.domain.ProcessDefinitionVariableNameLookupDbModel;
@@ -29,20 +28,17 @@ public class VariableWriter extends ProcessInstanceDependant implements RdbmsWri
   private final ExecutionQueue executionQueue;
   private final VendorDatabaseProperties vendorDatabaseProperties;
   private final RdbmsWriterConfig config;
-  private final ProcessDefinitionVariableNameLookupMapper lookupMapper;
   private final Map<Long, Set<String>> processVariableNameCache = new HashMap<>();
 
   public VariableWriter(
       final ExecutionQueue executionQueue,
       final VariableMapper mapper,
       final VendorDatabaseProperties vendorDatabaseProperties,
-      final RdbmsWriterConfig config,
-      final ProcessDefinitionVariableNameLookupMapper lookupMapper) {
+      final RdbmsWriterConfig config) {
     super(mapper);
     this.executionQueue = executionQueue;
     this.vendorDatabaseProperties = vendorDatabaseProperties;
     this.config = config;
-    this.lookupMapper = lookupMapper;
   }
 
   public void create(final VariableDbModel variable) {
@@ -98,9 +94,7 @@ public class VariableWriter extends ProcessInstanceDependant implements RdbmsWri
     if (pdKey == null || pdKey <= 0) {
       return;
     }
-    final Set<String> names =
-        processVariableNameCache.computeIfAbsent(
-            pdKey, k -> new HashSet<>(lookupMapper.findVariableNames(k)));
+    final Set<String> names = processVariableNameCache.computeIfAbsent(pdKey, k -> new HashSet<>());
     if (names.add(variable.name())) {
       executionQueue.executeInQueue(
           new QueueItem(

@@ -8,7 +8,6 @@
 package io.camunda.db.rdbms.write.service;
 
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
@@ -18,7 +17,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
-import io.camunda.db.rdbms.sql.ProcessDefinitionVariableNameLookupMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.domain.ProcessDefinitionVariableNameLookupDbModel;
@@ -28,7 +26,6 @@ import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
-import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class VariableWriterTest {
@@ -38,10 +35,8 @@ class VariableWriterTest {
   private final VendorDatabaseProperties vendorDatabaseProperties =
       mock(VendorDatabaseProperties.class);
   private final RdbmsWriterConfig config = mock(RdbmsWriterConfig.class, RETURNS_DEEP_STUBS);
-  private final ProcessDefinitionVariableNameLookupMapper lookupMapper =
-      mock(ProcessDefinitionVariableNameLookupMapper.class);
   private final VariableWriter writer =
-      new VariableWriter(executionQueue, mapper, vendorDatabaseProperties, config, lookupMapper);
+      new VariableWriter(executionQueue, mapper, vendorDatabaseProperties, config);
 
   @Test
   void shouldCreateVariable() {
@@ -82,7 +77,6 @@ class VariableWriterTest {
   void shouldQueueLookupInsertOnFirstSeenVariableName() {
     when(vendorDatabaseProperties.variableValuePreviewSize()).thenReturn(1000);
     when(vendorDatabaseProperties.charColumnMaxBytes()).thenReturn(4000);
-    when(lookupMapper.findVariableNames(456L)).thenReturn(List.of());
 
     final var model = mock(VariableDbModel.class);
     final var truncatedModel = mock(VariableDbModel.class);
@@ -114,7 +108,6 @@ class VariableWriterTest {
   void shouldNotQueueLookupInsertForAlreadyCachedVariableName() {
     when(vendorDatabaseProperties.variableValuePreviewSize()).thenReturn(1000);
     when(vendorDatabaseProperties.charColumnMaxBytes()).thenReturn(4000);
-    when(lookupMapper.findVariableNames(anyLong())).thenReturn(List.of());
 
     final var model = mock(VariableDbModel.class);
     final var truncatedModel = mock(VariableDbModel.class);
