@@ -28,6 +28,7 @@ import io.camunda.zeebe.broker.exporter.util.ControlledTestExporter;
 import io.camunda.zeebe.broker.exporter.util.PojoConfigurationExporter;
 import io.camunda.zeebe.broker.exporter.util.PojoConfigurationExporter.PojoExporterConfiguration;
 import io.camunda.zeebe.engine.Loggers;
+import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
@@ -53,6 +54,7 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -956,6 +958,57 @@ public final class ExporterDirectorTest {
               assertThat(exporters.get(0).getExportedRecords()).isEmpty();
               assertThat(exporters.get(1).getExportedRecords()).isEmpty();
             });
+  }
+
+  @Test
+  public void shouldReopenExporterAndContinueExportingAfterReopenCompensation() {
+    // given
+    final ControlledTestExporter exporter0 = exporters.get(0);
+
+    final AtomicInteger openCount = new AtomicInteger(0);
+    final AtomicBoolean wasClosed = new AtomicBoolean(false);
+    final AtomicBoolean shouldThrow = new AtomicBoolean(false);
+
+    exporter0
+        .onOpen(controller -> openCount.incrementAndGet())
+        .onClose(() -> wasClosed.set(true))
+        .onExport(
+            record -> {
+              if (shouldThrow.compareAndSet(true, false)) {
+                throw new ExporterException(
+                    "position mismatch", ExporterException.Compensation.REOPEN);
+              }
+            })
+        .shouldAutoUpdatePosition(true);
+    exporters.get(1).shouldAutoUpdatePosition(true);
+
+    startExporterDirector(exporterDescriptors);
+
+    // when — export one record successfully, then trigger a REOPEN exception on the next
+    final long eventPosition1 = writeEvent();
+    waitUntil(() -> exporter0.getExportedRecords().size() >= 1);
+
+    shouldThrow.set(true);
+    final long eventPosition2 = writeEvent();
+    final long eventPosition3 = writeEvent();
+
+    // then — advance the clock to drive back-off retries and wait for all records to appear
+    doRepeatedly(() -> rule.getClock().addTime(Duration.ofSeconds(1)))
+        .until(
+            r ->
+                exporter0.getExportedRecords().stream()
+                    .map(Record::getPosition)
+                    .anyMatch(pos -> pos == eventPosition3));
+
+    assertThat(wasClosed.get())
+        .describedAs("exporter was closed as part of REOPEN compensation")
+        .isTrue();
+    assertThat(openCount.get())
+        .describedAs("exporter was opened twice: once on startup, once on reopen")
+        .isEqualTo(2);
+    assertThat(exporter0.getExportedRecords())
+        .extracting(Record::getPosition)
+        .containsExactly(eventPosition1, eventPosition2, eventPosition3);
   }
 
   private long writeEvent() {
