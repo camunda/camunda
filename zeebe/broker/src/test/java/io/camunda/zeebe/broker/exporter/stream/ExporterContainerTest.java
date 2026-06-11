@@ -15,6 +15,7 @@ import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterLoadException;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector.ExporterInitializationInfo;
 import io.camunda.zeebe.exporter.api.Exporter;
+import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
@@ -195,6 +196,55 @@ final class ExporterContainerTest {
         return new ConfigurableFilter(
             acceptTypeResult, acceptValueResult, acceptIntentResult, acceptRecordResult);
       }
+    }
+  }
+
+  /**
+   * Exporter that always throws {@link ExporterException} with {@link
+   * ExporterException.Compensation#REOPEN} and tracks how many times {@link #open} was called.
+   */
+  public static final class ReopenThrowingExporter extends FakeExporter {
+
+    private int openCount;
+
+    @Override
+    public void open(final Controller controller) {
+      super.open(controller);
+      openCount++;
+    }
+
+    public int getOpenCount() {
+      return openCount;
+    }
+
+    @Override
+    public void export(final Record<?> record) {
+      throw new ExporterException(
+          "position mismatch detected", ExporterException.Compensation.REOPEN);
+    }
+  }
+
+  /**
+   * Exporter that always throws a plain {@link ExporterException} (defaulting to {@link
+   * ExporterException.Compensation#RETRY}) and tracks how many times {@link #open} was called.
+   */
+  public static final class RetryThrowingExporter extends FakeExporter {
+
+    private int openCount;
+
+    @Override
+    public void open(final Controller controller) {
+      super.open(controller);
+      openCount++;
+    }
+
+    public int getOpenCount() {
+      return openCount;
+    }
+
+    @Override
+    public void export(final Record<?> record) {
+      throw new ExporterException("export failed");
     }
   }
 
@@ -1078,6 +1128,80 @@ final class ExporterContainerTest {
       assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(1);
       // committed position is still previous value until record is acknowledged
       assertThat(exporterContainer.getPosition()).isEqualTo(-1L);
+    }
+  }
+
+  @Nested
+  class ExporterExceptionHandling {
+
+    @BeforeEach
+    void beforeEach(final @TempDir Path storagePath) {
+      runtime = new ExporterContainerRuntime(storagePath);
+    }
+
+    @Test
+    void shouldReopenExporterWhenExporterExceptionWithReopenCompensationIsThrown()
+        throws Exception {
+      // given
+      final var descriptor =
+          runtime
+              .getRepository()
+              .validateAndAddExporterDescriptor(
+                  EXPORTER_ID, ReopenThrowingExporter.class, Map.of());
+      exporterContainer = runtime.newContainer(descriptor, PARTITION_ID);
+      final var throwingExporter = (ReopenThrowingExporter) exporterContainer.getExporter();
+
+      exporterContainer.configureExporter();
+      runtime.getState().setPosition(EXPORTER_ID, 0);
+      exporterContainer.initMetadata();
+      exporterContainer.openExporter(); // first open: openCount = 1
+
+      final var mockedRecord = mock(TypedRecord.class);
+      when(mockedRecord.getPosition()).thenReturn(1L);
+      final var recordMetadata = new RecordMetadata();
+
+      // when
+      exporterContainer.exportRecord(recordMetadata, mockedRecord);
+
+      // then — the REOPEN compensation triggers close() + openExporter() inside exportRecord()
+      assertThat(throwingExporter.isClosed())
+          .describedAs("exporter was closed as part of reopen")
+          .isTrue();
+      assertThat(throwingExporter.getOpenCount())
+          .describedAs("exporter was opened twice: once on startup, once on reopen")
+          .isEqualTo(2);
+    }
+
+    @Test
+    void shouldNotReopenExporterWhenExporterExceptionWithRetryCompensationIsThrown()
+        throws Exception {
+      // given
+      final var descriptor =
+          runtime
+              .getRepository()
+              .validateAndAddExporterDescriptor(EXPORTER_ID, RetryThrowingExporter.class, Map.of());
+      exporterContainer = runtime.newContainer(descriptor, PARTITION_ID);
+      final var throwingExporter = (RetryThrowingExporter) exporterContainer.getExporter();
+
+      exporterContainer.configureExporter();
+      runtime.getState().setPosition(EXPORTER_ID, 0);
+      exporterContainer.initMetadata();
+      exporterContainer.openExporter(); // first open: openCount = 1
+
+      final var mockedRecord = mock(TypedRecord.class);
+      when(mockedRecord.getPosition()).thenReturn(1L);
+      final var recordMetadata = new RecordMetadata();
+
+      // when
+      exporterContainer.exportRecord(recordMetadata, mockedRecord);
+
+      // then — the RETRY compensation only logs the error; no close/reopen occurs
+      assertThat(throwingExporter.isClosed())
+          .describedAs("exporter was not closed for a RETRY compensation")
+          .isFalse();
+      assertThat(throwingExporter.getOpenCount())
+          .describedAs("exporter was opened exactly once (no reopen)")
+          .isEqualTo(1);
     }
   }
 }
