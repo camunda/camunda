@@ -10,10 +10,12 @@ package io.camunda.exporter.analytics;
 import io.camunda.exporter.analytics.handler.AdHocSubProcessHandler;
 import io.camunda.exporter.analytics.handler.ProcessInstanceCreationHandler;
 import io.camunda.exporter.analytics.handler.UsageMetricHandler;
+import io.camunda.exporter.analytics.handler.UserTaskCreatedHandler;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.UsageMetricIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 
 /**
  * Registers all analytics event handlers. This is the only file to edit when adding a new event:
@@ -39,6 +41,10 @@ final class HandlerCatalog {
         .register(
             ValueType.USAGE_METRIC,
             UsageMetricIntent.EXPORTED,
-            new UsageMetricHandler(otelSdkManager));
+            new UsageMetricHandler(otelSdkManager))
+        .register(
+            ValueType.USER_TASK,
+            UserTaskIntent.CREATED,
+            new UserTaskCreatedHandler(otelSdkManager));
   }
 }

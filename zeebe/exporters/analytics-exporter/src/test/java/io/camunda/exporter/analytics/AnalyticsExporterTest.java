@@ -18,6 +18,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
@@ -298,6 +299,29 @@ class AnalyticsExporterTest {
         .singleElement()
         .extracting(log -> log.getAttributes().get(AnalyticsAttributes.Event.SEQUENCE_NUMBER))
         .isEqualTo(6L);
+  }
+
+  @Test
+  void shouldEmitUserTaskCreatedEvent() {
+    // given
+    final var record =
+        FACTORY.generateRecord(
+            ValueType.USER_TASK,
+            r -> r.withRecordType(RecordType.EVENT).withIntent(UserTaskIntent.CREATED));
+
+    // when
+    exporter.export(record);
+
+    // then
+    assertThat(memoryExporter.getFinishedLogRecordItems())
+        .singleElement()
+        .satisfies(
+            logRecord -> {
+              assertThat(logRecord.getAttributes().get(AnalyticsAttributes.Event.NAME))
+                  .isEqualTo(AnalyticsAttributes.Event.USER_TASK_CREATED);
+              assertThat(logRecord.getAttributes().get(AnalyticsAttributes.Log.POSITION))
+                  .isEqualTo(record.getPosition());
+            });
   }
 
   // -- helpers --

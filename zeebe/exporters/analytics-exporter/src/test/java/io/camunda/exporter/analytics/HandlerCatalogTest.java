@@ -13,6 +13,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.UsageMetricIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.opentelemetry.sdk.testing.exporter.InMemoryLogRecordExporter;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -33,6 +34,7 @@ class HandlerCatalogTest {
         .containsExactlyInAnyOrder(
             Map.entry(ValueType.PROCESS_INSTANCE_CREATION, ProcessInstanceCreationIntent.CREATED),
             Map.entry(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_ACTIVATED),
-            Map.entry(ValueType.USAGE_METRIC, UsageMetricIntent.EXPORTED));
+            Map.entry(ValueType.USAGE_METRIC, UsageMetricIntent.EXPORTED),
+            Map.entry(ValueType.USER_TASK, UserTaskIntent.CREATED));
   }
 }
