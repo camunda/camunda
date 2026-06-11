@@ -389,6 +389,21 @@
     "relativeDateUnknown": "'Inconnu'",
     "processesLoadMore": "Charger plus",
     "processesLoadingMore": "Chargement...",
-    "deniedReason": "La tâche {{type}} a été rejetée par le système."
+    "deniedReason": "La tâche {{type}} a été rejetée par le système.",
+    "filter": "Filtre",
+    "headerNotificationsLabel": "Notifications",
+    "navSidebarCollapse": "Réduire",
+    "navSidebarCollapseAria": "Réduire la barre latérale",
+    "navSidebarExpand": "Développer",
+    "navSidebarExpandAria": "Développer la barre latérale",
+    "navSidebarGroupCollapseAria": "Réduire {{label}}",
+    "navSidebarGroupExpandAria": "Développer {{label}}",
+    "notificationsDismissAll": "Tout ignorer",
+    "notificationsEmptyTitle": "Aucune notification",
+    "notificationsEmptyDescription": "Les nouvelles mises à jour concernant vos processus, clusters et plus apparaîtront ici.",
+    "themeDark": "Sombre",
+    "themeLight": "Clair",
+    "themeSelectorLegend": "Thème",
+    "themeSystem": "Système"
   }
 }

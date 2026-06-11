@@ -23,7 +23,18 @@ const Layout: React.FC = () => {
         <AuthorizationCheck>
           <OSNotifications />
           <Header />
-          <Outlet />
+          <div
+            id="main-content"
+            tabIndex={-1}
+            style={{
+              paddingLeft: 'var(--c3-sidebar-width, 0)',
+              transition: 'padding-left 0.15s ease-out',
+              height: '100%',
+              boxSizing: 'border-box',
+            }}
+          >
+            <Outlet />
+          </div>
         </AuthorizationCheck>
       </AuthenticationCheck>
     </C3Provider>

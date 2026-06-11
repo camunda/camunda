@@ -398,6 +398,21 @@
     "relativeDateUnknown": "'Unknown'",
     "processesLoadMore": "Load more",
     "processesLoadingMore": "Loading...",
-    "deniedReason": "The task {{type}} was rejected by the system."
+    "deniedReason": "The task {{type}} was rejected by the system.",
+    "filter": "Filter",
+    "headerNotificationsLabel": "Notifications",
+    "navSidebarCollapse": "Collapse",
+    "navSidebarCollapseAria": "Collapse sidebar",
+    "navSidebarExpand": "Expand",
+    "navSidebarExpandAria": "Expand sidebar",
+    "navSidebarGroupCollapseAria": "Collapse {{label}}",
+    "navSidebarGroupExpandAria": "Expand {{label}}",
+    "notificationsDismissAll": "Dismiss all",
+    "notificationsEmptyTitle": "No notifications",
+    "notificationsEmptyDescription": "New updates regarding your processes, clusters and more will appear here.",
+    "themeDark": "Dark",
+    "themeLight": "Light",
+    "themeSelectorLegend": "Theme",
+    "themeSystem": "System"
   }
 }

@@ -386,6 +386,21 @@
     "relativeDateUnknown": "'Desconocido'",
     "processesLoadMore": "Cargar más",
     "processesLoadingMore": "Cargando...",
-    "deniedReason": "La tarea {{type}} fue rechazada por el sistema."
+    "deniedReason": "La tarea {{type}} fue rechazada por el sistema.",
+    "filter": "Filtro",
+    "headerNotificationsLabel": "Notificaciones",
+    "navSidebarCollapse": "Contraer",
+    "navSidebarCollapseAria": "Contraer barra lateral",
+    "navSidebarExpand": "Expandir",
+    "navSidebarExpandAria": "Expandir barra lateral",
+    "navSidebarGroupCollapseAria": "Contraer {{label}}",
+    "navSidebarGroupExpandAria": "Expandir {{label}}",
+    "notificationsDismissAll": "Descartar todo",
+    "notificationsEmptyTitle": "Sin notificaciones",
+    "notificationsEmptyDescription": "Las novedades sobre sus procesos, clústeres y más aparecerán aquí.",
+    "themeDark": "Oscuro",
+    "themeLight": "Claro",
+    "themeSelectorLegend": "Tema",
+    "themeSystem": "Sistema"
   }
 }
