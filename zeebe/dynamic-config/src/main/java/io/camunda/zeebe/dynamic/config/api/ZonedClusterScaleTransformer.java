@@ -33,17 +33,17 @@ import org.jspecify.annotations.NullMarked;
 @NullMarked
 public final class ZonedClusterScaleTransformer implements ConfigurationChangeRequest {
 
-  private final Optional<Integer> newClusterSize;
+  private final Optional<Integer> brokerCount;
   private final Optional<Integer> newPartitionCount;
   private final Optional<Integer> newReplicationFactor;
   private final String zone;
 
   public ZonedClusterScaleTransformer(
-      final Optional<Integer> newClusterSize,
+      final Optional<Integer> brokerCount,
       final Optional<Integer> newPartitionCount,
       final Optional<Integer> newReplicationFactor,
       final String zone) {
-    this.newClusterSize = newClusterSize;
+    this.brokerCount = brokerCount;
     this.newPartitionCount = newPartitionCount;
     this.newReplicationFactor = newReplicationFactor;
     this.zone = zone;
@@ -52,7 +52,7 @@ public final class ZonedClusterScaleTransformer implements ConfigurationChangeRe
   @Override
   public Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
       final ClusterConfiguration clusterConfiguration) {
-    if (newClusterSize.isEmpty() && newPartitionCount.isEmpty() && newReplicationFactor.isEmpty()) {
+    if (brokerCount.isEmpty() && newPartitionCount.isEmpty() && newReplicationFactor.isEmpty()) {
       // Nothing to change
       return Either.right(List.of());
     }
@@ -99,7 +99,7 @@ public final class ZonedClusterScaleTransformer implements ConfigurationChangeRe
   private Set<MemberId> newMembersForScaledZone(final Set<MemberId> currentMembers) {
     final int currentZoneCount =
         (int) currentMembers.stream().filter(m -> m.isInZone(zone)).count();
-    final int targetZoneCount = newClusterSize.orElse(currentZoneCount);
+    final int targetZoneCount = brokerCount.orElse(currentZoneCount);
 
     final var newMembers = new HashSet<MemberId>();
     currentMembers.stream().filter(m -> !m.isInZone(zone)).forEach(newMembers::add);

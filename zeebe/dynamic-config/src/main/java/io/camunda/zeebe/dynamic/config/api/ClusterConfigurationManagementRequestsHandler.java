@@ -146,14 +146,14 @@ public final class ClusterConfigurationManagementRequestsHandler
             .<ConfigurationChangeRequest>map(
                 zone ->
                     new ZonedClusterScaleTransformer(
-                        clusterScaleRequest.newClusterSize(),
+                        clusterScaleRequest.brokerCount(),
                         clusterScaleRequest.newPartitionCount(),
                         clusterScaleRequest.newReplicationFactor(),
                         zone))
             .orElseGet(
                 () ->
                     new ClusterScaleRequestTransformer(
-                        clusterScaleRequest.newClusterSize(),
+                        clusterScaleRequest.brokerCount(),
                         clusterScaleRequest.newPartitionCount(),
                         clusterScaleRequest.newReplicationFactor()));
     return handleRequest(clusterScaleRequest.dryRun(), transformer);

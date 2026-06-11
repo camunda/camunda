@@ -197,7 +197,7 @@ final class ClusterScaleRequestTransformerTest {
     // when
     final var result =
         new ClusterScaleRequestTransformer(
-                patchRequest.newClusterSize(),
+                patchRequest.brokerCount(),
                 patchRequest.newPartitionCount(),
                 patchRequest.newReplicationFactor())
             .operations(oldClusterTopology);

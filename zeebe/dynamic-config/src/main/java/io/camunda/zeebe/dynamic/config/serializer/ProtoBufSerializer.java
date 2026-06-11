@@ -990,7 +990,7 @@ public class ProtoBufSerializer
     final var builder =
         Requests.ClusterScaleRequest.newBuilder().setDryRun(clusterScaleRequest.dryRun());
 
-    clusterScaleRequest.newClusterSize().ifPresent(builder::setNewClusterSize);
+    clusterScaleRequest.brokerCount().ifPresent(builder::setNewClusterSize);
     clusterScaleRequest.newReplicationFactor().ifPresent(builder::setNewReplicationFactor);
     clusterScaleRequest.newPartitionCount().ifPresent(builder::setNewPartitionCount);
     clusterScaleRequest.zone().ifPresent(builder::setZone);
