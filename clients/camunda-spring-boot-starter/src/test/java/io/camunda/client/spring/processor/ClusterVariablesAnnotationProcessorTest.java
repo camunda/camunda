@@ -24,7 +24,10 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.annotation.ClusterVariables;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.GloballyScopedClusterVariableCreationCommandStep1;
+import io.camunda.client.api.command.GloballyScopedClusterVariableUpdateCommandStep1;
+import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.command.TenantScopedClusterVariableCreationCommandStep1;
+import io.camunda.client.api.command.TenantScopedClusterVariableUpdateCommandStep1;
 import io.camunda.client.impl.CamundaObjectMapper;
 import io.camunda.client.spring.annotation.processor.ClusterVariablesAnnotationProcessor;
 import io.camunda.client.spring.properties.CamundaClientClusterVariablesProperties;
@@ -47,8 +50,10 @@ public class ClusterVariablesAnnotationProcessorTest {
   @Mock private CamundaClient client;
 
   @Mock private GloballyScopedClusterVariableCreationCommandStep1 globalCreateStep;
+  @Mock private GloballyScopedClusterVariableUpdateCommandStep1 globalUpdateStep;
 
   @Mock private TenantScopedClusterVariableCreationCommandStep1 tenantCreateStep;
+  @Mock private TenantScopedClusterVariableUpdateCommandStep1 tenantUpdateStep;
 
   @Mock private ResourcePatternResolver resourcePatternResolver;
 
@@ -292,15 +297,89 @@ public class ClusterVariablesAnnotationProcessorTest {
     verify(globalCreateStep).create("fromResource", "resourceValue");
   }
 
+  @Test
+  void shouldUpdateGlobalVariableWhenAlreadyExists() throws IOException {
+    // given
+    final Resource resource = mockJsonResource("{\"myVar\": \"newValue\"}");
+    when(resourcePatternResolver.getResources("classpath:variables.json"))
+        .thenReturn(new Resource[] {resource});
+    when(client.newGloballyScopedClusterVariableCreateRequest()).thenReturn(globalCreateStep);
+    when(globalCreateStep.create(anyString(), any())).thenReturn(globalCreateStep);
+    doThrow(new ProblemException(409, "Conflict", null)).when(globalCreateStep).execute();
+    mockGlobalUpdateCommand();
+
+    // when
+    processor.configureFor(beanInfo(new WithSingleResource()));
+    processor.start(client);
+
+    // then
+    verify(globalCreateStep).create("myVar", "newValue");
+    verify(globalUpdateStep).update("myVar", "newValue");
+  }
+
+  @Test
+  void shouldPropagateNonConflictExceptionOnCreate() throws IOException {
+    // given
+    final Resource resource = mockJsonResource("{\"myVar\": \"value\"}");
+    when(resourcePatternResolver.getResources("classpath:variables.json"))
+        .thenReturn(new Resource[] {resource});
+    when(client.newGloballyScopedClusterVariableCreateRequest()).thenReturn(globalCreateStep);
+    when(globalCreateStep.create(anyString(), any())).thenReturn(globalCreateStep);
+    doThrow(new ProblemException(500, "Internal Server Error", null))
+        .when(globalCreateStep)
+        .execute();
+
+    // when / then
+    assertThatExceptionOfType(ProblemException.class)
+        .isThrownBy(
+            () -> {
+              processor.configureFor(beanInfo(new WithSingleResource()));
+              processor.start(client);
+            });
+    verifyNoInteractions(globalUpdateStep);
+  }
+
+  @Test
+  void shouldUpdateTenantScopedVariableWhenAlreadyExists() throws IOException {
+    // given
+    final Resource resource = mockJsonResource("{\"tenantVar\": \"newValue\"}");
+    when(resourcePatternResolver.getResources("classpath:tenant-variables.json"))
+        .thenReturn(new Resource[] {resource});
+    when(client.newTenantScopedClusterVariableCreateRequest(anyString()))
+        .thenReturn(tenantCreateStep);
+    when(tenantCreateStep.create(anyString(), any())).thenReturn(tenantCreateStep);
+    doThrow(new ProblemException(409, "Conflict", null)).when(tenantCreateStep).execute();
+    mockTenantUpdateCommand();
+
+    // when
+    processor.configureFor(beanInfo(new WithTenantScopedResource()));
+    processor.start(client);
+
+    // then
+    verify(tenantCreateStep).create("tenantVar", "newValue");
+    verify(tenantUpdateStep).update("tenantVar", "newValue");
+  }
+
   private void mockGlobalCreateCommand() {
     when(client.newGloballyScopedClusterVariableCreateRequest()).thenReturn(globalCreateStep);
     when(globalCreateStep.create(anyString(), any())).thenReturn(globalCreateStep);
+  }
+
+  private void mockGlobalUpdateCommand() {
+    when(client.newGloballyScopedClusterVariableUpdateRequest()).thenReturn(globalUpdateStep);
+    when(globalUpdateStep.update(anyString(), any())).thenReturn(globalUpdateStep);
   }
 
   private void mockTenantCreateCommand() {
     when(client.newTenantScopedClusterVariableCreateRequest(anyString()))
         .thenReturn(tenantCreateStep);
     when(tenantCreateStep.create(anyString(), any())).thenReturn(tenantCreateStep);
+  }
+
+  private void mockTenantUpdateCommand() {
+    when(client.newTenantScopedClusterVariableUpdateRequest(anyString()))
+        .thenReturn(tenantUpdateStep);
+    when(tenantUpdateStep.update(anyString(), any())).thenReturn(tenantUpdateStep);
   }
 
   private Resource mockJsonResource(final String jsonContent) throws IOException {
