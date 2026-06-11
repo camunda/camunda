@@ -106,7 +106,12 @@ type Events =
 	  }
 	| {
 			eventName: 'operate:navigation';
-			link: 'header-logo';
+			link:
+				| 'header-logo'
+				| 'header-processes'
+				| 'header-decisions'
+				| 'header-operations-log'
+				| 'header-batch-operations';
 	  };
 
 const STAGE_ENV = getStage(window.location.host);
