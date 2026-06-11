@@ -14,9 +14,11 @@ import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedInstancesOnlyFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.FlowNodeEndDateFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.FlowNodeStartDateFilterDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.filter.HasAgentInstancesFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.InstanceEndDateFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.InstanceStartDateFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
@@ -49,6 +51,18 @@ public abstract class AbstractProcessExecutionPlanInterpreterES
           InstanceEndDateFilterDto.class,
           FlowNodeStartDateFilterDto.class,
           FlowNodeEndDateFilterDto.class);
+
+  // For agentic reports the baseline must also be scoped to completed agentic instances so that the
+  // percentage denominator matches the same population as the numerator filter set.
+  private static final List<Class<? extends ProcessFilterDto<?>>>
+      FILTERS_AFFECTING_AGENTIC_BASELINE =
+          List.of(
+              InstanceStartDateFilterDto.class,
+              InstanceEndDateFilterDto.class,
+              FlowNodeStartDateFilterDto.class,
+              FlowNodeEndDateFilterDto.class,
+              CompletedInstancesOnlyFilterDto.class,
+              HasAgentInstancesFilterDto.class);
 
   protected abstract ProcessDefinitionReader getProcessDefinitionReader();
 
@@ -90,7 +104,13 @@ public abstract class AbstractProcessExecutionPlanInterpreterES
   @Override
   protected BoolQuery.Builder setupUnfilteredBaseQueryBuilder(
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    // Instance level date filters are also applied to the baseline so are included here
+    // Instance level date filters are also applied to the baseline so are included here.
+    // For agentic reports the baseline is further scoped to completed agentic instances so that the
+    // percentage denominator matches the correct population.
+    final List<Class<? extends ProcessFilterDto<?>>> effectiveBaselineFilters =
+        context.getReportData().isAgenticControlReport()
+            ? FILTERS_AFFECTING_AGENTIC_BASELINE
+            : FILTERS_AFFECTING_BASELINE;
     final Map<String, List<ProcessFilterDto<?>>> instanceLevelDateFiltersByDefinitionKey =
         context.getReportData().groupFiltersByDefinitionIdentifier().entrySet().stream()
             .collect(
@@ -101,8 +121,7 @@ public abstract class AbstractProcessExecutionPlanInterpreterES
                             .filter(
                                 filter ->
                                     filter.getFilterLevel() == FilterApplicationLevel.INSTANCE)
-                            .filter(
-                                filter -> FILTERS_AFFECTING_BASELINE.contains(filter.getClass()))
+                            .filter(filter -> effectiveBaselineFilters.contains(filter.getClass()))
                             .collect(Collectors.toList())));
     final BoolQuery.Builder multiDefinitionFilterQuery =
         buildDefinitionBaseQueryForFilters(context, instanceLevelDateFiltersByDefinitionKey);
