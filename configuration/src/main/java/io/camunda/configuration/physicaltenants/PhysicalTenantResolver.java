@@ -53,6 +53,7 @@ import org.springframework.core.env.Environment;
 public final class PhysicalTenantResolver {
 
   public static final String DEFAULT_PHYSICAL_TENANT_ID = "default";
+  static final int MAX_TENANT_ID_LENGTH = 64;
   private static final String PHYSICAL_TENANTS_PREFIX = Camunda.PREFIX + ".physical-tenants";
   static final ConfigurationPropertyName PREFIX_NAME =
       ConfigurationPropertyName.of(PHYSICAL_TENANTS_PREFIX);
@@ -147,6 +148,13 @@ public final class PhysicalTenantResolver {
 
   @VisibleForTesting
   static void validateTenantId(final String tenantId) {
+    if (tenantId.length() > MAX_TENANT_ID_LENGTH) {
+      throw new UnifiedConfigurationException(
+          String.format(
+              "Invalid physical tenant id '%s' under '%s.*'. "
+                  + "Tenant ids must not exceed %d characters.",
+              tenantId, PHYSICAL_TENANTS_PREFIX, MAX_TENANT_ID_LENGTH));
+    }
     if (!VALID_TENANT_ID.matcher(tenantId).matches()) {
       throw new UnifiedConfigurationException(
           String.format(
