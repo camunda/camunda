@@ -64,7 +64,8 @@ public class MessageControllerTest extends RestControllerTest {
   @BeforeEach
   void setup() {
     when(serviceRegistry.messageServices(any())).thenReturn(messageServices);
-    when(tenantRestConfigProvider.forTenant(any())).thenReturn(new GatewayRestConfiguration());
+    when(tenantRestConfigProvider.forPhysicalTenant(any()))
+        .thenReturn(new GatewayRestConfiguration());
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
   }

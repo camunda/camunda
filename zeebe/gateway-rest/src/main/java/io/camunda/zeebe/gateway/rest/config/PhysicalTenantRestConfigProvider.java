@@ -10,5 +10,5 @@ package io.camunda.zeebe.gateway.rest.config;
 /** Resolves the REST-layer configuration view for a given physical tenant. */
 public interface PhysicalTenantRestConfigProvider {
 
-  GatewayRestConfiguration forTenant(String physicalTenantId);
+  GatewayRestConfiguration forPhysicalTenant(String physicalTenantId);
 }

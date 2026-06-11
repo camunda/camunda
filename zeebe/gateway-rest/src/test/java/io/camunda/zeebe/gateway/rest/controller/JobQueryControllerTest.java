@@ -132,7 +132,8 @@ public class JobQueryControllerTest extends RestControllerTest {
     Mockito.doReturn(jobServices).when(serviceRegistry).jobServices(any());
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-    when(tenantRestConfigProvider.forTenant(any())).thenReturn(new GatewayRestConfiguration());
+    when(tenantRestConfigProvider.forPhysicalTenant(any()))
+        .thenReturn(new GatewayRestConfiguration());
   }
 
   @Test

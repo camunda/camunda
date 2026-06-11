@@ -74,7 +74,8 @@ public class JobControllerTest extends RestControllerTest {
     Mockito.doReturn(jobServices).when(serviceRegistry).jobServices(any());
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-    when(tenantRestConfigProvider.forTenant(any())).thenReturn(new GatewayRestConfiguration());
+    when(tenantRestConfigProvider.forPhysicalTenant(any()))
+        .thenReturn(new GatewayRestConfiguration());
   }
 
   @Test
@@ -2478,7 +2479,7 @@ public class JobControllerTest extends RestControllerTest {
     // given
     final var disabledCfg = new GatewayRestConfiguration();
     disabledCfg.getJobMetrics().setEnabled(false);
-    when(tenantRestConfigProvider.forTenant(any())).thenReturn(disabledCfg);
+    when(tenantRestConfigProvider.forPhysicalTenant(any())).thenReturn(disabledCfg);
 
     // when/then
     final var requestSpec =

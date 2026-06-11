@@ -65,7 +65,8 @@ class PhysicalTenantRestConfigurationTest {
     final var provider = configuration.physicalTenantRestConfigProvider(physicalTenantResolver);
 
     // then
-    assertThat(provider.forTenant("tenant-es").getMaxNameFieldLength()).isEqualTo(32 * 1024);
+    assertThat(provider.forPhysicalTenant("tenant-es").getMaxNameFieldLength())
+        .isEqualTo(32 * 1024);
   }
 
   @Test
@@ -80,7 +81,7 @@ class PhysicalTenantRestConfigurationTest {
     final var provider = configuration.physicalTenantRestConfigProvider(physicalTenantResolver);
 
     // then
-    assertThat(provider.forTenant("tenant-rdbms").getMaxNameFieldLength()).isEqualTo(4000);
+    assertThat(provider.forPhysicalTenant("tenant-rdbms").getMaxNameFieldLength()).isEqualTo(4000);
   }
 
   @Test
@@ -100,7 +101,7 @@ class PhysicalTenantRestConfigurationTest {
     final var provider = configuration.physicalTenantRestConfigProvider(physicalTenantResolver);
 
     // then
-    final var jm = provider.forTenant("tenant-1").getJobMetrics();
+    final var jm = provider.forPhysicalTenant("tenant-1").getJobMetrics();
     assertThat(jm.isEnabled()).isFalse();
     assertThat(jm.getExportInterval()).isEqualTo(Duration.ofMinutes(10));
     assertThat(jm.getMaxWorkerNameLength()).isEqualTo(50);
@@ -118,7 +119,7 @@ class PhysicalTenantRestConfigurationTest {
     final var provider = configuration.physicalTenantRestConfigProvider(physicalTenantResolver);
 
     // when / then
-    assertThatThrownBy(() -> provider.forTenant("unknown-tenant"))
+    assertThatThrownBy(() -> provider.forPhysicalTenant("unknown-tenant"))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("unknown-tenant");
   }
@@ -137,8 +138,9 @@ class PhysicalTenantRestConfigurationTest {
     final var provider = configuration.physicalTenantRestConfigProvider(physicalTenantResolver);
 
     // then
-    assertThat(provider.forTenant("es-tenant").getMaxNameFieldLength()).isEqualTo(32 * 1024);
-    assertThat(provider.forTenant("rdbms-tenant").getMaxNameFieldLength()).isEqualTo(4000);
+    assertThat(provider.forPhysicalTenant("es-tenant").getMaxNameFieldLength())
+        .isEqualTo(32 * 1024);
+    assertThat(provider.forPhysicalTenant("rdbms-tenant").getMaxNameFieldLength()).isEqualTo(4000);
   }
 
   @Test
@@ -150,8 +152,8 @@ class PhysicalTenantRestConfigurationTest {
     final var provider = configuration.physicalTenantRestConfigProvider(physicalTenantResolver);
 
     // when / then
-    assertThat(provider.forTenant("tenant-a")).isNotNull();
-    assertThatThrownBy(() -> provider.forTenant("tenant-b"))
+    assertThat(provider.forPhysicalTenant("tenant-a")).isNotNull();
+    assertThatThrownBy(() -> provider.forPhysicalTenant("tenant-b"))
         .isInstanceOf(IllegalArgumentException.class);
   }
 

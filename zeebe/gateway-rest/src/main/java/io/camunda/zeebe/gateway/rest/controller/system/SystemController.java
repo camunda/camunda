@@ -82,7 +82,8 @@ public class SystemController {
   @CamundaGetMapping(path = "/configuration")
   public ResponseEntity<SystemConfigurationResponse> getSystemConfiguration(
       @PhysicalTenantId final String physicalTenantId) {
-    final var jobMetrics = tenantRestConfigProvider.forTenant(physicalTenantId).getJobMetrics();
+    final var jobMetrics =
+        tenantRestConfigProvider.forPhysicalTenant(physicalTenantId).getJobMetrics();
     final var jobMetricsResponse =
         JobMetricsConfigurationResponse.Builder.create()
             .enabled(jobMetrics.isEnabled())

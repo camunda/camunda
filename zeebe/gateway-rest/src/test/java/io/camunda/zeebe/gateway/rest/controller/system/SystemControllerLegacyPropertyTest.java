@@ -48,7 +48,7 @@ public class SystemControllerLegacyPropertyTest extends RestControllerTest {
   void shouldUseCloudStageFromWebappConfiguration() {
     // given: WebappConfiguration already resolved (translation from legacy keys done by
     // WebappPropertiesOverride at runtime; here we supply the resolved values directly)
-    when(tenantRestConfigProvider.forTenant(Mockito.any()))
+    when(tenantRestConfigProvider.forPhysicalTenant(Mockito.any()))
         .thenReturn(new GatewayRestConfiguration());
 
     // when/then

@@ -94,7 +94,8 @@ public class SystemControllerTest extends RestControllerTest {
   @BeforeEach
   void setupUsageMetricsServices() {
     when(serviceRegistry.usageMetricsServices(any())).thenReturn(usageMetricsServices);
-    when(tenantRestConfigProvider.forTenant(any())).thenReturn(new GatewayRestConfiguration());
+    when(tenantRestConfigProvider.forPhysicalTenant(any()))
+        .thenReturn(new GatewayRestConfiguration());
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
   }
@@ -394,7 +395,7 @@ public class SystemControllerTest extends RestControllerTest {
     customCfg.getJobMetrics().setMaxJobTypeLength(200);
     customCfg.getJobMetrics().setMaxTenantIdLength(15);
     customCfg.getJobMetrics().setMaxUniqueKeys(5000);
-    when(tenantRestConfigProvider.forTenant(any())).thenReturn(customCfg);
+    when(tenantRestConfigProvider.forPhysicalTenant(any())).thenReturn(customCfg);
 
     // when/then
     webClient
@@ -428,7 +429,7 @@ public class SystemControllerTest extends RestControllerTest {
     // given
     final var disabledCfg = new GatewayRestConfiguration();
     disabledCfg.getJobMetrics().setEnabled(false);
-    when(tenantRestConfigProvider.forTenant(any())).thenReturn(disabledCfg);
+    when(tenantRestConfigProvider.forPhysicalTenant(any())).thenReturn(disabledCfg);
 
     // when/then
     webClient
