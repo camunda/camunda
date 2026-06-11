@@ -1773,7 +1773,9 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   forward-compat-tests:
-    if: needs.detect-changes.outputs.forward-compat-tests-changes == 'true'
+    if: |
+      needs.detect-changes.outputs.forward-compat-tests-changes == 'true'
+      && startsWith(github.base_ref, 'stable/')
     name: "C8 Forward Compatibility"
     needs: [ detect-changes ]
     uses: ./.github/workflows/ci-c8-forward-compatibility-tests.yml

@@ -82,10 +82,7 @@ jobs:
             echo "Base branch: $BASE_REF"
             echo "Test ref: $TEST_REF"
 
-            if [[ "$BASE_REF" == "main" ]]; then
-              SERVER_BRANCH="main"
-              SERVER_IMAGE="camunda/camunda:SNAPSHOT"
-            elif [[ "$BASE_REF" =~ ^stable/([0-9]+)\.([0-9]+)$ ]]; then
+            if [[ "$BASE_REF" =~ ^stable/([0-9]+)\.([0-9]+)$ ]]; then
               MAJOR="${BASH_REMATCH[1]}"
               MINOR="${BASH_REMATCH[2]}"
               NEXT_MINOR=$((MINOR + 1))
@@ -108,9 +105,11 @@ jobs:
             echo "Resolved: base=$BASE_REF → server=$SERVER_BRANCH ($SERVER_IMAGE), tests=$TEST_BRANCH"
           fi
 
-          echo "server_branch=$SERVER_BRANCH" >> "$GITHUB_OUTPUT"
-          echo "server_image=$SERVER_IMAGE" >> "$GITHUB_OUTPUT"
-          echo "test_branch=$TEST_BRANCH" >> "$GITHUB_OUTPUT"
+          {
+            echo "server_branch=$SERVER_BRANCH"
+            echo "server_image=$SERVER_IMAGE"
+            echo "test_branch=$TEST_BRANCH"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Print test configuration
         run: |
