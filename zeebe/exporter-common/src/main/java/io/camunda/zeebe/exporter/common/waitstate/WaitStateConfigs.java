@@ -10,6 +10,7 @@ package io.camunda.zeebe.exporter.common.waitstate;
 import io.camunda.zeebe.exporter.common.waitstate.WaitStateEntry.WaitStateType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 
 /**
  * Predefined {@link WaitStateTransformerConfig}s for common use cases, e.g. for jobs. These can be
@@ -26,6 +27,18 @@ public final class WaitStateConfigs {
           .withUpdateIntents(JobIntent.MIGRATED)
           .withRemoveIntents(JobIntent.COMPLETED, JobIntent.CANCELED)
           .withWaitStateType(WaitStateType.JOB);
+
+  /**
+   * MIGRATED is treated as an update to keep fields like targetElementId and processDefinitionKey
+   * current in secondary storage after process-instance migration. TRIGGERED and CANCELED remove
+   * the entry — the timer is no longer active once it fires or is canceled.
+   */
+  public static final WaitStateTransformerConfig TIMER_CONFIG =
+      WaitStateTransformerConfig.of(ValueType.TIMER)
+          .withAddIntents(TimerIntent.CREATED)
+          .withUpdateIntents(TimerIntent.MIGRATED)
+          .withRemoveIntents(TimerIntent.TRIGGERED, TimerIntent.CANCELED)
+          .withWaitStateType(WaitStateType.TIMER);
 
   private WaitStateConfigs() {}
 }

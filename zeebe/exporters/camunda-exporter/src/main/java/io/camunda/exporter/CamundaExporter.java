@@ -36,6 +36,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_MESSAGE_SUBSCRI
 import static io.camunda.zeebe.protocol.record.ValueType.RESOURCE;
 import static io.camunda.zeebe.protocol.record.ValueType.ROLE;
 import static io.camunda.zeebe.protocol.record.ValueType.TENANT;
+import static io.camunda.zeebe.protocol.record.ValueType.TIMER;
 import static io.camunda.zeebe.protocol.record.ValueType.USAGE_METRIC;
 import static io.camunda.zeebe.protocol.record.ValueType.USER;
 import static io.camunda.zeebe.protocol.record.ValueType.USER_TASK;
@@ -419,7 +420,8 @@ public class CamundaExporter implements Exporter {
             HISTORY_DELETION,
             JOB_METRICS_BATCH,
             GLOBAL_LISTENER,
-            AGENT_INSTANCE);
+            AGENT_INSTANCE,
+            TIMER);
 
     @Override
     public boolean acceptType(final RecordType recordType) {
