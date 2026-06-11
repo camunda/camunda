@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.server.observation.ServerRequestObservationContext;
 import org.springframework.web.util.ContentCachingRequestWrapper;
@@ -61,6 +62,36 @@ class McpServerRequestObservationConventionTest {
             observationContext, JSON_MAPPER);
     // then
     assertThat(keyValues).isEmpty();
+  }
+
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "/mcp/cluster",
+        "/mcp/processes",
+        "/mcp/anything/nested",
+        "/physical-tenants/tenant-a/mcp/cluster",
+        "/physical-tenants/tenant-a/mcp/processes/nested",
+      })
+  void shouldRecognizeMcpPaths(final String path) {
+    assertThat(McpServerRequestObservationConvention.isMcpPath(path)).isTrue();
+  }
+
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "/mcp", // no endpoint at bare /mcp
+        "/mcpfoo", // no slash after /mcp
+        "/mcp-cluster", // dash, not slash
+        "/v2/something",
+        "/physical-tenants/tenant-a/mcp", // no endpoint at bare /physical-tenants/{id}/mcp
+        "/physical-tenants/tenant-a/v2/something",
+        "/physical-tenants//mcp", // empty tenant id
+        "/physical-tenants/mcp", // no tenant segment (slash before mcp missing)
+        "/physical-tenants/tenant-a/mcpfoo", // no slash after /mcp
+      })
+  void shouldNotRecognizeNonMcpPathsAsMcp(final String path) {
+    assertThat(McpServerRequestObservationConvention.isMcpPath(path)).isFalse();
   }
 
   @ParameterizedTest
@@ -121,7 +152,6 @@ class McpServerRequestObservationConventionTest {
             "{\"method\":\"tools/call\",\"params\":{\"name\":\"deploy\"}}",
             "/mcp/processes/tenant/tenant1/tools/call/deploy"),
         // /physical-tenants/{tenantId}/mcp paths
-        Arguments.of("/physical-tenants/tenant-a/mcp", null, "/physical-tenants/tenant-a/mcp"),
         Arguments.of(
             "/physical-tenants/tenant-a/mcp/cluster",
             null,
