@@ -31,6 +31,9 @@ import co.elastic.clients.elasticsearch.core.search.HitsMetadata;
 import co.elastic.clients.elasticsearch.core.search.TotalHitsRelation;
 import co.elastic.clients.elasticsearch.indices.ElasticsearchIndicesAsyncClient;
 import co.elastic.clients.elasticsearch.indices.GetIndexResponse;
+import co.elastic.clients.json.JsonData;
+import co.elastic.clients.transport.DefaultTransportOptions;
+import co.elastic.clients.transport.TransportOptions;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiveByIdTaskSupplier.IdWithRouting;
@@ -50,17 +53,13 @@ import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-final class ElasticsearchArchiverRepositoryTest extends AbstractArchiverRepositoryTest {
-  private static final Logger LOGGER =
-      LoggerFactory.getLogger(ElasticsearchArchiverRepositoryTest.class);
+  @Test
+  void shouldCloseClientOnClose() throws Exception {
+    // when
+    repository.close();
 
-  private final ElasticsearchAsyncClient client = mock(ElasticsearchAsyncClient.class);
-
-  @Override
-  @BeforeEach
-  void setup() {
-    super.setup();
-    givenNoArchivingStatus();
+    // then
+    Mockito.verify(client, Mockito.times(1)).close();
   }
 
   @Override
@@ -284,5 +283,22 @@ final class ElasticsearchArchiverRepositoryTest extends AbstractArchiverReposito
     final var response = mock(GetIndexResponse.class);
     when(indicesClient.get(any(Function.class)))
         .thenReturn(CompletableFuture.completedFuture(response));
+  }
+
+final class ElasticsearchArchiverRepositoryTest extends AbstractArchiverRepositoryTest {
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(ElasticsearchArchiverRepositoryTest.class);
+
+  private final ElasticsearchAsyncClient client = mock(ElasticsearchAsyncClient.class);
+
+when(client._transportOptions()
+    thenReturn(DefaultTransportOptions.EMPTY);).when(client.withTransportOptions(any(TransportOptions.class)
+    thenReturn(client);)).
+  @Override
+  @BeforeEach
+  void setUp() {
+      super.setup();
+      givenNoArchivingStatus();
+    }
   }
 }
