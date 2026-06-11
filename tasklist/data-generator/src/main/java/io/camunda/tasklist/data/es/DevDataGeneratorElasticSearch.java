@@ -8,6 +8,7 @@
 package io.camunda.tasklist.data.es;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import io.camunda.search.connect.tenant.SearchClients;
 import io.camunda.spring.utils.ConditionalOnWebappEnabled;
 import io.camunda.tasklist.data.DataGenerator;
 import io.camunda.tasklist.data.DevDataGeneratorAbstract;
@@ -16,8 +17,6 @@ import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Profile;
@@ -33,9 +32,11 @@ public class DevDataGeneratorElasticSearch extends DevDataGeneratorAbstract
 
   private static final Logger LOGGER = LoggerFactory.getLogger(DevDataGeneratorElasticSearch.class);
 
-  @Autowired
-  @Qualifier("tasklistEsClient")
-  private ElasticsearchClient esClient;
+  private final ElasticsearchClient elasticsearchClient;
+
+  public DevDataGeneratorElasticSearch(final SearchClients searchClients) {
+    elasticsearchClient = searchClients.esClients().get("default");
+  }
 
   @Override
   public boolean shouldCreateData() {
@@ -43,7 +44,7 @@ public class DevDataGeneratorElasticSearch extends DevDataGeneratorAbstract
       final String indexName =
           new ProcessIndex(tasklistProperties.getElasticsearch().getIndexPrefix(), true)
               .getFullQualifiedName();
-      final boolean exists = esClient.count(c -> c.index(indexName)).count() > 0;
+      final boolean exists = elasticsearchClient.count(c -> c.index(indexName)).count() > 0;
       if (exists) {
         // data already exists
         LOGGER.debug("Data already exists.");

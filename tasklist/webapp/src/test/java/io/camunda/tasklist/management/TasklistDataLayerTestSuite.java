@@ -5,9 +5,11 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.tasklist.queries;
+package io.camunda.tasklist.management;
 
-public enum Sort {
-  ASC,
-  DESC
-}
+import org.junit.platform.suite.api.SelectPackages;
+import org.junit.platform.suite.api.Suite;
+
+@Suite
+@SelectPackages({"io.camunda.tasklist.management"})
+public class TasklistDataLayerTestSuite {}

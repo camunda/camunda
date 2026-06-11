@@ -17,7 +17,6 @@
   <modules>
     <module>client</module>
     <module>common</module>
-    <module>els-schema</module>
     <module>data-generator</module>
     <module>webapp</module>
   </modules>

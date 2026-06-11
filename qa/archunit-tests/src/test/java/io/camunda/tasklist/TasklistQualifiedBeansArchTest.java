@@ -18,7 +18,6 @@ import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
-import org.opensearch.client.opensearch.OpenSearchClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 
@@ -54,49 +53,6 @@ public class TasklistQualifiedBeansArchTest {
                                 + "\")"));
                   } else if (!TASKLIST_OBJECT_MAPPER_QUALIFIER.equals(
                       field.getAnnotationOfType(Qualifier.class).value())) {
-                    events.add(
-                        SimpleConditionEvent.violated(
-                            field,
-                            "Field "
-                                + field.getFullName()
-                                + "in class "
-                                + field.getOwner().getFullName()
-                                + " has @Qualifier(\"%s\")"
-                                    .formatted(
-                                        field.getAnnotationOfType(Qualifier.class).value())));
-                  }
-                }
-              });
-
-  private static final String TASKLIST_OS_CLIENT_QUALIFIER = "tasklistOsClient";
-
-  @ArchTest
-  public static final ArchRule AUTOWIRED_OS_CLIENT_FIELDS_SHOULD_HAVE_QUALIFIER =
-      fields()
-          .that()
-          .areAnnotatedWith(Autowired.class)
-          .and()
-          .haveRawType(OpenSearchClient.class)
-          .should(
-              new ArchCondition<>("have @Qualifier(\"" + TASKLIST_OS_CLIENT_QUALIFIER + "\")") {
-                @Override
-                public void check(final JavaField field, final ConditionEvents events) {
-                  final boolean hasQualifier = field.isAnnotatedWith(Qualifier.class);
-                  if (!hasQualifier) {
-                    events.add(
-                        SimpleConditionEvent.violated(
-                            field,
-                            "Field "
-                                + field.getFullName()
-                                + "in class "
-                                + field.getOwner().getFullName()
-                                + " is missing @Qualifier(\""
-                                + TASKLIST_OS_CLIENT_QUALIFIER
-                                + "\")"));
-                  } else if (!field
-                      .getAnnotationOfType(Qualifier.class)
-                      .value()
-                      .equals(TASKLIST_OS_CLIENT_QUALIFIER)) {
                     events.add(
                         SimpleConditionEvent.violated(
                             field,

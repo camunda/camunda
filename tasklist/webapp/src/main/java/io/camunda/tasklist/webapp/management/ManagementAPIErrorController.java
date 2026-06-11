@@ -7,7 +7,6 @@
  */
 package io.camunda.tasklist.webapp.management;
 
-import io.camunda.tasklist.exceptions.TasklistElasticsearchConnectionException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.webapp.rest.exception.APIException;
 import io.camunda.tasklist.webapp.rest.exception.Error;
@@ -63,18 +62,6 @@ public abstract class ManagementAPIErrorController {
             .setInstance(exception.getInstance())
             .setMessage(exception.getMessage());
     return ResponseEntity.status(HttpStatus.NOT_FOUND)
-        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-        .body(error);
-  }
-
-  @ResponseStatus(HttpStatus.BAD_GATEWAY)
-  @ExceptionHandler(TasklistElasticsearchConnectionException.class)
-  public ResponseEntity<Error> handleNotFound(
-      final TasklistElasticsearchConnectionException exception) {
-    LOGGER.error(exception.getMessage(), exception);
-    final Error error =
-        new Error().setStatus(HttpStatus.BAD_GATEWAY.value()).setMessage(exception.getMessage());
-    return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .body(error);
   }

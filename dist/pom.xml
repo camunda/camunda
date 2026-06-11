@@ -75,6 +75,11 @@
     </dependency>
 
     <dependency>
+      <groupId>software.amazon.awssdk</groupId>
+      <artifactId>sts</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-search-client-query-transformer</artifactId>
     </dependency>
@@ -975,10 +980,6 @@
               <mainClass>io.camunda.application.StandaloneTasklist</mainClass>
             </program>
             <program>
-              <id>tasklist-migrate</id>
-              <mainClass>io.camunda.tasklist.schema.migration.SchemaMigration</mainClass>
-            </program>
-            <program>
               <id>camunda</id>
               <mainClass>io.camunda.application.StandaloneCamunda</mainClass>
             </program>
@@ -1104,6 +1105,9 @@
 
             <!-- Analytics Exporter -->
             <dependency>io.camunda:analytics-exporter</dependency>
+
+            <!-- This dependency are indirectly used by the awssdk auth plugin. It requires these classes on the classpath to resolve the AWS credentials -->
+            <dependency>software.amazon.awssdk:sts</dependency>
           </usedDependencies>
           <ignoredUnusedDeclaredDependencies>
             <dep>com.nimbusds:oauth2-oidc-sdk</dep>
