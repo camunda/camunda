@@ -9,6 +9,7 @@ package io.camunda.application.commons.service;
 
 import io.camunda.application.commons.condition.ConditionalOnAnyHttpGatewayEnabled;
 import io.camunda.application.commons.document.CamundaDocumentStoreConfigurationLoader;
+import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.document.store.SimpleDocumentStoreRegistry;
 import io.camunda.gateway.protocol.model.JobActivationResult;
@@ -60,7 +61,6 @@ import io.camunda.spring.utils.DatabaseTypeUtils;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
-import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.camunda.zeebe.gateway.rest.config.PhysicalTenantRestConfigProvider;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.context.annotation.Bean;
@@ -82,12 +82,13 @@ public class CamundaServicesConfiguration {
   // Cluster-wide executor, uses the node's availableProcessors
   @Bean
   public ApiServicesExecutorProvider apiServicesExecutor(
-      final GatewayRestConfiguration configuration) {
+      final UnifiedConfiguration unifiedConfiguration) {
+    final var executor = unifiedConfiguration.getCamunda().getApi().getRest().getExecutor();
     return new ApiServicesExecutorProvider(
-        configuration.getApiExecutor().getCorePoolSizeMultiplier(),
-        configuration.getApiExecutor().getMaxPoolSizeMultiplier(),
-        configuration.getApiExecutor().getKeepAliveSeconds(),
-        configuration.getApiExecutor().getQueueCapacity());
+        executor.getCorePoolSizeMultiplier(),
+        executor.getMaxPoolSizeMultiplier(),
+        executor.getKeepAlive().getSeconds(),
+        executor.getQueueCapacity());
   }
 
   /**
