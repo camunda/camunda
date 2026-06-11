@@ -6,5 +6,4 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-export { useId } from "./useId"
-export { useAttachedMenu } from "./useAttachedMenu"
+export {default as MenuButton} from './MenuButton';

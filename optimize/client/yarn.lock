@@ -1420,13 +1420,6 @@
     react-error-boundary "4.0.13"
     react-markdown "8.0.7"
 
-"@camunda/camunda-optimize-composite-components@^0.0.16":
-  version "0.0.16"
-  resolved "https://registry.yarnpkg.com/@camunda/camunda-optimize-composite-components/-/camunda-optimize-composite-components-0.0.16.tgz#ed035704e433d7e907954a68836bacb96f6fb9d4"
-  integrity sha512-Ruq/6NsLk9LYuj0xyC4OIlRSIviKGeC+8ZNj4CKNe6Latpt9466wfQb4oyAn7VsI3RHtc3/Oks99A2vvYNA4mA==
-  dependencies:
-    "@storybook/test" "^8.0.4"
-
 "@carbon/colors@^11.30.0":
   version "11.30.0"
   resolved "https://registry.yarnpkg.com/@carbon/colors/-/colors-11.30.0.tgz#a4dfd1372558338618fd04f2b36318d5b1d9e95e"
