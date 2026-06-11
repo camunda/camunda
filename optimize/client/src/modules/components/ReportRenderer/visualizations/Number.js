@@ -21,7 +21,7 @@ import ProgressBar from './ProgressBar';
 
 import './Number.scss';
 
-export function Number({report, formatter, mightFail}) {
+export function Number({report, formatter, mightFail, badge}) {
   const {data, result} = report;
   const {targetValue, precision, valueFormat} = data.configuration;
   const [processVariable, setProcessVariable] = useState();
@@ -129,6 +129,7 @@ export function Number({report, formatter, mightFail}) {
             <React.Fragment key={idx}>
               <div className="data">
                 {formatValue(measure.data, valueFormat ?? measure.property, precision)}
+                {idx === 0 && badge}
               </div>
               <div className="label">{viewString}</div>
             </React.Fragment>

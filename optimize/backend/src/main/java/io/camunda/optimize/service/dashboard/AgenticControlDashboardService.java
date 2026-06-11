@@ -193,7 +193,11 @@ public class AgenticControlDashboardService {
         KPI_EXECUTION_COMPLETED_NAME,
         KPI_EXECUTION_COMPLETED_DESCRIPTION,
         null);
-    return buildTile(KPI_COMPLETED_REPORT_ID, new PositionDto(0, 0), new DimensionDto(6, 2));
+    return buildTile(
+        KPI_COMPLETED_REPORT_ID,
+        new PositionDto(0, 0),
+        new DimensionDto(6, 2),
+        Map.of("comparisonPeriod", true, "deltaGoodDirection", "up"));
   }
 
   private DashboardReportTileDto buildAvgDurationReport() {
@@ -220,7 +224,11 @@ public class AgenticControlDashboardService {
         KPI_EXECUTION_AVG_DURATION_NAME,
         KPI_EXECUTION_AVG_DURATION_DESCRIPTION,
         null);
-    return buildTile(KPI_AVG_DURATION_REPORT_ID, new PositionDto(6, 0), new DimensionDto(6, 2));
+    return buildTile(
+        KPI_AVG_DURATION_REPORT_ID,
+        new PositionDto(6, 0),
+        new DimensionDto(6, 2),
+        Map.of("comparisonPeriod", true, "deltaGoodDirection", "down"));
   }
 
   private DashboardReportTileDto buildIncidentRateReport() {
@@ -249,7 +257,11 @@ public class AgenticControlDashboardService {
         KPI_EXECUTION_INCIDENT_RATE_NAME,
         KPI_EXECUTION_INCIDENT_RATE_DESCRIPTION,
         null);
-    return buildTile(KPI_INCIDENT_RATE_REPORT_ID, new PositionDto(12, 0), new DimensionDto(6, 2));
+    return buildTile(
+        KPI_INCIDENT_RATE_REPORT_ID,
+        new PositionDto(12, 0),
+        new DimensionDto(6, 2),
+        Map.of("comparisonPeriod", true, "deltaGoodDirection", "down"));
   }
 
   private DashboardReportTileDto buildAvgTokensReport() {
