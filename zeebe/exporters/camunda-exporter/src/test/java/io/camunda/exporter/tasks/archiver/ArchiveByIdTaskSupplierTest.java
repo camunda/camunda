@@ -45,7 +45,7 @@ class ArchiveByIdTaskSupplierTest {
             historyConfigWithMaxRetry(3),
             "source-idx",
             "destination-idx",
-            searchAfter ->
+            (searchAfter, size) ->
                 CompletableFuture.completedFuture(
                     ArchiveDocIdsBatch.from(List.of("doc1", "doc2"), List.of("after1"))),
             (source, dest, ids) -> {
@@ -92,7 +92,7 @@ class ArchiveByIdTaskSupplierTest {
             historyConfigWithMaxRetry(1),
             "source-idx",
             "destination-idx",
-            searchAfter ->
+            (searchAfter, size) ->
                 CompletableFuture.completedFuture(
                     ArchiveDocIdsBatch.from(List.of("doc1"), List.of("after1"))),
             (source, dest, ids) -> CompletableFuture.failedFuture(retryableError),
@@ -125,7 +125,7 @@ class ArchiveByIdTaskSupplierTest {
             historyConfigWithMaxRetry(3),
             "source-idx",
             "destination-idx",
-            searchAfter ->
+            (searchAfter, size) ->
                 CompletableFuture.completedFuture(
                     ArchiveDocIdsBatch.from(List.of("doc1"), List.of("after1"))),
             (source, dest, ids) -> CompletableFuture.failedFuture(nonRetryableError),
@@ -150,7 +150,7 @@ class ArchiveByIdTaskSupplierTest {
             historyConfigWithMaxRetry(3),
             "source-idx",
             "destination-idx",
-            searchAfter -> CompletableFuture.completedFuture(ArchiveDocIdsBatch.empty()),
+            (searchAfter, size) -> CompletableFuture.completedFuture(ArchiveDocIdsBatch.empty()),
             (source, dest, ids) -> CompletableFuture.completedFuture((long) ids.size()),
             (source, ids) -> CompletableFuture.completedFuture((long) ids.size()),
             DIRECT_EXECUTOR,
@@ -177,7 +177,7 @@ class ArchiveByIdTaskSupplierTest {
             historyConfigWithMaxRetry(2),
             "source-idx",
             "destination-idx",
-            searchAfter ->
+            (searchAfter, size) ->
                 CompletableFuture.completedFuture(
                     ArchiveDocIdsBatch.from(List.of("doc1"), List.of("after1"))),
             (source, dest, ids) -> {
@@ -224,6 +224,52 @@ class ArchiveByIdTaskSupplierTest {
   }
 
   @Test
+  void shouldReduceReindexBatchSizeAfterEachRetry() {
+    // given - maxRetryAttempts=3: retries while retryCount < 3, so 2 retries before the 3rd
+    // failure throws. Reindex fails on calls 1 and 2, succeeds from call 3 onward.
+    final var retryableError = new CompletionException(new SocketTimeoutException("timeout"));
+    final var reindexCallCount = new AtomicInteger(0);
+    final var batchSize = new AtomicInteger(0);
+
+    final var taskSupplier =
+        new ArchiveByIdTaskSupplier<>(
+            historyConfigWithMaxRetry(3),
+            "source-idx",
+            "destination-idx",
+            (searchAfter, size) -> {
+              batchSize.set(size);
+              return CompletableFuture.completedFuture(
+                  ArchiveDocIdsBatch.from(List.of("doc1"), List.of("after1")));
+            },
+            (source, dest, ids) -> {
+              if (reindexCallCount.incrementAndGet() <= 2) {
+                return CompletableFuture.failedFuture(retryableError);
+              }
+              return CompletableFuture.completedFuture((long) ids.size());
+            },
+            (source, ids) -> CompletableFuture.completedFuture((long) ids.size()),
+            DIRECT_EXECUTOR,
+            metrics,
+            LOGGER);
+
+    // when - attempt 1 fails (retryCount: 0→1), full batch size used
+    assertThat(taskSupplier.moveNextBatch().join()).isEqualTo(0L);
+    assertThat(batchSize.get()).isEqualTo(1200);
+
+    // when - attempt 2 fails (retryCount: 1→2), batch size halved
+    assertThat(taskSupplier.moveNextBatch().join()).isEqualTo(0L);
+    assertThat(batchSize.get()).isEqualTo(600);
+
+    // when - attempt 3 succeeds (retryCount=2 at fetch → size/3), then resets to 0
+    assertThat(taskSupplier.moveNextBatch().join()).isEqualTo(1L);
+    assertThat(batchSize.get()).isEqualTo(400);
+
+    // when - next batch after success starts at full size again (retryCount reset to 0)
+    assertThat(taskSupplier.moveNextBatch().join()).isEqualTo(1L);
+    assertThat(batchSize.get()).isEqualTo(1200);
+  }
+
+  @Test
   void shouldDelayBeforeRetryingRetryableError() {
     // given
     final var retryableError = new CompletionException(new SocketTimeoutException("timeout"));
@@ -236,7 +282,7 @@ class ArchiveByIdTaskSupplierTest {
             config,
             "source-idx",
             "destination-idx",
-            searchAfter ->
+            (searchAfter, size) ->
                 CompletableFuture.completedFuture(
                     ArchiveDocIdsBatch.from(List.of("doc1"), List.of("after1"))),
             (source, dest, ids) -> {
@@ -265,6 +311,7 @@ class ArchiveByIdTaskSupplierTest {
     final var config = new HistoryConfiguration();
     config.setArchiveByIdMaxRetryAttempts(maxRetryCount);
     config.setArchiveByIdRetryDelayMs(0);
+    config.setReindexBatchSize(1200);
     return config;
   }
 }

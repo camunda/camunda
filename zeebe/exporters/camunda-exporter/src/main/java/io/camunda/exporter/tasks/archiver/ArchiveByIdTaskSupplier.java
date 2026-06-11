@@ -22,7 +22,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.slf4j.Logger;
 
@@ -31,7 +30,8 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
   private final HistoryConfiguration config;
   private final String sourceIdx;
   private final String destinationIdx;
-  private final Function<List<SortFieldType>, CompletableFuture<ArchiveDocIdsBatch<SortFieldType>>>
+  private final BiFunction<
+          List<SortFieldType>, Integer, CompletableFuture<ArchiveDocIdsBatch<SortFieldType>>>
       idsSupplier;
   private final TriFunction<String, String, List<String>, CompletableFuture<Long>> reindexer;
   private final BiFunction<String, List<String>, CompletableFuture<Long>> deleter;
@@ -51,7 +51,8 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
       final HistoryConfiguration config,
       final String sourceIdx,
       final String destinationIdx,
-      final Function<List<SortFieldType>, CompletableFuture<ArchiveDocIdsBatch<SortFieldType>>>
+      final BiFunction<
+              List<SortFieldType>, Integer, CompletableFuture<ArchiveDocIdsBatch<SortFieldType>>>
           idsSupplier,
       final TriFunction<String, String, List<String>, CompletableFuture<Long>> reindexer,
       final BiFunction<String, List<String>, CompletableFuture<Long>> deleter,
@@ -84,7 +85,7 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
   public CompletableFuture<Long> moveNextBatch() {
     final Stopwatch stopwatch = Stopwatch.createStarted();
     return idsSupplier
-        .apply(getLastSearchPosition())
+        .apply(getLastSearchPosition(), getBatchSize())
         .thenComposeAsync(
             response -> {
               if (response.isEmpty()) {
@@ -111,11 +112,12 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
                           metrics.recordArchiverBatchRetry();
                           logger.trace(
                               "Encountered retryable error when archiving docs from '{}' to '{}', "
-                                  + "retrying the batch (attempt {}/{}). Error: {}",
+                                  + "retrying the batch (next attempt {}/{} will use batch size {}). Error: {}",
                               sourceIdx,
                               destinationIdx,
                               retryCount.get(),
                               config.getArchiveByIdMaxRetryAttempts(),
+                              getBatchSize(),
                               ex.getMessage());
 
                           // Whilst this is crude, we exploit the fact the ES/OS visibility is
@@ -148,6 +150,11 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
   private List<SortFieldType> getLastSearchPosition() {
     final ArchiveDocIdsBatch<SortFieldType> lstResponse = lastSearchResponse.get();
     return lstResponse == null ? List.of() : lstResponse.searchAfter();
+  }
+
+  private int getBatchSize() {
+    // reduce the batch size on every retry to increase the chance of success
+    return Math.max(1, config.getReindexBatchSize() / (retryCount.get() + 1));
   }
 
   private CompletableFuture<Long> reindex(final ArchiveDocIdsBatch<SortFieldType> response) {
