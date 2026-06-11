@@ -7,22 +7,23 @@
  */
 package io.camunda.zeebe.engine.state.message;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 /**
  * Transient (in-memory only) state that tracks when each pending cross-partition message-start ask
  * was last sent. Used by {@link DbMessageStartProcessInstanceAskState} to implement retry
  * scheduling.
  *
- * <p>On recovery the CF is walked and all entries are added with {@code lastSentTime = 0} so they
- * are immediately eligible for re-send. This is safe because the success-only dedup on {@code P_B}
- * bounds the storm.
+ * <p>On recovery the CF is walked and each entry is seeded with a last-sent timestamp (see {@link
+ * DbMessageStartProcessInstanceAskState#onRecovered}): fresh asks with {@code 0} (immediately
+ * eligible, preserving at-least-once first delivery), already-backed-off asks with the recovery
+ * time (so they resume at their back-off cadence instead of all re-probing at once).
  *
  * <p>This class is thread-safe. It is intended that one thread mutates (add/update/remove) while
- * another observes via {@link #entriesBefore(long)}.
+ * another observes via {@link #entries()}.
  */
 public final class TransientPendingMessageStartProcessInstanceAskState {
 
@@ -49,7 +50,7 @@ public final class TransientPendingMessageStartProcessInstanceAskState {
   }
 
   /**
-   * Removes a pending ask. Called when any of the three reply intents is applied on {@code P_K}.
+   * Removes a pending ask. Called when the ask succeeds or the buffered message expires.
    *
    * @param key the key identifying the ask
    */
@@ -58,19 +59,15 @@ public final class TransientPendingMessageStartProcessInstanceAskState {
   }
 
   /**
-   * Returns all pending asks whose last-sent timestamp is before the given deadline, ordered by
-   * that timestamp (oldest first). The returned iterable may include entries that were updated or
-   * removed concurrently; the caller must tolerate stale data.
+   * Returns a snapshot of all pending asks with their last-sent timestamps. The retry scheduler
+   * joins each entry with its persisted ask (for the rejection count and the re-send payload) to
+   * decide per-ask eligibility. A snapshot is returned so the caller may mutate the underlying
+   * state (e.g. {@link #update}) while iterating.
    *
-   * @param deadline epoch millis; entries with {@code lastSentTime < deadline} are returned
-   * @return an iterable of pending ask keys
+   * @return a snapshot of {@code (key, lastSentTime)} entries
    */
-  public Iterable<PendingAskKey> entriesBefore(final long deadline) {
-    return pending.entrySet().stream()
-        .sorted(Map.Entry.comparingByValue())
-        .takeWhile(entry -> entry.getValue() < deadline)
-        .map(Entry::getKey)
-        .collect(Collectors.toList());
+  public Iterable<Entry<PendingAskKey, Long>> entries() {
+    return List.copyOf(pending.entrySet());
   }
 
   /** Returns {@code true} if there are no pending asks. */

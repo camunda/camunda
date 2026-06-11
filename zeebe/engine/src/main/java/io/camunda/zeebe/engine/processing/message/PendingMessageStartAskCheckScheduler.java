@@ -21,27 +21,36 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Scheduled task that drains pending cross-partition message-start asks on {@code P_K}. Entries
- * whose last-sent time is before the configured retry interval are re-sent to {@code P_B} via
- * {@link SubscriptionCommandSender#sendDirectStartProcessInstanceRequest}.
+ * that are due for retry are re-sent to {@code P_B} via {@link
+ * SubscriptionCommandSender#sendDirectStartProcessInstanceRequest}.
  *
- * <p>The scheduler ticks every {@code retryInterval} and re-sends every ask whose last-sent time is
- * older than {@code now - retryInterval}, so the same value bounds both the scheduler cadence and
- * the per-ask retry frequency. After sending, the entry's timestamp is updated via {@link
- * MessageStartProcessInstanceAskState#updateLastSentTime}.
+ * <p>The scheduler ticks every base {@code retryInterval} and, on each tick, re-sends every ask
+ * that is due. An ask is due when its transient last-sent time plus its back-off interval has
+ * elapsed; the back-off interval grows with the ask's persisted {@code rejectionCount} as {@code
+ * baseInterval * 2^min(rejectionCount, MAX_BACKOFF_EXPONENT)}. An un-replied ask has a rejection
+ * count of {@code 0} and so retries at the base interval (at-least-once delivery), while a
+ * repeatedly-rejected ask backs off exponentially up to {@code baseInterval *
+ * 2^MAX_BACKOFF_EXPONENT} so it does not storm {@code P_B} while its Business ID stays held. After
+ * sending, the entry's transient last-sent time is updated via {@link
+ * MessageStartProcessInstanceAskState#updateLastSentTime}; the back-off magnitude itself is
+ * event-sourced (advanced by the rejection applier), so it survives leader changes.
  *
- * <p>Entries are removed from the state when any of the three reply intents ({@code STARTED},
- * {@code UNIQUENESS_REJECTED}, {@code NO_SUBSCRIPTION_REJECTED}) is applied on {@code P_K}; those
- * handlers land in a separate commit. Entries are also cleared when the originating buffered
- * message expires on {@code P_K}, so a retry never outlives the buffered message it refers to.
- *
- * <p>Each retry re-emits the same {@code messageDeadline} that the original ask carried (sourced
- * from the buffered message's {@code publishTime + ttl}). The dedup row on {@code P_B} is keyed by
- * that same deadline, so any retry either lands on a live dedup row (cache hit, same outcome) or
- * arrives after both the dedup row and the buffered message have expired together — in which case
- * the pending-ask has already been cleared locally and no retry is emitted.
+ * <p>Entries are removed from the state when the ask succeeds ({@code STARTED}) or the originating
+ * buffered message expires on {@code P_K}; a rejection keeps the entry and increments its rejection
+ * count. Each retry re-emits the same {@code messageDeadline} the original ask carried, so any
+ * retry either lands on a live dedup row on {@code P_B} (same outcome) or arrives after both the
+ * dedup row and the buffered message have expired together — in which case the pending-ask has
+ * already been cleared locally and no retry is emitted.
  */
 public final class PendingMessageStartAskCheckScheduler
     implements Runnable, StreamProcessorLifecycleAware {
+
+  /**
+   * Caps the back-off exponent so the retry interval saturates at {@code baseInterval * 2^6} (64x
+   * the base). Bounds the maximum re-probe interval independently of how long an ask stays blocked,
+   * and keeps {@code 2^exponent} from overflowing.
+   */
+  private static final long MAX_BACKOFF_EXPONENT = 6L;
 
   private static final Logger LOG =
       LoggerFactory.getLogger(PendingMessageStartAskCheckScheduler.class);
@@ -57,10 +66,10 @@ public final class PendingMessageStartAskCheckScheduler
    * @param commandSender sender used to dispatch asks to {@code P_B}
    * @param state the pending ask state from which to read and update entries
    * @param routingInfo used to derive the target partition for a business ID
-   * @param retryInterval supplier returning how long to wait before retrying an ask; also used as
-   *     the scheduler tick cadence. Retries always re-emit the original {@code messageDeadline}, so
-   *     correctness does not depend on this interval relative to any window — it only controls the
-   *     retry cadence
+   * @param retryInterval supplier returning the base retry interval; also the scheduler tick
+   *     cadence. The per-ask interval is this value scaled by the ask's rejection count. Retries
+   *     always re-emit the original {@code messageDeadline}, so correctness does not depend on this
+   *     interval relative to any window — it only controls the retry cadence
    */
   public PendingMessageStartAskCheckScheduler(
       final SubscriptionCommandSender commandSender,
@@ -76,12 +85,27 @@ public final class PendingMessageStartAskCheckScheduler
   @Override
   public void run() {
     final long now = clock.millis();
-    // Entries whose lastSentTime < deadline are eligible for re-send
-    final long deadline = now - retryInterval.get().toMillis();
+    state.forEachPendingAsk(
+        (lastSentTime, ask) -> {
+          if (lastSentTime + retryIntervalMillis(ask.getRejectionCount()) <= now) {
+            sendAsk(ask, now);
+          }
+        });
+  }
 
-    for (final MessageStartProcessInstanceAsk ask : state.getPendingAsksPastDeadline(deadline)) {
-      sendAsk(ask, now);
+  /**
+   * Returns the back-off interval for an ask with the given rejection count: {@code baseInterval *
+   * 2^min(rejectionCount, MAX_BACKOFF_EXPONENT)}. A rejection count of {@code 0} yields the base
+   * interval.
+   */
+  private long retryIntervalMillis(final long rejectionCount) {
+    final long base = retryInterval.get().toMillis();
+    final long exponent = Math.min(rejectionCount, MAX_BACKOFF_EXPONENT);
+    long interval = base;
+    for (long i = 0; i < exponent; i++) {
+      interval *= 2;
     }
+    return interval;
   }
 
   private void sendAsk(final MessageStartProcessInstanceAsk ask, final long now) {

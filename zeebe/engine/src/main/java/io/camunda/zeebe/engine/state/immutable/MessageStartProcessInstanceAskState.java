@@ -39,13 +39,14 @@ public interface MessageStartProcessInstanceAskState {
   void forEach(AskVisitor visitor);
 
   /**
-   * Returns all pending asks whose last-sent timestamp is before the given deadline; intended for
-   * the scheduled retry loop.
+   * Visits every pending ask together with its transient last-sent timestamp, so the retry
+   * scheduler can decide per-ask eligibility from the ask's {@code rejectionCount} and the
+   * configured back-off it owns. The {@code ask} passed to the visitor is a freshly read instance
+   * that is safe to retain.
    *
-   * @param deadline epoch millis
-   * @return an iterable of pending asks past their deadline
+   * @param visitor called once per pending ask with its last-sent time and the ask
    */
-  Iterable<MessageStartProcessInstanceAsk> getPendingAsksPastDeadline(long deadline);
+  void forEachPendingAsk(PendingAskVisitor visitor);
 
   /**
    * Updates the in-memory last-sent timestamp for a pending ask. The retry scheduler calls this
@@ -67,5 +68,10 @@ public interface MessageStartProcessInstanceAskState {
   @FunctionalInterface
   interface AskVisitor {
     void visit(long messageKey, long processDefinitionKey, MessageStartProcessInstanceAsk ask);
+  }
+
+  @FunctionalInterface
+  interface PendingAskVisitor {
+    void visit(long lastSentTime, MessageStartProcessInstanceAsk ask);
   }
 }
