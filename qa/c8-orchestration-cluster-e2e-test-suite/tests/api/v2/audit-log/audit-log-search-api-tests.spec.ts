@@ -399,7 +399,7 @@ test.describe.parallel('Search Audit Logs API Tests', () => {
 
       await assertBadRequest(
         res,
-        "Unexpected value 'invalidField' for enum field 'field'. Use any of the following values: [actorId, actorType, auditLogKey, batchOperationKey, batchOperationType, category, decisionDefinitionId, decisionDefinitionKey, decisionEvaluationKey, decisionRequirementsId, decisionRequirementsKey, elementInstanceKey, entityKey, entityType, jobKey, operationType, processDefinitionId, processDefinitionKey, processInstanceKey, result, tenantId, timestamp, userTaskKey]",
+        "Unexpected value 'invalidField' for enum field 'field'. Use any of the following values: [actorId, actorType, auditLogKey, batchOperationKey, batchOperationType, category, decisionDefinitionId, decisionDefinitionKey, decisionEvaluationKey, decisionRequirementsId, decisionRequirementsKey, elementInstanceKey, entityKey, entityType, jobKey, operationType, processDefinitionId, processDefinitionKey, processInstanceKey, inboundChannelType, inboundChannelToolName, result, tenantId, timestamp, userTaskKey]",
       );
     }).toPass(defaultAssertionOptions);
   });
