@@ -17,6 +17,7 @@ import {
   FilterSwitcher,
   FilterSwitcherButton,
   EmptyMessageWrapper,
+  DimmableResults,
 } from './styled';
 import {StructuredRows} from 'modules/components/StructuredList';
 import {EmptyMessage} from 'modules/components/EmptyMessage';
@@ -60,9 +61,12 @@ const VariablesTable: React.FC<Props> = ({
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
+    isPlaceholderData,
   } = useVariables({
     documentsOnly: showDocumentsOnly,
   });
+
+  const isFilterLoading = isPlaceholderData;
 
   const processedVariables = useMemo(() => {
     const allVariables =
@@ -218,87 +222,91 @@ const VariablesTable: React.FC<Props> = ({
           </FilterSwitcherButton>
         </FilterSwitcher>
       </FilterSwitcherContainer>
-      {showDocumentsOnly &&
+      {!isFilterLoading &&
+      showDocumentsOnly &&
+      variablesData !== undefined &&
       processedVariables.length === 0 &&
       !isFetchingNextPage ? (
         <EmptyMessageWrapper>
           <EmptyMessage message="There are no document variables" />
         </EmptyMessageWrapper>
       ) : (
-        <StructuredList
-          dataTestId="variables-list"
-          headerColumns={[
-            {cellContent: 'Name', width: '35%'},
-            {cellContent: 'Value', width: 'auto'},
-            {cellContent: '', width: '120px'},
-          ]}
-          headerSize="sm"
-          verticalCellPadding="var(--cds-spacing-02)"
-          label="Variable List"
-          onVerticalScrollEndReach={() => {
-            if (hasNextPage && !isFetchingNextPage) {
-              fetchNextPage();
-            }
-          }}
-          dynamicRows={
-            isVariableModificationAllowed ? (
-              <>
-                <OnLastVariableModificationRemoved />
-                <FieldArray name="newVariables">
-                  {({fields}) => (
-                    <StructuredRows
-                      verticalCellPadding="var(--cds-spacing-02)"
-                      rows={fields.map((variableName, index) => ({
-                        key: fields.value[index]?.id ?? variableName,
-                        dataTestId: `variable-${variableName}`,
-                        columns: [
-                          {
-                            cellContent: (
-                              <Name
-                                variableName={variableName}
-                                scopeId={scopeId}
-                              />
-                            ),
-                            width: '35%',
-                          },
-                          {
-                            cellContent: (
-                              <Value
-                                variableName={variableName}
-                                scopeId={scopeId}
-                              />
-                            ),
-                            width: 'auto',
-                          },
-                          {
-                            cellContent: (
-                              <Operations>
-                                <ViewFullVariableButton
-                                  shouldSubmitOnApply={false}
-                                  mode="add"
+        <DimmableResults $dimmed={isFilterLoading}>
+          <StructuredList
+            dataTestId="variables-list"
+            headerColumns={[
+              {cellContent: 'Name', width: '35%'},
+              {cellContent: 'Value', width: 'auto'},
+              {cellContent: '', width: '120px'},
+            ]}
+            headerSize="sm"
+            verticalCellPadding="var(--cds-spacing-02)"
+            label="Variable List"
+            onVerticalScrollEndReach={() => {
+              if (hasNextPage && !isFetchingNextPage) {
+                fetchNextPage();
+              }
+            }}
+            dynamicRows={
+              isVariableModificationAllowed ? (
+                <>
+                  <OnLastVariableModificationRemoved />
+                  <FieldArray name="newVariables">
+                    {({fields}) => (
+                      <StructuredRows
+                        verticalCellPadding="var(--cds-spacing-02)"
+                        rows={fields.map((variableName, index) => ({
+                          key: fields.value[index]?.id ?? variableName,
+                          dataTestId: `variable-${variableName}`,
+                          columns: [
+                            {
+                              cellContent: (
+                                <Name
+                                  variableName={variableName}
                                   scopeId={scopeId}
-                                  variableName={variableName}
                                 />
-                                <Operation
+                              ),
+                              width: '35%',
+                            },
+                            {
+                              cellContent: (
+                                <Value
                                   variableName={variableName}
-                                  onRemove={() => {
-                                    fields.remove(index);
-                                  }}
+                                  scopeId={scopeId}
                                 />
-                              </Operations>
-                            ),
-                            width: '120px',
-                          },
-                        ],
-                      }))}
-                    />
-                  )}
-                </FieldArray>
-              </>
-            ) : undefined
-          }
-          rows={rows}
-        />
+                              ),
+                              width: 'auto',
+                            },
+                            {
+                              cellContent: (
+                                <Operations>
+                                  <ViewFullVariableButton
+                                    shouldSubmitOnApply={false}
+                                    mode="add"
+                                    scopeId={scopeId}
+                                    variableName={variableName}
+                                  />
+                                  <Operation
+                                    variableName={variableName}
+                                    onRemove={() => {
+                                      fields.remove(index);
+                                    }}
+                                  />
+                                </Operations>
+                              ),
+                              width: '120px',
+                            },
+                          ],
+                        }))}
+                      />
+                    )}
+                  </FieldArray>
+                </>
+              ) : undefined
+            }
+            rows={rows}
+          />
+        </DimmableResults>
       )}
     </>
   );
