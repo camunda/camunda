@@ -32,6 +32,7 @@ import co.elastic.clients.elasticsearch.core.SearchRequest.Builder;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import co.elastic.clients.elasticsearch.core.search.Hit;
+import co.elastic.clients.elasticsearch.core.search.TrackHits;
 import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
 import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsResponse;
 import com.github.benmanes.caffeine.cache.Cache;
@@ -257,11 +258,6 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
             });
   }
 
-  @VisibleForTesting
-  void invalidateLifeCycleCache(final String indexName) {
-    lifeCyclePolicyApplied.invalidate(indexName);
-  }
-
   @Override
   public CompletableFuture<Void> setLifeCycleToAllIndexes() {
     final var retention = config.getRetention();
@@ -430,6 +426,11 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   }
 
   @VisibleForTesting
+  void invalidateLifeCycleCache(final String indexName) {
+    lifeCyclePolicyApplied.invalidate(indexName);
+  }
+
+  @VisibleForTesting
   CompletableFuture<ArchiveDocIdsBatch<FieldValue>> getArchiveDocIdsBatch(
       final String sourceIndexName,
       final Map<String, List<String>> keysByField,
@@ -439,6 +440,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
     final Query query = buildFilterQuery(keysByField, inclusionFilters, exclusionFilters);
     final Builder requestBuilder =
         new SearchRequest.Builder()
+            .trackTotalHits(TrackHits.of(t -> t.enabled(false)))
             .index(sourceIndexName)
             .requestCache(false)
             .allowNoIndices(true)
@@ -452,8 +454,12 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
       requestBuilder.searchAfter(searchAfter);
     }
 
+    final var transportOptions =
+        client._transportOptions().with(b -> b.setParameter("filter_path", "-hits.hits._score"));
+
     final var timer = Timer.start();
     return client
+        .withTransportOptions(transportOptions)
         .search(requestBuilder.build())
         .whenCompleteAsync(
             (response, error) -> metrics.measureArchiveDocIdsSearchDuration(timer), executor)
