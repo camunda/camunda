@@ -6,10 +6,5 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { useState } from "react"
-
-export function useId() {
-	const [id] = useState((Math.random() + 1).toString(36))
-
-	return id
-}
+export {default as MenuDropdown} from './MenuDropdown';
+export type {MenuDropdownProps} from './MenuDropdown';
