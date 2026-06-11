@@ -18,6 +18,7 @@ import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.api.model.config.initialization.InitializationConfiguration;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.metrics.AuthorizationCheckMetrics;
 import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.property.UserTaskAuthorizationProperties;
@@ -50,6 +51,7 @@ import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -90,7 +92,11 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
             Pattern.compile("^[a-zA-Z0-9_~@.+-]+$"),
             Pattern.compile(".*", Pattern.DOTALL));
     authorizationCheckBehavior =
-        new AuthorizationCheckBehavior(processingState, securityConfig, engineConfig);
+        new AuthorizationCheckBehavior(
+            processingState,
+            securityConfig,
+            engineConfig,
+            new AuthorizationCheckMetrics(new SimpleMeterRegistry()));
 
     userCreatedApplier = new UserCreatedApplier(processingState.getUserState());
     mappingRuleCreatedApplier =
