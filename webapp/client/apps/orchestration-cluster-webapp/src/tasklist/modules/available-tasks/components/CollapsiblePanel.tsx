@@ -31,9 +31,8 @@ const CollapsiblePanel: React.FC = () => {
 				id="task-nav-bar"
 				className={cn(styles.base, styles.collapsedContainer)}
 				aria-label={t('taskFilterPanelControlsAria')}
-				aria-owns="task-nav-bar-controls"
 			>
-				<ul id="task-nav-bar-controls" aria-labelledby="task-nav-bar">
+				<ul aria-labelledby="task-nav-bar">
 					<li>
 						<Button
 							hasIconOnly
@@ -66,12 +65,7 @@ const CollapsiblePanel: React.FC = () => {
 
 	return (
 		<Layer className={styles.floatingContainer}>
-			<nav
-				className={cn(styles.base, styles.expandedContainer)}
-				id="task-nav-bar"
-				aria-labelledby="filters-title"
-				aria-owns="filters-menu"
-			>
+			<nav className={cn(styles.base, styles.expandedContainer)} id="task-nav-bar" aria-labelledby="filters-title">
 				<div className={styles.panelHeader}>
 					<h1 id="filters-title">{t('taskFilterPanelTitle')}</h1>
 					<Button
@@ -89,7 +83,7 @@ const CollapsiblePanel: React.FC = () => {
 					/>
 				</div>
 				<div className={styles.scrollContainer}>
-					<ul id="filters-menu" aria-labelledby="task-nav-bar">
+					<ul aria-labelledby="task-nav-bar">
 						{BUILT_IN_FILTERS.map(({id, labelKey}) => (
 							<li key={id}>
 								<span tabIndex={0} className={cn(styles.filterItem, {[styles.active!]: id === 'all-open'})}>
