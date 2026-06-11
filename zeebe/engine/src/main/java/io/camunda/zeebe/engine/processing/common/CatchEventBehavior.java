@@ -441,6 +441,8 @@ public final class CatchEventBehavior {
                   context.getProcessDefinitionKey(),
                   event.getId(),
                   context.getTenantId(),
+                  context.getRootProcessInstanceKey(),
+                  BufferUtil.bufferAsString(context.getBpmnProcessId()),
                   timer);
             });
   }
@@ -451,6 +453,8 @@ public final class CatchEventBehavior {
       final long processDefinitionKey,
       final DirectBuffer handlerNodeId,
       final String tenantId,
+      final long rootProcessInstanceKey,
+      final String bpmnProcessId,
       final Timer timer) {
     final long dueDate = timer.getDueDate(clock.millis());
     timerRecord.reset();
@@ -461,7 +465,9 @@ public final class CatchEventBehavior {
         .setProcessInstanceKey(processInstanceKey)
         .setTargetElementId(handlerNodeId)
         .setProcessDefinitionKey(processDefinitionKey)
-        .setTenantId(tenantId);
+        .setTenantId(tenantId)
+        .setRootProcessInstanceKey(rootProcessInstanceKey)
+        .setBpmnProcessId(bpmnProcessId);
 
     sideEffectWriter.appendSideEffect(
         () -> {

@@ -384,6 +384,8 @@ public final class DeploymentCreateProcessor
             processMetadata.getKey(),
             startEvent.getId(),
             processMetadata.getTenantId(),
+            NO_ELEMENT_INSTANCE,
+            processMetadata.getBpmnProcessId(),
             timerOrError.get());
       }
     }
