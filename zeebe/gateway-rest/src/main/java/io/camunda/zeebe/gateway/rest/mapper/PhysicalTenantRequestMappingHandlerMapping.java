@@ -7,10 +7,10 @@
  */
 package io.camunda.zeebe.gateway.rest.mapper;
 
-import io.camunda.gateway.mapping.http.physicaltenants.PhysicalTenantContext;
+import static io.camunda.gateway.mapping.http.physicaltenants.PhysicalTenantContext.PHYSICAL_TENANT_URI_PREFIX;
+
 import io.camunda.zeebe.gateway.rest.annotation.ClusterScoped;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
-import io.camunda.zeebe.gateway.rest.interceptor.PhysicalTenantInterceptor;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.lang.reflect.Method;
 import java.util.LinkedHashSet;
@@ -19,22 +19,7 @@ import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
-/**
- * Custom {@link RequestMappingHandlerMapping} that, in addition to the original path declared on
- * each {@link CamundaRestController}, registers a tenant-prefixed variant under {@code
- * /v2/physical-tenants/{physicalTenantId}/...}.
- *
- * <p>Controllers annotated with {@link ClusterScoped} are skipped — their endpoints stay
- * cluster-level and remain reachable only under their original path.
- *
- * <p>Validation of the {@code physicalTenantId} captured by the prefix and propagation to the
- * request scope is performed by {@link PhysicalTenantInterceptor}.
- */
 public class PhysicalTenantRequestMappingHandlerMapping extends RequestMappingHandlerMapping {
-
-  /** Path segment inserted between {@code /v2} and the original resource path. */
-  private static final String PREFIX_SEGMENT =
-      "physical-tenants/{" + PhysicalTenantContext.PATH_VARIABLE_PHYSICAL_TENANT_ID + "}";
 
   private static final String V2 = "/v2";
 
@@ -45,7 +30,7 @@ public class PhysicalTenantRequestMappingHandlerMapping extends RequestMappingHa
     super.registerHandlerMethod(handler, method, mapping);
 
     final Class<?> beanType = resolveBeanType(handler);
-    if (beanType == null || !shouldPrefix(beanType)) {
+    if (!shouldPrefix(beanType)) {
       return;
     }
 
@@ -57,31 +42,35 @@ public class PhysicalTenantRequestMappingHandlerMapping extends RequestMappingHa
 
   @VisibleForTesting
   boolean shouldPrefix(final Class<?> beanType) {
-    return AnnotatedElementUtils.hasAnnotation(beanType, CamundaRestController.class)
+    return beanType != null
+        && AnnotatedElementUtils.hasAnnotation(beanType, CamundaRestController.class)
         && !AnnotatedElementUtils.hasAnnotation(beanType, ClusterScoped.class);
   }
 
   @VisibleForTesting
   RequestMappingInfo withPhysicalTenantPrefix(final RequestMappingInfo mapping) {
-    final Set<String> patterns = extractPatterns(mapping);
-    final Set<String> prefixed = new LinkedHashSet<>();
-    for (final String pattern : patterns) {
-      final String rewritten = prefix(pattern);
-      if (rewritten != null) {
-        prefixed.add(rewritten);
+    final Set<String> prefixedPaths = buildPrefixedPaths(mapping);
+    return prefixedPaths.isEmpty()
+        ? null
+        : mapping.mutate().paths(prefixedPaths.toArray(String[]::new)).build();
+  }
+
+  private Set<String> buildPrefixedPaths(final RequestMappingInfo mapping) {
+    final Set<String> result = new LinkedHashSet<>();
+
+    for (final String pattern : extractPatterns(mapping)) {
+      final String prefixed = prefix(pattern);
+      if (prefixed != null) {
+        result.add(prefixed);
       }
     }
-    if (prefixed.isEmpty()) {
-      return null;
-    }
-    return mapping.mutate().paths(prefixed.toArray(String[]::new)).build();
+
+    return result;
   }
 
   private Set<String> extractPatterns(final RequestMappingInfo mapping) {
-    if (mapping.getPathPatternsCondition() != null) {
-      return mapping.getPathPatternsCondition().getPatternValues();
-    }
-    return Set.of();
+    final var condition = mapping.getPathPatternsCondition();
+    return condition != null ? condition.getPatternValues() : Set.of();
   }
 
   private String prefix(final String pattern) {
@@ -90,14 +79,11 @@ public class PhysicalTenantRequestMappingHandlerMapping extends RequestMappingHa
       return null;
     }
     final String tail = pattern.substring(V2.length());
-    if (tail.isEmpty()) {
-      return V2 + "/" + PREFIX_SEGMENT;
-    }
-    if (!tail.startsWith("/")) {
+    if (!tail.isEmpty() && !tail.startsWith("/")) {
       // Avoid prefixing things like "/v2foo".
       return null;
     }
-    return V2 + "/" + PREFIX_SEGMENT + tail;
+    return PHYSICAL_TENANT_URI_PREFIX + pattern;
   }
 
   private Class<?> resolveBeanType(final Object handler) {

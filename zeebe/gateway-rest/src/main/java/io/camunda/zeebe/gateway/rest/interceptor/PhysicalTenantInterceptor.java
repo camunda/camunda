@@ -21,7 +21,7 @@ import org.springframework.web.servlet.HandlerMapping;
  *
  * <ul>
  *   <li>If the request matches a tenant-prefixed route ({@code
- *       /v2/physical-tenants/{physicalTenantId}/...}) and the id is unknown, the request is
+ *       /physical-tenants/{physicalTenantId}/v2/...}) and the id is unknown, the request is
  *       rejected with HTTP 404 before reaching the controller.
  *   <li>If no prefix is present, the resolved id defaults to {@link
  *       PhysicalTenantContext#DEFAULT_PHYSICAL_TENANT_ID}.

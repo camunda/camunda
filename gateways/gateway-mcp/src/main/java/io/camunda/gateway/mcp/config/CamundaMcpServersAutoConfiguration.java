@@ -7,6 +7,9 @@
  */
 package io.camunda.gateway.mcp.config;
 
+import static io.camunda.gateway.mapping.http.physicaltenants.PhysicalTenantContext.PATH_VARIABLE_PHYSICAL_TENANT_ID;
+import static io.camunda.gateway.mapping.http.physicaltenants.PhysicalTenantContext.PHYSICAL_TENANT_URI_PREFIX;
+
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.gateway.mapping.http.physicaltenants.PhysicalTenantContext;
 import io.camunda.gateway.mcp.ConditionalOnMcpGatewayEnabled;
@@ -63,13 +66,6 @@ public class CamundaMcpServersAutoConfiguration {
 
   /** Processes MCP server endpoint. */
   private static final String PROCESSES_ENDPOINT = "/mcp/processes";
-
-  /**
-   * Path prefix that carries the {@code physicalTenantId} path variable. Nested in front of the
-   * base endpoints to serve the physical-tenant-scoped variant from the same transport.
-   */
-  private static final String PHYSICAL_TENANT_PREFIX =
-      "/physical-tenants/{" + PhysicalTenantContext.PATH_VARIABLE_PHYSICAL_TENANT_ID + "}";
 
   private static final String CLUSTER_SERVER_NAME = "Camunda 8 Orchestration API MCP Server";
   private static final String CLUSTER_SERVER_INSTRUCTIONS =
@@ -243,7 +239,7 @@ public class CamundaMcpServersAutoConfiguration {
    *
    * <p>The default branch stamps the {@link PhysicalTenantContext#DEFAULT_PHYSICAL_TENANT_ID
    * default} tenant. The tenant branch nests the same base router under {@link
-   * #PHYSICAL_TENANT_PREFIX} so the {@code physicalTenantId} path variable is captured, then
+   * #PHYSICAL_TENANT_URI_PREFIX} so the {@code physicalTenantId} path variable is captured, then
    * validates and stamps it via {@link #tenantFilter}. The transport handler reads only the request
    * body, so the same instance serves both routes.
    */
@@ -254,7 +250,7 @@ public class CamundaMcpServersAutoConfiguration {
 
     final RouterFunction<ServerResponse> global = base.filter(defaultTenantFilter());
     final RouterFunction<ServerResponse> tenant =
-        RouterFunctions.nest(RequestPredicates.path(PHYSICAL_TENANT_PREFIX), base)
+        RouterFunctions.nest(RequestPredicates.path(PHYSICAL_TENANT_URI_PREFIX), base)
             .filter(tenantFilter(resolverProvider));
 
     return global.and(tenant);
@@ -294,8 +290,7 @@ public class CamundaMcpServersAutoConfiguration {
             ? resolver.getAll().keySet()
             : Set.of(PhysicalTenantContext.DEFAULT_PHYSICAL_TENANT_ID);
     return (request, next) -> {
-      final String tenantId =
-          request.pathVariable(PhysicalTenantContext.PATH_VARIABLE_PHYSICAL_TENANT_ID);
+      final String tenantId = request.pathVariable(PATH_VARIABLE_PHYSICAL_TENANT_ID);
       if (!knownTenants.contains(tenantId)) {
         return unknownPhysicalTenantResponse(tenantId);
       }

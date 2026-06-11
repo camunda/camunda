@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.rest.controller.tenant;
 
 import static io.camunda.security.spring.CamundaSecurityLibraryProperties.DEFAULT_EXTERNAL_ID_PATTERN;
 import static io.camunda.zeebe.gateway.rest.config.ApiFiltersConfiguration.TENANTS_API_DISABLED_ERROR_MESSAGE;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
@@ -73,6 +74,7 @@ public class TenantControllerTest {
 
   @Nested
   @WebMvcTest(TenantController.class)
+  @Import(ApiFiltersConfiguration.class)
   public class TenantsApiEnabledTest extends RestControllerTest {
     @MockitoBean private TenantServices tenantServices;
     @MockitoBean private UserServices userServices;
@@ -716,6 +718,20 @@ public class TenantControllerTest {
       verify(tenantServices, times(1)).removeMember(eq(request), any());
     }
 
+    @Test
+    void shouldNotBlockPhysicalTenantPrefixedPath() {
+      // given
+      final var uri = "/physical-tenants/default/v2/tenants/tenantId";
+
+      // when/then
+      webClient
+          .get()
+          .uri(uri)
+          .exchange()
+          .expectStatus()
+          .value(status -> assertThat(status).isNotEqualTo(403));
+    }
+
     @TestConfiguration
     static class AdditionalConfig {
       @Bean
@@ -865,6 +881,22 @@ public class TenantControllerTest {
               (Function<WebTestClient, ResponseSpec>)
                   webClient ->
                       webClient.post().uri("/v2/tenants/tenantId/clients/search").exchange()));
+    }
+
+    @Test
+    void shouldReturnErrorOnPhysicalTenantPrefixedPath() {
+      // given
+      final var uri = "/physical-tenants/acme/v2/tenants/tenantId";
+
+      // when/then
+      webClient
+          .get()
+          .uri(uri)
+          .exchange()
+          .expectStatus()
+          .isForbidden()
+          .expectBody()
+          .json(FORBIDDEN_MESSAGE.formatted(uri, uri), JsonCompareMode.STRICT);
     }
   }
 }

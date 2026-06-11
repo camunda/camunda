@@ -41,7 +41,7 @@ class PhysicalTenantPathPatternMatchingTest extends RestTest {
             "Spring MVC must be configured with PathPatternParser. "
                 + "AntPathMatcher leaves RequestMappingInfo#getPathPatternsCondition() null, "
                 + "so PhysicalTenantRequestMappingHandlerMapping would silently skip registering "
-                + "the /v2/physical-tenants/{id}/... sibling routes.")
+                + "the /physical-tenants/{id}/v2/... sibling routes.")
         .isInstanceOf(PathPatternParser.class);
   }
 
@@ -60,12 +60,23 @@ class PhysicalTenantPathPatternMatchingTest extends RestTest {
     // tenant-prefixed sibling resolves to the same controller method
     webClient
         .get()
-        .uri("/v2/physical-tenants/default/widgets")
+        .uri("/physical-tenants/default/v2/widgets")
         .exchange()
         .expectStatus()
         .isOk()
         .expectBody(String.class)
         .isEqualTo("ok");
+  }
+
+  @Test
+  void oldTenantInfixPathShouldNotResolve() {
+    // /v2/physical-tenants/{id}/... is no longer registered
+    webClient
+        .get()
+        .uri("/v2/physical-tenants/default/widgets")
+        .exchange()
+        .expectStatus()
+        .isNotFound();
   }
 
   @CamundaRestController

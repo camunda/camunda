@@ -70,6 +70,12 @@ public class McpGatewayConfiguration {
     registrationBean.setFilter(
         new OncePerRequestFilter() {
           @Override
+          protected boolean shouldNotFilter(final @NonNull HttpServletRequest request) {
+            final String path = request.getServletPath();
+            return path == null || !McpServerRequestObservationConvention.isMcpPath(path);
+          }
+
+          @Override
           protected void doFilterInternal(
               final @NonNull HttpServletRequest request,
               final @NonNull HttpServletResponse response,
@@ -78,7 +84,7 @@ public class McpGatewayConfiguration {
             filterChain.doFilter(new ContentCachingRequestWrapper(request, 0), response);
           }
         });
-    registrationBean.addUrlPatterns("/mcp/*", "/physical-tenants/*/mcp/*");
+    registrationBean.addUrlPatterns("/*");
     registrationBean.setOrder(Ordered.HIGHEST_PRECEDENCE);
 
     return registrationBean;

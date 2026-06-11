@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
 import static io.camunda.zeebe.gateway.rest.config.ApiFiltersConfiguration.USERS_API_DISABLED_ERROR_MESSAGE;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
@@ -56,6 +57,7 @@ public class UserControllerTest {
 
   @Nested
   @WebMvcTest(UserController.class)
+  @Import(ApiFiltersConfiguration.class)
   @TestPropertySource(properties = "camunda.security.authentication.method=basic")
   public class CamundaUsersEnabledTest extends RestControllerTest {
 
@@ -428,6 +430,22 @@ public class UserControllerTest {
           .expectBody()
           .json(expectedError, JsonCompareMode.STRICT);
     }
+
+    @Test
+    void shouldNotBlockPhysicalTenantPrefixedPath() {
+      // given
+      final var username = "alice-test";
+      final var uri = "/physical-tenants/default/v2/users/" + username;
+
+      // when/then
+      webClient
+          .get()
+          .uri(uri)
+          .accept(MediaType.APPLICATION_JSON)
+          .exchange()
+          .expectStatus()
+          .value(status -> assertThat(status).isNotEqualTo(403));
+    }
   }
 
   @Nested
@@ -540,6 +558,24 @@ public class UserControllerTest {
           .uri(uri)
           .accept(MediaType.APPLICATION_JSON)
           .bodyValue(request)
+          .exchange()
+          .expectStatus()
+          .isForbidden()
+          .expectBody()
+          .json(FORBIDDEN_MESSAGE.formatted(uri, uri), JsonCompareMode.STRICT);
+    }
+
+    @Test
+    void shouldReturnErrorOnPhysicalTenantPrefixedPath() {
+      // given
+      final var username = "alice-test";
+      final var uri = "/physical-tenants/acme/v2/users/" + username;
+
+      // when/then
+      webClient
+          .get()
+          .uri(uri)
+          .accept(MediaType.APPLICATION_JSON)
           .exchange()
           .expectStatus()
           .isForbidden()

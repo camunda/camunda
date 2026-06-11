@@ -22,6 +22,7 @@ class SecurityPathAdapterTest {
             "/api/**",
             "/v1/**",
             "/v2/**",
+            "/physical-tenants/{physicalTenantId}/v2/**",
             "/mcp/**",
             "/physical-tenants/{physicalTenantId}/mcp/**",
             "/.well-known/oauth-protected-resource/**");

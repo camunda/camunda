@@ -26,7 +26,7 @@ import org.springframework.web.util.pattern.PathPatternParser;
 class PhysicalTenantRequestMappingHandlerMappingTest {
 
   private static final String EXPECTED_PREFIX =
-      "/v2/physical-tenants/{" + PhysicalTenantContext.PATH_VARIABLE_PHYSICAL_TENANT_ID + "}";
+      "/physical-tenants/{" + PhysicalTenantContext.PATH_VARIABLE_PHYSICAL_TENANT_ID + "}";
 
   private final PhysicalTenantRequestMappingHandlerMapping mapping =
       new PhysicalTenantRequestMappingHandlerMapping();
@@ -55,9 +55,9 @@ class PhysicalTenantRequestMappingHandlerMappingTest {
 
   static Stream<Arguments> patternCases() {
     return Stream.of(
-        Arguments.of("/v2", EXPECTED_PREFIX),
-        Arguments.of("/v2/widgets", EXPECTED_PREFIX + "/widgets"),
-        Arguments.of("/v2/widgets/{id}", EXPECTED_PREFIX + "/widgets/{id}"),
+        Arguments.of("/v2", EXPECTED_PREFIX + "/v2"),
+        Arguments.of("/v2/widgets", EXPECTED_PREFIX + "/v2/widgets"),
+        Arguments.of("/v2/widgets/{id}", EXPECTED_PREFIX + "/v2/widgets/{id}"),
         Arguments.of("/v1/widgets", null),
         Arguments.of("/v2foo", null),
         Arguments.of("/", null));
@@ -90,7 +90,7 @@ class PhysicalTenantRequestMappingHandlerMappingTest {
             "tenant-scoped /v2 keeps original and adds prefixed sibling",
             new TenantScopedController(),
             "/v2/widgets",
-            List.of("/v2/widgets", EXPECTED_PREFIX + "/widgets")),
+            List.of("/v2/widgets", EXPECTED_PREFIX + "/v2/widgets")),
         Arguments.of(
             "cluster-scoped controller keeps only original — no sibling",
             new ClusterScopedController(),
