@@ -12,9 +12,11 @@ import static io.camunda.optimize.service.dashboard.AgenticControlDashboardServi
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -57,10 +59,10 @@ public class AgenticControlDashboardServiceTest {
 
   @BeforeEach
   void setUp() {
-    // createOrUpdateSingleProcessReport is called with (reportId, userId, data, name, desc,
-    // collectionId)
     when(reportWriter.createOrUpdateSingleProcessReport(
             any(), isNull(), any(), any(), any(), isNull()))
+        .thenAnswer(invocation -> new IdResponseDto(invocation.getArgument(0)));
+    when(reportWriter.createOrUpdateCombinedReport(any(), isNull(), any(), any(), any(), isNull()))
         .thenAnswer(invocation -> new IdResponseDto(invocation.getArgument(0)));
   }
 
@@ -78,7 +80,7 @@ public class AgenticControlDashboardServiceTest {
     assertThat(saved.isAgenticControlDashboard()).isTrue();
     assertThat(saved.isManagementDashboard()).isFalse();
     assertThat(saved.getCollectionId()).isNull();
-    assertThat(saved.getTiles()).hasSize(5);
+    assertThat(saved.getTiles()).hasSize(6);
   }
 
   @Test
@@ -92,35 +94,27 @@ public class AgenticControlDashboardServiceTest {
     // then three reports are upserted with deterministic IDs and correct localization keys
     verify(reportWriter)
         .createOrUpdateSingleProcessReport(
-            org.mockito.ArgumentMatchers.eq(AgenticControlDashboardService.KPI_COMPLETED_REPORT_ID),
+            eq(AgenticControlDashboardService.KPI_COMPLETED_REPORT_ID),
             isNull(),
             any(),
-            org.mockito.ArgumentMatchers.eq(
-                AgenticControlDashboardService.KPI_EXECUTION_COMPLETED_NAME),
-            org.mockito.ArgumentMatchers.eq(
-                AgenticControlDashboardService.KPI_EXECUTION_COMPLETED_DESCRIPTION),
+            eq(AgenticControlDashboardService.KPI_EXECUTION_COMPLETED_NAME),
+            eq(AgenticControlDashboardService.KPI_EXECUTION_COMPLETED_DESCRIPTION),
             isNull());
     verify(reportWriter)
         .createOrUpdateSingleProcessReport(
-            org.mockito.ArgumentMatchers.eq(
-                AgenticControlDashboardService.KPI_AVG_DURATION_REPORT_ID),
+            eq(AgenticControlDashboardService.KPI_AVG_DURATION_REPORT_ID),
             isNull(),
             any(),
-            org.mockito.ArgumentMatchers.eq(
-                AgenticControlDashboardService.KPI_EXECUTION_AVG_DURATION_NAME),
-            org.mockito.ArgumentMatchers.eq(
-                AgenticControlDashboardService.KPI_EXECUTION_AVG_DURATION_DESCRIPTION),
+            eq(AgenticControlDashboardService.KPI_EXECUTION_AVG_DURATION_NAME),
+            eq(AgenticControlDashboardService.KPI_EXECUTION_AVG_DURATION_DESCRIPTION),
             isNull());
     verify(reportWriter)
         .createOrUpdateSingleProcessReport(
-            org.mockito.ArgumentMatchers.eq(
-                AgenticControlDashboardService.KPI_INCIDENT_RATE_REPORT_ID),
+            eq(AgenticControlDashboardService.KPI_INCIDENT_RATE_REPORT_ID),
             isNull(),
             any(),
-            org.mockito.ArgumentMatchers.eq(
-                AgenticControlDashboardService.KPI_EXECUTION_INCIDENT_RATE_NAME),
-            org.mockito.ArgumentMatchers.eq(
-                AgenticControlDashboardService.KPI_EXECUTION_INCIDENT_RATE_DESCRIPTION),
+            eq(AgenticControlDashboardService.KPI_EXECUTION_INCIDENT_RATE_NAME),
+            eq(AgenticControlDashboardService.KPI_EXECUTION_INCIDENT_RATE_DESCRIPTION),
             isNull());
   }
 
@@ -135,16 +129,16 @@ public class AgenticControlDashboardServiceTest {
     underTest.reconcile();
 
     // then — reports are upserted on every call, dashboard is updated but never recreated
-    verify(reportWriter, org.mockito.Mockito.times(2))
+    verify(reportWriter, times(2))
         .createOrUpdateSingleProcessReport(
-            org.mockito.ArgumentMatchers.eq(AgenticControlDashboardService.KPI_COMPLETED_REPORT_ID),
+            eq(AgenticControlDashboardService.KPI_COMPLETED_REPORT_ID),
             any(),
             any(),
             any(),
             any(),
             any());
     verify(dashboardWriter, never()).saveDashboard(any());
-    verify(dashboardWriter, org.mockito.Mockito.times(2)).updateDashboard(any(), any());
+    verify(dashboardWriter, times(2)).updateDashboard(any(), any());
   }
 
   @Test
@@ -165,7 +159,8 @@ public class AgenticControlDashboardServiceTest {
             AgenticControlDashboardService.KPI_AVG_DURATION_REPORT_ID,
             AgenticControlDashboardService.KPI_INCIDENT_RATE_REPORT_ID,
             AgenticControlDashboardService.KPI_AVG_TOKENS_REPORT_ID,
-            AgenticControlDashboardService.KPI_MEDIAN_TOKENS_REPORT_ID);
+            AgenticControlDashboardService.KPI_MEDIAN_TOKENS_REPORT_ID,
+            AgenticControlDashboardService.TOKEN_TREND_COMBINED_REPORT_ID);
   }
 
   @Test
@@ -226,8 +221,9 @@ public class AgenticControlDashboardServiceTest {
     underTest.reconcile();
 
     // then reports are upserted and dashboard tiles are updated, but dashboard is not recreated
-    verify(reportWriter, org.mockito.Mockito.times(5))
+    verify(reportWriter, times(7))
         .createOrUpdateSingleProcessReport(any(), any(), any(), any(), any(), any());
+    verify(reportWriter).createOrUpdateCombinedReport(any(), any(), any(), any(), any(), any());
     verify(dashboardWriter, never()).saveDashboard(any());
     verify(dashboardWriter).updateDashboard(any(), any());
     verify(dashboardWriter, never()).deleteDashboard(any());
@@ -315,8 +311,74 @@ public class AgenticControlDashboardServiceTest {
               AgenticControlDashboardService.KPI_EXECUTION_AVG_DURATION_NAME,
               AgenticControlDashboardService.KPI_EXECUTION_AVG_DURATION_DESCRIPTION,
               AgenticControlDashboardService.KPI_EXECUTION_INCIDENT_RATE_NAME,
-              AgenticControlDashboardService.KPI_EXECUTION_INCIDENT_RATE_DESCRIPTION);
+              AgenticControlDashboardService.KPI_EXECUTION_INCIDENT_RATE_DESCRIPTION,
+              AgenticControlDashboardService.KPI_TOKEN_TREND_INPUT_NAME,
+              AgenticControlDashboardService.KPI_TOKEN_TREND_OUTPUT_NAME);
     }
+  }
+
+  @Test
+  void shouldSeedTokenTrendCombinedReportWithCorrectSubReports() {
+    // given
+    when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID)).thenReturn(Optional.empty());
+
+    // when
+    underTest.reconcile();
+
+    // then the two sub-reports and one combined report are upserted with deterministic IDs
+    verify(reportWriter)
+        .createOrUpdateSingleProcessReport(
+            eq(AgenticControlDashboardService.TOKEN_TREND_INPUT_REPORT_ID),
+            isNull(),
+            any(),
+            eq(AgenticControlDashboardService.KPI_TOKEN_TREND_INPUT_NAME),
+            isNull(),
+            isNull());
+    verify(reportWriter)
+        .createOrUpdateSingleProcessReport(
+            eq(AgenticControlDashboardService.TOKEN_TREND_OUTPUT_REPORT_ID),
+            isNull(),
+            any(),
+            eq(AgenticControlDashboardService.KPI_TOKEN_TREND_OUTPUT_NAME),
+            isNull(),
+            isNull());
+    verify(reportWriter)
+        .createOrUpdateCombinedReport(
+            eq(AgenticControlDashboardService.TOKEN_TREND_COMBINED_REPORT_ID),
+            isNull(),
+            any(),
+            any(),
+            isNull(),
+            isNull());
+  }
+
+  @Test
+  void shouldUpsertTokenTrendReportsOnWarmRestart() {
+    // given
+    when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID))
+        .thenReturn(Optional.of(new DashboardDefinitionRestDto()));
+
+    // when
+    underTest.reconcile();
+    underTest.reconcile();
+
+    // then sub-reports and combined report are upserted on every reconcile
+    verify(reportWriter, times(2))
+        .createOrUpdateSingleProcessReport(
+            eq(AgenticControlDashboardService.TOKEN_TREND_INPUT_REPORT_ID),
+            any(),
+            any(),
+            any(),
+            any(),
+            any());
+    verify(reportWriter, times(2))
+        .createOrUpdateCombinedReport(
+            eq(AgenticControlDashboardService.TOKEN_TREND_COMBINED_REPORT_ID),
+            any(),
+            any(),
+            any(),
+            any(),
+            any());
   }
 
   @SuppressWarnings("unchecked")
