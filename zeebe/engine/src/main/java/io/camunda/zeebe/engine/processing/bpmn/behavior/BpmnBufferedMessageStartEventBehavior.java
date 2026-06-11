@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.BannedInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.MessageStartEventSubscriptionState;
+import io.camunda.zeebe.engine.state.immutable.MessageStartProcessInstanceAskState;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -37,6 +38,7 @@ public final class BpmnBufferedMessageStartEventBehavior {
   private final MessageStartEventSubscriptionState messageStartEventSubscriptionState;
   private final ElementInstanceState elementInstanceState;
   private final BannedInstanceState bannedInstanceState;
+  private final MessageStartProcessInstanceAskState messageStartProcessInstanceAskState;
   private final boolean businessIdUniquenessEnabled;
 
   private final MessageCorrelateBehavior messageCorrelateBehavior;
@@ -57,6 +59,7 @@ public final class BpmnBufferedMessageStartEventBehavior {
     messageStartEventSubscriptionState = processingState.getMessageStartEventSubscriptionState();
     elementInstanceState = processingState.getElementInstanceState();
     bannedInstanceState = processingState.getBannedInstanceState();
+    messageStartProcessInstanceAskState = processingState.getMessageStartProcessInstanceAskState();
     this.businessIdUniquenessEnabled = businessIdUniquenessEnabled;
     this.clock = clock;
 
@@ -170,20 +173,19 @@ public final class BpmnBufferedMessageStartEventBehavior {
                 // entry is left in the buffer until its TTL or until another K-keyed completion
                 // triggers a rescan.
                 //
-                // This correlation-key-keyed scan cannot, on its own, pick up such a skipped entry
-                // the moment its businessId frees: the unblocking event (the holder PI completing)
-                // is businessId-scoped and may carry a different correlation key, or none at all,
-                // so
-                // it need not trigger a rescan for this correlation key at all. Closing that
-                // liveness gap requires a businessId-keyed retry, which is owned by the pending
-                // message-start ask registry rather than by this buffer. That retry is not yet
-                // wired up for rejected starts (planned work — the cross-partition message-start
-                // rejection-retry increment). Until it lands, a skipped entry relies on its TTL or
-                // an incidental same-correlation-key completion, exactly as described above.
+                // Also skip a message that has a live pending cross-partition ask: such a message
+                // is owned by the rejection-retry registry, which is its single retry owner. This
+                // correlation-key-keyed scan cannot retry it correctly anyway — the unblocking
+                // event (the holder PI completing) is businessId-scoped and may carry a different
+                // correlation key, or none at all, so it need not trigger a rescan for this
+                // correlation key. Picking the message up here would emit a redundant second ask
+                // (harmless under P_B's dedup, but wasteful); the registry's scheduler drives the
+                // retry under back-off until the message starts or its TTL expires.
                 if (storedMessage.getMessage().getDeadline() > clock.millis()
                     && !messageState.existMessageCorrelation(
                         storedMessage.getMessageKey(), process.getBpmnProcessId())
-                    && !isBusinessIdAlreadyHeld(storedMessage, bpmnProcessId)) {
+                    && !isBusinessIdAlreadyHeld(storedMessage, bpmnProcessId)
+                    && !hasLivePendingAsk(storedMessage.getMessageKey(), process.getKey())) {
 
                   // correlate the first published message across all message start events
                   // - using the message key to decide which message was published before
@@ -228,6 +230,28 @@ public final class BpmnBufferedMessageStartEventBehavior {
         bpmnProcessId,
         storedMessage.getMessage().getTenantId(),
         bannedInstanceState::isProcessInstanceBanned);
+  }
+
+  /**
+   * Returns {@code true} when a cross-partition message-start ask is still pending for this {@code
+   * (messageKey, processDefinitionKey)}. Such a message is owned by the rejection-retry registry,
+   * which re-sends the ask under back-off, so the correlation-key buffer scan must not pick it up.
+   *
+   * <p>This guard is not redundant with {@link #isBusinessIdAlreadyHeld}: that predicate only sees
+   * <em>local</em> active PIs, but the rejections this registry retries are precisely the ones it
+   * cannot see — a cross-partition {@code UNIQUENESS_REJECTED} (the holder lives on {@code P_B})
+   * and {@code NO_SUBSCRIPTION_REJECTED} (the businessId is not locally held at all) both leave
+   * {@code isBusinessIdAlreadyHeld} returning {@code false}. Without this guard the scan would
+   * re-pick such a message on the next same-correlation-key completion and emit a redundant second
+   * ask (harmless under {@code P_B}'s dedup, but wasteful). The registry's scheduler is the single
+   * owner of the retry. Short-circuits to {@code false} when the feature is disabled, since no asks
+   * exist then.
+   */
+  private boolean hasLivePendingAsk(final long messageKey, final long processDefinitionKey) {
+    if (!businessIdUniquenessEnabled) {
+      return false;
+    }
+    return messageStartProcessInstanceAskState.get(messageKey, processDefinitionKey) != null;
   }
 
   private static final class Correlation {
