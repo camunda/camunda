@@ -57,7 +57,7 @@ services:
     cpu_count: 4
     mem_limit: 2g
     healthcheck:
-      test: ['CMD-SHELL', 'curl -f http://localhost:9200/_cat/health | grep -q green']
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cat/health | grep -qE 'green|yellow'"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -157,7 +157,6 @@ services:
       - CAMUNDA_DATA_SECONDARYSTORAGE_TYPE=elasticsearch
       - CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_URL=http://elasticsearch:9200
       - JAVA_OPTS=-XX:+IgnoreUnrecognizedVMOptions -XX:UseSVE=0
-      - SERVER_ADDRESS=127.0.0.1
     ports:
       - "26500:26500"
       - "9600:9600"
@@ -191,7 +190,6 @@ services:
       - JAVA_TOOL_OPTIONS=-Xms1g -Xmx2g
       - CAMUNDA_DATA_SECONDARYSTORAGE_TYPE=opensearch
       - CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_URL=http://opensearch:9200
-      - SERVER_ADDRESS=127.0.0.1
       - DATABASE_URL=http://opensearch
       - DATABASE_PORT=9200
       - DATABASE_TYPE=opensearch
