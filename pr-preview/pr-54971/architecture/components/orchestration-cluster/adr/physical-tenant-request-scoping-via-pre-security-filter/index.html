@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.1">
 <title data-rh="true">ADR-0003: Single Pre-Security Filter for Physical-Tenant Request Scoping | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-54971/architecture/components/orchestration-cluster/adr/physical-tenant-request-scoping-via-pre-security-filter/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="ADR-0003: Single Pre-Security Filter for Physical-Tenant Request Scoping | Camunda Platform"><meta data-rh="true" name="description" content="Status"><meta data-rh="true" property="og:description" content="Status"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-54971/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-54971/architecture/components/orchestration-cluster/adr/physical-tenant-request-scoping-via-pre-security-filter/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-54971/architecture/components/orchestration-cluster/adr/physical-tenant-request-scoping-via-pre-security-filter/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-54971/architecture/components/orchestration-cluster/adr/physical-tenant-request-scoping-via-pre-security-filter/" hreflang="x-default"><link rel="stylesheet" href="/camunda/pr-preview/pr-54971/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-54971/assets/js/runtime~main.8faf8663.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-54971/assets/js/main.aeee4efe.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-54971/assets/js/runtime~main.f0983da3.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-54971/assets/js/main.ce66b236.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -23,10 +23,11 @@
 <p>Physical-tenant API requests carry the tenant id in the URL path
 (<code>/physical-tenants/{id}/v2/...</code>). Several components need the resolved id during a request:
 <strong>controllers</strong> (via <code>@PhysicalTenantId</code>), downstream services (<code>PhysicalTenantContext.current()</code>),
-and — once CSL&#x27;s per-scope security chains are adopted — the <strong>authentication layer</strong> (basic-auth
-resolves users per physical tenant, and this runs <em>inside</em> Spring Security&#x27;s filter chain). The id
-is held on the request as an attribute through <code>PhysicalTenantContext</code>.</p>
-<p>A single Spring MVC component resolves it today: <strong><code>PhysicalTenantInterceptor</code></strong> (a
+and — once CSL&#x27;s per-scope security chains are adopted — <strong>components running <em>inside</em> Spring
+Security&#x27;s filter chain</strong> (per-tenant basic-auth user resolution, per-tenant OIDC, and webapp
+concerns such as tenant-specific session storage). The id is held on the request as an attribute
+through <code>PhysicalTenantContext</code>.</p>
+<p>A single Spring MVC component resolves it: <strong><code>PhysicalTenantInterceptor</code></strong> (a
 <code>HandlerInterceptor</code> in gateway-rest). In <code>preHandle</code> it reads the matched URI template variable,
 <strong>validates</strong> the id against the configured tenants (unknown → HTTP 404 before the controller),
 defaults to <code>default</code> when no prefix is present, and stamps <code>PhysicalTenantContext</code>.
@@ -34,9 +35,9 @@ defaults to <code>default</code> when no prefix is present, and stamps <code>Phy
 <code>PhysicalTenantIdArgumentResolver</code> enables <code>@PhysicalTenantId</code> injection.</p>
 <p>This interceptor-based approach has a fundamental limitation under CSL adoption: a
 <code>HandlerInterceptor.preHandle</code> runs during MVC dispatch, <strong>after</strong> Spring Security&#x27;s filter chain.
-Basic-auth user resolution runs <em>inside</em> that chain, so when CSL&#x27;s per-scope chains authenticate the
-request the tenant id is not yet available. The id must be resolved <strong>before</strong> the security chain
-runs.</p>
+The tenant id is consumed <em>inside</em> that chain (per-tenant user resolution, per-tenant OIDC, webapp
+session storage), so it must already be on the request when the chain executes — i.e. it must be
+stamped <strong>before</strong> the chain runs, which an interceptor cannot do.</p>
 <p>CSL adoption also changes how unknown tenants are handled. CSL registers security filter chains in a
 fixed order:</p>
 <table><thead><tr><th>Order</th><th>Chain</th><th>Matcher</th></tr></thead><tbody><tr><td>0</td><td>unprotected paths</td><td>specific unprotected paths</td></tr><tr><td>1</td><td>cluster API chain</td><td><code>apiPaths()</code> → <code>/v2/**</code></td></tr><tr><td>1</td><td>per-scope chains</td><td><code>basePath + apiPaths</code> → <code>/physical-tenants/&lt;configured&gt;/v2/**</code></td></tr><tr><td>1</td><td>webapp chains</td><td>webapp paths</td></tr><tr><td><strong>2</strong></td><td><strong>catch-all &quot;unhandled&quot; chain</strong></td><td><strong><code>/**</code>, <code>denyAll()</code></strong></td></tr></tbody></table>
@@ -53,9 +54,10 @@ the <strong>single</strong> physical-tenant id extraction point.</p>
 <ul>
 <li class="">The pre-security filter runs before Spring Security&#x27;s <code>FilterChainProxy</code>, parses the tenant id
 from the raw request URI for <code>/physical-tenants/*</code> paths, and stamps <code>PhysicalTenantContext</code> — so
-the id is available to the authentication layer. Because it sits at the servlet layer it covers
-both the REST (<code>/physical-tenants/{id}/v2/...</code>) and MCP (<code>/physical-tenants/{id}/mcp/...</code>) surfaces
-uniformly. It is <strong>permissive</strong>: it does not validate the id and needs no configured-tenant set.</li>
+the id is on the request before the chain executes and is available to the in-chain components
+that consume it. Because it sits at the servlet layer it covers both the REST
+(<code>/physical-tenants/{id}/v2/...</code>) and MCP (<code>/physical-tenants/{id}/mcp/...</code>) surfaces uniformly. It
+is <strong>permissive</strong>: it does not validate the id and needs no configured-tenant set.</li>
 <li class=""><strong>Unknown-tenant rejection (404) is delegated to CSL&#x27;s catch-all chain.</strong> The OC no longer
 performs its own physical-tenant existence check.</li>
 <li class=""><strong>Remove <code>PhysicalTenantInterceptor</code></strong> and its bean wiring: with CSL active its validation is
