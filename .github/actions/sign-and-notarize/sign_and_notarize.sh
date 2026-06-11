@@ -52,6 +52,17 @@ C8RUN_BASENAME="$(basename "$C8RUN_DIR")"
 EXCLUDE_PREFIXES=("camunda-zeebe" "connector-runtime-bundle" "elasticsearch")
 
 ##############################################
+# Literal directory names that identify a bundled JVM runtime.
+# Each entry is matched as an exact path component (not a glob), so "jre"
+# matches .../jre/... but not .../jre-custom/... or .../myjre/...
+# Any Mach-O binary under one of these directories is signed with
+# JRE_ENTITLEMENTS (allow-jit + allow-unsigned-executable-memory +
+# disable-library-validation) instead of the default hardened-runtime flags.
+# Add a new entry here when bundling an additional JRE/JDK under a new name.
+##############################################
+JRE_DIR_NAMES=("jre" "jdk" "runtime")
+
+##############################################
 # Temp dirs for exclude items + notarize steps
 ##############################################
 TMP_EXCLUDE_DIR="$(mktemp -d)"
@@ -141,12 +152,16 @@ sign_macho_in_folder() {
       fi
       if file -b "$candidate" | grep -q "Mach-O"; then
         echo "    Signing Mach-O: $candidate"
-        # Binaries inside the bundled JRE need JIT entitlements so the JVM can
+        # Binaries inside a JVM runtime need JIT entitlements so the JVM can
         # call pthread_jit_write_protect_np under the hardened runtime on Apple Silicon.
+        # The set of recognized runtime directory names is in JRE_DIR_NAMES.
         local entitlements_flag=()
-        if [[ "$candidate" == */jre/* ]]; then
-          entitlements_flag=(--entitlements "$JRE_ENTITLEMENTS")
-        fi
+        for jre_dir in "${JRE_DIR_NAMES[@]}"; do
+          if [[ "$candidate" == */"$jre_dir"/* ]]; then
+            entitlements_flag=(--entitlements "$JRE_ENTITLEMENTS")
+            break
+          fi
+        done
         if codesign --verbose=4 --force --options runtime --timestamp \
             "${entitlements_flag[@]}" --sign "$CERT_NAME" "$candidate"; then
           ((signed_count++))
@@ -199,6 +214,76 @@ sign_macho_in_folder "$C8RUN_DIR"
 sign_jars_in_folder "$C8RUN_DIR"
 
 ##############################################
+# C.5) Verify all signatures before notarizing
+#
+# Three checks on everything in $C8RUN_DIR (excluded items are already moved
+# out, so this only covers what was actually signed above):
+#
+#   1. Every .app bundle   → codesign --verify --deep --strict
+#   2. Every Mach-O file outside .app and .jar → codesign --verify --strict
+#      Note: Mach-O inside .jar files are signed and immediately repackaged;
+#      codesign --verify cannot reach them post-repackaging — they are covered
+#      by the exit-on-error in sign_macho_in_folder.
+#   3. Every Mach-O under a JRE_DIR_NAMES directory → assert allow-jit
+#      entitlement is present (missing it crashes libjvm.dylib on Apple Silicon
+#      under the hardened runtime via pthread_jit_write_protect_np).
+##############################################
+echo "=== Step C.5: Verifying all Mach-O signatures ==="
+verify_errors=0
+
+# Check 1: .app bundles
+while IFS= read -r -d '' app_bundle; do
+  if codesign --verify --deep --strict "$app_bundle" 2>/dev/null; then
+    echo "  -> signature OK (.app): $app_bundle"
+  else
+    echo "[Error] invalid/missing signature (.app): $app_bundle"
+    verify_errors=$((verify_errors + 1))
+  fi
+done < <(find "$C8RUN_DIR" -name "*.app" -type d -print0)
+
+# Check 2 + 3: individual Mach-O files
+while IFS= read -r -d '' candidate; do
+  # skip files inside .app bundles (covered by --deep above)
+  [[ "$candidate" == *.app/* ]] && continue
+  file -b "$candidate" | grep -q "Mach-O" || continue
+
+  # 2. Valid signature
+  if codesign --verify --strict "$candidate" 2>/dev/null; then
+    echo "  -> signature OK: $candidate"
+  else
+    echo "[Error] invalid/missing signature: $candidate"
+    verify_errors=$((verify_errors + 1))
+  fi
+
+  # 3. JRE path → must carry all three JVM entitlements
+  for jre_dir in "${JRE_DIR_NAMES[@]}"; do
+    if [[ "$candidate" == */"$jre_dir"/* ]]; then
+      entitlements_out="$(codesign -d --entitlements - "$candidate" 2>/dev/null)"
+      for required_entitlement in \
+          "com.apple.security.cs.allow-jit" \
+          "com.apple.security.cs.allow-unsigned-executable-memory" \
+          "com.apple.security.cs.disable-library-validation"; do
+        if echo "$entitlements_out" | grep -q "$required_entitlement"; then
+          echo "  -> $required_entitlement OK: $candidate"
+        else
+          echo "[Error] missing $required_entitlement on JVM runtime binary: $candidate"
+          echo "        Check JRE_DIR_NAMES includes '$jre_dir' and sign_macho_in_folder"
+          echo "        applies JRE_ENTITLEMENTS to that directory."
+          verify_errors=$((verify_errors + 1))
+        fi
+      done
+      break
+    fi
+  done
+done < <(find "$C8RUN_DIR" -type f -print0)
+
+if [ "$verify_errors" -gt 0 ]; then
+  echo "[Error] $verify_errors verification failure(s). Aborting before notarization."
+  exit 1
+fi
+echo "  -> All signed binaries verified."
+
+##############################################
 # D) Create c8run_signed.zip with ditto
 ##############################################
 echo "=== Step C: Creating c8run_signed.zip with ditto (excluding removed items) ==="
@@ -245,6 +330,32 @@ FINAL_ZIP="$(dirname "$C8RUN_DIR")/c8run_complete.zip"
 mv "$TMP_NOTARIZE_DIR/notarized/c8run_complete.zip" "$FINAL_ZIP"
 
 echo "All done. Final archive with excluded items is: $FINAL_ZIP"
+
+##############################################
+# G) JVM smoke test — verify the signed JRE actually starts
+# Finds any java binary under JRE_DIR_NAMES in the notarized tree and
+# runs -version. Catches signing regressions that only manifest at JVM init
+# time (e.g. a newly added binary that was missed by the entitlements loop).
+# Runs against the notarized, re-injected tree before any further packaging.
+##############################################
+echo "=== Step G: JVM smoke test ==="
+NOTARIZED_ROOT="$TMP_NOTARIZE_DIR/notarized/$C8RUN_BASENAME"
+smoke_tested=0
+for jre_dir in "${JRE_DIR_NAMES[@]}"; do
+  while IFS= read -r -d '' java_bin; do
+    echo "  -> Running: $java_bin -version"
+    if "$java_bin" -version; then
+      echo "  -> JVM smoke test passed: $java_bin"
+      smoke_tested=$((smoke_tested + 1))
+    else
+      echo "[Error] JVM smoke test FAILED: $java_bin"
+      exit 1
+    fi
+  done < <(find "$NOTARIZED_ROOT" -path "*/${jre_dir}/bin/java" \( -type f -o -type l \) -print0)
+done
+if [ "$smoke_tested" -eq 0 ]; then
+  echo "  -> No java binary found under JRE_DIR_NAMES in $NOTARIZED_ROOT; skipping smoke test."
+fi
 
 ##############################################
 # Cleanup

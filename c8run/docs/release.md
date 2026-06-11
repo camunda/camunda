@@ -5,6 +5,60 @@ Releases are owned by `@camunda/distribution` and triggered manually via the
 
 ---
 
+## macOS Signing Requirements
+
+### What gets signed
+
+`sign_and_notarize.sh` signs everything in the c8run package directory except the items listed in
+`EXCLUDE_PREFIXES` (`camunda-zeebe`, `connector-runtime-bundle`, `elasticsearch`), which are
+moved out before signing and re-injected after notarization unsigned.
+
+|          Content type           |                           How it is signed                            |
+|---------------------------------|-----------------------------------------------------------------------|
+| `.app` bundles                  | `codesign --deep --options runtime` (covers all contents recursively) |
+| Mach-O files outside `.app`     | `codesign --options runtime`                                          |
+| Mach-O inside `.jar` files      | Extracted, signed individually, jar rebuilt                           |
+| Mach-O under a JVM runtime path | Same as above **plus** JIT entitlements plist (see below)             |
+
+### JVM runtime entitlements
+
+Binaries inside a bundled JRE/JDK/runtime require three additional entitlements that the standard
+hardened runtime blocks:
+
+|                       Entitlement                        |                      Why required                      |
+|----------------------------------------------------------|--------------------------------------------------------|
+| `com.apple.security.cs.allow-jit`                        | JVM JIT compilation via `pthread_jit_write_protect_np` |
+| `com.apple.security.cs.allow-unsigned-executable-memory` | JIT code page allocation                               |
+| `com.apple.security.cs.disable-library-validation`       | Native libraries loaded by the JVM                     |
+
+Without these, `libjvm.dylib` crashes with `EXC_BREAKPOINT` during `Threads::create_vm` on
+Apple Silicon (see [#54877](https://github.com/camunda/camunda/issues/54877)).
+
+The script applies these entitlements to any Mach-O binary whose path contains a directory name
+listed in `JRE_DIR_NAMES` (currently `jre`, `jdk`, `runtime`). **To bundle an additional JRE
+or JDK under a different directory name, add that name to `JRE_DIR_NAMES`** — signing,
+entitlement verification, and the JVM smoke test all derive their scope from that single array.
+
+### Post-signing verification (Step C.5)
+
+Before submitting to Apple Notary, the script verifies the entire signed tree:
+
+1. **Signature check** — `codesign --verify --strict` on every Mach-O file and
+   `codesign --verify --deep --strict` on every `.app` bundle. Any unsigned or
+   invalidly signed binary fails the release.
+2. **JIT entitlement check** — every Mach-O under a `JRE_DIR_NAMES` directory is
+   additionally checked for `allow-jit`. A missing entitlement fails the release before
+   Apple sees the artifact.
+
+### Post-notarization smoke test (Step G)
+
+After notarization and re-injection of excluded items, the script finds every `bin/java`
+executable under any `JRE_DIR_NAMES` directory in the re-packaged tree and runs
+`java -version`. A crash at this point (e.g. a newly added JRE binary missing entitlements)
+fails the release before upload.
+
+---
+
 ## Before You Start
 
 ### 1. Check Docker Compose is released
