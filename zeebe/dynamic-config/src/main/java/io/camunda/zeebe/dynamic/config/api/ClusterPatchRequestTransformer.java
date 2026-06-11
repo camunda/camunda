@@ -12,17 +12,12 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedExce
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
-import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
-import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
-import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
 import io.camunda.zeebe.util.Either;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
@@ -76,7 +71,7 @@ public final class ClusterPatchRequestTransformer implements ConfigurationChange
     if (!newReplicationFactors.isEmpty()) {
       final var existingConfig = clusterConfiguration.partitionDistributorConfig();
 
-      return switch (buildZoneAwareConfig(existingConfig, newReplicationFactors)) {
+      return switch (ZoneAwareConfigs.withUpdatedReplicas(existingConfig, newReplicationFactors)) {
         case Either.Left(final var error) -> Either.left(error);
         case Either.Right(final var partitionDistributorConfig) ->
             new ScaleRequestTransformer(
@@ -97,37 +92,5 @@ public final class ClusterPatchRequestTransformer implements ConfigurationChange
 
     return new ScaleRequestTransformer(newSetOfMembers, newReplicationFactor, newPartitionCount)
         .operations(clusterConfiguration);
-  }
-
-  private Either<Exception, PartitionDistributorConfig.ZoneAwareConfig> buildZoneAwareConfig(
-      final Optional<PartitionDistributorConfig> existingConfig,
-      final Map<String, Integer> newReplicationFactors) {
-    if (existingConfig.isEmpty()
-        || !(existingConfig.get() instanceof ZoneAwareConfig(final List<ZoneSpec> zones))) {
-      return Either.left(
-          new InvalidRequest(
-              "'partitions.newReplicationFactors' is only supported on zone-aware clusters"));
-    }
-    final var knownZones = zones.stream().map(ZoneSpec::name).collect(Collectors.toSet());
-    final var unknownZones =
-        newReplicationFactors.keySet().stream().filter(z -> !knownZones.contains(z)).toList();
-    if (!unknownZones.isEmpty()) {
-      return Either.left(
-          new InvalidRequest(
-              "Unknown zones in 'partitions.newReplicationFactors': "
-                  + unknownZones
-                  + ". Known zones: "
-                  + knownZones));
-    }
-
-    final var updatedZones =
-        zones.stream()
-            .map(
-                z ->
-                    newReplicationFactors.containsKey(z.name())
-                        ? new ZoneSpec(z.name(), newReplicationFactors.get(z.name()), z.priority())
-                        : z)
-            .toList();
-    return Either.right(new ZoneAwareConfig(updatedZones));
   }
 }
