@@ -90,7 +90,7 @@ public class CamundaProcessTestExtensionIT {
   class ProcessInstanceTests {
 
     @Test
-    void shouldCreateProcessInstance() {
+    void shouldAssertProcessInstance() {
       // given
       final BpmnModelInstance process =
           Bpmn.createExecutableProcess("process")
@@ -1339,10 +1339,9 @@ public class CamundaProcessTestExtensionIT {
   @Nested
   class ConditionalBehaviorTests {
 
-    private static final Map<String, Object> UNHAPPY = Collections.singletonMap("happy", false);
-    private static final Map<String, Object> HAPPY = Collections.singletonMap("happy", true);
-    private static final Map<String, Object> EXPORT_VARS =
-        Collections.singletonMap("exportSuccess", true);
+    private final Map<String, Object> UNHAPPY = Collections.singletonMap("happy", false);
+    private final Map<String, Object> HAPPY = Collections.singletonMap("happy", true);
+    private final Map<String, Object> EXPORT_VARS = Collections.singletonMap("exportSuccess", true);
 
     @BeforeEach
     void setupBehaviors() {
