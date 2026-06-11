@@ -8,9 +8,11 @@
 package packages
 
 import (
+	"archive/zip"
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -163,6 +165,158 @@ func setOsSpecificValues() (string, string, string, string, func(string, string)
 	default:
 		return "", "", "", "", nil, fmt.Errorf("unsupported operating system: %s", osType)
 	}
+}
+
+func rocksdbNativeLibName(osType, arch string) (string, error) {
+	switch osType {
+	case "linux":
+		switch arch {
+		case "x86_64":
+			return "librocksdbjni-linux64.so", nil
+		case "aarch64":
+			return "librocksdbjni-linux-aarch64.so", nil
+		}
+	case "darwin":
+		switch arch {
+		case "x86_64":
+			return "librocksdbjni-osx-x86_64.jnilib", nil
+		case "aarch64":
+			return "librocksdbjni-osx-arm64.jnilib", nil
+		}
+	case "windows":
+		switch arch {
+		case "x86_64":
+			return "librocksdbjni-win64.dll", nil
+		}
+	}
+	return "", fmt.Errorf("no RocksDB native lib mapping for os=%s arch=%s", osType, arch)
+}
+
+// isRocksdbNativeLib reports whether name is a RocksDB JNI native library entry.
+// rocksdbjni JARs pack native libs at the JAR root (no directory prefix).
+// Only call this on rocksdbjni-*.jar entries — other JARs may contain unrelated root-level natives.
+func isRocksdbNativeLib(name string) bool {
+	if strings.ContainsRune(name, '/') {
+		return false
+	}
+	return strings.HasSuffix(name, ".so") || strings.HasSuffix(name, ".jnilib") || strings.HasSuffix(name, ".dll")
+}
+
+func copyZipEntry(w *zip.Writer, f *zip.File) error {
+	hdr := f.FileHeader
+	fw, err := w.CreateHeader(&hdr)
+	if err != nil {
+		return fmt.Errorf("failed to create entry %s in temp jar: %w", f.Name, err)
+	}
+	rc, err := f.Open()
+	if err != nil {
+		return fmt.Errorf("failed to read entry %s from jar: %w", f.Name, err)
+	}
+	defer func() {
+		if err := rc.Close(); err != nil {
+			log.Warn().Err(err).Str("entry", f.Name).Msg("failed to close zip entry reader")
+		}
+	}()
+	if _, err := io.Copy(fw, rc); err != nil {
+		return fmt.Errorf("failed to copy entry %s: %w", f.Name, err)
+	}
+	return nil
+}
+
+func rewriteZipKeepingNativeLib(jarPath, libName string) error {
+	r, err := zip.OpenReader(jarPath)
+	if err != nil {
+		return fmt.Errorf("failed to open jar %s: %w", jarPath, err)
+	}
+	// r is closed explicitly before os.Rename — Windows cannot rename over an open file.
+
+	tmpPath := jarPath + ".tmp"
+	tmpFile, err := os.Create(tmpPath)
+	if err != nil {
+		_ = r.Close()
+		return fmt.Errorf("failed to create temp file %s: %w", tmpPath, err)
+	}
+
+	removeTmp := func() {
+		if err := os.Remove(tmpPath); err != nil && !errors.Is(err, os.ErrNotExist) {
+			log.Warn().Err(err).Str("path", tmpPath).Msg("failed to remove temp jar")
+		}
+	}
+
+	w := zip.NewWriter(tmpFile)
+	var nativeLibCount int
+	var copyErr error
+
+	for _, f := range r.File {
+		isNativeEntry := isRocksdbNativeLib(f.Name)
+		if isNativeEntry {
+			if f.Name != libName {
+				continue
+			}
+			nativeLibCount++
+		}
+		if err := copyZipEntry(w, f); err != nil {
+			copyErr = err
+			break
+		}
+	}
+
+	if copyErr != nil {
+		_ = w.Close()
+		_ = tmpFile.Close()
+		_ = r.Close()
+		removeTmp()
+		return copyErr
+	}
+	if err := w.Close(); err != nil {
+		_ = tmpFile.Close()
+		_ = r.Close()
+		removeTmp()
+		return fmt.Errorf("failed to finalize temp jar: %w", err)
+	}
+	if err := tmpFile.Close(); err != nil {
+		_ = r.Close()
+		removeTmp()
+		return fmt.Errorf("failed to close temp file: %w", err)
+	}
+	if nativeLibCount != 1 {
+		_ = r.Close()
+		removeTmp()
+		return fmt.Errorf("expected exactly 1 native lib %q in jar, got %d: verify rocksdbNativeLibName mapping", libName, nativeLibCount)
+	}
+	if err := r.Close(); err != nil {
+		removeTmp()
+		return fmt.Errorf("failed to close source jar before rename: %w", err)
+	}
+	if err := os.Rename(tmpPath, jarPath); err != nil {
+		removeTmp()
+		return fmt.Errorf("failed to replace jar with slimmed version: %w", err)
+	}
+	return nil
+}
+
+// stripRocksDbNativeLibs must be called from the c8run working directory:
+// it globs camunda-zeebe-<version>/lib/rocksdbjni-*.jar relative to CWD.
+func stripRocksDbNativeLibs(camundaVersion, osType, arch string) error {
+	libName, err := rocksdbNativeLibName(osType, arch)
+	if err != nil {
+		return fmt.Errorf("stripRocksDbNativeLibs: %w", err)
+	}
+
+	pattern := filepath.Join("camunda-zeebe-"+camundaVersion, "lib", "rocksdbjni-*.jar")
+	jars, err := filepath.Glob(pattern)
+	if err != nil {
+		return fmt.Errorf("stripRocksDbNativeLibs: failed to glob %s: %w", pattern, err)
+	}
+	if len(jars) == 0 {
+		return fmt.Errorf("stripRocksDbNativeLibs: no rocksdbjni jar found matching %s", pattern)
+	}
+	if len(jars) > 1 {
+		log.Warn().Strs("jars", jars).Msg("multiple rocksdbjni jars found; stripping only the first")
+	}
+
+	log.Info().Str("jar", jars[0]).Str("keeping", libName).Msg("stripping unused RocksDB native libs")
+	return rewriteZipKeepingNativeLib(jars[0], libName)
 }
 
 func getJavaArtifactsToken() (string, error) {
@@ -480,6 +634,10 @@ func New(camundaVersion, connectorsVersion string) error {
 	err = downloadAndExtract(camundaFilePath, camundaUrl, "camunda-zeebe-"+camundaVersion, ".", javaArtifactsToken, extractFunc)
 	if err != nil {
 		return fmt.Errorf("Package "+osType+": failed to download camunda %w\n%s", err, debug.Stack())
+	}
+
+	if err := stripRocksDbNativeLibs(camundaVersion, osType, architecture); err != nil {
+		return fmt.Errorf("package %s: failed to strip RocksDB native libs: %w", osType, err)
 	}
 
 	err = downloadAndExtract(connectorsFilePath, connectorsUrl, connectorsFilePath, ".", javaArtifactsToken, func(_, _ string) error { return nil })
