@@ -37,7 +37,7 @@
     di.STATE,
     di.TYPE, /* TODO really save it there? */
     di.EVALUATION_DATE,
-    di.RESULT,
+    coalesce(di.FULL_RESULT, di.RESULT) as RESULT,
     di.EVALUATION_FAILURE,
     di.EVALUATION_FAILURE_MESSAGE,
     di.TENANT_ID,
@@ -243,7 +243,7 @@
                                             TYPE,
                                             STATE,
                                             EVALUATION_DATE,
-                                            RESULT,
+                                            FULL_RESULT,
                                             EVALUATION_FAILURE,
                                             EVALUATION_FAILURE_MESSAGE,
                                             TENANT_ID,
@@ -307,7 +307,7 @@
   <insert id="insertOutput"
     parameterType="io.camunda.db.rdbms.write.domain.DecisionInstanceDbModel">
     INSERT INTO ${prefix}DECISION_INSTANCE_OUTPUT
-    (DECISION_INSTANCE_ID, OUTPUT_ID, OUTPUT_NAME, OUTPUT_VALUE, RULE_ID, RULE_INDEX) VALUES
+    (DECISION_INSTANCE_ID, OUTPUT_ID, OUTPUT_NAME, FULL_OUTPUT_VALUE, RULE_ID, RULE_INDEX) VALUES
     <foreach collection="evaluatedOutputs" item="item" separator=", ">
       (#{decisionInstanceId}, #{item.id}, #{item.name}, #{item.value}, #{item.ruleId},
       #{item.ruleIndex})
@@ -319,7 +319,7 @@
     databaseId="oracle">
     INSERT ALL
     <foreach collection="evaluatedOutputs" item="item">
-      INTO ${prefix}DECISION_INSTANCE_OUTPUT (DECISION_INSTANCE_ID, OUTPUT_ID, OUTPUT_NAME, OUTPUT_VALUE, RULE_ID, RULE_INDEX)
+      INTO ${prefix}DECISION_INSTANCE_OUTPUT (DECISION_INSTANCE_ID, OUTPUT_ID, OUTPUT_NAME, FULL_OUTPUT_VALUE, RULE_ID, RULE_INDEX)
       VALUES (#{decisionInstanceId}, #{item.id}, #{item.name}, #{item.value}, #{item.ruleId}, #{item.ruleIndex})
     </foreach>
     SELECT 1 FROM DUAL
@@ -331,7 +331,7 @@
     DECISION_INSTANCE_ID,
     OUTPUT_ID,
     OUTPUT_NAME,
-    OUTPUT_VALUE,
+    COALESCE(FULL_OUTPUT_VALUE, OUTPUT_VALUE) AS OUTPUT_VALUE,
     RULE_ID,
     RULE_INDEX
     FROM ${prefix}DECISION_INSTANCE_OUTPUT
