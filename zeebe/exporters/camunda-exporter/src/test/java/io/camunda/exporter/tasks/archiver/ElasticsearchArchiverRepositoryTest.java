@@ -32,6 +32,8 @@ import co.elastic.clients.elasticsearch.core.search.TotalHitsRelation;
 import co.elastic.clients.elasticsearch.indices.ElasticsearchIndicesAsyncClient;
 import co.elastic.clients.elasticsearch.indices.GetIndexResponse;
 import co.elastic.clients.json.JsonData;
+import co.elastic.clients.transport.DefaultTransportOptions;
+import co.elastic.clients.transport.TransportOptions;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.ProcessInstanceRetentionMode;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
@@ -48,6 +50,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
@@ -59,6 +62,12 @@ final class ElasticsearchArchiverRepositoryTest extends AbstractArchiverReposito
       LoggerFactory.getLogger(ElasticsearchArchiverRepositoryTest.class);
 
   private final ElasticsearchAsyncClient client = mock(ElasticsearchAsyncClient.class);
+
+  @BeforeEach
+  void setUp() {
+    when(client._transportOptions()).thenReturn(DefaultTransportOptions.EMPTY);
+    when(client.withTransportOptions(any(TransportOptions.class))).thenReturn(client);
+  }
 
   @Test
   void shouldCloseClientOnClose() throws Exception {
