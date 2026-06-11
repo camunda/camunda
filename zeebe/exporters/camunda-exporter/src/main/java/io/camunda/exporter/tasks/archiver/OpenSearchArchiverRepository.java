@@ -270,6 +270,11 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
             });
   }
 
+  @VisibleForTesting
+  void invalidateLifeCycleCache(final String indexName) {
+    lifeCyclePolicyApplied.invalidate(indexName);
+  }
+
   @Override
   public CompletableFuture<Void> setLifeCycleToAllIndexes() {
     final var retention = config.getRetention();
