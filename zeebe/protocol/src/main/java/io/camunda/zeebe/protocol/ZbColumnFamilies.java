@@ -165,6 +165,9 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   MESSAGE_SUBSCRIPTION_BY_NAME_AND_CORRELATION_KEY(74, PARTITION_LOCAL),
   PROCESS_SUBSCRIPTION_BY_KEY(75, PARTITION_LOCAL),
 
+  /**
+   * @deprecated use {@link #JOB_ACTIVATABLE_BY_PRIORITY}; retained drain-only for pre-8.10 jobs
+   */
   @Deprecated
   JOB_ACTIVATABLE(76, PARTITION_LOCAL),
 

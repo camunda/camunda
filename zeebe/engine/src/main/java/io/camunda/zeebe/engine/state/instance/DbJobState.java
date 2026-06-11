@@ -150,7 +150,6 @@ public final class DbJobState implements JobState, MutableJobState {
   @Override
   public void activate(final long key, final JobRecord record) {
     final DirectBuffer type = record.getTypeBuffer();
-    final String tenantId = record.getTenantId();
     final long deadline = record.getDeadline();
 
     validateParameters(type);
@@ -160,7 +159,7 @@ public final class DbJobState implements JobState, MutableJobState {
 
     updateJobState(State.ACTIVATED);
 
-    makeJobNotActivatable(type, tenantId, record.getPriority());
+    makeJobNotActivatable(record);
 
     addJobDeadline(key, deadline);
   }
@@ -195,27 +194,23 @@ public final class DbJobState implements JobState, MutableJobState {
   @Override
   public void disable(final long key, final JobRecord record) {
     updateJob(key, record, State.FAILED);
-    makeJobNotActivatable(record.getTypeBuffer(), record.getTenantId(), record.getPriority());
+    makeJobNotActivatable(record);
   }
 
   @Override
   public void throwError(final long key, final JobRecord updatedValue) {
     updateJob(key, updatedValue, State.ERROR_THROWN);
-    makeJobNotActivatable(
-        updatedValue.getTypeBuffer(), updatedValue.getTenantId(), updatedValue.getPriority());
+    makeJobNotActivatable(updatedValue);
   }
 
   @Override
   public void delete(final long key, final JobRecord record) {
-    final DirectBuffer type = record.getTypeBuffer();
-    final String tenantId = record.getTenantId();
-
     jobKey.wrapLong(key);
     jobsColumnFamily.deleteExisting(jobKey);
 
     statesJobColumnFamily.deleteExisting(fkJob);
 
-    makeJobNotActivatable(type, tenantId, record.getPriority());
+    makeJobNotActivatable(record);
 
     removeJobDeadline(key, record.getDeadline());
     removeJobBackoff(key, record.getRecurringTime());
@@ -227,15 +222,13 @@ public final class DbJobState implements JobState, MutableJobState {
       if (updatedValue.getRetryBackoff() > 0) {
         addJobBackoff(key, updatedValue.getRecurringTime());
         updateJob(key, updatedValue, State.FAILED);
-        makeJobNotActivatable(
-            updatedValue.getTypeBuffer(), updatedValue.getTenantId(), updatedValue.getPriority());
+        makeJobNotActivatable(updatedValue);
       } else {
         updateJob(key, updatedValue, State.ACTIVATABLE);
       }
     } else {
       updateJob(key, updatedValue, State.FAILED);
-      makeJobNotActivatable(
-          updatedValue.getTypeBuffer(), updatedValue.getTenantId(), updatedValue.getPriority());
+      makeJobNotActivatable(updatedValue);
     }
   }
 
@@ -650,15 +643,16 @@ public final class DbJobState implements JobState, MutableJobState {
 
   // makeJobNotActivatable does NOT set jobKey. Callers are responsible for setting it
   // (via jobKey.wrapLong or via updateJobRecord) before calling it.
-  private void makeJobNotActivatable(
-      final DirectBuffer type, final String tenantId, final int priority) {
+  private void makeJobNotActivatable(final JobRecord record) {
+    final DirectBuffer type = record.getTypeBuffer();
+    final String tenantId = record.getTenantId();
     EnsureUtil.ensureNotNullOrEmpty("type", type);
     EnsureUtil.ensureNotNullOrEmpty("tenantid", tenantId);
 
     jobTypeKey.wrapBuffer(type);
     tenantIdKey.wrapString(tenantId);
     // overflow for negative priorities is intentional (see invertedPriorityKey field comment above)
-    invertedPriorityKey.wrapInt(Integer.MAX_VALUE - priority);
+    invertedPriorityKey.wrapInt(Integer.MAX_VALUE - record.getPriority());
     // Requires jobKey to already be set by the caller (directly or via updateJobRecord).
     // This method does not set jobKey because it is not passed as a parameter.
     priorityActivatableColumnFamily.deleteIfExists(tenantAwarePriorityKey);

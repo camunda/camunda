@@ -45,9 +45,11 @@ import org.junit.jupiter.api.Timeout;
  *   <li>When both exist the three-phase order holds: Phase 1 (priority&gt;0) → Phase 2 (legacy) →
  *       Phase 3 (priority≤0)
  *   <li>No job is activated twice (no stale CF entry after activation)
+ *   <li>When a batch is filled by Phase-1 (priority&gt;0) jobs, the legacy Phase-2 jobs are not
+ *       dropped by the phase short-circuit and remain activatable on the next call
  * </ul>
  *
- * <p>All three scenarios share a single Docker container start for the old broker and a single
+ * <p>All scenarios share a single Docker container start for the old broker and a single
  * Spring-broker start for the new version. Isolation is via distinct job types per scenario.
  *
  * <p>Priority assertions use {@link RecordingExporter} on the {@code JOB_BATCH ACTIVATED} record
@@ -66,6 +68,10 @@ final class JobPriorityUpgradeIT {
 
   private static final String NEW_ONLY_TYPE = "upgrade-priority-new-only";
   private static final int NUM_OF_NEW_ONLY_TYPE_JOBS = 3;
+
+  private static final String BOUNDARY_TYPE = "upgrade-priority-boundary";
+  private static final int NUM_OF_BOUNDARY_LEGACY_JOBS = 2;
+  private static final int NUM_OF_BOUNDARY_NEW_JOBS = 1;
 
   private final ContainerState state = new ContainerState();
 
@@ -95,6 +101,10 @@ final class JobPriorityUpgradeIT {
     deployAndCreateInstances(
         MIXED_TYPE + "-legacy", MIXED_TYPE, null, NUM_OF_MIXED_TYPE_LEGACY_JOBS);
     awaitJobsCreated(MIXED_TYPE, NUM_OF_MIXED_TYPE_LEGACY_JOBS);
+
+    deployAndCreateInstances(
+        BOUNDARY_TYPE + "-legacy", BOUNDARY_TYPE, null, NUM_OF_BOUNDARY_LEGACY_JOBS);
+    awaitJobsCreated(BOUNDARY_TYPE, NUM_OF_BOUNDARY_LEGACY_JOBS);
 
     // ── UPGRADE ────────────────────────────────────────────────────────────────────────────────
     // RecordingExporter is reset inside ContainerState when the Spring broker starts.
@@ -131,6 +141,12 @@ final class JobPriorityUpgradeIT {
     deployAndCreateInstances(NEW_ONLY_TYPE + "-zero", NEW_ONLY_TYPE, 0, 1);
     deployAndCreateInstances(NEW_ONLY_TYPE + "-neg10", NEW_ONLY_TYPE, -10, 1);
     awaitJobsCreated(NEW_ONLY_TYPE, NUM_OF_NEW_ONLY_TYPE_JOBS);
+
+    // Boundary scenario: 1 new priority>0 job on top of the legacy jobs created pre-upgrade.
+    // Used to verify the phase short-circuit: a batch filled by Phase-1 (priority>0) jobs must not
+    // drop the legacy Phase-2 jobs — they must remain activatable on the next call.
+    deployAndCreateInstances(BOUNDARY_TYPE + "-pos50", BOUNDARY_TYPE, 50, NUM_OF_BOUNDARY_NEW_JOBS);
+    awaitJobsCreated(BOUNDARY_TYPE, NUM_OF_BOUNDARY_LEGACY_JOBS + NUM_OF_BOUNDARY_NEW_JOBS);
   }
 
   @AfterAll
@@ -202,6 +218,33 @@ final class JobPriorityUpgradeIT {
     assertThat(activateJobs(MIXED_TYPE, 10)).isEmpty();
   }
 
+  @Test
+  @Timeout(value = 30, unit = TimeUnit.SECONDS)
+  void shouldServeLegacyJobsInNextBatchWhenHighPriorityFillsBatch() {
+    // given a batch filled by exactly the priority>0 (Phase 1) jobs
+    final var firstBatch = activateJobs(BOUNDARY_TYPE, NUM_OF_BOUNDARY_NEW_JOBS);
+
+    // then only the new priority-50 job is returned
+    assertThat(firstBatch).hasSize(NUM_OF_BOUNDARY_NEW_JOBS);
+    assertThat(activatedBatch(BOUNDARY_TYPE).getJobs())
+        .extracting(JobRecordValue::getPriority)
+        .containsExactly(50);
+
+    // when activating again
+    final var secondBatch = activateJobs(BOUNDARY_TYPE, 10);
+
+    // then the legacy (Phase 2) jobs were not dropped by the short-circuit; they are served next,
+    // in job-key-ascending order
+    assertThat(secondBatch).hasSize(NUM_OF_BOUNDARY_LEGACY_JOBS);
+    final var legacyKeys = secondBatch.stream().map(ActivatedJob::getKey).toList();
+    assertThat(legacyKeys).isSorted();
+    // legacy jobs predate the upgrade, so their keys are below the new priority-50 job's key
+    assertThat(legacyKeys.getLast()).isLessThan(firstBatch.getFirst().getKey());
+
+    // and a third activation returns nothing (no stale entry)
+    assertThat(activateJobs(BOUNDARY_TYPE, 10)).isEmpty();
+  }
+
   // ── Helpers ──────────────────────────────────────────────────────────────────────────────────
 
   private void deployAndCreateInstances(
@@ -258,6 +301,7 @@ final class JobPriorityUpgradeIT {
         .newActivateJobsCommand()
         .jobType(jobType)
         .maxJobsToActivate(maxJobs)
+        .requestTimeout(Duration.ofSeconds(2))
         .send()
         .join()
         .getJobs();
