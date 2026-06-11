@@ -92,10 +92,8 @@ jobs:
       build-frontend: true
       load-test-load: --set global.preferRest.enabled=true
 
-  # Warmup buffer before soak starts. Splitting this out as its own job makes
-  # `soak.started_at` (read by the PR load-test workflow's resolve-daily-namespace
-  # step via the GitHub jobs API) line up with the moment warmup ends and steady
-  # measurement begins. Skipped if both setup jobs failed (no tests running).
+  # Warmup buffer; split out so soak.started_at lines up with the post-warmup
+  # instant the PR load-test resolver anchors its comparison window at.
   prepare-soak:
     name: Warmup before soak
     runs-on: ubuntu-latest
@@ -105,11 +103,10 @@ jobs:
     permissions: { }
     steps:
       - name: Warmup sleep
-        run: sleep 900  # 15 min for deploy + producing-load + initial stabilize
+        run: sleep 900  # 15 min
 
-  # Wait 3 hours to let both load tests reach a stable operating state before
-  # taking the metrics snapshot. `soak.started_at` is consumed by the PR load
-  # test as the post-warmup anchor — do not collapse this back into prepare-soak.
+  # 3-hour soak. soak.started_at is read by the PR load-test resolver — do not
+  # merge back into prepare-soak.
   soak:
     name: Soak (3 hours)
     runs-on: ubuntu-latest

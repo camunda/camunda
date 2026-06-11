@@ -107,16 +107,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      # Warmup window: pod scheduling + image pull + clients connecting to the
-      # gateway + JIT / RocksDB cache settling. Metrics collected before this
-      # has elapsed are dominated by zero-traffic samples and ramp-up spikes,
-      # which skews backpressure / latency / completion ratio downward.
+      # Warmup before metrics start, then the 30-min window get-pr-metrics queries.
       - name: Warmup sleep
         run: sleep 900  # 15 minutes
-      # Metrics window: the 30 min that follows the warmup is what get-pr-metrics
-      # will query via `[1800s] @ now`. Keeping this as an explicit sleep here
-      # (rather than baking it into get-pr-metrics) makes the window source of
-      # truth obvious and keeps it identical to the daily-side anchor.
       - name: Accumulate metrics window
         run: sleep 1800  # 30 minutes
       - name: Observe build status
@@ -185,11 +178,7 @@ jobs:
     secrets: inherit
     with:
       namespace: ${{ needs.resolve-daily-namespace.outputs.daily-namespace }}
-      # First 30 min of the daily soak *after* its 15-min warmup. Anchor was
-      # computed in resolve-daily-namespace as soak.started_at + 1800s, so
-      # PromQL [1800s] @ at evaluates samples in [soak_start, soak_start +
-      # 1800s]. Matches PR's own post-warmup window so the comparison stays
-      # apples-to-apples.
+      # First 30 min of daily soak after its 15-min warmup (anchor = soak.started_at + 1800s).
       duration-seconds: '1800'
       at: ${{ needs.resolve-daily-namespace.outputs.daily-at }}
 
