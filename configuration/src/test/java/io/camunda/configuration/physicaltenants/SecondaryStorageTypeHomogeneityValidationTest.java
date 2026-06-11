@@ -13,9 +13,13 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.UnifiedConfigurationException;
+import io.camunda.configuration.UnifiedConfigurationHelper;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.mock.env.MockEnvironment;
 
 /**
  * Unit tests for the {@link SecondaryStorageTypeHomogeneityValidation} cross-tenant rule: all
@@ -30,6 +34,16 @@ class SecondaryStorageTypeHomogeneityValidationTest {
 
   private final SecondaryStorageTypeHomogeneityValidation validation =
       new SecondaryStorageTypeHomogeneityValidation();
+
+  @BeforeEach
+  void setUp() {
+    UnifiedConfigurationHelper.setCustomEnvironment(new MockEnvironment());
+  }
+
+  @AfterEach
+  void tearDown() {
+    UnifiedConfigurationHelper.setCustomEnvironment(null);
+  }
 
   @Test
   void shouldPassWhenAllTenantsUseElasticsearch() {
