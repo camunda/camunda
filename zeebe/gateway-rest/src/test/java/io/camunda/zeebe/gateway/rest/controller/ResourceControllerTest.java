@@ -582,7 +582,15 @@ public class ResourceControllerTest extends RestControllerTest {
         .thenReturn(
             CompletableFuture.completedFuture(
                 new DeployedResourceEntity(
-                    1L, "test", "test.rpa", "rpa", 1, null, 100L, "tenant", content)));
+                    1L,
+                    "test",
+                    "test.rpa",
+                    "rpa",
+                    1,
+                    null,
+                    100L,
+                    "tenant",
+                    content.getBytes(StandardCharsets.UTF_8))));
 
     // when / then
     webClient
@@ -610,7 +618,15 @@ public class ResourceControllerTest extends RestControllerTest {
         .thenReturn(
             CompletableFuture.completedFuture(
                 new DeployedResourceEntity(
-                    1L, "test", "test.rpa", "rpa", 1, null, 100L, "tenant", content)));
+                    1L,
+                    "test",
+                    "test.rpa",
+                    "rpa",
+                    1,
+                    null,
+                    100L,
+                    "tenant",
+                    content.getBytes(StandardCharsets.UTF_8))));
 
     // when / then
     webClient

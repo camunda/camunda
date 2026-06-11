@@ -46,6 +46,7 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequiremen
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentDistributionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceReexportRecord;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
@@ -129,6 +130,7 @@ import io.camunda.zeebe.test.util.JsonUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -4693,6 +4695,59 @@ final class JsonSerializableToJsonTest {
         {
           "resourceKey": -1,
           "tenantId": ""
+        }
+        """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////// ResourceRecord //////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "ResourceRecord",
+        (Supplier<UnifiedRecordValue>)
+            () -> {
+              final ResourceRecord record = new ResourceRecord();
+              record
+                  .setResourceId("my-resource")
+                  .setResourceName("my-resource.jpg")
+                  .setResourceKey(123L)
+                  .setVersion(1)
+                  .setVersionTag("v1.0")
+                  .setDeploymentKey(456L)
+                  .setTenantId("<default>")
+                  .setChecksum(wrapString("checksum"))
+                  .setResource(wrapArray("content".getBytes(StandardCharsets.UTF_8)));
+              return record;
+            },
+        """
+        {
+          "resourceProp": "content",
+          "resourceId": "my-resource",
+          "resourceKey": 123,
+          "tenantId": "<default>",
+          "deploymentKey": 456,
+          "versionTag": "v1.0",
+          "checksum": "Y2hlY2tzdW0=",
+          "resourceName": "my-resource.jpg",
+          "duplicate": false,
+          "version": 1
+        }
+        """
+      },
+      {
+        "Empty ResourceRecord",
+        (Supplier<UnifiedRecordValue>) ResourceRecord::new,
+        """
+        {
+          "resourceProp": "",
+          "resourceId": "",
+          "resourceKey": -1,
+          "tenantId": "<default>",
+          "deploymentKey": -1,
+          "versionTag": "",
+          "checksum": "",
+          "resourceName": "",
+          "duplicate": false,
+          "version": -1
         }
         """
       },

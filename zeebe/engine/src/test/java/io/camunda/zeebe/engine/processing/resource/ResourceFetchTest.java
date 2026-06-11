@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.resource;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.timeout;
@@ -119,6 +120,28 @@ public class ResourceFetchTest {
         .hasVersionTag("")
         .hasDeploymentKey(deployment.getKey())
         .hasChecksum(resourceMetadata.getChecksum());
+  }
+
+  @Test
+  public void shouldFetchBinaryResourceWithExactBytes() {
+    // given - bytes that contain non-UTF-8 sequences (e.g. PNG magic header 0x89)
+    // which would be corrupted if the content goes through a UTF-8 String conversion
+    final var binaryContent = new byte[] {(byte) 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A};
+    final var deployment =
+        engine.deployment().withJsonResource(binaryContent, "image.png").deploy();
+    final var resourceKey = deployment.getValue().getResourceMetadata().getFirst().getResourceKey();
+
+    // when
+    final var record =
+        engine
+            .resourceFetch()
+            .withResourceKey(resourceKey)
+            .withRequestStreamId(10)
+            .withRequestId(123456789L)
+            .fetch();
+
+    // then - raw bytes must survive the engine state round-trip byte-exact
+    assertThat(record.getValue().getResourceBytes()).isEqualTo(binaryContent);
   }
 
   @Test

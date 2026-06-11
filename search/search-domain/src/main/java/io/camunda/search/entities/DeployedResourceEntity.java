@@ -9,6 +9,7 @@ package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.util.ObjectBuilder;
+import java.util.Arrays;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 
@@ -24,7 +25,7 @@ public record DeployedResourceEntity(
     @Nullable String versionTag,
     Long deploymentKey,
     String tenantId,
-    @Nullable String resourceContent)
+    byte @Nullable [] resourceContent)
     implements TenantOwnedEntity {
 
   public DeployedResourceEntity {
@@ -36,6 +37,40 @@ public record DeployedResourceEntity(
     Objects.requireNonNull(tenantId, "tenantId");
   }
 
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+
+    if (!(o instanceof final DeployedResourceEntity that)) {
+      return false;
+    }
+    return Objects.equals(resourceKey, that.resourceKey)
+        && Objects.equals(resourceId, that.resourceId)
+        && Objects.equals(resourceName, that.resourceName)
+        && Objects.equals(resourceType, that.resourceType)
+        && Objects.equals(version, that.version)
+        && Objects.equals(versionTag, that.versionTag)
+        && Objects.equals(deploymentKey, that.deploymentKey)
+        && Objects.equals(tenantId, that.tenantId)
+        && Arrays.equals(resourceContent, that.resourceContent);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        resourceKey,
+        resourceId,
+        resourceName,
+        resourceType,
+        version,
+        versionTag,
+        deploymentKey,
+        tenantId,
+        Arrays.hashCode(resourceContent));
+  }
+
   public static class Builder implements ObjectBuilder<DeployedResourceEntity> {
     private @Nullable Long resourceKey;
     private @Nullable String resourceId;
@@ -45,7 +80,7 @@ public record DeployedResourceEntity(
     private @Nullable String versionTag;
     private @Nullable Long deploymentKey;
     private @Nullable String tenantId;
-    private @Nullable String resourceContent;
+    private byte @Nullable [] resourceContent;
 
     public Builder resourceKey(final Long resourceKey) {
       this.resourceKey = resourceKey;
@@ -87,7 +122,7 @@ public record DeployedResourceEntity(
       return this;
     }
 
-    public Builder resourceContent(final String resourceContent) {
+    public Builder resourceContent(final byte @Nullable [] resourceContent) {
       this.resourceContent = resourceContent;
       return this;
     }

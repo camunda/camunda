@@ -87,7 +87,7 @@ public class ResourceReexportReexportProcessor
             .setTenantId(resource.getTenantId())
             .setDeploymentKey(resource.getDeploymentKey())
             .setVersionTag(resource.getVersionTag())
-            .setResource(BufferUtil.wrapString(resource.getResource()));
+            .setResource(resource.getResourceBuffer());
     stateWriter.appendFollowUpEvent(
         resource.getResourceKey(), ResourceIntent.REEXPORTED, resourceRecord);
   }

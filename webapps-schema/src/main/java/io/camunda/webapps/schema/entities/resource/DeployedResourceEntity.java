@@ -9,6 +9,7 @@ package io.camunda.webapps.schema.entities.resource;
 
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.SinceVersion;
+import java.util.Arrays;
 import java.util.Objects;
 
 public final class DeployedResourceEntity implements ExporterEntity<DeployedResourceEntity> {
@@ -41,7 +42,7 @@ public final class DeployedResourceEntity implements ExporterEntity<DeployedReso
   private String tenantId;
 
   @SinceVersion(value = "8.10.0", requireDefault = false)
-  private String resourceContent;
+  private byte[] resourceContent;
 
   @Override
   public String getId() {
@@ -126,11 +127,11 @@ public final class DeployedResourceEntity implements ExporterEntity<DeployedReso
     return this;
   }
 
-  public String getResourceContent() {
+  public byte[] getResourceContent() {
     return resourceContent;
   }
 
-  public DeployedResourceEntity setResourceContent(final String resourceContent) {
+  public DeployedResourceEntity setResourceContent(final byte[] resourceContent) {
     this.resourceContent = resourceContent;
     return this;
   }
@@ -147,7 +148,7 @@ public final class DeployedResourceEntity implements ExporterEntity<DeployedReso
         versionTag,
         deploymentKey,
         tenantId,
-        resourceContent);
+        Arrays.hashCode(resourceContent));
   }
 
   @Override
@@ -165,7 +166,7 @@ public final class DeployedResourceEntity implements ExporterEntity<DeployedReso
         && Objects.equals(resourceType, that.resourceType)
         && Objects.equals(versionTag, that.versionTag)
         && Objects.equals(tenantId, that.tenantId)
-        && Objects.equals(resourceContent, that.resourceContent);
+        && Arrays.equals(resourceContent, that.resourceContent);
   }
 
   @Override

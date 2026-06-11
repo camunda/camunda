@@ -25,7 +25,7 @@
       <arg column="DEPLOYMENT_KEY" javaType="java.lang.Long"/>
       <arg column="TENANT_ID" javaType="java.lang.String"
         typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
-      <arg column="RESOURCE_CONTENT" javaType="java.lang.String"/>
+      <arg column="RESOURCE_CONTENT" javaType="[B" jdbcType="BLOB"/>
     </constructor>
   </resultMap>
 

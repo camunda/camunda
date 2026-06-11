@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.ImmutableResource;
 import io.camunda.zeebe.protocol.record.value.deployment.Resource;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -117,7 +118,7 @@ class ResourceExportHandlerTest {
     assertThat(model.versionTag()).isEqualTo("v3");
     assertThat(model.deploymentKey()).isEqualTo(100L);
     assertThat(model.tenantId()).isEqualTo("tenant-1");
-    assertThat(model.resourceContent()).isEqualTo("rpa-content");
+    assertThat(model.resourceContent()).isEqualTo("rpa-content".getBytes(StandardCharsets.UTF_8));
 
     verifyNoMoreInteractions(writer);
   }
@@ -155,7 +156,7 @@ class ResourceExportHandlerTest {
     assertThat(model.versionTag()).isEqualTo("v3");
     assertThat(model.deploymentKey()).isEqualTo(100L);
     assertThat(model.tenantId()).isEqualTo("tenant-1");
-    assertThat(model.resourceContent()).isEqualTo("rpa-content");
+    assertThat(model.resourceContent()).isEqualTo("rpa-content".getBytes(StandardCharsets.UTF_8));
 
     verifyNoMoreInteractions(writer);
   }

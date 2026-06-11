@@ -30,8 +30,7 @@
         "type": "keyword"
       },
       "resourceContent": {
-        "type": "text",
-        "index": false
+        "type": "binary"
       }
     }
   }

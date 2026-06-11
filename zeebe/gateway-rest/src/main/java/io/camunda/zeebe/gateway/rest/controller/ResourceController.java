@@ -118,7 +118,7 @@ public class ResourceController {
         entity ->
             ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                .body(ResponseMapper.toGetResourceContentResponse(entity)));
+                .body(ResponseMapper.toGetResourceContentBinaryResponse(entity)));
   }
 
   @RequiresSecondaryStorage

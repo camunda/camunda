@@ -58,7 +58,7 @@ public class PersistedResource extends UnpackedObject
     copy.tenantIdProp.setValue(getTenantId());
     copy.deploymentKeyProp.setValue(getDeploymentKey());
     copy.versionTagProp.setValue(getVersionTag());
-    copy.resourceProp.setValue(getResource());
+    copy.resourceProp.setValue(BufferUtil.cloneBuffer(resourceProp.getValue()));
     return copy;
   }
 
@@ -94,8 +94,8 @@ public class PersistedResource extends UnpackedObject
     return deploymentKeyProp.getValue();
   }
 
-  public String getResource() {
-    return bufferAsString(resourceProp.getValue());
+  public DirectBuffer getResourceBuffer() {
+    return resourceProp.getValue();
   }
 
   @Override
@@ -108,7 +108,7 @@ public class PersistedResource extends UnpackedObject
     tenantIdProp.setValue(record.getTenantId());
     deploymentKeyProp.setValue(record.getDeploymentKey());
     versionTagProp.setValue(record.getVersionTag());
-    resourceProp.setValue(record.getResourceProp());
+    resourceProp.setValue(record.getResourceBuffer());
     return this;
   }
 
