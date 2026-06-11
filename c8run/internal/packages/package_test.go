@@ -327,6 +327,105 @@ func TestRewriteZipKeepingNativeLibErrorsWhenLibNotFound(t *testing.T) {
 	}
 }
 
+func TestStripRocksDbNativeLibsStripsJar(t *testing.T) {
+	// given
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("failed to get working directory: %v", err)
+	}
+	root := t.TempDir()
+	if err := os.Chdir(root); err != nil {
+		t.Fatalf("failed to chdir to temp dir: %v", err)
+	}
+	defer func() {
+		if err := os.Chdir(cwd); err != nil {
+			t.Fatalf("failed to restore working directory: %v", err)
+		}
+	}()
+
+	version := "8.10.0-test"
+	libDir := filepath.Join("camunda-zeebe-"+version, "lib")
+	if err := os.MkdirAll(libDir, 0o755); err != nil {
+		t.Fatalf("failed to create lib dir: %v", err)
+	}
+	jarPath := filepath.Join(libDir, "rocksdbjni-9.0.0.jar")
+	f, err := os.Create(jarPath)
+	if err != nil {
+		t.Fatalf("failed to create test jar: %v", err)
+	}
+	w := zip.NewWriter(f)
+	for _, name := range []string{
+		"META-INF/native/librocksdb-jni-linux64.so",
+		"META-INF/native/librocksdb-jni-linux-aarch64.so",
+		"META-INF/native/librocksdb-jni-osx-arm64.jnilib",
+		"META-INF/native/librocksdb-jni-osx-x86_64.jnilib",
+		"META-INF/native/librocksdb-jni-win64.dll",
+	} {
+		fw, err := w.Create(name)
+		if err != nil {
+			t.Fatalf("failed to create zip entry %s: %v", name, err)
+		}
+		if _, err := fw.Write([]byte("binary")); err != nil {
+			t.Fatalf("failed to write zip entry %s: %v", name, err)
+		}
+	}
+	if err := w.Close(); err != nil {
+		t.Fatalf("failed to close zip writer: %v", err)
+	}
+	if err := f.Close(); err != nil {
+		t.Fatalf("failed to close jar file: %v", err)
+	}
+
+	// when
+	err = stripRocksDbNativeLibs(version, "linux", "x86_64")
+
+	// then
+	if err != nil {
+		t.Fatalf("stripRocksDbNativeLibs returned error: %v", err)
+	}
+
+	r, err := zip.OpenReader(jarPath)
+	if err != nil {
+		t.Fatalf("failed to open stripped jar: %v", err)
+	}
+	defer r.Close()
+
+	var nativeLibs []string
+	for _, entry := range r.File {
+		if strings.HasPrefix(entry.Name, "META-INF/native/") {
+			nativeLibs = append(nativeLibs, entry.Name)
+		}
+	}
+	if len(nativeLibs) != 1 || nativeLibs[0] != "META-INF/native/librocksdb-jni-linux64.so" {
+		t.Fatalf("expected only linux64 native lib after strip, got %v", nativeLibs)
+	}
+}
+
+func TestStripRocksDbNativeLibsErrorsWhenJarMissing(t *testing.T) {
+	// given: empty temp dir — no camunda-zeebe dir, no jar
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("failed to get working directory: %v", err)
+	}
+	root := t.TempDir()
+	if err := os.Chdir(root); err != nil {
+		t.Fatalf("failed to chdir to temp dir: %v", err)
+	}
+	defer func() {
+		if err := os.Chdir(cwd); err != nil {
+			t.Fatalf("failed to restore working directory: %v", err)
+		}
+	}()
+
+	// when
+	err = stripRocksDbNativeLibs("8.10.0-test", "linux", "x86_64")
+
+	// then
+	if err == nil {
+		t.Fatal("expected error when rocksdbjni jar not found, got nil")
+	}
+}
+
 func TestMaterializeSymlinksReplacesSymlinkWithRegularFile(t *testing.T) {
 	// given
 	root := t.TempDir()

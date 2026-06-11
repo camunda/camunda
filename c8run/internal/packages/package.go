@@ -276,6 +276,25 @@ func rewriteZipKeepingNativeLib(jarPath, libName string) error {
 	return nil
 }
 
+func stripRocksDbNativeLibs(camundaVersion, osType, arch string) error {
+	libName, err := rocksdbNativeLibName(osType, arch)
+	if err != nil {
+		return fmt.Errorf("stripRocksDbNativeLibs: %w", err)
+	}
+
+	pattern := filepath.Join("camunda-zeebe-"+camundaVersion, "lib", "rocksdbjni-*.jar")
+	jars, err := filepath.Glob(pattern)
+	if err != nil {
+		return fmt.Errorf("stripRocksDbNativeLibs: failed to glob %s: %w", pattern, err)
+	}
+	if len(jars) == 0 {
+		return fmt.Errorf("stripRocksDbNativeLibs: no rocksdbjni jar found matching %s", pattern)
+	}
+
+	log.Info().Str("jar", jars[0]).Str("keeping", libName).Msg("stripping unused RocksDB native libs")
+	return rewriteZipKeepingNativeLib(jars[0], libName)
+}
+
 func getJavaArtifactsToken() (string, error) {
 	javaArtifactsUser := os.Getenv("JAVA_ARTIFACTS_USER")
 	javaArtifactsPassword := os.Getenv("JAVA_ARTIFACTS_PASSWORD")
@@ -591,6 +610,10 @@ func New(camundaVersion, connectorsVersion string) error {
 	err = downloadAndExtract(camundaFilePath, camundaUrl, "camunda-zeebe-"+camundaVersion, ".", javaArtifactsToken, extractFunc)
 	if err != nil {
 		return fmt.Errorf("Package "+osType+": failed to download camunda %w\n%s", err, debug.Stack())
+	}
+
+	if err := stripRocksDbNativeLibs(camundaVersion, osType, architecture); err != nil {
+		return fmt.Errorf("Package %s: failed to strip RocksDB native libs: %w", osType, err)
 	}
 
 	err = downloadAndExtract(connectorsFilePath, connectorsUrl, connectorsFilePath, ".", javaArtifactsToken, func(_, _ string) error { return nil })
