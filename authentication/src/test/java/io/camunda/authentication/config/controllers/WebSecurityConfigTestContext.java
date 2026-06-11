@@ -13,6 +13,8 @@ import io.camunda.authentication.converter.CamundaAuthenticationDelegatingConver
 import io.camunda.authentication.handler.AuthFailureHandler;
 import io.camunda.authentication.holder.CamundaAuthenticationDelegatingHolder;
 import io.camunda.authentication.holder.HttpSessionBasedAuthenticationHolder;
+import io.camunda.authentication.service.MembershipService;
+import io.camunda.authentication.service.NoDBMembershipService;
 import io.camunda.search.clients.auth.DisabledResourceAccessProvider;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationConverter;
@@ -22,6 +24,7 @@ import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.reader.ResourceAccessProvider;
 import io.camunda.service.ApiServicesExecutorProvider;
 import io.camunda.service.GroupServices;
+import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
 import jakarta.servlet.http.HttpServletRequest;
@@ -86,6 +89,20 @@ public class WebSecurityConfigTestContext {
   @Bean
   public TenantServices createTenantServices(final ApiServicesExecutorProvider executorProvider) {
     return new TenantServices(null, null, null, executorProvider, null);
+  }
+
+  @Bean
+  public MappingRuleServices createMappingRuleServices(
+      final ApiServicesExecutorProvider executorProvider) {
+    return new MappingRuleServices(null, null, null, executorProvider, null);
+  }
+
+  // Fallback MembershipService for tests that don't auto-discover the real @Service via
+  // ComponentScan. The real DefaultMembershipService (@Primary) wins when it is in scope.
+  @Bean
+  public MembershipService fallbackMembershipService(
+      final SecurityConfiguration securityConfiguration) {
+    return new NoDBMembershipService(securityConfiguration);
   }
 
   @Bean

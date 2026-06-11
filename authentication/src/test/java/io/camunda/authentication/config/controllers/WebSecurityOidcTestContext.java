@@ -7,34 +7,12 @@
  */
 package io.camunda.authentication.config.controllers;
 
-import io.camunda.authentication.service.DefaultMembershipService;
-import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.service.ApiServicesExecutorProvider;
-import io.camunda.service.GroupServices;
-import io.camunda.service.MappingRuleServices;
-import io.camunda.service.RoleServices;
-import io.camunda.service.TenantServices;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-/** Additional dependency beans for the OIDC setup */
+/**
+ * Marker context for OIDC-specific test setup. The shared beans (RoleServices, GroupServices,
+ * TenantServices, MappingRuleServices, fallback MembershipService) are provided by {@link
+ * WebSecurityConfigTestContext}; OIDC tests load both contexts.
+ */
 @Configuration
-public class WebSecurityOidcTestContext {
-
-  @Bean
-  public MappingRuleServices createMappingRuleServices(
-      final ApiServicesExecutorProvider executorProvider) {
-    return new MappingRuleServices(null, null, null, executorProvider, null);
-  }
-
-  @Bean
-  public DefaultMembershipService createMembershipService(
-      final MappingRuleServices mappingRuleServices,
-      final TenantServices tenantServices,
-      final RoleServices roleServices,
-      final GroupServices groupServices,
-      final SecurityConfiguration securityConfiguration) {
-    return new DefaultMembershipService(
-        mappingRuleServices, tenantServices, roleServices, groupServices, securityConfiguration);
-  }
-}
+public class WebSecurityOidcTestContext {}
