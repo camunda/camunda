@@ -70,7 +70,7 @@ const CollapsiblePanel: React.FC = () => {
 		<Layer className={styles.floatingContainer}>
 			<nav className={cn(styles.base, styles.expandedContainer)} id="task-nav-bar" aria-labelledby="filters-title">
 				<div className={styles.panelHeader}>
-					<h1 id="filters-title">{t('taskFilterPanelTitle')}</h1>
+					<h2 id="filters-title">{t('taskFilterPanelTitle')}</h2>
 					<Button
 						hasIconOnly
 						renderIcon={SidePanelClose}

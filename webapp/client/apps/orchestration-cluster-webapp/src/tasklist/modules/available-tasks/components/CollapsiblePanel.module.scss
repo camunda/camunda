@@ -55,8 +55,8 @@
 	border-bottom: 1px solid var(--cds-border-subtle);
 	box-sizing: border-box;
 
-	h1 {
-		@include type.type-style('heading-01');
+	h2 {
+		@include type.type-style('heading-02');
 		color: var(--cds-text-primary);
 	}
 }
