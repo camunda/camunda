@@ -51,7 +51,15 @@ const DimmableResults = styled.div<{$dimmed: boolean}>`
 `;
 
 const FilterSwitcherContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--cds-spacing-04);
   padding: var(--cds-spacing-05) var(--cds-spacing-05) 0;
+`;
+
+const VariablesSearch = styled.div`
+  width: 100%;
 `;
 
 const FilterSwitcher = styled.div`
@@ -102,4 +110,5 @@ export {
   FilterSwitcherContainer,
   FilterSwitcher,
   FilterSwitcherButton,
+  VariablesSearch,
 };

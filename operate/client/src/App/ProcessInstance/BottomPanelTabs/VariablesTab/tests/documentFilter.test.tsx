@@ -14,6 +14,7 @@ import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinit
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 import {getWrapper, mockProcessInstance} from './mocks';
+import {modificationsStore} from 'modules/stores/modifications';
 import {mockServer} from 'modules/mock-server/node';
 import {http, HttpResponse} from 'msw';
 import type {DocumentReference} from '@camunda/camunda-api-zod-schemas/8.10';
@@ -166,5 +167,18 @@ describe('VariablesTab - document filter', () => {
     ).toBeInTheDocument();
     expect(screen.queryByText('nestedDecoy')).not.toBeInTheDocument();
     expect(screen.queryByText('stringDecoy')).not.toBeInTheDocument();
+  });
+
+  it('should hide the document filter in modification mode', async () => {
+    modificationsStore.enableModificationMode();
+
+    render(<VariablesTab />, {wrapper: getWrapper()});
+
+    expect(await screen.findByText('regularVar')).toBeInTheDocument();
+
+    expect(
+      screen.queryByRole('button', {name: 'Documents'}),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', {name: 'All'})).not.toBeInTheDocument();
   });
 });

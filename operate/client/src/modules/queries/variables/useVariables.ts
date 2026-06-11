@@ -21,6 +21,7 @@ function useVariables(options?: {
   refetchInterval?: number | false;
   documentsOnly?: boolean;
   keepPreviousResults?: boolean;
+  searchTerm?: string;
 }) {
   const {processInstanceId = ''} = useProcessInstancePageParams();
   const scopeKey = useVariableScopeKey();
@@ -28,13 +29,20 @@ function useVariables(options?: {
     refetchInterval = false,
     documentsOnly = false,
     keepPreviousResults = false,
+    searchTerm,
   } = options ?? {};
   const valueFilter = documentsOnly ? DOCUMENT_VALUE_FILTER : undefined;
+  const trimmedSearchTerm = searchTerm?.trim();
+  const nameFilter =
+    trimmedSearchTerm !== undefined && trimmedSearchTerm !== ''
+      ? `*${trimmedSearchTerm}*`
+      : undefined;
   const result = useInfiniteQuery({
     queryKey: queryKeys.variables.searchWithFilter({
       processInstanceKey: processInstanceId,
       scopeKey,
       value: valueFilter,
+      name: nameFilter,
     }),
     queryFn: async ({pageParam = 0}) => {
       const {response, error} = await searchVariables({
@@ -42,6 +50,7 @@ function useVariables(options?: {
           processInstanceKey: {$eq: processInstanceId},
           scopeKey: {$eq: scopeKey ?? undefined},
           value: valueFilter !== undefined ? {$like: valueFilter} : undefined,
+          name: nameFilter !== undefined ? {$like: nameFilter} : undefined,
         },
         page: {
           from: pageParam,
