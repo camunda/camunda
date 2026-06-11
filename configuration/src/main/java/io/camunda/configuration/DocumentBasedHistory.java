@@ -26,7 +26,7 @@ public class DocumentBasedHistory {
   private static final String DEFAULT_HISTORY_ROLLOVER_INTERVAL = "1d";
   private static final int DEFAULT_HISTORY_ROLLOVER_BATCH_SIZE = 100;
   private static final int DEFAULT_HISTORY_REINDEX_BATCH_SIZE = 2500;
-  private static final int DEFAULT_HISTORY_ARCHIVE_BY_ID_MAX_RETRY_ATTEMPTS = 3;
+  private static final int DEFAULT_HISTORY_ARCHIVE_BY_ID_MAX_RETRY_ATTEMPTS = 2;
   private static final int DEFAULT_HISTORY_ARCHIVE_BY_ID_RETRY_DELAY_MS = 1000;
   private static final String DEFAULT_HISTORY_WAIT_PERIOD_BEFORE_ARCHIVING = "1h";
   private static final Map<String, String> LEGACY_BROKER_PROPERTIES =
