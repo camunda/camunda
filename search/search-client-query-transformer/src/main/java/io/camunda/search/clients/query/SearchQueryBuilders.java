@@ -32,6 +32,14 @@ import java.util.stream.Collectors;
 public final class SearchQueryBuilders {
 
   public static final String DATE_TIME_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSSZZ";
+
+  /**
+   * Both Elasticsearch and OpenSearch reject terms queries with more than {@code
+   * index.max_terms_count} (default 65536) values. Larger value sets are split into multiple terms
+   * queries combined with OR, which is semantically identical.
+   */
+  static final int MAX_TERMS_COUNT = 65_536;
+
   private static final DateTimeFormatter DATE_TIME_FORMATTER =
       DateTimeFormatter.ofPattern(DATE_TIME_FORMAT);
 
@@ -323,8 +331,16 @@ public final class SearchQueryBuilders {
       return null;
     } else if (fieldValues.size() == 1) {
       return term(field, fieldValues.getFirst());
-    } else {
+    } else if (fieldValues.size() <= MAX_TERMS_COUNT) {
       return SearchTermsQuery.of(q -> q.field(field).longTerms(fieldValues)).toSearchQuery();
+    } else {
+      final var chunks = new ArrayList<SearchQuery>();
+      for (int from = 0; from < fieldValues.size(); from += MAX_TERMS_COUNT) {
+        final var chunk =
+            fieldValues.subList(from, Math.min(from + MAX_TERMS_COUNT, fieldValues.size()));
+        chunks.add(SearchTermsQuery.of(q -> q.field(field).longTerms(chunk)).toSearchQuery());
+      }
+      return or(chunks);
     }
   }
 
