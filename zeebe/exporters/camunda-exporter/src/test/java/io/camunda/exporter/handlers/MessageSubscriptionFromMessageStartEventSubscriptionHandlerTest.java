@@ -39,6 +39,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
 
 final class MessageSubscriptionFromMessageStartEventSubscriptionHandlerTest {
@@ -86,10 +87,7 @@ final class MessageSubscriptionFromMessageStartEventSubscriptionHandlerTest {
   }
 
   @ParameterizedTest
-  @EnumSource(
-      value = MessageStartEventSubscriptionIntent.class,
-      names = {"CORRELATED"},
-      mode = EnumSource.Mode.EXCLUDE)
+  @EnumSource(MessageStartEventSubscriptionIntent.class)
   void shouldNotHandleRecordFromNonDeploymentPartition(final Intent intent) {
     // given — any partition other than the deployment partition
     final int nonDeploymentPartition = Protocol.DEPLOYMENT_PARTITION + 1;
@@ -102,28 +100,16 @@ final class MessageSubscriptionFromMessageStartEventSubscriptionHandlerTest {
     assertThat(underTest.handlesRecord(record)).isFalse();
   }
 
-  @Test
-  void shouldNotHandleCorrelatedIntentOnDeploymentPartition() {
+  @ParameterizedTest
+  @ValueSource(ints = {Protocol.DEPLOYMENT_PARTITION, Protocol.DEPLOYMENT_PARTITION + 1})
+  void shouldNotHandleCorrelatedIntentOnAnyPartition(final int partitionId) {
     // given
     final Record<MessageStartEventSubscriptionRecordValue> record =
         factory.generateRecord(
             ValueType.MESSAGE_START_EVENT_SUBSCRIPTION,
             r ->
                 r.withIntent(MessageStartEventSubscriptionIntent.CORRELATED)
-                    .withPartitionId(Protocol.DEPLOYMENT_PARTITION));
-    // when - then
-    assertThat(underTest.handlesRecord(record)).isFalse();
-  }
-
-  @Test
-  void shouldNotHandleCorrelatedIntentOnNonDeploymentPartition() {
-    // given
-    final Record<MessageStartEventSubscriptionRecordValue> record =
-        factory.generateRecord(
-            ValueType.MESSAGE_START_EVENT_SUBSCRIPTION,
-            r ->
-                r.withIntent(MessageStartEventSubscriptionIntent.CORRELATED)
-                    .withPartitionId(Protocol.DEPLOYMENT_PARTITION + 1));
+                    .withPartitionId(partitionId));
     // when - then
     assertThat(underTest.handlesRecord(record)).isFalse();
   }

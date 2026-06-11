@@ -40,6 +40,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 
 final class MessageSubscriptionFromMessageStartEventSubscriptionExportHandlerTest {
@@ -72,10 +73,7 @@ final class MessageSubscriptionFromMessageStartEventSubscriptionExportHandlerTes
   }
 
   @ParameterizedTest
-  @EnumSource(
-      value = MessageStartEventSubscriptionIntent.class,
-      names = {"CORRELATED"},
-      mode = EnumSource.Mode.EXCLUDE)
+  @EnumSource(MessageStartEventSubscriptionIntent.class)
   void shouldNotExportForNonDeploymentPartition(final Intent intent) {
     // given — any partition other than the deployment partition
     final int nonDeploymentPartition = Protocol.DEPLOYMENT_PARTITION + 1;
@@ -85,6 +83,21 @@ final class MessageSubscriptionFromMessageStartEventSubscriptionExportHandlerTes
             b -> b.withIntent(intent).withPartitionId(nonDeploymentPartition));
 
     // when / then
+    assertThat(underTest.canExport(record)).isFalse();
+  }
+
+  @ParameterizedTest
+  @ValueSource(ints = {Protocol.DEPLOYMENT_PARTITION, Protocol.DEPLOYMENT_PARTITION + 1})
+  void shouldNotHandleCorrelatedIntentOnAnyPartition(final int partitionId) {
+    // given
+    final Record<MessageStartEventSubscriptionRecordValue> record =
+        factory.generateRecord(
+            ValueType.MESSAGE_START_EVENT_SUBSCRIPTION,
+            r ->
+                r.withIntent(MessageStartEventSubscriptionIntent.CORRELATED)
+                    .withPartitionId(partitionId));
+
+    // when - then
     assertThat(underTest.canExport(record)).isFalse();
   }
 
