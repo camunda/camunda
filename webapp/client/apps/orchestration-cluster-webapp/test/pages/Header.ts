@@ -7,14 +7,17 @@
  */
 
 import {type Page} from '@playwright/test';
+import {Notifications} from './Notifications';
 import {View} from './BasePage';
 
 class Header extends View {
 	private brandingName: string | undefined;
+	readonly notifications: Notifications;
 
 	constructor(page: Page, brandingName?: string) {
 		super(page);
 		this.brandingName = brandingName;
+		this.notifications = new Notifications(page);
 	}
 
 	get branding() {

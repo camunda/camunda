@@ -357,6 +357,7 @@
 		"variableEditorOpenJsonLabel": "Abrir editor de código JSON",
 		"variableEditorNamePlaceholder": "Nombre",
 		"sessionWatcherExpiredTitle": "Sesión expirada",
+		"networkStatusOfflineTitle": "Conexión a internet perdida",
 		"languageSelectorLabel": "Elige un idioma",
 		"languageSelectorTitle": "Idioma",
 		"relativeDateJustNow": "Justo ahora",
