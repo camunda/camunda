@@ -35,8 +35,8 @@ Without these, `libjvm.dylib` crashes with `EXC_BREAKPOINT` during `Threads::cre
 Apple Silicon (see [#54877](https://github.com/camunda/camunda/issues/54877)).
 
 The script applies these entitlements to any Mach-O binary whose path contains a directory name
-listed in `JRE_PATH_PATTERNS` (currently `jre`, `jdk`, `runtime`). **To bundle an additional JRE
-or JDK under a different directory name, add that name to `JRE_PATH_PATTERNS`** — signing,
+listed in `JRE_DIR_NAMES` (currently `jre`, `jdk`, `runtime`). **To bundle an additional JRE
+or JDK under a different directory name, add that name to `JRE_DIR_NAMES`** — signing,
 entitlement verification, and the JVM smoke test all derive their scope from that single array.
 
 ### Post-signing verification (Step C.5)
@@ -46,14 +46,14 @@ Before submitting to Apple Notary, the script verifies the entire signed tree:
 1. **Signature check** — `codesign --verify --strict` on every Mach-O file and
    `codesign --verify --deep --strict` on every `.app` bundle. Any unsigned or
    invalidly signed binary fails the release.
-2. **JIT entitlement check** — every Mach-O under a `JRE_PATH_PATTERNS` directory is
+2. **JIT entitlement check** — every Mach-O under a `JRE_DIR_NAMES` directory is
    additionally checked for `allow-jit`. A missing entitlement fails the release before
    Apple sees the artifact.
 
 ### Post-notarization smoke test (Step G)
 
 After notarization and re-injection of excluded items, the script finds every `bin/java`
-executable under any `JRE_PATH_PATTERNS` directory in the re-packaged tree and runs
+executable under any `JRE_DIR_NAMES` directory in the re-packaged tree and runs
 `java -version`. A crash at this point (e.g. a newly added JRE binary missing entitlements)
 fails the release before upload.
 
