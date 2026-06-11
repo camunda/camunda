@@ -6,8 +6,8 @@ usage() {
 Usage: verify-test.sh <namespace> [pod_timeout_seconds] [pod_ready_retries] [connectivity_timeout_seconds] [metrics_port]
 Arguments:
   namespace: Kubernetes namespace where the load test is deployed
-  pod_timeout_seconds: (optional) Timeout for waiting for pods to be ready in seconds (default: 800)
-  pod_ready_retries: (optional) Number of retries for waiting for pods to be ready (default: 3)
+  pod_timeout_seconds: (optional) Timeout for waiting for pods to be ready in seconds (default: 60)
+  pod_ready_retries: (optional) Number of retries for waiting for pods to be ready (default: 40)
   connectivity_timeout_seconds: (optional) Timeout for waiting for client connectivity in seconds (default: 1800)
   metrics_port: (optional) Port on which the client exposes metrics (default: 9600)
 EOF
@@ -26,8 +26,8 @@ if [ -z "$1" ]; then
 fi
 
 NAMESPACE=$1
-POD_TIMEOUT=${2:-800}
-POD_READY_RETRIES=${3:-3}
+POD_TIMEOUT=${2:-60}
+POD_READY_RETRIES=${3:-40}
 CONNECTIVITY_TIMEOUT=${4:-1800}
 METRICS_PORT=${5:-9600}
 GITHUB_OUTPUT="${GITHUB_OUTPUT:-/dev/stdout}"
