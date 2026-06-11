@@ -24,7 +24,61 @@ import {useErrorHandling} from 'hooks';
 import {track} from 'tracking';
 import {t} from 'translation';
 
+import KpiDeltaBadge from './KpiDeltaBadge';
+
 import './OptimizeReportTile.scss';
+
+const UNIT_TO_MS = {
+  seconds: 1000,
+  minutes: 60 * 1000,
+  hours: 60 * 60 * 1000,
+  days: 24 * 60 * 60 * 1000,
+  weeks: 7 * 24 * 60 * 60 * 1000,
+  months: 30.44 * 24 * 60 * 60 * 1000,
+  quarters: 91.31 * 24 * 60 * 60 * 1000,
+  years: 365.25 * 24 * 60 * 60 * 1000,
+};
+
+function buildPriorPeriodFilter(filter) {
+  if (!filter) {
+    return filter;
+  }
+  const rollingDateFilter = filter.find(
+    (f) => f.type === 'instanceEndDate' && f.data?.type === 'rolling'
+  );
+  if (!rollingDateFilter) {
+    return filter;
+  }
+  const {value, unit} = rollingDateFilter.data.start;
+  const periodMs = value * (UNIT_TO_MS[unit] ?? UNIT_TO_MS.days);
+  const now = Date.now();
+  const priorEnd = new Date(now - periodMs).toISOString();
+  const priorStart = new Date(now - 2 * periodMs).toISOString();
+  return [
+    ...filter.filter((f) => f.type !== 'instanceEndDate'),
+    {
+      type: 'instanceEndDate',
+      filterLevel: 'instance',
+      data: {
+        type: 'fixed',
+        start: priorStart,
+        end: priorEnd,
+        includeUndefined: false,
+        excludeUndefined: false,
+      },
+    },
+  ];
+}
+
+function propertyToUnit(property) {
+  if (property === 'duration') {
+    return 'ms';
+  }
+  if (property === 'percentage') {
+    return '%';
+  }
+  return '';
+}
 
 export default function OptimizeReportTile({
   tile,
@@ -38,10 +92,13 @@ export default function OptimizeReportTile({
   const [data, setData] = useState();
   const [error, setError] = useState(null);
   const [lastParams, setLastParams] = useState({});
+  const [priorData, setPriorData] = useState(null);
   const {mightFail} = useErrorHandling();
   const history = useHistory();
   const prevTile = useRef(tile);
   const prevFilter = useRef(filter);
+
+  const comparisonPeriod = tile.configuration?.comparisonPeriod;
 
   const loadTileData = useCallback(
     (params) => {
@@ -65,6 +122,18 @@ export default function OptimizeReportTile({
     [mightFail, loadTile, tile, filter]
   );
 
+  const loadPriorPeriodData = useCallback(() => {
+    const priorFilter = buildPriorPeriodFilter(filter);
+    if (!priorFilter) {
+      return;
+    }
+    mightFail(
+      loadTile(tile.id ?? tile.report, priorFilter, {}),
+      (result) => setPriorData(result),
+      () => setPriorData(null)
+    );
+  }, [mightFail, loadTile, tile, filter]);
+
   const loadInitialTile = useCallback(async () => {
     setLoading(true);
     await loadTileData({});
@@ -76,11 +145,17 @@ export default function OptimizeReportTile({
       prevTile.current = tile;
       prevFilter.current = filter;
       loadInitialTile();
+      if (comparisonPeriod) {
+        loadPriorPeriodData();
+      }
     }
-  }, [tile, filter, loadInitialTile]);
+  }, [tile, filter, loadInitialTile, comparisonPeriod, loadPriorPeriodData]);
 
   useEffect(() => {
     loadInitialTile();
+    if (comparisonPeriod) {
+      loadPriorPeriodData();
+    }
     // When we put loadTileData into the dependency array,
     // it causes weird behavior when you click on a tile the first time.
     // For example clicking on copy button will not work with the first click.
@@ -94,7 +169,7 @@ export default function OptimizeReportTile({
   const refreshTile = () => loadTileData(lastParams);
   const tileLink = customizeTileLink(data?.id || tile?.id);
   let tileProps = {
-    className: 'OptimizeReportTile DashboardTile',
+    className: classnames('OptimizeReportTile DashboardTile', {hasComparisonPeriod: comparisonPeriod}),
   };
 
   if (!disableNameLink) {
@@ -150,6 +225,16 @@ export default function OptimizeReportTile({
       <div className="visualization">
         <ReportRenderer error={error} report={data} context="dashboard" loadReport={loadTileData} />
       </div>
+      {comparisonPeriod && data?.result?.measures?.length > 0 && (
+        <div className="deltaBadge">
+          <KpiDeltaBadge
+            currentValue={data.result.measures[0].data}
+            priorValue={priorData?.result?.measures?.[0]?.data ?? null}
+            unit={propertyToUnit(data.result.measures[0].property)}
+            deltaGoodDirection={tile.configuration?.deltaGoodDirection ?? 'up'}
+          />
+        </div>
+      )}
       {children?.({loadTileData: refreshTile})}
     </div>
   );

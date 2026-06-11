@@ -64,6 +64,20 @@
       min-width: 100%;
     }
   }
+
+  .deltaBadge {
+    padding: 4px 8px 8px;
+  }
+
+  // Fixed font-size for KPI tiles with comparison period so the value doesn't
+  // shift when the delta badge renders alongside it.
+  &.hasComparisonPeriod .visualization .Number .container {
+    font-size: 48px;
+
+    .data {
+      font-size: inherit;
+    }
+  }
 }
 
 .Sharing,
