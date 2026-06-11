@@ -7,7 +7,6 @@
  */
 package io.camunda.exporter.analytics;
 
-import static io.camunda.exporter.analytics.AnalyticsAttributes.EVENT_PROCESS_INSTANCE_CREATED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -76,19 +75,22 @@ class AnalyticsExporterTest {
             logRecord -> {
               assertThat(logRecord.getSeverity()).isEqualTo(Severity.INFO);
               assertThat(logRecord.getAttributes().asMap())
-                  .containsEntry(AnalyticsAttributes.EVENT_NAME, EVENT_PROCESS_INSTANCE_CREATED)
-                  .containsEntry(AnalyticsAttributes.BPMN_PROCESS_ID, value.getBpmnProcessId())
-                  .containsEntry(AnalyticsAttributes.PROCESS_VERSION, (long) value.getVersion())
                   .containsEntry(
-                      AnalyticsAttributes.PROCESS_DEFINITION_KEY, value.getProcessDefinitionKey())
-                  .containsEntry(AnalyticsAttributes.PROCESS_INSTANCE_KEY, record.getKey())
+                      AnalyticsAttributes.Event.NAME,
+                      AnalyticsAttributes.Event.PROCESS_INSTANCE_CREATED)
+                  .containsEntry(
+                      AnalyticsAttributes.Process.BPMN_PROCESS_ID, value.getBpmnProcessId())
+                  .containsEntry(AnalyticsAttributes.Process.VERSION, (long) value.getVersion())
+                  .containsEntry(
+                      AnalyticsAttributes.Process.DEFINITION_KEY, value.getProcessDefinitionKey())
+                  .containsEntry(AnalyticsAttributes.Process.INSTANCE_KEY, record.getKey())
                   // Temporarily commented out as root process instance key doesn't exist on 8.8.
                   //                  .containsEntry(
-                  //                      AnalyticsAttributes.ROOT_PROCESS_INSTANCE_KEY,
+                  //                      AnalyticsAttributes.Process.ROOT_INSTANCE_KEY,
                   //                      value.getRootProcessInstanceKey())
-                  .containsEntry(AnalyticsAttributes.TENANT_ID, value.getTenantId())
-                  .containsEntry(AnalyticsAttributes.LOG_POSITION, record.getPosition())
-                  .containsEntry(AnalyticsAttributes.EVENT_SEQUENCE_NUMBER, 1L);
+                  .containsEntry(AnalyticsAttributes.Tenant.ID, value.getTenantId())
+                  .containsEntry(AnalyticsAttributes.Log.POSITION, record.getPosition())
+                  .containsEntry(AnalyticsAttributes.Event.SEQUENCE_NUMBER, 1L);
             });
   }
 
@@ -294,7 +296,7 @@ class AnalyticsExporterTest {
     // then
     assertThat(freshMemoryExporter.getFinishedLogRecordItems())
         .singleElement()
-        .extracting(log -> log.getAttributes().get(AnalyticsAttributes.EVENT_SEQUENCE_NUMBER))
+        .extracting(log -> log.getAttributes().get(AnalyticsAttributes.Event.SEQUENCE_NUMBER))
         .isEqualTo(6L);
   }
 

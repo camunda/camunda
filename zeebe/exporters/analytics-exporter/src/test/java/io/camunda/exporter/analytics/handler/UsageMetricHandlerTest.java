@@ -53,12 +53,12 @@ class UsageMetricHandlerTest {
             logRecord ->
                 assertThat(logRecord.getAttributes().asMap())
                     .containsEntry(
-                        AnalyticsAttributes.EVENT_NAME,
-                        AnalyticsAttributes.EVENT_USAGE_METRIC_EXPORTED)
-                    .containsEntry(AnalyticsAttributes.USAGE_METRIC_EVENT_TYPE, "RPI")
-                    .containsEntry(AnalyticsAttributes.USAGE_METRIC_COUNT, 30L)
-                    .containsEntry(AnalyticsAttributes.USAGE_METRIC_INTERVAL_START, 1000L)
-                    .containsEntry(AnalyticsAttributes.USAGE_METRIC_INTERVAL_END, 2000L));
+                        AnalyticsAttributes.Event.NAME,
+                        AnalyticsAttributes.Event.USAGE_METRIC_EXPORTED)
+                    .containsEntry(AnalyticsAttributes.UsageMetric.EVENT_TYPE, "RPI")
+                    .containsEntry(AnalyticsAttributes.UsageMetric.COUNT, 30L)
+                    .containsEntry(AnalyticsAttributes.UsageMetric.INTERVAL_START, 1000L)
+                    .containsEntry(AnalyticsAttributes.UsageMetric.INTERVAL_END, 2000L));
   }
 
   @Test
@@ -75,8 +75,8 @@ class UsageMetricHandlerTest {
         .satisfies(
             logRecord ->
                 assertThat(logRecord.getAttributes().asMap())
-                    .containsEntry(AnalyticsAttributes.USAGE_METRIC_EVENT_TYPE, "EDI")
-                    .containsEntry(AnalyticsAttributes.USAGE_METRIC_COUNT, 20L));
+                    .containsEntry(AnalyticsAttributes.UsageMetric.EVENT_TYPE, "EDI")
+                    .containsEntry(AnalyticsAttributes.UsageMetric.COUNT, 20L));
   }
 
   @Test
@@ -106,7 +106,7 @@ class UsageMetricHandlerTest {
         .satisfies(
             logRecord ->
                 assertThat(logRecord.getAttributes().asMap())
-                    .containsEntry(AnalyticsAttributes.USAGE_METRIC_COUNT, 3L));
+                    .containsEntry(AnalyticsAttributes.UsageMetric.COUNT, 3L));
   }
 
   @Test

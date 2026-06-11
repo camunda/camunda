@@ -7,12 +7,12 @@
  */
 package io.camunda.exporter.analytics;
 
-import static io.camunda.exporter.analytics.AnalyticsAttributes.EVENT_TIME_MAX;
-import static io.camunda.exporter.analytics.AnalyticsAttributes.EVENT_TIME_MIN;
-import static io.camunda.exporter.analytics.AnalyticsAttributes.LOG_POSITION_END;
-import static io.camunda.exporter.analytics.AnalyticsAttributes.LOG_POSITION_START;
-import static io.camunda.exporter.analytics.AnalyticsAttributes.METRIC_EXPORT_WINDOW;
-import static io.camunda.exporter.analytics.AnalyticsAttributes.METRIC_SEQUENCE_NUMBER;
+import static io.camunda.exporter.analytics.AnalyticsAttributes.Event.TIME_MAX;
+import static io.camunda.exporter.analytics.AnalyticsAttributes.Event.TIME_MIN;
+import static io.camunda.exporter.analytics.AnalyticsAttributes.Log.POSITION_END;
+import static io.camunda.exporter.analytics.AnalyticsAttributes.Log.POSITION_START;
+import static io.camunda.exporter.analytics.AnalyticsAttributes.Metric.EXPORT_WINDOW;
+import static io.camunda.exporter.analytics.AnalyticsAttributes.Metric.SEQUENCE_NUMBER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
@@ -184,7 +184,7 @@ class OtelSdkManagerTest {
               logs.forEach(
                   l ->
                       receivedEventNames.add(
-                          l.getAttributes().get(AnalyticsAttributes.EVENT_NAME)));
+                          l.getAttributes().get(AnalyticsAttributes.Event.NAME)));
               return CompletableResultCode.ofSuccess();
             },
             2048,
@@ -228,11 +228,11 @@ class OtelSdkManagerTest {
 
     // then
     assertThat(received).hasSize(3);
-    assertThat(received.get(0).getAttributes().get(AnalyticsAttributes.EVENT_SEQUENCE_NUMBER))
+    assertThat(received.get(0).getAttributes().get(AnalyticsAttributes.Event.SEQUENCE_NUMBER))
         .isEqualTo(1L);
-    assertThat(received.get(1).getAttributes().get(AnalyticsAttributes.EVENT_SEQUENCE_NUMBER))
+    assertThat(received.get(1).getAttributes().get(AnalyticsAttributes.Event.SEQUENCE_NUMBER))
         .isEqualTo(2L);
-    assertThat(received.get(2).getAttributes().get(AnalyticsAttributes.EVENT_SEQUENCE_NUMBER))
+    assertThat(received.get(2).getAttributes().get(AnalyticsAttributes.Event.SEQUENCE_NUMBER))
         .isEqualTo(3L);
   }
 
@@ -264,7 +264,7 @@ class OtelSdkManagerTest {
     // then — sequence continues from 5, so first event gets 6
     assertThat(received)
         .singleElement()
-        .extracting(log -> log.getAttributes().get(AnalyticsAttributes.EVENT_SEQUENCE_NUMBER))
+        .extracting(log -> log.getAttributes().get(AnalyticsAttributes.Event.SEQUENCE_NUMBER))
         .isEqualTo(6L);
   }
 
@@ -410,7 +410,7 @@ class OtelSdkManagerTest {
       final var metrics = metricReader.collectAllMetrics();
 
       // then
-      assertThat(findMetric(metrics, METRIC_EXPORT_WINDOW))
+      assertThat(findMetric(metrics, EXPORT_WINDOW))
           .isPresent()
           .hasValueSatisfying(
               metric ->
@@ -420,11 +420,11 @@ class OtelSdkManagerTest {
                           point -> {
                             assertThat(point.getValue()).isEqualTo(2);
                             final var pointAttrs = point.getAttributes();
-                            assertThat(pointAttrs.get(METRIC_SEQUENCE_NUMBER)).isEqualTo(1L);
-                            assertThat(pointAttrs.get(LOG_POSITION_START)).isEqualTo(100L);
-                            assertThat(pointAttrs.get(LOG_POSITION_END)).isEqualTo(200L);
-                            assertThat(pointAttrs.get(EVENT_TIME_MIN)).isEqualTo(5000L);
-                            assertThat(pointAttrs.get(EVENT_TIME_MAX)).isEqualTo(6000L);
+                            assertThat(pointAttrs.get(SEQUENCE_NUMBER)).isEqualTo(1L);
+                            assertThat(pointAttrs.get(POSITION_START)).isEqualTo(100L);
+                            assertThat(pointAttrs.get(POSITION_END)).isEqualTo(200L);
+                            assertThat(pointAttrs.get(TIME_MIN)).isEqualTo(5000L);
+                            assertThat(pointAttrs.get(TIME_MAX)).isEqualTo(6000L);
                           }));
     }
 
@@ -440,7 +440,7 @@ class OtelSdkManagerTest {
       final var metrics = metricReader.collectAllMetrics();
 
       // then
-      assertThat(findMetric(metrics, METRIC_EXPORT_WINDOW))
+      assertThat(findMetric(metrics, EXPORT_WINDOW))
           .isPresent()
           .hasValueSatisfying(
               metric ->
@@ -448,7 +448,7 @@ class OtelSdkManagerTest {
                       .first()
                       .satisfies(
                           point ->
-                              assertThat(point.getAttributes().get(METRIC_SEQUENCE_NUMBER))
+                              assertThat(point.getAttributes().get(SEQUENCE_NUMBER))
                                   .isEqualTo(2L)));
     }
 
@@ -464,7 +464,7 @@ class OtelSdkManagerTest {
       final var metrics = metricReader.collectAllMetrics();
 
       // then — should reflect only the second event
-      assertThat(findMetric(metrics, METRIC_EXPORT_WINDOW))
+      assertThat(findMetric(metrics, EXPORT_WINDOW))
           .isPresent()
           .hasValueSatisfying(
               metric ->
@@ -474,10 +474,10 @@ class OtelSdkManagerTest {
                           point -> {
                             assertThat(point.getValue()).isEqualTo(1);
                             final var pointAttrs = point.getAttributes();
-                            assertThat(pointAttrs.get(LOG_POSITION_START)).isEqualTo(300L);
-                            assertThat(pointAttrs.get(LOG_POSITION_END)).isEqualTo(300L);
-                            assertThat(pointAttrs.get(EVENT_TIME_MIN)).isEqualTo(8000L);
-                            assertThat(pointAttrs.get(EVENT_TIME_MAX)).isEqualTo(8000L);
+                            assertThat(pointAttrs.get(POSITION_START)).isEqualTo(300L);
+                            assertThat(pointAttrs.get(POSITION_END)).isEqualTo(300L);
+                            assertThat(pointAttrs.get(TIME_MIN)).isEqualTo(8000L);
+                            assertThat(pointAttrs.get(TIME_MAX)).isEqualTo(8000L);
                           }));
     }
 
@@ -487,7 +487,7 @@ class OtelSdkManagerTest {
       final var metrics = metricReader.collectAllMetrics();
 
       // then — gauge has no data points
-      assertThat(findMetric(metrics, METRIC_EXPORT_WINDOW))
+      assertThat(findMetric(metrics, EXPORT_WINDOW))
           .satisfiesAnyOf(
               opt -> assertThat(opt).isEmpty(),
               opt ->
@@ -504,7 +504,7 @@ class OtelSdkManagerTest {
       final var metrics = metricReader.collectAllMetrics();
 
       // then — sequence number is 1 (not 2), proving the empty window did not consume a slot
-      assertThat(findMetric(metrics, METRIC_EXPORT_WINDOW))
+      assertThat(findMetric(metrics, EXPORT_WINDOW))
           .isPresent()
           .hasValueSatisfying(
               metric ->
@@ -512,7 +512,7 @@ class OtelSdkManagerTest {
                       .first()
                       .satisfies(
                           point ->
-                              assertThat(point.getAttributes().get(METRIC_SEQUENCE_NUMBER))
+                              assertThat(point.getAttributes().get(SEQUENCE_NUMBER))
                                   .isEqualTo(1L)));
     }
 

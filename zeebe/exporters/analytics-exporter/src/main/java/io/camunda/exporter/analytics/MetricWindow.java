@@ -7,11 +7,11 @@
  */
 package io.camunda.exporter.analytics;
 
-import static io.camunda.exporter.analytics.AnalyticsAttributes.EVENT_TIME_MAX;
-import static io.camunda.exporter.analytics.AnalyticsAttributes.EVENT_TIME_MIN;
-import static io.camunda.exporter.analytics.AnalyticsAttributes.LOG_POSITION_END;
-import static io.camunda.exporter.analytics.AnalyticsAttributes.LOG_POSITION_START;
-import static io.camunda.exporter.analytics.AnalyticsAttributes.METRIC_SEQUENCE_NUMBER;
+import static io.camunda.exporter.analytics.AnalyticsAttributes.Event.TIME_MAX;
+import static io.camunda.exporter.analytics.AnalyticsAttributes.Event.TIME_MIN;
+import static io.camunda.exporter.analytics.AnalyticsAttributes.Log.POSITION_END;
+import static io.camunda.exporter.analytics.AnalyticsAttributes.Log.POSITION_START;
+import static io.camunda.exporter.analytics.AnalyticsAttributes.Metric.SEQUENCE_NUMBER;
 
 import io.opentelemetry.api.common.Attributes;
 
@@ -46,14 +46,14 @@ final class MetricWindow {
    */
   Attributes toGaugeAttributes(final long metricSequenceNumber) {
     if (!hasEvents()) {
-      return Attributes.of(METRIC_SEQUENCE_NUMBER, metricSequenceNumber);
+      return Attributes.of(SEQUENCE_NUMBER, metricSequenceNumber);
     }
     return Attributes.of(
-        METRIC_SEQUENCE_NUMBER, metricSequenceNumber,
-        LOG_POSITION_START, positionStart,
-        LOG_POSITION_END, positionEnd,
-        EVENT_TIME_MIN, eventTimeMin,
-        EVENT_TIME_MAX, eventTimeMax);
+        SEQUENCE_NUMBER, metricSequenceNumber,
+        POSITION_START, positionStart,
+        POSITION_END, positionEnd,
+        TIME_MIN, eventTimeMin,
+        TIME_MAX, eventTimeMax);
   }
 
   /** Resets all fields for the next window. */
