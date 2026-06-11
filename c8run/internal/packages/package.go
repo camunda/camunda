@@ -193,7 +193,8 @@ func rocksdbNativeLibName(osType, arch string) (string, error) {
 }
 
 func copyZipEntry(w *zip.Writer, f *zip.File) error {
-	fw, err := w.CreateHeader(&f.FileHeader)
+	hdr := f.FileHeader
+	fw, err := w.CreateHeader(&hdr)
 	if err != nil {
 		return fmt.Errorf("failed to create entry %s in temp jar: %w", f.Name, err)
 	}
@@ -217,11 +218,11 @@ func rewriteZipKeepingNativeLib(jarPath, libName string) error {
 	if err != nil {
 		return fmt.Errorf("failed to open jar %s: %w", jarPath, err)
 	}
+	defer r.Close()
 
 	tmpPath := jarPath + ".tmp"
 	tmpFile, err := os.Create(tmpPath)
 	if err != nil {
-		r.Close()
 		return fmt.Errorf("failed to create temp file %s: %w", tmpPath, err)
 	}
 
@@ -248,7 +249,6 @@ func rewriteZipKeepingNativeLib(jarPath, libName string) error {
 			break
 		}
 	}
-	r.Close()
 
 	if copyErr != nil {
 		w.Close()
