@@ -10,7 +10,6 @@ package io.camunda.it.client;
 import static io.camunda.it.util.TestHelper.DEFAULT_TENANT_ID;
 import static io.camunda.it.util.TestHelper.cancelInstance;
 import static io.camunda.it.util.TestHelper.completeJob;
-import static io.camunda.it.util.TestHelper.createTenant;
 import static io.camunda.it.util.TestHelper.deployServiceTaskProcess;
 import static io.camunda.it.util.TestHelper.startProcessInstance;
 import static io.camunda.it.util.TestHelper.waitForJobs;
@@ -24,6 +23,8 @@ import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.statistics.response.ProcessDefinitionInstanceStatistics;
 import io.camunda.qa.util.auth.Authenticated;
+import io.camunda.qa.util.auth.TenantDefinition;
+import io.camunda.qa.util.auth.TestTenant;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
@@ -53,18 +54,18 @@ public class ProcessDefinitionInstanceStatisticsIT {
   @UserDefinition
   private static final TestUser USER_1 = new TestUser(USERNAME_1, "password", List.of());
 
+  @TenantDefinition
+  private static final TestTenant TENANT_1 =
+      new TestTenant(TENANT_ID_1)
+          .setName(TENANT_ID_1)
+          .addUsers(InitializationConfiguration.DEFAULT_USER_USERNAME, USERNAME_1);
+
   @BeforeAll
   public static void beforeAll(@Authenticated final CamundaClient adminClient)
       throws InterruptedException {
 
     camundaClient = adminClient;
 
-    createTenant(
-        adminClient,
-        TENANT_ID_1,
-        TENANT_ID_1,
-        InitializationConfiguration.DEFAULT_USER_USERNAME,
-        USERNAME_1);
     adminClient.newAssignRoleToUserCommand().roleId("admin").username(USERNAME_1).execute();
   }
 
