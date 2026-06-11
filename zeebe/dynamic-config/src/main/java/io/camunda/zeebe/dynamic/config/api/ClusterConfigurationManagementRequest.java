@@ -53,6 +53,7 @@ public sealed interface ClusterConfigurationManagementRequest {
       Optional<Integer> newClusterSize,
       Optional<Integer> newPartitionCount,
       Optional<Integer> newReplicationFactor,
+      Optional<String> zone,
       boolean dryRun)
       implements ClusterConfigurationManagementRequest {}
 

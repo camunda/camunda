@@ -993,6 +993,7 @@ public class ProtoBufSerializer
     clusterScaleRequest.newClusterSize().ifPresent(builder::setNewClusterSize);
     clusterScaleRequest.newReplicationFactor().ifPresent(builder::setNewReplicationFactor);
     clusterScaleRequest.newPartitionCount().ifPresent(builder::setNewPartitionCount);
+    clusterScaleRequest.zone().ifPresent(builder::setZone);
 
     return builder.build().toByteArray();
   }
@@ -1188,8 +1189,16 @@ public class ProtoBufSerializer
           clusterScaleRequest.hasNewPartitionCount()
               ? Optional.of(clusterScaleRequest.getNewPartitionCount())
               : Optional.empty();
+      final Optional<String> zone =
+          clusterScaleRequest.getZone().isEmpty()
+              ? Optional.empty()
+              : Optional.of(clusterScaleRequest.getZone());
       return new ClusterScaleRequest(
-          newClusterSize, newPartitionCount, newReplicationFactor, clusterScaleRequest.getDryRun());
+          newClusterSize,
+          newPartitionCount,
+          newReplicationFactor,
+          zone,
+          clusterScaleRequest.getDryRun());
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);
     }

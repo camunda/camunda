@@ -52,7 +52,7 @@ public final class ClusterScaleRequestTransformer implements ConfigurationChange
     // replicationFactor and partitionCount is validated in the delegated transformer.
     final var newSetOfMembers =
         IntStream.range(0, newClusterSize.orElse(clusterConfiguration.members().size()))
-            .mapToObj(i -> MemberId.from(String.valueOf(i)))
+            .mapToObj(i -> MemberId.from((String) null, i))
             .collect(Collectors.toSet());
     return new ScaleRequestTransformer(newSetOfMembers, newReplicationFactor, newPartitionCount)
         .operations(clusterConfiguration);

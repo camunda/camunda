@@ -71,7 +71,7 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
   }
 
   @Override
-  protected void verifyClusterScaleViaPatch(
+  protected void assertClusterScaleResponse(
       final ClusterActuator actuator, final ClusterConfigPatchRequest request) {
     assertThatCode(() -> actuator.patchCluster(request, true, false))
         .isInstanceOf(FeignException.BadRequest.class)
@@ -79,7 +79,7 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
   }
 
   @Override
-  protected void verifyClusterPatch(
+  protected void assertClusterPatchResponse(
       final ClusterActuator actuator, final ClusterConfigPatchRequest request) {
     // Replace replicationFactor with per-zone replicationFactors so the cluster-patch path works
     // on zone-aware clusters. zoneA: 2 replicas, zoneB: 1 replica (total RF = minRF + 1 = 3).

@@ -24,12 +24,12 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
+import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossipState;
 import io.camunda.zeebe.dynamic.config.protocol.Topology;
 import io.camunda.zeebe.dynamic.config.protocol.Topology.ExporterStateEnum;
 import io.camunda.zeebe.dynamic.config.protocol.Topology.MessageCorrelation;
 import io.camunda.zeebe.dynamic.config.protocol.Topology.MessageCorrelation.HashMod;
 import io.camunda.zeebe.dynamic.config.protocol.Topology.RoutingState;
-import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossipState;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
@@ -164,7 +164,8 @@ final class ProtoBufSerializerTest {
   void shouldEncodeAndDecodeClusterScaleRequest() {
     // given
     final var clusterScaleRequest =
-        new ClusterScaleRequest(Optional.of(3), Optional.of(15), Optional.of(4), true);
+        new ClusterScaleRequest(
+            Optional.of(3), Optional.of(15), Optional.of(4), Optional.empty(), true);
 
     // when
     final var encodedRequest = protoBufSerializer.encodeClusterScaleRequest(clusterScaleRequest);
@@ -293,8 +294,7 @@ final class ProtoBufSerializerTest {
             List.of(
                 new PartitionDistributorConfig.ZoneSpec("zone-a", 2, 1000),
                 new PartitionDistributorConfig.ZoneSpec("zone-b", 1, 500)));
-    final var config =
-        ClusterConfiguration.init().setPartitionDistributorConfig(zoneAwareConfig);
+    final var config = ClusterConfiguration.init().setPartitionDistributorConfig(zoneAwareConfig);
     final var gossipState = new ClusterConfigurationGossipState();
     gossipState.setClusterConfiguration(config);
 
