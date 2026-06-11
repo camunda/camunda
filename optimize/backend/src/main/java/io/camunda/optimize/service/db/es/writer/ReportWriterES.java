@@ -100,17 +100,8 @@ public class ReportWriterES implements ReportWriter {
     LOG.debug("Writing new combined report to Elasticsearch");
     final String id = IdGenerator.getNextId();
     final CombinedReportDefinitionRequestDto reportDefinitionDto =
-        new CombinedReportDefinitionRequestDto();
-    reportDefinitionDto.setId(id);
-    final OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
-    reportDefinitionDto.setCreated(now);
-    reportDefinitionDto.setLastModified(now);
-    reportDefinitionDto.setOwner(userId);
-    reportDefinitionDto.setLastModifier(userId);
-    reportDefinitionDto.setName(reportName);
-    reportDefinitionDto.setDescription(description);
-    reportDefinitionDto.setData(reportData);
-    reportDefinitionDto.setCollectionId(collectionId);
+        buildCombinedReportDefinitionDto(
+            id, userId, reportData, reportName, description, collectionId);
 
     try {
       final IndexResponse indexResponse =
@@ -204,6 +195,71 @@ public class ReportWriterES implements ReportWriter {
       LOG.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
+  }
+
+  @Override
+  public IdResponseDto createOrUpdateCombinedReport(
+      final String reportId,
+      final String userId,
+      final CombinedReportDataDto reportData,
+      final String reportName,
+      final String description,
+      final String collectionId) {
+    LOG.debug("Writing combined report with id [{}] to Elasticsearch", reportId);
+    if (reportData == null) {
+      throw new OptimizeRuntimeException("reportData is null");
+    }
+    if (reportName == null) {
+      throw new OptimizeRuntimeException("reportName is null");
+    }
+    final CombinedReportDefinitionRequestDto reportDefinitionDto =
+        buildCombinedReportDefinitionDto(
+            reportId, userId, reportData, reportName, description, collectionId);
+    try {
+      final IndexResponse indexResponse =
+          esClient.index(
+              OptimizeIndexRequestBuilderES.of(
+                  i ->
+                      i.optimizeIndex(esClient, COMBINED_REPORT_INDEX_NAME)
+                          .id(reportId)
+                          .document(reportDefinitionDto)
+                          .refresh(Refresh.True)));
+      if (!indexResponse.result().equals(Result.Created)
+          && !indexResponse.result().equals(Result.Updated)) {
+        final String message =
+            String.format(
+                "Could not write combined report with id [%s] to Elasticsearch.", reportId);
+        LOG.error(message);
+        throw new OptimizeRuntimeException(message);
+      }
+      LOG.debug("Combined report with id [{}] has successfully been written.", reportId);
+      return new IdResponseDto(reportId);
+    } catch (final IOException e) {
+      final String errorMessage = "Was not able to write combined report.";
+      LOG.error(errorMessage, e);
+      throw new OptimizeRuntimeException(errorMessage, e);
+    }
+  }
+
+  private CombinedReportDefinitionRequestDto buildCombinedReportDefinitionDto(
+      final String id,
+      final String userId,
+      final CombinedReportDataDto reportData,
+      final String reportName,
+      final String description,
+      final String collectionId) {
+    final CombinedReportDefinitionRequestDto dto = new CombinedReportDefinitionRequestDto();
+    final OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
+    dto.setId(id);
+    dto.setCreated(now);
+    dto.setLastModified(now);
+    dto.setOwner(userId);
+    dto.setLastModifier(userId);
+    dto.setName(reportName);
+    dto.setDescription(description);
+    dto.setData(reportData);
+    dto.setCollectionId(collectionId);
+    return dto;
   }
 
   @Override
