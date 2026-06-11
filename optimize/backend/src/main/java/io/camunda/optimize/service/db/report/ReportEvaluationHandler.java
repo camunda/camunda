@@ -277,8 +277,7 @@ public abstract class ReportEvaluationHandler {
     final List<SingleProcessReportDefinitionRequestDto> foundSingleReports =
         reportService.getAllSingleProcessReportsForIdsOmitXml(singleReportIds).stream()
             .filter(reportDefinition -> getAuthorizedRole(userId, reportDefinition).isPresent())
-            .peek(
-                reportDefinition -> addAdditionalFiltersForReport(evaluationInfo, reportDefinition))
+            .peek(reportDefinition -> applyEvaluationOverrides(evaluationInfo, reportDefinition))
             .collect(Collectors.toList());
 
     if (foundSingleReports.size() != singleReportIds.size()) {
@@ -296,7 +295,7 @@ public abstract class ReportEvaluationHandler {
 
   private ReportEvaluationResult evaluateSingleReportWithErrorCheck(
       final ReportEvaluationInfo evaluationInfo, final RoleType currentUserRole) {
-    addAdditionalFiltersForReport(evaluationInfo, evaluationInfo.getReport());
+    applyEvaluationOverrides(evaluationInfo, evaluationInfo.getReport());
     addHiddenFlowNodeIds(evaluationInfo);
     try {
       final ReportEvaluationContext<SingleReportDefinitionDto<SingleReportDataDto>> context =
@@ -318,7 +317,7 @@ public abstract class ReportEvaluationHandler {
     }
   }
 
-  private void addAdditionalFiltersForReport(
+  private void applyEvaluationOverrides(
       final ReportEvaluationInfo evaluationInfo, final ReportDefinitionDto<?> reportDefinition) {
     if (evaluationInfo.isSharedReport()) {
       addAdditionalFiltersForReport(reportDefinition, evaluationInfo.getAdditionalFilters());
@@ -326,6 +325,7 @@ public abstract class ReportEvaluationHandler {
       addAdditionalFiltersForAuthorizedReport(
           evaluationInfo.getUserId(), reportDefinition, evaluationInfo.getAdditionalFilters());
     }
+    overrideGroupByDateUnit(reportDefinition, evaluationInfo.getAdditionalFilters());
   }
 
   private void addHiddenFlowNodeIds(final ReportEvaluationInfo evaluationInfo) {
@@ -413,7 +413,6 @@ public abstract class ReportEvaluationHandler {
             reportDefinitionDto.getId());
       }
     }
-    overrideGroupByDateUnit(reportDefinitionDto, additionalFilters);
   }
 
   private void overrideGroupByDateUnit(
