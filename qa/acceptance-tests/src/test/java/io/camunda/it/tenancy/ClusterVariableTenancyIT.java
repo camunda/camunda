@@ -14,6 +14,8 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.response.ClusterVariable;
 import io.camunda.qa.util.auth.Authenticated;
+import io.camunda.qa.util.auth.TenantDefinition;
+import io.camunda.qa.util.auth.TestTenant;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.multidb.MultiDbTest;
@@ -62,14 +64,16 @@ public class ClusterVariableTenancyIT {
   @UserDefinition
   private static final TestUser USER2_USER = new TestUser(USER2, "password", List.of());
 
+  @TenantDefinition
+  private static final TestTenant A_TENANT =
+      new TestTenant(TENANT_A).setName(TENANT_A).addUsers(ADMIN, USER1);
+
+  @TenantDefinition
+  private static final TestTenant B_TENANT =
+      new TestTenant(TENANT_B).setName(TENANT_B).addUsers(ADMIN);
+
   @BeforeAll
   static void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {
-    createTenant(adminClient, TENANT_A);
-    createTenant(adminClient, TENANT_B);
-    assignUserToTenant(adminClient, ADMIN, TENANT_A);
-    assignUserToTenant(adminClient, ADMIN, TENANT_B);
-    assignUserToTenant(adminClient, USER1, TENANT_A);
-
     // Create tenant-scoped cluster variables
     adminClient
         .newTenantScopedClusterVariableCreateRequest(TENANT_A)
@@ -440,15 +444,6 @@ public class ClusterVariableTenancyIT {
     assertThat(result.getName()).isEqualTo(GLOBAL_VAR_NAME);
     assertThat(result.getValue()).isEqualTo(VALUE_RESULT.formatted(GLOBAL_VAR_VALUE));
     assertThat(result.getTenantId()).isNull();
-  }
-
-  private static void createTenant(final CamundaClient camundaClient, final String tenant) {
-    camundaClient.newCreateTenantCommand().tenantId(tenant).name(tenant).send().join();
-  }
-
-  private static void assignUserToTenant(
-      final CamundaClient camundaClient, final String username, final String tenant) {
-    camundaClient.newAssignUserToTenantCommand().username(username).tenantId(tenant).send().join();
   }
 
   private static void waitForClusterVariablesBeingExported(final CamundaClient camundaClient) {

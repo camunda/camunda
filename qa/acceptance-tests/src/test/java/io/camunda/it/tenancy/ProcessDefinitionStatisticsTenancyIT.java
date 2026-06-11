@@ -7,7 +7,6 @@
  */
 package io.camunda.it.tenancy;
 
-import static io.camunda.it.util.TestHelper.createTenant;
 import static io.camunda.it.util.TestHelper.waitForMessageSubscriptions;
 import static io.camunda.it.util.TestHelper.waitForProcessInstances;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -18,6 +17,8 @@ import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.enums.MessageSubscriptionState;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.qa.util.auth.Authenticated;
+import io.camunda.qa.util.auth.TenantDefinition;
+import io.camunda.qa.util.auth.TestTenant;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.multidb.MultiDbTest;
@@ -73,24 +74,22 @@ public class ProcessDefinitionStatisticsTenancyIT {
   @UserDefinition
   private static final TestUser USER_ALL = new TestUser(USER_ALL_TENANTS, "password", List.of());
 
+  @TenantDefinition
+  private static final TestTenant TENANT_1_DEF =
+      new TestTenant(TENANT_1)
+          .setName("Tenant 1")
+          .addUsers(
+              InitializationConfiguration.DEFAULT_USER_USERNAME, USER_TENANT_1, USER_ALL_TENANTS);
+
+  @TenantDefinition
+  private static final TestTenant TENANT_2_DEF =
+      new TestTenant(TENANT_2)
+          .setName("Tenant 2")
+          .addUsers(
+              InitializationConfiguration.DEFAULT_USER_USERNAME, USER_TENANT_2, USER_ALL_TENANTS);
+
   @BeforeAll
   public static void beforeAll(@Authenticated final CamundaClient adminClient) {
-    // Create tenants and assign users
-    createTenant(
-        adminClient,
-        TENANT_1,
-        "Tenant 1",
-        InitializationConfiguration.DEFAULT_USER_USERNAME,
-        USER_TENANT_1,
-        USER_ALL_TENANTS);
-    createTenant(
-        adminClient,
-        TENANT_2,
-        "Tenant 2",
-        InitializationConfiguration.DEFAULT_USER_USERNAME,
-        USER_TENANT_2,
-        USER_ALL_TENANTS);
-
     // Deploy process with message subscriptions to each tenant
     processDefKeyDefaultTenant = deployProcessWithSubscriptions(adminClient, DEFAULT_TENANT);
     processDefKeyTenant1Version1 = deployProcessWithSubscriptions(adminClient, TENANT_1);
