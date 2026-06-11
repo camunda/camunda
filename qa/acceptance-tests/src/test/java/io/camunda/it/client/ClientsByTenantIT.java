@@ -14,11 +14,12 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.response.Client;
 import io.camunda.client.api.search.response.SearchResponse;
+import io.camunda.qa.util.auth.TenantDefinition;
+import io.camunda.qa.util.auth.TestTenant;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.test.util.Strings;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 @MultiDbTest
@@ -28,10 +29,8 @@ public class ClientsByTenantIT {
   private static CamundaClient camundaClient;
   private static final String TENANT_ID = Strings.newRandomValidTenantId();
 
-  @BeforeAll
-  static void setup() {
-    camundaClient.newCreateTenantCommand().tenantId(TENANT_ID).name("tenantName").send().join();
-  }
+  @TenantDefinition
+  private static final TestTenant TENANT = new TestTenant(TENANT_ID).setName("tenantName");
 
   @Test
   void shouldSearchAssignedClientsByTenantAndSort() {

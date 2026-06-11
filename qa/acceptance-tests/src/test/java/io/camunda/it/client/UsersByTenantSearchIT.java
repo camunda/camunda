@@ -13,6 +13,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.response.TenantUser;
+import io.camunda.qa.util.auth.TenantDefinition;
+import io.camunda.qa.util.auth.TestTenant;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.test.util.Strings;
@@ -31,25 +33,15 @@ public class UsersByTenantSearchIT {
   private static final String USER_USERNAME_3 = Strings.newRandomValidUsername();
   private static final String TENANT_ID = Strings.newRandomValidTenantId();
 
+  @TenantDefinition
+  private static final TestTenant TENANT =
+      new TestTenant(TENANT_ID).setName("tenant_name").addUsers(USER_USERNAME_1, USER_USERNAME_2);
+
   @BeforeAll
   static void setup() {
     createUser(USER_USERNAME_1);
     createUser(USER_USERNAME_2);
     createUser(USER_USERNAME_3);
-
-    camundaClient.newCreateTenantCommand().tenantId(TENANT_ID).name("tenant_name").send().join();
-    camundaClient
-        .newAssignUserToTenantCommand()
-        .username(USER_USERNAME_1)
-        .tenantId(TENANT_ID)
-        .send()
-        .join();
-    camundaClient
-        .newAssignUserToTenantCommand()
-        .username(USER_USERNAME_2)
-        .tenantId(TENANT_ID)
-        .send()
-        .join();
 
     waitForTenantToBeUpdated();
   }
