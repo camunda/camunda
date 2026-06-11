@@ -69,7 +69,11 @@ public class ReportRestMapper {
       final Map<String, AuthorizedProcessReportEvaluationResponseDto<T>> reportResults =
           combinedReportEvaluationResult.getReportEvaluationResults().stream()
               .map(this::mapToAuthorizedProcessReportEvaluationResponseDto)
-              .map(response -> (AuthorizedProcessReportEvaluationResponseDto<T>) response)
+              .map(
+                  response -> {
+                    localizeReportData(response.getReportDefinition(), locale);
+                    return (AuthorizedProcessReportEvaluationResponseDto<T>) response;
+                  })
               .collect(
                   Collectors.toMap(
                       singleReportEvaluationResponse ->
