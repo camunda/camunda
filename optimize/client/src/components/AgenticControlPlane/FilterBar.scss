@@ -15,19 +15,19 @@
   border-bottom: 1px solid var(--cds-border-subtle);
   margin-bottom: 1rem;
 
-  &__processScope {
+  .processScope {
     display: flex;
     align-items: center;
     gap: 0.5rem;
   }
 
-  &__dateRange {
+  .dateRange {
     display: flex;
     align-items: center;
     gap: 0.5rem;
   }
 
-  &__label {
+  .label {
     font-size: 0.875rem;
     color: var(--cds-text-secondary);
     white-space: nowrap;
