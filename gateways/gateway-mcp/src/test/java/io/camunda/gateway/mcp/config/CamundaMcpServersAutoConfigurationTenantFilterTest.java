@@ -13,10 +13,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.gateway.mapping.http.physicaltenants.PhysicalTenantContext;
-import java.util.HashMap;
-import java.util.Map;
+import io.camunda.gateway.mapping.http.physicaltenants.PhysicalTenantIds;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.ObjectProvider;
@@ -53,7 +51,7 @@ class CamundaMcpServersAutoConfigurationTenantFilterTest {
   void shouldSetTenantIdAndProceedWhenResolverAcceptsId() throws Exception {
     // given
     final var filter =
-        CamundaMcpServersAutoConfiguration.tenantFilter(resolverProvider(Set.of("tenant-a")));
+        CamundaMcpServersAutoConfiguration.tenantFilter(resolverKnownTenants(Set.of("tenant-a")));
     final MockHttpServletRequest servletRequest = new MockHttpServletRequest();
     final ServerRequest request = mock(ServerRequest.class);
     when(request.pathVariable(PhysicalTenantContext.PATH_VARIABLE_PHYSICAL_TENANT_ID))
@@ -73,9 +71,10 @@ class CamundaMcpServersAutoConfigurationTenantFilterTest {
   }
 
   @Test
-  void shouldRejectWithProblemDetailWhenResolverDoesNotKnowTenantId() throws Exception {
+  void shouldRejectWithNotFoundWhenResolverDoesNotKnowTenantId() throws Exception {
     // given
-    final var filter = CamundaMcpServersAutoConfiguration.tenantFilter(resolverProvider(Set.of()));
+    final var filter =
+        CamundaMcpServersAutoConfiguration.tenantFilter(resolverKnownTenants(Set.of()));
     final MockHttpServletRequest servletRequest = new MockHttpServletRequest();
     final ServerRequest request = mock(ServerRequest.class);
     when(request.pathVariable(PhysicalTenantContext.PATH_VARIABLE_PHYSICAL_TENANT_ID))
@@ -101,8 +100,8 @@ class CamundaMcpServersAutoConfigurationTenantFilterTest {
   @Test
   @SuppressWarnings("unchecked")
   void shouldFallBackToDefaultOnlyResolverWhenNoBeanProvided() throws Exception {
-    // given: no PhysicalTenantResolver bean is available; the fallback only accepts the default id
-    final ObjectProvider<PhysicalTenantResolver> emptyProvider = mock(ObjectProvider.class);
+    // given: no PhysicalTenantIds bean is available; the fallback only accepts the default id
+    final ObjectProvider<PhysicalTenantIds> emptyProvider = mock(ObjectProvider.class);
     when(emptyProvider.getIfAvailable()).thenReturn(null);
     final var filter = CamundaMcpServersAutoConfiguration.tenantFilter(emptyProvider);
 
@@ -125,14 +124,10 @@ class CamundaMcpServersAutoConfigurationTenantFilterTest {
   }
 
   @SuppressWarnings("unchecked")
-  private static ObjectProvider<PhysicalTenantResolver> resolverProvider(
+  private static ObjectProvider<PhysicalTenantIds> resolverKnownTenants(
       final Set<String> knownTenants) {
-    final PhysicalTenantResolver resolver = mock(PhysicalTenantResolver.class);
-    final Map<String, Object> tenantMap = new HashMap<>();
-    knownTenants.forEach(id -> tenantMap.put(id, null));
-    when(resolver.getAll()).thenReturn((Map) tenantMap);
-    final ObjectProvider<PhysicalTenantResolver> provider = mock(ObjectProvider.class);
-    when(provider.getIfAvailable()).thenReturn(resolver);
+    final ObjectProvider<PhysicalTenantIds> provider = mock(ObjectProvider.class);
+    when(provider.getIfAvailable()).thenReturn(() -> knownTenants);
     return provider;
   }
 }
