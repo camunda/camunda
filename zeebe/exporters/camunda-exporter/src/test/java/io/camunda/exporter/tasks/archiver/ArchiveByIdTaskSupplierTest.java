@@ -87,12 +87,12 @@ class ArchiveByIdTaskSupplierTest {
 
   @Test
   void shouldThrowWhenMaxRetriesExceeded() {
-    // given - maxRetryCount of 2, so only 1 retry is allowed
+    // given - maxRetryCount of 1, so only 1 retry is allowed
     final var retryableError = new CompletionException(new SocketTimeoutException("timeout"));
 
     final var taskSupplier =
         new ArchiveByIdTaskSupplier<>(
-            historyConfigWithMaxRetry(2),
+            historyConfigWithMaxRetry(1),
             "source-idx",
             "destination-idx",
             searchAfter ->
@@ -104,12 +104,12 @@ class ArchiveByIdTaskSupplierTest {
             metrics,
             LOGGER);
 
-    // when - first call retries (retryCount becomes 1, which is < maxRetryCount 2)
+    // when - first call retries (retryCount becomes 1, which is <= maxRetryCount 1)
     final var firstResult = taskSupplier.moveNextBatch().join();
     assertThat(firstResult).isEqualTo(0L);
     verify(metrics, times(1)).recordArchiverBatchRetry();
 
-    // when - second call exceeds max retries (retryCount becomes 2, which is NOT < 2)
+    // when - second call exceeds max retries (retryCount becomes 2, which is NOT <= 1)
     final var future = taskSupplier.moveNextBatch();
 
     // then - should throw
@@ -170,14 +170,14 @@ class ArchiveByIdTaskSupplierTest {
 
   @Test
   void shouldResetRetryCountAfterSuccessfulBatch() {
-    // given - maxRetryAttempts=3 means 2 retries allowed before throwing on the 3rd failure.
+    // given - maxRetryAttempts=2 means 2 retries allowed before throwing on the 3rd failure.
     // reindex calls 1, 3, 4, 5, 6 fail; calls 2, 7 succeed.
     final var retryableError = new CompletionException(new SocketTimeoutException("timeout"));
     final var reindexCallCount = new AtomicInteger(0);
 
     final var taskSupplier =
         new ArchiveByIdTaskSupplier<>(
-            historyConfigWithMaxRetry(3),
+            historyConfigWithMaxRetry(2),
             "source-idx",
             "destination-idx",
             searchAfter ->
@@ -212,7 +212,7 @@ class ArchiveByIdTaskSupplierTest {
     assertThat(taskSupplier.moveNextBatch().join()).isEqualTo(0L);
     verify(metrics, times(3)).recordArchiverBatchRetry();
 
-    // call 5 fails (retryCount=3, NOT < maxRetryAttempts 3) — throws and resets retryCount
+    // call 5 fails (retryCount=3, NOT <= maxRetryAttempts 2) — throws and resets retryCount
     assertThatThrownBy(() -> taskSupplier.moveNextBatch().join())
         .isInstanceOf(CompletionException.class)
         .hasCauseInstanceOf(SocketTimeoutException.class);
