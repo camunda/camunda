@@ -225,11 +225,12 @@ func rewriteZipKeepingNativeLib(jarPath, libName string) error {
 	if err != nil {
 		return fmt.Errorf("failed to open jar %s: %w", jarPath, err)
 	}
-	defer r.Close()
+	// r is closed explicitly before os.Rename — Windows cannot rename over an open file.
 
 	tmpPath := jarPath + ".tmp"
 	tmpFile, err := os.Create(tmpPath)
 	if err != nil {
+		r.Close()
 		return fmt.Errorf("failed to create temp file %s: %w", tmpPath, err)
 	}
 
@@ -260,21 +261,29 @@ func rewriteZipKeepingNativeLib(jarPath, libName string) error {
 	if copyErr != nil {
 		w.Close()
 		tmpFile.Close()
+		r.Close()
 		removeTmp()
 		return copyErr
 	}
 	if err := w.Close(); err != nil {
 		tmpFile.Close()
+		r.Close()
 		removeTmp()
 		return fmt.Errorf("failed to finalize temp jar: %w", err)
 	}
 	if err := tmpFile.Close(); err != nil {
+		r.Close()
 		removeTmp()
 		return fmt.Errorf("failed to close temp file: %w", err)
 	}
 	if nativeLibCount != 1 {
+		r.Close()
 		removeTmp()
 		return fmt.Errorf("expected exactly 1 native lib %q in jar, got %d: verify rocksdbNativeLibName mapping", libName, nativeLibCount)
+	}
+	if err := r.Close(); err != nil {
+		removeTmp()
+		return fmt.Errorf("failed to close source jar before rename: %w", err)
 	}
 	if err := os.Rename(tmpPath, jarPath); err != nil {
 		removeTmp()
