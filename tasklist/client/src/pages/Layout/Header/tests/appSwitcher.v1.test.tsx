@@ -6,36 +6,34 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {vi} from 'vitest';
-
-vi.mock('modules/featureFlags', () => ({IS_NAV_V2_ENABLED: true}));
-
 import {render, screen} from 'modules/testing/testing-library';
 import {nodeMockServer} from 'modules/testing/nodeMockServer';
 import {http, HttpResponse} from 'msw';
 import {Header} from '..';
 import {getWrapper} from './mocks';
-import {currentUser, invalidLicense} from '@camunda/c8-mocks';
+import {saasLicense, currentUserWithC8Links} from '@camunda/c8-mocks';
 
-describe('<Header /> (V2)', () => {
-  it('should render a header', async () => {
+describe('App switcher', () => {
+  beforeEach(() => {
     nodeMockServer.use(
       http.get(
-        '/v2/authentication/me',
+        '/v2/license',
         () => {
-          return HttpResponse.json(currentUser);
+          return HttpResponse.json(saasLicense);
         },
         {
           once: true,
         },
       ),
     );
+  });
 
+  it('should not render links for CCSM', async () => {
     nodeMockServer.use(
       http.get(
-        '/v2/license',
+        '/v2/authentication/me',
         () => {
-          return HttpResponse.json(invalidLicense);
+          return HttpResponse.json(currentUserWithC8Links);
         },
         {
           once: true,
@@ -48,13 +46,19 @@ describe('<Header /> (V2)', () => {
     });
 
     expect(
-      await screen.findByRole('banner', {name: 'Camunda Tasklist'}),
-    ).toBeInTheDocument();
+      screen.queryByRole('link', {name: 'Console'}),
+    ).not.toBeInTheDocument();
     expect(
-      await screen.findByText('Non-production license'),
-    ).toBeInTheDocument();
-    expect(screen.getByText('Non-commercial license')).toBeInTheDocument();
-    expect(screen.getByRole('button', {name: 'Info'})).toBeInTheDocument();
-    expect(screen.getByRole('button', {name: 'Settings'})).toBeInTheDocument();
+      screen.queryByRole('link', {name: 'Modeler'}),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', {name: 'Operate'}),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', {name: 'Tasklist'}),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', {name: 'Optimize'}),
+    ).not.toBeInTheDocument();
   });
 });

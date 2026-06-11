@@ -6,6 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {vi} from 'vitest';
+vi.mock('modules/featureFlags', () => ({IS_NAV_V2_ENABLED: true}));
+
 import {render, screen} from 'modules/testing/testing-library';
 import {nodeMockServer} from 'modules/testing/nodeMockServer';
 import {http, HttpResponse} from 'msw';
