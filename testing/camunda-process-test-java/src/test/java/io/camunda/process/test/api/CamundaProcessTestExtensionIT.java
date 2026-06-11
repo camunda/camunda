@@ -64,7 +64,7 @@ public class CamundaProcessTestExtensionIT {
   class ProcessInstanceTests {
 
     @Test
-    void shouldCreateProcessInstance() {
+    void shouldAssertProcessInstance() {
       // given
       final BpmnModelInstance process =
           Bpmn.createExecutableProcess("process")

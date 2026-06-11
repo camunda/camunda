@@ -902,7 +902,7 @@ public class CompleteJobTest {
   @Nested
   class CompleteJobWithExampleData {
 
-    private static final Long PROCESS_DEFINITION_KEY = 200L;
+    private static final long PROCESS_DEFINITION_KEY = 200L;
     private static final String PROCESS_ID = "test-process";
     private static final String ELEMENT_ID = "send-email";
     private static final String EXAMPLE_DATA = "{\"send_status\": 200}";
