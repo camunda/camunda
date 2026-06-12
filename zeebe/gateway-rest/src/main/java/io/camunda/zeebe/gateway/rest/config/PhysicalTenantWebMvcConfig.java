@@ -7,18 +7,13 @@
  */
 package io.camunda.zeebe.gateway.rest.config;
 
-import io.camunda.authentication.pt.PhysicalTenantContext;
-import io.camunda.zeebe.gateway.rest.interceptor.PhysicalTenantInterceptor;
 import io.camunda.zeebe.gateway.rest.mapper.PhysicalTenantRequestMappingHandlerMapping;
 import io.camunda.zeebe.gateway.rest.resolver.PhysicalTenantIdArgumentResolver;
 import java.util.List;
-import java.util.Set;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.webmvc.autoconfigure.WebMvcRegistrations;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
-import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
@@ -29,20 +24,14 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
  * for replacing the auto-configured {@link RequestMappingHandlerMapping}, so every future
  * {@code @CamundaRestController} automatically gets the {@code
  * /physical-tenants/{physicalTenantId}/v2/...} sibling registration.
+ *
+ * <p>This config is responsible for <em>routing</em> only. The physical tenant id is extracted from
+ * the request by {@code PhysicalTenantPreSecurityFilter} (which runs before the security chain so
+ * the id is available to in-chain components), and unknown tenants are rejected by CSL's catch-all
+ * security chain — so no MVC interceptor is registered here. See ADR-0003.
  */
 @Configuration
 public class PhysicalTenantWebMvcConfig implements WebMvcConfigurer {
-
-  private final PhysicalTenantInterceptor interceptor;
-
-  public PhysicalTenantWebMvcConfig(
-      final ObjectProvider<PhysicalTenantInterceptor> interceptorProvider) {
-    interceptor =
-        interceptorProvider.getIfAvailable(
-            () ->
-                new PhysicalTenantInterceptor(
-                    Set.of(PhysicalTenantContext.DEFAULT_PHYSICAL_TENANT_ID)::contains));
-  }
 
   @Bean
   public WebMvcRegistrations physicalTenantWebMvcRegistrations() {
@@ -52,12 +41,6 @@ public class PhysicalTenantWebMvcConfig implements WebMvcConfigurer {
         return new PhysicalTenantRequestMappingHandlerMapping();
       }
     };
-  }
-
-  @Override
-  public void addInterceptors(final InterceptorRegistry registry) {
-    // Run early so downstream interceptors and controllers can read the resolved tenant id.
-    registry.addInterceptor(interceptor).order(Integer.MIN_VALUE);
   }
 
   @Override

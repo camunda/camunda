@@ -19,7 +19,7 @@ import java.lang.annotation.Target;
  * for the current request.
  *
  * <p>Resolution is performed by {@code PhysicalTenantIdResolver}, which reads the value from {@link
- * PhysicalTenantContext} (set earlier by {@code PhysicalTenantInterceptor}). When no
+ * PhysicalTenantContext} (set earlier by {@code PhysicalTenantPreSecurityFilter}). When no
  * physical-tenant prefix is present on the request, the value defaults to {@link
  * PhysicalTenantContext#DEFAULT_PHYSICAL_TENANT_ID}.
  *

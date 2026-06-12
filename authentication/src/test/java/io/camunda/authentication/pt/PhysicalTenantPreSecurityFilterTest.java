@@ -7,12 +7,11 @@
  */
 package io.camunda.authentication.pt;
 
-import static io.camunda.authentication.pt.PhysicalTenantPreSecurityFilter.PHYSICAL_TENANT_PATH_PREFIX;
+import static io.camunda.authentication.pt.PhysicalTenantContext.PHYSICAL_TENANTS_PATH_SEGMENT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 
 import jakarta.servlet.FilterChain;
-import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -26,8 +25,7 @@ class PhysicalTenantPreSecurityFilterTest {
 
   @Mock private FilterChain chain;
 
-  private final PhysicalTenantPreSecurityFilter filter =
-      new PhysicalTenantPreSecurityFilter(Set.of("tenanta", "tenantb"));
+  private final PhysicalTenantPreSecurityFilter filter = new PhysicalTenantPreSecurityFilter();
 
   // -------------------------------------------------------------------------
   // Path matching and attribute stamping
@@ -83,7 +81,7 @@ class PhysicalTenantPreSecurityFilterTest {
   void shouldExtractTenantIdBeforeTrailingPathSegments() throws Exception {
     final var request =
         new MockHttpServletRequest(
-            "GET", PHYSICAL_TENANT_PATH_PREFIX + "tenantb/some/deep/path?q=1");
+            "GET", PHYSICAL_TENANTS_PATH_SEGMENT + "tenantb/some/deep/path?q=1");
     final var response = new MockHttpServletResponse();
 
     filter.doFilter(request, response, chain);
