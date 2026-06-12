@@ -228,6 +228,9 @@ public class AlignmentTest {
               "camunda.client.auth.client-assertion.keystore-key-password",
               new Getter(p -> p.getAuth().getClientAssertion().getKeystoreKeyPassword())),
           entry(
+              "camunda.client.auth.credentials-cache-path",
+              new Getter(p -> p.getAuth().getCredentialsCachePath())),
+          entry(
               "camunda.client.cluster-variables.enabled",
               new Getter(p -> p.getClusterVariables().isEnabled())),
           entry(
@@ -240,8 +243,9 @@ public class AlignmentTest {
   @Autowired CamundaClientProperties camundaClientProperties;
 
   /**
-   * This test enforces the alignment between the additional properties defined in the metadata json
-   * and the code
+   * This test enforces the alignment between the generated Spring configuration metadata
+   * (META-INF/spring-configuration-metadata.json) and the code, covering all camunda.client.*
+   * properties and skipping deprecated ones.
    */
   @TestFactory
   Stream<DynamicTest> alignmentWithDefaultPropertiesTest() throws IOException {
