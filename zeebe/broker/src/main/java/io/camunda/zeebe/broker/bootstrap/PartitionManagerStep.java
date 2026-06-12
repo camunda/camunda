@@ -111,24 +111,25 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
     final var clusterConfiguration =
         brokerStartupContext.getClusterConfigurationService().getInitialClusterConfiguration();
 
+    if (PartitionManager.isDefaultPhysicalTenant(physicalTenantId)) {
+      brokerStartupContext
+          .getClusterConfigurationService()
+          .registerInconsistentConfigurationListener(
+              (newTopology, oldTopology) -> {
+                final var clusterCfg = brokerStartupContext.getBrokerConfiguration().getCluster();
+                shutdownOnInconsistentTopology(
+                    clusterCfg.getZone(),
+                    clusterCfg.getNodeId(),
+                    brokerStartupContext.getSpringBrokerBridge(),
+                    newTopology,
+                    oldTopology);
+              });
+    }
+
     if (clusterConfiguration.recovery()) {
       LOGGER.info("Partition group in recovery, starting RecoveryPartitionManager");
       return recoveryPartitionManager(brokerStartupContext, topologyManager);
     } else {
-      if (PartitionManager.isDefaultPhysicalTenant(physicalTenantId)) {
-        brokerStartupContext
-            .getClusterConfigurationService()
-            .registerInconsistentConfigurationListener(
-                (newTopology, oldTopology) -> {
-                  final var clusterCfg = brokerStartupContext.getBrokerConfiguration().getCluster();
-                  shutdownOnInconsistentTopology(
-                      clusterCfg.getZone(),
-                      clusterCfg.getNodeId(),
-                      brokerStartupContext.getSpringBrokerBridge(),
-                      newTopology,
-                      oldTopology);
-                });
-      }
       return partitionManager(brokerStartupContext, topologyManager);
     }
   }
