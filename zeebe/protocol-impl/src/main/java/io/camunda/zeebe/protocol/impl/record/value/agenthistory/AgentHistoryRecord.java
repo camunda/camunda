@@ -24,6 +24,7 @@ import java.util.List;
 public final class AgentHistoryRecord extends UnifiedRecordValue
     implements AgentHistoryRecordValue {
 
+  private final LongProperty historyItemKeyProp = new LongProperty("historyItemKey", -1L);
   private final LongProperty agentInstanceKeyProp = new LongProperty("agentInstanceKey", -1L);
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey", -1L);
   private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey", -1L);
@@ -50,8 +51,9 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
       new ObjectProperty<>("metrics", new AgentHistoryMetrics());
 
   public AgentHistoryRecord() {
-    super(15);
-    declareProperty(agentInstanceKeyProp)
+    super(16);
+    declareProperty(historyItemKeyProp)
+        .declareProperty(agentInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(processInstanceKeyProp)
         .declareProperty(rootProcessInstanceKeyProp)
@@ -66,6 +68,16 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
         .declareProperty(contentProp)
         .declareProperty(toolCallsProp)
         .declareProperty(metricsProp);
+  }
+
+  @Override
+  public long getHistoryItemKey() {
+    return historyItemKeyProp.getValue();
+  }
+
+  public AgentHistoryRecord setHistoryItemKey(final long historyItemKey) {
+    historyItemKeyProp.setValue(historyItemKey);
+    return this;
   }
 
   @Override

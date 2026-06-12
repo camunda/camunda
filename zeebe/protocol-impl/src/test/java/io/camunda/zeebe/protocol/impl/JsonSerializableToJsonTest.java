@@ -4859,6 +4859,7 @@ final class JsonSerializableToJsonTest {
             () -> {
               final AgentHistoryRecord record =
                   new AgentHistoryRecord()
+                      .setHistoryItemKey(2251799813685250L)
                       .setAgentInstanceKey(2251799813685251L)
                       .setElementInstanceKey(2251799813685249L)
                       .setJobKey(2251799813685252L)
@@ -4914,6 +4915,7 @@ final class JsonSerializableToJsonTest {
             },
         """
         {
+          "historyItemKey": 2251799813685250,
           "agentInstanceKey": 2251799813685251,
           "elementInstanceKey": 2251799813685249,
           "jobKey": 2251799813685252,
@@ -4969,6 +4971,7 @@ final class JsonSerializableToJsonTest {
         (Supplier<UnifiedRecordValue>) AgentHistoryRecord::new,
         """
         {
+          "historyItemKey": -1,
           "agentInstanceKey": -1,
           "elementInstanceKey": -1,
           "jobKey": -1,

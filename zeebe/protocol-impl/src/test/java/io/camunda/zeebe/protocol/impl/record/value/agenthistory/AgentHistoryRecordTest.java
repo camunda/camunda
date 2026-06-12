@@ -27,6 +27,7 @@ final class AgentHistoryRecordTest {
     final AgentHistoryRecord record = new AgentHistoryRecord();
 
     // then
+    assertThat(record.getHistoryItemKey()).isEqualTo(-1L);
     assertThat(record.getAgentInstanceKey()).isEqualTo(-1L);
     assertThat(record.getElementInstanceKey()).isEqualTo(-1L);
     assertThat(record.getJobKey()).isEqualTo(-1L);
@@ -46,6 +47,7 @@ final class AgentHistoryRecordTest {
     // given
     final AgentHistoryRecord original =
         new AgentHistoryRecord()
+            .setHistoryItemKey(2251799813685250L)
             .setAgentInstanceKey(2251799813685251L)
             .setElementInstanceKey(2251799813685249L)
             .setJobKey(2251799813685252L)
@@ -60,6 +62,7 @@ final class AgentHistoryRecordTest {
     copy.copyFrom(original);
 
     // then
+    assertThat(copy.getHistoryItemKey()).isEqualTo(original.getHistoryItemKey());
     assertThat(copy.getAgentInstanceKey()).isEqualTo(original.getAgentInstanceKey());
     assertThat(copy.getElementInstanceKey()).isEqualTo(original.getElementInstanceKey());
     assertThat(copy.getJobKey()).isEqualTo(original.getJobKey());
