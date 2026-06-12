@@ -7,6 +7,7 @@
  */
 package io.camunda.authentication.pt;
 
+import static io.camunda.spring.utils.PhysicalTenantContext.DEFAULT_PHYSICAL_TENANT_ID;
 import static io.camunda.spring.utils.PhysicalTenantContext.PHYSICAL_TENANTS_PATH_SEGMENT;
 
 import io.camunda.security.api.context.CamundaSecurityScopeProvider;
@@ -27,7 +28,8 @@ import org.springframework.core.env.Environment;
 
 /**
  * {@link CamundaSecurityScopeProvider} that emits one {@link ScopedSecurityDescriptor} per
- * explicitly configured physical tenant.
+ * explicitly configured physical tenant, plus an alias descriptor for the implicit {@code default}
+ * tenant whenever any tenant is configured.
  *
  * <p>Each descriptor carries:
  *
@@ -40,10 +42,16 @@ import org.springframework.core.env.Environment;
  *       per-PT provider selection is deferred to #54730.
  * </ul>
  *
+ * <p><b>Default alias:</b> when at least one physical tenant is configured, this provider also
+ * emits a descriptor for the implicit {@code default} tenant at {@code /physical-tenants/default},
+ * built from the root configuration. The default (root) tenant is therefore addressable both via
+ * the unprefixed cluster paths ({@code /v2/...}) and via {@code /physical-tenants/default/v2/...}
+ * as an alias. This mirrors {@code PhysicalTenantResolver}'s synthesis of a default entry.
+ *
  * <p><b>Empty-list behaviour:</b> if no {@code camunda.physical-tenants.*} entries are present in
- * the {@link Environment} (i.e. only the implicit {@code default} tenant exists), this provider
- * returns an empty list. The cluster then behaves identically to a non-PT deployment — CSL's
- * standard chains serve all traffic.
+ * the {@link Environment}, this provider returns an empty list (the default alias is <em>not</em>
+ * emitted). The cluster then behaves identically to a non-PT deployment — CSL's standard chains
+ * serve all traffic.
  */
 public final class PhysicalTenantScopeProvider implements CamundaSecurityScopeProvider {
 
@@ -80,26 +88,40 @@ public final class PhysicalTenantScopeProvider implements CamundaSecurityScopePr
       return List.of();
     }
 
+    // Expose the implicit default tenant as an alias for the root/cluster surface (the unprefixed
+    // /v2/... paths), addressable at /physical-tenants/default — mirroring PhysicalTenantResolver's
+    // synthesis of a default entry. A valid OIDC cluster always configures its root provider (the
+    // unprefixed /v2 surface needs it), so the alias is always buildable; idempotent if default is
+    // already configured explicitly.
+    tenantIds.add(DEFAULT_PHYSICAL_TENANT_ID);
+
     final List<ScopedSecurityDescriptor> result = new ArrayList<>();
     for (final String tenantId : tenantIds) {
-      try {
-        final var authConfig =
-            PhysicalTenantAuthConfigurations.forPhysicalTenant(tenantId, environment);
-        final String basePath = PHYSICAL_TENANTS_PATH_SEGMENT + tenantId;
-        result.add(new ScopedSecurityDescriptor(basePath, authConfig));
-        LOG.debug(
-            "Registered scoped security descriptor for physical tenant '{}' at {} (providers: [{}])",
-            tenantId,
-            basePath,
-            describeProviders(authConfig));
-      } catch (final IllegalStateException e) {
-        LOG.warn(
-            "Skipping scoped security chain for physical tenant '{}': {}",
-            tenantId,
-            e.getMessage());
-      }
+      addDescriptor(result, tenantId);
     }
     return List.copyOf(result);
+  }
+
+  private void addDescriptor(final List<ScopedSecurityDescriptor> result, final String tenantId) {
+    try {
+      final var authConfig =
+          PhysicalTenantAuthConfigurations.forPhysicalTenant(tenantId, environment);
+      final String basePath = PHYSICAL_TENANTS_PATH_SEGMENT + tenantId;
+      result.add(new ScopedSecurityDescriptor(basePath, authConfig));
+      LOG.debug(
+          "Registered scoped security descriptor for physical tenant '{}' at {} (providers: [{}])",
+          tenantId,
+          basePath,
+          describeProviders(authConfig));
+    } catch (final IllegalStateException e) {
+      // Log the exception itself (last arg) so the full cause chain — e.g. a deeply-nested Spring
+      // Binder failure — is captured for operator diagnostics, not just its top-level message.
+      LOG.warn(
+          "Skipping scoped security chain for physical tenant '{}': {}",
+          tenantId,
+          e.getMessage(),
+          e);
+    }
   }
 
   /**

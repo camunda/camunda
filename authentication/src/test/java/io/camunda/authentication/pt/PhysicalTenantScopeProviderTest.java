@@ -64,10 +64,12 @@ class PhysicalTenantScopeProviderTest {
     final var provider = new PhysicalTenantScopeProvider(env);
     final List<ScopedSecurityDescriptor> descriptors = provider.get();
 
-    assertThat(descriptors).hasSize(2);
+    // Two explicit tenants + the implicit default alias.
+    assertThat(descriptors).hasSize(3);
     final var basePaths = descriptors.stream().map(ScopedSecurityDescriptor::basePath).toList();
     assertThat(basePaths)
-        .containsExactlyInAnyOrder("/physical-tenants/tenanta", "/physical-tenants/pt2");
+        .containsExactlyInAnyOrder(
+            "/physical-tenants/tenanta", "/physical-tenants/pt2", "/physical-tenants/default");
   }
 
   @Test
@@ -83,10 +85,10 @@ class PhysicalTenantScopeProviderTest {
 
     final var provider = new PhysicalTenantScopeProvider(env);
 
+    // The explicit tenant plus the implicit default alias.
     assertThat(provider.get())
-        .singleElement()
         .extracting(ScopedSecurityDescriptor::basePath)
-        .isEqualTo("/physical-tenants/myidp");
+        .containsExactlyInAnyOrder("/physical-tenants/myidp", "/physical-tenants/default");
   }
 
   @Test
@@ -137,11 +139,49 @@ class PhysicalTenantScopeProviderTest {
     final var provider = new PhysicalTenantScopeProvider(env);
     final List<ScopedSecurityDescriptor> descriptors = provider.get();
 
-    // Both tenants now yield descriptors (union semantics — no assigned check)
-    assertThat(descriptors).hasSize(2);
+    // Both tenants yield descriptors (union semantics — no assigned check), plus the default alias.
+    assertThat(descriptors).hasSize(3);
     final var basePaths = descriptors.stream().map(ScopedSecurityDescriptor::basePath).toList();
     assertThat(basePaths)
-        .containsExactlyInAnyOrder("/physical-tenants/pt1", "/physical-tenants/pt2");
+        .containsExactlyInAnyOrder(
+            "/physical-tenants/pt1", "/physical-tenants/pt2", "/physical-tenants/default");
+  }
+
+  @Test
+  void shouldEmitDefaultAliasDescriptorFromRootConfigWhenPtModeActive() {
+    // The default tenant is not declared under physical-tenants.*; it must still be exposed as an
+    // alias at /physical-tenants/default, carrying the root/cluster providers (the /v2 surface).
+    final var env =
+        env(
+            Map.of(
+                "camunda.security.authentication.method", "oidc",
+                "camunda.security.authentication.oidc.client-id", "root-client",
+                "camunda.security.authentication.oidc.issuer-uri", "http://idp/root",
+                "camunda.security.authentication.oidc.audiences[0]", "root-aud",
+                // A non-default tenant activates PT scoping.
+                "camunda.physical-tenants.tenanta.security.authentication.providers.oidc.tenanta.client-id",
+                    "pt-tenanta-client"));
+
+    final var provider = new PhysicalTenantScopeProvider(env);
+
+    final var defaultAlias =
+        provider.get().stream()
+            .filter(d -> d.basePath().equals("/physical-tenants/default"))
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("expected a /physical-tenants/default alias"));
+
+    // The alias carries the root default slot (the unprefixed /v2 surface), not a PT overlay.
+    assertThat(defaultAlias.authentication().getOidc()).isNotNull();
+    assertThat(defaultAlias.authentication().getOidc().getClientId()).isEqualTo("root-client");
+    assertThat(defaultAlias.authentication().getOidc().getAudiences()).containsExactly("root-aud");
+  }
+
+  @Test
+  void shouldNotEmitDefaultAliasWhenNoPhysicalTenantsConfigured() {
+    // Without PT scoping the default alias must not appear — a non-PT deployment stays vanilla.
+    final var env = env(Map.of("camunda.security.authentication.method", "oidc"));
+
+    assertThat(new PhysicalTenantScopeProvider(env).get()).isEmpty();
   }
 
   private static MockEnvironment env(final Map<String, String> properties) {

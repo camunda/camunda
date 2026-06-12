@@ -53,8 +53,12 @@ class PhysicalTenantSecurityConfigurationTest {
         .run(
             context -> {
               final var provider = context.getBean(CamundaSecurityScopeProvider.class);
-              assertThat(provider.get()).hasSize(1);
-              assertThat(provider.get().get(0).basePath()).isEqualTo("/physical-tenants/tenanta");
+              // The explicit tenant plus the default alias (the root declares a usable oidc slot).
+              assertThat(provider.get())
+                  .extracting(
+                      io.camunda.security.api.model.config.ScopedSecurityDescriptor::basePath)
+                  .containsExactlyInAnyOrder(
+                      "/physical-tenants/tenanta", "/physical-tenants/default");
             });
   }
 }
