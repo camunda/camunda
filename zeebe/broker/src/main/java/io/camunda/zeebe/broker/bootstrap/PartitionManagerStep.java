@@ -18,7 +18,6 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.MemberState.State;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
 final class PartitionManagerStep extends AbstractBrokerStartupStep {
@@ -113,9 +112,7 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
         brokerStartupContext.getClusterConfigurationService().getInitialClusterConfiguration();
 
     final var clusterCfg = brokerStartupContext.getBrokerConfiguration().getCluster();
-
-    final var memberState =
-        clusterConfiguration.getMember(MemberId.from(clusterCfg.getZone(), clusterCfg.getNodeId()));
+    final MemberId memberId = MemberId.from(clusterCfg.getZone(), clusterCfg.getNodeId());
 
     if (PartitionManager.isDefaultPhysicalTenant(physicalTenantId)) {
       brokerStartupContext
@@ -123,8 +120,7 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
           .registerInconsistentConfigurationListener(
               (newTopology, oldTopology) -> {
                 shutdownOnInconsistentTopology(
-                    clusterCfg.getZone(),
-                    clusterCfg.getNodeId(),
+                    memberId,
                     brokerStartupContext.getSpringBrokerBridge(),
                     newTopology,
                     oldTopology);
@@ -182,12 +178,10 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
   }
 
   private void shutdownOnInconsistentTopology(
-      final @Nullable String zone,
-      final int localBrokerId,
+      final MemberId memberId,
       final SpringBrokerBridge springBrokerBridge,
       final ClusterConfiguration newTopology,
       final ClusterConfiguration oldTopology) {
-    final MemberId localMemberId = MemberId.from(zone, localBrokerId);
     LOGGER.warn(
         """
           Received a newer topology which has a different state for this broker.
@@ -195,8 +189,8 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
           State of this broker in old topology: '{}'
           This usually happens when the topology was changed forcefully when this broker was unreachable or this broker encountered a data loss. Shutting down the broker. Please restart the broker to use the new topology.
         """,
-        newTopology.getMember(localMemberId),
-        oldTopology.getMember(localMemberId));
+        newTopology.getMember(memberId),
+        oldTopology.getMember(memberId));
     springBrokerBridge.initiateShutdown(
         ERROR_CODE_ON_INCONSISTENT_TOPOLOGY,
         "Inconsistent cluster topology detected - topology was changed while broker was"
