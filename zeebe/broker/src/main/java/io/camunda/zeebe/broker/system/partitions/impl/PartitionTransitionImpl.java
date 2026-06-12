@@ -124,6 +124,22 @@ public final class PartitionTransitionImpl implements PartitionTransition {
       ongoingTransitionFuture = currentTransitionFuture;
 
       final var ongoingTransition = currentTransition;
+
+      // A lower-term transition is stale and must not preempt a higher-term one. This can happen
+      // during bootstrap when toInactive(0) is queued after a Raft role change to FOLLOWER(1)
+      // has already started, because context.getCurrentTerm() is still 0 at that point.
+      if (term < ongoingTransition.term()) {
+        LOG.info(
+            "Ignoring stale transition to {} on term {} (current transition to {} on term {} has higher term)",
+            role,
+            term,
+            ongoingTransition.role(),
+            ongoingTransition.term());
+        nextTransitionFuture.completeExceptionally(
+            new PartitionTransition.CancelledPartitionTransition());
+        return;
+      }
+
       if (!ongoingTransition.isCompleted()) {
         LOG.info(
             "Cancelling transition {} in favor of next transition {}",
