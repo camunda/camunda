@@ -125,6 +125,31 @@ public class IndexSchemaValidatorIT extends AbstractSchemaIT {
   }
 
   @Test
+  public void shouldValidateFieldDifferencesWhenIndexIsNotMeantToBeDynamic() {
+    createTestIndexWithDefaultDynamicMapping();
+
+    // the index is meant to be dynamic=strict and has some of those fields marked as "keyword" only
+    // which should force an exception
+    assertThatThrownBy(() -> validator.validateIndexMappings())
+        .isInstanceOf(OperateRuntimeException.class)
+        .hasMessageContaining(
+            "Index name: testindex. Not supported index changes are introduced. Data migration is required. Changes found:");
+  }
+
+  @Test
+  public void shouldIgnoreFieldDifferencesWhenIndexAreDynamicIfFlagEnabled() {
+    validator.operateProperties.setUnsafeIgnoreSchemaFieldDifferencesForDynamicMappings(true);
+
+    createTestIndexWithDefaultDynamicMapping();
+
+    // although there are differences, they should be ignored as we've flipped the flag
+    final Map<IndexDescriptor, Set<IndexMappingProperty>> indexDiff =
+        validator.validateIndexMappings();
+
+    assertThat(indexDiff).isEmpty();
+  }
+
+  @Test
   public void shouldIgnoreMissingIndexes() {
     // given an empty schema
 
@@ -308,5 +333,13 @@ public class IndexSchemaValidatorIT extends AbstractSchemaIT {
 
     // then
     assertThat(indexDiff).isEmpty();
+  }
+
+  private void createTestIndexWithDefaultDynamicMapping() {
+    // let ES create the index with default dynamic mapping
+    // all the fields will end up as type "text" with sub-field "keyword"
+    final Map<String, Object> document =
+        Map.of("propA", "test", "propB", "test", "propC", "testing 123");
+    clientTestHelper.createDocument(testIndex.getFullQualifiedName(), "1", document);
   }
 }

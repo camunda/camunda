@@ -114,6 +114,8 @@ public class OperateProperties {
   @NestedConfigurationProperty
   private MultiTenancyProperties multiTenancy = new MultiTenancyProperties();
 
+  private boolean unsafeIgnoreSchemaFieldDifferencesForDynamicMappings;
+
   public boolean isImporterEnabled() {
     return importerEnabled;
   }
@@ -410,5 +412,15 @@ public class OperateProperties {
 
   public void setMaxIncidentSearchGroups(final int maxIncidentSearchGroups) {
     this.maxIncidentSearchGroups = maxIncidentSearchGroups;
+  }
+
+  public boolean isUnsafeIgnoreSchemaFieldDifferencesForDynamicMappings() {
+    return unsafeIgnoreSchemaFieldDifferencesForDynamicMappings;
+  }
+
+  public void setUnsafeIgnoreSchemaFieldDifferencesForDynamicMappings(
+      final boolean unsafeIgnoreSchemaFieldDifferencesForDynamicMappings) {
+    this.unsafeIgnoreSchemaFieldDifferencesForDynamicMappings =
+        unsafeIgnoreSchemaFieldDifferencesForDynamicMappings;
   }
 }
