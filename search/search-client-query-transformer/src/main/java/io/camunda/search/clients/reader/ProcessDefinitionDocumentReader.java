@@ -41,7 +41,7 @@ public class ProcessDefinitionDocumentReader extends DocumentBasedReader
   public SearchQueryResult<ProcessDefinitionEntity> search(
       final ProcessDefinitionQuery query, final ResourceAccessChecks resourceAccessChecks) {
 
-    if (query.filter().isLatestVersion()) {
+    if (Boolean.TRUE.equals(query.filter().isLatestVersion())) {
       return searchWithAggregation(query, resourceAccessChecks);
     } else {
       return getSearchExecutor().search(query, ProcessEntity.class, resourceAccessChecks);
@@ -55,10 +55,6 @@ public class ProcessDefinitionDocumentReader extends DocumentBasedReader
             .aggregate(
                 query, ProcessDefinitionLatestVersionAggregationResult.class, resourceAccessChecks);
     return new SearchQueryResult<>(
-        aggResult.items().size(),
-        !aggResult.items().isEmpty(),
-        aggResult.items(),
-        null,
-        aggResult.endCursor());
+        aggResult.totalItems(), false, aggResult.items(), null, aggResult.endCursor());
   }
 }
