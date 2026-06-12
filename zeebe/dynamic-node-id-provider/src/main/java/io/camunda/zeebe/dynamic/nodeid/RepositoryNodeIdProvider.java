@@ -29,6 +29,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,7 +39,7 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
 
   private final NodeIdRepository nodeIdRepository;
   private final InstantSource clock;
-  private volatile StoredLease.Initialized currentLease;
+  private volatile StoredLease.@Nullable Initialized currentLease;
   private final Duration leaseDuration;
   private final Duration readinessCheckTimeout;
   private final Duration expiredLeaseThreshold;
@@ -47,7 +48,7 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
   private final ScheduledExecutorService executor;
   private final ExponentialBackoffRetryDelay backoff;
   private final Duration renewalDelay;
-  private ScheduledFuture<?> renewalTask;
+  private @Nullable ScheduledFuture<?> renewalTask;
   private final AtomicBoolean shutdownInitiated = new AtomicBoolean(false);
   private VersionMappings knownVersionMappings = VersionMappings.empty();
   private final CompletableFuture<Boolean> previousNodeGracefullyShutdown =
@@ -105,7 +106,11 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
 
   @Override
   public NodeInstance currentNodeInstance() {
-    return getCurrentLease().lease().nodeInstance();
+    final var lease = getCurrentLease();
+    if (lease == null) {
+      throw new IllegalStateException("Current lease is not available");
+    }
+    return lease.lease().nodeInstance();
   }
 
   /**
@@ -156,9 +161,14 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
       return;
     }
 
+    final var lease = currentLease;
+    if (lease == null) {
+      throw new IllegalStateException("Current lease is null during readiness check");
+    }
+
     new RepositoryNodeIdProviderReadinessChecker(
             clusterSize,
-            currentLease.node(),
+            lease.node(),
             nodeIdRepository,
             Duration.ofSeconds(5),
             readinessCheckTimeout)
@@ -181,7 +191,7 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
             this::renew, renewalDelay.toMillis(), renewalDelay.toMillis(), TimeUnit.MILLISECONDS);
   }
 
-  public Initialized getCurrentLease() {
+  public @Nullable Initialized getCurrentLease() {
     return currentLease;
   }
 
@@ -256,7 +266,7 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
     backoff.reset();
   }
 
-  private StoredLease tryAcquireLeaseForNode(final int nodeId) {
+  private @Nullable StoredLease tryAcquireLeaseForNode(final int nodeId) {
     try {
       final var storedLease = nodeIdRepository.getLease(nodeId);
       currentLease = tryAcquireInitialLease(storedLease);
@@ -267,8 +277,9 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
     }
   }
 
-  private boolean wasGracefullyShutdown(final StoredLease storedLease) {
+  private boolean wasGracefullyShutdown(final @Nullable StoredLease storedLease) {
     return switch (storedLease) {
+      case null -> true;
       case final StoredLease.Uninitialized u -> true;
       case final StoredLease.Initialized initialized ->
           initialized.lease().isExpiredBeyondThreshold(clock.instant(), expiredLeaseThreshold);
@@ -310,7 +321,7 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
     return currentCount;
   }
 
-  private StoredLease.Initialized tryAcquireInitialLease(final StoredLease lease) {
+  private StoredLease.@Nullable Initialized tryAcquireInitialLease(final StoredLease lease) {
     try {
       final var newLease = lease.acquireInitialLease(taskId, clock, leaseDuration);
       return newLease.map(value -> nodeIdRepository.acquire(value, lease.eTag())).orElse(null);
