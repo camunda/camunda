@@ -7,7 +7,6 @@
  */
 package io.camunda.gateway.mcp.processes;
 
-import io.camunda.gateway.mapping.http.physicaltenants.PhysicalTenantContext;
 import io.camunda.gateway.mcp.config.server.ToolRepository;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
 import io.camunda.search.entities.MessageSubscriptionEntity;
@@ -18,6 +17,7 @@ import io.camunda.search.query.MessageSubscriptionQuery;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.MessageServices.CorrelateMessageRequest;
 import io.camunda.service.registry.ServiceRegistry;
+import io.camunda.spring.utils.PhysicalTenantContext;
 import io.camunda.zeebe.protocol.record.ChannelType;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.collection.Tuple;

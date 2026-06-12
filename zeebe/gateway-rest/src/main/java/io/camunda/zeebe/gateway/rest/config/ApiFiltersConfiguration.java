@@ -7,14 +7,15 @@
  */
 package io.camunda.zeebe.gateway.rest.config;
 
-import static io.camunda.gateway.mapping.http.physicaltenants.PhysicalTenantContext.PHYSICAL_TENANTS_PATH_SEGMENT;
 import static io.camunda.security.api.model.config.MultiTenancyConfiguration.API_ENABLED_PROPERTY;
 import static io.camunda.security.api.model.config.oidc.OidcConfiguration.GROUPS_CLAIM_PROPERTY;
+import static io.camunda.spring.utils.PhysicalTenantContext.PHYSICAL_TENANTS_PATH_SEGMENT;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.spring.annotation.ConditionalOnAuthenticationMethod;
 import io.camunda.zeebe.gateway.rest.controller.EndpointAccessErrorFilter;
+import io.camunda.zeebe.gateway.rest.controller.PhysicalTenantFilter;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.Arrays;
 import java.util.List;
@@ -44,8 +45,28 @@ public class ApiFiltersConfiguration {
 
   private static final PathPatternParser PATTERN_PARSER = new PathPatternParser();
 
+  // Spring Security's FilterChainProxy registers at SecurityProperties.DEFAULT_FILTER_ORDER (-100);
+  // the physical-tenant filter must run just before it so components inside the security chain can
+  // read the tenant id. We inline the value rather than depend on spring-boot-security for one
+  // constant — and DEFAULT_FILTER_ORDER is a compile-time constant, so a reference would inline the
+  // value anyway and leave the dependency flagged as unused by dependency:analyze. See ADR-0003.
+  private static final int PHYSICAL_TENANT_FILTER_ORDER = -101;
+
   private static List<PathPattern> patterns(final String... patterns) {
     return Arrays.stream(patterns).map(PATTERN_PARSER::parse).toList();
+  }
+
+  /**
+   * Stamps the physical tenant id from {@code /physical-tenants/{id}/...} paths onto the request
+   * before Spring Security runs, so the security chain and downstream handlers can read it.
+   */
+  @Bean
+  public FilterRegistrationBean<PhysicalTenantFilter> physicalTenantFilter() {
+    final FilterRegistrationBean<PhysicalTenantFilter> registration =
+        new FilterRegistrationBean<>(new PhysicalTenantFilter());
+    registration.addUrlPatterns(PHYSICAL_TENANTS_PATH_SEGMENT + "*");
+    registration.setOrder(PHYSICAL_TENANT_FILTER_ORDER);
+    return registration;
   }
 
   @ConditionalOnExpression("'${camunda.security.authentication.oidc.groupsClaim:}' != ''")

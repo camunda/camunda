@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.annotation;
 
-import io.camunda.gateway.mapping.http.physicaltenants.PhysicalTenantContext;
+import io.camunda.spring.utils.PhysicalTenantContext;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -18,8 +18,8 @@ import java.lang.annotation.Target;
  * Marks a controller method parameter that should be populated with the resolved physical tenant id
  * for the current request.
  *
- * <p>Resolution is performed by {@code PhysicalTenantIdResolver}, which reads the value from {@link
- * PhysicalTenantContext} (set earlier by {@code PhysicalTenantInterceptor}). When no
+ * <p>Resolution is performed by {@code PhysicalTenantIdArgumentResolver}, which reads the value
+ * from {@link PhysicalTenantContext} (set earlier by {@code PhysicalTenantFilter}). When no
  * physical-tenant prefix is present on the request, the value defaults to {@link
  * PhysicalTenantContext#DEFAULT_PHYSICAL_TENANT_ID}.
  *

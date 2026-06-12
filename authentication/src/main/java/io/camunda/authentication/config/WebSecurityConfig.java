@@ -13,6 +13,7 @@ import io.camunda.authentication.config.spi.BasicAuthUserDetailsAdapter;
 import io.camunda.authentication.config.spi.IdentityToAdminComponentAliasAdapter;
 import io.camunda.authentication.config.spi.SecurityPathAdapter;
 import io.camunda.authentication.config.spi.WebAppProviderAdapter;
+import io.camunda.authentication.pt.PhysicalTenantSecurityConfiguration;
 import io.camunda.search.clients.reader.AuthorizationReader;
 import io.camunda.security.api.context.CamundaAuthenticationConverter;
 import io.camunda.security.api.model.CamundaAuthentication;
@@ -65,6 +66,7 @@ import org.springframework.security.web.firewall.StrictHttpFirewall;
   OidcOverrideBeansConfiguration.class,
   BasicAuthBeansConfiguration.class,
   SaasCspModeCompatibility.class,
+  PhysicalTenantSecurityConfiguration.class,
 })
 public class WebSecurityConfig {
 

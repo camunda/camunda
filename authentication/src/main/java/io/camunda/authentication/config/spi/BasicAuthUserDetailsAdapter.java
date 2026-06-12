@@ -12,11 +12,17 @@ import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.core.port.out.BasicAuthUserDetailsPort;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.registry.ServiceRegistry;
+import io.camunda.spring.utils.PhysicalTenantContext;
 
 /**
  * Host-supplied {@link BasicAuthUserDetailsPort} resolving basic-auth users from OC's user
  * services, replacing the hand-rolled {@code CamundaUserDetailsService}
  * (camunda/camunda-security-library#372).
+ *
+ * <p>The physical tenant id is resolved via {@link PhysicalTenantContext#current()}, which reads
+ * the id stamped on the request by {@code PhysicalTenantFilter} (gateway-rest), registered to run
+ * before Spring Security's filter chain. For non-prefixed requests the context falls back to {@link
+ * PhysicalTenantContext#DEFAULT_PHYSICAL_TENANT_ID}.
  *
  * <p>An unknown user ({@link ServiceException.Status#NOT_FOUND}) resolves to {@code null}, the
  * port's no-such-user signal; any other lookup failure propagates rather than being masked as a
@@ -44,10 +50,9 @@ public final class BasicAuthUserDetailsAdapter implements BasicAuthUserDetailsPo
 
   private UserEntity getUser(final String username) {
     try {
-      // TODO physical-tenant resolution is a later slice (camunda/camunda#54729, #54730); this
-      // adapter is its home. Until then basic-auth users are resolved from the "default" tenant.
+      final String physicalTenantId = PhysicalTenantContext.current();
       return serviceRegistry
-          .userServices("default")
+          .userServices(physicalTenantId)
           .getUser(username, CamundaAuthentication.anonymous());
     } catch (final ServiceException e) {
       if (e.getStatus() == ServiceException.Status.NOT_FOUND) {

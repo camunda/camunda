@@ -58,6 +58,8 @@ public final class PhysicalTenantResolver implements PhysicalTenantIds {
   private static final String PHYSICAL_TENANTS_PREFIX = Camunda.PREFIX + ".physical-tenants";
   static final ConfigurationPropertyName PREFIX_NAME =
       ConfigurationPropertyName.of(PHYSICAL_TENANTS_PREFIX);
+  // Mirrored in PhysicalTenantScopeProvider (authentication module) — see the note there for why
+  // this is duplicated rather than shared. Keep the two in sync.
   private static final Pattern VALID_TENANT_ID = Pattern.compile("[a-z0-9]+");
 
   /**
