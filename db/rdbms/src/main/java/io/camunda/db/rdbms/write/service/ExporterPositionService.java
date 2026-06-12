@@ -77,7 +77,7 @@ public class ExporterPositionService {
           if (lockedPosition != null) {
             final long expectedPosition = expectedPositionSupplier.getAsLong();
             if (lockedPosition.lastExportedPosition() != expectedPosition) {
-              throw new IllegalStateException(
+              throw new ExporterPositionMismatchException(
                   String.format(
                       "Exporter position mismatch for partition %d: expected %d but found %d. "
                           + "Another exporter instance may have already exported to this partition.",
