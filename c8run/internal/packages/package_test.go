@@ -468,3 +468,45 @@ func TestMaterializeSymlinksReplacesSymlinkWithRegularFile(t *testing.T) {
 		t.Fatalf("expected materialized content %q, got %q", "jre legal text", string(content))
 	}
 }
+
+func TestMaterializeSymlinksReplacesSymlinkWithDirectory(t *testing.T) {
+	// given
+	root := t.TempDir()
+	targetPath := filepath.Join(root, "java.base")
+	linkPath := filepath.Join(root, "legal")
+	licensePath := filepath.Join(targetPath, "LICENSE")
+	if err := os.Mkdir(targetPath, 0o755); err != nil {
+		t.Fatalf("failed to create target directory: %v", err)
+	}
+	if err := os.WriteFile(licensePath, []byte("jre legal text"), 0o644); err != nil {
+		t.Fatalf("failed to write target file: %v", err)
+	}
+	if err := os.Symlink(targetPath, linkPath); err != nil {
+		t.Skipf("symlinks are not supported in this environment: %v", err)
+	}
+
+	// when
+	err := materializeSymlinks(root)
+
+	// then
+	if err != nil {
+		t.Fatalf("materializeSymlinks returned error: %v", err)
+	}
+	info, err := os.Lstat(linkPath)
+	if err != nil {
+		t.Fatalf("failed to stat materialized directory: %v", err)
+	}
+	if info.Mode()&os.ModeSymlink != 0 {
+		t.Fatalf("expected %s to be a directory, got mode %s", linkPath, info.Mode())
+	}
+	if !info.IsDir() {
+		t.Fatalf("expected %s to be a directory, got mode %s", linkPath, info.Mode())
+	}
+	content, err := os.ReadFile(filepath.Join(linkPath, "LICENSE"))
+	if err != nil {
+		t.Fatalf("failed to read materialized file: %v", err)
+	}
+	if string(content) != "jre legal text" {
+		t.Fatalf("expected materialized content %q, got %q", "jre legal text", string(content))
+	}
+}
