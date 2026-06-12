@@ -14,9 +14,9 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import liquibase.Liquibase;
 import liquibase.change.AbstractSQLChange;
 import liquibase.change.Change;
@@ -28,6 +28,7 @@ import liquibase.exception.LiquibaseException;
 import liquibase.resource.ClassLoaderResourceAccessor;
 import liquibase.sqlgenerator.SqlGeneratorFactory;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
 public class LiquibaseScriptGenerator {
@@ -69,11 +70,15 @@ public class LiquibaseScriptGenerator {
                 new PathMatchingResourcePatternResolver()
                     .getResources("classpath*:" + CHANGESET_PATH + "*.xml"))
             .filter(resource -> !Objects.equals(resource.getFilename(), "8.9.0.xml"))
+            // sorting as version numbers so e.g. 8.9.9 will appear before 8.10.0 (instead of
+            // lexical sorting, which would have 8.10.0 before 8.9.9)
+            .sorted(Comparator.comparing(LiquibaseScriptGenerator::versionNumberFromResource))
             .map(it -> CHANGESET_PATH + it.getFilename())
-            .collect(Collectors.toSet());
+            .distinct()
+            .toList();
 
     // Validate rolling-upgrade compatibility once, before generating any scripts.
-    validateRollingUpgradeCompatibility(upgradeChangesets.stream().toList());
+    validateRollingUpgradeCompatibility(upgradeChangesets);
 
     for (final var databaseVersion : DATABASE_VERSIONS) {
       // We generate create scripts for the latest version from the changelog-master.xml
@@ -263,6 +268,29 @@ public class LiquibaseScriptGenerator {
         .orElse(new DatabaseVersion(databaseId));
   }
 
+  private static VersionNumber versionNumberFromResource(final Resource resource) {
+    final var filename = resource.getFilename();
+    if (filename != null) {
+      return parseVersionNumber(filename.replace(".xml", ""));
+    }
+    throw new IllegalArgumentException(
+        "Expected resource with filename in format 'major.minor.patch.xml', but got: " + resource);
+  }
+
+  private static VersionNumber parseVersionNumber(final String str) {
+    final var parts = str.split("\\.");
+    if (parts.length == 3) {
+      try {
+        return new VersionNumber(
+            Integer.parseInt(parts[0]), Integer.parseInt(parts[1]), Integer.parseInt(parts[2]));
+      } catch (final NumberFormatException e) {
+        // fall through to exception below
+      }
+    }
+    throw new IllegalArgumentException(
+        "Expected version number in format 'major.minor.patch', but got: " + str);
+  }
+
   /**
    * Pairs a database vendor name with an optional target version for SQL generation.
    *
@@ -273,6 +301,21 @@ public class LiquibaseScriptGenerator {
   public record DatabaseVersion(String vendor, Long targetVersion) {
     public DatabaseVersion(final String vendor) {
       this(vendor, null);
+    }
+  }
+
+  record VersionNumber(int major, int minor, int patch) implements Comparable<VersionNumber> {
+    @Override
+    public int compareTo(final VersionNumber o) {
+      final var majorPart = major() - o.major();
+      if (majorPart != 0) {
+        return majorPart;
+      }
+      final var minorPart = minor() - o.minor();
+      if (minorPart != 0) {
+        return minorPart;
+      }
+      return patch() - o.patch();
     }
   }
 }
