@@ -33,4 +33,15 @@
     </addColumn>
   </changeSet>
 
+  <changeSet id="add_decision_instance_input_full_input_value_column" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="${prefix}DECISION_INSTANCE_INPUT" columnName="FULL_INPUT_VALUE"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="${prefix}DECISION_INSTANCE_INPUT">
+      <column name="FULL_INPUT_VALUE" type="CLOB"/>
+    </addColumn>
+  </changeSet>
+
 </databaseChangeLog>

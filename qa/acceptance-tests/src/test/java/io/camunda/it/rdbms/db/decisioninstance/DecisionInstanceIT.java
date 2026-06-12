@@ -15,6 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.DecisionInstanceDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriters;
+import io.camunda.db.rdbms.write.domain.DecisionInstanceDbModel.EvaluatedInput;
 import io.camunda.db.rdbms.write.domain.DecisionInstanceDbModel.EvaluatedOutput;
 import io.camunda.it.rdbms.db.fixtures.CommonFixtures;
 import io.camunda.it.rdbms.db.fixtures.DecisionDefinitionFixtures;
@@ -23,6 +24,7 @@ import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.DecisionInstanceEntity;
+import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceInputEntity;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceOutputEntity;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.query.DecisionInstanceQuery;
@@ -387,7 +389,7 @@ public class DecisionInstanceIT {
   }
 
   @TestTemplate
-  public void shouldSaveDecisionInstancesWithLargeResultsAndFindDecisionInstanceById(
+  public void shouldSaveDecisionInstancesWithLargeInputOutputsAndResultsAndFindDecisionInstanceById(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -396,10 +398,12 @@ public class DecisionInstanceIT {
 
     final var largeResult = "x".repeat(9_000);
     final var largeOutput = "y".repeat(10_000);
+    final var largeInput = "z".repeat(10_000);
 
     final var decisionInstanceKey = DecisionInstanceFixtures.nextKey();
     final var decisionInstanceId = decisionInstanceKey + "-1";
     final var evaluatedOutputId = DecisionInstanceFixtures.nextStringId();
+    final var evaluatedInputId = DecisionInstanceFixtures.nextStringId();
 
     final var original =
         DecisionInstanceFixtures.createRandomized(
@@ -415,7 +419,11 @@ public class DecisionInstanceIT {
                                 "outputName",
                                 largeOutput,
                                 "ruleId",
-                                123))));
+                                123)))
+                    .evaluatedInputs(
+                        List.of(
+                            new EvaluatedInput(
+                                decisionInstanceId, evaluatedInputId, "inputName", largeInput))));
     createAndSaveDecisionInstance(rdbmsWriters, original);
     final var actual = decisionInstanceReader.findOne(decisionInstanceId).orElseThrow();
 
@@ -428,5 +436,8 @@ public class DecisionInstanceIT {
             List.of(
                 new DecisionInstanceOutputEntity(
                     evaluatedOutputId, "outputName", largeOutput, "ruleId", 123)));
+    assertThat(actual.evaluatedInputs())
+        .isEqualTo(
+            List.of(new DecisionInstanceInputEntity(evaluatedInputId, "inputName", largeInput)));
   }
 }

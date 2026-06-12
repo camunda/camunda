@@ -268,7 +268,7 @@
 
   <insert id="insertInput" parameterType="io.camunda.db.rdbms.write.domain.DecisionInstanceDbModel">
     INSERT INTO ${prefix}DECISION_INSTANCE_INPUT (DECISION_INSTANCE_ID, INPUT_ID, INPUT_NAME,
-    INPUT_VALUE)
+    FULL_INPUT_VALUE)
     VALUES
     <foreach collection="evaluatedInputs" item="item" separator=", ">
       (#{decisionInstanceId}, #{item.id}, #{item.name}, #{item.value})
@@ -278,7 +278,7 @@
   <insert id="insertInput" parameterType="io.camunda.db.rdbms.write.domain.DecisionInstanceDbModel" databaseId="oracle">
     INSERT ALL
     <foreach collection="evaluatedInputs" item="item">
-      INTO ${prefix}DECISION_INSTANCE_INPUT (DECISION_INSTANCE_ID, INPUT_ID, INPUT_NAME, INPUT_VALUE)
+      INTO ${prefix}DECISION_INSTANCE_INPUT (DECISION_INSTANCE_ID, INPUT_ID, INPUT_NAME, FULL_INPUT_VALUE)
       VALUES (#{decisionInstanceId}, #{item.id}, #{item.name}, #{item.value})
     </foreach>
     SELECT 1 FROM DUAL
@@ -291,7 +291,10 @@
     DECISION_INSTANCE_ID,
     INPUT_ID,
     INPUT_NAME,
-    INPUT_VALUE
+    <include refid="io.camunda.db.rdbms.sql.Commons.coalesceCLOB">
+      <property name="clobColumn" value="FULL_INPUT_VALUE"/>
+      <property name="nonClobColumn" value="INPUT_VALUE"/>
+    </include> AS INPUT_VALUE
     FROM ${prefix}DECISION_INSTANCE_INPUT
     WHERE DECISION_INSTANCE_ID IN (<foreach collection="list" item="id" separator=", ">
     #{id}</foreach>)
