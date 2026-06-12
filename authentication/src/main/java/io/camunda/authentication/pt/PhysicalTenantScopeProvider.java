@@ -49,7 +49,12 @@ public final class PhysicalTenantScopeProvider implements CamundaSecurityScopePr
   private static final ConfigurationPropertyName PREFIX_NAME =
       ConfigurationPropertyName.of(PHYSICAL_TENANTS_PREFIX);
 
-  /** Pattern matching valid tenant ids (lowercase alphanumeric only, no dashes). */
+  // Valid tenant id: lowercase alphanumeric, no dashes — so the yaml form
+  // (camunda.physical-tenants.<id>.*) and its relaxed-binding env-var form address the same tenant.
+  // Intentionally duplicated from PhysicalTenantResolver (configuration module): it is a one-line
+  // rule, and no module that both 'configuration' and 'authentication' depend on fits a plain-Java
+  // validator (spring-utils is Spring-specific; depending on 'configuration' would invert the
+  // dependency). Keep the two in sync.
   private static final Pattern VALID_TENANT_ID = Pattern.compile("[a-z0-9]+");
 
   private final Environment environment;
