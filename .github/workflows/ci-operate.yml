@@ -16,11 +16,6 @@ on:
         description: "Set to true if Operate back-end code was changed"
         type: boolean
         required: true
-      stableBranch:
-        description: "Set to true if running on a stable/* branch"
-        type: boolean
-        required: false
-        default: false
   workflow_call:
     inputs:
       runFeTests:
@@ -31,11 +26,6 @@ on:
         description: "Set to true if Operate back-end code was changed"
         type: boolean
         required: true
-      stableBranch:
-        description: "Set to true if running on a stable/* branch"
-        type: boolean
-        required: false
-        default: false
 
 defaults:
   run:
@@ -616,7 +606,7 @@ jobs:
 #          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   run-migration-tests:
-    if: inputs.runBeTests && inputs.stableBranch
+    if: inputs.runBeTests && github.ref == 'refs/heads/stable/8.7'
     name: "Integration / Migrate Elasticsearch Data ITs"
     timeout-minutes: 30
     runs-on: gcp-perf-core-8-default
