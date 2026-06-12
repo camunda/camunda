@@ -300,11 +300,8 @@ processing.scheduled-tasks-check-interval
 processing.skip-positions
 security.authentication
 security.authorizations
-security.csrf
-security.http-headers
 security.id-validation-pattern
 security.initialization
-security.multi-tenancy
 security.saas
 security.session
 security.transport-layer-security.cluster.certificate-chain-path

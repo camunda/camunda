@@ -13,6 +13,8 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import io.camunda.configuration.UnifiedConfigurationException;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.core.env.MapPropertySource;
 import org.springframework.mock.env.MockEnvironment;
 
@@ -172,6 +174,86 @@ class PhysicalTenantOverridePolicyValidationTest {
     final MockEnvironment environment = environmentWith(Map.of("camunda.cluster.size", 4));
 
     // when / then root-level cluster configuration is allowed
+    assertThatCode(() -> PhysicalTenantOverridePolicyValidation.validate(environment))
+        .doesNotThrowAnyException();
+  }
+
+  // --- identity security property tests -------------------------------------------------------
+
+  @Test
+  void shouldRejectTenantOverridingAuthenticationMethod() {
+    // given a tenant attempting to override the cluster-wide authentication method
+    final MockEnvironment environment =
+        environmentWith(
+            Map.of("camunda.physical-tenants.tenanta.security.authentication.method", "basic"));
+
+    // when / then
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> PhysicalTenantOverridePolicyValidation.validate(environment))
+        .withMessageContaining("may not be overridden per physical tenant")
+        .withMessageContaining("tenanta")
+        .withMessageContaining("security.authentication.method");
+  }
+
+  @Test
+  void shouldRejectTenantOverridingAuthenticationUnprotectedApi() {
+    // given a tenant attempting to override the cluster-wide unprotected-api flag
+    final MockEnvironment environment =
+        environmentWith(
+            Map.of(
+                "camunda.physical-tenants.tenanta.security.authentication.unprotected-api", true));
+
+    // when / then
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> PhysicalTenantOverridePolicyValidation.validate(environment))
+        .withMessageContaining("may not be overridden per physical tenant")
+        .withMessageContaining("tenanta")
+        .withMessageContaining("security.authentication.unprotected-api");
+  }
+
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "security.csrf.enabled",
+        "security.csrf.cookie-name",
+        "security.http-headers.content-security-policy",
+        "security.cluster-admin.user-id",
+        "security.multi-tenancy.enabled"
+      })
+  void shouldRejectTenantOverridingNonOverridableSecuritySubpath(final String relativeKey) {
+    // given a tenant overriding a specific sub-key under a non-overridable security path
+    final MockEnvironment environment =
+        environmentWith(Map.of("camunda.physical-tenants.tenanta." + relativeKey, "somevalue"));
+
+    // when / then the entire subtree is blocked
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> PhysicalTenantOverridePolicyValidation.validate(environment))
+        .withMessageContaining("may not be overridden per physical tenant")
+        .withMessageContaining("tenanta")
+        .withMessageContaining(relativeKey);
+  }
+
+  @Test
+  void shouldAllowTenantOverridingOtherSecurityProperties() {
+    // given a tenant overriding a security property that is not on the deny-list
+    final MockEnvironment environment =
+        environmentWith(Map.of("camunda.physical-tenants.tenanta.security.session.timeout", "30m"));
+
+    // when / then freely overridable security properties are allowed
+    assertThatCode(() -> PhysicalTenantOverridePolicyValidation.validate(environment))
+        .doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldAllowTenantOverridingOidcConfiguration() {
+    // given a tenant configuring its own OIDC provider
+    final MockEnvironment environment =
+        environmentWith(
+            Map.of(
+                "camunda.physical-tenants.tenanta.security.authentication.oidc.issuer-uri",
+                "https://idp.tenanta.example.com"));
+
+    // when / then per-tenant OIDC configuration remains overridable
     assertThatCode(() -> PhysicalTenantOverridePolicyValidation.validate(environment))
         .doesNotThrowAnyException();
   }
