@@ -108,4 +108,34 @@ but carrying `aud=pt-default-via-tenanta-aud` (default's audience, not tenanta's
 | `dist/src/test/resources/pt-poc/default-realm.json` | Keycloak realm export — default realm |
 | `dist/src/test/resources/pt-poc/tenanta-realm.json` | Keycloak realm export — tenanta realm |
 | `dist/src/main/resources/application-pt-poc.yaml` | PT provider config + trimmed diagnostics |
-| `dist/src/main/resources/application.properties` | `spring.profiles.group.pt-poc=...` entry |
+| `dist/src/main/resources/application.properties` | `spring.profiles.group.pt-poc{,-basic}=...` entries |
+
+## BASIC-auth variant
+
+A parallel harness validates the same per-tenant chains under `method=basic` (no Keycloak). Users
+are seeded per tenant via `camunda.security.initialization`, and isolation is by per-tenant user
+store: `alice` lives only in the default store, `bob` only in the tenanta store.
+
+```bash
+# Terminal 1: Elasticsearch only (no IdP needed)
+#   reuse pt-poc-idp.sh's ES, or run your own on :9200
+# Terminal 2:
+./pt-poc-oc-basic.sh      # boots OC under the pt-poc-basic profile (application-pt-poc-basic.yaml)
+# Terminal 3 (after the broker exporter has seeded the initialization users):
+./pt-poc-basic-smoke.sh
+```
+
+Matrix: `alice` (default store) is accepted on `/v2` and `/pt/default`, 401 with a wrong/unknown
+password, and — the per-tenant routing isolation — **rejected on `/pt/tenanta`** because that chain
+resolves against a separate store (`userServices("tenanta")`).
+
+> **Scope:** seeding a *non-default* tenant's user store (`bob` on `/pt/tenanta`) needs per-PT
+> engine/store provisioning, which is separate from this PR's API-security-chain scope. This
+> single-engine harness only provisions the default store, so `bob` is never seeded — that cell is
+> informational (401 today, 200 once provisioning lands).
+
+| Path | Purpose |
+|---|---|
+| `pt-poc-oc-basic.sh` | Rebuilds + boots OC under the `pt-poc-basic` profile |
+| `pt-poc-basic-smoke.sh` | Runs the basic-auth per-tenant user-isolation matrix |
+| `dist/src/main/resources/application-pt-poc-basic.yaml` | `method=basic` + per-tenant initialization users |

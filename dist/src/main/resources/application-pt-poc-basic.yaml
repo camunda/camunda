@@ -1,0 +1,78 @@
+# Physical-tenant BASIC-auth PoC config (INTERIM — drop before review).
+#
+# Activated via the `pt-poc-basic` profile (see spring.profiles.group.pt-poc-basic in
+# application.properties). Unlike application-pt-poc.yaml (OIDC + two Keycloak realms), this needs
+# no external IdP: basic-auth users are seeded per physical tenant via camunda.security.initialization.
+#
+# Basic-auth user resolution is per physical tenant — BasicAuthUserDetailsAdapter looks the user up
+# via serviceRegistry.userServices(<ptId>). alice is seeded (below) into the default/root store and
+# resolves on /v2/... and /physical-tenants/default/...; the tenanta chain resolves against a
+# SEPARATE store, so alice is rejected there (per-tenant routing isolation).
+#
+# SCOPE NOTE: this single-engine harness provisions only the default store (index-prefix
+# ptbasicdefault). It does NOT provision a separate engine/store per physical tenant, so the
+# tenanta block below (index-prefix + bob) is NOT actually seeded — no ptbasictenanta-* indices are
+# created. Per-PT engine/store provisioning is separate from this PR's API-security-chain scope; the
+# tenanta config is kept to document intent and will seed bob once provisioning lands.
+camunda:
+  data:
+    secondary-storage:
+      type: elasticsearch
+      elasticsearch:
+        url: http://localhost:9200
+        number-of-replicas: 0
+        create-schema: true
+        # Default/root tenant store. Distinct from the OIDC harness prefixes so the two harnesses
+        # can share one ES node without their indices colliding.
+        index-prefix: ptbasicdefault
+  security:
+    authorizations:
+      enabled: true
+    authentication:
+      method: basic
+    # Default/root tenant users live in the ptbasicdefault store. alice is the default admin.
+    # NOTE: users are created in secondary storage via the broker exporter, so they only become
+    # resolvable once the exporter is healthy and the initialization data has been exported — wait
+    # for that (a few seconds after "Tomcat started") before running the smoke.
+    initialization:
+      users:
+        - username: alice
+          password: alice
+          name: Alice Default
+          email: alice@default
+      defaultRoles:
+        admin:
+          users:
+            - alice
+  physical-tenants:
+    tenanta:
+      data:
+        secondary-storage:
+          elasticsearch:
+            # tenanta's own store — bob lives here, not in the default store.
+            index-prefix: ptbasictenanta
+      security:
+        initialization:
+          users:
+            - username: bob
+              password: bob
+              name: Bob Tenanta
+              email: bob@tenanta
+          defaultRoles:
+            admin:
+              users:
+                - bob
+
+server:
+  port: 8080
+
+logging:
+  file:
+    name: /tmp/oc-basic.log
+  level:
+    io.camunda.authentication.pt: DEBUG
+    io.camunda.security: INFO
+    org.springframework.security: INFO
+    # DEBUG to surface the exact index/property the CamundaExporter's schema-readiness check flags
+    # as a mapping diff — the cause of repeated "Schema is not ready for use" on the broker exporter.
+    io.camunda.search.schema: DEBUG
