@@ -2,6 +2,45 @@
 
 This page collects processes we follow in the `camunda/camunda` monorepo.
 
+## Green Checks on `main` and `stable/*` Branches
+
+### Purpose
+
+This process ensures that `main` and `stable/*` branches stay green continuously.
+
+We use this process because:
+
+- These branches are our release and integration baseline, so red checks indicate reduced stability and release-readiness.
+- For base branches, we expect no failing checks after CI stabilization work; every red check matters.
+- Some important scheduled workflows are not part of Unified CI, so Unified CI thresholds alone are not sufficient.
+
+### Approach
+
+Use this process to create a fast feedback loop for any failed check on base branches:
+
+- Detect failures across `on: push` and `on: schedule` workflows.
+- Alert immediately via Grafana on any unsuccessful job.
+- Create and route incidents to the right owners/medics.
+- Drive mitigation and resolution via the established incident process.
+- Keep base branches green over time instead of reacting ad hoc.
+
+### Implementation
+
+1. **Coverage enforcement:** CI policy checks ensure relevant workflows/jobs submit CI Analytics data.
+2. **Detection:** CI Analytics data is queried for unsuccessful jobs on `main` and `stable/*` for push/schedule triggers.
+3. **Alerting:** Grafana raises `base-branch-unsuccessful-job` alerts for any detected red check.
+4. **Incident propagation:** Alerts are propagated into incident.io incidents (with alert grouping configured there).
+5. **Ownership routing:** Incidents are assigned to the responsible medic/owner based on ownership information.
+6. **Response and resolution:** Medics follow [runbooks](./ci-runbooks.md#base-branch-unsuccessful-job) and the [CI incident management process](#ci-incident-management) to mitigate and fix root causes.
+7. **Verification:** Job trends and alert behavior are monitored until checks are consistently green again.
+
+### Operating Notes
+
+- This is complementary to Unified CI SLO/threshold monitoring; it is stricter for base branches by alerting on every failure.
+- The process focuses on reliability of release-critical branches and includes both push and scheduled execution paths.
+- If recurring test instability is found, evaluate quarantine or other mitigation mechanisms with clear ownership and follow-up.
+
+
 ## Renovate PR Handling
 
 We use [Renovate to automate dependency updates](./ci.md#renovate) in the `camunda/camunda` monorepo. However, not all updates can be automatically merged as-is due to breaking changes or adjustments needed to the code base.
