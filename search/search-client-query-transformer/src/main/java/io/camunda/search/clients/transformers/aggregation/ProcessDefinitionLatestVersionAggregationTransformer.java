@@ -87,6 +87,7 @@ public class ProcessDefinitionLatestVersionAggregationTransformer
             .name(AGGREGATION_NAME_TOTAL_COUNT)
             .script(PROCESS_DEFINITION_AND_TENANT_KEY)
             .lang(SCRIPT_LANGUAGE)
+            .precisionThreshold(AGGREGATION_TERMS_SIZE)
             .build();
 
     return List.of(finalAggregation, totalCountAgg);
