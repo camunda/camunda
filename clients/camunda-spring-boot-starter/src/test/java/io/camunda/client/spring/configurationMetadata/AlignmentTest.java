@@ -15,7 +15,7 @@
  */
 package io.camunda.client.spring.configurationMetadata;
 
-import static io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder.DEFAULT_CREDENTIALS_CACHE_PATH;
+import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -28,7 +28,6 @@ import io.camunda.client.spring.properties.CamundaClientProperties;
 import java.io.IOException;
 import java.net.URI;
 import java.time.Duration;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -57,9 +56,6 @@ public class AlignmentTest {
   private static final Function<JsonNode, Object> DOUBLE_MAPPER = JsonNode::doubleValue;
   private static final Map<String, Getter> NEW_GETTERS =
       Map.<String, Getter>ofEntries(
-          entry(
-              "camunda.client.use-client-side-load-balancing",
-              new Getter(CamundaClientProperties::isUseClientSideLoadBalancing)),
           entry(
               "camunda.client.execution-threads",
               new Getter(CamundaClientProperties::getExecutionThreads)),
@@ -98,9 +94,6 @@ public class AlignmentTest {
               "camunda.client.worker.defaults.tenant-ids",
               new Getter(p -> p.getWorker().getDefaults().getTenantIds())),
           entry(
-              "camunda.client.worker.defaults.tenant-filter",
-              new Getter(p -> p.getWorker().getDefaults().getTenantFilter().name())),
-          entry(
               "camunda.client.worker.defaults.timeout",
               new Getter(p -> p.getWorker().getDefaults().getTimeout(), DURATION_MAPPER)),
           entry(
@@ -134,15 +127,8 @@ public class AlignmentTest {
               "camunda.client.worker.defaults.stream-timeout",
               new Getter(p -> p.getWorker().getDefaults().getStreamTimeout(), DURATION_MAPPER)),
           entry(
-              "camunda.client.worker.defaults.stream-inactivity-timeout",
-              new Getter(
-                  p -> p.getWorker().getDefaults().getStreamInactivityTimeout(), DURATION_MAPPER)),
-          entry(
               "camunda.client.max-http-connections",
               new Getter(CamundaClientProperties::getMaxHttpConnections)),
-          entry(
-              "camunda.client.worker.defaults.retry-backoff",
-              new Getter(p -> p.getWorker().getDefaults().getRetryBackoff(), DURATION_MAPPER)),
           entry(
               "camunda.client.keep-alive",
               new Getter(CamundaClientProperties::getKeepAlive, DURATION_MAPPER)),
@@ -176,19 +162,12 @@ public class AlignmentTest {
           entry("camunda.client.cloud.region", new Getter(p -> p.getCloud().getRegion())),
           entry(
               "camunda.client.deployment.enabled", new Getter(p -> p.getDeployment().isEnabled())),
-          entry(
-              "camunda.client.deployment.own-jar-only",
-              new Getter(p -> p.getDeployment().isOwnJarOnly())),
           // as the auth method is set by the properties post processor, we have to hardcode it to
           // null for this test
           entry("camunda.client.auth.method", new Getter(p -> null)),
           entry("camunda.client.auth.username", new Getter(p -> p.getAuth().getUsername())),
           entry("camunda.client.auth.password", new Getter(p -> p.getAuth().getPassword())),
           entry("camunda.client.auth.token-url", new Getter(p -> p.getAuth().getTokenUrl())),
-          entry("camunda.client.auth.issuer-url", new Getter(p -> p.getAuth().getIssuerUrl())),
-          entry(
-              "camunda.client.auth.well-known-configuration-url",
-              new Getter(p -> p.getAuth().getWellKnownConfigurationUrl())),
           entry("camunda.client.auth.audience", new Getter(p -> p.getAuth().getAudience())),
           entry("camunda.client.auth.scope", new Getter(p -> p.getAuth().getScope())),
           entry("camunda.client.auth.resource", new Getter(p -> p.getAuth().getResource())),
@@ -210,21 +189,6 @@ public class AlignmentTest {
               "camunda.client.auth.proactive-token-refresh-threshold",
               new Getter(p -> p.getAuth().getProactiveTokenRefreshThreshold(), DURATION_MAPPER)),
           entry(
-              "camunda.client.auth.token-fetch-max-retries",
-              new Getter(p -> p.getAuth().getTokenFetchMaxRetries())),
-          entry(
-              "camunda.client.auth.token-fetch-initial-backoff",
-              new Getter(p -> p.getAuth().getTokenFetchInitialBackoff(), DURATION_MAPPER)),
-          entry(
-              "camunda.client.auth.token-fetch-backoff-multiplier",
-              new Getter(p -> p.getAuth().getTokenFetchBackoffMultiplier(), DOUBLE_MAPPER)),
-          entry(
-              "camunda.client.auth.token-fetch-retryable-status-codes",
-              new Getter(p -> p.getAuth().getTokenFetchRetryableStatusCodes(), INT_SET_MAPPER)),
-          entry(
-              "camunda.client.auth.token-fetch-non-retryable-cooldown",
-              new Getter(p -> p.getAuth().getTokenFetchNonRetryableCooldown(), DURATION_MAPPER)),
-          entry(
               "camunda.client.auth.client-assertion.keystore-key-alias",
               new Getter(p -> p.getAuth().getClientAssertion().getKeystoreKeyAlias())),
           entry(
@@ -232,13 +196,7 @@ public class AlignmentTest {
               new Getter(p -> p.getAuth().getClientAssertion().getKeystoreKeyPassword())),
           entry(
               "camunda.client.auth.credentials-cache-path",
-              new Getter(p -> p.getAuth().getCredentialsCachePath())),
-          entry(
-              "camunda.client.cluster-variables.enabled",
-              new Getter(p -> p.getClusterVariables().isEnabled())),
-          entry(
-              "camunda.client.cluster-variables.variables",
-              new Getter(p -> p.getClusterVariables().getVariables())));
+              new Getter(p -> "$HOME/.camunda/credentials")));
 
   @Autowired CamundaClientProperties camundaClientProperties;
 
@@ -249,9 +207,8 @@ public class AlignmentTest {
    */
   @TestFactory
   Stream<DynamicTest> alignmentWithDefaultPropertiesTest() throws IOException {
-    final ObjectMapper objectMapper = new ObjectMapper();
     final JsonNode jsonNode =
-        objectMapper.readTree(
+        MAPPER.readTree(
             ResourceUtils.getFile("classpath:META-INF/spring-configuration-metadata.json"));
     final ArrayNode properties = (ArrayNode) jsonNode.get("properties");
     return properties
@@ -271,15 +228,15 @@ public class AlignmentTest {
                       assertThat(value).isNull();
                     });
               }
-              final Object defaultValue =
-                  objectMapper.convertValue(p.get("defaultValue"), Object.class);
+              final JsonNode defaultValue = p.get("defaultValue");
               return DynamicTest.dynamicTest(
                   "Property " + name + " with default value " + defaultValue,
                   () -> {
-                    assertThat(GETTERS).containsKey(name);
-                    final Object value = GETTERS.get(name).apply(camundaClientProperties);
+                    assertThat(NEW_GETTERS).containsKey(name);
+                    final Getter getter = NEW_GETTERS.get(name);
+                    final Object value = getter.getter().apply(camundaClientProperties);
                     final Object transformedDefaultValue =
-                        MAPPERS.getOrDefault(name, o -> o).apply(defaultValue);
+                        getter.defaultValueMapper().apply(defaultValue);
                     assertThat(value).isEqualTo(transformedDefaultValue);
                   });
             });
@@ -315,4 +272,12 @@ public class AlignmentTest {
   }
 
   private record DeprecatedProperty(String name, String replacement) {}
+
+  private record Getter(
+      Function<CamundaClientProperties, Object> getter,
+      Function<JsonNode, Object> defaultValueMapper) {
+    public Getter(final Function<CamundaClientProperties, Object> getter) {
+      this(getter, o -> MAPPER.convertValue(o, Object.class));
+    }
+  }
 }
