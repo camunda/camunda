@@ -407,6 +407,32 @@ jobs:
         id: build-optimize-fe
         with:
           directory: ./optimize/client
+      # Share the built frontend bundles so the snapshot deploy jobs download them
+      # instead of rebuilding (see issue #52693). Short retention: consumed within the same run.
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: fe-operate-${{ github.run_id }}
+          path: operate/client/build
+          retention-days: 1
+          if-no-files-found: error
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: fe-tasklist-${{ github.run_id }}
+          path: tasklist/client/build
+          retention-days: 1
+          if-no-files-found: error
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: fe-identity-${{ github.run_id }}
+          path: identity/client/dist
+          retention-days: 1
+          if-no-files-found: error
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: fe-optimize-${{ github.run_id }}
+          path: optimize/client/dist
+          retention-days: 1
+          if-no-files-found: error
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -2098,7 +2124,7 @@ jobs:
 
   deploy-snapshots:
     name: Deploy snapshot artifacts
-    needs: [ check-results, utils-get-concurrency-group-for-maven-snapshot ]
+    needs: [ check-results, build-platform-frontend, utils-get-concurrency-group-for-maven-snapshot ]
     runs-on: gcp-perf-core-8-default
     timeout-minutes: 25
     permissions: { }  # GITHUB_TOKEN unused in this job
@@ -2116,21 +2142,20 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-      - uses: ./.github/actions/build-frontend
-        id: build-operate-fe
+      # Frontend bundles are built once in build-platform-frontend and downloaded here
+      # instead of being rebuilt (issue #52693). mvn runs with -PskipFrontendBuild below.
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          directory: ./operate/client
-          package-manager: "npm"
-      - uses: ./.github/actions/build-frontend
-        id: build-tasklist-fe
+          name: fe-operate-${{ github.run_id }}
+          path: operate/client/build
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          directory: ./tasklist/client
-          package-manager: "npm"
-      - uses: ./.github/actions/build-frontend
-        id: build-identity-fe
+          name: fe-tasklist-${{ github.run_id }}
+          path: tasklist/client/build
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          directory: ./identity/client
-          package-manager: "npm"
+          name: fe-identity-${{ github.run_id }}
+          path: identity/client/dist
       # compile and generate-sources to ensure that the Javadoc can be properly generated; compile is
       # necessary when using annotation preprocessors for code generation, as otherwise the symbols are
       # not resolve-able by the Javadoc generator
@@ -2168,7 +2193,7 @@ jobs:
 
   deploy-camunda-docker-snapshot:
     name: Deploy snapshot Camunda Docker image
-    needs: [ check-results, utils-get-snapshot-docker-tag, utils-get-concurrency-group-for-docker-snapshot ]
+    needs: [ check-results, build-platform-frontend, utils-get-snapshot-docker-tag, utils-get-concurrency-group-for-docker-snapshot ]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions: { }  # GITHUB_TOKEN unused in this job
@@ -2187,21 +2212,20 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
           minimus: true
-      - uses: ./.github/actions/build-frontend
-        id: build-operate-fe
+      # Frontend bundles are built once in build-platform-frontend and downloaded here
+      # instead of being rebuilt (issue #52693). build-zeebe runs with -PskipFrontendBuild below.
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          directory: ./operate/client
-          package-manager: "npm"
-      - uses: ./.github/actions/build-frontend
-        id: build-tasklist-fe
+          name: fe-operate-${{ github.run_id }}
+          path: operate/client/build
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          directory: ./tasklist/client
-          package-manager: "npm"
-      - uses: ./.github/actions/build-frontend
-        id: build-identity-fe
+          name: fe-tasklist-${{ github.run_id }}
+          path: tasklist/client/build
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          directory: ./identity/client
-          package-manager: "npm"
+          name: fe-identity-${{ github.run_id }}
+          path: identity/client/dist
       - uses: ./.github/actions/build-zeebe
         id: build-camunda
         with:
@@ -2240,7 +2264,7 @@ jobs:
 
   deploy-optimize-docker-snapshot:
     name: Deploy snapshot Optimize Docker image
-    needs: [ check-results, utils-get-snapshot-docker-tag, utils-get-concurrency-group-for-optimize-docker-snapshot ]
+    needs: [ check-results, build-platform-frontend, utils-get-snapshot-docker-tag, utils-get-concurrency-group-for-optimize-docker-snapshot ]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions: { }  # GITHUB_TOKEN unused in this job
@@ -2259,10 +2283,12 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
           minimus: true
-      - uses: ./.github/actions/build-frontend
-        id: build-optimize-fe
+      # Optimize frontend bundle is built once in build-platform-frontend and downloaded here
+      # instead of being rebuilt (issue #52693). The Optimize assembly runs with -PskipFrontendBuild below.
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          directory: ./optimize/client
+          name: fe-optimize-${{ github.run_id }}
+          path: optimize/client/dist
       - name: Build zeebe-protocol from source
         uses: ./.github/actions/run-maven
         with:
