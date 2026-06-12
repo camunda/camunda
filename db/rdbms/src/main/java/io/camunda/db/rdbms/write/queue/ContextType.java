@@ -39,6 +39,7 @@ public enum ContextType {
   VARIABLE(false),
   WAIT_STATE(false),
   CLUSTER_VARIABLE(false),
+  PROCESS_DEF_VAR_NAME_LOOKUP(false),
   // for global listeners, event types are updated through delete+insert, so order needs to be
   // preserved
   GLOBAL_LISTENER(true),

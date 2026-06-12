@@ -212,6 +212,8 @@ public class HistoryDeletionServiceTest {
     verify(rdbmsWritersMock.getMessageSubscriptionWriter())
         .deleteStartEventSubscriptionsByProcessDefinitionKeys(
             eq(List.of(processDefinitionKey1, processDefinitionKey2)), anyInt());
+    verify(rdbmsWritersMock.getVariableWriter())
+        .deleteLookupByProcessDefinitionKeys(List.of(processDefinitionKey1, processDefinitionKey2));
     verify(rdbmsWritersMock.getProcessDefinitionWriter())
         .deleteByKeys(List.of(processDefinitionKey1, processDefinitionKey2));
   }
@@ -238,6 +240,8 @@ public class HistoryDeletionServiceTest {
     historyDeletionService.deleteHistory(partitionId);
 
     // then
+    verify(rdbmsWritersMock.getVariableWriter())
+        .deleteLookupByProcessDefinitionKeys(List.of(processDefinitionKey));
     verify(rdbmsWritersMock.getProcessDefinitionWriter(), never()).deleteByKeys(anyList());
     verify(rdbmsWritersMock.getHistoryDeletionWriter(), never()).deleteByResourceKeys(anyList());
   }

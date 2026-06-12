@@ -7,13 +7,16 @@
  */
 package io.camunda.it.rdbms.db.historydeletion;
 
+import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextStringId;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig.HistoryDeletionConfig;
 import io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel;
 import io.camunda.db.rdbms.write.service.HistoryDeletionService;
+import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
 import io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures;
+import io.camunda.it.rdbms.db.fixtures.VariableFixtures;
 import io.camunda.it.rdbms.db.history.ProcessInstanceHistory;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
@@ -115,6 +118,74 @@ public class HistoryDeletionServiceIT extends ProcessInstanceHistory {
     assertThat(incidentCount(rdbmsService, processInstanceKey)).isEqualTo(10L);
     assertThat(decisionInstanceCount(rdbmsService, processInstanceKey)).isEqualTo(10L);
     auditLogsNotDeleted(rdbmsService, processInstanceKey);
+  }
+
+  @TestTemplate
+  public void shouldDeleteVariableNameLookupWhenDeletingProcessDefinition(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final var rdbmsService = testApplication.getRdbmsService();
+    final var writers = rdbmsService.createWriter(0);
+    final var historyDeletionService =
+        new HistoryDeletionService(
+            writers,
+            rdbmsService.getHistoryDeletionDbReader(),
+            rdbmsService.getProcessInstanceReader(),
+            rdbmsService.getDecisionInstanceReader(),
+            new HistoryDeletionConfig(Duration.ofSeconds(1), Duration.ofMinutes(5), 100, 10000),
+            InstantSource.system());
+
+    // target process definition — no live process instances so it is eligible for deletion
+    final var targetProcDef =
+        ProcessDefinitionFixtures.createAndSaveRandomProcessDefinition(writers, b -> b);
+    final long targetPdKey = targetProcDef.processDefinitionKey();
+    final String varNameA = "var-a-" + nextStringId();
+    final String varNameB = "var-b-" + nextStringId();
+    VariableFixtures.createAndSaveVariableWithProcessDefinition(
+        rdbmsService, VariableFixtures.createRandomized(b -> b.name(varNameA)), targetPdKey);
+    VariableFixtures.createAndSaveVariableWithProcessDefinition(
+        rdbmsService, VariableFixtures.createRandomized(b -> b.name(varNameB)), targetPdKey);
+
+    // control process definition whose lookup rows must survive (not scheduled for deletion)
+    final var controlProcDef =
+        ProcessDefinitionFixtures.createAndSaveRandomProcessDefinition(writers, b -> b);
+    final long controlPdKey = controlProcDef.processDefinitionKey();
+    final String controlVarName = "control-" + nextStringId();
+    VariableFixtures.createAndSaveVariableWithProcessDefinition(
+        rdbmsService, VariableFixtures.createRandomized(b -> b.name(controlVarName)), controlPdKey);
+
+    // schedule target process definition for deletion (no live process instances)
+    final var deletionModel =
+        new HistoryDeletionDbModel.Builder()
+            .resourceKey(targetPdKey)
+            .resourceType(HistoryDeletionDbModel.HistoryDeletionTypeDbModel.PROCESS_DEFINITION)
+            .batchOperationKey(ProcessInstanceFixtures.nextKey())
+            .partitionId(0)
+            .build();
+    writers.getHistoryDeletionWriter().create(deletionModel);
+    writers.flush();
+
+    // pre-condition: lookup rows exist for the target
+    assertThat(
+            rdbmsService
+                .getProcessDefinitionVariableNameLookupReader()
+                .findVariableNames(targetPdKey))
+        .containsExactlyInAnyOrder(varNameA, varNameB);
+
+    // when
+    historyDeletionService.deleteHistory(0);
+
+    // then: target lookup rows removed; control untouched
+    assertThat(
+            rdbmsService
+                .getProcessDefinitionVariableNameLookupReader()
+                .findVariableNames(targetPdKey))
+        .isEmpty();
+    assertThat(
+            rdbmsService
+                .getProcessDefinitionVariableNameLookupReader()
+                .findVariableNames(controlPdKey))
+        .containsExactly(controlVarName);
   }
 
   private void auditLogsNotDeleted(final RdbmsService rdbmsService, final long processInstanceKey) {
