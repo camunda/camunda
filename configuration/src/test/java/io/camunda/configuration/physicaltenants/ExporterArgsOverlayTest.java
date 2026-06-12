@@ -135,14 +135,14 @@ class ExporterArgsOverlayTest {
   }
 
   @Nested
-  class CanonicalizeConfigKeys {
+  class NormalizeConfigKeys {
 
     @Test
     void shouldLowercaseKeys() {
       // given
       final Map<String, Object> map = Map.of("MyKey", "value");
       // when / then
-      assertThat(ExporterArgsOverlay.canonicalizeConfigKeys(map)).containsKey("mykey");
+      assertThat(ExporterArgsOverlay.normalizeConfigKeys(map)).containsKey("mykey");
     }
 
     @Test
@@ -150,20 +150,21 @@ class ExporterArgsOverlayTest {
       // given
       final Map<String, Object> map = Map.of("index-prefix", "value");
       // when / then
-      assertThat(ExporterArgsOverlay.canonicalizeConfigKeys(map)).containsKey("indexprefix");
+      assertThat(ExporterArgsOverlay.normalizeConfigKeys(map)).containsKey("indexprefix");
     }
 
     @Test
     void shouldCollapseRelaxedFormVariants() {
-      // given — indexPrefix and index-prefix both canonicalize to indexprefix; last write wins
+      // given — indexPrefix and index-prefix both normalize to indexprefix; last write wins
       final Map<String, Object> base = Map.of("indexPrefix", "camel");
       final Map<String, Object> override = Map.of("index-prefix", "dashes");
       // when
-      final Map<String, Object> mergedBase = ExporterArgsOverlay.canonicalizeConfigKeys(base);
-      final Map<String, Object> mergedOverride =
-          ExporterArgsOverlay.canonicalizeConfigKeys(override);
-      final Map<String, Object> result = ExporterArgsOverlay.deepMerge(mergedBase, mergedOverride);
-      // then — both forms collapse to the same canonical key; override wins
+      final Map<String, Object> normalizedBase = ExporterArgsOverlay.normalizeConfigKeys(base);
+      final Map<String, Object> normalizedOverride =
+          ExporterArgsOverlay.normalizeConfigKeys(override);
+      final Map<String, Object> result =
+          ExporterArgsOverlay.deepMerge(normalizedBase, normalizedOverride);
+      // then — both forms collapse to the same normalized key; override wins
       assertThat(result).containsOnlyKeys("indexprefix").containsEntry("indexprefix", "dashes");
     }
 
@@ -173,7 +174,7 @@ class ExporterArgsOverlayTest {
       final Map<String, Object> nested = Map.of("Index-Prefix", "v");
       final Map<String, Object> map = Map.of("Outer-Key", nested);
       // when
-      final Map<String, Object> result = ExporterArgsOverlay.canonicalizeConfigKeys(map);
+      final Map<String, Object> result = ExporterArgsOverlay.normalizeConfigKeys(map);
       // then
       assertThat(result).containsKey("outerkey");
       @SuppressWarnings("unchecked")

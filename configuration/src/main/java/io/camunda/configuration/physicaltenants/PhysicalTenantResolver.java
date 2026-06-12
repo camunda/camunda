@@ -88,7 +88,7 @@ public final class PhysicalTenantResolver {
       binder.bind(Camunda.PREFIX, Bindable.ofInstance(physicalTenant));
       binder.bind(
           PHYSICAL_TENANTS_PREFIX + "." + physicalTenantId, Bindable.ofInstance(physicalTenant));
-      final Map<String, Exporter> tenantDeclared =
+      final Map<String, Exporter> tenantDeclaredExporters =
           binder
               .bind(
                   PHYSICAL_TENANTS_PREFIX + "." + physicalTenantId + ".data.exporters",
@@ -97,7 +97,8 @@ public final class PhysicalTenantResolver {
       physicalTenant
           .getData()
           .setExporters(
-              ExporterArgsOverlay.overlay(physicalTenantId, rootExporters, tenantDeclared));
+              ExporterArgsOverlay.overlay(
+                  physicalTenantId, rootExporters, tenantDeclaredExporters));
       resolvedPhysicalTenants.put(physicalTenantId, physicalTenant);
     }
     if (!resolvedPhysicalTenants.containsKey(DEFAULT_PHYSICAL_TENANT_ID)) {

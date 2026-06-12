@@ -12,6 +12,7 @@ import io.camunda.configuration.UnifiedConfigurationException;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.Locale;
 import java.util.Map;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -21,8 +22,8 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>Layer 1 — {@link #deepMerge}: pure, generic, recursive map merge; key-agnostic.
  *
- * <p>Layer 2 — {@link #canonicalizeConfigKeys}: recursive lowercase + strip-dashes; composes with
- * layer 1 as {@code deepMerge(canonicalize(base), canonicalize(override))}.
+ * <p>Layer 2 — {@link #normalizeConfigKeys}: recursive lowercase + strip-dashes; composes with
+ * layer 1 as {@code deepMerge(normalize(base), normalize(override))}.
  *
  * <p>Layer 3 — {@link #overlay}: exporter-specific orchestration: field overlay for {@code
  * className}/{@code jarPath}, deep-merge for {@code args}, divergence-only validation.
@@ -38,7 +39,10 @@ final class ExporterArgsOverlay {
    * Disjoint keys survive; there is no removal.
    *
    * <p>No key normalization is performed here — keep this method key-agnostic so it remains safe
-   * for case-sensitive maps. Compose with {@link #canonicalizeConfigKeys} at the call site.
+   * for case-sensitive maps. Compose with {@link #normalizeConfigKeys} at the call site.
+   *
+   * <p>Un-overridden nested maps are shallow-copied from the input (not deep-cloned); safe as used
+   * since callers pass immutable Spring-bound maps.
    */
   static Map<String, Object> deepMerge(
       final Map<String, Object> base, final Map<String, Object> override) {
@@ -57,20 +61,28 @@ final class ExporterArgsOverlay {
   }
 
   /**
-   * Recursively lowercases and strips dashes from all map keys, so that relaxed config-key forms
-   * ({@code indexPrefix} and {@code index-prefix}) collapse into one canonical key before merge.
+   * Mirrors the key normalization in {@code
+   * io.camunda.zeebe.broker.exporter.context.ExporterConfiguration#normalizeKeys} applied
+   * downstream when args are deserialized. Recursively strips dashes and lowercases all map keys
+   * (using {@link Locale#ROOT}), so that relaxed config-key forms ({@code indexPrefix} and {@code
+   * index-prefix}) collapse into one normalized key before merge.
    *
    * <p>Underscores are intentionally preserved — {@code INDEX_PREFIX} normalizes to {@code
-   * index_prefix}, not {@code indexprefix}. This matches the key normalization applied downstream
-   * when exporter args are deserialized into a typed config object.
+   * index_prefix}, not {@code indexprefix}, consistent with the downstream normalization.
+   *
+   * <p>When two keys in the same map collapse to the same normalized form (e.g. {@code indexPrefix}
+   * and {@code index-prefix} both become {@code indexprefix}), the last entry wins silently.
+   *
+   * <p>Normalization is not type-aware: it rewrites the keys of every nested {@link Map}, including
+   * user-data maps inside {@code args}. This is unavoidable at the config layer, where the value
+   * type is {@code Map<String,Object>}.
    */
-  static Map<String, Object> canonicalizeConfigKeys(final Map<String, Object> map) {
+  static Map<String, Object> normalizeConfigKeys(final Map<String, Object> map) {
     final Map<String, Object> result = new LinkedHashMap<>();
     for (final var entry : map.entrySet()) {
-      final String key = entry.getKey().toLowerCase().replace("-", "");
+      final String key = entry.getKey().replace("-", "").toLowerCase(Locale.ROOT);
       final Object value = entry.getValue();
-      result.put(
-          key, value instanceof Map ? canonicalizeConfigKeys(toStringObjectMap(value)) : value);
+      result.put(key, value instanceof Map ? normalizeConfigKeys(toStringObjectMap(value)) : value);
     }
     return Collections.unmodifiableMap(result);
   }
@@ -85,7 +97,7 @@ final class ExporterArgsOverlay {
    * <ul>
    *   <li>{@code className} / {@code jarPath} — tenant value if set, else root (plain field
    *       overlay).
-   *   <li>{@code args} — deep-merged after canonicalization.
+   *   <li>{@code args} — deep-merged after normalization.
    * </ul>
    *
    * <p>Fails fast with a {@link UnifiedConfigurationException} when root explicitly declares {@code
@@ -95,12 +107,13 @@ final class ExporterArgsOverlay {
   static Map<String, Exporter> overlay(
       final String tenantId,
       final Map<String, Exporter> rootExporters,
-      final Map<String, Exporter> tenantDeclared) {
+      final Map<String, Exporter> tenantDeclaredExporters) {
     final Map<String, Exporter> merged = new LinkedHashMap<>();
     final var allIds = new LinkedHashSet<>(rootExporters.keySet());
-    allIds.addAll(tenantDeclared.keySet());
+    allIds.addAll(tenantDeclaredExporters.keySet());
     for (final String id : allIds) {
-      merged.put(id, mergeExporter(tenantId, id, rootExporters.get(id), tenantDeclared.get(id)));
+      merged.put(
+          id, mergeExporter(tenantId, id, rootExporters.get(id), tenantDeclaredExporters.get(id)));
     }
     return Collections.unmodifiableMap(merged);
   }
@@ -115,6 +128,12 @@ final class ExporterArgsOverlay {
     final @Nullable String tenantClassName = tenant != null ? tenant.getClassName() : null;
     final @Nullable String tenantJarPath = tenant != null ? tenant.getJarPath() : null;
 
+    // Verify that the physical tenant does not declare the same exporterId as in at the root level,
+    // but with different className or jarPath.
+    // These fields can still be empty at root and tenant level, as for CamundaExporter and
+    // RdbmsExporter, we have auto-configuration mode that allows setting only a subset of the
+    // exporter properties. The full validation of the exporter configuration is done downstream in
+    // the broker.
     checkDivergence(tenantId, exporterId, "className", rootClassName, tenantClassName);
     checkDivergence(tenantId, exporterId, "jarPath", rootJarPath, tenantJarPath);
 
@@ -126,7 +145,7 @@ final class ExporterArgsOverlay {
     final Exporter result = new Exporter();
     result.setClassName(tenantClassName != null ? tenantClassName : rootClassName);
     result.setJarPath(tenantJarPath != null ? tenantJarPath : rootJarPath);
-    result.setArgs(deepMerge(canonicalizeConfigKeys(rootArgs), canonicalizeConfigKeys(tenantArgs)));
+    result.setArgs(deepMerge(normalizeConfigKeys(rootArgs), normalizeConfigKeys(tenantArgs)));
     return result;
   }
 
