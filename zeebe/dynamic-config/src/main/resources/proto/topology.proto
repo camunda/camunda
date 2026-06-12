@@ -15,7 +15,6 @@ message ClusterTopology {
   RoutingState routingState = 5;
   string clusterId = 6;
   int64 incarnationNumber = 7;
-  bool recovery = 8;
 }
 
 message RoutingState {
@@ -201,6 +200,7 @@ enum State {
   LEAVING = 3;
   LEFT = 4;
   BOOTSTRAPPING = 5;
+  RECOVERING = 6;
 }
 
 enum ChangeStatus {
