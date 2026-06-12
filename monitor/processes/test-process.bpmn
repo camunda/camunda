@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:zeebe="http://camunda.org/schema/zeebe/1.0"
+             targetNamespace="http://bpmn.io/schema/bpmn">
+  <process id="test-process" isExecutable="true">
+    <startEvent id="start">
+      <outgoing>to-task</outgoing>
+    </startEvent>
+    <sequenceFlow id="to-task" sourceRef="start" targetRef="task" />
+    <serviceTask id="task" name="Test Job">
+      <extensionElements>
+        <zeebe:taskDefinition type="test-job" />
+      </extensionElements>
+      <incoming>to-task</incoming>
+      <outgoing>to-end</outgoing>
+    </serviceTask>
+    <sequenceFlow id="to-end" sourceRef="task" targetRef="end" />
+    <endEvent id="end">
+      <incoming>to-end</incoming>
+    </endEvent>
+  </process>
+</definitions>

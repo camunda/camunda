@@ -2,53 +2,102 @@
 
 ## Metrics
 
-Zeebe and other Camunda components export several metrics to facilitate monitoring a cluster.
-Currently, metrics are exported using Prometheus. You can find
-documentation about the different Zeebe metrics
-[here](https://docs.camunda.io/docs/product-manuals/zeebe/deployment-guide/operations/metrics).
-
-### Testing
-
-You can easily test metrics locally by using the standard provided [docker compose
-file](../docker/compose/docker-compose.yaml) in combination with the one [here](docker-compose.yml), e.g.:
-
-```sh
-docker-compose --project-directory ./ -f docker-compose.yml -f ../docker/compose/docker-compose.yaml up -d
-```
-
-This will start the usual 3 brokers cluster, as well as a Grafana [instance](http://localhost:3000/) (on port 3000; login: u `admin`, p `camunda`) and a Prometheus instance on
-port 9090. The Prometheus instance is configured to scrape the brokers every 5 seconds, and pre-assigns them the
-namespace and pod label as `local` and `broker-*`.
-
-> Remember that docker-compose does not remove volumes on the down command, so if you are completely done with it you
-> will need to run either `docker-compose --project-directory ./ -f docker-compose.yml -f ../docker/compose/docker-compose.yaml down -v`
-> or `docker volume prune`
-
-### Testing with local Zeebe
-
-When you want to use a local Zeebe Broker, you need to locally modify the config:
-- enable Prometheus Docker container to access localhost ports:
-
-```yaml
-# add to the prometheus service
-extra_hosts:
-- "host.docker.internal:host-gateway"
-```
-
-- add the local Zeebe broker to Prometheus config:
-
-  ```yaml
-  # add to scrape_configs
-  - job_name: 'zeebe_local'
-    metrics_path: /actuator/prometheus
-    static_configs:
-         - targets: ['host.docker.internal:9600']
-
-  ```
+Zeebe and other Camunda components export metrics to facilitate monitoring a cluster using Prometheus. Documentation for the available metrics can be found [here](https://docs.camunda.io/docs/product-manuals/zeebe/deployment-guide/operations/metrics).
 
 ## Grafana
 
-We use Grafana to visualize our metrics in dashboards for  monitoring and troubleshooting purposes. You can find general information about Grafana [here](https://grafana.com/docs/grafana/latest/fundamentals/).
+We use Grafana to visualize our metrics in dashboards for monitoring and troubleshooting purposes. You can find general information about Grafana [here](https://grafana.com/docs/grafana/latest/fundamentals/).
+
+### Running Grafana locally
+
+Start the Grafana and Prometheus stack with Docker Compose. Requires [Docker Desktop](https://docs.docker.com/desktop/) on Windows and macOS, or Docker with the Compose plugin on Linux.
+
+Run the following from the `monitor/` directory:
+
+```sh
+# Start
+docker compose --project-directory ./ -f docker-compose.yml up -d
+
+# Stop
+docker compose --project-directory ./ -f docker-compose.yml down
+
+# Stop and remove volumes
+docker compose --project-directory ./ -f docker-compose.yml down -v
+```
+
+On **macOS and Linux** you can also use the Makefile shortcuts: `make up`, `make down`, `make clean`.
+
+On **Windows** the `make` command is not available by default — use the `docker compose` commands above directly in PowerShell.
+
+Grafana is available at http://localhost:3000 (admin / camunda), Prometheus at http://localhost:9090.
+
+Once the stack is running, open http://localhost:3000 to access Grafana. Dashboards are loaded from the JSON files under `grafana/dashboards/` and are editable in the UI without restrictions.
+
+#### Dashboard file sync
+
+The dev overlay (`docker-compose.dev.yml`) includes a `dashboard-sync` sidecar that polls the Grafana API every 10 seconds and writes any UI edits back to the corresponding JSON file on disk. Start it alongside the main stack:
+
+```sh
+docker compose --project-directory ./ -f docker-compose.yml -f docker-compose.dev.yml up -d
+```
+
+With this running, the edit loop is: open `grafana/dashboards/core-features/overview.json` (or any dashboard), save changes in the Grafana UI, and the JSON file is updated within ~10 seconds. Changes are then visible in your editor and ready to commit.
+
+The sidecar matches files to Grafana dashboards by the `uid` field. When writing synced content back to disk it preserves the `id` and `version` values from the local file rather than overwriting them with Grafana's internal values, and excludes both fields from the comparison so they never trigger a spurious sync.
+
+**Grafana-managed fields** — Grafana automatically modifies certain fields in dashboard JSON that have no meaning outside the running instance and should not be manually edited:
+
+- `id` — a numeric internal DB ID assigned per Grafana installation. Preserved from the local file by the sync; do not set it manually.
+- `version` — a save counter incremented on every edit. Preserved from the local file by the sync; do not set it manually.
+- `pluginVersion` inside panel objects — updated to the running Grafana version on load. After a Grafana version upgrade the first sync will rewrite these values throughout the file; commit the resulting changes so subsequent startups produce no diff.
+
+#### Generating test data
+
+The Camunda container (Zeebe, Operate, and Tasklist unified) exposes JVM, broker, Operate, and Tasklist metrics immediately on startup. For process- and job-level metrics you need actual workload running.
+
+The dev overlay also includes a `traffic-generator` that deploys a simple process and creates one instance every 10 seconds (see above for the start command). The test process (`processes/test-process.bpmn`) has a single service task of type `test-job`; because no worker completes the job, instances accumulate at the task — making job backlog and active instance metrics visible in the dashboards. Requires Zeebe 8.3 or later for the REST API.
+
+The dev overlay also runs a **`metrics-generator`** — a small Node.js service built from `metrics-generator/` that exposes synthetic Prometheus metrics on port 9400. It generates realistic metrics across three synthetic environments (`local`, `staging`, `production`) with the full label schema the dashboards expect (`namespace`, `cluster`, `pod`, `partition`, `application`, etc.), including counters that increase over time so `rate()` and `increase()` panels render correctly. This makes dashboard template variables (e.g. the `namespace`, `cluster`, `geo_area`, `provider` dropdowns) populate immediately with multiple selectable values. The image is built locally on first `docker compose up`; if you modify `metrics-generator/generator.js` you must rebuild it explicitly:
+
+```sh
+docker compose --project-directory ./ -f docker-compose.yml -f docker-compose.dev.yml up -d --build metrics-generator
+```
+
+The synthetic data covers all sections of the `core-features/overview` dashboard (except Legacy Operate/Tasklist and Optimize), including `kube_namespace_labels` for the template variable dropdowns (`namespace`, `geo_area`, `cloud_provider`, `generation`, `sales_plan_type`) and the `node_namespace_pod_container:*` infrastructure metrics via the recording rules in `prometheus/recording_rules.yml`. No real Kubernetes cluster is needed.
+
+For **realistic, diverse test data** across all dashboards (process instances in various states, incidents, decisions, user tasks, multiple tenants), activate the `dev-data` Spring profile. The unified Camunda image already bundles the Operate and Tasklist data generators, so enabling the profile is a one-line change in `docker-compose.yml`:
+
+```yaml
+environment:
+  - SPRING_PROFILES_ACTIVE=consolidated-auth,tasklist,broker,operate,dev-data
+```
+
+Restart the stack after making this change. The data generators run on startup and populate Elasticsearch with representative process and task data.
+
+#### Keeping generator metrics in sync
+
+The `metrics-generator` only produces metrics the real Camunda container does not — mainly Kubernetes infrastructure metrics. Run `scripts/check-metrics.js` to verify the split is clean:
+
+```sh
+node scripts/check-metrics.js
+```
+
+The script scrapes both `http://localhost:9600/actuator/prometheus` (Camunda) and `http://localhost:9400/metrics` (generator) and reports three categories:
+
+- **OVERLAPS** — Both the real container and the generator expose this metric family; Grafana will double-count it.
+  Remove the metric from `generator.js`, then rebuild with `--build metrics-generator`.
+- **LABEL GAPS** — The generator produces the metric but is missing labels that the real service uses.
+  Extend the `labelNames` array for that metric in `generator.js` and rebuild.
+- **MISSING FAMILIES** — The real container exposes a metric family the generator does not.
+  Usually no action needed — the generator is intentionally supplemental. Only add a metric to `generator.js` if a dashboard panel needs it **and** the real container cannot provide it (e.g. Kubernetes-level infrastructure metrics).
+
+**When to run this script:**
+
+- After bumping `CAMUNDA_VERSION` in `docker-compose.yml` — a new release may add metrics that overlap with what the generator already produces.
+- When a Grafana panel shows unexpectedly high values, which is a symptom of double-counting from an overlap.
+- When adding new application metrics to the Camunda codebase, to confirm the real container covers them without generator duplication.
+
+New application metrics added to Camunda generally do **not** require generator changes — the real container exposes them directly. Generator changes are only needed when the metric lives outside the application (Kubernetes, Elasticsearch cluster health, etc.) and a dashboard panel depends on it.
 
 ### Creating a new dashboard (Camunda internal)
 
@@ -63,7 +112,9 @@ If you want to learn how to add new metrics, a good starting point can be found 
 
 *or*
 
-A **local Grafana** instance (e.g. using [Grizzly](https://grafana.com/blog/2024/10/29/edit-your-git-based-grafana-dashboards-locally/) to run Grafana locally, which can be started through the `make grizzly` command (see [Makefile](Makefile)) and instead make the modifications directly in the codebase.
+A **local Grafana** instance via the local stack described above. Use `make up-dev` (macOS/Linux) or the equivalent `docker compose` command with both compose files. The `dashboard-sync` sidecar writes UI saves back to the JSON files automatically — no manual export needed.
+
+> **Deprecated (macOS/Linux only):** [Grizzly](https://grafana.com/blog/2024/10/29/edit-your-git-based-grafana-dashboards-locally/) was previously used to serve dashboards locally via `make grizzly`. It is archived and no longer maintained (August 2025) and has no Windows support. Use the local stack above instead.
 
 For this guide the assumption is that you are using a shared Grafana instance.
 
@@ -87,10 +138,14 @@ This guide does not go into details about creating visualizations, but these are
 
 #### Exporting the dashboard
 
+**If you used the local stack with `dashboard-sync`:** the JSON file is already written back to `grafana/dashboards/` within ~10 seconds of each UI save. No manual export is needed — just commit the file.
+
+**If you used a shared Grafana instance:**
+
 1) Save your modifications (if you are editing an already deployed dashboard, save it as a copy to ensure it does not get overwritten by a new deployment from code)
-2) Exit edit mode and make sure to export as described [here](https://grafana.com/docs/grafana/latest/dashboards/share-dashboards-panels/#export-a-dashboard-as-json), checking `Export the dashboard to use in another instance` as you do.
-3) Save the dashboard JSON in the codebase under [grafana/dashboards](grafana/dashboards) - create a folder for your team if it does not exist yet. Ensure that the filename, dashboard name and UID are correct if you saved it as a copy (they should reflect the original dashboard's values since the goal is to overwrite it).
-4) Delete the copied dashboard (if one was created)
+2) Exit edit mode and export as described [here](https://grafana.com/docs/grafana/latest/dashboards/share-dashboards-panels/#export-a-dashboard-as-json), checking `Export the dashboard to use in another instance`.
+3) Save the dashboard JSON in the codebase under [grafana/dashboards](grafana/dashboards) — create a folder for your team if it does not exist yet. Ensure the filename, dashboard name, and UID are correct.
+4) Delete the copied dashboard (if one was created).
 
 **Note**: If you edit an already existing dashboard, keep in mind that it may get automatically deployed once it was merged into the code base (see next section).
 

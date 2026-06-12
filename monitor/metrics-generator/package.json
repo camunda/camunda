@@ -1,0 +1,8 @@
+{
+  "name": "metrics-generator",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "prom-client": "^15.1.3"
+  }
+}
