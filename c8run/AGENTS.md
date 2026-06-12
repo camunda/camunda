@@ -140,4 +140,3 @@ go version
 6. Build the changed binary to confirm it compiles: `go build -o c8run ./cmd/c8run`.
 7. For packaging changes, also build and verify `packager`.
 8. Commit with Conventional Commits format, no scope.
-

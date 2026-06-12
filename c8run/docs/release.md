@@ -67,4 +67,3 @@ Then:
 3. Delete any prior C8Run releases tagged with `-pending-removal`.
 4. Delete the RC artifacts from the Camunda GitHub release (the version specified in the release inputs).
 5. Report back each version in the release train form in the Slack release thread that the C8Run release is complete.
-

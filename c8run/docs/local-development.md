@@ -78,4 +78,3 @@ go build -o packager ./cmd/packager
 ./packager package
 ./start.sh
 ```
-
