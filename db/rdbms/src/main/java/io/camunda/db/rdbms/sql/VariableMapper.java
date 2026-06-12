@@ -28,13 +28,13 @@ public interface VariableMapper extends ProcessInstanceDependantMapper {
 
   List<VariableEntity> search(VariableDbQuery filter);
 
+  // --- PROCESS_DEF_VAR_NAME_LOOKUP ---
+
   /**
    * Inserts a new lookup entry if no entry already exists for the given (processDefinitionKey,
    * varName) combination. No-op on conflict.
    */
   void insertLookupIfNotExists(ProcessDefinitionVariableNameLookupDbModel model);
-
-  // --- PROCESS_DEF_VAR_NAME_LOOKUP ---
 
   /** Returns all variable names recorded for the given process definition key. */
   List<String> findLookupVariableNames(@Param("processDefinitionKey") long processDefinitionKey);
@@ -65,5 +65,4 @@ public interface VariableMapper extends ProcessInstanceDependantMapper {
       }
     }
   }
-
 }

@@ -18,14 +18,17 @@ import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.InsertVariableMerger;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 public class VariableWriter extends ProcessInstanceDependant implements RdbmsWriter {
 
   private final ExecutionQueue executionQueue;
+  private final VariableMapper variableMapper;
   private final VendorDatabaseProperties vendorDatabaseProperties;
   private final RdbmsWriterConfig config;
   private final Map<Long, Set<String>> processVariableNameCache = new HashMap<>();
@@ -37,6 +40,7 @@ public class VariableWriter extends ProcessInstanceDependant implements RdbmsWri
       final RdbmsWriterConfig config) {
     super(mapper);
     this.executionQueue = executionQueue;
+    variableMapper = mapper;
     this.vendorDatabaseProperties = vendorDatabaseProperties;
     this.config = config;
   }
@@ -104,5 +108,10 @@ public class VariableWriter extends ProcessInstanceDependant implements RdbmsWri
               "io.camunda.db.rdbms.sql.VariableMapper.insertLookupIfNotExists",
               new ProcessDefinitionVariableNameLookupDbModel(pdKey, variable.name())));
     }
+  }
+
+  public void deleteLookupByProcessDefinitionKeys(final Collection<Long> processDefinitionKeys) {
+    variableMapper.deleteLookupByProcessDefinitionKeys(List.copyOf(processDefinitionKeys));
+    processVariableNameCache.keySet().removeAll(processDefinitionKeys);
   }
 }

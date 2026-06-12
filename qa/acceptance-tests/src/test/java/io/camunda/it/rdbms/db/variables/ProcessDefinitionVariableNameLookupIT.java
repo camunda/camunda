@@ -19,6 +19,7 @@ import io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures;
 import io.camunda.it.rdbms.db.fixtures.VariableFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import java.util.List;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -121,7 +122,7 @@ public class ProcessDefinitionVariableNameLookupIT {
     createInstanceWithVariable(rdbmsService, procDefKey, varNameB);
 
     // when
-    writers.getProcessDefinitionWriter().deleteByKeys(java.util.List.of(procDefKey));
+    writers.getVariableWriter().deleteLookupByProcessDefinitionKeys(List.of(procDefKey));
 
     // then: all lookup entries are gone
     assertThat(lookupReader(testApplication).findVariableNames(procDefKey)).isEmpty();
@@ -145,7 +146,8 @@ public class ProcessDefinitionVariableNameLookupIT {
     final var variable =
         VariableFixtures.createRandomized(
             b -> b.processInstanceKey(processInstance.processInstanceKey()).name(varName));
-    VariableFixtures.createAndSaveVariableWithLookup(rdbmsService, variable, processDefinitionKey);
+    VariableFixtures.createAndSaveVariableWithProcessDefinition(
+        rdbmsService, variable, processDefinitionKey);
   }
 
   private ProcessDefinitionVariableNameLookupDbReader lookupReader(

@@ -119,7 +119,7 @@ public final class VariableFixtures extends CommonFixtures {
     rdbmsWriters.flush();
   }
 
-  public static void createAndSaveVariableWithLookup(
+  public static void createAndSaveVariableWithProcessDefinition(
       final RdbmsService rdbmsService,
       final VariableDbModel variable,
       final long processDefinitionKey) {

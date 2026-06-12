@@ -26,10 +26,14 @@ import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
+import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class VariableWriterTest {
 
+  final VariableDbModel model = mock(VariableDbModel.class);
+  final VariableDbModel truncatedModel = mock(VariableDbModel.class);
   private final ExecutionQueue executionQueue = mock(ExecutionQueue.class);
   private final VariableMapper mapper = mock(VariableMapper.class);
   private final VendorDatabaseProperties vendorDatabaseProperties =
@@ -38,14 +42,15 @@ class VariableWriterTest {
   private final VariableWriter writer =
       new VariableWriter(executionQueue, mapper, vendorDatabaseProperties, config);
 
-  @Test
-  void shouldCreateVariable() {
+  @BeforeEach
+  void setup() {
     when(vendorDatabaseProperties.variableValuePreviewSize()).thenReturn(1000);
     when(vendorDatabaseProperties.charColumnMaxBytes()).thenReturn(4000);
-
-    final var model = mock(VariableDbModel.class);
-    final var truncatedModel = mock(VariableDbModel.class);
     when(model.truncateValue(anyInt(), anyInt())).thenReturn(truncatedModel);
+  }
+
+  @Test
+  void shouldCreateVariable() {
     when(model.variableKey()).thenReturn(123L);
     when(truncatedModel.variableKey()).thenReturn(123L);
     // processDefinitionKey is null/0 → no lookup insert
@@ -75,12 +80,6 @@ class VariableWriterTest {
 
   @Test
   void shouldQueueLookupInsertOnFirstSeenVariableName() {
-    when(vendorDatabaseProperties.variableValuePreviewSize()).thenReturn(1000);
-    when(vendorDatabaseProperties.charColumnMaxBytes()).thenReturn(4000);
-
-    final var model = mock(VariableDbModel.class);
-    final var truncatedModel = mock(VariableDbModel.class);
-    when(model.truncateValue(anyInt(), anyInt())).thenReturn(truncatedModel);
     when(model.variableKey()).thenReturn(123L);
     when(truncatedModel.variableKey()).thenReturn(123L);
     when(model.processDefinitionKey()).thenReturn(456L);
@@ -106,12 +105,6 @@ class VariableWriterTest {
 
   @Test
   void shouldNotQueueLookupInsertForAlreadyCachedVariableName() {
-    when(vendorDatabaseProperties.variableValuePreviewSize()).thenReturn(1000);
-    when(vendorDatabaseProperties.charColumnMaxBytes()).thenReturn(4000);
-
-    final var model = mock(VariableDbModel.class);
-    final var truncatedModel = mock(VariableDbModel.class);
-    when(model.truncateValue(anyInt(), anyInt())).thenReturn(truncatedModel);
     when(model.variableKey()).thenReturn(123L);
     when(truncatedModel.variableKey()).thenReturn(123L);
     when(model.processDefinitionKey()).thenReturn(456L);
@@ -130,13 +123,52 @@ class VariableWriterTest {
   }
 
   @Test
-  void shouldUpdateVariable() {
-    when(vendorDatabaseProperties.variableValuePreviewSize()).thenReturn(1000);
-    when(vendorDatabaseProperties.charColumnMaxBytes()).thenReturn(4000);
+  void shouldDeleteLookupByProcessDefinitionKeys() {
+    // given
+    final var processDefinitionKeys = List.of(456L, 789L);
 
-    final var model = mock(VariableDbModel.class);
-    final var truncatedModel = mock(VariableDbModel.class);
-    when(model.truncateValue(anyInt(), anyInt())).thenReturn(truncatedModel);
+    // when
+    writer.deleteLookupByProcessDefinitionKeys(processDefinitionKeys);
+
+    // then: direct mapper call so the delete is executed synchronously (not queued)
+    verify(mapper).deleteLookupByProcessDefinitionKeys(processDefinitionKeys);
+    verify(executionQueue, never())
+        .executeInQueue(
+            argThat(
+                item ->
+                    item.contextType() == ContextType.PROCESS_DEF_VAR_NAME_LOOKUP
+                        && item.statementType() == WriteStatementType.DELETE));
+  }
+
+  @Test
+  void shouldEvictCacheOnLookupDelete() {
+    when(model.variableKey()).thenReturn(123L);
+    when(truncatedModel.variableKey()).thenReturn(123L);
+    when(model.processDefinitionKey()).thenReturn(456L);
+    when(model.name()).thenReturn("amount");
+
+    // given: first create primes the cache
+    writer.create(model);
+    // delete evicts the cache entry
+    writer.deleteLookupByProcessDefinitionKeys(List.of(456L));
+    // second create with same (pdKey, name) — must re-queue a lookup insert
+    when(model.variableKey()).thenReturn(124L);
+    when(truncatedModel.variableKey()).thenReturn(124L);
+    writer.create(model);
+
+    // then: mapper called once for the delete; lookup insert queued twice (before and after
+    // eviction)
+    verify(mapper).deleteLookupByProcessDefinitionKeys(List.of(456L));
+    verify(executionQueue, org.mockito.Mockito.times(2))
+        .executeInQueue(
+            argThat(
+                item ->
+                    item.contextType() == ContextType.PROCESS_DEF_VAR_NAME_LOOKUP
+                        && item.statementType() == WriteStatementType.INSERT));
+  }
+
+  @Test
+  void shouldUpdateVariable() {
     when(model.variableKey()).thenReturn(123L);
 
     writer.update(model);

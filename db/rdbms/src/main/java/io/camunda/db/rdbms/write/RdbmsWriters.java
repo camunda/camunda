@@ -140,7 +140,7 @@ public class RdbmsWriters {
         new IncidentWriter(executionQueue, incidentMapper, vendorDatabaseProperties));
     writers.put(
         ProcessDefinitionWriter.class,
-        new ProcessDefinitionWriter(processDefinitionMapper, variableMapper, executionQueue));
+        new ProcessDefinitionWriter(processDefinitionMapper, executionQueue));
     writers.put(
         ProcessInstanceWriter.class,
         new ProcessInstanceWriter(processInstanceMapper, executionQueue));
