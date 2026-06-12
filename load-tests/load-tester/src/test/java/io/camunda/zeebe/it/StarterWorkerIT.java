@@ -26,6 +26,7 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+
 /**
  * End-to-end integration test activating both the {@code starter} and {@code worker} profiles in
  * the same Spring context. The starter deploys the BPMN, creates a small number of instances at a

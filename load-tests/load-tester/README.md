@@ -3,6 +3,8 @@
 This project contains code for the starter and worker, which are used during our benchmarks.
 It is a Spring Boot application using the `camunda-spring-boot-starter`.
 
+Testing CI
+
 ## Running locally
 
 The application uses Spring profiles to select the role:
@@ -28,4 +30,3 @@ To build the docker images for the load test application, run the following comm
 ./mvnw -pl load-tests/load-tester jib:build -Pstarter
 ./mvnw -pl load-tests/load-tester jib:build -Pworker
 ```
-
