@@ -135,6 +135,10 @@ jobs:
         # compose project invalid ("depends on undefined service") and this
         # diagnostic step errors out instead of printing the container logs.
         run: |
+          # DATABASE must be set: the compose file declares the camunda service's
+          # depends_on as "${DATABASE}", so an unset DATABASE makes compose reject
+          # the project ("depends on undefined service \"\"") and these diagnostic
+          # logs never print. Match the value used by the Start Camunda step.
           if [[ "${{ inputs.branch }}" == "stable/8.7" ]]; then
             DATABASE=elasticsearch docker compose logs tasklist
             DATABASE=elasticsearch docker compose logs operate
