@@ -417,7 +417,7 @@ func buildJavaHelperArgs(sourceFile string) []string {
 	return []string{"--release", strconv.Itoa(helperJavaRelease), sourceFile}
 }
 
-func BuildJRE(camundaVersion, _ string) error {
+func BuildJRE(camundaVersion string) error {
 	if err := ensureJLinkVersion(); err != nil {
 		return err
 	}
@@ -589,18 +589,106 @@ func materializeSymlinks(root string) error {
 			return err
 		}
 		if targetInfo.IsDir() {
-			return fmt.Errorf("cannot materialize symlink to directory: %s", path)
+			return materializeDirectorySymlink(path, targetInfo.Mode().Perm())
 		}
 
-		content, err := os.ReadFile(path)
+		return materializeFileSymlink(path, targetInfo.Mode().Perm())
+	})
+}
+
+func materializeFileSymlink(path string, mode os.FileMode) error {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	if err := os.Remove(path); err != nil {
+		return err
+	}
+	return os.WriteFile(path, content, mode)
+}
+
+func materializeDirectorySymlink(path string, mode os.FileMode) error {
+	targetPath, err := filepath.EvalSymlinks(path)
+	if err != nil {
+		return err
+	}
+
+	tempPath, err := os.MkdirTemp(filepath.Dir(path), "."+filepath.Base(path)+".materialized-*")
+	if err != nil {
+		return err
+	}
+	cleanupTempPath := true
+	defer func() {
+		if cleanupTempPath {
+			_ = os.RemoveAll(tempPath)
+		}
+	}()
+
+	if err := copyDirectoryContents(targetPath, tempPath, make(map[string]struct{})); err != nil {
+		return err
+	}
+	if err := os.Chmod(tempPath, mode); err != nil {
+		return err
+	}
+	if err := os.Remove(path); err != nil {
+		return err
+	}
+	if err := os.Rename(tempPath, path); err != nil {
+		return err
+	}
+	cleanupTempPath = false
+	return nil
+}
+
+func copyDirectoryContents(sourcePath, destinationPath string, visitedPaths map[string]struct{}) error {
+	sourcePath, err := filepath.EvalSymlinks(sourcePath)
+	if err != nil {
+		return err
+	}
+	if _, visited := visitedPaths[sourcePath]; visited {
+		return fmt.Errorf("detected symlink cycle while materializing directory: %s", sourcePath)
+	}
+	visitedPaths[sourcePath] = struct{}{}
+	defer delete(visitedPaths, sourcePath)
+
+	entries, err := os.ReadDir(sourcePath)
+	if err != nil {
+		return err
+	}
+	for _, entry := range entries {
+		sourceEntryPath := filepath.Join(sourcePath, entry.Name())
+		destinationEntryPath := filepath.Join(destinationPath, entry.Name())
+		info, err := os.Stat(sourceEntryPath)
 		if err != nil {
 			return err
 		}
-		if err := os.Remove(path); err != nil {
+
+		if info.IsDir() {
+			if err := os.Mkdir(destinationEntryPath, 0o755); err != nil {
+				return err
+			}
+			if err := copyDirectoryContents(sourceEntryPath, destinationEntryPath, visitedPaths); err != nil {
+				return err
+			}
+			if err := os.Chmod(destinationEntryPath, info.Mode().Perm()); err != nil {
+				return err
+			}
+			continue
+		}
+
+		if err := copyFile(sourceEntryPath, destinationEntryPath, info.Mode().Perm()); err != nil {
 			return err
 		}
-		return os.WriteFile(path, content, targetInfo.Mode().Perm())
-	})
+	}
+	return nil
+}
+
+func copyFile(sourcePath, destinationPath string, mode os.FileMode) error {
+	content, err := os.ReadFile(sourcePath)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(destinationPath, content, mode)
 }
 
 func New(camundaVersion, connectorsVersion string) error {
@@ -651,8 +739,8 @@ func New(camundaVersion, connectorsVersion string) error {
 		// Continue without unpacking
 	}
 
-	if err := BuildJRE(camundaVersion, connectorsFilePath); err != nil {
-		return fmt.Errorf("Package "+osType+": failed to build bundled JRE %w\n%s", err, debug.Stack())
+	if err := BuildJRE(camundaVersion); err != nil {
+		return fmt.Errorf("package %s: failed to build bundled JRE: %w", osType, err)
 	}
 
 	err = os.Chdir("..")
