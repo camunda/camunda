@@ -12,6 +12,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.gateway.mapping.http.physicaltenants.PhysicalTenantContext;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.Map;
@@ -44,7 +45,7 @@ class PhysicalTenantInterceptorTest {
     // then
     assertThat(proceed).isTrue();
     Assertions.assertThat(PhysicalTenantContext.getPhysicalTenantId(request))
-        .isEqualTo(PhysicalTenantContext.DEFAULT_PHYSICAL_TENANT_ID);
+        .isEqualTo(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
     verifyNoInteractions(response);
   }
 
@@ -60,7 +61,7 @@ class PhysicalTenantInterceptorTest {
     // then
     assertThat(proceed).isTrue();
     assertThat(PhysicalTenantContext.getPhysicalTenantId(request))
-        .isEqualTo(PhysicalTenantContext.DEFAULT_PHYSICAL_TENANT_ID);
+        .isEqualTo(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
     verifyNoInteractions(response);
   }
 

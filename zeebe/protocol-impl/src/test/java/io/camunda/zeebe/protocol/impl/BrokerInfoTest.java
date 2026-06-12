@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.protocol.record.BrokerInfoEncoder;
 import io.camunda.zeebe.protocol.record.MessageHeaderEncoder;
@@ -126,7 +127,7 @@ final class BrokerInfoTest {
             .setPartitionsCount(3)
             .setClusterSize(3)
             .setReplicationFactor(1)
-            .setPartitionGroup("default");
+            .setPartitionGroup(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
     original.setVersion("8.10.0");
     original.setCommandApiAddress("10.0.0.1:26501");
     original.setLeaderForPartition(1, 5L);
@@ -147,7 +148,8 @@ final class BrokerInfoTest {
     assertThat(copy.getPartitionRoles()).isEmpty();
     assertThat(copy.getPartitionLeaderTerms()).isEmpty();
     // original is unchanged
-    assertThat(original.getPartitionGroup()).isEqualTo("default");
+    assertThat(original.getPartitionGroup())
+        .isEqualTo(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
     assertThat(original.getPartitionRoles()).hasSize(1);
   }
 
@@ -180,7 +182,7 @@ final class BrokerInfoTest {
             .setPartitionsCount(1)
             .setClusterSize(1)
             .setReplicationFactor(1);
-    // partitionGroup not set → defaults to "default"
+    // partitionGroup not set → defaults to PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID
 
     // when
     final Properties props = new Properties();

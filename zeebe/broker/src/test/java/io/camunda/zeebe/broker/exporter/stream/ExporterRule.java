@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.exporter.stream;
 
 import static org.mockito.Mockito.spy;
 
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector.ExporterInitializationInfo;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext.ExporterMode;
@@ -148,7 +149,7 @@ public final class ExporterRule implements TestRule {
             .descriptors(descriptorsWithInitializationInfo)
             .meterRegistry(new SimpleMeterRegistry())
             .positionsToSkipFilter(positionsToSkipFilter)
-            .tenantName("default");
+            .tenantName(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
 
     contextApplier.accept(context);
     director = new ExporterDirector(context, phase, recordExporter);

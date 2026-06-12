@@ -10,6 +10,7 @@ package io.camunda.it.rdbms.exporter;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assumptions.assumeThat;
 
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
@@ -79,7 +80,7 @@ class RdbmsExporterBatchOperationsIT {
                 "foo",
                 Map.of("queueSize", 0, "exportBatchOperationItemsOnCreation", exportPendingItems)),
             1,
-            "default",
+            PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
             "",
             null,
             Mockito.mock(MeterRegistry.class, Mockito.RETURNS_DEEP_STUBS),

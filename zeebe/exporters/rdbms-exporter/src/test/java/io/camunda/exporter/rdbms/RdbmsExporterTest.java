@@ -22,6 +22,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
 import io.camunda.db.rdbms.write.RdbmsWriters;
@@ -477,7 +478,7 @@ class RdbmsExporterTest {
         .hasMessage("Schema is not ready for use");
 
     // verify schema manager was checked
-    verify(schemaManager).isInitialized("default");
+    verify(schemaManager).isInitialized(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
   }
 
   @Test
@@ -687,7 +688,7 @@ class RdbmsExporterTest {
         new RdbmsExporter.Builder()
             .rdbmsWriter(rdbmsWriters)
             .partitionId(0)
-            .physicalTenantId("default")
+            .physicalTenantId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
             .flushInterval(Duration.ofMillis(500))
             .queueSize(100)
             .rdbmsSchemaManagerRegistry(schemaManager)

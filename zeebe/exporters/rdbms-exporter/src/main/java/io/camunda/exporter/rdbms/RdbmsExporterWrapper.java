@@ -8,11 +8,11 @@
 package io.camunda.exporter.rdbms;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.read.replication.ReplicationLogStatusProvider;
-import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig.HistoryDeletionConfig;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.service.HistoryCleanupService;
@@ -105,7 +105,7 @@ public class RdbmsExporterWrapper implements Exporter {
     config.validate(); // throws exception if configuration is invalid
 
     final int partitionId = context.getPartitionId();
-    final var physicalTenantId = RdbmsWriterConfig.DEFAULT_PHYSICAL_TENANT_ID;
+    final var physicalTenantId = PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
     final var rdbmsWriterConfig =
         config.createRdbmsWriterConfig(partitionId, physicalTenantId, context.clock());
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(rdbmsWriterConfig);

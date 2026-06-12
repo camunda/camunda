@@ -7,7 +7,6 @@
  */
 package io.camunda.application.commons.rdbms;
 
-import static io.camunda.configuration.physicaltenants.PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -19,6 +18,7 @@ import static org.mockito.Mockito.verify;
 import com.zaxxer.hikari.HikariDataSource;
 import io.camunda.configuration.Rdbms;
 import io.camunda.configuration.RdbmsConnectionPool;
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -45,10 +45,12 @@ class RdbmsDataSourcesTest {
   void shouldBuildDataSourceForSinglePhysicalTenant() throws Exception {
     final var rdbms = h2Rdbms();
     try (final var registry =
-        RdbmsDataSources.of(Map.of(DEFAULT_PHYSICAL_TENANT_ID, rdbms), DATABASE_ID_PROVIDER)) {
+        RdbmsDataSources.of(
+            Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, rdbms), DATABASE_ID_PROVIDER)) {
 
       // then
-      final var ds = (HikariDataSource) registry.dataSourceFor(DEFAULT_PHYSICAL_TENANT_ID);
+      final var ds =
+          (HikariDataSource) registry.dataSourceFor(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
       assertThat(ds.getJdbcUrl()).isEqualTo(rdbms.getUrl());
       assertThat(ds.getUsername()).isEqualTo("sa");
       assertThat(ds.getDriverClassName()).isEqualTo("org.h2.Driver");
@@ -69,9 +71,11 @@ class RdbmsDataSourcesTest {
     rdbms.setConnectionPool(pool);
 
     try (final var registry =
-        RdbmsDataSources.of(Map.of(DEFAULT_PHYSICAL_TENANT_ID, rdbms), DATABASE_ID_PROVIDER)) {
+        RdbmsDataSources.of(
+            Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, rdbms), DATABASE_ID_PROVIDER)) {
 
-      final var ds = (HikariDataSource) registry.dataSourceFor(DEFAULT_PHYSICAL_TENANT_ID);
+      final var ds =
+          (HikariDataSource) registry.dataSourceFor(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
       assertThat(ds.getMaximumPoolSize()).isEqualTo(42);
       assertThat(ds.getMinimumIdle()).isEqualTo(7);
       assertThat(ds.getConnectionTimeout()).isEqualTo(1234);
@@ -98,7 +102,9 @@ class RdbmsDataSourcesTest {
   @Test
   void shouldThrowWhenLookingUpUnknownPhysicalTenantDataSource() throws Exception {
     try (final var registry =
-        RdbmsDataSources.of(Map.of(DEFAULT_PHYSICAL_TENANT_ID, h2Rdbms()), DATABASE_ID_PROVIDER)) {
+        RdbmsDataSources.of(
+            Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, h2Rdbms()),
+            DATABASE_ID_PROVIDER)) {
       assertThatThrownBy(() -> registry.dataSourceFor("missing"))
           .isInstanceOf(IllegalArgumentException.class)
           .hasMessageContaining("missing");
@@ -108,7 +114,9 @@ class RdbmsDataSourcesTest {
   @Test
   void shouldThrowWhenLookingUpUnknownPhysicalTenantVendorProperties() throws Exception {
     try (final var registry =
-        RdbmsDataSources.of(Map.of(DEFAULT_PHYSICAL_TENANT_ID, h2Rdbms()), DATABASE_ID_PROVIDER)) {
+        RdbmsDataSources.of(
+            Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, h2Rdbms()),
+            DATABASE_ID_PROVIDER)) {
       assertThatThrownBy(() -> registry.vendorPropertiesFor("missing"))
           .isInstanceOf(IllegalArgumentException.class)
           .hasMessageContaining("missing");

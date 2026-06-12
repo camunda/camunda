@@ -16,6 +16,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.CamundaAuthentication;
@@ -55,7 +56,8 @@ public class BasicCamundaUserServiceTest {
     when(userServices.getUser(eq("foo@bar.com"), any())).thenReturn(user);
 
     final var serviceRegistry =
-        DefaultServiceRegistry.of(b -> b.userServices("default", userServices));
+        DefaultServiceRegistry.of(
+            b -> b.userServices(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, userServices));
 
     basicCamundaUserService =
         new BasicCamundaUserService(

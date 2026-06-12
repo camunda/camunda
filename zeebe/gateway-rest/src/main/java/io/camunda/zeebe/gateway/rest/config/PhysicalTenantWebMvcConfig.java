@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.config;
 
-import io.camunda.gateway.mapping.http.physicaltenants.PhysicalTenantContext;
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.zeebe.gateway.rest.interceptor.PhysicalTenantInterceptor;
 import io.camunda.zeebe.gateway.rest.mapper.PhysicalTenantRequestMappingHandlerMapping;
 import io.camunda.zeebe.gateway.rest.resolver.PhysicalTenantIdArgumentResolver;
@@ -41,7 +41,7 @@ public class PhysicalTenantWebMvcConfig implements WebMvcConfigurer {
         interceptorProvider.getIfAvailable(
             () ->
                 new PhysicalTenantInterceptor(
-                    Set.of(PhysicalTenantContext.DEFAULT_PHYSICAL_TENANT_ID)::contains));
+                    Set.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)::contains));
   }
 
   @Bean

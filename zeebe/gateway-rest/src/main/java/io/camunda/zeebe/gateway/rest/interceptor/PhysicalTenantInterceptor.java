@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.interceptor;
 
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.gateway.mapping.http.physicaltenants.PhysicalTenantContext;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -24,7 +25,7 @@ import org.springframework.web.servlet.HandlerMapping;
  *       /physical-tenants/{physicalTenantId}/v2/...}) and the id is unknown, the request is
  *       rejected with HTTP 404 before reaching the controller.
  *   <li>If no prefix is present, the resolved id defaults to {@link
- *       PhysicalTenantContext#DEFAULT_PHYSICAL_TENANT_ID}.
+ *       PhysicalTenantIds#DEFAULT_PHYSICAL_TENANT_ID}.
  * </ul>
  */
 public class PhysicalTenantInterceptor implements HandlerInterceptor {
@@ -46,7 +47,7 @@ public class PhysicalTenantInterceptor implements HandlerInterceptor {
         (uriVars == null ? Map.<String, String>of() : uriVars)
             .getOrDefault(
                 PhysicalTenantContext.PATH_VARIABLE_PHYSICAL_TENANT_ID,
-                PhysicalTenantContext.DEFAULT_PHYSICAL_TENANT_ID);
+                PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
 
     if (!isKnownTenant.test(tenantId)) {
       response.sendError(HttpServletResponse.SC_NOT_FOUND, "Unknown physical tenant: " + tenantId);
