@@ -20,6 +20,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdatePartitionDistributorConfigRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateRoutingStateRequest;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -61,6 +62,9 @@ public interface ClusterConfigurationManagementApi {
 
   ActorFuture<ClusterConfigurationChangeResponse> updateRoutingState(
       UpdateRoutingStateRequest updateRoutingStateRequest);
+
+  ActorFuture<ClusterConfigurationChangeResponse> updatePartitionDistribution(
+      UpdatePartitionDistributorConfigRequest request);
 
   ActorFuture<ClusterConfigurationChangeResponse> purge(PurgeRequest purgeRequest);
 

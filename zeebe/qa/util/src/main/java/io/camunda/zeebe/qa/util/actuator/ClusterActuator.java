@@ -23,6 +23,7 @@ import io.camunda.container.cluster.BrokerNode;
 import io.camunda.zeebe.management.cluster.BrokerId;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
 import io.camunda.zeebe.management.cluster.GetTopologyResponse;
+import io.camunda.zeebe.management.cluster.PartitionDistributionConfig;
 import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
 import io.camunda.zeebe.management.cluster.RoutingState;
 import io.camunda.zeebe.qa.util.cluster.TestApplication;
@@ -352,6 +353,11 @@ public interface ClusterActuator {
   @RequestLine("PATCH /routing-state?dryRun={dryRun}&force={force}")
   @Headers({"Content-Type: application/json", "accept: application/json"})
   void patchRoutingState(@Param boolean dryRun);
+
+  @RequestLine("PATCH /partition-distribution?dryRun={dryRun}")
+  @Headers({"Content-Type: application/json", "accept: application/json"})
+  PlannedOperationsResponse patchPartitionDistribution(
+      @RequestBody final PartitionDistributionConfig config, @Param boolean dryRun);
 
   // -- BrokerId dispatch methods (default) --
 
