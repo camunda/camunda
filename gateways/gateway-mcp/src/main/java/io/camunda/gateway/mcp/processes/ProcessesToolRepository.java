@@ -7,7 +7,7 @@
  */
 package io.camunda.gateway.mcp.processes;
 
-import io.camunda.gateway.mapping.http.physicaltenants.PhysicalTenantContext;
+import io.camunda.authentication.pt.PhysicalTenantContext;
 import io.camunda.gateway.mcp.config.server.ToolRepository;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
 import io.camunda.search.entities.MessageSubscriptionEntity;

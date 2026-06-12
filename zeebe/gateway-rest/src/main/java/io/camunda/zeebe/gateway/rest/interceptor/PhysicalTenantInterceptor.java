@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.interceptor;
 
-import io.camunda.gateway.mapping.http.physicaltenants.PhysicalTenantContext;
+import io.camunda.authentication.pt.PhysicalTenantContext;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.Map;

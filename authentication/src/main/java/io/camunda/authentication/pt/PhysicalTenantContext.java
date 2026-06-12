@@ -16,17 +16,26 @@ import org.springframework.web.context.request.RequestContextHolder;
  *
  * <p>Used by both the REST gateway ({@code /physical-tenants/{physicalTenantId}/v2/...} routes) and
  * the MCP gateway ({@code /physical-tenants/{physicalTenantId}/mcp/...} routes). The id is
- * populated on the request by the respective interceptor or pre-security filter, and read
- * downstream via {@link #current()} (request-bound thread) or {@link
- * #getPhysicalTenantId(HttpServletRequest)}.
+ * populated on the request by the respective interceptor and read downstream via {@link #current()}
+ * (request-bound thread) or {@link #getPhysicalTenantId(HttpServletRequest)}.
  */
 public final class PhysicalTenantContext {
 
   /** Default physical tenant id used when no prefix is present in the request path. */
   public static final String DEFAULT_PHYSICAL_TENANT_ID = "default";
 
+  /** URL path prefix for physical-tenant-scoped routes (e.g. {@code /physical-tenants/foo/}). */
+  public static final String PHYSICAL_TENANTS_PATH_SEGMENT = "/physical-tenants/";
+
   /** URI template variable carrying the physical tenant id in prefixed routes. */
   public static final String PATH_VARIABLE_PHYSICAL_TENANT_ID = "physicalTenantId";
+
+  /**
+   * URI template prefix for physical-tenant-scoped routes (e.g. {@code
+   * /physical-tenants/{physicalTenantId}/...}).
+   */
+  public static final String PHYSICAL_TENANT_URI_PREFIX =
+      PHYSICAL_TENANTS_PATH_SEGMENT + "{" + PATH_VARIABLE_PHYSICAL_TENANT_ID + "}";
 
   /** Request attribute key under which the resolved id is stored. */
   public static final String REQUEST_ATTRIBUTE_PHYSICAL_TENANT_ID =
