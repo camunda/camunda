@@ -278,9 +278,19 @@ class PhysicalTenantApiChainIsolationIT {
     // dynamically-allocated JWKS servers.
     env.setProperty("camunda.security.authentication.method", "oidc");
 
-    // OC's scope provider: reads camunda.physical-tenants.* and produces ScopedSecurityDescriptors
+    // OC's scope provider: reads camunda.physical-tenants.* and produces ScopedSecurityDescriptors.
+    // This IT validates explicit-tenant isolation, so it deliberately keeps a minimal env where
+    // each
+    // PT's provider lives only in its overlay and the root declares no OIDC provider. The provider
+    // also emits the /physical-tenants/default alias (built from the root config); here that root
+    // is
+    // intentionally empty, so the alias is excluded from chain building — the default alias is
+    // covered by PhysicalTenantScopeProviderTest.
     final var scopeProvider = new PhysicalTenantScopeProvider(env);
-    final var descriptors = scopeProvider.get();
+    final var descriptors =
+        scopeProvider.get().stream()
+            .filter(d -> !d.basePath().equals("/physical-tenants/default"))
+            .toList();
     assertThat(descriptors).as("scope provider must return at least one descriptor").isNotEmpty();
 
     // CSL decoder factory wired from scratch — no Spring context required; mirrors the CSL test
