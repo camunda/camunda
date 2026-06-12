@@ -154,19 +154,33 @@ public final class AuroraReplicationCluster implements ReplicationClusterContain
                   final ResultSet rs =
                       statement.executeQuery(
                           """
-                          SELECT session_id, durable_lsn FROM aurora_global_db_instance_status()
-                           WHERE session_id <> 'MASTER_SESSION_ID'
+                          SELECT server_id, session_id, aws_region, durable_lsn, visibility_lag_in_msec
+                          FROM aurora_global_db_instance_status()
                           """)) {
                 int replicaCount = 0;
+                boolean replicaInSync = false;
                 while (rs.next()) {
-                  replicaCount++;
+                  final String sessionId = rs.getString("session_id");
+                  final long durableLsn = rs.getLong("durable_lsn");
+                  // NULL session_id is treated as non-master (a recovering secondary may report a
+                  // NULL session before it establishes a streaming session); equals() is NULL-safe.
+                  final boolean isMaster = "MASTER_SESSION_ID".equals(sessionId);
                   LOG.info(
-                      "Replica status: session_id={}, durable_lsn={}",
-                      rs.getString("session_id"),
-                      rs.getLong("durable_lsn"));
-                  if (rs.getLong("durable_lsn") > 0) {
-                    return;
+                      "Instance status: server_id={}, session_id={}, aws_region={}, durable_lsn={}, visibility_lag_in_msec={}",
+                      rs.getString("server_id"),
+                      sessionId,
+                      rs.getString("aws_region"),
+                      durableLsn,
+                      rs.getLong("visibility_lag_in_msec"));
+                  if (!isMaster) {
+                    replicaCount++;
+                    if (durableLsn > 0) {
+                      replicaInSync = true;
+                    }
                   }
+                }
+                if (replicaInSync) {
+                  return;
                 }
                 throw new AssertionError(
                     "No replica instance reporting a durable_lsn yet (replicas visible: "
