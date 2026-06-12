@@ -282,6 +282,99 @@ class ArchiveByIdTaskSupplierTest {
   }
 
   @Test
+  void shouldNotReduceBatchSizeBelowMinimum() {
+    // given - starting batch size of 100 so it hits the floor at 50 after one halving
+    final var retryableError = new CompletionException(new SocketTimeoutException("timeout"));
+    final var reindexCallCount = new AtomicInteger(0);
+    final var batchSize = new AtomicInteger(0);
+
+    final var config = new HistoryConfiguration();
+    config.setArchiveByIdMaxRetryAttempts(10);
+    config.setArchiveByIdRetryDelayMs(0);
+    config.setReindexBatchSize(100);
+
+    final var taskSupplier =
+        new ArchiveByIdTaskSupplier<>(
+            config,
+            "source-idx",
+            "destination-idx",
+            (searchAfter, size) -> {
+              batchSize.set(size);
+              return CompletableFuture.completedFuture(
+                  ArchiveDocIdsBatch.from(List.of("doc1"), List.of("after1")));
+            },
+            (source, dest, ids) -> {
+              if (reindexCallCount.incrementAndGet() <= 3) {
+                return CompletableFuture.failedFuture(retryableError);
+              }
+              return CompletableFuture.completedFuture((long) ids.size());
+            },
+            (source, ids) -> CompletableFuture.completedFuture((long) ids.size()),
+            DIRECT_EXECUTOR,
+            metrics,
+            LOGGER);
+
+    // when - attempt 1 fails: 100 used, reduction gives 50
+    assertThat(taskSupplier.moveNextBatch().join()).isEqualTo(0L);
+    assertThat(batchSize.get()).isEqualTo(100);
+
+    // when - attempt 2 fails: 50 used, reduction stays at 50 (floor)
+    assertThat(taskSupplier.moveNextBatch().join()).isEqualTo(0L);
+    assertThat(batchSize.get()).isEqualTo(50);
+
+    // when - attempt 3 fails: still 50 (floor enforced)
+    assertThat(taskSupplier.moveNextBatch().join()).isEqualTo(0L);
+    assertThat(batchSize.get()).isEqualTo(50);
+
+    // when - attempt 4 succeeds: still 50
+    assertThat(taskSupplier.moveNextBatch().join()).isEqualTo(1L);
+    assertThat(batchSize.get()).isEqualTo(50);
+  }
+
+  @Test
+  void shouldNotReduceBatchSizeForNonSocketTimeoutRetryableError() {
+    // given - retryable error that is NOT a SocketTimeoutException
+    final var batchMismatchError =
+        new CompletionException(
+            new ArchiveByIdTaskSupplier.BatchCountMismatchException("reindex", "count mismatch"));
+    final var reindexCallCount = new AtomicInteger(0);
+    final var batchSize = new AtomicInteger(0);
+
+    final var taskSupplier =
+        new ArchiveByIdTaskSupplier<>(
+            historyConfigWithMaxRetry(3),
+            "source-idx",
+            "destination-idx",
+            (searchAfter, size) -> {
+              batchSize.set(size);
+              return CompletableFuture.completedFuture(
+                  ArchiveDocIdsBatch.from(List.of("doc1"), List.of("after1")));
+            },
+            (source, dest, ids) -> {
+              if (reindexCallCount.incrementAndGet() <= 2) {
+                return CompletableFuture.failedFuture(batchMismatchError);
+              }
+              return CompletableFuture.completedFuture((long) ids.size());
+            },
+            (source, ids) -> CompletableFuture.completedFuture((long) ids.size()),
+            DIRECT_EXECUTOR,
+            metrics,
+            LOGGER);
+
+    // when - attempt 1 fails with non-SocketTimeout error
+    assertThat(taskSupplier.moveNextBatch().join()).isEqualTo(0L);
+    assertThat(batchSize.get()).isEqualTo(1200);
+
+    // when - attempt 2 fails: batch size unchanged
+    assertThat(taskSupplier.moveNextBatch().join()).isEqualTo(0L);
+    assertThat(batchSize.get()).isEqualTo(1200);
+
+    // when - attempt 3 succeeds: batch size still unchanged
+    assertThat(taskSupplier.moveNextBatch().join()).isEqualTo(1L);
+    assertThat(batchSize.get()).isEqualTo(1200);
+  }
+
+  @Test
   void shouldDelayBeforeRetryingRetryableError() {
     // given
     final var retryableError = new CompletionException(new SocketTimeoutException("timeout"));
