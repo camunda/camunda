@@ -49,6 +49,11 @@ fi
 
 helm_chart="camunda-platform-8.10"
 namespace="$1"
+normalized_namespace="$(normalize_load_test_name "$namespace")"
+if [[ "$normalized_namespace" != "$namespace" ]]; then
+  namespace="$normalized_namespace"
+  echo "Namespace normalized to lowercase: $namespace"
+fi
 
 # Add c8- prefix if not present
 if [[ ! "$namespace" =~ ^c8- ]]; then
@@ -61,13 +66,7 @@ fi
 # now that namespace creation is deferred to `make install`, validate here so
 # we don't render a folder with random secrets just to discover the name is
 # invalid.
-if [[ ! "$namespace" =~ ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$ ]]; then
-  echo "Error: namespace '$namespace' is not a valid Kubernetes DNS-1123 label."
-  echo "       Allowed: lowercase letters, digits, '-'. Must start and end with an alphanumeric."
-  exit 1
-fi
-if [ ${#namespace} -gt 63 ]; then
-  echo "Error: namespace '$namespace' is ${#namespace} characters; Kubernetes labels are capped at 63."
+if ! validate_load_test_namespace "$namespace"; then
   exit 1
 fi
 

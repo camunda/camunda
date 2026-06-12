@@ -210,8 +210,6 @@ env:
   CLUSTER: camunda-benchmark-prod  # change this to "camunda-benchmark-dev" when experimenting
   TELEPORT_JOIN_TOKEN: infra-benchmark-prod-github-action-zeebe  # change this to "infra-benchmark-dev-github-action-zeebe" when experimenting
   HELM_CHART: camunda-platform-8.10
-  # Namespaces MUST start with c8 due to access policy
-  NAMESPACE: ${{ startsWith(inputs.name, 'c8-') && inputs.name || format('c8-{0}', inputs.name) }}
   IMAGE_REPOSITORY: registry.camunda.cloud/team-zeebe
 
 defaults:
@@ -221,21 +219,53 @@ defaults:
     shell: bash
 
 jobs:
+  normalize-load-test-name:
+    name: Normalize load test name
+    runs-on: ubuntu-latest
+    permissions: {}
+    outputs:
+      namespace: ${{ steps.normalize.outputs.namespace }}
+    steps:
+      - name: Normalize namespace
+        id: normalize
+        env:
+          LOAD_TEST_NAME: ${{ inputs.name }}
+        run: |
+          namespace="${LOAD_TEST_NAME,,}"
+
+          if [[ ! "$namespace" =~ ^c8- ]]; then
+            namespace="c8-$namespace"
+          fi
+
+          if [[ ! "$namespace" =~ ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$ ]]; then
+            echo "::error::Namespace '$namespace' is not a valid Kubernetes DNS-1123 label."
+            exit 1
+          fi
+
+          if [ ${#namespace} -gt 63 ]; then
+            echo "::error::Namespace '$namespace' is ${#namespace} characters; Kubernetes labels are capped at 63."
+            exit 1
+          fi
+
+          echo "namespace=$namespace" >> "$GITHUB_OUTPUT"
+
   show-summary:
     name: Summarize workflow inputs
+    needs: normalize-load-test-name
     runs-on: ubuntu-latest
     permissions: {}
     steps:
       - name: Show summary
         run: |-
           cat >> "$GITHUB_STEP_SUMMARY" <<'EOF'
-          ## Load test: `${{ env.NAMESPACE }}`
+          ## Load test: `${{ needs.normalize-load-test-name.outputs.namespace }}`
 
-          > 📊 **[Open Grafana Dashboard](https://dashboard.benchmark.camunda.cloud/d/zeebe-dashboard/zeebe?var-namespace=${{ env.NAMESPACE }})**
+          > 📊 **[Open Grafana Dashboard](https://dashboard.benchmark.camunda.cloud/d/zeebe-dashboard/zeebe?var-namespace=${{ needs.normalize-load-test-name.outputs.namespace }})**
 
           | Input | Value |
           |-------|-------|
           | Name | `${{ inputs.name }}` |
+          | Namespace | `${{ needs.normalize-load-test-name.outputs.namespace }}` |
           | Ref | `${{ inputs.ref }}` |
           | Scenario | `${{ inputs.scenario }}` |
           | Secondary storage | `${{ inputs.secondary-storage-type }}` |
@@ -456,6 +486,7 @@ jobs:
   deploy-cluster-under-test:
     name: Deploy cluster under test
     needs:
+      - normalize-load-test-name
       - calculate-image-tag
       - build-camunda-image
       - build-load-test-images
@@ -463,6 +494,7 @@ jobs:
     # the deploy will be run, when build is skipped or successful.
     if: |
       always() &&
+      needs.normalize-load-test-name.result == 'success' &&
       needs.calculate-image-tag.result == 'success' &&
       (needs.build-camunda-image.result == 'success' || needs.build-camunda-image.result == 'skipped') &&
       (needs.build-load-test-images.result == 'success' || needs.build-load-test-images.result == 'skipped')
@@ -532,10 +564,10 @@ jobs:
           git config user.name ${{ github.actor }}
           # Render the load-test folder. newLoadTest.sh no longer creates the namespace — that
           # happens on `make install` via `kubectl apply -f resources/namespace.yaml`.
-          ./newLoadTest.sh ${{ env.NAMESPACE }} ${{ inputs.secondary-storage-type }} ${{ inputs.ttl }} ${{ inputs.enable-optimize }}
+          ./newLoadTest.sh ${{ needs.normalize-load-test-name.outputs.namespace }} ${{ inputs.secondary-storage-type }} ${{ inputs.ttl }} ${{ inputs.enable-optimize }}
       - name: Install latest Camunda Platform
         run: |
-          cd load-tests/setup/${{ env.NAMESPACE }}
+          cd load-tests/setup/${{ needs.normalize-load-test-name.outputs.namespace }}
 
           # Build load test configuration
           load_test_config="--set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} \
@@ -606,7 +638,7 @@ jobs:
       - name: Annotate namespace with workflow run URL
         run: |
           # Traceability annotation, applied after `make install` has created the namespace.
-          kubectl annotate namespace ${{ env.NAMESPACE }} \
+          kubectl annotate namespace ${{ needs.normalize-load-test-name.outputs.namespace }} \
             "github.com/workflow-run-url=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
             --overwrite
       - name: Summarize platform deployment
@@ -615,7 +647,7 @@ jobs:
           cat >> "$GITHUB_STEP_SUMMARY" <<EOF
             ## Camunda platform \`${{ inputs.name }}\` values
             \`\`\`yaml
-            $(helm get values ${{ env.NAMESPACE }} -n ${{ env.NAMESPACE }})
+            $(helm get values ${{ needs.normalize-load-test-name.outputs.namespace }} -n ${{ needs.normalize-load-test-name.outputs.namespace }})
             \`\`\`
           EOF
       - name: Summarize load test deployment
@@ -623,10 +655,10 @@ jobs:
         run: |
           cat >> "$GITHUB_STEP_SUMMARY" <<EOF
             # Load test
-            The test has been set up successfully. You can observe it [here](https://dashboard.benchmark.camunda.cloud/d/zeebe-dashboard/zeebe?var-namespace=${{ env.NAMESPACE }})
+            The test has been set up successfully. You can observe it [here](https://dashboard.benchmark.camunda.cloud/d/zeebe-dashboard/zeebe?var-namespace=${{ needs.normalize-load-test-name.outputs.namespace }})
             ## Load test \`${{ inputs.name }}\` values
             \`\`\`yaml
-            $(helm get values ${{ env.NAMESPACE }}-test -n ${{ env.NAMESPACE }})
+            $(helm get values ${{ needs.normalize-load-test-name.outputs.namespace }}-test -n ${{ needs.normalize-load-test-name.outputs.namespace }})
             \`\`\`
           EOF
       - name: Observe build status
