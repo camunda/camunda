@@ -40,7 +40,7 @@ const AvailableTasks: React.FC<Props> = ({
 			className={cn(styles.container, {
 				[styles.containerPadding!]: tasks.length === 0,
 			})}
-			title={t('availableTasksTitle')}
+			title={t('tasklist.availableTasksTitle')}
 		>
 			{tasks.length > 0 ? (
 				<div
