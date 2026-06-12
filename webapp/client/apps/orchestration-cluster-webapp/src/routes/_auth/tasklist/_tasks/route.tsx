@@ -12,7 +12,6 @@ import {useSuspenseInfiniteQuery, useSuspenseQuery} from '@tanstack/react-query'
 import {queries} from '#/shared/http/queries';
 import {TasksLayoutPage} from '#/tasklist/pages/TasksLayoutPage';
 import {tasklistIndexSearchDefaults, tasklistIndexSearchSchema} from '#/tasklist/modules/available-tasks/searchSchema';
-import {tasksInfiniteQueryOptions} from '#/tasklist/modules/available-tasks/tasksQuery';
 import {getTasksRequestBody} from '#/tasklist/modules/available-tasks/getTasksRequestBody';
 
 export const Route = createFileRoute('/_auth/tasklist/_tasks')({
@@ -21,11 +20,12 @@ export const Route = createFileRoute('/_auth/tasklist/_tasks')({
 		middlewares: [retainSearchParams(['sortBy']), stripSearchParams(tasklistIndexSearchDefaults)],
 	},
 	loader: ({context: {queryClient}}) =>
-		queryClient.ensureInfiniteQueryData(tasksInfiniteQueryOptions(getTasksRequestBody())),
+		queryClient.ensureInfiniteQueryData(queries.queryUserTasks(getTasksRequestBody())),
 	component: function TasksLayoutRoute() {
-		const {data, fetchNextPage, fetchPreviousPage, hasNextPage, hasPreviousPage} = useSuspenseInfiniteQuery(
-			tasksInfiniteQueryOptions(getTasksRequestBody()),
-		);
+		const {data, fetchNextPage, fetchPreviousPage, hasNextPage, hasPreviousPage} = useSuspenseInfiniteQuery({
+			...queries.queryUserTasks(getTasksRequestBody()),
+			refetchInterval: 5000,
+		});
 		const {data: currentUser} = useSuspenseQuery(queries.getCurrentUser());
 
 		const tasks = useMemo(() => data.pages.flatMap((page) => page.items), [data]);

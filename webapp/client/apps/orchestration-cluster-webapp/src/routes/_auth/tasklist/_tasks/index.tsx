@@ -6,15 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {createFileRoute} from '@tanstack/react-router';
-import {useSuspenseInfiniteQuery} from '@tanstack/react-query';
+import {createFileRoute, useLoaderData} from '@tanstack/react-router';
+
 import {NoTaskSelectedPage} from '#/tasklist/pages/NoTaskSelectedPage';
-import {tasksInfiniteQueryOptions} from '#/tasklist/modules/available-tasks/tasksQuery';
-import {getTasksRequestBody} from '#/tasklist/modules/available-tasks/getTasksRequestBody';
 
 export const Route = createFileRoute('/_auth/tasklist/_tasks/')({
 	component: function NoTaskSelectedRoute() {
-		const {data} = useSuspenseInfiniteQuery(tasksInfiniteQueryOptions(getTasksRequestBody()));
+		const data = useLoaderData({from: '/_auth/tasklist/_tasks'});
 		const hasNoTasks = data.pages[0]?.items.length === 0;
 
 		return <NoTaskSelectedPage hasNoTasks={hasNoTasks} />;
