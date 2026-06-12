@@ -392,6 +392,13 @@
 		"relativeDateUnknown": "'Inconnu'",
 		"processesLoadMore": "Charger plus",
 		"processesLoadingMore": "Chargement...",
-		"deniedReason": "La tâche {{type}} a été rejetée par le système."
+		"deniedReason": "La tâche {{type}} a été rejetée par le système.",
+		"operate": {
+			"dashboard": {"title": "Tableau de bord"},
+			"processes": {"title": "Processus"},
+			"decisions": {"title": "Décisions"},
+			"operationsLog": {"title": "Journal des opérations"},
+			"batchOperations": {"title": "Opérations par lots"}
+		}
 	}
 }

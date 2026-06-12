@@ -9,9 +9,19 @@
 import {endpoints} from '@camunda/camunda-api-zod-schemas/8.10';
 import {createEndpointMock} from './mock-endpoint';
 
+const mockGetProcessDefinitionInstanceStatisticsEndpoint = createEndpointMock({
+	endpoint: endpoints.getProcessDefinitionInstanceStatistics.getUrl(),
+	method: endpoints.getProcessDefinitionInstanceStatistics.method,
+});
+
+const mockGetIncidentProcessInstanceStatisticsByErrorEndpoint = createEndpointMock({
+	endpoint: endpoints.getIncidentProcessInstanceStatisticsByError.getUrl(),
+	method: endpoints.getIncidentProcessInstanceStatisticsByError.method,
+});
+
 const mockCurrentUserEndpoint = createEndpointMock({
 	endpoint: endpoints.getCurrentUser.getUrl(),
-	method: 'GET',
+	method: endpoints.getCurrentUser.method,
 });
 
 const mockLoginEndpoint = createEndpointMock({
@@ -26,12 +36,12 @@ const mockLogoutEndpoint = createEndpointMock({
 
 const mockSystemConfigurationEndpoint = createEndpointMock({
 	endpoint: endpoints.getSystemConfiguration.getUrl(),
-	method: 'GET',
+	method: endpoints.getSystemConfiguration.method,
 });
 
 const mockLicenseEndpoint = createEndpointMock({
 	endpoint: endpoints.getLicense.getUrl(),
-	method: 'GET',
+	method: endpoints.getLicense.method,
 });
 
 const mockSaasTokenEndpoint = createEndpointMock({
@@ -46,4 +56,6 @@ export {
 	mockSystemConfigurationEndpoint,
 	mockLicenseEndpoint,
 	mockSaasTokenEndpoint,
+	mockGetProcessDefinitionInstanceStatisticsEndpoint,
+	mockGetIncidentProcessInstanceStatisticsByErrorEndpoint,
 };

@@ -389,6 +389,13 @@
 		"relativeDateUnknown": "'Desconocido'",
 		"processesLoadMore": "Cargar más",
 		"processesLoadingMore": "Cargando...",
-		"deniedReason": "La tarea {{type}} fue rechazada por el sistema."
+		"deniedReason": "La tarea {{type}} fue rechazada por el sistema.",
+		"operate": {
+			"dashboard": {"title": "Panel de control"},
+			"processes": {"title": "Procesos"},
+			"decisions": {"title": "Decisiones"},
+			"operationsLog": {"title": "Registro de operaciones"},
+			"batchOperations": {"title": "Operaciones en lote"}
+		}
 	}
 }

@@ -6,7 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {endpoints as unifiedAPIEndpoints} from '@camunda/camunda-api-zod-schemas/8.10';
+import {
+	endpoints as unifiedAPIEndpoints,
+	type GetProcessDefinitionInstanceStatisticsRequestBody,
+	type GetIncidentProcessInstanceStatisticsByErrorRequestBody,
+} from '@camunda/camunda-api-zod-schemas/8.10';
 import {getBootConfig} from '#/shared/config/getBootConfig';
 import {mergePathname} from './mergePathname';
 
@@ -65,6 +69,22 @@ const endpoints = {
 		new Request(getFullURL('/v2/authentication/me/token'), {
 			...BASE_REQUEST_OPTIONS,
 			method: 'GET',
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getProcessDefinitionInstanceStatistics: (body: GetProcessDefinitionInstanceStatisticsRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getProcessDefinitionInstanceStatistics.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getProcessDefinitionInstanceStatistics.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getIncidentProcessInstanceStatisticsByError: (body: GetIncidentProcessInstanceStatisticsByErrorRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getIncidentProcessInstanceStatisticsByError.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getIncidentProcessInstanceStatisticsByError.method,
+			body: JSON.stringify(body),
 			headers: {'Content-Type': 'application/json'},
 		}),
 };

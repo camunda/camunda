@@ -27,6 +27,10 @@ const tabRoutes = {
 	tasklistProcesses: '/tasklist/processes',
 	admin: '/admin',
 	operate: '/operate',
+	operateProcesses: '/operate/processes',
+	operateDecisions: '/operate/decisions',
+	operateOperationsLog: '/operate/operations-log',
+	operateBatchOperations: '/operate/batch-operations',
 } as const satisfies Record<string, FileRouteTypes['to']>;
 
 function useNavbar(currentUser: CurrentUser): NavbarConfig {
@@ -116,7 +120,54 @@ function useNavbar(currentUser: CurrentUser): NavbarConfig {
 					},
 				},
 			},
-			elements: hasOperateAccess ? [] : [],
+			elements: hasOperateAccess
+				? [
+						{
+							key: 'processes',
+							label: t('operate.processes.title'),
+							isCurrentPage: pathname.startsWith(tabRoutes['operateProcesses']),
+							routeProps: {
+								to: tabRoutes['operateProcesses'],
+								onClick: () => {
+									tracking.track({eventName: 'operate:navigation', link: 'header-processes'});
+								},
+							},
+						},
+						{
+							key: 'decisions',
+							label: t('operate.decisions.title'),
+							isCurrentPage: pathname.startsWith(tabRoutes['operateDecisions']),
+							routeProps: {
+								to: tabRoutes['operateDecisions'],
+								onClick: () => {
+									tracking.track({eventName: 'operate:navigation', link: 'header-decisions'});
+								},
+							},
+						},
+						{
+							key: 'operations-log',
+							label: t('operate.operationsLog.title'),
+							isCurrentPage: pathname.startsWith(tabRoutes['operateOperationsLog']),
+							routeProps: {
+								to: tabRoutes['operateOperationsLog'],
+								onClick: () => {
+									tracking.track({eventName: 'operate:navigation', link: 'header-operations-log'});
+								},
+							},
+						},
+						{
+							key: 'batch-operations',
+							label: t('operate.batchOperations.title'),
+							isCurrentPage: pathname.startsWith(tabRoutes['operateBatchOperations']),
+							routeProps: {
+								to: tabRoutes['operateBatchOperations'],
+								onClick: () => {
+									tracking.track({eventName: 'operate:navigation', link: 'header-batch-operations'});
+								},
+							},
+						},
+					]
+				: [],
 		};
 	}
 

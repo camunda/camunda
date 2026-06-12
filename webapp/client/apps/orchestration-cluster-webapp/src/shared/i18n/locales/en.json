@@ -401,6 +401,13 @@
 		"relativeDateUnknown": "'Unknown'",
 		"processesLoadMore": "Load more",
 		"processesLoadingMore": "Loading...",
-		"deniedReason": "The task {{type}} was rejected by the system."
+		"deniedReason": "The task {{type}} was rejected by the system.",
+		"operate": {
+			"dashboard": {"title": "Dashboard"},
+			"processes": {"title": "Processes"},
+			"decisions": {"title": "Decisions"},
+			"operationsLog": {"title": "Operations Log"},
+			"batchOperations": {"title": "Batch Operations"}
+		}
 	}
 }
