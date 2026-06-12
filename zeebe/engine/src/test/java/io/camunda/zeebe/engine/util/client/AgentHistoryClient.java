@@ -95,4 +95,14 @@ public final class AgentHistoryClient {
             AgentHistoryIntent.CREATE, record, authorizedTenantIds.toArray(new String[0]));
     return (expectRejection ? CREATE_REJECTION_EXPECTATION : CREATED_EXPECTATION).apply(position);
   }
+
+  public Record<AgentHistoryRecordValue> create(final String username) {
+    final long position =
+        writer.writeCommand(
+            AgentHistoryIntent.CREATE,
+            username,
+            record,
+            authorizedTenantIds.toArray(new String[0]));
+    return (expectRejection ? CREATE_REJECTION_EXPECTATION : CREATED_EXPECTATION).apply(position);
+  }
 }

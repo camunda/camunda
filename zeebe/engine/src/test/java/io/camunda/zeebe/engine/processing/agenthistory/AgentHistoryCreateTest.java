@@ -62,6 +62,13 @@ public class AgentHistoryCreateTest {
     assertThat(created.getValue().getAgentInstanceKey()).isEqualTo(agentInstanceKey);
     assertThat(created.getValue().getJobKey()).isEqualTo(jobKey);
     assertThat(created.getValue().getElementInstanceKey()).isEqualTo(elementInstanceKey);
+
+    final var committed =
+        RecordingExporter.agentHistoryRecords(AgentHistoryIntent.COMMITTED)
+            .withAgentInstanceKey(agentInstanceKey)
+            .getFirst();
+    assertThat(committed.getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(committed.getKey()).isEqualTo(created.getKey());
   }
 
   @Test
