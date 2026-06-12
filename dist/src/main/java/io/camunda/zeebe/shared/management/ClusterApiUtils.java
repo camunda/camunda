@@ -116,6 +116,7 @@ final class ClusterApiUtils {
           case final ConnectException ignore -> 502;
           case final NoSuchMemberException ignore -> 502;
           case final TimeoutException ignore -> 504;
+          case final IllegalArgumentException ignore -> 400;
           default -> 500;
         };
     return ResponseEntity.status(status).body(errorResponse);

@@ -67,6 +67,12 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
     return new BrokerId.String(memberIdForBroker(nodeIdx).toString());
   }
 
+
+  /**
+   * 0 -> zoneA_0
+   * 1 -> zoneB_0
+   * 2 -> zoneA_1
+   */
   @Override
   protected MemberId memberIdForBroker(final int nodeIdx) {
     return MemberId.from(zoneFor(nodeIdx), nodeIdx / ZONES.length);
@@ -165,20 +171,32 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
       cluster.awaitCompleteTopology();
       final var actuator = ClusterActuator.of(cluster.availableGateway());
 
-      // when - dry-run with priority change (zoneA 100→200)
+      // when - dry-run increasing zoneA replicas from 1→2 (RF 2→3)
+      // expects one PARTITION_JOIN per partition for the second zoneA broker
       final var config =
           new PartitionDistributionConfig()
               .type(PartitionDistributionConfig.TypeEnum.ZONE_AWARE)
               .zones(
                   List.of(
-                      new ZoneSpec().name(ZONES[0]).numberOfReplicas(1).priority(200),
+                      new ZoneSpec().name(ZONES[0]).numberOfReplicas(2).priority(100),
                       new ZoneSpec().name(ZONES[1]).numberOfReplicas(1).priority(10)));
       final var response = actuator.patchPartitionDistribution(config, true);
 
-      // then - planned changes include the config-set op
-      assertThat(response.getPlannedChanges()).isNotEmpty();
-      assertThat(response.getPlannedChanges().stream().map(op -> op.getOperation()))
-          .contains(OperationEnum.UPDATE_PARTITION_DISTRIBUTOR_CONFIG);
+      // then - exactly one config-set op followed by one PARTITION_JOIN per partition
+      final var ops = response.getPlannedChanges().stream().map(op -> op.getOperation()).toList();
+      assertThat(ops).first().isEqualTo(OperationEnum.UPDATE_PARTITION_DISTRIBUTOR_CONFIG);
+      assertThat(ops.subList(1, ops.size()))
+          .hasSize(partitionCount())
+          .containsOnly(OperationEnum.PARTITION_JOIN);
+      // all joins target the second zoneA broker (nodeIdx=2 → zoneA_1, not yet holding any
+      // partition)
+      final var joinBrokerIds =
+          response.getPlannedChanges().stream()
+              .filter(op -> op.getOperation() == OperationEnum.PARTITION_JOIN)
+              .map(op -> op.getBrokerId())
+              .distinct()
+              .toList();
+      assertThat(joinBrokerIds).singleElement().isEqualTo(brokerId(2));
     }
   }
 
