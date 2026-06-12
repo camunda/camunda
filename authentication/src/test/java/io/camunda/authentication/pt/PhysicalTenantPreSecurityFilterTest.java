@@ -7,10 +7,11 @@
  */
 package io.camunda.authentication.pt;
 
-import static io.camunda.authentication.pt.PhysicalTenantContext.PHYSICAL_TENANTS_PATH_SEGMENT;
+import static io.camunda.spring.utils.PhysicalTenantContext.PHYSICAL_TENANTS_PATH_SEGMENT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.spring.utils.PhysicalTenantContext;
 import jakarta.servlet.FilterChain;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
