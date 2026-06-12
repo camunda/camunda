@@ -63,6 +63,13 @@ public class ProcessInstanceCreationTest {
     }
 
     @Test
+    void shouldSetDefaultMessageStartAskRetryGrace() {
+      assertThat(brokerCfg.getExperimental().getEngine().getProcessInstanceCreation())
+          .returns(
+              Duration.ofSeconds(30), ProcessInstanceCreationCfg::getMessageStartAskRetryGrace);
+    }
+
+    @Test
     void shouldSetDefaultMessageStartLockReleasePollInterval() {
       assertThat(brokerCfg.getExperimental().getEngine().getProcessInstanceCreation())
           .returns(
@@ -92,6 +99,7 @@ public class ProcessInstanceCreationTest {
         "camunda.process-instance-creation.message-start-dedup-expiration-sweep-interval=1m",
         "camunda.process-instance-creation.message-start-dedup-expiration-sweep-batch-limit=250",
         "camunda.process-instance-creation.message-start-ask-retry-interval=5s",
+        "camunda.process-instance-creation.message-start-ask-retry-grace=20s",
         "camunda.process-instance-creation.message-start-lock-release-poll-interval=2s",
         "camunda.process-instance-creation.message-start-lock-release-poll-max-backoff=45s",
         "camunda.process-instance-creation.message-start-lock-release-poll-batch-limit=128",
@@ -113,6 +121,7 @@ public class ProcessInstanceCreationTest {
           .returns(250, ProcessInstanceCreationCfg::getMessageStartDedupExpirationSweepBatchLimit)
           .returns(
               Duration.ofSeconds(5), ProcessInstanceCreationCfg::getMessageStartAskRetryInterval)
+          .returns(Duration.ofSeconds(20), ProcessInstanceCreationCfg::getMessageStartAskRetryGrace)
           .returns(
               Duration.ofSeconds(2),
               ProcessInstanceCreationCfg::getMessageStartLockReleasePollInterval)

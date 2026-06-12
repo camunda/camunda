@@ -1119,6 +1119,8 @@ public class BrokerBasedPropertiesOverride {
         processInstanceCreation.getMessageStartDedupExpirationSweepBatchLimit());
     processInstanceCreationCfg.setMessageStartAskRetryInterval(
         processInstanceCreation.getMessageStartAskRetryInterval());
+    processInstanceCreationCfg.setMessageStartAskRetryGrace(
+        processInstanceCreation.getMessageStartAskRetryGrace());
     processInstanceCreationCfg.setMessageStartLockReleasePollInterval(
         processInstanceCreation.getMessageStartLockReleasePollInterval());
     processInstanceCreationCfg.setMessageStartLockReleasePollMaxBackoff(

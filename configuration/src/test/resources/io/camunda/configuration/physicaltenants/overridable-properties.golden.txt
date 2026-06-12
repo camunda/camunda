@@ -239,6 +239,7 @@ monitoring.metrics.job-metrics.max-tenant-id-length
 monitoring.metrics.job-metrics.max-unique-keys
 monitoring.metrics.job-metrics.max-worker-name-length
 process-instance-creation.business-id-uniqueness-enabled
+process-instance-creation.message-start-ask-retry-grace
 process-instance-creation.message-start-ask-retry-interval
 process-instance-creation.message-start-dedup-expiration-sweep-batch-limit
 process-instance-creation.message-start-dedup-expiration-sweep-interval
