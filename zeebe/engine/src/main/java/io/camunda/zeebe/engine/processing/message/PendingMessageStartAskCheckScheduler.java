@@ -103,6 +103,11 @@ public final class PendingMessageStartAskCheckScheduler
     final long exponent = Math.min(rejectionCount, MAX_BACKOFF_EXPONENT);
     long interval = base;
     for (long i = 0; i < exponent; i++) {
+      if (interval > Long.MAX_VALUE / 2) {
+        // Saturate rather than overflow into a negative interval: a negative interval would make
+        // `lastSentTime + interval <= now` always true and turn the back-off into a retry storm.
+        return Long.MAX_VALUE;
+      }
       interval *= 2;
     }
     return interval;
