@@ -436,7 +436,7 @@ jobs:
       - uses: ./.github/actions/build-zeebe
         id: build-camunda
         with:
-          maven-extra-args: -PskipFrontendBuild
+          maven-extra-args: -PskipFrontendBuild -Dskip.docker
 
       - name: Create backend logs file
         run: mkdir -p ./optimize/client/build && touch ./optimize/client/build/backendLogs.log
@@ -564,7 +564,7 @@ jobs:
       - uses: ./.github/actions/build-zeebe
         id: build-camunda
         with:
-          maven-extra-args: -PskipFrontendBuild
+          maven-extra-args: -PskipFrontendBuild -Dskip.docker
       - name: Create backend logs file
         run: mkdir -p ./optimize/client/build && touch ./optimize/client/build/backendLogs.log
       - name: Start backend
