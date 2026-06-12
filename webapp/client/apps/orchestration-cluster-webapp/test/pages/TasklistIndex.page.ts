@@ -22,8 +22,8 @@ class TasklistIndexPage extends BasePage {
 		return this.page.goto('/tasklist');
 	}
 
-	get heading() {
-		return this.page.getByRole('heading', {name: 'Tasklist'});
+	tasksPanelHeading(filterName: 'All open tasks' | 'Assigned to me' | 'Unassigned' | 'Completed' | (string & {})) {
+		return this.page.getByRole('heading', {name: filterName});
 	}
 
 	get tasksNavItem() {

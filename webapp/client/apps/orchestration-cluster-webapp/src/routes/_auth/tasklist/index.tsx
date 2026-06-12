@@ -7,8 +7,13 @@
  */
 
 import {TasklistIndexPage} from '#/tasklist/pages/TasklistIndexPage';
-import {createFileRoute} from '@tanstack/react-router';
+import {tasklistIndexSearchDefaults, tasklistIndexSearchSchema} from '#/tasklist/modules/available-tasks/searchSchema';
+import {createFileRoute, stripSearchParams} from '@tanstack/react-router';
 
 export const Route = createFileRoute('/_auth/tasklist/')({
+	validateSearch: tasklistIndexSearchSchema,
+	search: {
+		middlewares: [stripSearchParams(tasklistIndexSearchDefaults)],
+	},
 	component: TasklistIndexPage,
 });

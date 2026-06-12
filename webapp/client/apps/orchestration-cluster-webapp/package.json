@@ -25,6 +25,7 @@
 		"@tanstack/react-router": "1.170.10",
 		"@tanstack/react-router-devtools": "1.167.0",
 		"@tanstack/router-plugin": "1.168.13",
+		"@uidotdev/usehooks": "2.4.1",
 		"date-fns": "4.4.0",
 		"final-form": "5.0.1",
 		"i18next": "26.3.0",
