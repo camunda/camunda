@@ -38,6 +38,8 @@ public final class SearchCardinalityAggregationTransformer
                           return s;
                         })));
     Optional.ofNullable(value.field()).ifPresent(cardinalityBuilder::field);
+    Optional.ofNullable(value.precisionThreshold())
+        .ifPresent(cardinalityBuilder::precisionThreshold);
     final var builder = new Aggregation.Builder().cardinality(cardinalityBuilder.build());
     applySubAggregations(builder, value);
     return builder.build();
