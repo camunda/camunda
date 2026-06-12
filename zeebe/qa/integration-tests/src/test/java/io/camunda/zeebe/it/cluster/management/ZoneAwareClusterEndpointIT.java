@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.it.cluster.management;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 import feign.FeignException;
@@ -15,6 +16,9 @@ import io.camunda.configuration.Zone;
 import io.camunda.zeebe.management.cluster.BrokerId;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestBrokers;
+import io.camunda.zeebe.management.cluster.Operation.OperationEnum;
+import io.camunda.zeebe.management.cluster.PartitionDistributionConfig;
+import io.camunda.zeebe.management.cluster.ZoneSpec;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import java.util.List;
@@ -151,6 +155,45 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
       assertThatCode(() -> actuator.leavePartition(0, 1))
           .isInstanceOf(FeignException.BadRequest.class)
           .hasMessageContaining("zone-aware");
+    }
+  }
+
+  @Test
+  void shouldUpdatePartitionDistributionDryRun() {
+    try (final var cluster = createCluster(minReplicationFactor())) {
+      // given
+      cluster.awaitCompleteTopology();
+      final var actuator = ClusterActuator.of(cluster.availableGateway());
+
+      // when - dry-run with priority change (zoneA 100→200)
+      final var config =
+          new PartitionDistributionConfig()
+              .type(PartitionDistributionConfig.TypeEnum.ZONE_AWARE)
+              .zones(
+                  List.of(
+                      new ZoneSpec().name(ZONES[0]).numberOfReplicas(1).priority(200),
+                      new ZoneSpec().name(ZONES[1]).numberOfReplicas(1).priority(10)));
+      final var response = actuator.patchPartitionDistribution(config, true);
+
+      // then - planned changes include the config-set op
+      assertThat(response.getPlannedChanges()).isNotEmpty();
+      assertThat(response.getPlannedChanges().stream().map(op -> op.getOperation()))
+          .contains(OperationEnum.UPDATE_PARTITION_DISTRIBUTOR_CONFIG);
+    }
+  }
+
+  @Test
+  void shouldRejectRoundRobinConfigOnZoneAwareCluster() {
+    try (final var cluster = createCluster(minReplicationFactor())) {
+      // given
+      cluster.awaitCompleteTopology();
+      final var actuator = ClusterActuator.of(cluster.availableGateway());
+
+      // when - then
+      final var config =
+          new PartitionDistributionConfig().type(PartitionDistributionConfig.TypeEnum.ROUND_ROBIN);
+      assertThatCode(() -> actuator.patchPartitionDistribution(config, false))
+          .isInstanceOf(FeignException.BadRequest.class);
     }
   }
 
