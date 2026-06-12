@@ -323,5 +323,28 @@ public final class PendingMessageStartAskCheckSchedulerTest {
       // then it is re-sent, proving the interval was capped at base * 64
       verify(mockState).updateLastSentTime(1L, 100L, 1_000_000L);
     }
+
+    @Test
+    void shouldSaturateBackoffIntervalInsteadOfOverflowing() {
+      // given a pathologically large base interval such that doubling it for the back-off would
+      // overflow a long. A naive `interval *= 2` would wrap to a negative interval, making
+      // `lastSentTime + interval <= now` always true and turning the back-off into a retry storm.
+      final var hugeBaseScheduler =
+          new PendingMessageStartAskCheckScheduler(
+              mockCommandSender,
+              mockState,
+              mockRoutingInfo,
+              () -> Duration.ofMillis(Long.MAX_VALUE / 3));
+      hugeBaseScheduler.onRecovered(mockContext);
+      // a rejected ask (count 6) last sent long ago, evaluated at a normal clock value
+      stubPendingAsks(0L, createAsk(1L, 100L, "b", 6L));
+
+      // when
+      hugeBaseScheduler.run();
+
+      // then the interval saturates at Long.MAX_VALUE (effectively infinite) rather than going
+      // negative, so the ask is not yet due and is not re-sent — no storm
+      verifyNoSend();
+    }
   }
 }
