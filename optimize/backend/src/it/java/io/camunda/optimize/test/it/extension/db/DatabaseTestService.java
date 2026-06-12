@@ -135,6 +135,9 @@ public abstract class DatabaseTestService {
 
   public abstract void deleteAllZeebeRecordsForPrefix(final String zeebeRecordPrefix);
 
+  /** Physically deletes all indices matching the prefix. Call only from {@code @AfterAll}. */
+  public abstract void deleteAllZeebeIndicesForPrefix(final String zeebeRecordPrefix);
+
   public abstract void deleteAllOtherZeebeRecordsWithPrefix(
       final String zeebeRecordPrefix, final String recordsToKeep);
 

@@ -26,12 +26,8 @@ import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.optimize.AbstractCCSMIT;
 import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import io.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
-import io.camunda.optimize.dto.zeebe.variable.ZeebeVariableRecordDto;
 import io.camunda.optimize.exception.OptimizeIntegrationTestException;
-import io.camunda.optimize.service.db.DatabaseConstants;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import io.camunda.optimize.test.it.extension.db.TermsQueryContainer;
-import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -86,8 +82,8 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
     final Long processInstanceKey = deployProcessAndStartProcessInstanceWithVariables();
 
     // when
-    waitUntilMinimumProcessInstanceEventsExportedCount(4);
-    waitUntilMinimumVariableDocumentsExportedCount(1);
+    waitUntilMinimumProcessInstanceEventsForInstanceExportedCount(4, processInstanceKey);
+    waitUntilMinimumVariableDocumentsForInstanceExportedCount(5, processInstanceKey);
     importAllZeebeEntitiesFromScratch();
 
     // then
@@ -110,9 +106,8 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
             deployedProcess.getBpmnProcessId(), variables);
 
     // when
-    waitUntilNumberOfDefinitionsExported(1);
-    waitUntilMinimumProcessInstanceEventsExportedCount(4);
-    waitUntilMinimumVariableDocumentsExportedCount(1);
+    waitUntilMinimumProcessInstanceEventsForInstanceExportedCount(4, processInstanceKey);
+    waitUntilMinimumVariableDocumentsForInstanceExportedCount(1, processInstanceKey);
     importAllZeebeEntitiesFromScratch();
 
     // when
@@ -139,9 +134,8 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
         zeebeExtension.startProcessInstanceWithVariables(
             deployedProcess.getBpmnProcessId(), variables);
 
-    waitUntilNumberOfDefinitionsExported(1);
-    waitUntilMinimumProcessInstanceEventsExportedCount(4);
-    waitUntilMinimumVariableDocumentsExportedCount(1);
+    waitUntilMinimumProcessInstanceEventsForInstanceExportedCount(4, processInstanceKey);
+    waitUntilMinimumVariableDocumentsForInstanceExportedCount(1, processInstanceKey);
     importAllZeebeEntitiesFromScratch();
 
     // when
@@ -172,8 +166,8 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
     final long processInstanceKey =
         zeebeExtension.startProcessInstanceWithVariables(
             deployedProcess.getBpmnProcessId(), variables);
-    waitUntilMinimumProcessInstanceEventsExportedCount(4);
-    waitUntilMinimumVariableDocumentsExportedCount(1);
+    waitUntilMinimumProcessInstanceEventsForInstanceExportedCount(4, processInstanceKey);
+    waitUntilMinimumVariableDocumentsForInstanceExportedCount(1, processInstanceKey);
 
     // when
     importAllZeebeEntitiesFromScratch();
@@ -233,8 +227,8 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
         zeebeExtension.startProcessInstanceWithVariables(
             deployedProcess.getBpmnProcessId(), Map.of("numericStrings", numericStringList));
 
-    waitUntilMinimumProcessInstanceEventsExportedCount(4);
-    waitUntilMinimumVariableDocumentsExportedCount(1);
+    waitUntilMinimumProcessInstanceEventsForInstanceExportedCount(4, processInstanceKey);
+    waitUntilMinimumVariableDocumentsForInstanceExportedCount(1, processInstanceKey);
 
     // when
     importAllZeebeEntitiesFromScratch();
@@ -256,10 +250,12 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
   public void zeebeVariableImport_variablesAddedAfterProcessStarted() {
     // given
     final ProcessInstanceEvent processInstanceEvent = deployProcessAndStartProcessInstance();
-    waitUntilMinimumProcessInstanceEventsExportedCount(4);
+    waitUntilMinimumProcessInstanceEventsForInstanceExportedCount(
+        4, processInstanceEvent.getProcessInstanceKey());
     zeebeExtension.addVariablesToScope(
         processInstanceEvent.getProcessInstanceKey(), BASIC_VARIABLES, false);
-    waitUntilMinimumVariableDocumentsExportedCount(5);
+    waitUntilMinimumVariableDocumentsForInstanceExportedCount(
+        5, processInstanceEvent.getProcessInstanceKey());
 
     // when
     importAllZeebeEntitiesFromScratch();
@@ -278,8 +274,8 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
     final long startedInstanceKey =
         zeebeExtension.startProcessInstanceWithVariables(
             deployedProcess.getBpmnProcessId(), Map.of("var1", "someValue"));
-    waitUntilMinimumProcessInstanceEventsExportedCount(4);
-    waitUntilMinimumVariableDocumentsExportedCount(1);
+    waitUntilMinimumProcessInstanceEventsForInstanceExportedCount(4, startedInstanceKey);
+    waitUntilMinimumVariableDocumentsForInstanceExportedCount(1, startedInstanceKey);
     importAllZeebeEntitiesFromScratch();
     ProcessInstanceDto savedProcessInstance =
         getProcessInstanceForId(String.valueOf(startedInstanceKey));
@@ -287,7 +283,7 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
     final String flowNodeId =
         getFlowNodeInstanceIdFromProcessInstanceForActivity(savedProcessInstance, SERVICE_TASK);
     zeebeExtension.addVariablesToScope(Long.parseLong(flowNodeId), Map.of("var1", false), true);
-    waitUntilMinimumVariableDocumentsExportedCount(2);
+    waitUntilMinimumVariableDocumentsForInstanceExportedCount(2, startedInstanceKey);
 
     // when
     importAllZeebeEntitiesFromLastIndex();
@@ -309,7 +305,8 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
     // given
     final Map<String, Object> processVariable = Map.of("var1", "someValue");
     final ProcessInstanceEvent startedInstance = deployProcessAndStartProcessInstance();
-    waitUntilMinimumProcessInstanceEventsExportedCount(4);
+    waitUntilMinimumProcessInstanceEventsForInstanceExportedCount(
+        4, startedInstance.getProcessInstanceKey());
     importAllZeebeEntitiesFromScratch();
     ProcessInstanceDto savedProcessInstance =
         getProcessInstanceForId(String.valueOf(startedInstance.getProcessInstanceKey()));
@@ -317,7 +314,8 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
     final String flowNodeId =
         getFlowNodeInstanceIdFromProcessInstanceForActivity(savedProcessInstance, SERVICE_TASK);
     zeebeExtension.addVariablesToScope(Long.parseLong(flowNodeId), processVariable, false);
-    waitUntilMinimumVariableDocumentsExportedCount(1);
+    waitUntilMinimumVariableDocumentsForInstanceExportedCount(
+        1, startedInstance.getProcessInstanceKey());
 
     // when
     importAllZeebeEntitiesFromLastIndex();
@@ -338,8 +336,10 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
     // given
     final long deployedInstanceKey1 = deployProcessAndStartProcessInstanceWithVariables();
     final long deployedInstanceKey2 = deployProcessAndStartProcessInstanceWithVariables();
-    waitUntilMinimumProcessInstanceEventsExportedCount(8);
-    waitUntilMinimumVariableDocumentsExportedCount(10);
+    waitUntilMinimumProcessInstanceEventsForInstanceExportedCount(4, deployedInstanceKey1);
+    waitUntilMinimumProcessInstanceEventsForInstanceExportedCount(4, deployedInstanceKey2);
+    waitUntilMinimumVariableDocumentsForInstanceExportedCount(5, deployedInstanceKey1);
+    waitUntilMinimumVariableDocumentsForInstanceExportedCount(5, deployedInstanceKey2);
 
     // when
     importAllZeebeEntitiesFromScratch();
@@ -364,8 +364,10 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
     final long startedInstanceKey2 =
         zeebeExtension.startProcessInstanceWithVariables(
             deployedProcess2.getBpmnProcessId(), BASIC_VARIABLES);
-    waitUntilMinimumProcessInstanceEventsExportedCount(8);
-    waitUntilMinimumVariableDocumentsExportedCount(10);
+    waitUntilMinimumProcessInstanceEventsForInstanceExportedCount(4, startedInstanceKey1);
+    waitUntilMinimumProcessInstanceEventsForInstanceExportedCount(4, startedInstanceKey2);
+    waitUntilMinimumVariableDocumentsForInstanceExportedCount(5, startedInstanceKey1);
+    waitUntilMinimumVariableDocumentsForInstanceExportedCount(5, startedInstanceKey2);
 
     // when
     importAllZeebeEntitiesFromLastIndex();
@@ -390,8 +392,8 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
     final long processInstanceKey =
         zeebeExtension.startProcessInstanceWithVariables(
             deployedProcess.getBpmnProcessId(), supportedAndUnsupportedVariables);
-    waitUntilMinimumProcessInstanceEventsExportedCount(4);
-    waitUntilMinimumVariableDocumentsExportedCount(2);
+    waitUntilMinimumProcessInstanceEventsForInstanceExportedCount(4, processInstanceKey);
+    waitUntilMinimumVariableDocumentsForInstanceExportedCount(2, processInstanceKey);
 
     // when
     importAllZeebeEntitiesFromScratch();
@@ -417,8 +419,8 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
     final long processInstanceKey =
         zeebeExtension.startProcessInstanceWithVariables(
             deployedProcess.getBpmnProcessId(), variables);
-    waitUntilMinimumProcessInstanceEventsExportedCount(4);
-    waitUntilMinimumVariableDocumentsExportedCount(1);
+    waitUntilMinimumProcessInstanceEventsForInstanceExportedCount(4, processInstanceKey);
+    waitUntilMinimumVariableDocumentsForInstanceExportedCount(1, processInstanceKey);
 
     // when
     importAllZeebeEntitiesFromScratch();
@@ -471,8 +473,8 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
     final long processInstanceKey =
         zeebeExtension.startProcessInstanceWithVariables(
             deployedProcess.getBpmnProcessId(), variables);
-    waitUntilMinimumProcessInstanceEventsExportedCount(4);
-    waitUntilMinimumVariableDocumentsExportedCount(1);
+    waitUntilMinimumProcessInstanceEventsForInstanceExportedCount(4, processInstanceKey);
+    waitUntilMinimumVariableDocumentsForInstanceExportedCount(1, processInstanceKey);
 
     // when
     importAllZeebeEntitiesFromScratch();
@@ -495,8 +497,8 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
     final long processInstanceKey =
         zeebeExtension.startProcessInstanceWithVariables(
             deployedProcess.getBpmnProcessId(), Map.of("listVar", List.of("value1", "value2")));
-    waitUntilMinimumProcessInstanceEventsExportedCount(4);
-    waitUntilMinimumVariableDocumentsExportedCount(1);
+    waitUntilMinimumProcessInstanceEventsForInstanceExportedCount(4, processInstanceKey);
+    waitUntilMinimumVariableDocumentsForInstanceExportedCount(1, processInstanceKey);
 
     // when
     importAllZeebeEntitiesFromScratch();
@@ -528,9 +530,9 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
     final long startedInstanceKey =
         zeebeExtension.startProcessInstanceWithVariables(
             deployedProcess.getBpmnProcessId(), processVariables);
-    waitUntilMinimumProcessInstanceEventsExportedCount(4);
+    waitUntilMinimumProcessInstanceEventsForInstanceExportedCount(4, startedInstanceKey);
     zeebeExtension.addVariablesToScope(startedInstanceKey, processVariables, false);
-    waitUntilMinimumVariableDocumentsExportedCount(2);
+    waitUntilMinimumVariableDocumentsForInstanceExportedCount(2, startedInstanceKey);
 
     // when
     importAllZeebeEntitiesFromScratch();
@@ -569,8 +571,8 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
     zeebeExtension.addVariablesToScope(startedInstanceKey, Map.of("var2", "someValue2"), false);
 
     // when
-    waitUntilMinimumProcessInstanceEventsExportedCount(4);
-    waitUntilMinimumVariableDocumentsExportedCount(2);
+    waitUntilMinimumProcessInstanceEventsForInstanceExportedCount(4, startedInstanceKey);
+    waitUntilMinimumVariableDocumentsForInstanceExportedCount(2, startedInstanceKey);
     importAllZeebeEntitiesFromScratch();
 
     // then
@@ -597,15 +599,6 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
             () ->
                 new OptimizeIntegrationTestException(
                     "No process instance with id " + processInstanceId + " found"));
-  }
-
-  private void waitUntilMinimumVariableDocumentsExportedCount(final int minExportedEventCount) {
-    final TermsQueryContainer variableBoolQuery = new TermsQueryContainer();
-    variableBoolQuery.addTermQuery(
-        ZeebeVariableRecordDto.Fields.intent, VariableIntent.CREATED.name());
-
-    waitUntilMinimumDataExportedCount(
-        minExportedEventCount, DatabaseConstants.ZEEBE_VARIABLE_INDEX_NAME, variableBoolQuery);
   }
 
   private void assertThatVariablesHaveBeenImportedForProcessInstance(
