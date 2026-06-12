@@ -25,8 +25,11 @@ public class CamundaClientClusterVariablesProperties {
    */
   private boolean enabled = true;
 
-  /** Cluster variables to set at startup as key-value pairs. */
-  private Map<String, Object> variables;
+  /** Globally-scoped cluster variables to set at startup as key-value pairs. */
+  private Map<String, Object> global;
+
+  /** Tenant-scoped cluster variables to set at startup, keyed by tenant ID. */
+  private Map<String, Map<String, Object>> tenant;
 
   public boolean isEnabled() {
     return enabled;
@@ -36,12 +39,20 @@ public class CamundaClientClusterVariablesProperties {
     this.enabled = enabled;
   }
 
-  public Map<String, Object> getVariables() {
-    return variables;
+  public Map<String, Object> getGlobal() {
+    return global;
   }
 
-  public void setVariables(final Map<String, Object> variables) {
-    this.variables = variables;
+  public void setGlobal(final Map<String, Object> global) {
+    this.global = global;
+  }
+
+  public Map<String, Map<String, Object>> getTenant() {
+    return tenant;
+  }
+
+  public void setTenant(final Map<String, Map<String, Object>> tenant) {
+    this.tenant = tenant;
   }
 
   @Override
@@ -49,8 +60,10 @@ public class CamundaClientClusterVariablesProperties {
     return "CamundaClientClusterVariablesProperties{"
         + "enabled="
         + enabled
-        + ", variables="
-        + variables
+        + ", global="
+        + global
+        + ", tenant="
+        + tenant
         + '}';
   }
 }

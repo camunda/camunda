@@ -254,7 +254,7 @@ public class ClusterVariablesAnnotationProcessorTest {
   @Test
   void shouldCreateVariablesFromProperties() {
     // given
-    properties.setVariables(Map.of("propVar1", "propValue1", "propVar2", 99));
+    properties.setGlobal(Map.of("propVar1", "propValue1", "propVar2", 99));
     mockGlobalCreateCommand();
 
     // when
@@ -263,6 +263,20 @@ public class ClusterVariablesAnnotationProcessorTest {
     // then
     verify(globalCreateStep).create("propVar1", "propValue1");
     verify(globalCreateStep).create("propVar2", 99);
+  }
+
+  @Test
+  void shouldCreateTenantScopedVariablesFromProperties() {
+    // given
+    properties.setTenant(Map.of("my-tenant", Map.of("tenantPropVar", "tenantPropValue")));
+    mockTenantCreateCommand();
+
+    // when
+    processor.start(client);
+
+    // then
+    verify(client).newTenantScopedClusterVariableCreateRequest("my-tenant");
+    verify(tenantCreateStep).create("tenantPropVar", "tenantPropValue");
   }
 
   @Test
@@ -282,7 +296,7 @@ public class ClusterVariablesAnnotationProcessorTest {
   @Test
   void shouldCreateVariablesFromPropertiesAndAnnotations() throws IOException {
     // given
-    properties.setVariables(Map.of("fromProp", "propValue"));
+    properties.setGlobal(Map.of("fromProp", "propValue"));
     final Resource resource = mockJsonResource("{\"fromResource\": \"resourceValue\"}");
     when(resourcePatternResolver.getResources("classpath:variables.json"))
         .thenReturn(new Resource[] {resource});
