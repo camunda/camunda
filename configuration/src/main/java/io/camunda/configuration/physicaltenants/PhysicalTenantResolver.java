@@ -53,7 +53,8 @@ import org.springframework.core.env.Environment;
  */
 public final class PhysicalTenantResolver implements PhysicalTenantIds {
 
-  public static final String DEFAULT_PHYSICAL_TENANT_ID = "default";
+  public static final String DEFAULT_PHYSICAL_TENANT_ID =
+      PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
   static final int MAX_TENANT_ID_LENGTH = 64;
   private static final String PHYSICAL_TENANTS_PREFIX = Camunda.PREFIX + ".physical-tenants";
   static final ConfigurationPropertyName PREFIX_NAME =

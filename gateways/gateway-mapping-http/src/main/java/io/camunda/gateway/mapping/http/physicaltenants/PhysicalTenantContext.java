@@ -7,6 +7,7 @@
  */
 package io.camunda.gateway.mapping.http.physicaltenants;
 
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -22,7 +23,8 @@ import org.springframework.web.context.request.RequestContextHolder;
 public final class PhysicalTenantContext {
 
   /** Default physical tenant id used when no prefix is present in the request path. */
-  public static final String DEFAULT_PHYSICAL_TENANT_ID = "default";
+  public static final String DEFAULT_PHYSICAL_TENANT_ID =
+      PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 
   /** URL path prefix for physical-tenant-scoped routes (e.g. {@code /physical-tenants/foo/}). */
   public static final String PHYSICAL_TENANTS_PATH_SEGMENT = "/physical-tenants/";

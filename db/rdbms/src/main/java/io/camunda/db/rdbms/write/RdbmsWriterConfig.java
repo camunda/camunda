@@ -7,6 +7,7 @@
  */
 package io.camunda.db.rdbms.write;
 
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.util.ObjectBuilder;
 import java.time.Duration;
 import java.time.InstantSource;
@@ -41,7 +42,8 @@ public record RdbmsWriterConfig(
   public static final int DEFAULT_BATCH_OPERATION_ITEM_INSERT_BLOCK_SIZE = 10000;
   public static final boolean DEFAULT_EXPORT_BATCH_OPERATION_ITEMS_ON_CREATION = true;
 
-  public static final String DEFAULT_PHYSICAL_TENANT_ID = "default";
+  public static final String DEFAULT_PHYSICAL_TENANT_ID =
+      PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 
   public RdbmsWriterConfig {
     if (physicalTenantId == null || physicalTenantId.isBlank()) {
