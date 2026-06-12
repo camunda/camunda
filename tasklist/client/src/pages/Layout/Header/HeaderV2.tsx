@@ -40,7 +40,6 @@ import {
   preview_useClusterWebappBreadcrumbs as useClusterWebappBreadcrumbs,
   type SidebarNodeDescriptor,
 } from '@camunda/camunda-composite-components';
-import styled from 'styled-components';
 import {pages} from 'modules/routing';
 import {themeStore} from 'modules/theme/theme';
 import {tracking} from 'modules/tracking';
@@ -56,23 +55,6 @@ import {notificationsStore} from 'modules/notifications/notifications.store';
 
 const SKIP_TO_CONTENT_TARGET_ID = 'main-content';
 const LOGOUT_DELAY = 1000;
-
-const HoverActions = styled.span`
-  display: inline-flex;
-  align-items: center;
-  gap: var(--cds-spacing-01);
-  margin: calc(-1 * (var(--cds-spacing-02) + var(--cds-spacing-01)))
-    calc(-1 * var(--cds-spacing-02))
-    calc(-1 * (var(--cds-spacing-02) + var(--cds-spacing-01))) 0;
-  opacity: 0;
-  transition: opacity 0.1s ease-out;
-
-  a:hover > &,
-  button:hover > &,
-  &:focus-within {
-    opacity: 1;
-  }
-`;
 
 function getInfoSidebarItems(isPaidPlan: boolean) {
   const BASE_INFO_SIDEBAR_ITEMS = [
@@ -191,10 +173,10 @@ const HeaderV2: React.FC = observer(() => {
         logOut: t('headerLogOutLabel'),
       },
       customSection: (
-        <UserPanelExtras>
+        <div>
           <ThemeSelector />
           <LanguageSelector />
-        </UserPanelExtras>
+        </div>
       ),
       elements: [
         ...(window.Osano?.cm === undefined
@@ -328,7 +310,8 @@ const HeaderV2: React.FC = observer(() => {
         });
       },
       trailingElement: (
-        <HoverActions
+        <span
+          className={styles.hoverActions}
           onClick={stopRowNavigation}
           onMouseDown={stopRowNavigation}
           onKeyDown={(e) => {
@@ -363,7 +346,7 @@ const HeaderV2: React.FC = observer(() => {
           >
             <TrashCan />
           </IconButton>
-        </HoverActions>
+        </span>
       ),
     })),
     {
@@ -532,8 +515,6 @@ const LanguageSelector: React.FC = observer(() => {
     </Layer>
   );
 });
-
-const UserPanelExtras = styled.div``;
 
 const ThemeSelector: React.FC = observer(() => {
   const {selectedTheme, changeTheme} = themeStore;
