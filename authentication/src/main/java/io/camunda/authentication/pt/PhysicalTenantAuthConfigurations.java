@@ -11,11 +11,8 @@ import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.security.api.model.config.oidc.OidcProvidersConfiguration;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.Map;
-import org.jspecify.annotations.Nullable;
 import org.springframework.boot.context.properties.bind.BindResult;
 import org.springframework.boot.context.properties.bind.Bindable;
 import org.springframework.boot.context.properties.bind.Binder;
@@ -29,27 +26,39 @@ import org.springframework.core.env.Environment;
  * providers and the PT's own OVERLAY providers — each root provider merged with the PT overlay.
  * Per-PT provider SELECTION ({@code assigned}) is intentionally deferred to issue #54730.
  *
- * <p>Merge rules:
+ * <p>The merge is delegated to Spring's {@link Binder} rather than hand-written per field. The root
+ * config is bound into a fresh instance, then the per-tenant overlay is bound <em>into the same
+ * instance</em>. Because {@code Binder} only writes keys present in the overlay source, this yields
+ * the desired semantics for free:
  *
- * <ol>
- *   <li>The root configuration at {@code camunda.security.authentication.*} provides the base
- *       provider declarations.
- *   <li>The per-tenant overlay at {@code camunda.physical-tenants.<id>.security.authentication.*}
- *       overrides individual fields on a per-provider basis.
- *   <li>The union of root provider ids and PT overlay provider ids is used: every id from both
- *       sides is included. Root fields are used as defaults; non-null/non-empty PT-side fields
- *       override them per field.
- *   <li>The default slot ({@code authentication.oidc.*}) is included only when it carries a {@code
- *       client-id} or {@code issuer-uri} — a Spring-bound-but-empty slot is treated as absent.
- * </ol>
+ * <ul>
+ *   <li>scalar fields the overlay sets override the root value; fields it omits keep the root
+ *       value;
+ *   <li>list fields ({@code audiences}, {@code scope}) the overlay sets <em>replace</em> the root
+ *       list wholesale — a PT that declares its own audiences does not inherit the cluster's;
+ *   <li>the single nested default slot ({@code authentication.oidc.*}) merges field-by-field.
+ * </ul>
  *
- * <p>The {@code method} field of the returned configuration is always taken from the root — method
- * selection is cluster-wide, not per-tenant.
+ * <p>The one place {@code Binder} does not do the right thing on its own is the {@code providers}
+ * <em>map</em>: binding the overlay key-merges the map (root-only and PT-only providers both
+ * survive) but <em>replaces</em> the value object of any provider id present on both sides,
+ * dropping the root fields the overlay did not restate. {@link #mergeSharedProviders} repairs that
+ * by re-binding the overlay onto each pristine root provider object.
+ *
+ * <p>Two values are deliberately not taken from the overlay:
+ *
+ * <ul>
+ *   <li>{@code method} is cluster-wide — it is re-asserted from the root after binding. Overriding
+ *       it per tenant is rejected at startup by the configuration layer (#54731).
+ *   <li>An empty default slot (neither {@code client-id} nor {@code issuer-uri}) is treated as
+ *       absent — Spring binds an empty object even when the whole group is omitted.
+ * </ul>
  */
 public final class PhysicalTenantAuthConfigurations {
 
-  private static final String ROOT_PREFIX = "camunda.security";
-  private static final String PT_PREFIX_TEMPLATE = "camunda.physical-tenants.%s.security";
+  private static final String ROOT_PREFIX = "camunda.security.authentication";
+  private static final String PT_PREFIX_TEMPLATE =
+      "camunda.physical-tenants.%s.security.authentication";
 
   private PhysicalTenantAuthConfigurations() {}
 
@@ -68,171 +77,83 @@ public final class PhysicalTenantAuthConfigurations {
     final Binder binder = Binder.get(environment);
     final String ptPrefix = PT_PREFIX_TEMPLATE.formatted(tenantId);
 
-    // Bind root authentication config
-    final AuthenticationConfiguration rootAuth =
-        bindOrDefault(binder, ROOT_PREFIX + ".authentication", AuthenticationConfiguration.class);
+    // Bind the root config into a fresh, per-call instance (safe to mutate below).
+    final AuthenticationConfiguration config = bindOrDefault(binder, ROOT_PREFIX);
+    final AuthenticationMethod rootMethod = config.getMethod();
+    // Snapshot the pristine root provider objects before the overlay bind can replace them.
+    final Map<String, OidcConfiguration> rootProviders = snapshotProviders(config);
 
-    // Bind PT authentication overlay
-    final AuthenticationConfiguration ptAuth =
-        bindOrDefault(binder, ptPrefix + ".authentication", AuthenticationConfiguration.class);
+    // Bind the overlay into the SAME instance: scalars override, lists replace, the default slot
+    // field-merges, and the providers map key-merges (but replaces shared values — repaired next).
+    binder.bind(ptPrefix, Bindable.ofInstance(config));
 
-    return buildConfig(rootAuth, ptAuth);
-  }
-
-  private static AuthenticationConfiguration buildConfig(
-      final AuthenticationConfiguration rootAuth, final AuthenticationConfiguration ptAuth) {
-
-    // Default slot: include only when at least one side carries a client-id or issuer-uri.
-    final OidcConfiguration mergedDefault =
-        merge(validDefaultSlot(rootAuth.getOidc()), validDefaultSlot(ptAuth.getOidc()));
-
-    // Named providers: union of root and PT overlay ids.
-    final Map<String, OidcConfiguration> rootNamed = namedProviders(rootAuth);
-    final Map<String, OidcConfiguration> ptNamed = namedProviders(ptAuth);
-
-    final LinkedHashSet<String> ids = new LinkedHashSet<>();
-    if (rootNamed != null) {
-      ids.addAll(rootNamed.keySet());
-    }
-    if (ptNamed != null) {
-      ids.addAll(ptNamed.keySet());
-    }
-
-    final Map<String, OidcConfiguration> mergedNamed = new LinkedHashMap<>();
-    for (final String id : ids) {
-      final OidcConfiguration merged =
-          merge(
-              rootNamed == null ? null : rootNamed.get(id),
-              ptNamed == null ? null : ptNamed.get(id));
-      if (merged != null) {
-        mergedNamed.put(id, merged);
-      }
-    }
-
-    final AuthenticationConfiguration result = new AuthenticationConfiguration();
-    // Inherit method from root — method is cluster-wide, not per-tenant.
-    result.setMethod(
-        rootAuth.getMethod() != null ? rootAuth.getMethod() : AuthenticationMethod.BASIC);
-    result.setOidc(mergedDefault);
-    if (!mergedNamed.isEmpty()) {
-      final OidcProvidersConfiguration providers = new OidcProvidersConfiguration();
-      providers.setOidc(mergedNamed);
-      result.setProviders(providers);
-    } else {
-      // No named providers — clear the auto-created providers object so callers can
-      // reliably check getProviders() == null to detect "no named providers configured".
-      result.setProviders(null);
-    }
-    return result;
+    // method is cluster-wide, not per-tenant.
+    config.setMethod(rootMethod != null ? rootMethod : AuthenticationMethod.BASIC);
+    mergeSharedProviders(binder, ptPrefix, rootProviders, config);
+    dropEmptyDefaultSlot(config);
+    dropEmptyProviders(config);
+    return config;
   }
 
   /**
-   * Returns {@code slot} only if it carries a {@code client-id} or {@code issuer-uri}; otherwise
-   * returns {@code null}. This guards against Spring-bound-but-empty default slots being treated as
-   * a configured provider.
+   * Repairs provider ids present on both root and overlay. The overlay bind replaced each such
+   * value with a fresh object carrying only the overlay's keys; here we re-bind the overlay onto
+   * the <em>pristine</em> root object so the fields the overlay omitted survive (override +
+   * list-replace + inherit, all by {@link Binder}). Root-only and PT-only providers need no repair.
    */
-  private static @Nullable OidcConfiguration validDefaultSlot(
-      final @Nullable OidcConfiguration slot) {
-    if (slot == null) {
-      return null;
+  private static void mergeSharedProviders(
+      final Binder binder,
+      final String ptPrefix,
+      final Map<String, OidcConfiguration> rootProviders,
+      final AuthenticationConfiguration config) {
+    final Map<String, OidcConfiguration> merged = namedProviders(config);
+    if (merged == null) {
+      return;
     }
-    if (slot.getClientId() == null && slot.getIssuerUri() == null) {
-      return null;
+    rootProviders.forEach(
+        (id, rootProvider) -> {
+          if (merged.containsKey(id)) {
+            binder.bind(ptPrefix + ".providers.oidc." + id, Bindable.ofInstance(rootProvider));
+            merged.put(id, rootProvider);
+          }
+        });
+  }
+
+  /** A Spring-bound but empty default slot (no client-id / issuer-uri) is treated as absent. */
+  private static void dropEmptyDefaultSlot(final AuthenticationConfiguration config) {
+    final OidcConfiguration oidc = config.getOidc();
+    if (oidc != null && oidc.getClientId() == null && oidc.getIssuerUri() == null) {
+      config.setOidc(null);
     }
-    return slot;
   }
 
   /**
-   * Merges the PT-side overlay onto a clone of the root config. PT-side non-null/non-empty fields
-   * win; absent overrides inherit from root. Returns {@code null} when neither side declares the
-   * provider.
+   * Normalises "no named providers" to {@code getProviders() == null} so callers can reliably
+   * detect the absence of named providers.
    */
-  private static @Nullable OidcConfiguration merge(
-      final @Nullable OidcConfiguration root, final @Nullable OidcConfiguration overlay) {
-    if (root == null && overlay == null) {
-      return null;
-    }
-    final OidcConfiguration source = root != null ? root : overlay;
-    // Both null is already guarded above; this non-null assertion narrows for the compiler.
-    assert source != null;
-    final OidcConfiguration base = cloneConfig(source);
-    if (overlay != null && root != null) {
-      applyOverlay(base, overlay);
-    }
-    return base;
-  }
-
-  /** Applies non-null/non-empty fields from {@code overlay} onto {@code base}, in-place. */
-  private static void applyOverlay(final OidcConfiguration base, final OidcConfiguration overlay) {
-    if (overlay.getClientId() != null) {
-      base.setClientId(overlay.getClientId());
-    }
-    if (overlay.getClientSecret() != null) {
-      base.setClientSecret(overlay.getClientSecret());
-    }
-    if (overlay.getIssuerUri() != null) {
-      base.setIssuerUri(overlay.getIssuerUri());
-    }
-    if (overlay.getAudiences() != null && !overlay.getAudiences().isEmpty()) {
-      base.setAudiences(overlay.getAudiences());
-    }
-    if (overlay.getRedirectUri() != null) {
-      base.setRedirectUri(overlay.getRedirectUri());
-    }
-    if (overlay.getJwkSetUri() != null) {
-      base.setJwkSetUri(overlay.getJwkSetUri());
-    }
-    if (overlay.getAdditionalJwkSetUris() != null && !overlay.getAdditionalJwkSetUris().isEmpty()) {
-      base.setAdditionalJwkSetUris(new ArrayList<>(overlay.getAdditionalJwkSetUris()));
-    }
-    if (overlay.getClientAuthenticationMethod() != null
-        && !overlay
-            .getClientAuthenticationMethod()
-            .equals(OidcConfiguration.CLIENT_AUTHENTICATION_METHOD_CLIENT_SECRET_BASIC)) {
-      // Skip when overlay carries the default value — Spring Boot binds the default even when
-      // the property is absent, so treating the default as "no override" avoids stomping root.
-      base.setClientAuthenticationMethod(overlay.getClientAuthenticationMethod());
-    }
-    if (overlay.getScope() != null && !overlay.getScope().equals(OidcConfiguration.DEFAULT_SCOPE)) {
-      base.setScope(new ArrayList<>(overlay.getScope()));
-    }
-    if (overlay.getClientName() != null) {
-      base.setClientName(overlay.getClientName());
-    }
-    if (overlay.getUsernameClaim() != null) {
-      base.setUsernameClaim(overlay.getUsernameClaim());
-    }
-    if (overlay.getOrganizationId() != null) {
-      base.setOrganizationId(overlay.getOrganizationId());
+  private static void dropEmptyProviders(final AuthenticationConfiguration config) {
+    final Map<String, OidcConfiguration> named = namedProviders(config);
+    if (named == null || named.isEmpty()) {
+      config.setProviders(null);
     }
   }
 
-  /** Shallow-clones the fields relevant to chain construction so the root bean is never mutated. */
-  private static OidcConfiguration cloneConfig(final OidcConfiguration source) {
-    final OidcConfiguration copy = new OidcConfiguration();
-    copy.setClientId(source.getClientId());
-    copy.setClientSecret(source.getClientSecret());
-    copy.setIssuerUri(source.getIssuerUri());
-    copy.setAudiences(source.getAudiences());
-    copy.setRedirectUri(source.getRedirectUri());
-    copy.setJwkSetUri(source.getJwkSetUri());
-    copy.setAdditionalJwkSetUris(source.getAdditionalJwkSetUris());
-    copy.setClientAuthenticationMethod(source.getClientAuthenticationMethod());
-    copy.setScope(source.getScope());
-    copy.setClientName(source.getClientName());
-    copy.setUsernameClaim(source.getUsernameClaim());
-    copy.setOrganizationId(source.getOrganizationId());
-    return copy;
+  private static Map<String, OidcConfiguration> snapshotProviders(
+      final AuthenticationConfiguration config) {
+    final Map<String, OidcConfiguration> named = namedProviders(config);
+    return named == null ? Map.of() : new LinkedHashMap<>(named);
   }
 
-  private static @Nullable Map<String, OidcConfiguration> namedProviders(
-      final AuthenticationConfiguration auth) {
-    return auth.getProviders() == null ? null : auth.getProviders().getOidc();
+  private static Map<String, OidcConfiguration> namedProviders(
+      final AuthenticationConfiguration config) {
+    final OidcProvidersConfiguration providers = config.getProviders();
+    return providers == null ? null : providers.getOidc();
   }
 
   private static AuthenticationConfiguration bindOrDefault(
-      final Binder binder, final String prefix, final Class<AuthenticationConfiguration> type) {
-    final BindResult<AuthenticationConfiguration> result = binder.bind(prefix, Bindable.of(type));
+      final Binder binder, final String prefix) {
+    final BindResult<AuthenticationConfiguration> result =
+        binder.bind(prefix, Bindable.of(AuthenticationConfiguration.class));
     return result.orElseGet(AuthenticationConfiguration::new);
   }
 }
