@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.message;
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -106,6 +107,26 @@ public final class MessageStartProcessInstanceCrossPartitionHandshakeTest {
           .startEvent(START_EVENT_ID)
           .message(MESSAGE_NAME)
           .connectTo("task")
+          .done();
+
+  /**
+   * Like {@link #DUAL_START_PROCESS} but the none-start arm waits on an intermediate timer instead
+   * of a service task, so a holder PI created on {@code P_B} via {@code CreateProcessInstance} can
+   * be completed on a clock-controlled schedule (the engine job client cannot reach a job living on
+   * {@code P_B}). Used by the rejection-then-retry-flips-to-success test: the holder blocks the
+   * first ask, then the timer fires and frees the businessId so a retried ask succeeds.
+   */
+  private static final String HOLDER_TIMER_DURATION = "PT2S";
+
+  private static final BpmnModelInstance TIMER_HOLDER_AND_MESSAGE_START_PROCESS =
+      Bpmn.createExecutableProcess(PROCESS_ID)
+          .startEvent("noneStart")
+          .intermediateCatchEvent("holderTimer", e -> e.timerWithDuration(HOLDER_TIMER_DURATION))
+          .endEvent()
+          .moveToProcess(PROCESS_ID)
+          .startEvent(START_EVENT_ID)
+          .message(MESSAGE_NAME)
+          .endEvent()
           .done();
 
   @Rule
@@ -535,6 +556,111 @@ public final class MessageStartProcessInstanceCrossPartitionHandshakeTest {
         .as("a banned holder must not block a retry from starting a fresh PI")
         .isPositive()
         .isNotEqualTo(bannedPiKey);
+  }
+
+  @Test
+  public void shouldStartPiWhenUniquenessRejectedAskIsRetriedAfterHolderCompletesOnPB() {
+    // Pins the headline Part-B "way out": a cross-partition ask rejected on businessId uniqueness
+    // is kept and retried, and once the holder PI on P_B completes (freeing the businessId) a
+    // retried ask flips to a successful start. The holder parks on an intermediate timer so it
+    // stays active — and keeps the businessId held — until the clock is advanced (the engine job
+    // client cannot reach a job living on P_B, so a service-task holder could not be completed).
+    deployAndAwaitStartEventSubscriptionsOnAllPartitions(TIMER_HOLDER_AND_MESSAGE_START_PROCESS);
+    final long holderPiKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .onPartition(partitionFor(BUSINESS_ID))
+            .withBusinessId(BUSINESS_ID)
+            .create();
+    // wait until the holder PI has activated on P_B so the businessId uniqueness index is
+    // populated before the first ask arrives (ELEMENT_ACTIVATED follows the index-writing
+    // ACTIVATING applier)
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(holderPiKey)
+        .withElementType(BpmnElementType.PROCESS)
+        .getFirst();
+
+    // when a message-start publish lands on P_K and asks P_B for the same businessId; the holder
+    // is still active so P_B replies UNIQUENESS_REJECTED (the ask is kept, not dropped)
+    engine
+        .message()
+        .withName(MESSAGE_NAME)
+        .withCorrelationKey(CORRELATION_KEY)
+        .withBusinessId(BUSINESS_ID)
+        .withTimeToLive(Duration.ofMinutes(5))
+        .publish();
+    RecordingExporter.records()
+        .withIntent(MessageStartProcessInstanceRequestIntent.UNIQUENESS_REJECTED)
+        .getFirst();
+
+    // and the holder's timer fires, completing it and freeing the businessId
+    engine.increaseTime(Duration.ofSeconds(3));
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+        .withProcessInstanceKey(holderPiKey)
+        .filterRootScope()
+        .await();
+
+    // and the ask retry scheduler re-dispatches the ask (advance past the worst-case backed-off
+    // interval, capped at base * 64, while still well inside the 5-minute message TTL)
+    engine.increaseTime(ASK_RETRY_INTERVAL.multipliedBy(64).plusSeconds(1));
+
+    // then the retried ask now succeeds: P_B starts a fresh message-start PI carrying BUSINESS_ID,
+    // distinct from the completed holder
+    final var messagePi =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withElementType(BpmnElementType.PROCESS)
+            .withBpmnProcessId(PROCESS_ID)
+            .filter(r -> r.getValue().getProcessInstanceKey() != holderPiKey)
+            .getFirst();
+    assertThat(messagePi.getValue().getBusinessId()).isEqualTo(BUSINESS_ID);
+    assertThat(Protocol.decodePartitionId(messagePi.getValue().getProcessInstanceKey()))
+        .as("the retried start lands on P_B = hash(businessId)")
+        .isEqualTo(partitionFor(BUSINESS_ID));
+  }
+
+  @Test
+  public void shouldExpireBlockedMessageAtTtlWhenHolderNeverClearsAcrossPartitions() {
+    // Pins the safe terminal of the retry loop: when the cross-partition holder never frees the
+    // businessId, every retry is rejected and the buffered message simply expires at its TTL —
+    // no start, no duplicate, no leak. The holder sits on a service task it never leaves (the
+    // engine job client cannot reach a job on P_B), so it holds the businessId for the whole test.
+    deployAndAwaitStartEventSubscriptionsOnAllPartitions(DUAL_START_PROCESS);
+    final long holderPiKey = createHolderPiOnPBViaApi(BUSINESS_ID);
+    awaitHolderJobCreated(holderPiKey);
+
+    // when a message-start publish on P_K asks P_B for the same businessId with a short TTL
+    final var blockedPublish =
+        engine
+            .message()
+            .withName(MESSAGE_NAME)
+            .withCorrelationKey(CORRELATION_KEY)
+            .withBusinessId(BUSINESS_ID)
+            .withTimeToLive(MESSAGE_TTL.toMillis())
+            .publish();
+    RecordingExporter.records()
+        .withIntent(MessageStartProcessInstanceRequestIntent.UNIQUENESS_REJECTED)
+        .getFirst();
+
+    // and time advances past the messageDeadline so the buffered message expires on P_K
+    engine.increaseTime(
+        MESSAGE_TTL.plus(EngineConfiguration.DEFAULT_MESSAGES_TTL_CHECKER_INTERVAL));
+
+    // then the buffered message expires and no message-start PI is ever created — only the holder
+    // PI exists on P_B, bounded by the EXPIRED terminal of the blocked publish
+    final long processActivations =
+        RecordingExporter.records()
+            .limit(
+                r ->
+                    r.getIntent() == MessageIntent.EXPIRED && r.getKey() == blockedPublish.getKey())
+            .processInstanceRecords()
+            .withBpmnProcessId(PROCESS_ID)
+            .withElementType(BpmnElementType.PROCESS)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .count();
+    assertThat(processActivations)
+        .as("a never-freed cross-partition holder lets the blocked message expire unstarted")
+        .isEqualTo(1L);
   }
 
   private void deployAndAwaitStartEventSubscriptionsOnAllPartitions(
