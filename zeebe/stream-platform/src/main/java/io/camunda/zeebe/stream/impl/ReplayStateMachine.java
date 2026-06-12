@@ -44,6 +44,10 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
   private static final Logger LOG = Loggers.PROCESSOR_LOGGER;
 
   private static final String LOG_STMT_REPLAY_FINISHED = "Processor finished replay, with {}";
+  private static final String LOG_STMT_REPLAY_STOPPED_DIFFERENT_VERSION =
+      "Stopping at record [position: {}, valueType: {}] written by a different broker version ({}); "
+          + "this broker is {}. This is expected during a rolling upgrade.";
+  private static final String ERROR_NO_PROCESSOR = "No processor registered for {} of type {}";
   private static final String ERROR_INCONSISTENT_LOG =
       "Expected that position '%d' of current event is higher then position '%d' of last event, but was not. Inconsistent log detected!";
   private static final String ERROR_MSG_EXPECTED_TO_READ_METADATA =
@@ -242,7 +246,7 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
           recordProcessors.stream()
               .filter(p -> p.accepts(currentTypedEvent.getValueType()))
               .findFirst()
-              .orElseThrow(() -> NoSuchProcessorException.forRecord(currentTypedEvent));
+              .orElseThrow(() -> noProcessorRegistered(currentTypedEvent));
 
       processor.replay(currentTypedEvent);
       lastReplayedEventPosition = currentTypedEvent.getPosition();
@@ -271,6 +275,28 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
 
     LOG.info(LOG_STMT_REPLAY_FINISHED, lastProcessingPositions);
     recoveryFuture.complete(lastProcessingPositions);
+  }
+
+  /**
+   * Logs why no processor accepts the record and returns the exception to throw. A record written
+   * by a newer broker version is expected during a rolling upgrade and is logged as a warning
+   * without a stack trace; any other case is a genuine error and is logged loudly. The replay then
+   * fails as usual: {@link StreamProcessor} does not log this failure again (see its handling of
+   * {@link NoSuchProcessorException}).
+   */
+  private NoSuchProcessorException noProcessorRegistered(final TypedRecord<?> record) {
+    final var exception = NoSuchProcessorException.forRecord(record);
+    if (!RecordMetadata.CURRENT_BROKER_VERSION.equals(metadata.getBrokerVersion())) {
+      LOG.warn(
+          LOG_STMT_REPLAY_STOPPED_DIFFERENT_VERSION,
+          record.getPosition(),
+          record.getValueType(),
+          record.getBrokerVersion(),
+          RecordMetadata.CURRENT_BROKER_VERSION);
+    } else {
+      LOG.error(ERROR_NO_PROCESSOR, record.getRecordType(), record.getValueType(), exception);
+    }
+    return exception;
   }
 
   /**
