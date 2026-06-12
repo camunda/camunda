@@ -19,6 +19,7 @@ import io.camunda.exporter.tasks.archiver.ArchiveByIdTaskSupplier.ArchiveDocIdsB
 import io.camunda.exporter.tasks.archiver.ArchiveByIdTaskSupplier.IdWithRouting;
 import java.net.SocketTimeoutException;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executor;
@@ -229,7 +230,7 @@ class ArchiveByIdTaskSupplierTest {
   @Test
   void shouldReduceReindexBatchSizeAfterEachRetry() {
     // given - maxRetryAttempts=3: allows up to 3 retries (throws on the 4th consecutive failure).
-    // Reindex fails on calls 1 and 2, succeeds from call 3 onward.
+    // Reindex fails on calls 1, 2, and 5, succeeds on other calls.
     final var retryableError = new CompletionException(new SocketTimeoutException("timeout"));
     final var reindexCallCount = new AtomicInteger(0);
     final var batchSize = new AtomicInteger(0);
@@ -245,7 +246,7 @@ class ArchiveByIdTaskSupplierTest {
                   ArchiveDocIdsBatch.from(List.of("doc1"), List.of("after1")));
             },
             (source, dest, ids) -> {
-              if (reindexCallCount.incrementAndGet() <= 2) {
+              if (Set.of(1, 2, 5).contains(reindexCallCount.incrementAndGet())) {
                 return CompletableFuture.failedFuture(retryableError);
               }
               return CompletableFuture.completedFuture((long) ids.size());
@@ -255,21 +256,29 @@ class ArchiveByIdTaskSupplierTest {
             metrics,
             LOGGER);
 
-    // when - attempt 1 fails (retryCount: 0→1), full batch size used
+    // when - attempt 1 fails, full batch size used
     assertThat(taskSupplier.moveNextBatch().join()).isEqualTo(0L);
     assertThat(batchSize.get()).isEqualTo(1200);
 
-    // when - attempt 2 fails (retryCount: 1→2), batch size halved
+    // when - attempt 2 fails, batch size was halved
     assertThat(taskSupplier.moveNextBatch().join()).isEqualTo(0L);
     assertThat(batchSize.get()).isEqualTo(600);
 
-    // when - attempt 3 succeeds (retryCount=2 at fetch → size/3), then resets to 0
+    // when - attempt 3 succeeds, batch size was halved again
     assertThat(taskSupplier.moveNextBatch().join()).isEqualTo(1L);
-    assertThat(batchSize.get()).isEqualTo(400);
+    assertThat(batchSize.get()).isEqualTo(300);
 
-    // when - next batch after success starts at full size again (retryCount reset to 0)
+    // when - attempt 4 successful, batch size is kept
     assertThat(taskSupplier.moveNextBatch().join()).isEqualTo(1L);
-    assertThat(batchSize.get()).isEqualTo(1200);
+    assertThat(batchSize.get()).isEqualTo(300);
+
+    // when - attempt 5 fails, current batch size used
+    assertThat(taskSupplier.moveNextBatch().join()).isEqualTo(0L);
+    assertThat(batchSize.get()).isEqualTo(300);
+
+    // when - attempt 6 succeeds, batch size was halved
+    assertThat(taskSupplier.moveNextBatch().join()).isEqualTo(1L);
+    assertThat(batchSize.get()).isEqualTo(150);
   }
 
   @Test
