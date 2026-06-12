@@ -127,9 +127,34 @@ public final class EngineProcessors {
     final var config = typedRecordProcessorContext.getConfig();
     final var securityConfig = typedRecordProcessorContext.getSecurityConfig();
 
-    final DueDateTimerCheckScheduler timerChecker =
-        new DueDateTimerCheckScheduler(
-            scheduledTaskStateFactory.get().getTimerState(), featureFlags, clock);
+    final var scheduledTaskRuntime =
+        new io.camunda.zeebe.engine.scheduled.runtime.DefaultScheduledTaskRuntime(
+            io.camunda.zeebe.engine.scheduled.runtime.BackPressureSignal.alwaysGreen());
+
+    final var timerExpiryTask =
+        new io.camunda.zeebe.engine.processing.timer.TimerExpiryTask(
+            scheduledTaskStateFactory.get().getTimerState(),
+            clock,
+            featureFlags.yieldingDueDateChecker());
+
+    final var timerOptions =
+        featureFlags.enableTimerDueDateCheckerAsync()
+            ? io.camunda.zeebe.engine.scheduled.runtime.TaskOptions.async(
+                io.camunda.zeebe.stream.api.scheduling.AsyncTaskGroup.ASYNC_PROCESSING)
+            : io.camunda.zeebe.engine.scheduled.runtime.TaskOptions.sync();
+
+    final var timerHandle =
+        scheduledTaskRuntime.register(
+            "timer-check",
+            new io.camunda.zeebe.engine.scheduled.runtime.Schedule.OnDemand(
+                java.time.Duration.ofMillis(
+                    io.camunda.zeebe.engine.processing.timer.TimerExpiryTask.TIMER_RESOLUTION_MS)),
+            timerExpiryTask,
+            timerOptions);
+
+    typedRecordProcessors.withListener(scheduledTaskRuntime);
+
+    final DueDateTimerCheckScheduler timerChecker = new DueDateTimerCheckScheduler(timerHandle);
 
     final var jobMetrics = new JobProcessingMetrics(typedRecordProcessorContext.getMeterRegistry());
     final var processEngineMetrics =
