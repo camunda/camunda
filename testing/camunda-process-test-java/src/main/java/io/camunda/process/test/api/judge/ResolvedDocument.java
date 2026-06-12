@@ -22,15 +22,23 @@ package io.camunda.process.test.api.judge;
  */
 public interface ResolvedDocument {
 
+  /** Returns the Camunda document id. */
   String getDocumentId();
 
+  /** Returns the document store id, or {@code null} if the reference does not specify one. */
   String getStoreId();
 
+  /**
+   * Returns the document content hash as reported by the Camunda document store, or {@code null}.
+   */
   String getContentHash();
 
+  /** Returns the file name from the document metadata, or {@code null} if unset. */
   String getFileName();
 
+  /** Returns the MIME content type from the document metadata, or {@code null} if unset. */
   String getContentType();
 
+  /** Returns the downloaded document content. Never {@code null} (resolution is fail-fast). */
   byte[] getContent();
 }
