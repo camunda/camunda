@@ -33,7 +33,8 @@ jobs:
           # image pull (e.g. "Get https://registry-1.docker.io/v2/: context
           # deadline exceeded"). docker compose up -d is idempotent, so a retry
           # simply resumes the pull and starts the container.
-          attempts=3
+          attempts=5
+          delay=15
           for attempt in $(seq 1 "$attempts"); do
             if DATABASE=elasticsearch docker compose up -d camunda; then
               echo "Camunda started on attempt ${attempt}."
@@ -41,8 +42,9 @@ jobs:
             fi
             echo "Attempt ${attempt}/${attempts} to start Camunda failed."
             if [[ "$attempt" -lt "$attempts" ]]; then
-              echo "Retrying in 15s..."
-              sleep 15
+              echo "Retrying in ${delay}s (exponential backoff)..."
+              sleep "$delay"
+              delay=$(( delay * 2 ))
             fi
           done
           echo "Failed to start Camunda after ${attempts} attempts."
