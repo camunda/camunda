@@ -26,7 +26,7 @@ import org.immutables.value.Value;
 public interface AgentHistoryRecordValue extends RecordValue, TenantOwned, ProcessInstanceRelated {
 
   /** Returns the system-generated key for this history entry. */
-  long getHistoryItemKey();
+  long getAgentHistoryKey();
 
   /** Returns the key of the agent instance that produced this history entry. */
   long getAgentInstanceKey();

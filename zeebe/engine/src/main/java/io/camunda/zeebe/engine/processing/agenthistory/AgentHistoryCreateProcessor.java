@@ -113,7 +113,7 @@ public final class AgentHistoryCreateProcessor implements TypedRecordProcessor<A
     final var historyKey = keyGenerator.nextKey();
     final var event =
         new AgentHistoryRecord()
-            .setHistoryItemKey(historyKey)
+            .setAgentHistoryKey(historyKey)
             .setAgentInstanceKey(commandValue.getAgentInstanceKey())
             .setElementInstanceKey(jobElementInstanceKey)
             .setProcessInstanceKey(job.getProcessInstanceKey())
