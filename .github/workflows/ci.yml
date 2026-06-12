@@ -1831,9 +1831,7 @@ jobs:
         id: build-optimize-docker
         with:
           repository: camunda/optimize
-          version: |
-            ${{ needs.utils-get-snapshot-docker-tag.outputs.version_tag }}
-            ${{ needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag }}
+          version: ${{ needs.utils-get-snapshot-docker-tag.outputs.version_tag }}
           distball: optimize-distro/target/camunda-optimize-*-production.tar.gz
           platforms: ${{ env.DOCKER_PLATFORMS }}
           dockerfile: optimize.Dockerfile
