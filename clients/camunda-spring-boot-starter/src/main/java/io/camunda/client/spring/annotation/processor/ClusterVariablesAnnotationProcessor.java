@@ -107,6 +107,10 @@ public class ClusterVariablesAnnotationProcessor extends AbstractCamundaAnnotati
     if (tenantVariables != null && !tenantVariables.isEmpty()) {
       for (final Map.Entry<String, Map<String, Object>> entry : tenantVariables.entrySet()) {
         final String tenantId = entry.getKey();
+        if (tenantId == null || tenantId.isBlank()) {
+          throw new IllegalArgumentException(
+              "Invalid tenant ID in 'camunda.client.cluster-variables.tenant': tenant ID must not be null or blank");
+        }
         final Map<String, Object> variables = entry.getValue();
         if (variables != null && !variables.isEmpty()) {
           LOGGER.debug(

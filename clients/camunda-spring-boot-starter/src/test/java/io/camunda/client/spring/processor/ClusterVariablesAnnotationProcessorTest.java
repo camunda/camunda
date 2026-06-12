@@ -280,6 +280,17 @@ public class ClusterVariablesAnnotationProcessorTest {
   }
 
   @Test
+  void shouldRejectBlankTenantIdFromProperties() {
+    // given
+    properties.setTenant(Map.of("", Map.of("var", "value")));
+
+    // when / then
+    assertThatExceptionOfType(IllegalArgumentException.class)
+        .isThrownBy(() -> processor.start(client))
+        .withMessageContaining("camunda.client.cluster-variables.tenant");
+  }
+
+  @Test
   void shouldCreateVariablesFromPojoMethod() {
     // given
     mockGlobalCreateCommand();
