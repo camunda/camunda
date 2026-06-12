@@ -15,7 +15,7 @@ type Path = Parameters<typeof http.get>[0];
 
 type CreateEndpointMockParams<Method extends RequestMethod> = {
 	endpoint: Path;
-	method: Method;
+	method: Method | (string & {});
 };
 
 type SuccessMockParams = {
@@ -64,8 +64,6 @@ function createEndpointMock<Method extends RequestMethod>({
 		};
 
 		switch (method) {
-			case 'GET':
-				return http.get(endpoint, resolver);
 			case 'POST':
 				return http.post(endpoint, resolver);
 			case 'PUT':
@@ -74,6 +72,9 @@ function createEndpointMock<Method extends RequestMethod>({
 				return http.patch(endpoint, resolver);
 			case 'DELETE':
 				return http.delete(endpoint, resolver);
+			case 'GET':
+			default:
+				return http.get(endpoint, resolver);
 		}
 	};
 }
