@@ -252,7 +252,7 @@ public class ClusterVariablesAnnotationProcessorTest {
   }
 
   @Test
-  void shouldCreateVariablesFromProperties() {
+  void shouldCreateGlobalVariablesFromProperties() {
     // given
     properties.setGlobal(Map.of("propVar1", "propValue1", "propVar2", 99));
     mockGlobalCreateCommand();
@@ -294,7 +294,7 @@ public class ClusterVariablesAnnotationProcessorTest {
   }
 
   @Test
-  void shouldCreateVariablesFromPropertiesAndAnnotations() throws IOException {
+  void shouldCreateGlobalVariablesFromPropertiesAndAnnotations() throws IOException {
     // given
     properties.setGlobal(Map.of("fromProp", "propValue"));
     final Resource resource = mockJsonResource("{\"fromResource\": \"resourceValue\"}");
