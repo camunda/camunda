@@ -19,6 +19,7 @@ import static io.camunda.optimize.service.db.schema.index.AbstractDefinitionInde
 import static io.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DEFINITION_VERSION;
 import static io.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DEFINITION_VERSION_TAG;
 import static io.camunda.optimize.service.db.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_XML;
+import static io.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.AGENTIC_PROCESS;
 import static io.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_XML;
 import static io.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.TENANT_ID;
 import static io.camunda.optimize.service.util.DefinitionVersionHandlingUtil.convertToLatestParticularVersion;
@@ -895,6 +896,9 @@ public class DefinitionReaderES implements DefinitionReader {
           return builder;
         };
 
+    final Aggregation agenticProcessAggregation =
+        Aggregation.of(a -> a.filter(f -> f.term(t -> t.field(AGENTIC_PROCESS).value(true))));
+
     final Function<CompositeAggregation.Builder, Aggregation.Builder.ContainerBuilder>
         keyAndTypeAggregation =
             (b) -> {
@@ -904,7 +908,8 @@ public class DefinitionReaderES implements DefinitionReader {
                   .aggregations(
                       TENANT_AGGREGATION, Aggregation.of(a1 -> a1.terms(tenantsAggregation)))
                   .aggregations(NAME_AGGREGATION, nameAggregation)
-                  .aggregations(ENGINE_AGGREGATION, enginesAggregation);
+                  .aggregations(ENGINE_AGGREGATION, enginesAggregation)
+                  .aggregations(AGENTIC_PROCESS_AGGREGATION, agenticProcessAggregation);
             };
 
     final List<CompositeBucket> keyAndTypeAggBuckets =
@@ -924,23 +929,31 @@ public class DefinitionReaderES implements DefinitionReader {
                   keyAndTypeAgg.aggregations().get(NAME_AGGREGATION).sterms();
               final StringTermsAggregate enginesResult =
                   keyAndTypeAgg.aggregations().get(ENGINE_AGGREGATION).sterms();
-              return new DefinitionWithTenantIdsDto(
-                  definitionKey,
-                  nameResult.buckets().array().stream()
-                      .findFirst()
-                      .map(b -> b.key().stringValue())
-                      .orElse(null),
-                  resolveDefinitionTypeFromIndexAlias(indexAliasName),
-                  tenantResult.buckets().array().stream()
-                      .map(b -> b.key().stringValue())
-                      // convert null bucket back to a `null` id
-                      .map(
-                          tenantId ->
-                              TENANT_NOT_DEFINED_VALUE.equalsIgnoreCase(tenantId) ? null : tenantId)
-                      .collect(Collectors.toList()),
-                  enginesResult.buckets().array().stream()
-                      .map(b -> b.key().stringValue())
-                      .collect(Collectors.toSet()));
+              final boolean agenticProcess =
+                  keyAndTypeAgg.aggregations().get(AGENTIC_PROCESS_AGGREGATION).filter().docCount()
+                      > 0;
+              final DefinitionWithTenantIdsDto dto =
+                  new DefinitionWithTenantIdsDto(
+                      definitionKey,
+                      nameResult.buckets().array().stream()
+                          .findFirst()
+                          .map(b -> b.key().stringValue())
+                          .orElse(null),
+                      resolveDefinitionTypeFromIndexAlias(indexAliasName),
+                      tenantResult.buckets().array().stream()
+                          .map(b -> b.key().stringValue())
+                          // convert null bucket back to a `null` id
+                          .map(
+                              tenantId ->
+                                  TENANT_NOT_DEFINED_VALUE.equalsIgnoreCase(tenantId)
+                                      ? null
+                                      : tenantId)
+                          .collect(Collectors.toList()),
+                      enginesResult.buckets().array().stream()
+                          .map(b -> b.key().stringValue())
+                          .collect(Collectors.toSet()));
+              dto.setAgenticProcess(agenticProcess);
+              return dto;
             })
         .toList();
   }

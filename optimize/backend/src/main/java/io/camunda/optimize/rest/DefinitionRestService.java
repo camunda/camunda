@@ -23,6 +23,7 @@ import io.camunda.optimize.dto.optimize.rest.DefinitionVersionResponseDto;
 import io.camunda.optimize.dto.optimize.rest.TenantResponseDto;
 import io.camunda.optimize.dto.optimize.rest.definition.DefinitionWithTenantsResponseDto;
 import io.camunda.optimize.dto.optimize.rest.definition.MultiDefinitionTenantsRequestDto;
+import io.camunda.optimize.rest.exceptions.BadRequestException;
 import io.camunda.optimize.rest.exceptions.NotFoundException;
 import io.camunda.optimize.rest.providers.CacheRequest;
 import io.camunda.optimize.service.DefinitionService;
@@ -176,10 +177,17 @@ public class DefinitionRestService {
   public List<DefinitionKeyResponseDto> getDefinitionKeys(
       @PathVariable(name = "type") final DefinitionType type,
       @RequestParam(name = "filterByCollectionScope", required = false) final String collectionId,
+      @RequestParam(name = "onlyWithAgentRuns", required = false, defaultValue = "false")
+          final boolean onlyWithAgentRuns,
       final HttpServletRequest request) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
 
-    final List<DefinitionResponseDto> definitions = getDefinitions(type, collectionId, userId);
+    List<DefinitionResponseDto> definitions = getDefinitions(type, collectionId, userId);
+    if (onlyWithAgentRuns && DefinitionType.PROCESS.equals(type)) {
+      definitions = definitions.stream().filter(DefinitionResponseDto::isAgenticProcess).toList();
+    } else if (onlyWithAgentRuns) {
+      throw new BadRequestException("onlyWithAgentRuns is only supported for PROCESS definitions.");
+    }
     return definitions.stream()
         .map(definition -> new DefinitionKeyResponseDto(definition.getKey(), definition.getName()))
         .collect(Collectors.toList());
