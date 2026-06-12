@@ -7,6 +7,8 @@ paths:
       tags:
         - Batch operation
       operationId: getBatchOperation
+      x-required-permissions:
+        - { resourceType: BATCH, permissionType: READ }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -48,6 +50,9 @@ paths:
       tags:
         - Batch operation
       operationId: searchBatchOperations
+      x-permission-enforcement: filter
+      x-required-permissions:
+        - { resourceType: BATCH, permissionType: READ }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -82,6 +87,8 @@ paths:
       tags:
         - Batch operation
       operationId: cancelBatchOperation
+      x-required-permissions:
+        - { resourceType: BATCH, permissionType: UPDATE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -124,6 +131,8 @@ paths:
       tags:
         - Batch operation
       operationId: suspendBatchOperation
+      x-required-permissions:
+        - { resourceType: BATCH, permissionType: UPDATE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -168,6 +177,8 @@ paths:
       tags:
         - Batch operation
       operationId: resumeBatchOperation
+      x-required-permissions:
+        - { resourceType: BATCH, permissionType: UPDATE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -212,6 +223,9 @@ paths:
       tags:
         - Batch operation
       operationId: searchBatchOperationItems
+      x-permission-enforcement: filter
+      x-required-permissions:
+        - { resourceType: BATCH, permissionType: READ }
       security:
         - bearerAuth: []
         - basicAuth: []

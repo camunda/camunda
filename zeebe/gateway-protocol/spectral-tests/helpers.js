@@ -36,12 +36,18 @@ function lintFixtureFile(fixtureName, fileName) {
 
   // Test isolation: each fixture lint must see the fixture's own registry,
   // or no registry at all. Inheriting an ambient SPECTRAL_SEMANTIC_KINDS_REGISTRY
-  // from the parent process would make results order- and environment-dependent.
+  // (or SPECTRAL_RESOURCE_PERMISSIONS_REGISTRY) from the parent process would make
+  // results order- and environment-dependent.
   const env = { ...process.env };
   delete env.SPECTRAL_SEMANTIC_KINDS_REGISTRY;
+  delete env.SPECTRAL_RESOURCE_PERMISSIONS_REGISTRY;
   const fixtureRegistry = path.join(fixtureDir, 'semantic-kinds.json');
   if (fs.existsSync(fixtureRegistry)) {
     env.SPECTRAL_SEMANTIC_KINDS_REGISTRY = fixtureRegistry;
+  }
+  const permissionsRegistry = path.join(fixtureDir, 'resource-permissions.json');
+  if (fs.existsSync(permissionsRegistry)) {
+    env.SPECTRAL_RESOURCE_PERMISSIONS_REGISTRY = permissionsRegistry;
   }
 
   try {

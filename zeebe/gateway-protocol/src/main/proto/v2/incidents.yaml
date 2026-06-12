@@ -7,6 +7,9 @@ paths:
       tags:
         - Incident
       operationId: searchIncidents
+      x-permission-enforcement: filter
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_INSTANCE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -42,6 +45,8 @@ paths:
       tags:
         - Incident
       operationId: getIncident
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_INSTANCE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -84,6 +89,8 @@ paths:
       tags:
         - Incident
       operationId: resolveIncident
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: UPDATE_PROCESS_INSTANCE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -135,6 +142,8 @@ paths:
       tags:
         - Incident
       operationId: getProcessInstanceStatisticsByError
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_INSTANCE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -173,6 +182,8 @@ paths:
       tags:
         - Incident
       operationId: getProcessInstanceStatisticsByDefinition
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_INSTANCE }
       security:
         - bearerAuth: []
         - basicAuth: []

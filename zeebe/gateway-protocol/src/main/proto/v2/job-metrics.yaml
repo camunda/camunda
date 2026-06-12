@@ -7,6 +7,9 @@ paths:
       tags:
         - Job
       operationId: getGlobalJobStatistics
+      x-permission-enforcement: filter
+      x-required-permissions:
+        - { resourceType: SYSTEM, permissionType: READ_JOB_METRIC }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -62,6 +65,9 @@ paths:
       tags:
         - Job
       operationId: getJobTypeStatistics
+      x-permission-enforcement: filter
+      x-required-permissions:
+        - { resourceType: SYSTEM, permissionType: READ_JOB_METRIC }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -97,6 +103,9 @@ paths:
       tags:
         - Job
       operationId: getJobWorkerStatistics
+      x-permission-enforcement: filter
+      x-required-permissions:
+        - { resourceType: SYSTEM, permissionType: READ_JOB_METRIC }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -132,6 +141,9 @@ paths:
       tags:
         - Job
       operationId: getJobTimeSeriesStatistics
+      x-permission-enforcement: filter
+      x-required-permissions:
+        - { resourceType: SYSTEM, permissionType: READ_JOB_METRIC }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -169,6 +181,9 @@ paths:
       tags:
         - Job
       operationId: getJobErrorStatistics
+      x-permission-enforcement: filter
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_INSTANCE }
       security:
         - bearerAuth: []
         - basicAuth: []

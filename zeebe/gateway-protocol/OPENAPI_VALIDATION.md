@@ -195,6 +195,16 @@ Three rules validate the producer/consumer dependency annotations consumed by th
 
 For the full annotation reference (including `x-semantic-provider`, `x-semantic-client-minted`, kind-level `shape: external-entity`, and the per-tuple `acceptsExternal` flag), see §2.18 of [`docs/rest-api-endpoint-guidelines.md`](../../docs/rest-api-endpoint-guidelines.md). The kind registry itself is [`src/main/proto/v2/semantic-kinds.json`](src/main/proto/v2/semantic-kinds.json) — its `$comment` block documents how to add a new kind.
 
+### Required-permission annotations (`x-required-permissions`)
+
+Two rules validate the canonical endpoint → required-permission binding consumed by the API test generator and docs (camunda/camunda#54727):
+
+- `required-permissions-shape` — each `x-required-permissions` entry must conform to the documented schema (exactly one of: a static `{resourceType, permissionType}` pair, an `anyOf` OR-group, or `{dynamic: true, note}`).
+- `verify-required-permissions` (custom JS function in `spectral-functions/`) — every operation under `paths` must declare `x-required-permissions` (an array; `[]` means unrestricted — no specific permission required, though the endpoint is still authenticated), and every static `{resourceType, permissionType}` pair must be a valid pair per [`src/main/proto/v2/resource-permissions.json`](src/main/proto/v2/resource-permissions.json). Adding a new endpoint without a declared binding fails the build. It also checks that an operation marked `x-permission-enforcement: filter` declares at least one required permission.
+- `permission-enforcement-shape` — the optional operation-level `x-permission-enforcement` marker, when present, must be `reject` (default deny → `4xx`) or `filter` (deny → `200` with results scoped to authorized resources). Used by the runtime auth test (api-test-generator#374) to assert the correct deny shape.
+
+The registry `resource-permissions.json` mirrors `AuthorizationResourceType.buildResourcePermissionsMap()` and is kept honest by `ResourcePermissionsRegistryTest`. For the full reference see §2.19 of [`docs/rest-api-endpoint-guidelines.md`](../../docs/rest-api-endpoint-guidelines.md) and ADR [`docs/adr/security/001-endpoint-required-permission-mapping.md`](../../docs/adr/security/001-endpoint-required-permission-mapping.md).
+
 ## Testing Custom Spectral Functions
 
 Unit tests for the custom Spectral functions live in `spectral-tests/`. Each rule has its own test file and a set of multi-part YAML fixture specs that mirror the real spec structure (entry-point `rest-api.yaml` with `$ref`s to domain and shared-model files).

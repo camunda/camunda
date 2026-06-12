@@ -7,6 +7,7 @@ paths:
       tags:
         - Cluster
       operationId: getTopology
+      x-required-permissions: []
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -31,6 +32,7 @@ paths:
       tags:
         - Cluster
       operationId: getStatus
+      x-required-permissions: []
       # Public health-check endpoint — declared unauthenticated at runtime
       # via SecurityPathAdapter. `security: []` overrides the conditional
       # enforcement on the global schemes for this operation.
