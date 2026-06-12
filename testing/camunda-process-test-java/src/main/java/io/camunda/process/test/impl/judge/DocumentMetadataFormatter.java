@@ -16,13 +16,12 @@
 package io.camunda.process.test.impl.judge;
 
 import io.camunda.process.test.api.judge.ResolvedDocument;
-import org.apache.commons.text.StringEscapeUtils;
 
 /**
  * Renders the metadata attribute string used to identify a resolved document, both inside the
  * {@code <resolved_documents>} prompt section and inside per-block headers in multimodal requests.
- * Values are escaped so embedded quotes or angle brackets cannot break out of their surrounding
- * tag/header context.
+ * Values are escaped so embedded quotes, newlines, or angle brackets cannot break out of their
+ * surrounding tag/header context.
  */
 public final class DocumentMetadataFormatter {
 
@@ -38,10 +37,52 @@ public final class DocumentMetadataFormatter {
   }
 
   private static String attribute(final String name, final String value) {
-    return name + "=\"" + escape(value == null ? "" : value) + "\"";
+    return name + "=\"" + escape(value) + "\"";
   }
 
+  /**
+   * Neutralizes characters that could break the surrounding {@code name="value"} attribute or open
+   * a forged tag in the prompt — backslash, double quote, control characters, and angle brackets.
+   * Kept dependency-free; standard Apache Commons would otherwise add a runtime requirement on the
+   * consumer's classpath.
+   */
   private static String escape(final String value) {
-    return StringEscapeUtils.escapeJava(value).replace("<", "&lt;").replace(">", "&gt;");
+    if (value == null) {
+      return "";
+    }
+    final StringBuilder out = new StringBuilder(value.length());
+    for (int i = 0; i < value.length(); i++) {
+      final char c = value.charAt(i);
+      switch (c) {
+        case '\\':
+          out.append("\\\\");
+          break;
+        case '"':
+          out.append("\\\"");
+          break;
+        case '\n':
+          out.append("\\n");
+          break;
+        case '\r':
+          out.append("\\r");
+          break;
+        case '\t':
+          out.append("\\t");
+          break;
+        case '<':
+          out.append("&lt;");
+          break;
+        case '>':
+          out.append("&gt;");
+          break;
+        default:
+          if (c < 0x20) {
+            out.append(String.format("\\u%04x", (int) c));
+          } else {
+            out.append(c);
+          }
+      }
+    }
+    return out.toString();
   }
 }
