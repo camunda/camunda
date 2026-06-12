@@ -108,8 +108,6 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
 
   private PartitionManager buildPartitionManager(
       final BrokerStartupContext brokerStartupContext, final TopologyManagerImpl topologyManager) {
-    final var clusterConfiguration =
-        brokerStartupContext.getClusterConfigurationService().getInitialClusterConfiguration();
 
     final var clusterCfg = brokerStartupContext.getBrokerConfiguration().getCluster();
     final MemberId memberId = MemberId.from(clusterCfg.getZone(), clusterCfg.getNodeId());
@@ -127,7 +125,7 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
               });
     }
 
-    if (State.RECOVERING == memberState.state()) {
+    if (isRecovering(brokerStartupContext, memberId)) {
       LOGGER.info("Partition group in recovery, starting RecoveryPartitionManager");
       return recoveryPartitionManager(brokerStartupContext, topologyManager);
     } else {
@@ -195,5 +193,15 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
         ERROR_CODE_ON_INCONSISTENT_TOPOLOGY,
         "Inconsistent cluster topology detected - topology was changed while broker was"
             + " unreachable or broker encountered data loss");
+  }
+
+  private boolean isRecovering(
+      final BrokerStartupContext brokerStartupContext, final MemberId memberId) {
+
+    final var clusterConfiguration =
+        brokerStartupContext.getClusterConfigurationService().getInitialClusterConfiguration();
+
+    final var memberState = clusterConfiguration.getMember(memberId);
+    return memberState != null && State.RECOVERING == memberState.state();
   }
 }
