@@ -11,6 +11,10 @@ on:
     paths:
       - '.github/workflows/operate-*'
       - "operate/**"
+
+permissions:
+  contents: read
+
 jobs:
   run-migration-tests:
     uses: ./.github/workflows/operate-run-tests.yml
