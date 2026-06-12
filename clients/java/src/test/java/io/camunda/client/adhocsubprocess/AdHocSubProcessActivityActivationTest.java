@@ -115,6 +115,31 @@ public class AdHocSubProcessActivityActivationTest extends ClientRestTest {
             tuple("G", Collections.singletonMap("G", "gValue")));
   }
 
+  @Test
+  void shouldScopeAddedVariablesToLatestActivatedElement() {
+    client
+        .newActivateAdHocSubProcessActivitiesCommand(AD_HOC_SUBPROCESS_INSTANCE_KEY)
+        .activateElement("A")
+        .addVariable("A", "aValue")
+        .activateElement("B")
+        .addVariable("B", "bValue")
+        .activateElement("C", mapOf(entry("C", "cValue")))
+        .addVariable("C2", "cValue2")
+        .send()
+        .join();
+
+    final AdHocSubProcessActivateActivitiesInstruction request =
+        gatewayService.getLastRequest(AdHocSubProcessActivateActivitiesInstruction.class);
+    assertThat(request.getElements())
+        .extracting(
+            AdHocSubProcessActivateActivityReference::getElementId,
+            AdHocSubProcessActivateActivityReference::getVariables)
+        .containsExactly(
+            tuple("A", Collections.singletonMap("A", "aValue")),
+            tuple("B", Collections.singletonMap("B", "bValue")),
+            tuple("C", mapOf(Arrays.asList(entry("C", "cValue"), entry("C2", "cValue2")))));
+  }
+
   @ParameterizedTest
   @ValueSource(booleans = {true, false})
   void shouldSetCancelRemainingInstances(final boolean cancelRemainingInstances) {

@@ -767,6 +767,53 @@ public final class CompleteJobTest extends ClientTest {
   }
 
   @Test
+  public void shouldScopeAddedVariablesToLatestAdHocSubProcessElement() {
+    // given
+    final ActivatedJob job = Mockito.mock(ActivatedJob.class);
+    Mockito.when(job.getKey()).thenReturn(12L);
+    final String elementId1 = "elementId1";
+    final String elementId2 = "elementId2";
+    final String elementId3 = "elementId3";
+
+    // when
+    client
+        .newCompleteCommand(job)
+        .withResult(
+            r ->
+                r.forAdHocSubProcess()
+                    .activateElement(elementId1)
+                    .addVariable("key", "value")
+                    .addVariable("key2", "value2")
+                    .activateElement(elementId2)
+                    .addVariable("anotherKey", "anotherValue")
+                    .addVariables(Collections.singletonMap("anotherKey2", "anotherValue2"))
+                    .activateElement(elementId3))
+        .send()
+        .join();
+
+    // then
+    final CompleteJobRequest request = gatewayService.getLastRequest();
+
+    assertThat(request.getJobKey()).isEqualTo(job.getKey());
+    assertThat(request.getResult().getType()).isEqualTo(AD_HOC_SUB_PROCESS_DISCRIMINATOR);
+    assertThat(request.getResult().getActivateElementsCount()).isEqualTo(3);
+    assertThat(request.getResult().getActivateElements(0).getElementId()).isEqualTo(elementId1);
+    assertThat(JsonUtil.fromJsonAsMap(request.getResult().getActivateElements(0).getVariables()))
+        .containsEntry("key", "value")
+        .containsEntry("key2", "value2")
+        .hasSize(2);
+    assertThat(request.getResult().getActivateElements(1).getElementId()).isEqualTo(elementId2);
+    assertThat(JsonUtil.fromJsonAsMap(request.getResult().getActivateElements(1).getVariables()))
+        .containsEntry("anotherKey", "anotherValue")
+        .containsEntry("anotherKey2", "anotherValue2")
+        .hasSize(2);
+    assertThat(request.getResult().getActivateElements(2).getElementId()).isEqualTo(elementId3);
+    assertThat(request.getResult().getActivateElements(2).getVariables()).isEmpty();
+    assertThat(request.getResult().getIsCompletionConditionFulfilled()).isFalse();
+    assertThat(request.getResult().getIsCancelRemainingInstances()).isFalse();
+  }
+
+  @Test
   public void shouldCompleteAdHocSubProcessWithCompletionConditionFulfilled() {
     // given
     final ActivatedJob job = Mockito.mock(ActivatedJob.class);

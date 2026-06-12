@@ -90,5 +90,24 @@ public interface CompleteAdHocSubProcessResultStep1 extends CompleteJobResult {
      */
     @Override
     CompleteAdHocSubProcessResultStep1 variable(String key, Object value);
+
+    /**
+     * Adds a single variable to the activated element instance.
+     *
+     * @param key the key of the variable as string
+     * @param value the value of the variable as object
+     * @return the builder for this command.
+     */
+    @Override
+    CompleteAdHocSubProcessResultStep2 addVariable(String key, Object value);
+
+    /**
+     * Adds multiple variables to the activated element instance.
+     *
+     * @param variables the variables document as map
+     * @return the builder for this command.
+     */
+    @Override
+    CompleteAdHocSubProcessResultStep2 addVariables(Map<String, Object> variables);
   }
 }
