@@ -31,6 +31,7 @@ import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -59,6 +60,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   private static final String TYPE = "type";
   private static final String CUSTOM_HEADERS = "customHeaders";
   private static final String VARIABLES = "variables";
+  private static final String SECRET_PATHS = "secretPaths";
   private static final String ERROR_MESSAGE = "errorMessage";
   // Static StringValue keys to avoid memory waste
   private static final StringValue TYPE_KEY = new StringValue(TYPE);
@@ -70,6 +72,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   private static final StringValue RECURRING_TIME_KEY = new StringValue("recurringTime");
   private static final StringValue CUSTOM_HEADERS_KEY = new StringValue(CUSTOM_HEADERS);
   private static final StringValue VARIABLES_KEY = new StringValue(VARIABLES);
+  private static final StringValue SECRET_PATHS_KEY = new StringValue(SECRET_PATHS);
   private static final StringValue ERROR_MESSAGE_KEY = new StringValue(ERROR_MESSAGE);
   private static final StringValue ERROR_CODE_KEY = new StringValue("errorCode");
   private static final StringValue PROCESS_DEFINITION_VERSION_KEY =
@@ -100,6 +103,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   private final PackedProperty customHeadersProp =
       new PackedProperty(CUSTOM_HEADERS_KEY, NO_HEADERS);
   private final DocumentProperty variableProp = new DocumentProperty(VARIABLES_KEY);
+  private final DocumentProperty secretPathsProp = new DocumentProperty(SECRET_PATHS_KEY);
   private final StringProperty errorMessageProp =
       new StringProperty(ERROR_MESSAGE_KEY, EMPTY_STRING);
   private final StringProperty errorCodeProp = new StringProperty(ERROR_CODE_KEY, EMPTY_STRING);
@@ -148,6 +152,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
         .declareProperty(typeProp)
         .declareProperty(customHeadersProp)
         .declareProperty(variableProp)
+        .declareProperty(secretPathsProp)
         .declareProperty(errorMessageProp)
         .declareProperty(errorCodeProp)
         .declareProperty(bpmnProcessIdProp)
@@ -521,6 +526,26 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   @JsonIgnore
   public DirectBuffer getVariablesBuffer() {
     return variableProp.getValue();
+  }
+
+  /**
+   * Secret references carried with this job, indexed by the JSON-pointer path of the variable that
+   * holds them (e.g. {@code /authentication/token -> [camunda.secrets.TOKEN]}). Populated at job
+   * activation from the statically modeled input mappings; the gateway resolves these before
+   * returning the job to the client.
+   */
+  public Map<String, Set<String>> getSecretPaths() {
+    return MsgPackConverter.convertToSetStringMap(secretPathsProp.getValue());
+  }
+
+  public JobRecord setSecretPaths(final Map<String, ? extends Collection<String>> secretPaths) {
+    secretPathsProp.setValue(BufferUtil.wrapArray(MsgPackConverter.convertToMsgPack(secretPaths)));
+    return this;
+  }
+
+  @JsonIgnore
+  public DirectBuffer getSecretPathsBuffer() {
+    return secretPathsProp.getValue();
   }
 
   @JsonIgnore

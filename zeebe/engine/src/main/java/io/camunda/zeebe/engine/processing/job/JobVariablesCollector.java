@@ -7,7 +7,9 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
+import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
@@ -25,11 +27,13 @@ public class JobVariablesCollector {
   private final VariableState variableState;
   private final UserTaskState userTaskState;
   private final ElementInstanceState elementInstanceState;
+  private final ProcessState processState;
 
   public JobVariablesCollector(final ProcessingState processingState) {
     variableState = processingState.getVariableState();
     userTaskState = processingState.getUserTaskState();
     elementInstanceState = processingState.getElementInstanceState();
+    processState = processingState.getProcessState();
   }
 
   public void setJobVariables(
@@ -60,6 +64,27 @@ public class JobVariablesCollector {
         };
 
     jobRecord.setVariables(jobVariables);
+    setJobSecretPaths(jobRecord);
+  }
+
+  /**
+   * Attaches the statically modeled secret references of the activated element to the job, so the
+   * gateway can resolve them in the job's variables before returning them to the client. References
+   * come from the process definition (input mappings), never from runtime variable values — which
+   * is what prevents secret resolution from being triggered by injected, untrusted input.
+   */
+  private void setJobSecretPaths(final JobRecord jobRecord) {
+    final var process =
+        processState.getProcessByKeyAndTenant(
+            jobRecord.getProcessDefinitionKey(), jobRecord.getTenantId());
+    if (process == null) {
+      return;
+    }
+    final var element = process.getProcess().getElementById(jobRecord.getElementId());
+    if (element instanceof final ExecutableFlowNode flowNode
+        && !flowNode.getInputSecretReferences().isEmpty()) {
+      jobRecord.setSecretPaths(flowNode.getInputSecretReferences());
+    }
   }
 
   private Map<String, Object> getTaskVariables(
