@@ -78,6 +78,11 @@ endif
 # Platform values with stable configuration
 platform_values_stable := $(platform_values) -f values-stable.yaml
 
+# Per-namespace local overrides (holds the SNAPSHOT digest pin written by newLoadTest.sh).
+# Applied LAST on platform installs/renders so it wins over everything above. Kept out of
+# $(platform_values) so it never reaches the secondary storage (bitnami) charts.
+platform_values_local := -f camunda-platform-values.local.yaml
+
 ifeq ($(secondary_storage),elasticsearch)
 	install_es_prom_exporter := true
 	es_prom_exporter_es_uri := http://elastic:9200
@@ -190,7 +195,7 @@ else
 	@echo "Skipping Elasticsearch Prometheus Exporter installation (secondary_storage=$(secondary_storage))"
 endif
 
-# Install/upgrade Camunda Platform helm chart
+# Install/upgrade Camunda Platform helm chart.
 .PHONY: install-platform
 install-platform: setup-leader-balancer
 	helm upgrade $(namespace) $(helm_chart_platform) \
@@ -200,6 +205,7 @@ install-platform: setup-leader-balancer
 		--render-subchart-notes \
 		$(platform_values) \
 		$(_scenario_platform_flags) \
+		$(platform_values_local) \
 		$(additional_platform_configuration)
 
 # Install/upgrade Camunda Platform on stable VMs
@@ -212,6 +218,7 @@ install-platform-stable: setup-leader-balancer
 		--render-subchart-notes \
 		$(platform_values_stable) \
 		$(_scenario_platform_flags) \
+		$(platform_values_local) \
 		$(additional_platform_configuration)
 
 # Install/upgrade load test helm chart
@@ -247,6 +254,7 @@ template:
 	helm template $(namespace) $(helm_chart_platform) \
 		$(platform_values) \
 		$(_scenario_platform_flags) \
+		$(platform_values_local) \
 		$(additional_platform_configuration) \
 		--output-dir .
 
@@ -255,6 +263,7 @@ template-stable:
 	helm template $(namespace) $(helm_chart_platform) \
 		$(platform_values_stable) \
 		$(_scenario_platform_flags) \
+		$(platform_values_local) \
 		$(additional_platform_configuration) \
 		--output-dir .
 
