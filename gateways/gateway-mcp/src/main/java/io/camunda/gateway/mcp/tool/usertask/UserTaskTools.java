@@ -18,7 +18,6 @@ import static io.camunda.gateway.mcp.tool.ToolDescriptions.USER_TASK_KEY_POSITIV
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.VARIABLE_FILTER_FORMAT_NOTE;
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.VARIABLE_VALUE_RETURN_FORMAT;
 
-import io.camunda.authentication.pt.PhysicalTenantContext;
 import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
@@ -32,6 +31,7 @@ import io.camunda.gateway.protocol.model.simple.UserTaskSearchQuery;
 import io.camunda.gateway.protocol.model.simple.UserTaskVariableFilter;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.registry.ServiceRegistry;
+import io.camunda.spring.utils.PhysicalTenantContext;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;

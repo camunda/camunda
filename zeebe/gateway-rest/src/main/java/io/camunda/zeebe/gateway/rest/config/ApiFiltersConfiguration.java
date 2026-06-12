@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.gateway.rest.config;
 
-import static io.camunda.authentication.pt.PhysicalTenantContext.PHYSICAL_TENANTS_PATH_SEGMENT;
 import static io.camunda.security.api.model.config.MultiTenancyConfiguration.API_ENABLED_PROPERTY;
 import static io.camunda.security.api.model.config.oidc.OidcConfiguration.GROUPS_CLAIM_PROPERTY;
+import static io.camunda.spring.utils.PhysicalTenantContext.PHYSICAL_TENANTS_PATH_SEGMENT;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.security.api.model.config.AuthenticationMethod;

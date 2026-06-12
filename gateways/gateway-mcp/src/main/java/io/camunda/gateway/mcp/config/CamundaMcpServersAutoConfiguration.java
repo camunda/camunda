@@ -7,15 +7,15 @@
  */
 package io.camunda.gateway.mcp.config;
 
-import static io.camunda.authentication.pt.PhysicalTenantContext.PATH_VARIABLE_PHYSICAL_TENANT_ID;
-import static io.camunda.authentication.pt.PhysicalTenantContext.PHYSICAL_TENANT_URI_PREFIX;
+import static io.camunda.spring.utils.PhysicalTenantContext.PATH_VARIABLE_PHYSICAL_TENANT_ID;
+import static io.camunda.spring.utils.PhysicalTenantContext.PHYSICAL_TENANT_URI_PREFIX;
 
 import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
-import io.camunda.authentication.pt.PhysicalTenantContext;
 import io.camunda.gateway.mcp.ConditionalOnMcpGatewayEnabled;
 import io.camunda.gateway.mcp.config.server.RequestHandlerCustomizer;
 import io.camunda.gateway.mcp.config.server.ToolRepository;
 import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
+import io.camunda.spring.utils.PhysicalTenantContext;
 import io.camunda.zeebe.util.VersionUtil;
 import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.server.McpServer;

@@ -7,12 +7,12 @@
  */
 package io.camunda.authentication.config.spi;
 
-import io.camunda.authentication.pt.PhysicalTenantContext;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.core.port.out.BasicAuthUserDetailsPort;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.registry.ServiceRegistry;
+import io.camunda.spring.utils.PhysicalTenantContext;
 
 /**
  * Host-supplied {@link BasicAuthUserDetailsPort} resolving basic-auth users from OC's user

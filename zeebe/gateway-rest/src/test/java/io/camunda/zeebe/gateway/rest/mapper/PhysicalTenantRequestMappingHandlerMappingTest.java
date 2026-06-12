@@ -9,7 +9,7 @@ package io.camunda.zeebe.gateway.rest.mapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.authentication.pt.PhysicalTenantContext;
+import io.camunda.spring.utils.PhysicalTenantContext;
 import io.camunda.zeebe.gateway.rest.annotation.ClusterScoped;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import java.lang.reflect.Method;

@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.resolver;
 
-import io.camunda.authentication.pt.PhysicalTenantContext;
+import io.camunda.spring.utils.PhysicalTenantContext;
 import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;

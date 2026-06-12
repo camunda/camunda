@@ -7,7 +7,7 @@
  */
 package io.camunda.application.commons.mcp;
 
-import static io.camunda.authentication.pt.PhysicalTenantContext.PHYSICAL_TENANTS_PATH_SEGMENT;
+import static io.camunda.spring.utils.PhysicalTenantContext.PHYSICAL_TENANTS_PATH_SEGMENT;
 
 import io.micrometer.common.KeyValue;
 import io.micrometer.common.KeyValues;
