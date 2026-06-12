@@ -25,6 +25,9 @@ import org.immutables.value.Value;
 @ImmutableProtocol(builder = ImmutableAgentHistoryRecordValue.Builder.class)
 public interface AgentHistoryRecordValue extends RecordValue, TenantOwned, ProcessInstanceRelated {
 
+  /** Returns the system-generated key for this history entry. */
+  long getAgentHistoryKey();
+
   /** Returns the key of the agent instance that produced this history entry. */
   long getAgentInstanceKey();
 
