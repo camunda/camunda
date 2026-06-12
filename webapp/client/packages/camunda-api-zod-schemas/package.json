@@ -607,12 +607,12 @@
 	},
 	"packageManager": "npm@11.16.0",
 	"devDependencies": {
-		"@types/node": "25.9.1",
+		"@types/node": "25.9.3",
 		"changelogen": "0.6.2",
 		"typescript": "6.0.3",
-		"vite": "8.0.14",
+		"vite": "8.0.16",
 		"vite-plugin-circular-dependency": "0.6.0",
-		"vite-plugin-dts": "5.0.1",
+		"vite-plugin-dts": "5.0.2",
 		"zod": "^4.4.3"
 	},
 	"peerDependencies": {
