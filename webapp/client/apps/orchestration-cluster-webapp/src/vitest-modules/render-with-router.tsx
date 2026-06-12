@@ -27,7 +27,7 @@ async function renderWithRouter(
 		initialEntry = path,
 	}: {
 		path: ValidRoutes;
-		initialEntry?: ValidRoutes;
+		initialEntry?: string;
 	},
 ) {
 	const queryClient = new QueryClient({
