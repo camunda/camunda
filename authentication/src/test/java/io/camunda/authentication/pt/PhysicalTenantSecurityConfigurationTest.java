@@ -12,7 +12,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.security.api.context.CamundaSecurityScopeProvider;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
-import org.springframework.boot.web.servlet.FilterRegistrationBean;
 
 /**
  * Verifies that {@link PhysicalTenantSecurityConfiguration} registers the expected beans in the
@@ -31,18 +30,6 @@ class PhysicalTenantSecurityConfigurationTest {
           assertThat(context).hasSingleBean(CamundaSecurityScopeProvider.class);
           assertThat(context.getBean(CamundaSecurityScopeProvider.class))
               .isInstanceOf(PhysicalTenantScopeProvider.class);
-        });
-  }
-
-  @Test
-  void shouldRegisterPreSecurityFilterBean() {
-    runner.run(
-        context -> {
-          assertThat(context).hasSingleBean(FilterRegistrationBean.class);
-          final var reg = context.getBean(FilterRegistrationBean.class);
-          assertThat(reg.getFilter()).isInstanceOf(PhysicalTenantPreSecurityFilter.class);
-          // Must run before Spring Security's FilterChainProxy (-100)
-          assertThat(reg.getOrder()).isLessThan(-100);
         });
   }
 

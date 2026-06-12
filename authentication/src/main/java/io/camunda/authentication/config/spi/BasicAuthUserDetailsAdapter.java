@@ -20,9 +20,8 @@ import io.camunda.spring.utils.PhysicalTenantContext;
  * (camunda/camunda-security-library#372).
  *
  * <p>The physical tenant id is resolved via {@link PhysicalTenantContext#current()}, which reads
- * the id stamped on the request by {@link
- * io.camunda.authentication.pt.PhysicalTenantPreSecurityFilter} (runs before Spring Security's
- * filter chain). For non-prefixed requests the context falls back to {@link
+ * the id stamped on the request by {@code PhysicalTenantFilter} (gateway-rest), registered to run
+ * before Spring Security's filter chain. For non-prefixed requests the context falls back to {@link
  * PhysicalTenantContext#DEFAULT_PHYSICAL_TENANT_ID}.
  *
  * <p>An unknown user ({@link ServiceException.Status#NOT_FOUND}) resolves to {@code null}, the

@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.authentication.pt;
+package io.camunda.zeebe.gateway.rest.controller;
 
 import static io.camunda.spring.utils.PhysicalTenantContext.PHYSICAL_TENANTS_PATH_SEGMENT;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -20,17 +20,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 
-/** Unit tests for {@link PhysicalTenantPreSecurityFilter}. */
+/** Unit tests for {@link PhysicalTenantFilter}. */
 @ExtendWith(MockitoExtension.class)
-class PhysicalTenantPreSecurityFilterTest {
+class PhysicalTenantFilterTest {
 
   @Mock private FilterChain chain;
 
-  private final PhysicalTenantPreSecurityFilter filter = new PhysicalTenantPreSecurityFilter();
-
-  // -------------------------------------------------------------------------
-  // Path matching and attribute stamping
-  // -------------------------------------------------------------------------
+  private final PhysicalTenantFilter filter = new PhysicalTenantFilter();
 
   @Test
   void shouldStampPhysicalTenantIdForKnownPrefixedPath() throws Exception {
