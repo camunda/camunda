@@ -453,19 +453,68 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
+  build-metrics-exporter-image:
+    name: Build Metrics Exporter
+    if: ${{ inputs.reuse-tag == '' || inputs.orchestration-tag != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: calculate-image-tag
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          ref: ${{ inputs.ref }}
+      - uses: ./.github/actions/setup-build
+        with:
+          dockerhub-readonly: true
+          harbor: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+
+      - uses: docker/metadata-action@030e881283bb7a6894de51c315a6bfe6a94e05cf # v6.0.0
+        id: docker
+        with:
+          images: registry.camunda.cloud/team-reliability-testing/metrics-exporter
+          tags: type=raw,value=${{ needs.calculate-image-tag.outputs.image-tag }}
+
+      - uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
+      - uses: docker/build-push-action@d08e5c354a6adb9ed34480a06d141179aa583294 # v7
+        with:
+          context: ./load-tests/metrics-exporter
+          file: ./load-tests/metrics-exporter/Dockerfile
+          push: true
+          tags: ${{ steps.docker.outputs.tags }}
+          labels: ${{ steps.docker.outputs.labels }}
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
   deploy-cluster-under-test:
     name: Deploy cluster under test
     needs:
       - calculate-image-tag
       - build-camunda-image
       - build-load-test-images
+      - build-metrics-exporter-image
     # To have the possibility to re-deploy the tests without rebuilding the images,
     # the deploy will be run, when build is skipped or successful.
     if: |
       always() &&
       needs.calculate-image-tag.result == 'success' &&
       (needs.build-camunda-image.result == 'success' || needs.build-camunda-image.result == 'skipped') &&
-      (needs.build-load-test-images.result == 'success' || needs.build-load-test-images.result == 'skipped')
+      (needs.build-load-test-images.result == 'success' || needs.build-load-test-images.result == 'skipped') &&
+      (needs.build-metrics-exporter-image.result == 'success' || needs.build-metrics-exporter-image.result == 'skipped')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -595,6 +644,14 @@ jobs:
           # Append user-provided helm values if present
           if [[ -n "${{ inputs.platform-helm-values }}" ]]; then
             additional_platform_config+=" ${{ inputs.platform-helm-values }}"
+          fi
+
+          # Pin the metrics-exporter image to the tag built by build-metrics-exporter-image.
+          # If the image has been skipped, keep using the "latest" tag, which
+          # is assuming to be always published by the dedicated CI running on
+          # the main branch.
+          if [[ "${{ needs.build-metrics-exporter-image.result }}" == "success" ]]; then
+            sed -i "s|metrics-exporter:latest|metrics-exporter:${image_tag}|" resources/metrics-exporter.yaml
           fi
 
           make ${{ inputs.stable-vms && 'install-stable' || 'install' }} \

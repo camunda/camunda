@@ -1,0 +1,70 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: metrics-exporter
+  labels:
+    app: metrics-exporter
+spec:
+  progressDeadlineSeconds: 60
+  replicas: 1
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels:
+      app: metrics-exporter
+  template:
+    metadata:
+      labels:
+        app: metrics-exporter
+    spec:
+      containers:
+      - name: metrics-exporter
+        # TODO: configure the Docker image based on what we just built
+        image: registry.camunda.cloud/team-reliability-testing/metrics-exporter:latest
+        args:
+          - --web.listen-address=:9100
+          # TODO: Configure the Elasticsearch or OpenSearch endpoint
+          - --es.addresses=http://elastic:9200
+        ports:
+        - containerPort: 9100
+          name: metrics
+        # TODO: configure a readiness probe once we know how to poll
+        # Elasticsearch or OpenSearch
+        #readinessProbe:
+        #  httpGet:
+        #    path: /metrics
+        #    port: metrics
+        #  periodSeconds: 10
+        #  timeoutSeconds: 5
+        resources:
+          limits:
+            cpu: 100m
+            memory: 50Mi
+          requests:
+            cpu: 100m
+            memory: 50Mi
+      imagePullSecrets:
+      - name: harbor-registry
+      restartPolicy: Always
+      tolerations:
+      - effect: NoSchedule
+        key: nodepool
+        operator: Equal
+        value: n2-standard-4
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: metrics-exporter
+  labels:
+    app: metrics-exporter
+    release: monitoring # needed to be detected by Prometheus Operator
+spec:
+  podMetricsEndpoints:
+  - interval: 30s
+    path: /metrics
+    port: metrics
+    scrapeTimeout: 20s
+  selector:
+    matchLabels:
+      app: metrics-exporter

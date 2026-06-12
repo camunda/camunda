@@ -95,10 +95,10 @@ endif
 all: install
 
 .PHONY: install
-install: check-deadline create-namespace create-credentials install-storage install-platform install-load-test install-elasticsearch-exporter
+install: check-deadline create-namespace create-credentials install-storage install-platform install-load-test install-elasticsearch-exporter install-metrics-exporter
 
 .PHONY: install-stable
-install-stable: check-deadline create-namespace create-credentials install-storage install-platform-stable install-load-test install-elasticsearch-exporter
+install-stable: check-deadline create-namespace create-credentials install-storage install-platform-stable install-load-test install-elasticsearch-exporter install-metrics-exporter
 
 # Fail fast if the namespace TTL deadline (read from resources/namespace.yaml,
 # the single source of truth) is today or in the past — the TTL cleanup
@@ -226,6 +226,12 @@ install-load-test:
 		$(_scenario_load_test_flags) \
 		$(_secondary_storage_load_test_flags) \
 		$(additional_load_test_configuration)
+
+
+.PHONY: install-metrics-exporter
+install-metrics-exporter:
+	@echo "Deploying metrics exporter..."
+	kubectl apply -n $(namespace) -f resources/metrics-exporter.yaml
 
 # Setup leader balancing cronjob
 .PHONY: setup-leader-balancer
