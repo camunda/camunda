@@ -216,6 +216,33 @@ test.describe.serial('Create Process Instance Batch to Migrate Tests', () => {
       migrateMe: true,
     });
 
+    await test.step('Wait until instance is searchable by the migrateMe variable', async () => {
+      // The migration batch evaluates its filter against secondary storage at
+      // creation time. If the migrateMe variable has not been indexed yet, the
+      // batch matches zero instances, completes empty, and the instance is
+      // never migrated. Gate on the variable being queryable via the same
+      // filter the batch will use before issuing the migration.
+      await expect(async () => {
+        const res = await request.post(buildUrl('/process-instances/search'), {
+          headers: jsonHeaders(),
+          data: {
+            filter: {
+              processInstanceKey: localState.processInstanceKey2,
+              variables: [
+                {
+                  name: 'migrateMe',
+                  value: 'true',
+                },
+              ],
+            },
+          },
+        });
+        await assertStatusCode(res, 200);
+        const json = await res.json();
+        expect(json.items).toHaveLength(1);
+      }).toPass(defaultAssertionOptions);
+    });
+
     await test.step('Migrate only instance with specific variable', async () => {
       await expect(async () => {
         const res = await request.post(
