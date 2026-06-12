@@ -161,6 +161,63 @@ class PhysicalTenantAuthConfigurationsTest {
   }
 
   // -------------------------------------------------------------------------
+  // 3d. Faithful application-pt-poc.yaml shape: default slot "oidc" + named provider "tenanta"
+  //     whose name equals the PT id; the tenanta overlay overrides client/secret/audiences and
+  //     inherits issuer-uri. Guards the exact runtime config the smoke harness exercises.
+  // -------------------------------------------------------------------------
+
+  @Test
+  void shouldApplyTenantOverlayWithDefaultSlotAndSameNamedProvider() {
+    final var env =
+        env(
+            Map.ofEntries(
+                Map.entry("camunda.security.authentication.method", "oidc"),
+                // default slot "oidc"
+                Map.entry(
+                    "camunda.security.authentication.oidc.client-id", "camunda-pt-default-client"),
+                Map.entry(
+                    "camunda.security.authentication.oidc.issuer-uri",
+                    "http://localhost:8081/realms/default"),
+                Map.entry("camunda.security.authentication.oidc.audiences[0]", "pt-default-aud"),
+                // root view of named provider "tenanta"
+                Map.entry(
+                    "camunda.security.authentication.providers.oidc.tenanta.client-id",
+                    "camunda-pt-default-via-tenanta-client"),
+                Map.entry(
+                    "camunda.security.authentication.providers.oidc.tenanta.client-secret",
+                    "default-via-tenanta-secret"),
+                Map.entry(
+                    "camunda.security.authentication.providers.oidc.tenanta.issuer-uri",
+                    "http://localhost:8082/realms/tenanta"),
+                Map.entry(
+                    "camunda.security.authentication.providers.oidc.tenanta.audiences[0]",
+                    "pt-default-via-tenanta-aud"),
+                // tenanta PT overlay: override client/secret/audiences, inherit issuer-uri
+                Map.entry(
+                    "camunda.physical-tenants.tenanta.security.authentication.providers.oidc.tenanta.client-id",
+                    "camunda-pt-tenanta-client"),
+                Map.entry(
+                    "camunda.physical-tenants.tenanta.security.authentication.providers.oidc.tenanta.client-secret",
+                    "tenanta-secret"),
+                Map.entry(
+                    "camunda.physical-tenants.tenanta.security.authentication.providers.oidc.tenanta.audiences[0]",
+                    "pt-tenanta-aud")));
+
+    final AuthenticationConfiguration cfg =
+        PhysicalTenantAuthConfigurations.forPhysicalTenant("tenanta", env);
+
+    final var tenanta = cfg.getProviders().getOidc().get("tenanta");
+    assertThat(tenanta).isNotNull();
+    assertThat(tenanta.getAudiences()).containsExactly("pt-tenanta-aud"); // overlay wins
+    assertThat(tenanta.getClientId()).isEqualTo("camunda-pt-tenanta-client"); // overlay wins
+    assertThat(tenanta.getIssuerUri())
+        .isEqualTo("http://localhost:8082/realms/tenanta"); // inherited from root
+    // default slot intact
+    assertThat(cfg.getOidc()).isNotNull();
+    assertThat(cfg.getOidc().getAudiences()).containsExactly("pt-default-aud");
+  }
+
+  // -------------------------------------------------------------------------
   // 4. PT overlay declares a provider not in root (PT-only) → included via union
   // -------------------------------------------------------------------------
 
@@ -286,12 +343,71 @@ class PhysicalTenantAuthConfigurationsTest {
   }
 
   // -------------------------------------------------------------------------
+  // Real YAML environment (mirrors application-pt-poc.yaml) — guards against a
+  // MockEnvironment-vs-real-Environment binding discrepancy in the overlay merge.
+  // -------------------------------------------------------------------------
+
+  @Test
+  void shouldApplyTenantOverlayAudienceFromYamlLoadedEnvironment() throws Exception {
+    final String yaml =
+        """
+        camunda:
+          security:
+            authentication:
+              method: oidc
+              oidc:
+                client-id: camunda-pt-default-client
+                issuer-uri: http://localhost:8081/realms/default
+                audiences: [pt-default-aud]
+              providers:
+                oidc:
+                  tenanta:
+                    client-id: camunda-pt-default-via-tenanta-client
+                    client-secret: default-via-tenanta-secret
+                    issuer-uri: http://localhost:8082/realms/tenanta
+                    audiences: [pt-default-via-tenanta-aud]
+          physical-tenants:
+            tenanta:
+              security:
+                authentication:
+                  providers:
+                    oidc:
+                      tenanta:
+                        client-id: camunda-pt-tenanta-client
+                        client-secret: tenanta-secret
+                        audiences: [pt-tenanta-aud]
+        """;
+
+    final AuthenticationConfiguration cfg =
+        PhysicalTenantAuthConfigurations.forPhysicalTenant("tenanta", yamlEnv(yaml));
+
+    final var tenanta = cfg.getProviders().getOidc().get("tenanta");
+    assertThat(tenanta.getAudiences()).containsExactly("pt-tenanta-aud"); // overlay wins
+    assertThat(tenanta.getIssuerUri())
+        .isEqualTo("http://localhost:8082/realms/tenanta"); // inherited from root
+    assertThat(tenanta.getClientId()).isEqualTo("camunda-pt-tenanta-client"); // overlay wins
+  }
+
+  // -------------------------------------------------------------------------
   // Helpers
   // -------------------------------------------------------------------------
 
   private static MockEnvironment env(final Map<String, String> properties) {
     final MockEnvironment env = new MockEnvironment();
     properties.forEach(env::setProperty);
+    return env;
+  }
+
+  private static org.springframework.core.env.Environment yamlEnv(final String yaml)
+      throws java.io.IOException {
+    final var loaded =
+        new org.springframework.boot.env.YamlPropertySourceLoader()
+            .load(
+                "pt-poc",
+                new org.springframework.core.io.ByteArrayResource(
+                    yaml.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+    final var env = new org.springframework.core.env.StandardEnvironment();
+    loaded.forEach(env.getPropertySources()::addFirst);
     return env;
   }
 }
