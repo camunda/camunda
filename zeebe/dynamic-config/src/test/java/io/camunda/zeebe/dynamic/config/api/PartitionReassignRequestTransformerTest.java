@@ -12,9 +12,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.FixedConfig;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.dynamic.config.util.RoundRobinPartitionDistributor;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
@@ -30,6 +34,7 @@ import net.jqwik.api.ForAll;
 import net.jqwik.api.Property;
 import net.jqwik.api.ShrinkingMode;
 import net.jqwik.api.constraints.IntRange;
+import org.junit.jupiter.api.Test;
 
 class PartitionReassignRequestTransformerTest {
 
@@ -203,7 +208,8 @@ class PartitionReassignRequestTransformerTest {
         new PartitionReassignRequestTransformer(
             getClusterMembers(newClusterSize),
             Optional.of(newReplicationFactor),
-            Optional.of(newPartitionCount));
+            Optional.of(newPartitionCount),
+            Optional.empty());
     final var operations = request.operations(oldClusterTopology).get();
 
     // apply operations to generate new topology
@@ -212,6 +218,56 @@ class PartitionReassignRequestTransformerTest {
     // then
     final var newDistribution = ConfigurationUtil.getPartitionDistributionFrom(newTopology, "temp");
     assertThat(newDistribution).isEqualTo(expectedNewDistribution);
+  }
+
+  @Test
+  void shouldUseConfigOverrideWhenProvided() {
+    // given a cluster with no distributor config and a round-robin initial distribution
+    final var zoneConfig =
+        new ZoneAwareConfig(
+            List.of(new ZoneSpec("zone-a", 2, 1000), new ZoneSpec("zone-b", 1, 500)));
+    final var members =
+        Set.of(MemberId.from("zone-a", 0), MemberId.from("zone-a", 1), MemberId.from("zone-b", 0));
+    final var oldDistribution =
+        new RoundRobinPartitionDistributor()
+            .distributePartitions(members, getSortedPartitionIds(3), 3);
+    final var oldTopology =
+        ConfigurationUtil.getClusterConfigFrom(oldDistribution, partitionConfig, "temp");
+
+    // when reassigning with a ZoneAwareConfig override
+    final var operations =
+        new PartitionReassignRequestTransformer(
+                members, Optional.of(3), Optional.of(3), Optional.of(zoneConfig))
+            .operations(oldTopology)
+            .get();
+
+    // then the new distribution matches the zone-aware layout, not round-robin
+    final var newTopology = TestTopologyChangeSimulator.apply(oldTopology, operations);
+    final var newDistribution = ConfigurationUtil.getPartitionDistributionFrom(newTopology, "temp");
+    final var expectedDistribution =
+        zoneConfig.toDistributor().distributePartitions(members, getSortedPartitionIds(3), 3);
+    assertThat(newDistribution).isEqualTo(expectedDistribution);
+  }
+
+  @Test
+  void shouldRejectReassignWhenClusterUsesFixedDistribution() {
+    // given a cluster whose topology declares FixedConfig
+    final var members = getClusterMembers(3);
+    final var oldDistribution =
+        new RoundRobinPartitionDistributor()
+            .distributePartitions(members, getSortedPartitionIds(3), 3);
+    final var oldTopology =
+        ConfigurationUtil.getClusterConfigFrom(oldDistribution, partitionConfig, "temp")
+            .setPartitionDistributorConfig(new FixedConfig());
+
+    // when
+    final var result =
+        new PartitionReassignRequestTransformer(
+                members, Optional.of(3), Optional.of(3), Optional.empty())
+            .operations(oldTopology);
+
+    // then
+    EitherAssert.assertThat(result).isLeft().left().isInstanceOf(InvalidRequest.class);
   }
 
   private List<PartitionId> getSortedPartitionIds(final int partitionCount) {

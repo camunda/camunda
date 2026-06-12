@@ -140,12 +140,23 @@ public final class ClusterConfigurationManagementRequestsHandler
   public ActorFuture<ClusterConfigurationChangeResponse> scaleCluster(
       final ClusterScaleRequest clusterScaleRequest) {
 
-    return handleRequest(
-        clusterScaleRequest.dryRun(),
-        new ClusterScaleRequestTransformer(
-            clusterScaleRequest.newClusterSize(),
-            clusterScaleRequest.newPartitionCount(),
-            clusterScaleRequest.newReplicationFactor()));
+    final ConfigurationChangeRequest transformer =
+        clusterScaleRequest
+            .zone()
+            .<ConfigurationChangeRequest>map(
+                zone ->
+                    new ZonedClusterScaleTransformer(
+                        clusterScaleRequest.brokerCount(),
+                        clusterScaleRequest.newPartitionCount(),
+                        clusterScaleRequest.newReplicationFactor(),
+                        zone))
+            .orElseGet(
+                () ->
+                    new ClusterScaleRequestTransformer(
+                        clusterScaleRequest.brokerCount(),
+                        clusterScaleRequest.newPartitionCount(),
+                        clusterScaleRequest.newReplicationFactor()));
+    return handleRequest(clusterScaleRequest.dryRun(), transformer);
   }
 
   @Override
@@ -158,7 +169,8 @@ public final class ClusterConfigurationManagementRequestsHandler
             clusterPatchRequest.membersToAdd(),
             clusterPatchRequest.membersToRemove(),
             clusterPatchRequest.newPartitionCount(),
-            clusterPatchRequest.newReplicationFactor()));
+            clusterPatchRequest.newReplicationFactor(),
+            clusterPatchRequest.newReplicationFactors()));
   }
 
   @Override

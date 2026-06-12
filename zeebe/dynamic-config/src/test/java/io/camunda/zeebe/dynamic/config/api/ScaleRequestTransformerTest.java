@@ -20,6 +20,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.StartPartitionScaleUp;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.dynamic.config.util.RoundRobinPartitionDistributor;
@@ -38,6 +39,8 @@ import net.jqwik.api.Property;
 import net.jqwik.api.ShrinkingMode;
 import net.jqwik.api.constraints.IntRange;
 import org.assertj.core.api.AssertionsForInterfaceTypes;
+import org.jspecify.annotations.Nullable;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 class ScaleRequestTransformerTest {
@@ -177,7 +180,7 @@ class ScaleRequestTransformerTest {
   void shouldScaleAndReassign(
       final int partitionCount,
       final int replicationFactor,
-      final PartitionDistributorConfig config,
+      final @Nullable PartitionDistributorConfig config,
       final Set<MemberId> oldMembers,
       final Set<MemberId> newMembers) {
     // given
@@ -208,54 +211,6 @@ class ScaleRequestTransformerTest {
     final var newDistribution = ConfigurationUtil.getPartitionDistributionFrom(newTopology, "temp");
     assertThat(newDistribution).isEqualTo(expectedNewDistribution);
     assertThat(newTopology.members().keySet()).containsExactlyInAnyOrderElementsOf(newMembers);
-  }
-
-  @Test
-  void shouldScaleOutZoneAwareCluster() {
-    // given: 2 zones, RF=3 (zone-a contributes 2 replicas, zone-b contributes 1)
-    final var config =
-        new PartitionDistributorConfig.ZoneAwareConfig(
-            List.of(new ZoneSpec("zone-a", 2, 1000), new ZoneSpec("zone-b", 1, 500)));
-
-    // old cluster: 2 zone-a brokers + 1 zone-b broker
-    final var oldMembers =
-        Set.of(MemberId.from("zone-a", 0), MemberId.from("zone-a", 1), MemberId.from("zone-b", 0));
-
-    // new cluster: 4 zone-a brokers + 2 zone-b brokers
-    final var newMembers =
-        Set.of(
-            MemberId.from("zone-a", 0),
-            MemberId.from("zone-a", 1),
-            MemberId.from("zone-a", 2),
-            MemberId.from("zone-a", 3),
-            MemberId.from("zone-b", 0),
-            MemberId.from("zone-b", 1));
-
-    shouldScaleAndReassign(3, 3, config, oldMembers, newMembers);
-  }
-
-  @Test
-  void shouldScaleInZoneAwareCluster() {
-    // given: 2 zones, RF=3 (zone-a contributes 2 replicas, zone-b contributes 1)
-    final var config =
-        new PartitionDistributorConfig.ZoneAwareConfig(
-            List.of(new ZoneSpec("zone-a", 2, 1000), new ZoneSpec("zone-b", 1, 500)));
-
-    // old cluster: 4 zone-a brokers + 2 zone-b brokers
-    final var oldMembers =
-        Set.of(
-            MemberId.from("zone-a", 0),
-            MemberId.from("zone-a", 1),
-            MemberId.from("zone-a", 2),
-            MemberId.from("zone-a", 3),
-            MemberId.from("zone-b", 0),
-            MemberId.from("zone-b", 1));
-
-    // new cluster: 2 zone-a brokers + 1 zone-b broker (minimal)
-    final var newMembers =
-        Set.of(MemberId.from("zone-a", 0), MemberId.from("zone-a", 1), MemberId.from("zone-b", 0));
-
-    shouldScaleAndReassign(3, 3, config, oldMembers, newMembers);
   }
 
   private List<PartitionId> getSortedPartitionIds(final int partitionCount) {
@@ -305,5 +260,34 @@ class ScaleRequestTransformerTest {
 
   SortedSet<Integer> partitionsInRange(final int from, final int to) {
     return new TreeSet<>(IntStream.range(from, to).boxed().toList());
+  }
+
+  @Nested
+  class ZoneAwareScaling {
+    static final Set<MemberId> SCALED_MEMBERS =
+        Set.of(
+            MemberId.from("zone-a", 0),
+            MemberId.from("zone-a", 1),
+            MemberId.from("zone-a", 2),
+            MemberId.from("zone-a", 3),
+            MemberId.from("zone-b", 0),
+            MemberId.from("zone-b", 1));
+
+    static final Set<MemberId> UNSCALED_MEMBERS =
+        Set.of(MemberId.from("zone-a", 0), MemberId.from("zone-a", 1), MemberId.from("zone-b", 0));
+
+    static final ZoneAwareConfig ZONE_AWARE_CONFIG =
+        new PartitionDistributorConfig.ZoneAwareConfig(
+            List.of(new ZoneSpec("zone-a", 2, 1000), new ZoneSpec("zone-b", 1, 500)));
+
+    @Test
+    void shouldScaleOutZoneAwareCluster() {
+      shouldScaleAndReassign(3, 3, ZONE_AWARE_CONFIG, UNSCALED_MEMBERS, SCALED_MEMBERS);
+    }
+
+    @Test
+    void shouldScaleInZoneAwareCluster() {
+      shouldScaleAndReassign(3, 3, ZONE_AWARE_CONFIG, SCALED_MEMBERS, UNSCALED_MEMBERS);
+    }
   }
 }

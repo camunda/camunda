@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.dynamic.config.api;
 
+import static java.util.Objects.requireNonNull;
+
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
@@ -21,6 +23,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.AwaitRedistributionCompletion;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.AwaitRelocationCompletion;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.StartPartitionScaleUp;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
@@ -31,27 +34,32 @@ import java.util.TreeSet;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import org.jspecify.annotations.NullMarked;
 
 /**
  * Add new partitions and reassign all partitions to the given members based on round-robin
  * strategy.
  */
+@NullMarked
 public class PartitionReassignRequestTransformer implements ConfigurationChangeRequest {
   final Set<MemberId> members;
   private final Optional<Integer> newReplicationFactor;
   private final Optional<Integer> newPartitionCount;
+  private final Optional<PartitionDistributorConfig> configOverride;
 
   public PartitionReassignRequestTransformer(
       final Set<MemberId> members,
       final Optional<Integer> newReplicationFactor,
-      final Optional<Integer> newPartitionCount) {
+      final Optional<Integer> newPartitionCount,
+      final Optional<PartitionDistributorConfig> configOverride) {
     this.members = members;
     this.newReplicationFactor = newReplicationFactor;
     this.newPartitionCount = newPartitionCount;
+    this.configOverride = configOverride;
   }
 
   public PartitionReassignRequestTransformer(final Set<MemberId> members) {
-    this(members, Optional.empty(), Optional.empty());
+    this(members, Optional.empty(), Optional.empty(), Optional.empty());
   }
 
   @Override
@@ -127,16 +135,24 @@ public class PartitionReassignRequestTransformer implements ConfigurationChangeR
     final var allPartitions =
         Stream.of(oldPartitions, newPartitions).flatMap(List::stream).toList();
 
+    final var effectiveConfig = configOverride.or(currentConfiguration::partitionDistributorConfig);
+    if (effectiveConfig.orElse(null) instanceof PartitionDistributorConfig.FixedConfig) {
+      return Either.left(
+          new InvalidRequest(
+              "Cannot reassign partitions: the cluster uses a fixed partition distribution"
+                  + " defined in each broker's static configuration"));
+    }
+    final var distributor =
+        configOverride
+            .map(PartitionDistributorConfig::toDistributor)
+            .orElseGet(currentConfiguration::partitionDistributor);
     final var newDistribution =
-        currentConfiguration
-            .partitionDistributor()
-            .distributePartitions(brokers, allPartitions, replicationFactor)
-            .stream()
+        distributor.distributePartitions(brokers, allPartitions, replicationFactor).stream()
             .collect(Collectors.toMap(PartitionMetadata::id, p -> p));
 
     for (final PartitionId partition : oldPartitions) {
-      final var newMetadata = newDistribution.get(partition);
-      final var oldMetadata = oldDistribution.get(partition);
+      final var newMetadata = requireNonNull(newDistribution.get(partition));
+      final var oldMetadata = requireNonNull(oldDistribution.get(partition));
       operations.addAll(movePartition(oldMetadata, newMetadata));
     }
     final var hasNewPartitions = !newPartitions.isEmpty();
@@ -144,7 +160,7 @@ public class PartitionReassignRequestTransformer implements ConfigurationChangeR
     if (hasNewPartitions) {
       operations.add(new StartPartitionScaleUp(coordinatorNodeId, newPartitionCount.get()));
       for (final PartitionId partition : newPartitions) {
-        final var newMetadata = newDistribution.get(partition);
+        final var newMetadata = requireNonNull(newDistribution.get(partition));
         operations.addAll(addPartition(newMetadata));
       }
       operations.addAll(

@@ -990,9 +990,10 @@ public class ProtoBufSerializer
     final var builder =
         Requests.ClusterScaleRequest.newBuilder().setDryRun(clusterScaleRequest.dryRun());
 
-    clusterScaleRequest.newClusterSize().ifPresent(builder::setNewClusterSize);
+    clusterScaleRequest.brokerCount().ifPresent(builder::setNewClusterSize);
     clusterScaleRequest.newReplicationFactor().ifPresent(builder::setNewReplicationFactor);
     clusterScaleRequest.newPartitionCount().ifPresent(builder::setNewPartitionCount);
+    clusterScaleRequest.zone().ifPresent(builder::setZone);
 
     return builder.build().toByteArray();
   }
@@ -1008,6 +1009,7 @@ public class ProtoBufSerializer
         .forEach(memberId -> builder.addMembersToAdd(memberId.id()));
     clusterPatchRequest.membersToRemove().stream()
         .forEach(memberId -> builder.addMembersToRemove(memberId.id()));
+    builder.putAllNewReplicationFactors(clusterPatchRequest.newReplicationFactors());
 
     return builder.build().toByteArray();
   }
@@ -1187,8 +1189,16 @@ public class ProtoBufSerializer
           clusterScaleRequest.hasNewPartitionCount()
               ? Optional.of(clusterScaleRequest.getNewPartitionCount())
               : Optional.empty();
+      final Optional<String> zone =
+          clusterScaleRequest.getZone().isEmpty()
+              ? Optional.empty()
+              : Optional.of(clusterScaleRequest.getZone());
       return new ClusterScaleRequest(
-          newClusterSize, newPartitionCount, newReplicationFactor, clusterScaleRequest.getDryRun());
+          newClusterSize,
+          newPartitionCount,
+          newReplicationFactor,
+          zone,
+          clusterScaleRequest.getDryRun());
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);
     }
@@ -1215,6 +1225,7 @@ public class ProtoBufSerializer
               .collect(Collectors.toSet()),
           newPartitionCount,
           newReplicationFactor,
+          Map.copyOf(clusterPatchRequest.getNewReplicationFactorsMap()),
           clusterPatchRequest.getDryRun());
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);

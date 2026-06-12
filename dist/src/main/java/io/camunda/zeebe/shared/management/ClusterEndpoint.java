@@ -41,6 +41,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -247,15 +248,29 @@ public class ClusterEndpoint {
       final Optional<Integer> newReplicationFactor =
           Optional.ofNullable(partitions)
               .map(ClusterConfigPatchRequestPartitions::getReplicationFactor);
+      final Map<String, Integer> newReplicationFactors =
+          partitions != null && partitions.getNewReplicationFactors() != null
+              ? partitions.getNewReplicationFactors()
+              : Map.of();
 
       if (isScale) {
         final var scaleRequest =
             new ClusterScaleRequest(
-                Optional.of(brokers.getCount()), newPartitionCount, newReplicationFactor, dryRun);
+                Optional.of(brokers.getCount()),
+                newPartitionCount,
+                newReplicationFactor,
+                Optional.ofNullable(request.getBrokers().getZone()).filter(z -> !z.isBlank()),
+                dryRun);
         return ClusterApiUtils.mapOperationResponse(
             requestSender.scaleCluster(scaleRequest).join());
       } else {
-        return patchCluster(dryRun, request, brokers, newPartitionCount, newReplicationFactor);
+        return patchCluster(
+            dryRun,
+            request,
+            brokers,
+            newPartitionCount,
+            newReplicationFactor,
+            newReplicationFactors);
       }
 
     } catch (final Exception error) {
@@ -268,7 +283,8 @@ public class ClusterEndpoint {
       final ClusterConfigPatchRequest request,
       final ClusterConfigPatchRequestBrokers brokers,
       final Optional<Integer> newPartitionCount,
-      final Optional<Integer> newReplicationFactor) {
+      final Optional<Integer> newReplicationFactor,
+      final Map<String, Integer> newReplicationFactors) {
     final Set<MemberId> brokersToAdd =
         brokers != null
             ? request.getBrokers().getAdd().stream()
@@ -290,7 +306,12 @@ public class ClusterEndpoint {
         members -> {
           final var patchRequest =
               new ClusterPatchRequest(
-                  brokersToAdd, brokersToRemove, newPartitionCount, newReplicationFactor, dryRun);
+                  brokersToAdd,
+                  brokersToRemove,
+                  newPartitionCount,
+                  newReplicationFactor,
+                  newReplicationFactors,
+                  dryRun);
           return ClusterApiUtils.mapOperationResponse(
               requestSender.patchCluster(patchRequest).join());
         });

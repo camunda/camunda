@@ -78,6 +78,12 @@ schemas:
             description: The new number of brokers. Can be omitted if the broker count is not changed
               or if the brokers to add or remove is provided.
             example: 12
+          zone:
+            type: string
+            description: On zone-aware clusters, the zone whose broker count should be changed to
+              'count'. Required when 'count' is set and the cluster is zone-aware; must be omitted
+              otherwise.
+            example: zone-a
       partitions:
         type: object
         properties:
@@ -92,6 +98,17 @@ schemas:
             format: int32
             description: The new replication factor. Can be omitted if the replication factor is not changed.
             example: 3
+          newReplicationFactors:
+            type: object
+            description: Per-zone replica counts for zone-aware clusters (zone name → replica count per
+              partition). When provided on a zone-aware cluster, takes precedence over
+              'replicationFactor' and updates the gossiped PartitionDistributorConfig.
+            additionalProperties:
+              type: integer
+              format: int32
+            example:
+              zone-a: 2
+              zone-b: 1
 
   PlannedOperationsResponse:
     title: PlannedOperationsResponse

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.dynamic.config.api;
 
 import static io.camunda.zeebe.test.util.asserts.EitherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
@@ -18,8 +19,11 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedExce
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionBootstrapOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.UpdatePartitionDistributorConfigOperation;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.dynamic.config.util.RoundRobinPartitionDistributor;
@@ -29,7 +33,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.assertj.core.api.Assertions;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
 final class ClusterPatchRequestTransformerTest {
@@ -54,7 +58,8 @@ final class ClusterPatchRequestTransformerTest {
                 patchRequest.membersToAdd(),
                 patchRequest.membersToRemove(),
                 patchRequest.newPartitionCount(),
-                patchRequest.newReplicationFactor())
+                patchRequest.newReplicationFactor(),
+                Map.of())
             .operations(ClusterConfiguration.init());
 
     // then
@@ -79,7 +84,8 @@ final class ClusterPatchRequestTransformerTest {
                 patchRequest.membersToAdd(),
                 patchRequest.membersToRemove(),
                 patchRequest.newPartitionCount(),
-                patchRequest.newReplicationFactor())
+                patchRequest.newReplicationFactor(),
+                Map.of())
             .operations(ClusterConfiguration.init());
 
     // then
@@ -219,6 +225,174 @@ final class ClusterPatchRequestTransformerTest {
         expectedDistribution);
   }
 
+  @Test
+  void shouldRejectNewReplicationFactorsOnNonZoneAwareCluster() {
+    // given a plain cluster without ZoneAwareConfig
+    final var currentTopology =
+        ClusterConfiguration.init()
+            .addMember(id0, MemberState.initializeAsActive(Map.of()))
+            .addMember(id1, MemberState.initializeAsActive(Map.of()))
+            .updateMember(id0, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
+            .updateMember(id1, m -> m.addPartition(2, PartitionState.active(1, partitionConfig)));
+
+    // when
+    final var result =
+        new ClusterPatchRequestTransformer(
+                Set.of(), Set.of(), Optional.empty(), Optional.empty(), Map.of("zone-a", 2))
+            .operations(currentTopology);
+
+    // then
+    assertThat(result)
+        .isLeft()
+        .left()
+        .isInstanceOf(InvalidRequest.class)
+        .satisfies(
+            e ->
+                assertThat(e)
+                    .hasMessageContaining("newReplicationFactors")
+                    .hasMessageContaining("supported on zone-aware clusters"));
+  }
+
+  @Test
+  void shouldRejectUnknownZoneInNewReplicationFactors() {
+    // given a zone-aware cluster with zones zone-a and zone-b
+    final var currentTopology = zoneAwareTopology();
+
+    // when requesting a replica count for a zone that does not exist
+    final var result =
+        new ClusterPatchRequestTransformer(
+                Set.of(), Set.of(), Optional.empty(), Optional.empty(), Map.of("zone-x", 2))
+            .operations(currentTopology);
+
+    // then
+    assertThat(result)
+        .isLeft()
+        .left()
+        .isInstanceOf(InvalidRequest.class)
+        .satisfies(
+            e ->
+                assertThat(e)
+                    .hasMessageContaining(
+                        "Unknown zones in 'partitions.newReplicationFactors': [zone-x]. Known zones: [zone-a, zone-b]"));
+  }
+
+  @Test
+  void shouldRejectPlainReplicationFactorOnZoneAwareCluster() {
+    // given a zone-aware cluster
+    final var currentTopology = zoneAwareTopology();
+
+    // when
+    final var result =
+        new ClusterPatchRequestTransformer(
+                Set.of(), Set.of(), Optional.empty(), Optional.of(2), Map.of())
+            .operations(currentTopology);
+
+    // then
+    assertThat(result)
+        .isLeft()
+        .left()
+        .isInstanceOf(InvalidRequest.class)
+        .satisfies(
+            e ->
+                assertThat(e)
+                    .hasMessageContaining(
+                        "Changing the replication factor is not supported on zone-aware clusters"));
+  }
+
+  @Test
+  void shouldEmitUpdatePartitionDistributorConfigFirstWhenChangingZoneReplicationFactor() {
+    // given a zone-aware cluster: zone-a rf=2, zone-b rf=1
+    final var currentTopology = zoneAwareTopology();
+
+    // when increasing zone-a's replication factor to 3
+    final var result =
+        new ClusterPatchRequestTransformer(
+                Set.of(MemberId.from("zone-a", 2)),
+                Set.of(),
+                Optional.empty(),
+                Optional.empty(),
+                Map.of("zone-a", 3))
+            .operations(currentTopology);
+
+    // then the first operation gossips the new distributor config
+    assertThat(result).isRight();
+    final var operations = result.get();
+    assertThat(operations)
+        .isNotEmpty()
+        .first()
+        .isEqualTo(
+            new UpdatePartitionDistributorConfigOperation(
+                currentTopology.members().firstKey(),
+                new ZoneAwareConfig(
+                    List.of(new ZoneSpec("zone-a", 3, 1000), new ZoneSpec("zone-b", 1, 500)))));
+  }
+
+  @Test
+  void shouldScaleZoneAwareClusterWithPartitionCountAndZoneReplicationFactor() {
+    // given a zone-aware cluster: zone-a rf=2, zone-b rf=1 -- 2 partitions
+    final var initialConfig =
+        new ZoneAwareConfig(
+            List.of(new ZoneSpec("zone-a", 2, 1000), new ZoneSpec("zone-b", 1, 500)));
+    final var oldMembers =
+        Set.of(MemberId.from("zone-a", 0), MemberId.from("zone-a", 1), MemberId.from("zone-b", 0));
+    final var oldDistribution =
+        initialConfig.toDistributor().distributePartitions(oldMembers, getSortedPartitionIds(2), 3);
+    var currentTopology =
+        ConfigurationUtil.getClusterConfigFrom(oldDistribution, partitionConfig, "temp")
+            .setPartitionDistributorConfig(initialConfig);
+    currentTopology = new RoutingStateInitializer(2).modify(currentTopology).join();
+
+    // when adding a zone-a broker, raising zone-a rf=3, and scaling to 4 partitions
+    final var newMember = MemberId.from("zone-a", 2);
+    final var newConfig =
+        new ZoneAwareConfig(
+            List.of(new ZoneSpec("zone-a", 3, 1000), new ZoneSpec("zone-b", 1, 500)));
+    final int newPartitionCount = 4;
+    final var result =
+        new ClusterPatchRequestTransformer(
+                Set.of(newMember),
+                Set.of(),
+                Optional.of(newPartitionCount),
+                Optional.empty(),
+                Map.of("zone-a", 3))
+            .operations(currentTopology);
+
+    // then operations apply cleanly and produce the expected zone-aware distribution
+    assertThat(result).isRight();
+    final var operations = result.get();
+    assertThat(operations.get(0)).isInstanceOf(UpdatePartitionDistributorConfigOperation.class);
+
+    final var newTopology = TestTopologyChangeSimulator.apply(currentTopology, operations);
+    final var newMembers =
+        Stream.concat(Stream.of(newMember), oldMembers.stream()).collect(Collectors.toSet());
+    final var expectedDistribution =
+        newConfig
+            .toDistributor()
+            .distributePartitions(newMembers, getSortedPartitionIds(newPartitionCount), 4);
+    final var newDistribution = ConfigurationUtil.getPartitionDistributionFrom(newTopology, "temp");
+    assertThat(newDistribution)
+        .usingRecursiveComparison()
+        .ignoringCollectionOrder()
+        .isEqualTo(expectedDistribution);
+    assertThat(newTopology.partitionDistributorConfig()).contains(newConfig);
+    assertThat(newTopology.partitionCount()).isEqualTo(newPartitionCount);
+    assertThat(newTopology.minReplicationFactor())
+        .isEqualTo(4)
+        .isEqualTo(newConfig.replicationFactor());
+  }
+
+  private ClusterConfiguration zoneAwareTopology() {
+    final var config =
+        new ZoneAwareConfig(
+            List.of(new ZoneSpec("zone-a", 2, 1000), new ZoneSpec("zone-b", 1, 500)));
+    final var members =
+        Set.of(MemberId.from("zone-a", 0), MemberId.from("zone-a", 1), MemberId.from("zone-b", 0));
+    final var distribution =
+        config.toDistributor().distributePartitions(members, getSortedPartitionIds(2), 3);
+    return ConfigurationUtil.getClusterConfigFrom(distribution, partitionConfig, "temp")
+        .setPartitionDistributorConfig(config);
+  }
+
   private void applyRequestAndVerifyResultingTopology(
       final int oldPartitionCount,
       final int partitionCount,
@@ -233,7 +407,8 @@ final class ClusterPatchRequestTransformerTest {
                 patchRequest.membersToAdd(),
                 patchRequest.membersToRemove(),
                 patchRequest.newPartitionCount(),
-                patchRequest.newReplicationFactor())
+                patchRequest.newReplicationFactor(),
+                Map.of())
             .operations(oldClusterTopology);
     assertThat(result).isRight();
     final var operations = result.get();
@@ -244,19 +419,19 @@ final class ClusterPatchRequestTransformerTest {
 
     // then
     final var newDistribution = ConfigurationUtil.getPartitionDistributionFrom(newTopology, "temp");
-    Assertions.assertThat(newDistribution)
+    assertThat(newDistribution)
         .usingRecursiveComparison()
         .ignoringCollectionOrder()
         .isEqualTo(expectedNewDistribution);
-    Assertions.assertThat(newTopology.members().keySet())
+    assertThat(newTopology.members().keySet())
         .describedAs("Expected cluster members")
         .containsExactlyInAnyOrderElementsOf(expectedMembers);
-    Assertions.assertThat(newTopology.partitionCount()).isEqualTo(partitionCount);
+    assertThat(newTopology.partitionCount()).isEqualTo(partitionCount);
     if (oldPartitionCount == partitionCount) {
-      Assertions.assertThat(operations)
+      assertThat(operations)
           .allSatisfy(
               op ->
-                  Assertions.assertThat(op)
+                  assertThat(op)
                       .isNotInstanceOfAny(
                           ScaleUpOperation.class, PartitionBootstrapOperation.class));
     } else if (partitionCount > oldPartitionCount) {
@@ -265,7 +440,7 @@ final class ClusterPatchRequestTransformerTest {
               .filter(ScaleUpOperation.class::isInstance)
               .map(Object::getClass)
               .collect(Collectors.toSet());
-      Assertions.assertThat(scaleUpInstances)
+      assertThat(scaleUpInstances)
           .isEqualTo(
               Set.of(
                   ScaleUpOperation.StartPartitionScaleUp.class,

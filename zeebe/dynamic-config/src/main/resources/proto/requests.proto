@@ -42,6 +42,7 @@ message ClusterScaleRequest {
   optional uint32 newClusterSize = 1;
   optional uint32 newPartitionCount = 2;
   optional uint32 newReplicationFactor = 3;
+  string zone= 5;
   bool dryRun = 4;
 }
 
@@ -51,6 +52,7 @@ message ClusterPatchRequest {
   optional uint32 newPartitionCount = 3;
   optional uint32 newReplicationFactor = 4;
   bool dryRun = 5;
+  map<string, uint32> newReplicationFactors = 6;
 }
 
 message UpdateRoutingStateRequest{

@@ -16,8 +16,11 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.RoundRobinConfig;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
-import io.camunda.zeebe.dynamic.config.util.RoundRobinPartitionDistributor;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -37,6 +40,8 @@ final class ClusterScaleRequestTransformerTest {
   private final MemberId id3 = MemberId.from("3");
 
   private final DynamicPartitionConfig partitionConfig = DynamicPartitionConfig.init();
+  private final ZoneAwareConfig initialZoneAwareConfig =
+      new ZoneAwareConfig(List.of(new ZoneSpec("zoneA", 2, 2), new ZoneSpec("zoneB", 1, 1)));
 
   @Property(tries = 10)
   void shouldScaleBrokersWhenPartitionsUnchanged(
@@ -120,16 +125,42 @@ final class ClusterScaleRequestTransformerTest {
       final Optional<Integer> newReplicationFactor,
       final int oldClusterSize,
       final Optional<Integer> newClusterSize) {
+    shouldScaleBrokersAndPartitionsByCount(
+        oldPartitionCount,
+        newPartitionCount,
+        oldReplicationFactor,
+        newReplicationFactor,
+        oldClusterSize,
+        newClusterSize,
+        Optional.empty(),
+        Optional.empty(),
+        Optional.empty());
+  }
+
+  void shouldScaleBrokersAndPartitionsByCount(
+      final int oldPartitionCount,
+      final Optional<Integer> newPartitionCount,
+      final int oldReplicationFactor,
+      final Optional<Integer> newReplicationFactor,
+      final int oldClusterSize,
+      final Optional<Integer> newClusterSize,
+      final Optional<PartitionDistributorConfig> distributorConfig,
+      final Optional<PartitionDistributorConfig> newDistributorConfig,
+      final Optional<String> zone) {
     // given
     final var expectedNewDistribution =
-        new RoundRobinPartitionDistributor()
+        newDistributorConfig
+            .orElse(new RoundRobinConfig())
+            .toDistributor()
             .distributePartitions(
                 getClusterMembers(newClusterSize.orElse(oldClusterSize)),
                 getSortedPartitionIds(newPartitionCount.orElse(oldPartitionCount)),
                 newReplicationFactor.orElse(oldReplicationFactor));
 
     final var oldDistribution =
-        new RoundRobinPartitionDistributor()
+        distributorConfig
+            .orElse(new RoundRobinConfig())
+            .toDistributor()
             .distributePartitions(
                 getClusterMembers(oldClusterSize),
                 getSortedPartitionIds(oldPartitionCount),
@@ -145,7 +176,8 @@ final class ClusterScaleRequestTransformerTest {
 
     // when
     final var patchRequest =
-        new ClusterScaleRequest(newClusterSize, newPartitionCount, newReplicationFactor, false);
+        new ClusterScaleRequest(
+            newClusterSize, newPartitionCount, newReplicationFactor, zone, false);
 
     applyRequestAndVerifyResultingTopology(
         newPartitionCount.orElse(oldPartitionCount),
@@ -165,7 +197,7 @@ final class ClusterScaleRequestTransformerTest {
     // when
     final var result =
         new ClusterScaleRequestTransformer(
-                patchRequest.newClusterSize(),
+                patchRequest.brokerCount(),
                 patchRequest.newPartitionCount(),
                 patchRequest.newReplicationFactor())
             .operations(oldClusterTopology);

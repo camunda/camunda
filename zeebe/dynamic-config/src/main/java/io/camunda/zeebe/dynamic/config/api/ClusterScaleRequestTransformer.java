@@ -17,18 +17,20 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 public final class ClusterScaleRequestTransformer implements ConfigurationChangeRequest {
 
-  private final Optional<Integer> newClusterSize;
+  private final Optional<Integer> brokerCount;
   private final Optional<Integer> newPartitionCount;
   private final Optional<Integer> newReplicationFactor;
 
   public ClusterScaleRequestTransformer(
-      final Optional<Integer> newClusterSize,
+      final Optional<Integer> brokerCount,
       final Optional<Integer> newPartitionCount,
       final Optional<Integer> newReplicationFactor) {
-    this.newClusterSize = newClusterSize;
+    this.brokerCount = brokerCount;
     this.newPartitionCount = newPartitionCount;
     this.newReplicationFactor = newReplicationFactor;
   }
@@ -36,7 +38,7 @@ public final class ClusterScaleRequestTransformer implements ConfigurationChange
   @Override
   public Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
       final ClusterConfiguration clusterConfiguration) {
-    if (newClusterSize.isEmpty() && newPartitionCount.isEmpty() && newReplicationFactor.isEmpty()) {
+    if (brokerCount.isEmpty() && newPartitionCount.isEmpty() && newReplicationFactor.isEmpty()) {
       // Nothing to change
       return Either.right(List.of());
     }
@@ -49,8 +51,8 @@ public final class ClusterScaleRequestTransformer implements ConfigurationChange
 
     // replicationFactor and partitionCount is validated in the delegated transformer.
     final var newSetOfMembers =
-        IntStream.range(0, newClusterSize.orElse(clusterConfiguration.members().size()))
-            .mapToObj(i -> MemberId.from(String.valueOf(i)))
+        IntStream.range(0, brokerCount.orElse(clusterConfiguration.members().size()))
+            .mapToObj(i -> MemberId.from((String) null, i))
             .collect(Collectors.toSet());
     return new ScaleRequestTransformer(newSetOfMembers, newReplicationFactor, newPartitionCount)
         .operations(clusterConfiguration);

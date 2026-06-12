@@ -24,15 +24,18 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
+import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossipState;
 import io.camunda.zeebe.dynamic.config.protocol.Topology;
 import io.camunda.zeebe.dynamic.config.protocol.Topology.ExporterStateEnum;
 import io.camunda.zeebe.dynamic.config.protocol.Topology.MessageCorrelation;
 import io.camunda.zeebe.dynamic.config.protocol.Topology.MessageCorrelation.HashMod;
 import io.camunda.zeebe.dynamic.config.protocol.Topology.RoutingState;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling;
 import java.util.List;
 import java.util.Map;
@@ -161,7 +164,8 @@ final class ProtoBufSerializerTest {
   void shouldEncodeAndDecodeClusterScaleRequest() {
     // given
     final var clusterScaleRequest =
-        new ClusterScaleRequest(Optional.of(3), Optional.of(15), Optional.of(4), true);
+        new ClusterScaleRequest(
+            Optional.of(3), Optional.of(15), Optional.of(4), Optional.empty(), true);
 
     // when
     final var encodedRequest = protoBufSerializer.encodeClusterScaleRequest(clusterScaleRequest);
@@ -180,6 +184,7 @@ final class ProtoBufSerializerTest {
             Set.of(MemberId.from("4"), MemberId.from("5")),
             Optional.of(10),
             Optional.of(4),
+            Map.of("zoneA", 2, "zoneB", 1),
             true);
 
     // when
@@ -262,6 +267,74 @@ final class ProtoBufSerializerTest {
             state -> {
               assertThat(state.requestHandling()).isEqualTo(new RequestHandling.AllPartitions(3));
             });
+  }
+
+  @Test
+  void shouldEncodeAndDecodeRoundRobinPartitionDistributorConfig() {
+    // given
+    final var config =
+        ClusterConfiguration.init()
+            .setPartitionDistributorConfig(new PartitionDistributorConfig.RoundRobinConfig());
+    final var gossipState = new ClusterConfigurationGossipState();
+    gossipState.setClusterConfiguration(config);
+
+    // when
+    final var decoded = protoBufSerializer.decode(protoBufSerializer.encode(gossipState));
+
+    // then
+    assertThat(decoded.getClusterConfiguration().partitionDistributorConfig())
+        .hasValue(new PartitionDistributorConfig.RoundRobinConfig());
+  }
+
+  @Test
+  void shouldEncodeAndDecodeZoneAwarePartitionDistributorConfig() {
+    // given
+    final var zoneAwareConfig =
+        new PartitionDistributorConfig.ZoneAwareConfig(
+            List.of(
+                new PartitionDistributorConfig.ZoneSpec("zone-a", 2, 1000),
+                new PartitionDistributorConfig.ZoneSpec("zone-b", 1, 500)));
+    final var config = ClusterConfiguration.init().setPartitionDistributorConfig(zoneAwareConfig);
+    final var gossipState = new ClusterConfigurationGossipState();
+    gossipState.setClusterConfiguration(config);
+
+    // when
+    final var decoded = protoBufSerializer.decode(protoBufSerializer.encode(gossipState));
+
+    // then
+    assertThat(decoded.getClusterConfiguration().partitionDistributorConfig())
+        .hasValue(zoneAwareConfig);
+  }
+
+  @Test
+  void shouldEncodeAndDecodeFixedPartitionDistributorConfig() {
+    // given
+    final var config =
+        ClusterConfiguration.init()
+            .setPartitionDistributorConfig(new PartitionDistributorConfig.FixedConfig());
+    final var gossipState = new ClusterConfigurationGossipState();
+    gossipState.setClusterConfiguration(config);
+
+    // when
+    final var decoded = protoBufSerializer.decode(protoBufSerializer.encode(gossipState));
+
+    // then
+    assertThat(decoded.getClusterConfiguration().partitionDistributorConfig())
+        .hasValue(new PartitionDistributorConfig.FixedConfig());
+  }
+
+  @Test
+  void shouldDecodePartitionDistributorConfigAsEmptyWhenAbsent() {
+    // given — a ClusterConfiguration with no partitionDistributorConfig set
+    final var config = ClusterConfiguration.init();
+    final var gossipState = new ClusterConfigurationGossipState();
+    gossipState.setClusterConfiguration(config);
+
+    // when
+    final var decoded = protoBufSerializer.decode(protoBufSerializer.encode(gossipState));
+
+    // then
+    assertThat(decoded.getClusterConfiguration().partitionDistributorConfig()).isEmpty();
   }
 
   @Test
