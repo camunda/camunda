@@ -18,6 +18,8 @@ package io.camunda.process.test.impl.judge;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.camunda.client.api.response.DocumentReferenceResponse;
 import io.camunda.client.impl.response.DocumentReferenceResponseImpl;
+import io.camunda.client.protocol.rest.DocumentReference;
+import io.camunda.client.protocol.rest.DocumentReference.CamundaDocumentTypeEnum;
 import io.camunda.process.test.api.judge.ResolvedDocument;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.assertions.util.CamundaAssertJsonMapper;
@@ -41,8 +43,8 @@ import org.slf4j.LoggerFactory;
 public final class DocumentReferenceResolver {
 
   // Discriminator field/value identifying a Camunda document reference in variable JSON.
-  static final String DOCUMENT_TYPE_FIELD = "camunda.document.type";
-  static final String DOCUMENT_TYPE_VALUE = "camunda";
+  static final String DOCUMENT_TYPE_FIELD = DocumentReference.JSON_PROPERTY_CAMUNDA_DOCUMENT_TYPE;
+  static final String DOCUMENT_TYPE_VALUE = CamundaDocumentTypeEnum.CAMUNDA.getValue();
 
   private static final Logger LOG = LoggerFactory.getLogger(DocumentReferenceResolver.class);
 
