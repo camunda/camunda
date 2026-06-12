@@ -45,16 +45,16 @@ public class ApiFiltersConfiguration {
 
   private static final PathPatternParser PATTERN_PARSER = new PathPatternParser();
 
-  private static List<PathPattern> patterns(final String... patterns) {
-    return Arrays.stream(patterns).map(PATTERN_PARSER::parse).toList();
-  }
-
   // Spring Security's FilterChainProxy registers at SecurityProperties.DEFAULT_FILTER_ORDER (-100);
   // the physical-tenant filter must run just before it so components inside the security chain can
   // read the tenant id. We inline the value rather than depend on spring-boot-security for one
   // constant — and DEFAULT_FILTER_ORDER is a compile-time constant, so a reference would inline the
   // value anyway and leave the dependency flagged as unused by dependency:analyze. See ADR-0003.
   private static final int PHYSICAL_TENANT_FILTER_ORDER = -101;
+
+  private static List<PathPattern> patterns(final String... patterns) {
+    return Arrays.stream(patterns).map(PATTERN_PARSER::parse).toList();
+  }
 
   /**
    * Stamps the physical tenant id from {@code /physical-tenants/{id}/...} paths onto the request
