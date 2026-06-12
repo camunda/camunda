@@ -1999,3 +1999,61 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           user_description: "General"
+
+  utils-get-concurrency-group-for-optimize-docker-snapshot:
+    needs: [ check-results ]
+    uses: ./.github/workflows/generate-concurrency-group.yml
+    secrets: inherit
+    permissions:
+      contents: read
+    if: always() && needs.check-results.result == 'success'
+    with:
+      base_group_name: deploy-optimize-docker-snapshot
+
+  deploy-optimize-docker-snapshot:
+    name: Deploy snapshot Optimize Docker image
+    needs: [ check-results, utils-get-snapshot-docker-tag, utils-get-concurrency-group-for-optimize-docker-snapshot ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    if: always() && needs.check-results.result == 'success' && github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
+    concurrency:
+      group: ${{ needs.utils-get-concurrency-group-for-optimize-docker-snapshot.outputs.concurrency_group_name }}
+      cancel-in-progress: false
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: ./.github/actions/setup-build
+        with:
+          dockerhub: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          minimus: true
+      - uses: ./.github/actions/build-frontend
+        id: build-optimize-fe
+        with:
+          directory: ./optimize/client
+      - name: Generate Optimize production .tar.gz
+        uses: ./.github/actions/run-maven
+        with:
+          parameters: install -f optimize -DskipTests -Dskip.docker -PskipFrontendBuild,runAssembly -T1
+      - uses: ./.github/actions/build-platform-docker
+        id: build-optimize-docker
+        with:
+          repository: camunda/optimize
+          version: ${{ needs.utils-get-snapshot-docker-tag.outputs.version_tag }}
+          distball: optimize-distro/target/camunda-optimize-*-production.tar.gz
+          platforms: ${{ env.DOCKER_PLATFORMS }}
+          dockerfile: optimize.Dockerfile
+          push: true
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          user_description: "team-core-features"
