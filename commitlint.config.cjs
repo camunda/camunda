@@ -3,6 +3,14 @@ module.exports = {
 
     helpUrl: 'https://github.com/camunda/camunda/blob/main/CONTRIBUTING.md/#commit-message-guidelines',
 
+    // Ignore legacy commits that pre-date commitlint enforcement on this branch.
+    // These commits were added during the Renovate PR (#54397) on stable/8.7
+    // and cannot be rewritten without a force-push.
+    ignores: [
+        (commit) => commit.startsWith('Potential fix for pull request finding'),
+        (commit) => commit.startsWith('Align plugin.version.failsafe with plugin.version.surefire'),
+    ],
+
     // Rules are made up by a name and a configuration array. The configuration array contains:
     // - Level [0..2]: 0 disables the rule. For 1 it will be considered a warning for 2 an error.
     // - Applicable always|never: never inverts the rule.
