@@ -10,6 +10,7 @@ package io.camunda.search.clients.transformers.entity;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.search.clients.transformers.ServiceTransformer;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
+import io.camunda.search.entities.WaitStateConditionDetails;
 import io.camunda.search.entities.WaitStateDetails;
 import io.camunda.search.entities.WaitStateDetails.WaitStateType;
 import io.camunda.search.entities.WaitStateEntity;
@@ -58,6 +59,7 @@ public class WaitStateEntityTransformer
       return switch (WaitStateType.valueOf(waitStateType)) {
         case JOB -> OBJECT_MAPPER.readValue(detailsJson, WaitStateJobDetails.class);
         case MESSAGE -> OBJECT_MAPPER.readValue(detailsJson, WaitStateMessageDetails.class);
+        case CONDITION -> OBJECT_MAPPER.readValue(detailsJson, WaitStateConditionDetails.class);
       };
     } catch (final Exception e) {
       LOG.warn("Failed to parse wait state details for type {}: {}", waitStateType, e.getMessage());

@@ -18,5 +18,6 @@ package io.camunda.client.api.search.enums;
 public enum WaitStateType {
   JOB,
   MESSAGE,
+  CONDITION,
   UNKNOWN_ENUM_VALUE;
 }

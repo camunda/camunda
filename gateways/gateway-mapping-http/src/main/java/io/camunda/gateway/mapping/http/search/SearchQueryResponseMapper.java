@@ -46,6 +46,7 @@ import io.camunda.gateway.protocol.model.ClusterVariableResult;
 import io.camunda.gateway.protocol.model.ClusterVariableScopeEnum;
 import io.camunda.gateway.protocol.model.ClusterVariableSearchQueryResult;
 import io.camunda.gateway.protocol.model.ClusterVariableSearchResult;
+import io.camunda.gateway.protocol.model.ConditionWaitStateDetails;
 import io.camunda.gateway.protocol.model.CorrelatedMessageSubscriptionResult;
 import io.camunda.gateway.protocol.model.CorrelatedMessageSubscriptionSearchQueryResult;
 import io.camunda.gateway.protocol.model.DecisionDefinitionResult;
@@ -208,6 +209,7 @@ import io.camunda.search.entities.UsageMetricTUStatisticsEntity.UsageMetricTUSta
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
+import io.camunda.search.entities.WaitStateConditionDetails;
 import io.camunda.search.entities.WaitStateEntity;
 import io.camunda.search.entities.WaitStateJobDetails;
 import io.camunda.search.entities.WaitStateMessageDetails;
@@ -696,6 +698,7 @@ public final class SearchQueryResponseMapper {
                       .retries(retries)
                       .build())
               .messageDetails(null)
+              .conditionDetails(null)
               .build();
       case WaitStateMessageDetails(final var messageName, final var correlationKey) ->
           base.jobDetails(null)
@@ -703,6 +706,16 @@ public final class SearchQueryResponseMapper {
                   MessageWaitStateDetails.Builder.create()
                       .messageName(messageName)
                       .correlationKey(correlationKey)
+                      .build())
+              .conditionDetails(null)
+              .build();
+      case WaitStateConditionDetails(final var expression, final var events) ->
+          base.jobDetails(null)
+              .messageDetails(null)
+              .conditionDetails(
+                  ConditionWaitStateDetails.Builder.create()
+                      .expression(expression)
+                      .events(events)
                       .build())
               .build();
     };

@@ -68,6 +68,10 @@ public class ElementInstanceWaitStateResultImpl implements ElementInstanceWaitSt
         return item.getMessageDetails() == null
             ? null
             : new MessageWaitStateDetailsImpl(item.getMessageDetails());
+      case CONDITION:
+        return item.getConditionDetails() == null
+            ? null
+            : new ConditionWaitStateDetailsImpl(item.getConditionDetails());
       default:
         return null;
     }

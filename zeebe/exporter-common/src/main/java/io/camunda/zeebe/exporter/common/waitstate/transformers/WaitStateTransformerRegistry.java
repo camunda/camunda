@@ -24,7 +24,7 @@ public final class WaitStateTransformerRegistry {
    */
   public static List<Supplier<WaitStateTransformer<?>>>
       getAllPartitionWaitStateTransformerSuppliers() {
-    return List.of(JobBasedWaitStateTransformer::new);
+    return List.of(JobBasedWaitStateTransformer::new, ConditionBasedWaitStateTransformer::new);
   }
 
   /**

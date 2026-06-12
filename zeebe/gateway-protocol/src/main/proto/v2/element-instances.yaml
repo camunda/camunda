@@ -805,6 +805,7 @@ components:
         - rootProcessInstanceKey
         - jobDetails
         - messageDetails
+        - conditionDetails
       properties:
         waitStateType:
           description: The type of waiting state an element instance is in.
@@ -845,6 +846,11 @@ components:
           nullable: true
           allOf:
             - $ref: '#/components/schemas/MessageWaitStateDetails'
+        conditionDetails:
+          description: Condition details, present when waitStateType is CONDITION.
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/ConditionWaitStateDetails'
 
     WaitStateTypeEnum:
       description: The type of waiting state an element instance is in.
@@ -852,6 +858,7 @@ components:
       enum:
         - JOB
         - MESSAGE
+        - CONDITION
 
     JobWaitStateDetails:
       type: object
@@ -897,6 +904,21 @@ components:
           description: The correlation key for the message subscription (null for start events).
           nullable: true
           type: string
+
+    ConditionWaitStateDetails:
+      type: object
+      required:
+        - expression
+        - events
+      properties:
+        expression:
+          description: The condition expression that must evaluate to true to proceed.
+          type: string
+        events:
+          description: The variable events that trigger condition re-evaluation.
+          type: array
+          items:
+            type: string
 
     AdHocSubProcessActivateActivityReference:
       type: object
