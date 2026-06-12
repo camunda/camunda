@@ -74,6 +74,10 @@ public class AgenticControlDashboardService {
       "agenticKpiExecutionMedianTokensName";
   public static final String KPI_EXECUTION_MEDIAN_TOKENS_DESCRIPTION =
       "agenticKpiExecutionMedianTokensDescription";
+  public static final String KPI_DURATION_P50_NAME = "agenticKpiDurationP50Name";
+  public static final String KPI_DURATION_P50_DESCRIPTION = "agenticKpiDurationP50Description";
+  public static final String KPI_DURATION_P95_NAME = "agenticKpiDurationP95Name";
+  public static final String KPI_DURATION_P95_DESCRIPTION = "agenticKpiDurationP95Description";
 
   // Deterministic report IDs — derived from fixed seed strings so IDs are stable across restarts
   // and DB reimports. Same seed always produces the same UUID (UUID v3 / name-based).
@@ -91,6 +95,10 @@ public class AgenticControlDashboardService {
   public static final String KPI_MEDIAN_TOKENS_REPORT_ID =
       UUID.nameUUIDFromBytes("agentic-kpi-median-tokens".getBytes(StandardCharsets.UTF_8))
           .toString();
+  public static final String KPI_DURATION_P50_REPORT_ID =
+      UUID.nameUUIDFromBytes("agentic-duration-p50".getBytes(StandardCharsets.UTF_8)).toString();
+  public static final String KPI_DURATION_P95_REPORT_ID =
+      UUID.nameUUIDFromBytes("agentic-duration-p95".getBytes(StandardCharsets.UTF_8)).toString();
 
   private static final long INSTANCE_END_DATE_ROLLING_DAYS = 30L;
 
@@ -123,7 +131,7 @@ public class AgenticControlDashboardService {
   }
 
   public void reconcile() {
-    // Always upsert the five KPI reports so config changes are applied on every restart.
+    // Always upsert all KPI reports so config changes are applied on every restart.
     // Report IDs are deterministic so upserts are safe and tile references never orphan.
     final List<DashboardReportTileDto> tiles = new ArrayList<>();
     tiles.add(buildCompletedInstancesReport());
@@ -131,6 +139,8 @@ public class AgenticControlDashboardService {
     tiles.add(buildIncidentRateReport());
     tiles.add(buildAvgTokensReport());
     tiles.add(buildMedianTokensReport());
+    tiles.add(buildP50DurationReport());
+    tiles.add(buildP95DurationReport());
 
     // Always upsert the dashboard too — tile list can grow across versions and the cold-start
     // guard would leave an existing deployment stuck on the old layout.
@@ -274,6 +284,54 @@ public class AgenticControlDashboardService {
     reportWriter.createOrUpdateSingleProcessReport(
         id, null, reportData, nameKey, descriptionKey, null);
     return buildTile(id, position, new DimensionDto(9, 2), Map.of("section", "token"));
+  }
+
+  private DashboardReportTileDto buildP50DurationReport() {
+    return buildDurationPercentileReport(
+        50.0,
+        KPI_DURATION_P50_REPORT_ID,
+        KPI_DURATION_P50_NAME,
+        KPI_DURATION_P50_DESCRIPTION,
+        new PositionDto(0, 4));
+  }
+
+  private DashboardReportTileDto buildP95DurationReport() {
+    return buildDurationPercentileReport(
+        95.0,
+        KPI_DURATION_P95_REPORT_ID,
+        KPI_DURATION_P95_NAME,
+        KPI_DURATION_P95_DESCRIPTION,
+        new PositionDto(6, 4));
+  }
+
+  private DashboardReportTileDto buildDurationPercentileReport(
+      final double percentile,
+      final String reportId,
+      final String nameKey,
+      final String descriptionKey,
+      final PositionDto position) {
+    final SingleReportConfigurationDto config = new SingleReportConfigurationDto();
+    config.setAggregationTypes(new AggregationDto(AggregationType.PERCENTILE, percentile));
+    final ProcessReportDataDto reportData =
+        ProcessReportDataDto.builder()
+            .definitions(Collections.emptyList())
+            .configuration(config)
+            .view(new ProcessViewDto(ProcessViewEntity.PROCESS_INSTANCE, ViewProperty.DURATION))
+            .groupBy(new NoneGroupByDto())
+            .distributedBy(new NoneDistributedByDto())
+            .visualization(ProcessVisualization.NUMBER)
+            .filter(
+                ProcessFilterBuilder.filter()
+                    .completedInstancesOnly()
+                    .add()
+                    .hasAgentInstances()
+                    .add()
+                    .buildList())
+            .agenticControlReport(true)
+            .build();
+    reportWriter.createOrUpdateSingleProcessReport(
+        reportId, null, reportData, nameKey, descriptionKey, null);
+    return buildTile(reportId, position, new DimensionDto(9, 2), Map.of("section", "duration"));
   }
 
   private DashboardDefinitionRestDto buildAgentDashboard(final List<DashboardReportTileDto> tiles) {
