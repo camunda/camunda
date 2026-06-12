@@ -25,6 +25,16 @@ public interface MessageState {
       DirectBuffer correlationKey,
       MessageVisitor visitor);
 
+  /**
+   * Visits buffered messages that carry the given {@code businessId} (within the tenant), in
+   * message-key (publish) order. Only messages that were published with a business id are indexed,
+   * so this never visits a business-id-less message. Used to re-drive a same-partition
+   * message-start that was skipped on Business-ID uniqueness once the holder frees the business id
+   * (ADR 0002 D5).
+   */
+  void visitMessagesWithBusinessId(
+      final String tenantId, DirectBuffer businessId, MessageVisitor visitor);
+
   StoredMessage getMessage(long messageKey);
 
   /**
