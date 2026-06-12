@@ -26,6 +26,7 @@ SECURITY.md                 @camunda/orchestration-cluster
 /.idea/                     @camunda/orchestration-cluster
 /build-tools/               @camunda/orchestration-cluster
 /configuration/             @camunda/orchestration-cluster
+/configuration-api/         @camunda/orchestration-cluster
 /dist/                      @camunda/orchestration-cluster
 /docker-notice.txt          @camunda/orchestration-cluster
 /monitor/                   @camunda/orchestration-cluster

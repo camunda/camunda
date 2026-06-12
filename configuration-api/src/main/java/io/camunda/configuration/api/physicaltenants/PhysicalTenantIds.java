@@ -10,8 +10,8 @@ package io.camunda.configuration.api.physicaltenants;
 import java.util.Set;
 
 /**
- * Provides the set of known physical tenant IDs. Implemented by the application layer and injected
- * into gateway components that need to validate tenant IDs without coupling to the configuration
+ * Provides the set of known physical tenant IDs. Implemented by the configuration layer and
+ * injected into components that need to validate tenant IDs without coupling to the configuration
  * module.
  */
 @FunctionalInterface
