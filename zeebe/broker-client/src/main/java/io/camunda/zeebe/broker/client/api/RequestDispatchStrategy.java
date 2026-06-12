@@ -21,9 +21,13 @@ public interface RequestDispatchStrategy {
   int MAX_RANDOM_OFFSET = 128;
 
   /**
+   * Determines the partition to dispatch a request to within the given partition group. Numeric
+   * partition IDs overlap across partition groups, so the returned ID is only meaningful together
+   * with the group it was determined for.
+   *
    * @return {@link BrokerClusterState#PARTITION_ID_NULL} if no partition can be determined
    */
-  int determinePartition(final BrokerTopologyManager topologyManager);
+  int determinePartition(final BrokerTopologyManager topologyManager, final String partitionGroup);
 
   /**
    * Returns a dispatch strategy which will perform a stateful round robin between the partitions,

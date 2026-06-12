@@ -61,11 +61,6 @@ public final class BrokerTopologyManagerImpl extends Actor
   }
 
   @Override
-  public BrokerClusterState getTopology() {
-    return getTopology(Protocol.DEFAULT_PARTITION_GROUP_NAME);
-  }
-
-  @Override
   public BrokerClusterState getTopology(final String physicalTenantId) {
     return topologyPerGroup.getOrDefault(
         physicalTenantId, BrokerClientTopologyImpl.uninitialized());

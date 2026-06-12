@@ -87,7 +87,7 @@ public final class RequestRetryHandler {
           requestSender,
       final BrokerResponseConsumer<BrokerResponseT> responseConsumer,
       final Consumer<Throwable> throwableConsumer) {
-    final var topology = topologyManager.getTopology();
+    final var topology = topologyManager.getTopology(request.getPartitionGroup());
     if (topology == null || topology.getPartitionsCount() == 0) {
       throwableConsumer.accept(new NoTopologyAvailableException());
       return;
@@ -129,7 +129,8 @@ public final class RequestRetryHandler {
       final BrokerResponseConsumer<BrokerResponseT> responseConsumer,
       final Consumer<Throwable> throwableConsumer) {
     try {
-      request.setPartitionId(strategy.determinePartition(topologyManager));
+      request.setPartitionId(
+          strategy.determinePartition(topologyManager, request.getPartitionGroup()));
     } catch (final Exception e) {
       throwableConsumer.accept(e);
       return;
@@ -157,7 +158,8 @@ public final class RequestRetryHandler {
       final Consumer<Throwable> throwableConsumer,
       final Collection<Throwable> errors) {
 
-    final int partitionId = determineNextPartition(triedPartitions, partitionCount);
+    final int partitionId =
+        determineNextPartition(triedPartitions, partitionCount, request.getPartitionGroup());
     if (partitionId == BrokerClusterState.PARTITION_ID_NULL) {
       final var exception = new RequestRetriesExhaustedException();
       errors.forEach(exception::addSuppressed);
@@ -196,10 +198,11 @@ public final class RequestRetryHandler {
    * concurrent retries scatter across partitions instead of all cascading to the same next
    * partition.
    */
-  private int determineNextPartition(final Set<Integer> triedPartitions, final int partitionCount) {
+  private int determineNextPartition(
+      final Set<Integer> triedPartitions, final int partitionCount, final String partitionGroup) {
     final var seen = new HashSet<Integer>();
     for (int i = 0; i < partitionCount; i++) {
-      final int partition = dispatchStrategy.determinePartition(topologyManager);
+      final int partition = dispatchStrategy.determinePartition(topologyManager, partitionGroup);
       if (partition == BrokerClusterState.PARTITION_ID_NULL) {
         return BrokerClusterState.PARTITION_ID_NULL;
       }

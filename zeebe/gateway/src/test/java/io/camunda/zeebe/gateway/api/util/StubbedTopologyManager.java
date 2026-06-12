@@ -39,7 +39,8 @@ public final class StubbedTopologyManager implements BrokerTopologyManager {
   }
 
   @Override
-  public BrokerClusterState getTopology() {
+  public BrokerClusterState getTopology(final String physicalTenantId) {
+    // a single shared state for all partition groups; group-specific stubbing not needed yet
     return clusterState;
   }
 
