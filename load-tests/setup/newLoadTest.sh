@@ -195,7 +195,7 @@ sed_inplace "s/__ENABLE_OPTIMIZE__/$enable_optimize/" Makefile
 # Values shared with the chart (NAMESPACE, AVAILABILITY_ZONE, AUTHOR) flow into
 # the upstream yaml files via the same sed pass.
 sed_inplace "s/__NAMESPACE__/$namespace/"                       load-test-values.yaml resources/*.yaml
-sed_targets=(*.yaml resources/namespace.yaml)
+sed_targets=(*.yaml resources/*.yaml)
 [[ -d databases ]] && sed_targets+=(databases/*.yaml)
 sed_inplace "s/__AVAILABILITY_ZONE__/$availability_zone/" "${sed_targets[@]}"
 sed_inplace "s/__AUTHOR__/$git_author/"                   "${sed_targets[@]}"

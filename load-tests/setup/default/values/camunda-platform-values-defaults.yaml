@@ -360,3 +360,9 @@ prometheusServiceMonitor:
   labels:
     release: monitoring
   scrapeInterval: 30s
+
+# Legacy settings
+elasticsearch:
+  # Never deploy the Elasticsearch Helm Chart through the Camunda Platform Helm Chart dependency.
+  # Elasticsearch will be deployed explicitly, as required.
+  enabled: false

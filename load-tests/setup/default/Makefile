@@ -63,14 +63,17 @@ platform_values += -f camunda-platform-values-$(secondary_storage).yaml
 # Disable Optimize if not enabled
 ifneq ($(enable_optimize),true)
 	platform_values += --set optimize.enabled=false
-
-	ifneq ($(filter $(secondary_storage),postgresql mysql mariadb mssql oracle),)
-		platform_values += --set elasticsearch.enabled=false
-	endif
 else
-	# Optimize needs Elasticsearch or OpenSearch, so enable Elasticsearch if
-	# we are not already creating a cluster for secondary storage.
-	ifeq ($(filter $(secondary_storage),elasticsearch opensearch),)
+	ifneq ($(secondary_storage),opensearch)
+		# When deploying the OpenSearch secondary storage, Optimize is
+		# configured via the camunda-platform-values-opensearch.yaml file.
+		#
+		# If we are not using OpenSearch as a secondary storage, Optimize will
+		# be configured with the Elasticsearch backend, either:
+		# * Using the same Elasticsearch cluster as the secondary storage, if
+		#   the secondary storage is also Elasticsearch.
+		# * Or using its dedicated Elasticsearch cluster, different from the
+		#   configured secondary storage.
 		platform_values += -f camunda-platform-values-optimize-elasticsearch.yaml
 	endif
 endif
@@ -80,13 +83,13 @@ platform_values_stable := $(platform_values) -f values-stable.yaml
 
 ifeq ($(secondary_storage),elasticsearch)
 	install_es_prom_exporter := true
-	es_prom_exporter_es_uri := http://elastic:9200
+	es_prom_exporter_es_uri := http://elasticsearch-es-http:9200
 else ifeq ($(secondary_storage),opensearch)
 	install_es_prom_exporter := true
 	es_prom_exporter_es_uri := http://opensearch:9200
 else ifeq ($(enable_optimize),true)
 	install_es_prom_exporter := true
-	es_prom_exporter_es_uri := http://elastic:9200
+	es_prom_exporter_es_uri := http://elasticsearch-es-http:9200
 else
 	install_es_prom_exporter := false
 endif
@@ -136,9 +139,9 @@ create-credentials:
 	@echo "Applying camunda-credentials secret for namespace $(namespace)..."
 	kubectl apply -n $(namespace) -f resources/camunda-credentials.yaml
 
-# Install secondary storage based on configuration (PostgreSQL, MySQL, MariaDB, MSSQL, Oracle, OpenSearch)
+# Install secondary storage based on configuration (PostgreSQL, MySQL, MariaDB, MSSQL, Oracle, Elasticsearch, OpenSearch)
 .PHONY: install-storage
-install-storage:
+install-storage: install-storage-optimize
 ifeq ($(secondary_storage),postgresql)
 	@echo "Installing PostgreSQL database for namespace $(namespace)..."
 	# Install Postgres database - configuration provided via camunda-platform-values-defaults.yaml, camunda-platform-values-rdbms.yaml and camunda-platform-values-postgresql.yaml
@@ -171,9 +174,36 @@ else ifeq ($(secondary_storage),opensearch)
 		--version "2.31.0" \
 		--namespace $(namespace) \
 		$(platform_values)
+else ifeq ($(secondary_storage),elasticsearch)
+	@echo "Installing Elasticsearch as secondary storage for namespace $(namespace)..."
+	$(MAKE) install-elasticsearch
 else
 	@echo "Skipping secondary storage installation (secondary_storage=$(secondary_storage))"
 endif
+
+# Install the storage specifically for Optimize.
+# We can either reuse the configured secondary storage (if using Elasticsearch
+# or OpenSearch), or install a dedicated Elasticsearch cluster otherwise.
+.PHONY: install-storage-optimize
+install-storage-optimize:
+ifeq ($(enable_optimize),true)
+ifneq ($(filter $(secondary_storage),elasticsearch opensearch),)
+	@echo "Optimize will use the configured secondary storage=$(secondary_storage)"
+else
+	@echo "Installing Elasticsearch only for Optimize (secondary storage=$(secondary_storage))"
+	$(MAKE) install-elasticsearch
+endif
+else
+	@echo "Optimize is not enabled; its storage will NOT be configured."
+endif
+
+# Install the Elasticsearch custom resource to deploy the Elasticsearch cluster.
+.PHONY: install-elasticsearch
+install-elasticsearch:
+	@echo "Installing Elasticsearch cluster for namespace $(namespace)..."
+	# Deploy Elasticsearch via the ECK Operator Elasticsearch custom resource.
+	# The ECK operator must be pre-installed in the cluster.
+	kubectl apply --server-side --namespace $(namespace) -f resources/elasticsearch.yaml
 
 # Install Elasticsearch Prometheus exporter if Elasticsearch/OpenSearch is deployed (secondary storage or Optimize)
 .PHONY: install-elasticsearch-exporter
@@ -312,6 +342,8 @@ else ifeq ($(secondary_storage),opensearch)
 	@echo "Cleaning up OpenSearch cluster for namespace $(namespace)..."
 	-helm --namespace $(namespace) uninstall opensearch
 	-kubectl delete -n $(namespace) pvc -l app.kubernetes.io/name=opensearch
+else ifeq ($(secondary_storage),elasticsearch)
+	@# Elasticsearch is deleted recursively via the deletion of the namespace below.
 endif
 	@echo "Deleting namespace $(namespace) and waiting for finalization..."
 	# `--wait` (default) blocks until the namespace is fully gone. We intentionally
