@@ -470,4 +470,57 @@ class AwsDocumentStoreTest {
     final var request = requestCaptor.getValue();
     assertThat(request.bucket()).isEqualTo(BUCKET_NAME);
   }
+
+  @Test
+  void createDocumentInBufferedModeShouldPutHashInMetadataAndSkipCopy() {
+    // given
+    final var bufferedStore =
+        new AwsDocumentStore(
+            BUCKET_NAME,
+            BUCKET_TTL,
+            BUCKET_PATH,
+            s3Client,
+            Executors.newSingleThreadExecutor(),
+            preSigner,
+            true);
+
+    final var documentId = "buffered-document-id";
+    final var content = "buffered-content".getBytes();
+    final var inputStream = new ByteArrayInputStream(content);
+
+    final var metadata =
+        new DocumentMetadataModel(
+            "text/plain",
+            "buffered.txt",
+            null,
+            (long) content.length,
+            null,
+            null,
+            Collections.emptyMap());
+
+    when(s3Client.headObject(any(HeadObjectRequest.class)))
+        .thenThrow(S3Exception.builder().statusCode(HttpStatusCode.NOT_FOUND).build());
+    when(s3Client.putObject(any(PutObjectRequest.class), any(RequestBody.class)))
+        .thenReturn(mock(PutObjectResponse.class));
+
+    final var request = new DocumentCreationRequest(documentId, inputStream, metadata);
+
+    // when
+    final var result = bufferedStore.createDocument(request).join();
+
+    // then
+    assertThat(result.isRight()).isTrue();
+    assertThat(result.get().documentId()).isEqualTo(documentId);
+
+    // and — the buffered path embeds the hash directly in the put's metadata, so the
+    // metadata-replacing copy that the streaming path performs is unnecessary.
+    final var putRequestCaptor = ArgumentCaptor.forClass(PutObjectRequest.class);
+    verify(s3Client).putObject(putRequestCaptor.capture(), any(RequestBody.class));
+    final var putRequest = putRequestCaptor.getValue();
+    assertThat(putRequest.key()).isEqualTo(BUCKET_PATH + documentId);
+    assertThat(putRequest.bucket()).isEqualTo(BUCKET_NAME);
+    assertThat(putRequest.metadata().get("content-hash"))
+        .isEqualTo("78636f5cf96b5a61fc7147b4ee4c2e503ee1a3463128978fb02f6d33bcfcea59");
+    verify(s3Client, never()).copyObject(any(CopyObjectRequest.class));
+  }
 }
