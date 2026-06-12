@@ -7,6 +7,7 @@
  */
 
 import styled from 'styled-components';
+import {ContentSwitcher} from '@carbon/react';
 
 type ActorType = 'user' | 'assistant' | 'system';
 
@@ -64,4 +65,28 @@ const Message = styled.div`
   color: var(--cds-text-primary);
 `;
 
-export {Container, MessageBlock, ActorLabel, Message, MessageActions};
+const ModalContent = styled(Message)`
+  max-height: 70vh;
+`;
+
+const ModalToolbar = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: var(--cds-spacing-05);
+`;
+
+const ViewSwitcher = styled(ContentSwitcher)`
+  width: 15rem;
+`;
+
+export {
+  Container,
+  MessageBlock,
+  ActorLabel,
+  Message,
+  MessageActions,
+  ModalContent,
+  ModalToolbar,
+  ViewSwitcher,
+};
