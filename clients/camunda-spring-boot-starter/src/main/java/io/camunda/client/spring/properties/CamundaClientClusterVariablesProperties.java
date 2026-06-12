@@ -15,6 +15,7 @@
  */
 package io.camunda.client.spring.properties;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class CamundaClientClusterVariablesProperties {
