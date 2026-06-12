@@ -76,7 +76,9 @@ const queries = {
 			queryKey: queryKeys.getProcessDefinitionInstanceStatistics(body),
 			queryFn: async (): Promise<GetProcessDefinitionInstanceStatisticsResponseBody> => {
 				const {response, error} = await request(endpoints.getProcessDefinitionInstanceStatistics(body));
-				if (error !== null) throw error;
+				if (error !== null) {
+					throw error;
+				}
 				return response.json();
 			},
 		}),
@@ -86,7 +88,9 @@ const queries = {
 			queryKey: queryKeys.getIncidentProcessInstanceStatisticsByError(body),
 			queryFn: async (): Promise<GetIncidentProcessInstanceStatisticsByErrorResponseBody> => {
 				const {response, error} = await request(endpoints.getIncidentProcessInstanceStatisticsByError(body));
-				if (error !== null) throw error;
+				if (error !== null) {
+					throw error;
+				}
 				return response.json();
 			},
 		}),
