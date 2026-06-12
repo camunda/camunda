@@ -10,7 +10,10 @@ package io.camunda.zeebe.broker.bootstrap;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
+import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
+import io.camunda.zeebe.broker.partitioning.RecoveryPartitionManager;
+import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -22,6 +25,7 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
   private static final int ERROR_CODE_ON_INCONSISTENT_TOPOLOGY = 3;
 
   private final String physicalTenantId;
+  private TopologyManagerImpl topologyManager;
 
   PartitionManagerStep(final String physicalTenantId) {
     this.physicalTenantId = physicalTenantId;
@@ -32,71 +36,42 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
     return "Partition Manager [" + physicalTenantId + "]";
   }
 
-  private boolean isDefaultPhysicalTenant() {
-    return PartitionManagerImpl.DEFAULT_GROUP_NAME.equals(physicalTenantId);
-  }
-
   @Override
   void startupInternal(
       final BrokerStartupContext brokerStartupContext,
       final ConcurrencyControl concurrencyControl,
       final ActorFuture<BrokerStartupContext> startupFuture) {
-    final var partitionManager =
-        new PartitionManagerImpl(
-            physicalTenantId,
-            brokerStartupContext.getConcurrencyControl(),
-            brokerStartupContext.getActorSchedulingService(),
-            brokerStartupContext.getBrokerConfiguration(),
-            brokerStartupContext.getBrokerInfo(),
-            brokerStartupContext.getClusterServices(),
-            brokerStartupContext.getHealthCheckService(),
-            brokerStartupContext.getDiskSpaceUsageMonitor(),
-            brokerStartupContext.getPartitionListeners(),
-            brokerStartupContext.getPartitionRaftListeners(),
-            brokerStartupContext.getSnapshotApiRequestHandler(),
-            brokerStartupContext.getExporterRepository(),
-            brokerStartupContext.getGatewayBrokerTransport(),
-            brokerStartupContext.getJobStreamService().jobStreamer(),
-            brokerStartupContext.getClusterConfigurationService(),
-            brokerStartupContext.getMeterRegistry(),
-            brokerStartupContext.getBrokerClient(),
-            brokerStartupContext.getRocksDbResources(),
-            brokerStartupContext.getSecurityConfiguration(),
-            brokerStartupContext.getSearchClientsProxy(),
-            brokerStartupContext.getBrokerRequestAuthorizationConverter());
-    concurrencyControl.run(
-        () -> {
-          try {
-            // Only the default physical tenant participates in dynamic cluster configuration
-            // changes. ClusterConfigurationService has single-slot listener/executor registration,
-            // and other physical tenants are outside the management API's scope in M1.
-            if (isDefaultPhysicalTenant()) {
-              brokerStartupContext
-                  .getClusterConfigurationService()
-                  .registerInconsistentConfigurationListener(
-                      (newTopology, oldTopology) -> {
-                        final var clusterCfg =
-                            brokerStartupContext.getBrokerConfiguration().getCluster();
-                        shutdownOnInconsistentTopology(
-                            clusterCfg.getZone(),
-                            clusterCfg.getNodeId(),
-                            brokerStartupContext.getSpringBrokerBridge(),
-                            newTopology,
-                            oldTopology);
-                      });
+
+    final var brokerInfo = brokerStartupContext.getBrokerInfo();
+
+    topologyManager =
+        new TopologyManagerImpl(
+            brokerStartupContext.getClusterServices().getMembershipService(),
+            brokerInfo.withPartitionGroup(physicalTenantId));
+    try {
+      final var partitionStartupFuture =
+          brokerStartupContext
+              .getActorSchedulingService()
+              .submitActor(topologyManager)
+              .thenApply((ignore) -> buildPartitionManager(brokerStartupContext, topologyManager))
+              .thenAccept(
+                  (partitionManager) -> {
+                    partitionManager.start();
+                    brokerStartupContext.addPartitionManager(physicalTenantId, partitionManager);
+                  });
+
+      concurrencyControl.runOnCompletion(
+          partitionStartupFuture,
+          (ignore, error) -> {
+            if (error == null) {
+              startupFuture.complete(brokerStartupContext);
+            } else {
+              startupFuture.completeExceptionally(error);
             }
-            partitionManager.start();
-            brokerStartupContext.addPartitionManager(physicalTenantId, partitionManager);
-            if (isDefaultPhysicalTenant()) {
-              brokerStartupContext
-                  .getClusterConfigurationService()
-                  .registerPartitionChangeExecutors(partitionManager, partitionManager);
-            }
-            startupFuture.complete(brokerStartupContext);
-          } catch (final Exception e) {
-            startupFuture.completeExceptionally(e);
-          }
-        });
+          });
+    } catch (final Exception e) {
+      startupFuture.completeExceptionally(e);
+    }
   }
 
   @Override
@@ -110,15 +85,15 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
       return;
     }
 
-    if (isDefaultPhysicalTenant()) {
+    if (PartitionManager.isDefaultPhysicalTenant(physicalTenantId)) {
       brokerShutdownContext.getClusterConfigurationService().removePartitionChangeExecutor();
     }
 
     concurrencyControl.runOnCompletion(
-        partitionManager.stop(),
+        partitionManager.stop().andThen(ignore -> topologyManager.closeAsync(), concurrencyControl),
         (ok, error) -> {
           brokerShutdownContext.removePartitionManager(physicalTenantId);
-          if (isDefaultPhysicalTenant()) {
+          if (PartitionManager.isDefaultPhysicalTenant(physicalTenantId)) {
             brokerShutdownContext
                 .getClusterConfigurationService()
                 .removeInconsistentConfigurationListener();
@@ -129,6 +104,76 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
             shutdownFuture.complete(brokerShutdownContext);
           }
         });
+  }
+
+  private PartitionManager buildPartitionManager(
+      final BrokerStartupContext brokerStartupContext, final TopologyManagerImpl topologyManager) {
+    final var clusterConfiguration =
+        brokerStartupContext.getClusterConfigurationService().getInitialClusterConfiguration();
+
+    if (PartitionManager.isDefaultPhysicalTenant(physicalTenantId)) {
+      brokerStartupContext
+          .getClusterConfigurationService()
+          .registerInconsistentConfigurationListener(
+              (newTopology, oldTopology) -> {
+                final var clusterCfg = brokerStartupContext.getBrokerConfiguration().getCluster();
+                shutdownOnInconsistentTopology(
+                    clusterCfg.getZone(),
+                    clusterCfg.getNodeId(),
+                    brokerStartupContext.getSpringBrokerBridge(),
+                    newTopology,
+                    oldTopology);
+              });
+    }
+
+    if (clusterConfiguration.recovery()) {
+      LOGGER.info("Partition group in recovery, starting RecoveryPartitionManager");
+      return recoveryPartitionManager(brokerStartupContext, topologyManager);
+    } else {
+      return partitionManager(brokerStartupContext, topologyManager);
+    }
+  }
+
+  PartitionManager partitionManager(
+      final BrokerStartupContext brokerStartupContext, final TopologyManagerImpl topologyManager) {
+
+    return new PartitionManagerImpl(
+        physicalTenantId,
+        brokerStartupContext.getConcurrencyControl(),
+        brokerStartupContext.getActorSchedulingService(),
+        brokerStartupContext.getBrokerConfiguration(),
+        brokerStartupContext.getBrokerInfo(),
+        brokerStartupContext.getClusterServices(),
+        brokerStartupContext.getHealthCheckService(),
+        brokerStartupContext.getDiskSpaceUsageMonitor(),
+        brokerStartupContext.getPartitionListeners(),
+        brokerStartupContext.getPartitionRaftListeners(),
+        brokerStartupContext.getSnapshotApiRequestHandler(),
+        brokerStartupContext.getExporterRepository(),
+        brokerStartupContext.getGatewayBrokerTransport(),
+        brokerStartupContext.getJobStreamService().jobStreamer(),
+        brokerStartupContext.getClusterConfigurationService(),
+        brokerStartupContext.getMeterRegistry(),
+        brokerStartupContext.getBrokerClient(),
+        brokerStartupContext.getRocksDbResources(),
+        brokerStartupContext.getSecurityConfiguration(),
+        brokerStartupContext.getSearchClientsProxy(),
+        brokerStartupContext.getBrokerRequestAuthorizationConverter(),
+        topologyManager);
+  }
+
+  PartitionManager recoveryPartitionManager(
+      final BrokerStartupContext brokerStartupContext, final TopologyManagerImpl topologyManager) {
+
+    return new RecoveryPartitionManager(
+        physicalTenantId,
+        brokerStartupContext.getBrokerConfiguration().getData().getDirectory(),
+        brokerStartupContext.getConcurrencyControl(),
+        brokerStartupContext.getClusterConfigurationService(),
+        brokerStartupContext.getClusterServices(),
+        brokerStartupContext.getActorSchedulingService(),
+        brokerStartupContext.getMeterRegistry(),
+        topologyManager);
   }
 
   private void shutdownOnInconsistentTopology(

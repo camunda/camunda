@@ -11,7 +11,7 @@ import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
-import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
+import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.system.management.PartitionStatus.ClockStatus;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.scheduler.Actor;
@@ -41,9 +41,9 @@ import org.slf4j.Logger;
 public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminService {
 
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
-  private final PartitionManagerImpl partitionManager;
+  private final PartitionManager partitionManager;
 
-  public BrokerAdminServiceImpl(final PartitionManagerImpl partitionManager) {
+  public BrokerAdminServiceImpl(final PartitionManager partitionManager) {
     this.partitionManager = partitionManager;
   }
 
