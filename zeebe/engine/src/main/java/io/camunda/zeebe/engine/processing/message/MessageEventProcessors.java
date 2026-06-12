@@ -174,6 +174,7 @@ public final class MessageEventProcessors {
                 subscriptionCommandSender,
                 keyGenerator,
                 clock,
+                businessIdUniquenessEnabled,
                 writers))
         .onCommand(
             ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
