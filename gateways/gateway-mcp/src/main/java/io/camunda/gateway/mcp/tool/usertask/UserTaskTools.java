@@ -18,8 +18,8 @@ import static io.camunda.gateway.mcp.tool.ToolDescriptions.USER_TASK_KEY_POSITIV
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.VARIABLE_FILTER_FORMAT_NOTE;
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.VARIABLE_VALUE_RETURN_FORMAT;
 
+import io.camunda.authentication.pt.PhysicalTenantContext;
 import io.camunda.gateway.mapping.http.RequestMapper;
-import io.camunda.gateway.mapping.http.physicaltenants.PhysicalTenantContext;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;

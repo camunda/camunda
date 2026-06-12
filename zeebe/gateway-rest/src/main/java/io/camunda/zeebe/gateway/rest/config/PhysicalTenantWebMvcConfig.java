@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.config;
 
-import io.camunda.gateway.mapping.http.physicaltenants.PhysicalTenantContext;
+import io.camunda.authentication.pt.PhysicalTenantContext;
 import io.camunda.zeebe.gateway.rest.interceptor.PhysicalTenantInterceptor;
 import io.camunda.zeebe.gateway.rest.mapper.PhysicalTenantRequestMappingHandlerMapping;
 import io.camunda.zeebe.gateway.rest.resolver.PhysicalTenantIdArgumentResolver;

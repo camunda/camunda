@@ -11,9 +11,9 @@ import static io.camunda.gateway.mcp.tool.ToolDescriptions.EVENTUAL_CONSISTENCY_
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.PROCESS_INSTANCE_KEY_NOT_NULL_MESSAGE;
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.PROCESS_INSTANCE_KEY_POSITIVE_MESSAGE;
 
+import io.camunda.authentication.pt.PhysicalTenantContext;
 import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.mapping.http.SimpleRequestMapper;
-import io.camunda.gateway.mapping.http.physicaltenants.PhysicalTenantContext;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;

@@ -7,8 +7,8 @@
  */
 package io.camunda.gateway.mcp.tool.cluster;
 
+import io.camunda.authentication.pt.PhysicalTenantContext;
 import io.camunda.gateway.mapping.http.ResponseMapper;
-import io.camunda.gateway.mapping.http.physicaltenants.PhysicalTenantContext;
 import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
 import io.camunda.service.registry.ServiceRegistry;
