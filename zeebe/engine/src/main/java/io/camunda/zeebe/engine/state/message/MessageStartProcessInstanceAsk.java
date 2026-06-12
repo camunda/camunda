@@ -23,8 +23,23 @@ import org.agrona.concurrent.UnsafeBuffer;
  * MessageStartProcessInstanceRequestRecord}.
  *
  * <p>Keyed by {@code (messageKey, processDefinitionKey)} — the pair that uniquely identifies an
- * outstanding ask from this partition. When any of the three reply intents is applied, the entry is
- * removed.
+ * outstanding ask from this partition. The entry is removed when the ask succeeds ({@code STARTED}
+ * applied locally) or the buffered message expires; a rejection ({@code UNIQUENESS_REJECTED} /
+ * {@code NO_SUBSCRIPTION_REJECTED}) instead keeps the entry and increments its {@code
+ * rejectionCount} so it is retried under back-off.
+ *
+ * <p>The {@code rejectionCount} field is {@code P_K}-local retry bookkeeping — how many times this
+ * ask has been rejected so far — not part of the cross-partition request. It is deliberately absent
+ * from {@link #wrap(MessageStartProcessInstanceRequestRecord)} and {@link
+ * #populateRecord(MessageStartProcessInstanceRequestRecord)}: an un-replied ask carries a count of
+ * {@code 0} (the base re-send cadence), and each rejection reply increments it via the rejection
+ * applier — a pure, clock-free function of the prior persisted value, so it stays deterministic on
+ * replay. The applier stores only the count, not a back-off duration: deriving the duration needs
+ * the configured base/cap, and appliers must not read mutable config. The scheduler (which may read
+ * config) turns the count into the next-retry interval, {@code min(baseInterval * 2^rejectionCount,
+ * cap)}. Persisting the count — rather than holding it in the transient send tracker — keeps a
+ * long-blocked ask from resetting to base-interval storming on every leader change. It defaults to
+ * {@code 0} so values persisted before this field existed decode unchanged.
  */
 public final class MessageStartProcessInstanceAsk extends UnpackedObject implements DbValue {
 
@@ -42,9 +57,10 @@ public final class MessageStartProcessInstanceAsk extends UnpackedObject impleme
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final LongProperty messageDeadlineProp = new LongProperty("messageDeadline", -1L);
+  private final LongProperty rejectionCountProp = new LongProperty("rejectionCount", 0L);
 
   public MessageStartProcessInstanceAsk() {
-    super(11);
+    super(12);
     declareProperty(messageKeyProp)
         .declareProperty(messageNameProp)
         .declareProperty(correlationKeyProp)
@@ -55,7 +71,8 @@ public final class MessageStartProcessInstanceAsk extends UnpackedObject impleme
         .declareProperty(messageStartEventSubscriptionKeyProp)
         .declareProperty(variablesProp)
         .declareProperty(tenantIdProp)
-        .declareProperty(messageDeadlineProp);
+        .declareProperty(messageDeadlineProp)
+        .declareProperty(rejectionCountProp);
   }
 
   /**
@@ -226,6 +243,20 @@ public final class MessageStartProcessInstanceAsk extends UnpackedObject impleme
 
   public MessageStartProcessInstanceAsk setMessageDeadline(final long messageDeadline) {
     messageDeadlineProp.setValue(messageDeadline);
+    return this;
+  }
+
+  /**
+   * How many times this ask has been rejected. {@code 0} for an un-replied ask; incremented by the
+   * rejection applier on each rejection reply. The scheduler turns it into the next-retry interval,
+   * {@code min(baseInterval * 2^rejectionCount, cap)}.
+   */
+  public long getRejectionCount() {
+    return rejectionCountProp.getValue();
+  }
+
+  public MessageStartProcessInstanceAsk setRejectionCount(final long rejectionCount) {
+    rejectionCountProp.setValue(rejectionCount);
     return this;
   }
 

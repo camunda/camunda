@@ -244,12 +244,17 @@ public final class ProcessProcessor
 
     } else if (processElement.hasMessageStartEvent()) {
       // the process might be created by a message (but not by a call activity)
-      final var correlationKey = bufferedMessageStartEventBehavior.findCorrelationKey(context);
+      // capture the holder's correlation key and businessId now, before the completion transition
+      // removes them; after the transition both are re-driven to pick up any message buffered
+      // behind
+      // the freed correlation-key lock and/or the freed Business ID (ADR 0002 D5)
+      final var correlationKey =
+          bufferedMessageStartEventBehavior.findCorrelationKey(context).orElse(null);
+      final var businessId = context.getBusinessId();
 
       return postTransitionContext ->
-          correlationKey.ifPresent(
-              key ->
-                  bufferedMessageStartEventBehavior.correlateMessage(postTransitionContext, key));
+          bufferedMessageStartEventBehavior.correlateNextBufferedMessagesOnCompletion(
+              postTransitionContext, correlationKey, businessId);
 
     } else {
       return NOOP;

@@ -98,6 +98,22 @@ public final class DbMessageState implements MutableMessageState {
       messageIdColumnFamily;
 
   /**
+   * <pre>tenant aware business id | message key -> []
+   *
+   * find buffered messages by business id. Only messages published with a business id are indexed.
+   * Lets a same-partition message-start that was skipped on Business-ID uniqueness be found again by
+   * the freed business id when a holder completes/terminates (ADR 0002 D5).
+   */
+  private final DbString businessId;
+
+  private final DbTenantAwareKey<DbString> tenantAwareBusinessId;
+  private final DbCompositeKey<DbTenantAwareKey<DbString>, DbForeignKey<DbLong>>
+      businessIdMessageKey;
+  private final ColumnFamily<
+          DbCompositeKey<DbTenantAwareKey<DbString>, DbForeignKey<DbLong>>, DbNil>
+      messageByBusinessIdColumnFamily;
+
+  /**
    * <pre>key | bpmn process id -> []
    *
    * check if a message is correlated to a process
@@ -201,6 +217,16 @@ public final class DbMessageState implements MutableMessageState {
             nameCorrelationMessageIdKey,
             DbNil.INSTANCE);
 
+    businessId = new DbString();
+    tenantAwareBusinessId = new DbTenantAwareKey<>(tenantIdKey, businessId, PlacementType.PREFIX);
+    businessIdMessageKey = new DbCompositeKey<>(tenantAwareBusinessId, fkMessage);
+    messageByBusinessIdColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.MESSAGE_BY_BUSINESS_ID,
+            transactionContext,
+            businessIdMessageKey,
+            DbNil.INSTANCE);
+
     bpmnProcessIdKey = new DbString();
     messageBpmnProcessIdKey = new DbCompositeKey<>(fkMessage, bpmnProcessIdKey);
     correlatedMessageColumnFamily =
@@ -270,6 +296,14 @@ public final class DbMessageState implements MutableMessageState {
     if (messageId.capacity() > 0) {
       this.messageId.wrapBuffer(messageId);
       messageIdColumnFamily.upsert(nameCorrelationMessageIdKey, DbNil.INSTANCE);
+    }
+
+    // index by business id so a same-partition start skipped on uniqueness can be re-found when the
+    // holder frees the business id (tenantIdKey and messageKey/fkMessage are wrapped above)
+    final DirectBuffer businessIdBuffer = record.getBusinessIdBuffer();
+    if (businessIdBuffer.capacity() > 0) {
+      businessId.wrapBuffer(businessIdBuffer);
+      messageByBusinessIdColumnFamily.insert(businessIdMessageKey, DbNil.INSTANCE);
     }
   }
 
@@ -412,6 +446,15 @@ public final class DbMessageState implements MutableMessageState {
       messageIdColumnFamily.deleteExisting(nameCorrelationMessageIdKey);
     }
 
+    final DirectBuffer businessIdBuffer = storedMessage.getMessage().getBusinessIdBuffer();
+    if (businessIdBuffer.capacity() > 0) {
+      businessId.wrapBuffer(businessIdBuffer);
+      // deleteIfExists (not deleteExisting): the business-id index was added after buffered
+      // messages already carried a business id, so a message published before the index existed
+      // (upgraded RocksDB state) has no entry here. Removing it must not throw on the missing key.
+      messageByBusinessIdColumnFamily.deleteIfExists(businessIdMessageKey);
+    }
+
     deadline.wrapLong(storedMessage.getMessage().getDeadline());
     deadlineColumnFamily.deleteExisting(deadlineMessageKey);
 
@@ -469,6 +512,21 @@ public final class DbMessageState implements MutableMessageState {
 
     nameCorrelationMessageColumnFamily.whileEqualPrefix(
         nameAndCorrelationKey,
+        (compositeKey, nil) -> {
+          final long messageKey = compositeKey.second().inner().getValue();
+          final StoredMessage message = getMessage(messageKey);
+          return visitor.visit(message);
+        });
+  }
+
+  @Override
+  public void visitMessagesWithBusinessId(
+      final String tenantId, final DirectBuffer businessId, final MessageVisitor visitor) {
+    tenantIdKey.wrapString(tenantId);
+    this.businessId.wrapBuffer(businessId);
+
+    messageByBusinessIdColumnFamily.whileEqualPrefix(
+        tenantAwareBusinessId,
         (compositeKey, nil) -> {
           final long messageKey = compositeKey.second().inner().getValue();
           final StoredMessage message = getMessage(messageKey);

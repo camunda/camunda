@@ -32,6 +32,14 @@ import org.agrona.collections.MutableBoolean;
  * io.camunda.zeebe.engine.state.appliers.MessageExpiredApplier}-driven pending-ask cleanup. There
  * is no PI-completion hook on this state and no reverse mapping by process-instance key — both are
  * unnecessary under write-time expiry.
+ *
+ * <p>The stored {@code deletionDeadline} is exactly the message deadline; callers ({@link
+ * #visitExpiredEntries} / {@link #hasExpiredEntry} and the request processor's dedup lookup) decide
+ * expiry by passing an effective {@code now}. The cross-partition request processor and the sweep
+ * pass {@code now - grace} so a row stays a valid re-reply source for a grace window past its
+ * deadline — absorbing a near-deadline in-flight retry without a duplicate. The grace lives in
+ * those callers, not in this state, keeping the stored value a pure function of the message
+ * deadline.
  */
 public final class DbMessageStartProcessInstanceDedupState
     implements MutableMessageStartProcessInstanceDedupState {
@@ -65,14 +73,15 @@ public final class DbMessageStartProcessInstanceDedupState
   }
 
   @Override
-  public boolean visitExpiredEntries(final long now, final ExpiredEntryVisitor visitor) {
+  public boolean visitExpiredEntries(
+      final long expiryThreshold, final ExpiredEntryVisitor visitor) {
     // Iterate the CF directly with early-exit so per-tick work is bounded by the visitor's batch
     // limit rather than the full CF size. The visitor must not mutate the column family — any
     // deletions are deferred to event appliers that run after this call returns.
     final var stoppedEarly = new MutableBoolean(false);
     columnFamily.whileTrue(
         (key, value) -> {
-          if (value.getDeletionDeadline() > now) {
+          if (value.getDeletionDeadline() > expiryThreshold) {
             // Keep scanning: ordering is by (processDefinitionKey, messageKey), not deadline.
             return true;
           }
@@ -86,11 +95,11 @@ public final class DbMessageStartProcessInstanceDedupState
   }
 
   @Override
-  public boolean hasExpiredEntry(final long now) {
+  public boolean hasExpiredEntry(final long expiryThreshold) {
     final var found = new MutableBoolean(false);
     columnFamily.whileTrue(
         (key, value) -> {
-          if (value.getDeletionDeadline() <= now) {
+          if (value.getDeletionDeadline() <= expiryThreshold) {
             found.set(true);
             return false;
           }

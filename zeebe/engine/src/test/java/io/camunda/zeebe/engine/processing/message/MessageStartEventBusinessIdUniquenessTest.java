@@ -9,9 +9,11 @@ package io.camunda.zeebe.engine.processing.message;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
@@ -63,6 +65,26 @@ public final class MessageStartEventBusinessIdUniquenessTest {
           .startEvent("start")
           .message(MESSAGE_NAME)
           .serviceTask("task", t -> t.zeebeJobType("test"))
+          .endEvent()
+          .done();
+
+  private static final String DUAL_PROCESS_ID = "wf-dual";
+  private static final String HOLDER_JOB_TYPE = "holder";
+  private static final String MESSAGE_JOB_TYPE = "msg";
+
+  // A process with both a none-start and a message-start event sharing the same definition, so a
+  // PI created via CreateProcessInstance (none-start, no correlation key) and a message-start
+  // publish contend for the same businessId uniqueness index. Both arms have a service task so the
+  // holder can be completed deterministically and each started PI emits an observable JOB CREATED.
+  private static final BpmnModelInstance MESSAGE_AND_NONE_START_PROCESS =
+      Bpmn.createExecutableProcess(DUAL_PROCESS_ID)
+          .startEvent("noneStart")
+          .serviceTask("holderTask", t -> t.zeebeJobType(HOLDER_JOB_TYPE))
+          .endEvent()
+          .moveToProcess(DUAL_PROCESS_ID)
+          .startEvent("msgStart")
+          .message(MESSAGE_NAME)
+          .serviceTask("msgTask", t -> t.zeebeJobType(MESSAGE_JOB_TYPE))
           .endEvent()
           .done();
 
@@ -359,5 +381,206 @@ public final class MessageStartEventBusinessIdUniquenessTest {
                 .limit(2))
         .extracting(r -> r.getValue().getBusinessId())
         .containsExactly("biz-42", "biz-42");
+  }
+
+  @Test
+  public void
+      shouldCorrelateBusinessIdBlockedMessageWhenHolderWithDifferentCorrelationKeyCompletes() {
+    // Pins the businessId index + completion hook (ADR 0002 D5): a message blocked purely on
+    // businessId uniqueness — whose correlation key differs from the holder's, so the
+    // correlation-key buffer scan can never reach it — is still re-driven once the holder frees the
+    // businessId on completion. This is the behaviour the correlation-key buffer could not provide.
+
+    // given a holder PI on correlation key "k-holder" carrying "biz-shared"
+    engine.deployment().withXmlResource(MESSAGE_START_PROCESS).deploy();
+    engine
+        .message()
+        .withName(MESSAGE_NAME)
+        .withCorrelationKey("k-holder")
+        .withBusinessId("biz-shared")
+        .withVariables(Map.of("seq", 1))
+        .publish();
+    final var holderJob = RecordingExporter.jobRecords(JobIntent.CREATED).getFirst();
+
+    // and a message on a DIFFERENT, otherwise-free correlation key carrying the same businessId —
+    // blocked only by uniqueness and therefore buffered (the correlation-key lock for "k-other" is
+    // free, so the correlation-key buffer would never re-drive it)
+    engine
+        .message()
+        .withName(MESSAGE_NAME)
+        .withCorrelationKey("k-other")
+        .withBusinessId("biz-shared")
+        .withTimeToLive(Duration.ofMinutes(5))
+        .withVariables(Map.of("seq", 2))
+        .publish();
+
+    // when the holder completes, freeing "biz-shared"
+    engine.job().withKey(holderJob.getKey()).complete();
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+        .withProcessInstanceKey(holderJob.getValue().getProcessInstanceKey())
+        .filterRootScope()
+        .await();
+
+    // then the businessId-blocked message starts a new PI even though its correlation key never
+    // matched the holder's — proving the businessId index, not the correlation-key buffer, owns it
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+                .withElementType(BpmnElementType.PROCESS)
+                .limit(2))
+        .extracting(r -> r.getValue().getBusinessId())
+        .containsExactly("biz-shared", "biz-shared");
+  }
+
+  @Test
+  public void shouldCorrelateBusinessIdBlockedMessageWhenHolderTerminates() {
+    // A businessId frees on termination as well as completion, and the completion hook runs on the
+    // termination transition too — so a message blocked on a businessId held by a (differently
+    // keyed) holder is re-driven when that holder is cancelled.
+
+    // given a holder PI on correlation key "k-holder" carrying "biz-shared"
+    engine.deployment().withXmlResource(MESSAGE_START_PROCESS).deploy();
+    engine
+        .message()
+        .withName(MESSAGE_NAME)
+        .withCorrelationKey("k-holder")
+        .withBusinessId("biz-shared")
+        .withVariables(Map.of("seq", 1))
+        .publish();
+    final var holderJob = RecordingExporter.jobRecords(JobIntent.CREATED).getFirst();
+    final var holderProcessInstanceKey = holderJob.getValue().getProcessInstanceKey();
+
+    // and a businessId-blocked message on a different, free correlation key
+    engine
+        .message()
+        .withName(MESSAGE_NAME)
+        .withCorrelationKey("k-other")
+        .withBusinessId("biz-shared")
+        .withTimeToLive(Duration.ofMinutes(5))
+        .withVariables(Map.of("seq", 2))
+        .publish();
+
+    // when the holder is terminated (cancelled) — freeing "biz-shared" without completing
+    engine.processInstance().withInstanceKey(holderProcessInstanceKey).cancel();
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+        .withProcessInstanceKey(holderProcessInstanceKey)
+        .filterRootScope()
+        .await();
+
+    // then the businessId-blocked message starts a new PI
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+                .withElementType(BpmnElementType.PROCESS)
+                .limit(2))
+        .extracting(r -> r.getValue().getBusinessId())
+        .containsExactly("biz-shared", "biz-shared");
+  }
+
+  @Test
+  public void shouldCorrelateBusinessIdBlockedMessageWhenHolderWithoutCorrelationKeyCompletes() {
+    // Pins that the businessId index + completion hook re-drives a blocked message even when the
+    // holder carries NO correlation key at all — a PI created via CreateProcessInstance on the
+    // none-start event. Such a holder never enters the message-start branch of the correlation-key
+    // buffer rescan, so only the businessId-keyed hook can free the blocked message.
+
+    // given a holder PI created via the none-start API holding "biz-shared" (no correlation key)
+    engine.deployment().withXmlResource(MESSAGE_AND_NONE_START_PROCESS).deploy();
+    final long holderPiKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId(DUAL_PROCESS_ID)
+            .withBusinessId("biz-shared")
+            .create();
+    final var holderJob =
+        RecordingExporter.jobRecords(JobIntent.CREATED).withType(HOLDER_JOB_TYPE).getFirst();
+
+    // and a message-start publish carrying the same businessId — blocked purely on uniqueness and
+    // therefore buffered
+    engine
+        .message()
+        .withName(MESSAGE_NAME)
+        .withCorrelationKey("k-msg")
+        .withBusinessId("biz-shared")
+        .withTimeToLive(Duration.ofMinutes(5))
+        .publish();
+
+    // when the holder completes, freeing "biz-shared"
+    engine.job().withKey(holderJob.getKey()).complete();
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+        .withProcessInstanceKey(holderPiKey)
+        .filterRootScope()
+        .await();
+
+    // then the buffered message-start correlates and a second PI is created, even though the
+    // holder never carried a correlation key
+    final var messagePiActivating =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withElementType(BpmnElementType.PROCESS)
+            .withBpmnProcessId(DUAL_PROCESS_ID)
+            .limit(2)
+            .skip(1)
+            .getFirst();
+    assertThat(messagePiActivating.getValue().getBusinessId()).isEqualTo("biz-shared");
+    assertThat(messagePiActivating.getValue().getProcessInstanceKey()).isNotEqualTo(holderPiKey);
+
+    // and the same-partition retry is fully local — no cross-partition ask is ever emitted
+    final long crossPartitionAsks =
+        RecordingExporter.records()
+            .limit(
+                r ->
+                    r.getIntent() == ProcessInstanceIntent.ELEMENT_ACTIVATING
+                        && r.getKey() == messagePiActivating.getKey())
+            .filter(r -> r.getValueType() == ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST)
+            .count();
+    assertThat(crossPartitionAsks)
+        .as("a same-partition (P_K = P_B) blocked-start retry must not emit a cross-partition ask")
+        .isZero();
+  }
+
+  @Test
+  public void shouldNotRestartBusinessIdBlockedMessageWhenHolderIsBannedUntilTtl() {
+    // Pins the accepted boundary (mirrors the correlation-key buffer): banning frees the businessId
+    // WITHOUT a completion/termination event, so the completion hook never runs and a message
+    // blocked behind a banned holder is not re-driven promptly — it waits until its TTL and then
+    // expires unstarted. No duplicate, no leak.
+
+    // given a holder PI holds "biz-banned" and a message-start with the same businessId is blocked
+    engine.deployment().withXmlResource(MESSAGE_AND_NONE_START_PROCESS).deploy();
+    final long holderPiKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId(DUAL_PROCESS_ID)
+            .withBusinessId("biz-banned")
+            .create();
+    RecordingExporter.jobRecords(JobIntent.CREATED).withType(HOLDER_JOB_TYPE).getFirst();
+
+    final var blockedPublish =
+        engine
+            .message()
+            .withName(MESSAGE_NAME)
+            .withCorrelationKey("k-msg")
+            .withBusinessId("biz-banned")
+            .withTimeToLive(Duration.ofSeconds(5))
+            .publish();
+
+    // when the holder is banned (neither completes nor terminates) and the message's TTL elapses
+    engine.banInstanceInNewTransaction(1, holderPiKey);
+    engine.increaseTime(
+        Duration.ofSeconds(5).plus(EngineConfiguration.DEFAULT_MESSAGES_TTL_CHECKER_INTERVAL));
+
+    // then the buffered message expires without ever starting a second PI — only the holder PI was
+    // ever activated, bounded by the EXPIRED terminal of the blocked publish
+    final long activations =
+        RecordingExporter.records()
+            .limit(
+                r ->
+                    r.getIntent() == MessageIntent.EXPIRED && r.getKey() == blockedPublish.getKey())
+            .processInstanceRecords()
+            .withElementType(BpmnElementType.PROCESS)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .count();
+    assertThat(activations)
+        .as(
+            "a banned holder does not trigger the completion hook; the blocked start expires at TTL")
+        .isEqualTo(1L);
   }
 }
