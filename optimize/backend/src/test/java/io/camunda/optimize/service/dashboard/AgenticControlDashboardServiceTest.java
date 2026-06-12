@@ -172,8 +172,8 @@ public class AgenticControlDashboardServiceTest {
             AgenticControlDashboardService.KPI_INCIDENT_RATE_REPORT_ID,
             AgenticControlDashboardService.KPI_AVG_TOKENS_REPORT_ID,
             AgenticControlDashboardService.KPI_MEDIAN_TOKENS_REPORT_ID,
-            AgenticControlDashboardService.KPI_P50_DURATION_REPORT_ID,
-            AgenticControlDashboardService.KPI_P95_DURATION_REPORT_ID);
+            AgenticControlDashboardService.KPI_DURATION_P50_REPORT_ID,
+            AgenticControlDashboardService.KPI_DURATION_P95_REPORT_ID);
   }
 
   @Test
@@ -333,58 +333,20 @@ public class AgenticControlDashboardServiceTest {
 
   @Test
   void shouldSeedP50DurationReportWithCorrectConfig() {
-    // given
-    when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID)).thenReturn(Optional.empty());
-    final ArgumentCaptor<ProcessReportDataDto> dataCaptor =
-        ArgumentCaptor.forClass(ProcessReportDataDto.class);
-
-    // when
-    underTest.reconcile();
-
-    // then the P50 report is upserted with the correct deterministic ID and localization keys
-    verify(reportWriter)
-        .createOrUpdateSingleProcessReport(
-            eq(AgenticControlDashboardService.KPI_P50_DURATION_REPORT_ID),
-            isNull(),
-            dataCaptor.capture(),
-            eq(AgenticControlDashboardService.KPI_DURATION_P50_NAME),
-            eq(AgenticControlDashboardService.KPI_DURATION_P50_DESCRIPTION),
-            isNull());
-
-    final ProcessReportDataDto p50Data = dataCaptor.getValue();
-    assertThat(p50Data.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
-    assertThat(p50Data.getView().getProperties()).contains(ViewProperty.DURATION);
-    assertThat(p50Data.getConfiguration().getAggregationTypes())
-        .containsExactly(new AggregationDto(AggregationType.PERCENTILE, 50.0));
-    assertThat(p50Data.isAgenticControlReport()).isTrue();
+    assertDurationReportSeeded(
+        AgenticControlDashboardService.KPI_DURATION_P50_REPORT_ID,
+        AgenticControlDashboardService.KPI_DURATION_P50_NAME,
+        AgenticControlDashboardService.KPI_DURATION_P50_DESCRIPTION,
+        50.0);
   }
 
   @Test
   void shouldSeedP95DurationReportWithCorrectConfig() {
-    // given
-    when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID)).thenReturn(Optional.empty());
-    final ArgumentCaptor<ProcessReportDataDto> dataCaptor =
-        ArgumentCaptor.forClass(ProcessReportDataDto.class);
-
-    // when
-    underTest.reconcile();
-
-    // then the P95 report is upserted with the correct deterministic ID and localization keys
-    verify(reportWriter)
-        .createOrUpdateSingleProcessReport(
-            eq(AgenticControlDashboardService.KPI_P95_DURATION_REPORT_ID),
-            isNull(),
-            dataCaptor.capture(),
-            eq(AgenticControlDashboardService.KPI_DURATION_P95_NAME),
-            eq(AgenticControlDashboardService.KPI_DURATION_P95_DESCRIPTION),
-            isNull());
-
-    final ProcessReportDataDto p95Data = dataCaptor.getValue();
-    assertThat(p95Data.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
-    assertThat(p95Data.getView().getProperties()).contains(ViewProperty.DURATION);
-    assertThat(p95Data.getConfiguration().getAggregationTypes())
-        .containsExactly(new AggregationDto(AggregationType.PERCENTILE, 95.0));
-    assertThat(p95Data.isAgenticControlReport()).isTrue();
+    assertDurationReportSeeded(
+        AgenticControlDashboardService.KPI_DURATION_P95_REPORT_ID,
+        AgenticControlDashboardService.KPI_DURATION_P95_NAME,
+        AgenticControlDashboardService.KPI_DURATION_P95_DESCRIPTION,
+        95.0);
   }
 
   @Test
@@ -399,7 +361,7 @@ public class AgenticControlDashboardServiceTest {
     // then both duration percentile reports are upserted even when the dashboard is not recreated
     verify(reportWriter)
         .createOrUpdateSingleProcessReport(
-            eq(AgenticControlDashboardService.KPI_P50_DURATION_REPORT_ID),
+            eq(AgenticControlDashboardService.KPI_DURATION_P50_REPORT_ID),
             any(),
             any(),
             any(),
@@ -407,7 +369,7 @@ public class AgenticControlDashboardServiceTest {
             any());
     verify(reportWriter)
         .createOrUpdateSingleProcessReport(
-            eq(AgenticControlDashboardService.KPI_P95_DURATION_REPORT_ID),
+            eq(AgenticControlDashboardService.KPI_DURATION_P95_REPORT_ID),
             any(),
             any(),
             any(),
@@ -431,5 +393,31 @@ public class AgenticControlDashboardServiceTest {
         ArgumentCaptor.forClass(DashboardDefinitionRestDto.class);
     verify(dashboardWriter).saveDashboard(captor.capture());
     return captor.getValue();
+  }
+
+  private void assertDurationReportSeeded(
+      final String reportId,
+      final String nameKey,
+      final String descKey,
+      final double expectedPercentile) {
+    // given
+    when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID)).thenReturn(Optional.empty());
+    final ArgumentCaptor<ProcessReportDataDto> dataCaptor =
+        ArgumentCaptor.forClass(ProcessReportDataDto.class);
+
+    // when
+    underTest.reconcile();
+
+    // then the report is upserted with the correct deterministic ID and localization keys
+    verify(reportWriter)
+        .createOrUpdateSingleProcessReport(
+            eq(reportId), isNull(), dataCaptor.capture(), eq(nameKey), eq(descKey), isNull());
+
+    final ProcessReportDataDto reportData = dataCaptor.getValue();
+    assertThat(reportData.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
+    assertThat(reportData.getView().getProperties()).contains(ViewProperty.DURATION);
+    assertThat(reportData.getConfiguration().getAggregationTypes())
+        .containsExactly(new AggregationDto(AggregationType.PERCENTILE, expectedPercentile));
+    assertThat(reportData.isAgenticControlReport()).isTrue();
   }
 }
