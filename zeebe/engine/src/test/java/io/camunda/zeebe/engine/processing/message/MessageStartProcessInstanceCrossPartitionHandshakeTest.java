@@ -116,7 +116,12 @@ public final class MessageStartProcessInstanceCrossPartitionHandshakeTest {
                   config
                       .setBusinessIdUniquenessEnabled(true)
                       .setMessageStartDedupExpirationSweepInterval(SWEEP_INTERVAL)
-                      .setMessageStartAskRetryInterval(ASK_RETRY_INTERVAL));
+                      .setMessageStartAskRetryInterval(ASK_RETRY_INTERVAL)
+                      // These tests pin the dedup hit/miss boundary at the *message deadline*
+                      // itself, so the near-deadline grace is disabled here; the grace's own
+                      // behaviour is pinned separately (config default + the dedicated
+                      // near-deadline duplicate-window regression).
+                      .setMessageStartAskRetryGrace(Duration.ZERO));
 
   @Before
   public void assertCrossPartitionRouting() {

@@ -7,6 +7,7 @@
  */
 package io.camunda.configuration;
 
+import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_MESSAGE_START_ASK_RETRY_GRACE;
 import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_MESSAGE_START_ASK_RETRY_INTERVAL;
 import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_MESSAGE_START_DEDUP_EXPIRATION_SWEEP_BATCH_LIMIT;
 import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_MESSAGE_START_DEDUP_EXPIRATION_SWEEP_INTERVAL;
@@ -53,6 +54,17 @@ public class ProcessInstanceCreation {
    * also drives the scheduler's tick frequency.
    */
   private Duration messageStartAskRetryInterval = DEFAULT_MESSAGE_START_ASK_RETRY_INTERVAL;
+
+  /**
+   * Grace by which the cross-partition message-start dedup row on {@code P_B} is kept valid (for
+   * re-reply lookups and the expiration sweep) beyond the originating message's deadline. It must
+   * cover the worst-case one-way inter-partition command latency plus clock skew so a retry ask
+   * sent just before the deadline, but processed slightly after it, still hits the dedup and
+   * re-replies the same instance instead of creating a duplicate. Over-sizing is essentially free
+   * (the dedup key is unique per publish); under-sizing re-opens the near-deadline duplicate
+   * window.
+   */
+  private Duration messageStartAskRetryGrace = DEFAULT_MESSAGE_START_ASK_RETRY_GRACE;
 
   /**
    * Base poll interval for the cross-partition correlation-key lock-release scheduler on {@code
@@ -111,6 +123,14 @@ public class ProcessInstanceCreation {
 
   public void setMessageStartAskRetryInterval(final Duration messageStartAskRetryInterval) {
     this.messageStartAskRetryInterval = messageStartAskRetryInterval;
+  }
+
+  public Duration getMessageStartAskRetryGrace() {
+    return messageStartAskRetryGrace;
+  }
+
+  public void setMessageStartAskRetryGrace(final Duration messageStartAskRetryGrace) {
+    this.messageStartAskRetryGrace = messageStartAskRetryGrace;
   }
 
   public Duration getMessageStartLockReleasePollInterval() {
