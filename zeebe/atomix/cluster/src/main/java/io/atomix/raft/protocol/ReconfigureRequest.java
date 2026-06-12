@@ -28,7 +28,7 @@ import java.util.Objects;
 import java.util.Set;
 
 /** Request a change of members. Members can change type, be removed or added. */
-public class ReconfigureRequest extends AbstractRaftRequest {
+public final class ReconfigureRequest extends AbstractRaftRequest {
 
   private final long index;
   private final long term;

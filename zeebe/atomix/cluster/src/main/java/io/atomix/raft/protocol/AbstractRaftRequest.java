@@ -19,7 +19,18 @@ package io.atomix.raft.protocol;
 import static com.google.common.base.MoreObjects.toStringHelper;
 
 /** Base request for all client requests. */
-public abstract class AbstractRaftRequest implements RaftRequest {
+public abstract sealed class AbstractRaftRequest implements RaftRequest
+    permits AppendRequest,
+        ConfigureRequest,
+        ForceConfigureRequest,
+        InstallRequest,
+        JoinRequest,
+        LeaveRequest,
+        PollRequest,
+        ReconfigureRequest,
+        TransferRequest,
+        VersionedAppendRequest,
+        VoteRequest {
 
   /**
    * Abstract request builder.

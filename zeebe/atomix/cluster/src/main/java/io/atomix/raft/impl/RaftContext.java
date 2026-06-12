@@ -26,6 +26,7 @@ import io.atomix.cluster.MemberId;
 import io.atomix.raft.ElectionTimer;
 import io.atomix.raft.RaftApplicationEntryCommittedPositionListener;
 import io.atomix.raft.RaftCommitListener;
+import io.atomix.raft.RaftError;
 import io.atomix.raft.RaftException.CommitFailedException;
 import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer.Role;
@@ -40,21 +41,24 @@ import io.atomix.raft.metrics.RaftRoleMetrics;
 import io.atomix.raft.metrics.RaftServiceMetrics;
 import io.atomix.raft.partition.RaftElectionConfig;
 import io.atomix.raft.partition.RaftPartitionConfig;
+import io.atomix.raft.protocol.AbstractRaftRequest;
+import io.atomix.raft.protocol.AppendRequest;
 import io.atomix.raft.protocol.AppendResponse;
 import io.atomix.raft.protocol.ConfigureResponse;
 import io.atomix.raft.protocol.ForceConfigureResponse;
 import io.atomix.raft.protocol.InstallResponse;
+import io.atomix.raft.protocol.InternalAppendRequest;
 import io.atomix.raft.protocol.JoinResponse;
 import io.atomix.raft.protocol.LeaveResponse;
 import io.atomix.raft.protocol.PollResponse;
 import io.atomix.raft.protocol.ProtocolVersionHandler;
-import io.atomix.raft.protocol.RaftRequest;
 import io.atomix.raft.protocol.RaftResponse;
 import io.atomix.raft.protocol.RaftResponse.Builder;
 import io.atomix.raft.protocol.RaftResponse.Status;
 import io.atomix.raft.protocol.RaftServerProtocol;
 import io.atomix.raft.protocol.ReconfigureResponse;
 import io.atomix.raft.protocol.TransferResponse;
+import io.atomix.raft.protocol.VersionedAppendRequest;
 import io.atomix.raft.protocol.VoteResponse;
 import io.atomix.raft.roles.ActiveRole;
 import io.atomix.raft.roles.CandidateRole;
@@ -84,9 +88,13 @@ import io.camunda.zeebe.util.logging.ThrottledLogger;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutionException;
@@ -113,7 +121,8 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   private static final long NO_CONFIGURATION_INDEX = -1L;
 
   private static final String RAFT_ROLE_KEY = "raft-role";
-
+  // Queue for incoming raft requests to enable batch processing in the future
+  private static final int REQUEST_QUEUE_CAPACITY = 1000;
   protected final String name;
   protected final ThreadContext threadContext;
   protected final ClusterMembershipService membershipService;
@@ -152,7 +161,6 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   private final Random random;
   private PersistedSnapshot currentSnapshot;
   private final int snapshotChunkSize;
-
   private boolean ongoingTransition = false;
   // Keeps track of snapshot replication to notify new listeners about missed events
   private MissedSnapshotReplicationEvents missedSnapshotReplicationEvents =
@@ -165,9 +173,10 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   private final RaftPartitionConfig partitionConfig;
   private final int partitionId;
   private final MeterRegistry meterRegistry;
-
   // after firstCommitIndex is set it will be null
   private AwaitingReadyCommitListener awaitingReadyCommitListener;
+  private final BlockingQueue<QueuedRequest> requestQueue =
+      new ArrayBlockingQueue<>(REQUEST_QUEUE_CAPACITY);
 
   public RaftContext(
       final String name,
@@ -257,6 +266,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
 
     // Register protocol listeners.
     registerHandlers(protocol);
+
     started = true;
 
     if (meta.hasCommitIndex()) {
@@ -341,81 +351,167 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   /** Registers server handlers on the configured protocol. */
   private void registerHandlers(final RaftServerProtocol protocol) {
     protocol.registerConfigureHandler(
-        request ->
-            handleRequestOnContext(
-                request, () -> role.onConfigure(request), ConfigureResponse::builder));
+        request -> handleRequestOnContext(request, ConfigureResponse::builder));
     protocol.registerInstallHandler(
-        request ->
-            handleRequestOnContext(
-                request, () -> role.onInstall(request), InstallResponse::builder));
+        request -> handleRequestOnContext(request, InstallResponse::builder));
     protocol.registerReconfigureHandler(
-        request ->
-            handleRequestOnContext(
-                request, () -> role.onReconfigure(request), ReconfigureResponse::builder));
+        request -> handleRequestOnContext(request, ReconfigureResponse::builder));
     protocol.registerForceConfigureHandler(
-        request ->
-            handleRequestOnContext(
-                request, () -> role.onForceConfigure(request), ForceConfigureResponse::builder));
-    protocol.registerJoinHandler(
-        request ->
-            handleRequestOnContext(request, () -> role.onJoin(request), JoinResponse::builder));
+        request -> handleRequestOnContext(request, ForceConfigureResponse::builder));
+    protocol.registerJoinHandler(request -> handleRequestOnContext(request, JoinResponse::builder));
     protocol.registerLeaveHandler(
-        request ->
-            handleRequestOnContext(request, () -> role.onLeave(request), LeaveResponse::builder));
+        request -> handleRequestOnContext(request, LeaveResponse::builder));
     protocol.registerTransferHandler(
-        request ->
-            handleRequestOnContext(
-                request, () -> role.onTransfer(request), TransferResponse::builder));
+        request -> handleRequestOnContext(request, TransferResponse::builder));
     protocol.registerAppendV1Handler(
-        request ->
-            handleRequestOnContext(
-                request,
-                () -> role.onAppend(ProtocolVersionHandler.transform(request)),
-                AppendResponse::builder));
+        request -> handleRequestOnContext(request, AppendResponse::builder));
     protocol.registerAppendV2Handler(
-        request ->
-            handleRequestOnContext(
-                request,
-                () -> role.onAppend(ProtocolVersionHandler.transform(request)),
-                AppendResponse::builder));
-    protocol.registerPollHandler(
-        request ->
-            handleRequestOnContext(request, () -> role.onPoll(request), PollResponse::builder));
-    protocol.registerVoteHandler(
-        request ->
-            handleRequestOnContext(request, () -> role.onVote(request), VoteResponse::builder));
+        request -> handleRequestOnContext(request, AppendResponse::builder));
+    protocol.registerPollHandler(request -> handleRequestOnContext(request, PollResponse::builder));
+    protocol.registerVoteHandler(request -> handleRequestOnContext(request, VoteResponse::builder));
   }
 
+  @SuppressWarnings("unchecked")
   private <T extends Builder<T, R>, R extends RaftResponse>
       CompletableFuture<R> handleRequestOnContext(
-          final RaftRequest request,
-          final Supplier<CompletableFuture<R>> function,
+          final AbstractRaftRequest request,
           final Supplier<RaftResponse.Builder<T, R>> responseBuilder) {
 
-    final CompletableFuture<R> future = new CompletableFuture<>();
-    threadContext.execute(
-        () ->
-            role.shouldAcceptRequest(request)
-                .ifRightOrLeft(
-                    ignore ->
-                        function
-                            .get()
-                            .whenComplete(
-                                (response, error) -> {
-                                  if (error == null) {
-                                    future.complete(response);
-                                  } else {
-                                    future.completeExceptionally(error);
-                                  }
-                                }),
-                    error -> {
-                      final R response =
-                          responseBuilder.get().withStatus(Status.ERROR).withError(error).build();
-                      LOGGER.trace("Sending {}", response);
-                      future.complete(response);
-                    }));
+    // Preallocate the CompletableFuture that will be completed async by the context
+    final CompletableFuture<RaftResponse> future = new CompletableFuture<>();
 
-    return future;
+    // Create a queued request wrapper
+    final QueuedRequest queuedRequest = new QueuedRequest(request, future, responseBuilder);
+
+    // Enqueue the request instead of directly scheduling it
+    if (!requestQueue.offer(queuedRequest)) {
+      // Queue is full - reject the request immediately
+      final R response =
+          responseBuilder
+              .get()
+              .withStatus(Status.ERROR)
+              .withError(RaftError.Type.ILLEGAL_MEMBER_STATE, "Request queue is full")
+              .build();
+      future.complete(response);
+      LOGGER.warn("Request queue is full, rejecting request: {}", request);
+    } else {
+      threadContext.execute(this::processRequestQueue);
+    }
+
+    // Safe cast: the future will be completed with an instance of R
+    return (CompletableFuture<R>) (CompletableFuture<?>) future;
+  }
+
+  /**
+   * Processes requests from the queue. Non-append requests are processed immediately. Consecutive
+   * append requests are batched together and processed with a single flush for better throughput.
+   */
+  private void processRequestQueue() {
+    final QueuedRequest first = requestQueue.poll();
+    if (first == null) {
+      return;
+    }
+
+    if (!isAppendRequest(first.request)) {
+      // Non-append request: process immediately
+      processQueuedRequest(first);
+      if (!requestQueue.isEmpty()) {
+        threadContext.execute(this::processRequestQueue);
+      }
+      return;
+    }
+
+    // First request is an append -- drain consecutive appends from the queue
+    final var appends = new ArrayList<QueuedRequest>(6);
+    appends.add(first);
+    QueuedRequest peeked = requestQueue.peek();
+    while (peeked != null && isAppendRequest(peeked.request)) {
+      appends.add(requestQueue.poll());
+      peeked = requestQueue.peek();
+    }
+    processQueuedAppends(appends);
+
+    // Give priority to a non-append request that may be waiting behind the appends
+    final QueuedRequest next = requestQueue.peek();
+    if (next != null && !isAppendRequest(next.request)) {
+      processQueuedRequest(requestQueue.poll());
+    }
+
+    // Schedule another drain if there are more items in the queue
+    if (!requestQueue.isEmpty()) {
+      threadContext.execute(this::processRequestQueue);
+    }
+  }
+
+  private static boolean isAppendRequest(final AbstractRaftRequest request) {
+    return request instanceof AppendRequest || request instanceof VersionedAppendRequest;
+  }
+
+  /**
+   * Processes a single queued request.
+   *
+   * @param queuedRequest the request to process
+   */
+  private void processQueuedRequest(final QueuedRequest queuedRequest) {
+    role.shouldAcceptRequest(queuedRequest.request)
+        .ifRightOrLeft(
+            ignore ->
+                role.onRaftRequest(queuedRequest.request)
+                    .whenComplete(
+                        (response, error) -> {
+                          if (error == null) {
+                            queuedRequest.future.complete(response);
+                          } else {
+                            queuedRequest.future.completeExceptionally(error);
+                          }
+                        }),
+            error -> rejectRequest(queuedRequest, error));
+  }
+
+  private static void rejectRequest(final QueuedRequest queuedRequest, final RaftError error) {
+    @SuppressWarnings("unchecked")
+    final RaftResponse.Builder<?, RaftResponse> builder =
+        (RaftResponse.Builder<?, RaftResponse>) queuedRequest.responseBuilder.get();
+    final var response = builder.withStatus(Status.ERROR).withError(error).build();
+    LOGGER.trace("Sending {}", response);
+    queuedRequest.future.complete(response);
+  }
+
+  private void processQueuedAppends(final List<QueuedRequest> appends) {
+    if (appends.size() == 1) {
+      // Single append: use the standard path (no batching overhead)
+      processQueuedRequest(appends.getFirst());
+      return;
+    }
+
+    // Multiple appends: validate each, then delegate to role.onBatchAppend()
+    final var batch = new ArrayList<RaftRole.BatchedAppend>(appends.size());
+    for (final QueuedRequest queuedRequest : appends) {
+      final var accepted = role.shouldAcceptRequest(queuedRequest.request);
+      if (accepted.isRight()) {
+        final InternalAppendRequest internalRequest = transformToInternal(queuedRequest.request);
+        @SuppressWarnings("unchecked")
+        final CompletableFuture<AppendResponse> appendFuture =
+            (CompletableFuture<AppendResponse>) (CompletableFuture<?>) queuedRequest.future;
+        batch.add(new RaftRole.BatchedAppend(internalRequest, appendFuture));
+      } else {
+        rejectRequest(queuedRequest, accepted.getLeft());
+      }
+    }
+
+    if (!batch.isEmpty()) {
+      role.onBatchAppend(batch);
+    }
+  }
+
+  private static InternalAppendRequest transformToInternal(final AbstractRaftRequest request) {
+    if (request instanceof final AppendRequest appendRequest) {
+      return ProtocolVersionHandler.transform(appendRequest);
+    } else if (request instanceof final VersionedAppendRequest versionedRequest) {
+      return ProtocolVersionHandler.transform(versionedRequest);
+    } else {
+      throw new IllegalArgumentException("Not an append request: " + request.getClass());
+    }
   }
 
   public int getMaxAppendBatchSize() {
@@ -1329,6 +1425,22 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
           fut.complete(segments);
         });
     return fut;
+  }
+
+  /** Wrapper for a raft request with its preallocated CompletableFuture and processing logic. */
+  private static class QueuedRequest {
+    final AbstractRaftRequest request;
+    final CompletableFuture<RaftResponse> future;
+    final Supplier<? extends RaftResponse.Builder<?, ?>> responseBuilder;
+
+    QueuedRequest(
+        final AbstractRaftRequest request,
+        final CompletableFuture<RaftResponse> future,
+        final Supplier<? extends RaftResponse.Builder<?, ?>> responseBuilder) {
+      this.request = request;
+      this.future = future;
+      this.responseBuilder = responseBuilder;
+    }
   }
 
   /** Raft server state. */

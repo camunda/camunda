@@ -30,7 +30,7 @@ import io.atomix.cluster.MemberId;
  * that servers that can't win elections do not disrupt existing leaders when e.g. rejoining the
  * cluster after a partition.
  */
-public class PollRequest extends AbstractRaftRequest {
+public final class PollRequest extends AbstractRaftRequest {
 
   private final long term;
   private final String candidate;
