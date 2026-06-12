@@ -134,8 +134,8 @@ services:
       - 9600:9600
       - 8080:8080
     depends_on:
-      - ${DATABASE}
+      - ${DATABASE:-elasticsearch}
     networks:
       - zeebe_network
     env_file:
-      - envs/.env.database.${DATABASE}
+      - envs/.env.database.${DATABASE:-elasticsearch}
