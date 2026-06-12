@@ -37,7 +37,6 @@ public final class ExporterDirectorContext {
   private String clusterId = "";
   private @Nullable String licenseKey;
   private String tenantName;
-  private boolean sendOnLegacySubject = true;
   private boolean receiveOnLegacySubject = true;
 
   public int getId() {
@@ -94,10 +93,6 @@ public final class ExporterDirectorContext {
 
   public String getTenantName() {
     return tenantName;
-  }
-
-  public boolean isSendOnLegacySubject() {
-    return sendOnLegacySubject;
   }
 
   public boolean isReceiveOnLegacySubject() {
@@ -173,11 +168,6 @@ public final class ExporterDirectorContext {
 
   public ExporterDirectorContext tenantName(final String tenantName) {
     this.tenantName = tenantName;
-    return this;
-  }
-
-  public ExporterDirectorContext sendOnLegacySubject(final boolean sendOnLegacySubject) {
-    this.sendOnLegacySubject = sendOnLegacySubject;
     return this;
   }
 

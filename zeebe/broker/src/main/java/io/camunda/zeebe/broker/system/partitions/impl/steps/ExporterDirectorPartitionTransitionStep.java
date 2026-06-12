@@ -23,6 +23,7 @@ import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -118,6 +119,7 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
     final var exporterFilter = SkipPositionsFilter.of(skipRecords);
     final ExporterMode exporterMode =
         targetRole == Role.LEADER ? ExporterMode.ACTIVE : ExporterMode.PASSIVE;
+    final var tenantName = context.getRaftPartition().getPartitionConfig().getTenantName();
     final ExporterDirectorContext exporterCtx =
         new ExporterDirectorContext()
             .id(EXPORTER_PROCESSOR_ID)
@@ -133,9 +135,8 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
             .meterRegistry(context.getPartitionTransitionMeterRegistry())
             .clusterId(requireNonNullElse(brokerCfg.getCluster().getClusterId(), ""))
             .licenseKey(brokerCfg.getLicenseKey())
-            .tenantName(context.getRaftPartition().getPartitionConfig().getTenantName())
-            .sendOnLegacySubject(brokerCfg.getExperimental().isSendOnLegacySubject())
-            .receiveOnLegacySubject(brokerCfg.getExperimental().isReceiveOnLegacySubject());
+            .tenantName(tenantName)
+            .receiveOnLegacySubject(Protocol.DEFAULT_PARTITION_GROUP_NAME.equals(tenantName));
 
     final ExporterDirector director =
         exporterDirectorBuilder.apply(exporterCtx, context.getExporterPhase());
