@@ -100,6 +100,14 @@ When migrating code from `operate/client/` or `tasklist/client/` to the orchestr
 
 Key principles: migration is a rewrite (not a code port), dependencies flow routes → pages → modules, and MobX stores should be decomposed by purpose (server data → TanStack Query, filters → URL params, ephemeral UI → useState).
 
+## Tasklist Pod
+
+When building, changing, or testing features in the Tasklist pod area at `webapp/client/apps/orchestration-cluster-webapp/src/tasklist/`, consult the tasklist-frontend skill:
+
+- `.claude/skills/tasklist-frontend/` — Tasklist pod ownership (Employee Engagement & Tasklist), structure, and boundaries
+
+Key principles: building blocks live in `src/tasklist/modules/` (split by meaningful unit, kept flat — components in `components/`, everything else at the module root), pages are assembled in `src/tasklist/pages/`, and routes are thin wrappers under `src/routes/_auth/tasklist/`. **Do not modify `src/shared/` for Tasklist work unless an engineer explicitly tells you to** — surface the need instead. Defer to `frontend-feature` for general conventions.
+
 ## Legacy Operate Frontend
 
 When fixing bugs, writing tests, or making small changes in the legacy Operate frontend at `operate/client/`, consult the operate-frontend skill:
