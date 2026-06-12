@@ -9,6 +9,11 @@ package io.camunda.zeebe.broker.exporter.stream;
 
 // The PAUSED phase is when the exporter is paused, and the exporter is not exporting records.
 // The SOFT_PAUSED phase is when we keep exporting the records without updating the exporter state.
+// This means that after a restart, the exporter will continue from the last persisted position,
+// re-exporting every record that was processed while soft-paused. This is used in the backup
+// process to ensure that after restoring Zeebe, the secondary storage will receive all missing
+// records from Zeebe via re-export, bridging any gap between the Zeebe and secondary storage
+// backups.
 public enum ExporterPhase {
   EXPORTING,
   PAUSED,
