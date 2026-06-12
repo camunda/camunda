@@ -15,6 +15,7 @@ import io.camunda.search.entities.WaitStateDetails.WaitStateType;
 import io.camunda.search.entities.WaitStateEntity;
 import io.camunda.search.entities.WaitStateJobDetails;
 import io.camunda.search.entities.WaitStateMessageDetails;
+import io.camunda.search.entities.WaitStateTimerDetails;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,6 +58,7 @@ public class WaitStateEntityMapper {
       return switch (type) {
         case JOB -> OBJECT_MAPPER.readValue(detailsJson, WaitStateJobDetails.class);
         case MESSAGE -> OBJECT_MAPPER.readValue(detailsJson, WaitStateMessageDetails.class);
+        case TIMER -> OBJECT_MAPPER.readValue(detailsJson, WaitStateTimerDetails.class);
       };
     } catch (final Exception e) {
       LOG.warn("Failed to parse wait state details for type {}: {}", waitStateType, e.getMessage());
