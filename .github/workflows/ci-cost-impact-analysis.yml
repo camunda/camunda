@@ -1,0 +1,93 @@
+# Description:
+#   Analyze CI/workflow changes from the past week for potential cost impact and publish a report.
+#
+# Test location:
+#   Trigger manually via workflow_dispatch.
+#
+# Type:
+#   - CI
+#
+# Owner:
+#   @camunda/ci
+#
+name: CI Cost Impact Analysis
+
+on:
+  workflow_dispatch:
+    inputs:
+      since_days:
+        description: "Days of git history to analyze"
+        required: false
+        default: "7"
+      create_issue:
+        description: "Create an issue with the generated report"
+        required: false
+        default: "false"
+      issue_title:
+        description: "Issue title when create_issue is true"
+        required: false
+        default: "CI Cost Impact Analysis Report"
+      issue_label:
+        description: "Issue label when create_issue is true"
+        required: false
+        default: "ci-cost-impact"
+  schedule:
+    # At 08:00 UTC every Monday.
+    - cron: "0 8 * * 1"
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  analyze-ci-cost-impact:
+    name: Analyze CI Cost Impact
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate CI cost impact report
+        run: |
+          set -euo pipefail
+
+          since_days="7"
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            since_days="${{ inputs.since_days }}"
+          fi
+
+          python3 .github/scripts/ci-cost-analysis.py \
+            --since-days "$since_days" \
+            --output ci-cost-impact-report.md
+
+      - name: Publish report to job summary
+        run: |
+          set -euo pipefail
+          cat ci-cost-impact-report.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Create issue with report
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.create_issue == 'true' }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh issue create \
+            --repo "${{ github.repository }}" \
+            --title "${{ inputs.issue_title }}" \
+            --body-file ci-cost-impact-report.md \
+            --label "${{ inputs.issue_label }}"
+
+      - name: Observe Build Status
+        if: always() && !cancelled()
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "ci-cost-impact-analysis / analyze-ci-cost-impact"
+          step_name: "Observe Build Status"
