@@ -36,8 +36,7 @@ public class UnifiedConfigurationModule {
 
   @Bean
   public PhysicalTenantIds physicalTenantIds(final PhysicalTenantResolver physicalTenantResolver) {
-    final Set<String> known = Set.copyOf(physicalTenantResolver.getAll().keySet());
-    return () -> known;
+    return () -> Set.copyOf(physicalTenantResolver.getAll().keySet());
   }
 
   /**
@@ -48,6 +47,6 @@ public class UnifiedConfigurationModule {
   @Bean
   public PhysicalTenantInterceptor physicalTenantInterceptor(
       final PhysicalTenantIds physicalTenantIds) {
-    return new PhysicalTenantInterceptor(physicalTenantIds.known()::contains);
+    return new PhysicalTenantInterceptor(id -> physicalTenantIds.known().contains(id));
   }
 }

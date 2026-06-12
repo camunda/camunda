@@ -285,11 +285,11 @@ public class CamundaMcpServersAutoConfiguration {
   static HandlerFilterFunction<ServerResponse, ServerResponse> tenantFilter(
       final ObjectProvider<PhysicalTenantIds> tenantIdsProvider) {
     final PhysicalTenantIds tenantIds = tenantIdsProvider.getIfAvailable();
-    final var knownTenants =
-        tenantIds != null
-            ? tenantIds.known()
-            : Set.of(PhysicalTenantContext.DEFAULT_PHYSICAL_TENANT_ID);
     return (request, next) -> {
+      final var knownTenants =
+          tenantIds != null
+              ? tenantIds.known()
+              : Set.of(PhysicalTenantContext.DEFAULT_PHYSICAL_TENANT_ID);
       final String tenantId = request.pathVariable(PATH_VARIABLE_PHYSICAL_TENANT_ID);
       if (!knownTenants.contains(tenantId)) {
         return unknownPhysicalTenantResponse(tenantId);
