@@ -449,7 +449,10 @@ public final class DbMessageState implements MutableMessageState {
     final DirectBuffer businessIdBuffer = storedMessage.getMessage().getBusinessIdBuffer();
     if (businessIdBuffer.capacity() > 0) {
       businessId.wrapBuffer(businessIdBuffer);
-      messageByBusinessIdColumnFamily.deleteExisting(businessIdMessageKey);
+      // deleteIfExists (not deleteExisting): the business-id index was added after buffered
+      // messages already carried a business id, so a message published before the index existed
+      // (upgraded RocksDB state) has no entry here. Removing it must not throw on the missing key.
+      messageByBusinessIdColumnFamily.deleteIfExists(businessIdMessageKey);
     }
 
     deadline.wrapLong(storedMessage.getMessage().getDeadline());
