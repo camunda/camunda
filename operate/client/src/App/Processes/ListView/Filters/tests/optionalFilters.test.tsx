@@ -72,6 +72,32 @@ describe('Optional Filters', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('should clear inline variable inputs after closing and reopening the filter', async () => {
+    const {user} = render(<Filters />, {
+      wrapper: getWrapper(),
+    });
+
+    await user.click(screen.getByRole('button', {name: /^more filters$/i}));
+    await user.click(screen.getByTestId('optional-filter-menuitem-variable'));
+
+    await user.type(screen.getByTestId('single-condition-name'), 'orderStatus');
+    await user.type(screen.getByTestId('single-condition-value'), '"paid"');
+
+    expect(screen.getByTestId('single-condition-name')).toHaveValue(
+      'orderStatus',
+    );
+    expect(screen.getByTestId('single-condition-value')).toHaveValue('"paid"');
+
+    await user.hover(screen.getByTestId('open-variable-filter-modal'));
+    await user.click(screen.getByLabelText('Remove Variables Filter'));
+
+    await user.click(screen.getByRole('button', {name: /^more filters$/i}));
+    await user.click(screen.getByTestId('optional-filter-menuitem-variable'));
+
+    expect(screen.getByTestId('single-condition-name')).toHaveValue('');
+    expect(screen.getByTestId('single-condition-value')).toHaveValue('');
+  });
+
   it('should display instance ids field on click', async () => {
     const {user} = render(<Filters />, {
       wrapper: getWrapper(),
