@@ -65,7 +65,6 @@ final class S3BackupConfigTest {
   @Test
   void shouldNotValidateSsecKeyWhenAbsent() {
     // when - then
-    assertThatCode(() -> new Builder().withBucketName("bucket").build())
-        .doesNotThrowAnyException();
+    assertThatCode(() -> new Builder().withBucketName("bucket").build()).doesNotThrowAnyException();
   }
 }
