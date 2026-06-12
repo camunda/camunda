@@ -193,7 +193,7 @@ const TopPanel: React.FC = observer(() => {
       : notCompletedElementStateOverlays;
   }, [statistics, businessObjects, isExecutionCountVisible]);
 
-  const waitingStateOverlays = useMemo(() => {
+  const allWaitingStateOverlays = useMemo(() => {
     if (!inspectionData?.items?.length) {
       return [];
     }
@@ -228,42 +228,51 @@ const TopPanel: React.FC = observer(() => {
     return overlays;
   }, [inspectionData]);
 
-  const agentOverlays = useMemo(() => {
+  const {agentOverlays, elementsWithAgent} = useMemo(() => {
     if (!agentInstancesData?.items?.length) {
-      return [];
+      return {agentOverlays: [], elementsWithAgent: new Set<string>()};
     }
 
-    const mappedElementIds = new Set<string>();
+    const elementsWithAgent = new Set<string>();
 
-    return agentInstancesData.items.flatMap<OverlayData>((agentInstance) => {
-      // We expect only one active agent instance per element. But there *can* be multiple.
-      // For now, only add an overlay to an element for first matching agent instance.
-      if (mappedElementIds.has(agentInstance.elementId)) {
-        return [];
-      }
+    const agentOverlays = agentInstancesData.items.flatMap<OverlayData>(
+      (agentInstance) => {
+        // We expect only one active agent instance per element. But there *can* be multiple.
+        // For now, only add an overlay to an element for first matching agent instance.
+        if (elementsWithAgent.has(agentInstance.elementId)) {
+          return [];
+        }
 
-      mappedElementIds.add(agentInstance.elementId);
-      return [
-        {
-          type: OVERLAY_TYPE_AGENT_STATUS,
-          elementId: agentInstance.elementId,
-          position: AGENT_STATUS_TAG,
-          payload: {
-            status: agentInstance.status,
-            agentInstanceKey: agentInstance.agentInstanceKey,
-          } satisfies AgentStatusPayload,
-        },
-        {
-          type: OVERLAY_TYPE_AGENT_SHINE,
-          elementId: agentInstance.elementId,
-          position: AGENT_SHINE,
-          payload: {
-            agentInstanceKey: agentInstance.agentInstanceKey,
-          } satisfies AgentShinePayload,
-        },
-      ];
-    });
+        elementsWithAgent.add(agentInstance.elementId);
+        return [
+          {
+            type: OVERLAY_TYPE_AGENT_STATUS,
+            elementId: agentInstance.elementId,
+            position: AGENT_STATUS_TAG,
+            payload: {
+              status: agentInstance.status,
+              agentInstanceKey: agentInstance.agentInstanceKey,
+            } satisfies AgentStatusPayload,
+          },
+          {
+            type: OVERLAY_TYPE_AGENT_SHINE,
+            elementId: agentInstance.elementId,
+            position: AGENT_SHINE,
+            payload: {
+              agentInstanceKey: agentInstance.agentInstanceKey,
+            } satisfies AgentShinePayload,
+          },
+        ];
+      },
+    );
+    return {agentOverlays, elementsWithAgent};
   }, [agentInstancesData]);
+
+  const waitingStateOverlays = useMemo(() => {
+    return allWaitingStateOverlays.filter(
+      (overlay) => !elementsWithAgent.has(overlay.elementId),
+    );
+  }, [allWaitingStateOverlays, elementsWithAgent]);
 
   const selectedElementIds = useMemo(() => {
     return selectedAnchorElementId
