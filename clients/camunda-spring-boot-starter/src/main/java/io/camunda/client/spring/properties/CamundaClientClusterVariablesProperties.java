@@ -21,8 +21,10 @@ import java.util.Map;
 public class CamundaClientClusterVariablesProperties {
 
   /**
-   * Indicates if the <code>@ClusterVariables</code> annotation is processed and configured
-   * variables are applied.
+   * Indicates if cluster variable processing is enabled. When {@code true}, variables configured
+   * via <code>@ClusterVariables</code> annotations and via the {@code global}/{@code tenant}
+   * properties are applied at startup. When {@code false}, all cluster variable processing is
+   * skipped.
    */
   private boolean enabled = true;
 
