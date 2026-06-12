@@ -38,10 +38,6 @@ defaults:
     # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
     shell: bash
 
-env:
-  CLUSTER: camunda-benchmark-prod
-  TELEPORT_JOIN_TOKEN: infra-benchmark-prod-github-action-zeebe
-
 jobs:
   sanitize-branch-name:
     name: Sanitize Branch Name
@@ -111,7 +107,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - name: Wait for load test to stabilize
+      # Warmup before metrics start, then the 30-min window get-pr-metrics queries.
+      - name: Warmup sleep
+        run: sleep 900  # 15 minutes
+      - name: Accumulate metrics window
         run: sleep 1800  # 30 minutes
       - name: Observe build status
         if: always()
@@ -134,50 +133,24 @@ jobs:
       database: ${{ needs.sanitize-branch-name.outputs.storage-type }}
 
   resolve-daily-namespace:
-    name: Resolve latest daily-on-main namespace
+    name: Resolve last completed daily-on-main run
     needs: await-benchmark
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
       contents: 'read'
-      id-token: 'write'
+      actions: 'read'   # list the daily workflow's runs + their artifacts
+    env:
+      GH_TOKEN: ${{ github.token }}
     outputs:
       daily-namespace: ${{ steps.find.outputs.namespace }}
+      daily-at: ${{ steps.find.outputs.at }}
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - name: Set up Teleport
-        uses: teleport-actions/setup@b638ff596557cc3959eb6b5287d5e58e0c8ac6a6 # v1.1.1
-        with:
-          proxy: camunda.teleport.sh:443
-          version: auto
-      - name: Authenticate to Cluster using Teleport
-        uses: teleport-actions/auth-k8s@0f46164469ae4fcd4d359d40e06bab17d4be17c9 # v2.0.6
-        with:
-          proxy: camunda.teleport.sh:443
-          token: ${{ env.TELEPORT_JOIN_TOKEN }}
-          kubernetes-cluster: ${{ env.CLUSTER }}
       - id: find
-        name: Find most recent c8-medic-daily-*-test namespace
-        run: |
-          # Pick the most recently created namespace matching the daily-on-main
-          # naming pattern. Empty string when no daily run is currently live;
-          # the get-daily-metrics job is gated on this output so we skip the
-          # comparison cleanly rather than failing. Skip namespaces that are
-          # mid-deletion — otherwise metrics collection races teardown.
-          ns=$(kubectl get ns -o json \
-            | jq -r '.items[]
-                | select(.metadata.name | test("^c8-medic-daily-.*-test$"))
-                | select(.status.phase == "Active")
-                | select(.metadata.deletionTimestamp == null)
-                | "\(.metadata.creationTimestamp) \(.metadata.name)"' \
-            | sort -r | head -n1 | awk '{print $2}')
-          if [[ -z "$ns" ]]; then
-            echo "::warning::No active c8-medic-daily-*-test namespace found; daily comparison will be skipped"
-          else
-            echo "Resolved daily namespace: $ns"
-          fi
-          echo "namespace=${ns}" >> "$GITHUB_OUTPUT"
+        name: Resolve daily-on-main namespace + post-warmup anchor
+        run: python3 .github/scripts/resolve-daily.py
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -205,7 +178,9 @@ jobs:
     secrets: inherit
     with:
       namespace: ${{ needs.resolve-daily-namespace.outputs.daily-namespace }}
+      # First 30 min of daily soak after its 15-min warmup (anchor = soak.started_at + 1800s).
       duration-seconds: '1800'
+      at: ${{ needs.resolve-daily-namespace.outputs.daily-at }}
 
   render-comparison:
     name: Render PR vs Daily comparison
@@ -224,6 +199,7 @@ jobs:
     env:
       NAMESPACE: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
       DAILY_NAMESPACE: ${{ needs.resolve-daily-namespace.outputs.daily-namespace }}
+      DAILY_AT: ${{ needs.resolve-daily-namespace.outputs.daily-at }}
       DURATION_SECONDS: '1800'
       STORAGE_TYPE: ${{ needs.sanitize-branch-name.outputs.storage-type }}
       PR_RESULTS_JSON: ${{ needs.get-pr-metrics.outputs.results-json }}
