@@ -38,6 +38,7 @@ faces-config.NavData
 *.DS_Store
 .java-version
 .gradle
+buildSrc/.kotlin/
 .worktree
 work/
 tngp-data
@@ -93,3 +94,5 @@ scripts/codeowners-utils/output/
 # playwright test output
 **/test-results
 .claude/settings.local.json
+build/
+build-cache/

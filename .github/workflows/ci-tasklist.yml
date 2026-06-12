@@ -51,12 +51,15 @@ jobs:
         include:
           - suite: DataLayer
             suiteName: Data Layer
+            gradleTestTasks: ""
           - suite: CoreFeatures
             suiteName: Core Features
+            gradleTestTasks: ":tasklist-common:test --tests io.camunda.tasklist.TasklistCoreFeaturesTestSuite :tasklist-webapp:test --tests io.camunda.tasklist.webapp.TasklistCoreFeaturesTestSuite"
     with:
       componentName: "Tasklist"
       suite: ${{ matrix.suite }}
       suiteName: ${{ matrix.suiteName }}
+      gradleTestTasks: ${{ matrix.gradleTestTasks }}
 
   fe-type-check:
     if: inputs.runFeTests

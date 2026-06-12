@@ -394,7 +394,9 @@ class InProgressBackupImplTest {
     when(snapshotMetadata.maxExportedPosition()).thenReturn(maxExportedPosition);
 
     final var snapshot = mock(PersistedSnapshot.class);
-    when(snapshot.getId()).thenReturn(String.format("%d-%d", processedPosition, followUpPosition));
+    lenient()
+        .when(snapshot.getId())
+        .thenReturn(String.format("%d-%d", processedPosition, followUpPosition));
     when(snapshot.getMetadata()).thenReturn(snapshotMetadata);
     return snapshot;
   }

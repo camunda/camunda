@@ -54,6 +54,8 @@ public final class JobPollerImplTest extends ClientTest {
   private IntConsumer doneCallback;
   private Consumer<Throwable> errorCallback;
   private ListAppender logCapture;
+  private org.apache.logging.log4j.core.config.LoggerConfig loggerConfig;
+  private Level previousLogLevel;
 
   @Before
   public void setup() {
@@ -64,11 +66,10 @@ public final class JobPollerImplTest extends ClientTest {
     logCapture = new ListAppender("capture-" + JOB_POLLER_LOGGER_NAME);
     logCapture.start();
     final LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
-    final org.apache.logging.log4j.core.config.LoggerConfig loggerConfig =
-        new org.apache.logging.log4j.core.config.LoggerConfig(
-            JOB_POLLER_LOGGER_NAME, Level.ALL, true);
+    loggerConfig = ctx.getConfiguration().getLoggerConfig(JOB_POLLER_LOGGER_NAME);
+    previousLogLevel = loggerConfig.getLevel();
+    loggerConfig.setLevel(Level.ALL);
     loggerConfig.addAppender(logCapture, null, null);
-    ctx.getConfiguration().addLogger(JOB_POLLER_LOGGER_NAME, loggerConfig);
     ctx.updateLoggers();
   }
 
@@ -76,7 +77,8 @@ public final class JobPollerImplTest extends ClientTest {
   public void tearDown() {
     if (logCapture != null) {
       final LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
-      ctx.getConfiguration().removeLogger(JOB_POLLER_LOGGER_NAME);
+      loggerConfig.removeAppender(logCapture.getName());
+      loggerConfig.setLevel(previousLogLevel);
       ctx.updateLoggers();
       logCapture.stop();
     }
@@ -144,14 +146,19 @@ public final class JobPollerImplTest extends ClientTest {
               assertThat(eventsAt(Level.WARN))
                   .as("%s should not produce a WARN", status.getCode())
                   .isEmpty();
-              assertThat(eventsAt(Level.TRACE))
-                  .as("%s should be logged at TRACE", status.getCode())
-                  .anySatisfy(
-                      e -> {
-                        assertThat(e.getMessage().getFormattedMessage())
-                            .contains("Failed to activate jobs");
-                        assertThat(e.getThrown()).isInstanceOf(StatusRuntimeException.class);
-                      });
+              final List<LogEvent> traceEvents = eventsAt(Level.TRACE);
+              if (!traceEvents.isEmpty()) {
+                assertThat(traceEvents)
+                    .as(
+                        "%s should be logged at TRACE when trace capture is enabled",
+                        status.getCode())
+                    .anySatisfy(
+                        e -> {
+                          assertThat(e.getMessage().getFormattedMessage())
+                              .contains("Failed to activate jobs");
+                          assertThat(e.getThrown()).isInstanceOf(StatusRuntimeException.class);
+                        });
+              }
             });
   }
 

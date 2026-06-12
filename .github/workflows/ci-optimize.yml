@@ -51,12 +51,15 @@ jobs:
         include:
           - suite: DataLayer
             suiteName: Data Layer
+            gradleTestTasks: ":optimize-commons:ut --tests io.camunda.optimize.OptimizeDataLayerTestSuite :optimize-backend:ut --tests io.camunda.optimize.OptimizeDataLayerTestSuite :upgrade-optimize:ut --tests io.camunda.optimize.upgrade.OptimizeDataLayerTestSuite"
           - suite: CoreFeatures
             suiteName: Core Features
+            gradleTestTasks: ":optimize-commons:ut --tests io.camunda.optimize.OptimizeCoreFeaturesTestSuite :optimize-backend:ut --tests io.camunda.optimize.OptimizeCoreFeaturesTestSuite"
     with:
       componentName: "Optimize"
       suite: ${{ matrix.suite }}
       suiteName: ${{ matrix.suiteName }}
+      gradleTestTasks: ${{ matrix.gradleTestTasks }}
 
   optimize-it-elasticsearch:
     name: "Integration / Elasticsearch ITs"

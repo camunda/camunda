@@ -316,7 +316,7 @@
       "allowedVersions": "!/-SNAPSHOT$/"
     },
     {
-      "description": "Exclude Maven dependencies lacking metadata.",
+      "description": "Exclude Maven/Gradle dependencies lacking metadata.",
       "matchManagers": [
         "maven"
       ],
@@ -416,7 +416,7 @@
       "enabled": false
     },
     {
-      "description": "Disable internal io.camunda Maven updates on stable branches; versions are controlled by the release process.",
+      "description": "Disable internal io.camunda Maven/Gradle updates on stable branches; versions are controlled by the release process.",
       "matchManagers": [
         "maven"
       ],

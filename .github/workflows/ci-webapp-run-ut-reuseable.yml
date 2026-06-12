@@ -20,6 +20,11 @@ on:
         description: "Well formatted name of the suite under test. ie, 'Data Layer' or 'Core Features'"
         required: true
         type: string
+      gradleTestTasks:
+        description: "Gradle test tasks to execute for this suite when gradle-build label is set"
+        required: false
+        default: ""
+        type: string
 
 env:
   GHA_BEST_PRACTICES_LINTER: enabled
@@ -50,16 +55,23 @@ jobs:
       - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: ut-be-${{inputs.componentName}}
+          skip-maven-cache: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'gradle-build') }}
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
+        if: ${{ github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'gradle-build') }}
         with:
           maven-extra-args: -T1C -Dquickly
+      - uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
+        if: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'gradle-build') }}
+        with:
+          cache-read-only: true
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       - name: Maven Run Test
+        if: ${{ github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'gradle-build') }}
         shell: bash
         # we use the verify goal here as flaky test extraction is bound to the post-integration-test
         # phase of Maven https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html#default-lifecycle
@@ -70,6 +82,15 @@ jobs:
           -D surefire.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }} -D junitThreadCount=16 -P skipFrontendBuild
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
+      - name: Gradle Run Test
+        if: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'gradle-build') }}
+        shell: bash
+        run: >
+          if [[ -z "${{ inputs.gradleTestTasks }}" ]]; then
+            printf 'No Gradle unit test tasks configured for %s %s\n' "${{ inputs.componentName }}" "${{ inputs.suite }}" | tee "${BUILD_OUTPUT_FILE_PATH}";
+          else
+            ./gradlew --no-daemon --console=plain --parallel -Pskip.fe.build ${{ inputs.gradleTestTasks }} | tee "${BUILD_OUTPUT_FILE_PATH}";
+          fi
       - name: Analyze Test Runs
         id: analyze-test-run
         if: always()
