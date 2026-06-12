@@ -5,10 +5,13 @@ module.exports = {
 
     // Ignore legacy commits that pre-date commitlint enforcement on this branch.
     // These commits were added during the Renovate PR (#54397) on stable/8.7
-    // and cannot be rewritten without a force-push.
+    // and cannot be rewritten without a force-push. Remove after PR is merged.
     ignores: [
-        (commit) => commit.startsWith('Potential fix for pull request finding'),
-        (commit) => commit.startsWith('Align plugin.version.failsafe with plugin.version.surefire'),
+        (commit) => /^Potential fix for pull request finding(\n|$)/.test(commit),
+        (commit) =>
+            /^Align plugin\.version\.failsafe with plugin\.version\.surefire \(3\.5\.6\)(\n|$)/.test(
+                commit,
+            ),
     ],
 
     // Rules are made up by a name and a configuration array. The configuration array contains:
