@@ -272,7 +272,8 @@ test.describe.serial('Resolve related incidents API Tests', () => {
     );
   });
 
-  test('Resolve related incidents of a process instance without permissions - Forbidden', async ({
+    // TODO(triage-agent): flaky – investigate
+test('Resolve related incidents of a process instance without permissions - Forbidden', async ({
     request,
   }) => {
     const token = encode(
