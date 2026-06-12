@@ -8,6 +8,7 @@
 package io.camunda.zeebe.dynamic.config.api;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
@@ -40,8 +41,13 @@ public final class ClusterScaleRequestTransformer implements ConfigurationChange
       return Either.right(List.of());
     }
 
-    // replicationFactor and partitionCount is validated in the delegated transformer.
+    if (clusterConfiguration.isZoneAware()) {
+      return Either.left(
+          new InvalidRequest(
+              "Scaling operation without zone is not allowed when cluster is zone-aware"));
+    }
 
+    // replicationFactor and partitionCount is validated in the delegated transformer.
     final var newSetOfMembers =
         IntStream.range(0, newClusterSize.orElse(clusterConfiguration.members().size()))
             .mapToObj(i -> MemberId.from(String.valueOf(i)))

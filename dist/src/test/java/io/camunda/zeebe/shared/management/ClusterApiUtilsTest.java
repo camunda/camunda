@@ -31,6 +31,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.AwaitRelocationCompletion;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.StartPartitionScaleUp;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.UpdateIncarnationNumberOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.UpdatePartitionDistributorConfigOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.UpdateRoutingState;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
@@ -38,6 +39,10 @@ import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
 import io.camunda.zeebe.dynamic.config.state.ExportingConfig;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.FixedConfig;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.RoundRobinConfig;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.management.cluster.BrokerState;
@@ -45,6 +50,7 @@ import io.camunda.zeebe.management.cluster.ExporterStatus;
 import io.camunda.zeebe.management.cluster.ExporterStatus.StatusEnum;
 import io.camunda.zeebe.management.cluster.GetTopologyResponse;
 import io.camunda.zeebe.management.cluster.Operation.OperationEnum;
+import io.camunda.zeebe.management.cluster.PartitionDistributionConfig.TypeEnum;
 import io.camunda.zeebe.management.cluster.TopologyChangeCompletedInner;
 import io.camunda.zeebe.util.Either;
 import java.time.Instant;
@@ -62,6 +68,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 final class ClusterApiUtilsTest {
 
@@ -191,6 +198,52 @@ final class ClusterApiUtilsTest {
         .extracting(BrokerState::getId)
         .extracting(String::valueOf)
         .containsExactlyInAnyOrder("0", "1");
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"ZONE_AWARE", "FIXED", "ROUND_ROBIN"})
+  void shouldIncludePartitionDistributorConfig(final String type) {
+    // given
+    final var expectedConfig =
+        new io.camunda.zeebe.management.cluster.PartitionDistributionConfig();
+    expectedConfig.type(TypeEnum.valueOf(type));
+    final PartitionDistributorConfig partitionDistributorConfig;
+    switch (type) {
+      case "ZONE_AWARE" -> {
+        partitionDistributorConfig =
+            new PartitionDistributorConfig.ZoneAwareConfig(
+                List.of(new ZoneSpec("zone-a", 3, 1000)));
+        expectedConfig.setZones(
+            List.of(new io.camunda.zeebe.management.cluster.ZoneSpec("zone-a", 3, 1000)));
+      }
+      case "ROUND_ROBIN" -> {
+        partitionDistributorConfig = new RoundRobinConfig();
+      }
+      case "FIXED" -> {
+        partitionDistributorConfig = new FixedConfig();
+      }
+      default -> throw new IllegalArgumentException("Invalid type: " + type);
+    }
+    final var config =
+        ClusterConfiguration.init()
+            .addMember(
+                MemberId.from("0"),
+                MemberState.initializeAsActive(
+                    Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init()))))
+            .addMember(
+                MemberId.from("1"),
+                MemberState.initializeAsActive(
+                    Map.of(1, PartitionState.active(2, DynamicPartitionConfig.init()))))
+            .setPartitionDistributorConfig(partitionDistributorConfig);
+
+    // when
+    final var response = ClusterApiUtils.mapClusterTopologyResponse(Either.right(config));
+
+    // then
+    assertThat(response.getStatusCode().value()).isEqualTo(200);
+    assertThat(response.getBody()).isNotNull();
+    final var body = (GetTopologyResponse) response.getBody();
+    assertThat(body.getPartitionDistribution()).isEqualTo(expectedConfig);
   }
 
   @Test
@@ -417,8 +470,10 @@ final class ClusterApiUtilsTest {
         new PartitionDeleteExporterOperation(memberId1, 1, "test-exporter"),
         new PartitionEnableExporterOperation(memberId1, 1, "test-exporter", emptyExporterId),
         new PartitionBootstrapOperation(memberId1, 1, 1, emptyConfig, false),
-        new PartitionBootstrapOperation(memberId1, 2, 1, true) // Alternative constructor
-        );
+        new PartitionBootstrapOperation(memberId1, 2, 1, true), // Alternative constructor
+
+        // PartitionDistributorConfig
+        new UpdatePartitionDistributorConfigOperation(memberId1, new RoundRobinConfig()));
   }
 
   /** Provides all ClusterConfigurationChangeOperation implementations as test arguments. */

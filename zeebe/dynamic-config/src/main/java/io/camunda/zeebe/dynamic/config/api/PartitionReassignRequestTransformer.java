@@ -10,7 +10,6 @@ package io.camunda.zeebe.dynamic.config.api;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
-import io.camunda.zeebe.dynamic.config.PartitionDistributor;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
@@ -23,7 +22,6 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.AwaitRelocationCompletion;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.StartPartitionScaleUp;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
-import io.camunda.zeebe.dynamic.config.util.RoundRobinPartitionDistributor;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
 import java.util.List;
@@ -126,13 +124,12 @@ public class PartitionReassignRequestTransformer implements ConfigurationChangeR
                         .toList())
             .orElse(List.of());
 
-    final PartitionDistributor roundRobinDistributor = new RoundRobinPartitionDistributor();
-
     final var allPartitions =
         Stream.of(oldPartitions, newPartitions).flatMap(List::stream).toList();
 
     final var newDistribution =
-        roundRobinDistributor
+        currentConfiguration
+            .partitionDistributor()
             .distributePartitions(brokers, allPartitions, replicationFactor)
             .stream()
             .collect(Collectors.toMap(PartitionMetadata::id, p -> p));
