@@ -9,11 +9,12 @@
 import { FC } from "react";
 import { Edit, TrashCan } from "@carbon/react/icons";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import useTranslate from "src/utility/localization";
-import { usePaginatedApi } from "src/utility/api";
+import { usePagination } from "src/utility/api";
+import { tenantQueries } from "src/utility/api/tenants/queries";
 import Page, { PageHeader } from "src/components/layout/Page";
 import EntityList from "src/components/entityList";
-import { searchTenant } from "src/utility/api/tenants";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import useModal, { useEntityModal } from "src/components/modal/useModal";
 import AddModal from "src/pages/tenants/modals/AddModal";
@@ -30,20 +31,21 @@ type ListProps = {
 const List: FC<ListProps> = ({ isOIDC }) => {
   const { t } = useTranslate("tenants");
   const navigate = useNavigate();
+  const noop = () => {};
+
+  const { pageParams, page, search, ...paginationCallbacks } = usePagination();
   const {
     data: tenantSearchResults,
-    loading,
-    reload,
-    success,
-    search,
-    ...paginationProps
-  } = usePaginatedApi(searchTenant);
+    isLoading: loading,
+    isSuccess: success,
+    refetch: reload,
+  } = useQuery(tenantQueries.search(pageParams));
 
-  const [addTenant, addTenantModal] = useModal(AddModal, reload, {
+  const [addTenant, addTenantModal] = useModal(AddModal, noop, {
     isOIDC,
   });
-  const [editTenant, editTenantModal] = useEntityModal(EditModal, reload);
-  const [deleteTenant, deleteTenantModal] = useEntityModal(DeleteModal, reload);
+  const [editTenant, editTenantModal] = useEntityModal(EditModal, noop);
+  const [deleteTenant, deleteTenantModal] = useEntityModal(DeleteModal, noop);
 
   const showDetails = ({ tenantId }: Tenant) => navigate(`${tenantId}`);
 
@@ -108,12 +110,18 @@ const List: FC<ListProps> = ({ isOIDC }) => {
         ]}
         searchPlaceholder={t("searchByTenantId")}
         searchKey="tenantId"
-        {...paginationProps}
+        page={{ ...page, ...tenantSearchResults?.page }}
+        {...paginationCallbacks}
       />
       {!loading && !success && (
         <TranslatedErrorInlineNotification
           title={t("tenantsListCouldNotLoad")}
-          actionButton={{ label: t("retry"), onClick: reload }}
+          actionButton={{
+            label: t("retry"),
+            onClick: () => {
+              void reload();
+            },
+          }}
         />
       )}
       {addTenantModal}

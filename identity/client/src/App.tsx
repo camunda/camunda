@@ -8,6 +8,7 @@
 
 import { FC, StrictMode, useEffect } from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { QueryClientProvider } from "@tanstack/react-query";
 import AppRoot from "./components/global/AppRoot";
 import GlobalRoutes from "src/components/global/GlobalRoutes";
 import { LoginPage } from "src/pages/login/LoginPage.tsx";
@@ -19,6 +20,8 @@ import { cleanServiceWorkers } from "src/utility/cleanServiceWorkers.ts";
 import { getBaseUrl } from "./configuration/urlConfig";
 import { DocsUrlProvider } from "./components/documentation/DocsUrlContext.tsx";
 import { docsUrl } from "src/configuration";
+import { queryClient } from "src/utility/api/queryClient";
+import ErrorNotificationBridge from "src/utility/api/ErrorNotificationBridge";
 
 const App: FC = () => {
   useEffect(() => {
@@ -28,32 +31,35 @@ const App: FC = () => {
   return (
     <BrowserRouter basename={getBaseUrl()}>
       <StrictMode>
-        <DocsUrlProvider value={docsUrl}>
-          <NotificationProvider>
-            <Routes>
-              <Route key="setup" path={Paths.setup()} Component={SetupPage} />
-              <Route
-                key="login"
-                path={Paths.login()}
-                element={
-                  <LoginPage
-                    defaultRedirectUrl={getBaseUrl() + Paths.users()}
-                  />
-                }
-              />
-              <Route path={Paths.forbidden()} element={<Forbidden />} />
-              <Route
-                key="identity-ui"
-                path="*"
-                element={
-                  <AppRoot>
-                    <GlobalRoutes />
-                  </AppRoot>
-                }
-              />
-            </Routes>
-          </NotificationProvider>
-        </DocsUrlProvider>
+        <QueryClientProvider client={queryClient}>
+          <DocsUrlProvider value={docsUrl}>
+            <NotificationProvider>
+              <ErrorNotificationBridge />
+              <Routes>
+                <Route key="setup" path={Paths.setup()} Component={SetupPage} />
+                <Route
+                  key="login"
+                  path={Paths.login()}
+                  element={
+                    <LoginPage
+                      defaultRedirectUrl={getBaseUrl() + Paths.users()}
+                    />
+                  }
+                />
+                <Route path={Paths.forbidden()} element={<Forbidden />} />
+                <Route
+                  key="identity-ui"
+                  path="*"
+                  element={
+                    <AppRoot>
+                      <GlobalRoutes />
+                    </AppRoot>
+                  }
+                />
+              </Routes>
+            </NotificationProvider>
+          </DocsUrlProvider>
+        </QueryClientProvider>
       </StrictMode>
     </BrowserRouter>
   );

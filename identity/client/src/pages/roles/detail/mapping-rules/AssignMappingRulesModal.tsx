@@ -10,13 +10,13 @@ import { FC, useCallback, useEffect, useState } from "react";
 import styled from "styled-components";
 import { Tag } from "@carbon/react";
 import { UseEntityModalCustomProps } from "src/components/modal";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import useTranslate from "src/utility/localization";
-import { useApi, useApiCall } from "src/utility/api";
-import { searchMappingRule } from "src/utility/api/mapping-rules";
+import { mappingRuleQueries } from "src/utility/api/mapping-rules/queries";
+import { roleMutations } from "src/utility/api/roles/mutations";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import DropdownSearch from "src/components/form/DropdownSearch";
 import FormModal from "src/components/modal/FormModal";
-import { assignRoleMappingRule } from "src/utility/api/roles";
 import type { MappingRule, Role } from "@camunda/camunda-api-zod-schemas/8.10";
 
 const SelectedMappingRules = styled.div`
@@ -47,12 +47,15 @@ const AssignMappingRulesModal: FC<
 
   const {
     data: mappingRuleSearchResults,
-    loading,
-    reload,
+    isLoading: loading,
+    refetch: reload,
     error,
-  } = useApi(searchMappingRule, mappingRuleFilter);
+  } = useQuery(mappingRuleQueries.search(mappingRuleFilter));
 
-  const [callAssignMappingRule] = useApiCall(assignRoleMappingRule);
+  const qc = useQueryClient();
+  const { mutateAsync: callAssignMappingRule } = useMutation(
+    roleMutations.assignMappingRule(qc),
+  );
 
   const unassignedFilter = useCallback(
     ({ mappingRuleId }: MappingRule) =>
@@ -85,20 +88,20 @@ const AssignMappingRulesModal: FC<
     if (!canSubmit) return;
 
     setLoadingAssignMappingRule(true);
-
-    const results = await Promise.all(
-      selectedMappingRules.map(({ mappingRuleId }) =>
-        callAssignMappingRule({
-          mappingRuleId: mappingRuleId,
-          roleId: role.id,
-        }),
-      ),
-    );
-
-    setLoadingAssignMappingRule(false);
-
-    if (results.every(({ success }) => success)) {
+    try {
+      await Promise.all(
+        selectedMappingRules.map(({ mappingRuleId }) =>
+          callAssignMappingRule({
+            mappingRuleId: mappingRuleId,
+            roleId: role.id,
+          }),
+        ),
+      );
       onSuccess();
+    } catch {
+      // error handled globally
+    } finally {
+      setLoadingAssignMappingRule(false);
     }
   };
 
@@ -153,7 +156,12 @@ const AssignMappingRulesModal: FC<
       {!loading && error && (
         <TranslatedErrorInlineNotification
           title={t("mappingRulesCouldNotLoad")}
-          actionButton={{ label: t("retry"), onClick: reload }}
+          actionButton={{
+            label: t("retry"),
+            onClick: () => {
+              void reload();
+            },
+          }}
         />
       )}
     </FormModal>

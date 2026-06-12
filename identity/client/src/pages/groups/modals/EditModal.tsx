@@ -7,11 +7,11 @@
  */
 
 import { FC, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { FormModal, UseEntityModalProps } from "src/components/modal";
 import useTranslate from "src/utility/localization";
-import { useApiCall } from "src/utility/api";
 import { useNotifications } from "src/components/notifications";
-import { updateGroup } from "src/utility/api/groups";
+import { groupMutations } from "src/utility/api/groups/mutations";
 import TextField from "src/components/form/TextField";
 import { isValidId } from "src/utility/validate.ts";
 import type { Group } from "@camunda/camunda-api-zod-schemas/8.10";
@@ -25,29 +25,35 @@ const EditModal: FC<UseEntityModalProps<Group>> = ({
   const { t } = useTranslate("groups");
   const { enqueueNotification } = useNotifications();
 
-  const [callUpdateGroup, { error, loading }] = useApiCall(updateGroup, {
-    suppressErrorNotification: true,
-  });
+  const qc = useQueryClient();
+  const {
+    mutate,
+    isPending: loading,
+    error,
+  } = useMutation(groupMutations.update(qc));
 
   const [groupName, setGroupName] = useState(group.name);
   const [groupId, setGroupId] = useState(group.groupId);
   const [description, setDescription] = useState(group.description);
   const [isGroupIdValid, setIsGroupIdValid] = useState(true);
 
-  const handleSubmit = async () => {
-    const { success } = await callUpdateGroup({
-      groupId: group.groupId,
-      name: groupName,
-      description: description,
-    });
-
-    if (success) {
-      enqueueNotification({
-        kind: "success",
-        title: t("groupHasBeenUpdated"),
-      });
-      onSuccess();
-    }
+  const handleSubmit = () => {
+    mutate(
+      {
+        groupId: group.groupId,
+        name: groupName,
+        description: description,
+      },
+      {
+        onSuccess: () => {
+          enqueueNotification({
+            kind: "success",
+            title: t("groupHasBeenUpdated"),
+          });
+          onSuccess();
+        },
+      },
+    );
   };
 
   const validateGroupId = (id: string) => {

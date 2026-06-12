@@ -7,13 +7,13 @@
  */
 
 import { FC } from "react";
-import { useApiCall } from "src/utility/api";
 import useTranslate from "src/utility/localization";
 import {
   DeleteModal as Modal,
   UseEntityModalProps,
 } from "src/components/modal";
-import { deleteGlobalTaskListener } from "src/utility/api/global-task-listeners";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { globalTaskListenerMutations } from "src/utility/api/global-task-listeners/mutations";
 import { useNotifications } from "src/components/notifications";
 import type { GlobalTaskListener } from "@camunda/camunda-api-zod-schemas/8.10";
 
@@ -25,19 +25,25 @@ const DeleteModal: FC<UseEntityModalProps<GlobalTaskListener>> = ({
 }) => {
   const { t } = useTranslate("globalTaskListeners");
   const { enqueueNotification } = useNotifications();
-  const [apiCall, { loading }] = useApiCall(deleteGlobalTaskListener);
+  const qc = useQueryClient();
+  const { mutate, isPending: loading } = useMutation(
+    globalTaskListenerMutations.delete(qc),
+  );
 
-  const handleSubmit = async () => {
-    const { success } = await apiCall({ id });
-
-    if (success) {
-      enqueueNotification({
-        kind: "success",
-        title: t("globalTaskListenerDeleted"),
-        subtitle: type,
-      });
-      onSuccess();
-    }
+  const handleSubmit = () => {
+    mutate(
+      { id },
+      {
+        onSuccess: () => {
+          enqueueNotification({
+            kind: "success",
+            title: t("globalTaskListenerDeleted"),
+            subtitle: type,
+          });
+          onSuccess();
+        },
+      },
+    );
   };
 
   return (

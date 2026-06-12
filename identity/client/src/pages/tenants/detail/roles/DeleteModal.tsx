@@ -7,14 +7,14 @@
  */
 
 import { FC } from "react";
-import { useApiCall } from "src/utility/api";
 import useTranslate from "src/utility/localization";
 import {
   DeleteModal as Modal,
   UseEntityModalCustomProps,
 } from "src/components/modal";
 import { useNotifications } from "src/components/notifications";
-import { unassignTenantRole } from "src/utility/api/tenants";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { tenantMutations } from "src/utility/api/tenants/mutations";
 import type { Role } from "@camunda/camunda-api-zod-schemas/8.10";
 
 type RemoveTenantRoleModalProps = UseEntityModalCustomProps<
@@ -34,22 +34,25 @@ const DeleteModal: FC<RemoveTenantRoleModalProps> = ({
   const { t, Translate } = useTranslate("tenants");
   const { enqueueNotification } = useNotifications();
 
-  const [callUnassignRole, { loading }] = useApiCall(unassignTenantRole);
+  const qc = useQueryClient();
+  const { mutate, isPending: loading } = useMutation(
+    tenantMutations.unassignRole(qc),
+  );
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (tenant && roleId) {
-      const { success } = await callUnassignRole({
-        tenantId: tenant,
-        roleId,
-      });
-
-      if (success) {
-        enqueueNotification({
-          kind: "success",
-          title: t("tenantRoleRemoved"),
-        });
-        onSuccess();
-      }
+      mutate(
+        { tenantId: tenant, roleId },
+        {
+          onSuccess: () => {
+            enqueueNotification({
+              kind: "success",
+              title: t("tenantRoleRemoved"),
+            });
+            onSuccess();
+          },
+        },
+      );
     }
   };
 

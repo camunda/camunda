@@ -8,18 +8,21 @@
 
 import { FC, useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import TextField from "src/components/form/TextField";
-import { useApiCall } from "src/utility/api";
 import useTranslate from "src/utility/localization";
 import { FormModal, UseModalProps } from "src/components/modal";
-import { createUser } from "src/utility/api/users";
+import { userMutations } from "src/utility/api/users/mutations";
 import { isValidEmail, isValidId, getIdPattern } from "src/utility/validate";
 
 const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
   const { t } = useTranslate("users");
-  const [apiCall, { loading, error }] = useApiCall(createUser, {
-    suppressErrorNotification: true,
-  });
+  const qc = useQueryClient();
+  const {
+    mutate,
+    isPending: loading,
+    error,
+  } = useMutation(userMutations.create(qc));
 
   type FormData = {
     username: string;
@@ -54,17 +57,16 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
     }
   }, [password, touchedFields.repeatedPassword, trigger]);
 
-  const onSubmit = async (data: FormData) => {
-    const { success } = await apiCall({
-      name: data.name,
-      email: data.email,
-      username: data.username,
-      password: data.password,
-    });
-
-    if (success) {
-      onSuccess();
-    }
+  const onSubmit = (data: FormData) => {
+    mutate(
+      {
+        name: data.name,
+        email: data.email,
+        username: data.username,
+        password: data.password,
+      },
+      { onSuccess },
+    );
   };
 
   return (

@@ -29,23 +29,25 @@ const Members: FC<MembersProps> = ({ tenantId, isOIDC }) => {
   const { t } = useTranslate("tenants");
 
   const { users, loading, success, reload, paginationProps } = useEnrichedUsers(
+    "tenants",
     getMembersByTenantId,
     {
       tenantId,
     },
     isOIDC,
   );
+  const noop = () => {};
 
   const isAssignedUsersListEmpty = !users || users.length === 0;
   const [assignUsers, assignUsersModal] = useEntityModal(
     isOIDC ? AssignMemberModal : AssignMembersModal,
-    reload,
+    noop,
     { assignedUsers: users },
   );
   const openAssignModal = () => assignUsers({ tenantId });
   const [unassignMember, unassignMemberModal] = useEntityModal(
     DeleteModal,
-    reload,
+    noop,
     {
       tenant: tenantId,
     },

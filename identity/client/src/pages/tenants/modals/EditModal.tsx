@@ -7,11 +7,11 @@
  */
 
 import { FC, useEffect, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { FormModal, UseEntityModalProps } from "src/components/modal";
 import useTranslate from "src/utility/localization";
-import { useApiCall } from "src/utility/api";
 import { useNotifications } from "src/components/notifications";
-import { updateTenant } from "src/utility/api/tenants";
+import { tenantMutations } from "src/utility/api/tenants/mutations";
 import TextField from "src/components/form/TextField";
 import type { Tenant } from "@camunda/camunda-api-zod-schemas/8.10";
 
@@ -29,9 +29,12 @@ const EditModal: FC<UseEntityModalProps<Tenant>> = ({
   const { t } = useTranslate("tenants");
   const { enqueueNotification } = useNotifications();
 
-  const [callUpdateTenant, { error, loading }] = useApiCall(updateTenant, {
-    suppressErrorNotification: true,
-  });
+  const qc = useQueryClient();
+  const {
+    mutate,
+    isPending: loading,
+    error,
+  } = useMutation(tenantMutations.update(qc));
 
   const [tenantName, setTenantName] = useState(
     () => getTenantFormValues(tenant).name,
@@ -46,20 +49,19 @@ const EditModal: FC<UseEntityModalProps<Tenant>> = ({
     setDescription(newTenantFormValues.description);
   }, [tenant]);
 
-  const handleSubmit = async () => {
-    const { success } = await callUpdateTenant({
-      tenantId: tenant.tenantId,
-      name: tenantName,
-      description,
-    });
-
-    if (success) {
-      enqueueNotification({
-        kind: "success",
-        title: t("tenantHasBeenUpdated"),
-      });
-      onSuccess();
-    }
+  const handleSubmit = () => {
+    mutate(
+      { tenantId: tenant.tenantId, name: tenantName, description },
+      {
+        onSuccess: () => {
+          enqueueNotification({
+            kind: "success",
+            title: t("tenantHasBeenUpdated"),
+          });
+          onSuccess();
+        },
+      },
+    );
   };
 
   return (

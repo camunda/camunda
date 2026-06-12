@@ -7,10 +7,10 @@
  */
 
 import { FC, useEffect, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import useTranslate from "src/utility/localization";
-import { useApiCall } from "src/utility/api";
+import { groupMutations } from "src/utility/api/groups/mutations";
 import FormModal from "src/components/modal/FormModal";
-import { assignGroupClient } from "src/utility/api/groups";
 import TextField from "src/components/form/TextField";
 import { UseEntityModalProps } from "src/components/modal";
 import { useNotifications } from "src/components/notifications";
@@ -25,30 +25,28 @@ const AssignClientsModal: FC<
   const { t } = useTranslate("groups");
   const { enqueueNotification } = useNotifications();
   const [clientId, setClientId] = useState<TenantClient["clientId"]>("");
-  const [loadingAssignClient, setLoadingAssignClient] = useState(false);
-
-  const [callAssignClient] = useApiCall(assignGroupClient);
+  const qc = useQueryClient();
+  const { mutate, isPending: loadingAssignClient } = useMutation(
+    groupMutations.assignClient(qc),
+  );
 
   const canSubmit = groupId && clientId.length;
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (!canSubmit) return;
-
-    setLoadingAssignClient(true);
-    const { success } = await callAssignClient({
-      clientId,
-      groupId,
-    });
-    setLoadingAssignClient(false);
-
-    if (success) {
-      enqueueNotification({
-        kind: "success",
-        title: t("clientAssigned"),
-        subtitle: t("clientAssignedSuccessfully"),
-      });
-      onSuccess();
-    }
+    mutate(
+      { clientId, groupId },
+      {
+        onSuccess: () => {
+          enqueueNotification({
+            kind: "success",
+            title: t("clientAssigned"),
+            subtitle: t("clientAssignedSuccessfully"),
+          });
+          onSuccess();
+        },
+      },
+    );
   };
 
   useEffect(() => {

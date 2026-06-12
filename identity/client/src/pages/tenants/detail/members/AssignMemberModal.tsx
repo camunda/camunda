@@ -7,10 +7,10 @@
  */
 
 import { FC, useEffect, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { UseEntityModalCustomProps } from "src/components/modal";
-import { assignTenantMember } from "src/utility/api/membership";
+import { membershipMutations } from "src/utility/api/membership/mutations";
 import useTranslate from "src/utility/localization";
-import { useApiCall } from "src/utility/api";
 import FormModal from "src/components/modal/FormModal";
 import TextField from "src/components/form/TextField";
 import { Caption } from "src/pages/authorizations/modals/components.tsx";
@@ -25,22 +25,16 @@ const AssignMemberModal: FC<
 > = ({ entity: { tenantId }, onSuccess, open, onClose }) => {
   const { t, Translate } = useTranslate("tenants");
   const [username, setUsername] = useState("");
-  const [loadingAssignUser, setLoadingAssignUser] = useState(false);
-
-  const [callAssignUser] = useApiCall(assignTenantMember);
+  const qc = useQueryClient();
+  const { mutate, isPending: loadingAssignUser } = useMutation(
+    membershipMutations.assignTenantMember(qc),
+  );
 
   const canSubmit = tenantId && username;
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (!canSubmit) return;
-
-    setLoadingAssignUser(true);
-    const { success } = await callAssignUser({ username, tenantId });
-    setLoadingAssignUser(false);
-
-    if (success) {
-      onSuccess();
-    }
+    mutate({ username, tenantId }, { onSuccess });
   };
 
   useEffect(() => {

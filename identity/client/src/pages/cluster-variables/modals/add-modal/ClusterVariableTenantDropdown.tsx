@@ -7,8 +7,9 @@
  */
 
 import { FC, useEffect } from "react";
-import { usePaginatedApi } from "src/utility/api";
-import { searchTenant } from "src/utility/api/tenants";
+import { useQuery } from "@tanstack/react-query";
+import { usePagination } from "src/utility/api";
+import { tenantQueries } from "src/utility/api/tenants/queries";
 import { Dropdown } from "@carbon/react";
 import useTranslate from "src/utility/localization";
 import type { Tenant } from "@camunda/camunda-api-zod-schemas/8.10";
@@ -24,8 +25,10 @@ const ClusterVariableTenantDropdown: FC<TenantDropdownProps> = ({
 }) => {
   const { t } = useTranslate("clusterVariables");
 
-  const { data: tenants, loading: tenantLoading } =
-    usePaginatedApi(searchTenant);
+  const { pageParams } = usePagination();
+  const { data: tenants, isLoading: tenantLoading } = useQuery(
+    tenantQueries.search(pageParams),
+  );
 
   // Set tenantId to first tenant if not set
   useEffect(() => {

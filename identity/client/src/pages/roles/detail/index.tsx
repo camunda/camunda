@@ -9,15 +9,15 @@
 import { FC } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { OverflowMenu, OverflowMenuItem, Section, Stack } from "@carbon/react";
+import { useQuery } from "@tanstack/react-query";
 import useTranslate from "src/utility/localization";
-import { useApi } from "src/utility/api";
+import { roleQueries } from "src/utility/api/roles/queries";
 import NotFound from "src/pages/not-found";
 import { Breadcrumbs, StackPage } from "src/components/layout/Page";
 import { DetailPageHeaderFallback } from "src/components/fallbacks";
 import Flex from "src/components/layout/Flex";
 import PageHeadline from "src/components/layout/PageHeadline";
 import Tabs from "src/components/tabs";
-import { getRoleDetails } from "src/utility/api/roles";
 import { useEntityModal } from "src/components/modal";
 import DeleteModal from "src/pages/roles/modals/DeleteModal";
 import EditModal from "src/pages/roles/modals/EditModal";
@@ -45,15 +45,9 @@ const Details: FC<DetailsProps> = ({
     tab: string;
   }>();
 
-  const {
-    data: role,
-    loading,
-    reload,
-  } = useApi(getRoleDetails, {
-    roleId: id,
-  });
+  const { data: role, isLoading: loading } = useQuery(roleQueries.detail(id));
 
-  const [editRole, editModal] = useEntityModal(EditModal, reload);
+  const [editRole, editModal] = useEntityModal(EditModal, () => {});
   const [deleteRole, deleteModal] = useEntityModal(DeleteModal, () =>
     navigate("..", { replace: true }),
   );
