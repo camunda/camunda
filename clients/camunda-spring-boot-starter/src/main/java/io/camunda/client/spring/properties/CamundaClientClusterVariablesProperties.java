@@ -15,6 +15,7 @@
  */
 package io.camunda.client.spring.properties;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class CamundaClientClusterVariablesProperties {
@@ -26,7 +27,7 @@ public class CamundaClientClusterVariablesProperties {
   private boolean enabled = true;
 
   /** Cluster variables to set at startup as key-value pairs. */
-  private Map<String, Object> variables;
+  private Map<String, Object> variables = new LinkedHashMap<>();
 
   public boolean isEnabled() {
     return enabled;
