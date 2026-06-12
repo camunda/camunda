@@ -55,6 +55,7 @@ import org.mockito.Mockito;
 
 class RdbmsExporterTest {
 
+  private static final String PHYSICAL_TENANT_ID = "mytenant";
   private Controller controller;
   private RdbmsWriters rdbmsWriters;
   private RdbmsExporter exporter;
@@ -477,7 +478,7 @@ class RdbmsExporterTest {
         .hasMessage("Schema is not ready for use");
 
     // verify schema manager was checked
-    verify(schemaManager).isInitialized("default");
+    verify(schemaManager).isInitialized(PHYSICAL_TENANT_ID);
   }
 
   @Test
@@ -687,7 +688,7 @@ class RdbmsExporterTest {
         new RdbmsExporter.Builder()
             .rdbmsWriter(rdbmsWriters)
             .partitionId(0)
-            .physicalTenantId("default")
+            .physicalTenantId(PHYSICAL_TENANT_ID)
             .flushInterval(Duration.ofMillis(500))
             .queueSize(100)
             .rdbmsSchemaManagerRegistry(schemaManager)

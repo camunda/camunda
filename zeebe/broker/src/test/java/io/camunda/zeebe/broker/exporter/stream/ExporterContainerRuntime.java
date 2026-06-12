@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.exporter.stream;
 
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterLoadException;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
@@ -112,7 +113,12 @@ public final class ExporterContainerRuntime implements CloseableSilently {
       final MeterRegistry meterRegistry,
       final ExporterReplayControl replayControl) {
     return newContainer(
-        descriptor, partitionId, "default", initializationInfo, meterRegistry, replayControl);
+        descriptor,
+        partitionId,
+        PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+        initializationInfo,
+        meterRegistry,
+        replayControl);
   }
 
   public ExporterContainer newContainer(

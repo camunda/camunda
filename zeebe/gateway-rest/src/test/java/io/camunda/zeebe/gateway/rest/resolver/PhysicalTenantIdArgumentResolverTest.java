@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.resolver;
 
-import static io.camunda.spring.utils.PhysicalTenantContext.DEFAULT_PHYSICAL_TENANT_ID;
+import static io.camunda.configuration.api.physicaltenants.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.spring.utils.PhysicalTenantContext;

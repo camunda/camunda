@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.exporter.test;
 
+import static io.camunda.configuration.api.physicaltenants.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+
 import io.camunda.zeebe.exporter.api.context.Configuration;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -30,7 +32,7 @@ public final class ExporterTestContext implements Context {
   private RecordFilter recordFilter;
   private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
   private int partitionId;
-  private String physicalTenantId = "default";
+  private String physicalTenantId = DEFAULT_PHYSICAL_TENANT_ID;
   private String clusterId = "";
   private String licenseKey;
   private InstantSource clock = InstantSource.system();
@@ -72,11 +74,6 @@ public final class ExporterTestContext implements Context {
   }
 
   @Override
-  public void setFilter(final RecordFilter filter) {
-    recordFilter = filter;
-  }
-
-  @Override
   public String getClusterId() {
     return clusterId;
   }
@@ -91,6 +88,11 @@ public final class ExporterTestContext implements Context {
     return licenseKey;
   }
 
+  @Override
+  public void setFilter(final RecordFilter filter) {
+    recordFilter = filter;
+  }
+
   public ExporterTestContext setLicenseKey(final String licenseKey) {
     this.licenseKey = licenseKey;
     return this;
@@ -101,13 +103,13 @@ public final class ExporterTestContext implements Context {
     return this;
   }
 
-  public ExporterTestContext setClock(final InstantSource clock) {
-    this.clock = Objects.requireNonNull(clock, "must specify a clock");
+  public ExporterTestContext setConfiguration(final Configuration configuration) {
+    this.configuration = Objects.requireNonNull(configuration, "must specify a configuration");
     return this;
   }
 
-  public ExporterTestContext setConfiguration(final Configuration configuration) {
-    this.configuration = Objects.requireNonNull(configuration, "must specify a configuration");
+  public ExporterTestContext setClock(final InstantSource clock) {
+    this.clock = Objects.requireNonNull(clock, "must specify a clock");
     return this;
   }
 

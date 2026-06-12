@@ -14,6 +14,7 @@ import io.camunda.authentication.config.spi.IdentityToAdminComponentAliasAdapter
 import io.camunda.authentication.config.spi.SecurityPathAdapter;
 import io.camunda.authentication.config.spi.WebAppProviderAdapter;
 import io.camunda.authentication.pt.PhysicalTenantSecurityConfiguration;
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.search.clients.reader.AuthorizationReader;
 import io.camunda.security.api.context.CamundaAuthenticationConverter;
 import io.camunda.security.api.model.CamundaAuthentication;
@@ -94,7 +95,9 @@ public class WebSecurityConfig {
   public AdminUserPresencePort adminUserPresencePort(
       final ServiceRegistry serviceRegistry, final CamundaSecurityLibraryProperties properties) {
     return new AdminUserPresenceAdapter(
-        serviceRegistry.roleServices("default"), // TODO apply this to all physical tenants
+        serviceRegistry.roleServices(
+            PhysicalTenantIds
+                .DEFAULT_PHYSICAL_TENANT_ID), // TODO apply this to all physical tenants
         properties.getInitialization());
   }
 

@@ -8,6 +8,7 @@
 package io.camunda.authentication.config.controllers;
 
 import io.camunda.authentication.service.DefaultMembershipService;
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.service.ApiServicesExecutorProvider;
 import io.camunda.service.GroupServices;
@@ -50,10 +51,11 @@ public class WebSecurityOidcTestContext {
     final var serviceRegistry =
         DefaultServiceRegistry.of(
             b ->
-                b.mappingRuleServices("default", mappingRuleServices)
-                    .tenantServices("default", tenantServices)
-                    .roleServices("default", roleServices)
-                    .groupServices("default", groupServices));
+                b.mappingRuleServices(
+                        PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, mappingRuleServices)
+                    .tenantServices(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, tenantServices)
+                    .roleServices(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, roleServices)
+                    .groupServices(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, groupServices));
     return new DefaultMembershipService(serviceRegistry, cslProperties);
   }
 }

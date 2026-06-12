@@ -25,13 +25,16 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-bpmn-model</artifactId>
-      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>configuration-api</artifactId>
     </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>configuration</artifactId>
-      <version>${project.version}</version>
     </dependency>
 
     <dependency>

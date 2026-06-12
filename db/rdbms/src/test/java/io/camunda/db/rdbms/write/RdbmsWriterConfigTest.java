@@ -10,6 +10,7 @@ package io.camunda.db.rdbms.write;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -21,7 +22,7 @@ class RdbmsWriterConfigTest {
     final var config = new RdbmsWriterConfig.Builder().partitionId(1).build();
 
     assertThat(config.physicalTenantId())
-        .isEqualTo(RdbmsWriterConfig.DEFAULT_PHYSICAL_TENANT_ID)
+        .isEqualTo(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
         .isEqualTo("default");
   }
 
