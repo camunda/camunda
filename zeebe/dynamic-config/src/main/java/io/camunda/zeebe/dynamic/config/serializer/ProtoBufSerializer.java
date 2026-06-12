@@ -25,6 +25,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdatePartitionDistributorConfigRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateRoutingStateRequest;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossipState;
@@ -1038,6 +1039,16 @@ public class ProtoBufSerializer
   }
 
   @Override
+  public byte[] encodeUpdatePartitionDistributorConfigRequest(
+      final UpdatePartitionDistributorConfigRequest request) {
+    return Requests.UpdatePartitionDistributorConfigRequest.newBuilder()
+        .setConfig(encodePartitionDistributorConfig(request.config()))
+        .setDryRun(request.dryRun())
+        .build()
+        .toByteArray();
+  }
+
+  @Override
   public AddMembersRequest decodeAddMembersRequest(final byte[] encodedState) {
     try {
       final var addMemberRequest = Requests.AddMembersRequest.parseFrom(encodedState);
@@ -1325,6 +1336,25 @@ public class ProtoBufSerializer
     }
     final var routingState = decodeRoutingState(proto.getRoutingState());
     return new UpdateRoutingStateRequest(routingState, proto.getDryRun());
+  }
+
+  @Override
+  public UpdatePartitionDistributorConfigRequest decodeUpdatePartitionDistributorConfigRequest(
+      final byte[] bytes) {
+    final Requests.UpdatePartitionDistributorConfigRequest proto;
+    try {
+      proto = Requests.UpdatePartitionDistributorConfigRequest.parseFrom(bytes);
+    } catch (final InvalidProtocolBufferException e) {
+      throw new DecodingFailed(e);
+    }
+    final var config =
+        decodePartitionDistributorConfig(proto.getConfig())
+            .orElseThrow(
+                () ->
+                    new DecodingFailed(
+                        new IllegalArgumentException(
+                            "UpdatePartitionDistributorConfigRequest has empty config")));
+    return new UpdatePartitionDistributorConfigRequest(config, proto.getDryRun());
   }
 
   public Builder encodeTopologyChangeResponse(

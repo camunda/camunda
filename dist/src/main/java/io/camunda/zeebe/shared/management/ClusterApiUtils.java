@@ -116,6 +116,7 @@ final class ClusterApiUtils {
           case final ConnectException ignore -> 502;
           case final NoSuchMemberException ignore -> 502;
           case final TimeoutException ignore -> 504;
+          case final IllegalArgumentException ignore -> 400;
           default -> 500;
         };
     return ResponseEntity.status(status).body(errorResponse);
@@ -408,6 +409,24 @@ final class ClusterApiUtils {
               io.camunda.zeebe.management.cluster.PartitionDistributionConfig.TypeEnum.FIXED);
     }
     return result;
+  }
+
+  static PartitionDistributorConfig toPartitionDistributorConfig(
+      final io.camunda.zeebe.management.cluster.PartitionDistributionConfig dto) {
+    if (dto.getType() != TypeEnum.ZONE_AWARE) {
+      throw new IllegalArgumentException(
+          "Only ZONE_AWARE partition distribution config is supported. Received: " + dto.getType());
+    }
+    final List<PartitionDistributorConfig.ZoneSpec> zones =
+        dto.getZones() == null
+            ? List.of()
+            : dto.getZones().stream()
+                .map(
+                    z ->
+                        new PartitionDistributorConfig.ZoneSpec(
+                            z.getName(), z.getNumberOfReplicas(), z.getPriority()))
+                .toList();
+    return new ZoneAwareConfig(zones);
   }
 
   private static io.camunda.zeebe.management.cluster.RoutingState mapRoutingState(

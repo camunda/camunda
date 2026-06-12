@@ -50,6 +50,7 @@ public final class ClusterConfigurationRequestServer implements AutoCloseable {
     registerClusterScaleRequestHandler();
     registerClusterPatchRequestHandler();
     registerUpdateRoutingStateHandler();
+    registerUpdatePartitionDistributionHandler();
     registerForceRemoveBrokersRequestHandler();
     registerPurgeRequestHandler();
   }
@@ -204,6 +205,15 @@ public final class ClusterConfigurationRequestServer implements AutoCloseable {
         ClusterConfigurationRequestTopics.UPDATE_ROUTING_STATE.topic(),
         serializer::decodeUpdateRoutingStateRequest,
         request -> mapResponse(clusterConfigurationManagementApi.updateRoutingState(request)),
+        this::encodeResponse);
+  }
+
+  private void registerUpdatePartitionDistributionHandler() {
+    communicationService.replyTo(
+        ClusterConfigurationRequestTopics.UPDATE_PARTITION_DISTRIBUTION.topic(),
+        serializer::decodeUpdatePartitionDistributorConfigRequest,
+        request ->
+            mapResponse(clusterConfigurationManagementApi.updatePartitionDistribution(request)),
         this::encodeResponse);
   }
 
