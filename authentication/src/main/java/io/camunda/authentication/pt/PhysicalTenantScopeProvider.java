@@ -7,6 +7,8 @@
  */
 package io.camunda.authentication.pt;
 
+import static io.camunda.spring.utils.PhysicalTenantContext.PHYSICAL_TENANTS_PATH_SEGMENT;
+
 import io.camunda.security.api.context.CamundaSecurityScopeProvider;
 import io.camunda.security.api.model.config.ScopedSecurityDescriptor;
 import java.util.ArrayList;
@@ -82,11 +84,12 @@ public final class PhysicalTenantScopeProvider implements CamundaSecurityScopePr
       try {
         final var authConfig =
             PhysicalTenantAuthConfigurations.forPhysicalTenant(tenantId, environment);
-        result.add(new ScopedSecurityDescriptor("/physical-tenants/" + tenantId, authConfig));
+        final String basePath = PHYSICAL_TENANTS_PATH_SEGMENT + tenantId;
+        result.add(new ScopedSecurityDescriptor(basePath, authConfig));
         LOG.debug(
-            "Registered scoped security descriptor for physical tenant '{}' at /physical-tenants/{}",
+            "Registered scoped security descriptor for physical tenant '{}' at {}",
             tenantId,
-            tenantId);
+            basePath);
       } catch (final IllegalStateException e) {
         LOG.warn(
             "Skipping scoped security chain for physical tenant '{}': {}",
