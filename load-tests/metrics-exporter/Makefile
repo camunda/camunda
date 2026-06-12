@@ -1,4 +1,5 @@
 DOCKER_PUSH ?= false
+IMAGE ?= registry.camunda.cloud/team-reliability-testing/metrics-exporter:latest
 
 .PHONY: build
 build:
@@ -16,4 +17,4 @@ lint:
 
 .PHONY: docker
 docker:
-	docker buildx build --tag registry.camunda.cloud/team-reliability-testing/metrics-exporter:latest --push=$(DOCKER_PUSH) .
+	docker buildx build --tag $(IMAGE) --push=$(DOCKER_PUSH) .

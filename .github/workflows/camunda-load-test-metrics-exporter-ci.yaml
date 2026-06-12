@@ -44,7 +44,7 @@ jobs:
         run: go mod download
 
       - name: Run tests
-        run: go test -race -count=1 ./...
+        run: make test
 
       - name: Observe build status
         if: always()
@@ -69,13 +69,11 @@ jobs:
           go-version-file: ./load-tests/metrics-exporter/go.mod
           cache-dependency-path: ./load-tests/metrics-exporter/go.sum
 
-      - name: go vet
-        run: go vet ./...
+      - name: Install golangci-lint
+        run: go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.1.6
 
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 # v9.2.0
-        with:
-          working-directory: ./load-tests/metrics-exporter
+      - name: Lint
+        run: make lint
 
       - name: Observe build status
         if: always()
@@ -105,26 +103,11 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
 
-      - name: Compute metadata
-        uses: docker/metadata-action@030e881283bb7a6894de51c315a6bfe6a94e05cf # v6.0.0
-        id: meta
-        with:
-          images: registry.camunda.cloud/team-reliability-testing/metrics-exporter
-          tags: |
-            # set latest tag for main branch
-            type=raw,value=latest
-
       - name: Setup Docker
         uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
 
       - name: Build image
-        uses: docker/build-push-action@d08e5c354a6adb9ed34480a06d141179aa583294 # v7
-        with:
-          context: ./load-tests/metrics-exporter
-          file: ./load-tests/metrics-exporter/Dockerfile
-          push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+        run: make docker DOCKER_PUSH=${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
 
       - name: Observe build status
         if: always()
