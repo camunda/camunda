@@ -52,7 +52,11 @@ public final class PhysicalTenantFilter implements Filter {
   }
 
   private void extractTenantId(final HttpServletRequest request) {
-    final String path = request.getRequestURI();
+    // Use the context-relative path: getRequestURI() includes the servlet context path (e.g.
+    // "/zeebe/physical-tenants/..."), but Spring Security matches the per-scope chains against the
+    // context-relative path. Strip the context path so both agree regardless of how the host is
+    // deployed.
+    final String path = contextRelativePath(request);
     if (path == null || !path.startsWith(PhysicalTenantContext.PHYSICAL_TENANTS_PATH_SEGMENT)) {
       return;
     }
@@ -65,5 +69,17 @@ public final class PhysicalTenantFilter implements Filter {
     }
     PhysicalTenantContext.setPhysicalTenantId(request, tenantId);
     LOG.trace("Resolved physical tenant '{}' from path '{}'", tenantId, path);
+  }
+
+  private static String contextRelativePath(final HttpServletRequest request) {
+    final String uri = request.getRequestURI();
+    if (uri == null) {
+      return null;
+    }
+    final String contextPath = request.getContextPath();
+    if (contextPath != null && !contextPath.isEmpty() && uri.startsWith(contextPath)) {
+      return uri.substring(contextPath.length());
+    }
+    return uri;
   }
 }
