@@ -14,7 +14,7 @@ const mockGetProcessDefinitionInstanceStatisticsEndpoint = createEndpointMock({
 	method: 'POST',
 });
 
-const mockGetIncidentStatisticsByErrorEndpoint = createEndpointMock({
+const mockGetIncidentProcessInstanceStatisticsByErrorEndpoint = createEndpointMock({
 	endpoint: endpoints.getIncidentProcessInstanceStatisticsByError.getUrl(),
 	method: 'POST',
 });
@@ -57,5 +57,5 @@ export {
 	mockLicenseEndpoint,
 	mockSaasTokenEndpoint,
 	mockGetProcessDefinitionInstanceStatisticsEndpoint,
-	mockGetIncidentStatisticsByErrorEndpoint,
+	mockGetIncidentProcessInstanceStatisticsByErrorEndpoint,
 };
