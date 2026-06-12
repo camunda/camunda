@@ -29,6 +29,17 @@ import org.springframework.mock.env.MockEnvironment;
 
 class ExporterArgsOverlayTest {
 
+  // ---- helpers ----
+
+  private static Exporter exporter(
+      final String className, final String jarPath, final Map<String, Object> args) {
+    final Exporter e = new Exporter();
+    e.setClassName(className);
+    e.setJarPath(jarPath);
+    e.setArgs(new LinkedHashMap<>(args));
+    return e;
+  }
+
   @Nested
   class DeepMerge {
 
@@ -351,16 +362,81 @@ class ExporterArgsOverlayTest {
           .as("sibling key preserved from root (deep-merge, not replace)")
           .containsEntry("a", 1);
     }
-  }
 
-  // ---- helpers ----
+    @Test
+    void shouldInheritAllRootExportersWhenTenantDeclaresNone() {
+      // given root has two exporters; the tenant overrides nothing under data.exporters
+      final Map<String, Object> properties = new HashMap<>();
+      properties.put("camunda.data.exporters.exp1.class-name", "com.Exp1");
+      properties.put("camunda.data.exporters.exp1.args.k", "v");
+      properties.put("camunda.data.exporters.exp2.class-name", "com.Exp2");
+      properties.put(
+          "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.index-prefix",
+          "tenanta");
+      environment.getPropertySources().addFirst(new MapPropertySource("test", properties));
 
-  private static Exporter exporter(
-      final String className, final String jarPath, final Map<String, Object> args) {
-    final Exporter e = new Exporter();
-    e.setClassName(className);
-    e.setJarPath(jarPath);
-    e.setArgs(new LinkedHashMap<>(args));
-    return e;
+      final Camunda camunda = new Camunda();
+      Binder.get(environment).bind(Camunda.PREFIX, Bindable.ofInstance(camunda));
+
+      // when
+      final Camunda tenantA =
+          PhysicalTenantResolver.of(environment, camunda).forPhysicalTenant("tenanta");
+
+      // then both root exporters are present on the tenant with fields intact
+      assertThat(tenantA.getData().getExporters()).containsKeys("exp1", "exp2");
+      assertThat(tenantA.getData().getExporters().get("exp1").getClassName()).isEqualTo("com.Exp1");
+      assertThat(tenantA.getData().getExporters().get("exp1").getArgs()).containsEntry("k", "v");
+      assertThat(tenantA.getData().getExporters().get("exp2").getClassName()).isEqualTo("com.Exp2");
+    }
+
+    @Test
+    void shouldAllowTenantDedicatedExporterAlongsideRootExporters() {
+      // given root has one exporter; the tenant also declares a second, dedicated one
+      final Map<String, Object> properties = new HashMap<>();
+      properties.put("camunda.data.exporters.rootexp.class-name", "com.Root");
+      properties.put(
+          "camunda.physical-tenants.tenanta.data.exporters.tenantexp.class-name", "com.Tenant");
+      properties.put(
+          "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.index-prefix",
+          "tenanta");
+      environment.getPropertySources().addFirst(new MapPropertySource("test", properties));
+
+      final Camunda camunda = new Camunda();
+      Binder.get(environment).bind(Camunda.PREFIX, Bindable.ofInstance(camunda));
+
+      // when
+      final Camunda tenantA =
+          PhysicalTenantResolver.of(environment, camunda).forPhysicalTenant("tenanta");
+
+      // then both exporters are present in the tenant's resolved config
+      assertThat(tenantA.getData().getExporters()).containsKeys("rootexp", "tenantexp");
+      assertThat(tenantA.getData().getExporters().get("rootexp").getClassName())
+          .isEqualTo("com.Root");
+      assertThat(tenantA.getData().getExporters().get("tenantexp").getClassName())
+          .isEqualTo("com.Tenant");
+    }
+
+    @Test
+    void shouldRejectTenantThatReclassesRootExporter() {
+      // given root declares an explicit className; tenant sets a different value for the same id
+      final Map<String, Object> properties = new HashMap<>();
+      properties.put("camunda.data.exporters.myexp.class-name", "com.Root");
+      properties.put(
+          "camunda.physical-tenants.tenanta.data.exporters.myexp.class-name", "com.Different");
+      properties.put(
+          "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.index-prefix",
+          "tenanta");
+      environment.getPropertySources().addFirst(new MapPropertySource("test", properties));
+
+      final Camunda camunda = new Camunda();
+      Binder.get(environment).bind(Camunda.PREFIX, Bindable.ofInstance(camunda));
+
+      // when / then — fail fast naming tenant, exporter id, and field
+      assertThatThrownBy(() -> PhysicalTenantResolver.of(environment, camunda))
+          .isInstanceOf(UnifiedConfigurationException.class)
+          .hasMessageContaining("tenanta")
+          .hasMessageContaining("myexp")
+          .hasMessageContaining("className");
+    }
   }
 }

@@ -303,4 +303,56 @@ class PhysicalTenantResolverTest {
     // when / then no exception
     PhysicalTenantResolver.validateTenantId(maxLength);
   }
+
+  @Test
+  void shouldExposeRootExportersOnEachResolvedTenant() {
+    // given root has an exporter; tenanta only overrides storage, not the exporter
+    setProperties(
+        Map.of(
+            "camunda.data.exporters.exp1.class-name",
+            "com.Exp1",
+            "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.index-prefix",
+            "tenanta"));
+
+    // when
+    final PhysicalTenantResolver resolver = newResolver();
+
+    // then the root exporter is present on the declared tenant and the synthesized default
+    assertThat(
+            resolver
+                .forPhysicalTenant("tenanta")
+                .getData()
+                .getExporters()
+                .get("exp1")
+                .getClassName())
+        .isEqualTo("com.Exp1");
+    assertThat(
+            resolver
+                .forPhysicalTenant(PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID)
+                .getData()
+                .getExporters()
+                .get("exp1")
+                .getClassName())
+        .isEqualTo("com.Exp1");
+  }
+
+  @Test
+  void shouldRejectTenantThatReclassesRootExporter() {
+    // given root declares a className for an exporter; a tenant overrides it with a different value
+    setProperties(
+        Map.of(
+            "camunda.data.exporters.exp1.class-name",
+            "com.Root",
+            "camunda.physical-tenants.tenanta.data.exporters.exp1.class-name",
+            "com.Different",
+            "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.index-prefix",
+            "tenanta"));
+
+    // when / then resolution fails fast naming tenant, exporter id, and field
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(this::newResolver)
+        .withMessageContaining("tenanta")
+        .withMessageContaining("exp1")
+        .withMessageContaining("className");
+  }
 }
