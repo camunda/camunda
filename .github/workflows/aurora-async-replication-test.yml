@@ -196,12 +196,20 @@ jobs:
           TEST_AURORA_JDBC_URL: jdbc:postgresql://localhost:${{ env.LOCAL_DB_PORT }}/postgres
           TEST_AURORA_USERNAME: camunda_admin
           TEST_AURORA_PASSWORD: ${{ env.TF_VAR_master_password }}
+          # Replica loss is simulated by rebooting the secondary instance, NOT by scaling it
+          # away. Scaling secondary_num_instances to 0 leaves the cluster headless and it does
+          # not rejoin the global database when scaled back, so the recovered instance never
+          # reappears in aurora_global_db_instance_status(). A reboot keeps the instance in the
+          # global cluster; while it restarts it stops applying redo, so its durable_lsn freezes
+          # and the exporter pauses, then resumes and catches up once it is back.
           TEST_AURORA_STOP_REPLICA_CMD: >-
-            terraform -chdir=${{ github.workspace }}/${{ env.TF_DIR }}
-            apply -auto-approve -var=secondary_num_instances=0
+            aws rds reboot-db-instance
+            --region ${{ env.TF_VAR_secondary_region }}
+            --db-instance-identifier ${{ env.TF_VAR_name_prefix }}-secondary-0
           TEST_AURORA_START_REPLICA_CMD: >-
-            terraform -chdir=${{ github.workspace }}/${{ env.TF_DIR }}
-            apply -auto-approve -var=secondary_num_instances=1
+            aws rds wait db-instance-available
+            --region ${{ env.TF_VAR_secondary_region }}
+            --db-instance-identifier ${{ env.TF_VAR_name_prefix }}-secondary-0
         uses: ./.github/actions/run-maven
         with:
           threads: '1'
