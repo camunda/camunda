@@ -23,7 +23,7 @@ import org.immutables.value.Value;
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableConditionalSubscriptionRecordValue.Builder.class)
 public interface ConditionalSubscriptionRecordValue
-    extends RecordValue, ProcessInstanceRelated, TenantOwned {
+    extends RecordValue, ProcessInstanceRelated, TenantOwned, WaitStateRelated {
 
   /**
    * The key of the scope in which the condition is evaluated. Scopes should be assigned for
@@ -95,4 +95,9 @@ public interface ConditionalSubscriptionRecordValue
    * @return true if the condition is interrupting, false otherwise
    */
   boolean isInterrupting();
+
+  /**
+   * @return the BPMN element type of the element this subscription belongs to
+   */
+  BpmnElementType getElementType();
 }
