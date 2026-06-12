@@ -230,9 +230,11 @@ public class CamundaProcessTestExtension
         .map(
             adapter ->
                 JudgeConfig.of(
-                    adapter,
-                    CamundaProcessTestRuntimeDefaults.JUDGE_PROPERTIES.getThreshold(),
-                    CamundaProcessTestRuntimeDefaults.JUDGE_PROPERTIES.getCustomPrompt()))
+                        adapter,
+                        CamundaProcessTestRuntimeDefaults.JUDGE_PROPERTIES.getThreshold(),
+                        CamundaProcessTestRuntimeDefaults.JUDGE_PROPERTIES.getCustomPrompt())
+                    .withAttachDocuments(
+                        CamundaProcessTestRuntimeDefaults.JUDGE_PROPERTIES.isAttachDocuments()))
         .ifPresent(CamundaAssert::setJudgeConfig);
   }
 
