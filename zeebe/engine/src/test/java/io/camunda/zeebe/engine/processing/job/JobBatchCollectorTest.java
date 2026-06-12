@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.security.configuration.EngineSecurityConfigurations;
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.metrics.AuthorizationCheckMetrics;
 import io.camunda.zeebe.engine.processing.identity.AuthenticatedAuthorizedTenants;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.job.JobBatchCollector.TooLargeJob;
@@ -37,6 +38,7 @@ import io.camunda.zeebe.test.util.MsgPackUtil;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.InstantSource;
@@ -71,7 +73,8 @@ final class JobBatchCollectorTest {
         new AuthorizationCheckBehavior(
             state,
             EngineSecurityConfigurations.unauthenticatedAndUnauthorized(),
-            new EngineConfiguration());
+            new EngineConfiguration(),
+            new AuthorizationCheckMetrics(new SimpleMeterRegistry()));
     collector = new JobBatchCollector(state, lengthEvaluator, authorizationCheckBehavior, clock);
   }
 
