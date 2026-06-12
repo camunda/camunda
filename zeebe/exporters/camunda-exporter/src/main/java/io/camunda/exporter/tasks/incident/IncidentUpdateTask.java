@@ -299,6 +299,12 @@ public final class IncidentUpdateTask implements BackgroundTask {
       final AdditionalData data, final IncidentUpdateRepository.PendingIncidentUpdateBatch batch) {
     final var bulkUpdate = new IncidentBulkUpdate();
     return mapActiveIncidentsToAffectedInstances(data)
+        .thenApplyAsync(
+            ignored -> {
+              seedResolvedIncidentsAsActive(data, batch);
+              return null;
+            },
+            executor)
         .thenComposeAsync(
             ignored ->
                 // processIncident one at a time, stopping if an error is raised
@@ -312,6 +318,29 @@ public final class IncidentUpdateTask implements BackgroundTask {
             updatedIds ->
                 notifyIncidents(updatedIds, bulkUpdate.incidentRequests(), data.incidents()))
         .join();
+  }
+
+  private void seedResolvedIncidentsAsActive(
+      final AdditionalData data, final IncidentUpdateRepository.PendingIncidentUpdateBatch batch) {
+    for (final var incident : data.incidents().values()) {
+      final var newState = batch.newIncidentStates().get(incident.incident().getKey());
+      if (newState != IncidentState.RESOLVED) {
+        continue;
+      }
+
+      final var treePath = data.incidentTreePaths().get(incident.id());
+      if (treePath == null) {
+        continue;
+      }
+
+      final var parsedTreePath = new TreePath(treePath);
+      parsedTreePath
+          .extractProcessInstanceIds()
+          .forEach(id -> data.addPiIdsWithIncidentIds(id, incident.id()));
+      parsedTreePath
+          .extractFlowNodeInstanceIds()
+          .forEach(id -> data.addFniIdsWithIncidentIds(id, incident.id()));
+    }
   }
 
   private CompletableFuture<Void> processIncidentInBatch(

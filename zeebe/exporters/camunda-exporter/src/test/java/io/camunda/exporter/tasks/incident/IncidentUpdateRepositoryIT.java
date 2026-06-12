@@ -449,6 +449,116 @@ abstract class IncidentUpdateRepositoryIT {
       matches = "^(?=\\s*\\S).*$",
       disabledReason = "Excluding from AWS OS IT CI")
   @Nested
+  final class ProcessNextBatchIT {
+
+    @RegressionTest("https://github.com/camunda/camunda/issues/54279")
+    void shouldClearStaleIncidentFlagWhenCreatedAndResolvedInSameBatch()
+        throws PersistenceException, IOException {
+      // given
+      final var metadata = new ExporterMetadata(new ObjectMapper());
+      final var repository = createRepository();
+      final var executor = Executors.newSingleThreadScheduledExecutor();
+
+      final var incidentNotifier = mock(IncidentNotifier.class);
+      when(incidentNotifier.notifyAsync(anyList()))
+          .thenReturn(CompletableFuture.completedFuture(null));
+
+      // the incident document is still PENDING: the CREATED update will be dropped because RESOLVED
+      // is present in the same batch, so it never transitions to ACTIVE
+      final var incidentKey = 1L;
+      final var incident = newIncident(incidentKey).setState(IncidentState.PENDING);
+      indexIncident(incident);
+
+      // the process instance is already displaying an incident (incident=true) in the list view
+      final var batchRequest = clientAdapter.createBatchRequest();
+      batchRequest.addWithId(
+          listViewTemplate.getFullQualifiedName(),
+          String.valueOf(incidentKey),
+          new ProcessInstanceForListViewEntity()
+              .setKey(incidentKey)
+              .setTreePath("PI_" + incidentKey)
+              .setIncident(true));
+      batchRequest.executeWithRefresh();
+
+      // a CREATED + RESOLVED pair for the same incident in the same post-importer-queue batch
+      final var piqRequest = clientAdapter.createBatchRequest();
+      piqRequest.add(
+          postImporterQueueTemplate.getFullQualifiedName(),
+          newPendingIncidentUpdate(incidentKey, 1L, IncidentIntent.CREATED));
+      piqRequest.add(
+          postImporterQueueTemplate.getFullQualifiedName(),
+          newPendingIncidentUpdate(incidentKey, 2L, IncidentIntent.RESOLVED));
+      piqRequest.executeWithRefresh();
+
+      engineClient.createIndex(flowNodeInstanceTemplate, new IndexConfiguration());
+      Awaitility.await()
+          .until(
+              () ->
+                  engineClient.indexExists(listViewTemplate.getFullQualifiedName())
+                      && engineClient.indexExists(flowNodeInstanceTemplate.getFullQualifiedName()));
+
+      final var incidentUpdateTask =
+          new IncidentUpdateTask(
+              metadata,
+              repository,
+              true,
+              100,
+              executor,
+              incidentNotifier,
+              mock(CamundaExporterMetrics.class),
+              LOGGER);
+
+      // when
+      incidentUpdateTask.execute().toCompletableFuture().join();
+
+      // then - the task advances the position unconditionally past the whole batch (step 4)
+      Awaitility.await().until(() -> metadata.getLastIncidentUpdatePosition() == 2L);
+
+      // the incident document is updated to RESOLVED (step 5)
+      final var incidents =
+          search(
+              incidentTemplate.getFullQualifiedName(),
+              IncidentTemplate.KEY,
+              List.of(String.valueOf(incidentKey)),
+              IncidentEntity.class);
+      assertThat(incidents)
+          .extracting(IncidentEntity::getKey, IncidentEntity::getState)
+          .containsExactly(Tuple.tuple(incidentKey, IncidentState.RESOLVED));
+
+      // the list-view process instance must no longer be marked as having an incident, otherwise
+      // operate-list-view-* stays permanently inconsistent with the now-RESOLVED incident document
+      final var processInstances =
+          search(
+              listViewTemplate.getFullQualifiedName(),
+              ListViewTemplate.PROCESS_INSTANCE_KEY,
+              List.of(String.valueOf(incidentKey)),
+              ProcessInstanceForListViewEntity.class);
+      assertThat(processInstances)
+          .extracting(
+              ProcessInstanceForListViewEntity::getKey,
+              ProcessInstanceForListViewEntity::isIncident)
+          .containsExactly(Tuple.tuple(incidentKey, false));
+
+      executor.close();
+    }
+
+    private PostImporterQueueEntity newPendingIncidentUpdate(
+        final long key, final long position, final IncidentIntent intent) {
+      return new PostImporterQueueEntity()
+          .setActionType(PostImporterActionType.INCIDENT)
+          .setIntent(intent.name())
+          .setKey(key)
+          .setPartitionId(PARTITION_ID)
+          .setProcessInstanceKey(key)
+          .setPosition(position);
+    }
+  }
+
+  @DisabledIfSystemProperty(
+      named = SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL,
+      matches = "^(?=\\s*\\S).*$",
+      disabledReason = "Excluding from AWS OS IT CI")
+  @Nested
   final class BulkUpdateIT {
     @Test
     void shouldReportError() {
