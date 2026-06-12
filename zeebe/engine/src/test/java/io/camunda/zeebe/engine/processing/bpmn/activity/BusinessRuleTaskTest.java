@@ -921,4 +921,82 @@ public final class BusinessRuleTaskTest {
                 .getValue())
         .hasValue("\"EXPRESS\"");
   }
+
+  @Test
+  public void shouldCallLatestDecisionVersion() {
+    // given
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlClasspathResource(DMN_DECISION_TABLE_V2)
+            .withXmlResource(
+                processWithBusinessRuleTask(
+                    t ->
+                        t.zeebeCalledDecisionId("jedi_or_sith")
+                            .zeebeBindingType(ZeebeBindingType.latest)
+                            .zeebeResultVariable(RESULT_VARIABLE)))
+            .deploy();
+    final var latestDecision = deployment.getValue().getDecisionsMetadata().getFirst();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("lightsaberColor", "blue")
+            .create();
+
+    // then
+    final var decisionEvaluationRecord =
+        RecordingExporter.decisionEvaluationRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    assertThat(decisionEvaluationRecord.getValue())
+        .hasDecisionId("jedi_or_sith")
+        .hasDecisionKey(latestDecision.getDecisionKey())
+        .hasDecisionVersion(latestDecision.getVersion());
+  }
+
+  @Test
+  public void shouldCallDecisionWithDynamicVersionTagExpression() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlClasspathResource(DMN_DECISION_TABLE_WITH_VERSION_TAG_V1)
+        .withXmlResource(
+            processWithBusinessRuleTask(
+                t ->
+                    t.zeebeCalledDecisionId("jedi_or_sith")
+                        .zeebeBindingType(ZeebeBindingType.versionTag)
+                        .zeebeVersionTagExpression("versionTagVariable")
+                        .zeebeResultVariable(RESULT_VARIABLE)))
+        .deploy();
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlClasspathResource(DMN_DECISION_TABLE_WITH_VERSION_TAG_V1_NEW)
+            .deploy();
+    ENGINE.deployment().withXmlClasspathResource(DMN_DECISION_TABLE_WITH_VERSION_TAG_V2).deploy();
+    final var deployedDecisionV1New = deployment.getValue().getDecisionsMetadata().getFirst();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables(
+                Map.ofEntries(
+                    Map.entry("versionTagVariable", "v1.0"), Map.entry("lightsaberColor", "blue")))
+            .create();
+
+    // then
+    final var decisionEvaluationRecord =
+        RecordingExporter.decisionEvaluationRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    assertThat(decisionEvaluationRecord.getValue())
+        .hasDecisionId("jedi_or_sith")
+        .hasDecisionKey(deployedDecisionV1New.getDecisionKey())
+        .hasDecisionVersion(deployedDecisionV1New.getVersion());
+  }
 }
