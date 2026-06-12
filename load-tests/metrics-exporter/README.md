@@ -15,13 +15,13 @@ kubectl port-forward svc/elastic 9200
 Start the exporter with:
 
 ```shell
-go run main.go -web.listen-address :9101
+go run main.go
 ```
 
 Then fetch the metrics using:
 
 ```shell
-curl -s http://localhost:9101/metrics | grep "^camunda_"
+curl -s http://localhost:9600/metrics | grep "^camunda_"
 ```
 
 ## Metrics exported

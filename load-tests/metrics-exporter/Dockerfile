@@ -22,8 +22,8 @@ FROM gcr.io/distroless/static-debian13:nonroot
 
 COPY --from=builder /out/metrics-exporter /usr/local/bin/metrics-exporter
 
-EXPOSE 9100
+EXPOSE 9600
 USER nonroot:nonroot
 
 ENTRYPOINT ["/usr/local/bin/metrics-exporter"]
-CMD ["--web.listen-address=:9100"]
+CMD ["--web.listen-address=:9600"]

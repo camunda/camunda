@@ -20,7 +20,7 @@ func main() {
 		cfg      exporter.Config
 		logLevel string
 	)
-	flag.StringVar(&cfg.ListenAddr, "web.listen-address", ":9100", "Address to listen on for HTTP requests.")
+	flag.StringVar(&cfg.ListenAddr, "web.listen-address", ":9600", "Address to listen on for HTTP requests.")
 	flag.StringVar(&cfg.ElasticsearchConfig.Address, "es.addresses", "http://localhost:9200", "Elasticsearch endpoint.")
 	flag.DurationVar(&cfg.ScrapeInterval, "scrape.interval", 30*time.Second, "Interval between Elasticsearch scrapes.")
 	flag.StringVar(&logLevel, "log.level", "info", "Log level: debug, info, warn, error.")
