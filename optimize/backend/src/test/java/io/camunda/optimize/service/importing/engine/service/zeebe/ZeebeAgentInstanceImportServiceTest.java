@@ -21,7 +21,9 @@ import io.camunda.optimize.dto.zeebe.agentinstance.ZeebeAgentInstanceDataDto.Age
 import io.camunda.optimize.dto.zeebe.agentinstance.ZeebeAgentInstanceRecordDto;
 import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
+import io.camunda.optimize.service.db.writer.ProcessDefinitionWriter;
 import io.camunda.optimize.service.db.writer.ProcessInstanceWriter;
+import io.camunda.optimize.service.importing.job.AgenticProcessFlagCache;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
@@ -45,6 +47,8 @@ class ZeebeAgentInstanceImportServiceTest {
   @Mock private ProcessInstanceWriter processInstanceWriter;
   @Mock private ProcessDefinitionReader processDefinitionReader;
   @Mock private DatabaseClient databaseClient;
+  @Mock private ProcessDefinitionWriter processDefinitionWriter;
+  @Mock private AgenticProcessFlagCache agenticProcessFlagCache;
 
   private ZeebeAgentInstanceImportService underTest;
 
@@ -58,7 +62,9 @@ class ZeebeAgentInstanceImportServiceTest {
             processInstanceWriter,
             1,
             processDefinitionReader,
-            databaseClient);
+            databaseClient,
+            processDefinitionWriter,
+            agenticProcessFlagCache);
   }
 
   @Test

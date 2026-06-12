@@ -13,6 +13,7 @@ import static io.camunda.optimize.service.db.schema.index.DecisionDefinitionInde
 import static io.camunda.optimize.service.db.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_KEY;
 import static io.camunda.optimize.service.db.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_VERSION;
 import static io.camunda.optimize.service.db.schema.index.DecisionDefinitionIndex.TENANT_ID;
+import static io.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_ID;
 import static io.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_KEY;
 
 import co.elastic.clients.elasticsearch._types.FieldValue;
@@ -48,6 +49,13 @@ public class ProcessDefinitionWriterES extends AbstractProcessDefinitionWriterES
 
   private static final Script MARK_AS_ONBOARDED_SCRIPT =
       Script.of(s -> s.lang(ScriptLanguage.Painless).source("ctx._source.onboarded = true"));
+
+  private static final Script MARK_AS_AGENTIC_PROCESS_SCRIPT =
+      Script.of(
+          s ->
+              s.lang(ScriptLanguage.Painless)
+                  .source(
+                      "if (ctx._source.agenticProcess != true) { ctx._source.agenticProcess = true; }"));
   private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(ProcessDefinitionWriterES.class);
 
@@ -166,6 +174,32 @@ public class ProcessDefinitionWriterES extends AbstractProcessDefinitionWriterES
                                                 tt ->
                                                     tt.value(
                                                         definitionKeys.stream()
+                                                            .map(FieldValue::of)
+                                                            .toList())))))),
+        PROCESS_DEFINITION_INDEX_NAME);
+  }
+
+  @Override
+  public void markDefinitionsAsAgenticProcesses(final Set<String> definitionIds) {
+    if (definitionIds == null || definitionIds.isEmpty()) {
+      return;
+    }
+    taskRepositoryES.tryUpdateByQueryRequest(
+        "process definitions agentic process flag",
+        MARK_AS_AGENTIC_PROCESS_SCRIPT,
+        Query.of(
+            q ->
+                q.bool(
+                    b ->
+                        b.must(
+                            m ->
+                                m.terms(
+                                    t ->
+                                        t.field(PROCESS_DEFINITION_ID)
+                                            .terms(
+                                                tt ->
+                                                    tt.value(
+                                                        definitionIds.stream()
                                                             .map(FieldValue::of)
                                                             .toList())))))),
         PROCESS_DEFINITION_INDEX_NAME);

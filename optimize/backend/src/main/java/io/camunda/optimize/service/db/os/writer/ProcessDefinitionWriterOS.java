@@ -46,6 +46,11 @@ public class ProcessDefinitionWriterOS extends AbstractProcessDefinitionWriterOS
   private static final Script MARK_AS_ONBOARDED_SCRIPT =
       OpenSearchWriterUtil.createDefaultScriptWithPrimitiveParams(
           "ctx._source.onboarded = true", Collections.emptyMap());
+
+  private static final Script MARK_AS_AGENTIC_PROCESS_SCRIPT =
+      OpenSearchWriterUtil.createDefaultScriptWithPrimitiveParams(
+          "if (ctx._source.agenticProcess != true) { ctx._source.agenticProcess = true; }",
+          Collections.emptyMap());
   private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(ProcessDefinitionWriterOS.class);
 
@@ -137,6 +142,20 @@ public class ProcessDefinitionWriterOS extends AbstractProcessDefinitionWriterOS
             .build()
             .toQuery(),
         MARK_AS_ONBOARDED_SCRIPT);
+  }
+
+  @Override
+  public void markDefinitionsAsAgenticProcesses(final Set<String> definitionIds) {
+    if (definitionIds == null || definitionIds.isEmpty()) {
+      return;
+    }
+    osClient.updateByQuery(
+        PROCESS_DEFINITION_INDEX_NAME,
+        new BoolQuery.Builder()
+            .must(QueryDSL.terms(PROCESS_DEFINITION_ID, definitionIds, FieldValue::of))
+            .build()
+            .toQuery(),
+        MARK_AS_AGENTIC_PROCESS_SCRIPT);
   }
 
   @Override

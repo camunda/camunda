@@ -21,12 +21,9 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.List;
-import org.slf4j.Logger;
 
 public abstract class ZeebeProcessInstanceSubEntityImportService<T> implements ImportService<T> {
 
-  private static final Logger LOG =
-      org.slf4j.LoggerFactory.getLogger(ZeebeProcessInstanceSubEntityImportService.class);
   protected final DatabaseImportJobExecutor databaseImportJobExecutor;
   protected final ConfigurationService configurationService;
   protected final ProcessDefinitionReader processDefinitionReader;
@@ -109,17 +106,31 @@ public abstract class ZeebeProcessInstanceSubEntityImportService<T> implements I
     databaseImportJobExecutor.executeImportJob(databaseImportJob);
   }
 
-  private DatabaseImportJob<ProcessInstanceDto> createDatabaseImportJob(
+  protected final DatabaseImportJob<ProcessInstanceDto> createDatabaseImportJob(
       final List<ProcessInstanceDto> processInstanceDtos, final Runnable importCompleteCallback) {
-    final ProcessInstanceDatabaseImportJob processInstanceImportJob =
-        new ProcessInstanceDatabaseImportJob(
-            processInstanceWriter,
-            configurationService,
-            importCompleteCallback,
-            sourceExportIndex,
-            databaseClient);
-    processInstanceImportJob.setEntitiesToImport(processInstanceDtos);
-    return processInstanceImportJob;
+    final ProcessInstanceDatabaseImportJob job =
+        newImportJob(
+            importCompleteCallback, processInstanceWriter, sourceExportIndex, databaseClient);
+    job.setEntitiesToImport(processInstanceDtos);
+    return job;
+  }
+
+  /**
+   * Hook for subclasses to substitute a custom {@link ProcessInstanceDatabaseImportJob}. The parent
+   * passes its own collaborators in as arguments so subclasses do not need direct access to the
+   * private fields.
+   */
+  protected ProcessInstanceDatabaseImportJob newImportJob(
+      final Runnable importCompleteCallback,
+      final ProcessInstanceWriter processInstanceWriter,
+      final String sourceExportIndex,
+      final DatabaseClient databaseClient) {
+    return new ProcessInstanceDatabaseImportJob(
+        processInstanceWriter,
+        configurationService,
+        importCompleteCallback,
+        sourceExportIndex,
+        databaseClient);
   }
 
   /**
