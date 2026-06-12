@@ -8,6 +8,7 @@
 package io.camunda.configuration.physicaltenants;
 
 import io.camunda.configuration.Camunda;
+import io.camunda.configuration.Exporter;
 import io.camunda.configuration.UnifiedConfigurationException;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.Collections;
@@ -81,11 +82,22 @@ public final class PhysicalTenantResolver {
     PhysicalTenantOverridePolicyValidation.validate(environment);
     final Map<String, Camunda> resolvedPhysicalTenants = new LinkedHashMap<>();
     final Binder binder = Binder.get(environment);
+    final Map<String, Exporter> rootExporters = camunda.getData().getExporters();
     for (final String physicalTenantId : physicalTenantIds) {
       final Camunda physicalTenant = new Camunda();
       binder.bind(Camunda.PREFIX, Bindable.ofInstance(physicalTenant));
       binder.bind(
           PHYSICAL_TENANTS_PREFIX + "." + physicalTenantId, Bindable.ofInstance(physicalTenant));
+      final Map<String, Exporter> tenantDeclared =
+          binder
+              .bind(
+                  PHYSICAL_TENANTS_PREFIX + "." + physicalTenantId + ".data.exporters",
+                  Bindable.mapOf(String.class, Exporter.class))
+              .orElse(Map.of());
+      physicalTenant
+          .getData()
+          .setExporters(
+              ExporterArgsOverlay.overlay(physicalTenantId, rootExporters, tenantDeclared));
       resolvedPhysicalTenants.put(physicalTenantId, physicalTenant);
     }
     if (!resolvedPhysicalTenants.containsKey(DEFAULT_PHYSICAL_TENANT_ID)) {
