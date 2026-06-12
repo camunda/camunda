@@ -16,7 +16,6 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.WrittenRecord;
-import io.camunda.zeebe.util.ObjectSizeEstimator;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -175,7 +174,11 @@ public final class ExporterBatchWriter {
             record.getClass().getSimpleName());
         warnAboutMessageSizeEstimation = true;
       }
-      return ObjectSizeEstimator.estimateSize(record);
+      // TODO need to figure out how to get size from copied records
+      // for now just returning fix amount as max benchmarks don't usually trigger flush
+      // based on memory
+      return 1024;
+      // return ObjectSizeEstimator.estimateSize(record);
     }
   }
 

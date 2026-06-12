@@ -18,7 +18,6 @@ import io.camunda.zeebe.exporter.api.context.ScheduledTask;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.scheduler.ActorControl;
-import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.jar.ThreadContextUtil;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -72,7 +71,14 @@ final class ExporterContainer implements Controller {
             meterRegistry,
             clock);
 
-    exporter = descriptor.newInstance();
+    exporter = wrapIfAsync(descriptor.newInstance());
+  }
+
+  private Exporter wrapIfAsync(final Exporter exporter) {
+    if (exporter.isAsyncAllowed()) {
+      return new AsyncExporterWrapper(exporter);
+    }
+    return exporter;
   }
 
   void initContainer(
@@ -232,7 +238,7 @@ final class ExporterContainer implements Controller {
     return context.getConfiguration().getId();
   }
 
-  private boolean acceptRecord(final RecordMetadata rawMetadata, final TypedRecord<?> typedEvent) {
+  private boolean acceptRecord(final RecordMetadata rawMetadata, final Record<?> typedEvent) {
     final Context.RecordFilter filter = context.getFilter();
     return filter.acceptType(rawMetadata.getRecordType())
         && filter.acceptValue(rawMetadata.getValueType())
@@ -246,7 +252,7 @@ final class ExporterContainer implements Controller {
         () -> exporter.configure(context), exporter.getClass().getClassLoader());
   }
 
-  boolean exportRecord(final RecordMetadata rawMetadata, final TypedRecord<?> typedEvent) {
+  boolean exportRecord(final RecordMetadata rawMetadata, final Record<?> typedEvent) {
     try {
       if (position < typedEvent.getPosition()) {
         if (acceptRecord(rawMetadata, typedEvent)) {
