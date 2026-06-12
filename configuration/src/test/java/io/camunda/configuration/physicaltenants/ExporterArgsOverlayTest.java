@@ -10,13 +10,22 @@ package io.camunda.configuration.physicaltenants;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.configuration.Camunda;
 import io.camunda.configuration.Exporter;
 import io.camunda.configuration.UnifiedConfigurationException;
+import io.camunda.configuration.UnifiedConfigurationHelper;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.context.properties.bind.Bindable;
+import org.springframework.boot.context.properties.bind.Binder;
+import org.springframework.core.env.MapPropertySource;
+import org.springframework.mock.env.MockEnvironment;
 
 class ExporterArgsOverlayTest {
 
@@ -294,6 +303,53 @@ class ExporterArgsOverlayTest {
       // when / then — no divergence
       assertThat(ExporterArgsOverlay.overlay("t1", Map.of("exp", root), Map.of("exp", tenant)))
           .containsKey("exp");
+    }
+  }
+
+  @Nested
+  class ViaResolver {
+
+    private MockEnvironment environment;
+
+    @BeforeEach
+    void setUp() {
+      environment = new MockEnvironment();
+      UnifiedConfigurationHelper.setCustomEnvironment(environment);
+    }
+
+    @AfterEach
+    void tearDown() {
+      UnifiedConfigurationHelper.setCustomEnvironment(null);
+    }
+
+    @Test
+    void shouldDeepMergeExporterArgsThroughFullResolver() {
+      // given a root exporter with a className and two args, and a tenant overriding only args.b
+      final Map<String, Object> properties = new HashMap<>();
+      properties.put("camunda.data.exporters.myexp.class-name", "X");
+      properties.put("camunda.data.exporters.myexp.args.a", 1);
+      properties.put("camunda.data.exporters.myexp.args.b", 2);
+      properties.put("camunda.physical-tenants.tenanta.data.exporters.myexp.args.b", 99);
+      properties.put(
+          "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.index-prefix",
+          "tenanta");
+      environment.getPropertySources().addFirst(new MapPropertySource("test", properties));
+
+      final Camunda camunda = new Camunda();
+      Binder.get(environment).bind(Camunda.PREFIX, Bindable.ofInstance(camunda));
+
+      // when
+      final Camunda tenantA =
+          PhysicalTenantResolver.of(environment, camunda).forPhysicalTenant("tenanta");
+
+      // then className is inherited and args are deep-merged
+      final Exporter myexp = tenantA.getData().getExporters().get("myexp");
+      assertThat(myexp).isNotNull();
+      assertThat(myexp.getClassName()).as("className inherited from root").isEqualTo("X");
+      assertThat(myexp.getArgs()).as("tenant value wins for overridden key").containsEntry("b", 99);
+      assertThat(myexp.getArgs())
+          .as("sibling key preserved from root (deep-merge, not replace)")
+          .containsEntry("a", 1);
     }
   }
 
