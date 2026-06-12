@@ -1,0 +1,425 @@
+/* SwimMembershipSimulator.module.css */
+
+.widget {
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 8px;
+  overflow: hidden;
+  font-family: var(--ifm-font-family-base);
+}
+
+/* ── Parameters panel ──────────────────────────────────────── */
+
+.paramsPanel {
+  background: var(--ifm-color-emphasis-100);
+  border-bottom: 1px solid var(--ifm-color-emphasis-300);
+  padding: 12px 16px;
+}
+
+.paramsPanelHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ifm-color-emphasis-700);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.paramsPanelHeader:hover { color: var(--ifm-color-emphasis-900); }
+
+.paramsBody {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px 20px;
+  margin-top: 12px;
+}
+
+.paramGroupWide {
+  grid-column: span 2;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.paramGroupInner {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 16px;
+}
+
+.paramGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.paramGroupLabel {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--ifm-color-emphasis-600);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-bottom: 1px solid var(--ifm-color-emphasis-300);
+  padding-bottom: 3px;
+  margin-bottom: 2px;
+}
+
+.paramRow {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 0.78rem;
+}
+
+.paramLabel {
+  color: var(--ifm-color-emphasis-700);
+  font-size: 0.75rem;
+  line-height: 1.2;
+  cursor: help;
+}
+
+.paramRowControls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.paramVal {
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+  min-width: 36px;
+  text-align: right;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ifm-color-emphasis-800);
+}
+
+.paramSlider {
+  flex: 1;
+  min-width: 60px;
+  accent-color: var(--viz-leader);
+  cursor: pointer;
+}
+
+.toggle { position: relative; display: inline-flex; width: 32px; height: 18px; cursor: pointer; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggleTrack {
+  position: absolute;
+  inset: 0;
+  border-radius: 9px;
+  background: var(--ifm-color-emphasis-300);
+  transition: background 0.2s;
+}
+.toggle input:checked ~ .toggleTrack { background: var(--viz-leader); }
+.toggleKnob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: white;
+  transition: transform 0.2s;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+.toggle input:checked ~ .toggleTrack ~ .toggleKnob { transform: translateX(14px); }
+
+/* ── Graph + event log ─────────────────────────────────────── */
+
+.graphRow {
+  display: grid;
+  grid-template-columns: 1fr 220px;
+}
+
+.graphWrap {
+  position: relative;
+  border-right: 1px solid var(--ifm-color-emphasis-300);
+}
+
+.graph { display: block; width: 100%; }
+
+.eventLog {
+  padding: 8px;
+  overflow-y: auto;
+  max-height: 380px;
+  font-size: 0.72rem;
+  background: var(--ifm-background-color);
+}
+
+.eventLogTitleText {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ifm-color-emphasis-600);
+}
+
+.eventEntry {
+  display: flex;
+  gap: 6px;
+  padding: 2px 0;
+  border-bottom: 1px solid var(--ifm-color-emphasis-200);
+  line-height: 1.4;
+}
+
+.eventTime {
+  color: var(--ifm-color-emphasis-500);
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.65rem;
+}
+
+/* ── Stats bar ─────────────────────────────────────────────── */
+
+.statsBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  padding: 8px 16px;
+  background: var(--ifm-color-emphasis-100);
+  border-top: 1px solid var(--ifm-color-emphasis-300);
+  border-bottom: 1px solid var(--ifm-color-emphasis-300);
+  font-size: 0.75rem;
+}
+
+.statItem { display: flex; gap: 5px; align-items: center; }
+.statLabel { color: var(--ifm-color-emphasis-600); }
+.statVal { font-variant-numeric: tabular-nums; font-weight: 600; }
+
+.chip {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 10px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+.chipOk   { background: var(--viz-gossip-update-light); color: var(--viz-gossip-update); }
+.chipWarn { background: var(--viz-suspect-light); color: var(--viz-suspect); }
+.chipInfo { background: var(--ifm-color-emphasis-200); color: var(--ifm-color-emphasis-700); }
+
+/* ── Legend ────────────────────────────────────────────────── */
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  padding: 6px 16px;
+  border-top: 1px solid var(--ifm-color-emphasis-300);
+  background: var(--ifm-color-emphasis-100);
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.72rem;
+  color: var(--ifm-color-emphasis-700);
+}
+
+.legendDot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 16px;
+  border-radius: 8px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: white;
+  flex-shrink: 0;
+}
+
+.legendDesc { white-space: nowrap; }
+
+.legendSep {
+  width: 1px;
+  height: 16px;
+  background: var(--ifm-color-emphasis-300);
+  flex-shrink: 0;
+}
+
+.graphRowFull {
+  grid-template-columns: 1fr auto;
+}
+
+.eventLogCollapsed {
+  width: 36px;
+  min-width: 36px;
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.eventLogCollapsedLabel {
+  writing-mode: vertical-lr;
+  transform: rotate(180deg);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--ifm-color-emphasis-600);
+  user-select: none;
+  white-space: nowrap;
+  padding: 12px 0;
+}
+.eventLogCollapsed:hover .eventLogCollapsedLabel {
+  color: var(--ifm-color-emphasis-900);
+}
+
+.legendBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid var(--ifm-color-emphasis-400);
+  background: var(--ifm-background-surface-color);
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--ifm-color-emphasis-700);
+  flex-shrink: 0;
+}
+
+/* ── Event log clear button ────────────────────────────────── */
+
+.eventLogTitle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.clearLogBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 0 2px;
+  line-height: 1;
+  opacity: 0.6;
+}
+.clearLogBtn:hover { opacity: 1; }
+
+/* ── Controls bar ──────────────────────────────────────────── */
+
+.controlsBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 10px 16px;
+  background: var(--ifm-background-color);
+}
+
+.ctrlGroup { display: flex; align-items: center; gap: 6px; }
+.ctrlGroupLabel {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--ifm-color-emphasis-600);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.btn {
+  padding: 4px 12px;
+  border-radius: 4px;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  background: var(--ifm-background-surface-color);
+  color: var(--ifm-color-emphasis-800);
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn:not(.btnActive):hover { background: var(--ifm-color-emphasis-200); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn.btnActive:hover { filter: brightness(0.85); }
+.btn.btnActive {
+  background: var(--viz-leader);
+  color: white;
+  border-color: var(--viz-leader);
+}
+.btnDanger {
+  border-color: var(--viz-leader);
+  color: var(--viz-leader);
+}
+.btnDanger:hover { background: var(--viz-leader-light); }
+
+.speedGroup { display: flex; gap: 0; }
+.speedBtn {
+  padding: 3px 8px;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  background: var(--ifm-background-surface-color);
+  color: var(--ifm-color-emphasis-700);
+  font-size: 0.72rem;
+  cursor: pointer;
+  border-radius: 0;
+}
+.speedBtn:first-child { border-radius: 4px 0 0 4px; }
+.speedBtn:last-child  { border-radius: 0 4px 4px 0; }
+.speedBtn.speedBtnActive { background: var(--viz-leader); color: white; border-color: var(--viz-leader); }
+
+.injectSelect {
+  padding: 4px 8px;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 4px;
+  background: var(--ifm-background-surface-color);
+  color: var(--ifm-color-emphasis-800);
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.sep { width: 1px; height: 24px; background: var(--ifm-color-emphasis-300); margin: 0 2px; }
+
+.faultsBar {
+  background: var(--ifm-color-emphasis-100);
+  border-top: 1px solid var(--ifm-color-emphasis-300);
+}
+
+/* ── Mobile layout ─────────────────────────────────────────── */
+
+@media (max-width: 767px) {
+  /* Stack graph and event log vertically */
+  .graphRow, .graphRowFull {
+    grid-template-columns: 1fr;
+  }
+  .graphWrap {
+    border-right: none;
+    border-bottom: 1px solid var(--ifm-color-emphasis-300);
+    overflow: auto; /* allow scroll if SVG overflows on very small screens */
+  }
+  .graph {
+    min-width: 280px; /* prevent graph from becoming unusably narrow */
+  }
+
+  /* On mobile, collapsed state is vertical — restore normal width */
+  .eventLogCollapsed {
+    width: auto;
+    min-width: 0;
+    padding: 8px;
+    flex-direction: row;
+  }
+  .eventLogCollapsedLabel {
+    writing-mode: horizontal-tb;
+    transform: none;
+    padding: 0;
+  }
+
+  /* Params panel: single column */
+  .paramsBody {
+    grid-template-columns: 1fr;
+  }
+  .paramGroupWide {
+    grid-column: span 1;
+  }
+  .paramGroupInner {
+    grid-template-columns: 1fr;
+  }
+
+  /* Event log height matches the smaller mobile graph */
+  .eventLog {
+    max-height: 260px;
+  }
+}
