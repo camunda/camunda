@@ -134,7 +134,7 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
   }
 
   // ---------------------------------------------------------------------------
-  // Incident rate (count of resolved incidents on completed agentic instances)
+  // Incident rate (percentage of completed agentic instances with a resolved incident)
   // ---------------------------------------------------------------------------
 
   @Test
@@ -177,7 +177,8 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
     persistProcessInstances(List.of(withIncident, clean, running));
 
     final Double result = evaluateNumber(KPI_INCIDENT_RATE_REPORT_ID, noExtraFilters());
-    assertThat(result).isEqualTo(1.0);
+    // 1 instance with resolved incident / 2 completed agentic instances = 50%
+    assertThat(result).isEqualTo(50.0);
   }
 
   // ---------------------------------------------------------------------------
@@ -458,8 +459,9 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
 
     persistProcessInstances(List.of(recent, old));
 
+    // 1 instance with resolved incident / 1 completed agentic instance in window = 100%
     assertThat(evaluateNumber(KPI_INCIDENT_RATE_REPORT_ID, rollingEndDateFilter(1L, DateUnit.DAYS)))
-        .isEqualTo(1.0);
+        .isEqualTo(100.0);
   }
 
   @Test
@@ -663,12 +665,12 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
                             .build()))
                 .build()));
 
-    // only procKeyA selected → 1 incident
+    // only procKeyA selected → 1 instance with incident / 1 completed agentic instance = 100%
     assertThat(
             evaluateNumber(
                 KPI_INCIDENT_RATE_REPORT_ID,
                 withDefinitions(List.of(new ReportDataDefinitionDto(procKeyA)))))
-        .isEqualTo(1.0);
+        .isEqualTo(100.0);
   }
 
   @Test
@@ -808,6 +810,183 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
     assertThat(commandResult.getPagination().getTotal()).isEqualTo(3L);
     // and the pagination is valid, so it survives REST mapping and the total reaches the frontend
     assertThat(commandResult.getPagination().isValid()).isTrue();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Scoped baseline: denominator must exclude running and non-agentic instances
+  // ---------------------------------------------------------------------------
+
+  @Test
+  void shouldExcludeRunningInstancesFromIncidentRateDenominator() {
+    // given: 1 completed agentic with incident, 1 completed agentic without,
+    //        plus 5 running agentic instances (no incidents) — running must not count
+    final String withIncidentId = UUID.randomUUID().toString();
+    final ProcessInstanceDto withIncident =
+        agenticInstance(PROC_KEY, 100L, 50L)
+            .processInstanceId(withIncidentId)
+            .incidents(
+                List.of(
+                    IncidentDto.builder()
+                        .incidentStatus(IncidentStatus.RESOLVED)
+                        .processInstanceId(withIncidentId)
+                        .build()))
+            .build();
+    final ProcessInstanceDto completedClean = agenticInstance(PROC_KEY, 100L, 50L).build();
+    final List<ProcessInstanceDto> runningInstances =
+        java.util.stream.IntStream.range(0, 5)
+            .mapToObj(
+                i ->
+                    agenticInstance(PROC_KEY, 100L, 50L)
+                        .state(ProcessInstanceConstants.ACTIVE_STATE)
+                        .endDate(null)
+                        .duration(null)
+                        .build())
+            .toList();
+
+    persistProcessInstances(
+        java.util.stream.Stream.concat(
+                java.util.stream.Stream.of(withIncident, completedClean), runningInstances.stream())
+            .toList());
+
+    // denominator = 2 completed agentic instances (not 7); numerator = 1 → 50%
+    assertThat(evaluateNumber(KPI_INCIDENT_RATE_REPORT_ID, noExtraFilters())).isEqualTo(50.0);
+  }
+
+  @Test
+  void shouldExcludeNonAgenticInstancesFromIncidentRateDenominator() {
+    // given: 1 completed agentic with incident, 1 completed agentic without,
+    //        plus 8 completed non-agentic instances — non-agentic must not count
+    final String withIncidentId = UUID.randomUUID().toString();
+    final ProcessInstanceDto withIncident =
+        agenticInstance(PROC_KEY, 100L, 50L)
+            .processInstanceId(withIncidentId)
+            .incidents(
+                List.of(
+                    IncidentDto.builder()
+                        .incidentStatus(IncidentStatus.RESOLVED)
+                        .processInstanceId(withIncidentId)
+                        .build()))
+            .build();
+    final ProcessInstanceDto completedAgentic = agenticInstance(PROC_KEY, 100L, 50L).build();
+    final List<ProcessInstanceDto> nonAgenticInstances =
+        java.util.stream.IntStream.range(0, 8)
+            .mapToObj(i -> completedInstance(PROC_KEY).build())
+            .toList();
+
+    persistProcessInstances(
+        java.util.stream.Stream.concat(
+                java.util.stream.Stream.of(withIncident, completedAgentic),
+                nonAgenticInstances.stream())
+            .toList());
+
+    // denominator = 2 completed agentic instances (not 10); numerator = 1 → 50%
+    assertThat(evaluateNumber(KPI_INCIDENT_RATE_REPORT_ID, noExtraFilters())).isEqualTo(50.0);
+  }
+
+  @Test
+  void shouldScopeBothNumeratorAndDenominatorByDateFilter() {
+    // given: within window — 1 agentic with incident, 1 agentic without
+    //        outside window — 10 agentic with incidents (must not affect either side)
+    final String recentWithId = UUID.randomUUID().toString();
+    final ProcessInstanceDto recentWithIncident =
+        agenticInstance(PROC_KEY, 100L, 50L)
+            .processInstanceId(recentWithId)
+            .startDate(OffsetDateTime.now().minusHours(3))
+            .endDate(OffsetDateTime.now().minusHours(2))
+            .incidents(
+                List.of(
+                    IncidentDto.builder()
+                        .incidentStatus(IncidentStatus.RESOLVED)
+                        .processInstanceId(recentWithId)
+                        .build()))
+            .build();
+    final ProcessInstanceDto recentClean =
+        agenticInstance(PROC_KEY, 100L, 50L)
+            .startDate(OffsetDateTime.now().minusHours(3))
+            .endDate(OffsetDateTime.now().minusHours(2))
+            .build();
+    final List<ProcessInstanceDto> oldWithIncidents =
+        java.util.stream.IntStream.range(0, 10)
+            .mapToObj(
+                i -> {
+                  final String id = UUID.randomUUID().toString();
+                  return agenticInstance(PROC_KEY, 100L, 50L)
+                      .processInstanceId(id)
+                      .startDate(OffsetDateTime.now().minusDays(10))
+                      .endDate(OffsetDateTime.now().minusDays(9))
+                      .incidents(
+                          List.of(
+                              IncidentDto.builder()
+                                  .incidentStatus(IncidentStatus.RESOLVED)
+                                  .processInstanceId(id)
+                                  .build()))
+                      .build();
+                })
+            .toList();
+
+    persistProcessInstances(
+        java.util.stream.Stream.concat(
+                java.util.stream.Stream.of(recentWithIncident, recentClean),
+                oldWithIncidents.stream())
+            .toList());
+
+    // denominator = 2 (in-window completed agentic); numerator = 1 → 50%
+    assertThat(evaluateNumber(KPI_INCIDENT_RATE_REPORT_ID, rollingEndDateFilter(1L, DateUnit.DAYS)))
+        .isEqualTo(50.0);
+  }
+
+  @Test
+  void shouldScopeBothNumeratorAndDenominatorByDefinitionFilter() {
+    // given: procKeyA — 1 with incident, 3 without → scoped rate = 25%
+    //        procKeyB — 5 all with incidents → must not inflate the procKeyA denominator
+    final String procKeyA = "proc-scope-a";
+    final String procKeyB = "proc-scope-b";
+
+    final String idA = UUID.randomUUID().toString();
+    final ProcessInstanceDto aWithIncident =
+        agenticInstance(procKeyA, 100L, 50L)
+            .processInstanceId(idA)
+            .incidents(
+                List.of(
+                    IncidentDto.builder()
+                        .incidentStatus(IncidentStatus.RESOLVED)
+                        .processInstanceId(idA)
+                        .build()))
+            .build();
+    final List<ProcessInstanceDto> aClean =
+        java.util.stream.IntStream.range(0, 3)
+            .mapToObj(i -> agenticInstance(procKeyA, 100L, 50L).build())
+            .toList();
+    final List<ProcessInstanceDto> bWithIncidents =
+        java.util.stream.IntStream.range(0, 5)
+            .mapToObj(
+                i -> {
+                  final String id = UUID.randomUUID().toString();
+                  return agenticInstance(procKeyB, 100L, 50L)
+                      .processInstanceId(id)
+                      .incidents(
+                          List.of(
+                              IncidentDto.builder()
+                                  .incidentStatus(IncidentStatus.RESOLVED)
+                                  .processInstanceId(id)
+                                  .build()))
+                      .build();
+                })
+            .toList();
+
+    persistProcessInstances(
+        java.util.stream.Stream.concat(
+                java.util.stream.Stream.concat(
+                    java.util.stream.Stream.of(aWithIncident), aClean.stream()),
+                bWithIncidents.stream())
+            .toList());
+
+    // denominator = 4 procKeyA instances (not 9); numerator = 1 → 25%
+    assertThat(
+            evaluateNumber(
+                KPI_INCIDENT_RATE_REPORT_ID,
+                withDefinitions(List.of(new ReportDataDefinitionDto(procKeyA)))))
+        .isEqualTo(25.0);
   }
 
   // ---------------------------------------------------------------------------
