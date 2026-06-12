@@ -175,6 +175,7 @@ function historyToAgentElementData(
   const conversation: ConversationMessage[] = [
     {role: 'system', content: [instance.definition.systemPrompt]},
   ];
+  let conversationIterationCount = 0;
   for (const element of history) {
     const text = textOf(element);
     if (element.role === 'user') {
@@ -187,6 +188,7 @@ function historyToAgentElementData(
         timestamp: element.timestamp,
       });
     } else if (element.role === 'assistant') {
+      conversationIterationCount += 1;
       const blocks = element.content
         .filter((c) => c.contentType === 'text')
         .map((c) => c.content);
@@ -194,6 +196,7 @@ function historyToAgentElementData(
         role: 'assistant',
         content: blocks,
         timestamp: element.timestamp,
+        iterationNumber: conversationIterationCount,
       });
     } else if (element.role === 'tool_call') {
       const payload = parseToolCall(text);

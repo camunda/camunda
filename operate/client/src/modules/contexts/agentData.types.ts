@@ -62,6 +62,7 @@ export interface ConversationMessage {
   // block but expanded independently.
   content: string[];
   timestamp?: string;
+  iterationNumber?: number;
   documents?: {
     name: string;
   }[];

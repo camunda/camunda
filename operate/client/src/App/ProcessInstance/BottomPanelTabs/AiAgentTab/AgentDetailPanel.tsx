@@ -419,6 +419,8 @@ function StatusAccordion({agentData}: {agentData: AgentElementData}) {
 
   const StatusIcon = agentData.status === 'COMPLETED' ? CheckmarkOutline : Time;
 
+  const iterationCount = agentData.iterations.length;
+
   const accordionTitle = (
     <span
       style={{
@@ -451,6 +453,7 @@ function StatusAccordion({agentData}: {agentData: AgentElementData}) {
             role="Assistant"
             borderColor="#8a3ffc"
             contents={currentMessage ? [currentMessage] : []}
+            iterationNumber={iterationCount > 0 ? iterationCount : undefined}
           >
             {agentData.status !== 'COMPLETED' && activeTools.length > 0 && (
               <div
@@ -906,11 +909,13 @@ function ExpandableMessageBlock({
   role,
   borderColor,
   contents,
+  iterationNumber,
   children,
 }: {
   role: string;
   borderColor: string;
   contents: string[];
+  iterationNumber?: number;
   children?: React.ReactNode;
 }) {
   const segments = contents.filter((c) => c.length > 0);
@@ -941,7 +946,7 @@ function ExpandableMessageBlock({
             color: 'var(--cds-text-secondary)',
           }}
         >
-          {role}
+          {iterationNumber !== undefined ? `Iteration ${iterationNumber}` : role}
         </span>
       </div>
       {segments.map((segment, index) => (
@@ -1052,6 +1057,7 @@ function ConversationHistory({
               role="Assistant"
               borderColor="#8a3ffc"
               contents={msg.content}
+              iterationNumber={msg.iterationNumber}
             >
               {msg.toolCalls && msg.toolCalls.length > 0 && (
                 <div
