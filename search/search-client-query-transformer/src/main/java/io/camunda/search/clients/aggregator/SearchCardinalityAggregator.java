@@ -11,7 +11,12 @@ import java.util.List;
 import java.util.Objects;
 
 public record SearchCardinalityAggregator(
-    String name, String field, String script, String lang, List<SearchAggregator> aggregations)
+    String name,
+    String field,
+    String script,
+    String lang,
+    Integer precisionThreshold,
+    List<SearchAggregator> aggregations)
     implements SearchAggregator {
 
   @Override
@@ -28,6 +33,7 @@ public record SearchCardinalityAggregator(
     private String field;
     private String script;
     private String lang;
+    private Integer precisionThreshold;
 
     @Override
     protected Builder self() {
@@ -49,12 +55,18 @@ public record SearchCardinalityAggregator(
       return this;
     }
 
+    public Builder precisionThreshold(final Integer value) {
+      precisionThreshold = value;
+      return this;
+    }
+
     public SearchCardinalityAggregator build() {
       return new SearchCardinalityAggregator(
           Objects.requireNonNull(name, "Expected non-null field for name."),
           field,
           script,
           lang,
+          precisionThreshold,
           aggregations);
     }
   }

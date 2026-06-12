@@ -11,9 +11,13 @@ import static io.camunda.search.aggregation.DecisionDefinitionLatestVersionAggre
 import static io.camunda.search.aggregation.DecisionDefinitionLatestVersionAggregation.AGGREGATION_GROUP_TENANT_ID;
 import static io.camunda.search.aggregation.DecisionDefinitionLatestVersionAggregation.AGGREGATION_NAME_BY_DECISION_ID;
 import static io.camunda.search.aggregation.DecisionDefinitionLatestVersionAggregation.AGGREGATION_NAME_LATEST_DEFINITION;
+import static io.camunda.search.aggregation.DecisionDefinitionLatestVersionAggregation.AGGREGATION_NAME_TOTAL_COUNT;
 import static io.camunda.search.aggregation.DecisionDefinitionLatestVersionAggregation.AGGREGATION_SOURCE_NAME_DECISION_ID;
 import static io.camunda.search.aggregation.DecisionDefinitionLatestVersionAggregation.AGGREGATION_SOURCE_NAME_TENANT_ID;
 import static io.camunda.search.aggregation.DecisionDefinitionLatestVersionAggregation.AGGREGATION_TERMS_SIZE;
+import static io.camunda.search.aggregation.DecisionDefinitionLatestVersionAggregation.DECISION_DEFINITION_AND_TENANT_KEY;
+import static io.camunda.search.aggregation.DecisionDefinitionLatestVersionAggregation.SCRIPT_LANGUAGE;
+import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.cardinality;
 import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.composite;
 import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.terms;
 import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.topHits;
@@ -76,6 +80,14 @@ public class DecisionDefinitionLatestVersionAggregationTransformer
             .aggregations(maxVersionsAgg)
             .build();
 
-    return List.of(finalAggregation);
+    final var totalCountAgg =
+        cardinality()
+            .name(AGGREGATION_NAME_TOTAL_COUNT)
+            .script(DECISION_DEFINITION_AND_TENANT_KEY)
+            .lang(SCRIPT_LANGUAGE)
+            .precisionThreshold(AGGREGATION_TERMS_SIZE)
+            .build();
+
+    return List.of(finalAggregation, totalCountAgg);
   }
 }
