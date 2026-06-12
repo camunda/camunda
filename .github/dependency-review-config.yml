@@ -1,0 +1,15 @@
+# Vulnerability gate exceptions — governs the pr-vuln-check job in ci.yml.
+#
+# Gate rules (implemented in .github/actions/dependency-vuln-check/check.py, not configurable here):
+#   - Block if vulnerability is fixable at any severity
+#   - Block if vulnerability is high/critical regardless of fix availability
+#   - Development-scoped (test-only) dependencies are excluded
+#
+# To suppress a known false positive or accepted risk, add the GHSA ID below.
+# Include a comment with: reason, tracking issue, and a review-by date.
+# This file is protected by CODEOWNERS — changes require @camunda/monorepo-devops-team approval.
+#
+# Example:
+#   allow-ghsas:
+#     - GHSA-xxxx-xxxx-xxxx  # Vetted: no exploit path in our usage; INC-XYZ; review by 2026-12-01
+allow-ghsas: []
