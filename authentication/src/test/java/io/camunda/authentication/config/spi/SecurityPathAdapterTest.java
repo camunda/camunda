@@ -17,15 +17,11 @@ class SecurityPathAdapterTest {
 
   @Test
   void shouldExposeApiPaths() {
+    // Tenant-prefixed paths are intentionally absent — per-tenant scoped chains own them; listing
+    // them here would let the cluster chain shadow a scoped chain and break audience isolation.
     assertThat(port.apiPaths())
         .containsExactlyInAnyOrder(
-            "/api/**",
-            "/v1/**",
-            "/v2/**",
-            "/physical-tenants/{physicalTenantId}/v2/**",
-            "/mcp/**",
-            "/physical-tenants/{physicalTenantId}/mcp/**",
-            "/.well-known/oauth-protected-resource/**");
+            "/api/**", "/v1/**", "/v2/**", "/mcp/**", "/.well-known/oauth-protected-resource/**");
   }
 
   @Test
