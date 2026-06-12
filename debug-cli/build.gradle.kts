@@ -31,6 +31,8 @@ dependencies {
     api(libs.io.micrometer.micrometer.core)
     implementation(project(":zeebe-util"))
     implementation(project(":zeebe-protocol"))
+    implementation(project(":zeebe-broker"))
+    implementation(project(":zeebe-msgpack-value"))
     testImplementation(libs.com.fasterxml.jackson.core.jackson.core)
     testImplementation(libs.com.fasterxml.jackson.core.jackson.databind)
 }

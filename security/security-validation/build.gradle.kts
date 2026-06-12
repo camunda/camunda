@@ -8,6 +8,7 @@ plugins {
 
 dependencies {
     api(libs.io.camunda.security.library.api)
+    api(libs.io.camunda.security.library.validation)
     implementation(project(":camunda-security-protocol"))
     implementation(libs.commons.validator.commons.validator)
 }

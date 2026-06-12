@@ -40,6 +40,8 @@ dependencies {
     implementation(project(":camunda-exporter"))
     implementation(project(":rdbms-exporter"))
     implementation(project(":camunda-search-client-connect"))
+    api(project(":configuration-api"))
+    implementation(libs.io.camunda.security.library.spring.boot.starter)
     api(project(":camunda-schema-manager"))
     api(libs.com.fasterxml.jackson.core.jackson.databind)
     api(libs.com.fasterxml.jackson.core.jackson.annotations)
