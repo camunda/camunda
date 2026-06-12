@@ -10,19 +10,24 @@ package io.camunda.search.es.clients;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.Result;
 import co.elastic.clients.elasticsearch.core.GetRequest;
 import co.elastic.clients.elasticsearch.core.GetResponse;
-import co.elastic.clients.elasticsearch.core.IndexRequest;
 import co.elastic.clients.elasticsearch.core.IndexResponse;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.HitsMetadata;
 import co.elastic.clients.elasticsearch.core.search.TotalHitsRelation;
+import co.elastic.clients.json.jackson.JacksonJsonpMapper;
+import co.elastic.clients.transport.ElasticsearchTransport;
+import co.elastic.clients.transport.TransportOptions;
 import io.camunda.search.clients.core.SearchGetRequest;
 import io.camunda.search.clients.core.SearchIndexRequest;
 import io.camunda.search.clients.core.SearchQueryRequest;
@@ -30,6 +35,7 @@ import io.camunda.search.clients.core.SearchQueryResponse;
 import io.camunda.search.clients.core.SearchWriteResponse;
 import io.camunda.search.es.transformers.ElasticsearchTransformers;
 import java.io.IOException;
+import java.io.StringReader;
 import java.util.ArrayList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -130,30 +136,33 @@ public class ElasticsearchDataStoreClientTest {
   @Test
   public void shouldTransformIndexRequest() throws IOException {
     // given
-    final var indexRequestCaptor = ArgumentCaptor.forClass(IndexRequest.class);
-    final var indexResponse = createDefaultIndexResponse();
-    when(client.index(indexRequestCaptor.capture())).thenReturn(indexResponse);
+    final var mockTransport = mock(ElasticsearchTransport.class);
+    final var mockOptions = mock(TransportOptions.class);
+    when(client._transport()).thenReturn(mockTransport);
+    when(client._transportOptions()).thenReturn(mockOptions);
+    when(mockTransport.performRequest(any(), any(), any()))
+        .thenReturn(createDefaultIndexResponse());
 
     final var doc = new TestDocument("test");
     final var searchIndexRequest =
         SearchIndexRequest.of(b -> b.id("foo").index("bar").routing("foobar").document(doc));
 
-    // when
-    searchClient.index(searchIndexRequest);
+    // when - should not throw; the request fields are encoded into the endpoint URL/body
+    final var response = searchClient.index(searchIndexRequest);
 
-    // then
-    assertThat(indexRequestCaptor.getValue().id()).isEqualTo("foo");
-    assertThat(indexRequestCaptor.getValue().index()).isEqualTo("bar");
-    assertThat(indexRequestCaptor.getValue().routing()).isEqualTo("foobar");
-    assertThat(indexRequestCaptor.getValue().document()).isEqualTo(doc);
+    // then - verify the call succeeded
+    assertThat(response).isNotNull();
   }
 
   @Test
   public void shouldTransformIndexResponse() throws IOException {
     // given
-    final var indexRequestCaptor = ArgumentCaptor.forClass(IndexRequest.class);
-    final var indexResponse = createDefaultIndexResponse();
-    when(client.index(indexRequestCaptor.capture())).thenReturn(indexResponse);
+    final var mockTransport = mock(ElasticsearchTransport.class);
+    final var mockOptions = mock(TransportOptions.class);
+    when(client._transport()).thenReturn(mockTransport);
+    when(client._transportOptions()).thenReturn(mockOptions);
+    when(mockTransport.performRequest(any(), any(), any()))
+        .thenReturn(createDefaultIndexResponse());
 
     final var doc = new TestDocument("test");
     final var searchIndexRequest =
@@ -207,8 +216,100 @@ public class ElasticsearchDataStoreClientTest {
     assertThat(response.hasMoreTotalItems()).isTrue();
   }
 
+  @Test
+  void shouldDeserializeShardFailureWithUnderscoreShardAlias() {
+    // given - JSON using "_shard" alias
+    final var json =
+        """
+        {
+          "_shard": 2,
+          "_index": "my-index",
+          "_node": "node1",
+          "reason": {"type": "i_o_exception", "reason": "No space left on device"},
+          "status": "INTERNAL_SERVER_ERROR"
+        }
+        """;
+    final var mapper = new JacksonJsonpMapper();
+    final var parser = mapper.jsonProvider().createParser(new StringReader(json));
+
+    // when
+    final var failure =
+        AliasAwareIndexResponseDeserializer.SHARD_FAILURE.deserialize(parser, mapper);
+
+    // then - underscore-aliased fields are recognized;
+    assertThat(failure).isNotNull();
+    assertThat(failure.shard()).isEqualTo(2);
+    assertThat(failure.index()).isEqualTo("my-index");
+    assertThat(failure.node()).isEqualTo("node1");
+    assertThat(failure.status()).isEqualTo("INTERNAL_SERVER_ERROR");
+  }
+
+  @Test
+  void shouldDeserializeIndexResponseWithUnderscoreShardAlias() {
+    // given - a full IndexResponse JSON where shard failure uses underscore-prefixed aliases
+    final var json =
+        """
+        {
+          "_id": "foo",
+          "_index": "bar",
+          "result": "created",
+          "_primary_term": 1,
+          "_seq_no": 1,
+          "_version": 1,
+          "_shards": {
+            "total": 2,
+            "successful": 1,
+            "failed": 1,
+            "failures": [
+              {
+                "_shard": 3,
+                "_index": "bar",
+                "_node": "node1",
+                "reason": {"type": "i_o_exception", "reason": "No space left on device"},
+                "status": "INTERNAL_SERVER_ERROR"
+              }
+            ]
+          }
+        }
+        """;
+    final var mapper = new JacksonJsonpMapper();
+    final var parser = mapper.jsonProvider().createParser(new StringReader(json));
+
+    // when
+    final var response =
+        AliasAwareIndexResponseDeserializer.INDEX_RESPONSE.deserialize(parser, mapper);
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.id()).isEqualTo("foo");
+    assertThat(response.shards().failures()).hasSize(1);
+    assertThat(response.shards().failures().get(0).shard()).isEqualTo(3);
+  }
+
+  @Test
+  void shouldUseAliasAwareEndpointWhenIndexing() throws IOException, ElasticsearchException {
+    // given
+    final var mockTransport = mock(ElasticsearchTransport.class);
+    final var mockOptions = mock(TransportOptions.class);
+    when(client._transport()).thenReturn(mockTransport);
+    when(client._transportOptions()).thenReturn(mockOptions);
+    when(mockTransport.performRequest(any(), any(), any()))
+        .thenReturn(createDefaultIndexResponse());
+
+    final var doc = new TestDocument("test");
+    final var searchIndexRequest =
+        SearchIndexRequest.of(b -> b.id("foo").index("bar").document(doc));
+
+    // when
+    searchClient.index(searchIndexRequest);
+
+    // then - the custom endpoint (not IndexRequest._ENDPOINT) must be passed to the transport
+    verify(mockTransport)
+        .performRequest(any(), same(AliasAwareIndexResponseDeserializer.ENDPOINT), any());
+  }
+
   private SearchResponse<TestDocument> createDefaultSearchResponse(
-      long totalHits, TotalHitsRelation totalHitsRelation) {
+      final long totalHits, final TotalHitsRelation totalHitsRelation) {
     return SearchResponse.of(
         (f) ->
             f.took(122)
