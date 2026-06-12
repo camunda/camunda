@@ -16,6 +16,7 @@ import io.camunda.configuration.Zone;
 import io.camunda.zeebe.management.cluster.BrokerId;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestBrokers;
+import io.camunda.zeebe.management.cluster.Operation;
 import io.camunda.zeebe.management.cluster.Operation.OperationEnum;
 import io.camunda.zeebe.management.cluster.PartitionDistributionConfig;
 import io.camunda.zeebe.management.cluster.ZoneSpec;
@@ -69,12 +70,7 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
     return new BrokerId.String(memberIdForBroker(nodeIdx).toString());
   }
 
-
-  /**
-   * 0 -> zoneA_0
-   * 1 -> zoneB_0
-   * 2 -> zoneA_1
-   */
+  /** 0 -> zoneA_0 1 -> zoneB_0 2 -> zoneA_1 */
   @Override
   protected MemberId memberIdForBroker(final int nodeIdx) {
     return MemberId.from(zoneFor(nodeIdx), nodeIdx / ZONES.length);
