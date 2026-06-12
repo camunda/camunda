@@ -132,10 +132,12 @@ public abstract class ReportEvaluationHandler {
         Optional.ofNullable(report).map(ReportDefinitionDto::getName).orElse("Unknown");
     final String reportId =
         Optional.ofNullable(report).map(ReportDefinitionDto::getId).orElse("Unsaved");
+    final String executionPlan = resolveExecutionPlanTag(report);
     logger.debug(
-        "Recording report latency - reportId: {}, reportName: {}, duration: {}ms",
+        "Recording report latency - reportId: {}, reportName: {}, executionPlan: {}, duration: {}ms",
         reportId,
         reportName,
+        executionPlan,
         durationMillis);
     if (reportLatencyEnabled) {
       OptimizeMetrics.registerTimer(
@@ -144,9 +146,29 @@ public abstract class ReportEvaluationHandler {
                   OptimizeMetrics.REPORT_ID_TAG,
                   reportId,
                   OptimizeMetrics.REPORT_NAME_TAG,
-                  reportName))
+                  reportName,
+                  OptimizeMetrics.EXECUTION_PLAN_TAG,
+                  executionPlan))
           .record(durationMillis, MILLISECONDS);
     }
+  }
+
+  private String resolveExecutionPlanTag(final ReportDefinitionDto<?> report) {
+    if (report == null || report.getData() == null) {
+      return "unknown";
+    }
+    if (report.isCombined()) {
+      return "combined";
+    }
+    try {
+      final List<String> commandKeys = report.getData().createCommandKeys();
+      if (commandKeys != null && !commandKeys.isEmpty()) {
+        return commandKeys.get(0);
+      }
+    } catch (final Exception e) {
+      logger.debug("Could not resolve execution plan tag for report [{}]", report.getId(), e);
+    }
+    return "unknown";
   }
 
   private void updateAndSetLatestReportDefinitionXml(
