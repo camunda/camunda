@@ -34,7 +34,7 @@ public abstract class AsyncReplicationIT extends AbstractAsyncReplicationIT {
 
     // then - exporter advances and fully catches up
     awaitExporterPositionAdvances(exporterPosition);
-    awaitExporterPositionStable(Duration.ofSeconds(2), Duration.ofSeconds(10));
+    awaitExporterPositionStable(Duration.ofSeconds(2), Duration.ofSeconds(30));
     exporterAcknowledgedAll();
   }
 

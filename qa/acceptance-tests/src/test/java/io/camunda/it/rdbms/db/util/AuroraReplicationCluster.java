@@ -97,9 +97,52 @@ public final class AuroraReplicationCluster implements ReplicationClusterContain
 
   @Override
   public void stopReplica() {
-    LOG.info("Removing Aurora replica via external command");
+    LOG.info("Triggering Aurora replica outage via external command");
     executeReplicaCommand(stopReplicaCommand);
-    LOG.info("Aurora replica removed");
+    waitForReplicaUnreachable();
+    LOG.info("Aurora replica is unreachable");
+  }
+
+  /**
+   * Waits until no replica instance reports a position on the primary, i.e. the secondary has
+   * actually gone offline. The stop command (e.g. a reboot) returns before the instance is down, so
+   * without this the test would proceed while the replica is still reachable and exporting would
+   * not yet be paused.
+   */
+  private void waitForReplicaUnreachable() {
+    await()
+        .atMost(Duration.ofMinutes(5))
+        .pollInterval(Duration.ofSeconds(5))
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              try (final Connection connection =
+                      DriverManager.getConnection(adminJdbcUrl, username, password);
+                  final Statement statement = connection.createStatement();
+                  final ResultSet rs =
+                      statement.executeQuery(
+                          """
+                          SELECT server_id, session_id, durable_lsn
+                          FROM aurora_global_db_instance_status()
+                          """)) {
+                int replicaCount = 0;
+                while (rs.next()) {
+                  final String sessionId = rs.getString("session_id");
+                  if (!"MASTER_SESSION_ID".equals(sessionId)) {
+                    replicaCount++;
+                    LOG.info(
+                        "Replica still reachable: server_id={}, session_id={}, durable_lsn={}",
+                        rs.getString("server_id"),
+                        sessionId,
+                        rs.getLong("durable_lsn"));
+                  }
+                }
+                if (replicaCount > 0) {
+                  throw new AssertionError(
+                      "Replica still reachable (replicas visible: " + replicaCount + ")");
+                }
+              }
+            });
   }
 
   @Override
