@@ -28,7 +28,7 @@ import org.slf4j.Logger;
 public class ArchiveByIdTaskSupplier<SortFieldType> {
 
   public static final int MINIMUM_BATCH_SIZE = 50;
-  public static final double BATCH_SIZE_REDUCTION_RATIO = 0.5;
+  public static final double BATCH_SIZE_REDUCTION_FACTOR = 0.5;
 
   private final HistoryConfiguration config;
   private final String sourceIdx;
@@ -115,9 +115,7 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
                             && retryCount.incrementAndGet()
                                 <= config.getArchiveByIdMaxRetryAttempts()) {
                           metrics.recordArchiverBatchRetry();
-                          if (shouldReduceBatchSize(ex)) {
-                            reduceBatchSize();
-                          }
+                          adjustBatchSize(ex);
 
                           logger.trace(
                               "Encountered retryable error when archiving docs from '{}' to '{}', "
@@ -161,10 +159,15 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
     return lstResponse == null ? List.of() : lstResponse.searchAfter();
   }
 
-  private void reduceBatchSize() {
-    batchSize.updateAndGet(
-        currentSize ->
-            (int) Math.max(MINIMUM_BATCH_SIZE, currentSize * BATCH_SIZE_REDUCTION_RATIO));
+  private void adjustBatchSize(final Throwable ex) {
+    if (batchSize.get() <= MINIMUM_BATCH_SIZE) {
+      return;
+    }
+
+    if (shouldReduceBatchSize(ex)) {
+      batchSize.set(
+          (int) Math.max(MINIMUM_BATCH_SIZE, batchSize.get() * BATCH_SIZE_REDUCTION_FACTOR));
+    }
   }
 
   private CompletableFuture<Long> reindex(final ArchiveDocIdsBatch<SortFieldType> response) {
