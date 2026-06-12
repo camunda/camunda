@@ -35,6 +35,7 @@ import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.index.RoleIndex;
 import io.camunda.webapps.schema.descriptors.index.TenantIndex;
 import io.camunda.webapps.schema.descriptors.index.UserIndex;
+import io.camunda.webapps.schema.descriptors.template.AgentHistoryTemplate;
 import io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.AuditLogTemplate;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
@@ -144,6 +145,7 @@ public class BackupPriorityConfiguration {
             new AuditLogCleanupIndex(indexPrefix, isElasticsearch),
             new AuditLogTemplate(indexPrefix, isElasticsearch),
             // CAMUNDA
+            new AgentHistoryTemplate(indexPrefix, isElasticsearch),
             new ClusterVariableIndex(indexPrefix, isElasticsearch),
             new DeployedResourceIndex(indexPrefix, isElasticsearch),
             new GlobalListenerIndex(indexPrefix, isElasticsearch),
