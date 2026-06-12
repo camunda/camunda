@@ -58,8 +58,11 @@ final class ExporterArgsOverlay {
 
   /**
    * Recursively lowercases and strips dashes from all map keys, so that relaxed config-key forms
-   * ({@code indexPrefix}, {@code index-prefix}, {@code INDEX_PREFIX}) collapse into one key before
-   * merge.
+   * ({@code indexPrefix} and {@code index-prefix}) collapse into one canonical key before merge.
+   *
+   * <p>Underscores are intentionally preserved — {@code INDEX_PREFIX} normalizes to {@code
+   * index_prefix}, not {@code indexprefix}. This matches the key normalization applied downstream
+   * when exporter args are deserialized into a typed config object.
    */
   static Map<String, Object> canonicalizeConfigKeys(final Map<String, Object> map) {
     final Map<String, Object> result = new LinkedHashMap<>();
@@ -137,7 +140,7 @@ final class ExporterArgsOverlay {
       throw new UnifiedConfigurationException(
           String.format(
               "Physical tenant '%s' sets exporter '%s'.%s='%s' but root declares '%s'."
-                  + " A tenant may not re-class an exporter the root explicitly declares.",
+                  + " A tenant may not override an exporter field that root explicitly declares.",
               tenantId, exporterId, field, tenantValue, rootValue));
     }
   }
