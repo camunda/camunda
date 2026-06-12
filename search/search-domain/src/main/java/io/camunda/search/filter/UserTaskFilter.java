@@ -43,6 +43,31 @@ public record UserTaskFilter(
     String type)
     implements FilterBase {
 
+  public Builder toBuilder() {
+    return new Builder()
+        .userTaskKeys(userTaskKeys)
+        .elementIds(elementIds)
+        .nameOperations(nameOperations)
+        .processDefinitionIdOperations(processDefinitionIdOperations)
+        .assigneeOperations(assigneeOperations)
+        .priorityOperations(priorityOperations)
+        .stateOperations(stateOperations)
+        .processInstanceKeyOperations(processInstanceKeyOperations)
+        .processDefinitionKeyOperations(processDefinitionKeyOperations)
+        .candidateUserOperations(candidateUserOperations)
+        .candidateGroupOperations(candidateGroupOperations)
+        .tenantIdOperations(tenantIdOperations)
+        .processInstanceVariables(processInstanceVariableFilter)
+        .localVariables(localVariableFilters)
+        .elementInstanceKeys(elementInstanceKeys)
+        .creationDateOperations(creationDateOperations)
+        .completionDateOperations(completionDateOperations)
+        .followUpDateOperations(followUpDateOperations)
+        .dueDateOperations(dueDateOperations)
+        .tags(tags)
+        .type(type);
+  }
+
   public static final class Builder implements ObjectBuilder<UserTaskFilter> {
 
     private List<Long> userTaskKeys;
@@ -241,6 +266,11 @@ public record UserTaskFilter(
 
     public Builder processInstanceVariables(final List<VariableValueFilter> values) {
       processInstanceVariableFilters = addValuesToList(processInstanceVariableFilters, values);
+      return this;
+    }
+
+    public Builder clearProcessInstanceVariables() {
+      processInstanceVariableFilters = null;
       return this;
     }
 

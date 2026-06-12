@@ -64,7 +64,7 @@ public record VariableFilter(
       return this;
     }
 
-    private Builder valueUntypedOperations(final List<UntypedOperation> operations) {
+    public Builder valueUntypedOperations(final List<UntypedOperation> operations) {
       valueOperations = addValuesToList(valueOperations, operations);
       return this;
     }
