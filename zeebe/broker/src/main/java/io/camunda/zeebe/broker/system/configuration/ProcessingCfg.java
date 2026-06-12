@@ -19,6 +19,7 @@ public final class ProcessingCfg implements ConfigurationEntry {
   private boolean enableAsyncScheduledTasks = true;
   private Duration scheduledTaskCheckInterval = Duration.ofSeconds(1);
   private Set<Long> skipPositions;
+  private int scheduledCommandCacheCapacity = 100_000;
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
@@ -34,6 +35,11 @@ public final class ProcessingCfg implements ConfigurationEntry {
       throw new IllegalArgumentException(
           "scheduledTaskCheckInterval must be positive but was %s"
               .formatted(scheduledTaskCheckInterval));
+    }
+    if (scheduledCommandCacheCapacity < 1) {
+      throw new IllegalArgumentException(
+          "scheduledCommandCacheCapacity must be >= 1 but was %s"
+              .formatted(scheduledCommandCacheCapacity));
     }
   }
 
@@ -69,6 +75,14 @@ public final class ProcessingCfg implements ConfigurationEntry {
     this.skipPositions = skipPositions;
   }
 
+  public int getScheduledCommandCacheCapacity() {
+    return scheduledCommandCacheCapacity;
+  }
+
+  public void setScheduledCommandCacheCapacity(final int scheduledCommandCacheCapacity) {
+    this.scheduledCommandCacheCapacity = scheduledCommandCacheCapacity;
+  }
+
   @Override
   public String toString() {
     return "ProcessingCfg{"
@@ -80,6 +94,8 @@ public final class ProcessingCfg implements ConfigurationEntry {
         + enableAsyncScheduledTasks
         + ", scheduledTaskCheckInterval="
         + scheduledTaskCheckInterval
+        + ", scheduledCommandCacheCapacity="
+        + scheduledCommandCacheCapacity
         + '}';
   }
 
