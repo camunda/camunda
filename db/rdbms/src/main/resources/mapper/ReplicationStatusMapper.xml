@@ -51,5 +51,99 @@
     WHERE is_local = 0
   </select>
 
+  <!--
+    Detects whether the connected PostgreSQL instance is AWS Aurora. Uses to_regprocedure to
+    look up aurora_version() in the system catalog — returns null if the function does not exist,
+    non-null if it does. Safe to run on any PostgreSQL-compatible database; never throws.
+  -->
+  <select id="isAurora" resultType="boolean" databaseId="postgresql">
+    SELECT to_regprocedure('aurora_version()') IS NOT NULL
+  </select>
+
+  <!--
+    Detects whether the connected MySQL instance is AWS Aurora MySQL. Aurora MySQL exposes the
+    aurora_version() function; plain MySQL does not. Checks information_schema.ROUTINES rather
+    than the *_variables tables because information_schema.session_variables was removed in
+    MySQL 8.0 (and Aurora MySQL 3.x is MySQL 8.0-compatible), while ROUTINES is standard SQL
+    available across all MySQL versions. Safe to run on any MySQL-compatible database; never throws.
+  -->
+  <select id="isAurora" resultType="boolean" databaseId="mysql">
+    SELECT EXISTS(
+      SELECT 1 FROM information_schema.ROUTINES WHERE ROUTINE_NAME = 'aurora_version'
+    )
+  </select>
+
+  <!--
+    Detects whether the connected Aurora PostgreSQL instance is part of a Global Database.
+    Uses to_regprocedure to check for aurora_global_db_instance_status() without calling it.
+    Safe to run on any PostgreSQL-compatible database; never throws.
+  -->
+  <select id="isAuroraGlobalDatabase" resultType="boolean" databaseId="postgresql">
+    SELECT to_regprocedure('aurora_global_db_instance_status()') IS NOT NULL
+  </select>
+
+  <!--
+    Detects whether the connected Aurora MySQL instance is part of a Global Database. Aurora MySQL
+    exposes Global Database status as the information_schema.aurora_global_db_instance_status
+    table (not a function). Available on Aurora MySQL 3.04.0+ and 8.4+ global databases. Safe to
+    run on any MySQL-compatible database; never throws.
+  -->
+  <select id="isAuroraGlobalDatabase" resultType="boolean" databaseId="mysql">
+    SELECT EXISTS(
+      SELECT 1 FROM information_schema.TABLES
+      WHERE TABLE_SCHEMA = 'information_schema'
+        AND TABLE_NAME = 'AURORA_GLOBAL_DB_INSTANCE_STATUS'
+    )
+  </select>
+
+  <!--
+    Returns the primary's current durable LSN for Aurora Global Database (PostgreSQL).
+    The row with session_id = 'MASTER_SESSION_ID' identifies the primary writer.
+  -->
+  <select id="getAuroraCurrentLogStatus" resultType="java.lang.Long" databaseId="postgresql">
+    SELECT COALESCE(durable_lsn, 0)
+    FROM aurora_global_db_instance_status()
+    WHERE session_id = 'MASTER_SESSION_ID'
+  </select>
+
+  <!--
+    Returns the primary's current durable LSN for Aurora Global Database (MySQL). Reads from
+    information_schema.aurora_global_db_instance_status (table, not function on MySQL).
+    The row with SESSION_ID = 'MASTER_SESSION_ID' identifies the primary writer.
+  -->
+  <select id="getAuroraCurrentLogStatus" resultType="java.lang.Long" databaseId="mysql">
+    SELECT COALESCE(DURABLE_LSN, 0)
+    FROM information_schema.aurora_global_db_instance_status
+    WHERE SESSION_ID = 'MASTER_SESSION_ID'
+  </select>
+
+  <!--
+    Returns per-replica replication status for Aurora Global Database (PostgreSQL). Each non-primary
+    instance reports its durable_lsn (the LSN persisted to durable storage on that instance)
+    together with the visibility_lag_in_msec for metrics.
+  -->
+  <select id="getAuroraReplicationStatus" resultMap="replicationLogStatusResultMap" databaseId="postgresql">
+    SELECT
+      COALESCE(durable_lsn, 0)                              AS logStatus,
+      server_id                                             AS replicaId,
+      COALESCE(visibility_lag_in_msec, 0)                   AS replicationLagMs
+    FROM aurora_global_db_instance_status()
+    WHERE session_id != 'MASTER_SESSION_ID'
+  </select>
+
+  <!--
+    Returns per-replica replication status for Aurora Global Database (MySQL). Each non-primary
+    instance reports its DURABLE_LSN together with VISIBILITY_LAG_IN_MSEC for metrics. Reads from
+    information_schema.aurora_global_db_instance_status (table, not function on MySQL).
+  -->
+  <select id="getAuroraReplicationStatus" resultMap="replicationLogStatusResultMap" databaseId="mysql">
+    SELECT
+      COALESCE(DURABLE_LSN, 0)                              AS logStatus,
+      SERVER_ID                                             AS replicaId,
+      COALESCE(VISIBILITY_LAG_IN_MSEC, 0)                   AS replicationLagMs
+    FROM information_schema.aurora_global_db_instance_status
+    WHERE SESSION_ID != 'MASTER_SESSION_ID'
+  </select>
+
 </mapper>
 
