@@ -544,21 +544,86 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           user_description: "team-core-features"
 
-  run-backup-restore-tests:
+# As part of the V1 API cleanup, the backup restore tests have been disabled
+# and need to be reinstated before 8.10 releases.
+#  run-backup-restore-tests:
+#    if: inputs.runBeTests
+#    name: "Integration / Backup Restore ITs"
+#    timeout-minutes: 15
+#    runs-on: ubuntu-latest
+#    permissions: {} # GITHUB_TOKEN unused in this job
+#    env:
+#      DOCKER_IMAGE_TAG: current-test
+#      TEST_OWNER: Data Layer
+#      TEST_TYPE: Integration
+#    services:
+#      registry:
+#        image: registry:3
+#        ports:
+#          - 5000:5000
+#    steps:
+#      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+#      - name: Print metadata
+#        uses: ./.github/actions/print-metadata
+#      - name: Create build output log file
+#        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
+#      - uses: ./.github/actions/setup-build
+#        with:
+#          vault-address: ${{ secrets.VAULT_ADDR }}
+#          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+#          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+#          minimus: true
+#      - uses: ./.github/actions/build-zeebe
+#        id: build-zeebe
+#        with:
+#          maven-extra-args: -T1C -PskipFrontendBuild
+#      - uses: ./.github/actions/build-platform-docker
+#        id: build-operate-docker
+#        with:
+#          repository: localhost:5000/camunda/operate
+#          version: ${{ env.DOCKER_IMAGE_TAG }}
+#          dockerfile: operate.Dockerfile
+#          push: true
+#          distball: ${{ steps.build-zeebe.outputs.distball }}
+#      - name: Run Operate backup restore Tests
+#        shell: bash
+#        run: ./mvnw -B -pl operate/qa/backup-restore-tests -DskipChecks -P -docker,-skipTests verify | tee "${BUILD_OUTPUT_FILE_PATH}"
+#      - name: Upload Test Report
+#        if: failure()
+#        uses: ./.github/actions/collect-test-artifacts
+#        with:
+#          name: "Operate Test Backup Restore"
+#      - name: Analyze Test Runs
+#        id: analyze-test-run
+#        if: always()
+#        uses: ./.github/actions/analyze-test-runs
+#        with:
+#          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
+#          # workaround to avoid https://github.com/camunda/camunda/issues/16604
+#          skipSummary: true
+#      - name: Observe build status
+#        if: always()
+#        continue-on-error: true
+#        uses: ./.github/actions/observe-build-status
+#        with:
+#          job_name: "operate-ci/backup-restore"
+#          build_status: ${{ job.status }}
+#          user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
+#          user_description: "team-data-layer"
+#          detailed_junit_tests: true
+#          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+#          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+#          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  run-migration-tests:
     if: inputs.runBeTests && inputs.stableBranch
-    name: "Integration / Backup Restore ITs"
-    timeout-minutes: 15
-    runs-on: ubuntu-latest
+    name: "Integration / Migrate Elasticsearch Data ITs"
+    timeout-minutes: 30
+    runs-on: gcp-perf-core-8-default
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
-      DOCKER_IMAGE_TAG: current-test
       TEST_OWNER: Data Layer
       TEST_TYPE: Integration
-    services:
-      registry:
-        image: registry:3
-        ports:
-          - 5000:5000
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Print metadata
@@ -567,30 +632,22 @@ jobs:
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       - uses: ./.github/actions/setup-build
         with:
+          java-distribution: adopt
+          maven-cache-key-modifier: operate
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
           minimus: true
-      - uses: ./.github/actions/build-zeebe
-        id: build-zeebe
-        with:
-          maven-extra-args: -T1C -PskipFrontendBuild
-      - uses: ./.github/actions/build-platform-docker
-        id: build-operate-docker
-        with:
-          repository: localhost:5000/camunda/operate
-          version: ${{ env.DOCKER_IMAGE_TAG }}
-          dockerfile: operate.Dockerfile
-          push: true
-          distball: ${{ steps.build-zeebe.outputs.distball }}
-      - name: Run Operate backup restore Tests
+      - name: Build Operate
+        run: ./mvnw -B -T1C -DskipChecks -DskipTests -PskipFrontendBuild clean install
+      - name: Run Operate migration tests
         shell: bash
-        run: ./mvnw -B -pl operate/qa/backup-restore-tests -DskipChecks -P -docker,-skipTests verify | tee "${BUILD_OUTPUT_FILE_PATH}"
+        run: ./mvnw -B -pl operate/qa/migration-tests/migration-test -DskipChecks -DskipTests=false verify | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Upload Test Report
         if: failure()
         uses: ./.github/actions/collect-test-artifacts
         with:
-          name: "Operate Test Backup Restore"
+          name: "Operate Test Migrate Elasticsearch Data"
       - name: Analyze Test Runs
         id: analyze-test-run
         if: always()
@@ -604,7 +661,7 @@ jobs:
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
-          job_name: "operate-ci/backup-restore"
+          job_name: "operate-ci/migrate-elasticsearch-data"
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
           user_description: "team-data-layer"
