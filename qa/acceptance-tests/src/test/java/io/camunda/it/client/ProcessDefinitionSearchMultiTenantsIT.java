@@ -7,7 +7,6 @@
  */
 package io.camunda.it.client;
 
-import static io.camunda.it.util.TestHelper.createTenant;
 import static io.camunda.it.util.TestHelper.deployResource;
 import static io.camunda.it.util.TestHelper.deployResourceForTenant;
 import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
@@ -18,6 +17,8 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.client.api.search.sort.ProcessDefinitionSort;
 import io.camunda.qa.util.auth.Authenticated;
+import io.camunda.qa.util.auth.TenantDefinition;
+import io.camunda.qa.util.auth.TestTenant;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
@@ -91,18 +92,17 @@ public class ProcessDefinitionSearchMultiTenantsIT {
   @UserDefinition
   private static final TestUser USER_1 = new TestUser(USERNAME_1, "password", List.of());
 
+  @TenantDefinition
+  private static final TestTenant TENANT_1 =
+      new TestTenant(TENANT_ID_1)
+          .setName(TENANT_ID_1)
+          .addUsers(InitializationConfiguration.DEFAULT_USER_USERNAME, USERNAME_1);
+
   @BeforeAll
   public static void beforeAll(@Authenticated final CamundaClient adminClient)
       throws InterruptedException {
 
     camundaClient = adminClient;
-
-    createTenant(
-        adminClient,
-        TENANT_ID_1,
-        TENANT_ID_1,
-        InitializationConfiguration.DEFAULT_USER_USERNAME,
-        USERNAME_1);
 
     deployResourceForTenant(camundaClient, "form/form.form", TENANT_ID_1);
     deployResourceForTenant(camundaClient, "form/form_v2.form", TENANT_ID_1);

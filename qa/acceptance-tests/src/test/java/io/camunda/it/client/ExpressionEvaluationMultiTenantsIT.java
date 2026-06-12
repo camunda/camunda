@@ -7,12 +7,13 @@
  */
 package io.camunda.it.client;
 
-import static io.camunda.it.util.TestHelper.createTenant;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.EvaluateExpressionResponse;
 import io.camunda.qa.util.auth.Authenticated;
+import io.camunda.qa.util.auth.TenantDefinition;
+import io.camunda.qa.util.auth.TestTenant;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
@@ -50,24 +51,21 @@ public class ExpressionEvaluationMultiTenantsIT {
   @UserDefinition
   private static final TestUser USER_2 = new TestUser(USERNAME_2, "password", List.of());
 
+  @TenantDefinition
+  private static final TestTenant TENANT_1 =
+      new TestTenant(TENANT_ID_1)
+          .setName(TENANT_ID_1)
+          .addUsers(InitializationConfiguration.DEFAULT_USER_USERNAME, USERNAME_1);
+
+  @TenantDefinition
+  private static final TestTenant TENANT_2 =
+      new TestTenant(TENANT_ID_2)
+          .setName(TENANT_ID_2)
+          .addUsers(InitializationConfiguration.DEFAULT_USER_USERNAME, USERNAME_2);
+
   @BeforeAll
   public static void beforeAll(@Authenticated final CamundaClient client) {
     adminClient = client;
-
-    // Create tenants and assign users
-    createTenant(
-        adminClient,
-        TENANT_ID_1,
-        TENANT_ID_1,
-        InitializationConfiguration.DEFAULT_USER_USERNAME,
-        USERNAME_1);
-
-    createTenant(
-        adminClient,
-        TENANT_ID_2,
-        TENANT_ID_2,
-        InitializationConfiguration.DEFAULT_USER_USERNAME,
-        USERNAME_2);
   }
 
   // ============ VARIABLE SCOPING TESTS ============

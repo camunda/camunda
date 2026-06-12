@@ -19,6 +19,8 @@ import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.search.enums.JobState;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
+import io.camunda.qa.util.auth.TenantDefinition;
+import io.camunda.qa.util.auth.TestTenant;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.multidb.MultiDbTest;
@@ -35,7 +37,6 @@ import java.util.Set;
 import java.util.UUID;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -83,20 +84,13 @@ public class JobStreamAuthorizationIT {
                   UPDATE_PROCESS_INSTANCE,
                   List.of(PROCESS_ID_2, PROCESS_ID_4, PROCESS_ID_5))));
 
-  @BeforeAll
-  static void setUp() {
-    createTenant(adminClient, TENANT_A);
-    createTenant(adminClient, TENANT_B);
+  @TenantDefinition
+  private static final TestTenant A_TENANT =
+      new TestTenant(TENANT_A).setName(TENANT_A).addUsers("demo", USER1_USERNAME, USER2_USERNAME);
 
-    assignUserToTenant(adminClient, "demo", TENANT_A);
-    assignUserToTenant(adminClient, "demo", TENANT_B);
-    // user1 is only assigned to tenantA, but isn't authorized to handle any resources
-    assignUserToTenant(adminClient, USER1_USERNAME, TENANT_A);
-    // user2 is assigned to tenantA AND tenant B BUT is authorized to handle only PROCESS_2 on
-    // tenantB
-    assignUserToTenant(adminClient, USER2_USERNAME, TENANT_A);
-    assignUserToTenant(adminClient, USER2_USERNAME, TENANT_B);
-  }
+  @TenantDefinition
+  private static final TestTenant B_TENANT =
+      new TestTenant(TENANT_B).setName(TENANT_B).addUsers("demo", USER2_USERNAME);
 
   @AfterEach
   void cleanUp() {
@@ -345,15 +339,6 @@ public class JobStreamAuthorizationIT {
                 JobStreamActuatorAssert.assertThat(actuator)
                     .remoteStreams()
                     .haveJobType(1, jobType));
-  }
-
-  private static void createTenant(final CamundaClient camundaClient, final String tenant) {
-    camundaClient.newCreateTenantCommand().tenantId(tenant).name(tenant).send().join();
-  }
-
-  private static void assignUserToTenant(
-      final CamundaClient camundaClient, final String username, final String tenant) {
-    camundaClient.newAssignUserToTenantCommand().username(username).tenantId(tenant).send().join();
   }
 
   private static void deployResource(

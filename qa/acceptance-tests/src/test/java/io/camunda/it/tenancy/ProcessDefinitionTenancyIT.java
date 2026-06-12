@@ -14,6 +14,8 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.qa.util.auth.Authenticated;
+import io.camunda.qa.util.auth.TenantDefinition;
+import io.camunda.qa.util.auth.TestTenant;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.multidb.MultiDbTest;
@@ -54,14 +56,16 @@ public class ProcessDefinitionTenancyIT {
   @UserDefinition
   private static final TestUser USER2_USER = new TestUser(USER2, "password", List.of());
 
+  @TenantDefinition
+  private static final TestTenant A_TENANT =
+      new TestTenant(TENANT_A).setName(TENANT_A).addUsers(ADMIN, USER1);
+
+  @TenantDefinition
+  private static final TestTenant B_TENANT =
+      new TestTenant(TENANT_B).setName(TENANT_B).addUsers(ADMIN);
+
   @BeforeAll
   static void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {
-    createTenant(adminClient, TENANT_A);
-    createTenant(adminClient, TENANT_B);
-    assignUserToTenant(adminClient, ADMIN, TENANT_A);
-    assignUserToTenant(adminClient, ADMIN, TENANT_B);
-    assignUserToTenant(adminClient, USER1, TENANT_A);
-
     deployResource(adminClient, "process/service_tasks_v1.bpmn", TENANT_A);
     deployResource(adminClient, "process/service_tasks_v1.bpmn", TENANT_B);
     waitForProcessBeingExported(adminClient);
@@ -139,15 +143,6 @@ public class ProcessDefinitionTenancyIT {
     assertThat(exception.details().getStatus()).isEqualTo(404);
     assertThat(exception.details().getDetail())
         .contains("Process Definition with key '%s' not found".formatted(processDefinitionKey));
-  }
-
-  private static void createTenant(final CamundaClient camundaClient, final String tenant) {
-    camundaClient.newCreateTenantCommand().tenantId(tenant).name(tenant).send().join();
-  }
-
-  private static void assignUserToTenant(
-      final CamundaClient camundaClient, final String username, final String tenant) {
-    camundaClient.newAssignUserToTenantCommand().username(username).tenantId(tenant).send().join();
   }
 
   private static void deployResource(

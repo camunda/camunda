@@ -15,6 +15,8 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.response.TenantGroup;
+import io.camunda.qa.util.auth.TenantDefinition;
+import io.camunda.qa.util.auth.TestTenant;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.test.util.Strings;
@@ -34,10 +36,11 @@ public class GroupsByTenantIT {
   private static final String B_GROUP_ID = "bGroupId";
   private static final String UNASSIGNED_GROUP_ID = Strings.newRandomValidIdentityId();
 
+  @TenantDefinition
+  private static final TestTenant TENANT = new TestTenant(TENANT_ID).setName("tenantName");
+
   @BeforeAll
   static void setup() {
-    camundaClient.newCreateTenantCommand().tenantId(TENANT_ID).name("tenantName").send().join();
-
     camundaClient.newCreateGroupCommand().groupId(A_GROUP_ID).name("firstGroupName").send().join();
     camundaClient.newCreateGroupCommand().groupId(B_GROUP_ID).name("secondGroupName").send().join();
     camundaClient

@@ -28,6 +28,8 @@ import io.camunda.client.impl.statistics.response.UsageMetricsStatisticsImpl;
 import io.camunda.client.impl.statistics.response.UsageMetricsStatisticsItemImpl;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
+import io.camunda.qa.util.auth.TenantDefinition;
+import io.camunda.qa.util.auth.TestTenant;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.multidb.MultiDbTest;
@@ -99,6 +101,14 @@ public class UsageMetricAuthorizationIT {
   @UserDefinition
   private static final TestUser UNAUTHORIZED_USER = new TestUser(UNAUTHORIZED, PASSWORD, List.of());
 
+  @TenantDefinition
+  private static final TestTenant A_TENANT =
+      new TestTenant(TENANT_A).setName(TENANT_A).addUsers(ADMIN, RESTRICTED);
+
+  @TenantDefinition
+  private static final TestTenant B_TENANT =
+      new TestTenant(TENANT_B).setName(TENANT_B).addUsers(ADMIN);
+
   private static void waitForUsageMetrics(
       final CamundaClient camundaClient, final Consumer<UsageMetricsStatistics> fnRequirements) {
     Awaitility.await("should export metrics to secondary storage")
@@ -137,11 +147,6 @@ public class UsageMetricAuthorizationIT {
 
   @BeforeAll
   static void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {
-    createTenant(adminClient, TENANT_A);
-    createTenant(adminClient, TENANT_B);
-    assignUserToTenant(adminClient, ADMIN, TENANT_A);
-    assignUserToTenant(adminClient, ADMIN, TENANT_B);
-    assignUserToTenant(adminClient, RESTRICTED, TENANT_A);
     waitForUsersAssignedToTenant(adminClient, TENANT_A, ADMIN, RESTRICTED);
     waitForUsersAssignedToTenant(adminClient, TENANT_B, ADMIN);
 
@@ -193,15 +198,6 @@ public class UsageMetricAuthorizationIT {
         .tenantId(tenantId)
         .send()
         .join();
-  }
-
-  private static void createTenant(final CamundaClient camundaClient, final String tenant) {
-    camundaClient.newCreateTenantCommand().tenantId(tenant).name(tenant).send().join();
-  }
-
-  private static void assignUserToTenant(
-      final CamundaClient camundaClient, final String username, final String tenant) {
-    camundaClient.newAssignUserToTenantCommand().username(username).tenantId(tenant).send().join();
   }
 
   private static void startProcessInstance(
