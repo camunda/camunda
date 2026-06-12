@@ -16,6 +16,7 @@
 package io.camunda.process.test.api.coverage.model;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import javax.annotation.Nullable;
 import org.immutables.value.Value;
 
 /**
@@ -28,6 +29,14 @@ import org.immutables.value.Value;
 public interface DecisionModel {
   /** Returns the decision definition id. */
   String getDecisionDefinitionId();
+
+  /**
+   * Returns the human-readable decision name, or {@code null} if no name is defined.
+   *
+   * <p>This is the {@code name} attribute of the DMN {@code <decision>} element.
+   */
+  @Nullable
+  String getDecisionName();
 
   /** Returns the number of coverable rules in this model. */
   int getTotalRuleCount();

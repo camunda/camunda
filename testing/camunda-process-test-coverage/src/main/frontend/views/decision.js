@@ -15,6 +15,21 @@ import { escapeHtml, toPercent, progressBarHtml, badgeHtml, coverageClass, statC
 import { renderDmnDecision } from '../dmn.js';
 
 /**
+ * Returns an HTML string for the decision heading: name as primary, ID as secondary if different.
+ * @param {string} decisionId
+ * @param {Array<object>} decisionModels
+ * @returns {string}
+ */
+function decisionHeading(decisionId, decisionModels) {
+  const model = (decisionModels || []).find((m) => m.decisionDefinitionId === decisionId);
+  const name = model?.decisionName;
+  if (name && name !== decisionId) {
+    return `${escapeHtml(name)}<br><small class="text-muted fw-normal">Decision Definition ID: ${escapeHtml(decisionId)}</small>`;
+  }
+  return escapeHtml(decisionId);
+}
+
+/**
  * Renders the decision details view into #content.
  * @param {string} decisionId
  * @param {object} data window.COVERAGE_DATA
@@ -69,7 +84,7 @@ export async function renderDecision(decisionId, data, context = null) {
   let html = breadcrumbHtml + `
     <h2 class="view-title">
       <i class="bi bi-table me-2" aria-hidden="true"></i>
-      ${escapeHtml(decisionId)}
+      ${decisionHeading(decisionId, decisionModels)}
     </h2>`;
 
   if (cov) {

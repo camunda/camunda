@@ -72,9 +72,12 @@ public final class CoverageReportCollector {
    * coverage data for each instance, and adds the collected data to the suite. Also collects
    * decision table coverage from decision instances.
    *
-   * @param runName Identifier for the current test run
+   * @param runName Identifier for the current test run (the test method name)
+   * @param displayName Optional custom display name for the test case (e.g. from
+   *     {@code @DisplayName}), or {@code null} if not set
    */
-  public void collectTestRunCoverage(final String runName, final CoverageTestData testResults) {
+  public void collectTestRunCoverage(
+      final String runName, final String displayName, final CoverageTestData testResults) {
     final List<CoverageProcessInstanceData> filteredProcessInstanceData =
         testResults.getProcessInstanceData().stream()
             .filter(
@@ -99,6 +102,7 @@ public final class CoverageReportCollector {
     coverageRunReports.add(
         ImmutableCoverageRunReport.builder()
             .name(runName)
+            .displayName(displayName)
             .addAllProcessCoverages(coverages)
             .addAllDecisionCoverages(decisionCoverages)
             .build());

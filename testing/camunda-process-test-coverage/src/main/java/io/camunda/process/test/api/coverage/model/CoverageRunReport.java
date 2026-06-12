@@ -17,6 +17,7 @@ package io.camunda.process.test.api.coverage.model;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.List;
+import javax.annotation.Nullable;
 import org.immutables.value.Value;
 
 /**
@@ -27,8 +28,18 @@ import org.immutables.value.Value;
 @Value.Immutable
 @JsonDeserialize(builder = ImmutableCoverageRunReport.Builder.class)
 public interface CoverageRunReport {
-  /** Returns the test run name. */
+  /** Returns the test method name. */
   String getName();
+
+  /**
+   * Returns the display name of the test case, or {@code null} if no custom display name is set.
+   *
+   * <p>In JUnit 5, this corresponds to the value of the {@code @DisplayName} annotation. When
+   * present, the display name should be shown as the primary identifier in the report, with the
+   * method name ({@link #getName()}) shown as the secondary identifier.
+   */
+  @Nullable
+  String getDisplayName();
 
   /** Returns process coverage entries calculated for this run. */
   List<ProcessCoverage> getProcessCoverages();

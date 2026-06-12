@@ -52,6 +52,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import org.junit.jupiter.api.DisplayName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.Ordered;
@@ -211,8 +212,11 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     try {
       final CamundaDataSource dataSource = new CamundaDataSource(client);
       final CoverageTestData coverageTestData = CoverageTestDataCollector.collectData(dataSource);
+      final java.lang.reflect.Method testMethod = testContext.getTestMethod();
+      final String runName = testMethod.getName();
+      final String displayName = getDisplayName(testMethod);
       coverageCollector.collectTestRunCoverage(
-          testContext.getTestClass(), testContext.getTestMethod().getName(), coverageTestData);
+          testContext.getTestClass(), runName, displayName, coverageTestData);
     } catch (final Throwable t) {
       LOG.warn("Failed to collect test process coverage, skipping.", t);
     }
@@ -374,6 +378,15 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
   private static boolean isTestFailed(final TestContext testContext) {
     return testContext.getTestException() != null;
+  }
+
+  /**
+   * Returns the {@code @DisplayName} annotation value for the test method, or {@code null} if no
+   * explicit display name is set.
+   */
+  private static String getDisplayName(final java.lang.reflect.Method testMethod) {
+    final DisplayName annotation = testMethod.getAnnotation(DisplayName.class);
+    return annotation != null ? annotation.value() : null;
   }
 
   @Override

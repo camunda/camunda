@@ -16,6 +16,7 @@
 package io.camunda.process.test.api.coverage.model;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import javax.annotation.Nullable;
 import org.immutables.value.Value;
 
 /**
@@ -28,6 +29,14 @@ import org.immutables.value.Value;
 public interface ProcessModel {
   /** Returns the process definition id. */
   String getProcessDefinitionId();
+
+  /**
+   * Returns the human-readable process name, or {@code null} if no name is defined.
+   *
+   * <p>This is the {@code name} attribute of the BPMN {@code <process>} element.
+   */
+  @Nullable
+  String getProcessName();
 
   /** Returns the number of coverable BPMN elements in this model. */
   int getTotalElementCount();

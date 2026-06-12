@@ -73,6 +73,7 @@ public class DecisionModelCreator {
 
     return ImmutableDecisionModel.builder()
         .decisionDefinitionId(decisionDefinitionId)
+        .decisionName(decisionDefinitionData.getDecisionDefinition().getDmnDecisionName())
         .totalRuleCount(ruleCount)
         .version(String.valueOf(decisionDefinitionData.getDecisionDefinition().getVersion()))
         .xml(xml)

@@ -21,6 +21,8 @@ export function renderDashboard(data) {
   const suites = data.suites || [];
   const globalCoverages = data.processCoverages || [];
   const globalDecisionCoverages = data.decisionCoverages || [];
+  const processModels = data.processModels || [];
+  const decisionModels = data.decisionModels || [];
 
   const totalSuites = suites.length;
   const totalProcesses = globalCoverages.length;
@@ -61,7 +63,8 @@ export function renderDashboard(data) {
       <div class="table-responsive">
         <table class="table table-hover align-middle">
           <thead><tr>
-            <th>Process</th>
+            <th>Process Name</th>
+            <th>Process Definition ID</th>
             <th style="width:200px">Coverage</th>
             <th style="width:100px">Ratio</th>
           </tr></thead>
@@ -69,12 +72,15 @@ export function renderDashboard(data) {
 
     for (const cov of sortedProcesses) {
       const pid = encodeURIComponent(cov.processDefinitionId);
+      const model = processModels.find((m) => m.processDefinitionId === cov.processDefinitionId);
+      const processName = model?.processName || '';
       html += `
             <tr class="clickable-row" onclick="navigate('/process/${pid}')">
               <td>
                 <i class="bi bi-diagram-3-fill me-2 text-primary" aria-hidden="true"></i>
-                <strong>${escapeHtml(cov.processDefinitionId)}</strong>
+                <strong>${escapeHtml(processName || cov.processDefinitionId)}</strong>
               </td>
+              <td><small class="text-muted">${escapeHtml(cov.processDefinitionId)}</small></td>
               <td>${progressBarHtml(cov.coverage)}</td>
               <td>${badgeHtml(cov.coverage)}</td>
             </tr>`;
@@ -90,7 +96,8 @@ export function renderDashboard(data) {
       <div class="table-responsive">
         <table class="table table-hover align-middle">
           <thead><tr>
-            <th>Decision</th>
+            <th>Decision Name</th>
+            <th>Decision Definition ID</th>
             <th style="width:200px">Coverage</th>
             <th style="width:100px">Ratio</th>
           </tr></thead>
@@ -98,12 +105,15 @@ export function renderDashboard(data) {
 
     for (const cov of sortedDecisions) {
       const did = encodeURIComponent(cov.decisionDefinitionId);
+      const model = decisionModels.find((m) => m.decisionDefinitionId === cov.decisionDefinitionId);
+      const decisionName = model?.decisionName || '';
       html += `
             <tr class="clickable-row" onclick="navigate('/decision/${did}')">
               <td>
                 <i class="bi bi-table me-2 text-success" aria-hidden="true"></i>
-                <strong>${escapeHtml(cov.decisionDefinitionId)}</strong>
+                <strong>${escapeHtml(decisionName || cov.decisionDefinitionId)}</strong>
               </td>
+              <td><small class="text-muted">${escapeHtml(cov.decisionDefinitionId)}</small></td>
               <td>${progressBarHtml(cov.coverage)}</td>
               <td>${badgeHtml(cov.coverage)}</td>
             </tr>`;

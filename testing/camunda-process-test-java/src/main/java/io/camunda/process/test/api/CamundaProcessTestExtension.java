@@ -54,6 +54,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
@@ -379,7 +380,10 @@ public class CamundaProcessTestExtension
           new CamundaDataSource(camundaProcessTestContext.createClient());
       final CoverageTestData coverageData = CoverageTestDataCollector.collectData(dataSource);
       coverageCollector.collectTestRunCoverage(
-          context.getRequiredTestClass(), getCoverageTestName(context), coverageData);
+          context.getRequiredTestClass(),
+          getCoverageTestName(context),
+          getDisplayName(context),
+          coverageData);
     } catch (final Throwable t) {
       LOG.warn("Failed to collect test process coverage, skipping.", t);
     }
@@ -406,7 +410,19 @@ public class CamundaProcessTestExtension
       parentContext = parentContext.getParent().orElse(null);
     }
 
-    return prefix + context.getDisplayName();
+    return prefix + context.getRequiredTestMethod().getName();
+  }
+
+  /**
+   * Returns the {@code @DisplayName} annotation value for the test method, or {@code null} if no
+   * explicit display name is set.
+   */
+  private static String getDisplayName(final ExtensionContext context) {
+    return context
+        .getTestMethod()
+        .flatMap(m -> AnnotationUtils.findAnnotation(m, DisplayName.class))
+        .map(DisplayName::value)
+        .orElse(null);
   }
 
   private void printTestResults() {

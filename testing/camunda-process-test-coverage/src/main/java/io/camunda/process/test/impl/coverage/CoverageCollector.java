@@ -29,12 +29,14 @@ public interface CoverageCollector {
    * Collects coverage data for one test run and returns the suite-level coverage report.
    *
    * @param testClass The test class for identification in reports
-   * @param runName Name of the test run for identification in reports
+   * @param runName Name of the test method for identification in reports
+   * @param displayName Optional custom display name (e.g. from {@code @DisplayName}), or {@code
+   *     null} if not set
    * @param testData Snapshot of all test run data required for coverage calculation
    * @return Coverage report for the current suite
    */
   CoverageReport collectTestRunCoverage(
-      Class<?> testClass, String runName, CoverageTestData testData);
+      Class<?> testClass, String runName, String displayName, CoverageTestData testData);
 
   /**
    * Generates coverage reports (JSON/HTML), prints coverage summary, and returns the aggregated

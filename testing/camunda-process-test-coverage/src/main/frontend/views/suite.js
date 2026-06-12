@@ -11,6 +11,7 @@ import {
   badgeHtml,
   coverageClass,
   statCard,
+  runPrimaryLabel,
 } from '../utils.js';
 
 /**
@@ -30,6 +31,8 @@ export function renderSuite(suiteId, data) {
   const suiteDecisionCoverages = suite.decisionCoverages || [];
   const runs = suite.runs || [];
   const sid = encodeURIComponent(suite.id);
+  const processModels = data.processModels || [];
+  const decisionModels = data.decisionModels || [];
 
   const allCoverages = [...suiteCoverages, ...suiteDecisionCoverages];
   const avgCoverage =
@@ -59,7 +62,8 @@ export function renderSuite(suiteId, data) {
       <div class="table-responsive">
         <table class="table table-hover align-middle">
           <thead><tr>
-            <th>Process</th>
+            <th>Process Name</th>
+            <th>Process Definition ID</th>
             <th style="width:200px">Coverage</th>
             <th style="width:100px">Ratio</th>
           </tr></thead>
@@ -67,12 +71,15 @@ export function renderSuite(suiteId, data) {
 
     for (const cov of sortedProcesses) {
       const pid = encodeURIComponent(cov.processDefinitionId);
+      const model = processModels.find((m) => m.processDefinitionId === cov.processDefinitionId);
+      const processName = model?.processName || '';
       html += `
             <tr class="clickable-row" onclick="navigate('/suite/${sid}/process/${pid}')">
               <td>
                 <i class="bi bi-diagram-3-fill me-2 text-primary" aria-hidden="true"></i>
-                ${escapeHtml(cov.processDefinitionId)}
+                <strong>${escapeHtml(processName || cov.processDefinitionId)}</strong>
               </td>
+              <td><small class="text-muted">${escapeHtml(cov.processDefinitionId)}</small></td>
               <td>${progressBarHtml(cov.coverage)}</td>
               <td>${badgeHtml(cov.coverage)}</td>
             </tr>`;
@@ -89,7 +96,8 @@ export function renderSuite(suiteId, data) {
       <div class="table-responsive">
         <table class="table table-hover align-middle">
           <thead><tr>
-            <th>Decision</th>
+            <th>Decision Name</th>
+            <th>Decision Definition ID</th>
             <th style="width:200px">Coverage</th>
             <th style="width:100px">Ratio</th>
           </tr></thead>
@@ -97,12 +105,15 @@ export function renderSuite(suiteId, data) {
 
     for (const cov of sortedDecisions) {
       const did = encodeURIComponent(cov.decisionDefinitionId);
+      const model = decisionModels.find((m) => m.decisionDefinitionId === cov.decisionDefinitionId);
+      const decisionName = model?.decisionName || '';
       html += `
             <tr class="clickable-row" onclick="navigate('/suite/${sid}/decision/${did}')">
               <td>
                 <i class="bi bi-table me-2 text-success" aria-hidden="true"></i>
-                ${escapeHtml(cov.decisionDefinitionId)}
+                <strong>${escapeHtml(decisionName || cov.decisionDefinitionId)}</strong>
               </td>
+              <td><small class="text-muted">${escapeHtml(cov.decisionDefinitionId)}</small></td>
               <td>${progressBarHtml(cov.coverage)}</td>
               <td>${badgeHtml(cov.coverage)}</td>
             </tr>`;
@@ -118,7 +129,8 @@ export function renderSuite(suiteId, data) {
       <div class="table-responsive">
         <table class="table table-hover align-middle">
           <thead><tr>
-            <th>Test Case</th>
+            <th>Test Name</th>
+            <th>Test Method</th>
             <th style="width:200px">Coverage</th>
             <th style="width:100px">Ratio</th>
           </tr></thead>
@@ -130,12 +142,14 @@ export function renderSuite(suiteId, data) {
         runAllCoverages.length > 0
           ? runAllCoverages.reduce((s, c) => s + c.coverage, 0) / runAllCoverages.length
           : 0;
+      const primary = runPrimaryLabel(run);
       html += `
             <tr class="clickable-row" onclick="navigate('/suite/${sid}/run/${runIndex}')">
               <td>
                 <i class="bi bi-file-earmark-code-fill me-2 text-info" aria-hidden="true"></i>
-                <strong>${escapeHtml(run.name)}</strong>
+                <strong>${escapeHtml(primary)}</strong>
               </td>
+              <td><small class="text-muted">${escapeHtml(run.name)}</small></td>
               <td>${progressBarHtml(runAvg)}</td>
               <td>${badgeHtml(runAvg)}</td>
             </tr>`;

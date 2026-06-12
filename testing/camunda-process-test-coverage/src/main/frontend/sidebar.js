@@ -16,7 +16,7 @@
 
 'use strict';
 
-import { escapeHtml, badgeHtml } from './utils.js';
+import { escapeHtml, badgeHtml, processLabel, decisionLabel, runPrimaryLabel } from './utils.js';
 import { Collapse } from 'bootstrap';
 
 /**
@@ -92,6 +92,8 @@ function buildSidebarHtml(data) {
   const suites = data.suites || [];
   const globalCoverages = data.processCoverages || [];
   const globalDecisionCoverages = data.decisionCoverages || [];
+  const processModels = data.processModels || [];
+  const decisionModels = data.decisionModels || [];
 
   let html = `<ul class="nav-list" role="list">
     <li>
@@ -110,6 +112,7 @@ function buildSidebarHtml(data) {
     const sorted = [...globalCoverages].sort((a, b) => b.coverage - a.coverage);
     for (const cov of sorted) {
       const pid = encodeURIComponent(cov.processDefinitionId);
+      const label = processLabel(cov.processDefinitionId, processModels);
       html += `
     <li>
       <a class="nav-item nav-item-process"
@@ -118,7 +121,7 @@ function buildSidebarHtml(data) {
          data-process-id="${escapeHtml(cov.processDefinitionId)}"
          title="${escapeHtml(cov.processDefinitionId)}">
         <i class="bi bi-diagram-3-fill me-2" aria-hidden="true"></i>
-        <span class="nav-item-label">${escapeHtml(cov.processDefinitionId)}</span>
+        <span class="nav-item-label">${escapeHtml(label)}</span>
         ${badgeHtml(cov.coverage)}
       </a>
     </li>`;
@@ -135,6 +138,7 @@ function buildSidebarHtml(data) {
     const sortedDecisions = [...globalDecisionCoverages].sort((a, b) => b.coverage - a.coverage);
     for (const cov of sortedDecisions) {
       const did = encodeURIComponent(cov.decisionDefinitionId);
+      const label = decisionLabel(cov.decisionDefinitionId, decisionModels);
       html += `
     <li>
       <a class="nav-item nav-item-decision"
@@ -143,7 +147,7 @@ function buildSidebarHtml(data) {
          data-decision-id="${escapeHtml(cov.decisionDefinitionId)}"
          title="${escapeHtml(cov.decisionDefinitionId)}">
         <i class="bi bi-table me-2" aria-hidden="true"></i>
-        <span class="nav-item-label">${escapeHtml(cov.decisionDefinitionId)}</span>
+        <span class="nav-item-label">${escapeHtml(label)}</span>
         ${badgeHtml(cov.coverage)}
       </a>
     </li>`;
@@ -204,6 +208,7 @@ function buildSuiteHtml(suite) {
 
 function buildRunHtml(suite, run, runIndex) {
   const sid = encodeURIComponent(suite.id);
+  const primaryLabel = runPrimaryLabel(run);
 
   return `
           <li>
@@ -214,7 +219,7 @@ function buildRunHtml(suite, run, runIndex) {
                data-run-index="${runIndex}"
                title="${escapeHtml(run.name)}">
               <i class="bi bi-file-earmark-code-fill me-2" aria-hidden="true"></i>
-              <span class="nav-item-label">${escapeHtml(run.name)}</span>
+              <span class="nav-item-label">${escapeHtml(primaryLabel)}</span>
             </a>
           </li>`;
 }
