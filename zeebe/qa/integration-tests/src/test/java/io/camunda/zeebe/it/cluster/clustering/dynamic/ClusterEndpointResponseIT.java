@@ -41,7 +41,7 @@ final class ClusterEndpointResponseIT {
           // language=JSON
           """
           {
-            "version": 1,
+            "version": 2,
             "brokers": [
               {
                 "id": 0,
