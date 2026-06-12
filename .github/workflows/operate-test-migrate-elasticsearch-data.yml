@@ -1,4 +1,4 @@
-name: "[Legacy] Operate / Migrate Elasticsearch Data"
+name: "Operate / Migrate Elasticsearch Data"
 on:
   push:
     branches:
