@@ -846,9 +846,11 @@ components:
         mapping:
           JOB: '#/components/schemas/JobWaitStateDetails'
           MESSAGE: '#/components/schemas/MessageWaitStateDetails'
+          USER_TASK: '#/components/schemas/UserTaskWaitStateDetails'
       oneOf:
         - $ref: '#/components/schemas/JobWaitStateDetails'
         - $ref: '#/components/schemas/MessageWaitStateDetails'
+        - $ref: '#/components/schemas/UserTaskWaitStateDetails'
 
     WaitStateTypeEnum:
       description: The type of waiting state an element instance is in.
@@ -856,6 +858,7 @@ components:
       enum:
         - JOB
         - MESSAGE
+        - USER_TASK
 
     BaseWaitStateDetails:
       description: Common fields shared by all wait-state details variants.
@@ -917,6 +920,25 @@ components:
           description: The correlation key for the message subscription (null for start events).
           nullable: true
           type: string
+
+    UserTaskWaitStateDetails:
+      type: object
+      required:
+        - waitStateType
+        - taskKey
+        - dueDate
+      allOf:
+        - $ref: '#/components/schemas/BaseWaitStateDetails'
+      properties:
+        taskKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/UserTaskKey'
+          description: The key of the user task.
+        dueDate:
+          description: The due date of the user task, if set.
+          nullable: true
+          type: string
+          format: date-time
 
     AdHocSubProcessActivateActivityReference:
       type: object

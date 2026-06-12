@@ -12,11 +12,14 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.db.rdbms.write.service.WaitStateWriter;
 import io.camunda.zeebe.exporter.common.waitstate.transformers.JobBasedWaitStateTransformer;
+import io.camunda.zeebe.exporter.common.waitstate.transformers.UserTaskBasedWaitStateTransformer;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -84,5 +87,29 @@ class WaitStateRemoveHandlerTest {
 
     // then
     verify(waitStateWriter).delete(777L);
+  }
+
+  @Test
+  void shouldExportUserTaskCompletedAndCanceledRecords() {
+    // given
+    final WaitStateRemoveHandler<UserTaskRecordValue> userTaskHandler =
+        new WaitStateRemoveHandler<>(waitStateWriter, new UserTaskBasedWaitStateTransformer());
+    final Record<UserTaskRecordValue> completed =
+        factory.generateRecord(
+            ValueType.USER_TASK,
+            r -> r.withRecordType(RecordType.EVENT).withIntent(UserTaskIntent.COMPLETED));
+    final Record<UserTaskRecordValue> canceled =
+        factory.generateRecord(
+            ValueType.USER_TASK,
+            r -> r.withRecordType(RecordType.EVENT).withIntent(UserTaskIntent.CANCELED));
+    final Record<UserTaskRecordValue> created =
+        factory.generateRecord(
+            ValueType.USER_TASK,
+            r -> r.withRecordType(RecordType.EVENT).withIntent(UserTaskIntent.CREATED));
+
+    // when / then
+    assertThat(userTaskHandler.canExport(completed)).isTrue();
+    assertThat(userTaskHandler.canExport(canceled)).isTrue();
+    assertThat(userTaskHandler.canExport(created)).isFalse();
   }
 }
