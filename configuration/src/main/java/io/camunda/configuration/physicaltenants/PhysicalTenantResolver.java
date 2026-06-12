@@ -46,15 +46,14 @@ import org.springframework.core.env.Environment;
  * for any property the tenant did not override, those getters resolve legacy properties exactly as
  * they would on the root {@code Camunda}.
  *
- * <p>If no {@value #DEFAULT_PHYSICAL_TENANT_ID} tenant is declared under {@code
- * camunda.physical-tenants.*}, an entry under that key is synthesized from the root configuration
- * so that consumers can always address the root configuration as a tenant. An explicit {@code
- * default} declaration is honored as-is.
+ * <p>If no {@value
+ * io.camunda.configuration.api.physicaltenants.PhysicalTenantIds#DEFAULT_PHYSICAL_TENANT_ID} tenant
+ * is declared under {@code camunda.physical-tenants.*}, an entry under that key is synthesized from
+ * the root configuration so that consumers can always address the root configuration as a tenant.
+ * An explicit {@code default} declaration is honored as-is.
  */
 public final class PhysicalTenantResolver implements PhysicalTenantIds {
 
-  public static final String DEFAULT_PHYSICAL_TENANT_ID =
-      PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
   static final int MAX_TENANT_ID_LENGTH = 64;
   private static final String PHYSICAL_TENANTS_PREFIX = Camunda.PREFIX + ".physical-tenants";
   static final ConfigurationPropertyName PREFIX_NAME =
@@ -95,8 +94,8 @@ public final class PhysicalTenantResolver implements PhysicalTenantIds {
           PHYSICAL_TENANTS_PREFIX + "." + physicalTenantId, Bindable.ofInstance(physicalTenant));
       resolvedPhysicalTenants.put(physicalTenantId, physicalTenant);
     }
-    if (!resolvedPhysicalTenants.containsKey(DEFAULT_PHYSICAL_TENANT_ID)) {
-      resolvedPhysicalTenants.put(DEFAULT_PHYSICAL_TENANT_ID, camunda);
+    if (!resolvedPhysicalTenants.containsKey(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)) {
+      resolvedPhysicalTenants.put(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, camunda);
     }
     CROSS_TENANT_VALIDATIONS.forEach(validation -> validation.validate(resolvedPhysicalTenants));
     return new PhysicalTenantResolver(resolvedPhysicalTenants);

@@ -43,7 +43,7 @@ class CamundaMcpServersAutoConfigurationTenantFilterTest {
     // then
     assertThat(response).isSameAs(expectedResponse);
     assertThat(PhysicalTenantContext.getPhysicalTenantId(servletRequest))
-        .isEqualTo(PhysicalTenantContext.DEFAULT_PHYSICAL_TENANT_ID);
+        .isEqualTo(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
     verify(next).handle(request);
   }
 
@@ -108,7 +108,7 @@ class CamundaMcpServersAutoConfigurationTenantFilterTest {
     final MockHttpServletRequest servletRequest = new MockHttpServletRequest();
     final ServerRequest request = mock(ServerRequest.class);
     when(request.pathVariable(PhysicalTenantContext.PATH_VARIABLE_PHYSICAL_TENANT_ID))
-        .thenReturn(PhysicalTenantContext.DEFAULT_PHYSICAL_TENANT_ID);
+        .thenReturn(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
     when(request.servletRequest()).thenReturn(servletRequest);
     final ServerResponse expectedResponse = ServerResponse.ok().build();
     final HandlerFunction<ServerResponse> next = mock(HandlerFunction.class);
@@ -120,7 +120,7 @@ class CamundaMcpServersAutoConfigurationTenantFilterTest {
     // then: the fallback accepts only the default tenant id
     assertThat(response).isSameAs(expectedResponse);
     assertThat(PhysicalTenantContext.getPhysicalTenantId(servletRequest))
-        .isEqualTo(PhysicalTenantContext.DEFAULT_PHYSICAL_TENANT_ID);
+        .isEqualTo(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
   }
 
   @SuppressWarnings("unchecked")

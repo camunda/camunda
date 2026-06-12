@@ -22,10 +22,6 @@ import org.springframework.web.context.request.RequestContextHolder;
  */
 public final class PhysicalTenantContext {
 
-  /** Default physical tenant id used when no prefix is present in the request path. */
-  public static final String DEFAULT_PHYSICAL_TENANT_ID =
-      PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
-
   /** URL path prefix for physical-tenant-scoped routes (e.g. {@code /physical-tenants/foo/}). */
   public static final String PHYSICAL_TENANTS_PATH_SEGMENT = "/physical-tenants/";
 
@@ -56,19 +52,19 @@ public final class PhysicalTenantContext {
 
   /**
    * @return the resolved physical tenant id for the request being processed on this thread, or
-   *     {@link #DEFAULT_PHYSICAL_TENANT_ID} when no request context is bound or the attribute is
-   *     not set.
+   *     {@link PhysicalTenantIds#DEFAULT_PHYSICAL_TENANT_ID} when no request context is bound or
+   *     the attribute is not set.
    */
   public static String current() {
     final RequestAttributes attributes = RequestContextHolder.getRequestAttributes();
     if (attributes == null) {
-      return DEFAULT_PHYSICAL_TENANT_ID;
+      return PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
     }
     final String value =
         asString(
             attributes.getAttribute(
                 REQUEST_ATTRIBUTE_PHYSICAL_TENANT_ID, RequestAttributes.SCOPE_REQUEST));
-    return value != null ? value : DEFAULT_PHYSICAL_TENANT_ID;
+    return value != null ? value : PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
   }
 
   private static String asString(final Object value) {

@@ -7,10 +7,9 @@
  */
 package io.camunda.application.commons.search;
 
-import static io.camunda.configuration.physicaltenants.PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID;
-
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.search.connect.tenant.SearchClients;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
@@ -24,18 +23,18 @@ public class NativeSearchClientsConfiguration {
   @Bean
   @ConditionalOnSecondaryStorageType(SecondaryStorageType.elasticsearch)
   public ElasticsearchClient elasticsearchClient(final SearchClients searchClients) {
-    return searchClients.esClients().get(DEFAULT_PHYSICAL_TENANT_ID);
+    return searchClients.esClients().get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
   }
 
   @Bean
   @ConditionalOnSecondaryStorageType(SecondaryStorageType.opensearch)
   public OpenSearchClient openSearchClient(final SearchClients searchClients) {
-    return searchClients.osClients().get(DEFAULT_PHYSICAL_TENANT_ID);
+    return searchClients.osClients().get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
   }
 
   @Bean
   @ConditionalOnSecondaryStorageType(SecondaryStorageType.opensearch)
   public OpenSearchAsyncClient openSearchAsyncClient(final SearchClients searchClients) {
-    return searchClients.osAsyncClients().get(DEFAULT_PHYSICAL_TENANT_ID);
+    return searchClients.osAsyncClients().get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
   }
 }

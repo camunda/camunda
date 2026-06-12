@@ -9,7 +9,7 @@ package io.camunda.zeebe.gateway.rest.controller.authentication;
 
 import static io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper.toCamundaUser;
 
-import io.camunda.gateway.mapping.http.physicaltenants.PhysicalTenantContext;
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.gateway.protocol.model.CamundaUserResult;
 import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.query.TenantQuery;
@@ -68,7 +68,7 @@ public class AuthenticationController {
     }
     return serviceRegistry
         .tenantServices(
-            PhysicalTenantContext
+            PhysicalTenantIds
                 .DEFAULT_PHYSICAL_TENANT_ID) // TODO replace with contextual physicalTenantId
         .search(
             TenantQuery.of(q -> q.filter(f -> f.tenantIds(tenantIds)).unlimited()),

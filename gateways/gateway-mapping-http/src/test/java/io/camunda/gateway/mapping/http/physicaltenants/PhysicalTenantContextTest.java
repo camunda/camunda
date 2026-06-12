@@ -9,6 +9,7 @@ package io.camunda.gateway.mapping.http.physicaltenants;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -26,7 +27,7 @@ class PhysicalTenantContextTest {
   @Test
   void shouldExposeStableConstants() {
     // then
-    assertThat(PhysicalTenantContext.DEFAULT_PHYSICAL_TENANT_ID).isEqualTo("default");
+    assertThat(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID).isEqualTo("default");
     assertThat(PhysicalTenantContext.PATH_VARIABLE_PHYSICAL_TENANT_ID)
         .isEqualTo("physicalTenantId");
     assertThat(PhysicalTenantContext.REQUEST_ATTRIBUTE_PHYSICAL_TENANT_ID)
@@ -54,7 +55,7 @@ class PhysicalTenantContextTest {
 
     // when / then
     assertThat(PhysicalTenantContext.current())
-        .isEqualTo(PhysicalTenantContext.DEFAULT_PHYSICAL_TENANT_ID);
+        .isEqualTo(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
   }
 
   @Test
@@ -75,7 +76,7 @@ class PhysicalTenantContextTest {
 
     // when / then
     assertThat(PhysicalTenantContext.getPhysicalTenantId(request))
-        .isNotEqualTo(PhysicalTenantContext.DEFAULT_PHYSICAL_TENANT_ID);
+        .isNotEqualTo(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
   }
 
   @Test
@@ -86,7 +87,7 @@ class PhysicalTenantContextTest {
 
     // when / then
     assertThat(PhysicalTenantContext.getPhysicalTenantId(request))
-        .isNotEqualTo(PhysicalTenantContext.DEFAULT_PHYSICAL_TENANT_ID);
+        .isNotEqualTo(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
   }
 
   @Test
@@ -98,6 +99,6 @@ class PhysicalTenantContextTest {
 
     // when / then
     assertThat(PhysicalTenantContext.current())
-        .isNotEqualTo(PhysicalTenantContext.DEFAULT_PHYSICAL_TENANT_ID);
+        .isNotEqualTo(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
   }
 }

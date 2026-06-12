@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.annotation;
 
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.gateway.mapping.http.physicaltenants.PhysicalTenantContext;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -21,7 +22,7 @@ import java.lang.annotation.Target;
  * <p>Resolution is performed by {@code PhysicalTenantIdResolver}, which reads the value from {@link
  * PhysicalTenantContext} (set earlier by {@code PhysicalTenantInterceptor}). When no
  * physical-tenant prefix is present on the request, the value defaults to {@link
- * PhysicalTenantContext#DEFAULT_PHYSICAL_TENANT_ID}.
+ * PhysicalTenantIds#DEFAULT_PHYSICAL_TENANT_ID}.
  *
  * <p>Usage:
  *

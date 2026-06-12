@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.resolver;
 
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.gateway.mapping.http.physicaltenants.PhysicalTenantContext;
 import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
 import jakarta.servlet.http.HttpServletRequest;
@@ -23,8 +24,8 @@ import org.springframework.web.method.support.ModelAndViewContainer;
  * physical tenant id from the current request via {@link PhysicalTenantContext}.
  *
  * <p>The interceptor that populates the request attribute runs before this resolver, so the value
- * is always present (defaulting to {@link PhysicalTenantContext#DEFAULT_PHYSICAL_TENANT_ID} when
- * the request did not carry the {@code /physical-tenants/{physicalTenantId}/v2/...} prefix).
+ * is always present (defaulting to {@link PhysicalTenantIds#DEFAULT_PHYSICAL_TENANT_ID} when the
+ * request did not carry the {@code /physical-tenants/{physicalTenantId}/v2/...} prefix).
  */
 public class PhysicalTenantIdArgumentResolver implements HandlerMethodArgumentResolver {
 
@@ -48,7 +49,7 @@ public class PhysicalTenantIdArgumentResolver implements HandlerMethodArgumentRe
       LOGGER.debug(
           "Could not resolve physical tenant id for parameter '{}': no HTTP request bound to current thread",
           parameter);
-      return PhysicalTenantContext.DEFAULT_PHYSICAL_TENANT_ID;
+      return PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
     }
     return PhysicalTenantContext.getPhysicalTenantId(request);
   }

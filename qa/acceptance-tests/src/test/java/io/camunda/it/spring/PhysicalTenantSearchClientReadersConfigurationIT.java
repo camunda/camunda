@@ -11,7 +11,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
-import static io.camunda.configuration.physicaltenants.PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
@@ -20,6 +19,7 @@ import io.camunda.application.commons.search.PhysicalTenantSearchClientReadersCo
 import io.camunda.application.commons.search.SearchClientConfiguration;
 import io.camunda.application.commons.search.SearchClientReaderConfiguration;
 import io.camunda.configuration.Camunda;
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.search.clients.CamundaSearchClients;
 import io.camunda.search.clients.auth.AnonymousResourceAccessController;
@@ -70,9 +70,10 @@ public class PhysicalTenantSearchClientReadersConfigurationIT {
   @Test
   void shouldWirePerTenantSearchClientsFromResolver() {
     assertThat(searchClients.esClients())
-        .containsOnlyKeys(DEFAULT_PHYSICAL_TENANT_ID, TENANT_A, TENANT_B);
+        .containsOnlyKeys(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, TENANT_A, TENANT_B);
     assertThat(searchClients.osClients()).isEmpty();
-    assertThat(tenantDescriptors).containsOnlyKeys(DEFAULT_PHYSICAL_TENANT_ID, TENANT_A, TENANT_B);
+    assertThat(tenantDescriptors)
+        .containsOnlyKeys(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, TENANT_A, TENANT_B);
   }
 
   @Test

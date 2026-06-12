@@ -10,6 +10,7 @@ package io.camunda.application.commons.service;
 import io.camunda.application.commons.condition.ConditionalOnAnyHttpGatewayEnabled;
 import io.camunda.application.commons.document.CamundaDocumentStoreConfigurationLoader;
 import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.document.store.SimpleDocumentStoreRegistry;
 import io.camunda.gateway.protocol.model.JobActivationResult;
@@ -370,58 +371,56 @@ public class CamundaServicesConfiguration {
 
   @Bean
   public TopologyServices topologyServices(final ServiceRegistry serviceRegistry) {
-    return serviceRegistry.topologyServices(PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID);
+    return serviceRegistry.topologyServices(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
   }
 
   @Bean
   public ProcessInstanceServices processInstanceServices(final ServiceRegistry serviceRegistry) {
-    return serviceRegistry.processInstanceServices(
-        PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID);
+    return serviceRegistry.processInstanceServices(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
   }
 
   @Bean
   public ProcessDefinitionServices processDefinitionServices(
       final ServiceRegistry serviceRegistry) {
-    return serviceRegistry.processDefinitionServices(
-        PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID);
+    return serviceRegistry.processDefinitionServices(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
   }
 
   @Bean
   public UserTaskServices userTaskServices(final ServiceRegistry serviceRegistry) {
-    return serviceRegistry.userTaskServices(PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID);
+    return serviceRegistry.userTaskServices(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
   }
 
   @Bean
   public IncidentServices incidentServices(final ServiceRegistry serviceRegistry) {
-    return serviceRegistry.incidentServices(PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID);
+    return serviceRegistry.incidentServices(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
   }
 
   @Bean
   public JobServices<JobActivationResult> jobServices(final ServiceRegistry serviceRegistry) {
-    return serviceRegistry.jobServices(PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID);
+    return serviceRegistry.jobServices(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
   }
 
   @Bean
   public VariableServices variableServices(final ServiceRegistry serviceRegistry) {
-    return serviceRegistry.variableServices(PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID);
+    return serviceRegistry.variableServices(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
   }
 
   @Bean
   public MessageServices messageServices(final ServiceRegistry serviceRegistry) {
-    return serviceRegistry.messageServices(PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID);
+    return serviceRegistry.messageServices(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
   }
 
   @Bean
   public MessageSubscriptionServices messageSubscriptionServices(
       final ServiceRegistry serviceRegistry) {
     return serviceRegistry.messageSubscriptionServices(
-        PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID);
+        PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
   }
 
   // This is required by BrokerModuleConfiguration that requires UserServices for Basic auth
   // TODO we need to make it physical tenant aware
   @Bean
   public UserServices userServices(final ServiceRegistry serviceRegistry) {
-    return serviceRegistry.userServices(PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID);
+    return serviceRegistry.userServices(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
   }
 }
