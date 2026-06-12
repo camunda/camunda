@@ -152,7 +152,7 @@ jobs:
         run: |
           set -euo pipefail
           stamp="$(date -u +%Y%m%d-%H%M%S)"
-          branch="test/regenerate-responses-${SAFE}-${stamp}-${GITHUB_RUN_ID}"
+          branch="regenerate-responses-${SAFE}-${stamp}-${GITHUB_RUN_ID}"
           echo "branch=${branch}" >> "$GITHUB_OUTPUT"
 
           git checkout -b "$branch"
