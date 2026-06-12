@@ -23,8 +23,9 @@ import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import io.camunda.zeebe.protocol.record.value.EntityType;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -64,75 +65,131 @@ public class DefaultMembershipService implements MembershipService {
   }
 
   @Override
-  public CamundaAuthentication resolveMemberships(
+  public MembershipResolver newResolver(
       final Map<String, Object> tokenClaims,
       final String principalId,
       final PrincipalType principalType)
       throws OAuth2AuthenticationException {
-    final var ownerTypeToIds = new HashMap<EntityType, Set<String>>();
+    // OIDC groups-claim parsing is in-memory token validation, not a DB call: evaluate it
+    // eagerly so malformed claims fail fast at authentication time.
+    final List<String> eagerGroupsFromClaims =
+        isGroupsClaimConfigured ? List.copyOf(oidcGroupsLoader.load(tokenClaims)) : null;
+    return new Resolver(tokenClaims, principalId, principalType, eagerGroupsFromClaims);
+  }
 
-    ownerTypeToIds.put(
-        principalType.equals(PrincipalType.USER) ? EntityType.USER : EntityType.CLIENT,
-        Set.of(principalId));
+  /**
+   * Per-authentication resolver that memoizes prerequisite lookups so that when multiple membership
+   * fields are read on the same authentication, shared upstream queries
+   * (mappingRules→groups→roles→tenants) only run once. Synchronized so concurrent reads on
+   * different lazy fields don't double-fetch.
+   */
+  private final class Resolver implements MembershipResolver {
+    private final Map<String, Object> tokenClaims;
+    private final List<String> eagerGroupsFromClaims;
+    private final EnumMap<EntityType, Set<String>> ownerTypeToIds = new EnumMap<>(EntityType.class);
 
-    final var mappingRules =
-        mappingRuleServices
-            .getMatchingMappingRules(tokenClaims, CamundaAuthentication.anonymous())
-            .map(MappingRuleEntity::mappingRuleId)
-            .collect(Collectors.toSet());
+    private List<String> mappingRules;
+    private List<String> groups;
+    private List<String> roles;
+    private List<String> tenants;
 
-    if (!mappingRules.isEmpty()) {
-      ownerTypeToIds.put(MAPPING_RULE, mappingRules);
-    } else {
-      LOG.debug("No mappingRules found for these claims: {}", tokenClaims);
+    Resolver(
+        final Map<String, Object> tokenClaims,
+        final String principalId,
+        final PrincipalType principalType,
+        final List<String> eagerGroupsFromClaims) {
+      this.tokenClaims = tokenClaims;
+      this.eagerGroupsFromClaims = eagerGroupsFromClaims;
+      ownerTypeToIds.put(
+          principalType.equals(PrincipalType.USER) ? EntityType.USER : EntityType.CLIENT,
+          Set.of(principalId));
     }
 
-    final Set<String> groups;
-    if (isGroupsClaimConfigured) {
-      groups = new HashSet<>(oidcGroupsLoader.load(tokenClaims));
-    } else {
-      groups =
-          groupServices
-              .getGroupsByMemberTypeAndMemberIds(ownerTypeToIds, CamundaAuthentication.anonymous())
-              .stream()
-              .map(GroupEntity::groupId)
-              .collect(Collectors.toSet());
+    @Override
+    public synchronized List<String> mappingRules() {
+      if (mappingRules == null) {
+        if (tokenClaims.isEmpty()) {
+          mappingRules = List.of();
+          return mappingRules;
+        }
+
+        final var ids =
+            mappingRuleServices
+                .getMatchingMappingRules(tokenClaims, CamundaAuthentication.anonymous())
+                .map(MappingRuleEntity::mappingRuleId)
+                .collect(Collectors.toSet());
+        if (!ids.isEmpty()) {
+          ownerTypeToIds.put(MAPPING_RULE, ids);
+        } else {
+          LOG.debug("No mappingRules found for these claims: {}", tokenClaims);
+        }
+        mappingRules = List.copyOf(ids);
+      }
+      return mappingRules;
     }
 
-    if (!groups.isEmpty()) {
-      ownerTypeToIds.put(GROUP, groups);
+    @Override
+    public synchronized List<String> groups() {
+      if (groups == null) {
+        // mappingRules must run first so ownerTypeToIds includes MAPPING_RULE before the group
+        // lookup uses it.
+        mappingRules();
+
+        final Set<String> ids;
+        if (eagerGroupsFromClaims != null) {
+          ids = new HashSet<>(eagerGroupsFromClaims);
+        } else {
+          ids =
+              groupServices
+                  .getGroupsByMemberTypeAndMemberIds(
+                      ownerTypeToIds, CamundaAuthentication.anonymous())
+                  .stream()
+                  .map(GroupEntity::groupId)
+                  .collect(Collectors.toSet());
+        }
+
+        if (!ids.isEmpty()) {
+          ownerTypeToIds.put(GROUP, ids);
+        }
+        groups = List.copyOf(ids);
+      }
+      return groups;
     }
 
-    final var roles =
-        roleServices
-            .getRolesByMemberTypeAndMemberIds(ownerTypeToIds, CamundaAuthentication.anonymous())
-            .stream()
-            .map(RoleEntity::roleId)
-            .collect(Collectors.toSet());
+    @Override
+    public synchronized List<String> roles() {
+      if (roles == null) {
+        groups();
 
-    if (!roles.isEmpty()) {
-      ownerTypeToIds.put(EntityType.ROLE, roles);
+        final var ids =
+            roleServices
+                .getRolesByMemberTypeAndMemberIds(ownerTypeToIds, CamundaAuthentication.anonymous())
+                .stream()
+                .map(RoleEntity::roleId)
+                .collect(Collectors.toSet());
+
+        if (!ids.isEmpty()) {
+          ownerTypeToIds.put(EntityType.ROLE, ids);
+        }
+        roles = List.copyOf(ids);
+      }
+      return roles;
     }
 
-    final var tenants =
-        tenantServices
-            .getTenantsByMemberTypeAndMemberIds(ownerTypeToIds, CamundaAuthentication.anonymous())
-            .stream()
-            .map(TenantEntity::tenantId)
-            .toList();
+    @Override
+    public synchronized List<String> tenants() {
+      if (tenants == null) {
+        roles();
 
-    return CamundaAuthentication.of(
-        a -> {
-          if (principalType.equals(PrincipalType.CLIENT)) {
-            a.clientId(principalId);
-          } else {
-            a.user(principalId);
-          }
-          return a.roleIds(roles.stream().toList())
-              .groupIds(groups.stream().toList())
-              .mappingRule(mappingRules.stream().toList())
-              .tenants(tenants)
-              .claims(tokenClaims);
-        });
+        tenants =
+            tenantServices
+                .getTenantsByMemberTypeAndMemberIds(
+                    ownerTypeToIds, CamundaAuthentication.anonymous())
+                .stream()
+                .map(TenantEntity::tenantId)
+                .toList();
+      }
+      return tenants;
+    }
   }
 }

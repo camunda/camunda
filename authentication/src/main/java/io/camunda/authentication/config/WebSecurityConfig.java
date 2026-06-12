@@ -42,9 +42,7 @@ import io.camunda.security.oidc.NoopOidcClaimsProvider;
 import io.camunda.security.oidc.OidcClaimsProvider;
 import io.camunda.security.oidc.OidcUserInfoClient;
 import io.camunda.security.reader.ResourceAccessProvider;
-import io.camunda.service.GroupServices;
 import io.camunda.service.RoleServices;
-import io.camunda.service.TenantServices;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageDisabled;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import io.micrometer.common.KeyValues;
@@ -511,11 +509,8 @@ public class WebSecurityConfig {
 
     @Bean
     public CamundaAuthenticationConverter<Authentication> usernamePasswordAuthenticationConverter(
-        final RoleServices roleServices,
-        final GroupServices groupServices,
-        final TenantServices tenantServices) {
-      return new UsernamePasswordAuthenticationTokenConverter(
-          roleServices, groupServices, tenantServices);
+        final MembershipService membershipService) {
+      return new UsernamePasswordAuthenticationTokenConverter(membershipService);
     }
 
     @Bean

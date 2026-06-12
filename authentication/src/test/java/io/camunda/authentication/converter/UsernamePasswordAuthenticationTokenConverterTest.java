@@ -10,14 +10,12 @@ package io.camunda.authentication.converter;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.search.entities.GroupEntity;
-import io.camunda.search.entities.RoleEntity;
-import io.camunda.search.entities.TenantEntity;
-import io.camunda.service.GroupServices;
-import io.camunda.service.RoleServices;
-import io.camunda.service.TenantServices;
+import io.camunda.authentication.service.MembershipService;
+import io.camunda.authentication.service.MembershipService.MembershipResolver;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,18 +27,15 @@ import org.springframework.security.oauth2.client.authentication.OAuth2Authentic
 
 public class UsernamePasswordAuthenticationTokenConverterTest {
 
-  @Mock private GroupServices groupServices;
-  @Mock private RoleServices roleServices;
-  @Mock private TenantServices tenantServices;
+  @Mock private MembershipService membershipService;
+  @Mock private MembershipResolver resolver;
   private UsernamePasswordAuthenticationTokenConverter authenticationConverter;
 
   @BeforeEach
   void setup() throws Exception {
     MockitoAnnotations.openMocks(this).close();
-
-    authenticationConverter =
-        new UsernamePasswordAuthenticationTokenConverter(
-            roleServices, groupServices, tenantServices);
+    when(membershipService.newResolver("test-user")).thenReturn(resolver);
+    authenticationConverter = new UsernamePasswordAuthenticationTokenConverter(membershipService);
   }
 
   @Test
@@ -68,85 +63,48 @@ public class UsernamePasswordAuthenticationTokenConverterTest {
   }
 
   @Test
-  void authenticationContainsUsername() {
+  void shouldBuildAuthenticationFromResolver() {
     // given
-    final var authentication = getUsernamePasswordAuthentication("test-user", "test-password");
+    when(resolver.groups()).thenReturn(List.of("g1"));
+    when(resolver.roles()).thenReturn(List.of("r1"));
+    when(resolver.tenants()).thenReturn(List.of("t1"));
 
     // when
-    final var camundaAuthentication = authenticationConverter.convert(authentication);
+    final var auth = authenticationConverter.convert(usernamePassword("test-user"));
 
-    // then
-    assertThat(camundaAuthentication.authenticatedUsername()).isEqualTo("test-user");
+    // then — username plus the three resolver-backed memberships are wired through
+    assertThat(auth.authenticatedUsername()).isEqualTo("test-user");
+    assertThat(auth.authenticatedGroupIds()).containsExactly("g1");
+    assertThat(auth.authenticatedRoleIds()).containsExactly("r1");
+    assertThat(auth.authenticatedTenantIds()).containsExactly("t1");
   }
 
   @Test
-  void authenticationContainsGroups() {
-    // given
-    when(groupServices.getGroupsByMemberTypeAndMemberIds(any(), any()))
-        .thenReturn(
-            List.of(
-                new GroupEntity(1L, "group1", "group", "desc"),
-                new GroupEntity(2L, "group2", "group", "desc")));
-    final var authentication = getUsernamePasswordAuthentication("test-user", "test-password");
-
+  void shouldNotWireMappingRulesSupplierForBasicAuth() {
+    // given — BASIC auth has no token claims, so mappingRules must remain empty without ever
+    // calling the resolver.
     // when
-    final var camundaAuthentication = authenticationConverter.convert(authentication);
+    final var auth = authenticationConverter.convert(usernamePassword("test-user"));
 
     // then
-    assertThat(camundaAuthentication.authenticatedGroupIds())
-        .containsExactlyInAnyOrder("group1", "group2");
+    assertThat(auth.authenticatedMappingRuleIds()).isEmpty();
+    verify(resolver, never()).mappingRules();
   }
 
   @Test
-  void authenticationContainsRoles() {
+  void shouldRequestResolverFromServiceWithUsername() {
     // given
-    when(roleServices.getRolesByMemberTypeAndMemberIds(any(), any()))
-        .thenReturn(
-            List.of(
-                new RoleEntity(1L, "role1", "role", "desc"),
-                new RoleEntity(2L, "role2", "role", "desc")));
-    final var authentication = getUsernamePasswordAuthentication("test-user", "test-password");
+    final var authentication = usernamePassword("test-user");
 
     // when
-    final var camundaAuthentication = authenticationConverter.convert(authentication);
+    authenticationConverter.convert(authentication);
 
-    // then
-    assertThat(camundaAuthentication.authenticatedRoleIds())
-        .containsExactlyInAnyOrder("role1", "role2");
+    // then — converter delegates resolver creation to the service using the username overload
+    verify(membershipService).newResolver("test-user");
+    verify(membershipService, never()).newResolver(any(), any(), any());
   }
 
-  @Test
-  void authenticationContainsTenants() {
-    // given
-    when(tenantServices.getTenantsByMemberTypeAndMemberIds(any(), any()))
-        .thenReturn(
-            List.of(
-                new TenantEntity(1L, "tenant1", "tenant", "desc"),
-                new TenantEntity(2L, "tenant2", "tenant", "desc")));
-    final var authentication = getUsernamePasswordAuthentication("test-user", "test-password");
-
-    // when
-    final var camundaAuthentication = authenticationConverter.convert(authentication);
-
-    // then
-    assertThat(camundaAuthentication.authenticatedTenantIds())
-        .containsExactlyInAnyOrder("tenant1", "tenant2");
-  }
-
-  @Test
-  void authenticationClaimsAreNull() {
-    // given
-    final var authentication = getUsernamePasswordAuthentication("test-user", "test-password");
-
-    // when
-    final var camundaAuthentication = authenticationConverter.convert(authentication);
-
-    // then
-    assertThat(camundaAuthentication.claims()).isNull();
-  }
-
-  private Authentication getUsernamePasswordAuthentication(
-      final String username, final String password) {
-    return new UsernamePasswordAuthenticationToken(username, password);
+  private Authentication usernamePassword(final String username) {
+    return new UsernamePasswordAuthenticationToken(username, "ignored");
   }
 }
