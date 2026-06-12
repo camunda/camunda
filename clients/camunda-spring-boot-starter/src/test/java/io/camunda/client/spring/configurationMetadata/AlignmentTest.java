@@ -131,7 +131,106 @@ public class AlignmentTest {
               new Getter(CamundaClientProperties::getMaxHttpConnections)),
           entry(
               "camunda.client.worker.defaults.retry-backoff",
-              new Getter(p -> p.getWorker().getDefaults().getRetryBackoff(), DURATION_MAPPER)));
+              new Getter(p -> p.getWorker().getDefaults().getRetryBackoff(), DURATION_MAPPER)),
+          entry(
+              "camunda.client.keep-alive",
+              new Getter(CamundaClientProperties::getKeepAlive, DURATION_MAPPER)),
+          entry("camunda.client.mode", new Getter(CamundaClientProperties::getMode)),
+          entry(
+              "camunda.client.override-authority",
+              new Getter(CamundaClientProperties::getOverrideAuthority)),
+          entry(
+              "camunda.client.auth.client-assertion.keystore-password",
+              new Getter(p -> p.getAuth().getClientAssertion().getKeystorePassword())),
+          entry(
+              "camunda.client.auth.client-assertion.keystore-path",
+              new Getter(p -> p.getAuth().getClientAssertion().getKeystorePath())),
+          entry("camunda.client.auth.client-id", new Getter(p -> p.getAuth().getClientId())),
+          entry(
+              "camunda.client.auth.client-secret", new Getter(p -> p.getAuth().getClientSecret())),
+          entry(
+              "camunda.client.worker.defaults.fetch-variables",
+              new Getter(p -> p.getWorker().getDefaults().getFetchVariables())),
+          entry(
+              "camunda.client.worker.defaults.type",
+              new Getter(p -> p.getWorker().getDefaults().getType())),
+          entry("camunda.client.worker.override", new Getter(p -> p.getWorker().getOverride())),
+          entry("camunda.client.enabled", new Getter(CamundaClientProperties::getEnabled)),
+          entry(
+              "camunda.client.ca-certificate-path",
+              new Getter(CamundaClientProperties::getCaCertificatePath)),
+          entry("camunda.client.cloud.cluster-id", new Getter(p -> p.getCloud().getClusterId())),
+          entry("camunda.client.cloud.domain", new Getter(p -> p.getCloud().getDomain())),
+          entry("camunda.client.cloud.port", new Getter(p -> p.getCloud().getPort())),
+          entry("camunda.client.cloud.region", new Getter(p -> p.getCloud().getRegion())),
+          entry(
+              "camunda.client.deployment.enabled", new Getter(p -> p.getDeployment().isEnabled())),
+          entry(
+              "camunda.client.deployment.own-jar-only",
+              new Getter(p -> p.getDeployment().isOwnJarOnly())),
+          // as the auth method is set by the properties post processor, we have to hardcode it to
+          // null for this test
+          entry("camunda.client.auth.method", new Getter(p -> null)),
+          entry("camunda.client.auth.username", new Getter(p -> p.getAuth().getUsername())),
+          entry("camunda.client.auth.password", new Getter(p -> p.getAuth().getPassword())),
+          entry("camunda.client.auth.token-url", new Getter(p -> p.getAuth().getTokenUrl())),
+          entry("camunda.client.auth.issuer-url", new Getter(p -> p.getAuth().getIssuerUrl())),
+          entry(
+              "camunda.client.auth.well-known-configuration-url",
+              new Getter(p -> p.getAuth().getWellKnownConfigurationUrl())),
+          entry("camunda.client.auth.audience", new Getter(p -> p.getAuth().getAudience())),
+          entry("camunda.client.auth.scope", new Getter(p -> p.getAuth().getScope())),
+          entry("camunda.client.auth.resource", new Getter(p -> p.getAuth().getResource())),
+          entry(
+              "camunda.client.auth.keystore-path", new Getter(p -> p.getAuth().getKeystorePath())),
+          entry(
+              "camunda.client.auth.keystore-password",
+              new Getter(p -> p.getAuth().getKeystorePassword())),
+          entry(
+              "camunda.client.auth.keystore-key-password",
+              new Getter(p -> p.getAuth().getKeystoreKeyPassword())),
+          entry(
+              "camunda.client.auth.truststore-path",
+              new Getter(p -> p.getAuth().getTruststorePath())),
+          entry(
+              "camunda.client.auth.truststore-password",
+              new Getter(p -> p.getAuth().getTruststorePassword())),
+          entry(
+              "camunda.client.auth.proactive-token-refresh-threshold",
+              new Getter(p -> p.getAuth().getProactiveTokenRefreshThreshold(), DURATION_MAPPER)),
+          entry(
+              "camunda.client.auth.token-fetch-max-retries",
+              new Getter(p -> p.getAuth().getTokenFetchMaxRetries())),
+          entry(
+              "camunda.client.auth.token-fetch-initial-backoff",
+              new Getter(p -> p.getAuth().getTokenFetchInitialBackoff(), DURATION_MAPPER)),
+          entry(
+              "camunda.client.auth.token-fetch-backoff-multiplier",
+              new Getter(p -> p.getAuth().getTokenFetchBackoffMultiplier(), DOUBLE_MAPPER)),
+          entry(
+              "camunda.client.auth.token-fetch-retryable-status-codes",
+              new Getter(p -> p.getAuth().getTokenFetchRetryableStatusCodes(), INT_SET_MAPPER)),
+          entry(
+              "camunda.client.auth.token-fetch-non-retryable-cooldown",
+              new Getter(p -> p.getAuth().getTokenFetchNonRetryableCooldown(), DURATION_MAPPER)),
+          entry(
+              "camunda.client.auth.client-assertion.keystore-key-alias",
+              new Getter(p -> p.getAuth().getClientAssertion().getKeystoreKeyAlias())),
+          entry(
+              "camunda.client.auth.client-assertion.keystore-key-password",
+              new Getter(p -> p.getAuth().getClientAssertion().getKeystoreKeyPassword())),
+          entry(
+              "camunda.client.auth.credentials-cache-path",
+              new Getter(p -> p.getAuth().getCredentialsCachePath())),
+          entry(
+              "camunda.client.cluster-variables.enabled",
+              new Getter(p -> p.getClusterVariables().isEnabled())),
+          entry(
+              "camunda.client.cluster-variables.global",
+              new Getter(p -> p.getClusterVariables().getGlobal())),
+          entry(
+              "camunda.client.cluster-variables.tenant",
+              new Getter(p -> p.getClusterVariables().getTenant())));
 
   @Autowired CamundaClientProperties camundaClientProperties;
 

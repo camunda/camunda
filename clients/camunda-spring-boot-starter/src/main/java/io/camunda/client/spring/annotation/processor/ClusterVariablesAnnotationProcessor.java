@@ -93,11 +93,29 @@ public class ClusterVariablesAnnotationProcessor extends AbstractCamundaAnnotati
 
   @Override
   public void start(final CamundaClient client) {
-    // Process variables from properties
-    final Map<String, Object> propertyVariables = properties.getVariables();
-    if (propertyVariables != null && !propertyVariables.isEmpty()) {
-      LOGGER.debug("Upserting {} cluster variable(s) from properties", propertyVariables.size());
-      upsertClusterVariables(client, propertyVariables, null);
+    // Process global variables from properties
+    final Map<String, Object> globalVariables = properties.getGlobal();
+    if (globalVariables != null && !globalVariables.isEmpty()) {
+      LOGGER.debug(
+          "Upserting {} globally-scoped cluster variable(s) from properties",
+          globalVariables.size());
+      upsertClusterVariables(client, globalVariables, null);
+    }
+
+    // Process tenant-scoped variables from properties
+    final Map<String, Map<String, Object>> tenantVariables = properties.getTenant();
+    if (tenantVariables != null && !tenantVariables.isEmpty()) {
+      for (final Map.Entry<String, Map<String, Object>> entry : tenantVariables.entrySet()) {
+        final String tenantId = entry.getKey();
+        final Map<String, Object> variables = entry.getValue();
+        if (variables != null && !variables.isEmpty()) {
+          LOGGER.debug(
+              "Upserting {} cluster variable(s) from properties for tenant '{}'",
+              variables.size(),
+              tenantId);
+          upsertClusterVariables(client, variables, tenantId);
+        }
+      }
     }
 
     // Process variables from annotations
