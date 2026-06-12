@@ -12,9 +12,7 @@ import static io.camunda.configuration.physicaltenants.PhysicalTenantResolver.DE
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
-import io.camunda.search.clients.SearchClientBasedQueryExecutor;
 import io.camunda.search.clients.reader.AuthorizationReader;
-import io.camunda.search.clients.reader.SearchClientReaders;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import java.util.Map;
 import org.springframework.context.annotation.Bean;
@@ -26,13 +24,6 @@ import org.springframework.context.annotation.Configuration;
   SecondaryStorageType.opensearch
 })
 public class SearchClientReaderConfiguration {
-
-  @Bean
-  public IndexDescriptors indexDescriptors(
-      final Map<String, IndexDescriptors> physicalTenantScopedIndexDescriptors) {
-    return requireDefault(
-        physicalTenantScopedIndexDescriptors, "physicalTenantScopedIndexDescriptors");
-  }
 
   @Bean
   public Map<String, IndexDescriptors> physicalTenantScopedIndexDescriptors(
@@ -53,22 +44,12 @@ public class SearchClientReaderConfiguration {
   }
 
   @Bean
-  public SearchClientBasedQueryExecutor searchClientBasedQueryExecutor(
-      final Map<String, SearchClientBasedQueryExecutor> physicalTenantQueryExecutors) {
-    return requireDefault(physicalTenantQueryExecutors, "physicalTenantQueryExecutors");
-  }
-
-  @Bean
-  public SearchClientReaders documentReaders(
+  public AuthorizationReader authorizationReader(
       final PhysicalTenantSearchClientReaders physicalTenantSearchClientReaders) {
     return requireDefault(
-        physicalTenantSearchClientReaders.readersByPhysicalTenant(),
-        "physicalTenantSearchClientReaders");
-  }
-
-  @Bean
-  public AuthorizationReader authorizationReader(final SearchClientReaders documentReaders) {
-    return documentReaders.authorizationReader();
+            physicalTenantSearchClientReaders.readersByPhysicalTenant(),
+            "physicalTenantSearchClientReaders")
+        .authorizationReader();
   }
 
   private static <T> T requireDefault(final Map<String, T> beansByTenant, final String beanName) {
