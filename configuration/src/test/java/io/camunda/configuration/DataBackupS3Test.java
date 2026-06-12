@@ -324,6 +324,7 @@ public class DataBackupS3Test {
         "camunda.data.primary-storage.backup.s3.connection-acquisition-timeout=120s",
         "camunda.data.primary-storage.backup.s3.base-path=basePathPrimaryStorage",
         "camunda.data.primary-storage.backup.s3.support-legacy-md5=false",
+        "camunda.data.primary-storage.backup.s3.ssec-key=ssecKeyPrimaryStorage",
       })
   class WithOnlyPrimaryStorageConfigSet {
     final BrokerBasedProperties brokerCfg;
@@ -400,6 +401,12 @@ public class DataBackupS3Test {
     @Test
     void shouldSetSupportLegacyMd5() {
       assertThat(brokerCfg.getData().getBackup().getS3().isSupportLegacyMd5()).isFalse();
+    }
+
+    @Test
+    void shouldSetSsecKey() {
+      assertThat(brokerCfg.getData().getBackup().getS3().getSsecKey())
+          .isEqualTo("ssecKeyPrimaryStorage");
     }
   }
 
