@@ -21,7 +21,9 @@ import io.camunda.zeebe.management.cluster.PartitionDistributionConfig;
 import io.camunda.zeebe.management.cluster.ZoneSpec;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
+import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
 import java.util.List;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 
 final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
@@ -165,14 +167,13 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
   }
 
   @Test
-  void shouldUpdatePartitionDistributionDryRun() {
+  void shouldUpdatePartitionDistribution() {
     try (final var cluster = createCluster(minReplicationFactor())) {
       // given
       cluster.awaitCompleteTopology();
       final var actuator = ClusterActuator.of(cluster.availableGateway());
 
-      // when - dry-run increasing zoneA replicas from 1→2 (RF 2→3)
-      // expects one PARTITION_JOIN per partition for the second zoneA broker
+      // when - increase zoneA replicas from 1→2 (RF 2→3)
       final var config =
           new PartitionDistributionConfig()
               .type(PartitionDistributionConfig.TypeEnum.ZONE_AWARE)
@@ -180,23 +181,58 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
                   List.of(
                       new ZoneSpec().name(ZONES[0]).numberOfReplicas(2).priority(100),
                       new ZoneSpec().name(ZONES[1]).numberOfReplicas(1).priority(10)));
-      final var response = actuator.patchPartitionDistribution(config, true);
+      final var response = actuator.patchPartitionDistribution(config, false);
 
-      // then - exactly one config-set op followed by one PARTITION_JOIN per partition
-      final var ops = response.getPlannedChanges().stream().map(op -> op.getOperation()).toList();
-      assertThat(ops).first().isEqualTo(OperationEnum.UPDATE_PARTITION_DISTRIBUTOR_CONFIG);
-      assertThat(ops.subList(1, ops.size()))
-          .hasSize(partitionCount())
-          .containsOnly(OperationEnum.PARTITION_JOIN);
-      // all joins target the second zoneA broker (nodeIdx=2 → zoneA_1, not yet holding any
-      // partition)
-      final var joinBrokerIds =
-          response.getPlannedChanges().stream()
-              .filter(op -> op.getOperation() == OperationEnum.PARTITION_JOIN)
-              .map(op -> op.getBrokerId())
-              .distinct()
-              .toList();
-      assertThat(joinBrokerIds).singleElement().isEqualTo(brokerId(2));
+      // then - exact planned operations.
+      // Before (RF=2): zoneA_0 holds P1,P3 and zoneA_1 holds P2 (1 replica/zone, priority 2+1).
+      // After  (RF=3): each partition needs both zoneA brokers; existing zoneA replica gets
+      // promoted to priority 3, new zoneA replica joins at priority 2. zoneB unchanged.
+      // nodeIdx mapping: 0=zoneA_0, 1=zoneB_0, 2=zoneA_1
+      assertThat(response.getPlannedChanges())
+          .isEqualTo(
+              List.of(
+                  new Operation()
+                      .operation(OperationEnum.UPDATE_PARTITION_DISTRIBUTOR_CONFIG)
+                      // Coordinator
+                      .brokerId(brokerId(0))
+                      .partitionDistributionConfig(config),
+                  new Operation()
+                      .operation(OperationEnum.PARTITION_JOIN)
+                      .brokerId(brokerId(2))
+                      .partitionId(1)
+                      .priority(2),
+                  new Operation()
+                      .operation(OperationEnum.PARTITION_RECONFIGURE_PRIORITY)
+                      .brokerId(brokerId(0))
+                      .partitionId(1)
+                      .priority(3),
+                  new Operation()
+                      .operation(OperationEnum.PARTITION_JOIN)
+                      .brokerId(brokerId(0))
+                      .partitionId(2)
+                      .priority(2),
+                  new Operation()
+                      .operation(OperationEnum.PARTITION_RECONFIGURE_PRIORITY)
+                      .brokerId(brokerId(2))
+                      .partitionId(2)
+                      .priority(3),
+                  new Operation()
+                      .operation(OperationEnum.PARTITION_JOIN)
+                      .brokerId(brokerId(2))
+                      .partitionId(3)
+                      .priority(2),
+                  new Operation()
+                      .operation(OperationEnum.PARTITION_RECONFIGURE_PRIORITY)
+                      .brokerId(brokerId(0))
+                      .partitionId(3)
+                      .priority(3)));
+
+      Awaitility.await()
+          .untilAsserted(
+              () -> ClusterActuatorAssert.assertThat(actuator).hasAppliedChanges(response));
+
+      final var topology = actuator.getTopology();
+      assertThat(topology.getPartitionDistribution()).isEqualTo(config);
     }
   }
 
