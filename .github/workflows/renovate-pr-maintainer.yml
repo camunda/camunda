@@ -1,0 +1,64 @@
+# description: Keeps open Renovate PRs fresh and unstuck on main (rebaseWhen=conflicted companion). Read-only on schedule; live only via manual dispatch.
+# type: CI Helper
+# owner: @camunda/monorepo-devops-team
+
+---
+name: Renovate PR maintainer
+
+on:
+  schedule:
+    # Daily, off-peak. Scheduled runs are ALWAYS dry-run (no PR is modified).
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: "Run without modifying any PR (uncheck to go live)"
+        required: false
+        type: boolean
+        default: true
+
+env:
+  GHA_BEST_PRACTICES_LINTER: enabled
+
+permissions: {}
+
+# Never let two maintainer runs act on the same PRs concurrently.
+concurrency:
+  group: renovate-pr-maintainer
+  cancel-in-progress: false
+
+jobs:
+  maintain:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Least-privilege: label PRs (Issues Labels API), re-run failed jobs,
+    # read PR/check/compare state.
+    permissions:
+      issues: write
+      pull-requests: read
+      actions: write
+      checks: read
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+
+      - name: Maintain Renovate PRs
+        uses: camunda/infra-global-github-actions/renovate-pr-maintainer@main
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          # Scheduled runs stay dry-run; manual runs honor the dispatch input.
+          dry-run: ${{ github.event_name == 'schedule' || inputs.dry-run }}
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
