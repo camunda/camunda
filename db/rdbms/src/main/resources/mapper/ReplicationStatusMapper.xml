@@ -18,6 +18,7 @@
     </constructor>
   </resultMap>
 
+  <!-- PostgreSQL -->
   <select id="getCurrentLogStatus" resultType="java.lang.Long" databaseId="postgresql">
     SELECT pg_wal_lsn_diff(pg_current_wal_lsn(), '0/0')::bigint last_lsn
   </select>
@@ -51,5 +52,28 @@
     WHERE is_local = 0
   </select>
 
-</mapper>
+  <!-- Oracle -->
+  <select id="getCurrentLogStatus" resultType="java.lang.Long" databaseId="oracle">
+    SELECT current_scn FROM v$database
+  </select>
 
+  <select id="getReplicationStatus" resultMap="replicationLogStatusResultMap" databaseId="oracle">
+    SELECT
+      COALESCE(
+        (SELECT MAX(al.next_change#)
+         FROM   v$archived_log al
+         WHERE  al.thread#           = ads.applied_thread#
+           AND  al.sequence#         = ads.applied_seq#
+           AND  al.dest_id           = ads.dest_id
+           AND  al.resetlogs_change# = (SELECT resetlogs_change# FROM v$database)),
+        0
+      )                    AS logStatus,
+      TO_CHAR(ads.dest_id) AS replicaId,
+      0                    AS replicationLagMs
+    FROM v$archive_dest_status ads
+    WHERE ads.type IN ('PHYSICAL', 'LOGICAL')
+      AND ads.status = 'VALID'
+      AND ads.applied_seq# > 0
+  </select>
+
+</mapper>

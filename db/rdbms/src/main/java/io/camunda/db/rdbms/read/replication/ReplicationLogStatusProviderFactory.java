@@ -14,6 +14,7 @@ public final class ReplicationLogStatusProviderFactory {
 
   public static final String POSTGRESQL_DATABASE_ID = "postgresql";
   public static final String MSSQL_DATABASE_ID = "mssql";
+  public static final String ORACLE_DATABASE_ID = "oracle";
 
   private final VendorDatabaseProperties vendorDatabaseProperties;
   private final ReplicationStatusMapper replicationStatusMapper;
@@ -27,7 +28,7 @@ public final class ReplicationLogStatusProviderFactory {
 
   public ReplicationLogStatusProvider create() {
     return switch (vendorDatabaseProperties.databaseId()) {
-      case POSTGRESQL_DATABASE_ID, MSSQL_DATABASE_ID ->
+      case POSTGRESQL_DATABASE_ID, MSSQL_DATABASE_ID, ORACLE_DATABASE_ID ->
           new DefaultReplicationLogStatusProvider(replicationStatusMapper);
       case null ->
           throw new IllegalArgumentException(

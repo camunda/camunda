@@ -51,7 +51,7 @@ class ReplicationLogStatusProviderFactoryTest {
   }
 
   @Test
-  void shouldNotCreateReplicationLogStatusProviderForUnsupportedDatabase() {
+  void shouldCreateOracleReplicationLogStatusProvider() {
     // given
     final var vendorDatabaseProperties = mock(VendorDatabaseProperties.class);
     when(vendorDatabaseProperties.databaseId()).thenReturn("oracle");
@@ -60,9 +60,25 @@ class ReplicationLogStatusProviderFactoryTest {
             vendorDatabaseProperties, mock(ReplicationStatusMapper.class));
 
     // when
+    final var provider = factory.create();
+
+    // then
+    assertThat(provider).isInstanceOf(DefaultReplicationLogStatusProvider.class);
+  }
+
+  @Test
+  void shouldNotCreateReplicationLogStatusProviderForUnsupportedDatabase() {
+    // given
+    final var vendorDatabaseProperties = mock(VendorDatabaseProperties.class);
+    when(vendorDatabaseProperties.databaseId()).thenReturn("h2");
+    final var factory =
+        new ReplicationLogStatusProviderFactory(
+            vendorDatabaseProperties, mock(ReplicationStatusMapper.class));
+
+    // when
     assertThatThrownBy(factory::create)
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("Cannot create ReplicationLogStatusProvider for unknown database id oracle");
+        .hasMessage("Cannot create ReplicationLogStatusProvider for unknown database id h2");
   }
 
   @Test
