@@ -19,7 +19,7 @@ import org.springframework.web.method.support.ModelAndViewContainer;
  * Resolves controller method parameters annotated with {@link PhysicalTenantId} from {@link
  * PhysicalTenantContext#current()}.
  *
- * <p>{@code PhysicalTenantPreSecurityFilter} stamps the id for tenant-prefixed paths ({@code
+ * <p>{@code PhysicalTenantFilter} stamps the id for tenant-prefixed paths ({@code
  * /physical-tenants/{physicalTenantId}/v2/...}); {@code current()} returns it, or falls back to
  * {@link PhysicalTenantContext#DEFAULT_PHYSICAL_TENANT_ID} for cluster (non-prefixed) paths — so
  * the resolved value is never {@code null}.

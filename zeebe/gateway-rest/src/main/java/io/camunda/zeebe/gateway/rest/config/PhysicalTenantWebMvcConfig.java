@@ -26,9 +26,9 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
  * /physical-tenants/{physicalTenantId}/v2/...} sibling registration.
  *
  * <p>This config is responsible for <em>routing</em> only. The physical tenant id is extracted from
- * the request by {@code PhysicalTenantPreSecurityFilter} (which runs before the security chain so
- * the id is available to in-chain components), and unknown tenants are rejected by CSL's catch-all
- * security chain — so no MVC interceptor is registered here. See ADR-0003.
+ * the request by {@code PhysicalTenantFilter} (which runs before the security chain so the id is
+ * available to in-chain components), and unknown tenants are rejected by CSL's catch-all security
+ * chain — so no MVC interceptor is registered here. See ADR-0003.
  */
 @Configuration
 public class PhysicalTenantWebMvcConfig implements WebMvcConfigurer {

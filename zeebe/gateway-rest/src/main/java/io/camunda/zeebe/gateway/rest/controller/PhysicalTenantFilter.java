@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.authentication.pt;
+package io.camunda.zeebe.gateway.rest.controller;
 
 import io.camunda.spring.utils.PhysicalTenantContext;
 import jakarta.servlet.Filter;
@@ -21,32 +21,23 @@ import org.slf4j.LoggerFactory;
 /**
  * Servlet {@link Filter} that extracts the physical tenant id from tenant-prefixed request paths
  * ({@code /physical-tenants/{id}/...}) and stamps it onto the request via {@link
- * PhysicalTenantContext} before Spring Security's filter chain runs.
+ * PhysicalTenantContext}.
  *
- * <p>Spring Security's filter chains (including the per-tenant API chains built by CSL from {@link
- * io.camunda.security.api.model.config.ScopedSecurityDescriptor}s) execute inside Spring Security's
- * {@code FilterChainProxy}, which runs at a fixed order. An MVC {@code HandlerInterceptor} would
- * fire later — during dispatch, after the security filter chain — so components that consume the
- * tenant id <em>inside</em> the chain could not rely on it. This filter runs at a lower order
- * (before the security filter chain) so the id is on the request when those in-chain components
- * run, for example:
+ * <p>{@code ApiFiltersConfiguration} registers it to run before Spring Security's {@code
+ * FilterChainProxy}, so the id is on the request when components <em>inside</em> the security chain
+ * consume it — e.g. per-tenant basic-auth user resolution, and per-tenant OIDC/session handling. An
+ * MVC {@code HandlerInterceptor} would fire later (during dispatch, after the chain) and so could
+ * not serve those in-chain consumers.
  *
- * <ul>
- *   <li>{@link BasicAuthUserDetailsAdapter}, which calls {@link PhysicalTenantContext#current()} to
- *       look up users from the correct per-tenant {@code UserServices};
- *   <li>per-tenant OIDC and webapp concerns such as tenant-specific session storage.
- * </ul>
- *
- * <p>Only paths matching {@code /physical-tenants/{id}/...} are processed; all other requests pass
- * through unchanged with no attribute set. The {@code id} segment is intentionally not validated
- * here: this filter is the single extraction point, and validation is left to CSL's security
- * chains. A request for an unconfigured tenant matches no per-scope chain and is rejected by CSL's
- * catch-all chain with 404; bad credentials for a configured tenant are rejected with 401/403. See
+ * <p>Only paths matching {@code /physical-tenants/{id}/...} are processed; other requests pass
+ * through unchanged. The {@code id} is intentionally not validated here — this is the single
+ * extraction point, and rejection of unknown tenants is left to CSL's security chains (an
+ * unconfigured tenant matches no per-scope chain and is rejected by the catch-all with 404). See
  * ADR-0003.
  */
-public final class PhysicalTenantPreSecurityFilter implements Filter {
+public final class PhysicalTenantFilter implements Filter {
 
-  private static final Logger LOG = LoggerFactory.getLogger(PhysicalTenantPreSecurityFilter.class);
+  private static final Logger LOG = LoggerFactory.getLogger(PhysicalTenantFilter.class);
 
   @Override
   public void doFilter(
@@ -73,6 +64,6 @@ public final class PhysicalTenantPreSecurityFilter implements Filter {
       return;
     }
     PhysicalTenantContext.setPhysicalTenantId(request, tenantId);
-    LOG.trace("Pre-security: resolved physical tenant '{}' from path '{}'", tenantId, path);
+    LOG.trace("Resolved physical tenant '{}' from path '{}'", tenantId, path);
   }
 }

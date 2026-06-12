@@ -29,7 +29,7 @@ class PhysicalTenantIdArgumentResolverTest {
 
   @Test
   void resolvesStampedTenantIdForPrefixedPath() {
-    // given a request stamped by PhysicalTenantPreSecurityFilter
+    // given a request stamped by PhysicalTenantFilter
     final var request = new MockHttpServletRequest();
     PhysicalTenantContext.setPhysicalTenantId(request, "tenanta");
     RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
