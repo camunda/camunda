@@ -252,6 +252,64 @@ class ExporterArgsOverlayTest {
       assertThat(result).containsKeys("a", "b");
       assertThat(result.get("b").getClassName()).isEqualTo("com.B");
     }
+
+    @Test
+    void shouldDeepMergeRealCamundaExporterArgs() {
+      // given — root configures bulk settings and a three-level history.retention block,
+      // using property names from ExporterConfiguration (bulk.memory-limit, history.retention.*)
+      final Map<String, Object> rootBulk = new LinkedHashMap<>();
+      rootBulk.put("size", 5000);
+      rootBulk.put("delay", 1);
+      rootBulk.put("memory-limit", 20); // dash-form: normalized to memorylimit
+
+      final Map<String, Object> rootRetention = new LinkedHashMap<>();
+      rootRetention.put("minimum-age", "30d"); // normalized to minimumage
+      // TODO a tenant should use a different retention policy if it shares the same ES/OS instance,
+      // we need to add a validation on that when implementing ES/OS epic
+      rootRetention.put("policy-name", "camunda-retention"); // normalized to policyname
+
+      final Map<String, Object> rootHistory = new LinkedHashMap<>();
+      rootHistory.put("rollover-interval", "1d"); // normalized to rolloverinterval
+      rootHistory.put("retention", rootRetention);
+
+      final Map<String, Object> rootArgs = new LinkedHashMap<>();
+      rootArgs.put("bulk", rootBulk);
+      rootArgs.put("history", rootHistory);
+
+      // tenant overrides only bulk.size and history.retention.minimum-age
+      final Map<String, Object> tenantArgs =
+          Map.of(
+              "bulk", Map.of("size", 1000),
+              "history", Map.of("retention", Map.of("minimum-age", "90d")));
+
+      final Exporter root = exporter(null, null, rootArgs);
+      final Exporter tenant = exporter(null, null, tenantArgs);
+
+      // when
+      final Map<String, Exporter> result =
+          ExporterArgsOverlay.overlay(
+              "t1", Map.of("camundaexporter", root), Map.of("camundaexporter", tenant));
+      final Map<String, Object> args = result.get("camundaexporter").getArgs();
+
+      // then bulk: size overridden; delay and memory-limit (→ memorylimit after normalization) kept
+      @SuppressWarnings("unchecked")
+      final Map<String, Object> bulk = (Map<String, Object>) args.get("bulk");
+      assertThat(bulk)
+          .containsEntry("size", 1000)
+          .containsEntry("delay", 1)
+          .containsEntry("memorylimit", 20);
+
+      // then history: rollover-interval (→ rolloverinterval) kept; retention deep-merged
+      @SuppressWarnings("unchecked")
+      final Map<String, Object> history = (Map<String, Object>) args.get("history");
+      assertThat(history).containsEntry("rolloverinterval", "1d");
+
+      @SuppressWarnings("unchecked")
+      final Map<String, Object> retention = (Map<String, Object>) history.get("retention");
+      assertThat(retention)
+          .containsEntry("minimumage", "90d") // overridden
+          .containsEntry("policyname", "camunda-retention"); // inherited
+    }
   }
 
   @Nested
