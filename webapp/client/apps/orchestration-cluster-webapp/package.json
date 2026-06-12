@@ -43,7 +43,7 @@
 	},
 	"devDependencies": {
 		"@axe-core/playwright": "4.11.3",
-		"@carbon/react": "1.106.0",
+		"@carbon/react": "1.108.0",
 		"@msw/playwright": "0.6.7",
 		"@playwright/test": "1.60.0",
 		"@svgr/cli": "^8.1.0",
