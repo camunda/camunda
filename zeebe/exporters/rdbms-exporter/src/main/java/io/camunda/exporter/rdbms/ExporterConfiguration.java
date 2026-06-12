@@ -618,24 +618,26 @@ public class ExporterConfiguration {
   }
 
   public static class ReplicationConfiguration {
-    public static final boolean DEFAULT_ENABLED = false;
+    public static final ReplicationType DEFAULT_TYPE = ReplicationType.NONE;
     public static final Duration DEFAULT_POLLING_INTERVAL = Duration.ofSeconds(15);
     public static final Duration DEFAULT_MAX_LAG = Duration.ofMinutes(15);
     public static final int DEFAULT_MIN_SYNC_REPLICAS = 1;
     public static final boolean DEFAULT_PAUSE_ON_MAX_LAG_EXCEEDED = false;
+    public static final Duration DEFAULT_DELAY = Duration.ofMinutes(15);
 
-    private boolean enabled = DEFAULT_ENABLED;
+    private ReplicationType type = DEFAULT_TYPE;
     private Duration pollingInterval = DEFAULT_POLLING_INTERVAL;
     private int minSyncReplicas = DEFAULT_MIN_SYNC_REPLICAS;
     private Duration maxLag = DEFAULT_MAX_LAG;
     private boolean pauseOnMaxLagExceeded = DEFAULT_PAUSE_ON_MAX_LAG_EXCEEDED;
+    private Duration delay = DEFAULT_DELAY;
 
-    public boolean isEnabled() {
-      return enabled;
+    public ReplicationType getType() {
+      return type;
     }
 
-    public void setEnabled(final boolean enabled) {
-      this.enabled = enabled;
+    public void setType(final ReplicationType type) {
+      this.type = type;
     }
 
     public Duration getPollingInterval() {
@@ -670,9 +672,18 @@ public class ExporterConfiguration {
       this.pauseOnMaxLagExceeded = pauseOnMaxLagExceeded;
     }
 
+    public Duration getDelay() {
+      return delay;
+    }
+
+    public void setDelay(final Duration delay) {
+      this.delay = delay;
+    }
+
     public List<String> validate() {
       final List<String> errors = new ArrayList<>();
-      if (enabled && (pollingInterval.isNegative() || pollingInterval.isZero())) {
+      if (type == ReplicationType.LSN
+          && (pollingInterval.isNegative() || pollingInterval.isZero())) {
         errors.add(
             String.format(
                 "asyncReplication.pollingInterval must be a positive duration but was %s",
@@ -683,12 +694,22 @@ public class ExporterConfiguration {
             String.format(
                 "asyncReplication.minSyncReplicas must be greater 0 but was %d", minSyncReplicas));
       }
-      if (enabled && (maxLag.isNegative() || maxLag.isZero())) {
+      if (type == ReplicationType.LSN && (maxLag.isNegative() || maxLag.isZero())) {
         errors.add(
             String.format(
                 "asyncReplication.maxLag must be a positive duration but was %s", maxLag));
       }
+      if (type == ReplicationType.TIME_DELAY && (delay.isNegative() || delay.isZero())) {
+        errors.add(
+            String.format("asyncReplication.delay must be a positive duration but was %s", delay));
+      }
       return errors;
+    }
+
+    public enum ReplicationType {
+      NONE,
+      LSN,
+      TIME_DELAY
     }
   }
 }
