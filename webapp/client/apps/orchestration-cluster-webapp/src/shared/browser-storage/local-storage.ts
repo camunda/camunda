@@ -16,6 +16,7 @@ const {
 } = createBrowserStorage(localStorage, {
 	theme: z.enum(['light', 'dark', 'system']),
 	wasReloaded: z.boolean(),
+	hasCompletedTask: z.boolean(),
 });
 
 export {storeStateLocally, getStateLocally, clearStateLocally};
