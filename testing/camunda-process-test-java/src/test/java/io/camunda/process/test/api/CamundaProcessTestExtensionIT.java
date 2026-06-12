@@ -45,7 +45,7 @@ import org.junit.jupiter.api.Test;
 @CamundaProcessTest
 public class CamundaProcessTestExtensionIT {
 
-  // to be injected
+  // To be injected
   private CamundaClient client;
   private CamundaProcessTestContext processTestContext;
 
