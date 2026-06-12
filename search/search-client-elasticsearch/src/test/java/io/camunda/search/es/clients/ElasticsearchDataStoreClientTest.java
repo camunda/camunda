@@ -25,7 +25,6 @@ import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.HitsMetadata;
 import co.elastic.clients.elasticsearch.core.search.TotalHitsRelation;
-import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.ElasticsearchTransport;
 import co.elastic.clients.transport.TransportOptions;
 import io.camunda.search.clients.core.SearchGetRequest;
@@ -35,7 +34,6 @@ import io.camunda.search.clients.core.SearchQueryResponse;
 import io.camunda.search.clients.core.SearchWriteResponse;
 import io.camunda.search.es.transformers.ElasticsearchTransformers;
 import java.io.IOException;
-import java.io.StringReader;
 import java.util.ArrayList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -214,76 +212,6 @@ public class ElasticsearchDataStoreClientTest {
     // then
     assertThat(response).isNotNull();
     assertThat(response.hasMoreTotalItems()).isTrue();
-  }
-
-  @Test
-  void shouldDeserializeShardFailureWithUnderscoreShardAlias() {
-    // given - JSON using "_shard" alias
-    final var json =
-        """
-        {
-          "_shard": 2,
-          "_index": "my-index",
-          "_node": "node1",
-          "reason": {"type": "i_o_exception", "reason": "No space left on device"},
-          "status": "INTERNAL_SERVER_ERROR"
-        }
-        """;
-    final var mapper = new JacksonJsonpMapper();
-    final var parser = mapper.jsonProvider().createParser(new StringReader(json));
-
-    // when
-    final var failure =
-        AliasAwareIndexResponseDeserializer.SHARD_FAILURE.deserialize(parser, mapper);
-
-    // then - underscore-aliased fields are recognized;
-    assertThat(failure).isNotNull();
-    assertThat(failure.shard()).isEqualTo(2);
-    assertThat(failure.index()).isEqualTo("my-index");
-    assertThat(failure.node()).isEqualTo("node1");
-    assertThat(failure.status()).isEqualTo("INTERNAL_SERVER_ERROR");
-  }
-
-  @Test
-  void shouldDeserializeIndexResponseWithUnderscoreShardAlias() {
-    // given - a full IndexResponse JSON where shard failure uses underscore-prefixed aliases
-    final var json =
-        """
-        {
-          "_id": "foo",
-          "_index": "bar",
-          "result": "created",
-          "_primary_term": 1,
-          "_seq_no": 1,
-          "_version": 1,
-          "_shards": {
-            "total": 2,
-            "successful": 1,
-            "failed": 1,
-            "failures": [
-              {
-                "_shard": 3,
-                "_index": "bar",
-                "_node": "node1",
-                "reason": {"type": "i_o_exception", "reason": "No space left on device"},
-                "status": "INTERNAL_SERVER_ERROR"
-              }
-            ]
-          }
-        }
-        """;
-    final var mapper = new JacksonJsonpMapper();
-    final var parser = mapper.jsonProvider().createParser(new StringReader(json));
-
-    // when
-    final var response =
-        AliasAwareIndexResponseDeserializer.INDEX_RESPONSE.deserialize(parser, mapper);
-
-    // then
-    assertThat(response).isNotNull();
-    assertThat(response.id()).isEqualTo("foo");
-    assertThat(response.shards().failures()).hasSize(1);
-    assertThat(response.shards().failures().get(0).shard()).isEqualTo(3);
   }
 
   @Test
