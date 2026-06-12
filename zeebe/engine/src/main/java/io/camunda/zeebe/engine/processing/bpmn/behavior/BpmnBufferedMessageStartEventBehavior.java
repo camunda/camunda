@@ -351,13 +351,14 @@ public final class BpmnBufferedMessageStartEventBehavior {
    * {@code isBusinessIdAlreadyHeld} returning {@code false}. Without this guard the scan would
    * re-pick such a message on the next same-correlation-key completion and emit a redundant second
    * ask (harmless under {@code P_B}'s dedup, but wasteful). The registry's scheduler is the single
-   * owner of the retry. Short-circuits to {@code false} when the feature is disabled, since no asks
-   * exist then.
+   * owner of the retry.
+   *
+   * <p>The presence of a pending ask is respected regardless of {@code
+   * businessIdUniquenessEnabled}: a remote Business ID is delegated to {@code P_B} independently of
+   * the flag (see ADR 0002 D6), and {@code NO_SUBSCRIPTION_REJECTED} asks are retried whether or
+   * not uniqueness is enabled, so asks can be pending even when the flag is off.
    */
   private boolean hasLivePendingAsk(final long messageKey, final long processDefinitionKey) {
-    if (!businessIdUniquenessEnabled) {
-      return false;
-    }
     return messageStartProcessInstanceAskState.get(messageKey, processDefinitionKey) != null;
   }
 
