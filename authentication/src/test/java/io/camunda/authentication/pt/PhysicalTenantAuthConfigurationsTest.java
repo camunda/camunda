@@ -107,6 +107,60 @@ class PhysicalTenantAuthConfigurationsTest {
   }
 
   // -------------------------------------------------------------------------
+  // 3b. PT overlay list REPLACES the root list (no index-merge inheritance)
+  // -------------------------------------------------------------------------
+
+  @Test
+  void shouldReplaceRootListWhenPtDeclaresOwnList() {
+    final var env =
+        env(
+            Map.of(
+                "camunda.security.authentication.method", "oidc",
+                "camunda.security.authentication.providers.oidc.tenanta.client-id", "root-client",
+                "camunda.security.authentication.providers.oidc.tenanta.issuer-uri",
+                    "http://idp/tenanta",
+                "camunda.security.authentication.providers.oidc.tenanta.audiences[0]", "root-aud-0",
+                "camunda.security.authentication.providers.oidc.tenanta.audiences[1]", "root-aud-1",
+                // PT overlay declares a single-element audiences list
+                "camunda.physical-tenants.tenanta.security.authentication.providers.oidc.tenanta.audiences[0]",
+                    "pt-aud"));
+
+    final AuthenticationConfiguration cfg =
+        PhysicalTenantAuthConfigurations.forPhysicalTenant("tenanta", env);
+
+    final var provider = cfg.getProviders().getOidc().get("tenanta");
+    // PT list wins wholesale — root-aud-1 must NOT be inherited via index-merge.
+    assertThat(provider.getAudiences()).containsExactly("pt-aud");
+  }
+
+  // -------------------------------------------------------------------------
+  // 3c. PT-silent list INHERITS the root list
+  // -------------------------------------------------------------------------
+
+  @Test
+  void shouldInheritRootListWhenPtOmitsIt() {
+    final var env =
+        env(
+            Map.of(
+                "camunda.security.authentication.method", "oidc",
+                "camunda.security.authentication.providers.oidc.tenanta.client-id", "root-client",
+                "camunda.security.authentication.providers.oidc.tenanta.issuer-uri",
+                    "http://idp/tenanta",
+                "camunda.security.authentication.providers.oidc.tenanta.audiences[0]", "root-aud-0",
+                "camunda.security.authentication.providers.oidc.tenanta.audiences[1]", "root-aud-1",
+                // PT overlay overrides only client-id — says nothing about audiences
+                "camunda.physical-tenants.tenanta.security.authentication.providers.oidc.tenanta.client-id",
+                    "pt-client"));
+
+    final AuthenticationConfiguration cfg =
+        PhysicalTenantAuthConfigurations.forPhysicalTenant("tenanta", env);
+
+    final var provider = cfg.getProviders().getOidc().get("tenanta");
+    assertThat(provider.getClientId()).isEqualTo("pt-client"); // overridden
+    assertThat(provider.getAudiences()).containsExactly("root-aud-0", "root-aud-1"); // inherited
+  }
+
+  // -------------------------------------------------------------------------
   // 4. PT overlay declares a provider not in root (PT-only) → included via union
   // -------------------------------------------------------------------------
 
