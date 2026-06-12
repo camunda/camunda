@@ -1375,32 +1375,34 @@ public class CamundaProcessTestExtensionIT {
 
     @Test
     void shouldCompleteProcessFirstRun() {
-      // increase assertion timeout because the immediate loop-back occasionally activates
-      // the reset gate timeout of 5 seconds
-      CamundaAssert.setAssertionTimeout(Duration.ofSeconds(30));
-
       final ProcessInstanceEvent processInstanceEvent =
           client.newCreateInstanceCommand().bpmnProcessId(PROCESS_ID).latestVersion().execute();
 
+      // increase assertion timeout because the immediate loop-back occasionally activates
+      // the reset gate timeout of 5 seconds
       assertThatProcessInstance(processInstanceEvent)
-          .isCompleted()
+          .withAssertionTimeout(Duration.ofSeconds(30))
+          .isCompleted();
+
+      assertThatProcessInstance(processInstanceEvent)
           .hasVariable("happy", true)
           .hasVariable("exportSuccess", true);
     }
 
     @Test
     void shouldCompleteProcessSecondRun() {
-      // increase assertion timeout because the immediate loop-back occasionally activates
-      // the reset gate timeout of 5 seconds
-      CamundaAssert.setAssertionTimeout(Duration.ofSeconds(30));
-
       // Same behavior — proves @BeforeEach re-registers fresh behaviors for each test,
       // including a fresh action chain (happy=false first, then happy=true)
       final ProcessInstanceEvent processInstanceEvent =
           client.newCreateInstanceCommand().bpmnProcessId(PROCESS_ID).latestVersion().execute();
 
+      // increase assertion timeout because the immediate loop-back occasionally activates
+      // the reset gate timeout of 5 seconds
       assertThatProcessInstance(processInstanceEvent)
-          .isCompleted()
+          .withAssertionTimeout(Duration.ofSeconds(30))
+          .isCompleted();
+
+      assertThatProcessInstance(processInstanceEvent)
           .hasVariable("happy", true)
           .hasVariable("exportSuccess", true);
     }
