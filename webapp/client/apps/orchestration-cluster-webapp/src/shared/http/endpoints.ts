@@ -6,10 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {endpoints as unifiedAPIEndpoints} from '@camunda/camunda-api-zod-schemas/8.10';
-import type {
-	GetProcessDefinitionInstanceStatisticsRequestBody,
-	GetIncidentProcessInstanceStatisticsByErrorRequestBody,
+import {
+	endpoints as unifiedAPIEndpoints,
+	type GetProcessDefinitionInstanceStatisticsRequestBody,
+	type GetIncidentProcessInstanceStatisticsByErrorRequestBody,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {getBootConfig} from '#/shared/config/getBootConfig';
 import {mergePathname} from './mergePathname';
