@@ -23,8 +23,10 @@ import org.agrona.concurrent.UnsafeBuffer;
  * MessageStartProcessInstanceRequestRecord}.
  *
  * <p>Keyed by {@code (messageKey, processDefinitionKey)} — the pair that uniquely identifies an
- * outstanding ask from this partition. When any of the three reply intents is applied, the entry is
- * removed.
+ * outstanding ask from this partition. The entry is removed when the ask succeeds ({@code STARTED}
+ * applied locally) or the buffered message expires; a rejection ({@code UNIQUENESS_REJECTED} /
+ * {@code NO_SUBSCRIPTION_REJECTED}) instead keeps the entry and increments its {@code
+ * rejectionCount} so it is retried under back-off.
  *
  * <p>The {@code rejectionCount} field is {@code P_K}-local retry bookkeeping — how many times this
  * ask has been rejected so far — not part of the cross-partition request. It is deliberately absent
