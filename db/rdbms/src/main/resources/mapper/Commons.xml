@@ -416,4 +416,17 @@
     </constructor>
   </resultMap>
 
+  <!--
+    Vendor-specific SQL fragment to let us COALESCE a CLOB column with a non-CLOB column
+     - ${clobColumn} is the name of the CLOB column (e.g. FULL_RESULT)
+     - ${nonClobColumn} is the name of the non-CLOB column (e.g. RESULT) that contains the same data for short values
+  -->
+  <sql id="coalesceCLOB">
+    COALESCE(${clobColumn}, ${nonClobColumn})
+  </sql>
+
+  <sql id="coalesceCLOB" databaseId="oracle">
+    COALESCE(${clobColumn}, TO_CLOB(${nonClobColumn}))
+  </sql>
+
 </mapper>
