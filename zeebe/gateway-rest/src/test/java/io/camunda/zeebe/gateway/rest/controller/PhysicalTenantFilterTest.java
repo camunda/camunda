@@ -40,6 +40,21 @@ class PhysicalTenantFilterTest {
   }
 
   @Test
+  void shouldStampPhysicalTenantIdWhenServletContextPathIsConfigured() throws Exception {
+    // getRequestURI() includes the context path; the filter must strip it so the tenant id is still
+    // extracted when the host is deployed under a context path (e.g. server.servlet.context-path).
+    final var request =
+        new MockHttpServletRequest("GET", "/zeebe/physical-tenants/tenanta/v2/users");
+    request.setContextPath("/zeebe");
+    final var response = new MockHttpServletResponse();
+
+    filter.doFilter(request, response, chain);
+
+    assertThat(PhysicalTenantContext.getPhysicalTenantId(request)).isEqualTo("tenanta");
+    verify(chain).doFilter(request, response);
+  }
+
+  @Test
   void shouldStampPhysicalTenantIdForUnknownPrefixedPath() throws Exception {
     // The filter does not validate against configured ids — CSL's chain handles rejection.
     final var request = new MockHttpServletRequest("GET", "/physical-tenants/unknown/v2/users");
