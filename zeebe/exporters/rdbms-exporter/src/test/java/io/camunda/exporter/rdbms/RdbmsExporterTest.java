@@ -23,6 +23,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
+import io.camunda.db.rdbms.exception.ExporterPositionMismatchException;
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.ExporterPositionModel;
@@ -532,17 +533,21 @@ class RdbmsExporterTest {
   }
 
   @Test
-  void shouldThrowWhenReplayFailsBecauseLogSegmentsAreGone() {
-    // given - broker position is 1000, RDBMS position is 900, but log segments are gone
+  void shouldThrowWhenReplayIsUnavailable() {
+    // given - broker position is 1000, RDBMS position is 900, but replay is unavailable
+    // (segments deleted or already in exporting phase)
     final long brokerPosition = 1000L;
     final long rdbmsPosition = 900L;
     createExporterWithRdbmsPosition(brokerPosition, rdbmsPosition);
     when(controller.requestReplay(anyLong())).thenReturn(false);
 
-    // when + then - exporter should fail to open because replay is not possible
+    // when + then - exporter must throw when replay cannot be initiated; accepting a stale DB
+    // position as baseline risks data loss, so we fail hard and require manual intervention
     assertThatThrownBy(() -> exporter.open(controller))
         .isInstanceOf(ExporterException.class)
-        .hasMessageContaining("log segments are no longer available");
+        .hasMessageContaining("Cannot replay records");
+
+    verify(controller).requestReplay(rdbmsPosition);
   }
 
   @Test
@@ -556,6 +561,51 @@ class RdbmsExporterTest {
 
     // then - no replay should be requested
     verify(controller, never()).requestReplay(Mockito.anyLong());
+  }
+
+  @Test
+  void shouldThrowReopenExceptionWhenPositionIsAhead() {
+    // given
+    final var jobHandler = mockHandler(ValueType.JOB);
+    final var record = mockRecord(ValueType.JOB, 5);
+    createExporter(b -> b.withHandler(ValueType.JOB, jobHandler));
+
+    // Make the flush throw ExporterPositionAheadException to simulate DB ahead of broker
+    doAnswer(
+            invocation -> {
+              throw new ExporterPositionMismatchException(1, 4, 5); // expected 4 but found 5 in DB
+            })
+        .when(rdbmsWriters)
+        .flush(anyBoolean());
+
+    // when - export wraps the conflict in an ExporterException(REOPEN) so ExporterContainer
+    // closes and reopens the exporter to re-sync the position
+    final var thrown =
+        assertThatThrownBy(() -> exporter.export(record))
+            .isInstanceOf(ExporterException.class)
+            .hasMessageContaining("exporter position conflict")
+            .hasCauseInstanceOf(ExporterPositionMismatchException.class);
+
+    // then - compensation must be REOPEN so ExporterContainer calls reopenExporter()
+    thrown.satisfies(
+        ex ->
+            assertThat(((ExporterException) ex).getCompensation())
+                .isEqualTo(ExporterException.Compensation.REOPEN));
+  }
+
+  @Test
+  void shouldNotRegisterDuplicateListenersOnReopen() {
+    // given - exporter already opened (listeners registered once)
+    createExporter(b -> b.withHandler(ValueType.JOB, mockHandler(ValueType.JOB)));
+
+    final int listenersAfterFirstOpen = executionQueue.preFlushListeners.size();
+    assertThat(listenersAfterFirstOpen).isGreaterThan(0);
+
+    // when - exporter is reopened (simulating ExporterContainer.reopenExporter)
+    exporter.open(controller);
+
+    // then - listener count must not double; reset() in open() clears before re-registering
+    assertThat(executionQueue.preFlushListeners).hasSize(listenersAfterFirstOpen);
   }
 
   @Test
@@ -742,6 +792,13 @@ class RdbmsExporterTest {
     @Override
     public boolean checkQueueForFlush() {
       return false;
+    }
+
+    @Override
+    public void reset() {
+      preFlushListeners.clear();
+      postFlushListeners.clear();
+      inTransactionHooks.clear();
     }
   }
 }

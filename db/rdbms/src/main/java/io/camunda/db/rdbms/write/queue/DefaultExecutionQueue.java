@@ -328,6 +328,17 @@ public class DefaultExecutionQueue implements ExecutionQueue {
     return resultList;
   }
 
+  @Override
+  public void reset() {
+    synchronized (queue) {
+      queue.clear();
+      currentQueueMemoryBytes = 0;
+    }
+    preFlushListeners.clear();
+    postFlushListeners.clear();
+    inTransactionHooks.clear();
+  }
+
   LinkedList<QueueItem> getQueue() {
     return queue;
   }

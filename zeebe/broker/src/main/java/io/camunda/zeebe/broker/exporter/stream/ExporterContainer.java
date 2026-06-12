@@ -12,6 +12,7 @@ import io.camunda.zeebe.broker.exporter.context.ExporterContext;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector.ExporterInitializationInfo;
 import io.camunda.zeebe.exporter.api.Exporter;
+import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.exporter.api.context.ScheduledTask;
@@ -256,10 +257,40 @@ final class ExporterContainer implements Controller {
         }
       }
       return true;
+    } catch (final ExporterException ex) {
+      if (ex.getCompensation() == ExporterException.Compensation.REOPEN) {
+        context
+            .getLogger()
+            .warn(
+                "Export error for exporter '{}' requires reopen to re-sync position", getId(), ex);
+        try {
+          reopenExporter();
+        } catch (final Exception reopenEx) {
+          context
+              .getLogger()
+              .error(
+                  "Failed to reopen exporter '{}'; manual intervention may be required",
+                  getId(),
+                  reopenEx);
+        }
+      } else {
+        context.getLogger().warn("Error on exporting record with key {}", typedEvent.getKey(), ex);
+      }
+      return false;
     } catch (final Exception ex) {
       context.getLogger().warn("Error on exporting record with key {}", typedEvent.getKey(), ex);
       return false;
     }
+  }
+
+  void reopenExporter() {
+    try {
+      ThreadContextUtil.runCheckedWithClassLoader(
+          exporter::close, exporter.getClass().getClassLoader());
+    } catch (final Exception e) {
+      context.getLogger().error("Error closing exporter '{}' during reopen", getId(), e);
+    }
+    openExporter();
   }
 
   void softPauseExporter() {
