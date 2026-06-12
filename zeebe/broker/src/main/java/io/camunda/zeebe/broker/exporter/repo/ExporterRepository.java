@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.exporter.repo;
 
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.exporter.context.ExporterContext;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
@@ -113,7 +114,7 @@ public final class ExporterRepository {
               LOG,
               descriptor.getConfiguration(),
               NULL_PARTITION_ID,
-              "default",
+              PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
               "",
               licenseKey,
               new SimpleMeterRegistry(),

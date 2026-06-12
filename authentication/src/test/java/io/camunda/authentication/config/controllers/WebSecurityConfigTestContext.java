@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.authentication.config.BasicAuthBeansConfiguration;
 import io.camunda.authentication.config.OidcOverrideBeansConfiguration;
 import io.camunda.authentication.config.WebSecurityConfig;
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.search.clients.auth.DisabledResourceAccessProvider;
 import io.camunda.security.api.context.CamundaAuthenticationConverter;
 import io.camunda.security.api.context.CamundaAuthenticationHolder;
@@ -105,9 +106,9 @@ public class WebSecurityConfigTestContext {
       final TenantServices tenantServices) {
     return DefaultServiceRegistry.of(
         b ->
-            b.roleServices("default", roleServices)
-                .groupServices("default", groupServices)
-                .tenantServices("default", tenantServices));
+            b.roleServices(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, roleServices)
+                .groupServices(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, groupServices)
+                .tenantServices(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, tenantServices));
   }
 
   @Bean

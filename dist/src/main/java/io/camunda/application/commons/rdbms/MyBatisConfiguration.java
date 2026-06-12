@@ -7,8 +7,7 @@
  */
 package io.camunda.application.commons.rdbms;
 
-import static io.camunda.configuration.physicaltenants.PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID;
-
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.db.rdbms.DefaultRdbmsSchemaManagerRegistry;
 import io.camunda.db.rdbms.PerTenantSchemaConfig;
@@ -131,18 +130,18 @@ public class MyBatisConfiguration {
 
   @Bean
   public DataSource dataSource(final RdbmsDataSources rdbmsDataSources) {
-    return rdbmsDataSources.dataSourceFor(DEFAULT_PHYSICAL_TENANT_ID);
+    return rdbmsDataSources.dataSourceFor(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
   }
 
   @Bean
   public VendorDatabaseProperties databaseProperties(final RdbmsDataSources rdbmsDataSources) {
-    return rdbmsDataSources.vendorPropertiesFor(DEFAULT_PHYSICAL_TENANT_ID);
+    return rdbmsDataSources.vendorPropertiesFor(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
   }
 
   @Bean
   public SqlSessionFactory sqlSessionFactory(
       final Map<String, SqlSessionFactory> sqlSessionFactories) {
-    return sqlSessionFactories.get(DEFAULT_PHYSICAL_TENANT_ID);
+    return sqlSessionFactories.get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
   }
 
   @Bean

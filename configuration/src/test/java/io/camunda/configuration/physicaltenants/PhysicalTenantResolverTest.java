@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.UnifiedConfigurationException;
 import io.camunda.configuration.UnifiedConfigurationHelper;
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -127,7 +128,7 @@ class PhysicalTenantResolverTest {
     // when
     final PhysicalTenantResolver resolver = newResolver();
     final Camunda defaultTenant =
-        resolver.forPhysicalTenant(PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID);
+        resolver.forPhysicalTenant(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
     final Camunda tenantA = resolver.forPhysicalTenant("tenanta");
 
     // then the default tenant keeps root values and tenant configuration is overlaid
@@ -148,11 +149,10 @@ class PhysicalTenantResolverTest {
     final PhysicalTenantResolver resolver = newResolver();
 
     // then a default tenant is synthesized from the root so consumers can always look it up
-    assertThat(resolver.getAll())
-        .containsOnlyKeys(PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID);
+    assertThat(resolver.getAll()).containsOnlyKeys(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
     assertThat(
             resolver
-                .forPhysicalTenant(PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID)
+                .forPhysicalTenant(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
                 .getCluster()
                 .getSize())
         .isEqualTo(5);
@@ -185,10 +185,10 @@ class PhysicalTenantResolverTest {
 
     // then a default tenant is added alongside the declared one, carrying the root values
     assertThat(resolver.getAll())
-        .containsOnlyKeys("tenanta", PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID);
+        .containsOnlyKeys("tenanta", PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
     assertThat(
             resolver
-                .forPhysicalTenant(PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID)
+                .forPhysicalTenant(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
                 .getCluster()
                 .getSize())
         .isEqualTo(5);
@@ -210,8 +210,7 @@ class PhysicalTenantResolverTest {
 
     // then the explicit declaration wins and is not clobbered by synthesis
     assertThat(
-            indexPrefixOf(
-                resolver.forPhysicalTenant(PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID)))
+            indexPrefixOf(resolver.forPhysicalTenant(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)))
         .isEqualTo("custom");
   }
 
@@ -265,7 +264,7 @@ class PhysicalTenantResolverTest {
     // when / then resolution succeeds
     final PhysicalTenantResolver resolver = newResolver();
     assertThat(resolver.getAll())
-        .containsOnlyKeys("tenanta", "tenantb", PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID);
+        .containsOnlyKeys("tenanta", "tenantb", PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
   }
 
   @Test

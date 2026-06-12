@@ -430,7 +430,7 @@ class ExporterConfigurationTest {
 
     // when
     final var writerConfig =
-        configuration.createRdbmsWriterConfig(1, "default", InstantSource.system());
+        configuration.createRdbmsWriterConfig(1, "mytenant", InstantSource.system());
 
     // then
     assertThat(writerConfig.insertBatchingConfig().variableInsertBatchSize()).isEqualTo(25);
