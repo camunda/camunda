@@ -360,4 +360,96 @@ public final class MessageStartEventBusinessIdUniquenessTest {
         .extracting(r -> r.getValue().getBusinessId())
         .containsExactly("biz-42", "biz-42");
   }
+
+  @Test
+  public void
+      shouldCorrelateBusinessIdBlockedMessageWhenHolderWithDifferentCorrelationKeyCompletes() {
+    // Pins the businessId index + completion hook (ADR 0002 D5): a message blocked purely on
+    // businessId uniqueness — whose correlation key differs from the holder's, so the
+    // correlation-key buffer scan can never reach it — is still re-driven once the holder frees the
+    // businessId on completion. This is the behaviour the correlation-key buffer could not provide.
+
+    // given a holder PI on correlation key "k-holder" carrying "biz-shared"
+    engine.deployment().withXmlResource(MESSAGE_START_PROCESS).deploy();
+    engine
+        .message()
+        .withName(MESSAGE_NAME)
+        .withCorrelationKey("k-holder")
+        .withBusinessId("biz-shared")
+        .withVariables(Map.of("seq", 1))
+        .publish();
+    final var holderJob = RecordingExporter.jobRecords(JobIntent.CREATED).getFirst();
+
+    // and a message on a DIFFERENT, otherwise-free correlation key carrying the same businessId —
+    // blocked only by uniqueness and therefore buffered (the correlation-key lock for "k-other" is
+    // free, so the correlation-key buffer would never re-drive it)
+    engine
+        .message()
+        .withName(MESSAGE_NAME)
+        .withCorrelationKey("k-other")
+        .withBusinessId("biz-shared")
+        .withTimeToLive(Duration.ofMinutes(5))
+        .withVariables(Map.of("seq", 2))
+        .publish();
+
+    // when the holder completes, freeing "biz-shared"
+    engine.job().withKey(holderJob.getKey()).complete();
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+        .withProcessInstanceKey(holderJob.getValue().getProcessInstanceKey())
+        .filterRootScope()
+        .await();
+
+    // then the businessId-blocked message starts a new PI even though its correlation key never
+    // matched the holder's — proving the businessId index, not the correlation-key buffer, owns it
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+                .withElementType(BpmnElementType.PROCESS)
+                .limit(2))
+        .extracting(r -> r.getValue().getBusinessId())
+        .containsExactly("biz-shared", "biz-shared");
+  }
+
+  @Test
+  public void shouldCorrelateBusinessIdBlockedMessageWhenHolderTerminates() {
+    // A businessId frees on termination as well as completion, and the completion hook runs on the
+    // termination transition too — so a message blocked on a businessId held by a (differently
+    // keyed) holder is re-driven when that holder is cancelled.
+
+    // given a holder PI on correlation key "k-holder" carrying "biz-shared"
+    engine.deployment().withXmlResource(MESSAGE_START_PROCESS).deploy();
+    engine
+        .message()
+        .withName(MESSAGE_NAME)
+        .withCorrelationKey("k-holder")
+        .withBusinessId("biz-shared")
+        .withVariables(Map.of("seq", 1))
+        .publish();
+    final var holderJob = RecordingExporter.jobRecords(JobIntent.CREATED).getFirst();
+    final var holderProcessInstanceKey = holderJob.getValue().getProcessInstanceKey();
+
+    // and a businessId-blocked message on a different, free correlation key
+    engine
+        .message()
+        .withName(MESSAGE_NAME)
+        .withCorrelationKey("k-other")
+        .withBusinessId("biz-shared")
+        .withTimeToLive(Duration.ofMinutes(5))
+        .withVariables(Map.of("seq", 2))
+        .publish();
+
+    // when the holder is terminated (cancelled) — freeing "biz-shared" without completing
+    engine.processInstance().withInstanceKey(holderProcessInstanceKey).cancel();
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+        .withProcessInstanceKey(holderProcessInstanceKey)
+        .filterRootScope()
+        .await();
+
+    // then the businessId-blocked message starts a new PI
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+                .withElementType(BpmnElementType.PROCESS)
+                .limit(2))
+        .extracting(r -> r.getValue().getBusinessId())
+        .containsExactly("biz-shared", "biz-shared");
+  }
 }
