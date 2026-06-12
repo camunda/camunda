@@ -7,12 +7,30 @@
  */
 package io.camunda.search.schema.config;
 
+import io.camunda.webapps.schema.descriptors.template.AuditLogTemplate;
+import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
+import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.template.SequenceFlowTemplate;
+import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 
 public class IndexConfiguration {
   public static final int DEFAULT_VARIABLE_SIZE_THRESHOLD = 8191;
+  public static final int BIG_INDEX_NUMBEROFSHARDS =
+      Optional.ofNullable(System.getenv("BIG_INDEX_NUMBEROFSHARDS"))
+          .map(Integer::parseInt)
+          .orElse(1);
+  public static final Set<String> BIG_INDEX_NAMES =
+      Set.of(
+          ListViewTemplate.INDEX_NAME,
+          FlowNodeInstanceTemplate.INDEX_NAME,
+          SequenceFlowTemplate.INDEX_NAME,
+          AuditLogTemplate.INDEX_NAME,
+          TaskTemplate.INDEX_NAME);
 
   private Integer numberOfShards = 1;
   private Integer numberOfReplicas = 1;
@@ -24,6 +42,12 @@ public class IndexConfiguration {
   private Map<String, String> refreshIntervalByIndexName = new HashMap<>();
 
   private Integer variableSizeThreshold = DEFAULT_VARIABLE_SIZE_THRESHOLD;
+
+  {
+    for (final String indexName : BIG_INDEX_NAMES) {
+      shardsByIndexName.put(indexName, BIG_INDEX_NUMBEROFSHARDS);
+    }
+  }
 
   public Integer getNumberOfShards() {
     return numberOfShards;
