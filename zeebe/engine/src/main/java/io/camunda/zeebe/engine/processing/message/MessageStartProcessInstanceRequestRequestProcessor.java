@@ -54,13 +54,20 @@ import java.time.InstantSource;
  *       {@link MessageStartProcessInstanceRequestIntent#REJECT_NO_SUBSCRIPTION}; the publisher's
  *       message stays buffered on {@code P_K};
  *   <li>an active root PI on this partition already holds the {@code businessId} for this process
- *       definition → reply {@link MessageStartProcessInstanceRequestIntent#REJECT_UNIQUENESS}; the
- *       publisher's message stays buffered on {@code P_K};
+ *       definition <em>and uniqueness is enabled</em> → reply {@link
+ *       MessageStartProcessInstanceRequestIntent#REJECT_UNIQUENESS}; the publisher's message stays
+ *       buffered on {@code P_K};
  *   <li>otherwise → activate the new PI locally, write a local {@link
  *       MessageStartProcessInstanceRequestIntent#STARTED} follow-up event (whose applier records
  *       the dedup entry), and dispatch the {@link MessageStartProcessInstanceRequestIntent#START}
  *       reply back to {@code P_K}.
  * </ul>
+ *
+ * <p>The {@code businessIdUniquenessEnabled} flag gates only the uniqueness <em>rejection</em>, not
+ * the routing: a remote businessId is always delegated here so the "every businessId PI lives on
+ * {@code P_B}" placement invariant holds regardless of the flag (see {@link
+ * io.camunda.zeebe.engine.processing.message.MessageCorrelateBehavior}). With the flag off this
+ * processor therefore still creates the PI on {@code P_B}, it just never rejects on uniqueness.
  *
  * <p>Rejection outcomes are deliberately not deduplicated: each retry re-evaluates live state on
  * {@code P_B}, so a holder PI that has since completed (or a deployment that has since arrived) can
@@ -80,6 +87,7 @@ public final class MessageStartProcessInstanceRequestRequestProcessor
   private final EventHandle eventHandle;
   private final KeyGenerator keyGenerator;
   private final InstantSource clock;
+  private final boolean businessIdUniquenessEnabled;
   private final MessageStartProcessInstanceRequestRecord startedEventBuffer =
       new MessageStartProcessInstanceRequestRecord();
 
@@ -95,6 +103,7 @@ public final class MessageStartProcessInstanceRequestRequestProcessor
       final SubscriptionCommandSender commandSender,
       final KeyGenerator keyGenerator,
       final InstantSource clock,
+      final boolean businessIdUniquenessEnabled,
       final Writers writers) {
     this.startEventSubscriptionState = startEventSubscriptionState;
     this.elementInstanceState = elementInstanceState;
@@ -104,6 +113,7 @@ public final class MessageStartProcessInstanceRequestRequestProcessor
     stateWriter = writers.state();
     this.keyGenerator = keyGenerator;
     this.clock = clock;
+    this.businessIdUniquenessEnabled = businessIdUniquenessEnabled;
     eventHandle =
         new EventHandle(
             keyGenerator,
@@ -132,7 +142,7 @@ public final class MessageStartProcessInstanceRequestRequestProcessor
       return;
     }
 
-    if (isBusinessIdAlreadyHeld(request)) {
+    if (businessIdUniquenessEnabled && isBusinessIdAlreadyHeld(request)) {
       commandSender.sendStartProcessInstanceUniquenessRejected(request);
       return;
     }
