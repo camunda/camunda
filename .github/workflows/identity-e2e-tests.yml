@@ -60,7 +60,7 @@ jobs:
 
   test:
     needs: [ generate-db-versions ]
-    runs-on: ubuntu-latest
+    runs-on: gcp-core-4-default
     timeout-minutes: 15
     services:
       elasticsearch:
