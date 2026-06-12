@@ -15,14 +15,14 @@ This is fundamentally different from the `@testing-library/react` + `vi.mock()` 
 
 - Import `it` from `#/vitest-modules/test-extend`, not from `vitest`. The custom fixture auto-starts an MSW service worker before each test and resets/stops it after. Importing from `vitest` directly means no MSW interception — HTTP calls will fail or hit real endpoints.
 - Use `render()` from `vitest-browser-react`, not from `@testing-library/react`. The vitest-browser-react renderer is designed for browser-mode Vitest and handles the real DOM lifecycle correctly. Do NOT import `screen` from `@testing-library/react` — it does not exist in this setup.
-- For components that need routing context (pages, components using `<Link>`, `useNavigate`, route hooks), use `renderWithRouter(initialLocation)` from `#/vitest-modules/render-with-router` instead of bare `render()`. It creates a real TanStack Router with a memory history — no mocking needed.
-- Both `render()` and `renderWithRouter()` return the `screen` object — you MUST capture the return value: `const screen = await renderWithRouter('/login')`. There is no global `screen` import.
+- For components that need routing context (pages, components using `<Link>`, `useNavigate`, route hooks), use `renderWithRouter(Component, {path, initialEntry?})` from `#/vitest-modules/render-with-router` instead of bare `render()`. It mounts the component in a minimal isolated route tree backed by an in-memory history — no full `routeTree.gen` is loaded, no `beforeLoad` runs.
+- Both `render()` and `renderWithRouter()` return the `screen` object — you MUST capture the return value: `const screen = await renderWithRouter(MyPage, {path: '/my-path'})`. There is no global `screen` import.
 - Use `expect.element()` for DOM assertions — it retries automatically until the assertion passes or times out. This replaces the `waitFor` / `findBy*` / `screen.findByRole` patterns you may know from Testing Library. There is no `waitFor` here.
 - Mock HTTP through the `worker` fixture using endpoint mocks from `#/shared-test-modules/mock-handlers`. Each mock is an individually named export (e.g., `mockCurrentUserEndpoint`, `mockLoginEndpoint`) created with `createEndpointMock` from `#/shared-test-modules/mock-endpoint`. Both unit and Playwright tests use the same definitions. All endpoint mocks must be defined in `apps/orchestration-cluster-webapp/shared-test-modules/mock-handlers.ts` — never create `createEndpointMock` calls inline in test files. Never use `vi.mock()` for API calls; it couples tests to implementation details and breaks on refactors.
 - Prefer testing library selectors: `getByRole`, `getByLabelText`, `getByText`. They enforce accessible markup and survive structural refactors. Avoid `querySelector` and `getByTestId` — they test DOM structure, not behavior.
 - Co-locate test files with source: a test for `src/shared/foo/bar.tsx` sits at `src/shared/foo/bar.test.tsx`; a test for `src/operate/components/Foo.tsx` sits next to it at `src/operate/components/Foo.test.tsx`. Pod areas follow their own conventions for test placement.
 - Prefix test names with `should` (e.g., `it('should display an error on invalid credentials')`).
-- Do not mock the router. Use `renderWithRouter(initialLocation)` from `#/vitest-modules/render-with-router` when the component needs routing context. It creates a real TanStack Router backed by an in-memory history — the component receives real route params, search params, and navigation.
+- Do not mock the router. Use `renderWithRouter(Component, {path})` from `#/vitest-modules/render-with-router` when the component needs routing context. It mounts the component in a fresh, isolated TanStack Router backed by an in-memory history — the component receives real route params, search params, and navigation. No full application route tree or global providers are loaded, which keeps tests fast and self-contained. Typed file-route hooks (`Route.useParams()`) will not resolve under the isolated router; use `useParams({from: '/your-path'})` instead.
 - Avoid `vi.mock()` in general. Prefer MSW and real implementations. Vitest mocks couple tests to internals and break on refactors. Reach for them only when there is no practical alternative, such as faking time with `vi.useFakeTimers`.
 - Do not use `// given / when / then` comments — that is a Java backend convention. Structure tests by visual grouping (blank lines between setup, action, and assertion).
 
@@ -70,22 +70,17 @@ describe('<UserList />', () => {
 
 ### Testing a page or component that needs routing context
 
-Use `renderWithRouter(initialLocation)` — it creates a real TanStack Router with memory history, so route params, search params, and navigation all work.
+Use `renderWithRouter(Component, {path, initialEntry?})` — it mounts the component in a minimal isolated route tree with a fresh `QueryClient` and memory history. No `beforeLoad`, no global providers, no full route tree. Pass `initialEntry` when the path contains params (e.g. `path: '/users/$id'`, `initialEntry: '/users/42'`).
 
 ```tsx
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
-import {mockCurrentUserEndpoint} from '#/shared-test-modules/mock-handlers';
 import {describe, expect} from 'vitest';
-import {HttpResponse} from 'msw';
+import {LoginPage} from './LoginPage';
 
 describe('<Login />', () => {
-  it('should not allow the form to be submitted with empty fields', async ({worker}) => {
-    worker.use(
-      mockCurrentUserEndpoint({successResponse: new HttpResponse(null, {status: 401})}),
-    );
-
-    const screen = await renderWithRouter('/login');
+  it('should not allow the form to be submitted with empty fields', async () => {
+    const screen = await renderWithRouter(LoginPage, {path: '/login'});
 
     await screen.getByRole('button', {name: /login/i}).click();
 
@@ -122,7 +117,7 @@ await expect.element(screen.getByText('Loading...')).not.toBeVisible();
 - **No jsdom APIs**: tests run in a real browser, so `document.querySelector` technically works but defeats the purpose. Use `screen.getBy*` queries.
 - **`msw/browser`, not `msw/node`**: the MSW worker runs in the browser via `setupWorker`. If you see imports from `msw/node`, that's wrong.
 - **No `vi.mock()` for HTTP**: it silently breaks in browser mode and is the wrong abstraction anyway. Use MSW.
-- **`render()` returns `screen`**: unlike Testing Library where `screen` is a global import, here `render()` returns the screen object. Use `const screen = await render(<Comp />)`. Same for `renderWithRouter()` — `const screen = await renderWithRouter('/path')`.
+- **`render()` returns `screen`**: unlike Testing Library where `screen` is a global import, here `render()` returns the screen object. Use `const screen = await render(<Comp />)`. Same for `renderWithRouter()` — `const screen = await renderWithRouter(MyPage, {path: '/my-path'})`.
 
 ## Commands
 
