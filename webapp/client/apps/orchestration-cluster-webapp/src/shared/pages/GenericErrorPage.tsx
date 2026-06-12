@@ -19,14 +19,14 @@ const GenericErrorPage: React.FC<Props> = ({reset}) => {
 	const {t} = useTranslation();
 
 	return (
-		<div className={styles['page']}>
-			<Layer withBackground className={styles['card']}>
+		<div className={styles.page}>
+			<Layer withBackground className={styles.card}>
 				<Stack orientation="horizontal" gap={6}>
 					<SvgErrorRobot aria-hidden />
 					<Stack gap={6}>
 						<Stack gap={3}>
-							<h1 className={styles['heading']}>{t('errorGenericErrorPageTitle')}</h1>
-							<p className={styles['description']}>{t('errorGenericErrorPageMessage')}</p>
+							<h1 className={styles.heading}>{t('errorGenericErrorPageTitle')}</h1>
+							<p className={styles.description}>{t('errorGenericErrorPageMessage')}</p>
 						</Stack>
 						<Button onClick={reset}>{t('errorGenericErrorPageButtonLabel')}</Button>
 					</Stack>

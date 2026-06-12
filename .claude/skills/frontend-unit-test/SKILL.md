@@ -133,6 +133,8 @@ npm run test:unit       # Headless Chromium — CI and local
 npm run test:unit:ui    # Visible browser — useful for debugging
 ```
 
+Format changed files via `npm run prettier:format` from `webapp/client/` and typecheck via `npm run typecheck` from the app directory — never invoke Prettier or `tsc` directly.
+
 ## Template references
 
 - `src/shared/pages/LoginPage.test.tsx` — page-level test using `renderWithRouter`.

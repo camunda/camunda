@@ -69,10 +69,11 @@ see `docs/monorepo-docs/frontend/`.
 # From webapp/client/
 npm ci                    # Install dependencies (workspace)
 npm run dev:oc            # Dev server on :3000
-npm run lint              # ESLint + Prettier
+npm run prettier:format   # Auto-format with Prettier (always use this script, never npx prettier)
+npm run lint              # ESLint + Prettier + Knip (unused exports/dependencies)
 
 # From webapp/client/apps/orchestration-cluster-webapp/
-npm run typecheck         # TypeScript across all tsconfigs
+npm run typecheck         # TypeScript across all tsconfigs (always use this script, never npx tsc)
 npm run test:unit         # Vitest browser mode (headless Chromium)
 npm run test:integration  # Playwright integration tests (MSW-mocked)
 npm run test:a11y         # Playwright accessibility (light + dark)

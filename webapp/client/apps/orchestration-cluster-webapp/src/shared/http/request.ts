@@ -107,4 +107,3 @@ const requestErrorSchema = z.union([
 ]);
 
 export {request, requestErrorSchema};
-export type {RequestError};

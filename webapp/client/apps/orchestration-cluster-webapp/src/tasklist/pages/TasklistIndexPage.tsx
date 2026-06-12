@@ -10,7 +10,7 @@ import styles from './TasklistIndexPage.module.scss';
 
 const TasklistIndexPage: React.FC = () => {
 	return (
-		<main className={styles['container']}>
+		<main className={styles.container}>
 			<h1>Tasklist</h1>
 		</main>
 	);

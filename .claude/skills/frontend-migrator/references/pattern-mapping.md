@@ -427,10 +427,10 @@ import {Tile} from '@carbon/react';
 
 function ProcessesPage() {
   return (
-    <div className={styles['container']!}>
-      <Tile className={styles['tile']!}>
+    <div className={styles.container}>
+      <Tile className={styles.tile}>
         <h2
-          className={styles['title']!}
+          className={styles.title}
           data-inactive={!isActive || undefined}
         >
           {title}

@@ -15,13 +15,13 @@ const ForbiddenPage: React.FC = () => {
 	const {t} = useTranslation();
 
 	return (
-		<div className={styles['page']}>
-			<Layer withBackground className={styles['card']}>
+		<div className={styles.page}>
+			<Layer withBackground className={styles.card}>
 				<Stack orientation="horizontal" gap={6}>
 					<SvgForbidden aria-hidden />
 					<Stack gap={3}>
-						<h1 className={styles['heading']}>{t('forbiddenPageTitle')}</h1>
-						<p className={styles['description']}>{t('forbiddenPageDesc')}</p>
+						<h1 className={styles.heading}>{t('forbiddenPageTitle')}</h1>
+						<p className={styles.description}>{t('forbiddenPageDesc')}</p>
 					</Stack>
 				</Stack>
 			</Layer>

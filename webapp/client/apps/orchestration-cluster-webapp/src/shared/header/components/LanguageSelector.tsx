@@ -27,7 +27,7 @@ const LanguageSelector: React.FC = () => {
 	return (
 		<Layer>
 			<SwitcherDivider />
-			<div className={styles['languageDropdownPadding']}>
+			<div className={styles.languageDropdownPadding}>
 				<Dropdown
 					id="language-dropdown"
 					label={t('languageSelectorLabel')}

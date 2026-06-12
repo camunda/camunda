@@ -16,7 +16,7 @@ const Notifications: React.FC = observer(() => {
 	const {notifications} = notificationsStore;
 
 	return (
-		<TransitionGroup className={styles['container']!}>
+		<TransitionGroup className={styles.container}>
 			{notifications.map((notification) => (
 				<Notification key={notification.id} notification={notification} />
 			))}

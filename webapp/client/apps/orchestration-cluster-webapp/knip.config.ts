@@ -6,11 +6,17 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import CamundaLogoSVG from '#/shared/svg/CamundaLogo';
-import styles from './CamundaLogo.module.scss';
+import type {KnipConfig} from 'knip';
 
-const CamundaLogo: React.FC<React.ComponentProps<typeof CamundaLogoSVG>> = () => (
-	<CamundaLogoSVG className={styles.logo} />
-);
+const config: KnipConfig = {
+	entry: ['src/vitest-modules/vitest.setup.ts'],
+	ignore: [
+		'src/shared/feature-flags.ts',
+		'shared-test-modules/mock-handlers.ts',
+		'src/shared/browser-storage/session-storage.ts',
+		'src/shared/http/request.ts',
+	],
+	ignoreDependencies: ['@vitest/browser'],
+};
 
-export {CamundaLogo};
+export default config;

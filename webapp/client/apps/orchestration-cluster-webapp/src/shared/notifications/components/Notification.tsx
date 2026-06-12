@@ -42,10 +42,10 @@ const Notification: React.FC<Props> = observer(
 			<CSSTransition
 				timeout={300}
 				classNames={{
-					enter: styles['toastEnter']!,
-					enterActive: styles['toastEnterActive']!,
-					exitActive: styles['toastExitActive']!,
-					exitDone: styles['toastExitDone']!,
+					enter: styles.toastEnter,
+					enterActive: styles.toastEnterActive,
+					exitActive: styles.toastExitActive,
+					exitDone: styles.toastExitDone,
 				}}
 				nodeRef={nodeRef}
 				{...props}
@@ -53,7 +53,7 @@ const Notification: React.FC<Props> = observer(
 				<div ref={nodeRef}>
 					{isActionable ? (
 						<ActionableNotification
-							className={styles['notification']!}
+							className={styles.notification}
 							kind={kind}
 							lowContrast={false}
 							title={title}
@@ -68,7 +68,7 @@ const Notification: React.FC<Props> = observer(
 						/>
 					) : (
 						<ToastNotification
-							className={styles['notification']!}
+							className={styles.notification}
 							kind={kind}
 							lowContrast={false}
 							title={title}

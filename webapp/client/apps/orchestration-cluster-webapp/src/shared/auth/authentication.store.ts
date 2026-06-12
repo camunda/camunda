@@ -141,4 +141,3 @@ class Authentication {
 const authenticationStore = new Authentication();
 
 export {authenticationStore};
-export type {Status};

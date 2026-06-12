@@ -16,7 +16,7 @@ const Disclaimer: React.FC = () => {
 	}
 
 	return (
-		<span className={styles['container']}>
+		<span className={styles.container}>
 			Non-Production License. If you would like information on production usage, please refer to our{' '}
 			<Link href="https://legal.camunda.com/#self-managed-non-production-terms" target="_blank" inline>
 				terms & conditions page
