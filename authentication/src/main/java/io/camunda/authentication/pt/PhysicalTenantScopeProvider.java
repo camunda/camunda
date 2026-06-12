@@ -10,6 +10,7 @@ package io.camunda.authentication.pt;
 import static io.camunda.spring.utils.PhysicalTenantContext.PHYSICAL_TENANTS_PATH_SEGMENT;
 
 import io.camunda.security.api.context.CamundaSecurityScopeProvider;
+import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.api.model.config.ScopedSecurityDescriptor;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -87,9 +88,10 @@ public final class PhysicalTenantScopeProvider implements CamundaSecurityScopePr
         final String basePath = PHYSICAL_TENANTS_PATH_SEGMENT + tenantId;
         result.add(new ScopedSecurityDescriptor(basePath, authConfig));
         LOG.debug(
-            "Registered scoped security descriptor for physical tenant '{}' at {}",
+            "Registered scoped security descriptor for physical tenant '{}' at {} (providers: [{}])",
             tenantId,
-            basePath);
+            basePath,
+            describeProviders(authConfig));
       } catch (final IllegalStateException e) {
         LOG.warn(
             "Skipping scoped security chain for physical tenant '{}': {}",
@@ -98,6 +100,28 @@ public final class PhysicalTenantScopeProvider implements CamundaSecurityScopePr
       }
     }
     return List.copyOf(result);
+  }
+
+  /**
+   * Summarises a merged scope config for DEBUG diagnostics: each provider's registration id,
+   * issuer, and audiences. Deliberately excludes client secrets and any credential material.
+   */
+  private static String describeProviders(final AuthenticationConfiguration auth) {
+    final List<String> parts = new ArrayList<>();
+    if (auth.getOidc() != null) {
+      parts.add(
+          "<default> issuer=%s aud=%s"
+              .formatted(auth.getOidc().getIssuerUri(), auth.getOidc().getAudiences()));
+    }
+    if (auth.getProviders() != null && auth.getProviders().getOidc() != null) {
+      auth.getProviders()
+          .getOidc()
+          .forEach(
+              (id, p) ->
+                  parts.add(
+                      "%s issuer=%s aud=%s".formatted(id, p.getIssuerUri(), p.getAudiences())));
+    }
+    return String.join(", ", parts);
   }
 
   /**
