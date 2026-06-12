@@ -27,7 +27,7 @@ class TasklistIndexPage extends BasePage {
 	}
 
 	get tasksNavItem() {
-		return this.page.getByRole('link', {name: 'Tasks'});
+		return this.page.getByRole('link', {name: 'Tasks', exact: true});
 	}
 
 	get processesNavItem() {

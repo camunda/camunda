@@ -11,11 +11,13 @@ import {HttpResponse} from 'msw';
 import {
 	mockCurrentUserEndpoint,
 	mockLicenseEndpoint,
+	mockQueryUserTasksEndpoint,
 	mockSystemConfigurationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
+import {createQueryUserTasksResponse} from '#/shared-test-modules/api-mocks/user-tasks';
 
 test.beforeEach(({network}) => {
 	network.use(
@@ -27,6 +29,9 @@ test.beforeEach(({network}) => {
 		}),
 		mockLicenseEndpoint({
 			successResponse: HttpResponse.json(createLicense()),
+		}),
+		mockQueryUserTasksEndpoint({
+			successResponse: HttpResponse.json(createQueryUserTasksResponse()),
 		}),
 	);
 });
@@ -46,7 +51,7 @@ test('should match the tasklist processes page snapshot', async ({tasklistProces
 });
 
 test('should match the tasklist 404 page snapshot', async ({notFoundPage, page}) => {
-	await page.goto('/tasklist/nonexistent');
+	await page.goto('/tasklist/nonexistent/page');
 	await expect(notFoundPage.heading).toBeVisible();
 
 	await expect(page).toHaveScreenshot();

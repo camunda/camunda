@@ -7,7 +7,7 @@
  */
 
 import {useCallback, useMemo} from 'react';
-import {createFileRoute, retainSearchParams, stripSearchParams} from '@tanstack/react-router';
+import {createFileRoute, notFound, retainSearchParams, stripSearchParams} from '@tanstack/react-router';
 import {useSuspenseInfiniteQuery, useSuspenseQuery} from '@tanstack/react-query';
 import {queries} from '#/shared/http/queries';
 import {TasksLayoutPage} from '#/tasklist/pages/TasksLayoutPage';
@@ -18,6 +18,9 @@ export const Route = createFileRoute('/_auth/tasklist/_tasks')({
 	validateSearch: tasklistIndexSearchSchema,
 	search: {
 		middlewares: [retainSearchParams(['sortBy']), stripSearchParams(tasklistIndexSearchDefaults)],
+	},
+	notFoundComponent: () => {
+		throw notFound({routeId: '/_auth/tasklist'});
 	},
 	loader: ({context: {queryClient}}) =>
 		queryClient.ensureInfiniteQueryData(queries.queryUserTasks(getTasksRequestBody())),
