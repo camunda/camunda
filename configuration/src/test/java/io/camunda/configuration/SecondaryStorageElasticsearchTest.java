@@ -17,8 +17,6 @@ import io.camunda.configuration.beans.SearchEngineConnectProperties;
 import io.camunda.configuration.beans.SearchEngineIndexProperties;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.operate.OperatePropertiesOverride;
-import io.camunda.operate.conditions.DatabaseType;
-import io.camunda.operate.property.OperateElasticsearchProperties;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.tasklist.TasklistPropertiesOverride;
@@ -198,24 +196,6 @@ public class SecondaryStorageElasticsearchTest {
 
     @Test
     void testCamundaDataSecondaryStorageOperateProperties() {
-      final DatabaseType expectedOperateDatabaseType = DatabaseType.Elasticsearch;
-      final String expectedUrl = "http://expected-url:4321";
-
-      assertThat(operateProperties.getDatabase()).isEqualTo(expectedOperateDatabaseType);
-
-      assertThat(operateProperties.getElasticsearch().getUrl()).isEqualTo(expectedUrl);
-      assertThat(operateProperties.getElasticsearch().getUsername()).isEqualTo(EXPECTED_USERNAME);
-      assertThat(operateProperties.getElasticsearch().getPassword()).isEqualTo(EXPECTED_PASSWORD);
-      assertThat(operateProperties.getElasticsearch().getClusterName())
-          .isEqualTo(EXPECTED_CLUSTER_NAME);
-      assertThat(operateProperties.getElasticsearch().getIndexPrefix())
-          .isEqualTo(EXPECTED_INDEX_PREFIX);
-      assertThat(operateProperties.getElasticsearch().getDateFormat())
-          .isEqualTo(EXPECTED_DATE_FORMAT);
-      assertThat(operateProperties.getElasticsearch().getSocketTimeout())
-          .isEqualTo(EXPECTED_SOCKET_TIMEOUT);
-      assertThat(operateProperties.getElasticsearch().getConnectTimeout())
-          .isEqualTo(EXPECTED_CONNECTION_TIMEOUT);
       assertThat(operateProperties.getBackup().getSnapshotTimeout())
           .isEqualTo(EXPECTED_BACKUP_SNAPSHOT_TIMEOUT);
       assertThat(operateProperties.getBackup().getRepositoryName())
@@ -555,24 +535,6 @@ public class SecondaryStorageElasticsearchTest {
 
     @Test
     void testCamundaDataSecondaryStorageOperateProperties() {
-      final DatabaseType expectedOperateDatabaseType = DatabaseType.Elasticsearch;
-      final String expectedUrl = "http://matching-url:4321";
-
-      assertThat(operateProperties.getDatabase()).isEqualTo(expectedOperateDatabaseType);
-
-      assertThat(operateProperties.getElasticsearch().getUrl()).isEqualTo(expectedUrl);
-      assertThat(operateProperties.getElasticsearch().getClusterName())
-          .isEqualTo(EXPECTED_CLUSTER_NAME);
-      assertThat(operateProperties.getElasticsearch().getIndexPrefix())
-          .isEqualTo(EXPECTED_INDEX_PREFIX);
-      assertThat(operateProperties.getElasticsearch().getUsername()).isEqualTo(EXPECTED_USERNAME);
-      assertThat(operateProperties.getElasticsearch().getPassword()).isEqualTo(EXPECTED_PASSWORD);
-      assertThat(operateProperties.getElasticsearch().getDateFormat())
-          .isEqualTo(EXPECTED_DATE_FORMAT);
-      assertThat(operateProperties.getElasticsearch().getSocketTimeout())
-          .isEqualTo(EXPECTED_SOCKET_TIMEOUT);
-      assertThat(operateProperties.getElasticsearch().getConnectTimeout())
-          .isEqualTo(EXPECTED_CONNECTION_TIMEOUT);
       assertThat(operateProperties.getBackup().getSnapshotTimeout())
           .isEqualTo(EXPECTED_BACKUP_SNAPSHOT_TIMEOUT);
       assertThat(operateProperties.getBackup().getRepositoryName())
@@ -826,15 +788,6 @@ public class SecondaryStorageElasticsearchTest {
     }
 
     @Test
-    void shouldUseOperatePropertiesDefaults() {
-      assertThat(operateProperties.getElasticsearch())
-          .returns(
-              OperateElasticsearchProperties.SOCKET_TIMEOUT_DEFAULT,
-              OperateElasticsearchProperties::getSocketTimeout)
-          .returns(null, OperateElasticsearchProperties::getConnectTimeout);
-    }
-
-    @Test
     void shouldUseTasklistPropertiesDefaults() {
       assertThat(tasklistProperties.getElasticsearch())
           .returns(
@@ -892,13 +845,6 @@ public class SecondaryStorageElasticsearchTest {
       this.tasklistProperties = tasklistProperties;
       this.brokerBasedProperties = brokerBasedProperties;
       this.searchEngineConnectProperties = searchEngineConnectProperties;
-    }
-
-    @Test
-    void testUrlsPropagatedToOperateProperties() {
-      assertThat(operateProperties.getElasticsearch().getUrls()).isEqualTo(EXPECTED_URLS);
-      assertThat(operateProperties.getElasticsearch().getUsername()).isEqualTo(EXPECTED_USERNAME);
-      assertThat(operateProperties.getElasticsearch().getPassword()).isEqualTo(EXPECTED_PASSWORD);
     }
 
     @Test
@@ -962,18 +908,6 @@ public class SecondaryStorageElasticsearchTest {
       this.tasklistProperties = tasklistProperties;
       this.brokerBasedProperties = brokerBasedProperties;
       this.searchEngineConnectProperties = searchEngineConnectProperties;
-    }
-
-    @Test
-    void testProxyPropagatedToOperateProperties() {
-      final var proxy = operateProperties.getElasticsearch().getProxy();
-      assertThat(proxy).isNotNull();
-      assertThat(proxy.isEnabled()).isTrue();
-      assertThat(proxy.getHost()).isEqualTo(EXPECTED_PROXY_HOST);
-      assertThat(proxy.getPort()).isEqualTo(EXPECTED_PROXY_PORT);
-      assertThat(proxy.isSslEnabled()).isTrue();
-      assertThat(proxy.getUsername()).isEqualTo(EXPECTED_PROXY_USERNAME);
-      assertThat(proxy.getPassword()).isEqualTo(EXPECTED_PROXY_PASSWORD);
     }
 
     @Test

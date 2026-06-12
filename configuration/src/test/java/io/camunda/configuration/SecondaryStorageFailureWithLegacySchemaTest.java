@@ -90,19 +90,6 @@ public class SecondaryStorageFailureWithLegacySchemaTest {
   }
 
   @Test
-  void testOperateShouldFailWhenUsingLegacyDatabaseProperties() {
-    operateRunner.run(
-        context -> {
-          assertThat(context).hasFailed();
-          assertThat(context.getStartupFailure())
-              .hasRootCauseInstanceOf(UnifiedConfigurationException.class)
-              .rootCause()
-              .hasMessageContaining("Ambiguous configuration")
-              .hasMessageContaining("conflicts");
-        });
-  }
-
-  @Test
   void testTasklistshouldFailWhenUsingLegacyDatabaseProperties() {
     tasklistRunner.run(
         context -> {

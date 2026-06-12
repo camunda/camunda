@@ -12,10 +12,10 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.worker.JobWorker;
+import io.camunda.operate.data.testhelpers.StatefulRestTemplate;
 import io.camunda.operate.data.usertest.UserTestDataGenerator;
+import io.camunda.operate.data.util.ZeebeTestUtil;
 import io.camunda.operate.exceptions.OperateRuntimeException;
-import io.camunda.operate.testhelpers.StatefulRestTemplate;
-import io.camunda.operate.util.ZeebeTestUtil;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -201,22 +201,6 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
             String.format("Unable to create operations. REST response: %s", response));
       }
     }
-  }
-
-  private ResponseEntity<String> createOperationViaV2(
-      final Long processInstanceKey, final OperationType type) {
-    final String operationPath =
-        switch (type) {
-          case CANCEL_PROCESS_INSTANCE -> "/v2/process-instances/%d/cancellation";
-          case RESOLVE_INCIDENT -> "/v2/process-instances/%d/incident-resolution";
-          default ->
-              throw new OperateRuntimeException(
-                  "Unsupported operation type for dev data generation: " + type);
-        };
-    final RequestEntity<Void> requestEntity =
-        RequestEntity.post(restTemplate.getURL(operationPath.formatted(processInstanceKey)))
-            .build();
-    return restTemplate.exchange(requestEntity, String.class);
   }
 
   @Override
@@ -565,6 +549,22 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
     super.deployVersion4();
     ZeebeTestUtil.deployProcess(
         true, client, getTenant(TENANT_A), "develop/user-task-annual-leave.bpmn");
+  }
+
+  private ResponseEntity<String> createOperationViaV2(
+      final Long processInstanceKey, final OperationType type) {
+    final String operationPath =
+        switch (type) {
+          case CANCEL_PROCESS_INSTANCE -> "/v2/process-instances/%d/cancellation";
+          case RESOLVE_INCIDENT -> "/v2/process-instances/%d/incident-resolution";
+          default ->
+              throw new OperateRuntimeException(
+                  "Unsupported operation type for dev data generation: " + type);
+        };
+    final RequestEntity<Void> requestEntity =
+        RequestEntity.post(restTemplate.getURL(operationPath.formatted(processInstanceKey)))
+            .build();
+    return restTemplate.exchange(requestEntity, String.class);
   }
 
   private OperationType getType(final int i) {

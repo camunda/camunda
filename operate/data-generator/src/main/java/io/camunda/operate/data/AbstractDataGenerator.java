@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.data;
 
-import static io.camunda.operate.util.ThreadUtil.sleepFor;
+import static io.camunda.operate.data.util.ThreadUtil.sleepFor;
 import static io.camunda.webapps.schema.entities.AbstractExporterEntity.DEFAULT_TENANT_ID;
 
 import io.camunda.client.CamundaClient;

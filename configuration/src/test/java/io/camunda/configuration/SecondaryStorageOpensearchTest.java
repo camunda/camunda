@@ -17,10 +17,9 @@ import io.camunda.configuration.beans.SearchEngineConnectProperties;
 import io.camunda.configuration.beans.SearchEngineIndexProperties;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.operate.OperatePropertiesOverride;
-import io.camunda.operate.conditions.DatabaseType;
-import io.camunda.operate.property.OperateOpensearchProperties;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
+import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.tasklist.TasklistPropertiesOverride;
 import io.camunda.tasklist.property.TasklistOpenSearchProperties;
 import io.camunda.tasklist.property.TasklistProperties;
@@ -196,24 +195,6 @@ public class SecondaryStorageOpensearchTest {
 
     @Test
     void testCamundaDataSecondaryStorageOperateProperties() {
-      final DatabaseType expectedOperateDatabaseType = DatabaseType.Opensearch;
-      final String expectedUrl = "http://expected-url:4321";
-
-      assertThat(operateProperties.getDatabase()).isEqualTo(expectedOperateDatabaseType);
-
-      assertThat(operateProperties.getOpensearch().getUrl()).isEqualTo(expectedUrl);
-      assertThat(operateProperties.getOpensearch().getUsername()).isEqualTo(EXPECTED_USERNAME);
-      assertThat(operateProperties.getOpensearch().getPassword()).isEqualTo(EXPECTED_PASSWORD);
-      assertThat(operateProperties.getOpensearch().getClusterName())
-          .isEqualTo(EXPECTED_CLUSTER_NAME);
-      assertThat(operateProperties.getOpensearch().getIndexPrefix())
-          .isEqualTo(EXPECTED_INDEX_PREFIX);
-      assertThat(operateProperties.getOpensearch().getDateFormat()).isEqualTo(EXPECTED_DATE_FORMAT);
-      assertThat(operateProperties.getOpensearch().getSocketTimeout())
-          .isEqualTo(EXPECTED_SOCKET_TIMEOUT);
-      assertThat(operateProperties.getOpensearch().getConnectTimeout())
-          .isEqualTo(EXPECTED_CONNECTION_TIMEOUT);
-      assertThat(operateProperties.getOpensearch().isAwsEnabled()).isEqualTo(EXPECTED_AWS_ENABLED);
       assertThat(operateProperties.getBackup().getSnapshotTimeout())
           .isEqualTo(EXPECTED_BACKUP_SNAPSHOT_TIMEOUT);
       assertThat(operateProperties.getBackup().getRepositoryName())
@@ -224,7 +205,7 @@ public class SecondaryStorageOpensearchTest {
 
     @Test
     void testCamundaDataSecondaryStorageTasklistProperties() {
-      final String expectedTasklistDatabaseType = DatabaseType.Opensearch.name().toLowerCase();
+      final String expectedTasklistDatabaseType = DatabaseType.OPENSEARCH.name().toLowerCase();
       final String expectedUrl = "http://expected-url:4321";
 
       assertThat(tasklistProperties.getDatabase()).isEqualTo(expectedTasklistDatabaseType);
@@ -247,7 +228,7 @@ public class SecondaryStorageOpensearchTest {
 
     @Test
     void testCamundaDataSecondaryStorageCamundaExporterProperties() {
-      final String expectedType = DatabaseType.Opensearch.name().toLowerCase();
+      final String expectedType = DatabaseType.OPENSEARCH.name().toLowerCase();
       final String expectedUrl = "http://expected-url:4321";
 
       final ExporterCfg camundaExporter = brokerBasedProperties.getCamundaExporter();
@@ -329,7 +310,7 @@ public class SecondaryStorageOpensearchTest {
 
     @Test
     void testCamundaSearchEngineConnectProperties() {
-      final String expectedType = DatabaseType.Opensearch.name().toLowerCase();
+      final String expectedType = DatabaseType.OPENSEARCH.name().toLowerCase();
 
       assertThat(searchEngineConnectProperties.getType().toLowerCase()).isEqualTo(expectedType);
       assertThat(searchEngineConnectProperties.getUrl()).isEqualTo("http://expected-url:4321");
@@ -550,23 +531,6 @@ public class SecondaryStorageOpensearchTest {
 
     @Test
     void testCamundaDataSecondaryStorageOperateProperties() {
-      final DatabaseType expectedOperateDatabaseType = DatabaseType.Opensearch;
-      final String expectedUrl = "http://matching-url:4321";
-
-      assertThat(operateProperties.getDatabase()).isEqualTo(expectedOperateDatabaseType);
-
-      assertThat(operateProperties.getOpensearch().getUrl()).isEqualTo(expectedUrl);
-      assertThat(operateProperties.getOpensearch().getClusterName())
-          .isEqualTo(EXPECTED_CLUSTER_NAME);
-      assertThat(operateProperties.getOpensearch().getIndexPrefix())
-          .isEqualTo(EXPECTED_INDEX_PREFIX);
-      assertThat(operateProperties.getOpensearch().getUsername()).isEqualTo(EXPECTED_USERNAME);
-      assertThat(operateProperties.getOpensearch().getPassword()).isEqualTo(EXPECTED_PASSWORD);
-      assertThat(operateProperties.getOpensearch().getDateFormat()).isEqualTo(EXPECTED_DATE_FORMAT);
-      assertThat(operateProperties.getOpensearch().getSocketTimeout())
-          .isEqualTo(EXPECTED_SOCKET_TIMEOUT);
-      assertThat(operateProperties.getOpensearch().getConnectTimeout())
-          .isEqualTo(EXPECTED_CONNECTION_TIMEOUT);
       assertThat(operateProperties.getBackup().getSnapshotTimeout())
           .isEqualTo(EXPECTED_BACKUP_SNAPSHOT_TIMEOUT);
       assertThat(operateProperties.getBackup().getRepositoryName())
@@ -577,7 +541,7 @@ public class SecondaryStorageOpensearchTest {
 
     @Test
     void testCamundaDataSecondaryStorageTasklistProperties() {
-      final String expectedTasklistDatabaseType = DatabaseType.Opensearch.name().toLowerCase();
+      final String expectedTasklistDatabaseType = DatabaseType.OPENSEARCH.name().toLowerCase();
       final String expectedUrl = "http://matching-url:4321";
 
       assertThat(tasklistProperties.getDatabase()).isEqualTo(expectedTasklistDatabaseType);
@@ -601,7 +565,7 @@ public class SecondaryStorageOpensearchTest {
 
     @Test
     void testCamundaDataSecondaryStorageCamundaExporterProperties() {
-      final String expectedType = DatabaseType.Opensearch.name().toLowerCase();
+      final String expectedType = DatabaseType.OPENSEARCH.name().toLowerCase();
       final String expectedUrl = "http://matching-url:4321";
 
       final ExporterCfg camundaExporter = brokerBasedProperties.getCamundaExporter();
@@ -642,7 +606,7 @@ public class SecondaryStorageOpensearchTest {
 
     @Test
     void testCamundaSearchEngineConnectProperties() {
-      final String expectedType = DatabaseType.Opensearch.name().toLowerCase();
+      final String expectedType = DatabaseType.OPENSEARCH.name().toLowerCase();
 
       assertThat(searchEngineConnectProperties.getType().toLowerCase()).isEqualTo(expectedType);
       assertThat(searchEngineConnectProperties.getUrl()).isEqualTo("http://matching-url:4321");
@@ -734,15 +698,6 @@ public class SecondaryStorageOpensearchTest {
     }
 
     @Test
-    void shouldUseOperatePropertiesDefaults() {
-      assertThat(operateProperties.getOpensearch())
-          .returns(
-              OperateOpensearchProperties.SOCKET_TIMEOUT_DEFAULT,
-              OperateOpensearchProperties::getSocketTimeout)
-          .returns(null, OperateOpensearchProperties::getConnectTimeout);
-    }
-
-    @Test
     void shouldUseTasklistPropertiesDefaults() {
       assertThat(tasklistProperties.getOpenSearch())
           .returns(
@@ -800,13 +755,6 @@ public class SecondaryStorageOpensearchTest {
       this.tasklistProperties = tasklistProperties;
       this.brokerBasedProperties = brokerBasedProperties;
       this.searchEngineConnectProperties = searchEngineConnectProperties;
-    }
-
-    @Test
-    void testUrlsPropagatedToOperateProperties() {
-      assertThat(operateProperties.getOpensearch().getUrls()).isEqualTo(EXPECTED_URLS);
-      assertThat(operateProperties.getOpensearch().getUsername()).isEqualTo(EXPECTED_USERNAME);
-      assertThat(operateProperties.getOpensearch().getPassword()).isEqualTo(EXPECTED_PASSWORD);
     }
 
     @Test
@@ -870,18 +818,6 @@ public class SecondaryStorageOpensearchTest {
       this.tasklistProperties = tasklistProperties;
       this.brokerBasedProperties = brokerBasedProperties;
       this.searchEngineConnectProperties = searchEngineConnectProperties;
-    }
-
-    @Test
-    void testProxyPropagatedToOperateProperties() {
-      final var proxy = operateProperties.getOpensearch().getProxy();
-      assertThat(proxy).isNotNull();
-      assertThat(proxy.isEnabled()).isTrue();
-      assertThat(proxy.getHost()).isEqualTo(EXPECTED_PROXY_HOST);
-      assertThat(proxy.getPort()).isEqualTo(EXPECTED_PROXY_PORT);
-      assertThat(proxy.isSslEnabled()).isTrue();
-      assertThat(proxy.getUsername()).isEqualTo(EXPECTED_PROXY_USERNAME);
-      assertThat(proxy.getPassword()).isEqualTo(EXPECTED_PROXY_PASSWORD);
     }
 
     @Test

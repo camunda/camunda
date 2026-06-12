@@ -7,8 +7,6 @@
  */
 package io.camunda.operate.conditions;
 
-import static io.camunda.operate.conditions.DatabaseCondition.DATABASE_PROPERTY;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
@@ -20,6 +18,7 @@ import org.springframework.stereotype.Component;
 @Component("databaseInfo")
 public class DatabaseInfo implements ApplicationContextAware, DisposableBean {
 
+  static final String DATABASE_PROPERTY = "camunda.data.secondary-storage.type";
   static final DatabaseType DEFAULT_DATABASE = DatabaseType.Elasticsearch;
   private static final Logger LOGGER = LoggerFactory.getLogger(DatabaseInfo.class);
   private static ApplicationContext applicationContext;
