@@ -9,6 +9,7 @@ package io.camunda.configuration.physicaltenants;
 
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.UnifiedConfigurationException;
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -50,7 +51,7 @@ import org.springframework.core.env.Environment;
  * so that consumers can always address the root configuration as a tenant. An explicit {@code
  * default} declaration is honored as-is.
  */
-public final class PhysicalTenantResolver {
+public final class PhysicalTenantResolver implements PhysicalTenantIds {
 
   public static final String DEFAULT_PHYSICAL_TENANT_ID = "default";
   static final int MAX_TENANT_ID_LENGTH = 64;
@@ -74,6 +75,11 @@ public final class PhysicalTenantResolver {
 
   private PhysicalTenantResolver(final Map<String, Camunda> resolved) {
     this.resolved = Collections.unmodifiableMap(resolved);
+  }
+
+  @Override
+  public Set<String> known() {
+    return resolved.keySet();
   }
 
   public static PhysicalTenantResolver of(final Environment environment, final Camunda camunda) {

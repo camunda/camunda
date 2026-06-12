@@ -8,10 +8,9 @@
 package io.camunda.application.commons.configuration;
 
 import io.camunda.configuration.Camunda;
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
-import io.camunda.gateway.mapping.http.physicaltenants.PhysicalTenantIds;
 import io.camunda.zeebe.gateway.rest.interceptor.PhysicalTenantInterceptor;
-import java.util.Set;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -32,11 +31,6 @@ public class UnifiedConfigurationModule {
   public PhysicalTenantResolver physicalTenantResolver(
       final Environment environment, final Camunda camunda) {
     return PhysicalTenantResolver.of(environment, camunda);
-  }
-
-  @Bean
-  public PhysicalTenantIds physicalTenantIds(final PhysicalTenantResolver physicalTenantResolver) {
-    return () -> Set.copyOf(physicalTenantResolver.getAll().keySet());
   }
 
   /**
