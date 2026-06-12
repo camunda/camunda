@@ -37,6 +37,11 @@ fi
 
 
 namespace=$1
+normalized_namespace="$(normalize_load_test_name "$namespace")"
+if [[ "$normalized_namespace" != "$namespace" ]]; then
+  namespace="$normalized_namespace"
+  echo "Namespace normalized to lowercase: $namespace"
+fi
 
 # Add c8- prefix if not present
 if [[ ! "$namespace" =~ ^c8- ]]; then
@@ -44,7 +49,11 @@ if [[ ! "$namespace" =~ ^c8- ]]; then
   echo "Namespace prefix added: $namespace"
 fi
 
-kubectl create namespace $namespace
+if ! validate_load_test_namespace "$namespace"; then
+  exit 1
+fi
+
+kubectl create namespace "$namespace"
 
 # Label namespace with registry (required to inject image pull secrets)
 kubectl label namespace "$namespace" registry=harbor --overwrite
@@ -54,8 +63,8 @@ git_author=$(compute_git_author)
 kubectl label namespace "$namespace" camunda.io/purpose=load-test --overwrite
 kubectl label namespace "$namespace" camunda.io/created-by="$git_author" --overwrite
 
-cp -rv saas-default/ $namespace
-cd $namespace
+cp -rv saas-default/ "$namespace"
+cd "$namespace"
 
 
 # Update Makefile to use the namespace

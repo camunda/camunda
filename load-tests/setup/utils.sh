@@ -32,6 +32,24 @@ function sed_inplace() {
 
 }
 
+normalize_load_test_name() {
+  echo "$1" | tr '[:upper:]' '[:lower:]'
+}
+
+validate_load_test_namespace() {
+  local namespace="$1"
+
+  if [[ ! "$namespace" =~ ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$ ]]; then
+    echo "Error: namespace '$namespace' is not a valid Kubernetes DNS-1123 label."
+    echo "       Allowed: lowercase letters, digits, '-'. Must start and end with an alphanumeric."
+    return 1
+  fi
+  if [ ${#namespace} -gt 63 ]; then
+    echo "Error: namespace '$namespace' is ${#namespace} characters; Kubernetes labels are capped at 63."
+    return 1
+  fi
+}
+
 # Sanitize a string to be a valid Kubernetes label value (max 63 chars, alphanumeric/.-_)
 sanitize_k8s_label() {
   local value="$1"

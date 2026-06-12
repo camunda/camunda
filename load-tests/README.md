@@ -300,7 +300,7 @@ On top of the previous scenarios, we support running ad-hoc load tests. They can
 
 **Validation:** The more general [Zeebe Dashboard](https://dashboard.benchmark.camunda.cloud/d/zeebe-dashboard/zeebe?orgId=1) should be used to observe and validate the performance of the different load tests. If performance is the motivator of such a test, it might be helpful to use the [Camunda Performance](https://dashboard.benchmark.camunda.cloud/d/camunda-performance/camunda-performance?orgId=1) Dashboard.
 
-**Requirement:** Please make sure that load test namespaces are always prefixed with your initials, to allow us to identify who created the tests and reach out if necessary. Note that the `c8-` namespace prefix is added implicitly by the tooling (due to cluster access policies). For example, a name like `pp-stable-vms-october` will result in the Kubernetes namespace `c8-pp-stable-vms-october`.
+**Requirement:** Please make sure that load test namespaces are always prefixed with your initials, to allow us to identify who created the tests and reach out if necessary. Uppercase letters are normalized to lowercase, and the `c8-` namespace prefix is added implicitly by the tooling (due to cluster access policies). For example, a name like `PP-stable-vms-october` will result in the Kubernetes namespace `c8-pp-stable-vms-october`.
 
 #### Labeling a PR
 

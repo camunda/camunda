@@ -104,7 +104,7 @@ Examples:
   ./newLoadTest.sh perf opensearch 3 true
 ```
 
-As you can see, you can create a test (namespace) by passing a name; other parameters are optional. Like, secondary storage, TTL, and whether Optimize should be enabled.
+As you can see, you can create a test (namespace) by passing a name; other parameters are optional. Like, secondary storage, TTL, and whether Optimize should be enabled. Uppercase letters in the namespace are normalized to lowercase before the `c8-` prefix and Kubernetes namespace validation are applied.
 
 Example:
 
