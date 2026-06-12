@@ -95,9 +95,9 @@ public class AgenticControlDashboardService {
   public static final String KPI_MEDIAN_TOKENS_REPORT_ID =
       UUID.nameUUIDFromBytes("agentic-kpi-median-tokens".getBytes(StandardCharsets.UTF_8))
           .toString();
-  public static final String KPI_P50_DURATION_REPORT_ID =
+  public static final String KPI_DURATION_P50_REPORT_ID =
       UUID.nameUUIDFromBytes("agentic-duration-p50".getBytes(StandardCharsets.UTF_8)).toString();
-  public static final String KPI_P95_DURATION_REPORT_ID =
+  public static final String KPI_DURATION_P95_REPORT_ID =
       UUID.nameUUIDFromBytes("agentic-duration-p95".getBytes(StandardCharsets.UTF_8)).toString();
 
   private static final long INSTANCE_END_DATE_ROLLING_DAYS = 30L;
@@ -287,38 +287,31 @@ public class AgenticControlDashboardService {
   }
 
   private DashboardReportTileDto buildP50DurationReport() {
-    final SingleReportConfigurationDto config = new SingleReportConfigurationDto();
-    config.setAggregationTypes(new AggregationDto(AggregationType.PERCENTILE, 50.0));
-    final ProcessReportDataDto reportData =
-        ProcessReportDataDto.builder()
-            .definitions(Collections.emptyList())
-            .configuration(config)
-            .view(new ProcessViewDto(ProcessViewEntity.PROCESS_INSTANCE, ViewProperty.DURATION))
-            .groupBy(new NoneGroupByDto())
-            .distributedBy(new NoneDistributedByDto())
-            .visualization(ProcessVisualization.NUMBER)
-            .filter(
-                ProcessFilterBuilder.filter()
-                    .completedInstancesOnly()
-                    .add()
-                    .hasAgentInstances()
-                    .add()
-                    .buildList())
-            .agenticControlReport(true)
-            .build();
-    reportWriter.createOrUpdateSingleProcessReport(
-        KPI_P50_DURATION_REPORT_ID,
-        null,
-        reportData,
+    return buildDurationPercentileReport(
+        50.0,
+        KPI_DURATION_P50_REPORT_ID,
         KPI_DURATION_P50_NAME,
         KPI_DURATION_P50_DESCRIPTION,
-        null);
-    return buildTile(KPI_P50_DURATION_REPORT_ID, new PositionDto(0, 4), new DimensionDto(6, 2));
+        new PositionDto(0, 4));
   }
 
   private DashboardReportTileDto buildP95DurationReport() {
+    return buildDurationPercentileReport(
+        95.0,
+        KPI_DURATION_P95_REPORT_ID,
+        KPI_DURATION_P95_NAME,
+        KPI_DURATION_P95_DESCRIPTION,
+        new PositionDto(6, 4));
+  }
+
+  private DashboardReportTileDto buildDurationPercentileReport(
+      final double percentile,
+      final String reportId,
+      final String nameKey,
+      final String descriptionKey,
+      final PositionDto position) {
     final SingleReportConfigurationDto config = new SingleReportConfigurationDto();
-    config.setAggregationTypes(new AggregationDto(AggregationType.PERCENTILE, 95.0));
+    config.setAggregationTypes(new AggregationDto(AggregationType.PERCENTILE, percentile));
     final ProcessReportDataDto reportData =
         ProcessReportDataDto.builder()
             .definitions(Collections.emptyList())
@@ -337,13 +330,8 @@ public class AgenticControlDashboardService {
             .agenticControlReport(true)
             .build();
     reportWriter.createOrUpdateSingleProcessReport(
-        KPI_P95_DURATION_REPORT_ID,
-        null,
-        reportData,
-        KPI_DURATION_P95_NAME,
-        KPI_DURATION_P95_DESCRIPTION,
-        null);
-    return buildTile(KPI_P95_DURATION_REPORT_ID, new PositionDto(6, 4), new DimensionDto(6, 2));
+        reportId, null, reportData, nameKey, descriptionKey, null);
+    return buildTile(reportId, position, new DimensionDto(9, 2), Map.of("section", "duration"));
   }
 
   private DashboardDefinitionRestDto buildAgentDashboard(final List<DashboardReportTileDto> tiles) {

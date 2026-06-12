@@ -6,6 +6,7 @@
     "description": "Monitor AI agent adoption, token spend, behavior, and reliability across your processes.",
     "dateRange": "Date range",
     "tokenUsage": "Token usage",
+    "duration": "Duration",
     "presets": {
       "last7Days": "Last 7 days",
       "last30Days": "Last 30 days",

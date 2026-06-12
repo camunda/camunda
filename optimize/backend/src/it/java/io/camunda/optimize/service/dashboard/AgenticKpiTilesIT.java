@@ -10,10 +10,10 @@ package io.camunda.optimize.service.dashboard;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.KPI_AVG_DURATION_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.KPI_AVG_TOKENS_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.KPI_COMPLETED_REPORT_ID;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.KPI_DURATION_P50_REPORT_ID;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.KPI_DURATION_P95_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.KPI_INCIDENT_RATE_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.KPI_MEDIAN_TOKENS_REPORT_ID;
-import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.KPI_P50_DURATION_REPORT_ID;
-import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.KPI_P95_DURATION_REPORT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 
@@ -39,8 +39,12 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
 
@@ -98,12 +102,14 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
   }
 
   // ---------------------------------------------------------------------------
-  // P50 duration (median)
+  // Percentile durations
   // ---------------------------------------------------------------------------
 
-  @Test
-  void shouldComputeP50DurationOfCompletedAgenticInstances() {
-    // durations: 1h, 2h, 3h, 4h, 5h → P50 = 3h = 10_800_000 ms
+  @ParameterizedTest
+  @MethodSource("durationPercentileReportIds")
+  void shouldComputeDurationPercentileOfCompletedAgenticInstances(
+      final String reportId, final double expectedValue, final double tolerance) {
+    // durations: 1h, 2h, 3h, 4h, 5h
     final ProcessInstanceDto inst1 = agenticInstance(PROC_KEY, 0L, 0L).duration(3_600_000L).build();
     final ProcessInstanceDto inst2 = agenticInstance(PROC_KEY, 0L, 0L).duration(7_200_000L).build();
     final ProcessInstanceDto inst3 =
@@ -115,32 +121,9 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
 
     persistProcessInstances(List.of(inst1, inst2, inst3, inst4, inst5));
 
-    final Double result = evaluateNumber(KPI_P50_DURATION_REPORT_ID, noExtraFilters());
-    // ES percentile approximation — allow small delta
-    assertThat(result).isCloseTo(10_800_000.0, within(10_000.0));
-  }
-
-  // ---------------------------------------------------------------------------
-  // P95 duration
-  // ---------------------------------------------------------------------------
-
-  @Test
-  void shouldComputeP95DurationOfCompletedAgenticInstances() {
-    // durations: 1h, 2h, 3h, 4h, 5h → P95 ≈ 5h = 18_000_000 ms
-    final ProcessInstanceDto inst1 = agenticInstance(PROC_KEY, 0L, 0L).duration(3_600_000L).build();
-    final ProcessInstanceDto inst2 = agenticInstance(PROC_KEY, 0L, 0L).duration(7_200_000L).build();
-    final ProcessInstanceDto inst3 =
-        agenticInstance(PROC_KEY, 0L, 0L).duration(10_800_000L).build();
-    final ProcessInstanceDto inst4 =
-        agenticInstance(PROC_KEY, 0L, 0L).duration(14_400_000L).build();
-    final ProcessInstanceDto inst5 =
-        agenticInstance(PROC_KEY, 0L, 0L).duration(18_000_000L).build();
-
-    persistProcessInstances(List.of(inst1, inst2, inst3, inst4, inst5));
-
-    final Double result = evaluateNumber(KPI_P95_DURATION_REPORT_ID, noExtraFilters());
-    // ES percentile approximation — allow generous delta for P95 with small dataset
-    assertThat(result).isCloseTo(18_000_000.0, within(1_000_000.0));
+    final Double result = evaluateNumber(reportId, noExtraFilters());
+    // ES percentile approximation
+    assertThat(result).isCloseTo(expectedValue, within(tolerance));
   }
 
   // ---------------------------------------------------------------------------
@@ -408,7 +391,7 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
 
     persistProcessInstances(List.of(recent, old));
 
-    assertThat(evaluateNumber(KPI_P50_DURATION_REPORT_ID, rollingEndDateFilter(1L, DateUnit.DAYS)))
+    assertThat(evaluateNumber(KPI_DURATION_P50_REPORT_ID, rollingEndDateFilter(1L, DateUnit.DAYS)))
         .isCloseTo(3_600_000.0, within(1.0));
   }
 
@@ -431,7 +414,7 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
 
     persistProcessInstances(List.of(recent, old));
 
-    assertThat(evaluateNumber(KPI_P95_DURATION_REPORT_ID, rollingEndDateFilter(1L, DateUnit.DAYS)))
+    assertThat(evaluateNumber(KPI_DURATION_P95_REPORT_ID, rollingEndDateFilter(1L, DateUnit.DAYS)))
         .isCloseTo(3_600_000.0, within(1.0));
   }
 
@@ -619,7 +602,7 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
 
     assertThat(
             evaluateNumber(
-                KPI_P50_DURATION_REPORT_ID,
+                KPI_DURATION_P50_REPORT_ID,
                 withDefinitions(List.of(new ReportDataDefinitionDto(procKeyA)))))
         .isCloseTo(7_200_000.0, within(10_000.0));
   }
@@ -639,7 +622,7 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
 
     assertThat(
             evaluateNumber(
-                KPI_P95_DURATION_REPORT_ID,
+                KPI_DURATION_P95_REPORT_ID,
                 withDefinitions(List.of(new ReportDataDefinitionDto(procKeyA)))))
         .isCloseTo(10_800_000.0, within(1_000_000.0));
   }
@@ -805,5 +788,11 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
     final AdditionalProcessReportEvaluationFilterDto dto = withDefinitions(definitions);
     dto.setFilter(List.of((ProcessFilterDto<?>) filter));
     return dto;
+  }
+
+  private static Stream<Arguments> durationPercentileReportIds() {
+    return Stream.of(
+        Arguments.of(KPI_DURATION_P50_REPORT_ID, 10_800_000.0, 10_000.0),
+        Arguments.of(KPI_DURATION_P95_REPORT_ID, 18_000_000.0, 1_000_000.0));
   }
 }

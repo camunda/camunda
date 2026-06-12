@@ -97,6 +97,7 @@ export function AgenticControlPlane() {
   const sections = [
     {key: 'kpi', loadTile: scopedEvaluateReport},
     {key: 'token', titleKey: 'agenticControlPlane.tokenUsage', loadTile: scopedEvaluateReport},
+    {key: 'duration', titleKey: 'agenticControlPlane.duration', loadTile: scopedEvaluateReport},
   ];
 
   return (
