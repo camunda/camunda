@@ -235,11 +235,7 @@ public class AlignmentTest {
               new Getter(p -> p.getClusterVariables().isEnabled())),
           entry(
               "camunda.client.cluster-variables.variables",
-              new Getter(
-                  p -> {
-                    final Map<String, Object> vars = p.getClusterVariables().getVariables();
-                    return vars == null || vars.isEmpty() ? null : vars;
-                  })));
+              new Getter(p -> p.getClusterVariables().getVariables())));
 
   @Autowired CamundaClientProperties camundaClientProperties;
 
