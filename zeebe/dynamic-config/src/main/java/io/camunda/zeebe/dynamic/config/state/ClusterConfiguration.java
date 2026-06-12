@@ -160,10 +160,17 @@ public record ClusterConfiguration(
         partitionDistributorConfig);
   }
 
+  /**
+   * Change the partition distribution configuration. This must be done exclusivelyu from the
+   * coordinator node.
+   */
   public ClusterConfiguration setPartitionDistributorConfig(
       final PartitionDistributorConfig config) {
+    if (partitionDistributorConfig.map(cfg -> cfg.equals(config)).orElse(false)) {
+      return this;
+    }
     return new ClusterConfiguration(
-        version,
+        version + 1,
         members,
         lastChange,
         pendingChanges,
