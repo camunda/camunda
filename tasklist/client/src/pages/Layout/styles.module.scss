@@ -6,18 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-.container {
-  width: 100%;
-  padding: var(--cds-spacing-04) var(--cds-spacing-05);
-  border-bottom: 1px solid var(--cds-border-subtle);
-  border-top: 1px solid var(--cds-border-subtle);
-}
-
-:global(.nav-v2-tasks) .container {
-  height: calc(var(--cds-spacing-09) + 1px);
+.mainContent {
+  padding-left: var(--c3-sidebar-width, 0);
+  transition: padding-left 0.15s ease-out;
+  height: 100%;
   box-sizing: border-box;
-  display: flex;
-  align-items: center;
-  padding: 0 var(--cds-spacing-05);
-  border-bottom: none;
 }
