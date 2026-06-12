@@ -9,6 +9,7 @@ package io.camunda.authentication.service;
 
 import static io.camunda.service.authorization.Authorizations.COMPONENT_ACCESS_AUTHORIZATION;
 
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.CamundaAuthentication;
@@ -81,7 +82,9 @@ public class BasicCamundaUserService implements CamundaUserPort {
   protected UserEntity getUser(final CamundaAuthentication authentication) {
     final var username = authentication.authenticatedUsername();
     return serviceRegistry
-        .userServices("default") // TODO replace with contextual physicalTenantId
+        .userServices(
+            PhysicalTenantIds
+                .DEFAULT_PHYSICAL_TENANT_ID) // TODO replace with contextual physicalTenantId
         .getUser(username, CamundaAuthentication.anonymous());
   }
 

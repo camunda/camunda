@@ -13,6 +13,7 @@ import static java.time.ZoneOffset.UTC;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
@@ -166,7 +167,7 @@ class RdbmsExporterIT {
             null,
             new ExporterConfiguration("foo", Map.of("queueSize", 0)),
             1,
-            "default",
+            PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
             "",
             null,
             Mockito.mock(MeterRegistry.class, Mockito.RETURNS_DEEP_STUBS),
@@ -1489,7 +1490,7 @@ class RdbmsExporterIT {
             null,
             new ExporterConfiguration("interval-flush-test", Map.of("queueSize", 100)),
             2,
-            "default",
+            PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
             "",
             null,
             Mockito.mock(MeterRegistry.class, Mockito.RETURNS_DEEP_STUBS),
