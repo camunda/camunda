@@ -23,15 +23,15 @@
     <!-- Camunda dependencies -->
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>configuration-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>camunda-gateway-model</artifactId>
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-gateway-mapping-http</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>configuration</artifactId>
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>

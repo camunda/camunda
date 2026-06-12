@@ -8,9 +8,9 @@
 package io.camunda.application.commons.configuration;
 
 import io.camunda.configuration.Camunda;
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.zeebe.gateway.rest.interceptor.PhysicalTenantInterceptor;
-import java.util.Set;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -40,8 +40,7 @@ public class UnifiedConfigurationModule {
    */
   @Bean
   public PhysicalTenantInterceptor physicalTenantInterceptor(
-      final PhysicalTenantResolver physicalTenantResolver) {
-    final Set<String> known = Set.copyOf(physicalTenantResolver.getAll().keySet());
-    return new PhysicalTenantInterceptor(known::contains);
+      final PhysicalTenantIds physicalTenantIds) {
+    return new PhysicalTenantInterceptor(id -> physicalTenantIds.known().contains(id));
   }
 }
