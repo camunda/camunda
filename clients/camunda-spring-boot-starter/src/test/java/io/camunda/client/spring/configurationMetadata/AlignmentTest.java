@@ -228,9 +228,6 @@ public class AlignmentTest {
               "camunda.client.auth.client-assertion.keystore-key-password",
               new Getter(p -> p.getAuth().getClientAssertion().getKeystoreKeyPassword())),
           entry(
-              "camunda.client.auth.credentials-cache-path",
-              new Getter(p -> p.getAuth().getCredentialsCachePath())),
-          entry(
               "camunda.client.cluster-variables.enabled",
               new Getter(p -> p.getClusterVariables().isEnabled())),
           entry(
