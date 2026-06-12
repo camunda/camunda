@@ -62,6 +62,7 @@ jobs:
       webapp-client-changes: ${{ steps.filter.outputs.webapp-client-changes }}
       docs-changes: ${{ steps.filter.outputs.docs-changes }}
       c8-e2e-test-suite-changes: ${{ steps.filter.outputs.c8-e2e-test-suite-changes }}
+      deps-changed: ${{ steps.filter.outputs.deps-changed }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -1690,6 +1691,81 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           user_description: "Identity"
 
+  pr-maven-snapshot:
+    name: "Security / Submit Maven Dependency Snapshot"
+    # Submits the resolved Maven dep tree for the PR head SHA so pr-vuln-check
+    # can compare against it. Must complete before pr-vuln-check runs.
+    if: >-
+      needs.detect-changes.outputs.deps-changed == 'true'
+      && github.event_name == 'pull_request'
+    needs: [ detect-changes ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    continue-on-error: true  # snapshot failure falls back to auto-parse; gate still runs
+    permissions:
+      contents: write  # required by Dependency Submission API
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Submit Maven dependency snapshot
+        uses: advanced-security/maven-dependency-submission-action@b275d12641ac2d2108b2cbb7598b154ad2f2cee8 # v5.0.0
+        with:
+          token: ${{ github.token }}
+          maven-args: >-
+            -pl bom,clients/java,clients/camunda-spring-boot-starter,zeebe/bpmn-model,zeebe/exporter-api,zeebe/gateway-protocol-impl,zeebe/protocol
+            -am
+            -Dquickly
+          correlator: ${{ github.job }}-maven
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  pr-vuln-check:
+    name: "Security / Dependency Vulnerability Gate"
+    # Runs on all PRs (including forks) that change dependency manifests.
+    # Skip backport PRs: code already gated on main. Skip the backport bot.
+    # Depends on pr-maven-snapshot to ensure the head snapshot is indexed
+    # before the Dependency Review API is called.
+    if: >-
+      needs.detect-changes.outputs.deps-changed == 'true'
+      && github.event_name == 'pull_request'
+      && !startsWith(github.head_ref, 'backport')
+      && github.event.pull_request.user.login != 'monorepo-devops-automation[bot]'
+    needs: [ detect-changes, pr-maven-snapshot ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    continue-on-error: true # pilot phase: observe without blocking merges
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Check for vulnerable dependencies
+        uses: camunda/infra-global-github-actions/dependency-vuln-check@50f8493e449f1abc6956f158185e58d1d261aa1f # main
+        with:
+          base-sha: ${{ github.event.pull_request.base.sha }}
+          head-sha: ${{ github.event.pull_request.head.sha }}
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
   tasklist-ci:
     if: needs.detect-changes.outputs.java-code-changes == 'true' || needs.detect-changes.outputs.frontend-changes == 'true'
     name: "Tasklist"
@@ -2051,6 +2127,8 @@ jobs:
       - operate-ci
       - optimize-ci
       - pin-check
+      - pr-maven-snapshot
+      - pr-vuln-check
       - protobuf-checks
       - rdbms-integration-tests
       - renovatelint
