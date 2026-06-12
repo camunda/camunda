@@ -391,6 +391,7 @@ public class CamundaProcessTestExtensionIT {
           coverageCollector.collectTestRunCoverage(
               CamundaProcessTestExtensionIT.class,
               testName,
+              null,
               CoverageTestDataCollector.collectData(new CamundaDataSource(client)));
       return coverageReport.getSuites().stream()
           .flatMap(report -> report.getRuns().stream())
