@@ -256,7 +256,7 @@ jobs:
           additional_flags: "--profile self-managed"
 
       - name: Build backend
-        run: ./mvnw -T1C clean install -DskipTests -Dskip.docker -pl optimize/backend -am -PskipFrontendBuild
+        run: ./mvnw -T1C clean install -Dmaven.test.skip=true -DskipChecks -Dskip.docker -pl optimize/backend -am -PskipFrontendBuild
 
       - name: Create backend logs file
         run: mkdir -p ./optimize/client/build && touch ./optimize/client/build/backendLogs.log
@@ -383,7 +383,7 @@ jobs:
           directory: ./optimize/client
           node-version: ${{ steps.pom-info.outputs.x_version_node }}
       - name: Build backend
-        run: ./mvnw -T1C clean install -DskipTests -Dskip.docker -pl optimize/backend -am -PskipFrontendBuild
+        run: ./mvnw -T1C clean install -Dmaven.test.skip=true -DskipChecks -Dskip.docker -pl optimize/backend -am -PskipFrontendBuild
       - name: Create backend logs file
         run: mkdir -p ./optimize/client/build && touch ./optimize/client/build/backendLogs.log
       - name: Start backend
