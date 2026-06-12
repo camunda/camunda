@@ -8,13 +8,31 @@
 
 import {Stack} from '@carbon/react';
 import {useTranslation} from 'react-i18next';
+import type {CurrentUser, UserTask} from '@camunda/camunda-api-zod-schemas/8.10';
+import {AvailableTasks} from '#/tasklist/modules/available-tasks/components/AvailableTasks';
 import {CollapsiblePanel} from '#/tasklist/modules/available-tasks/components/CollapsiblePanel';
 import {Filters} from '#/tasklist/modules/available-tasks/components/Filters';
-import {NoTasks} from '#/tasklist/modules/available-tasks/components/NoTasks';
 import {Options} from '#/tasklist/modules/available-tasks/components/Options';
-import styles from './TasklistIndexPage.module.scss';
+import styles from './TasksLayoutPage.module.scss';
+import {Outlet} from '@tanstack/react-router';
 
-const TasklistIndexPage: React.FC = () => {
+type Props = {
+	tasks: UserTask[];
+	currentUser: CurrentUser;
+	hasNextPage: boolean;
+	hasPreviousPage: boolean;
+	onScrollDown: () => Promise<UserTask[]>;
+	onScrollUp: () => Promise<UserTask[]>;
+};
+
+const TasksLayoutPage: React.FC<Props> = ({
+	tasks,
+	currentUser,
+	hasNextPage,
+	hasPreviousPage,
+	onScrollDown,
+	onScrollUp,
+}) => {
 	const {t} = useTranslation();
 
 	return (
@@ -22,14 +40,21 @@ const TasklistIndexPage: React.FC = () => {
 			<CollapsiblePanel />
 			<Stack as="section" className={styles.tasksPanel} aria-label={t('tasksPanelLabel')}>
 				<Filters />
-				<div className={styles.tasksContainer} title={t('availableTasksTitle')}>
-					<NoTasks />
-				</div>
+				<AvailableTasks
+					tasks={tasks}
+					currentUser={currentUser}
+					hasNextPage={hasNextPage}
+					hasPreviousPage={hasPreviousPage}
+					onScrollDown={onScrollDown}
+					onScrollUp={onScrollUp}
+				/>
 				<Options />
 			</Stack>
-			<div className={styles.detailsPanel} />
+			<div className={styles.detailsPanel}>
+				<Outlet />
+			</div>
 		</main>
 	);
 };
 
-export {TasklistIndexPage};
+export {TasksLayoutPage};
