@@ -282,4 +282,25 @@ class PhysicalTenantResolverTest {
         .isThrownBy(() -> PhysicalTenantResolver.validateTenantId("tenant-a"))
         .withMessageContaining("Invalid physical tenant id");
   }
+
+  @Test
+  void shouldRejectTenantIdExceeding64Characters() {
+    // given a tenant id that is exactly one character over the limit
+    final String tooLong = "a".repeat(PhysicalTenantResolver.MAX_TENANT_ID_LENGTH + 1);
+
+    // when / then
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> PhysicalTenantResolver.validateTenantId(tooLong))
+        .withMessageContaining("Invalid physical tenant id")
+        .withMessageContaining("must not exceed " + PhysicalTenantResolver.MAX_TENANT_ID_LENGTH);
+  }
+
+  @Test
+  void shouldAcceptTenantIdOfExactly64Characters() {
+    // given a tenant id at exactly the maximum allowed length — must not throw
+    final String maxLength = "a".repeat(PhysicalTenantResolver.MAX_TENANT_ID_LENGTH);
+
+    // when / then no exception
+    PhysicalTenantResolver.validateTenantId(maxLength);
+  }
 }
