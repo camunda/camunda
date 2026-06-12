@@ -74,7 +74,7 @@ const OPTIONAL_FILTER_FIELDS: Record<
   }
 > = {
   variable: {
-    keys: [],
+    keys: ['variableName', 'variableValues'],
     label: 'Variables',
   },
   processInstanceKey: {
