@@ -1157,10 +1157,6 @@ public class CamundaProcessTestExtensionIT {
     private static final String SERVICE_TASK_ID = "Export_Happiness";
     private static final String JOB_TYPE = "io.camunda:http-json:1";
 
-    private final Map<String, Object> UNHAPPY = Collections.singletonMap("happy", false);
-    private final Map<String, Object> HAPPY = Collections.singletonMap("happy", true);
-    private final Map<String, Object> EXPORT_VARS = Collections.singletonMap("exportSuccess", true);
-
     @BeforeEach
     void setupBehaviors() {
       // Deploy the process model
@@ -1175,15 +1171,24 @@ public class CamundaProcessTestExtensionIT {
               () ->
                   CamundaAssert.assertThat(ProcessInstanceSelectors.byProcessId(PROCESS_ID))
                       .hasActiveElement(USER_TASK_ID, 1))
-          .then(() -> processTestContext.completeUserTask(USER_TASK_ID, UNHAPPY))
-          .then(() -> processTestContext.completeUserTask(USER_TASK_ID, HAPPY));
+          .then(
+              () ->
+                  processTestContext.completeUserTask(
+                      USER_TASK_ID, Collections.singletonMap("happy", false)))
+          .then(
+              () ->
+                  processTestContext.completeUserTask(
+                      USER_TASK_ID, Collections.singletonMap("happy", true)));
 
       processTestContext
           .when(
               () ->
                   assertThatProcessInstance(ProcessInstanceSelectors.byProcessId(PROCESS_ID))
                       .hasActiveElements(SERVICE_TASK_ID))
-          .then(() -> processTestContext.completeJob(JOB_TYPE, EXPORT_VARS));
+          .then(
+              () ->
+                  processTestContext.completeJob(
+                      JOB_TYPE, Collections.singletonMap("exportSuccess", true)));
     }
 
     @Test
