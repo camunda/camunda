@@ -32,7 +32,6 @@ import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestBrokers;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestPartitions;
 import io.camunda.zeebe.management.cluster.Error;
-import io.camunda.zeebe.management.cluster.MessageCorrelationHashMod;
 import io.camunda.zeebe.management.cluster.RequestHandlingActivePartitions;
 import io.camunda.zeebe.management.cluster.RequestHandlingAllPartitions;
 import io.camunda.zeebe.management.cluster.RoutingState;
@@ -458,9 +457,14 @@ public class ClusterEndpoint {
                   throw new IllegalStateException(
                       "Unexpected value: " + routingState.getRequestHandling());
             };
+        final var mc = routingState.getMessageCorrelation();
         final MessageCorrelation messageCorrelation =
-            switch (routingState.getMessageCorrelation()) {
-              case final MessageCorrelationHashMod req -> new HashMod(req.getPartitionCount());
+            switch (mc.getStrategy()) {
+              case ClusterApiUtils.MESSAGE_CORRELATION_STRATEGY_HASH_MOD ->
+                  new HashMod(mc.getPartitionCount());
+              default ->
+                  throw new UnknownRequestParameterException(
+                      "Unknown message correlation strategy: " + mc.getStrategy());
             };
         internalRoutingState =
             Optional.of(
