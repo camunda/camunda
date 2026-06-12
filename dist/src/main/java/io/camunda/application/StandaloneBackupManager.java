@@ -11,6 +11,7 @@ import io.camunda.application.commons.configuration.UnifiedConfigurationModule;
 import io.camunda.application.commons.search.NativeSearchClientsConfiguration;
 import io.camunda.application.commons.search.PhysicalTenantSearchClientReadersConfiguration;
 import io.camunda.application.commons.search.SearchClientReaderConfiguration;
+import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.webapps.backup.BackupService;
 import io.camunda.webapps.backup.BackupStateDto;
 import io.camunda.webapps.backup.TakeBackupRequestDto;
@@ -22,6 +23,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.ExitCodeExceptionMapper;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.WebApplicationType;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
@@ -51,6 +53,8 @@ import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGe
 @SpringBootConfiguration(proxyBeanMethods = false)
 public class StandaloneBackupManager implements CommandLineRunner {
 
+  private static final String WRONG_ARGUMENTS_ERROR =
+      "Expected 1 or 2 arguments: <backupId> [--skip-schema-check], but got %d argument(s): %s";
   private static final Logger LOG = LoggerFactory.getLogger(StandaloneBackupManager.class);
   private final BackupService backupService;
 
@@ -94,9 +98,9 @@ public class StandaloneBackupManager implements CommandLineRunner {
 
   @Override
   public void run(final String... args) throws Exception {
-    if (args.length != 1) {
+    if (args.length < 1 || args.length > 2) {
       throw new IllegalArgumentException(
-          String.format("Expected one argument, the backup ID, but got: %s", Arrays.asList(args)));
+          String.format(WRONG_ARGUMENTS_ERROR, args.length, Arrays.asList(args)));
     }
 
     final long backupId;
@@ -107,9 +111,12 @@ public class StandaloneBackupManager implements CommandLineRunner {
           String.format("Expected as argument the backup ID as long, but got %s", args[0]));
     }
 
+    final boolean skipSchemaCheck = args.length == 2 && "--skip-schema-check".equals(args[1]);
+
     try {
       final var takeBackupRequestDto = new TakeBackupRequestDto();
       takeBackupRequestDto.setBackupId(backupId);
+      takeBackupRequestDto.setSkipSchemaCheck(skipSchemaCheck);
       final var backupResponse = backupService.takeBackup(takeBackupRequestDto);
       LOG.info("Triggered search engine snapshots: {}", backupResponse.getScheduledSnapshots());
     } catch (final Exception e) {
@@ -161,6 +168,12 @@ public class StandaloneBackupManager implements CommandLineRunner {
     @Bean
     public ExitCodeExceptionMapper exitCodeExceptionMapper() {
       return ex -> 1;
+    }
+
+    @Bean
+    @ConfigurationProperties(prefix = "camunda.database")
+    public SearchEngineConfiguration searchEngineConfiguration() {
+      return SearchEngineConfiguration.of(b -> b);
     }
   }
 }
