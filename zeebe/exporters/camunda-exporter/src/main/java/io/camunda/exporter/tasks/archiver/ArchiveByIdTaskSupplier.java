@@ -27,6 +27,9 @@ import org.slf4j.Logger;
 
 public class ArchiveByIdTaskSupplier<SortFieldType> {
 
+  public static final int MINIMUM_BATCH_SIZE = 50;
+  public static final double BATCH_SIZE_REDUCTION_RATIO = 0.5;
+
   private final HistoryConfiguration config;
   private final String sourceIdx;
   private final String destinationIdx;
@@ -43,6 +46,7 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
       new AtomicReference<>(null);
   private final AtomicBoolean finished = new AtomicBoolean(false);
   private final AtomicInteger retryCount = new AtomicInteger(0);
+  private final AtomicInteger batchSize = new AtomicInteger(0);
 
   private final AtomicLong totalArchived = new AtomicLong(0);
   private final AtomicLong totalTimeTakenMs = new AtomicLong(0);
@@ -68,6 +72,7 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
     this.executor = executor;
     this.metrics = metrics;
     this.logger = logger;
+    batchSize.set(config.getReindexBatchSize());
   }
 
   public boolean isComplete() {
@@ -85,7 +90,7 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
   public CompletableFuture<Long> moveNextBatch() {
     final Stopwatch stopwatch = Stopwatch.createStarted();
     return idsSupplier
-        .apply(getLastSearchPosition(), getBatchSize())
+        .apply(getLastSearchPosition(), batchSize.get())
         .thenComposeAsync(
             response -> {
               if (response.isEmpty()) {
@@ -110,14 +115,18 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
                             && retryCount.incrementAndGet()
                                 <= config.getArchiveByIdMaxRetryAttempts()) {
                           metrics.recordArchiverBatchRetry();
+                          if (shouldReduceBatchSize(ex)) {
+                            reduceBatchSize();
+                          }
+
                           logger.trace(
                               "Encountered retryable error when archiving docs from '{}' to '{}', "
-                                  + "retrying the batch (next attempt {}/{} will use batch size {}). Error: {}",
+                                  + "retrying the batch (attempt {}/{}). Next batch size {}. Error: {}",
                               sourceIdx,
                               destinationIdx,
                               retryCount.get(),
                               config.getArchiveByIdMaxRetryAttempts(),
-                              getBatchSize(),
+                              batchSize.get(),
                               ex.getMessage());
 
                           // Whilst this is crude, we exploit the fact the ES/OS visibility is
@@ -152,9 +161,10 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
     return lstResponse == null ? List.of() : lstResponse.searchAfter();
   }
 
-  private int getBatchSize() {
-    // reduce the batch size on every retry to increase the chance of success
-    return Math.max(1, config.getReindexBatchSize() / (retryCount.get() + 1));
+  private void reduceBatchSize() {
+    batchSize.updateAndGet(
+        currentSize ->
+            (int) Math.max(MINIMUM_BATCH_SIZE, currentSize * BATCH_SIZE_REDUCTION_RATIO));
   }
 
   private CompletableFuture<Long> reindex(final ArchiveDocIdsBatch<SortFieldType> response) {
@@ -182,6 +192,12 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
               operation, sourceIdx, processedCount, expectedCount));
     }
     return processedCount;
+  }
+
+  private boolean shouldReduceBatchSize(final Throwable thr) {
+    return thr != null
+        && thr.getCause() != null
+        && thr.getCause() instanceof SocketTimeoutException;
   }
 
   private boolean isRetryableError(final Throwable thr) {
