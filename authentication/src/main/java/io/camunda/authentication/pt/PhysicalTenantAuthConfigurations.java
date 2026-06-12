@@ -45,14 +45,14 @@ import org.springframework.core.env.Environment;
  * dropping the root fields the overlay did not restate. {@link #mergeSharedProviders} repairs that
  * by re-binding the overlay onto each pristine root provider object.
  *
- * <p>Two values are deliberately not taken from the overlay:
+ * <p>{@code method} is deliberately not taken from the overlay: it is cluster-wide and re-asserted
+ * from the root after binding. Overriding it per tenant is rejected at startup by the configuration
+ * layer (#54731).
  *
- * <ul>
- *   <li>{@code method} is cluster-wide — it is re-asserted from the root after binding. Overriding
- *       it per tenant is rejected at startup by the configuration layer (#54731).
- *   <li>An empty default slot (neither {@code client-id} nor {@code issuer-uri}) is treated as
- *       absent — Spring binds an empty object even when the whole group is omitted.
- * </ul>
+ * <p>No special handling is needed for an empty default slot (neither {@code client-id} nor {@code
+ * issuer-uri}): the config getters never return {@code null} (the api setters coerce {@code null}
+ * to an empty instance), and CSL's {@code flatten} ignores a slot or provider with no usable
+ * config, so a content-less slot is simply not turned into a chain.
  */
 public final class PhysicalTenantAuthConfigurations {
 
@@ -90,8 +90,6 @@ public final class PhysicalTenantAuthConfigurations {
     // method is cluster-wide, not per-tenant.
     config.setMethod(rootMethod != null ? rootMethod : AuthenticationMethod.BASIC);
     mergeSharedProviders(binder, ptPrefix, rootProviders, config);
-    dropEmptyDefaultSlot(config);
-    dropEmptyProviders(config);
     return config;
   }
 
@@ -117,25 +115,6 @@ public final class PhysicalTenantAuthConfigurations {
             merged.put(id, rootProvider);
           }
         });
-  }
-
-  /** A Spring-bound but empty default slot (no client-id / issuer-uri) is treated as absent. */
-  private static void dropEmptyDefaultSlot(final AuthenticationConfiguration config) {
-    final OidcConfiguration oidc = config.getOidc();
-    if (oidc != null && oidc.getClientId() == null && oidc.getIssuerUri() == null) {
-      config.setOidc(null);
-    }
-  }
-
-  /**
-   * Normalises "no named providers" to {@code getProviders() == null} so callers can reliably
-   * detect the absence of named providers.
-   */
-  private static void dropEmptyProviders(final AuthenticationConfiguration config) {
-    final Map<String, OidcConfiguration> named = namedProviders(config);
-    if (named == null || named.isEmpty()) {
-      config.setProviders(null);
-    }
   }
 
   private static Map<String, OidcConfiguration> snapshotProviders(

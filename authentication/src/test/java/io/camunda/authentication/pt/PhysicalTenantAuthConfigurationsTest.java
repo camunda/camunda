@@ -280,14 +280,18 @@ class PhysicalTenantAuthConfigurationsTest {
   }
 
   // -------------------------------------------------------------------------
-  // 6. Empty/absent default slot → getOidc() is null (validDefaultSlot guard)
+  // 6. Default slot with no client-id/issuer-uri carries no usable config
   // -------------------------------------------------------------------------
 
   @Test
-  void shouldReturnNullDefaultSlotWhenSpringBoundButEmpty() {
-    // Spring may bind an empty OidcConfiguration when authentication.* properties exist but
-    // no client-id/issuer-uri is set under authentication.oidc.*. The validDefaultSlot guard
-    // must treat such a slot as absent.
+  void shouldExposeEmptyDefaultSlotWhenNoFlatOidcConfigured() {
+    // When authentication.* exists but no authentication.oidc.client-id/issuer-uri is set, the
+    // default slot has no usable config. AuthenticationConfiguration.setOidc(null) coerces null to
+    // a
+    // fresh empty OidcConfiguration (the api setter never stores null), so getOidc() is non-null
+    // but
+    // carries neither client-id nor issuer-uri — exactly what CSL's flatten treats as "no default
+    // provider". Assert that precise shape rather than a never-reachable null.
     final var env =
         env(
             Map.of(
@@ -299,14 +303,9 @@ class PhysicalTenantAuthConfigurationsTest {
     final AuthenticationConfiguration cfg =
         PhysicalTenantAuthConfigurations.forPhysicalTenant("anytenant", env);
 
-    // No client-id/issuer-uri under authentication.oidc.* → default slot must be null
-    assertThat(cfg.getOidc())
-        .satisfiesAnyOf(
-            oidc -> assertThat(oidc).isNull(),
-            oidc -> {
-              assertThat(oidc.getClientId()).isNull();
-              assertThat(oidc.getIssuerUri()).isNull();
-            });
+    assertThat(cfg.getOidc()).isNotNull();
+    assertThat(cfg.getOidc().getClientId()).isNull();
+    assertThat(cfg.getOidc().getIssuerUri()).isNull();
   }
 
   // -------------------------------------------------------------------------
