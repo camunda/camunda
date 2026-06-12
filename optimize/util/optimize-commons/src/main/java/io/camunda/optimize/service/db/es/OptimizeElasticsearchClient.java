@@ -1014,21 +1014,30 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
 
   @Override
   public void reloadConfiguration(final ApplicationContext context) {
+    // Close both the transport and restClient before creating new ones. Attempt both closes even
+    // if one fails to avoid leaking file descriptors in the error path.
     try {
       esWithTransportOptions()._transport().close();
-      final ConfigurationService configurationService = context.getBean(ConfigurationService.class);
-      esClient =
-          ElasticsearchClientBuilder.build(
-              configurationService, objectMapper, new PluginRepository());
-      restClient =
-          ElasticsearchClientBuilder.restClient(configurationService, new PluginRepository());
-      indexNameService = context.getBean(OptimizeIndexNameService.class);
-      transportOptionsProvider = new TransportOptionsProvider(configurationService);
-      elasticsearchAsyncClient =
-          new ElasticsearchAsyncClient(esClient._transport(), esClient._transportOptions());
     } catch (final IOException e) {
       throw new RuntimeException(e);
+    } finally {
+      try {
+        restClient.close();
+      } catch (final IOException e) {
+        LOG.warn("Failed to close old RestClient during configuration reload", e);
+      }
     }
+
+    final ConfigurationService configurationService = context.getBean(ConfigurationService.class);
+    esClient =
+        ElasticsearchClientBuilder.build(
+            configurationService, objectMapper, new PluginRepository());
+    restClient =
+        ElasticsearchClientBuilder.restClient(configurationService, new PluginRepository());
+    indexNameService = context.getBean(OptimizeIndexNameService.class);
+    transportOptionsProvider = new TransportOptionsProvider(configurationService);
+    elasticsearchAsyncClient =
+        new ElasticsearchAsyncClient(esClient._transport(), esClient._transportOptions());
   }
 
   public final <T> SearchResponse<T> searchWithoutPrefixing(

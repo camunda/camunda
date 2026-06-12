@@ -143,6 +143,9 @@ public abstract class AbstractCCSMIT extends AbstractIT {
     final Set<Long> cancelledKeys = zeebeExtension.cancelAllStartedInstances();
     waitForCancelledInstancesToExport(cancelledKeys);
     deleteZeebeRecordsAndAssertClean(zeebeExtension.getZeebeRecordPrefix());
+    // Clean up Optimize's imported data to ensure complete test isolation
+    databaseIntegrationTestExtension.deleteAllOptimizeData();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
   /**
