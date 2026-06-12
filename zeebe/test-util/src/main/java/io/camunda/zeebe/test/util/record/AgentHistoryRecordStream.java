@@ -8,7 +8,6 @@
 package io.camunda.zeebe.test.util.record;
 
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.value.AgentHistoryCommitStatus;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRole;
 import java.util.stream.Stream;
@@ -40,9 +39,5 @@ public final class AgentHistoryRecordStream
 
   public AgentHistoryRecordStream withRole(final AgentHistoryRole role) {
     return valueFilter(v -> v.getRole() == role);
-  }
-
-  public AgentHistoryRecordStream withCommitStatus(final AgentHistoryCommitStatus commitStatus) {
-    return valueFilter(v -> v.getCommitStatus() == commitStatus);
   }
 }

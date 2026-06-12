@@ -14,7 +14,6 @@ import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
-import io.camunda.zeebe.protocol.record.value.AgentHistoryCommitStatus;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRole;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -39,9 +38,6 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
   private final IntegerProperty iterationProp = new IntegerProperty("iteration", 0);
   private final EnumProperty<AgentHistoryRole> roleProp =
       new EnumProperty<>("role", AgentHistoryRole.class, AgentHistoryRole.UNSPECIFIED);
-  private final EnumProperty<AgentHistoryCommitStatus> commitStatusProp =
-      new EnumProperty<>(
-          "commitStatus", AgentHistoryCommitStatus.class, AgentHistoryCommitStatus.UNSPECIFIED);
   private final LongProperty producedAtProp = new LongProperty("producedAt", -1L);
   private final ArrayProperty<AgentHistoryMessageContent> contentProp =
       new ArrayProperty<>("content", AgentHistoryMessageContent::new);
@@ -51,7 +47,7 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
       new ObjectProperty<>("metrics", new AgentHistoryMetrics());
 
   public AgentHistoryRecord() {
-    super(16);
+    super(15);
     declareProperty(agentHistoryKeyProp)
         .declareProperty(agentInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
@@ -63,7 +59,6 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
         .declareProperty(jobLeaseProp)
         .declareProperty(iterationProp)
         .declareProperty(roleProp)
-        .declareProperty(commitStatusProp)
         .declareProperty(producedAtProp)
         .declareProperty(contentProp)
         .declareProperty(toolCallsProp)
@@ -177,16 +172,6 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
 
   public AgentHistoryRecord setRole(final AgentHistoryRole role) {
     roleProp.setValue(role);
-    return this;
-  }
-
-  @Override
-  public AgentHistoryCommitStatus getCommitStatus() {
-    return commitStatusProp.getValue();
-  }
-
-  public AgentHistoryRecord setCommitStatus(final AgentHistoryCommitStatus commitStatus) {
-    commitStatusProp.setValue(commitStatus);
     return this;
   }
 

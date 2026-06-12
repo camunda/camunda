@@ -67,9 +67,6 @@ public interface AgentHistoryRecordValue extends RecordValue, TenantOwned, Proce
   /** Returns the role of the message author (e.g. USER, ASSISTANT, TOOL_RESULT). */
   AgentHistoryRole getRole();
 
-  /** Returns the commit status of this history entry (e.g. PENDING, COMMITTED, DISCARDED). */
-  AgentHistoryCommitStatus getCommitStatus();
-
   /** Returns the epoch-millis timestamp at which this entry was produced. */
   long getProducedAt();
 

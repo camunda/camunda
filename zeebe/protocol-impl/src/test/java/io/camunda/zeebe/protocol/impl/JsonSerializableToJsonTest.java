@@ -104,7 +104,6 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
-import io.camunda.zeebe.protocol.record.value.AgentHistoryCommitStatus;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryContentType;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRole;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
@@ -4866,7 +4865,6 @@ final class JsonSerializableToJsonTest {
                       .setJobLease("job-lease-abc123")
                       .setIteration(3)
                       .setRole(AgentHistoryRole.ASSISTANT)
-                      .setCommitStatus(AgentHistoryCommitStatus.COMMITTED)
                       .setProducedAt(1748860800000L);
               record.addContent(
                   new AgentHistoryMessageContent()
@@ -4922,7 +4920,6 @@ final class JsonSerializableToJsonTest {
           "jobLease": "job-lease-abc123",
           "iteration": 3,
           "role": "ASSISTANT",
-          "commitStatus": "COMMITTED",
           "producedAt": 1748860800000,
           "content": [
             {
@@ -4978,7 +4975,6 @@ final class JsonSerializableToJsonTest {
           "jobLease": "",
           "iteration": 0,
           "role": "UNSPECIFIED",
-          "commitStatus": "UNSPECIFIED",
           "producedAt": -1,
           "content": [],
           "toolCalls": [],
