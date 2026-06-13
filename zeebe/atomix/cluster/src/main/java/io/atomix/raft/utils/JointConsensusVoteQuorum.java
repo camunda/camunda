@@ -9,6 +9,8 @@ package io.atomix.raft.utils;
 
 import io.atomix.cluster.MemberId;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.function.Consumer;
 
 public class JointConsensusVoteQuorum implements VoteQuorum {
@@ -59,6 +61,13 @@ public class JointConsensusVoteQuorum implements VoteQuorum {
       completed = true;
       callback.accept(false);
     }
+  }
+
+  @Override
+  public Collection<MemberId> participants() {
+    final var set = new HashSet<>((oldQuorum).participants());
+    set.addAll(newQuorum.participants());
+    return Collections.unmodifiableSet(set);
   }
 
   @Override
