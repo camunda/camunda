@@ -11,22 +11,80 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.configuration.Camunda;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.UnifiedConfigurationHelper;
+import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
+import io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverride;
+import io.camunda.configuration.beanoverrides.SearchEngineRetentionPropertiesOverride;
+import io.camunda.configuration.beanoverrides.SearchEngineSchemaManagerPropertiesOverride;
+import io.camunda.configuration.beans.LegacySearchEngineConnectProperties;
+import io.camunda.configuration.beans.LegacySearchEngineIndexProperties;
+import io.camunda.configuration.beans.LegacySearchEngineRetentionProperties;
+import io.camunda.configuration.beans.LegacySearchEngineSchemaManagerProperties;
+import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
+import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.lang.reflect.Field;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.springframework.mock.env.MockEnvironment;
 
 class SearchEngineSchemaInitializerTest {
 
+  @BeforeAll
+  @AfterAll
+  static void clearStaticEnvironment() {
+    // Avoid leaking a previous test's environment into these unit tests.
+    UnifiedConfigurationHelper.setCustomEnvironment(null);
+  }
+
+  /** Builds an initializer with a single synthesized {@code default} tenant for an ES backend. */
   private SearchEngineSchemaInitializer createInitializer() {
-    return new SearchEngineSchemaInitializer(null, new SimpleMeterRegistry(), true);
+    final Camunda camunda = new Camunda();
+    camunda.getData().getSecondaryStorage().setType(SecondaryStorageType.elasticsearch);
+    camunda.getData().getSecondaryStorage().getElasticsearch().setUrl("http://localhost:9200");
+    final PhysicalTenantResolver resolver =
+        PhysicalTenantResolver.of(new MockEnvironment(), camunda);
+    return new SearchEngineSchemaInitializer(configsFor(resolver), new SimpleMeterRegistry(), true);
+  }
+
+  private static Map<String, SearchEngineConfiguration> configsFor(
+      final PhysicalTenantResolver resolver) {
+    final UnifiedConfiguration unifiedConfig = new UnifiedConfiguration();
+    final SearchEngineConnectPropertiesOverride connectOverride =
+        new SearchEngineConnectPropertiesOverride(
+            unifiedConfig, new LegacySearchEngineConnectProperties());
+    final SearchEngineIndexPropertiesOverride indexOverride =
+        new SearchEngineIndexPropertiesOverride(
+            unifiedConfig, new LegacySearchEngineIndexProperties());
+    final SearchEngineRetentionPropertiesOverride retentionOverride =
+        new SearchEngineRetentionPropertiesOverride(
+            unifiedConfig, new LegacySearchEngineRetentionProperties());
+    final SearchEngineSchemaManagerPropertiesOverride schemaManagerOverride =
+        new SearchEngineSchemaManagerPropertiesOverride(
+            unifiedConfig, new LegacySearchEngineSchemaManagerProperties());
+    return resolver.mapValues(
+        tenantCamunda ->
+            SearchEngineConfiguration.of(
+                b ->
+                    b.connect(connectOverride.searchEngineConnectProperties(tenantCamunda))
+                        .index(indexOverride.searchEngineIndexProperties(tenantCamunda))
+                        .retention(retentionOverride.searchEngineRetentionProperties(tenantCamunda))
+                        .schemaManager(
+                            schemaManagerOverride.searchEngineSchemaManagerProperties(
+                                tenantCamunda))));
   }
 
   /** Sets the private {@code isShutdown} flag on the initializer via reflection. */
@@ -212,6 +270,105 @@ class SearchEngineSchemaInitializerTest {
       // then — wait a bit for the whenCompleteAsync callback to run
       executor.awaitTermination(2, TimeUnit.SECONDS);
       assertThat(executor.isShutdown()).isTrue();
+    }
+  }
+
+  @Nested
+  class PerTenantResolution {
+
+    @Test
+    void shouldSynthesizeDefaultTenantWhenNoneDeclared() {
+      // given
+      final Camunda camunda = new Camunda();
+      camunda.getData().getSecondaryStorage().setType(SecondaryStorageType.elasticsearch);
+      camunda.getData().getSecondaryStorage().getElasticsearch().setIndexPrefix("default-prefix");
+      final PhysicalTenantResolver resolver =
+          PhysicalTenantResolver.of(new MockEnvironment(), camunda);
+
+      // when
+      final SearchEngineSchemaInitializer initializer =
+          new SearchEngineSchemaInitializer(configsFor(resolver), new SimpleMeterRegistry(), true);
+
+      // then
+      assertThat(initializer.isInitialized("default")).isFalse();
+      assertThat(initializer.isInitialized()).isFalse();
+      assertThat(initializer.forTenant("default").indices()).isNotEmpty();
+    }
+
+    @Test
+    void shouldThrowForUnknownTenant() {
+      // given
+      final SearchEngineSchemaInitializer initializer = createInitializer();
+
+      // when/then
+      assertThatThrownBy(() -> initializer.forTenant("unknown"))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("unknown");
+    }
+
+    @Test
+    void shouldReportPerTenantReadiness() throws Exception {
+      // given
+      final SearchEngineSchemaInitializer initializer = createInitializer();
+
+      // initially neither no-arg nor per-tenant readiness is true
+      assertThat(initializer.isInitialized()).isFalse();
+      assertThat(initializer.isInitialized("default")).isFalse();
+
+      // when — flip the per-tenant flag via reflection (simulating a successful init)
+      final Field field = SearchEngineSchemaInitializer.class.getDeclaredField("initialized");
+      field.setAccessible(true);
+      @SuppressWarnings("unchecked")
+      final java.util.Map<String, AtomicBoolean> map =
+          (java.util.Map<String, AtomicBoolean>) field.get(initializer);
+      map.get("default").set(true);
+
+      // then
+      assertThat(initializer.isInitialized("default")).isTrue();
+      assertThat(initializer.isInitialized()).isTrue();
+    }
+
+    @Test
+    void shouldReturnFalseForNoArgWhenNotAllTenantsReady() throws Exception {
+      // given — two explicitly declared tenants (default + tenantb), only one ready.
+      // We declare `default` explicitly to suppress the resolver's synthesized default entry,
+      // which would otherwise leave a third tenant permanently un-ready.
+      final MockEnvironment env = new MockEnvironment();
+      env.getPropertySources()
+          .addFirst(
+              new org.springframework.core.env.MapPropertySource(
+                  "test",
+                  java.util.Map.of(
+                      "camunda.physical-tenants.default.data.secondary-storage.type",
+                      "elasticsearch",
+                      "camunda.physical-tenants.tenantb.data.secondary-storage.type",
+                      "elasticsearch")));
+      final Camunda camunda = new Camunda();
+      camunda.getData().getSecondaryStorage().setType(SecondaryStorageType.elasticsearch);
+      camunda.getData().getSecondaryStorage().getElasticsearch().setUrl("http://es:9200");
+      final PhysicalTenantResolver resolver = PhysicalTenantResolver.of(env, camunda);
+      final SearchEngineSchemaInitializer initializer =
+          new SearchEngineSchemaInitializer(configsFor(resolver), new SimpleMeterRegistry(), true);
+
+      // when — flip readiness on only one tenant
+      final Field field = SearchEngineSchemaInitializer.class.getDeclaredField("initialized");
+      field.setAccessible(true);
+      @SuppressWarnings("unchecked")
+      final java.util.Map<String, AtomicBoolean> map =
+          (java.util.Map<String, AtomicBoolean>) field.get(initializer);
+      assertThat(map).containsOnlyKeys("default", "tenantb");
+      map.get("default").set(true);
+
+      // then
+      assertThat(initializer.isInitialized("default")).isTrue();
+      assertThat(initializer.isInitialized("tenantb")).isFalse();
+      assertThat(initializer.isInitialized()).isFalse();
+
+      // when — flip the second tenant
+      map.get("tenantb").set(true);
+
+      // then
+      assertThat(initializer.isInitialized()).isTrue();
     }
   }
 }
