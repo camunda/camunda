@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.value.AgentHistoryCommitStatus;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryContentType;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRole;
 import io.camunda.zeebe.protocol.record.value.ImmutableAgentHistoryEmbeddedToolCallValue;
@@ -161,7 +160,6 @@ class CompactRecordLoggerTest {
                       .withElementInstanceKey(2L)
                       .withJobKey(3L)
                       .withRole(AgentHistoryRole.ASSISTANT)
-                      .withCommitStatus(AgentHistoryCommitStatus.COMMITTED)
                       .withJobLease("1")
                       .withIteration(2)
                       .withMetrics(
@@ -197,7 +195,7 @@ class CompactRecordLoggerTest {
       assertThat(result)
           .isEqualTo(
               """
-              K1#2 ASSISTANT COMMITTED @K2 K3#1 tokens:100/50 ms:1234
+              K1#2 ASSISTANT @K2 K3#1 tokens:100/50 ms:1234
                      I will analyze the customer data
                      calling tools: getAccount, getOrderDetails""");
     }
@@ -215,7 +213,6 @@ class CompactRecordLoggerTest {
                       .withElementInstanceKey(2L)
                       .withJobKey(3L)
                       .withRole(AgentHistoryRole.TOOL_RESULT)
-                      .withCommitStatus(AgentHistoryCommitStatus.COMMITTED)
                       .withJobLease("1")
                       .withIteration(3)
                       .addContent(
@@ -233,7 +230,7 @@ class CompactRecordLoggerTest {
       assertThat(result)
           .isEqualTo(
               """
-              K1#3 TOOL_RESULT COMMITTED @K2 K3#1
+              K1#3 TOOL_RESULT @K2 K3#1
                      {orderId=12345}""");
     }
 
@@ -250,7 +247,6 @@ class CompactRecordLoggerTest {
                       .withElementInstanceKey(2L)
                       .withJobKey(3L)
                       .withRole(AgentHistoryRole.ASSISTANT)
-                      .withCommitStatus(AgentHistoryCommitStatus.COMMITTED)
                       .withJobLease("1")
                       .withIteration(1)
                       .addContent(
@@ -289,7 +285,7 @@ class CompactRecordLoggerTest {
       assertThat(result)
           .isEqualTo(
               """
-              K1#1 ASSISTANT COMMITTED @K2 K3#1
+              K1#1 ASSISTANT @K2 K3#1
                      doc:gcs-store/doc-001 (invoice.pdf)
                      doc:s3-store/doc-002""");
     }

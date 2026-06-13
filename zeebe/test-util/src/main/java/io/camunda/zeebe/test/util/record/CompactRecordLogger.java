@@ -566,8 +566,6 @@ public class CompactRecordLogger {
         .append(value.getIteration())
         .append(" ")
         .append(value.getRole())
-        .append(" ")
-        .append(value.getCommitStatus())
         .append(" @")
         .append(shortenKey(value.getElementInstanceKey()))
         .append(" ")

@@ -10,7 +10,6 @@ package io.camunda.zeebe.protocol.impl.record.value.agenthistory;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
-import io.camunda.zeebe.protocol.record.value.AgentHistoryCommitStatus;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryContentType;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRole;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -34,7 +33,6 @@ final class AgentHistoryRecordTest {
     assertThat(record.getJobLease()).isEmpty();
     assertThat(record.getIteration()).isEqualTo(0);
     assertThat(record.getRole()).isEqualTo(AgentHistoryRole.UNSPECIFIED);
-    assertThat(record.getCommitStatus()).isEqualTo(AgentHistoryCommitStatus.UNSPECIFIED);
     assertThat(record.getProducedAt()).isEqualTo(-1L);
     assertThat(record.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     assertThat(record.getProcessInstanceKey()).isEqualTo(-1L);
@@ -54,7 +52,6 @@ final class AgentHistoryRecordTest {
             .setJobLease("job-lease-abc123")
             .setIteration(3)
             .setRole(AgentHistoryRole.USER)
-            .setCommitStatus(AgentHistoryCommitStatus.DISCARDED)
             .setProducedAt(1717200000000L);
 
     // when
@@ -69,7 +66,6 @@ final class AgentHistoryRecordTest {
     assertThat(copy.getJobLease()).isEqualTo(original.getJobLease());
     assertThat(copy.getIteration()).isEqualTo(original.getIteration());
     assertThat(copy.getRole()).isEqualTo(original.getRole());
-    assertThat(copy.getCommitStatus()).isEqualTo(original.getCommitStatus());
     assertThat(copy.getProducedAt()).isEqualTo(original.getProducedAt());
   }
 
@@ -98,20 +94,6 @@ final class AgentHistoryRecordTest {
 
     // then
     assertThat(copy.getRole()).isEqualTo(AgentHistoryRole.ASSISTANT);
-  }
-
-  @Test
-  void shouldRoundTripCommitStatusViaMsgPack() {
-    // given
-    final AgentHistoryRecord original =
-        new AgentHistoryRecord().setCommitStatus(AgentHistoryCommitStatus.COMMITTED);
-
-    // when
-    final AgentHistoryRecord copy = new AgentHistoryRecord();
-    copy.copyFrom(original);
-
-    // then
-    assertThat(copy.getCommitStatus()).isEqualTo(AgentHistoryCommitStatus.COMMITTED);
   }
 
   @Test
