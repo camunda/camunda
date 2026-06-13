@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter;
 
+import static io.camunda.zeebe.protocol.record.ValueType.AGENT_HISTORY;
 import static io.camunda.zeebe.protocol.record.ValueType.AGENT_INSTANCE;
 import static io.camunda.zeebe.protocol.record.ValueType.AUTHORIZATION;
 import static io.camunda.zeebe.protocol.record.ValueType.BATCH_OPERATION_CHUNK;
@@ -419,7 +420,8 @@ public class CamundaExporter implements Exporter {
             HISTORY_DELETION,
             JOB_METRICS_BATCH,
             GLOBAL_LISTENER,
-            AGENT_INSTANCE);
+            AGENT_INSTANCE,
+            AGENT_HISTORY);
 
     @Override
     public boolean acceptType(final RecordType recordType) {

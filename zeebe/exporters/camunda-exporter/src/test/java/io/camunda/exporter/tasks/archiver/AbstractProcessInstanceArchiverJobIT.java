@@ -14,6 +14,7 @@ import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.search.test.utils.SearchClientAdapter;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
+import io.camunda.webapps.schema.descriptors.template.AgentHistoryTemplate;
 import io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.AuditLogTemplate;
 import io.camunda.webapps.schema.descriptors.template.CorrelatedMessageSubscriptionTemplate;
@@ -35,6 +36,7 @@ import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.JobEntity;
 import io.camunda.webapps.schema.entities.SequenceFlowEntity;
 import io.camunda.webapps.schema.entities.VariableEntity;
+import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryEntity;
 import io.camunda.webapps.schema.entities.agentinstance.AgentInstanceEntity;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogEntity;
 import io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity;
@@ -509,7 +511,10 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
             List.of(taskEntity(processInstance))),
         new DependentEntities(
             resourceProvider.getIndexTemplateDescriptor(AgentInstanceTemplate.class),
-            List.of(agentInstanceEntity(processInstance))));
+            List.of(agentInstanceEntity(processInstance))),
+        new DependentEntities(
+            resourceProvider.getIndexTemplateDescriptor(AgentHistoryTemplate.class),
+            List.of(agentHistoryEntity(processInstance))));
   }
 
   private ProcessInstanceForListViewEntity processInstanceForListViewEntity(final String endDate) {
@@ -662,6 +667,14 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
   private AgentInstanceEntity agentInstanceEntity(
       final ProcessInstanceForListViewEntity processInstance) {
     final AgentInstanceEntity entity = create(AgentInstanceEntity::new);
+    entity.setProcessInstanceKey(processInstance.getKey());
+    entity.setRootProcessInstanceKey(processInstance.getKey());
+    return entity;
+  }
+
+  private AgentHistoryEntity agentHistoryEntity(
+      final ProcessInstanceForListViewEntity processInstance) {
+    final AgentHistoryEntity entity = create(AgentHistoryEntity::new);
     entity.setProcessInstanceKey(processInstance.getKey());
     entity.setRootProcessInstanceKey(processInstance.getKey());
     return entity;

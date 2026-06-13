@@ -1,0 +1,163 @@
+{
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "id": {
+        "type": "keyword"
+      },
+      "key": {
+        "type": "long"
+      },
+      "agentInstanceKey": {
+        "type": "long"
+      },
+      "elementInstanceKey": {
+        "type": "long"
+      },
+      "processInstanceKey": {
+        "type": "long"
+      },
+      "rootProcessInstanceKey": {
+        "type": "long"
+      },
+      "processDefinitionKey": {
+        "type": "long"
+      },
+      "tenantId": {
+        "type": "keyword"
+      },
+      "partitionId": {
+        "type": "integer"
+      },
+      "jobKey": {
+        "type": "long"
+      },
+      "jobLease": {
+        "type": "keyword"
+      },
+      "iteration": {
+        "type": "integer"
+      },
+      "role": {
+        "type": "keyword"
+      },
+      "commitStatus": {
+        "type": "keyword"
+      },
+      "producedAt": {
+        "type": "date",
+        "format": "date_time || epoch_millis"
+      },
+      "inputTokens": {
+        "type": "long"
+      },
+      "outputTokens": {
+        "type": "long"
+      },
+      "durationMs": {
+        "type": "long"
+      },
+      "content": {
+        "type": "object",
+        "properties": {
+          "contentType": {
+            "type": "keyword",
+            "index": false,
+            "doc_values": false
+          },
+          "text": {
+            "type": "text",
+            "index": false
+          },
+          "documentReference": {
+            "type": "object",
+            "properties": {
+              "documentId": {
+                "type": "keyword",
+                "index": false,
+                "doc_values": false
+              },
+              "storeId": {
+                "type": "keyword",
+                "index": false,
+                "doc_values": false
+              },
+              "contentHash": {
+                "type": "keyword",
+                "index": false,
+                "doc_values": false
+              },
+              "metadata": {
+                "type": "object",
+                "properties": {
+                  "contentType": {
+                    "type": "keyword",
+                    "index": false,
+                    "doc_values": false
+                  },
+                  "fileName": {
+                    "type": "keyword",
+                    "index": false,
+                    "doc_values": false
+                  },
+                  "expiresAt": {
+                    "type": "date",
+                    "format": "date_time || epoch_millis",
+                    "index": false
+                  },
+                  "size": {
+                    "type": "long",
+                    "index": false,
+                    "doc_values": false
+                  },
+                  "processDefinitionId": {
+                    "type": "keyword",
+                    "index": false,
+                    "doc_values": false
+                  },
+                  "processInstanceKey": {
+                    "type": "long",
+                    "index": false,
+                    "doc_values": false
+                  },
+                  "customProperties": {
+                    "type": "object",
+                    "enabled": false
+                  }
+                }
+              }
+            }
+          },
+          "object": {
+            "type": "object",
+            "enabled": false
+          }
+        }
+      },
+      "toolCalls": {
+        "type": "object",
+        "properties": {
+          "toolCallId": {
+            "type": "keyword",
+            "index": false,
+            "doc_values": false
+          },
+          "toolName": {
+            "type": "keyword",
+            "index": false,
+            "doc_values": false
+          },
+          "elementId": {
+            "type": "keyword",
+            "index": false,
+            "doc_values": false
+          },
+          "arguments": {
+            "type": "object",
+            "enabled": false
+          }
+        }
+      }
+    }
+  }
+}
