@@ -15,10 +15,12 @@ import { Route as AuthIndexRouteImport } from './routes/_auth/index'
 import { Route as AuthTasklistRouteRouteImport } from './routes/_auth/tasklist/route'
 import { Route as AuthOperateRouteRouteImport } from './routes/_auth/operate/route'
 import { Route as AuthAdminRouteRouteImport } from './routes/_auth/admin/route'
-import { Route as AuthTasklistIndexRouteImport } from './routes/_auth/tasklist/index'
 import { Route as AuthOperateIndexRouteImport } from './routes/_auth/operate/index'
 import { Route as AuthAdminIndexRouteImport } from './routes/_auth/admin/index'
 import { Route as AuthTasklistProcessesRouteImport } from './routes/_auth/tasklist/processes'
+import { Route as AuthTasklistTasksRouteRouteImport } from './routes/_auth/tasklist/_tasks/route'
+import { Route as AuthTasklistTasksIndexRouteImport } from './routes/_auth/tasklist/_tasks/index'
+import { Route as AuthTasklistTasksIdRouteImport } from './routes/_auth/tasklist/_tasks/$id'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -49,11 +51,6 @@ const AuthAdminRouteRoute = AuthAdminRouteRouteImport.update({
   path: '/admin',
   getParentRoute: () => AuthRouteRoute,
 } as any)
-const AuthTasklistIndexRoute = AuthTasklistIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AuthTasklistRouteRoute,
-} as any)
 const AuthOperateIndexRoute = AuthOperateIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -69,6 +66,20 @@ const AuthTasklistProcessesRoute = AuthTasklistProcessesRouteImport.update({
   path: '/processes',
   getParentRoute: () => AuthTasklistRouteRoute,
 } as any)
+const AuthTasklistTasksRouteRoute = AuthTasklistTasksRouteRouteImport.update({
+  id: '/_tasks',
+  getParentRoute: () => AuthTasklistRouteRoute,
+} as any)
+const AuthTasklistTasksIndexRoute = AuthTasklistTasksIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthTasklistTasksRouteRoute,
+} as any)
+const AuthTasklistTasksIdRoute = AuthTasklistTasksIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AuthTasklistTasksRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthIndexRoute
@@ -79,15 +90,17 @@ export interface FileRoutesByFullPath {
   '/tasklist/processes': typeof AuthTasklistProcessesRoute
   '/admin/': typeof AuthAdminIndexRoute
   '/operate/': typeof AuthOperateIndexRoute
-  '/tasklist/': typeof AuthTasklistIndexRoute
+  '/tasklist/$id': typeof AuthTasklistTasksIdRoute
+  '/tasklist/': typeof AuthTasklistTasksIndexRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
+  '/tasklist': typeof AuthTasklistTasksIndexRoute
   '/': typeof AuthIndexRoute
   '/tasklist/processes': typeof AuthTasklistProcessesRoute
   '/admin': typeof AuthAdminIndexRoute
   '/operate': typeof AuthOperateIndexRoute
-  '/tasklist': typeof AuthTasklistIndexRoute
+  '/tasklist/$id': typeof AuthTasklistTasksIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -97,10 +110,12 @@ export interface FileRoutesById {
   '/_auth/operate': typeof AuthOperateRouteRouteWithChildren
   '/_auth/tasklist': typeof AuthTasklistRouteRouteWithChildren
   '/_auth/': typeof AuthIndexRoute
+  '/_auth/tasklist/_tasks': typeof AuthTasklistTasksRouteRouteWithChildren
   '/_auth/tasklist/processes': typeof AuthTasklistProcessesRoute
   '/_auth/admin/': typeof AuthAdminIndexRoute
   '/_auth/operate/': typeof AuthOperateIndexRoute
-  '/_auth/tasklist/': typeof AuthTasklistIndexRoute
+  '/_auth/tasklist/_tasks/$id': typeof AuthTasklistTasksIdRoute
+  '/_auth/tasklist/_tasks/': typeof AuthTasklistTasksIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -113,15 +128,17 @@ export interface FileRouteTypes {
     | '/tasklist/processes'
     | '/admin/'
     | '/operate/'
+    | '/tasklist/$id'
     | '/tasklist/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
+    | '/tasklist'
     | '/'
     | '/tasklist/processes'
     | '/admin'
     | '/operate'
-    | '/tasklist'
+    | '/tasklist/$id'
   id:
     | '__root__'
     | '/_auth'
@@ -130,10 +147,12 @@ export interface FileRouteTypes {
     | '/_auth/operate'
     | '/_auth/tasklist'
     | '/_auth/'
+    | '/_auth/tasklist/_tasks'
     | '/_auth/tasklist/processes'
     | '/_auth/admin/'
     | '/_auth/operate/'
-    | '/_auth/tasklist/'
+    | '/_auth/tasklist/_tasks/$id'
+    | '/_auth/tasklist/_tasks/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -185,13 +204,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthAdminRouteRouteImport
       parentRoute: typeof AuthRouteRoute
     }
-    '/_auth/tasklist/': {
-      id: '/_auth/tasklist/'
-      path: '/'
-      fullPath: '/tasklist/'
-      preLoaderRoute: typeof AuthTasklistIndexRouteImport
-      parentRoute: typeof AuthTasklistRouteRoute
-    }
     '/_auth/operate/': {
       id: '/_auth/operate/'
       path: '/'
@@ -212,6 +224,27 @@ declare module '@tanstack/react-router' {
       fullPath: '/tasklist/processes'
       preLoaderRoute: typeof AuthTasklistProcessesRouteImport
       parentRoute: typeof AuthTasklistRouteRoute
+    }
+    '/_auth/tasklist/_tasks': {
+      id: '/_auth/tasklist/_tasks'
+      path: ''
+      fullPath: '/tasklist'
+      preLoaderRoute: typeof AuthTasklistTasksRouteRouteImport
+      parentRoute: typeof AuthTasklistRouteRoute
+    }
+    '/_auth/tasklist/_tasks/': {
+      id: '/_auth/tasklist/_tasks/'
+      path: '/'
+      fullPath: '/tasklist/'
+      preLoaderRoute: typeof AuthTasklistTasksIndexRouteImport
+      parentRoute: typeof AuthTasklistTasksRouteRoute
+    }
+    '/_auth/tasklist/_tasks/$id': {
+      id: '/_auth/tasklist/_tasks/$id'
+      path: '/$id'
+      fullPath: '/tasklist/$id'
+      preLoaderRoute: typeof AuthTasklistTasksIdRouteImport
+      parentRoute: typeof AuthTasklistTasksRouteRoute
     }
   }
 }
@@ -239,14 +272,30 @@ const AuthOperateRouteRouteChildren: AuthOperateRouteRouteChildren = {
 const AuthOperateRouteRouteWithChildren =
   AuthOperateRouteRoute._addFileChildren(AuthOperateRouteRouteChildren)
 
+interface AuthTasklistTasksRouteRouteChildren {
+  AuthTasklistTasksIdRoute: typeof AuthTasklistTasksIdRoute
+  AuthTasklistTasksIndexRoute: typeof AuthTasklistTasksIndexRoute
+}
+
+const AuthTasklistTasksRouteRouteChildren: AuthTasklistTasksRouteRouteChildren =
+  {
+    AuthTasklistTasksIdRoute: AuthTasklistTasksIdRoute,
+    AuthTasklistTasksIndexRoute: AuthTasklistTasksIndexRoute,
+  }
+
+const AuthTasklistTasksRouteRouteWithChildren =
+  AuthTasklistTasksRouteRoute._addFileChildren(
+    AuthTasklistTasksRouteRouteChildren,
+  )
+
 interface AuthTasklistRouteRouteChildren {
+  AuthTasklistTasksRouteRoute: typeof AuthTasklistTasksRouteRouteWithChildren
   AuthTasklistProcessesRoute: typeof AuthTasklistProcessesRoute
-  AuthTasklistIndexRoute: typeof AuthTasklistIndexRoute
 }
 
 const AuthTasklistRouteRouteChildren: AuthTasklistRouteRouteChildren = {
+  AuthTasklistTasksRouteRoute: AuthTasklistTasksRouteRouteWithChildren,
   AuthTasklistProcessesRoute: AuthTasklistProcessesRoute,
-  AuthTasklistIndexRoute: AuthTasklistIndexRoute,
 }
 
 const AuthTasklistRouteRouteWithChildren =

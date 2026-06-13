@@ -12,11 +12,13 @@ import {
 	mockCurrentUserEndpoint,
 	mockLicenseEndpoint,
 	mockLogoutEndpoint,
+	mockQueryUserTasksEndpoint,
 	mockSystemConfigurationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
+import {createQueryUserTasksResponse} from '#/shared-test-modules/api-mocks/user-tasks';
 
 const currentUserMock = createCurrentUser();
 
@@ -30,6 +32,9 @@ test.beforeEach(({network}) => {
 		}),
 		mockLicenseEndpoint({
 			successResponse: HttpResponse.json(createLicense()),
+		}),
+		mockQueryUserTasksEndpoint({
+			successResponse: HttpResponse.json(createQueryUserTasksResponse()),
 		}),
 	);
 });
@@ -157,7 +162,7 @@ test.describe('i18n', () => {
 		await tasklistIndexPage.header.openUserSidebar();
 		await tasklistIndexPage.header.selectLanguage('Deutsch');
 
-		await expect(page.getByRole('link', {name: 'Aufgaben'})).toBeVisible();
+		await expect(page.getByRole('link', {name: 'Aufgaben', exact: true})).toBeVisible();
 		await expect(page.getByRole('link', {name: 'Prozesse'})).toBeVisible();
 	});
 });

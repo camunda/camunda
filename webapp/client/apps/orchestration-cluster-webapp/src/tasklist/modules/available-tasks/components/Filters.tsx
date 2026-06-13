@@ -30,7 +30,7 @@ const SORTING_OPTION_LABEL_KEYS = {
 
 const Filters: React.FC = () => {
 	const {t} = useTranslation();
-	const {sortBy} = useSearch({from: '/_auth/tasklist/'});
+	const {sortBy} = useSearch({from: '/_auth/tasklist/_tasks'});
 	const navigate = useNavigate();
 
 	return (
@@ -55,7 +55,7 @@ const Filters: React.FC = () => {
 							</div>
 						}
 						onClick={() => {
-							navigate({to: '/tasklist', search: (prev) => ({...prev, sortBy: id})});
+							navigate({to: '.', search: (prev) => ({...prev, sortBy: id})});
 							tracking.track({
 								eventName: 'tasklist:tasks-filtered',
 								filter: 'all-open',

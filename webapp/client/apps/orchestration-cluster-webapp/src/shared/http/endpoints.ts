@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {endpoints as unifiedAPIEndpoints} from '@camunda/camunda-api-zod-schemas/8.10';
+import {endpoints as unifiedAPIEndpoints, type QueryUserTasksRequestBody} from '@camunda/camunda-api-zod-schemas/8.10';
 import {getBootConfig} from '#/shared/config/getBootConfig';
 import {mergePathname} from './mergePathname';
 
@@ -66,6 +66,17 @@ const endpoints = {
 			...BASE_REQUEST_OPTIONS,
 			method: 'GET',
 			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryUserTasks: (body: QueryUserTasksRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryUserTasks.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryUserTasks.method,
+			body: JSON.stringify(body),
+			headers: {
+				'Content-Type': 'application/json',
+				'x-is-polling': 'true',
+			},
 		}),
 };
 
