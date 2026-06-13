@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.metrics;
 
+import io.camunda.zeebe.metrics.StarterMetricsDoc.StarterMetricKeyNames;
 import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
 import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.Meter.Type;
@@ -141,7 +142,8 @@ public enum StarterLatencyMetricsDoc implements ExtendedMeterDocumentation {
 
   /** The latency of read benchmark queries executed against the Camunda cluster. */
   READ_BENCHMARK {
-    private static final KeyName[] KEY_NAMES = new KeyName[] {StarterMetricKeyNames.QUERY_NAME};
+    private static final KeyName[] KEY_NAMES =
+        new KeyName[] {StarterLatencyMetricKeyNames.QUERY_NAME};
 
     private static final Duration[] BUCKETS = {
       Duration.ofMillis(10),
@@ -188,16 +190,7 @@ public enum StarterLatencyMetricsDoc implements ExtendedMeterDocumentation {
     }
   };
 
-  public enum StarterMetricKeyNames implements KeyName {
-
-    /** The ID of the partition associated to the metric */
-    PARTITION {
-      @Override
-      public String asString() {
-        return "partition";
-      }
-    },
-
+  public enum StarterLatencyMetricKeyNames implements KeyName {
     /** The name of the query being benchmarked */
     QUERY_NAME {
       @Override
