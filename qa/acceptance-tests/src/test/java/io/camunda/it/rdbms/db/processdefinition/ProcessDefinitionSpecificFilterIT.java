@@ -33,13 +33,14 @@ public class ProcessDefinitionSpecificFilterIT {
 
   @Autowired private RdbmsService rdbmsService;
 
-  @Autowired private ProcessDefinitionDbReader processDefinitionReader;
+  private ProcessDefinitionDbReader processDefinitionReader;
 
   private RdbmsWriters rdbmsWriters;
 
   @BeforeEach
   public void beforeAll() {
     rdbmsWriters = rdbmsService.createWriter(0L);
+    processDefinitionReader = rdbmsService.getProcessDefinitionReader();
   }
 
   @ParameterizedTest

@@ -40,13 +40,14 @@ public class IncidentSpecificFilterIT {
 
   @Autowired private RdbmsService rdbmsService;
 
-  @Autowired private IncidentDbReader processDefinitionReader;
+  private IncidentDbReader processDefinitionReader;
 
   private RdbmsWriters rdbmsWriters;
 
   @BeforeEach
   public void beforeAll() {
     rdbmsWriters = rdbmsService.createWriter(0L);
+    processDefinitionReader = rdbmsService.getIncidentReader();
   }
 
   @ParameterizedTest
