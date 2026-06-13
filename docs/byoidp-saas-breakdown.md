@@ -100,7 +100,9 @@ Each phase is intended to be shippable on its own.
 ## Phase 1 — BYOIDP user-facing MVP
 
 **User stories addressed (in full or part):** Story 1 (intuitive setup), Story 6 (Camunda Support
-read-only — implicit, via Auth0 staying alive), Story 7 (documentation clarity).
+read-only — implicit, via Auth0 staying alive; this implicit coverage holds only while Phase 3's
+Auth0-disable toggle has not shipped — see Phase 3 for the customer-onboarded-support-identity
+path that replaces it), Story 7 (documentation clarity).
 
 ### `camunda-cloud-management-apps` (Console)
 
@@ -112,6 +114,14 @@ read-only — implicit, via Auth0 staying alive), Story 7 (documentation clarity
 - When the toggle is on, the form collects: friendly display name, Issuer URL, Client ID,
   Client Secret, Scopes, and claim-mapping inputs (username-claim, clientid-claim, optional
   groups-claim).
+- **Redirect URI** is not collected. The POC verified that Spring's default
+  `{baseUrl}/sso-callback` derived from the actual request works. Customers register this URL
+  in their IdP app registration as part of the documented setup. If real-world adoption needs
+  configurable Redirect URIs, a follow-up adds the field — open question Q10.
+- **Pre-save configuration validation** (OIDC discovery fetch, claim-presence checks,
+  client-credentials test) is **explicitly out of scope for Phase 1**. The historic doc defers
+  it; the AC's "real-time feedback on errors" is achieved through cluster startup failure
+  surfacing instead. Productizing validation is a follow-on item — action item 12.
 - The form **surfaces a lockout-risk warning before commit** (per the updated product brief).
   Final copy is an action item with Design.
 - The friendly display name is also configurable for the existing Auth0 entry, so the login picker
@@ -160,7 +170,8 @@ read-only — implicit, via Auth0 staying alive), Story 7 (documentation clarity
 
 ### `camunda-security-library` (CSL)
 
-Phase 1 is mostly *already done*. Verification work, plus closing the gap noted in the POC:
+Phase 1 is mostly *already done*. Verification work, plus closing the gap noted in the POC and
+adding observability:
 
 - Confirm that providers configured under `camunda.security.authentication.providers.oidc.<name>.*`
   reach the Spring login picker with their `clientName` rendered.
@@ -168,16 +179,26 @@ Phase 1 is mostly *already done*. Verification work, plus closing the gap noted 
   was read from the top-level `camunda.security.authentication.oidc` config only); recent CSL
   work may have closed it. If it remains a gap, close it so customer IdP and Auth0 can choose
   RP-initiated logout independently. Tracked as open question Q2.
+- **Observability**: emit per-provider metrics for login success, login failure (by reason
+  bucket), token-rejection by issuer, and JWKS refresh failure. A customer-IdP misconfiguration
+  otherwise silently lands customers on a failing cluster with no operator-visible signal.
 - Add a CSL ADR documenting BYOIDP support.
 
 ### `camunda/camunda` (Orchestration Cluster)
-
-Phase 1 here is **minimal**:
 
 - No new auth code in this repo for the primary login flow — CSL covers it.
 - Extend the existing multi-provider integration tests in
   `authentication/src/test/java/io/camunda/authentication/MultipleOidcProviderFlowTest.java` (and
   related) to cover Auth0 + a customer-IdP shape end-to-end.
+- **User-profile IdP indicator** (epic Details: *"Cluster should show … in user profile which
+  IdP was used to login"*). Add the issuer / friendly name of the IdP that authenticated the
+  current session to the user-profile pane in the OC webapp. Small frontend change in
+  `webapp/client/`. Open question Q11 if Console renders this instead — see open questions.
+- **Authentication-event audit scoping** (epic AC: *"Tokens, sessions, and audit events reflect
+  correct scoping"*). Authentication and session events must carry which IdP issued the
+  underlying token so audit consumers can attribute access. Scope of change depends on the
+  current audit-event schema — Phase 1 adds the IdP attribution to login/logout/session-create
+  audit records.
 
 ### Out of repo (Phase 1)
 
@@ -238,7 +259,12 @@ discussion — see action items.
 
 ### `camunda-security-library` (CSL)
 
-- No change for this story. The OC already trusts the customer IdP from Phase 1.
+- The CSL filter chain for **gRPC** is separate from REST. Phase 2 must include multi-provider
+  gRPC validation, because both Story 2 (Connectors communicate via REST/gRPC) and Story 5 (the
+  C8 REST/gRPC API) explicitly require it. Add gRPC-side tests for multi-provider token
+  acceptance and authorization; fix any gaps surfaced.
+- The OC already trusts the customer IdP from Phase 1 on the REST path; the gRPC path is the
+  scope of this Phase 2 deliverable.
 
 ### `camunda/camunda` (Orchestration Cluster)
 
@@ -275,17 +301,20 @@ items from the product brief.
 
 ### `camunda-operator` (Operator)
 
-- New CRD field `Spec.Identity.DisableAuth0UserLogin bool` on `IdentitySpec`, surfaced as the env
-  var consumed by CSL's per-provider user-login filter.
+- Add a `UserLoginEnabled *bool` field on the existing `OidcProviderSpec` entry (from Phase 1).
+  The Console-side Auth0-disable toggle writes `userLoginEnabled=false` on the Auth0 provider
+  entry, rather than a separate cluster-wide `DisableAuth0UserLogin` field. This keeps a single
+  per-provider data model and avoids a duplicate, Auth0-specific shape. Operator renders the
+  field into the corresponding CSL env var.
 - Regenerate manifests, deepcopy, golden tests.
 
 ### `camunda-security-library` (CSL)
 
 - **Per-provider user-login enable/disable.** Today, providers are both trusted for token
   validation AND offered in the login picker. Phase 3 introduces a per-provider
-  `userLoginEnabled` flag (or equivalent) so Auth0 can be hidden from the login picker while its
-  tokens continue to be validated for M2M flows. This split is non-trivial CSL work and depends
-  on the M2M-split action item.
+  `userLoginEnabled` flag. The flag's exact semantic (does it gate only login-picker visibility,
+  or also issuer trust for M2M tokens?) is the topic of action item 10. CSL ships the flag; the
+  resolution of that action item determines whether the flag affects M2M trust as well.
 - **PoC closure work** (validation activities, not features):
     1. Logout RP-initiated: ensure per-provider `idpLogoutEnabled` interoperates correctly across
        providers; logging out of one does not prematurely end the other's session.
@@ -294,9 +323,6 @@ items from the product brief.
        seam.
     3. AuthZ enforcement across IdPs: tests asserting identical authorization decisions for
        equivalent resolved identity, independent of issuer.
-    4. gRPC auth: gRPC is a separate filter chain. Add gRPC-side tests for multi-provider
-       acceptance and authorization. Possibly the heaviest PoC item; may overflow into Phase 2
-       if discovered earlier.
 - A CSL ADR documenting the user-login-vs-M2M split.
 
 ### `camunda/camunda` (Orchestration Cluster)
@@ -382,6 +408,18 @@ Each item below needs an owner and a resolution; many gate scope refinement in t
    and Operator CRD all support multiple custom IdPs; the question is whether the Console UI
    ships a single-form shape or a list/CRUD shape in Phase 1. Heavier FE work for the latter.
    Owner: Product Design + Console FE engineering.
+12. **Pre-save configuration validation** (OIDC discovery fetch, claim-presence checks,
+    `client_credentials` test) — confirm Phase 1 deferral with PM, and either file a follow-on
+    ticket for productized validation or document the indefinite deferral. Owner: PM.
+13. **Security review.** This is a security-critical feature (two trusted issuers, SaaS
+    validators tolerating missing org/clusterId claims). Schedule an explicit security review of
+    the Phase 1 design before code lands. Owner: Security team + breakdown author.
+14. **Cluster generation / minimum-version gate.** The sibling multi-tenancy epic gated the UI
+    on Zeebe 8.8.0-alpha7+. Decide which cluster generations expose the BYOIDP toggle, and gate
+    the Console UI accordingly. Owner: PM + Console engineering.
+15. **Feature entitlement and staged rollout.** Decide whether BYOIDP is a paid tier, whether
+    it is exposed behind a Console feature flag, and what the regional / staged-rollout plan
+    looks like. Owner: PM.
 
 ### Phase 2
 
@@ -425,6 +463,20 @@ These do not block scoping but need answers during execution.
   closed it? Verify against current CSL state when execution begins.
 - **Q3.** Does Console already propagate a `CLIENTNAME` for the existing Auth0 entry, or is
   passing a friendly Auth0 name through a new propagation?
+- **Q10.** Redirect URI: is the `{baseUrl}/sso-callback` default sufficient for all customer IdPs,
+  or do some require a different callback path? If real-world adoption exposes a need, a
+  Redirect-URI field is added in a follow-on.
+- **Q11.** User-profile IdP indicator: should it render in the OC webapp (`webapp/client/`) or in
+  Console? OC is the natural home because the user is inside the cluster context, but Console
+  surfaces session/cluster details elsewhere too. Resolve before Phase 1 design.
+- **Q12.** JWKS / discovery resilience: what is the expected behavior when the customer IdP's
+  discovery endpoint is unreachable at pod start, or JWKS is unreachable mid-session? Define
+  timeouts, retry policy, and whether transient customer-IdP failures must keep Auth0 (and the
+  rest of the cluster) usable.
+- **Q13.** Identity reconciliation on enablement: when BYOIDP is turned on, the same human user's
+  `sub` claim from the customer IdP differs from their Auth0 `sub`. Per-user authorizations
+  bound to Auth0 `sub` are orphaned. Groups-claim helps for group-scoped permissions but not for
+  per-user grants. Document the expected admin workflow, or define a migration deliverable.
 
 ### Phase 2
 
@@ -435,6 +487,11 @@ These do not block scoping but need answers during execution.
 - **Q5.** What mechanism does Console use to detect Connectors-side authentication failures so it
   can render the "Connector cannot authenticate to cluster" error from the AC? A healthcheck
   signal, a deployment status, or something else?
+- **Q14.** Existing-flows breaking-change risk on BYOIDP-enabled clusters. On a cluster with
+  BYOIDP enabled where Auth0 is still trusted, hybrid clients currently routing through
+  `proxy-token-issuer` (and any other indirect Auth0-token flow) must be characterized:
+  do they continue to function unchanged, are they explicitly out of scope, or do they need a
+  migration path? Resolve during Phase 2 design — closely related to action item 8.
 
 ### PoC validation items (gate on closure before claiming the affected phases done)
 
