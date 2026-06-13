@@ -49,6 +49,9 @@ defaults:
   run:
     shell: bash
 
+env:
+  TEST_OWNER: '@camunda/core-features'
+
 jobs:
   triage:
     runs-on: ubuntu-latest

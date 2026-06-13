@@ -22,6 +22,7 @@ on:
     - cron: "0 5 * * Mon-Fri"
 
 env:
+  TEST_OWNER: '@camunda/core-features'
   GHA_BEST_PRACTICES_LINTER: enabled
 
 defaults:

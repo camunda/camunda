@@ -29,6 +29,7 @@ defaults:
     shell: bash
 
 env:
+  TEST_OWNER: '@camunda/reliability-testing'
   IMAGE_REPOSITORY: registry.camunda.cloud/team-zeebe
 
 jobs:

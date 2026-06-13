@@ -13,6 +13,9 @@ on:
     - cron: '0 * * * *' # every hour
   workflow_dispatch: {}
 
+env:
+  TEST_OWNER: '@camunda/core-features'
+
 jobs:
   assign-urgency-batch:
     runs-on: ubuntu-latest

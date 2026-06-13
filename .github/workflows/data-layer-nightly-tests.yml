@@ -15,6 +15,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  TEST_OWNER: '@camunda/data-layer'
+
 jobs:
   nightly-tests:
     name: "Data Layer Nightly Tests (${{ matrix.branch }})"

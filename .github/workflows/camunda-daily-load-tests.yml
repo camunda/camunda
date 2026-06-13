@@ -27,6 +27,9 @@ defaults:
     # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
     shell: bash
 
+env:
+  TEST_OWNER: '@camunda/reliability-testing'
+
 jobs:
   benchmark-data:
     name: Collect benchmark data
