@@ -9,6 +9,7 @@ package io.camunda.exporter.appint;
 
 import io.camunda.exporter.appint.config.Config;
 import io.camunda.exporter.appint.event.Event;
+import io.camunda.exporter.appint.metrics.AppIntegrationsExporterMetrics;
 import io.camunda.exporter.appint.subscription.Subscription;
 import io.camunda.exporter.appint.subscription.SubscriptionFactory;
 import io.camunda.zeebe.exporter.api.Exporter;
@@ -27,16 +28,18 @@ public class AppIntegrationsExporter implements Exporter {
   private Subscription<Event> subscription;
   private Controller controller;
   private Config config;
+  private AppIntegrationsExporterMetrics metrics;
 
   @Override
   public void configure(final Context context) {
     config = context.getConfiguration().instantiate(Config.class);
+    metrics = new AppIntegrationsExporterMetrics(context.getMeterRegistry());
   }
 
   @Override
   public void open(final Controller controller) {
     this.controller = controller;
-    subscription = SubscriptionFactory.createDefault(config, this::updateExportPosition);
+    subscription = SubscriptionFactory.createDefault(config, this::updateExportPosition, metrics);
     scheduleDelayedFlush();
   }
 
