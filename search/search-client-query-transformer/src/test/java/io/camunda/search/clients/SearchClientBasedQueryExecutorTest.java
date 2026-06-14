@@ -181,6 +181,40 @@ class SearchClientBasedQueryExecutorTest {
   }
 
   @Test
+  void shouldPropagatePositionToProcessInstanceEntity() {
+    // given
+    final var instanceWithPosition =
+        new ProcessInstanceForListViewEntity()
+            .setProcessInstanceKey(123L)
+            .setProcessName("Demo Process")
+            .setBpmnProcessId("demoProcess")
+            .setProcessVersion(5)
+            .setProcessVersionTag("42")
+            .setProcessDefinitionKey(789L)
+            .setTenantId("default")
+            .setStartDate(OffsetDateTime.parse("2024-01-01T00:00:00Z"))
+            .setState(ACTIVE)
+            .setIncident(false)
+            .setPosition(42L);
+    final SearchQueryResponse<ProcessInstanceForListViewEntity> response =
+        createProcessInstanceEntityResponse(instanceWithPosition, 1, false);
+    when(searchClient.search(
+            any(SearchQueryRequest.class), eq(ProcessInstanceForListViewEntity.class)))
+        .thenReturn(response);
+
+    // when
+    final SearchQueryResult<ProcessInstanceEntity> searchResult =
+        queryExecutor.search(
+            new ProcessInstanceQuery.Builder().build(),
+            ProcessInstanceForListViewEntity.class,
+            ResourceAccessChecks.disabled());
+
+    // then
+    assertThat(searchResult.items()).hasSize(1);
+    assertThat(searchResult.items().getFirst().position()).isEqualTo(42L);
+  }
+
+  @Test
   void shouldIncludeTenantFilterForTenantScopedEntities() {
     // given
     final var tenantIds = List.of("<default>", "T1");

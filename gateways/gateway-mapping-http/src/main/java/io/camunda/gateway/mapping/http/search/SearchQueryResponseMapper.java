@@ -909,6 +909,7 @@ public final class SearchQueryResponseMapper {
         .rootProcessInstanceKey(keyToStringOrNull(p.rootProcessInstanceKey()))
         .tags(p.tags())
         .businessId(emptyToNull(p.businessId()))
+        .position(p.position())
         .build();
   }
 

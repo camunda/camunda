@@ -34,7 +34,8 @@ public class ProcessInstanceEntityTransformer
         source.getTenantId(),
         source.getTreePath(),
         source.getTags(),
-        emptyToNull(source.getBusinessId()));
+        emptyToNull(source.getBusinessId()),
+        source.getPosition());
   }
 
   private static String emptyToNull(final String value) {
