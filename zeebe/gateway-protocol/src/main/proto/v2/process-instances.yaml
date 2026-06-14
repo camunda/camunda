@@ -1453,6 +1453,11 @@ components:
           nullable: true
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/BusinessId'
+        position:
+          description: The position of this process instance record in the Zeebe log stream.
+          nullable: true
+          type: integer
+          format: int64
       x-properties-added-in-version:
         - propertyName: processDefinitionId
           addedInVersion: "8.8"
@@ -1486,6 +1491,8 @@ components:
           addedInVersion: "8.8"
         - propertyName: businessId
           addedInVersion: "8.9"
+        - propertyName: position
+          addedInVersion: "8.10"
 
     CancelProcessInstanceRequest:
       type: object

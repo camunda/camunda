@@ -341,7 +341,8 @@ abstract class AbstractBatchOperationTest {
         TenantOwned.DEFAULT_TENANT_IDENTIFIER,
         null, // treePath
         Set.of(), // tags
-        null); // businessId
+        null, // businessId
+        null); // position
   }
 
   protected IncidentEntity fakeIncidentEntity(

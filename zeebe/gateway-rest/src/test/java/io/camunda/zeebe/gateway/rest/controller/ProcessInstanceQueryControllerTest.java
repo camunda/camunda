@@ -92,7 +92,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
           "tenant",
           "PI_123",
           Set.of("tag1", "tag2"),
-          "biz-id");
+          "biz-id",
+          null);
   private static final String PROCESS_INSTANCE_ENTITY_JSON =
       """
             {
@@ -111,7 +112,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             "hasIncident": false,
             "tenantId": "tenant",
             "tags": ["tag1", "tag2"],
-            "businessId": "biz-id"
+            "businessId": "biz-id",
+            "position": null
           }
           """;
   private static final String EXPECTED_SEARCH_RESPONSE =
@@ -134,7 +136,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
                   "hasIncident": false,
                   "tenantId": "tenant",
                   "tags": ["tag1", "tag2"],
-                  "businessId": "biz-id"
+                  "businessId": "biz-id",
+                  "position": null
                 }
               ],
               "page": {
@@ -156,6 +159,48 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         ]
       """;
 
+  private static final ProcessInstanceEntity PROCESS_INSTANCE_ENTITY_WITH_POSITION =
+      new ProcessInstanceEntity(
+          456L,
+          37L,
+          "demoProcess",
+          "Demo Process",
+          5,
+          "v5",
+          789L,
+          333L,
+          777L,
+          OffsetDateTime.parse("2024-01-01T00:00:00Z"),
+          null,
+          ProcessInstanceState.ACTIVE,
+          false,
+          "tenant",
+          "PI_456",
+          Set.of("tag1"),
+          "biz-id",
+          9999L);
+  private static final String PROCESS_INSTANCE_ENTITY_WITH_POSITION_JSON =
+      """
+          {
+            "processInstanceKey": "456",
+            "rootProcessInstanceKey": "37",
+            "processDefinitionId": "demoProcess",
+            "processDefinitionName": "Demo Process",
+            "processDefinitionVersion": 5,
+            "processDefinitionVersionTag": "v5",
+            "processDefinitionKey": "789",
+            "parentProcessInstanceKey": "333",
+            "parentElementInstanceKey": "777",
+            "startDate": "2024-01-01T00:00:00.000Z",
+            "endDate": null,
+            "state": "ACTIVE",
+            "hasIncident": false,
+            "tenantId": "tenant",
+            "tags": ["tag1"],
+            "businessId": "biz-id",
+            "position": 9999
+          }
+          """;
   private static final String EXPECTED_INVALID_TAGS_RESPONSE =
       """
       {
@@ -768,6 +813,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             "tenant",
             "PI_456",
             null,
+            null,
             null);
     when(processInstanceServices.getByKey(eq(processInstanceKey), any(CamundaAuthentication.class)))
         .thenReturn(entityWithNullBusinessId);
@@ -790,7 +836,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
               "hasIncident": false,
               "tenantId": "tenant",
               "tags": [],
-              "businessId": null
+              "businessId": null,
+              "position": null
             }
             """;
 
@@ -1047,6 +1094,88 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
     verify(processInstanceServices)
         .search(
             eq(new ProcessInstanceQuery.Builder().filter(expectedFilter.build()).build()), any());
+  }
+
+  @Test
+  public void shouldReturnProcessInstanceWithNonNullPosition() {
+    // given
+    when(processInstanceServices.getByKey(eq(456L), any(CamundaAuthentication.class)))
+        .thenReturn(PROCESS_INSTANCE_ENTITY_WITH_POSITION);
+
+    // when / then
+    webClient
+        .get()
+        .uri(PROCESS_INSTANCES_BY_KEY_URL, 456L)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .consumeWith(
+            result ->
+                assertJsonNonExtensible(
+                    PROCESS_INSTANCE_ENTITY_WITH_POSITION_JSON, result.getResponseBody()));
+
+    verify(processInstanceServices).getByKey(eq(456L), any(CamundaAuthentication.class));
+  }
+
+  @Test
+  void shouldSearchProcessInstancesWithNonNullPosition() {
+    // given
+    final var resultWithPosition =
+        new Builder<ProcessInstanceEntity>()
+            .total(1L)
+            .items(List.of(PROCESS_INSTANCE_ENTITY_WITH_POSITION))
+            .startCursor("f")
+            .endCursor("v")
+            .build();
+    when(processInstanceServices.search(any(ProcessInstanceQuery.class), any()))
+        .thenReturn(resultWithPosition);
+    final var expectedSearchResponse =
+        """
+            {
+                "items": [
+                  {
+                    "processInstanceKey": "456",
+                    "rootProcessInstanceKey": "37",
+                    "processDefinitionId": "demoProcess",
+                    "processDefinitionName": "Demo Process",
+                    "processDefinitionVersion": 5,
+                    "processDefinitionVersionTag": "v5",
+                    "processDefinitionKey": "789",
+                    "parentProcessInstanceKey": "333",
+                    "parentElementInstanceKey": "777",
+                    "startDate": "2024-01-01T00:00:00.000Z",
+                    "endDate": null,
+                    "state": "ACTIVE",
+                    "hasIncident": false,
+                    "tenantId": "tenant",
+                    "tags": ["tag1"],
+                    "businessId": "biz-id",
+                    "position": 9999
+                  }
+                ],
+                "page": {
+                    "totalItems": 1,
+                    "startCursor": "f",
+                    "endCursor": "v",
+                    "hasMoreTotalItems": false
+                }
+            }
+            """;
+
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_INSTANCES_SEARCH_URL)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .consumeWith(
+            result -> assertJsonNonExtensible(expectedSearchResponse, result.getResponseBody()));
   }
 
   @Test
