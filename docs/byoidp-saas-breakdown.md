@@ -417,9 +417,8 @@ Each item below needs an owner and a resolution; many gate scope refinement in t
 14. **Cluster generation / minimum-version gate.** The sibling multi-tenancy epic gated the UI
     on Zeebe 8.8.0-alpha7+. Decide which cluster generations expose the BYOIDP toggle, and gate
     the Console UI accordingly. Owner: PM + Console engineering.
-15. **Feature entitlement and staged rollout.** Decide whether BYOIDP is a paid tier, whether
-    it is exposed behind a Console feature flag, and what the regional / staged-rollout plan
-    looks like. Owner: PM.
+15. **Feature rollout.** Decide whether BYOIDP is exposed behind a Console feature flag, and what
+    the rollout plan looks like. Owner: PM.
 
 ### Phase 2
 
