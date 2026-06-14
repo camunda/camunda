@@ -3,9 +3,12 @@
 ## Status
 
 - **Epic:** [camunda/product-hub#3190](https://github.com/camunda/product-hub/issues/3190)
-- **Updated product brief:** [Google Doc](https://docs.google.com/document/d/1Erwa5erxpO5oWBW7b3SQXr_xD2CcCzIl7uiJfg_X5VE)
-- **User journey:** [Figma](https://www.figma.com/board/CM3QV2uOSqWe8fjTaWKOGk/Bring-your-own-Identity-Provider-per-Cluster-in-SaaS)
-- **Companion document (historic):** [`docs/evaluate-byoidp-saas.md`](./evaluate-byoidp-saas.md) — POC notes,
+- **Updated product brief:
+  ** [Google Doc](https://docs.google.com/document/d/1Erwa5erxpO5oWBW7b3SQXr_xD2CcCzIl7uiJfg_X5VE)
+- **User journey:
+  ** [Figma](https://www.figma.com/board/CM3QV2uOSqWe8fjTaWKOGk/Bring-your-own-Identity-Provider-per-Cluster-in-SaaS)
+- **Companion document (historic):** [`docs/evaluate-byoidp-saas.md`](./evaluate-byoidp-saas.md) —
+  POC notes,
   approach evaluation, and findings from the dev SaaS validation. Read it for *why* this plan picks
   Approach A; this document focuses on *what is delivered*.
 
@@ -86,12 +89,12 @@ Customer admin → Console UI → Console DB + AWS SM/GCP SM → ZeebeCluster CR
 
 ## Phasing
 
-| Phase | Theme |
-|---|---|
-| **Phase 1** | BYOIDP user-facing MVP: customer can configure a custom IdP, log in via it, log out, and the Web Modeler knows BYOIDP is on. Auth0 remains active. Lockout safeguards in UX and docs. |
-| **Phase 2** | Connectors authenticate to the cluster via the customer's IdP. External client authorization management in Console. |
-| **Phase 3** | Groups-claim productization. Camunda Support BYO-IdP onboarding. Auth0-disable toggle for user login. Closure of the PoC validation items. |
-| **Phase 4** *(may be split out as its own epic — see action item)* | Session idle timeout (cluster default + per-IdP override) with audit logging. |
+| Phase                                                              | Theme                                                                                                                                                                                 |
+|--------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Phase 1**                                                        | BYOIDP user-facing MVP: customer can configure a custom IdP, log in via it, log out, and the Web Modeler knows BYOIDP is on. Auth0 remains active. Lockout safeguards in UX and docs. |
+| **Phase 2**                                                        | Connectors authenticate to the cluster via the customer's IdP. External client authorization management in Console.                                                                   |
+| **Phase 3**                                                        | Groups-claim productization. Camunda Support BYO-IdP onboarding. Auth0-disable toggle for user login. Closure of the PoC validation items.                                            |
+| **Phase 4** *(may be split out as its own epic — see action item)* | Session idle timeout (cluster default + per-IdP override) with audit logging.                                                                                                         |
 
 Each phase is intended to be shippable on its own.
 
@@ -316,13 +319,13 @@ items from the product brief.
   or also issuer trust for M2M tokens?) is the topic of action item 10. CSL ships the flag; the
   resolution of that action item determines whether the flag affects M2M trust as well.
 - **PoC closure work** (validation activities, not features):
-    1. Logout RP-initiated: ensure per-provider `idpLogoutEnabled` interoperates correctly across
-       providers; logging out of one does not prematurely end the other's session.
-    2. Multi-IdP claim mapping: integration tests that groups/username/clientid claims resolve
-       consistently to Camunda's identity model regardless of issuer. Groups is the highest-risk
-       seam.
-    3. AuthZ enforcement across IdPs: tests asserting identical authorization decisions for
-       equivalent resolved identity, independent of issuer.
+  1. Logout RP-initiated: ensure per-provider `idpLogoutEnabled` interoperates correctly across
+     providers; logging out of one does not prematurely end the other's session.
+  2. Multi-IdP claim mapping: integration tests that groups/username/clientid claims resolve
+     consistently to Camunda's identity model regardless of issuer. Groups is the highest-risk
+     seam.
+  3. AuthZ enforcement across IdPs: tests asserting identical authorization decisions for
+     equivalent resolved identity, independent of issuer.
 - A CSL ADR documenting the user-login-vs-M2M split.
 
 ### `camunda/camunda` (Orchestration Cluster)
@@ -465,9 +468,6 @@ These do not block scoping but need answers during execution.
 - **Q10.** Redirect URI: is the `{baseUrl}/sso-callback` default sufficient for all customer IdPs,
   or do some require a different callback path? If real-world adoption exposes a need, a
   Redirect-URI field is added in a follow-on.
-- **Q11.** User-profile IdP indicator: should it render in the OC webapp (`webapp/client/`) or in
-  Console? OC is the natural home because the user is inside the cluster context, but Console
-  surfaces session/cluster details elsewhere too. Resolve before Phase 1 design.
 - **Q12.** JWKS / discovery resilience: what is the expected behavior when the customer IdP's
   discovery endpoint is unreachable at pod start, or JWKS is unreachable mid-session? Define
   timeouts, retry policy, and whether transient customer-IdP failures must keep Auth0 (and the
@@ -476,6 +476,10 @@ These do not block scoping but need answers during execution.
   `sub` claim from the customer IdP differs from their Auth0 `sub`. Per-user authorizations
   bound to Auth0 `sub` are orphaned. Groups-claim helps for group-scoped permissions but not for
   per-user grants. Document the expected admin workflow, or define a migration deliverable.
+- **Q15.** Login picker: is the Spring Security default login picker (one button per configured
+  provider) sufficient for general availability, or does the product require a Camunda-designed
+  login page? A custom page gives control over branding, copy, and provider order but is a
+  non-trivial frontend investment. Resolve before Phase 1 design.
 
 ### Phase 2
 
@@ -507,8 +511,10 @@ These do not block scoping but need answers during execution.
 
 ## References
 
-- Historic POC notes and approach evaluation: [`docs/evaluate-byoidp-saas.md`](./evaluate-byoidp-saas.md)
-- Multi-OIDC commit in this repo (now consumed via CSL): `bfe2316a` (`feat: support multiple OIDC providers`)
+- Historic POC notes and approach evaluation: [
+  `docs/evaluate-byoidp-saas.md`](./evaluate-byoidp-saas.md)
+- Multi-OIDC commit in this repo (now consumed via CSL): `bfe2316a` (
+  `feat: support multiple OIDC providers`)
 - Example sibling epic (multi-tenancy in cluster settings — same propagation pattern):
   [camunda/product-hub#3244](https://github.com/camunda/product-hub/issues/3244), with operator
   change [camunda/camunda#53629](https://github.com/camunda/camunda/issues/53629) and Console
