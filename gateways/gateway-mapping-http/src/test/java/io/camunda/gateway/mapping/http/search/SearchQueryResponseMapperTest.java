@@ -175,6 +175,68 @@ class SearchQueryResponseMapperTest {
   }
 
   @Test
+  void shouldMapPositionForProcessInstance() {
+    // given
+    final var entity =
+        new ProcessInstanceEntity(
+            123L, // processInstanceKey
+            null, // rootProcessInstanceKey
+            "demoProcess", // processDefinitionId
+            "Demo Process", // processDefinitionName
+            1, // processDefinitionVersion
+            null, // processDefinitionVersionTag
+            456L, // processDefinitionKey
+            null, // parentProcessInstanceKey
+            null, // parentFlowNodeInstanceKey
+            OffsetDateTime.now(), // startDate
+            null, // endDate
+            ProcessInstanceState.ACTIVE, // state
+            false, // hasIncident
+            "tenant", // tenantId
+            null, // treePath
+            new java.util.HashSet<>(), // tags
+            null, // businessId
+            42L); // position
+
+    // when
+    final var response = SearchQueryResponseMapper.toProcessInstance(entity);
+
+    // then
+    assertThat(response.getPosition()).isEqualTo(42L);
+  }
+
+  @Test
+  void shouldMapNullPositionForProcessInstance() {
+    // given
+    final var entity =
+        new ProcessInstanceEntity(
+            123L, // processInstanceKey
+            null, // rootProcessInstanceKey
+            "demoProcess", // processDefinitionId
+            "Demo Process", // processDefinitionName
+            1, // processDefinitionVersion
+            null, // processDefinitionVersionTag
+            456L, // processDefinitionKey
+            null, // parentProcessInstanceKey
+            null, // parentFlowNodeInstanceKey
+            OffsetDateTime.now(), // startDate
+            null, // endDate
+            ProcessInstanceState.ACTIVE, // state
+            false, // hasIncident
+            "tenant", // tenantId
+            null, // treePath
+            new java.util.HashSet<>(), // tags
+            null, // businessId
+            null); // position
+
+    // when
+    final var response = SearchQueryResponseMapper.toProcessInstance(entity);
+
+    // then
+    assertThat(response.getPosition()).isNull();
+  }
+
+  @Test
   void shouldMapRootProcessInstanceKeyForUserTask() {
     // given
     final var entity =
