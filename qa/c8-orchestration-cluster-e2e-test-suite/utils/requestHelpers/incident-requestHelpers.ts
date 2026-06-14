@@ -144,22 +144,27 @@ export async function createTwoDifferentIncidentsInOneProcess(
 }
 
 export async function createSingleIncidentProcessInstance(
-  localState: Record<string, unknown>,
+  localState: Record<string, unknown> = {},
   request: APIRequestContext,
 ) {
-  await test.step('Create process instance with single incidents', async () => {
-    const instance = await createSingleInstance('singleIncidentProcess', 1);
-    localState['processInstanceKey'] = instance.processInstanceKey;
-  });
-
-  await test.step('Search incident to get incidentKey', async () => {
-    const incidents = await searchIncidentByPIK(request, {
-      processInstanceKey: localState['processInstanceKey'] as string,
+  const processInstanceKey =
+    await test.step('Create process instance with single incidents', async () => {
+      const instance = await createSingleInstance('singleIncidentProcess', 1);
+      localState['processInstanceKey'] = instance.processInstanceKey; // mutation left for backward-compatibility
+      return instance.processInstanceKey;
     });
-    localState['incidentKeys'] = incidents.map(
-      (incident) => incident.incidentKey,
-    );
-  });
+
+  const incidentKeys =
+    await test.step('Search incident to get incidentKey', async () => {
+      const incidents = await searchIncidentByPIK(request, {
+        processInstanceKey,
+      });
+      const incidentKeys = incidents.map((incident) => incident.incidentKey);
+      localState['incidentKeys'] = incidentKeys; // mutation left for backward-compatibility
+      return incidentKeys;
+    });
+  // explicit object return removes parameter mutation and makes behaviour explicit and discoverable
+  return {processInstanceKey, incidentKeys};
 }
 
 /**
