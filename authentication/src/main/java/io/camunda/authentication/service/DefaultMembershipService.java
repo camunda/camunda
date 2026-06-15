@@ -121,7 +121,7 @@ public class DefaultMembershipService implements MembershipService {
         if (!ids.isEmpty()) {
           ownerTypeToIds.put(MAPPING_RULE, ids);
         } else {
-          LOG.debug("No mappingRules found for these claims: {}", tokenClaims);
+          LOG.debug("No mappingRules found for claim keys: {}", tokenClaims.keySet());
         }
         mappingRules = List.copyOf(ids);
       }
