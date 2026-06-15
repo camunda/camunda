@@ -10,6 +10,7 @@ package io.camunda.zeebe.exporter.common.waitstate;
 import io.camunda.zeebe.exporter.common.waitstate.WaitStateEntry.WaitStateType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 
 /**
@@ -34,6 +35,13 @@ public final class WaitStateConfigs {
           .withUpdateIntents(UserTaskIntent.MIGRATED, UserTaskIntent.UPDATED)
           .withRemoveIntents(UserTaskIntent.COMPLETED, UserTaskIntent.CANCELED)
           .withWaitStateType(WaitStateType.USER_TASK);
+
+  public static final WaitStateTransformerConfig TIMER_CONFIG =
+      WaitStateTransformerConfig.of(ValueType.TIMER)
+          .withAddIntents(TimerIntent.CREATED)
+          .withUpdateIntents(TimerIntent.MIGRATED)
+          .withRemoveIntents(TimerIntent.TRIGGERED, TimerIntent.CANCELED)
+          .withWaitStateType(WaitStateType.TIMER);
 
   private WaitStateConfigs() {}
 }
