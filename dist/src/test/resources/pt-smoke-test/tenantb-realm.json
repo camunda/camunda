@@ -1,0 +1,48 @@
+{
+  "realm": "tenantb",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "clients": [
+    {
+      "clientId": "camunda-pt-tenantb-client",
+      "enabled": true,
+      "secret": "tenantb-secret",
+      "publicClient": false,
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": true,
+      "serviceAccountsEnabled": true,
+      "redirectUris": [
+        "http://localhost:8080/physical-tenant/tenantb/login/oauth2/code/*",
+        "http://localhost:8080/sso-callback"
+      ],
+      "webOrigins": ["http://localhost:8080"],
+      "protocolMappers": [
+        {
+          "name": "audience-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.custom.audience": "pt-tenantb-aud",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "lightweight.claim": "false",
+            "introspection.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "carol",
+      "enabled": true,
+      "email": "carol@tenantb",
+      "emailVerified": true,
+      "firstName": "Carol",
+      "lastName": "Tenantb",
+      "credentials": [{"type": "password", "value": "carol", "temporary": false}]
+    }
+  ]
+}
