@@ -13,13 +13,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
 import io.atomix.cluster.AtomixCluster;
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.EngineSecurityConfigurations;
 import io.camunda.security.oidc.NoopOidcClaimsProvider;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.test.TestActorSchedulerFactory;
@@ -36,7 +36,6 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
 import java.time.Duration;
 import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import org.junit.Before;
 import org.junit.Rule;
@@ -87,7 +86,7 @@ public final class SimpleBrokerStartTest {
                       mock(SearchClientsProxy.class),
                       mock(BrokerRequestAuthorizationConverter.class),
                       mock(NodeIdProvider.class),
-                      List.of(PartitionManagerImpl.DEFAULT_GROUP_NAME));
+                      PhysicalTenantIds.DEFAULT);
               new Broker(systemContext, TEST_SPRING_BROKER_BRIDGE, emptyList());
             });
 
@@ -124,7 +123,7 @@ public final class SimpleBrokerStartTest {
             mock(SearchClientsProxy.class),
             mock(BrokerRequestAuthorizationConverter.class),
             mock(NodeIdProvider.class),
-            List.of(PartitionManagerImpl.DEFAULT_GROUP_NAME));
+            PhysicalTenantIds.DEFAULT);
 
     final var leaderLatch = new CountDownLatch(1);
     final var listener =
