@@ -65,8 +65,11 @@ public class AnnotationProcessorConfiguration {
   @Bean
   @ConditionalOnProperty(value = "camunda.client.cluster-variables.enabled", matchIfMissing = true)
   public ClusterVariablesAnnotationProcessor clusterVariablesPostProcessor(
-      final JsonMapper jsonMapper, final CamundaClientProperties properties) {
-    return new ClusterVariablesAnnotationProcessor(jsonMapper, properties.getClusterVariables());
+      final JsonMapper jsonMapper,
+      final ResourcePatternResolver resourcePatternResolver,
+      final CamundaClientProperties properties) {
+    return new ClusterVariablesAnnotationProcessor(
+        jsonMapper, resourcePatternResolver, properties.getClusterVariables());
   }
 
   @Bean
