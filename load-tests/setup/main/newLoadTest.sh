@@ -1,9 +1,13 @@
 #!/bin/bash
 
-# Contains OS specific sed function
-. "../utils.sh"
-
 set -eo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# The directory where the load tests and shared utilities are located.
+ROOT_DIR="$(dirname "$SCRIPT_DIR")"
+
+# Contains OS specific sed function
+. "${ROOT_DIR}/utils.sh"
 
 usage() {
   cat <<'EOF'
@@ -141,48 +145,49 @@ else
   exit 1
 fi
 
+TARGET_DIRECTORY="${ROOT_DIR}/${namespace}"
 
 # Scaffold the namespace folder with only the files this $secondaryStorage uses.
 # A namespace is bound to its storage at create time; to switch storage, create
 # a new namespace via ./newLoadTest.sh <new-name> <newStorage>.
-mkdir -p "$namespace"
+mkdir -p "$TARGET_DIRECTORY"
 
 # Scaffold the always-copied files into the namespace folder root: the
 # Makefile, the resources/ manifests, four storage-agnostic values files
 # (defaults + override + load-test + stable), and the matching
 # camunda-platform-values-${secondaryStorage}.yaml. Flat layout so the
 # per-namespace Makefile's -f <file>.yaml references resolve unchanged.
-cp -v  "Makefile"                                                "$namespace/"
-cp -rv "resources/"                                              "$namespace/"
-cp -v  "values/camunda-platform-override-values.yaml"            "$namespace/"
-cp -v  "values/load-test-values.yaml"                            "$namespace/"
-cp -v  "values/values-stable.yaml"                              "$namespace/"
-cp -v  "values/camunda-platform-values-defaults.yaml"            "$namespace/"
-cp -v  "values/camunda-platform-values-${secondaryStorage}.yaml" "$namespace/"
+cp -v  "Makefile"                                                "$TARGET_DIRECTORY/"
+cp -rv "resources/"                                              "$TARGET_DIRECTORY/"
+cp -v  "values/camunda-platform-override-values.yaml"            "$TARGET_DIRECTORY/"
+cp -v  "values/load-test-values.yaml"                            "$TARGET_DIRECTORY/"
+cp -v  "values/values-stable.yaml"                               "$TARGET_DIRECTORY/"
+cp -v  "values/camunda-platform-values-defaults.yaml"            "$TARGET_DIRECTORY/"
+cp -v  "values/camunda-platform-values-${secondaryStorage}.yaml" "$TARGET_DIRECTORY/"
 
 # Storage-specific copies. databases/ is created only for mssql/oracle.
 case "$secondaryStorage" in
   elasticsearch|opensearch)
-    cp -v "values/prometheus-elasticsearch-exporter-values.yaml" "$namespace/"
+    cp -v "values/prometheus-elasticsearch-exporter-values.yaml" "$TARGET_DIRECTORY/"
     ;;
   postgresql|mysql|mariadb)
-    cp -v "values/camunda-platform-values-rdbms.yaml"            "$namespace/"
+    cp -v "values/camunda-platform-values-rdbms.yaml"            "$TARGET_DIRECTORY/"
     ;;
   mssql|oracle)
-    cp -v "values/camunda-platform-values-rdbms.yaml"            "$namespace/"
-    mkdir -p "$namespace/databases"
-    cp -v "databases/${secondaryStorage}.yaml"                   "$namespace/databases/"
+    cp -v "values/camunda-platform-values-rdbms.yaml"            "$TARGET_DIRECTORY/"
+    mkdir -p "$TARGET_DIRECTORY/databases"
+    cp -v "databases/${secondaryStorage}.yaml"                   "$TARGET_DIRECTORY/databases/"
     ;;
 esac
 
 if [[ "$enable_optimize" == "true" ]]; then
   # Optimize needs specifically Elasticsearch (independently from the secondary
   # storage configuration).
-  cp -v "values/camunda-platform-values-optimize-elasticsearch.yaml" "$namespace/"
-  cp -v "values/prometheus-elasticsearch-exporter-values.yaml"       "$namespace/"
+  cp -v "values/camunda-platform-values-optimize-elasticsearch.yaml" "$TARGET_DIRECTORY/"
+  cp -v "values/prometheus-elasticsearch-exporter-values.yaml"       "$TARGET_DIRECTORY/"
 fi
 
-cd "$namespace"
+cd "$TARGET_DIRECTORY"
 
 # Bake values into the rendered Makefile. The deadline lives only in
 # resources/namespace.yaml (single source of truth) — check-deadline parses

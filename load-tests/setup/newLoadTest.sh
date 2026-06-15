@@ -52,4 +52,6 @@ if [[ ! -f "$target_script" ]]; then
   exit 1
 fi
 
+# Run the script in the context of the directory it is in.
+cd "$(dirname "$target_script")"
 exec "$target_script" "${remaining_args[@]}"
