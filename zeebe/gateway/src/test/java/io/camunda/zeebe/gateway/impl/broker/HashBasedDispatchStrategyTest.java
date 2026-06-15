@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.PartitionUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Optional;
+import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.Test;
 
 final class HashBasedDispatchStrategyTest {
@@ -117,7 +118,7 @@ final class HashBasedDispatchStrategyTest {
       implements BrokerTopologyManager {
 
     @Override
-    public BrokerClusterState getTopology(final String physicalTenantId) {
+    public BrokerClusterState getTopology(final @NonNull String physicalTenantId) {
       return topology;
     }
 

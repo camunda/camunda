@@ -11,6 +11,7 @@ import io.atomix.cluster.BrokerMemberId;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationUpdateNotifier.ClusterConfigurationUpdateListener;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.protocol.Protocol;
+import org.jspecify.annotations.NonNull;
 
 public interface BrokerTopologyManager extends ClusterConfigurationUpdateListener {
 
@@ -18,7 +19,7 @@ public interface BrokerTopologyManager extends ClusterConfigurationUpdateListene
    * Returns live topology for the given physical tenant (partition group). May return {@code null}
    * or an uninitialized topology if the group is not (yet) known; callers must handle both.
    */
-  BrokerClusterState getTopology(String physicalTenantId);
+  BrokerClusterState getTopology(@NonNull String physicalTenantId);
 
   /**
    * Returns live topology for the default partition group. Equivalent to {@code

@@ -19,6 +19,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -59,7 +60,7 @@ final class TestTopologyManager implements BrokerTopologyManager {
   }
 
   @Override
-  public BrokerClusterState getTopology(final String physicalTenantId) {
+  public BrokerClusterState getTopology(final @NonNull String physicalTenantId) {
     return topologies.get(physicalTenantId);
   }
 
