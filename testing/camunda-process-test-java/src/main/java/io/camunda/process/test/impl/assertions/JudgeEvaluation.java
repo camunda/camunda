@@ -38,8 +38,7 @@ class JudgeEvaluation {
   static final String DEFAULT_EVALUATION_CRITERIA =
       "You are an impartial judge evaluating whether an actual value satisfies an expectation. "
           + "Evaluate based on semantic meaning, not literal string matching. "
-          + "Equivalent meanings expressed differently should be considered a full match."
-          + "IMPORTANT: If being asked on Camunda documents content while reasoning, and you can't access them, reflect that in a FAILING score.";
+          + "Equivalent meanings expressed differently should be considered a full match.";
   private static final Logger LOG = LoggerFactory.getLogger(JudgeEvaluation.class);
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
@@ -80,7 +79,10 @@ class JudgeEvaluation {
           + "\n"
           + "Respond with ONLY a JSON object (no markdown, no extra text) in this exact format:\n"
           + "{\"reasoning\": \"<step-by-step explanation>\", "
-          + "\"score\": <number between 0.0 and 1.0>}";
+          + "\"score\": <number between 0.0 and 1.0>}\n"
+          + "IMPORTANT:\n"
+          + "- Keep your explanation concise and simple. State clear facts. Avoid emojis and bloat.\n"
+          + "- If being asked on Camunda documents content while reasoning, and you can't access them, reflect that in a FAILING score.";
 
   private final ChatModelAdapter chatModel;
   private final String expectation;
