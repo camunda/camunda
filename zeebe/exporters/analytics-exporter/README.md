@@ -71,9 +71,10 @@ camunda:
         jar-path: /usr/local/zeebe/exporters/camunda-analytics-exporter.jar
         args:
           endpoint: https://analytics.cloud.camunda.io
-          push-interval: PT5S
+          push-interval: PT5M
           max-queue-size: 2048
           max-batch-size: 512
+          sampling-rate: 1.0
 ```
 
 **Legacy configuration (Camunda 8.8 and earlier):**
@@ -87,9 +88,10 @@ zeebe:
         jarPath: /usr/local/zeebe/exporters/camunda-analytics-exporter.jar
         args:
           endpoint: https://analytics.cloud.camunda.io
-          pushInterval: PT5S
+          pushInterval: PT5M
           maxQueueSize: 2048
           maxBatchSize: 512
+          samplingRate: 1.0
 ```
 
 ### Environment variables
@@ -103,7 +105,7 @@ CAMUNDA_DATA_EXPORTERS_ANALYTICS_CLASSNAME=io.camunda.exporter.analytics.Analyti
 # JARPATH is required on 8.9 only; omit on 8.10+
 CAMUNDA_DATA_EXPORTERS_ANALYTICS_JARPATH=/usr/local/zeebe/exporters/camunda-analytics-exporter.jar
 CAMUNDA_DATA_EXPORTERS_ANALYTICS_ARGS_ENDPOINT=https://analytics.cloud.camunda.io
-CAMUNDA_DATA_EXPORTERS_ANALYTICS_ARGS_PUSHINTERVAL=PT5S
+CAMUNDA_DATA_EXPORTERS_ANALYTICS_ARGS_PUSHINTERVAL=PT5M
 CAMUNDA_DATA_EXPORTERS_ANALYTICS_ARGS_MAXQUEUESIZE=2048
 CAMUNDA_DATA_EXPORTERS_ANALYTICS_ARGS_MAXBATCHSIZE=512
 ```
@@ -114,7 +116,7 @@ CAMUNDA_DATA_EXPORTERS_ANALYTICS_ARGS_MAXBATCHSIZE=512
 ZEEBE_BROKER_EXPORTERS_ANALYTICS_CLASSNAME=io.camunda.exporter.analytics.AnalyticsExporter
 ZEEBE_BROKER_EXPORTERS_ANALYTICS_JARPATH=/usr/local/zeebe/exporters/camunda-analytics-exporter.jar
 ZEEBE_BROKER_EXPORTERS_ANALYTICS_ARGS_ENDPOINT=https://analytics.cloud.camunda.io
-ZEEBE_BROKER_EXPORTERS_ANALYTICS_ARGS_PUSHINTERVAL=PT5S
+ZEEBE_BROKER_EXPORTERS_ANALYTICS_ARGS_PUSHINTERVAL=PT5M
 ZEEBE_BROKER_EXPORTERS_ANALYTICS_ARGS_MAXQUEUESIZE=2048
 ZEEBE_BROKER_EXPORTERS_ANALYTICS_ARGS_MAXBATCHSIZE=512
 ```
@@ -133,13 +135,14 @@ Analytics exporter configured: endpoint=https://analytics.cloud.camunda.io, clus
 All options live under `args`. Defaults are tuned for typical Self-Managed deployments and
 rarely need to be changed.
 
-|        Option        |   Type   |                                                   Description                                                   |               Default                |
-|----------------------|----------|-----------------------------------------------------------------------------------------------------------------|--------------------------------------|
-| `endpoint`           | string   | OTLP/HTTP base URL for the analytics endpoint. The OTel SDK appends `/v1/logs` automatically.                   | `https://analytics.cloud.camunda.io` |
-| `push-interval`      | duration | Maximum time between batch pushes, as an [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations). | `PT5M`                               |
-| `heartbeat-interval` | duration | Interval between periodic heartbeat events carrying static cluster metadata.                                    | `PT10M`                              |
-| `max-queue-size`     | int      | Maximum number of log records buffered in memory before new records are dropped.                                | `2048`                               |
-| `max-batch-size`     | int      | Maximum number of records sent in a single OTLP request. Must be less than or equal to `max-queue-size`.        | `512`                                |
+|        Option        |   Type   |                                                                           Description                                                                           |               Default                |
+|----------------------|----------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------|
+| `endpoint`           | string   | OTLP/HTTP base URL for the analytics endpoint. The OTel SDK appends `/v1/logs` automatically.                                                                   | `https://analytics.cloud.camunda.io` |
+| `push-interval`      | duration | Maximum time between batch pushes, as an [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations).                                                 | `PT5M`                               |
+| `heartbeat-interval` | duration | Interval between periodic heartbeat events carrying static cluster metadata.                                                                                    | `PT10M`                              |
+| `max-queue-size`     | int      | Maximum number of log records buffered in memory before new records are dropped.                                                                                | `2048`                               |
+| `max-batch-size`     | int      | Maximum number of records sent in a single OTLP request. Must be less than or equal to `max-queue-size`.                                                        | `512`                                |
+| `sampling-rate`      | double   | Default sampling rate for log events, between 0.0 (none) and 1.0 (all). Handlers may declare a lower rate; the effective rate is always the minimum of the two. | `1.0`                                |
 
 ## What data is exported
 

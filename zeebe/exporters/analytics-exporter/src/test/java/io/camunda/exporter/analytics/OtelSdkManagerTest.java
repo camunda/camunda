@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.analytics;
 
+import static io.camunda.exporter.analytics.AnalyticsAttributes.EVENT_SAMPLE_RATE;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.EVENT_TIME_MAX;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.EVENT_TIME_MIN;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.LOG_POSITION_END;
@@ -16,6 +17,7 @@ import static io.camunda.exporter.analytics.AnalyticsAttributes.METRIC_SEQUENCE_
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
+import io.camunda.exporter.analytics.sampling.HashSampler;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.sdk.common.CompletableResultCode;
@@ -320,6 +322,116 @@ class OtelSdkManagerTest {
         return CompletableResultCode.ofSuccess();
       }
     };
+  }
+
+  @Nested
+  class Sampling {
+
+    private InMemoryLogRecordExporter logExporter;
+    private OtelSdkManager manager;
+
+    @BeforeEach
+    void setUp() {
+      logExporter = InMemoryLogRecordExporter.create();
+      manager = TestOtelSdkManager.inMemory(logExporter);
+    }
+
+    @Test
+    void shouldSkipEventWhenSamplingDecisionRejects() {
+      // given — rate 0.0 rejects all positions
+      // when
+      manager.logEvent("test", 42L, 0.0, log -> {});
+
+      // then — no log record emitted, sequence number not incremented
+      assertThat(logExporter.getFinishedLogRecordItems()).isEmpty();
+    }
+
+    @Test
+    void shouldEmitEventWhenSamplingDecisionAccepts() {
+      // given — rate 1.0 accepts all positions
+      // when
+      manager.logEvent("test", 42L, HashSampler.MAX_SAMPLE_RATE, log -> {});
+
+      // then
+      assertThat(logExporter.getFinishedLogRecordItems()).hasSize(1);
+    }
+
+    @Test
+    void shouldNotIncrementSequenceNumberWhenEventIsDropped() {
+      // given — rate 0.0 drops everything
+      manager.logEvent("test", 1L, 0.0, log -> {});
+      manager.logEvent("test", 2L, 0.0, log -> {});
+
+      // when — emit one with full rate
+      manager.logEvent("test", 3L, HashSampler.MAX_SAMPLE_RATE, log -> {});
+
+      // then — sequence number is 1 (not 3), proving drops don't consume slots
+      assertThat(logExporter.getFinishedLogRecordItems())
+          .singleElement()
+          .extracting(log -> log.getAttributes().get(AnalyticsAttributes.EVENT_SEQUENCE_NUMBER))
+          .isEqualTo(1L);
+    }
+
+    @Test
+    void shouldEmitSampleRateAttributeWhenRateBelowMax() {
+      // given — find a position that passes at rate 0.5
+      long passingPosition = -1L;
+      for (long pos = 0; pos < 1000; pos++) {
+        if (HashSampler.shouldSample(pos, 0.5)) {
+          passingPosition = pos;
+          break;
+        }
+      }
+      assertThat(passingPosition).isGreaterThanOrEqualTo(0L);
+
+      // when
+      manager.logEvent("test", passingPosition, 0.5, log -> {});
+
+      // then — sample_rate attribute is set
+      assertThat(logExporter.getFinishedLogRecordItems())
+          .singleElement()
+          .extracting(log -> log.getAttributes().get(EVENT_SAMPLE_RATE))
+          .isEqualTo(0.5);
+    }
+
+    @Test
+    void shouldNotEmitSampleRateAttributeWhenRateIsMax() {
+      // when — default logEvent (no rate param)
+      manager.logEvent("test", 42L, log -> {});
+
+      // then — sample_rate attribute is absent
+      assertThat(logExporter.getFinishedLogRecordItems())
+          .singleElement()
+          .satisfies(log -> assertThat(log.getAttributes().get(EVENT_SAMPLE_RATE)).isNull());
+    }
+
+    @Test
+    void shouldApplyMinOfDefaultAndHandlerRate() {
+      // given — default rate 0.5 via config, handler rate 0.8 → effective is 0.5
+      final var customLogExporter = InMemoryLogRecordExporter.create();
+      final var customManager =
+          TestOtelSdkManager.inMemory(
+              customLogExporter, new AnalyticsExporterConfig().setSamplingRate(0.5));
+
+      // find a position that passes at 0.5
+      long passingPosition = -1L;
+      for (long pos = 0; pos < 1000; pos++) {
+        if (HashSampler.shouldSample(pos, 0.5)) {
+          passingPosition = pos;
+          break;
+        }
+      }
+      assertThat(passingPosition).isGreaterThanOrEqualTo(0L);
+
+      // when — handler requests 0.8, but default is 0.5
+      customManager.logEvent("test", passingPosition, 0.8, log -> {});
+
+      // then — effective rate 0.5 is used (attribute reflects the min)
+      assertThat(customLogExporter.getFinishedLogRecordItems())
+          .singleElement()
+          .extracting(log -> log.getAttributes().get(EVENT_SAMPLE_RATE))
+          .isEqualTo(0.5);
+    }
   }
 
   @Nested
