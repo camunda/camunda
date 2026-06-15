@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useRef} from 'react';
+import {useCallback, useRef} from 'react';
 import {useTranslation} from 'react-i18next';
 import type {CurrentUser, UserTask} from '@camunda/camunda-api-zod-schemas/8.10';
 import {cn} from '#/shared/cn';
@@ -35,6 +35,21 @@ const AvailableTasks: React.FC<Props> = ({
 	const scrollableListRef = useRef<HTMLDivElement | null>(null);
 	const {t} = useTranslation();
 
+	const handleScroll = useCallback(
+		async (event: React.UIEvent<HTMLDivElement>) => {
+			const target = event.target as HTMLDivElement;
+
+			if (Math.floor(target.scrollHeight - target.clientHeight - target.scrollTop) <= 0 && hasNextPage) {
+				await onScrollDown();
+			} else if (target.scrollTop === 0 && hasPreviousPage) {
+				const previousTasks = await onScrollUp();
+
+				target.scrollTop = (taskRef.current?.clientHeight ?? 0) * previousTasks.length;
+			}
+		},
+		[hasNextPage, hasPreviousPage, onScrollDown, onScrollUp],
+	);
+
 	return (
 		<div
 			className={cn(styles.container, {
@@ -47,17 +62,7 @@ const AvailableTasks: React.FC<Props> = ({
 					className={styles.listContainer}
 					data-testid="scrollable-list"
 					ref={scrollableListRef}
-					onScroll={async (event) => {
-						const target = event.target as HTMLDivElement;
-
-						if (Math.floor(target.scrollHeight - target.clientHeight - target.scrollTop) <= 0 && hasNextPage) {
-							await onScrollDown();
-						} else if (target.scrollTop === 0 && hasPreviousPage) {
-							const previousTasks = await onScrollUp();
-
-							target.scrollTop = (taskRef.current?.clientHeight ?? 0) * previousTasks.length;
-						}
-					}}
+					onScroll={handleScroll}
 					tabIndex={-1}
 				>
 					{tasks.map((task) => (
