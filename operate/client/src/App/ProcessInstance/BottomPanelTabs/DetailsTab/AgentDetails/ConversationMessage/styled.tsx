@@ -15,7 +15,7 @@ const accentColorByActor: Record<ActorType, string> = {
   SYSTEM: 'var(--cds-status-gray)',
   ASSISTANT: 'var(--cds-status-purple)',
   USER: 'var(--cds-status-blue)',
-  TOOL_RESULT: 'var(--cds-status-yellow)',
+  TOOL_RESULT: 'var(--cds-status-gray)',
 };
 
 const Container = styled.div<{$actor: ActorType}>`
