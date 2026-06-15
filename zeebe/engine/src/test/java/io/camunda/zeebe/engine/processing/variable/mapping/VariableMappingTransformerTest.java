@@ -67,7 +67,7 @@ public final class VariableMappingTransformerTest {
     // when
     assertThatThrownBy(() -> transformer.transformInputMappings(mappings, expressionLanguage))
         .hasMessageStartingWith(
-            "Failed to build variable mapping expression: failed to parse expression '{a:x?,_camunda_input_context:context put({},\"a\",a)}._camunda_input_context'");
+            "Failed to build variable mapping expression: failed to parse expression '{a:x?}'");
   }
 
   @Test
@@ -78,7 +78,7 @@ public final class VariableMappingTransformerTest {
     // when
     assertThatThrownBy(() -> transformer.transformInputMappings(mappings, expressionLanguage))
         .hasMessageStartingWith(
-            "Failed to build variable mapping expression: failed to parse expression '{a,:x,_camunda_input_context:context put({},\"a,\",a,)}._camunda_input_context'");
+            "Failed to build variable mapping expression: failed to parse expression '{a,:x}'");
   }
 
   @Test
@@ -119,11 +119,7 @@ public final class VariableMappingTransformerTest {
         .isTrue();
     assertThat(expression.getExpression())
         .isEqualTo(
-            "{tab:\"Hello\tWorld\",_camunda_input_context:context put({},\"tab\",tab),"
-                + "newline:\"Hello\nWorld\",_camunda_input_context:context put(_camunda_input_context,\"newline\",newline),"
-                + "carriageReturn:\"Hello\rWorld\",_camunda_input_context:context put(_camunda_input_context,\"carriageReturn\",carriageReturn),"
-                + "doubleQoutes:\"\\\"My Name is \\\"Zeebe\\\", nice to meet you\\\"\",_camunda_input_context:context put(_camunda_input_context,\"doubleQoutes\",doubleQoutes),"
-                + "encodedQuotes:\"My Name is &#34;Zeebe&#34;, nice to meet you\",_camunda_input_context:context put(_camunda_input_context,\"encodedQuotes\",encodedQuotes)}._camunda_input_context");
+            "{tab:\"Hello\tWorld\",newline:\"Hello\nWorld\",carriageReturn:\"Hello\rWorld\",doubleQoutes:\"\\\"My Name is \\\"Zeebe\\\", nice to meet you\\\"\",encodedQuotes:\"My Name is &#34;Zeebe&#34;, nice to meet you\"}");
   }
 
   @Test
@@ -139,9 +135,7 @@ public final class VariableMappingTransformerTest {
     assertThat(expression.isValid())
         .describedAs("Expected valid expression: %s", expression.getFailureMessage())
         .isTrue();
-    assertThat(result.getExpression())
-        .isEqualTo(
-            "{a:null,_camunda_input_context:context put({},\"a\",a)}._camunda_input_context");
+    assertThat(result.getExpression()).isEqualTo("{a:null}");
   }
 
   private static ZeebeMapping mapping(final String source, final String target) {
