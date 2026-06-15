@@ -6,10 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {IS_NAV_V2_ENABLED} from 'feature-flags';
-import LegacyHeader from './LegacyHeader';
-import HeaderV2 from './HeaderV2';
+const IS_NAV_V2_ENABLED = false;
 
-export default function Header(props: {noActions?: boolean}) {
-  return IS_NAV_V2_ENABLED ? <HeaderV2 {...props} /> : <LegacyHeader {...props} />;
-}
+export {IS_NAV_V2_ENABLED};

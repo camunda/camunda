@@ -1,5 +1,8 @@
 .PrivateRoute {
-  padding-top: 48px;
+  padding-top: var(--c3-header-height, 48px);
+  padding-left: var(--c3-sidebar-width, 0);
+  transition: padding-left 0.15s ease-out;
+  box-sizing: border-box;
 
   &,
   & > div {
