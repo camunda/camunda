@@ -28,6 +28,7 @@ import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebeimport.*;
 import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
 import io.camunda.webapps.schema.entities.ImportPositionEntity;
+import io.camunda.zeebe.util.logging.ThrottledLogger;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.time.Duration;
@@ -81,6 +82,8 @@ public class ElasticsearchRecordsReader implements RecordsReader {
   private static final String READ_BATCH_ERROR_MESSAGE =
       "Exception occurred for alias [%s], while obtaining next Zeebe records batch: %s";
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchRecordsReader.class);
+  private static final ThrottledLogger THROTTLED_LOGGER =
+      new ThrottledLogger(LOGGER, Duration.ofSeconds(60L));
 
   /** Partition id. */
   private final int partitionId;
@@ -158,6 +161,14 @@ public class ElasticsearchRecordsReader implements RecordsReader {
               importValueType.getAliasTemplate(), partitionId);
 
       importPositionHolder.recordLatestLoadedPosition(latestPosition);
+
+      LOGGER.info(
+          "Importing partition {} for value type {} starting from position {} using prefix: {}",
+          partitionId,
+          importValueType,
+          latestPosition.getPosition(),
+          operateProperties.getZeebeElasticsearch().getPrefix());
+
     } catch (final IOException e) {
       LOGGER.error(
           "Failed to write initial import position index document for value type [{}] and partition [{}]",
@@ -605,6 +616,8 @@ public class ElasticsearchRecordsReader implements RecordsReader {
   private void markRecordReaderCompletedIfMinimumEmptyBatchesReceived() {
     if (isPartitionCompletedImporting(partitionId)) {
       recordsReaderHolder.incrementEmptyBatches(partitionId, importValueType);
+    } else {
+      THROTTLED_LOGGER.warn("Partition {} has not completed import yet", partitionId);
     }
 
     if (recordsReaderHolder.isRecordReaderCompletedImporting(partitionId, importValueType)) {
@@ -618,6 +631,9 @@ public class ElasticsearchRecordsReader implements RecordsReader {
             partitionId,
             e);
       }
+    } else {
+      THROTTLED_LOGGER.warn(
+          "Not marking partition: {} value type: {} as completed", partitionId, importValueType);
     }
   }
 
