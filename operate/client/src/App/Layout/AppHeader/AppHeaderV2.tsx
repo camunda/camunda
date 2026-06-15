@@ -8,7 +8,7 @@
 
 import {useEffect} from 'react';
 import {observer} from 'mobx-react-lite';
-import {Link} from 'react-router-dom';
+import {SmartLink} from './SmartLink';
 import {
   Activity,
   Dashboard,
@@ -336,7 +336,7 @@ const AppHeaderV2: React.FC = observer(() => {
     sidebarChildren,
     breadcrumbs,
     tools,
-    linkComponent: Link as never,
+    linkComponent: SmartLink as never,
     headerTrailingContent: licenseTagStore.state.isTagVisible ? (
       <C3LicenseTag
         isProductionLicense={licenseTagStore.state.isProductionLicense}

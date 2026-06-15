@@ -30,7 +30,7 @@ import {
 } from "@camunda/camunda-composite-components";
 import type { License as LicenseDto } from "@camunda/camunda-api-zod-schemas/8.10";
 import { observer } from "mobx-react-lite";
-import { Link } from "react-router-dom";
+import { SmartLink } from "./SmartLink";
 import { useState } from "react";
 
 import { useGlobalRoutes } from "src/components/global/useGlobalRoutes";
@@ -209,7 +209,7 @@ const AppHeaderV2 = observer(
       sidebarChildren,
       breadcrumbs,
       tools,
-      linkComponent: Link as never,
+      linkComponent: SmartLink as never,
       headerTrailingContent: licenseTag.show ? (
         <C3LicenseTag
           isProductionLicense={licenseTag.isProductionLicense}

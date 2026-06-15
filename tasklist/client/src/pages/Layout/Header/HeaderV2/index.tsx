@@ -9,7 +9,8 @@
 import {useEffect} from 'react';
 import {useTranslation} from 'react-i18next';
 import {observer} from 'mobx-react-lite';
-import {Link as RouterLink, matchPath, useLocation} from 'react-router-dom';
+import {matchPath, useLocation} from 'react-router-dom';
+import {SmartLink} from './SmartLink';
 import {
   C3LicenseTag,
   preview_C3NavigationV2 as C3NavigationV2,
@@ -103,7 +104,7 @@ const HeaderV2: React.FC = observer(() => {
     sidebarChildren,
     breadcrumbs,
     tools,
-    linkComponent: RouterLink as never,
+    linkComponent: SmartLink as never,
     headerTrailingContent: showLicenseTag ? (
       <C3LicenseTag
         isProductionLicense={license.validLicense ?? false}

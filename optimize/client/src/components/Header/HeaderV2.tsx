@@ -5,7 +5,8 @@
  */
 
 import {ComponentProps, useEffect, useState} from 'react';
-import {Link, matchPath, useLocation} from 'react-router-dom';
+import {matchPath, useLocation} from 'react-router-dom';
+import {SmartLink} from './SmartLink';
 import {
   C3LicenseTag,
   C3UserConfigurationProvider,
@@ -309,7 +310,7 @@ function V2Body({
     sidebarChildren,
     breadcrumbs,
     tools,
-    linkComponent: Link as never,
+    linkComponent: SmartLink as never,
     headerTrailingContent: showLicenseTag ? (
       <C3LicenseTag
         isProductionLicense={license.validLicense}
