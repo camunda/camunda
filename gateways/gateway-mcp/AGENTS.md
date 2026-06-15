@@ -36,6 +36,16 @@ to `false` disables MCP as well. See `ConditionalOnMcpGatewayEnabled`.
 
 ---
 
+## Adding or Editing a Tool
+
+When adding a new tool, mirror the corresponding REST controller in `zeebe/gateway-rest` and the
+closest existing tool implementation as much as possible. The goal is consistent schema generation,
+consistent error handling / `ProblemDetail` mapping, consistent search query mapping, and
+consistent testing patterns. If you encounter a pattern that is not covered here, ask the engineer
+before inventing something new, and update this file afterward.
+
+---
+
 ## Tool Structure
 
 ### Annotations
@@ -55,6 +65,8 @@ to `false` disables MCP as well. See `ConditionalOnMcpGatewayEnabled`.
 - Mark optional parameters with `required = false`.
 - Use bean validation annotations for input constraints: `@Positive`, `@NotBlank`, `@Pattern`,
   `@Size`, and container element constraints (e.g., `Map<@NotBlank String, Object>`).
+  - For numeric key parameters use `@Positive` with an explicit message, e.g.:
+    `@Positive(message = "processDefinitionKey must be a positive number.")`
 - When grouping related parameters into a DTO, annotate the DTO parameter with
   `@McpToolParamsUnwrapped @Valid` — the `@Valid` is required (enforced by ArchUnit) to trigger
   cascading validation.
@@ -102,6 +114,19 @@ Search tools accept three inputs: `filter`, `sort`, and `page`.
 - Convert the service response using `SearchQueryResponseMapper`.
 - See the MCP-facing filter models in `io.camunda.gateway.mcp.model` (e.g., `McpIncidentFilter`).
 
+### Mapping: simple → advanced
+
+Keep all new mapping code centralized in:
+
+- `io.camunda.gateway.mapping.http.search.SimpleSearchQueryMapper`
+- `io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper`
+
+If a simple filter model contains a nested `$or` list of filter-field groups, map each group into
+the corresponding advanced filter-field type in the mapper (not in the tool).
+
+When a field is hidden from MCP via `@JsonIgnore` on an MCP-facing model override, still map that
+field in the mapper — the simple model and mapper are consumed by other integrations beyond MCP.
+
 ## Write/Command Tools
 
 - Reuse existing request mappers (e.g., `SimpleRequestMapper`) to shape and validate requests.
@@ -119,8 +144,8 @@ When the generated OpenAPI models include fields that must not be exposed via MC
 1. Create an MCP-specific model in `io.camunda.gateway.mcp.model`.
 2. Extend the generated *simple* model.
 3. Override getters and annotate them `@JsonIgnore` to hide fields from the MCP JSON schema.
-4. Keep the underlying mapping code intact — the simple model and mapper are also used by other
-   integrations.
+4. Keep the underlying mapping code intact, and ensure all model fields are mapped — even fields
+   hidden from MCP — because the simple model and mapper are consumed by other integrations.
 
 Reference: `McpIncidentFilter`, `McpProcessDefinitionFilter`, `McpProcessInstanceFilter`.
 
@@ -202,7 +227,9 @@ class MyToolsTest extends OperationalToolsTest {
 **What to validate per test:**
 
 1. Happy-path: assert all fields in the example entity that the tool exposes (prefer a shared
-   `assertExample<Thing>(...)` helper method used in both get and search tests).
+   `assertExample<Thing>(...)` helper method used in both get and search tests). For search
+   results, also assert the `page` metadata: `totalItems`, `hasMoreTotalItems`, `startCursor`,
+   and `endCursor`.
 2. Error mapping: service throws → result is `isError()` with a `ProblemDetail`.
 3. Bean validation: negative key, blank required string, etc.
 4. Search mapping: capture the query with `ArgumentCaptor` and verify filter/sort/page fields.
