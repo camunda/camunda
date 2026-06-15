@@ -27,7 +27,8 @@ public final class WaitStateTransformerRegistry {
     return List.of(
         JobBasedWaitStateTransformer::new,
         UserTaskBasedWaitStateTransformer::new,
-        TimerBasedWaitStateTransformer::new);
+        TimerBasedWaitStateTransformer::new,
+        MessageBasedWaitStateTransformer::new);
   }
 
   /**
