@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.1">
 <title data-rh="true">ADR-0004: Per-Physical-Tenant Provider Selection via OC-side assigned Narrowing | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-55227/architecture/components/orchestration-cluster/adr/per-physical-tenant-provider-selection-via-assigned/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="ADR-0004: Per-Physical-Tenant Provider Selection via OC-side assigned Narrowing | Camunda Platform"><meta data-rh="true" name="description" content="Status"><meta data-rh="true" property="og:description" content="Status"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-55227/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-55227/architecture/components/orchestration-cluster/adr/per-physical-tenant-provider-selection-via-assigned/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-55227/architecture/components/orchestration-cluster/adr/per-physical-tenant-provider-selection-via-assigned/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-55227/architecture/components/orchestration-cluster/adr/per-physical-tenant-provider-selection-via-assigned/" hreflang="x-default"><link rel="stylesheet" href="/camunda/pr-preview/pr-55227/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-55227/assets/js/runtime~main.0a0a953d.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-55227/assets/js/main.e535d156.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-55227/assets/js/runtime~main.6b09f556.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-55227/assets/js/main.0856a169.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -68,8 +68,8 @@ has no <code>assigned</code> field and never binds it. CSL&#x27;s schema is ther
 <li class="">Ids are drawn from the union <code>{oidc} ∪ providers.oidc.&lt;name&gt;</code>. The reserved id <strong><code>oidc</code></strong> names the
 unnamed default slot (<code>camunda.security.authentication.oidc.*</code>), which has no map key of its own
 and so is referenced by the leaf name of the property that defines it. A named provider literally
-called <code>oidc</code> (<code>providers.oidc.oidc</code>) would collide; that pathological name is documented as
-unsupported.</li>
+called <code>oidc</code> (<code>providers.oidc.oidc</code>) would collide; that pathological name is rejected at startup
+by validation.</li>
 </ul>
 <p><strong>Three parts.</strong></p>
 <ol>
@@ -131,7 +131,7 @@ even though CSL does not define it. Mitigated by the fact that it lives only und
 <code>physical-tenants.&lt;id&gt;</code> namespace; the alternative of a sibling namespace was weighed and rejected
 (see Alternatives).</li>
 <li class="">The reserved <code>oidc</code> id is a small piece of magic; it collides with a (pathological) named provider
-called <code>oidc</code>. Documented as unsupported rather than guarded.</li>
+called <code>oidc</code>. That collision is rejected at startup by validation.</li>
 <li class="">Selection is split across two modules (validation vs application). This mirrors the existing PT
 config/auth split and is deliberate, but it does mean the &quot;must declare a valid list&quot; rule and the
 &quot;apply the list&quot; code live apart and must stay conceptually in sync.</li>
