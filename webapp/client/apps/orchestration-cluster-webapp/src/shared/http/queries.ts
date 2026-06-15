@@ -6,23 +6,28 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {queryOptions} from '@tanstack/react-query';
+import {infiniteQueryOptions, queryOptions} from '@tanstack/react-query';
 import type {
 	GetSystemConfigurationResponseBody,
 	CurrentUser,
 	License,
+	QueryUserTasksRequestBody,
+	QueryUserTasksResponseBody,
 	GetProcessDefinitionInstanceStatisticsRequestBody,
-	GetProcessDefinitionInstanceStatisticsResponseBody,
 	GetIncidentProcessInstanceStatisticsByErrorRequestBody,
+	GetProcessDefinitionInstanceStatisticsResponseBody,
 	GetIncidentProcessInstanceStatisticsByErrorResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {request} from './request';
 import {endpoints} from './endpoints';
 
+const DEFAULT_MAX_ITEM_PER_PAGE = 50;
+
 const queryKeys = {
 	currentUser: () => ['getCurrentUser'] as const,
 	systemConfiguration: () => ['systemConfiguration'] as const,
 	license: () => ['license'] as const,
+	userTasks: (body: QueryUserTasksRequestBody) => ['userTasks', body] as const,
 	getProcessDefinitionInstanceStatistics: (body: GetProcessDefinitionInstanceStatisticsRequestBody) =>
 		['getProcessDefinitionInstanceStatistics', body] as const,
 	getIncidentProcessInstanceStatisticsByError: (body: GetIncidentProcessInstanceStatisticsByErrorRequestBody) =>
@@ -70,6 +75,54 @@ const queries = {
 			staleTime: Infinity,
 			gcTime: Infinity,
 		}),
+	queryUserTasks: (body: QueryUserTasksRequestBody) => {
+		const MAX_TASKS_PER_REQUEST = body.page?.limit ?? DEFAULT_MAX_ITEM_PER_PAGE;
+		const enhancedBody = {
+			...body,
+			page: {
+				...body.page,
+				limit: MAX_TASKS_PER_REQUEST,
+			},
+		};
+
+		return infiniteQueryOptions({
+			queryKey: queryKeys.userTasks(enhancedBody),
+			queryFn: async ({pageParam}): Promise<QueryUserTasksResponseBody> => {
+				const {response, error} = await request(
+					endpoints.queryUserTasks({
+						...enhancedBody,
+						page: {
+							...enhancedBody.page,
+							from: pageParam,
+						},
+					}),
+				);
+				if (error !== null) {
+					throw error;
+				}
+				return response.json();
+			},
+			initialPageParam: body.page?.from ?? 0,
+			getNextPageParam: (lastPage, _, lastPageParam) => {
+				const nextPage = lastPageParam + MAX_TASKS_PER_REQUEST;
+
+				if (nextPage > lastPage.page.totalItems) {
+					return undefined;
+				}
+
+				return nextPage;
+			},
+			getPreviousPageParam: (_, __, firstPageParam) => {
+				const previousPage = firstPageParam - MAX_TASKS_PER_REQUEST;
+
+				if (previousPage < 0) {
+					return undefined;
+				}
+
+				return previousPage;
+			},
+		});
+	},
 
 	getProcessDefinitionInstanceStatistics: (body: GetProcessDefinitionInstanceStatisticsRequestBody) =>
 		queryOptions({

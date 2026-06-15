@@ -11,11 +11,13 @@ import {HttpResponse} from 'msw';
 import {
 	mockCurrentUserEndpoint,
 	mockLicenseEndpoint,
+	mockQueryUserTasksEndpoint,
 	mockSystemConfigurationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
+import {createQueryUserTasksResponse} from '#/shared-test-modules/api-mocks/user-tasks';
 
 test.describe('component routes', () => {
 	test('should render Operate when component is active', async ({network, page}) => {
@@ -46,6 +48,9 @@ test.describe('component routes', () => {
 			}),
 			mockLicenseEndpoint({
 				successResponse: HttpResponse.json(createLicense()),
+			}),
+			mockQueryUserTasksEndpoint({
+				successResponse: HttpResponse.json(createQueryUserTasksResponse()),
 			}),
 		);
 
@@ -152,9 +157,12 @@ test.describe('component routes', () => {
 				successResponse: HttpResponse.json(createSystemConfiguration({components: {active: ['tasklist']}})),
 			}),
 			mockLicenseEndpoint({successResponse: HttpResponse.json(createLicense())}),
+			mockQueryUserTasksEndpoint({
+				successResponse: HttpResponse.json(createQueryUserTasksResponse()),
+			}),
 		);
 
-		await page.goto('/tasklist/nonexistent');
+		await page.goto('/tasklist/nonexistent/page');
 
 		await expect(notFoundPage.heading).toBeVisible();
 	});
