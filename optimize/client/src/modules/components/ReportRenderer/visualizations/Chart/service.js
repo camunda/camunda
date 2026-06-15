@@ -103,12 +103,20 @@ export function canBeInterpolated({type, value}) {
   return true;
 }
 
+const TOKEN_PROPERTIES = ['inputTokens', 'outputTokens', 'totalTokens', 'toolCalls'];
+
 export function getLabel({property, aggregationType, userTaskDurationTime}) {
+  let viewKey = 'duration';
+  if (property === 'frequency') {
+    viewKey = 'count';
+  } else if (TOKEN_PROPERTIES.includes(property)) {
+    viewKey = property;
+  }
   return (
     (userTaskDurationTime
       ? `${t('report.config.userTaskDuration.' + userTaskDurationTime)} `
       : '') +
-    t('report.view.' + (property === 'frequency' ? 'count' : 'duration')) +
+    t('report.view.' + viewKey) +
     (aggregationType
       ? ` - ${t('report.config.aggregationShort.' + aggregationType.type, {
           value: aggregationType.value,
@@ -118,8 +126,12 @@ export function getLabel({property, aggregationType, userTaskDurationTime}) {
 }
 
 export function getAxisIdx(measures, measureIdx) {
-  if (measures.every(({property}) => property === measures[0].property)) {
-    // if every measure has the same prop, there is only one axis
+  // A second axis only exists when a report mixes frequency and duration measures.
+  const hasFrequencyAndDuration = ['frequency', 'duration'].every((prop) =>
+    measures.some((measure) => measure.property === prop)
+  );
+  if (!hasFrequencyAndDuration) {
+    // All measures share a single axis (e.g. input and output tokens).
     return 0;
   }
   return measures[measureIdx].property === 'frequency' ? 0 : 1;
