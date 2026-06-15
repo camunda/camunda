@@ -162,9 +162,9 @@ class PhysicalTenantAuthConfigurationsTest {
   }
 
   // -------------------------------------------------------------------------
-  // 3d. Faithful application-pt-poc.yaml shape: default slot "oidc" + named provider "tenanta"
-  //     whose name equals the PT id; the tenanta overlay overrides client/secret/audiences and
-  //     inherits issuer-uri. Guards the exact runtime config the smoke harness exercises.
+  // 3d. A representative cluster shape: default slot "oidc" + a named provider "tenanta" whose name
+  //     equals the PT id; the tenanta overlay overrides client/secret/audiences and inherits
+  //     issuer-uri.
   // -------------------------------------------------------------------------
 
   @Test
@@ -343,7 +343,7 @@ class PhysicalTenantAuthConfigurationsTest {
   }
 
   // -------------------------------------------------------------------------
-  // Real YAML environment (mirrors application-pt-poc.yaml) — guards against a
+  // Real YAML-loaded environment (not MockEnvironment) — guards against a
   // MockEnvironment-vs-real-Environment binding discrepancy in the overlay merge.
   // -------------------------------------------------------------------------
 
@@ -535,7 +535,7 @@ class PhysicalTenantAuthConfigurationsTest {
     final var loaded =
         new org.springframework.boot.env.YamlPropertySourceLoader()
             .load(
-                "pt-poc",
+                "test",
                 new org.springframework.core.io.ByteArrayResource(
                     yaml.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
     final var env = new org.springframework.core.env.StandardEnvironment();
