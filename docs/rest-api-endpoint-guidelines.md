@@ -1132,7 +1132,7 @@ Failures are reported to Slack and visible in the [Actions tab](https://github.c
 **What this means for contributors:**
 
 - If you change an endpoint's response shape, remove a field, or alter error codes, the forward compatibility tests will detect it.
-- If your PR intentionally introduces a breaking change (see §2.7), coordinate with `@camunda/camunda-ex` to update the test expectations on the affected older branches _before_ merging.
+- If your PR intentionally introduces a breaking change (see §2.7), coordinate with `@camunda/camundaex` to update the test expectations on the affected older branches _before_ merging.
 
 There is also an **on-demand workflow** ([`c8-orchestration-cluster-e2e-api-test-branch-on-demand.yml`](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-api-test-branch-on-demand.yml)) that builds the server _and_ runs the tests from the same branch. This is useful for verifying that a feature branch passes all API tests — both against Elasticsearch _and_ H2/RDBMS — before merging. It also detects differential behavior between storage engines.
 

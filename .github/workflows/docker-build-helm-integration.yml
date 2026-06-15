@@ -45,6 +45,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  TEST_OWNER: '@camunda/distribution'
   GHA_BEST_PRACTICES_LINTER: enabled
   HARBOR_REGISTRY: registry.camunda.cloud
   HARBOR_REPOSITORY: registry.camunda.cloud/team-camunda/camunda

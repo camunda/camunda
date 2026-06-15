@@ -34,6 +34,7 @@ defaults:
     shell: bash
 
 env:
+  TEST_OWNER: '@camunda/core-features'
   GHA_BEST_PRACTICES_LINTER: enabled
   TEST_PRODUCT: Optimize
 
@@ -51,12 +52,15 @@ jobs:
         include:
           - suite: DataLayer
             suiteName: Data Layer
+            owner: '@camunda/data-layer'
           - suite: CoreFeatures
             suiteName: Core Features
+            owner: '@camunda/core-features'
     with:
       componentName: "Optimize"
       suite: ${{ matrix.suite }}
       suiteName: ${{ matrix.suiteName }}
+      owner: ${{ matrix.owner }}
 
   optimize-it-elasticsearch:
     name: "Integration / Elasticsearch ITs"
@@ -65,7 +69,6 @@ jobs:
     timeout-minutes: 45
     permissions: { }  # GITHUB_TOKEN unused in this job
     env:
-      TEST_OWNER: Core Features
       TEST_TYPE: IT
     strategy:
       fail-fast: false
@@ -149,7 +152,6 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          user_description: "team-core-features"
 
   optimize-it-opensearch:
     name: "Integration / OpenSearch ITs"
@@ -158,7 +160,6 @@ jobs:
     timeout-minutes: 60
     permissions: { }  # GITHUB_TOKEN unused in this job
     env:
-      TEST_OWNER: Core Features
       TEST_TYPE: IT
     strategy:
       fail-fast: false
@@ -242,7 +243,6 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          user_description: "team-core-features"
 
   optimize-frontend-unit-tests:
     name: "Unit - Front End"
@@ -255,7 +255,6 @@ jobs:
         working-directory: optimize/client
     env:
       LIMITS_CPU: 4
-      TEST_OWNER: Core Features
       TEST_TYPE: Unit
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@main
@@ -296,7 +295,6 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          user_description: "team-core-features"
 
   optimize-frontend-sbom-snyk:
     name: "Tool / Front End - Snyk SBOM"
@@ -308,7 +306,6 @@ jobs:
       run:
         working-directory: optimize/client
     env:
-      TEST_OWNER: Core Features
       TEST_TYPE: Tool
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@main
@@ -353,7 +350,6 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          user_description: "team-core-features"
 
   hadolint:
     if: inputs.runBeTests
@@ -362,7 +358,6 @@ jobs:
     permissions: { }  # GITHUB_TOKEN unused in this job
     timeout-minutes: 4
     env:
-      TEST_OWNER: Core Features
       TEST_TYPE: Tool
     strategy:
       fail-fast: false
@@ -390,7 +385,6 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          user_description: "team-core-features"
   optimize-e2e-smoke:
     name: "E2E / Self-Managed (Smoke)"
     if: inputs.runFeTests
@@ -399,7 +393,6 @@ jobs:
     permissions: { }
     env:
       TEST_TYPE: E2E
-      TEST_OWNER: Core Features
 
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@main
@@ -550,7 +543,6 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          user_description: "team-core-features"
 
   e2e-cloud-test:
     name: "E2E Cloud"
@@ -559,7 +551,6 @@ jobs:
     timeout-minutes: 30
     permissions: { }  # GITHUB_TOKEN unused in this job
     env:
-      TEST_OWNER: Core Features
       TEST_TYPE: E2E
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@main
@@ -665,4 +656,3 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          user_description: "team-core-features"

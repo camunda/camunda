@@ -13,6 +13,7 @@ on:
   workflow_dispatch: {}
 
 env:
+  TEST_OWNER: '@camunda/monorepo-devops-team'
   GHA_BEST_PRACTICES_LINTER: enabled
 
 jobs:

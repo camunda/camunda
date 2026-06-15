@@ -34,6 +34,7 @@ defaults:
     shell: bash
 
 env:
+  TEST_OWNER: '@camunda/core-features'
   GHA_BEST_PRACTICES_LINTER: enabled
   TEST_PRODUCT: Operate
 
@@ -51,12 +52,15 @@ jobs:
         include:
           - suite: DataLayer
             suiteName: Data Layer
+            owner: '@camunda/data-layer'
           - suite: CoreFeatures
             suiteName: Core Features
+            owner: '@camunda/core-features'
     with:
       componentName: "Operate"
       suite: ${{ matrix.suite }}
       suiteName: ${{ matrix.suiteName }}
+      owner: ${{ matrix.owner }}
 
   # Checks to see if Operate can properly build itself and a docker image
   build-operate-backend:
@@ -67,7 +71,6 @@ jobs:
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
-      TEST_OWNER: Core Features
       TEST_TYPE: Build
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@main
@@ -103,7 +106,6 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          user_description: "team-core-features"
 
   fe-unit-tests:
     if: inputs.runFeTests
@@ -118,7 +120,6 @@ jobs:
         shardTotal: [4]
     env:
       TEST_TYPE: Unit
-      TEST_OWNER: Core Features
     defaults:
       run:
         working-directory: operate/client
@@ -165,7 +166,6 @@ jobs:
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Unit
-      TEST_OWNER: Core Features
     defaults:
       run:
         working-directory: operate/client
@@ -196,7 +196,6 @@ jobs:
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Tool
-      TEST_OWNER: Core Features
       TEST_PRODUCT: Operate
     defaults:
       run:
@@ -222,7 +221,6 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          user_description: "team-core-features"
 
   # Front End Code linting
   operate-fe-eslint:
@@ -233,7 +231,6 @@ jobs:
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Tool
-      TEST_OWNER: Core Features
       TEST_PRODUCT: Operate
     defaults:
       run:
@@ -259,7 +256,6 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          user_description: "team-core-features"
 
   operate-fe-sbom-snyk:
     if: inputs.runFeTests
@@ -269,7 +265,6 @@ jobs:
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Tool
-      TEST_OWNER: Core Features
     defaults:
       run:
         working-directory: operate/client
@@ -305,7 +300,6 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          user_description: "team-core-features"
 
   # description: This workflow runs a11y accessibility tests on Operate
   operate-fe-a11y-tests:
@@ -316,7 +310,6 @@ jobs:
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Tool
-      TEST_OWNER: Core Features
     container:
       image: mcr.microsoft.com/playwright:v1.58.2
       options: --user 1001:1000
@@ -354,7 +347,6 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          user_description: "team-core-features"
 
   operate-fe-visual-regression-tests:
     if: inputs.runFeTests
@@ -369,7 +361,6 @@ jobs:
         shardTotal: [4]
     env:
       TEST_TYPE: visual-regression
-      TEST_OWNER: Core Features
     container:
       image: mcr.microsoft.com/playwright:v1.58.2
       options: --user 1001:1000
@@ -409,7 +400,6 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          user_description: "team-core-features"
 
   operate-fe-visual-regression-merge:
     if: ${{ !cancelled() && inputs.runFeTests }}
@@ -420,7 +410,6 @@ jobs:
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: visual-regression
-      TEST_OWNER: Core Features
     defaults:
       run:
         working-directory: operate/client
@@ -459,7 +448,6 @@ jobs:
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: screenshot-update
-      TEST_OWNER: Core Features
     container:
       image: mcr.microsoft.com/playwright:v1.58.2
       options: --user 1001:1000
@@ -496,7 +484,6 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          user_description: "team-core-features"
 
   run-backup-restore-tests:
     if: inputs.runBeTests
@@ -506,7 +493,7 @@ jobs:
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       DOCKER_IMAGE_TAG: current-test
-      TEST_OWNER: Data Layer
+      TEST_OWNER: '@camunda/data-layer'
       TEST_TYPE: Integration
     services:
       registry:
@@ -561,7 +548,6 @@ jobs:
           job_name: "operate-ci/backup-restore"
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
-          user_description: "team-data-layer"
           detailed_junit_tests: true
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
