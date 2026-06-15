@@ -200,7 +200,7 @@ function V2Body({
             privacyPolicy: t('navigation.privacyPolicy').toString(),
             imprint: t('navigation.imprint').toString(),
           },
-          customSection: <div className="timezone">{timezoneInfo}</div>,
+          customSection: <div className="HeaderV2-timezone">{timezoneInfo}</div>,
           elements: [
             {
               key: 'terms',

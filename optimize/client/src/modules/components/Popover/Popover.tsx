@@ -27,7 +27,7 @@ import {
 } from '@carbon/react';
 import ListBox from '@carbon/react/lib/components/ListBox';
 
-import {getRandomId, getScreenBounds} from 'services';
+import {getC3SidebarWidth, getRandomId, getScreenBounds} from 'services';
 
 import classNames from 'classnames';
 
@@ -96,6 +96,7 @@ export default function Popover({
     const bounds = getScrollBounds(parentContainer.current);
 
     const bodyWidth = document.body.clientWidth;
+    const sidebarWidth = getC3SidebarWidth();
     const margin = 10;
     const padding = 10 + 15;
     const caretSpacing = props.isTabTip ? 0 : 10;
@@ -109,7 +110,10 @@ export default function Popover({
       newAlignment = 'bottom-right';
     }
 
-    if (buttonCenter - overlayWidth / divisor < 0) {
+    if (
+      buttonCenter - overlayWidth / divisor < sidebarWidth &&
+      buttonCenter + overlayWidth / divisor <= bodyWidth
+    ) {
       newAlignment = 'bottom-left';
     }
 

@@ -43,7 +43,17 @@
     "termsOfUse": "Nutzungsbedingungen",
     "imprint": "Impressum",
     "academy": "Camunda Academy",
-    "feedback": "Feedback und Support"
+    "feedback": "Feedback und Support",
+    "info": "Info",
+    "notifications": "Benachrichtigungen",
+    "notificationsDismissAll": "Alle ausblenden",
+    "notificationsEmptyTitle": "Keine Benachrichtigungen",
+    "notificationsEmptyDescription": "Sie haben derzeit keine Benachrichtigungen.",
+    "settings": "Einstellungen",
+    "sidebarCollapse": "Einklappen",
+    "sidebarCollapseAria": "Seitenleiste einklappen",
+    "sidebarExpand": "Ausklappen",
+    "sidebarExpandAria": "Seitenleiste ausklappen"
   },
   "login": {
     "label": "Einloggen",
