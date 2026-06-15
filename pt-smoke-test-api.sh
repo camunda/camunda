@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# INTERIM — drop before review. Part of the local PT API smoke harness.
+# INTERIM — drop before review. Scenario A (base) of the PT API smoke harness.
 #
-# API isolation smoke matrix for the physical-tenant security chains.
+# Base API isolation smoke matrix for the physical-tenant security chains.
 #
 # Demonstrates the isolation this PR delivers, including per-tenant provider SELECTION
 # (`providers.assigned`, #54730): a physical tenant receives only the cluster providers it is
