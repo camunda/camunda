@@ -9,7 +9,6 @@ package io.camunda.it.client;
 
 import static io.camunda.client.api.search.enums.PermissionType.READ_PROCESS_INSTANCE;
 import static io.camunda.client.api.search.enums.ResourceType.PROCESS_DEFINITION;
-import static io.camunda.it.util.TestHelper.createTenant;
 import static io.camunda.it.util.TestHelper.deployResourceForTenant;
 import static io.camunda.it.util.TestHelper.waitForJobs;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
@@ -26,6 +25,8 @@ import io.camunda.client.api.search.response.Job;
 import io.camunda.client.api.statistics.response.IncidentProcessInstanceStatisticsByError;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
+import io.camunda.qa.util.auth.TenantDefinition;
+import io.camunda.qa.util.auth.TestTenant;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
@@ -92,6 +93,34 @@ public class IncidentProcessInstanceStatisticsByErrorIT {
   private static final TestUser U_NO_READ_PROCESS_INSTANCE =
       new TestUser(USER_NO_READ_PROCESS_INSTANCE, PASSWORD, List.of());
 
+  @TenantDefinition
+  private static final TestTenant T_SINGLE_ERROR =
+      new TestTenant(TENANT_SINGLE_ERROR).setName(TENANT_SINGLE_ERROR).addUsers(USER_SINGLE_ERROR);
+
+  @TenantDefinition
+  private static final TestTenant T_MULTI_ERROR =
+      new TestTenant(TENANT_MULTI_ERROR).setName(TENANT_MULTI_ERROR).addUsers(USER_MULTI_ERROR);
+
+  @TenantDefinition
+  private static final TestTenant T_ACTIVE_ONLY =
+      new TestTenant(TENANT_ACTIVE_ONLY).setName(TENANT_ACTIVE_ONLY).addUsers(USER_ACTIVE_ONLY);
+
+  @TenantDefinition
+  private static final TestTenant T_ERROR_HASH_COLLISION =
+      new TestTenant(TENANT_ERROR_HASH_COLLISION)
+          .setName(TENANT_ERROR_HASH_COLLISION)
+          .addUsers(USER_ERROR_HASH_COLLISION);
+
+  @TenantDefinition
+  private static final TestTenant T_PAGINATION =
+      new TestTenant(TENANT_PAGINATION).setName(TENANT_PAGINATION).addUsers(USER_PAGINATION);
+
+  @TenantDefinition
+  private static final TestTenant T_NO_READ_PROCESS_INSTANCE =
+      new TestTenant(TENANT_NO_READ_PROCESS_INSTANCE)
+          .setName(TENANT_NO_READ_PROCESS_INSTANCE)
+          .addUsers(DEFAULT_USER_USERNAME);
+
   private static CamundaClient adminClient;
 
   private static TestUser testUser(final String userId) {
@@ -101,11 +130,6 @@ public class IncidentProcessInstanceStatisticsByErrorIT {
   @BeforeAll
   public static void beforeAll(@Authenticated final CamundaClient adminClient) {
     IncidentProcessInstanceStatisticsByErrorIT.adminClient = adminClient;
-  }
-
-  private static void ensureTenantExistsForUser(
-      final CamundaClient adminClient, final String tenantId, final String userId) {
-    createTenant(adminClient, tenantId, tenantId, userId);
   }
 
   @Test
@@ -125,8 +149,6 @@ public class IncidentProcessInstanceStatisticsByErrorIT {
   void shouldReturnSingleErrorStatisticForMultipleFailingInstances(
       @Authenticated(USER_SINGLE_ERROR) final CamundaClient userClient) {
     // given
-    ensureTenantExistsForUser(adminClient, TENANT_SINGLE_ERROR, USER_SINGLE_ERROR);
-
     final String processId = SIMPLE_PROCESS_1;
     final BpmnModelInstance model = singleServiceTaskProcess(processId, JOB_TYPE_1);
 
@@ -168,8 +190,6 @@ public class IncidentProcessInstanceStatisticsByErrorIT {
       @Authenticated(USER_MULTI_ERROR) final CamundaClient userClient) {
 
     // given
-    ensureTenantExistsForUser(adminClient, TENANT_MULTI_ERROR, USER_MULTI_ERROR);
-
     final String process1Id = SIMPLE_PROCESS_1;
     final String process2Id = SIMPLE_PROCESS_2;
 
@@ -228,8 +248,6 @@ public class IncidentProcessInstanceStatisticsByErrorIT {
   void shouldPaginateIncidentStatisticsByErrorWithoutOverlapAndWithStableOrdering(
       @Authenticated(USER_PAGINATION) final CamundaClient userClient) {
     // given
-    ensureTenantExistsForUser(adminClient, TENANT_PAGINATION, USER_PAGINATION);
-
     final String processId = SIMPLE_PROCESS_1;
     final BpmnModelInstance model = singleServiceTaskProcess(processId, JOB_TYPE_1);
     final long processDefinitionKey =
@@ -318,8 +336,6 @@ public class IncidentProcessInstanceStatisticsByErrorIT {
       @Authenticated(USER_ACTIVE_ONLY) final CamundaClient userClient) {
 
     // given
-    ensureTenantExistsForUser(adminClient, TENANT_ACTIVE_ONLY, USER_ACTIVE_ONLY);
-
     final String processId = SIMPLE_PROCESS_1;
     final BpmnModelInstance model = singleServiceTaskProcess(processId, JOB_TYPE_1);
 
@@ -373,8 +389,6 @@ public class IncidentProcessInstanceStatisticsByErrorIT {
       @Authenticated(USER_ERROR_HASH_COLLISION) final CamundaClient userClient) {
 
     // given
-    ensureTenantExistsForUser(adminClient, TENANT_ERROR_HASH_COLLISION, USER_ERROR_HASH_COLLISION);
-
     final String processId = SIMPLE_PROCESS_1;
     final BpmnModelInstance model1 = singleServiceTaskProcess(processId, JOB_TYPE_1);
     final BpmnModelInstance model2 = singleServiceTaskProcess(processId, JOB_TYPE_2);
@@ -439,8 +453,6 @@ public class IncidentProcessInstanceStatisticsByErrorIT {
   void shouldReturnNoStatisticsForUserWithoutReadProcessInstance(
       @Authenticated(USER_NO_READ_PROCESS_INSTANCE) final CamundaClient userClient) {
     // given
-    ensureTenantExistsForUser(adminClient, TENANT_NO_READ_PROCESS_INSTANCE, DEFAULT_USER_USERNAME);
-
     final BpmnModelInstance process = singleServiceTaskProcess(SIMPLE_PROCESS_1, JOB_TYPE_1);
 
     final long processDefinitionKey =
