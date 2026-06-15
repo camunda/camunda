@@ -1,10 +1,10 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "cda9ec35a56a71873bd9eb0daac70f21af285277",
-    "generatedAt": "2026-06-03T10:53:40.676Z",
+    "commit": "55944e3e6aeff6be4b14ab5eaec4c01095c45acb",
+    "generatedAt": "2026-06-13T13:33:18.642Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "993c5f0583b61f0d486171aaebc45db58771759734629e2a3f810aa822d0fecf"
+    "specSha256": "6eb21016c14c9495eb188ec7fe5dcb7424160d83e2246c5e4eceb88585f6534d"
   },
   "responses": [
     {
@@ -350,6 +350,161 @@
                       },
                       {
                         "name": "name",
+                        "type": "string"
+                      }
+                    ],
+                    "optional": []
+                  }
+                }
+              ],
+              "optional": []
+            }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": []
+            }
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/agent-instances/{agentInstanceKey}/history",
+      "method": "POST",
+      "status": "201",
+      "schema": {
+        "required": [
+          {
+            "name": "historyItemKey",
+            "type": "string"
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/agent-instances/{agentInstanceKey}/history/search",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "items",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "agentInstanceKey",
+                  "type": "string"
+                },
+                {
+                  "name": "commitStatus",
+                  "type": "string",
+                  "enumValues": [
+                    "COMMITTED",
+                    "PENDING",
+                    "DISCARDED"
+                  ]
+                },
+                {
+                  "name": "content",
+                  "type": "array<object|object|object>"
+                },
+                {
+                  "name": "elementInstanceKey",
+                  "type": "string"
+                },
+                {
+                  "name": "historyItemKey",
+                  "type": "string"
+                },
+                {
+                  "name": "iteration",
+                  "type": "number",
+                  "nullable": true
+                },
+                {
+                  "name": "jobKey",
+                  "type": "string"
+                },
+                {
+                  "name": "jobLease",
+                  "type": "string"
+                },
+                {
+                  "name": "metrics",
+                  "type": "0",
+                  "nullable": true,
+                  "children": {
+                    "required": [
+                      {
+                        "name": "durationMs",
+                        "type": "number"
+                      },
+                      {
+                        "name": "inputTokens",
+                        "type": "number"
+                      },
+                      {
+                        "name": "outputTokens",
+                        "type": "number"
+                      }
+                    ],
+                    "optional": []
+                  }
+                },
+                {
+                  "name": "producedAt",
+                  "type": "string"
+                },
+                {
+                  "name": "role",
+                  "type": "string"
+                },
+                {
+                  "name": "toolCalls",
+                  "type": "array<items>",
+                  "children": {
+                    "required": [
+                      {
+                        "name": "arguments",
+                        "type": "object",
+                        "nullable": true
+                      },
+                      {
+                        "name": "elementId",
+                        "type": "string",
+                        "nullable": true
+                      },
+                      {
+                        "name": "toolCallId",
+                        "type": "string"
+                      },
+                      {
+                        "name": "toolName",
                         "type": "string"
                       }
                     ],
@@ -3095,6 +3250,14 @@
             "children": {
               "required": [
                 {
+                  "name": "bpmnProcessId",
+                  "type": "string"
+                },
+                {
+                  "name": "details",
+                  "type": "unknown"
+                },
+                {
                   "name": "elementId",
                   "type": "string"
                 },
@@ -3136,57 +3299,6 @@
                   ]
                 },
                 {
-                  "name": "jobDetails",
-                  "type": "object",
-                  "nullable": true,
-                  "children": {
-                    "required": [
-                      {
-                        "name": "jobKey",
-                        "type": "string"
-                      },
-                      {
-                        "name": "jobKind",
-                        "type": "string"
-                      },
-                      {
-                        "name": "jobType",
-                        "type": "string"
-                      },
-                      {
-                        "name": "listenerEventType",
-                        "type": "string",
-                        "nullable": true
-                      },
-                      {
-                        "name": "retries",
-                        "type": "number",
-                        "nullable": true
-                      }
-                    ],
-                    "optional": []
-                  }
-                },
-                {
-                  "name": "messageDetails",
-                  "type": "object",
-                  "nullable": true,
-                  "children": {
-                    "required": [
-                      {
-                        "name": "correlationKey",
-                        "type": "string",
-                        "nullable": true
-                      },
-                      {
-                        "name": "messageName",
-                        "type": "string"
-                      }
-                    ],
-                    "optional": []
-                  }
-                },
-                {
                   "name": "processInstanceKey",
                   "type": "string"
                 },
@@ -3198,14 +3310,6 @@
                 {
                   "name": "tenantId",
                   "type": "string"
-                },
-                {
-                  "name": "waitStateType",
-                  "type": "string",
-                  "enumValues": [
-                    "JOB",
-                    "MESSAGE"
-                  ]
                 }
               ],
               "optional": []
