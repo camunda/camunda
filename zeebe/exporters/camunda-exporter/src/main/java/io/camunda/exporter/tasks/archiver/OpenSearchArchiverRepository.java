@@ -71,7 +71,6 @@ import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.generic.OpenSearchGenericClient;
 import org.opensearch.client.opensearch.generic.Requests;
 import org.opensearch.client.opensearch.generic.Response;
-import org.opensearch.client.transport.TransportOptions;
 import org.slf4j.Logger;
 
 public final class OpenSearchArchiverRepository extends OpensearchRepository
@@ -483,18 +482,8 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
       requestBuilder.searchAfter(searchAfter);
     }
 
-    final var transportOptions =
-        (client._transportOptions() != null
-                ? client._transportOptions()
-                : TransportOptions.builder().build())
-            .with(b -> b.setParameter("filter_path", "-hits.hits._score"));
-
     final var timer = Timer.start();
-    return sendRequestAsync(
-            () ->
-                client
-                    .withTransportOptions(transportOptions)
-                    .search(requestBuilder.build(), Object.class))
+    return sendRequestAsync(() -> client.search(requestBuilder.build(), Object.class))
         .whenCompleteAsync(
             (response, error) -> metrics.measureArchiveDocIdsSearchDuration(timer), executor)
         .thenApply(
