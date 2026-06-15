@@ -35,7 +35,6 @@ import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.Resource;
-import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternResolver;
 import org.springframework.util.ReflectionUtils;
 
@@ -56,11 +55,6 @@ public class ClusterVariablesAnnotationProcessor extends AbstractCamundaAnnotati
     this.jsonMapper = jsonMapper;
     this.resourcePatternResolver = resourcePatternResolver;
     this.properties = properties;
-  }
-
-  public ClusterVariablesAnnotationProcessor(
-      final JsonMapper jsonMapper, final CamundaClientClusterVariablesProperties properties) {
-    this(jsonMapper, new PathMatchingResourcePatternResolver(), properties);
   }
 
   @Override

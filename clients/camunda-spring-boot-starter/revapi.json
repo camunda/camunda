@@ -771,7 +771,13 @@
           "ignore": true,
           "code": "java.method.removed",
           "old": "method io.camunda.client.spring.annotation.processor.DeploymentAnnotationProcessor io.camunda.client.spring.configuration.AnnotationProcessorConfiguration::deploymentPostProcessor(org.springframework.context.ApplicationEventPublisher, io.camunda.client.spring.properties.CamundaClientProperties)",
-          "justification": "This constructor was replaced with the full one. As this was wired as spring bean, the compatibility impact is accepted for this release."
+          "justification": "Bean factory method replaced with a version that injects ResourcePatternResolver. Compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.client.spring.annotation.processor.ClusterVariablesAnnotationProcessor io.camunda.client.spring.configuration.AnnotationProcessorConfiguration::clusterVariablesPostProcessor(io.camunda.client.api.JsonMapper, io.camunda.client.spring.properties.CamundaClientProperties)",
+          "justification": "Bean factory method replaced with a version that injects ResourcePatternResolver. Compatibility impact accepted for this release."
         }
       ]
     }
