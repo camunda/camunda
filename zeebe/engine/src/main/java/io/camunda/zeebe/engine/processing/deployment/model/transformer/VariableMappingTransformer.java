@@ -189,8 +189,8 @@ public final class VariableMappingTransformer {
    *   <li>Nested target paths are handled correctly without premature evaluation
    * </ul>
    *
-   * Compared to {@link #buildIncrementalMappingExpression}, this method adds support for nested
-   * variable references in source expressions of subsequent mappings.
+   * Compared to {@link #buildIncrementalMappingExpression}, this method adds support for
+   * nested variable references in source expressions of subsequent mappings.
    *
    * @param mappings the list of mappings to process
    * @param expressionLanguage the expression language to parse the result
@@ -226,20 +226,7 @@ public final class VariableMappingTransformer {
         // and then it should be updated with `context put` (assigning to the nested variable
         // directly will create a new flat variable with "." in its name)
         final var root = parts.getFirst();
-        // Note: the following expression is necessary to handle three cases:
-        // - root variable does not exist yet
-        //   - `get entries` will return null (as the variable is not found)
-        //   - `get or else` will return an empty list
-        //   - `context` will convert it to an empty context object
-        // - root variable exists but contains a scalar
-        //   - `get entries` will return null (as the variable is not a context)
-        //   - `get or else` will return an empty list
-        //   - `context` will convert it to an empty context object
-        // - root variable exists and it is an object
-        //   - `get entries` will return the contained entries (as it is in fact a context)
-        //   - `get or else` will return the contained entries
-        //   - `context` will rebuild the context object exactly as it was
-        sb.append(String.format("%s:context(get or else(get entries(%s),[])),", root, root));
+        sb.append(String.format("%s:get or else(%s,{}),", root, root));
         final var subPath = parts.stream().skip(1).toList();
         sb.append(buildContextUpdate(root, root, subPath, sourceExpr)).append(",");
       }
