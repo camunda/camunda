@@ -8,6 +8,9 @@ on:
     # Runs at 02:00 every week day; see this link for more: https://crontab.guru/#0_2_*_*_1-5
     - cron: '0 2 * * 1-5'
 
+env:
+  TEST_OWNER: '@camunda/monorepo-devops-team'
+
 jobs:
   dry-run-release-85:
     name: "Release from stable/8.5"

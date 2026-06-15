@@ -14,6 +14,9 @@ on:
     branches:
       - release-*
 
+env:
+  TEST_OWNER: '@camunda/monorepo-devops-team'
+
 jobs:
   validate-event:
     name: Validate GitHub event for release branch activity

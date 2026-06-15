@@ -11,6 +11,9 @@ on:
     # Run at 7:00 on every monday
     - cron: '0 7 * * 1'
 
+env:
+  TEST_OWNER: '@camunda/core-features'
+
 jobs:
   # This job will figure out the last supported versions based on the latest tags.
   #

@@ -9,6 +9,9 @@ on:
   workflow_dispatch:
   pull_request:
 
+env:
+  TEST_OWNER: '@camunda/monorepo-devops-team'
+
 jobs:
   check-all-pr-conflicts:
     if: ${{ github.event_name == 'schedule' }}

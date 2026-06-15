@@ -12,6 +12,7 @@ on:
     - cron: '0 1 * * 1-5'
 
 env:
+  TEST_OWNER: '@camunda/core-features'
   # This URL is used as the business key for the various QA workflows
   BUILD_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 

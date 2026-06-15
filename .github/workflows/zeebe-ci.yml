@@ -21,6 +21,7 @@ defaults:
     shell: bash
 
 env:
+  TEST_OWNER: '@camunda/zeebe-distributed-platform'
   DOCKER_PLATFORMS: "linux/amd64,linux/arm64"
   GHA_BEST_PRACTICES_LINTER: enabled
   FLAKY_TEST_RERUN_COUNT: ${{ github.event_name == 'pull_request' && '3' || '7' }}
@@ -104,8 +105,7 @@ jobs:
           job_name: "smoke-tests/${{ matrix.os }}-${{ matrix.arch }}"
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
-          user_description: ${{ steps.analyze-test-run.outputs.flakyTests }}
-          detailed_junit_tests: true
+          detailed_junit_tests: ${{ matrix.os != 'macos' && matrix.os != 'windows' }}  # feature only supported on Linux for now
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
@@ -157,7 +157,6 @@ jobs:
         with:
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
-          user_description: ${{ steps.analyze-test-run.outputs.flakyTests }}
           detailed_junit_tests: true
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
@@ -223,7 +222,6 @@ jobs:
         with:
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
-          user_description: ${{ steps.analyze-test-run.outputs.flakyTests }}
           detailed_junit_tests: true
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
@@ -281,7 +279,6 @@ jobs:
         with:
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
-          user_description: ${{ steps.analyze-test-run.outputs.flakyTests }}
           detailed_junit_tests: true
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
@@ -433,7 +430,6 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          user_description: "team-distributed-systems"
 
   deploy-snyk-projects:
     name: Deploy Snyk development projects
@@ -470,6 +466,8 @@ jobs:
     permissions:
       checks: read
       pull-requests: write
+    env:
+      TEST_OWNER: '@camunda/monorepo-devops-team'
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@main
       - name: Generate GitHub token
