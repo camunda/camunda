@@ -14,6 +14,7 @@ import static io.camunda.gateway.mapping.http.validator.RequestValidator.validat
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validatePositiveKeyFormat;
 
 import io.camunda.gateway.protocol.model.AgentInstanceCreationRequest;
+import io.camunda.gateway.protocol.model.AgentInstanceHistoryItemRequest;
 import io.camunda.gateway.protocol.model.AgentInstanceUpdateRequest;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -61,6 +62,49 @@ public class AgentInstanceRequestValidator {
             violations.addAll(validateLimit("limits.maxTokens", limits.getMaxTokens()));
             violations.addAll(validateLimit("limits.maxModelCalls", limits.getMaxModelCalls()));
             violations.addAll(validateLimit("limits.maxToolCalls", limits.getMaxToolCalls()));
+          }
+
+          return violations;
+        });
+  }
+
+  @SuppressWarnings("ConstantValue")
+  public Optional<ProblemDetail> validateHistoryItemRequest(
+      final String agentInstanceKey, final AgentInstanceHistoryItemRequest request) {
+    return validate(
+        () -> {
+          final List<String> violations = new ArrayList<>();
+
+          validatePositiveKeyFormat(agentInstanceKey, "agentInstanceKey", violations);
+
+          if (request.getElementInstanceKey() == null) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("elementInstanceKey"));
+          } else {
+            validatePositiveKeyFormat(
+                request.getElementInstanceKey(), "elementInstanceKey", violations);
+          }
+
+          if (request.getJobKey() == null) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("jobKey"));
+          } else {
+            validatePositiveKeyFormat(request.getJobKey(), "jobKey", violations);
+          }
+
+          // TODO: validate jobLease once job leasing is implemented (#55033)
+          // if (request.getJobLease() == null || request.getJobLease().isBlank()) {
+          //   violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("jobLease"));
+          // }
+
+          if (request.getRole() == null) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("role"));
+          }
+
+          if (request.getContent() == null || request.getContent().isEmpty()) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("content"));
+          }
+
+          if (request.getProducedAt() == null || request.getProducedAt().isBlank()) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("producedAt"));
           }
 
           return violations;

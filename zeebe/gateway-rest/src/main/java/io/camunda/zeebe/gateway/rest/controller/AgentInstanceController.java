@@ -14,6 +14,7 @@ import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mapping.http.validator.AgentInstanceRequestValidator;
 import io.camunda.gateway.protocol.model.AgentInstanceCreationRequest;
+import io.camunda.gateway.protocol.model.AgentInstanceHistoryItemRequest;
 import io.camunda.gateway.protocol.model.AgentInstanceResult;
 import io.camunda.gateway.protocol.model.AgentInstanceSearchQuery;
 import io.camunda.gateway.protocol.model.AgentInstanceSearchQueryResult;
@@ -28,6 +29,7 @@ import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.HttpStatus;
@@ -75,6 +77,18 @@ public class AgentInstanceController {
             record -> update(physicalTenantId, record));
   }
 
+  @CamundaPostMapping(path = "/{agentInstanceKey}/history")
+  public CompletableFuture<ResponseEntity<Object>> createAgentInstanceHistoryItem(
+      @PhysicalTenantId final String physicalTenantId,
+      @PathVariable final String agentInstanceKey,
+      @RequestBody final AgentInstanceHistoryItemRequest request) {
+    return mapper
+        .toCreateAgentHistoryRecord(agentInstanceKey, request)
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            record -> createHistoryItem(physicalTenantId, record));
+  }
+
   @RequiresSecondaryStorage
   @CamundaGetMapping(path = "/{agentInstanceKey}")
   public ResponseEntity<AgentInstanceResult> getAgentInstance(
@@ -116,6 +130,16 @@ public class AgentInstanceController {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethodWithNoContentResult(
         () -> agentInstanceServices.updateAgentInstance(record, authentication));
+  }
+
+  private CompletableFuture<ResponseEntity<Object>> createHistoryItem(
+      final String physicalTenantId, final AgentHistoryRecord record) {
+    final var agentHistoryServices = serviceRegistry.agentHistoryServices(physicalTenantId);
+    final var authentication = authenticationProvider.getCamundaAuthentication();
+    return RequestExecutor.executeServiceMethod(
+        () -> agentHistoryServices.createAgentHistoryItem(record, authentication),
+        mapper::toAgentHistoryItemCreationResult,
+        HttpStatus.CREATED);
   }
 
   private ResponseEntity<AgentInstanceSearchQueryResult> search(
