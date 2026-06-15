@@ -13,7 +13,7 @@ import {C3Navigation, C3NavigationProps} from '@camunda/camunda-composite-compon
 import {track} from 'tracking';
 import {useUiConfig} from 'hooks';
 
-import Header from './Header';
+import Header from './LegacyHeader';
 
 const defaultUiConfig = {
   optimizeProfile: 'ccsm',
