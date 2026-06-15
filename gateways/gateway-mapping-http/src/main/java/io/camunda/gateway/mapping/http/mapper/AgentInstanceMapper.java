@@ -24,12 +24,14 @@ import io.camunda.gateway.protocol.model.AgentInstanceToolCall;
 import io.camunda.gateway.protocol.model.AgentInstanceUpdateRequest;
 import io.camunda.gateway.protocol.model.AgentInstanceUpdateStatusEnum;
 import io.camunda.gateway.protocol.model.AgentTool;
+import io.camunda.gateway.protocol.model.DocumentMetadataResponse;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryEmbeddedToolCall;
 import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryMessageContent;
 import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceTool;
+import io.camunda.zeebe.protocol.impl.record.value.document.DocumentReferenceMetadata;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryContentType;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRole;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
@@ -195,6 +197,10 @@ public class AgentInstanceMapper {
             .setDocumentId(ref.getDocumentId() != null ? ref.getDocumentId() : "")
             .setStoreId(ref.getStoreId() != null ? ref.getStoreId() : "")
             .setContentHash(ref.getContentHash() != null ? ref.getContentHash() : "");
+        final var meta = ref.getMetadata();
+        if (meta != null) {
+          fillDocumentReferenceMetadata(meta, result.getDocumentReference().getMetadata());
+        }
       }
     } else if (content instanceof final AgentInstanceObjectContent obj) {
       result.setContentType(AgentHistoryContentType.OBJECT);
@@ -220,6 +226,26 @@ public class AgentInstanceMapper {
 
   private DirectBuffer toMsgPackBuffer(final Map<String, Object> map) {
     return BufferUtil.wrapArray(MsgPackConverter.convertToMsgPack(map));
+  }
+
+  private void fillDocumentReferenceMetadata(
+      final DocumentMetadataResponse meta, final DocumentReferenceMetadata recordMeta) {
+    recordMeta
+        .setContentType(meta.getContentType() != null ? meta.getContentType() : "")
+        .setFileName(meta.getFileName() != null ? meta.getFileName() : "")
+        .setSize(meta.getSize() != null ? meta.getSize() : -1L);
+    if (meta.getExpiresAt() != null) {
+      recordMeta.setExpiresAt(OffsetDateTime.parse(meta.getExpiresAt()).toInstant().toEpochMilli());
+    }
+    if (meta.getProcessDefinitionId() != null) {
+      recordMeta.setProcessDefinitionId(meta.getProcessDefinitionId());
+    }
+    if (meta.getProcessInstanceKey() != null) {
+      recordMeta.setProcessInstanceKey(Long.parseLong(meta.getProcessInstanceKey()));
+    }
+    if (meta.getCustomProperties() != null && !meta.getCustomProperties().isEmpty()) {
+      recordMeta.setCustomProperties(meta.getCustomProperties());
+    }
   }
 
   // Note: even if limits are marked @NotNull in AgentInstanceCreationRequest,

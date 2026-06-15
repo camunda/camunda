@@ -22,6 +22,8 @@ import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryContentType;
+import java.time.OffsetDateTime;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -848,6 +850,83 @@ class AgentInstanceControllerTest extends RestControllerTest {
                   assertThat(record.getMetrics().getInputTokens()).isEqualTo(512L);
                   assertThat(record.getMetrics().getOutputTokens()).isEqualTo(128L);
                   assertThat(record.getMetrics().getDurationMs()).isEqualTo(1500L);
+                }),
+            any());
+  }
+
+  @Test
+  void shouldCreateAgentHistoryItemWithDocumentContent() {
+    // given
+    final var responseRecord = new AgentHistoryRecord();
+    responseRecord.setAgentHistoryKey(HISTORY_ITEM_KEY);
+    when(agentHistoryServices.createAgentHistoryItem(any(AgentHistoryRecord.class), any()))
+        .thenReturn(CompletableFuture.completedFuture(responseRecord));
+
+    final var requestBody =
+        """
+        {
+          "elementInstanceKey": "%d",
+          "jobKey": "%d",
+          "jobLease": "lease-abc",
+          "role": "USER",
+          "content": [
+            {
+              "contentType": "DOCUMENT",
+              "documentReference": {
+                "camunda.document.type": "camunda",
+                "storeId": "store-1",
+                "documentId": "doc-abc",
+                "contentHash": "sha256:deadbeef",
+                "metadata": {
+                  "contentType": "application/pdf",
+                  "fileName": "invoice.pdf",
+                  "expiresAt": "2025-12-31T23:59:59Z",
+                  "size": 12345,
+                  "processDefinitionId": "invoice-process",
+                  "processInstanceKey": "%d",
+                  "customProperties": {"source": "email"}
+                }
+              }
+            }
+          ],
+          "producedAt": "2025-06-01T12:00:00Z"
+        }
+        """
+            .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY, ELEMENT_INSTANCE_KEY);
+
+    // when / then
+    webClient
+        .post()
+        .uri(AGENT_INSTANCES_URL + "/%d/history".formatted(AGENT_INSTANCE_KEY))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(requestBody)
+        .exchange()
+        .expectStatus()
+        .isCreated();
+
+    verify(agentHistoryServices)
+        .createAgentHistoryItem(
+            assertArg(
+                record -> {
+                  assertThat(record.getContent()).hasSize(1);
+                  final var docContent = record.getContent().get(0);
+                  assertThat(docContent.getContentType())
+                      .isEqualTo(AgentHistoryContentType.DOCUMENT);
+                  final var docRef = docContent.getDocumentReference();
+                  assertThat(docRef.getDocumentId()).isEqualTo("doc-abc");
+                  assertThat(docRef.getStoreId()).isEqualTo("store-1");
+                  assertThat(docRef.getContentHash()).isEqualTo("sha256:deadbeef");
+                  final var meta = docRef.getMetadata();
+                  assertThat(meta.getContentType()).isEqualTo("application/pdf");
+                  assertThat(meta.getFileName()).isEqualTo("invoice.pdf");
+                  assertThat(meta.getExpiresAt())
+                      .isEqualTo(
+                          OffsetDateTime.parse("2025-12-31T23:59:59Z").toInstant().toEpochMilli());
+                  assertThat(meta.getSize()).isEqualTo(12345L);
+                  assertThat(meta.getProcessDefinitionId()).isEqualTo("invoice-process");
+                  assertThat(meta.getProcessInstanceKey()).isEqualTo(ELEMENT_INSTANCE_KEY);
+                  assertThat(meta.getCustomProperties()).containsEntry("source", "email");
                 }),
             any());
   }
