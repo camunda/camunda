@@ -20,6 +20,9 @@ concurrency:
 permissions:
   contents: read # for git clone
 
+env:
+  TEST_OWNER: '@camunda/identity'
+
 jobs:
   read-versions:
     runs-on: ubuntu-latest
