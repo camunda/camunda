@@ -46,18 +46,18 @@ const NoTaskSelectedPage: React.FC<Props> = ({hasNoTasks}) => {
 			</Column>
 			<Column className={isOldUser ? styles.oldUserText : styles.newUserText} sm={3} md={5} lg={10} xlg={10}>
 				{isOldUser ? (
-					<h3>{t('taskEmptyPickPrompt')}</h3>
+					<h3>{t('tasklist.taskEmptyPickPrompt')}</h3>
 				) : (
 					<>
-						<h3>{t('taskEmptyHeader')}</h3>
+						<h3>{t('tasklist.taskEmptyHeader')}</h3>
 						<p data-testid="first-paragraph">
-							{t('taskEmptyDetail1')}
+							{t('tasklist.taskEmptyDetail1')}
 							<br />
-							{t('taskEmptyDetail2')}
+							{t('tasklist.taskEmptyDetail2')}
 						</p>
-						{!hasNoTasks && <p>{t('taskEmptyTaskAvailablePrompt')}</p>}
+						{!hasNoTasks && <p>{t('tasklist.taskEmptyTaskAvailablePrompt')}</p>}
 						<p data-testid="tutorial-paragraph">
-							<Trans i18nKey="taskEmptyTutorial">
+							<Trans i18nKey="tasklist.taskEmptyTutorial">
 								Follow our tutorial to{' '}
 								<Link
 									href="https://modeler.cloud.camunda.io/tutorial/quick-start-human-tasks"

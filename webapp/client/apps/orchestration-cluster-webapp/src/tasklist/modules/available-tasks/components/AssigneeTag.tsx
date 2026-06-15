@@ -54,9 +54,9 @@ const AssigneeTag: React.FC<Props> = ({currentUser, assignee, isShortFormat = tr
 
 	if (!isAssigned) {
 		return (
-			<Tag title={t('assigneeTagUnassignedTitle')} size={isShortFormat ? 'sm' : 'md'} unselectable="off">
+			<Tag title={t('tasklist.assigneeTagUnassignedTitle')} size={isShortFormat ? 'sm' : 'md'} unselectable="off">
 				<CircleDash size={16} />
-				{t('assigneeTagUnassigned')}
+				{t('tasklist.assigneeTagUnassigned')}
 			</Tag>
 		);
 	}
@@ -65,24 +65,24 @@ const AssigneeTag: React.FC<Props> = ({currentUser, assignee, isShortFormat = tr
 			<Tag
 				$isHighlighted
 				$isAssigned
-				title={t('assigneeTagAssignedToMeAria')}
+				title={t('tasklist.assigneeTagAssignedToMeAria')}
 				size={isShortFormat ? 'sm' : 'md'}
 				unselectable="off"
 			>
 				<UserAvatarFilled size={16} />
-				{isShortFormat ? t('assigneeTagAssignedToMeShortForm') : t('assigneeTagAssignedToMe')}
+				{isShortFormat ? t('tasklist.assigneeTagAssignedToMeShortForm') : t('tasklist.assigneeTagAssignedToMe')}
 			</Tag>
 		);
 	}
 	return (
 		<Tag
 			$isAssigned
-			title={t('assigneeTagAssignedToXAria', {assignee})}
+			title={t('tasklist.assigneeTagAssignedToXAria', {assignee})}
 			size={isShortFormat ? 'sm' : 'md'}
 			unselectable="off"
 		>
 			<UserAvatar size={16} />
-			{isShortFormat ? assignee : t('assigneeTagAssignedToX', {assignee})}
+			{isShortFormat ? assignee : t('tasklist.assigneeTagAssignedToX', {assignee})}
 		</Tag>
 	);
 };

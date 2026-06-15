@@ -23,26 +23,26 @@ type PriorityLabel = {
 const getPriorityLabel = (priority: number): PriorityLabel => {
 	if (priority > 75) {
 		return {
-			short: t('taskPriorityCriticalShort'),
-			long: t('taskPriorityCriticalLong'),
+			short: t('tasklist.taskPriorityCriticalShort'),
+			long: t('tasklist.taskPriorityCriticalLong'),
 			key: 'critical',
 		};
 	} else if (priority > 50) {
 		return {
-			short: t('taskPriorityHighShort'),
-			long: t('taskPriorityHighLong'),
+			short: t('tasklist.taskPriorityHighShort'),
+			long: t('tasklist.taskPriorityHighLong'),
 			key: 'high',
 		};
 	} else if (priority > 25) {
 		return {
-			short: t('taskPriorityMediumShort'),
-			long: t('taskPriorityMediumLong'),
+			short: t('tasklist.taskPriorityMediumShort'),
+			long: t('tasklist.taskPriorityMediumLong'),
 			key: 'medium',
 		};
 	} else {
 		return {
-			short: t('taskPriorityLowShort'),
-			long: t('taskPriorityLowLong'),
+			short: t('tasklist.taskPriorityLowShort'),
+			long: t('tasklist.taskPriorityLowLong'),
 			key: 'low',
 		};
 	}

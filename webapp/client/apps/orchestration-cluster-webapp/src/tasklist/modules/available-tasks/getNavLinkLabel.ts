@@ -21,12 +21,12 @@ function getNavLinkLabel({
 	const isAssignedToCurrentUser = assigneeId === currentUsername;
 	if (isAssigned) {
 		if (isAssignedToCurrentUser) {
-			return t('availableTasksNavLinkAssignedToMe', {name: displayName});
+			return t('tasklist.availableTasksNavLinkAssignedToMe', {name: displayName});
 		} else {
-			return t('availableTasksNavLinkAssignedTask', {name: displayName});
+			return t('tasklist.availableTasksNavLinkAssignedTask', {name: displayName});
 		}
 	} else {
-		return t('availableTasksNavLinkUnassignedTask', {name: displayName});
+		return t('tasklist.availableTasksNavLinkUnassignedTask', {name: displayName});
 	}
 }
 

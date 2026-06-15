@@ -91,16 +91,16 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
 							{creationDate ? (
 								<DateLabel
 									date={creationDate}
-									relativeLabel={t('availableTasksCreatedRelativeLabel')}
-									absoluteLabel={t('availableTasksCreatedAbsoluteLabel')}
+									relativeLabel={t('tasklist.availableTasksCreatedRelativeLabel')}
+									absoluteLabel={t('tasklist.availableTasksCreatedAbsoluteLabel')}
 									icon={<Calendar className={styles.inlineIcon} />}
 								/>
 							) : null}
 							{secondaryDate.followUpDate !== undefined ? (
 								<DateLabel
 									date={secondaryDate.followUpDate}
-									relativeLabel={t('availableTasksFollowUpRelativeLabel')}
-									absoluteLabel={t('availableTasksFollowUpAbsoluteLabel')}
+									relativeLabel={t('tasklist.availableTasksFollowUpRelativeLabel')}
+									absoluteLabel={t('tasklist.availableTasksFollowUpAbsoluteLabel')}
 									icon={<Notification className={styles.inlineIcon} color="blue" />}
 									align="top-end"
 								/>
@@ -108,8 +108,8 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
 							{secondaryDate.overDueDate !== undefined ? (
 								<DateLabel
 									date={secondaryDate.overDueDate}
-									relativeLabel={t('availableTasksOverdueRelativeLabel')}
-									absoluteLabel={t('availableTasksOverdueAbsoluteLabel')}
+									relativeLabel={t('tasklist.availableTasksOverdueRelativeLabel')}
+									absoluteLabel={t('tasklist.availableTasksOverdueAbsoluteLabel')}
 									icon={<Warning className={styles.inlineIcon} color="red" />}
 									align="top-end"
 								/>
@@ -117,16 +117,16 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
 							{secondaryDate.dueDate !== undefined ? (
 								<DateLabel
 									date={secondaryDate.dueDate}
-									relativeLabel={t('availableTasksDueRelativeLabel')}
-									absoluteLabel={t('availableTasksDueAbsoluteLabel')}
+									relativeLabel={t('tasklist.availableTasksDueRelativeLabel')}
+									absoluteLabel={t('tasklist.availableTasksDueAbsoluteLabel')}
 									align="top-end"
 								/>
 							) : null}
 							{secondaryDate.completionDate !== undefined ? (
 								<DateLabel
 									date={secondaryDate.completionDate}
-									relativeLabel={t('availableTasksCompletedRelativeLabel')}
-									absoluteLabel={t('availableTasksCompletedAbsoluteLabel')}
+									relativeLabel={t('tasklist.availableTasksCompletedRelativeLabel')}
+									absoluteLabel={t('tasklist.availableTasksCompletedAbsoluteLabel')}
 									icon={<CheckmarkFilled className={styles.inlineIcon} color="green" />}
 									align="top-end"
 								/>
