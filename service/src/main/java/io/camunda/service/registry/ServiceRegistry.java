@@ -8,6 +8,7 @@
 package io.camunda.service.registry;
 
 import io.camunda.service.AdHocSubProcessActivityServices;
+import io.camunda.service.AgentHistoryServices;
 import io.camunda.service.AgentInstanceServices;
 import io.camunda.service.AuditLogServices;
 import io.camunda.service.AuthorizationServices;
@@ -54,6 +55,8 @@ public interface ServiceRegistry {
   // -- tenant-scoped --
 
   AdHocSubProcessActivityServices adHocSubProcessActivityServices(String physicalTenantId);
+
+  AgentHistoryServices agentHistoryServices(String physicalTenantId);
 
   AgentInstanceServices agentInstanceServices(String physicalTenantId);
 

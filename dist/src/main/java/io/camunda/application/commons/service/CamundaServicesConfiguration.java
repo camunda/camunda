@@ -19,6 +19,7 @@ import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.security.core.authz.AuthorizationChecker;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.service.AdHocSubProcessActivityServices;
+import io.camunda.service.AgentHistoryServices;
 import io.camunda.service.AgentInstanceServices;
 import io.camunda.service.ApiServicesExecutorProvider;
 import io.camunda.service.AuditLogServices;
@@ -219,6 +220,10 @@ public class CamundaServicesConfiguration {
                   .adHocSubProcessActivityServices(
                       tenantId,
                       new AdHocSubProcessActivityServices(
+                          brokerClient, securityContextProvider, executor, converter))
+                  .agentHistoryServices(
+                      tenantId,
+                      new AgentHistoryServices(
                           brokerClient, securityContextProvider, executor, converter))
                   .agentInstanceServices(
                       tenantId,
