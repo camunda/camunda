@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.dynamic.config.api;
 
+import static io.camunda.zeebe.util.Preconditions.assertNonEmpty;
+import static io.camunda.zeebe.util.Preconditions.assertPositive;
+
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
@@ -67,7 +70,14 @@ public sealed interface ClusterConfigurationManagementRequest {
       Optional<Integer> newReplicationFactor,
       Optional<String> zone,
       boolean dryRun)
-      implements ClusterConfigurationManagementRequest {}
+      implements ClusterConfigurationManagementRequest {
+    public ClusterScaleRequest {
+      zone.ifPresent(assertNonEmpty("zone"));
+      brokerCount.ifPresent(assertPositive("brokerCount"));
+      newPartitionCount.ifPresent(assertPositive("newPartitionCount"));
+      newReplicationFactor.ifPresent(assertPositive("newReplicationFactor"));
+    }
+  }
 
   record ClusterPatchRequest(
       Set<MemberId> membersToAdd,
@@ -75,7 +85,13 @@ public sealed interface ClusterConfigurationManagementRequest {
       Optional<Integer> newPartitionCount,
       Optional<Integer> newReplicationFactor,
       boolean dryRun)
-      implements ClusterConfigurationManagementRequest {}
+      implements ClusterConfigurationManagementRequest {
+
+    public ClusterPatchRequest {
+      newPartitionCount.ifPresent(assertPositive("newPartitionCount"));
+      newReplicationFactor.ifPresent(assertPositive("newReplicationFactor"));
+    }
+  }
 
   record UpdateRoutingStateRequest(Optional<RoutingState> routingState, boolean dryRun)
       implements ClusterConfigurationManagementRequest {}
