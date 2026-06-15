@@ -369,6 +369,14 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
     return managementReport || instantPreviewReport || agenticControlReport;
   }
 
+  // Whether this grouped report supports a server-side top-N subset via report pagination.
+  // Today only agentic control reports opt in (e.g. the top token consumers tile); a future
+  // paginatable report would extend this single derivation rather than the generic evaluator.
+  @JsonIgnore
+  public boolean isGroupByPaginationSupported() {
+    return agenticControlReport;
+  }
+
   protected boolean canEqual(final Object other) {
     return other instanceof ProcessReportDataDto;
   }

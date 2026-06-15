@@ -40,9 +40,21 @@
     margin: 0;
   }
 
-  .tile-footnote {
-    margin: 0.5rem 0 0;
-    padding-top: 0.5rem;
+  .tile-footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    column-gap: 0.25rem;
+
+    &:not(:empty) {
+      margin-top: 0.5rem;
+      padding-top: 0.5rem;
+    }
+  }
+
+  .tile-footnote,
+  .tile-topn-notice {
+    margin: 0;
     font-size: 0.75rem;
     line-height: 1.2;
     color: var(--cds-text-secondary);

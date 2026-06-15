@@ -18,6 +18,7 @@ import io.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.report.SingleReportDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.report.SingleReportEvaluationResult;
 import io.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
 import io.camunda.optimize.dto.optimize.rest.pagination.PaginationScrollableDto;
 import io.camunda.optimize.service.db.report.interpreter.plan.ExecutionPlanInterpreterFacade;
@@ -75,6 +76,15 @@ public class SingleReportEvaluator {
       final ReportEvaluationContext<T> reportEvaluationContext, final ExecutionPlan executionPlan) {
     if (executionPlan.isRawDataReport()) {
       addDefaultMissingPaginationValues(reportEvaluationContext);
+    } else if (supportsGroupedPagination(reportEvaluationContext)) {
+      // A grouped top-N request only carries a limit. Normalise it to a complete first page by
+      // defaulting the offset to 0; this is the natural first-page value and also keeps the
+      // resulting PaginationScrollableDto valid so the "top N of total" count is serialized back
+      // to the client. No limit is injected, leaving every other agentic tile untouched.
+      reportEvaluationContext
+          .getPagination()
+          .filter(pagination -> pagination.getLimit() != null && pagination.getOffset() == null)
+          .ifPresent(pagination -> pagination.setOffset(PAGINATION_DEFAULT_OFFSET));
     } else {
       reportEvaluationContext
           .getPagination()
@@ -86,6 +96,13 @@ public class SingleReportEvaluator {
                 }
               });
     }
+  }
+
+  private <T extends ReportDefinitionDto<?>> boolean supportsGroupedPagination(
+      final ReportEvaluationContext<T> reportEvaluationContext) {
+    return reportEvaluationContext.getReportDefinition().getData()
+            instanceof final ProcessReportDataDto processReportData
+        && processReportData.isGroupByPaginationSupported();
   }
 
   private <T extends ReportDefinitionDto<?>> void addDefaultMissingPaginationValues(

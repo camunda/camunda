@@ -150,7 +150,7 @@ export default function OptimizeReportTile({
       <div className="visualization">
         <ReportRenderer error={error} report={data} context="dashboard" loadReport={loadTileData} />
       </div>
-      {children?.({loadTileData: refreshTile})}
+      {children?.({loadTileData: refreshTile, data})}
     </div>
   );
 }

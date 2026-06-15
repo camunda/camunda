@@ -19,6 +19,7 @@ import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch.core.search.ResponseBody;
 import co.elastic.clients.util.NamedValue;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import io.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
 import io.camunda.optimize.service.db.es.report.interpreter.distributedby.process.ProcessDistributedByInterpreterFacadeES;
 import io.camunda.optimize.service.db.es.report.interpreter.view.process.ProcessViewInterpreterFacadeES;
 import io.camunda.optimize.service.db.report.ExecutionContext;
@@ -28,8 +29,10 @@ import io.camunda.optimize.service.db.report.result.CompositeCommandResult;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -40,6 +43,8 @@ public class ProcessGroupByProcessDefinitionKeyInterpreterES
     extends AbstractProcessGroupByInterpreterES {
 
   private static final String PROCESS_DEFINITION_KEY_AGGREGATION = "processDefinitionKeyAgg";
+  private static final String PROCESS_DEFINITION_KEY_COUNT_AGGREGATION =
+      "processDefinitionKeyCountAgg";
 
   private final ConfigurationService configurationService;
   private final ProcessDistributedByInterpreterFacadeES distributedByInterpreter;
@@ -63,21 +68,44 @@ public class ProcessGroupByProcessDefinitionKeyInterpreterES
   public Map<String, Aggregation.Builder.ContainerBuilder> createAggregation(
       final BoolQuery boolQuery,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+    final Map<String, Aggregation.Builder.ContainerBuilder> distributedByAggregations =
+        distributedByInterpreter.createAggregations(context, boolQuery);
+    final Optional<PaginationDto> topN = topNPagination(context);
+
     final Aggregation.Builder.ContainerBuilder builder =
         new Aggregation.Builder()
             .terms(
-                terms ->
+                terms -> {
+                  terms.field(PROCESS_DEFINITION_KEY);
+                  if (topN.isPresent() && !distributedByAggregations.isEmpty()) {
+                    // Return only the top N process definitions by the configured measure,
+                    // computed server-side so we never fetch all buckets for large data sets.
+                    terms
+                        .size(topN.get().getLimit())
+                        .order(
+                            NamedValue.of(
+                                primaryMeasureAggregationName(distributedByAggregations),
+                                SortOrder.Desc));
+                  } else {
                     terms
                         .size(
                             configurationService
                                 .getElasticSearchConfiguration()
                                 .getAggregationBucketLimit())
-                        .field(PROCESS_DEFINITION_KEY)
-                        .order(NamedValue.of("_key", SortOrder.Asc)));
-    distributedByInterpreter
-        .createAggregations(context, boolQuery)
-        .forEach((key, value) -> builder.aggregations(key, value.build()));
-    return Map.of(PROCESS_DEFINITION_KEY_AGGREGATION, builder);
+                        .order(NamedValue.of("_key", SortOrder.Asc));
+                  }
+                  return terms;
+                });
+    distributedByAggregations.forEach((key, value) -> builder.aggregations(key, value.build()));
+
+    final Map<String, Aggregation.Builder.ContainerBuilder> aggregations = new LinkedHashMap<>();
+    aggregations.put(PROCESS_DEFINITION_KEY_AGGREGATION, builder);
+    if (topN.isPresent()) {
+      aggregations.put(
+          PROCESS_DEFINITION_KEY_COUNT_AGGREGATION,
+          new Aggregation.Builder().cardinality(c -> c.field(PROCESS_DEFINITION_KEY)));
+    }
+    return aggregations;
   }
 
   @Override
@@ -99,6 +127,28 @@ public class ProcessGroupByProcessDefinitionKeyInterpreterES
     compositeCommandResult.setGroups(groupedData);
     compositeCommandResult.setDistributedByKeyOfNumericType(
         distributedByInterpreter.isKeyOfNumericType(context));
+
+    topNPagination(context)
+        .ifPresent(
+            pagination -> {
+              final var countAggregation =
+                  response.aggregations().get(PROCESS_DEFINITION_KEY_COUNT_AGGREGATION);
+              if (countAggregation != null) {
+                pagination.setTotal((long) countAggregation.cardinality().value());
+              }
+            });
+  }
+
+  private Optional<PaginationDto> topNPagination(
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+    return context.getPagination().filter(pagination -> pagination.getLimit() != null);
+  }
+
+  // The distributed-by facade emits one sub-aggregation per measure; the first is the primary
+  // measure used to rank the top-N buckets.
+  private static String primaryMeasureAggregationName(
+      final Map<String, Aggregation.Builder.ContainerBuilder> distributedByAggregations) {
+    return distributedByAggregations.keySet().iterator().next();
   }
 
   @Override

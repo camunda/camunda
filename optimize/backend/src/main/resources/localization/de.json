@@ -7,6 +7,7 @@
     "dateRange": "Zeitraum",
     "tokenUsage": "Token-Nutzung",
     "duration": "Dauer",
+    "topNNotice": "Top {shown} von {total}.",
     "presets": {
       "last7Days": "Letzte 7 Tage",
       "last30Days": "Letzte 30 Tage",
@@ -1560,6 +1561,8 @@
       "agenticKpiExecutionMedianTokensDescription": "Median der verbrauchten Tokens pro abgeschlossener agentischer Prozessinstanz im gewählten Zeitraum.",
       "agenticKpiTokenTrendName": "Token-Trend",
       "agenticKpiTokenTrendFootnote": "Wenn die Token-Nutzung ohne mehr Ausführungen steigt, wachsen möglicherweise die Prompts oder das Modell erzeugt längere Ausgaben. Engineering informieren.",
+      "agenticKpiTokenConsumersName": "Top-Token-Verbraucher nach Prozess",
+      "agenticKpiTokenConsumersFootnote": "Die Reduzierung des größten Verbrauchers hat die größte Auswirkung auf die gesamten Token-Kosten.",
       "agenticKpiDurationP50Name": "P50-Ausführungsdauer",
       "agenticKpiDurationP50Description": "Median (P50) der Ausführungsdauer abgeschlossener agentischer Prozessinstanzen im gewählten Zeitraum.",
       "agenticKpiDurationP95Name": "P95-Ausführungsdauer",

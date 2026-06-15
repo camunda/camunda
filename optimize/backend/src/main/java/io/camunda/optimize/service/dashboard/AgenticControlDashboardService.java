@@ -32,9 +32,12 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.distributed.
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.EndDateGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessDefinitionKeyGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
+import io.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
+import io.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import io.camunda.optimize.service.db.reader.DashboardReader;
 import io.camunda.optimize.service.db.writer.DashboardWriter;
 import io.camunda.optimize.service.db.writer.ReportWriter;
@@ -81,6 +84,13 @@ public class AgenticControlDashboardService {
   public static final String KPI_TOKEN_TREND_FOOTNOTE = "agenticKpiTokenTrendFootnote";
   public static final String KPI_TOKEN_TREND_FOOTNOTE_KEY =
       "agenticControl.report." + KPI_TOKEN_TREND_FOOTNOTE;
+  public static final String KPI_TOKEN_CONSUMERS_NAME = "agenticKpiTokenConsumersName";
+  public static final String KPI_TOKEN_CONSUMERS_FOOTNOTE = "agenticKpiTokenConsumersFootnote";
+  public static final String KPI_TOKEN_CONSUMERS_FOOTNOTE_KEY =
+      "agenticControl.report." + KPI_TOKEN_CONSUMERS_FOOTNOTE;
+  // Only the top N process definitions by total tokens are returned by the tile; the backend
+  // computes this server-side via report pagination so it scales to very large data sets.
+  public static final int TOKEN_CONSUMERS_LIMIT = 10;
   public static final String KPI_DURATION_P50_NAME = "agenticKpiDurationP50Name";
   public static final String KPI_DURATION_P50_DESCRIPTION = "agenticKpiDurationP50Description";
   public static final String KPI_DURATION_P95_NAME = "agenticKpiDurationP95Name";
@@ -104,12 +114,22 @@ public class AgenticControlDashboardService {
           .toString();
   public static final String TOKEN_TREND_REPORT_ID =
       UUID.nameUUIDFromBytes("agentic-token-trend".getBytes(StandardCharsets.UTF_8)).toString();
+  public static final String TOKEN_CONSUMERS_REPORT_ID =
+      UUID.nameUUIDFromBytes("agentic-token-consumers".getBytes(StandardCharsets.UTF_8)).toString();
   public static final String KPI_DURATION_P50_REPORT_ID =
       UUID.nameUUIDFromBytes("agentic-duration-p50".getBytes(StandardCharsets.UTF_8)).toString();
   public static final String KPI_DURATION_P95_REPORT_ID =
       UUID.nameUUIDFromBytes("agentic-duration-p95".getBytes(StandardCharsets.UTF_8)).toString();
 
   private static final long INSTANCE_END_DATE_ROLLING_DAYS = 30L;
+
+  // Tile configuration keys consumed by the Agentic Control Plane frontend.
+  private static final String TILE_CONFIG_SECTION = "section";
+  private static final String TILE_CONFIG_FOOTNOTE = "footnote";
+  private static final String TILE_CONFIG_TOP_N = "topN";
+  // Section values that group tiles within the dashboard layout.
+  private static final String TILE_SECTION_TOKEN = "token";
+  private static final String TILE_SECTION_DURATION = "duration";
 
   private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(AgenticControlDashboardService.class);
@@ -149,6 +169,7 @@ public class AgenticControlDashboardService {
     tiles.add(buildAvgTokensReport());
     tiles.add(buildMedianTokensReport());
     tiles.add(buildTokenTrendReport());
+    tiles.add(buildTopTokenConsumersReport());
     tiles.add(buildP50DurationReport());
     tiles.add(buildP95DurationReport());
 
@@ -293,7 +314,8 @@ public class AgenticControlDashboardService {
             .build();
     reportWriter.createOrUpdateSingleProcessReport(
         id, null, reportData, nameKey, descriptionKey, null);
-    return buildTile(id, position, new DimensionDto(9, 2), Map.of("section", "token"));
+    return buildTile(
+        id, position, new DimensionDto(9, 2), Map.of(TILE_CONFIG_SECTION, TILE_SECTION_TOKEN));
   }
 
   private DashboardReportTileDto buildTokenTrendReport() {
@@ -304,7 +326,11 @@ public class AgenticControlDashboardService {
         TOKEN_TREND_REPORT_ID,
         new PositionDto(0, 6),
         new DimensionDto(9, 4),
-        Map.of("section", "token", "footnote", KPI_TOKEN_TREND_FOOTNOTE_KEY));
+        Map.of(
+            TILE_CONFIG_SECTION,
+            TILE_SECTION_TOKEN,
+            TILE_CONFIG_FOOTNOTE,
+            KPI_TOKEN_TREND_FOOTNOTE_KEY));
   }
 
   // A single multi-measure report (input + output tokens) renders both series as separate lines,
@@ -326,6 +352,55 @@ public class AgenticControlDashboardService {
                 .aggregationTypes(
                     new LinkedHashSet<>(
                         Collections.singletonList(new AggregationDto(AggregationType.SUM))))
+                .build())
+        .filter(
+            ProcessFilterBuilder.filter()
+                .completedInstancesOnly()
+                .add()
+                .hasAgentInstances()
+                .add()
+                .buildList())
+        .agenticControlReport(true)
+        .build();
+  }
+
+  private DashboardReportTileDto buildTopTokenConsumersReport() {
+    reportWriter.createOrUpdateSingleProcessReport(
+        TOKEN_CONSUMERS_REPORT_ID,
+        null,
+        buildTopTokenConsumersReportData(),
+        KPI_TOKEN_CONSUMERS_NAME,
+        null,
+        null);
+    return buildTile(
+        TOKEN_CONSUMERS_REPORT_ID,
+        new PositionDto(0, 10),
+        new DimensionDto(18, 4),
+        Map.of(
+            TILE_CONFIG_SECTION,
+            TILE_SECTION_TOKEN,
+            TILE_CONFIG_FOOTNOTE,
+            KPI_TOKEN_CONSUMERS_FOOTNOTE_KEY,
+            TILE_CONFIG_TOP_N,
+            String.valueOf(TOKEN_CONSUMERS_LIMIT)));
+  }
+
+  // Total tokens grouped by process definition key, rendered as a horizontal bar chart sorted
+  // descending so the heaviest token consumers surface at the top.
+  private ProcessReportDataDto buildTopTokenConsumersReportData() {
+    return ProcessReportDataDto.builder()
+        .definitions(Collections.emptyList())
+        .view(new ProcessViewDto(ProcessViewEntity.AGENT_INSTANCE, ViewProperty.TOTAL_TOKENS))
+        .groupBy(new ProcessDefinitionKeyGroupByDto())
+        .distributedBy(new NoneDistributedByDto())
+        .visualization(ProcessVisualization.BAR)
+        .configuration(
+            SingleReportConfigurationDto.builder()
+                .aggregationTypes(
+                    new LinkedHashSet<>(
+                        Collections.singletonList(new AggregationDto(AggregationType.SUM))))
+                .horizontalBar(true)
+                .sorting(new ReportSortingDto(ReportSortingDto.SORT_BY_VALUE, SortOrder.DESC))
                 .build())
         .filter(
             ProcessFilterBuilder.filter()
@@ -383,7 +458,11 @@ public class AgenticControlDashboardService {
             .build();
     reportWriter.createOrUpdateSingleProcessReport(
         reportId, null, reportData, nameKey, descriptionKey, null);
-    return buildTile(reportId, position, new DimensionDto(9, 2), Map.of("section", "duration"));
+    return buildTile(
+        reportId,
+        position,
+        new DimensionDto(9, 2),
+        Map.of(TILE_CONFIG_SECTION, TILE_SECTION_DURATION));
   }
 
   private DashboardDefinitionRestDto buildAgentDashboard(final List<DashboardReportTileDto> tiles) {

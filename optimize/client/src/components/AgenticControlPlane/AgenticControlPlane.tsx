@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useState, useEffect, useCallback} from 'react';
+import {useState, useEffect, useCallback, useMemo} from 'react';
 
 import {useErrorHandling} from 'hooks';
 import {showError} from 'notifications';
@@ -20,7 +20,8 @@ import type {DashboardTile} from 'types';
 
 import {DATE_PRESETS, FilterBar} from './FilterBar';
 import {loadAgenticDashboard} from './service';
-import {TileFootnote} from './TileFootnote';
+import {TileFooter} from './TileFooter';
+import {getTileTopNLimit} from './tilePagination';
 
 import './AgenticControlPlane.scss';
 
@@ -29,6 +30,7 @@ interface AgenticTileConfiguration {
   visibleInL1Only?: boolean;
   section?: string;
   footnote?: string;
+  topN?: string;
 }
 
 interface RollingFilter {
@@ -87,14 +89,37 @@ export function AgenticControlPlane() {
     [processScope]
   );
 
+  const tileLimitById = useMemo(() => {
+    const map: Record<string, number> = {};
+    dashboard?.tiles?.forEach((tile) => {
+      const limit = getTileTopNLimit(tile);
+      if (limit != null && tile.id) {
+        map[tile.id] = limit;
+      }
+    });
+    return map;
+  }, [dashboard]);
+
   const scopedEvaluateTokenTrendReport = useCallback(
     (
       id: ReportEvaluationPayload,
       tileFilter: Parameters<typeof evaluateReport>[1],
       query: Parameters<typeof evaluateReport>[2]
-    ) => evaluateReport(id, tileFilter, query, definitions, presetToGroupByDateUnit(preset)),
+    ) => {
+      // The top consumers tile only renders the top N processes; the backend computes that
+      // subset server-side when a limit is supplied, so we never fetch every process.
+      const limit = typeof id === 'string' ? tileLimitById[id] : undefined;
+      const scopedQuery = limit ? {...query, limit} : query;
+      return evaluateReport(
+        id,
+        tileFilter,
+        scopedQuery,
+        definitions,
+        presetToGroupByDateUnit(preset)
+      );
+    },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [processScope, preset]
+    [processScope, preset, tileLimitById]
   );
 
   if (!dashboard) {
@@ -153,7 +178,7 @@ export function AgenticControlPlane() {
                 loadTile={loadTile}
                 tiles={tiles}
                 filter={filter}
-                addons={[<TileFootnote key="tile-footnote" />]}
+                addons={[<TileFooter key="tile-footer" />]}
               />
             </div>
           </div>
