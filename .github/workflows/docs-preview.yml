@@ -21,6 +21,7 @@ defaults:
     shell: bash
 
 env:
+  TEST_OWNER: '@camunda/monorepo-devops-team'
   # renovate: datasource=node-version depName=node
   NODE_VERSION: '24.13.1'
 
