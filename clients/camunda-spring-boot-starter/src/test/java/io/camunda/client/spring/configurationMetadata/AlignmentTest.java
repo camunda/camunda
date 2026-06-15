@@ -32,7 +32,9 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.TestFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,11 +44,17 @@ import org.springframework.util.unit.DataSize;
 
 @SpringBootTest(classes = CamundaClientPropertiesTestConfig.class)
 public class AlignmentTest {
+  private static final Function<JsonNode, Object> INT_SET_MAPPER =
+      p ->
+          StreamSupport.stream(p.spliterator(), false)
+              .map(JsonNode::asInt)
+              .collect(Collectors.toSet());
   private static final ObjectMapper MAPPER = new ObjectMapper();
   private static final Function<JsonNode, Object> DURATION_MAPPER = p -> Duration.parse(p.asText());
   private static final Function<JsonNode, Object> DATA_SIZE_MAPPER =
       p -> DataSize.parse(p.asText());
   private static final Function<JsonNode, Object> URI_MAPPER = p -> URI.create(p.asText());
+  private static final Function<JsonNode, Object> DOUBLE_MAPPER = JsonNode::doubleValue;
   private static final Map<String, Getter> NEW_GETTERS =
       Map.ofEntries(
           entry(
@@ -219,9 +227,6 @@ public class AlignmentTest {
           entry(
               "camunda.client.auth.client-assertion.keystore-key-password",
               new Getter(p -> p.getAuth().getClientAssertion().getKeystoreKeyPassword())),
-          entry(
-              "camunda.client.auth.credentials-cache-path",
-              new Getter(p -> p.getAuth().getCredentialsCachePath())),
           entry(
               "camunda.client.cluster-variables.enabled",
               new Getter(p -> p.getClusterVariables().isEnabled())),
