@@ -29,7 +29,7 @@ defaults:
     shell: bash
 
 env:
-  TEST_OWNER: '@camunda/core-features'
+  TEST_OWNER: '@camunda/camundaex'
 
 jobs:
   prepare-matrix:

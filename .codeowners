@@ -400,4 +400,7 @@ optimize.Dockerfile         @camunda/core-features
 # Codeowners is last-match-wins. Add specific overrides here when a broader
 # earlier rule (e.g. `/.github/workflows/zeebe*`) needs to be reverted to a
 # different team for a particular file.
+/.github/workflows/c8-orchestration-cluster-e2e-nightly-triage.yml @camunda/qa-engineering
+/.github/workflows/c8-orchestration-cluster-forward-compatibility-tests.yml @camunda/camundaex
+/.github/workflows/c8-orchestration-cluster-request-validation-nightly.yml @camunda/qa-engineering
 /.github/workflows/zeebe-release-stable-dry-run.yml @camunda/monorepo-devops-team
