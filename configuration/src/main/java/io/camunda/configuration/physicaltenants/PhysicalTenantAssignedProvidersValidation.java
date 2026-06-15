@@ -95,6 +95,19 @@ final class PhysicalTenantAssignedProvidersValidation {
         continue;
       }
 
+      // The reserved-id collision (a named provider literally called `oidc`) is a cluster/overlay
+      // config error independent of whether THIS tenant declares a selection — so check it for
+      // every
+      // tenant under OIDC, including the default tenant on its implicit full-set path. Otherwise a
+      // config whose only tenant is `default` (no `assigned`) would not fail fast on the collision.
+      final Set<String> namedIds = namedProviderIds(environment, tenantId);
+      if (namedIds.contains(DEFAULT_SLOT_ASSIGNED_ID)) {
+        throw fail(
+            ("a named OIDC provider may not be called '%s' (configured for physical tenant '%s') — "
+                    + "that id is reserved for the unnamed default slot '%s.oidc.*'")
+                .formatted(DEFAULT_SLOT_ASSIGNED_ID, tenantId, ROOT_AUTH));
+      }
+
       if (assigned == null) {
         // The default tenant may omit a selection (implicit full set); a non-default tenant must
         // declare one so its provider set is explicit.
@@ -121,14 +134,6 @@ final class PhysicalTenantAssignedProvidersValidation {
             "physical tenant '%s' declares a blank entry in '%s'; every id must be a non-blank "
                     .formatted(tenantId, assignedPath(tenantId))
                 + "provider id");
-      }
-
-      final Set<String> namedIds = namedProviderIds(environment, tenantId);
-      if (namedIds.contains(DEFAULT_SLOT_ASSIGNED_ID)) {
-        throw fail(
-            ("a named OIDC provider may not be called '%s' for physical tenant '%s' — that id is "
-                    + "reserved for the unnamed default slot in '%s'")
-                .formatted(DEFAULT_SLOT_ASSIGNED_ID, tenantId, assignedPath(tenantId)));
       }
 
       final Set<String> known = new LinkedHashSet<>(namedIds);

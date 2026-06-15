@@ -12,6 +12,7 @@ import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.security.api.model.config.oidc.OidcProvidersConfiguration;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -139,7 +140,17 @@ public final class PhysicalTenantAuthConfigurations {
     if (assigned == null) {
       return;
     }
-    final Set<String> assignedIds = Set.copyOf(assigned);
+    // Defensive: tolerate null/blank list elements (some yaml list shapes bind them) so this never
+    // throws an opaque NPE — it can run before the configuration-layer validation (e.g. from the
+    // cluster-unification BeanPostProcessor). Blank ids match no provider, so dropping them is
+    // safe;
+    // the configuration layer still rejects them at startup with a clear message.
+    final Set<String> assignedIds = new LinkedHashSet<>();
+    for (final String id : assigned) {
+      if (id != null && !id.isBlank()) {
+        assignedIds.add(id);
+      }
+    }
 
     // Default slot: drop unless explicitly assigned by its reserved id. setOidc never stores null
     // (it coerces to an empty instance), so a fresh OidcConfiguration is the canonical "no slot".

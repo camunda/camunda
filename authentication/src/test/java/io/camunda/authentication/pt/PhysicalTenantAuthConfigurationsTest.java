@@ -520,6 +520,31 @@ class PhysicalTenantAuthConfigurationsTest {
     assertThat(cfg.getProviders().getOidc()).containsKey("a");
   }
 
+  @Test
+  void shouldIgnoreBlankAssignedEntryWhenNarrowing() {
+    // Defensive: a blank entry in assigned must not break narrowing (it matches no provider and is
+    // dropped). The configuration layer rejects blank entries at startup; this guards the merge in
+    // case it runs first (e.g. via the cluster-unification BeanPostProcessor).
+    final var env =
+        env(
+            Map.of(
+                "camunda.security.authentication.method", "oidc",
+                "camunda.security.authentication.providers.oidc.a.client-id", "client-a",
+                "camunda.security.authentication.providers.oidc.a.issuer-uri", "http://idp/a",
+                "camunda.security.authentication.providers.oidc.b.client-id", "client-b",
+                "camunda.security.authentication.providers.oidc.b.issuer-uri", "http://idp/b",
+                "camunda.physical-tenants.tenanta.security.authentication.providers.assigned[0]",
+                    "",
+                "camunda.physical-tenants.tenanta.security.authentication.providers.assigned[1]",
+                    "a"));
+
+    final AuthenticationConfiguration cfg =
+        PhysicalTenantAuthConfigurations.forPhysicalTenant("tenanta", env);
+
+    // blank ignored; only the real id "a" is kept, "b" dropped — and no exception thrown.
+    assertThat(cfg.getProviders().getOidc()).containsOnlyKeys("a");
+  }
+
   // -------------------------------------------------------------------------
   // Helpers
   // -------------------------------------------------------------------------
