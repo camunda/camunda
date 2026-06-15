@@ -38,7 +38,10 @@ function createUserTask(overrides?: Partial<UserTask>): UserTask {
 	};
 }
 
-function createQueryUserTasksResponse(overrides?: {items?: UserTask[]}): QueryUserTasksResponseBody {
+function createQueryUserTasksResponse(overrides?: {
+	items?: UserTask[];
+	page?: Partial<QueryUserTasksResponseBody['page']>;
+}): QueryUserTasksResponseBody {
 	const items = overrides?.items ?? [];
 	return {
 		items,
@@ -47,6 +50,7 @@ function createQueryUserTasksResponse(overrides?: {items?: UserTask[]}): QueryUs
 			startCursor: null,
 			endCursor: null,
 			hasMoreTotalItems: false,
+			...overrides?.page,
 		},
 	};
 }
