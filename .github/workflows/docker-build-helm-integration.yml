@@ -39,6 +39,7 @@ on:
       - checks_requested
 
 env:
+  TEST_OWNER: '@camunda/distribution'
   GHA_BEST_PRACTICES_LINTER: enabled
   HARBOR_REGISTRY: registry.camunda.cloud
   HARBOR_ZEEBE_REPOSITORY: registry.camunda.cloud/team-camunda/zeebe

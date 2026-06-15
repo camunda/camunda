@@ -27,6 +27,7 @@ defaults:
     shell: bash
 
 env:
+  TEST_OWNER: '@camunda/monorepo-devops-team'
   DOCKER_PLATFORMS: "linux/amd64,linux/arm64"
   GHA_BEST_PRACTICES_LINTER: enabled
   FLAKY_TEST_RERUN_COUNT: ${{ github.event_name == 'pull_request' && '3' || '7' }}
@@ -329,7 +330,6 @@ jobs:
         with:
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
-          user_description: ${{ steps.analyze-test-run.outputs.flakyTests }}
           detailed_junit_tests: true
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
@@ -353,31 +353,37 @@ jobs:
             maven-build-threads: 2
             maven-test-fork-count: 7
             runs-on: gcp-perf-core-8-default
+            owner: '@camunda/qa-engineering'
           - group: modules
             name: "Zeebe Module Integration Tests"
             maven-modules: "'!qa/integration-tests,!qa/update-tests' -f zeebe"
             maven-build-threads: 2
             maven-test-fork-count: 7
             runs-on: gcp-perf-core-8-longrunning
+            owner: '@camunda/monorepo-devops-team'
           - group: qa-integration
             name: "Zeebe QA - Integration Tests"
             maven-modules: "zeebe/qa/integration-tests"
             maven-build-threads: 1
             maven-test-fork-count: 10
             runs-on: gcp-perf-core-16-default
+            owner: '@camunda/monorepo-devops-team'
           - group: qa-update
             name: "Zeebe QA - Update Tests"
             maven-modules: "zeebe/qa/update-tests"
             maven-build-threads: 1
             maven-test-fork-count: 10
             runs-on: gcp-perf-core-8-default
+            owner: '@camunda/core-features'
           - group: qa-camunda-process-test
             name: "Camunda Process Test"
             maven-modules: "testing/camunda-process-test-java,testing/camunda-process-test-spring"
             maven-build-threads: 1
             maven-test-fork-count: 10
             runs-on: gcp-perf-core-8-default
+            owner: '@camunda/camundaex'
     env:
+      TEST_OWNER: ${{ matrix.owner }}
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
       OPERATE_TEST_DOCKER_IMAGE: localhost:5000/camunda/operate:current-test
       TASKLIST_TEST_DOCKER_IMAGE: localhost:5000/camunda/tasklist:current-test
@@ -456,7 +462,6 @@ jobs:
           job_name: "integration-tests/${{ matrix.group }}"
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
-          user_description: ${{ steps.analyze-test-run.outputs.flakyTests }}
           detailed_junit_tests: true
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
@@ -470,7 +475,6 @@ jobs:
     permissions: { }  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-16-default
     env:
-      TEST_OWNER: General
       TEST_PRODUCT: Camunda
       TEST_TYPE: Unit
     outputs:
@@ -524,7 +528,6 @@ jobs:
         with:
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
-          user_description: "General"
           detailed_junit_tests: true
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}

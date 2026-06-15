@@ -4,6 +4,9 @@ on:
   workflow_dispatch: { }
   workflow_call: { }
 
+env:
+  TEST_OWNER: '@camunda/core-features'
+
 jobs:
   integration-tests:
     name: Tasklist Docker tests

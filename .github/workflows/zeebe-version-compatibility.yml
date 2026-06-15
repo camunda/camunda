@@ -11,6 +11,9 @@ concurrency:
 permissions:
   actions: read # Required to get the previous report
 
+env:
+  TEST_OWNER: '@camunda/core-features'
+
 jobs:
   released-versions:
     name: Released Versions
