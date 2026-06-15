@@ -56,7 +56,7 @@ camunda:
         # @JobWorker picks up the correct values per deployment.
         name: ${LOAD_TESTER_WORKER_WORKER_NAME:benchmark-worker}
         type: ${LOAD_TESTER_WORKER_JOB_TYPE:benchmark-task}
-        stream-enabled: true
+        stream-enabled: false
         max-jobs-active: ${LOAD_TESTER_WORKER_CAPACITY:30}
         # Default: completionDelay(300ms) * 6 = 1800ms. The old HOCON app computed
         # this dynamically; here it's static. Update if completionDelay changes.
