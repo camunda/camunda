@@ -35,8 +35,9 @@ select **which** of the cluster's providers apply to it, instead of inheriting t
 Acceptance criteria (post-rescope of #54730):
 
 1. `providers.assigned` is resolved and validated per PT: the **default tenant has the implicit full
-   set**; a **non-default PT must declare an explicit list of valid provider ids** — a missing or
-   invalid `assigned` **fails startup** with a clear error.
+   set** when it declares no `assigned` (but **may** declare one to limit itself); a **non-default
+   PT must declare an explicit list of valid provider ids** — a missing or invalid `assigned`
+   **fails startup** with a clear error.
 2. The scope provider **narrows** each PT's merged `AuthenticationConfiguration` to its `assigned`
    providers.
 3. Tests cover: default-tenant full set, a valid explicit selection, and startup failure on
@@ -81,26 +82,35 @@ camunda:
   called `oidc` (`providers.oidc.oidc`) would collide; that pathological name is rejected at startup
   by validation.
 
-**Two responsibilities, two layers.**
+**Three parts.**
 
 1. **Application (narrowing) — `authentication` module**, in
    `PhysicalTenantAuthConfigurations.forPhysicalTenant`, after the existing union-merge: read
    `...providers.assigned` via a dedicated `Binder` call (it is not a field on CSL's config), then
    filter the merged config to the selection — keep the default slot iff `oidc ∈ assigned` (else
    reset it to a content-less `OidcConfiguration`, which CSL's `flatten` ignores), and retain only
-   the named providers whose ids are listed. The implicit `default` tenant (and its
-   `/physical-tenants/default` alias) is **never** narrowed — it always carries the full set (AC-1).
-   A non-default tenant with no `assigned` list bound is also left at the full union here; requiring
-   one is the validation layer's job.
+   the named providers whose ids are listed. This is applied **uniformly to every tenant, the
+   `default` tenant included**: a tenant with no `assigned` bound keeps the full union; a tenant
+   that declares one is narrowed to it.
 
-2. **Validation — `configuration` module** (fail-fast at startup, sibling to
+2. **Cluster/default unification — `authentication` module**
+   (`PhysicalTenantSecurityConfiguration`). The default tenant is reachable at two surfaces: the
+   unprefixed `/v2` cluster chain (CSL builds it from `camunda.security.authentication.*`) and the
+   `/physical-tenants/default` alias (built from `forPhysicalTenant("default")`). To keep the two
+   **identical**, a `BeanPostProcessor` on CSL's `CamundaSecurityLibraryProperties` — active
+   whenever any physical tenant is configured — replaces the cluster `authentication` with
+   `forPhysicalTenant("default")` *before* CSL builds its chains. So both surfaces carry the default
+   tenant's resolved config, and `camunda.physical-tenants.default.providers.assigned` limits the
+   cluster surface too. CSL stays PT-agnostic: OC only mutates OC-owned config CSL already consumes.
+
+3. **Validation — `configuration` module** (fail-fast at startup, sibling to
    `PhysicalTenantOverridePolicyValidation`): a non-default PT **must** declare a non-empty
-   `assigned`, and every id must resolve to a known provider (`oidc` when the root default slot has
-   content, or a configured `providers.oidc.<name>`); otherwise throw
-   `UnifiedConfigurationException`. A "known provider ids" notion analogous to
-   `PhysicalTenantIds.known()` keeps this out of the auth merge. The merge then only ever *applies*
-   an already-valid selection. *(This PR spikes the narrowing + tests; the configuration-layer
-   validation follows in the same issue.)*
+   `assigned`; the `default` tenant **may** declare one (omitting it keeps the full set). When
+   present (for any tenant), every id must resolve to a known provider — `oidc` when the merged
+   default slot has content, or a cluster/overlay `providers.oidc.<name>` — and an empty list or the
+   reserved-`oidc` name collision is rejected; otherwise `UnifiedConfigurationException`. The merge
+   then only ever *applies* an already-valid selection, so a tenant can never silently end up with
+   no providers.
 
 ## Consequences
 
@@ -114,6 +124,10 @@ camunda:
   wording) while never touching CSL's actual config namespace.
 - Clean separation of concerns: fail-fast validation in the configuration layer; pure application in
   the auth merge. The merge stays total (it only ever applies a valid selection).
+- The default tenant's two surfaces (`/v2` and `/physical-tenants/default`) are **identical by
+  construction**, since both derive from `forPhysicalTenant("default")`. This also closes a latent
+  #54729 gap where any `camunda.physical-tenants.default.*` overlay (not just `assigned`) would have
+  diverged the alias from `/v2`.
 - Flips the smoke harness's cross-issuer `[#54730]` cell to a pass and is mirrored by an
   `PhysicalTenantApiChainIsolationIT` case (a provider assigned to PT-A but not PT-B → PT-A's token
   rejected on PT-B).
@@ -129,6 +143,12 @@ camunda:
 - Selection is split across two modules (validation vs application). This mirrors the existing PT
   config/auth split and is deliberate, but it does mean the "must declare a valid list" rule and the
   "apply the list" code live apart and must stay conceptually in sync.
+- `camunda.physical-tenants.default.*` now governs the **cluster-wide `/v2`** surface, not just a
+  scoped chain — an operator limiting the default tenant limits the cluster. This is intentional
+  (the default physical tenant *is* the cluster) but is a wider blast radius than a per-tenant knob.
+- The unification mutates CSL's `CamundaSecurityLibraryProperties` bean via a `BeanPostProcessor`
+  that must run before CSL builds its chains. This is timing-sensitive, but follows the established
+  `SaasCspModeCompatibility` pattern (a `static @Bean` BPP on the same properties bean).
 
 ## Alternatives Considered
 

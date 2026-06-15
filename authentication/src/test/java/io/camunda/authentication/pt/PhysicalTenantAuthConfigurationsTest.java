@@ -457,9 +457,10 @@ class PhysicalTenantAuthConfigurationsTest {
   }
 
   @Test
-  void shouldKeepFullSetForDefaultTenantEvenIfAssignedDeclared() {
-    // The implicit default tenant (and its /physical-tenants/default alias) always carries the full
-    // set (AC-1); a stray assigned list under it is ignored.
+  void shouldNarrowDefaultTenantWhenAssignedDeclared() {
+    // The default tenant is narrowed by its own assigned just like any other tenant. Its resolved
+    // config also drives the cluster /v2 chain (see PhysicalTenantSecurityConfiguration), so a
+    // default selection limits that surface too.
     final var env =
         env(
             Map.of(
@@ -470,6 +471,27 @@ class PhysicalTenantAuthConfigurationsTest {
                 "camunda.security.authentication.providers.oidc.a.issuer-uri", "http://idp/a",
                 "camunda.physical-tenants.default.security.authentication.providers.assigned[0]",
                     "a"));
+
+    final AuthenticationConfiguration cfg =
+        PhysicalTenantAuthConfigurations.forPhysicalTenant("default", env);
+
+    // default slot dropped (oidc not assigned); only "a" kept
+    assertThat(cfg.getOidc().getClientId()).isNull();
+    assertThat(cfg.getProviders().getOidc()).containsOnlyKeys("a");
+  }
+
+  @Test
+  void shouldKeepFullSetForDefaultTenantWhenNoAssignedDeclared() {
+    // No assigned under default → full set (the common case; the alias and cluster surface keep all
+    // providers).
+    final var env =
+        env(
+            Map.of(
+                "camunda.security.authentication.method", "oidc",
+                "camunda.security.authentication.oidc.client-id", "root-client",
+                "camunda.security.authentication.oidc.issuer-uri", "http://idp/root",
+                "camunda.security.authentication.providers.oidc.a.client-id", "client-a",
+                "camunda.security.authentication.providers.oidc.a.issuer-uri", "http://idp/a"));
 
     final AuthenticationConfiguration cfg =
         PhysicalTenantAuthConfigurations.forPhysicalTenant("default", env);
