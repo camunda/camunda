@@ -174,15 +174,17 @@ jobs:
           title="test: regenerate API response assertions from latest ${TARGET_REF} OpenAPI spec"
 
           # List all open PRs targeting this ref whose title matches exactly.
-          # --search scopes to the title string; --base further narrows to this
-          # ref only, so PRs from other matrix legs are never touched.
+          # --search narrows the result set; --jq enforces exact title equality.
+          export TITLE="$title"
+          export PREFIX="regenerate-responses-${SAFE}-"
           stale=$(gh pr list \
             --repo "$GITHUB_REPOSITORY" \
             --base "$TARGET_REF" \
             --state open \
-            --search "in:title ${title}" \
-            --json number,headRefName \
-            --jq '.[] | "\(.number) \(.headRefName)"')
+            --limit 200 \
+            --search "in:title \"${title}\"" \
+            --json number,headRefName,title \
+            --jq '.[] | select(.title == env.TITLE) | select(.headRefName | startswith(env.PREFIX)) | "\(.number) \(.headRefName)"')
 
           if [ -z "$stale" ]; then
             echo "No stale PRs found."
