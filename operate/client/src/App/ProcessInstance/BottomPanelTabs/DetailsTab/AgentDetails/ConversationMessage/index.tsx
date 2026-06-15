@@ -21,14 +21,18 @@ import {
   TextContent,
   MessageActions,
   ObjectContent,
+  AttachmentsContainer,
+  AttachmentsLabel,
+  AttachmentButton,
 } from './styled';
 import {MarkdownMessage} from './MarkdownMessage';
 import {RichTextEditorModal} from 'modules/components/RichTextEditorModal';
 
 type Actor = AgentInstanceHistoryRole | 'SYSTEM';
 type ContentItem = AgentInstanceHistoryItem['content'][number];
+type ToolCall = AgentInstanceHistoryItem['toolCalls'][number];
 
-const editorModalTitleByActor: Record<Actor, string> = {
+const readableTitleByActor: Record<Actor, string> = {
   SYSTEM: 'System prompt',
   USER: 'User message',
   ASSISTANT: 'Assistant message',
@@ -46,12 +50,16 @@ type ConversationMessageProps = {
   actor: Actor;
   content: ContentItem[];
   historyItemKey?: string;
+  toolCalls?: ToolCall[];
+  onToolCallClick?: (toolCall: ToolCall) => void;
 };
 
 const ConversationMessage: React.FC<ConversationMessageProps> = ({
   actor,
   content,
   historyItemKey,
+  toolCalls = [],
+  onToolCallClick,
 }) => {
   const [messageDetails, dispatch] = useReducer(
     messageDetailsReducer,
@@ -62,6 +70,7 @@ const ConversationMessage: React.FC<ConversationMessageProps> = ({
     <Container
       $actor={actor}
       data-testid={`conversation-message${historyItemKey ? `-${historyItemKey}` : ''}`}
+      aria-label={readableTitleByActor[actor]}
     >
       <ActorLabel>{labelByActor[actor]}</ActorLabel>
       {content.map((entry, index) => {
@@ -100,6 +109,20 @@ const ConversationMessage: React.FC<ConversationMessageProps> = ({
           }
         }
       })}
+      {toolCalls.length > 0 && (
+        <AttachmentsContainer>
+          <AttachmentsLabel>Tool calls</AttachmentsLabel>
+          {toolCalls.map((tc) => (
+            <AttachmentButton
+              key={tc.toolCallId}
+              disabled={tc.elementId === null}
+              onClick={() => onToolCallClick?.(tc)}
+            >
+              {tc.toolName}
+            </AttachmentButton>
+          ))}
+        </AttachmentsContainer>
+      )}
       <RichTextEditorModal
         title={messageDetails.title}
         readOnly
@@ -169,14 +192,14 @@ function messageDetailsReducer(
         state: 'visible',
         language: 'markdown',
         content: action.text,
-        title: editorModalTitleByActor[action.actor],
+        title: readableTitleByActor[action.actor],
       };
     case 'show-object':
       return {
         state: 'visible',
         language: 'json',
         content: action.value,
-        title: editorModalTitleByActor[action.actor],
+        title: readableTitleByActor[action.actor],
       };
     case 'hide':
       return initialMessageDetailsState;
