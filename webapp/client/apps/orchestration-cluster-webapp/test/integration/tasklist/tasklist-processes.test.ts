@@ -37,15 +37,10 @@ test.beforeEach(({network}) => {
 });
 
 test.describe('Tasklist processes page', () => {
-	test('should render Tasklist Processes page', async ({tasklistProcessesPage}) => {
+	test('should render Tasklist Processes page with navigation', async ({tasklistProcessesPage}) => {
 		await tasklistProcessesPage.goto();
 
 		await expect(tasklistProcessesPage.heading).toBeVisible();
-	});
-
-	test('should show Tasks and Processes nav items', async ({tasklistProcessesPage}) => {
-		await tasklistProcessesPage.goto();
-
 		await expect(tasklistProcessesPage.tasksNavItem).toBeVisible();
 		await expect(tasklistProcessesPage.processesNavItem).toBeVisible();
 	});

@@ -9,6 +9,75 @@ description: Use when writing, modifying, or debugging Playwright-based tests in
 
 Playwright tests in `@camunda/orchestration-cluster-webapp` cover three categories — integration, visual regression, and accessibility — across 7 Playwright projects. Tests run against the built app served by `vite preview` on port 3003. MSW intercepts HTTP at the network level via `@msw/playwright`, so no real backend is needed.
 
+## Test granularity
+
+Each `test()` spins up a fresh browser context and every `goto()` reboots the full SPA bundle plus MSW
+interception. Page loads are the dominant Playwright cost — structure tests to minimize them.
+
+**Scope each test to one feature (observable behavior), not to one assertion and not to an entire page.**
+
+A feature test should:
+- Navigate (or set up) **once**
+- Make **all assertions** that verify that single behavior — visibility, content, state, attributes — in sequence
+- End when the feature has been fully verified
+
+**Do not split a feature into multiple tests just to isolate individual assertions.** A test named "should
+show the info sidebar links" should assert every expected link in one go, not spawn four separate tests that
+each check one link.
+
+**Do not collapse an entire page into a single test.** Each distinct behavior — navigation, error states,
+conditional/role-gated UI, logout, i18n — is its own feature and belongs in its own test.
+
+**Decision rule:** put assertions in the same test when they verify the **same behavior** under the **same
+mock setup and navigation**. Split into a new test when the behavior, mock setup, or user flow changes.
+
+Use `await test.step('description', async () => { ... })` for readability inside a feature test instead of
+artificially splitting it.
+
+```ts
+// WRONG — one assertion per test creates redundant page loads
+test('should show Documentation link', async ({tasklistIndexPage}) => {
+  await tasklistIndexPage.goto();
+  await tasklistIndexPage.header.openInfoSidebar();
+  await expect(tasklistIndexPage.header.documentationLink).toBeVisible();
+});
+
+test('should show Camunda Academy link', async ({tasklistIndexPage}) => {
+  await tasklistIndexPage.goto();
+  await tasklistIndexPage.header.openInfoSidebar();
+  await expect(tasklistIndexPage.header.camundaAcademyLink).toBeVisible();
+});
+
+test('should show Community Forum link', async ({tasklistIndexPage}) => {
+  await tasklistIndexPage.goto();
+  await tasklistIndexPage.header.openInfoSidebar();
+  await expect(tasklistIndexPage.header.communityForumLink).toBeVisible();
+});
+
+// CORRECT — one feature test, one page load, all assertions for that behavior
+test('should show expected links in the info sidebar', async ({tasklistIndexPage}) => {
+  await tasklistIndexPage.goto();
+  await tasklistIndexPage.header.openInfoSidebar();
+
+  await expect(tasklistIndexPage.header.documentationLink).toBeVisible();
+  await expect(tasklistIndexPage.header.camundaAcademyLink).toBeVisible();
+  await expect(tasklistIndexPage.header.communityForumLink).toBeVisible();
+  await expect(tasklistIndexPage.header.feedbackAndSupportLink).not.toBeVisible();
+});
+
+// Paid-plan link is a SEPARATE test — it requires different mock setup (different behavior)
+test('should show the Feedback and Support link for paid plan users', async ({network, tasklistIndexPage}) => {
+  network.use(
+    mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser({salesPlanType: 'paid-cc'}))}),
+  );
+
+  await tasklistIndexPage.goto();
+  await tasklistIndexPage.header.openInfoSidebar();
+
+  await expect(tasklistIndexPage.header.feedbackAndSupportLink).toBeVisible();
+});
+```
+
 ## Key rules
 
 - Import `test` and `expect` from `#/pw-modules/test-extend`, not from `@playwright/test`. The custom `test` fixture auto-starts MSW network interception per test and provides the `makeAxeBuilder` fixture for accessibility checks.

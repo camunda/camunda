@@ -37,16 +37,11 @@ test.beforeEach(({network}) => {
 });
 
 test.describe('Tasklist index page', () => {
-	test('should render Tasklist index page', async ({tasklistIndexPage}) => {
+	test('should render Tasklist index page with navigation', async ({tasklistIndexPage}) => {
 		await tasklistIndexPage.goto();
 
 		await expect(tasklistIndexPage.tasksPanelHeading('All open tasks')).toBeVisible();
 		await expect(tasklistIndexPage.header.branding).toBeVisible();
-	});
-
-	test('should show Tasks and Processes nav items', async ({tasklistIndexPage}) => {
-		await tasklistIndexPage.goto();
-
 		await expect(tasklistIndexPage.tasksNavItem).toBeVisible();
 		await expect(tasklistIndexPage.processesNavItem).toBeVisible();
 	});
