@@ -61,7 +61,7 @@ const ConversationMessage: React.FC<ConversationMessageProps> = ({
   return (
     <Container
       $actor={actor}
-      data-testid={`conversation-message-${historyItemKey}`}
+      data-testid={`conversation-message${historyItemKey ? `-${historyItemKey}` : ''}`}
     >
       <ActorLabel>{labelByActor[actor]}</ActorLabel>
       {content.map((entry, index) => {
