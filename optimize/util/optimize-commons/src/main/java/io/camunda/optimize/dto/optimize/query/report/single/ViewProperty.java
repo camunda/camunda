@@ -80,6 +80,14 @@ public class ViewProperty implements Combinable {
     return Optional.of(viewPropertyDto).filter(clazz::isInstance).map(clazz::cast);
   }
 
+  @JsonIgnore
+  public boolean isAgentToken() {
+    return INPUT_TOKENS.equals(this)
+        || OUTPUT_TOKENS.equals(this)
+        || TOOL_CALLS.equals(this)
+        || TOTAL_TOKENS.equals(this);
+  }
+
   protected boolean canEqual(final Object other) {
     return other instanceof ViewProperty;
   }
