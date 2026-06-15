@@ -137,7 +137,7 @@ public class AgentInstanceMapper {
           record.setAgentInstanceKey(Long.parseLong(agentInstanceKey));
           record.setElementInstanceKey(Long.parseLong(request.getElementInstanceKey()));
           record.setJobKey(Long.parseLong(request.getJobKey()));
-          record.setJobLease(request.getJobLease());
+          record.setJobLease(request.getJobLease() != null ? request.getJobLease() : "");
           record.setRole(mapHistoryRole(request.getRole()));
           record.setProducedAt(
               OffsetDateTime.parse(request.getProducedAt()).toInstant().toEpochMilli());
@@ -187,7 +187,9 @@ public class AgentInstanceMapper {
   private AgentHistoryMessageContent mapContent(final AgentInstanceMessageContent content) {
     final var result = new AgentHistoryMessageContent();
     if (content instanceof final AgentInstanceTextContent text) {
-      result.setContentType(AgentHistoryContentType.TEXT).setText(text.getText());
+      result
+          .setContentType(AgentHistoryContentType.TEXT)
+          .setText(text.getText() != null ? text.getText() : "");
     } else if (content instanceof final AgentInstanceDocumentContent doc) {
       result.setContentType(AgentHistoryContentType.DOCUMENT);
       final var ref = doc.getDocumentReference();
@@ -213,8 +215,8 @@ public class AgentInstanceMapper {
 
   private AgentHistoryEmbeddedToolCall mapToolCall(final AgentInstanceToolCall toolCall) {
     final var result = new AgentHistoryEmbeddedToolCall();
-    result.setToolCallId(toolCall.getToolCallId());
-    result.setToolName(toolCall.getToolName());
+    result.setToolCallId(toolCall.getToolCallId() != null ? toolCall.getToolCallId() : "");
+    result.setToolName(toolCall.getToolName() != null ? toolCall.getToolName() : "");
     if (toolCall.getElementId() != null) {
       result.setElementId(toolCall.getElementId());
     }
