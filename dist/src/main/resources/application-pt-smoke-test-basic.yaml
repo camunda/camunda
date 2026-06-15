@@ -1,7 +1,7 @@
 # Physical-tenant BASIC-auth PoC config (INTERIM — drop before review).
 #
-# Activated via the `pt-poc-basic` profile (see spring.profiles.group.pt-poc-basic in
-# application.properties). Unlike application-pt-poc.yaml (OIDC + two Keycloak realms), this needs
+# Activated via the `pt-smoke-test-basic` profile (see spring.profiles.group.pt-smoke-test-basic in
+# application.properties). Unlike application-pt-smoke-test.yaml (OIDC + two Keycloak realms), this needs
 # no external IdP: basic-auth users are seeded per physical tenant via camunda.security.initialization.
 #
 # Basic-auth user resolution is per physical tenant — BasicAuthUserDetailsAdapter looks the user up

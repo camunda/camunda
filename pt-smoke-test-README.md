@@ -10,7 +10,7 @@
 
 Per-PT **API** chain isolation via the CSL `CamundaSecurityScopeProvider` (`PhysicalTenantScopeProvider`):
 
-- Two physical tenants (`default`, `tenanta`) are declared in `application-pt-poc.yaml`.
+- Two physical tenants (`default`, `tenanta`) are declared in `application-pt-smoke-test.yaml`.
 - `PhysicalTenantScopeProvider` emits one `ScopedSecurityDescriptor` per tenant; CSL builds one
   `SecurityFilterChain` per descriptor, matching the tenant-first path prefix
   `/physical-tenants/<id>/v2/...`.
@@ -29,7 +29,7 @@ Per-PT **API** chain isolation via the CSL `CamundaSecurityScopeProvider` (`Phys
 | `camunda.physical-tenants.tenanta.security.authentication.providers.assigned` | `[tenanta]` | tenanta PT is narrowed to one provider (the inherited default-slot `oidc` is dropped — see the `[#54730]` issuer-isolation cell) with its own clientId/audience override |
 | `camunda.security.authorizations.enabled` | `false` | authorizations disabled (orthogonal to chain isolation) |
 
-The `pt-poc` profile group (`spring.profiles.group.pt-poc=consolidated-auth,elasticsearch,broker`)
+The `pt-smoke-test` profile group (`spring.profiles.group.pt-smoke-test=consolidated-auth,elasticsearch,broker`)
 activates the host security graph, Elasticsearch secondary storage, and the embedded Zeebe broker.
 Elasticsearch is required because `PhysicalTenantSearchClientReadersConfiguration` (which creates
 per-PT search clients) is `@ConditionalOnSecondaryStorageType(elasticsearch, opensearch)` — with
@@ -42,7 +42,7 @@ rdbms the multi-PT readers do not activate and OC fails to start with more than 
     `docker.elastic.co/elasticsearch/elasticsearch:8.19.13` (~1.5 GB)
 - Java 21 on `PATH`
 - `./mvnw` (repo Maven wrapper)
-- `curl`, `jq`, and `python3` (used by the ES health-check in `pt-poc-idp.sh`)
+- `curl`, `jq`, and `python3` (used by the ES health-check in `pt-smoke-test-idp.sh`)
 - Free ports: 8080 (OC), 8081 (Keycloak default realm), 8082 (Keycloak tenanta realm),
   9200 (Elasticsearch), 9600 (OC management)
 
@@ -53,7 +53,7 @@ Three terminals. Run steps in order — each step depends on the previous.
 ### Terminal 1 — Keycloak + Elasticsearch
 
 ```bash
-./pt-poc-idp.sh
+./pt-smoke-test-idp.sh
 ```
 
 Boots one Elasticsearch container (`:9200`) and two Keycloak containers (`:8081`, `:8082`) via
@@ -63,16 +63,16 @@ Press Ctrl-C to stop all three containers.
 ### Terminal 2 — OC
 
 ```bash
-./pt-poc-oc.sh
+./pt-smoke-test-oc.sh
 ```
 
-Rebuilds dist + upstream modules then boots OC under `--spring.profiles.active=pt-poc`.
+Rebuilds dist + upstream modules then boots OC under `--spring.profiles.active=pt-smoke-test`.
 Wait for `Tomcat started on port 8080`. Logs tee to `/tmp/oc.log`. Press Ctrl-C to stop.
 
 ### Terminal 3 — smoke
 
 ```bash
-./pt-poc-api-smoke.sh
+./pt-smoke-test-api.sh
 ```
 
 Runs 12 assertion cells against `GET /physical-tenants/<id>/v2/authentication/me` and
@@ -106,8 +106,8 @@ dedicated smoke script. Boot OC with the variant profile, then run its script in
 ### A — default narrowed + `/v2` ≡ `/physical-tenants/default`
 
 ```bash
-./pt-poc-oc.sh pt-poc,pt-poc-default-narrowed   # Terminal 2
-./pt-poc-api-smoke-default-narrowed.sh          # Terminal 3
+./pt-smoke-test-oc.sh pt-smoke-test,pt-smoke-test-default-narrowed   # Terminal 2
+./pt-smoke-test-api-default-narrowed.sh          # Terminal 3
 ```
 
 `default` is assigned `[tenanta]`, dropping the inherited root default slot `oidc`. Since the
@@ -118,8 +118,8 @@ the assigned `tenanta` provider is still accepted on both.
 ### C — reserved-`oidc` keep on a non-default tenant
 
 ```bash
-./pt-poc-oc.sh pt-poc,pt-poc-oidc-keep          # Terminal 2
-./pt-poc-api-smoke-oidc-keep.sh                 # Terminal 3
+./pt-smoke-test-oc.sh pt-smoke-test,pt-smoke-test-oidc-keep          # Terminal 2
+./pt-smoke-test-api-oidc-keep.sh                 # Terminal 3
 ```
 
 `tenanta` is assigned `[oidc, tenanta]`, so it KEEPS the inherited default slot — a default-realm
@@ -130,17 +130,17 @@ where `tenanta` is `[tenanta]` only and the same token is rejected cross-issuer.
 
 | Path | Purpose |
 |---|---|
-| `pt-poc-idp.sh` | Boots ES (`:9200`) and two Keycloak containers (default on :8081, tenanta on :8082) |
-| `pt-poc-oc.sh` | Rebuilds + boots OC; optional arg = Spring profiles (default `pt-poc`) for the scenario variants below |
-| `pt-poc-api-smoke.sh` | Base API isolation matrix (incl. `/v2` ≡ `/pt/default` identity cells) |
-| `pt-poc-api-smoke-default-narrowed.sh` | Scenario A — default narrowed; default-realm token rejected on **both** `/v2` and `/pt/default` |
-| `pt-poc-api-smoke-oidc-keep.sh` | Scenario C — tenanta keeps `oidc`; default-realm token accepted on `/pt/tenanta` |
-| `dist/src/test/resources/pt-poc/default-realm.json` | Keycloak realm export — default realm |
-| `dist/src/test/resources/pt-poc/tenanta-realm.json` | Keycloak realm export — tenanta realm |
-| `dist/src/main/resources/application-pt-poc.yaml` | Base PT provider config + trimmed diagnostics |
-| `dist/src/main/resources/application-pt-poc-default-narrowed.yaml` | Scenario A overlay — `default` assigned `[tenanta]` |
-| `dist/src/main/resources/application-pt-poc-oidc-keep.yaml` | Scenario C overlay — `tenanta` assigned `[oidc, tenanta]` |
-| `dist/src/main/resources/application.properties` | `spring.profiles.group.pt-poc{,-basic}=...` entries |
+| `pt-smoke-test-idp.sh` | Boots ES (`:9200`) and two Keycloak containers (default on :8081, tenanta on :8082) |
+| `pt-smoke-test-oc.sh` | Rebuilds + boots OC; optional arg = Spring profiles (default `pt-smoke-test`) for the scenario variants below |
+| `pt-smoke-test-api.sh` | Base API isolation matrix (incl. `/v2` ≡ `/pt/default` identity cells) |
+| `pt-smoke-test-api-default-narrowed.sh` | Scenario A — default narrowed; default-realm token rejected on **both** `/v2` and `/pt/default` |
+| `pt-smoke-test-api-oidc-keep.sh` | Scenario C — tenanta keeps `oidc`; default-realm token accepted on `/pt/tenanta` |
+| `dist/src/test/resources/pt-smoke-test/default-realm.json` | Keycloak realm export — default realm |
+| `dist/src/test/resources/pt-smoke-test/tenanta-realm.json` | Keycloak realm export — tenanta realm |
+| `dist/src/main/resources/application-pt-smoke-test.yaml` | Base PT provider config + trimmed diagnostics |
+| `dist/src/main/resources/application-pt-smoke-test-default-narrowed.yaml` | Scenario A overlay — `default` assigned `[tenanta]` |
+| `dist/src/main/resources/application-pt-smoke-test-oidc-keep.yaml` | Scenario C overlay — `tenanta` assigned `[oidc, tenanta]` |
+| `dist/src/main/resources/application.properties` | `spring.profiles.group.pt-smoke-test{,-basic}=...` entries |
 
 ## BASIC-auth variant
 
@@ -150,11 +150,11 @@ store: `alice` lives only in the default store, `bob` only in the tenanta store.
 
 ```bash
 # Terminal 1: Elasticsearch only (no IdP needed)
-#   reuse pt-poc-idp.sh's ES, or run your own on :9200
+#   reuse pt-smoke-test-idp.sh's ES, or run your own on :9200
 # Terminal 2:
-./pt-poc-oc-basic.sh      # boots OC under the pt-poc-basic profile (application-pt-poc-basic.yaml)
+./pt-smoke-test-oc-basic.sh      # boots OC under the pt-smoke-test-basic profile (application-pt-smoke-test-basic.yaml)
 # Terminal 3 (after the broker exporter has seeded the initialization users):
-./pt-poc-basic-smoke.sh
+./pt-smoke-test-basic.sh
 ```
 
 Matrix: `alice` (default store) is accepted on `/v2` and `/pt/default`, 401 with a wrong/unknown
@@ -168,6 +168,6 @@ resolves against a separate store (`userServices("tenanta")`).
 
 | Path | Purpose |
 |---|---|
-| `pt-poc-oc-basic.sh` | Rebuilds + boots OC under the `pt-poc-basic` profile |
-| `pt-poc-basic-smoke.sh` | Runs the basic-auth per-tenant user-isolation matrix |
-| `dist/src/main/resources/application-pt-poc-basic.yaml` | `method=basic` + per-tenant initialization users |
+| `pt-smoke-test-oc-basic.sh` | Rebuilds + boots OC under the `pt-smoke-test-basic` profile |
+| `pt-smoke-test-basic.sh` | Runs the basic-auth per-tenant user-isolation matrix |
+| `dist/src/main/resources/application-pt-smoke-test-basic.yaml` | `method=basic` + per-tenant initialization users |

@@ -3,16 +3,16 @@
 #
 # Verifies DEFAULT-tenant narrowing + the /v2 ≡ /physical-tenants/default unification (#54730).
 #
-# Boot with the scenario-A overlay first:  ./pt-poc-oc.sh pt-poc,pt-poc-default-narrowed
+# Boot with the scenario-A overlay first:  ./pt-smoke-test-oc.sh pt-smoke-test,pt-smoke-test-default-narrowed
 # That overlay sets `camunda.physical-tenants.default...providers.assigned: [tenanta]`, so the
 # default tenant is narrowed to the named `tenanta` provider and the inherited root default slot
 # `oidc` (the default realm on :8081) is dropped. Because the default tenant's resolved config also
 # drives the unprefixed /v2 cluster chain, the limit applies to BOTH surfaces, identically.
 #
-# Contrast with the base harness (./pt-poc-api-smoke.sh), where the default tenant keeps the full
+# Contrast with the base harness (./pt-smoke-test-api.sh), where the default tenant keeps the full
 # set and a default-realm token is accepted on /v2 and /pt/default.
 #
-# Requires: ./pt-poc-idp.sh and ./pt-poc-oc.sh pt-poc,pt-poc-default-narrowed running.
+# Requires: ./pt-smoke-test-idp.sh and ./pt-smoke-test-oc.sh pt-smoke-test,pt-smoke-test-default-narrowed running.
 # Dependencies: curl, jq.
 
 set -u
@@ -37,9 +37,9 @@ token() {
 _status() {
   local tok="$1" path="$2"
   if [[ -n "$tok" ]]; then
-    curl -sS -o /tmp/pt-poc-api-body -w "%{http_code}" -H "Authorization: Bearer $tok" "$OC$path"
+    curl -sS -o /tmp/pt-smoke-test-api-body -w "%{http_code}" -H "Authorization: Bearer $tok" "$OC$path"
   else
-    curl -sS -o /tmp/pt-poc-api-body -w "%{http_code}" "$OC$path"
+    curl -sS -o /tmp/pt-smoke-test-api-body -w "%{http_code}" "$OC$path"
   fi
 }
 
@@ -48,7 +48,7 @@ check_not_401() {
   status=$(_status "$tok" "$path")
   printf "%-74s %s  " "$label" "$status"
   if [[ "$status" != "401" ]]; then echo "PASS (not 401)"; PASS=$((PASS + 1))
-  else echo "FAIL (got 401)"; cat /tmp/pt-poc-api-body 2>/dev/null && echo; FAIL=$((FAIL + 1)); fi
+  else echo "FAIL (got 401)"; cat /tmp/pt-smoke-test-api-body 2>/dev/null && echo; FAIL=$((FAIL + 1)); fi
 }
 
 check_401() {
@@ -56,7 +56,7 @@ check_401() {
   status=$(_status "$tok" "$path")
   printf "%-74s %s  " "$label" "$status"
   if [[ "$status" == "401" ]]; then echo "PASS (401 as expected)"; PASS=$((PASS + 1))
-  else echo "FAIL (expected 401, got $status)"; cat /tmp/pt-poc-api-body 2>/dev/null && echo; FAIL=$((FAIL + 1)); fi
+  else echo "FAIL (expected 401, got $status)"; cat /tmp/pt-smoke-test-api-body 2>/dev/null && echo; FAIL=$((FAIL + 1)); fi
 }
 
 # check_same: assert the same token yields the same pass/fail outcome on /v2 and /pt/default.
@@ -92,6 +92,6 @@ check_same "default token  (rejected on both)" "$DEF"
 check_same "dvta token     (accepted on both)" "$DVTA"
 echo
 
-rm -f /tmp/pt-poc-api-body
+rm -f /tmp/pt-smoke-test-api-body
 echo "=== Results: $PASS passed, $FAIL failed ==="
 [[ "$FAIL" -gt 0 ]] && exit 1 || exit 0

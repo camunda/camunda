@@ -24,7 +24,7 @@
 # @CamundaRestController — registered under the PT prefix by
 # PhysicalTenantRequestMappingHandlerMapping for scoped tenants, and at /v2 for the cluster).
 #
-# Requires: ./pt-poc-idp.sh and ./pt-poc-oc.sh running.
+# Requires: ./pt-smoke-test-idp.sh and ./pt-smoke-test-oc.sh running.
 # Dependencies: curl, jq.
 
 set -u
@@ -53,9 +53,9 @@ token() {
 _status() {
   local tok="$1" path="$2"
   if [[ -n "$tok" ]]; then
-    curl -sS -o /tmp/pt-poc-api-body -w "%{http_code}" -H "Authorization: Bearer $tok" "$OC$path"
+    curl -sS -o /tmp/pt-smoke-test-api-body -w "%{http_code}" -H "Authorization: Bearer $tok" "$OC$path"
   else
-    curl -sS -o /tmp/pt-poc-api-body -w "%{http_code}" "$OC$path"
+    curl -sS -o /tmp/pt-smoke-test-api-body -w "%{http_code}" "$OC$path"
   fi
 }
 
@@ -67,7 +67,7 @@ check_not_401() {
   if [[ "$status" != "401" ]]; then
     echo "PASS (not 401)"; PASS=$((PASS + 1))
   else
-    echo "FAIL (got 401 — token rejected by chain)"; cat /tmp/pt-poc-api-body 2>/dev/null && echo
+    echo "FAIL (got 401 — token rejected by chain)"; cat /tmp/pt-smoke-test-api-body 2>/dev/null && echo
     FAIL=$((FAIL + 1))
   fi
 }
@@ -80,7 +80,7 @@ check_401() {
   if [[ "$status" == "401" ]]; then
     echo "PASS (401 as expected)"; PASS=$((PASS + 1))
   else
-    echo "FAIL (expected 401, got $status)"; cat /tmp/pt-poc-api-body 2>/dev/null && echo
+    echo "FAIL (expected 401, got $status)"; cat /tmp/pt-smoke-test-api-body 2>/dev/null && echo
     FAIL=$((FAIL + 1))
   fi
 }
@@ -133,7 +133,7 @@ echo
 
 echo "=== /v2 ≡ /physical-tenants/default identity (both derive from forPhysicalTenant(default)) ==="
 echo "    With the default tenant unchanged here (full set), every token resolves the same on both"
-echo "    surfaces. See ./pt-poc-api-smoke-default-narrowed.sh for the narrowed-default variant."
+echo "    surfaces. See ./pt-smoke-test-api-default-narrowed.sh for the narrowed-default variant."
 check_same "default token  (accepted on both)" "$DEF"
 check_same "tenanta token  (rejected on both)" "$TA"
 check_same "dvta token     (accepted on both)" "$DVTA"
@@ -145,7 +145,7 @@ echo "    provider. A default-realm token (different issuer :8081) is rejected c
 check_401 "default token -> /pt/tenanta  (ISSUER ISOLATION: default 'oidc' not assigned to tenanta)" "$DEF" "$(printf "$PROBE_PATH_TEMPLATE" tenanta)"
 echo
 
-rm -f /tmp/pt-poc-api-body
+rm -f /tmp/pt-smoke-test-api-body
 
 echo "=== Results: $PASS passed, $FAIL failed ==="
 if [[ "$FAIL" -gt 0 ]]; then

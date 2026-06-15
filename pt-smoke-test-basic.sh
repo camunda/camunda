@@ -19,7 +19,7 @@
 # The probe endpoint is GET .../v2/authentication/me (registered under the PT prefix by
 # PhysicalTenantRequestMappingHandlerMapping for scoped tenants, and at /v2 for the cluster).
 #
-# Requires: ./pt-poc-oc-basic.sh running, and the broker exporter to have seeded the initialization
+# Requires: ./pt-smoke-test-oc-basic.sh running, and the broker exporter to have seeded the initialization
 # users into ES (wait a few seconds after "Tomcat started"). Dependencies: curl.
 
 set -u
@@ -34,9 +34,9 @@ FAIL=0
 _status() {
   local creds="$1" path="$2"
   if [[ -n "$creds" ]]; then
-    curl -sS -o /tmp/pt-poc-basic-body -w "%{http_code}" -u "$creds" "$OC$path"
+    curl -sS -o /tmp/pt-smoke-test-basic-body -w "%{http_code}" -u "$creds" "$OC$path"
   else
-    curl -sS -o /tmp/pt-poc-basic-body -w "%{http_code}" "$OC$path"
+    curl -sS -o /tmp/pt-smoke-test-basic-body -w "%{http_code}" "$OC$path"
   fi
 }
 
@@ -48,7 +48,7 @@ check_not_401() {
   if [[ "$status" != "401" ]]; then
     echo "PASS (not 401)"; PASS=$((PASS + 1))
   else
-    echo "FAIL (got 401 — credentials rejected by chain)"; cat /tmp/pt-poc-basic-body 2>/dev/null && echo
+    echo "FAIL (got 401 — credentials rejected by chain)"; cat /tmp/pt-smoke-test-basic-body 2>/dev/null && echo
     FAIL=$((FAIL + 1))
   fi
 }
@@ -61,7 +61,7 @@ check_401() {
   if [[ "$status" == "401" ]]; then
     echo "PASS (401 as expected)"; PASS=$((PASS + 1))
   else
-    echo "FAIL (expected 401, got $status)"; cat /tmp/pt-poc-basic-body 2>/dev/null && echo
+    echo "FAIL (expected 401, got $status)"; cat /tmp/pt-smoke-test-basic-body 2>/dev/null && echo
     FAIL=$((FAIL + 1))
   fi
 }
@@ -100,7 +100,7 @@ check_401     "no creds    -> /pt/default  (unauthenticated rejected)"          
 check_401     "bob:bob     -> /pt/default  (USER ISOLATION: not in default store)" "bob:bob"     "$(printf "$PROBE_PATH_TEMPLATE" default)"
 echo
 
-rm -f /tmp/pt-poc-basic-body
+rm -f /tmp/pt-smoke-test-basic-body
 
 echo "=== Results: $PASS passed, $FAIL failed ==="
 if [[ "$FAIL" -gt 0 ]]; then

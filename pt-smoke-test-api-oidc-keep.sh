@@ -3,14 +3,14 @@
 #
 # Verifies the reserved-`oidc` KEEP path (#54730) — the inverse of the base harness's [#54730] cell.
 #
-# Boot with the scenario-C overlay first:  ./pt-poc-oc.sh pt-poc,pt-poc-oidc-keep
+# Boot with the scenario-C overlay first:  ./pt-smoke-test-oc.sh pt-smoke-test,pt-smoke-test-oidc-keep
 # That overlay sets `camunda.physical-tenants.tenanta...providers.assigned: [oidc, tenanta]`, so
 # tenanta KEEPS the inherited root default slot `oidc` alongside its own `tenanta` provider.
 #
 # Effect: a default-realm token (issuer :8081, the `oidc` slot) is ACCEPTED on /pt/tenanta — whereas
-# the base harness (tenanta assigned [tenanta]) rejects it cross-issuer (./pt-poc-api-smoke.sh).
+# the base harness (tenanta assigned [tenanta]) rejects it cross-issuer (./pt-smoke-test-api.sh).
 #
-# Requires: ./pt-poc-idp.sh and ./pt-poc-oc.sh pt-poc,pt-poc-oidc-keep running.
+# Requires: ./pt-smoke-test-idp.sh and ./pt-smoke-test-oc.sh pt-smoke-test,pt-smoke-test-oidc-keep running.
 # Dependencies: curl, jq.
 
 set -u
@@ -34,9 +34,9 @@ token() {
 _status() {
   local tok="$1" path="$2"
   if [[ -n "$tok" ]]; then
-    curl -sS -o /tmp/pt-poc-api-body -w "%{http_code}" -H "Authorization: Bearer $tok" "$OC$path"
+    curl -sS -o /tmp/pt-smoke-test-api-body -w "%{http_code}" -H "Authorization: Bearer $tok" "$OC$path"
   else
-    curl -sS -o /tmp/pt-poc-api-body -w "%{http_code}" "$OC$path"
+    curl -sS -o /tmp/pt-smoke-test-api-body -w "%{http_code}" "$OC$path"
   fi
 }
 
@@ -45,7 +45,7 @@ check_not_401() {
   status=$(_status "$tok" "$path")
   printf "%-74s %s  " "$label" "$status"
   if [[ "$status" != "401" ]]; then echo "PASS (not 401)"; PASS=$((PASS + 1))
-  else echo "FAIL (got 401)"; cat /tmp/pt-poc-api-body 2>/dev/null && echo; FAIL=$((FAIL + 1)); fi
+  else echo "FAIL (got 401)"; cat /tmp/pt-smoke-test-api-body 2>/dev/null && echo; FAIL=$((FAIL + 1)); fi
 }
 
 echo "=== Acquiring tokens ==="
@@ -62,6 +62,6 @@ echo "    ^ Inverse of the base [#54730] cell: there tenanta is [tenanta] only, 
 echo "      realm token is rejected (401) cross-issuer. Here 'oidc' is assigned, so it is accepted."
 echo
 
-rm -f /tmp/pt-poc-api-body
+rm -f /tmp/pt-smoke-test-api-body
 echo "=== Results: $PASS passed, $FAIL failed ==="
 [[ "$FAIL" -gt 0 ]] && exit 1 || exit 0
