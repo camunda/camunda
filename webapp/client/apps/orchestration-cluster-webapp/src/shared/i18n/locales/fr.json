@@ -397,7 +397,16 @@
 		},
 		"operate": {
 			"dashboard": {
-				"title": "Tableau de bord"
+				"title": "Tableau de bord",
+				"runningInstancesTotal": "{{count}} Running Process Instances in total",
+				"instancesWithIncident": "Process Instances with Incident",
+				"activeInstances": "Active Process Instances",
+				"processesByNameTitle": "Process Instances by Name",
+				"incidentsByErrorTitle": "Process Incidents by Error Message",
+				"noInstancesHeading": "No running process instances",
+				"noInstancesDescription": "To view finished instances, go to the Processes view. Start a new process instance to see activity here.",
+				"learnMoreLink": "Learn more about Operate",
+				"goToModelerButton": "Go to Modeler"
 			},
 			"processes": {
 				"title": "Processus"

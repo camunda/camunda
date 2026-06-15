@@ -111,7 +111,14 @@ type Events =
 				| 'header-processes'
 				| 'header-decisions'
 				| 'header-operations-log'
-				| 'header-batch-operations';
+				| 'header-batch-operations'
+				| 'dashboard-running-processes'
+				| 'dashboard-processes-with-incidents'
+				| 'dashboard-active-processes';
+	  }
+	| {
+			eventName: 'operate:dashboard-link-clicked';
+			link: 'operate-docs' | 'modeler';
 	  };
 
 const STAGE_ENV = getStage(window.location.host);

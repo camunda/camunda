@@ -7,8 +7,12 @@
  */
 
 import {createFileRoute} from '@tanstack/react-router';
-import {OperatePage} from '#/operate/pages/OperatePage';
+import {queries} from '#/shared/http/queries';
+import {Dashboard} from '#/operate/pages/Dashboard/Dashboard';
 
 export const Route = createFileRoute('/_auth/operate/')({
-	component: OperatePage,
+	beforeLoad: async ({context: {queryClient}}) => {
+		await queryClient.ensureQueryData(queries.getRunningInstancesCount());
+	},
+	component: Dashboard,
 });

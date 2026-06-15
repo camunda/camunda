@@ -8,6 +8,12 @@
 
 import {Mixpanel} from 'mixpanel-browser';
 
+declare module '*.svg' {
+	const content: string;
+	// eslint-disable-next-line import/no-default-export
+	export default content;
+}
+
 export declare global {
 	interface Window {
 		Osano?: {
