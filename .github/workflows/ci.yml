@@ -31,6 +31,7 @@ defaults:
     shell: bash
 
 env:
+  TEST_OWNER: '@camunda/monorepo-devops-team'
   DOCKER_PLATFORMS: "linux/amd64,linux/arm64"
   GHA_BEST_PRACTICES_LINTER: enabled
   FLAKY_TEST_RERUN_COUNT: ${{ github.event_name == 'pull_request' && '3' || '7' }}
@@ -475,7 +476,6 @@ jobs:
         with:
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
-          user_description: "General"
           detailed_junit_tests: true
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
@@ -489,6 +489,7 @@ jobs:
     permissions: { }  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-16-default
     env:
+      TEST_OWNER: ${{ matrix.owner }}
       TEST_TYPE: "Unit"
       TEST_PRODUCT: "Zeebe"
     strategy:
@@ -497,24 +498,31 @@ jobs:
         include:
           - component: General
             suite: CoreFeatures
+            owner: '@camunda/core-features'
             maven-modules: ${{ needs.setup-tests.outputs.ZEEBE_CORE_FEATURES_MODULES }}
           - component: Protocol
             suite: CoreFeatures
+            owner: '@camunda/core-features'
             maven-modules: ${{ needs.setup-tests.outputs.ZEEBE_PROTOCOL_MODULES }}
           - component: Gateway
             suite: CoreFeatures
+            owner: '@camunda/core-features'
             maven-modules: ${{ needs.setup-tests.outputs.ZEEBE_GATEWAY_MODULES }}
           - component: Exporter
             suite: DataLayer
+            owner: '@camunda/data-layer'
             maven-modules: ${{ needs.setup-tests.outputs.ZEEBE_EXPORTER_MODULES }}
           - component: Backup
             suite: DistributedPlatform
+            owner: '@camunda/zeebe-distributed-platform'
             maven-modules: ${{ needs.setup-tests.outputs.ZEEBE_BACKUP_MODULES }}
           - component:  Distributed
             suite: DistributedPlatform
+            owner: '@camunda/zeebe-distributed-platform'
             maven-modules: ${{ needs.setup-tests.outputs.ZEEBE_DISTRIBUTED_MODULES }}
           - component: Client
             suite: CamundaEx
+            owner: '@camunda/camundaex'
             maven-modules: ${{ needs.setup-tests.outputs.ZEEBE_CLIENT_MODULES }}
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@main
@@ -522,7 +530,7 @@ jobs:
       - name: Print metadata
         uses: ./.github/actions/print-metadata
         with:
-          test_owner: "${{ matrix.suite }}"
+          test_owner: "${{ matrix.owner }}"
       - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: ut-zeebe
@@ -570,7 +578,6 @@ jobs:
           job_name: "zeebe-unit-tests/${{ matrix.component }}-${{matrix.suite}}"
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
-          user_description: "${{matrix.suite}}"
           detailed_junit_tests: true
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
@@ -673,7 +680,6 @@ jobs:
           job_name: "elasticsearch-integration-tests/${{ matrix.module.maven_module }}"
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
-          user_description: "General"
           detailed_junit_tests: true
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
@@ -782,7 +788,6 @@ jobs:
           job_name: "opensearch-integration-tests/${{ matrix.module.maven_module }}"
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
-          user_description: "General"
           detailed_junit_tests: true
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
@@ -850,7 +855,6 @@ jobs:
         with:
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
-          user_description: "General"
           detailed_junit_tests: true
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
@@ -911,7 +915,6 @@ jobs:
         with:
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
-          user_description: "General"
           detailed_junit_tests: true
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
@@ -936,7 +939,7 @@ jobs:
             runs-on: gcp-perf-core-8-default
             docker-repository: localhost:5000/camunda/zeebe
             docker-file: Dockerfile
-            owner: "QA"
+            owner: '@camunda/qa-engineering'
             module: "QA"
           - group: zeebe-ds-modules
             name: "Zeebe Distributed Platform Modules"
@@ -946,7 +949,7 @@ jobs:
             runs-on: gcp-perf-core-16-longrunning
             docker-repository: localhost:5000/camunda/zeebe
             docker-file: Dockerfile
-            owner: "Distributed Platform"
+            owner: '@camunda/zeebe-distributed-platform'
             module: "Zeebe"
           - group: zeebe-engine-modules
             name: "Zeebe Engine Modules"
@@ -956,7 +959,7 @@ jobs:
             runs-on: gcp-perf-core-16-longrunning
             docker-repository: localhost:5000/camunda/camunda
             docker-file: camunda.Dockerfile
-            owner: "Core Features"
+            owner: '@camunda/core-features'
             module: "Zeebe"
           - group: zeebe-exporter-modules
             name: "Zeebe Exporter Modules"
@@ -966,7 +969,7 @@ jobs:
             runs-on: gcp-perf-core-16-longrunning
             docker-repository: localhost:5000/camunda/zeebe
             docker-file: Dockerfile
-            owner: "DataLayer"
+            owner: '@camunda/data-layer'
             module: "Zeebe"
           - group: schema-manager
             name: "Schema Manager"
@@ -976,7 +979,7 @@ jobs:
             runs-on: gcp-perf-core-8-default
             docker-repository: localhost:5000/camunda/camunda
             docker-file: camunda.Dockerfile
-            owner: "Data Layer"
+            owner: '@camunda/data-layer'
             module: "Schema Manager"
           - group: zeebe-engine-integration
             name: "Zeebe Engine QA"
@@ -986,7 +989,7 @@ jobs:
             runs-on: gcp-perf-core-16-default
             docker-repository: localhost:5000/camunda/zeebe
             docker-file: Dockerfile
-            owner: "Core Features"
+            owner: '@camunda/core-features'
             module: "Zeebe"
             test-filter: "io.camunda.zeebe.it.engine.**,!**/*$*.java"
           - group: zeebe-ds-integration
@@ -997,7 +1000,7 @@ jobs:
             runs-on: gcp-perf-core-16-default
             docker-repository: localhost:5000/camunda/zeebe
             docker-file: Dockerfile
-            owner: "Distributed Platform"
+            owner: '@camunda/zeebe-distributed-platform'
             module: "Zeebe"
             test-filter: "io.camunda.zeebe.it.cluster.**,!io.camunda.zeebe.it.cluster.clustering.dynamic.ScaleUpPartitionsTest,!**/*$*.java"
           - group: zeebe-ds-integration-scaleup
@@ -1006,7 +1009,7 @@ jobs:
             maven-build-threads: 1
             maven-test-fork-count: 1
             runs-on: gcp-perf-core-8-default
-            owner: "Distributed Platform"
+            owner: '@camunda/zeebe-distributed-platform'
             module: "Zeebe"
             test-filter: "io.camunda.zeebe.it.cluster.clustering.dynamic.ScaleUpPartitionsTest"
           - group: zeebe-shared-integration
@@ -1017,7 +1020,7 @@ jobs:
             runs-on: gcp-perf-core-16-default
             docker-repository: localhost:5000/camunda/zeebe
             docker-file: Dockerfile
-            owner: "General"
+            owner: '@camunda/monorepo-devops-team'
             module: "Zeebe"
             test-filter: "!io.camunda.zeebe.it.engine.**,!io.camunda.zeebe.it.cluster.**"
           - group: qa-migration-integration
@@ -1028,7 +1031,7 @@ jobs:
             runs-on: gcp-perf-core-8-default
             docker-repository: localhost:5000/camunda/zeebe
             docker-file: Dockerfile
-            owner: "Data Layer"
+            owner: '@camunda/data-layer'
             module: "Migration"
           - group: qa-update
             name: "Zeebe QA - Update"
@@ -1038,7 +1041,7 @@ jobs:
             runs-on: gcp-perf-core-8-default
             docker-repository: localhost:5000/camunda/zeebe
             docker-file: Dockerfile
-            owner: "Core Features"
+            owner: '@camunda/core-features'
             module: "Zeebe"
           - group: qa-camunda-process-test
             name: "Camunda Process"
@@ -1048,9 +1051,10 @@ jobs:
             runs-on: gcp-perf-core-8-default
             docker-repository: localhost:5000/camunda/camunda
             docker-file: camunda.Dockerfile
-            owner: "Core Features"
+            owner: '@camunda/camundaex'
             module: "Testing"
     env:
+      TEST_OWNER: ${{ matrix.owner }}
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
       OPERATE_TEST_DOCKER_IMAGE: localhost:5000/camunda/operate:current-test
       TASKLIST_TEST_DOCKER_IMAGE: localhost:5000/camunda/tasklist:current-test
@@ -1159,7 +1163,6 @@ jobs:
           job_name: "integration-tests/${{ matrix.group }}"
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
-          user_description: ${{ matrix.owner }}
           detailed_junit_tests: true
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
@@ -1173,7 +1176,6 @@ jobs:
     permissions: { }  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-16-default
     env:
-      TEST_OWNER: General
       TEST_PRODUCT: Camunda
       TEST_TYPE: Unit
     outputs:
@@ -1227,7 +1229,6 @@ jobs:
         with:
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
-          user_description: "General"
           detailed_junit_tests: true
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
@@ -1349,7 +1350,6 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          user_description: "General"
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
 
   detect-new-flaky-tests:
@@ -1522,6 +1522,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions: { }  # GITHUB_TOKEN unused in this job
+    env:
+      TEST_OWNER: '@camunda/identity'
     defaults:
       run:
         working-directory: identity/client
@@ -1554,7 +1556,6 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          user_description: "Identity"
 
   identity-frontend-sbom-snyk:
     if: needs.detect-changes.outputs.identity-frontend-tests == 'true'
@@ -1564,7 +1565,7 @@ jobs:
     timeout-minutes: 10
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
-      TEST_OWNER: Identity
+      TEST_OWNER: '@camunda/identity'
       TEST_PRODUCT: Identity
       TEST_TYPE: Tool
     defaults:
@@ -1601,7 +1602,6 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          user_description: "Identity"
 
   tasklist-ci:
     if: needs.detect-changes.outputs.java-code-changes == 'true' || needs.detect-changes.outputs.frontend-changes == 'true'
@@ -1705,7 +1705,6 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          user_description: "General"
 
   openapi-lint:
     name: "Lint / C8 REST OpenAPI"
@@ -1742,7 +1741,6 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          user_description: "General"
 
   renovatelint:
     if: needs.detect-changes.outputs.renovate-config-changes == 'true'
@@ -1918,7 +1916,6 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          user_description: "General"
 
   # Dynamically generate the Docker tag (e.g., SNAPSHOT or X.Y-SNAPSHOT) based on branch name
   utils-get-snapshot-docker-tag:
@@ -1998,7 +1995,6 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          user_description: "General"
 
   utils-get-concurrency-group-for-optimize-docker-snapshot:
     needs: [ check-results ]
@@ -2020,6 +2016,8 @@ jobs:
     concurrency:
       group: ${{ needs.utils-get-concurrency-group-for-optimize-docker-snapshot.outputs.concurrency_group_name }}
       cancel-in-progress: false
+    env:
+      TEST_OWNER: '@camunda/core-features'
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@main
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -2062,4 +2060,3 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          user_description: "team-core-features"
