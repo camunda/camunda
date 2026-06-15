@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.mapper;
 
-import static io.camunda.gateway.mapping.http.physicaltenants.PhysicalTenantContext.PHYSICAL_TENANT_URI_PREFIX;
+import static io.camunda.spring.utils.PhysicalTenantContext.PHYSICAL_TENANT_URI_PREFIX;
 
 import io.camunda.zeebe.gateway.rest.annotation.ClusterScoped;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;

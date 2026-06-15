@@ -8,9 +8,7 @@
 package io.camunda.application.commons.configuration;
 
 import io.camunda.configuration.Camunda;
-import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
-import io.camunda.zeebe.gateway.rest.interceptor.PhysicalTenantInterceptor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -31,16 +29,5 @@ public class UnifiedConfigurationModule {
   public PhysicalTenantResolver physicalTenantResolver(
       final Environment environment, final Camunda camunda) {
     return PhysicalTenantResolver.of(environment, camunda);
-  }
-
-  /**
-   * Exposes the physical-tenant interceptor to the REST and MCP gateways so that {@code
-   * /physical-tenants/{physicalTenantId}/...} requests with an unknown id are rejected with HTTP
-   * 404 before reaching any controller.
-   */
-  @Bean
-  public PhysicalTenantInterceptor physicalTenantInterceptor(
-      final PhysicalTenantIds physicalTenantIds) {
-    return new PhysicalTenantInterceptor(id -> physicalTenantIds.known().contains(id));
   }
 }
