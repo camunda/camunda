@@ -68,9 +68,11 @@ camunda:
     default:
       security:
         authentication:
-          # With `assigned` removed, the default PT now receives all cluster providers plus its
-          # own overlay. Both root providers (`oidc` and `tenanta`) are included automatically;
-          # isolation comes from audience values declared in each provider's configuration.
+          # The implicit default tenant always carries the FULL cluster provider set (both the
+          # `oidc` default slot and the named `tenanta` provider). It must NOT declare
+          # `providers.assigned` — startup validation rejects a selection under `default`, since
+          # the default tenant is the cluster surface and is full by definition. Isolation between
+          # the two same-issuer tenanta-realm providers comes from their distinct audiences.
           providers: {}
     tenanta:
       data:
@@ -81,10 +83,16 @@ camunda:
       security:
         authentication:
           providers:
+            # tenanta is ASSIGNED only its own named `tenanta` provider (#54730). Narrowing drops
+            # the inherited root default slot `oidc` (the default realm on :8081) from tenanta's
+            # chain, so a default-realm token is rejected cross-issuer on /pt/tenanta. To also
+            # accept the default realm here, add the reserved id `oidc` to this list — it is
+            # intentionally omitted to demonstrate issuer isolation.
+            assigned:
+              - tenanta
             # tenanta PT overlay: overrides the `tenanta` provider's client/secret/audiences.
-            # With `assigned` removed, the tenanta PT receives all root providers plus this
-            # overlay. The overlay ensures tenanta uses its own client and audience at the
-            # tenanta Keycloak realm; issuerUri inherits from root.
+            # The overlay ensures tenanta uses its own client and audience at the tenanta Keycloak
+            # realm; issuerUri inherits from root.
             oidc:
               tenanta:
                 # PT-side override: tenanta tenant uses its OWN client at the tenanta
