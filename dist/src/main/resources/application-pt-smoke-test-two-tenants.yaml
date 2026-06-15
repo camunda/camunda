@@ -1,0 +1,36 @@
+# INTERIM — drop before review. Scenario D overlay for the PT smoke-test harness.
+#
+# Activate alongside the base profile:  ./pt-smoke-test-oc.sh pt-smoke-test,pt-smoke-test-two-tenants
+#
+# Adds a SECOND non-default tenant (tenantb, its own Keycloak realm on :8083) as a cluster provider,
+# assigned only to itself. Combined with the base config (where tenanta is assigned [tenanta]), this
+# gives two non-default tenants that each select only their own provider — so each rejects the
+# other's token even though BOTH are valid cluster providers. That is the per-tenant selection among
+# multiple *named* cluster providers (and PT-to-PT isolation) that the base harness, with only the
+# default slot + tenanta, cannot show. Verify with ./pt-smoke-test-api-two-tenants.sh.
+camunda:
+  security:
+    authentication:
+      # tenantb is declared at the CLUSTER level, so without selection any tenant would inherit it.
+      providers:
+        oidc:
+          tenantb:
+            username-claim: preferred_username
+            client-id: camunda-pt-tenantb-client
+            client-secret: tenantb-secret
+            issuer-uri: http://localhost:8083/realms/tenantb
+            audiences: [pt-tenantb-aud]
+            redirect-uri: "{baseUrl}/sso-callback"
+  physical-tenants:
+    tenantb:
+      data:
+        secondary-storage:
+          elasticsearch:
+            # tenantb uses a distinct index prefix to isolate its indices.
+            index-prefix: pttenantb
+      security:
+        authentication:
+          providers:
+            # tenantb is assigned only its own provider; it does NOT get tenanta or the default slot.
+            assigned:
+              - tenantb

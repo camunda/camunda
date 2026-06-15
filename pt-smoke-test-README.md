@@ -57,7 +57,7 @@ Three terminals. Run steps in order — each step depends on the previous.
 ```
 
 Boots one Elasticsearch container (`:9200`) and two Keycloak containers (`:8081`, `:8082`) via
-`docker run`. Wait for `=== PT-PoC local IdPs + ES ready ===`.
+`docker run`. Wait for `=== PT smoke-test local IdPs + ES ready ===`.
 Press Ctrl-C to stop all three containers.
 
 ### Terminal 2 — OC
@@ -109,6 +109,7 @@ There are three runnable smoke scenarios. Each boots OC (Terminal 2), then runs 
 | **A — Base** | Core per-PT isolation: own-chain accept, cross-tenant 401, shared-issuer audience isolation, the cluster `/v2` + `/physical-tenants/default` surfaces, the **`[#54730]` cross-issuer cell** (`tenanta` is `[tenanta]`, so a default-realm token is rejected on `/pt/tenanta`), and the `/v2 ≡ /pt/default` identity. | `./pt-smoke-test-oc.sh` | `./pt-smoke-test-api.sh` |
 | **B — Default narrowing** | The default tenant's own selection limits the **cluster** surface: `default` is `[tenanta]`, dropping the inherited root default slot, so a default-realm token is rejected on **both** `/v2` and `/pt/default` — proving they resolve from one config (`forPhysicalTenant("default")`). | `./pt-smoke-test-oc.sh pt-smoke-test,pt-smoke-test-default-narrowed` | `./pt-smoke-test-api-default-narrowed.sh` |
 | **C — Reserved-`oidc` keep** | A non-default tenant can re-include the default slot: `tenanta` is `[oidc, tenanta]`, so it KEEPS the inherited default slot and a default-realm token is **accepted** on `/pt/tenanta` — the inverse of the base `[#54730]` cell. | `./pt-smoke-test-oc.sh pt-smoke-test,pt-smoke-test-oidc-keep` | `./pt-smoke-test-api-oidc-keep.sh` |
+| **D — Two non-default tenants** | Selection among multiple *named* cluster providers + PT-to-PT isolation: `tenanta=[tenanta]` and `tenantb=[tenantb]` (distinct Keycloak realms :8082/:8083), so each rejects the **other's** token even though both are valid cluster providers. Requires the tenantb realm (`pt-smoke-test-idp.sh` starts it on :8083). | `./pt-smoke-test-oc.sh pt-smoke-test,pt-smoke-test-two-tenants` | `./pt-smoke-test-api-two-tenants.sh` |
 
 > Validation failures (e.g. a non-default tenant with no `assigned`, or an unknown id) fail OC
 > startup — that path is covered by unit tests (`PhysicalTenantAssignedProvidersValidationTest`),
@@ -123,11 +124,14 @@ There are three runnable smoke scenarios. Each boots OC (Terminal 2), then runs 
 | `pt-smoke-test-api.sh` | **Scenario A** — base API isolation matrix (incl. `/v2` ≡ `/pt/default` identity cells) |
 | `pt-smoke-test-api-default-narrowed.sh` | **Scenario B** — default narrowed; default-realm token rejected on **both** `/v2` and `/pt/default` |
 | `pt-smoke-test-api-oidc-keep.sh` | **Scenario C** — tenanta keeps `oidc`; default-realm token accepted on `/pt/tenanta` |
+| `pt-smoke-test-api-two-tenants.sh` | **Scenario D** — two non-default tenants; each rejects the other's (valid cluster) provider |
 | `dist/src/test/resources/pt-smoke-test/default-realm.json` | Keycloak realm export — default realm |
 | `dist/src/test/resources/pt-smoke-test/tenanta-realm.json` | Keycloak realm export — tenanta realm |
+| `dist/src/test/resources/pt-smoke-test/tenantb-realm.json` | Keycloak realm export — tenantb realm (:8083, Scenario D) |
 | `dist/src/main/resources/application-pt-smoke-test.yaml` | Base PT provider config + trimmed diagnostics |
 | `dist/src/main/resources/application-pt-smoke-test-default-narrowed.yaml` | Scenario B overlay — `default` assigned `[tenanta]` |
 | `dist/src/main/resources/application-pt-smoke-test-oidc-keep.yaml` | Scenario C overlay — `tenanta` assigned `[oidc, tenanta]` |
+| `dist/src/main/resources/application-pt-smoke-test-two-tenants.yaml` | Scenario D overlay — adds cluster provider `tenantb` + PT `tenantb` assigned `[tenantb]` |
 | `dist/src/main/resources/application.properties` | `spring.profiles.group.pt-smoke-test{,-basic}=...` entries |
 
 ## BASIC-auth variant

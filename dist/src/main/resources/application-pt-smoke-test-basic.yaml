@@ -1,4 +1,4 @@
-# Physical-tenant BASIC-auth PoC config (INTERIM — drop before review).
+# Physical-tenant BASIC-auth smoke-test config (INTERIM — drop before review).
 #
 # Activated via the `pt-smoke-test-basic` profile (see spring.profiles.group.pt-smoke-test-basic in
 # application.properties). Unlike application-pt-smoke-test.yaml (OIDC + two Keycloak realms), this needs
