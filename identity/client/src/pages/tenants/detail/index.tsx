@@ -63,11 +63,12 @@ const Details: FC = () => {
                       <OverflowMenu ariaLabel={t("openTenantContextMenu")}>
                         <OverflowMenuItem
                           itemText={t("delete")}
-                        onClick={() => {
-                          deleteTenant(tenant);
-                        }}
-                      />
-                    </OverflowMenu>)}
+                          onClick={() => {
+                            deleteTenant(tenant);
+                          }}
+                        />
+                      </OverflowMenu>
+                    )}
                   </Stack>
                   <p>
                     {t("tenantId")}: {tenant.tenantId}
