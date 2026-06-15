@@ -121,7 +121,7 @@ go version
 | `docs/local-development.md`      | Prerequisites, quick start, and testing code changes against a local Camunda build                           |
 | `docs/package-layout.md`         | Key package areas, runtime artifact list, packaging a distribution                                           |
 | `docs/runtime-rules.md`          | Config precedence, H2 rules, Connectors compatibility, ports, health check timeout, quickstart marker        |
-| `docs/testing-guide.md`          | Platform coverage, process lifecycle, packaging, E2E layers, on-demand all-OS trigger guide                 |
+| `docs/testing-guide.md`          | Platform coverage, process lifecycle, packaging, E2E layers, on-demand all-OS trigger guide                  |
 | `docs/process-lifecycle.md`      | PID locking semantics, 4-state restart machine, signal handling, graceful shutdown, detached mode stub       |
 | `docs/configuration.md`          | JAVA_HOME fallback chain, config directory handling, H2 cleanup decision tree, RDBMS driver detection        |
 | `docs/platform-differences.md`   | Unix vs Windows: process groups, kill implementation, path/classpath conventions, archive formats, test tags |
