@@ -16,6 +16,15 @@ import {Number, Table, Heatmap, Chart} from './visualizations';
 export default function ProcessReportRenderer(props) {
   const {report} = props;
   const Component = getComponent(report.data.visualization);
+
+  if (report.combined) {
+    return (
+      <div className="component">
+        <Component {...props} report={{...report, hyper: true}} />
+      </div>
+    );
+  }
+
   const newProps = {
     ...props,
     formatter: getFormatter(report.data.view.properties[0]),

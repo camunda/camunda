@@ -28,6 +28,7 @@ import io.camunda.optimize.dto.optimize.rest.report.measure.MeasureResponseDto;
 import io.camunda.optimize.service.LocalizationService;
 import io.camunda.optimize.service.identity.AbstractIdentityService;
 import io.camunda.optimize.util.SuppressionConstants;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -69,7 +70,11 @@ public class ReportRestMapper {
       final Map<String, AuthorizedProcessReportEvaluationResponseDto<T>> reportResults =
           combinedReportEvaluationResult.getReportEvaluationResults().stream()
               .map(this::mapToAuthorizedProcessReportEvaluationResponseDto)
-              .map(response -> (AuthorizedProcessReportEvaluationResponseDto<T>) response)
+              .map(
+                  response -> {
+                    localizeReportData(response.getReportDefinition(), locale);
+                    return (AuthorizedProcessReportEvaluationResponseDto<T>) response;
+                  })
               .collect(
                   Collectors.toMap(
                       singleReportEvaluationResponse ->
@@ -78,10 +83,14 @@ public class ReportRestMapper {
                       (x, y) -> y,
                       LinkedHashMap::new));
 
+      final CombinedReportDefinitionRequestDto combinedReportDefinition =
+          (CombinedReportDefinitionRequestDto)
+              reportEvaluationResult.getEvaluationResult().getReportDefinition();
+      localizeCombinedReportName(combinedReportDefinition, reportResults.values(), locale);
+
       return new AuthorizedCombinedReportEvaluationResponseDto<>(
           reportEvaluationResult.getCurrentUserRole(),
-          (CombinedReportDefinitionRequestDto)
-              reportEvaluationResult.getEvaluationResult().getReportDefinition(),
+          combinedReportDefinition,
           new CombinedProcessReportResultDataDto<>(
               reportResults, combinedReportEvaluationResult.getInstanceCount()));
     } else {
@@ -136,6 +145,28 @@ public class ReportRestMapper {
       }
       localizeChartLabels(reportDefinitionDto, localizationService, validLocale);
     }
+  }
+
+  private void localizeCombinedReportName(
+      final CombinedReportDefinitionRequestDto combinedReportDefinition,
+      final Collection<? extends AuthorizedProcessReportEvaluationResponseDto<?>> subReports,
+      final String locale) {
+    final boolean isAgenticControlReport =
+        subReports.stream()
+            .map(AuthorizedProcessReportEvaluationResponseDto::getReportDefinition)
+            .anyMatch(definition -> definition.getData().isAgenticControlReport());
+    if (!isAgenticControlReport) {
+      return;
+    }
+    final String validLocale = localizationService.validateAndReturnValidLocale(locale);
+    Optional.ofNullable(
+            localizationService.getLocalizationForAgenticControlReportCode(
+                validLocale, combinedReportDefinition.getName()))
+        .ifPresent(combinedReportDefinition::setName);
+    Optional.ofNullable(
+            localizationService.getLocalizationForAgenticControlReportCode(
+                validLocale, combinedReportDefinition.getDescription()))
+        .ifPresent(combinedReportDefinition::setDescription);
   }
 
   private static void localizeChartLabels(

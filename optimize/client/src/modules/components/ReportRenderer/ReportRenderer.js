@@ -32,7 +32,7 @@ function ReportRenderer(props) {
     const isHyper = result?.type === 'hyperMap';
 
     View = isHyper ? HyperReportRenderer : ProcessReportRenderer;
-    somethingMissing = checkProcessReport(report.data);
+    somethingMissing = report.combined ? null : checkProcessReport(report.data);
 
     if (somethingMissing) {
       if (updateReport) {
