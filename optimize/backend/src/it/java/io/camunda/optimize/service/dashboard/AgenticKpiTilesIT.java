@@ -14,6 +14,7 @@ import static io.camunda.optimize.service.dashboard.AgenticControlDashboardServi
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.KPI_DURATION_P95_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.KPI_INCIDENT_RATE_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.KPI_MEDIAN_TOKENS_REPORT_ID;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.TOKEN_TREND_REPORT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 
@@ -25,6 +26,8 @@ import io.camunda.optimize.dto.optimize.persistence.incident.IncidentStatus;
 import io.camunda.optimize.dto.optimize.query.process.AgentInstanceDto;
 import io.camunda.optimize.dto.optimize.query.process.AgentInstanceDto.AgentMetricsDto;
 import io.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
+import io.camunda.optimize.dto.optimize.query.report.CommandEvaluationResult;
+import io.camunda.optimize.dto.optimize.query.report.SingleReportEvaluationResult;
 import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateUnit;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
@@ -33,6 +36,8 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.filter.Filte
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.InstanceEndDateFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.result.MeasureDto;
+import io.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
+import io.camunda.optimize.service.db.report.result.MapCommandResult;
 import io.camunda.optimize.service.db.report.result.NumberCommandResult;
 import io.camunda.optimize.service.report.ReportEvaluationService;
 import java.time.OffsetDateTime;
@@ -686,6 +691,64 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
   }
 
   // ---------------------------------------------------------------------------
+  // Token trend report (weekly multi-measure line chart)
+  // ---------------------------------------------------------------------------
+
+  @Test
+  void shouldComputeWeeklyInputTokensGroupedByWeek() {
+    // given two instances within the same week with known input tokens
+    persistProcessInstances(
+        List.of(
+            agenticInstance(PROC_KEY, 100L, 50L)
+                .startDate(OffsetDateTime.now().minusDays(3))
+                .endDate(OffsetDateTime.now().minusDays(2))
+                .build(),
+            agenticInstance(PROC_KEY, 200L, 80L)
+                .startDate(OffsetDateTime.now().minusDays(3))
+                .endDate(OffsetDateTime.now().minusDays(2))
+                .build()));
+
+    // when evaluating the first measure (input tokens) of the token-trend report
+    final List<MapResultEntryDto> buckets = evaluateMapMeasure(TOKEN_TREND_REPORT_ID, 0);
+
+    // then total input tokens across all buckets equals 300
+    assertThat(buckets).isNotEmpty();
+    final double totalInput =
+        buckets.stream()
+            .filter(e -> e.getValue() != null)
+            .mapToDouble(MapResultEntryDto::getValue)
+            .sum();
+    assertThat(totalInput).isCloseTo(300.0, within(1.0));
+  }
+
+  @Test
+  void shouldComputeWeeklyOutputTokensGroupedByWeek() {
+    // given two instances within the same week with known output tokens
+    persistProcessInstances(
+        List.of(
+            agenticInstance(PROC_KEY, 50L, 100L)
+                .startDate(OffsetDateTime.now().minusDays(3))
+                .endDate(OffsetDateTime.now().minusDays(2))
+                .build(),
+            agenticInstance(PROC_KEY, 80L, 200L)
+                .startDate(OffsetDateTime.now().minusDays(3))
+                .endDate(OffsetDateTime.now().minusDays(2))
+                .build()));
+
+    // when evaluating the second measure (output tokens) of the token-trend report
+    final List<MapResultEntryDto> buckets = evaluateMapMeasure(TOKEN_TREND_REPORT_ID, 1);
+
+    // then total output tokens across all buckets equals 300
+    assertThat(buckets).isNotEmpty();
+    final double totalOutput =
+        buckets.stream()
+            .filter(e -> e.getValue() != null)
+            .mapToDouble(MapResultEntryDto::getValue)
+            .sum();
+    assertThat(totalOutput).isCloseTo(300.0, within(1.0));
+  }
+
+  // ---------------------------------------------------------------------------
   // Combined: process definition + date range
   // ---------------------------------------------------------------------------
 
@@ -746,18 +809,34 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
         .agentTotalTokens(inputTokens + outputTokens);
   }
 
+  private List<MapResultEntryDto> evaluateMapMeasure(
+      final String reportId, final int measureIndex) {
+    final var result =
+        evaluationService.evaluateSavedReportWithAdditionalFilters(
+            USER_ID, UTC, reportId, noExtraFilters(), null);
+    final MapCommandResult commandResult =
+        (MapCommandResult)
+            ((SingleReportEvaluationResult<?>) result.getEvaluationResult())
+                .getCommandEvaluationResults()
+                .get(measureIndex);
+    final List<MeasureDto<List<MapResultEntryDto>>> measures = commandResult.getMeasures();
+    return measures.isEmpty() ? List.of() : measures.getFirst().getData();
+  }
+
   private Double evaluateNumber(
+      final String reportId, final AdditionalProcessReportEvaluationFilterDto filterDto) {
+    final NumberCommandResult commandResult =
+        (NumberCommandResult) firstCommandResult(reportId, filterDto);
+    final List<MeasureDto<Double>> measures = commandResult.getMeasures();
+    return measures.isEmpty() ? null : measures.getFirst().getData();
+  }
+
+  private CommandEvaluationResult<?> firstCommandResult(
       final String reportId, final AdditionalProcessReportEvaluationFilterDto filterDto) {
     final var result =
         evaluationService.evaluateSavedReportWithAdditionalFilters(
             USER_ID, UTC, reportId, filterDto, null);
-    final NumberCommandResult commandResult =
-        (NumberCommandResult)
-            ((io.camunda.optimize.dto.optimize.query.report.SingleReportEvaluationResult<?>)
-                    result.getEvaluationResult())
-                .getFirstCommandResult();
-    final List<MeasureDto<Double>> measures = commandResult.getMeasures();
-    return measures.isEmpty() ? null : measures.getFirst().getData();
+    return ((SingleReportEvaluationResult<?>) result.getEvaluationResult()).getFirstCommandResult();
   }
 
   private AdditionalProcessReportEvaluationFilterDto noExtraFilters() {
