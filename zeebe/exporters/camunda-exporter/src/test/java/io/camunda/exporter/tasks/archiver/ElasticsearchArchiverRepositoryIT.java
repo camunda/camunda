@@ -100,6 +100,7 @@ final class ElasticsearchArchiverRepositoryIT {
   private String batchOperationIndex;
   private String auditLogIndex;
   private TestExporterResourceProvider resourceProvider;
+  private final String zeebeIndex = zeebeIndexPrefix + "-" + UUID.randomUUID();
   private final ElasticsearchClient testClient = new ElasticsearchClient(transport);
   private final ObjectMapper objectMapper = TestObjectMapper.objectMapper();
   @AutoClose private final ExecutorService executor = Executors.newSingleThreadExecutor();

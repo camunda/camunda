@@ -69,7 +69,6 @@ final class OpenSearchArchiverRepositoryTest extends AbstractArchiverRepositoryT
   void setup() {
     super.setup();
     when(client._transport()).thenReturn(transport);
-    when(client.withTransportOptions(any())).thenReturn(client);
   }
 
   @Override
@@ -190,7 +189,7 @@ final class OpenSearchArchiverRepositoryTest extends AbstractArchiverRepositoryT
 
     final var inOrder = Mockito.inOrder(client);
     inOrder.verify(client)._transport();
-    inOrder.verify(client, Mockito.times(2))._transportOptions();
+    inOrder.verify(client)._transportOptions();
     inOrder.verify(client).search(any(SearchRequest.class), eq(Object.class));
     inOrder.verify(client).reindex(any(ReindexRequest.class));
     inOrder.verifyNoMoreInteractions();
@@ -225,7 +224,7 @@ final class OpenSearchArchiverRepositoryTest extends AbstractArchiverRepositoryT
 
     final var inOrder = Mockito.inOrder(client);
     inOrder.verify(client)._transport();
-    inOrder.verify(client, Mockito.times(2))._transportOptions();
+    inOrder.verify(client)._transportOptions();
     inOrder.verify(client).search(any(SearchRequest.class), eq(Object.class));
     inOrder.verify(client).reindex(any(ReindexRequest.class));
     inOrder.verify(client).bulk(any(BulkRequest.class));
