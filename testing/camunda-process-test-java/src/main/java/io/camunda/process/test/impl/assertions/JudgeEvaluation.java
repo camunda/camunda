@@ -38,7 +38,8 @@ class JudgeEvaluation {
   static final String DEFAULT_EVALUATION_CRITERIA =
       "You are an impartial judge evaluating whether an actual value satisfies an expectation. "
           + "Evaluate based on semantic meaning, not literal string matching. "
-          + "Equivalent meanings expressed differently should be considered a full match.";
+          + "Equivalent meanings expressed differently should be considered a full match."
+          + "IMPORTANT: If being asked on Camunda documents content while reasoning, and you can't access them, reflect that in a FAILING score.";
   private static final Logger LOG = LoggerFactory.getLogger(JudgeEvaluation.class);
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
