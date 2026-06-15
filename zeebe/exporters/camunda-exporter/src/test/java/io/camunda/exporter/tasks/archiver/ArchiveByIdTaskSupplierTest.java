@@ -240,7 +240,8 @@ class ArchiveByIdTaskSupplierTest {
             (searchAfter, size) -> {
               batchSize.set(size);
               return CompletableFuture.completedFuture(
-                  ArchiveDocIdsBatch.from(List.of("doc1"), List.of("after1")));
+                  ArchiveDocIdsBatch.from(
+                      List.of(IdWithRouting.of("doc1")), List.of(IdWithRouting.of("after1"))));
             },
             (source, dest, ids) -> {
               if (Set.of(1, 2, 5).contains(reindexCallCount.incrementAndGet())) {
@@ -298,7 +299,8 @@ class ArchiveByIdTaskSupplierTest {
             (searchAfter, size) -> {
               batchSize.set(size);
               return CompletableFuture.completedFuture(
-                  ArchiveDocIdsBatch.from(List.of("doc1"), List.of("after1")));
+                  ArchiveDocIdsBatch.from(
+                      List.of(IdWithRouting.of("doc1")), List.of(IdWithRouting.of("after1"))));
             },
             (source, dest, ids) -> {
               if (reindexCallCount.incrementAndGet() <= 3) {
@@ -345,7 +347,8 @@ class ArchiveByIdTaskSupplierTest {
             (searchAfter, size) -> {
               batchSize.set(size);
               return CompletableFuture.completedFuture(
-                  ArchiveDocIdsBatch.from(List.of("doc1"), List.of("after1")));
+                  ArchiveDocIdsBatch.from(
+                      List.of(IdWithRouting.of("doc1")), List.of(IdWithRouting.of("after1"))));
             },
             (source, dest, ids) -> {
               if (reindexCallCount.incrementAndGet() <= 2) {
