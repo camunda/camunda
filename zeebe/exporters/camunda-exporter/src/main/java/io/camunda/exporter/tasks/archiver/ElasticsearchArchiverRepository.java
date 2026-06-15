@@ -452,12 +452,8 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
       requestBuilder.searchAfter(searchAfter);
     }
 
-    final var transportOptions =
-        client._transportOptions().with(b -> b.setParameter("filter_path", "-hits.hits._score"));
-
     final var timer = Timer.start();
     return client
-        .withTransportOptions(transportOptions)
         .search(requestBuilder.build(), Object.class)
         .whenCompleteAsync(
             (response, error) -> metrics.measureArchiveDocIdsSearchDuration(timer), executor)
