@@ -9,7 +9,7 @@
 import styled, { createGlobalStyle } from "styled-components";
 import { FC, ReactNode, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { bodyShort01 } from "@carbon/elements";
+import { styles } from "@carbon/elements";
 import AppHeader from "src/components/layout/AppHeader";
 import ErrorBoundary from "src/components/global/ErrorBoundary";
 import { useApi } from "src/utility/api";
@@ -24,10 +24,10 @@ import { ThemeProvider } from "src/common/theme/ThemeProvider";
 const GlobalStyle = createGlobalStyle`
   body {
     background: var(--cds-background);
-    font-size: ${bodyShort01.fontSize};
-    font-weight: ${bodyShort01.fontWeight};
-    line-height: ${bodyShort01.lineHeight};
-    letter-spacing: ${bodyShort01.letterSpacing};
+    font-size: ${styles.bodyShort01.fontSize};
+    font-weight: ${styles.bodyShort01.fontWeight};
+    line-height: ${styles.bodyShort01.lineHeight};
+    letter-spacing: ${styles.bodyShort01.letterSpacing};
     margin: 0;
     padding: 0;
     box-sizing: border-box;
