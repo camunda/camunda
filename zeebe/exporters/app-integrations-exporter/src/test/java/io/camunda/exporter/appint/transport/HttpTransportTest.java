@@ -116,7 +116,11 @@ public class HttpTransportTest {
 
   @Test
   public void shouldRecordExportTimeoutWhenRequestTimesOut() {
-    // given — the backend stalls beyond the configured requestTimeoutMs (500ms)
+    // given
+    final var httpConfig = new HttpTransportConfig(url, new ApiKey("test-key"), 2, 50, 500);
+    final var jsonMapper = SubscriptionFactory.createJsonMapper();
+    transport =
+        new HttpTransportImpl(jsonMapper, httpConfig, new AppIntegrationsExporterMetrics(registry));
     wireMock.stubFor(post("/").willReturn(aResponse().withFixedDelay(2000).withStatus(200)));
 
     // when
