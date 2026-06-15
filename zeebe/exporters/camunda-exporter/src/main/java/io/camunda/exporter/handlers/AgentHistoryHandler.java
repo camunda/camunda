@@ -158,7 +158,6 @@ public class AgentHistoryHandler
   private static List<AgentHistoryContentValue> mapContent(
       final List<? extends AgentHistoryMessageContentValue> content) {
     return content.stream()
-        .filter(c -> AgentHistoryContentType.isSupported(c.getContentType().name()))
         .map(
             c ->
                 switch (c.getContentType()) {
@@ -167,15 +166,25 @@ public class AgentHistoryHandler
                       AgentHistoryContentValue.document(
                           mapDocumentReference(c.getDocumentReference()));
                   case OBJECT -> AgentHistoryContentValue.object(c.getObject());
-                  default ->
-                      throw new IllegalArgumentException(
-                          "Unexpected content type should have been filtered before mapContent(): "
-                              + c.getContentType());
+                  default -> {
+                    LOGGER.warn(
+                        "Received unexpected AgentHistoryContentType: {}, will be mapped to UNKNOWN",
+                        c.getContentType());
+                    yield new AgentHistoryContentValue(
+                        AgentHistoryContentType.UNKNOWN,
+                        ExporterUtil.emptyToNull(c.getText()),
+                        mapDocumentReference(c.getDocumentReference()),
+                        c.getObject().isEmpty() ? null : c.getObject());
+                  }
                 })
         .toList();
   }
 
   private static DocumentReferenceEntity mapDocumentReference(final DocumentReferenceValue ref) {
+    if (ref == null) {
+      return null;
+    }
+
     final var meta = ref.getMetadata();
     final var expiresAt =
         meta.getExpiresAt() > 0

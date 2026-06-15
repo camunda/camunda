@@ -9,6 +9,7 @@ package io.camunda.exporter.handlers;
 
 import static io.camunda.webapps.schema.descriptors.template.AgentHistoryTemplate.COMMIT_STATUS;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.store.BatchRequest;
@@ -433,53 +434,19 @@ final class AgentHistoryHandlerTest {
   }
 
   @Test
-  void shouldReturnEmptyContentWhenAllItemsUnsupported() {
-    // given — every item is UNSPECIFIED; the allow-list filter should drop all of them
-    final var unsupported =
-        ImmutableAgentHistoryMessageContentValue.builder()
-            .withContentType(
-                io.camunda.zeebe.protocol.record.value.AgentHistoryContentType.UNSPECIFIED)
-            .withText("")
-            .withObject(Map.of())
-            .build();
-    final var recordValue =
-        ImmutableAgentHistoryRecordValue.builder()
-            .from(buildMinimalRecordValue(1L, 1))
-            .withContent(List.of(unsupported, unsupported))
-            .build();
-    final Record<AgentHistoryRecordValue> record =
-        factory.generateRecord(
-            ValueType.AGENT_HISTORY,
-            r -> r.withIntent(AgentHistoryIntent.CREATED).withValue(recordValue));
-    final var entity = new AgentHistoryEntity().setId("1");
-
-    // when
-    underTest.updateEntity(record, entity);
-
-    // then — content list is empty; no exception thrown
-    assertThat(entity.getContent()).isEmpty();
-  }
-
-  @Test
-  void shouldFilterOutUnsupportedContentItems() {
-    // given — one TEXT content item (supported) and one UNSPECIFIED (unsupported)
-    final var textItem =
-        ImmutableAgentHistoryMessageContentValue.builder()
-            .withContentType(io.camunda.zeebe.protocol.record.value.AgentHistoryContentType.TEXT)
-            .withText("valid text")
-            .withObject(Map.of())
-            .build();
+  void shouldMapUnspecifiedContentTypeToUnknown() {
+    // given — UNSPECIFIED is the protocol sentinel; it should survive as UNKNOWN (not be dropped)
     final var unspecifiedItem =
         ImmutableAgentHistoryMessageContentValue.builder()
             .withContentType(
                 io.camunda.zeebe.protocol.record.value.AgentHistoryContentType.UNSPECIFIED)
-            .withText("")
-            .withObject(Map.of())
+            .withText("some text")
+            .withObject(Map.of("key", "value"))
             .build();
     final var recordValue =
         ImmutableAgentHistoryRecordValue.builder()
             .from(buildMinimalRecordValue(1L, 1))
-            .withContent(List.of(textItem, unspecifiedItem))
+            .withContent(List.of(unspecifiedItem))
             .build();
     final Record<AgentHistoryRecordValue> record =
         factory.generateRecord(
@@ -490,14 +457,33 @@ final class AgentHistoryHandlerTest {
     // when
     underTest.updateEntity(record, entity);
 
-    // then — only the TEXT item is retained; UNSPECIFIED is dropped
+    // then — UNSPECIFIED is preserved as UNKNOWN with all available fields
     assertThat(entity.getContent())
         .singleElement()
         .satisfies(
             content -> {
-              assertThat(content.contentType()).isEqualTo(AgentHistoryContentType.TEXT);
-              assertThat(content.text()).isEqualTo("valid text");
+              assertThat(content.contentType()).isEqualTo(AgentHistoryContentType.UNKNOWN);
+              assertThat(content.text()).isEqualTo("some text");
+              assertThat(content.object()).isEqualTo(Map.of("key", "value"));
             });
+  }
+
+  @ParameterizedTest(
+      name = "[{index}] Protocol type ''{0}'' should have a matching entity enum constant")
+  @EnumSource(
+      value = io.camunda.zeebe.protocol.record.value.AgentHistoryContentType.class,
+      names = "UNSPECIFIED",
+      mode = Mode.EXCLUDE)
+  void shouldMapAllSupportedContentTypes(
+      final io.camunda.zeebe.protocol.record.value.AgentHistoryContentType protocolType) {
+    // This test will fail if a new content type is added to the protocol without a corresponding
+    // constant in the entity AgentHistoryContentType enum. Add the new constant to fix it.
+    assertThatCode(() -> AgentHistoryContentType.valueOf(protocolType.name()))
+        .as(
+            "AgentHistoryContentType must have a constant named '%s' to match protocol type %s."
+                + " Add the constant to AgentHistoryContentType and handle it properly in AgentHistoryHandler.",
+            protocolType.name(), protocolType)
+        .doesNotThrowAnyException();
   }
 
   @Test

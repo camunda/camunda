@@ -7,26 +7,14 @@
  */
 package io.camunda.webapps.schema.entities.agenthistory;
 
-import java.util.Arrays;
-import java.util.Set;
-import java.util.stream.Collectors;
-
 /**
- * Entity-layer enum for the content type of a history entry content block. Only the three concrete
- * types ({@code TEXT}, {@code DOCUMENT}, {@code OBJECT}) are represented — there is no {@code
- * UNKNOWN} fallback because unsupported protocol values (e.g. {@code UNSPECIFIED}) are filtered out
- * via {@link #isSupported} before any mapping takes place.
+ * Entity-layer enum for the content type of a history entry content block. {@code UNKNOWN} is used
+ * for any protocol value that has no explicit mapping (e.g. {@code UNSPECIFIED} or future types);
+ * the content is still stored with all available fields so data is not silently discarded.
  */
 public enum AgentHistoryContentType {
+  UNKNOWN,
   TEXT,
   DOCUMENT,
-  OBJECT;
-
-  private static final Set<String> SUPPORTED_NAMES =
-      Arrays.stream(values()).map(Enum::name).collect(Collectors.toUnmodifiableSet());
-
-  /** Returns whether the given content type name is supported by this enum. */
-  public static boolean isSupported(final String contentType) {
-    return SUPPORTED_NAMES.contains(contentType);
-  }
+  OBJECT
 }
