@@ -12,16 +12,34 @@ import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.mapping.http.validator.AgentInstanceRequestValidator;
 import io.camunda.gateway.protocol.model.AgentInstanceCreationRequest;
 import io.camunda.gateway.protocol.model.AgentInstanceCreationResult;
+import io.camunda.gateway.protocol.model.AgentInstanceDocumentContent;
+import io.camunda.gateway.protocol.model.AgentInstanceHistoryItemCreationResult;
+import io.camunda.gateway.protocol.model.AgentInstanceHistoryItemRequest;
+import io.camunda.gateway.protocol.model.AgentInstanceHistoryRoleEnum;
 import io.camunda.gateway.protocol.model.AgentInstanceLimits;
+import io.camunda.gateway.protocol.model.AgentInstanceMessageContent;
+import io.camunda.gateway.protocol.model.AgentInstanceObjectContent;
+import io.camunda.gateway.protocol.model.AgentInstanceTextContent;
+import io.camunda.gateway.protocol.model.AgentInstanceToolCall;
 import io.camunda.gateway.protocol.model.AgentInstanceUpdateRequest;
 import io.camunda.gateway.protocol.model.AgentInstanceUpdateStatusEnum;
 import io.camunda.gateway.protocol.model.AgentTool;
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryEmbeddedToolCall;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryMessageContent;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceTool;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryContentType;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryRole;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
+import org.agrona.DirectBuffer;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.http.ProblemDetail;
 
@@ -105,6 +123,103 @@ public class AgentInstanceMapper {
     return AgentInstanceCreationResult.Builder.create()
         .agentInstanceKey(KeyUtil.keyToString(record.getAgentInstanceKey()))
         .build();
+  }
+
+  public Either<ProblemDetail, AgentHistoryRecord> toCreateAgentHistoryRecord(
+      final String agentInstanceKey, final AgentInstanceHistoryItemRequest request) {
+    return RequestMapper.getResult(
+        requestValidator.validateHistoryItemRequest(agentInstanceKey, request),
+        () -> {
+          final var record = new AgentHistoryRecord();
+
+          record.setAgentInstanceKey(Long.parseLong(agentInstanceKey));
+          record.setElementInstanceKey(Long.parseLong(request.getElementInstanceKey()));
+          record.setJobKey(Long.parseLong(request.getJobKey()));
+          record.setJobLease(request.getJobLease());
+          record.setRole(mapHistoryRole(request.getRole()));
+          record.setProducedAt(
+              OffsetDateTime.parse(request.getProducedAt()).toInstant().toEpochMilli());
+
+          if (request.getIteration() != null) {
+            record.setIteration(request.getIteration());
+          }
+
+          for (final AgentInstanceMessageContent content : request.getContent()) {
+            record.addContent(mapContent(content));
+          }
+
+          if (request.getToolCalls() != null) {
+            for (final AgentInstanceToolCall toolCall : request.getToolCalls()) {
+              record.addToolCall(mapToolCall(toolCall));
+            }
+          }
+
+          if (request.getMetrics() != null) {
+            final var metrics = request.getMetrics();
+            record
+                .getMetrics()
+                .setInputTokens(metrics.getInputTokens() != null ? metrics.getInputTokens() : 0L)
+                .setOutputTokens(metrics.getOutputTokens() != null ? metrics.getOutputTokens() : 0L)
+                .setDurationMs(metrics.getDurationMs() != null ? metrics.getDurationMs() : 0L);
+          }
+
+          return record;
+        });
+  }
+
+  public AgentInstanceHistoryItemCreationResult toAgentHistoryItemCreationResult(
+      final AgentHistoryRecord record) {
+    return AgentInstanceHistoryItemCreationResult.Builder.create()
+        .historyItemKey(KeyUtil.keyToString(record.getAgentHistoryKey()))
+        .build();
+  }
+
+  private AgentHistoryRole mapHistoryRole(final AgentInstanceHistoryRoleEnum role) {
+    return switch (role) {
+      case USER -> AgentHistoryRole.USER;
+      case ASSISTANT -> AgentHistoryRole.ASSISTANT;
+      case TOOL_RESULT -> AgentHistoryRole.TOOL_RESULT;
+    };
+  }
+
+  private AgentHistoryMessageContent mapContent(final AgentInstanceMessageContent content) {
+    final var result = new AgentHistoryMessageContent();
+    if (content instanceof final AgentInstanceTextContent text) {
+      result.setContentType(AgentHistoryContentType.TEXT).setText(text.getText());
+    } else if (content instanceof final AgentInstanceDocumentContent doc) {
+      result.setContentType(AgentHistoryContentType.DOCUMENT);
+      final var ref = doc.getDocumentReference();
+      if (ref != null) {
+        result
+            .getDocumentReference()
+            .setDocumentId(ref.getDocumentId() != null ? ref.getDocumentId() : "")
+            .setStoreId(ref.getStoreId() != null ? ref.getStoreId() : "")
+            .setContentHash(ref.getContentHash() != null ? ref.getContentHash() : "");
+      }
+    } else if (content instanceof final AgentInstanceObjectContent obj) {
+      result.setContentType(AgentHistoryContentType.OBJECT);
+      if (obj.getObject() != null) {
+        result.setObject(toMsgPackBuffer(obj.getObject()));
+      }
+    }
+    return result;
+  }
+
+  private AgentHistoryEmbeddedToolCall mapToolCall(final AgentInstanceToolCall toolCall) {
+    final var result = new AgentHistoryEmbeddedToolCall();
+    result.setToolCallId(toolCall.getToolCallId());
+    result.setToolName(toolCall.getToolName());
+    if (toolCall.getElementId() != null) {
+      result.setElementId(toolCall.getElementId());
+    }
+    if (toolCall.getArguments() != null) {
+      result.setArguments(toMsgPackBuffer(toolCall.getArguments()));
+    }
+    return result;
+  }
+
+  private DirectBuffer toMsgPackBuffer(final Map<String, Object> map) {
+    return BufferUtil.wrapArray(MsgPackConverter.convertToMsgPack(map));
   }
 
   // Note: even if limits are marked @NotNull in AgentInstanceCreationRequest,
