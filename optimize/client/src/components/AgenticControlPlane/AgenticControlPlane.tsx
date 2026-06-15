@@ -20,6 +20,7 @@ import type {DashboardTile} from 'types';
 
 import {DATE_PRESETS, FilterBar} from './FilterBar';
 import {loadAgenticDashboard} from './service';
+import {TileFootnote} from './TileFootnote';
 
 import './AgenticControlPlane.scss';
 
@@ -27,6 +28,7 @@ interface AgenticTileConfiguration {
   visibleInL0Only?: boolean;
   visibleInL1Only?: boolean;
   section?: string;
+  footnote?: string;
 }
 
 interface RollingFilter {
@@ -39,6 +41,12 @@ interface RollingFilter {
     excludeUndefined: boolean;
     includeUndefined: boolean;
   };
+}
+
+function presetToGroupByDateUnit(presetId: string): string {
+  if (presetId === '7d') return 'day';
+  if (presetId === '30d') return 'week';
+  return 'month';
 }
 
 function presetToFilter(preset: (typeof DATE_PRESETS)[number]): RollingFilter {
@@ -79,6 +87,16 @@ export function AgenticControlPlane() {
     [processScope]
   );
 
+  const scopedEvaluateTokenTrendReport = useCallback(
+    (
+      id: ReportEvaluationPayload,
+      tileFilter: Parameters<typeof evaluateReport>[1],
+      query: Parameters<typeof evaluateReport>[2]
+    ) => evaluateReport(id, tileFilter, query, definitions, presetToGroupByDateUnit(preset)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [processScope, preset]
+  );
+
   if (!dashboard) {
     return <Loading />;
   }
@@ -96,7 +114,11 @@ export function AgenticControlPlane() {
 
   const sections = [
     {key: 'kpi', loadTile: scopedEvaluateReport},
-    {key: 'token', titleKey: 'agenticControlPlane.tokenUsage', loadTile: scopedEvaluateReport},
+    {
+      key: 'token',
+      titleKey: 'agenticControlPlane.tokenUsage',
+      loadTile: scopedEvaluateTokenTrendReport,
+    },
     {key: 'duration', titleKey: 'agenticControlPlane.duration', loadTile: scopedEvaluateReport},
   ];
 
@@ -114,7 +136,8 @@ export function AgenticControlPlane() {
       />
       {sections.map(({key, titleKey, loadTile}) => {
         const tiles = visibleTiles?.filter(
-          (tile) => ((tile.configuration as AgenticTileConfiguration | undefined)?.section ?? 'kpi') === key
+          (tile) =>
+            ((tile.configuration as AgenticTileConfiguration | undefined)?.section ?? 'kpi') === key
         );
         return (
           <div key={key}>
@@ -130,6 +153,7 @@ export function AgenticControlPlane() {
                 loadTile={loadTile}
                 tiles={tiles}
                 filter={filter}
+                addons={[<TileFootnote key="tile-footnote" />]}
               />
             </div>
           </div>
