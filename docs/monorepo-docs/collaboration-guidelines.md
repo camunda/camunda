@@ -107,7 +107,7 @@ When any of those become true → reach out to the Monorepo DevOps team for coll
 ### Key Documentation
 
 * **CI Pipeline Architecture:** [CI & Automation](ci.md) and [C8 Monorepo CI Processes](https://confluence.camunda.com/spaces/HAN/pages/245403757/C8+Monorepo+CI+Processes).
-* **Release Process Guide:** [Release Process](release.md).
+* **Release Process Guide:** [Release Process](release/index.md).
 * **Performance Guidelines:** [Monorepo CI Health KPIs & Impact](https://docs.google.com/document/d/1VDnNy4KOidxOev2_BNNA-BEJQKSTUhspiYqlEKRPaSM).
 
 ### Templates & Examples
