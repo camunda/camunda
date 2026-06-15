@@ -83,6 +83,7 @@ jobs:
           ZEEBE_CI_CHECK_VERSION_COMPATIBILITY_INDEX: ${{ strategy.job-index }}
           ZEEBE_CI_CHECK_VERSION_COMPATIBILITY_TOTAL: ${{ strategy.job-total }}
           ZEEBE_CI_CHECK_VERSION_COMPATIBILITY_REPORT: ${{ github.workspace }}/zeebe-version-compatibility
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - uses: ./.github/actions/collect-test-artifacts
         if: always()
         with:
@@ -148,6 +149,7 @@ jobs:
           verify
         env:
           ZEEBE_CI_CHECK_CURRENT_VERSION_COMPATIBILITY: true
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - uses: ./.github/actions/collect-test-artifacts
         if: always()
         with:
