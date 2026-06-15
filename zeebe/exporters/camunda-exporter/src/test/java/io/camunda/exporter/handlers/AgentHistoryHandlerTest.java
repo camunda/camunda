@@ -83,9 +83,14 @@ final class AgentHistoryHandlerTest {
     assertThat(underTest.generateIds(record)).containsExactly(String.valueOf(record.getKey()));
   }
 
-  @Test
-  void shouldUpdateEntityOnCreated() {
-    // given
+  @ParameterizedTest(name = "[{index}] Should populate all entity fields for ''{0}'' intent")
+  @EnumSource(
+      value = AgentHistoryIntent.class,
+      names = {"CREATE", "COMMIT"},
+      mode = Mode.EXCLUDE)
+  void shouldUpdateEntityForAllHandledIntents(final AgentHistoryIntent intent) {
+    // given — updateEntity() must populate ALL fields for every handled intent; the partial update
+    // (commitStatus-only) is an artefact of flush(), not of updateEntity().
     final long recordKey = 100L;
     final int partitionId = 1;
     final long agentInstanceKey = 50L;
@@ -144,99 +149,6 @@ final class AgentHistoryHandlerTest {
         factory.generateRecord(
             ValueType.AGENT_HISTORY,
             r ->
-                r.withIntent(AgentHistoryIntent.CREATED)
-                    .withKey(recordKey)
-                    .withPartitionId(partitionId)
-                    .withValue(recordValue));
-
-    final var entity = new AgentHistoryEntity().setId(String.valueOf(recordKey));
-
-    // when
-    underTest.updateEntity(record, entity);
-
-    // then
-    assertThat(entity.getKey()).isEqualTo(recordKey);
-    assertThat(entity.getPartitionId()).isEqualTo(partitionId);
-    assertThat(entity.getAgentInstanceKey()).isEqualTo(agentInstanceKey);
-    assertThat(entity.getElementInstanceKey()).isEqualTo(elementInstanceKey);
-    assertThat(entity.getProcessInstanceKey()).isEqualTo(processInstanceKey);
-    assertThat(entity.getRootProcessInstanceKey()).isEqualTo(rootProcessInstanceKey);
-    assertThat(entity.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
-    assertThat(entity.getTenantId()).isEqualTo(tenantId);
-    assertThat(entity.getJobKey()).isEqualTo(jobKey);
-    assertThat(entity.getJobLease()).isEqualTo(jobLease);
-    assertThat(entity.getIteration()).isEqualTo(iteration);
-    assertThat(entity.getRole()).isEqualTo(AgentHistoryRole.ASSISTANT);
-    assertThat(entity.getCommitStatus()).isEqualTo(AgentHistoryCommitStatus.PENDING);
-    assertThat(entity.getProducedAt())
-        .isEqualTo(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(producedAtMs)));
-    assertThat(entity.getInputTokens()).isEqualTo(inputTokens);
-    assertThat(entity.getOutputTokens()).isEqualTo(outputTokens);
-    assertThat(entity.getDurationMs()).isEqualTo(durationMs);
-    assertThat(entity.getContent())
-        .containsExactly(
-            new AgentHistoryContentValue(
-                io.camunda.webapps.schema.entities.agenthistory.AgentHistoryContentType.TEXT,
-                "Hello, world!",
-                null,
-                null));
-    assertThat(entity.getToolCalls())
-        .containsExactly(
-            new AgentHistoryEmbeddedToolCallValue(
-                "tc-1", "search", "searchElement", Map.of("query", "weather")));
-  }
-
-  @ParameterizedTest(name = "[{index}] Should populate all scalar entity fields for ''{0}'' intent")
-  @EnumSource(
-      value = AgentHistoryIntent.class,
-      names = {"COMMITTED", "DISCARDED"},
-      mode = Mode.INCLUDE)
-  void shouldPopulateAllScalarFieldsForNonCreatedIntents(final AgentHistoryIntent intent) {
-    // given — updateEntity() is called for every handled intent and must populate ALL entity
-    // fields, not just commitStatus; the partial update (commitStatus-only) is done in flush().
-    final long recordKey = 100L;
-    final int partitionId = 2;
-    final long agentInstanceKey = 50L;
-    final long elementInstanceKey = 200L;
-    final long processInstanceKey = 300L;
-    final long rootProcessInstanceKey = 250L;
-    final long processDefinitionKey = 400L;
-    final String tenantId = "<default>";
-    final long jobKey = 500L;
-    final String jobLease = "lease-token-xyz";
-    final int iteration = 7;
-    final long producedAtMs = System.currentTimeMillis();
-    final long inputTokens = 10L;
-    final long outputTokens = 5L;
-    final long durationMs = 800L;
-
-    final var recordValue =
-        ImmutableAgentHistoryRecordValue.builder()
-            .withAgentInstanceKey(agentInstanceKey)
-            .withElementInstanceKey(elementInstanceKey)
-            .withProcessInstanceKey(processInstanceKey)
-            .withRootProcessInstanceKey(rootProcessInstanceKey)
-            .withProcessDefinitionKey(processDefinitionKey)
-            .withTenantId(tenantId)
-            .withJobKey(jobKey)
-            .withJobLease(jobLease)
-            .withIteration(iteration)
-            .withRole(io.camunda.zeebe.protocol.record.value.AgentHistoryRole.USER)
-            .withProducedAt(producedAtMs)
-            .withMetrics(
-                ImmutableAgentHistoryMetricsValue.builder()
-                    .withInputTokens(inputTokens)
-                    .withOutputTokens(outputTokens)
-                    .withDurationMs(durationMs)
-                    .build())
-            .withContent(List.of())
-            .withToolCalls(List.of())
-            .build();
-
-    final Record<AgentHistoryRecordValue> record =
-        factory.generateRecord(
-            ValueType.AGENT_HISTORY,
-            r ->
                 r.withIntent(intent)
                     .withKey(recordKey)
                     .withPartitionId(partitionId)
@@ -250,6 +162,7 @@ final class AgentHistoryHandlerTest {
     // then
     final AgentHistoryCommitStatus expectedStatus =
         switch (intent) {
+          case CREATED -> AgentHistoryCommitStatus.PENDING;
           case COMMITTED -> AgentHistoryCommitStatus.COMMITTED;
           case DISCARDED -> AgentHistoryCommitStatus.DISCARDED;
           default -> throw new IllegalStateException("Unexpected intent: " + intent);
@@ -266,13 +179,21 @@ final class AgentHistoryHandlerTest {
     assertThat(entity.getJobKey()).isEqualTo(jobKey);
     assertThat(entity.getJobLease()).isEqualTo(jobLease);
     assertThat(entity.getIteration()).isEqualTo(iteration);
-    assertThat(entity.getRole()).isEqualTo(AgentHistoryRole.USER);
+    assertThat(entity.getRole()).isEqualTo(AgentHistoryRole.ASSISTANT);
     assertThat(entity.getCommitStatus()).isEqualTo(expectedStatus);
     assertThat(entity.getProducedAt())
         .isEqualTo(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(producedAtMs)));
     assertThat(entity.getInputTokens()).isEqualTo(inputTokens);
     assertThat(entity.getOutputTokens()).isEqualTo(outputTokens);
     assertThat(entity.getDurationMs()).isEqualTo(durationMs);
+    assertThat(entity.getContent())
+        .containsExactly(
+            new AgentHistoryContentValue(
+                AgentHistoryContentType.TEXT, "Hello, world!", null, null));
+    assertThat(entity.getToolCalls())
+        .containsExactly(
+            new AgentHistoryEmbeddedToolCallValue(
+                "tc-1", "search", "searchElement", Map.of("query", "weather")));
   }
 
   @Test
