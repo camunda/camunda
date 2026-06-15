@@ -17,7 +17,9 @@ import io.camunda.zeebe.engine.processing.deployment.StartEventSubscriptionManag
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.model.bpmn.util.time.Timer;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 
 public final class StartEventSubscriptions {
 
@@ -63,6 +65,9 @@ public final class StartEventSubscriptions {
                     deployedProcess.getKey(),
                     timerStartEvent.getId(),
                     deployedProcess.getTenantId(),
+                    NO_ELEMENT_INSTANCE,
+                    BufferUtil.bufferAsString(deployedProcess.getBpmnProcessId()),
+                    BpmnElementType.START_EVENT,
                     failureOrTimer.get());
               });
     }

@@ -171,6 +171,9 @@ public final class TimerTriggerProcessor implements TypedRecordProcessor<TimerRe
         record.getProcessDefinitionKey(),
         event.getId(),
         record.getTenantId(),
+        record.getRootProcessInstanceKey(),
+        record.getBpmnProcessId(),
+        record.getElementType(),
         refreshedTimer);
   }
 
