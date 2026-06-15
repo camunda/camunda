@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# INTERIM — drop before review. Scenario A of the PT API smoke harness.
+# INTERIM — drop before review. Scenario B of the PT API smoke harness.
 #
 # Verifies DEFAULT-tenant narrowing + the /v2 ≡ /physical-tenants/default unification (#54730).
 #
-# Boot with the scenario-A overlay first:  ./pt-smoke-test-oc.sh pt-smoke-test,pt-smoke-test-default-narrowed
+# Boot with the scenario-B overlay first:  ./pt-smoke-test-oc.sh pt-smoke-test,pt-smoke-test-default-narrowed
 # That overlay sets `camunda.physical-tenants.default...providers.assigned: [tenanta]`, so the
 # default tenant is narrowed to the named `tenanta` provider and the inherited root default slot
 # `oidc` (the default realm on :8081) is dropped. Because the default tenant's resolved config also
