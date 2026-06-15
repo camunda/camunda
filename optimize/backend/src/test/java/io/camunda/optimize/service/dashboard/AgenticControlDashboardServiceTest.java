@@ -36,7 +36,11 @@ import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.Dat
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.RollingDateFilterDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
+import io.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
+import io.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
+import io.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import io.camunda.optimize.service.db.reader.DashboardReader;
 import io.camunda.optimize.service.db.writer.DashboardWriter;
 import io.camunda.optimize.service.db.writer.ReportWriter;
@@ -83,7 +87,7 @@ public class AgenticControlDashboardServiceTest {
     assertThat(saved.isAgenticControlDashboard()).isTrue();
     assertThat(saved.isManagementDashboard()).isFalse();
     assertThat(saved.getCollectionId()).isNull();
-    assertThat(saved.getTiles()).hasSize(8);
+    assertThat(saved.getTiles()).hasSize(9);
   }
 
   @Test
@@ -164,6 +168,7 @@ public class AgenticControlDashboardServiceTest {
             AgenticControlDashboardService.KPI_AVG_TOKENS_REPORT_ID,
             AgenticControlDashboardService.KPI_MEDIAN_TOKENS_REPORT_ID,
             AgenticControlDashboardService.TOKEN_TREND_REPORT_ID,
+            AgenticControlDashboardService.TOKEN_CONSUMERS_REPORT_ID,
             AgenticControlDashboardService.KPI_DURATION_P50_REPORT_ID,
             AgenticControlDashboardService.KPI_DURATION_P95_REPORT_ID);
   }
@@ -226,7 +231,7 @@ public class AgenticControlDashboardServiceTest {
     underTest.reconcile();
 
     // then reports are upserted and dashboard tiles are updated, but dashboard is not recreated
-    verify(reportWriter, org.mockito.Mockito.times(8))
+    verify(reportWriter, org.mockito.Mockito.times(9))
         .createOrUpdateSingleProcessReport(any(), any(), any(), any(), any(), any());
     verify(dashboardWriter, never()).saveDashboard(any());
     verify(dashboardWriter).updateDashboard(any(), any());
@@ -318,10 +323,23 @@ public class AgenticControlDashboardServiceTest {
               AgenticControlDashboardService.KPI_EXECUTION_INCIDENT_RATE_DESCRIPTION,
               AgenticControlDashboardService.KPI_TOKEN_TREND_NAME,
               AgenticControlDashboardService.KPI_TOKEN_TREND_FOOTNOTE,
+              AgenticControlDashboardService.KPI_TOKEN_CONSUMERS_NAME,
+              AgenticControlDashboardService.KPI_TOKEN_CONSUMERS_FOOTNOTE,
               AgenticControlDashboardService.KPI_DURATION_P50_NAME,
               AgenticControlDashboardService.KPI_DURATION_P50_DESCRIPTION,
               AgenticControlDashboardService.KPI_DURATION_P95_NAME,
               AgenticControlDashboardService.KPI_DURATION_P95_DESCRIPTION);
+    }
+  }
+
+  @Test
+  void shouldDefineTopNNoticeLabelInEveryLocale() throws IOException {
+    for (final String locale : new String[] {"en", "de"}) {
+      final Map<String, Object> agenticControlPlane =
+          readLocalizationNode(locale, "agenticControlPlane");
+      assertThat(agenticControlPlane)
+          .as("locale '%s' must define agenticControlPlane.topNNotice", locale)
+          .containsKey("topNNotice");
     }
   }
 
@@ -401,6 +419,86 @@ public class AgenticControlDashboardServiceTest {
   }
 
   @Test
+  void shouldSeedTopTokenConsumersReportGroupedByProcessSortedDesc() {
+    // given
+    when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID)).thenReturn(Optional.empty());
+
+    // when
+    underTest.reconcile();
+
+    // then a single total-tokens report grouped by process is seeded as a descending horizontal bar
+    assertThat(captureTopTokenConsumersReport())
+        .satisfies(
+            data -> {
+              assertThat(data.getView().getEntity()).isEqualTo(ProcessViewEntity.AGENT_INSTANCE);
+              assertThat(data.getView().getProperties()).containsExactly(ViewProperty.TOTAL_TOKENS);
+              assertThat(data.getGroupBy().getType())
+                  .isEqualTo(ProcessGroupByType.PROCESS_DEFINITION_KEY);
+              assertThat(data.getVisualization()).isEqualTo(ProcessVisualization.BAR);
+              assertThat(data.getConfiguration().getHorizontalBar()).isTrue();
+              assertThat(data.getConfiguration().getAggregationTypes())
+                  .extracting(AggregationDto::getType)
+                  .containsExactly(AggregationType.SUM);
+              assertThat(data.getConfiguration().getSorting())
+                  .hasValueSatisfying(
+                      sorting -> {
+                        assertThat(sorting.getBy()).contains(ReportSortingDto.SORT_BY_VALUE);
+                        assertThat(sorting.getOrder()).contains(SortOrder.DESC);
+                      });
+            });
+  }
+
+  @Test
+  void shouldPlaceTopTokenConsumersTileFullWidthBelowTokenTrend() {
+    // given
+    when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID)).thenReturn(Optional.empty());
+
+    // when
+    underTest.reconcile();
+
+    // then the consumers tile spans the full grid width directly below the token trend tile
+    final DashboardDefinitionRestDto saved = captureSavedDashboard();
+    final DashboardReportTileDto trend =
+        tileById(saved, AgenticControlDashboardService.TOKEN_TREND_REPORT_ID);
+    final DashboardReportTileDto consumers =
+        tileById(saved, AgenticControlDashboardService.TOKEN_CONSUMERS_REPORT_ID);
+
+    assertThat(consumers.getPosition().getX()).isZero();
+    assertThat(consumers.getPosition().getY())
+        .isEqualTo(trend.getPosition().getY() + trend.getDimensions().getHeight());
+    assertThat(consumers.getDimensions().getWidth()).isEqualTo(18);
+
+    // and it advertises the server-side top-N limit for the frontend to request
+    @SuppressWarnings("unchecked")
+    final Map<String, Object> configuration = (Map<String, Object>) consumers.getConfiguration();
+    assertThat(configuration)
+        .containsEntry(
+            "topN", String.valueOf(AgenticControlDashboardService.TOKEN_CONSUMERS_LIMIT));
+  }
+
+  private DashboardReportTileDto tileById(
+      final DashboardDefinitionRestDto dashboard, final String id) {
+    return dashboard.getTiles().stream()
+        .filter(tile -> id.equals(tile.getId()))
+        .findFirst()
+        .orElseThrow();
+  }
+
+  private ProcessReportDataDto captureTopTokenConsumersReport() {
+    final ArgumentCaptor<ProcessReportDataDto> captor =
+        ArgumentCaptor.forClass(ProcessReportDataDto.class);
+    verify(reportWriter)
+        .createOrUpdateSingleProcessReport(
+            eq(AgenticControlDashboardService.TOKEN_CONSUMERS_REPORT_ID),
+            isNull(),
+            captor.capture(),
+            eq(AgenticControlDashboardService.KPI_TOKEN_CONSUMERS_NAME),
+            isNull(),
+            isNull());
+    return captor.getValue();
+  }
+
+  @Test
   void shouldSeedP50DurationReportWithCorrectConfig() {
     assertDurationReportSeeded(
         AgenticControlDashboardService.KPI_DURATION_P50_REPORT_ID,
@@ -454,6 +552,16 @@ public class AgenticControlDashboardServiceTest {
         getClass().getClassLoader().getResourceAsStream("localization/" + locale + ".json")) {
       final Map<String, Object> root = new ObjectMapper().readValue(in, Map.class);
       return (Map<String, Object>) root.get("agenticControl");
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  private Map<String, Object> readLocalizationNode(final String locale, final String node)
+      throws IOException {
+    try (final InputStream in =
+        getClass().getClassLoader().getResourceAsStream("localization/" + locale + ".json")) {
+      final Map<String, Object> root = new ObjectMapper().readValue(in, Map.class);
+      return (Map<String, Object>) root.get(node);
     }
   }
 
