@@ -85,6 +85,19 @@ check_401() {
   fi
 }
 
+# check_same: assert a token yields the same 401-vs-not-401 outcome on /v2 and /pt/default.
+# (authz 403s can vary by data state; isolation hinges on the 401 boundary, so compare on that.)
+check_same() {
+  local label="$1" tok="$2" s_cluster s_alias c_cls c_als
+  s_cluster=$(_status "$tok" "$PROBE_CLUSTER")
+  s_alias=$(_status "$tok" "$(printf "$PROBE_PATH_TEMPLATE" default)")
+  [[ "$s_cluster" == "401" ]] && c_cls=401 || c_cls=ok
+  [[ "$s_alias"   == "401" ]] && c_als=401 || c_als=ok
+  printf "%-72s /v2=%s /pt/default=%s  " "$label" "$s_cluster" "$s_alias"
+  if [[ "$c_cls" == "$c_als" ]]; then echo "PASS (identical)"; PASS=$((PASS + 1))
+  else echo "FAIL (surfaces diverge)"; FAIL=$((FAIL + 1)); fi
+}
+
 echo "=== Acquiring tokens ==="
 DEF=$(token "$KC_DEFAULT" camunda-pt-default-client default-secret alice alice)
 TA=$(token "$KC_TENANTA" camunda-pt-tenanta-client tenanta-secret bob bob)
@@ -116,6 +129,14 @@ check_not_401 "default token -> /pt/default  (alias accepts default realm)"     
 check_401     "no token      -> /pt/default  (unauthenticated rejected)"              ""      "$(printf "$PROBE_PATH_TEMPLATE" default)"
 check_401     "tenanta token -> /pt/default  (scope-private client not in root providers)" "$TA" "$(printf "$PROBE_PATH_TEMPLATE" default)"
 check_not_401 "dvta token    -> /pt/default  (accepted via root tenanta provider)"   "$DVTA" "$(printf "$PROBE_PATH_TEMPLATE" default)"
+echo
+
+echo "=== /v2 ≡ /physical-tenants/default identity (both derive from forPhysicalTenant(default)) ==="
+echo "    With the default tenant unchanged here (full set), every token resolves the same on both"
+echo "    surfaces. See ./pt-poc-api-smoke-default-narrowed.sh for the narrowed-default variant."
+check_same "default token  (accepted on both)" "$DEF"
+check_same "tenanta token  (rejected on both)" "$TA"
+check_same "dvta token     (accepted on both)" "$DVTA"
 echo
 
 echo "=== Per-tenant ISSUER selection via providers.assigned (#54730) ==="
