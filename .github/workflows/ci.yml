@@ -1051,7 +1051,7 @@ jobs:
             runs-on: gcp-perf-core-8-default
             docker-repository: localhost:5000/camunda/camunda
             docker-file: camunda.Dockerfile
-            owner: '@camunda/core-features'
+            owner: '@camunda/camundaex'
             module: "Testing"
     env:
       TEST_OWNER: ${{ matrix.owner }}
