@@ -7,7 +7,15 @@
  */
 
 import {queryOptions} from '@tanstack/react-query';
-import type {GetSystemConfigurationResponseBody, CurrentUser, License} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {
+	GetSystemConfigurationResponseBody,
+	CurrentUser,
+	License,
+	GetProcessDefinitionInstanceStatisticsRequestBody,
+	GetProcessDefinitionInstanceStatisticsResponseBody,
+	GetIncidentProcessInstanceStatisticsByErrorRequestBody,
+	GetIncidentProcessInstanceStatisticsByErrorResponseBody,
+} from '@camunda/camunda-api-zod-schemas/8.10';
 import {request} from './request';
 import {endpoints} from './endpoints';
 
@@ -15,6 +23,10 @@ const queryKeys = {
 	currentUser: () => ['getCurrentUser'] as const,
 	systemConfiguration: () => ['systemConfiguration'] as const,
 	license: () => ['license'] as const,
+	getProcessDefinitionInstanceStatistics: (body: GetProcessDefinitionInstanceStatisticsRequestBody) =>
+		['getProcessDefinitionInstanceStatistics', body] as const,
+	getIncidentProcessInstanceStatisticsByError: (body: GetIncidentProcessInstanceStatisticsByErrorRequestBody) =>
+		['getIncidentProcessInstanceStatisticsByError', body] as const,
 };
 
 const queries = {
@@ -57,6 +69,30 @@ const queries = {
 			},
 			staleTime: Infinity,
 			gcTime: Infinity,
+		}),
+
+	getProcessDefinitionInstanceStatistics: (body: GetProcessDefinitionInstanceStatisticsRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.getProcessDefinitionInstanceStatistics(body),
+			queryFn: async (): Promise<GetProcessDefinitionInstanceStatisticsResponseBody> => {
+				const {response, error} = await request(endpoints.getProcessDefinitionInstanceStatistics(body));
+				if (error !== null) {
+					throw error;
+				}
+				return response.json();
+			},
+		}),
+
+	getIncidentProcessInstanceStatisticsByError: (body: GetIncidentProcessInstanceStatisticsByErrorRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.getIncidentProcessInstanceStatisticsByError(body),
+			queryFn: async (): Promise<GetIncidentProcessInstanceStatisticsByErrorResponseBody> => {
+				const {response, error} = await request(endpoints.getIncidentProcessInstanceStatisticsByError(body));
+				if (error !== null) {
+					throw error;
+				}
+				return response.json();
+			},
 		}),
 } as const;
 

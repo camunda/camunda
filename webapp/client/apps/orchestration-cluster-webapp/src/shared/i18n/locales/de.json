@@ -389,6 +389,13 @@
 		"relativeDateUnknown": "'Unbekannt'",
 		"processesLoadMore": "Mehr laden",
 		"processesLoadingMore": "Wird geladen...",
-		"deniedReason": "Die Aufgabe {{type}} wurde vom System abgelehnt."
+		"deniedReason": "Die Aufgabe {{type}} wurde vom System abgelehnt.",
+		"operate": {
+			"dashboard": {"title": "Dashboard"},
+			"processes": {"title": "Prozesse"},
+			"decisions": {"title": "Entscheidungen"},
+			"operationsLog": {"title": "Vorgangsprotokoll"},
+			"batchOperations": {"title": "Stapeloperationen"}
+		}
 	}
 }
