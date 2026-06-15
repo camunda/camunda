@@ -14,6 +14,7 @@ concurrency:
 
 permissions:
   actions: read # Required to get the previous report
+  contents: read # Required for authenticated GitHub API calls in RollingUpdateTest (releases, tags)
 
 jobs:
   released-versions:
