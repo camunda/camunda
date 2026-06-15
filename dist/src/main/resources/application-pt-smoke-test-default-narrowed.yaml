@@ -1,15 +1,15 @@
 # INTERIM — drop before review. Scenario A overlay for the PT API smoke harness.
 #
-# Activate alongside the base profile:  ./pt-poc-oc.sh pt-poc,pt-poc-default-narrowed
+# Activate alongside the base profile:  ./pt-smoke-test-oc.sh pt-smoke-test,pt-smoke-test-default-narrowed
 #
 # Spring loads application-<profile>.yaml for EACH active profile, so this file layers a small
-# override on top of application-pt-poc.yaml. It narrows the implicit DEFAULT tenant to the named
+# override on top of application-pt-smoke-test.yaml. It narrows the implicit DEFAULT tenant to the named
 # `tenanta` provider only, dropping the inherited root default slot `oidc`.
 #
 # Because the default tenant's resolved config also drives the unprefixed /v2 cluster chain
 # (PhysicalTenantSecurityConfiguration unifies them), this limits BOTH /v2 and
 # /physical-tenants/default identically: a default-realm token (issuer :8081, the `oidc` slot) is
-# now rejected on both surfaces. Verify with ./pt-poc-api-smoke-default-narrowed.sh.
+# now rejected on both surfaces. Verify with ./pt-smoke-test-api-default-narrowed.sh.
 camunda:
   physical-tenants:
     default:

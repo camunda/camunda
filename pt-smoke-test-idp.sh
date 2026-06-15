@@ -15,16 +15,16 @@
 #
 # Requires Docker (with enough memory for ES — at least 4 GB recommended).
 # First invocation pulls the Keycloak and ES images; subsequent runs start in ~20s.
-# Leave this running while ./pt-poc-oc.sh and ./pt-poc-api-smoke.sh are active.
+# Leave this running while ./pt-smoke-test-oc.sh and ./pt-smoke-test-api.sh are active.
 # Press Ctrl-C to stop all containers.
 #
 # Usage:
-#   ./pt-poc-idp.sh
+#   ./pt-smoke-test-idp.sh
 #
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-REALM_DIR="$SCRIPT_DIR/dist/src/test/resources/pt-poc"
+REALM_DIR="$SCRIPT_DIR/dist/src/test/resources/pt-smoke-test"
 
 KC_IMAGE="quay.io/keycloak/keycloak:26.2"
 KC_OPTS="start-dev --health-enabled=true"
@@ -33,12 +33,12 @@ ES_IMAGE="docker.elastic.co/elasticsearch/elasticsearch:8.19.13"
 cleanup() {
   echo
   echo "Stopping containers..."
-  docker rm -f pt-poc-kc-default pt-poc-kc-tenanta pt-poc-es 2>/dev/null || true
+  docker rm -f pt-smoke-test-kc-default pt-smoke-test-kc-tenanta pt-smoke-test-es 2>/dev/null || true
 }
 trap cleanup EXIT INT TERM
 
 # Remove any leftover containers from a previous run
-docker rm -f pt-poc-kc-default pt-poc-kc-tenanta pt-poc-es 2>/dev/null || true
+docker rm -f pt-smoke-test-kc-default pt-smoke-test-kc-tenanta pt-smoke-test-es 2>/dev/null || true
 
 echo "Starting Elasticsearch (port 9200)..."
 # Disable the disk-based shard allocation decider. On Colima/Docker-Desktop the ES container
@@ -46,7 +46,7 @@ echo "Starting Elasticsearch (port 9200)..."
 # all indices read-only — a false positive for this local smoke harness. Disabling the decider
 # avoids the spurious read-only block; this is a throwaway single-node dev node, never production.
 docker run -d \
-  --name pt-poc-es \
+  --name pt-smoke-test-es \
   -p 9200:9200 \
   -e discovery.type=single-node \
   -e xpack.security.enabled=false \
@@ -56,7 +56,7 @@ docker run -d \
 
 echo "Starting default realm (port 8081)..."
 docker run -d \
-  --name pt-poc-kc-default \
+  --name pt-smoke-test-kc-default \
   -p 8081:8080 \
   -e KEYCLOAK_ADMIN=admin \
   -e KEYCLOAK_ADMIN_PASSWORD=admin \
@@ -66,7 +66,7 @@ docker run -d \
 
 echo "Starting tenanta realm (port 8082)..."
 docker run -d \
-  --name pt-poc-kc-tenanta \
+  --name pt-smoke-test-kc-tenanta \
   -p 8082:8080 \
   -e KEYCLOAK_ADMIN=admin \
   -e KEYCLOAK_ADMIN_PASSWORD=admin \
@@ -79,7 +79,7 @@ for i in $(seq 1 60); do
   STATUS=$(curl -fsS "http://localhost:9200/_cluster/health" 2>/dev/null \
     | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('status',''))" 2>/dev/null || true)
   if [ "$STATUS" = "green" ] || [ "$STATUS" = "yellow" ]; then
-    echo "  pt-poc-es ready (cluster status: $STATUS)"
+    echo "  pt-smoke-test-es ready (cluster status: $STATUS)"
     # Safety net (in addition to the disk.threshold_enabled=false start-up setting): disable the
     # disk decider via the cluster settings API and clear any flood-stage read-only block, in case
     # the Colima/Docker VM disk already tripped the watermark on a reused volume. Idempotent.
@@ -93,7 +93,7 @@ for i in $(seq 1 60); do
     break
   fi
   if [ "$i" -eq 60 ]; then
-    echo "  ERROR: pt-poc-es did not become ready within 120s" >&2
+    echo "  ERROR: pt-smoke-test-es did not become ready within 120s" >&2
     exit 1
   fi
   sleep 2
@@ -103,7 +103,7 @@ echo "Waiting for Keycloak realms to become ready..."
 # Keycloak 26 serves /health on the management port (9000), not the app port, so we
 # probe the realm's OIDC discovery document on the app port instead — this confirms both
 # that Keycloak is up AND that the realm imported successfully.
-for entry in "pt-poc-kc-default:8081:default" "pt-poc-kc-tenanta:8082:tenanta"; do
+for entry in "pt-smoke-test-kc-default:8081:default" "pt-smoke-test-kc-tenanta:8082:tenanta"; do
   IFS=: read -r container port realm <<<"$entry"
   for i in $(seq 1 60); do
     if curl -fsS "http://localhost:$port/realms/$realm/.well-known/openid-configuration" >/dev/null 2>&1; then
@@ -140,5 +140,5 @@ echo "Press Ctrl-C to stop."
 #    command returns, so Ctrl-C wouldn't clean up promptly.
 # Running `docker wait` in the background and blocking on the `wait` BUILTIN fixes both:
 # the builtin is interruptible by the trap, so Ctrl-C tears the containers down at once.
-docker wait pt-poc-kc-default pt-poc-kc-tenanta pt-poc-es >/dev/null 2>&1 &
+docker wait pt-smoke-test-kc-default pt-smoke-test-kc-tenanta pt-smoke-test-es >/dev/null 2>&1 &
 wait $! || true

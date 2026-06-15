@@ -1,14 +1,14 @@
 # INTERIM — drop before review. Scenario C overlay for the PT API smoke harness.
 #
-# Activate alongside the base profile:  ./pt-poc-oc.sh pt-poc,pt-poc-oidc-keep
+# Activate alongside the base profile:  ./pt-smoke-test-oc.sh pt-smoke-test,pt-smoke-test-oidc-keep
 #
 # Spring loads application-<profile>.yaml for EACH active profile, so this file layers a small
-# override on top of application-pt-poc.yaml. It re-includes the reserved `oidc` id in tenanta's
+# override on top of application-pt-smoke-test.yaml. It re-includes the reserved `oidc` id in tenanta's
 # selection (base assigns only `[tenanta]`), so tenanta KEEPS the inherited root default slot.
 #
 # Effect: a default-realm token (issuer :8081, the `oidc` slot) is now ACCEPTED on /pt/tenanta —
 # the reserved-`oidc` KEEP path, the inverse of the base harness's [#54730] DROP cell. Verify with
-# ./pt-poc-api-smoke-oidc-keep.sh.
+# ./pt-smoke-test-api-oidc-keep.sh.
 #
 # A later-profile list REPLACES the earlier one, so this sets tenanta.assigned to [oidc, tenanta].
 camunda:
