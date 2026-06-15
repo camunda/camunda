@@ -36,8 +36,10 @@ import org.springframework.core.env.Environment;
  * a {@link Binder} read of each {@code assigned} list. The rules:
  *
  * <ul>
- *   <li>The implicit {@code default} tenant carries the full provider set; declaring {@code
- *       providers.assigned} under it is rejected as a misconfiguration.
+ *   <li>The implicit {@code default} tenant carries the full provider set unless it declares its
+ *       own {@code providers.assigned} — which is allowed and, because the default tenant's
+ *       resolved config also drives the cluster {@code /v2} chain, limits that surface too. The
+ *       default tenant is not <em>required</em> to declare one (omitting it keeps the full set).
  *   <li>{@code assigned} applies only to the OIDC authentication method. If the cluster method is
  *       not {@code oidc}, a tenant that declares {@code assigned} is rejected (per-PT basic-auth is
  *       a separate concern — see #51949 — not a provider-selection one).
@@ -81,15 +83,7 @@ final class PhysicalTenantAssignedProvidersValidation {
 
     for (final String tenantId : discoverTenantIds(environment)) {
       final List<String> assigned = bindAssigned(binder, tenantId);
-
-      if (PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID.equals(tenantId)) {
-        if (assigned != null) {
-          throw fail(
-              "the implicit '%s' physical tenant always carries the full provider set; remove '%s'"
-                  .formatted(tenantId, assignedPath(tenantId)));
-        }
-        continue;
-      }
+      final boolean isDefault = PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID.equals(tenantId);
 
       if (!oidcMethod) {
         if (assigned != null) {
@@ -101,11 +95,32 @@ final class PhysicalTenantAssignedProvidersValidation {
         continue;
       }
 
-      if (assigned == null || assigned.isEmpty()) {
+      if (assigned == null) {
+        // The default tenant may omit a selection (implicit full set); a non-default tenant must
+        // declare one so its provider set is explicit.
+        if (isDefault) {
+          continue;
+        }
         throw fail(
             ("non-default physical tenant '%s' must declare a non-empty '%s' selecting which "
                     + "cluster OIDC providers apply to it")
                 .formatted(tenantId, assignedPath(tenantId)));
+      }
+
+      if (assigned.isEmpty()) {
+        throw fail(
+            "physical tenant '%s' declares an empty '%s'; it must select at least one provider"
+                .formatted(tenantId, assignedPath(tenantId)));
+      }
+
+      // Reject blank/null entries explicitly: an empty-string id (e.g. `- ""` in yaml) would
+      // otherwise fall through to the unknown-id check and render as `[]` (List#toString collapses
+      // a lone empty string), giving a confusing message.
+      if (assigned.stream().anyMatch(id -> id == null || id.isBlank())) {
+        throw fail(
+            "physical tenant '%s' declares a blank entry in '%s'; every id must be a non-blank "
+                    .formatted(tenantId, assignedPath(tenantId))
+                + "provider id");
       }
 
       final Set<String> namedIds = namedProviderIds(environment, tenantId);

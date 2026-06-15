@@ -72,7 +72,28 @@ class PhysicalTenantAssignedProvidersValidationTest {
     assertThatExceptionOfType(UnifiedConfigurationException.class)
         .isThrownBy(() -> PhysicalTenantAssignedProvidersValidation.validate(environment))
         .withMessageContaining("tenanta")
-        .withMessageContaining("must declare a non-empty");
+        .withMessageContaining("empty")
+        .withMessageContaining("must select at least one provider");
+  }
+
+  @Test
+  void shouldRejectBlankAssignedId() {
+    // given a tenant whose assigned list contains a blank entry (e.g. `- ""` in yaml)
+    final Environment environment =
+        environmentWith(
+            Map.of(
+                "camunda.security.authentication.method", "oidc",
+                "camunda.security.authentication.providers.oidc.a.client-id", "client-a",
+                "camunda.physical-tenants.tenanta.security.authentication.providers.assigned[0]",
+                    "",
+                "camunda.physical-tenants.tenanta.security.authentication.providers.assigned[1]",
+                    "a"));
+
+    // when / then — a clear "blank entry" failure, not a confusing "unknown id(s) []"
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> PhysicalTenantAssignedProvidersValidation.validate(environment))
+        .withMessageContaining("tenanta")
+        .withMessageContaining("blank entry");
   }
 
   @Test
@@ -190,8 +211,9 @@ class PhysicalTenantAssignedProvidersValidationTest {
   // -------------------------------------------------------------------------
 
   @Test
-  void shouldRejectDefaultTenantDeclaringAssigned() {
-    // given the implicit default tenant declaring a provider selection
+  void shouldAcceptDefaultTenantDeclaringValidAssigned() {
+    // given the default tenant declaring a valid selection — allowed; it limits the default tenant
+    // and (via the cluster-auth unification) the /v2 surface too
     final Environment environment =
         environmentWith(
             Map.of(
@@ -201,10 +223,27 @@ class PhysicalTenantAssignedProvidersValidationTest {
                     "a"));
 
     // when / then
+    assertThatCode(() -> PhysicalTenantAssignedProvidersValidation.validate(environment))
+        .doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldRejectDefaultTenantAssigningUnknownId() {
+    // given the default tenant assigning an id that is not configured
+    final Environment environment =
+        environmentWith(
+            Map.of(
+                "camunda.security.authentication.method", "oidc",
+                "camunda.security.authentication.providers.oidc.a.client-id", "client-a",
+                "camunda.physical-tenants.default.security.authentication.providers.assigned[0]",
+                    "nope"));
+
+    // when / then — the default tenant is validated like any other
     assertThatExceptionOfType(UnifiedConfigurationException.class)
         .isThrownBy(() -> PhysicalTenantAssignedProvidersValidation.validate(environment))
         .withMessageContaining("default")
-        .withMessageContaining("full provider set");
+        .withMessageContaining("unknown OIDC provider id")
+        .withMessageContaining("nope");
   }
 
   // -------------------------------------------------------------------------

@@ -7,8 +7,6 @@
  */
 package io.camunda.authentication.pt;
 
-import static io.camunda.spring.utils.PhysicalTenantContext.DEFAULT_PHYSICAL_TENANT_ID;
-
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
@@ -27,10 +25,14 @@ import org.springframework.core.env.Environment;
  * cluster configuration and the per-tenant overlay.
  *
  * <p>The merge first builds the union of <em>all</em> cluster providers — ROOT providers ∪ the PT's
- * own OVERLAY providers, each root provider merged with the PT overlay — and then, for a
- * non-default tenant that declares one, <em>narrows</em> that union to its {@code
- * providers.assigned} selection (issue #54730, see {@link #narrowToAssigned}). The default tenant
- * always keeps the full union.
+ * own OVERLAY providers, each root provider merged with the PT overlay — and then, for any tenant
+ * that declares one (the {@code default} tenant included), <em>narrows</em> that union to its
+ * {@code providers.assigned} selection (issue #54730, see {@link #narrowToAssigned}). A tenant that
+ * declares no {@code assigned} keeps the full union.
+ *
+ * <p>The {@code default} tenant is treated uniformly here: its resolved configuration drives both
+ * the {@code /physical-tenants/default} alias and — via {@code PhysicalTenantSecurityConfiguration}
+ * — the unprefixed {@code /v2} cluster chain, so the two surfaces stay identical.
  *
  * <p>The merge is delegated to Spring's {@link Binder} rather than hand-written per field. The root
  * config is bound into a fresh instance, then the per-tenant overlay is bound <em>into the same
@@ -105,14 +107,15 @@ public final class PhysicalTenantAuthConfigurations {
     // method is cluster-wide, not per-tenant.
     config.setMethod(rootMethod != null ? rootMethod : AuthenticationMethod.BASIC);
     mergeSharedProviders(binder, ptPrefix, rootProviders, config);
-    narrowToAssigned(binder, ptPrefix, tenantId, config);
+    narrowToAssigned(binder, ptPrefix, config);
     return config;
   }
 
   /**
-   * Narrows the merged union to the providers a non-default physical tenant has explicitly SELECTED
-   * via {@code ...providers.assigned} (issue #54730). Each list entry is a provider id drawn from
-   * the union {@code {oidc} ∪ providers.oidc.<name>}:
+   * Narrows the merged union to the providers a physical tenant has explicitly SELECTED via {@code
+   * ...providers.assigned} (issue #54730) — applied uniformly to every tenant, the {@code default}
+   * tenant included. Each list entry is a provider id drawn from the union {@code {oidc} ∪
+   * providers.oidc.<name>}:
    *
    * <ul>
    *   <li>the reserved id {@value #DEFAULT_SLOT_ASSIGNED_ID} keeps the unnamed default slot ({@code
@@ -123,26 +126,14 @@ public final class PhysicalTenantAuthConfigurations {
    *       listed are removed.
    * </ul>
    *
-   * <p>The narrowing is intentionally skipped in two cases, both of which yield the full union:
-   *
-   * <ul>
-   *   <li>the implicit {@code default} tenant (and its {@code /physical-tenants/default} alias) —
-   *       it always carries the full set (AC-1);
-   *   <li>a tenant with no {@code assigned} list bound — selection is optional <em>here</em>.
-   * </ul>
-   *
-   * <p>Enforcing that a non-default tenant MUST declare a valid {@code assigned} list (non-empty,
-   * every id known) is a fail-fast <em>configuration-layer</em> concern (#54730), kept out of this
-   * merge so the merge only ever <em>applies</em> an already-valid selection.
+   * <p>A tenant with no {@code assigned} list bound keeps the full union — selection is optional
+   * <em>here</em>. Enforcing that a non-default tenant MUST declare a valid {@code assigned} list
+   * (non-empty, every id known), that the {@code default} tenant <em>may</em> declare one, and that
+   * a declared list is valid, is a fail-fast <em>configuration-layer</em> concern (#54730), kept
+   * out of this merge so the merge only ever <em>applies</em> an already-valid selection.
    */
   private static void narrowToAssigned(
-      final Binder binder,
-      final String ptPrefix,
-      final String tenantId,
-      final AuthenticationConfiguration config) {
-    if (DEFAULT_PHYSICAL_TENANT_ID.equals(tenantId)) {
-      return;
-    }
+      final Binder binder, final String ptPrefix, final AuthenticationConfiguration config) {
     final List<String> assigned =
         binder.bind(ptPrefix + ".providers.assigned", Bindable.listOf(String.class)).orElse(null);
     if (assigned == null) {
