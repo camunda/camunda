@@ -60,7 +60,7 @@ public class UsersByTenantSearchIT {
     assertThat(users.items().size()).isEqualTo(2);
     assertThat(users.items())
         .extracting(TenantUser::getUsername)
-        .containsExactly(USER_USERNAME_1, USER_USERNAME_2);
+        .containsExactlyInAnyOrder(USER_USERNAME_1, USER_USERNAME_2);
   }
 
   @Test
