@@ -119,6 +119,19 @@ public final class VariableFixtures extends CommonFixtures {
     rdbmsWriters.flush();
   }
 
+  public static void createAndSaveVariableWithProcessDefinition(
+      final RdbmsService rdbmsService,
+      final VariableDbModel variable,
+      final long processDefinitionKey) {
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(0L);
+    rdbmsWriters
+        .getVariableWriter()
+        .create(
+            variable.copy(
+                b -> ((VariableDbModelBuilder) b).processDefinitionKey(processDefinitionKey)));
+    rdbmsWriters.flush();
+  }
+
   public static void prepareRandomVariables(final CamundaRdbmsTestApplication testApplication) {
     VariableFixtures.createAndSaveRandomVariables(testApplication.getRdbmsService(), b -> b);
   }

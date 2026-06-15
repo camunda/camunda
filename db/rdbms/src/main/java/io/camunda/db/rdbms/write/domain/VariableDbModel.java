@@ -32,7 +32,12 @@ public record VariableDbModel(
     String processDefinitionId,
     String tenantId,
     int partitionId,
-    Long elementInstanceKey)
+    Long elementInstanceKey,
+    /**
+     * Not persisted to the VARIABLE table; used only to gate lookup-table inserts in
+     * VariableWriter.
+     */
+    Long processDefinitionKey)
     implements Copyable<VariableDbModel> {
 
   @Override
@@ -50,7 +55,8 @@ public record VariableDbModel(
                 .rootProcessInstanceKey(rootProcessInstanceKey)
                 .processDefinitionId(processDefinitionId)
                 .tenantId(tenantId)
-                .partitionId(partitionId))
+                .partitionId(partitionId)
+                .processDefinitionKey(processDefinitionKey))
         .build();
   }
 
@@ -92,7 +98,8 @@ public record VariableDbModel(
         processDefinitionId,
         tenantId,
         partitionId,
-        elementInstanceKey);
+        elementInstanceKey,
+        processDefinitionKey);
   }
 
   public static class VariableDbModelBuilder implements ObjectBuilder<VariableDbModel> {
@@ -107,6 +114,7 @@ public record VariableDbModel(
     private String tenantId;
     private int partitionId;
     private Long elementInstanceKey;
+    private Long processDefinitionKey;
 
     public VariableDbModelBuilder() {}
 
@@ -160,6 +168,11 @@ public record VariableDbModel(
       return this;
     }
 
+    public VariableDbModelBuilder processDefinitionKey(final Long processDefinitionKey) {
+      this.processDefinitionKey = processDefinitionKey;
+      return this;
+    }
+
     // Build method to create the record
     @Override
     public VariableDbModel build() {
@@ -188,7 +201,8 @@ public record VariableDbModel(
           processDefinitionId,
           tenantId,
           partitionId,
-          elementInstanceKey);
+          elementInstanceKey,
+          processDefinitionKey);
     }
 
     private VariableDbModel getLongModel() {
@@ -207,7 +221,8 @@ public record VariableDbModel(
           processDefinitionId,
           tenantId,
           partitionId,
-          elementInstanceKey);
+          elementInstanceKey,
+          processDefinitionKey);
     }
 
     private VariableDbModel getDoubleModel() {
@@ -226,7 +241,8 @@ public record VariableDbModel(
           processDefinitionId,
           tenantId,
           partitionId,
-          elementInstanceKey);
+          elementInstanceKey,
+          processDefinitionKey);
     }
   }
 }
