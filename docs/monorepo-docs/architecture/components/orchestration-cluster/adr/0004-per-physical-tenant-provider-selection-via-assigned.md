@@ -101,7 +101,7 @@ camunda:
    **identical**, a `BeanPostProcessor` on CSL's `CamundaSecurityLibraryProperties` — active
    whenever any physical tenant is configured — replaces the cluster `authentication` with
    `forPhysicalTenant("default")` *before* CSL builds its chains. So both surfaces carry the default
-   tenant's resolved config, and `camunda.physical-tenants.default.providers.assigned` limits the
+   tenant's resolved config, and `camunda.physical-tenants.default.security.authentication.providers.assigned` limits the
    cluster surface too. CSL stays PT-agnostic: OC only mutates OC-owned config CSL already consumes.
 
 3. **Validation — `configuration` module** (fail-fast at startup, sibling to

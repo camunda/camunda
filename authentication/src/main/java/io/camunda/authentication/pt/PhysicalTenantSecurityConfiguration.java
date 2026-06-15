@@ -60,8 +60,9 @@ public class PhysicalTenantSecurityConfiguration {
    * physical tenant is configured, this {@link BeanPostProcessor} replaces the cluster
    * authentication with the default tenant's resolved config <em>before</em> CSL builds its chains
    * — so {@code /v2} and {@code /physical-tenants/default} carry the same providers, and {@code
-   * camunda.physical-tenants.default.providers.assigned} limits the cluster surface too. CSL stays
-   * physical-tenant-agnostic: this only mutates OC-owned config it already consumes.
+   * camunda.physical-tenants.default.security.authentication.providers.assigned} limits the cluster
+   * surface too. CSL stays physical-tenant-agnostic: this only mutates OC-owned config it already
+   * consumes.
    *
    * <p>Declared {@code static} for the same reason as {@link #physicalTenantScopeProvider} — a
    * {@code BeanPostProcessor} must be instantiated before the beans it post-processes.
