@@ -23,6 +23,7 @@ import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState.TimerVisitor;
 import io.camunda.zeebe.engine.state.instance.TimerInstance;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 import java.time.Instant;
@@ -55,6 +56,7 @@ class DueDateTimerCheckSchedulerTest {
       when(mockTimer.getKey()).thenReturn(timerKey);
       when(mockTimer.getTenantId()).thenReturn(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
       when(mockTimer.getBpmnProcessId()).thenReturn("bpmnProcessId");
+      when(mockTimer.getElementType()).thenReturn(BpmnElementType.INTERMEDIATE_CATCH_EVENT);
 
       final var testActorClock = new TestActorClock();
 
@@ -98,6 +100,7 @@ class DueDateTimerCheckSchedulerTest {
       when(mockTimer.getKey()).thenReturn(timerKey);
       when(mockTimer.getTenantId()).thenReturn(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
       when(mockTimer.getBpmnProcessId()).thenReturn("bpmnProcessId");
+      when(mockTimer.getElementType()).thenReturn(BpmnElementType.INTERMEDIATE_CATCH_EVENT);
 
       final var testActorClock = new TestActorClock();
 
