@@ -119,12 +119,13 @@ public abstract class AbstractProcessExecutionPlanInterpreterES
   private BoolQuery.Builder buildDefinitionBaseQueryForFilters(
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context,
       final Map<String, List<ProcessFilterDto<?>>> filtersByDefinition) {
-    // If the user has access to no definitions, management reports may contain no processes in its
-    // data source so we exclude all instances from the result
-    if (context.getReportData().getDefinitions().isEmpty()
-        && context.getReportData().isManagementReport()) {
+    if (context.getReportData().getDefinitions().isEmpty()) {
       final BoolQuery.Builder builder = new OptimizeBoolQueryBuilderES();
-      builder.mustNot(m -> m.matchAll(i -> i));
+      if (context.getReportData().isManagementReport()) {
+        // Management report with no accessible definitions: exclude all instances from the result
+        builder.mustNot(m -> m.matchAll(i -> i));
+      }
+      // No definitions: skip definition-scoped filtering and let other query filters apply
       return builder;
     }
     final BoolQuery.Builder multiDefinitionFilterQuery =
