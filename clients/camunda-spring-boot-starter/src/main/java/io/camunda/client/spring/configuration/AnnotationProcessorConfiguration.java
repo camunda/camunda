@@ -15,6 +15,7 @@
  */
 package io.camunda.client.spring.configuration;
 
+import io.camunda.client.annotation.AnnotationUtil;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.jobhandling.JobCallbackCommandWrapperFactory;
 import io.camunda.client.jobhandling.JobWorkerManager;
@@ -28,10 +29,13 @@ import io.camunda.client.spring.annotation.processor.JobWorkerAnnotationProcesso
 import io.camunda.client.spring.event.CamundaClientEventListener;
 import io.camunda.client.spring.properties.CamundaClientProperties;
 import java.util.Set;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
+import org.springframework.core.io.support.ResourcePatternResolver;
 
 @EnableConfigurationProperties(CamundaClientProperties.class)
 public class AnnotationProcessorConfiguration {
@@ -43,10 +47,19 @@ public class AnnotationProcessorConfiguration {
   }
 
   @Bean
+  @ConditionalOnMissingBean
+  public ResourcePatternResolver resourcePatternResolver() {
+    return new PathMatchingResourcePatternResolver();
+  }
+
+  @Bean
   @ConditionalOnProperty(value = "camunda.client.deployment.enabled", matchIfMissing = true)
   public DeploymentAnnotationProcessor deploymentPostProcessor(
-      final ApplicationEventPublisher publisher, final CamundaClientProperties properties) {
-    return new DeploymentAnnotationProcessor(publisher, properties);
+      final ApplicationEventPublisher publisher,
+      final ResourcePatternResolver resourcePatternResolver,
+      final CamundaClientProperties properties) {
+    return new DeploymentAnnotationProcessor(
+        publisher, AnnotationUtil::getDeploymentValues, resourcePatternResolver, properties);
   }
 
   @Bean
