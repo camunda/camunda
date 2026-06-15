@@ -89,6 +89,19 @@
       <version>${project.version}</version>
     </dependency>
 
+    <!--
+      Direct declaration so that `-am` includes clients/java-deprecated in the local build graph.
+      Without this, zeebe-client-java is only reached transitively via zeebe-test-container (a test dep),
+      which is an external artifact. Maven's -am walk stops at external artifacts, so the module is never
+      built locally and the SNAPSHOT lookup against Nexus fails on release merge-back PRs.
+    -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-client-java</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-client-java</artifactId>
@@ -801,6 +814,7 @@
         <artifactId>maven-dependency-plugin</artifactId>
         <configuration>
           <ignoredUnusedDeclaredDependencies>
+            <ignoredUnusedDeclaredDependency>io.camunda:zeebe-client-java:jar</ignoredUnusedDeclaredDependency>
             <ignoredUnusedDeclaredDependency>io.camunda:zeebe-protocol-jackson:jar</ignoredUnusedDeclaredDependency>
             <ignoredUnusedDeclaredDependency>org.junit.platform:junit-platform-suite</ignoredUnusedDeclaredDependency>
             <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot-jackson2</ignoredUnusedDeclaredDependency>
