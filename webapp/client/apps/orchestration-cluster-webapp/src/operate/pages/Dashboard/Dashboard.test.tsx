@@ -35,12 +35,12 @@ const STATS_RESPONSE_WITH_INSTANCES = HttpResponse.json({
 			tenantId: '<default>',
 		},
 	],
-	page: {totalItems: 2, from: 0},
+	page: {totalItems: 2, startCursor: null, endCursor: null, hasMoreTotalItems: false},
 });
 
 const STATS_RESPONSE_EMPTY = HttpResponse.json({
 	items: [],
-	page: {totalItems: 0, from: 0},
+	page: {totalItems: 0, startCursor: null, endCursor: null, hasMoreTotalItems: false},
 });
 
 const CURRENT_USER_RESPONSE = HttpResponse.json({

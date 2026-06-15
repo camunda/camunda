@@ -10,6 +10,7 @@ import {test, expect} from '#/pw-modules/test-extend';
 import {HttpResponse} from 'msw';
 import {
 	mockCurrentUserEndpoint,
+	mockGetProcessDefinitionInstanceStatisticsEndpoint,
 	mockLicenseEndpoint,
 	mockQueryUserTasksEndpoint,
 	mockSystemConfigurationEndpoint,
@@ -18,6 +19,7 @@ import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createQueryUserTasksResponse} from '#/shared-test-modules/api-mocks/user-tasks';
+import {createProcessDefinitionInstanceStatisticsResponse} from '#/shared-test-modules/api-mocks/process-definition-statistics';
 
 test.describe('component routes', () => {
 	test('should render Operate when component is active', async ({network, page}) => {
@@ -31,11 +33,14 @@ test.describe('component routes', () => {
 			mockLicenseEndpoint({
 				successResponse: HttpResponse.json(createLicense()),
 			}),
+			mockGetProcessDefinitionInstanceStatisticsEndpoint({
+				successResponse: HttpResponse.json(createProcessDefinitionInstanceStatisticsResponse()),
+			}),
 		);
 
 		await page.goto('/operate');
 
-		await expect(page.getByRole('heading', {name: 'Operate'})).toBeVisible();
+		await expect(page.getByRole('heading', {name: 'Dashboard'})).toBeVisible();
 	});
 
 	test('should render Tasklist when component is active', async ({network, page, tasklistIndexPage}) => {

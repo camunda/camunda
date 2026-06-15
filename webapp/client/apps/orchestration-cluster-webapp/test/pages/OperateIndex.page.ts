@@ -23,7 +23,7 @@ class OperateIndexPage extends BasePage {
 	}
 
 	get heading() {
-		return this.page.getByRole('heading', {name: 'Operate'});
+		return this.page.getByRole('heading', {name: 'Dashboard'});
 	}
 }
 

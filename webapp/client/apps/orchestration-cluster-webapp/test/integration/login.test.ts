@@ -10,6 +10,7 @@ import {test, expect} from '#/pw-modules/test-extend';
 import {HttpResponse} from 'msw';
 import {
 	mockCurrentUserEndpoint,
+	mockGetProcessDefinitionInstanceStatisticsEndpoint,
 	mockLicenseEndpoint,
 	mockLoginEndpoint,
 	mockSystemConfigurationEndpoint,
@@ -17,6 +18,7 @@ import {
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
+import {createProcessDefinitionInstanceStatisticsResponse} from '#/shared-test-modules/api-mocks/process-definition-statistics';
 
 test('should redirect to the initial page on success', async ({network, page, loginPage}) => {
 	network.use(
@@ -40,6 +42,9 @@ test('should redirect to the initial page on success', async ({network, page, lo
 		}),
 		mockLicenseEndpoint({
 			successResponse: HttpResponse.json(createLicense()),
+		}),
+		mockGetProcessDefinitionInstanceStatisticsEndpoint({
+			successResponse: HttpResponse.json(createProcessDefinitionInstanceStatisticsResponse()),
 		}),
 	);
 
@@ -80,6 +85,9 @@ test('should redirect to the referrer page', async ({network, page, loginPage}) 
 		}),
 		mockLicenseEndpoint({
 			successResponse: HttpResponse.json(licenseMock),
+		}),
+		mockGetProcessDefinitionInstanceStatisticsEndpoint({
+			successResponse: HttpResponse.json(createProcessDefinitionInstanceStatisticsResponse()),
 		}),
 	);
 
