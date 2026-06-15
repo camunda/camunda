@@ -12,8 +12,8 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import liquibase.Liquibase;
 import liquibase.change.AbstractSQLChange;
 import liquibase.change.Change;
@@ -25,6 +25,7 @@ import liquibase.exception.LiquibaseException;
 import liquibase.resource.ClassLoaderResourceAccessor;
 import liquibase.sqlgenerator.SqlGeneratorFactory;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
 public class LiquibaseScriptGenerator {
@@ -60,6 +61,19 @@ public class LiquibaseScriptGenerator {
 
     final var prefix = args.length >= 3 ? args[2] : "";
 
+    // Identify upgrade changesets once (8.9.0 pre-dates rolling-upgrade guardrails and is exempt)
+    final var upgradeChangesets =
+        Arrays.stream(
+                new PathMatchingResourcePatternResolver()
+                    .getResources("classpath*:" + CHANGESET_PATH + "*.xml"))
+            .filter(resource -> !Objects.equals(resource.getFilename(), "8.9.0.xml"))
+            // sorting as version numbers so e.g. 8.9.9 will appear before 8.10.0 (instead of
+            // lexical sorting, which would have 8.10.0 before 8.9.9)
+            .sorted(Comparator.comparing(LiquibaseScriptGenerator::versionNumberFromResource))
+            .map(it -> CHANGESET_PATH + it.getFilename())
+            .distinct()
+            .toList();
+
     for (final var databaseVersion : DATABASE_VERSIONS) {
       // We generate create scripts for the latest version from the changelog-master.xml
       generateLiquibaseScript(
@@ -72,13 +86,6 @@ public class LiquibaseScriptGenerator {
       // We generate upgrade scripts for each version (except 8.9.0) from the changesets, so that
       // customers, who created their schema with an older version can upgrade to the latest
       // version step by step
-      final var upgradeChangesets =
-          Arrays.stream(
-                  new PathMatchingResourcePatternResolver()
-                      .getResources("classpath*:" + CHANGESET_PATH + "*.xml"))
-              .filter(resource -> !Objects.equals(resource.getFilename(), "8.9.0.xml"))
-              .map(it -> CHANGESET_PATH + it.getFilename())
-              .collect(Collectors.toSet());
 
       // 8.9.0 is the initial version of the RDBMS schema, so we start upgrades from there
       String previousVersion = "8.9.0";
@@ -222,6 +229,29 @@ public class LiquibaseScriptGenerator {
         .orElse(new DatabaseVersion(databaseId));
   }
 
+  private static VersionNumber versionNumberFromResource(final Resource resource) {
+    final var filename = resource.getFilename();
+    if (filename != null) {
+      return parseVersionNumber(filename.replace(".xml", ""));
+    }
+    throw new IllegalArgumentException(
+        "Expected resource with filename in format 'major.minor.patch.xml', but got: " + resource);
+  }
+
+  private static VersionNumber parseVersionNumber(final String str) {
+    final var parts = str.split("\\.");
+    if (parts.length == 3) {
+      try {
+        return new VersionNumber(
+            Integer.parseInt(parts[0]), Integer.parseInt(parts[1]), Integer.parseInt(parts[2]));
+      } catch (final NumberFormatException e) {
+        // fall through to exception below
+      }
+    }
+    throw new IllegalArgumentException(
+        "Expected version number in format 'major.minor.patch', but got: " + str);
+  }
+
   /**
    * Pairs a database vendor name with an optional target version for SQL generation.
    *
@@ -232,6 +262,19 @@ public class LiquibaseScriptGenerator {
   public record DatabaseVersion(String vendor, Long targetVersion) {
     public DatabaseVersion(final String vendor) {
       this(vendor, null);
+    }
+  }
+
+  record VersionNumber(int major, int minor, int patch) implements Comparable<VersionNumber> {
+    @Override
+    public int compareTo(final VersionNumber other) {
+      if (major != other.major) {
+        return Integer.compare(major, other.major);
+      }
+      if (minor != other.minor) {
+        return Integer.compare(minor, other.minor);
+      }
+      return Integer.compare(patch, other.patch);
     }
   }
 }
