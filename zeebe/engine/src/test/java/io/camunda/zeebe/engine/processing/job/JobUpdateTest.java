@@ -158,6 +158,74 @@ public class JobUpdateTest {
   }
 
   @Test
+  public void shouldUpdateJobWithOnlyPriority() {
+    // given
+    final Record<JobRecordValue> jobCreated = ENGINE.createJob(jobType, PROCESS_ID);
+    final long jobKey = jobCreated.getKey();
+
+    // when
+    ENGINE.job().withKey(jobKey).withPriority(10).withChangeset(Set.of("priority")).update();
+
+    // then
+    assertThat(RecordingExporter.jobRecords().withIntent(JobIntent.PRIORITY_UPDATED).getFirst())
+        .extracting(record -> record.getValue().getPriority())
+        .isEqualTo(10);
+  }
+
+  @Test
+  public void shouldRejectWholeCommandWhenPriorityIsInvalidEvenIfRetriesWouldBeValid() {
+    // given - a FAILED job (retries=0); retries update is valid for FAILED but priority is not
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final var batchRecord = ENGINE.jobs().withType(jobType).activate();
+    final long jobKey = batchRecord.getValue().getJobKeys().get(0);
+    ENGINE.job().withKey(jobKey).withRetries(0).fail();
+
+    // when - send UPDATE with both priority (invalid for FAILED) and retries (valid for FAILED)
+    final var jobRecord =
+        ENGINE
+            .job()
+            .withKey(jobKey)
+            .withPriority(10)
+            .withRetries(5)
+            .withChangeset(Set.of("priority", "retries"))
+            .expectRejection()
+            .update();
+
+    // then - entire command rejected with the PRIORITY error (priority is checked first)
+    Assertions.assertThat(jobRecord)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            "Expected to update the priority of job with key '%d', but it is not activatable"
+                .formatted(jobKey));
+  }
+
+  @Test
+  public void shouldRejectPriorityUpdateIfJobNotActivatable() {
+    // given
+    ENGINE.createJob(jobType, PROCESS_ID);
+
+    final var batchRecord = ENGINE.jobs().withType(jobType).activate();
+    final long jobKey = batchRecord.getValue().getJobKeys().get(0);
+
+    // when
+    final var jobRecord =
+        ENGINE
+            .job()
+            .withKey(jobKey)
+            .withPriority(10)
+            .withChangeset(Set.of("priority"))
+            .expectRejection()
+            .update();
+
+    // then
+    Assertions.assertThat(jobRecord)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            "Expected to update the priority of job with key '%d', but it is not activatable"
+                .formatted(jobKey));
+  }
+
+  @Test
   public void shouldRejectJobUpdateForBannedProcessInstance() {
     // given
     final Record<JobRecordValue> jobCreated = ENGINE.createJob(jobType, PROCESS_ID);

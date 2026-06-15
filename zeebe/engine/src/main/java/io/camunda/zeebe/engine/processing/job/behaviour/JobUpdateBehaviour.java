@@ -30,6 +30,8 @@ public class JobUpdateBehaviour {
 
   public static final String NO_DEADLINE_FOUND_MESSAGE =
       "Expected to update the timeout of job with key '%d', but it is not active";
+  public static final String NOT_ACTIVATABLE_FOR_PRIORITY_UPDATE_MESSAGE =
+      "Expected to update the priority of job with key '%d', but it is not activatable";
   private static final String NEGATIVE_RETRIES_MESSAGE =
       "Expected to update retries for job with key '%d' with a positive amount of retries, "
           + "but the amount given was '%d'";
@@ -78,27 +80,64 @@ public class JobUpdateBehaviour {
     return authCheckBehavior.isAuthorizedOrInternalCommand(authRequest).map(unused -> job);
   }
 
-  public Optional<String> updateJobRetries(
-      final long jobKey, final int retries, final JobRecord jobRecord) {
+  public Optional<String> validateJobRetries(final long jobKey, final int retries) {
     if (retries < 1) {
       return Optional.of(NEGATIVE_RETRIES_MESSAGE.formatted(jobKey, retries));
     }
-    // update retries for response sent to client
+    return Optional.empty();
+  }
+
+  public void applyJobRetries(
+      final long jobKey, final int retries, final JobRecord jobRecord) {
     jobRecord.setRetries(retries);
     stateWriter.appendFollowUpEvent(jobKey, JobIntent.RETRIES_UPDATED, jobRecord);
+  }
+
+  public Optional<String> updateJobRetries(
+      final long jobKey, final int retries, final JobRecord jobRecord) {
+    final Optional<String> error = validateJobRetries(jobKey, retries);
+    if (error.isPresent()) {
+      return error;
+    }
+    applyJobRetries(jobKey, retries, jobRecord);
     return Optional.empty();
+  }
+
+  public Optional<String> validateJobTimeout(final long jobKey, final JobRecord jobRecord) {
+    if (!jobState.jobDeadlineExists(jobKey, jobRecord.getDeadline())) {
+      return Optional.of(NO_DEADLINE_FOUND_MESSAGE.formatted(jobKey));
+    }
+    return Optional.empty();
+  }
+
+  public void applyJobTimeout(
+      final long jobKey, final long timeout, final JobRecord jobRecord) {
+    final long newDeadline = clock.millis() + timeout;
+    jobRecord.setDeadline(newDeadline);
+    stateWriter.appendFollowUpEvent(jobKey, JobIntent.TIMEOUT_UPDATED, jobRecord);
   }
 
   public Optional<String> updateJobTimeout(
       final long jobKey, final long timeout, final JobRecord jobRecord) {
-    final long oldDeadline = jobRecord.getDeadline();
-
-    if (!jobState.jobDeadlineExists(jobKey, oldDeadline)) {
-      return Optional.of(NO_DEADLINE_FOUND_MESSAGE.formatted(jobKey));
+    final Optional<String> error = validateJobTimeout(jobKey, jobRecord);
+    if (error.isPresent()) {
+      return error;
     }
-    final long newDeadline = clock.millis() + timeout;
-    jobRecord.setDeadline(newDeadline);
-    stateWriter.appendFollowUpEvent(jobKey, JobIntent.TIMEOUT_UPDATED, jobRecord);
+    applyJobTimeout(jobKey, timeout, jobRecord);
     return Optional.empty();
   }
+
+  public Optional<String> validateJobPriority(final long jobKey) {
+    if (!jobState.isInState(jobKey, State.ACTIVATABLE)) {
+      return Optional.of(NOT_ACTIVATABLE_FOR_PRIORITY_UPDATE_MESSAGE.formatted(jobKey));
+    }
+    return Optional.empty();
+  }
+
+  public void applyJobPriority(
+      final long jobKey, final int newPriority, final JobRecord jobRecord) {
+    jobRecord.setPriority(newPriority);
+    stateWriter.appendFollowUpEvent(jobKey, JobIntent.PRIORITY_UPDATED, jobRecord);
+  }
+
 }

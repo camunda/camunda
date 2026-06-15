@@ -122,6 +122,11 @@ public final class JobClient {
     return this;
   }
 
+  public JobClient withPriority(final int priority) {
+    jobRecord.setPriority(priority);
+    return this;
+  }
+
   public JobClient withChangeset(final Set<String> changeset) {
     jobRecord.setChangedAttributes(changeset);
     return this;

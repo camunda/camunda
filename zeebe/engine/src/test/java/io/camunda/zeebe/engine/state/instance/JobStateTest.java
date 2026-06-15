@@ -355,6 +355,33 @@ public final class JobStateTest {
   }
 
   @Test
+  public void shouldUpdateJobPriority() {
+    // given
+    final long jobKey = 1L;
+    final int newPriority = 99;
+    final JobRecord jobRecord = newJobRecord();
+    jobState.create(jobKey, jobRecord);
+
+    // when
+    jobState.updateJobPriority(jobKey, newPriority);
+
+    // then
+    assertThat(jobState.exists(jobKey)).isTrue();
+    assertThat(jobState.getJob(jobKey).getPriority()).isEqualTo(newPriority);
+    assertListedAsActivatable(jobKey, jobRecord.getTypeBuffer(), jobRecord.getTenantId());
+  }
+
+  @Test
+  public void shouldIgnoreUpdateJobPriorityIfJobNotFound() {
+    // given
+    final long jobKey = 999L;
+
+    // when / then - no exception, no state change
+    jobState.updateJobPriority(jobKey, 42);
+    assertThat(jobState.exists(jobKey)).isFalse();
+  }
+
+  @Test
   public void shouldUpdateDeadline() {
     // given
     final long jobKey = 1L;

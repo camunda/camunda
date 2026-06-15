@@ -300,6 +300,18 @@ public final class DbJobState implements JobState, MutableJobState {
   }
 
   @Override
+  public void updateJobPriority(final long jobKey, final int newPriority) {
+    this.jobKey.wrapLong(jobKey);
+    final JobRecord job = getJob(jobKey);
+    if (job != null) {
+      makeJobNotActivatable(job);
+      job.setPriority(newPriority);
+      updateJobRecord(jobKey, job);
+      makeJobActivatable(job.getTypeBuffer(), jobKey, job.getTenantId(), newPriority);
+    }
+  }
+
+  @Override
   public void migrate(final long key, final JobRecord record) {
     updateJobRecord(key, record);
   }
