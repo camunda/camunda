@@ -128,10 +128,10 @@ class VariableWriterTest {
     final var processDefinitionKeys = List.of(456L, 789L);
 
     // when
-    writer.deleteLookupByProcessDefinitionKeys(processDefinitionKeys);
+    writer.deleteLookupByProcessDefinitionKeys(processDefinitionKeys, 1000);
 
     // then: direct mapper call so the delete is executed synchronously (not queued)
-    verify(mapper).deleteLookupByProcessDefinitionKeys(processDefinitionKeys);
+    verify(mapper).deleteLookupByProcessDefinitionKeys(processDefinitionKeys, 1000);
     verify(executionQueue, never())
         .executeInQueue(
             argThat(
@@ -150,7 +150,7 @@ class VariableWriterTest {
     // given: first create primes the cache
     writer.create(model);
     // delete evicts the cache entry
-    writer.deleteLookupByProcessDefinitionKeys(List.of(456L));
+    writer.deleteLookupByProcessDefinitionKeys(List.of(456L), 1000);
     // second create with same (pdKey, name) — must re-queue a lookup insert
     when(model.variableKey()).thenReturn(124L);
     when(truncatedModel.variableKey()).thenReturn(124L);
@@ -158,7 +158,7 @@ class VariableWriterTest {
 
     // then: mapper called once for the delete; lookup insert queued twice (before and after
     // eviction)
-    verify(mapper).deleteLookupByProcessDefinitionKeys(List.of(456L));
+    verify(mapper).deleteLookupByProcessDefinitionKeys(List.of(456L), 1000);
     verify(executionQueue, org.mockito.Mockito.times(2))
         .executeInQueue(
             argThat(

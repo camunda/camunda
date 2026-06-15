@@ -40,7 +40,7 @@ public interface VariableMapper extends ProcessInstanceDependantMapper {
   List<String> findLookupVariableNames(@Param("processDefinitionKey") long processDefinitionKey);
 
   /** Deletes all lookup entries for the given process definition keys. */
-  void deleteLookupByProcessDefinitionKeys(List<Long> processDefinitionKeys);
+  void deleteLookupByProcessDefinitionKeys(List<Long> processDefinitionKeys, int limit);
 
   record MigrateToProcessDto(Long variableKey, String processDefinitionId) {
 

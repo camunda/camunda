@@ -274,7 +274,41 @@
   <delete id="deleteLookupByProcessDefinitionKeys">
     DELETE FROM ${prefix}PROCESS_DEF_VAR_NAME_LOOKUP
     WHERE PROCESS_DEFINITION_KEY IN
-    <foreach collection="list" item="key" open="(" close=")" separator=",">#{key}</foreach>
+    <foreach collection="processDefinitionKeys" item="key" open="(" separator="," close=")">
+      #{key}
+    </foreach>
+    LIMIT #{limit}
+  </delete>
+
+  <delete id="deleteLookupByProcessDefinitionKeys" databaseId="mssql">
+    DELETE TOP (#{limit})
+    FROM ${prefix}PROCESS_DEF_VAR_NAME_LOOKUP
+    WHERE PROCESS_DEFINITION_KEY IN
+    <foreach collection="processDefinitionKeys" item="key" open="(" separator="," close=")">
+      #{key}
+    </foreach>
+  </delete>
+
+  <delete id="deleteLookupByProcessDefinitionKeys" databaseId="oracle">
+    DELETE FROM ${prefix}PROCESS_DEF_VAR_NAME_LOOKUP
+    WHERE rowid IN (SELECT rowid
+                    FROM ${prefix}PROCESS_DEF_VAR_NAME_LOOKUP
+                    WHERE PROCESS_DEFINITION_KEY IN
+                    <foreach collection="processDefinitionKeys" item="key" open="(" separator="," close=")">
+                      #{key}
+                    </foreach>
+                    AND ROWNUM &lt;= #{limit})
+  </delete>
+
+  <delete id="deleteLookupByProcessDefinitionKeys" databaseId="postgresql">
+    DELETE FROM ${prefix}PROCESS_DEF_VAR_NAME_LOOKUP
+    WHERE ctid IN (SELECT ctid
+                   FROM ${prefix}PROCESS_DEF_VAR_NAME_LOOKUP
+                   WHERE PROCESS_DEFINITION_KEY IN
+                   <foreach collection="processDefinitionKeys" item="key" open="(" separator="," close=")">
+                     #{key}
+                   </foreach>
+                   LIMIT #{limit})
   </delete>
 
 </mapper>

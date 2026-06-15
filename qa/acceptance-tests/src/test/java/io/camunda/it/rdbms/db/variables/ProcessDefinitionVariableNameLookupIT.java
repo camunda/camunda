@@ -122,7 +122,7 @@ public class ProcessDefinitionVariableNameLookupIT {
     createInstanceWithVariable(rdbmsService, procDefKey, varNameB);
 
     // when
-    writers.getVariableWriter().deleteLookupByProcessDefinitionKeys(List.of(procDefKey));
+    writers.getVariableWriter().deleteLookupByProcessDefinitionKeys(List.of(procDefKey), 1000);
 
     // then: all lookup entries are gone
     assertThat(lookupReader(testApplication).findVariableNames(procDefKey)).isEmpty();

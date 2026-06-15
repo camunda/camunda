@@ -110,8 +110,9 @@ public class VariableWriter extends ProcessInstanceDependant implements RdbmsWri
     }
   }
 
-  public void deleteLookupByProcessDefinitionKeys(final Collection<Long> processDefinitionKeys) {
-    variableMapper.deleteLookupByProcessDefinitionKeys(List.copyOf(processDefinitionKeys));
+  public void deleteLookupByProcessDefinitionKeys(
+      final Collection<Long> processDefinitionKeys, final int limit) {
+    variableMapper.deleteLookupByProcessDefinitionKeys(List.copyOf(processDefinitionKeys), limit);
     processVariableNameCache.keySet().removeAll(processDefinitionKeys);
   }
 }

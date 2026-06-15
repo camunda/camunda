@@ -159,7 +159,9 @@ public class HistoryDeletionService {
             .getMessageSubscriptionWriter()
             .deleteStartEventSubscriptionsByProcessDefinitionKeys(processDefinitionKeys, limit);
     // remove process definition key variable name lookup rows
-    rdbmsWriters.getVariableWriter().deleteLookupByProcessDefinitionKeys(processDefinitionKeys);
+    rdbmsWriters
+        .getVariableWriter()
+        .deleteLookupByProcessDefinitionKeys(processDefinitionKeys, limit);
     if (deletedSubscriptions >= limit) {
       return List.of();
     }
