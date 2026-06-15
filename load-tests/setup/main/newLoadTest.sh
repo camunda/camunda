@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Contains OS specific sed function
-. utils.sh
+. "../utils.sh"
 
 set -eo pipefail
 
@@ -152,34 +152,34 @@ mkdir -p "$namespace"
 # (defaults + override + load-test + stable), and the matching
 # camunda-platform-values-${secondaryStorage}.yaml. Flat layout so the
 # per-namespace Makefile's -f <file>.yaml references resolve unchanged.
-cp -v  default/Makefile                              "$namespace/"
-cp -rv default/resources/                            "$namespace/"
-cp -v  default/values/camunda-platform-override-values.yaml "$namespace/"
-cp -v  default/values/load-test-values.yaml                 "$namespace/"
-cp -v  default/values/values-stable.yaml                    "$namespace/"
-cp -v "default/values/camunda-platform-values-defaults.yaml" "$namespace/"
-cp -v "default/values/camunda-platform-values-${secondaryStorage}.yaml" "$namespace/"
+cp -v  "Makefile"                                                "$namespace/"
+cp -rv "resources/"                                              "$namespace/"
+cp -v  "values/camunda-platform-override-values.yaml"            "$namespace/"
+cp -v  "values/load-test-values.yaml"                            "$namespace/"
+cp -v  "values/values-stable.yaml"                              "$namespace/"
+cp -v  "values/camunda-platform-values-defaults.yaml"            "$namespace/"
+cp -v  "values/camunda-platform-values-${secondaryStorage}.yaml" "$namespace/"
 
 # Storage-specific copies. databases/ is created only for mssql/oracle.
 case "$secondaryStorage" in
   elasticsearch|opensearch)
-    cp -v default/values/prometheus-elasticsearch-exporter-values.yaml "$namespace/"
+    cp -v "values/prometheus-elasticsearch-exporter-values.yaml" "$namespace/"
     ;;
   postgresql|mysql|mariadb)
-    cp -v default/values/camunda-platform-values-rdbms.yaml                 "$namespace/"
+    cp -v "values/camunda-platform-values-rdbms.yaml"            "$namespace/"
     ;;
   mssql|oracle)
-    cp -v default/values/camunda-platform-values-rdbms.yaml                 "$namespace/"
+    cp -v "values/camunda-platform-values-rdbms.yaml"            "$namespace/"
     mkdir -p "$namespace/databases"
-    cp -v "default/databases/${secondaryStorage}.yaml"                       "$namespace/databases/"
+    cp -v "databases/${secondaryStorage}.yaml"                   "$namespace/databases/"
     ;;
 esac
 
 if [[ "$enable_optimize" == "true" ]]; then
   # Optimize needs specifically Elasticsearch (independently from the secondary
   # storage configuration).
-  cp -v default/values/camunda-platform-values-optimize-elasticsearch.yaml "$namespace/"
-  cp -v default/values/prometheus-elasticsearch-exporter-values.yaml "$namespace/"
+  cp -v "values/camunda-platform-values-optimize-elasticsearch.yaml" "$namespace/"
+  cp -v "values/prometheus-elasticsearch-exporter-values.yaml"       "$namespace/"
 fi
 
 cd "$namespace"
