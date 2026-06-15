@@ -33,6 +33,8 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
 
   private String basePath;
 
+  private String ssecKey;
+
   public String getBucketName() {
     return bucketName;
   }
@@ -133,6 +135,14 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
     this.supportLegacyMd5 = supportLegacyMd5;
   }
 
+  public String getSsecKey() {
+    return ssecKey;
+  }
+
+  public void setSsecKey(final String ssecKey) {
+    this.ssecKey = ssecKey;
+  }
+
   public static S3BackupConfig toStoreConfig(final S3BackupStoreConfig config) {
     final var builder =
         new Builder()
@@ -145,7 +155,8 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
             .withBasePath(config.getBasePath())
             .withMaxConcurrentConnections(config.getMaxConcurrentConnections())
             .withConnectionAcquisitionTimeout(config.getConnectionAcquisitionTimeout())
-            .withSupportLegacyMd5(config.isSupportLegacyMd5());
+            .withSupportLegacyMd5(config.isSupportLegacyMd5())
+            .withSsecKey(config.getSsecKey());
     if (config.getAccessKey() != null && config.getSecretKey() != null) {
       builder.withCredentials(config.getAccessKey(), config.getSecretKey());
     }
@@ -163,6 +174,7 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
     result = 31 * result + (forcePathStyleAccess ? 1 : 0);
     result = 31 * result + (compression != null ? compression.hashCode() : 0);
     result = 31 * result + (basePath != null ? basePath.hashCode() : 0);
+    result = 31 * result + (ssecKey != null ? ssecKey.hashCode() : 0);
     result = 31 * result + maxConcurrentConnections;
     result =
         31 * result
@@ -191,6 +203,7 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
         && Objects.equals(apiCallTimeout, that.apiCallTimeout)
         && Objects.equals(compression, that.compression)
         && Objects.equals(basePath, that.basePath)
+        && Objects.equals(ssecKey, that.ssecKey)
         && Objects.equals(connectionAcquisitionTimeout, that.connectionAcquisitionTimeout)
         && supportLegacyMd5 == that.supportLegacyMd5;
   }
@@ -227,6 +240,9 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
         + connectionAcquisitionTimeout
         + ", supportLegacyMd5="
         + supportLegacyMd5
+        + ", ssecKey='"
+        + (ssecKey != null ? "<redacted>" : "null")
+        + '\''
         + '}';
   }
 }

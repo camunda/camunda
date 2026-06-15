@@ -667,6 +667,9 @@ public final class S3BackupStore implements BackupStore {
         cfg -> {
           cfg.retryStrategy(RetryMode.ADAPTIVE_V2);
           config.apiCallTimeout().ifPresent(cfg::apiCallTimeout);
+          config
+              .ssecKey()
+              .ifPresent(key -> cfg.addExecutionInterceptor(new SseCKeyInterceptor(key)));
         });
     builder.forcePathStyle(config.forcePathStyleAccess());
     config.endpoint().ifPresent(endpoint -> builder.endpointOverride(URI.create(endpoint)));
