@@ -27,44 +27,98 @@ import io.camunda.client.jobhandling.result.ResultProcessorStrategy;
 import io.camunda.client.lifecycle.CamundaClientLifecycleAware;
 import io.camunda.client.metrics.MetricsRecorder;
 import io.camunda.client.spring.annotation.processor.AbstractCamundaAnnotationProcessor;
+import io.camunda.client.spring.annotation.processor.DeploymentAnnotationProcessor;
 import io.camunda.client.spring.event.CamundaClientCreatedSpringEvent;
 import io.camunda.client.spring.event.CamundaClientEventListener;
 import java.util.Set;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
+import org.springframework.core.io.support.ResourcePatternResolver;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-@SpringBootTest(
-    classes = {
-      AnnotationProcessorConfiguration.class,
-      AnnotationProcessorConfigurationTest.TestConfig.class
-    })
 public class AnnotationProcessorConfigurationTest {
-  // required to auto-wire with the annotation processor configurations
-  @MockitoBean JobWorkerManager jobWorkerManager;
-  @MockitoBean CamundaClient camundaClient;
-  @MockitoBean JsonMapper jsonMapper;
-  @MockitoBean JobCallbackCommandWrapperFactory jobCallbackCommandWrapperFactory;
-  @MockitoBean MetricsRecorder metricsRecorder;
-  @MockitoBean ParameterResolverStrategy parameterResolverStrategy;
-  @MockitoBean ResultProcessorStrategy resultProcessorStrategy;
-  @Autowired MockedBean mockedBean;
-  @Autowired CamundaClientEventListener camundaClientEventListener;
-  @Autowired Set<CamundaClientLifecycleAware> camundaClientLifecycleAwareSet;
 
-  @Test
-  void shouldRun() {
-    // when - we mock the creation of the camunda client
-    camundaClientEventListener.handleStart(
-        new CamundaClientCreatedSpringEvent(this, camundaClient));
-    // then
-    assertThat(camundaClientLifecycleAwareSet)
-        .anySatisfy(p -> assertThat(p).isInstanceOf(MockCamundaAnnotationProcessor.class));
-    assertThat(mockedBean.isConfigured()).isTrue();
-    assertThat(mockedBean.isStarted()).isTrue();
+  @Nested
+  @SpringBootTest(
+      classes = {
+        AnnotationProcessorConfiguration.class,
+        AnnotationProcessorConfigurationTest.TestConfig.class
+      })
+  class AnnotationProcessorLifecycleTest {
+    @MockitoBean JobWorkerManager jobWorkerManager;
+    @MockitoBean CamundaClient camundaClient;
+    @MockitoBean JsonMapper jsonMapper;
+    @MockitoBean JobCallbackCommandWrapperFactory jobCallbackCommandWrapperFactory;
+    @MockitoBean MetricsRecorder metricsRecorder;
+    @MockitoBean ParameterResolverStrategy parameterResolverStrategy;
+    @MockitoBean ResultProcessorStrategy resultProcessorStrategy;
+    @Autowired MockedBean mockedBean;
+    @Autowired CamundaClientEventListener camundaClientEventListener;
+    @Autowired Set<CamundaClientLifecycleAware> camundaClientLifecycleAwareSet;
+
+    @Test
+    void shouldRun() {
+      // when - we mock the creation of the camunda client
+      camundaClientEventListener.handleStart(
+          new CamundaClientCreatedSpringEvent(this, camundaClient));
+      // then
+      assertThat(camundaClientLifecycleAwareSet)
+          .anySatisfy(p -> assertThat(p).isInstanceOf(MockCamundaAnnotationProcessor.class));
+      assertThat(mockedBean.isConfigured()).isTrue();
+      assertThat(mockedBean.isStarted()).isTrue();
+    }
+  }
+
+  @Nested
+  @SpringBootTest(
+      classes = {AnnotationProcessorConfiguration.class},
+      properties = "camunda.client.cluster-variables.enabled=false")
+  class DefaultResourcePatternResolverTest {
+    @MockitoBean JobWorkerManager jobWorkerManager;
+    @MockitoBean MetricsRecorder metricsRecorder;
+    @MockitoBean ParameterResolverStrategy parameterResolverStrategy;
+    @MockitoBean ResultProcessorStrategy resultProcessorStrategy;
+    @MockitoBean JobCallbackCommandWrapperFactory jobCallbackCommandWrapperFactory;
+    @Autowired ResourcePatternResolver resourcePatternResolver;
+    @Autowired DeploymentAnnotationProcessor deploymentAnnotationProcessor;
+
+    @Test
+    void shouldCreatePathMatchingResourcePatternResolverByDefault() {
+      assertThat(resourcePatternResolver).isInstanceOf(PathMatchingResourcePatternResolver.class);
+      assertThat(deploymentAnnotationProcessor).isNotNull();
+    }
+  }
+
+  @Nested
+  // CustomResourcePatternResolverConfig is a user bean (processed first).
+  // AnnotationProcessorConfiguration is loaded as autoconfiguration (processed after user beans),
+  // so @ConditionalOnMissingBean correctly skips the default ResourcePatternResolver.
+  @SpringBootTest(
+      classes = {AnnotationProcessorConfigurationTest.CustomResourcePatternResolverConfig.class},
+      properties = "camunda.client.cluster-variables.enabled=false")
+  @ImportAutoConfiguration(AnnotationProcessorConfiguration.class)
+  class CustomResourcePatternResolverTest {
+    @MockitoBean JobWorkerManager jobWorkerManager;
+    @MockitoBean MetricsRecorder metricsRecorder;
+    @MockitoBean ParameterResolverStrategy parameterResolverStrategy;
+    @MockitoBean ResultProcessorStrategy resultProcessorStrategy;
+    @MockitoBean JobCallbackCommandWrapperFactory jobCallbackCommandWrapperFactory;
+    @Autowired ResourcePatternResolver resourcePatternResolver;
+    @Autowired DeploymentAnnotationProcessor deploymentAnnotationProcessor;
+
+    @Test
+    void shouldAllowOverridingResourcePatternResolverWithCustomBean() {
+      // given a custom ResourcePatternResolver bean declared by the user,
+      // the default PathMatchingResourcePatternResolver must be suppressed
+      assertThat(resourcePatternResolver).isInstanceOf(CustomResourcePatternResolver.class);
+      assertThat(deploymentAnnotationProcessor).isNotNull();
+    }
   }
 
   @Configuration
@@ -79,6 +133,16 @@ public class AnnotationProcessorConfigurationTest {
       return new MockedBean();
     }
   }
+
+  @Configuration
+  static class CustomResourcePatternResolverConfig {
+    @Bean
+    public ResourcePatternResolver resourcePatternResolver() {
+      return new CustomResourcePatternResolver();
+    }
+  }
+
+  static final class CustomResourcePatternResolver extends PathMatchingResourcePatternResolver {}
 
   private static final class MockCamundaAnnotationProcessor
       extends AbstractCamundaAnnotationProcessor {
