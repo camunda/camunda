@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway;
 
 import com.google.rpc.Code;
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.security.oidc.NoopOidcClaimsProvider;
 import io.camunda.security.oidc.OidcClaimsProvider;
@@ -30,6 +31,7 @@ import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationMetrics;
 import io.camunda.zeebe.gateway.interceptors.impl.ContextInjectingInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.DecoratedInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.InterceptorRepository;
+import io.camunda.zeebe.gateway.interceptors.impl.PhysicalTenantInterceptor;
 import io.camunda.zeebe.gateway.metrics.LongPollingMetrics;
 import io.camunda.zeebe.gateway.metrics.LongPollingMetricsDoc;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
@@ -43,6 +45,7 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.transport.stream.api.ClientStreamer;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.TlsConfigUtil;
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.error.FatalErrorHandler;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.grpc.BindableService;
@@ -105,7 +108,9 @@ public final class Gateway implements CloseableSilently {
   private final OidcClaimsProvider oidcClaimsProvider;
   private final MeterRegistry meterRegistry;
   private final int maxVariableNameLength;
+  private final PhysicalTenantIds physicalTenantIds;
 
+  @VisibleForTesting
   public Gateway(
       final GatewayCfg gatewayCfg,
       final EngineSecurityConfig securityConfiguration,
@@ -128,33 +133,8 @@ public final class Gateway implements CloseableSilently {
         jwtDecoder,
         new NoopOidcClaimsProvider(),
         meterRegistry,
-        VariableNameLengthValidator.DEFAULT_MAX_NAME_FIELD_LENGTH);
-  }
-
-  public Gateway(
-      final Duration shutdownDuration,
-      final GatewayCfg gatewayCfg,
-      final EngineSecurityConfig securityConfiguration,
-      final BrokerClient brokerClient,
-      final ActorSchedulingService actorSchedulingService,
-      final ClientStreamer<JobActivationProperties> jobStreamer,
-      final UserServices userServices,
-      final PasswordEncoder passwordEncoder,
-      final JwtDecoder jwtDecoder,
-      final MeterRegistry meterRegistry) {
-    this(
-        shutdownDuration,
-        gatewayCfg,
-        securityConfiguration,
-        brokerClient,
-        actorSchedulingService,
-        jobStreamer,
-        userServices,
-        passwordEncoder,
-        jwtDecoder,
-        new NoopOidcClaimsProvider(),
-        meterRegistry,
-        VariableNameLengthValidator.DEFAULT_MAX_NAME_FIELD_LENGTH);
+        VariableNameLengthValidator.DEFAULT_MAX_NAME_FIELD_LENGTH,
+        PhysicalTenantIds.DEFAULT);
   }
 
   public Gateway(
@@ -169,7 +149,8 @@ public final class Gateway implements CloseableSilently {
       final JwtDecoder jwtDecoder,
       final OidcClaimsProvider oidcClaimsProvider,
       final MeterRegistry meterRegistry,
-      final int maxVariableNameLength) {
+      final int maxVariableNameLength,
+      final PhysicalTenantIds physicalTenantIds) {
     shutdownTimeout = shutdownDuration;
     this.gatewayCfg = gatewayCfg;
     this.securityConfiguration = securityConfiguration;
@@ -182,6 +163,7 @@ public final class Gateway implements CloseableSilently {
     this.oidcClaimsProvider = Objects.requireNonNull(oidcClaimsProvider);
     this.meterRegistry = meterRegistry;
     this.maxVariableNameLength = maxVariableNameLength;
+    this.physicalTenantIds = physicalTenantIds;
 
     healthManager = new GatewayHealthManagerImpl();
   }
@@ -450,6 +432,7 @@ public final class Gateway implements CloseableSilently {
     // chain
     Collections.reverse(interceptors);
     interceptors.add(new ContextInjectingInterceptor(queryApi));
+    interceptors.add(new PhysicalTenantInterceptor(physicalTenantIds));
 
     if (!securityConfiguration.getAuthentication().isUnprotectedApi()) {
       final var authMethod = securityConfiguration.getAuthentication().getMethod();

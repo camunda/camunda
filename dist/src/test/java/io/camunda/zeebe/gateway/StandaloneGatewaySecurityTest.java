@@ -19,6 +19,7 @@ import io.camunda.application.commons.broker.client.BrokerClientConfiguration;
 import io.camunda.application.commons.clustering.AtomixClusterConfiguration;
 import io.camunda.application.commons.clustering.DynamicClusterServices;
 import io.camunda.application.commons.configuration.GatewayBasedConfiguration;
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.configuration.beans.GatewayBasedProperties;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -291,6 +292,7 @@ final class StandaloneGatewaySecurityTest {
         null,
         null,
         new SimpleMeterRegistry(),
-        gatewayRestConfiguration);
+        gatewayRestConfiguration,
+        PhysicalTenantIds.DEFAULT);
   }
 }
