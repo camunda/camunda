@@ -14,14 +14,14 @@ const Options: React.FC = () => {
 	const {t} = useTranslation();
 
 	return (
-		<section className={styles.container} aria-label={t('taskOptionsSectionAria')}>
+		<section className={styles.container} aria-label={t('tasklist.taskOptionsSectionAria')}>
 			<Toggle
 				id="toggle-auto-select-task"
 				size="sm"
-				labelText={t('taskOptionsAutoSelectLabel')}
+				labelText={t('tasklist.taskOptionsAutoSelectLabel')}
 				hideLabel
-				labelA={t('taskOptionsAutoSelectOffAria')}
-				labelB={t('taskOptionsAutoSelectOnAria')}
+				labelA={t('tasklist.taskOptionsAutoSelectOffAria')}
+				labelB={t('tasklist.taskOptionsAutoSelectOnAria')}
 				toggled={false}
 			/>
 		</section>

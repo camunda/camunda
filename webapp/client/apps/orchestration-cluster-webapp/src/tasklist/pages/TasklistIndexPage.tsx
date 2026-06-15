@@ -20,9 +20,9 @@ const TasklistIndexPage: React.FC = () => {
 	return (
 		<main className={styles.container}>
 			<CollapsiblePanel />
-			<Stack as="section" className={styles.tasksPanel} aria-label={t('tasksPanelLabel')}>
+			<Stack as="section" className={styles.tasksPanel} aria-label={t('tasklist.tasksPanelLabel')}>
 				<Filters />
-				<div className={styles.tasksContainer} title={t('availableTasksTitle')}>
+				<div className={styles.tasksContainer} title={t('tasklist.availableTasksTitle')}>
 					<NoTasks />
 				</div>
 				<Options />

@@ -22,10 +22,10 @@ const SORTING_OPTIONS_ORDER = [
 ] as const satisfies TasklistIndexSearch['sortBy'][];
 
 const SORTING_OPTION_LABEL_KEYS = {
-	creation: 'taskFiltersSortCreationDate',
-	due: 'taskFiltersSortDueDate',
-	'follow-up': 'taskFiltersSortFollowUpDate',
-	priority: 'taskFiltersSortPriority',
+	creation: 'tasklist.taskFiltersSortCreationDate',
+	due: 'tasklist.taskFiltersSortDueDate',
+	'follow-up': 'tasklist.taskFiltersSortFollowUpDate',
+	priority: 'tasklist.taskFiltersSortPriority',
 } as const;
 
 const Filters: React.FC = () => {
@@ -34,11 +34,11 @@ const Filters: React.FC = () => {
 	const navigate = useNavigate();
 
 	return (
-		<section className={styles.panelHeader} aria-label={t('taskFiltersHeaderAria')}>
-			<h1 className={styles.header}>{t('taskFiltersAllOpenTasks')}</h1>
+		<section className={styles.panelHeader} aria-label={t('tasklist.taskFiltersHeaderAria')}>
+			<h1 className={styles.header}>{t('tasklist.taskFiltersAllOpenTasks')}</h1>
 			<OverflowMenu
-				aria-label={t('taskFiltersSortButton')}
-				iconDescription={t('taskFiltersSortButton')}
+				aria-label={t('tasklist.taskFiltersSortButton')}
+				iconDescription={t('tasklist.taskFiltersSortButton')}
 				renderIcon={SortAscending}
 				size="md"
 				align="bottom"

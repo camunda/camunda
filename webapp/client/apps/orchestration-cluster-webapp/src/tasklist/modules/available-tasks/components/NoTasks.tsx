@@ -18,8 +18,8 @@ const NoTasks: React.FC = () => {
 		<Stack gap={5} orientation="horizontal" className={styles.container}>
 			<Search size={24} aria-hidden className={styles.icon} />
 			<Stack gap={1} className={styles.text}>
-				<span className={styles.heading}>{t('availableTasksNoTasksFoundInfo')}</span>
-				<span className={styles.body}>{t('availableTasksNoTasksMatchingCriteriaInfo')}</span>
+				<span className={styles.heading}>{t('tasklist.availableTasksNoTasksFoundInfo')}</span>
+				<span className={styles.body}>{t('tasklist.availableTasksNoTasksMatchingCriteriaInfo')}</span>
 			</Stack>
 		</Stack>
 	);

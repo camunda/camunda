@@ -15,10 +15,10 @@ import styles from './CollapsiblePanel.module.scss';
 import {usePrevious} from '@uidotdev/usehooks';
 
 const BUILT_IN_FILTERS = [
-	{id: 'all-open', labelKey: 'taskFilterPanelAllOpenTasks'},
-	{id: 'assigned-to-me', labelKey: 'taskFilterPanelAssignedToMe'},
-	{id: 'unassigned', labelKey: 'taskFilterPanelUnassigned'},
-	{id: 'completed', labelKey: 'taskFilterPanelCompleted'},
+	{id: 'all-open', labelKey: 'tasklist.taskFilterPanelAllOpenTasks'},
+	{id: 'assigned-to-me', labelKey: 'tasklist.taskFilterPanelAssignedToMe'},
+	{id: 'unassigned', labelKey: 'tasklist.taskFilterPanelUnassigned'},
+	{id: 'completed', labelKey: 'tasklist.taskFilterPanelCompleted'},
 ] as const;
 
 const CollapsiblePanel: React.FC = () => {
@@ -32,14 +32,14 @@ const CollapsiblePanel: React.FC = () => {
 				as="nav"
 				id="task-nav-bar"
 				className={cn(styles.base, styles.collapsedContainer)}
-				aria-label={t('taskFilterPanelControlsAria')}
+				aria-label={t('tasklist.taskFilterPanelControlsAria')}
 			>
 				<ul aria-labelledby="task-nav-bar">
 					<li>
 						<Button
 							hasIconOnly
 							renderIcon={SidePanelOpen}
-							iconDescription={t('taskFilterPanelExpandButton')}
+							iconDescription={t('tasklist.taskFilterPanelExpandButton')}
 							tooltipPosition="right"
 							kind="ghost"
 							size="md"
@@ -55,7 +55,7 @@ const CollapsiblePanel: React.FC = () => {
 						<Button
 							hasIconOnly
 							renderIcon={Filter}
-							iconDescription={t('taskFilterPanelFilterButton')}
+							iconDescription={t('tasklist.taskFilterPanelFilterButton')}
 							tooltipPosition="right"
 							kind="ghost"
 							size="md"
@@ -70,11 +70,11 @@ const CollapsiblePanel: React.FC = () => {
 		<Layer className={styles.floatingContainer}>
 			<nav className={cn(styles.base, styles.expandedContainer)} id="task-nav-bar" aria-labelledby="filters-title">
 				<div className={styles.panelHeader}>
-					<h2 id="filters-title">{t('taskFilterPanelTitle')}</h2>
+					<h2 id="filters-title">{t('tasklist.taskFilterPanelTitle')}</h2>
 					<Button
 						hasIconOnly
 						renderIcon={SidePanelClose}
-						iconDescription={t('taskFilterPanelCollapse')}
+						iconDescription={t('tasklist.taskFilterPanelCollapse')}
 						tooltipPosition="right"
 						kind="ghost"
 						size="md"
@@ -98,7 +98,7 @@ const CollapsiblePanel: React.FC = () => {
 					</ul>
 					<ButtonSet>
 						<Button kind="ghost" size="md">
-							{t('taskFilterPanelNewFilter')}
+							{t('tasklist.taskFilterPanelNewFilter')}
 						</Button>
 					</ButtonSet>
 				</div>
