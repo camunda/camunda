@@ -10,6 +10,7 @@ package io.camunda.webapps.schema.entities.agenthistory;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.PartitionedEntity;
 import io.camunda.webapps.schema.entities.SinceVersion;
+import io.camunda.webapps.schema.entities.document.DocumentReferenceEntity;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -21,11 +22,6 @@ import java.util.Objects;
  * stored as nested records on the entity — they are write-only and never individually filtered or
  * sorted. Metrics fields are flattened to top-level fields to avoid nested object complexity in
  * ES/OS.
- *
- * <p>Document-reference records ({@link AgentHistoryDocumentReferenceValue} and {@link
- * AgentHistoryDocumentReferenceMetadataValue}) are kept in this package following YAGNI — they are
- * only needed here for now; extract to a shared {@code entities/document} package when a second
- * consumer appears.
  */
 public final class AgentHistoryEntity
     implements ExporterEntity<AgentHistoryEntity>,
@@ -386,12 +382,13 @@ public final class AgentHistoryEntity
 
   /**
    * A single content block in a history entry message. {@code text}, {@code documentReference}, and
-   * {@code object} are mutually exclusive based on {@code contentType}.
+   * {@code object} are mutually exclusive based on {@code contentType}; for {@code UNKNOWN} types
+   * all available fields are populated as-is.
    */
   public record AgentHistoryContentValue(
       AgentHistoryContentType contentType,
       String text,
-      AgentHistoryDocumentReferenceValue documentReference,
+      DocumentReferenceEntity documentReference,
       Map<String, Object> object) {
 
     public static AgentHistoryContentValue text(final String text) {
@@ -399,7 +396,7 @@ public final class AgentHistoryEntity
     }
 
     public static AgentHistoryContentValue document(
-        final AgentHistoryDocumentReferenceValue documentReference) {
+        final DocumentReferenceEntity documentReference) {
       return new AgentHistoryContentValue(
           AgentHistoryContentType.DOCUMENT, null, documentReference, null);
     }
@@ -408,32 +405,6 @@ public final class AgentHistoryEntity
       return new AgentHistoryContentValue(AgentHistoryContentType.OBJECT, null, null, object);
     }
   }
-
-  /**
-   * A reference to a Camunda document attached to a history content block.
-   *
-   * <p>Kept in the {@code agenthistory} package — currently only consumed by {@code
-   * AgentHistoryEntity}. Extract to a shared package when a second entity type requires the same
-   * structure.
-   */
-  public record AgentHistoryDocumentReferenceValue(
-      String documentId,
-      String storeId,
-      String contentHash,
-      AgentHistoryDocumentReferenceMetadataValue metadata) {}
-
-  /**
-   * Metadata for a document reference. {@code expiresAt} and {@code processInstanceKey} are
-   * nullable — protocol sentinel {@code -1} is converted to {@code null}.
-   */
-  public record AgentHistoryDocumentReferenceMetadataValue(
-      String contentType,
-      String fileName,
-      OffsetDateTime expiresAt,
-      long size,
-      String processDefinitionId,
-      Long processInstanceKey,
-      Map<String, Object> customProperties) {}
 
   /** A tool call embedded in a history entry. */
   public record AgentHistoryEmbeddedToolCallValue(

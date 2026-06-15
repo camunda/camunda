@@ -17,10 +17,10 @@ import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryCommitStatus;
 import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryContentType;
 import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryEntity;
 import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryEntity.AgentHistoryContentValue;
-import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryEntity.AgentHistoryDocumentReferenceMetadataValue;
-import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryEntity.AgentHistoryDocumentReferenceValue;
 import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryEntity.AgentHistoryEmbeddedToolCallValue;
 import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryRole;
+import io.camunda.webapps.schema.entities.document.DocumentReferenceEntity;
+import io.camunda.webapps.schema.entities.document.DocumentReferenceMetadataEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AgentHistoryIntent;
@@ -533,10 +533,9 @@ final class AgentHistoryHandlerTest {
     underTest.updateEntity(record, entity);
 
     // then
-    final AgentHistoryDocumentReferenceValue docRefEntity =
-        entity.getContent().getFirst().documentReference();
+    final DocumentReferenceEntity docRefEntity = entity.getContent().getFirst().documentReference();
     assertThat(docRefEntity).isNotNull();
-    final AgentHistoryDocumentReferenceMetadataValue metaEntity = docRefEntity.metadata();
+    final DocumentReferenceMetadataEntity metaEntity = docRefEntity.metadata();
     assertThat(metaEntity.expiresAt()).isNull();
     assertThat(metaEntity.processInstanceKey()).isNull();
   }
@@ -586,13 +585,12 @@ final class AgentHistoryHandlerTest {
     underTest.updateEntity(record, entity);
 
     // then — valid expiresAt and processInstanceKey are preserved (not nulled)
-    final AgentHistoryDocumentReferenceValue docRefEntity =
-        entity.getContent().getFirst().documentReference();
+    final DocumentReferenceEntity docRefEntity = entity.getContent().getFirst().documentReference();
     assertThat(docRefEntity).isNotNull();
     assertThat(docRefEntity.documentId()).isEqualTo("doc-1");
     assertThat(docRefEntity.storeId()).isEqualTo("store-1");
     assertThat(docRefEntity.contentHash()).isEqualTo("abc123");
-    final AgentHistoryDocumentReferenceMetadataValue metaEntity = docRefEntity.metadata();
+    final DocumentReferenceMetadataEntity metaEntity = docRefEntity.metadata();
     assertThat(metaEntity.expiresAt())
         .isEqualTo(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(expiresAtMs)));
     assertThat(metaEntity.size()).isEqualTo(2048L);

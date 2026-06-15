@@ -15,9 +15,9 @@ import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryCommitStatus;
 import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryContentType;
 import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryEntity;
 import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryEntity.AgentHistoryContentValue;
-import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryEntity.AgentHistoryDocumentReferenceMetadataValue;
-import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryEntity.AgentHistoryDocumentReferenceValue;
 import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryRole;
+import io.camunda.webapps.schema.entities.document.DocumentReferenceEntity;
+import io.camunda.webapps.schema.entities.document.DocumentReferenceMetadataEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AgentHistoryIntent;
@@ -175,18 +175,17 @@ public class AgentHistoryHandler
         .toList();
   }
 
-  private static AgentHistoryDocumentReferenceValue mapDocumentReference(
-      final DocumentReferenceValue ref) {
+  private static DocumentReferenceEntity mapDocumentReference(final DocumentReferenceValue ref) {
     final var meta = ref.getMetadata();
     final var expiresAt =
         meta.getExpiresAt() > 0
             ? DateUtil.toOffsetDateTime(Instant.ofEpochMilli(meta.getExpiresAt()))
             : null;
-    return new AgentHistoryDocumentReferenceValue(
+    return new DocumentReferenceEntity(
         ref.getDocumentId(),
         ref.getStoreId(),
         ref.getContentHash(),
-        new AgentHistoryDocumentReferenceMetadataValue(
+        new DocumentReferenceMetadataEntity(
             meta.getContentType(),
             meta.getFileName(),
             expiresAt,
