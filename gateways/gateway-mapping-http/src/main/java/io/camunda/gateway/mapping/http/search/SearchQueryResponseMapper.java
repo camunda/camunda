@@ -16,7 +16,6 @@ import static java.util.Objects.requireNonNullElse;
 import static java.util.Optional.ofNullable;
 import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
 
-import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.protocol.model.AgentInstanceDefinition;
 import io.camunda.gateway.protocol.model.AgentInstanceLimits;
 import io.camunda.gateway.protocol.model.AgentInstanceMetrics;
@@ -36,6 +35,7 @@ import io.camunda.gateway.protocol.model.AuthorizationSearchResult;
 import io.camunda.gateway.protocol.model.BatchOperationError;
 import io.camunda.gateway.protocol.model.BatchOperationError.TypeEnum;
 import io.camunda.gateway.protocol.model.BatchOperationItemResponse;
+import io.camunda.gateway.protocol.model.BatchOperationItemResponse.StateEnum;
 import io.camunda.gateway.protocol.model.BatchOperationItemSearchQueryResult;
 import io.camunda.gateway.protocol.model.BatchOperationResponse;
 import io.camunda.gateway.protocol.model.BatchOperationSearchQueryResult;
@@ -146,8 +146,10 @@ import io.camunda.gateway.protocol.model.TenantResult;
 import io.camunda.gateway.protocol.model.TenantSearchQueryResult;
 import io.camunda.gateway.protocol.model.TenantUserResult;
 import io.camunda.gateway.protocol.model.TenantUserSearchResult;
+import io.camunda.gateway.protocol.model.TimerWaitStateDetails;
 import io.camunda.gateway.protocol.model.UsageMetricsResponse;
 import io.camunda.gateway.protocol.model.UsageMetricsResponseItem;
+import io.camunda.gateway.protocol.model.UsageMetricsResponseItem.Builder;
 import io.camunda.gateway.protocol.model.UserResult;
 import io.camunda.gateway.protocol.model.UserSearchResult;
 import io.camunda.gateway.protocol.model.UserTaskResult;
@@ -166,6 +168,7 @@ import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationErrorEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
 import io.camunda.search.entities.ClusterVariableEntity;
+import io.camunda.search.entities.ClusterVariableScope;
 import io.camunda.search.entities.CorrelatedMessageSubscriptionEntity;
 import io.camunda.search.entities.DecisionDefinitionEntity;
 import io.camunda.search.entities.DecisionInstanceEntity;
@@ -197,6 +200,7 @@ import io.camunda.search.entities.ProcessDefinitionInstanceVersionStatisticsEnti
 import io.camunda.search.entities.ProcessDefinitionMessageSubscriptionStatisticsEntity;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
+import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.RoleMemberEntity;
 import io.camunda.search.entities.SequenceFlowEntity;
@@ -212,6 +216,7 @@ import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.entities.WaitStateEntity;
 import io.camunda.search.entities.WaitStateJobDetails;
 import io.camunda.search.entities.WaitStateMessageDetails;
+import io.camunda.search.entities.WaitStateTimerDetails;
 import io.camunda.search.entities.WaitStateUserTaskDetails;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.api.model.authz.PermissionType;
@@ -258,7 +263,7 @@ public final class SearchQueryResponseMapper {
                       key -> {
                         final UsageMetricStatisticsEntityTenant stats = tenants1.get(key);
                         final UsageMetricTUStatisticsEntityTenant tuStats = tenants2.get(key);
-                        return UsageMetricsResponseItem.Builder.create()
+                        return Builder.create()
                             .processInstances(stats != null ? stats.rpi() : 0L)
                             .decisionInstances(stats != null ? stats.edi() : 0L)
                             .assignees(tuStats != null ? tuStats.tu() : 0L)
@@ -715,6 +720,14 @@ public final class SearchQueryResponseMapper {
                       .dueDate(dueDate == null || dueDate.isBlank() ? null : dueDate)
                       .build())
               .build();
+      case WaitStateTimerDetails(final var dueDate, final var repetitions) ->
+          base.details(
+                  TimerWaitStateDetails.Builder.create()
+                      .waitStateType(WaitStateTypeEnum.TIMER.name())
+                      .dueDate(dueDate)
+                      .repetitions(repetitions)
+                      .build())
+              .build();
     };
   }
 
@@ -897,9 +910,7 @@ public final class SearchQueryResponseMapper {
         .processDefinitionVersionTag(p.processDefinitionVersionTag())
         .startDate(requireNonNullElse(formatDateOrNull(p.startDate()), EPOCH_DATE_SENTINEL))
         .endDate(formatDateOrNull(p.endDate()))
-        .state(
-            toProtocolState(
-                requireNonNullElse(p.state(), ProcessInstanceEntity.ProcessInstanceState.ACTIVE)))
+        .state(toProtocolState(requireNonNullElse(p.state(), ProcessInstanceState.ACTIVE)))
         .hasIncident(Boolean.TRUE.equals(p.hasIncident()))
         .tenantId(p.tenantId())
         .processInstanceKey(keyToString(p.processInstanceKey()))
@@ -978,7 +989,7 @@ public final class SearchQueryResponseMapper {
         // `processInstanceKey` is null for batch-op targets that are not process instances (e.g.
         // DELETE_DECISION_INSTANCE, DELETE_DECISION_DEFINITION). Spec declares it nullable.
         .processInstanceKey(keyToStringOrNull(entity.processInstanceKey()))
-        .state(BatchOperationItemResponse.StateEnum.fromValue(entity.state().name()))
+        .state(StateEnum.fromValue(entity.state().name()))
         .build();
   }
 
@@ -1556,7 +1567,7 @@ public final class SearchQueryResponseMapper {
           case TENANT -> ClusterVariableScopeEnum.TENANT;
         };
     final String tenantId =
-        clusterVariableEntity.scope() == io.camunda.search.entities.ClusterVariableScope.TENANT
+        clusterVariableEntity.scope() == ClusterVariableScope.TENANT
             ? clusterVariableEntity.tenantId()
             : null;
     return ClusterVariableSearchResult.Builder.create()
@@ -1582,7 +1593,7 @@ public final class SearchQueryResponseMapper {
           case TENANT -> ClusterVariableScopeEnum.TENANT;
         };
     final String tenantId =
-        clusterVariableEntity.scope() == io.camunda.search.entities.ClusterVariableScope.TENANT
+        clusterVariableEntity.scope() == ClusterVariableScope.TENANT
             ? clusterVariableEntity.tenantId()
             : null;
     return ClusterVariableResult.Builder.create()
@@ -1695,9 +1706,8 @@ public final class SearchQueryResponseMapper {
         .build();
   }
 
-  private static ProcessInstanceStateEnum toProtocolState(
-      final ProcessInstanceEntity.ProcessInstanceState value) {
-    if (value == ProcessInstanceEntity.ProcessInstanceState.CANCELED) {
+  private static ProcessInstanceStateEnum toProtocolState(final ProcessInstanceState value) {
+    if (value == ProcessInstanceState.CANCELED) {
       return ProcessInstanceStateEnum.TERMINATED;
     }
     return ProcessInstanceStateEnum.fromValue(value.name());
@@ -1976,7 +1986,7 @@ public final class SearchQueryResponseMapper {
         .versionTag(entity.versionTag())
         .resourceId(entity.resourceId())
         .tenantId(entity.tenantId())
-        .resourceKey(KeyUtil.keyToString(entity.resourceKey()))
+        .resourceKey(keyToString(entity.resourceKey()))
         .build();
   }
 
