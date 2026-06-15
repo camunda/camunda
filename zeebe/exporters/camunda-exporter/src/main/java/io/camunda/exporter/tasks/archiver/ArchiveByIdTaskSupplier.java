@@ -27,8 +27,8 @@ import org.slf4j.Logger;
 
 public class ArchiveByIdTaskSupplier<SortFieldType> {
 
-  public static final int MINIMUM_BATCH_SIZE = 50;
-  public static final double BATCH_SIZE_REDUCTION_FACTOR = 0.5;
+  private static final int MINIMUM_BATCH_SIZE = 50;
+  private static final double BATCH_SIZE_REDUCTION_FACTOR = 0.5;
 
   private final HistoryConfiguration config;
   private final String sourceIdx;
