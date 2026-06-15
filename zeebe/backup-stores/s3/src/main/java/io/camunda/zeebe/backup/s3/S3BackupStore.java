@@ -656,7 +656,11 @@ public final class S3BackupStore implements BackupStore {
             .connectionAcquisitionTimeout(config.connectionAcquisitionTimeout())
             .build());
 
-    builder.overrideConfiguration(cfg -> cfg.retryStrategy(RetryMode.ADAPTIVE_V2));
+    builder.overrideConfiguration(
+        cfg -> {
+          cfg.retryStrategy(RetryMode.ADAPTIVE_V2);
+          config.apiCallTimeout().ifPresent(cfg::apiCallTimeout);
+        });
     builder.forcePathStyle(config.forcePathStyleAccess());
     config.endpoint().ifPresent(endpoint -> builder.endpointOverride(URI.create(endpoint)));
     config.region().ifPresent(region -> builder.region(Region.of(region)));
@@ -668,9 +672,6 @@ public final class S3BackupStore implements BackupStore {
                     StaticCredentialsProvider.create(
                         AwsBasicCredentials.create(
                             credentials.accessKey(), credentials.secretKey()))));
-    config
-        .apiCallTimeout()
-        .ifPresent(timeout -> builder.overrideConfiguration(cfg -> cfg.apiCallTimeout(timeout)));
     return builder.build();
   }
 
