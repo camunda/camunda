@@ -214,17 +214,6 @@ public final class TestHelper {
         .execute();
   }
 
-  public static void createTenant(
-      final CamundaClient client,
-      final String tenantId,
-      final String tenantName,
-      final String... usernames) {
-    client.newCreateTenantCommand().tenantId(tenantId).name(tenantName).execute();
-    for (final var username : usernames) {
-      client.newAssignUserToTenantCommand().username(username).tenantId(tenantId).execute();
-    }
-  }
-
   public static void deleteTenant(final CamundaClient camundaClient, final String tenant) {
     camundaClient.newDeleteTenantCommand(tenant).execute();
   }

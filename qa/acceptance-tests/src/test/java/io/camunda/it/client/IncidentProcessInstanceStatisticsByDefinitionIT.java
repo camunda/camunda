@@ -9,7 +9,6 @@ package io.camunda.it.client;
 
 import static io.camunda.client.api.search.enums.PermissionType.READ_PROCESS_INSTANCE;
 import static io.camunda.client.api.search.enums.ResourceType.PROCESS_DEFINITION;
-import static io.camunda.it.util.TestHelper.createTenant;
 import static io.camunda.it.util.TestHelper.deployResourceForTenant;
 import static io.camunda.it.util.TestHelper.waitForJobs;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
@@ -24,6 +23,8 @@ import io.camunda.client.api.search.response.Job;
 import io.camunda.client.api.statistics.response.IncidentProcessInstanceStatisticsByDefinition;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
+import io.camunda.qa.util.auth.TenantDefinition;
+import io.camunda.qa.util.auth.TestTenant;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
@@ -107,6 +108,54 @@ public class IncidentProcessInstanceStatisticsByDefinitionIT {
 
   @UserDefinition private static final TestUser U_MULTI_VERSION = testUser(USER_MULTI_VERSION);
 
+  @TenantDefinition
+  private static final TestTenant T_SINGLE_DEFINITION =
+      new TestTenant(TENANT_SINGLE_DEFINITION)
+          .setName(TENANT_SINGLE_DEFINITION)
+          .addUsers(USER_SINGLE_DEFINITION);
+
+  @TenantDefinition
+  private static final TestTenant T_MULTI_DEFINITION =
+      new TestTenant(TENANT_MULTI_DEFINITION)
+          .setName(TENANT_MULTI_DEFINITION)
+          .addUsers(USER_MULTI_DEFINITION);
+
+  @TenantDefinition
+  private static final TestTenant T_NO_READ_PROCESS_INSTANCE =
+      new TestTenant(TENANT_NO_READ_PROCESS_INSTANCE)
+          .setName(TENANT_NO_READ_PROCESS_INSTANCE)
+          .addUsers(DEFAULT_USER_USERNAME);
+
+  @TenantDefinition
+  private static final TestTenant T_HASH_COLLISION =
+      new TestTenant(TENANT_HASH_COLLISION)
+          .setName(TENANT_HASH_COLLISION)
+          .addUsers(USER_HASH_COLLISION);
+
+  @TenantDefinition
+  private static final TestTenant T_MULTI_TENANT_1 =
+      new TestTenant(TENANT_MULTI_TENANT_1)
+          .setName(TENANT_MULTI_TENANT_1)
+          .addUsers(USER_MULTI_TENANT);
+
+  @TenantDefinition
+  private static final TestTenant T_MULTI_TENANT_2 =
+      new TestTenant(TENANT_MULTI_TENANT_2)
+          .setName(TENANT_MULTI_TENANT_2)
+          .addUsers(USER_MULTI_TENANT);
+
+  @TenantDefinition
+  private static final TestTenant T_MULTI_VERSION =
+      new TestTenant(TENANT_MULTI_VERSION)
+          .setName(TENANT_MULTI_VERSION)
+          .addUsers(USER_MULTI_VERSION);
+
+  @TenantDefinition
+  private static final TestTenant T_SINGLE_DEFINITION_CACHE =
+      new TestTenant(TENANT_SINGLE_DEFINITION_CACHE)
+          .setName(TENANT_SINGLE_DEFINITION_CACHE)
+          .addUsers(USER_SINGLE_DEFINITION_CACHE);
+
   private static CamundaClient adminClient;
 
   private static TestUser testUser(final String userId) {
@@ -116,11 +165,6 @@ public class IncidentProcessInstanceStatisticsByDefinitionIT {
   @BeforeAll
   public static void beforeAll(@Authenticated final CamundaClient adminClient) {
     IncidentProcessInstanceStatisticsByDefinitionIT.adminClient = adminClient;
-  }
-
-  private static void ensureTenantExistsForUser(
-      final CamundaClient adminClient, final String tenantId, final String userId) {
-    createTenant(adminClient, tenantId, tenantId, userId);
   }
 
   private static BpmnModelInstance singleServiceTaskProcess(
@@ -214,8 +258,6 @@ public class IncidentProcessInstanceStatisticsByDefinitionIT {
   void shouldReturnSingleDefinitionStatisticForMultipleFailingInstances(
       @Authenticated(USER_SINGLE_DEFINITION) final CamundaClient userClient) {
     // given
-    ensureTenantExistsForUser(adminClient, TENANT_SINGLE_DEFINITION, USER_SINGLE_DEFINITION);
-
     final String processId = SIMPLE_PROCESS_1;
     final BpmnModelInstance model = singleServiceTaskProcess(processId, PROCESS_NAME_1, JOB_TYPE_1);
 
@@ -269,8 +311,6 @@ public class IncidentProcessInstanceStatisticsByDefinitionIT {
       @Authenticated(USER_MULTI_DEFINITION) final CamundaClient userClient) {
 
     // given
-    ensureTenantExistsForUser(adminClient, TENANT_MULTI_DEFINITION, USER_MULTI_DEFINITION);
-
     final String process1Id = SIMPLE_PROCESS_1;
     final String process2Id = SIMPLE_PROCESS_2;
 
@@ -348,8 +388,6 @@ public class IncidentProcessInstanceStatisticsByDefinitionIT {
   void shouldReturnNoStatisticsForUserWithoutReadProcessInstance(
       @Authenticated(USER_NO_READ_PROCESS_INSTANCE) final CamundaClient userClient) {
     // given
-    ensureTenantExistsForUser(adminClient, TENANT_NO_READ_PROCESS_INSTANCE, DEFAULT_USER_USERNAME);
-
     final BpmnModelInstance process =
         singleServiceTaskProcess(SIMPLE_PROCESS_1, PROCESS_NAME_1, JOB_TYPE_1);
 
@@ -390,8 +428,6 @@ public class IncidentProcessInstanceStatisticsByDefinitionIT {
       @Authenticated(USER_HASH_COLLISION) final CamundaClient userClient) {
 
     // given
-    ensureTenantExistsForUser(adminClient, TENANT_HASH_COLLISION, USER_HASH_COLLISION);
-
     final String processId = SIMPLE_PROCESS_1;
     final BpmnModelInstance model1 =
         singleServiceTaskProcess(processId, PROCESS_NAME_1, JOB_TYPE_1);
@@ -479,9 +515,6 @@ public class IncidentProcessInstanceStatisticsByDefinitionIT {
       @Authenticated(USER_MULTI_TENANT) final CamundaClient userClient) {
 
     // given
-    ensureTenantExistsForUser(adminClient, TENANT_MULTI_TENANT_1, USER_MULTI_TENANT);
-    ensureTenantExistsForUser(adminClient, TENANT_MULTI_TENANT_2, USER_MULTI_TENANT);
-
     final String processId = SIMPLE_PROCESS_1;
     final BpmnModelInstance model = singleServiceTaskProcess(processId, PROCESS_NAME_1, JOB_TYPE_1);
 
@@ -557,8 +590,6 @@ public class IncidentProcessInstanceStatisticsByDefinitionIT {
       @Authenticated(USER_MULTI_VERSION) final CamundaClient userClient) {
 
     // given
-    ensureTenantExistsForUser(adminClient, TENANT_MULTI_VERSION, USER_MULTI_VERSION);
-
     final String processId = SIMPLE_PROCESS_1;
 
     // Deploy v1 (jobType1)
@@ -641,9 +672,6 @@ public class IncidentProcessInstanceStatisticsByDefinitionIT {
   @Test
   void shouldUseCachedProcessDefinitionDataForRepeatedRequests(
       @Authenticated(USER_SINGLE_DEFINITION_CACHE) final CamundaClient userClient) {
-    ensureTenantExistsForUser(
-        adminClient, TENANT_SINGLE_DEFINITION_CACHE, USER_SINGLE_DEFINITION_CACHE);
-
     final BpmnModelInstance model =
         singleServiceTaskProcess(SIMPLE_PROCESS_1, PROCESS_NAME_1, JOB_TYPE_1);
 
