@@ -206,6 +206,27 @@ class PhysicalTenantAssignedProvidersValidationTest {
         .withMessageContaining("reserved");
   }
 
+  @Test
+  void shouldRejectNamedOidcProviderEvenWhenDefaultOmitsAssigned() {
+    // given a named provider "oidc" and only the default tenant, which omits assigned (implicit
+    // full set) — the collision must still fail fast, not be deferred until a selection is declared
+    final Environment environment =
+        environmentWith(
+            Map.of(
+                "camunda.security.authentication.method", "oidc",
+                "camunda.security.authentication.providers.oidc.oidc.client-id", "client-oidc",
+                // a key under physical-tenants.default so the default tenant is discovered, with no
+                // providers.assigned
+                "camunda.physical-tenants.default.security.authentication.providers.oidc.x.client-id",
+                    "client-x"));
+
+    // when / then
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> PhysicalTenantAssignedProvidersValidation.validate(environment))
+        .withMessageContaining("default")
+        .withMessageContaining("reserved");
+  }
+
   // -------------------------------------------------------------------------
   // Default tenant semantics: implicit full set, no explicit assigned
   // -------------------------------------------------------------------------
