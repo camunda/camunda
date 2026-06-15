@@ -71,7 +71,7 @@ public abstract class ProcessInstanceHistory {
   protected long processInstanceCount(
       final RdbmsService rdbmsService, final List<Long> processInstanceKeys) {
     return entityCount(
-        rdbmsService.getProcessInstanceReader(),
+        rdbmsService.getProcessInstanceReader("default"),
         ProcessInstanceQuery.of(
             b ->
                 b.filter(
@@ -83,38 +83,38 @@ public abstract class ProcessInstanceHistory {
   protected long flowNodeInstanceCount(
       final RdbmsService rdbmsService, final long processInstanceKey) {
     return entityCount(
-        rdbmsService.getFlowNodeInstanceReader(),
+        rdbmsService.getFlowNodeInstanceReader("default"),
         FlowNodeInstanceQuery.of(b -> b.filter(f -> f.processInstanceKeys(processInstanceKey))));
   }
 
   protected long userTaskCount(final RdbmsService rdbmsService, final long processInstanceKey) {
     return entityCount(
-        rdbmsService.getUserTaskReader(),
+        rdbmsService.getUserTaskReader("default"),
         UserTaskQuery.of(b -> b.filter(f -> f.processInstanceKeys(processInstanceKey))));
   }
 
   protected long variableCount(final RdbmsService rdbmsService, final long processInstanceKey) {
     return entityCount(
-        rdbmsService.getVariableReader(),
+        rdbmsService.getVariableReader("default"),
         VariableQuery.of(b -> b.filter(f -> f.processInstanceKeys(processInstanceKey))));
   }
 
   protected long incidentCount(final RdbmsService rdbmsService, final long processInstanceKey) {
     return entityCount(
-        rdbmsService.getIncidentReader(),
+        rdbmsService.getIncidentReader("default"),
         IncidentQuery.of(b -> b.filter(f -> f.processInstanceKeys(processInstanceKey))));
   }
 
   protected long decisionInstanceCount(
       final RdbmsService rdbmsService, final long processInstanceKey) {
     return entityCount(
-        rdbmsService.getDecisionInstanceReader(),
+        rdbmsService.getDecisionInstanceReader("default"),
         DecisionInstanceQuery.of(b -> b.filter(f -> f.processInstanceKeys(processInstanceKey))));
   }
 
   protected long auditLogCount(final RdbmsService rdbmsService, final long processInstanceKey) {
     return entityCount(
-        rdbmsService.getAuditLogReader(),
+        rdbmsService.getAuditLogReader("default"),
         AuditLogQuery.of(b -> b.filter(f -> f.processInstanceKeys(processInstanceKey))));
   }
 

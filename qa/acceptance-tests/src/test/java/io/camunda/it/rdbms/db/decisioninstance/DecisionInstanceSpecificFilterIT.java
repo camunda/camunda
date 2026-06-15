@@ -50,7 +50,7 @@ public class DecisionInstanceSpecificFilterIT {
   @BeforeEach
   public void beforeAll() {
     rdbmsWriters = rdbmsService.createWriter(0L);
-    decisionInstanceReader = rdbmsService.getDecisionInstanceReader();
+    decisionInstanceReader = rdbmsService.getDecisionInstanceReader("default");
 
     final var decisionDefinitionKey = nextKey();
     final var decisionDefinition =

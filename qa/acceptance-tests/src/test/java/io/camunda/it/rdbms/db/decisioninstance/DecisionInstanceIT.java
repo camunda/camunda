@@ -53,7 +53,7 @@ public class DecisionInstanceIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final DecisionInstanceDbReader decisionInstanceReader =
-        rdbmsService.getDecisionInstanceReader();
+        rdbmsService.getDecisionInstanceReader("default");
 
     final var original = DecisionInstanceFixtures.createRandomized(b -> b);
     createAndSaveDecisionInstance(rdbmsWriters, original);
@@ -83,7 +83,7 @@ public class DecisionInstanceIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final DecisionInstanceDbReader decisionInstanceReader =
-        rdbmsService.getDecisionInstanceReader();
+        rdbmsService.getDecisionInstanceReader("default");
 
     final var original = DecisionInstanceFixtures.createRandomized(b -> b);
     createAndSaveDecisionInstance(rdbmsWriters, original);
@@ -109,7 +109,7 @@ public class DecisionInstanceIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final DecisionInstanceDbReader decisionInstanceReader =
-        rdbmsService.getDecisionInstanceReader();
+        rdbmsService.getDecisionInstanceReader("default");
 
     final var original = DecisionInstanceFixtures.createRandomized(b -> b);
     createAndSaveDecisionInstance(rdbmsWriters, original);
@@ -134,7 +134,7 @@ public class DecisionInstanceIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final DecisionInstanceDbReader decisionInstanceReader =
-        rdbmsService.getDecisionInstanceReader();
+        rdbmsService.getDecisionInstanceReader("default");
 
     final var decisionDefinition =
         DecisionDefinitionFixtures.createAndSaveRandomDecisionDefinition(rdbmsWriters, b -> b);
@@ -163,7 +163,7 @@ public class DecisionInstanceIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final DecisionInstanceDbReader decisionInstanceReader =
-        rdbmsService.getDecisionInstanceReader();
+        rdbmsService.getDecisionInstanceReader("default");
 
     final var decisionDefinition =
         DecisionDefinitionFixtures.createAndSaveRandomDecisionDefinition(rdbmsWriters, b -> b);
@@ -195,7 +195,7 @@ public class DecisionInstanceIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final DecisionInstanceDbReader decisionInstanceReader =
-        rdbmsService.getDecisionInstanceReader();
+        rdbmsService.getDecisionInstanceReader("default");
 
     final var decisionDefinition =
         DecisionDefinitionFixtures.createAndSaveRandomDecisionDefinition(rdbmsWriters, b -> b);
@@ -239,7 +239,7 @@ public class DecisionInstanceIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final DecisionInstanceDbReader decisionInstanceReader =
-        rdbmsService.getDecisionInstanceReader();
+        rdbmsService.getDecisionInstanceReader("default");
 
     final var decisionDefinition =
         DecisionDefinitionFixtures.createAndSaveRandomDecisionDefinition(rdbmsWriters, b -> b);
@@ -294,7 +294,7 @@ public class DecisionInstanceIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final DecisionInstanceDbReader decisionInstanceReader =
-        rdbmsService.getDecisionInstanceReader();
+        rdbmsService.getDecisionInstanceReader("default");
 
     final var original =
         DecisionInstanceFixtures.createRandomized(
@@ -312,7 +312,7 @@ public class DecisionInstanceIT {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final DecisionInstanceDbReader reader = rdbmsService.getDecisionInstanceReader();
+    final DecisionInstanceDbReader reader = rdbmsService.getDecisionInstanceReader("default");
 
     final var definition =
         ProcessDefinitionFixtures.createAndSaveProcessDefinition(rdbmsWriters, b -> b);
@@ -354,7 +354,7 @@ public class DecisionInstanceIT {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final DecisionInstanceDbReader reader = rdbmsService.getDecisionInstanceReader();
+    final DecisionInstanceDbReader reader = rdbmsService.getDecisionInstanceReader("default");
 
     final var definition =
         ProcessDefinitionFixtures.createAndSaveProcessDefinition(rdbmsWriters, b -> b);
@@ -396,7 +396,7 @@ public class DecisionInstanceIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final DecisionInstanceDbReader decisionInstanceReader =
-        rdbmsService.getDecisionInstanceReader();
+        rdbmsService.getDecisionInstanceReader("default");
 
     final var largeResult = "x".repeat(9_000);
     final var largeOutput = "y".repeat(10_000);
@@ -449,7 +449,7 @@ public class DecisionInstanceIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final DecisionInstanceDbReader decisionInstanceReader =
-        rdbmsService.getDecisionInstanceReader();
+        rdbmsService.getDecisionInstanceReader("default");
 
     final var decisionInstanceKey = DecisionInstanceFixtures.nextKey();
     final var decisionInstanceId = decisionInstanceKey + "-1";

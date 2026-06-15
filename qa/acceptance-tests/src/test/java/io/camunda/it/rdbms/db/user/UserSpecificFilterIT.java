@@ -52,7 +52,7 @@ public class UserSpecificFilterIT {
   @BeforeEach
   public void beforeAll() {
     rdbmsWriters = rdbmsService.createWriter(0L);
-    userReader = rdbmsService.getUserReader();
+    userReader = rdbmsService.getUserReader("default");
   }
 
   @Test

@@ -40,7 +40,7 @@ public class ProcessDefinitionSpecificFilterIT {
   @BeforeEach
   public void beforeAll() {
     rdbmsWriters = rdbmsService.createWriter(0L);
-    processDefinitionReader = rdbmsService.getProcessDefinitionReader();
+    processDefinitionReader = rdbmsService.getProcessDefinitionReader("default");
   }
 
   @ParameterizedTest

@@ -121,7 +121,7 @@ public class UserTaskTagIT {
   }
 
   private static UserTaskDbReader setupReader(final CamundaRdbmsTestApplication testApplication) {
-    return testApplication.getRdbmsService().getUserTaskReader();
+    return testApplication.getRdbmsService().getUserTaskReader("default");
   }
 
   private static RdbmsWriters setupWriter(final CamundaRdbmsTestApplication testApplication) {

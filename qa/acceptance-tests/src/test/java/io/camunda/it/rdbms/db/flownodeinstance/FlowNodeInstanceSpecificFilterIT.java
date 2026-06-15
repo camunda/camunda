@@ -46,7 +46,7 @@ public class FlowNodeInstanceSpecificFilterIT {
   @BeforeEach
   public void beforeAll() {
     rdbmsWriters = rdbmsService.createWriter(0L);
-    elementInstanceReader = rdbmsService.getFlowNodeInstanceReader();
+    elementInstanceReader = rdbmsService.getFlowNodeInstanceReader("default");
   }
 
   @ParameterizedTest

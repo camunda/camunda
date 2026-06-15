@@ -43,7 +43,7 @@ public class CorrelatedMessageSubscriptionIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final CorrelatedMessageSubscriptionDbReader correlatedMessageSubscriptionReader =
-        rdbmsService.getCorrelatedMessageSubscriptionReader();
+        rdbmsService.getCorrelatedMessageSubscriptionReader("default");
 
     final var original = CorrelatedMessageSubscriptionFixtures.createRandomized(b -> b);
     createAndSaveCorrelatedMessageSubscription(rdbmsWriters, original);
@@ -62,7 +62,7 @@ public class CorrelatedMessageSubscriptionIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final CorrelatedMessageSubscriptionDbReader correlatedMessageSubscriptionReader =
-        rdbmsService.getCorrelatedMessageSubscriptionReader();
+        rdbmsService.getCorrelatedMessageSubscriptionReader("default");
 
     final var original = CorrelatedMessageSubscriptionFixtures.createRandomized(b -> b);
     createAndSaveCorrelatedMessageSubscription(rdbmsWriters, original);
@@ -86,7 +86,7 @@ public class CorrelatedMessageSubscriptionIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final CorrelatedMessageSubscriptionDbReader reader =
-        rdbmsService.getCorrelatedMessageSubscriptionReader();
+        rdbmsService.getCorrelatedMessageSubscriptionReader("default");
 
     final var original = CorrelatedMessageSubscriptionFixtures.createRandomized(b -> b);
     createAndSaveCorrelatedMessageSubscription(rdbmsWriters, original);
@@ -110,7 +110,7 @@ public class CorrelatedMessageSubscriptionIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final CorrelatedMessageSubscriptionDbReader reader =
-        rdbmsService.getCorrelatedMessageSubscriptionReader();
+        rdbmsService.getCorrelatedMessageSubscriptionReader("default");
 
     final var original = CorrelatedMessageSubscriptionFixtures.createRandomized(b -> b);
     createAndSaveCorrelatedMessageSubscription(rdbmsWriters, original);
@@ -133,7 +133,7 @@ public class CorrelatedMessageSubscriptionIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final CorrelatedMessageSubscriptionDbReader reader =
-        rdbmsService.getCorrelatedMessageSubscriptionReader();
+        rdbmsService.getCorrelatedMessageSubscriptionReader("default");
 
     final String processDefinitionId = CorrelatedMessageSubscriptionFixtures.nextStringId();
     createAndSaveRandomCorrelatedMessageSubscriptions(
@@ -158,7 +158,7 @@ public class CorrelatedMessageSubscriptionIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final CorrelatedMessageSubscriptionDbReader reader =
-        rdbmsService.getCorrelatedMessageSubscriptionReader();
+        rdbmsService.getCorrelatedMessageSubscriptionReader("default");
 
     final String processDefinitionId = CorrelatedMessageSubscriptionFixtures.nextStringId();
     createAndSaveRandomCorrelatedMessageSubscriptions(
@@ -184,7 +184,7 @@ public class CorrelatedMessageSubscriptionIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final CorrelatedMessageSubscriptionDbReader reader =
-        rdbmsService.getCorrelatedMessageSubscriptionReader();
+        rdbmsService.getCorrelatedMessageSubscriptionReader("default");
 
     final var original = CorrelatedMessageSubscriptionFixtures.createRandomized(b -> b);
     createAndSaveCorrelatedMessageSubscription(rdbmsWriters, original);
@@ -223,7 +223,7 @@ public class CorrelatedMessageSubscriptionIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final CorrelatedMessageSubscriptionDbReader reader =
-        rdbmsService.getCorrelatedMessageSubscriptionReader();
+        rdbmsService.getCorrelatedMessageSubscriptionReader("default");
 
     final var processDefinitionKey = nextKey();
     createAndSaveRandomCorrelatedMessageSubscriptions(
@@ -265,7 +265,7 @@ public class CorrelatedMessageSubscriptionIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final CorrelatedMessageSubscriptionDbReader reader =
-        rdbmsService.getCorrelatedMessageSubscriptionReader();
+        rdbmsService.getCorrelatedMessageSubscriptionReader("default");
 
     final var definition =
         ProcessDefinitionFixtures.createAndSaveProcessDefinition(rdbmsWriters, b -> b);
@@ -308,7 +308,7 @@ public class CorrelatedMessageSubscriptionIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final CorrelatedMessageSubscriptionDbReader reader =
-        rdbmsService.getCorrelatedMessageSubscriptionReader();
+        rdbmsService.getCorrelatedMessageSubscriptionReader("default");
 
     final var definition =
         ProcessDefinitionFixtures.createAndSaveProcessDefinition(rdbmsWriters, b -> b);

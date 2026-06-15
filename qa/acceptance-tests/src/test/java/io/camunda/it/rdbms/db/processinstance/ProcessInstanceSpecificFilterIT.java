@@ -53,7 +53,7 @@ public class ProcessInstanceSpecificFilterIT {
   @BeforeEach
   public void beforeAll() {
     rdbmsWriters = rdbmsService.createWriter(0L);
-    processInstanceReader = rdbmsService.getProcessInstanceReader();
+    processInstanceReader = rdbmsService.getProcessInstanceReader("default");
   }
 
   @ParameterizedTest

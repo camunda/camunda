@@ -42,7 +42,7 @@ public class DecisionDefinitionSpecificFilterIT {
   @BeforeEach
   public void beforeAll() {
     rdbmsWriters = rdbmsService.createWriter(0L);
-    decisionDefinitionReader = rdbmsService.getDecisionDefinitionReader();
+    decisionDefinitionReader = rdbmsService.getDecisionDefinitionReader("default");
   }
 
   @ParameterizedTest

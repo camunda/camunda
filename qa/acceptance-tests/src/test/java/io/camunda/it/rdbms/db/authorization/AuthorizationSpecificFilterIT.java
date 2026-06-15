@@ -48,7 +48,7 @@ public class AuthorizationSpecificFilterIT {
   @BeforeEach
   public void beforeAll() {
     rdbmsWriters = rdbmsService.createWriter(0L);
-    authorizationReader = rdbmsService.getAuthorizationReader();
+    authorizationReader = rdbmsService.getAuthorizationReader("default");
   }
 
   @ParameterizedTest

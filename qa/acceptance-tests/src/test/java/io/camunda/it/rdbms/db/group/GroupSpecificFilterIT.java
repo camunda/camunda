@@ -51,7 +51,7 @@ public class GroupSpecificFilterIT {
   @BeforeEach
   public void beforeAll() {
     rdbmsWriters = rdbmsService.createWriter(0L);
-    groupReader = rdbmsService.getGroupReader();
+    groupReader = rdbmsService.getGroupReader("default");
   }
 
   @Test

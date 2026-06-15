@@ -154,7 +154,7 @@ public class ProcessInstanceSortIT {
       final Function<Builder, ObjectBuilder<ProcessInstanceSort>> sortBuilder,
       final Comparator<ProcessInstanceEntity> comparator) {
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final ProcessInstanceDbReader reader = rdbmsService.getProcessInstanceReader();
+    final ProcessInstanceDbReader reader = rdbmsService.getProcessInstanceReader("default");
 
     final var version = new Random().nextInt(32767);
     for (int i = 0; i < 20; i++) {
