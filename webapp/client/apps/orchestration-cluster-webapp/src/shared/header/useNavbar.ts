@@ -56,7 +56,7 @@ function useNavbar(currentUser: CurrentUser): NavbarConfig {
 				? [
 						{
 							key: 'tasks',
-							label: t('headerNavItemTasks'),
+							label: t('tasklist.headerNavItemTasks'),
 							isCurrentPage: pathname === tabRoutes['tasklistIndex'],
 							routeProps: {
 								to: tabRoutes['tasklistIndex'],
@@ -71,7 +71,7 @@ function useNavbar(currentUser: CurrentUser): NavbarConfig {
 						},
 						{
 							key: 'processes',
-							label: t('headerNavItemProcesses'),
+							label: t('tasklist.headerNavItemProcesses'),
 							isCurrentPage: pathname.startsWith(tabRoutes['tasklistProcesses']),
 							routeProps: {
 								to: tabRoutes['tasklistProcesses'],
