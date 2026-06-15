@@ -20,6 +20,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.StartPartitionScaleUp;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.dynamic.config.util.RoundRobinPartitionDistributor;
@@ -38,6 +39,7 @@ import net.jqwik.api.Property;
 import net.jqwik.api.ShrinkingMode;
 import net.jqwik.api.constraints.IntRange;
 import org.assertj.core.api.AssertionsForInterfaceTypes;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 class ScaleRequestTransformerTest {
@@ -305,5 +307,34 @@ class ScaleRequestTransformerTest {
 
   SortedSet<Integer> partitionsInRange(final int from, final int to) {
     return new TreeSet<>(IntStream.range(from, to).boxed().toList());
+  }
+
+  @Nested
+  class ZoneAwareScaling {
+    static final Set<MemberId> SCALED_MEMBERS =
+        Set.of(
+            MemberId.from("zone-a", 0),
+            MemberId.from("zone-a", 1),
+            MemberId.from("zone-a", 2),
+            MemberId.from("zone-a", 3),
+            MemberId.from("zone-b", 0),
+            MemberId.from("zone-b", 1));
+
+    static final Set<MemberId> UNSCALED_MEMBERS =
+        Set.of(MemberId.from("zone-a", 0), MemberId.from("zone-a", 1), MemberId.from("zone-b", 0));
+
+    static final ZoneAwareConfig ZONE_AWARE_CONFIG =
+        new PartitionDistributorConfig.ZoneAwareConfig(
+            List.of(new ZoneSpec("zone-a", 2, 1000), new ZoneSpec("zone-b", 1, 500)));
+
+    @Test
+    void shouldScaleOutZoneAwareCluster() {
+      shouldScaleAndReassign(3, 3, ZONE_AWARE_CONFIG, UNSCALED_MEMBERS, SCALED_MEMBERS);
+    }
+
+    @Test
+    void shouldScaleInZoneAwareCluster() {
+      shouldScaleAndReassign(3, 3, ZONE_AWARE_CONFIG, SCALED_MEMBERS, UNSCALED_MEMBERS);
+    }
   }
 }

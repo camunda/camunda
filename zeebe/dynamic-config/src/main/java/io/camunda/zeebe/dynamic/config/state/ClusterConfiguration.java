@@ -338,9 +338,21 @@ public record ClusterConfiguration(
     return Optional.of(pendingChanges.orElseThrow().nextPendingOperation());
   }
 
+  /**
+   * @return true if All brokers are not zoned and the partition distribution config is not
+   *     ZoneAware, false otherwise.
+   */
+  public boolean isNotZoneAware() {
+    return members().keySet().stream().allMatch(m -> m.zone() == null)
+        && !partitionDistributorConfig.map(ZoneAwareConfig.class::isInstance).orElse(false);
+  }
+
+  /**
+   * @return true if all brokers are zone aware and the partition distribution config is ZoneAware
+   */
   public boolean isZoneAware() {
-    return members().keySet().stream().anyMatch(m -> m.zone() != null)
-        || partitionDistributorConfig.map(ZoneAwareConfig.class::isInstance).orElse(false);
+    return members().keySet().stream().allMatch(m -> m.zone() != null)
+        && partitionDistributorConfig.map(ZoneAwareConfig.class::isInstance).orElse(false);
   }
 
   /**

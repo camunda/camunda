@@ -254,7 +254,11 @@ public class ClusterEndpoint {
       if (isScale) {
         final var scaleRequest =
             new ClusterScaleRequest(
-                Optional.of(brokers.getCount()), newPartitionCount, newReplicationFactor, dryRun);
+                Optional.of(brokers.getCount()),
+                newPartitionCount,
+                newReplicationFactor,
+                Optional.ofNullable(request.getBrokers().getZone()).filter(z -> !z.isBlank()),
+                dryRun);
         return ClusterApiUtils.mapOperationResponse(
             requestSender.scaleCluster(scaleRequest).join());
       } else {

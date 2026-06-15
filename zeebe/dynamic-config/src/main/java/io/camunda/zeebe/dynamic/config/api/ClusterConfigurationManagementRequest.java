@@ -47,10 +47,25 @@ public sealed interface ClusterConfigurationManagementRequest {
     }
   }
 
+  /**
+   * Request to scale a cluster by target counts rather than by explicit broker ids.
+   *
+   * @param brokerCount the target number of brokers. On a plain (non-zone-aware) cluster this is
+   *     the total cluster size; when {@code zone} is set it is the target broker count <em>within
+   *     that zone</em>, leaving the other zones untouched. Empty leaves the broker count unchanged.
+   * @param newPartitionCount the target number of partitions, or empty to leave it unchanged.
+   *     Partitions can only be scaled up.
+   * @param newReplicationFactor the target replication factor, or empty to leave it unchanged. When
+   *     {@code zone} is set this is interpreted as that zone's replica count.
+   * @param zone the zone to scale, or empty to scale a plain cluster. Required when scaling a
+   *     zone-aware cluster and rejected on a plain one.
+   * @param dryRun when true, the resulting plan is computed and returned without being applied.
+   */
   record ClusterScaleRequest(
-      Optional<Integer> newClusterSize,
+      Optional<Integer> brokerCount,
       Optional<Integer> newPartitionCount,
       Optional<Integer> newReplicationFactor,
+      Optional<String> zone,
       boolean dryRun)
       implements ClusterConfigurationManagementRequest {}
 
