@@ -44,7 +44,6 @@ import io.camunda.db.rdbms.read.service.ProcessDefinitionInstanceStatisticsDbRea
 import io.camunda.db.rdbms.read.service.ProcessDefinitionInstanceVersionStatisticsDbReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionMessageSubscriptionStatisticsDbReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionStatisticsDbReader;
-import io.camunda.db.rdbms.read.service.ProcessDefinitionVariableNameLookupDbReader;
 import io.camunda.db.rdbms.read.service.ProcessInstanceDbReader;
 import io.camunda.db.rdbms.read.service.ProcessInstanceStatisticsDbReader;
 import io.camunda.db.rdbms.read.service.RdbmsTableRowCountMetrics;
@@ -361,12 +360,6 @@ public class RdbmsConfiguration {
   }
 
   @Bean
-  public ProcessDefinitionVariableNameLookupDbReader processDefinitionVariableNameLookupDbReader(
-      final VariableMapper variableMapper) {
-    return new ProcessDefinitionVariableNameLookupDbReader(variableMapper);
-  }
-
-  @Bean
   public IncidentProcessInstanceStatisticsByErrorDbReader
       incidentProcessInstanceStatisticsByErrorReader(
           final IncidentMapper incidentMapper, final RdbmsReaderConfig readerConfig) {
@@ -481,7 +474,6 @@ public class RdbmsConfiguration {
           incidentProcessInstanceStatisticsByDefinitionReader,
       final GlobalListenerDbReader globalListenerDbReader,
       final DeployedResourceDbReader deployedResourceDbReader,
-      final ProcessDefinitionVariableNameLookupDbReader processDefinitionVariableNameLookupDbReader,
       final ReplicationLogStatusProviderFactory replicationLogStatusProviderFactory) {
     return new RdbmsService(
         rdbmsWriterFactory,
@@ -525,7 +517,6 @@ public class RdbmsConfiguration {
         incidentProcessInstanceStatisticsByDefinitionReader,
         globalListenerDbReader,
         deployedResourceDbReader,
-        processDefinitionVariableNameLookupDbReader,
         replicationLogStatusProviderFactory);
   }
 

@@ -37,7 +37,6 @@ import io.camunda.db.rdbms.read.service.ProcessDefinitionDbReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionInstanceStatisticsDbReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionInstanceVersionStatisticsDbReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionMessageSubscriptionStatisticsDbReader;
-import io.camunda.db.rdbms.read.service.ProcessDefinitionVariableNameLookupDbReader;
 import io.camunda.db.rdbms.read.service.ProcessInstanceDbReader;
 import io.camunda.db.rdbms.read.service.RoleDbReader;
 import io.camunda.db.rdbms.read.service.RoleMemberDbReader;
@@ -105,8 +104,6 @@ public class RdbmsService {
       incidentProcessInstanceStatisticsByDefinitionDbReader;
   private final GlobalListenerDbReader globalListenerDbReader;
   private final DeployedResourceDbReader deployedResourceDbReader;
-  private final ProcessDefinitionVariableNameLookupDbReader
-      processDefinitionVariableNameLookupDbReader;
   private final ReplicationLogStatusProviderFactory replicationLogStatusProviderFactory;
 
   public RdbmsService(
@@ -155,7 +152,6 @@ public class RdbmsService {
           incidentProcessInstanceStatisticsByDefinitionDbReader,
       final GlobalListenerDbReader globalListenerDbReader,
       final DeployedResourceDbReader deployedResourceDbReader,
-      final ProcessDefinitionVariableNameLookupDbReader processDefinitionVariableNameLookupDbReader,
       final ReplicationLogStatusProviderFactory replicationLogStatusProviderFactory) {
     this.rdbmsWriterFactory = rdbmsWriterFactory;
     this.agentInstanceDbReader = agentInstanceDbReader;
@@ -202,7 +198,6 @@ public class RdbmsService {
         incidentProcessInstanceStatisticsByDefinitionDbReader;
     this.globalListenerDbReader = globalListenerDbReader;
     this.deployedResourceDbReader = deployedResourceDbReader;
-    this.processDefinitionVariableNameLookupDbReader = processDefinitionVariableNameLookupDbReader;
     this.replicationLogStatusProviderFactory = replicationLogStatusProviderFactory;
   }
 
@@ -373,11 +368,6 @@ public class RdbmsService {
 
   public DeployedResourceDbReader getResourceDbReader() {
     return deployedResourceDbReader;
-  }
-
-  public ProcessDefinitionVariableNameLookupDbReader
-      getProcessDefinitionVariableNameLookupReader() {
-    return processDefinitionVariableNameLookupDbReader;
   }
 
   public ReplicationLogStatusProvider getReplicationLogStatusProvider() {

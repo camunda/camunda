@@ -166,25 +166,15 @@ public class HistoryDeletionServiceIT extends ProcessInstanceHistory {
     writers.flush();
 
     // pre-condition: lookup rows exist for the target
-    assertThat(
-            rdbmsService
-                .getProcessDefinitionVariableNameLookupReader()
-                .findVariableNames(targetPdKey))
+    assertThat(rdbmsService.getVariableReader().findLookupVariableNames(targetPdKey))
         .containsExactlyInAnyOrder(varNameA, varNameB);
 
     // when
     historyDeletionService.deleteHistory(0);
 
     // then: target lookup rows removed; control untouched
-    assertThat(
-            rdbmsService
-                .getProcessDefinitionVariableNameLookupReader()
-                .findVariableNames(targetPdKey))
-        .isEmpty();
-    assertThat(
-            rdbmsService
-                .getProcessDefinitionVariableNameLookupReader()
-                .findVariableNames(controlPdKey))
+    assertThat(rdbmsService.getVariableReader().findLookupVariableNames(targetPdKey)).isEmpty();
+    assertThat(rdbmsService.getVariableReader().findLookupVariableNames(controlPdKey))
         .containsExactly(controlVarName);
   }
 

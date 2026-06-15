@@ -12,7 +12,6 @@ import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextStringId;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.read.service.ProcessDefinitionVariableNameLookupDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
 import io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures;
@@ -41,7 +40,11 @@ public class ProcessDefinitionVariableNameLookupIT {
     createInstanceWithVariable(rdbmsService, procDefKey, varName);
 
     // then: only one entry exists (idempotent insert)
-    assertThat(lookupReader(testApplication).findVariableNames(procDefKey))
+    assertThat(
+            testApplication
+                .getRdbmsService()
+                .getVariableReader()
+                .findLookupVariableNames(procDefKey))
         .containsExactly(varName);
   }
 
@@ -59,7 +62,11 @@ public class ProcessDefinitionVariableNameLookupIT {
     createInstanceWithVariable(rdbmsService, procDefKey, varNameB);
 
     // then: both names are present
-    assertThat(lookupReader(testApplication).findVariableNames(procDefKey))
+    assertThat(
+            testApplication
+                .getRdbmsService()
+                .getVariableReader()
+                .findLookupVariableNames(procDefKey))
         .containsExactlyInAnyOrder(varNameA, varNameB);
   }
 
@@ -101,7 +108,11 @@ public class ProcessDefinitionVariableNameLookupIT {
     writers.flush();
 
     // then: the cache suppressed the second lookup INSERT — exactly one entry in the table
-    assertThat(lookupReader(testApplication).findVariableNames(procDefKey))
+    assertThat(
+            testApplication
+                .getRdbmsService()
+                .getVariableReader()
+                .findLookupVariableNames(procDefKey))
         .containsExactly(varName);
   }
 
@@ -125,7 +136,12 @@ public class ProcessDefinitionVariableNameLookupIT {
     writers.getVariableWriter().deleteLookupByProcessDefinitionKeys(List.of(procDefKey), 1000);
 
     // then: all lookup entries are gone
-    assertThat(lookupReader(testApplication).findVariableNames(procDefKey)).isEmpty();
+    assertThat(
+            testApplication
+                .getRdbmsService()
+                .getVariableReader()
+                .findLookupVariableNames(procDefKey))
+        .isEmpty();
   }
 
   // ---------------------------------------------------------------------------
@@ -148,10 +164,5 @@ public class ProcessDefinitionVariableNameLookupIT {
             b -> b.processInstanceKey(processInstance.processInstanceKey()).name(varName));
     VariableFixtures.createAndSaveVariableWithProcessDefinition(
         rdbmsService, variable, processDefinitionKey);
-  }
-
-  private ProcessDefinitionVariableNameLookupDbReader lookupReader(
-      final CamundaRdbmsTestApplication testApplication) {
-    return testApplication.getRdbmsService().getProcessDefinitionVariableNameLookupReader();
   }
 }

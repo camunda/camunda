@@ -84,4 +84,8 @@ public class VariableDbReader extends AbstractEntityReader<VariableEntity>
   public SearchQueryResult<VariableEntity> search(final VariableQuery query) {
     return search(query, ResourceAccessChecks.disabled());
   }
+
+  public List<String> findLookupVariableNames(final long processDefinitionKey) {
+    return variableMapper.findLookupVariableNames(processDefinitionKey);
+  }
 }
