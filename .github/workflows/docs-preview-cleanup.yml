@@ -21,6 +21,9 @@ defaults:
     # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
     shell: bash
 
+env:
+  TEST_OWNER: '@camunda/monorepo-devops-team'
+
 jobs:
   cleanup-orphaned-previews:
     name: Cleanup Orphaned Documentation Previews

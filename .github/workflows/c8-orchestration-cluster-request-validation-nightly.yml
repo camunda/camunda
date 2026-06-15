@@ -12,6 +12,9 @@ on:
 permissions:
   contents: read
 
+env:
+  TEST_OWNER: '@camunda/qa-engineering'
+
 jobs:
   request-validation-tests:
     name: V2 Stateless Tests (${{ matrix.branch }})
@@ -63,7 +66,7 @@ jobs:
             tasklist_status=$(curl -s -m 5 http://localhost:8080/tasklist || echo "Failed")
             operate_status=$(curl -s -m 5 http://localhost:8080/operate || echo "Failed")
             identity_status=$(curl -s -m 5 http://localhost:8080/identity || echo "Failed")
-            
+
             if [[ "$tasklist_status" != "Failed" && "$operate_status" != "Failed" && "$identity_status" != "Failed" ]]; then
               echo "Services are ready!"
               ready=true

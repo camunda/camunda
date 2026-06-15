@@ -1,6 +1,6 @@
 # description: Daily compatibility tests for Camunda Spring Boot Starter across server versions
 # type: CI
-# owner: @camunda/camunda-ex
+# owner: @camunda/camundaex
 name: Camunda Spring Boot Starter Compatibility Tests
 
 on:
@@ -31,6 +31,7 @@ defaults:
     shell: bash
 
 env:
+  TEST_OWNER: '@camunda/camundaex'
   FLAKY_TEST_RERUN_COUNT: '3'
 
 jobs:

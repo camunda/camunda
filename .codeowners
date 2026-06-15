@@ -121,6 +121,7 @@ mwnw*                       @camunda/monorepo-devops-team
 /.github/workflows/camunda8-getting-started-bundle.yaml @camunda/camundaex
 /.github/workflows/camunda-client-compatibility-test* @camunda/camundaex
 /.github/workflows/camunda-process-test-compatibility* @camunda/camundaex
+/.github/workflows/camunda-spring-boot-starter-compatibility-test* @camunda/camundaex
 
 
 ################################
@@ -305,6 +306,7 @@ optimize.Dockerfile         @camunda/core-features
 /.github/workflows/c8-orchestration-cluster-*.yml @camunda/core-features
 /.github/workflows/gh-inherit-core-fields.yml @camunda/core-features
 /.github/workflows/publish-zod-schemas.yml @camunda/core-features
+/.github/workflows/verify-x-added-in-version-annotations.yml @camunda/core-features
 
 ################################
 ## @camunda/reliability-testing
@@ -373,6 +375,7 @@ optimize.Dockerfile         @camunda/core-features
 /.github/actions/rdbms/* @camunda/data-layer
 /.github/actions/setup-aws-opensearch-env/* @camunda/data-layer
 /.github/workflows/ci-database-integration-tests-reusable.yml @camunda/data-layer
+/.github/workflows/data-layer-nightly-tests.yml @camunda/data-layer
 /.github/workflows/operate-test-backup-restore.yml @camunda/data-layer
 /.github/workflows/operate-test-importer.yml @camunda/data-layer
 
@@ -389,3 +392,15 @@ optimize.Dockerfile         @camunda/core-features
 /.github/workflows/c8run*            @camunda/distribution
 /.github/workflows/docker-build-helm-integration.yml @camunda/distribution
 /.github/workflows/trigger-c8run-e2e-tests.yml @camunda/distribution
+
+################################
+## Late overrides
+################################
+
+# Codeowners is last-match-wins. Add specific overrides here when a broader
+# earlier rule (e.g. `/.github/workflows/zeebe*`) needs to be reverted to a
+# different team for a particular file.
+/.github/workflows/c8-orchestration-cluster-e2e-nightly-triage.yml @camunda/qa-engineering
+/.github/workflows/c8-orchestration-cluster-forward-compatibility-tests.yml @camunda/camundaex
+/.github/workflows/c8-orchestration-cluster-request-validation-nightly.yml @camunda/qa-engineering
+/.github/workflows/zeebe-release-stable-dry-run.yml @camunda/monorepo-devops-team

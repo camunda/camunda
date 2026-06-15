@@ -1,12 +1,15 @@
 # description: trigger workflow to run the camunda-client-compatibility-test.yml workflow on a schedule
 # type: CI
-# owner: @camunda/camunda-ex
+# owner: @camunda/camundaex
 name: Camunda Compatibility Tests - Trigger
 
 on:
   schedule:
     # Run daily at 02:00 UTC
     - cron: "0 2 * * *"
+
+env:
+  TEST_OWNER: '@camunda/camundaex'
 
 jobs:
   trigger-stable-8-8:
