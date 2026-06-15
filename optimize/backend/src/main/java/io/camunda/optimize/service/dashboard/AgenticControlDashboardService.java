@@ -18,6 +18,8 @@ import io.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTile
 import io.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardTileType;
 import io.camunda.optimize.dto.optimize.query.dashboard.tile.DimensionDto;
 import io.camunda.optimize.dto.optimize.query.dashboard.tile.PositionDto;
+import io.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
+import io.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
 import io.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
@@ -25,11 +27,14 @@ import io.camunda.optimize.dto.optimize.query.report.single.configuration.Single
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateUnit;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.RollingDateFilterDataDto;
+import io.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 import io.camunda.optimize.dto.optimize.query.report.single.process.distributed.NoneDistributedByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
+import io.camunda.optimize.dto.optimize.query.report.single.process.group.EndDateGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import io.camunda.optimize.service.db.reader.DashboardReader;
@@ -74,6 +79,11 @@ public class AgenticControlDashboardService {
       "agenticKpiExecutionMedianTokensName";
   public static final String KPI_EXECUTION_MEDIAN_TOKENS_DESCRIPTION =
       "agenticKpiExecutionMedianTokensDescription";
+  public static final String KPI_TOKEN_TREND_INPUT_NAME = "agenticKpiTokenTrendInputName";
+  public static final String KPI_TOKEN_TREND_OUTPUT_NAME = "agenticKpiTokenTrendOutputName";
+  public static final String KPI_TOKEN_TREND_NAME = "agenticKpiTokenTrendName";
+  public static final String KPI_TOKEN_TREND_FOOTNOTE_KEY =
+      "agenticControl.report.agenticKpiTokenTrendFootnote";
   public static final String KPI_DURATION_P50_NAME = "agenticKpiDurationP50Name";
   public static final String KPI_DURATION_P50_DESCRIPTION = "agenticKpiDurationP50Description";
   public static final String KPI_DURATION_P95_NAME = "agenticKpiDurationP95Name";
@@ -94,6 +104,15 @@ public class AgenticControlDashboardService {
       UUID.nameUUIDFromBytes("agentic-kpi-avg-tokens".getBytes(StandardCharsets.UTF_8)).toString();
   public static final String KPI_MEDIAN_TOKENS_REPORT_ID =
       UUID.nameUUIDFromBytes("agentic-kpi-median-tokens".getBytes(StandardCharsets.UTF_8))
+          .toString();
+  public static final String TOKEN_TREND_INPUT_REPORT_ID =
+      UUID.nameUUIDFromBytes("agentic-token-trend-input".getBytes(StandardCharsets.UTF_8))
+          .toString();
+  public static final String TOKEN_TREND_OUTPUT_REPORT_ID =
+      UUID.nameUUIDFromBytes("agentic-token-trend-output".getBytes(StandardCharsets.UTF_8))
+          .toString();
+  public static final String TOKEN_TREND_COMBINED_REPORT_ID =
+      UUID.nameUUIDFromBytes("agentic-token-trend-combined".getBytes(StandardCharsets.UTF_8))
           .toString();
   public static final String KPI_DURATION_P50_REPORT_ID =
       UUID.nameUUIDFromBytes("agentic-duration-p50".getBytes(StandardCharsets.UTF_8)).toString();
@@ -139,6 +158,7 @@ public class AgenticControlDashboardService {
     tiles.add(buildIncidentRateReport());
     tiles.add(buildAvgTokensReport());
     tiles.add(buildMedianTokensReport());
+    tiles.add(buildTokenTrendReport());
     tiles.add(buildP50DurationReport());
     tiles.add(buildP95DurationReport());
 
@@ -284,6 +304,64 @@ public class AgenticControlDashboardService {
     reportWriter.createOrUpdateSingleProcessReport(
         id, null, reportData, nameKey, descriptionKey, null);
     return buildTile(id, position, new DimensionDto(9, 2), Map.of("section", "token"));
+  }
+
+  private DashboardReportTileDto buildTokenTrendReport() {
+    reportWriter.createOrUpdateSingleProcessReport(
+        TOKEN_TREND_INPUT_REPORT_ID,
+        null,
+        buildTokenTrendSubReportData(ViewProperty.INPUT_TOKENS),
+        KPI_TOKEN_TREND_INPUT_NAME,
+        null,
+        null);
+    reportWriter.createOrUpdateSingleProcessReport(
+        TOKEN_TREND_OUTPUT_REPORT_ID,
+        null,
+        buildTokenTrendSubReportData(ViewProperty.OUTPUT_TOKENS),
+        KPI_TOKEN_TREND_OUTPUT_NAME,
+        null,
+        null);
+
+    final CombinedReportDataDto combined = new CombinedReportDataDto();
+    combined.setVisualization(ProcessVisualization.LINE);
+    combined.setReports(
+        List.of(
+            new CombinedReportItemDto(TOKEN_TREND_INPUT_REPORT_ID, "#0062FF"),
+            new CombinedReportItemDto(TOKEN_TREND_OUTPUT_REPORT_ID, "#009D9A")));
+    reportWriter.createOrUpdateCombinedReport(
+        TOKEN_TREND_COMBINED_REPORT_ID, null, combined, KPI_TOKEN_TREND_NAME, null, null);
+
+    return buildTile(
+        TOKEN_TREND_COMBINED_REPORT_ID,
+        new PositionDto(0, 6),
+        new DimensionDto(9, 4),
+        Map.of("section", "token", "footnote", KPI_TOKEN_TREND_FOOTNOTE_KEY));
+  }
+
+  private ProcessReportDataDto buildTokenTrendSubReportData(final ViewProperty tokenProperty) {
+    final EndDateGroupByDto groupBy = new EndDateGroupByDto();
+    groupBy.setValue(new DateGroupByValueDto(AggregateByDateUnit.WEEK));
+    return ProcessReportDataDto.builder()
+        .definitions(Collections.emptyList())
+        .view(new ProcessViewDto(ProcessViewEntity.AGENT_INSTANCE, tokenProperty))
+        .groupBy(groupBy)
+        .distributedBy(new NoneDistributedByDto())
+        .visualization(ProcessVisualization.LINE)
+        .configuration(
+            SingleReportConfigurationDto.builder()
+                .aggregationTypes(
+                    new LinkedHashSet<>(
+                        Collections.singletonList(new AggregationDto(AggregationType.SUM))))
+                .build())
+        .filter(
+            ProcessFilterBuilder.filter()
+                .completedInstancesOnly()
+                .add()
+                .hasAgentInstances()
+                .add()
+                .buildList())
+        .agenticControlReport(true)
+        .build();
   }
 
   private DashboardReportTileDto buildP50DurationReport() {
