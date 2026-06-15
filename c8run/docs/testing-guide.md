@@ -114,12 +114,12 @@ Use `playwright_c8Run_release_test.yml` to validate a `camunda/camunda` feature 
 
 **Required inputs:**
 
-| Input               | Description                                      | Where to get it                                               |
-|---------------------|--------------------------------------------------|---------------------------------------------------------------|
-| `c8Version`         | Minor version, e.g. `8.10`                       | `major.minor` of `CAMUNDA_VERSION` in `c8run/.env`           |
-| `branchName`        | Branch in `camunda/camunda` to check out         | Your feature branch name                                      |
-| `camundaVersion`    | Full version, e.g. `8.10.0-alpha2`               | `CAMUNDA_VERSION` in `c8run/.env`                             |
-| `connectorsVersion` | Full connectors version, e.g. `8.10.0-alpha2`   | `CONNECTORS_VERSION` in `c8run/.env`                          |
+|        Input        |                  Description                  |                  Where to get it                   |
+|---------------------|-----------------------------------------------|----------------------------------------------------|
+| `c8Version`         | Minor version, e.g. `8.10`                    | `major.minor` of `CAMUNDA_VERSION` in `c8run/.env` |
+| `branchName`        | Branch in `camunda/camunda` to check out      | Your feature branch name                           |
+| `camundaVersion`    | Full version, e.g. `8.10.0-alpha2`            | `CAMUNDA_VERSION` in `c8run/.env`                  |
+| `connectorsVersion` | Full connectors version, e.g. `8.10.0-alpha2` | `CONNECTORS_VERSION` in `c8run/.env`               |
 
 **Trigger via `gh` CLI:**
 
