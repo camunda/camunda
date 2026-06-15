@@ -2,13 +2,14 @@
 
 ## Status
 
-Proposed
+Accepted
 
 ## Deciders
 
 - Proposed by: Sebastian Bathke ([@megglos](https://github.com/megglos))
+- Patrick Wunderlich ([@p-wunderlich](https://github.com/p-wunderlich))
 
-_This ADR is a proposal; deciders will be recorded once the team aligns._
+_Additional deciders may be recorded as more of the team reviews._
 
 ## Context
 
