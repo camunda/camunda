@@ -32,19 +32,19 @@ import org.junit.Test;
  * when a BPMN element is activated more times than the configured threshold within one process
  * instance.
  *
- * <p>The engine is configured with a very low threshold (3 activations) and a check interval of 1
- * (check on every single activation) so the tests run quickly without needing hundreds of loop
+ * <p>The engine is configured with a very low threshold (3 activations) and a retry cooldown of 1
+ * (re-check on every single activation) so the tests run quickly without needing hundreds of loop
  * iterations.
  */
 public final class LoopDetectionIncidentTest {
 
   /**
-   * Low threshold so tests don't need to run > 1000 loop iterations. checkInterval=1 means the
-   * detection fires as soon as the cumulative count reaches {@code MAX_ACTIVATIONS}.
+   * Low threshold so tests don't need to run > 1000 loop iterations. A retry cooldown of 1 means
+   * the detection fires as soon as the cumulative count exceeds {@code MAX_ACTIVATIONS}.
    */
   private static final int MAX_ACTIVATIONS = 3;
 
-  private static final int CHECK_INTERVAL = 1;
+  private static final int RETRY_COOLDOWN = 1;
 
   private static final String PROCESS_ID = "looping-process";
   private static final String TASK_ID = "looping-task";
@@ -65,7 +65,7 @@ public final class LoopDetectionIncidentTest {
           .withEngineConfig(
               cfg ->
                   cfg.setMaxElementActivationCount(MAX_ACTIVATIONS)
-                      .setElementActivationRetryCooldown(CHECK_INTERVAL));
+                      .setElementActivationRetryCooldown(RETRY_COOLDOWN));
 
   // ---------------------------------------------------------------------------
   // BPMN model helpers
