@@ -34,6 +34,7 @@ public interface UserTaskRecordValue
     extends RecordValueWithVariables,
         ProcessInstanceRelated,
         AuditLogProcessInstanceRelated,
+        WaitStateRelated,
         TenantOwned {
 
   long getUserTaskKey();

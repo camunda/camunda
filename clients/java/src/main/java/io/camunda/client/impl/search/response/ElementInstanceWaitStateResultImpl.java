@@ -61,6 +61,9 @@ public class ElementInstanceWaitStateResultImpl implements ElementInstanceWaitSt
       case MESSAGE:
         return new MessageWaitStateDetailsImpl(
             (io.camunda.client.protocol.rest.MessageWaitStateDetails) item);
+      case USER_TASK:
+        return new UserTaskWaitStateDetailsImpl(
+            (io.camunda.client.protocol.rest.UserTaskWaitStateDetails) item);
       default:
         return null;
     }
