@@ -10,6 +10,8 @@ import styled from 'styled-components';
 
 const PageContent = styled.main`
   padding-top: var(--cds-spacing-09);
+  padding-left: var(--c3-sidebar-width, 0);
+  transition: padding-left 0.15s ease-out;
   height: 100%;
 `;
 

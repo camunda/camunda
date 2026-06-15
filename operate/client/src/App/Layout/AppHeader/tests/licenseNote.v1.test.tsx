@@ -7,7 +7,7 @@
  */
 
 import {vi} from 'vitest';
-vi.mock('modules/feature-flags', () => ({IS_NAV_V2_ENABLED: true}));
+vi.mock('modules/feature-flags', () => ({IS_NAV_V2_ENABLED: false}));
 
 import {AppHeader} from '../index';
 import {render, screen, waitFor} from 'modules/testing-library';
