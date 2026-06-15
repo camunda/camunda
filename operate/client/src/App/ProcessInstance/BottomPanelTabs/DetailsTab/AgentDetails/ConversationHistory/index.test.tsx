@@ -29,7 +29,11 @@ function createWrapper() {
   return ({children}: {children: ReactNode}) => {
     const router = createMemoryRouter(
       [{path: Paths.processInstance(undefined, true), element: children}],
-      {initialEntries: [Paths.processInstanceDetails({isRelative: true})]},
+      {
+        initialEntries: [
+          Paths.processInstanceDetails({processInstanceId: AGENT_INSTANCE_KEY}),
+        ],
+      },
     );
     return (
       <QueryClientProvider client={queryClient}>
@@ -130,7 +134,122 @@ describe('<ConversationHistory />', () => {
     expect(screen.getByText('Tool output here')).toBeInTheDocument();
   });
 
-  it('should render enabled tool call buttons when the tool link to an element', async () => {
+  it('should render conversation items with formatted object content', async () => {
+    mockSearchAgentInstanceHistory().withSuccess(
+      searchResult([
+        mockAgentInstanceHistoryItem({
+          historyItemKey: '1',
+          role: 'TOOL_RESULT',
+          content: [
+            {
+              contentType: 'OBJECT',
+              object: {message: 'Tool output here', hello: 'world'},
+            },
+          ],
+        }),
+      ]),
+    );
+
+    render(
+      <ConversationHistory
+        agentInstanceKey={AGENT_INSTANCE_KEY}
+        enablePeriodicRefetch={false}
+      />,
+      {wrapper: createWrapper()},
+    );
+
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('conversation-history-skeleton'),
+    );
+
+    const toolResultMessage = within(
+      screen.getByTestId('conversation-message-1'),
+    );
+    expect(
+      toolResultMessage.getByRole('heading', {name: 'Tool Result'}),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        '{\n  "message": "Tool output here",\n  "hello": "world"\n}',
+        {
+          normalizer: (text) => text,
+        },
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('should render document references', async () => {
+    mockSearchAgentInstanceHistory().withSuccess(
+      searchResult([
+        mockAgentInstanceHistoryItem({
+          historyItemKey: '1',
+          role: 'USER',
+          content: [
+            {contentType: 'TEXT', text: 'Here are the documents.'},
+            {
+              contentType: 'DOCUMENT',
+              documentReference: {
+                'camunda.document.type': 'camunda',
+                contentHash: 'abc123',
+                documentId: 'doc-1',
+                storeId: 'default',
+                metadata: {
+                  contentType: 'text/plain',
+                  fileName: 'report.txt',
+                  size: 1234,
+                  expiresAt: null,
+                  processDefinitionId: null,
+                  processInstanceKey: null,
+                  customProperties: {},
+                },
+              },
+            },
+            {
+              contentType: 'DOCUMENT',
+              documentReference: {
+                'camunda.document.type': 'camunda',
+                contentHash: 'def456',
+                documentId: 'doc-2',
+                storeId: 'default',
+                metadata: {
+                  contentType: 'image/png',
+                  fileName: 'screenshot.png',
+                  size: 5678,
+                  expiresAt: null,
+                  processDefinitionId: null,
+                  processInstanceKey: null,
+                  customProperties: {},
+                },
+              },
+            },
+          ],
+        }),
+      ]),
+    );
+
+    render(
+      <ConversationHistory
+        agentInstanceKey={AGENT_INSTANCE_KEY}
+        enablePeriodicRefetch={false}
+      />,
+      {wrapper: createWrapper()},
+    );
+
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('conversation-history-skeleton'),
+    );
+
+    const message = within(screen.getByTestId('conversation-message-1'));
+    expect(message.getByText('Here are the documents.')).toBeInTheDocument();
+    expect(
+      message.getByRole('button', {name: 'report.txt'}),
+    ).toBeInTheDocument();
+    expect(
+      message.getByRole('button', {name: 'screenshot.png'}),
+    ).toBeInTheDocument();
+  });
+
+  it('should render tool calls and enable them when a tool links to an element', async () => {
     mockSearchAgentInstanceHistory().withSuccess(
       searchResult([
         mockAgentInstanceHistoryItem({
@@ -174,49 +293,5 @@ describe('<ConversationHistory />', () => {
     expect(
       assistantMessage.getByRole('button', {name: 'search'}),
     ).toBeDisabled();
-  });
-
-  it('should render conversation items with formatted object content', async () => {
-    mockSearchAgentInstanceHistory().withSuccess(
-      searchResult([
-        mockAgentInstanceHistoryItem({
-          historyItemKey: '1',
-          role: 'TOOL_RESULT',
-          content: [
-            {
-              contentType: 'OBJECT',
-              object: {message: 'Tool output here', hello: 'world'},
-            },
-          ],
-        }),
-      ]),
-    );
-
-    render(
-      <ConversationHistory
-        agentInstanceKey={AGENT_INSTANCE_KEY}
-        enablePeriodicRefetch={false}
-      />,
-      {wrapper: createWrapper()},
-    );
-
-    await waitForElementToBeRemoved(
-      screen.queryByTestId('conversation-history-skeleton'),
-    );
-
-    const toolResultMessage = within(
-      screen.getByTestId('conversation-message-1'),
-    );
-    expect(
-      toolResultMessage.getByRole('heading', {name: 'Tool Result'}),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        '{\n  "message": "Tool output here",\n  "hello": "world"\n}',
-        {
-          normalizer: (text) => text,
-        },
-      ),
-    ).toBeInTheDocument();
   });
 });

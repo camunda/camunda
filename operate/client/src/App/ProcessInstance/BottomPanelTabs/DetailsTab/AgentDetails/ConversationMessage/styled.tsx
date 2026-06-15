@@ -114,6 +114,10 @@ const AttachmentButton = styled.button`
   whitespace: nowrap;
   cursor: pointer;
 
+  & > svg {
+    color: var(--cds-icon-secondary);
+  }
+
   &:disabled {
     cursor: not-allowed;
     color: var(--cds-text-primary);

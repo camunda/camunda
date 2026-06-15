@@ -8,7 +8,7 @@
 
 import {useReducer} from 'react';
 import {Button} from '@carbon/react';
-import {Maximize} from '@carbon/react/icons';
+import {Document, Maximize} from '@carbon/react/icons';
 import type {
   AgentInstanceHistoryItem,
   AgentInstanceHistoryRole,
@@ -66,6 +66,10 @@ const ConversationMessage: React.FC<ConversationMessageProps> = ({
     initialMessageDetailsState,
   );
 
+  const documentEntries = content.filter(
+    (entry) => entry.contentType === 'DOCUMENT',
+  );
+
   return (
     <Container
       $actor={actor}
@@ -109,6 +113,17 @@ const ConversationMessage: React.FC<ConversationMessageProps> = ({
           }
         }
       })}
+      {documentEntries.length > 0 && (
+        <AttachmentsContainer>
+          <AttachmentsLabel>Documents</AttachmentsLabel>
+          {documentEntries.map(({documentReference}) => (
+            <AttachmentButton key={documentReference.documentId} disabled>
+              <Document size={12} />
+              {documentReference.metadata.fileName}
+            </AttachmentButton>
+          ))}
+        </AttachmentsContainer>
+      )}
       {toolCalls.length > 0 && (
         <AttachmentsContainer>
           <AttachmentsLabel>Tool calls</AttachmentsLabel>
