@@ -131,14 +131,16 @@ public class DefaultMembershipService implements MembershipService {
     @Override
     public synchronized List<String> groups() {
       if (groups == null) {
-        // mappingRules must run first so ownerTypeToIds includes MAPPING_RULE before the group
-        // lookup uses it.
-        mappingRules();
-
         final Set<String> ids;
         if (eagerGroupsFromClaims != null) {
+          // Claims path: the group ids come straight from the JWT, in memory. No DB lookup, so
+          // we don't need MAPPING_RULE seeded into ownerTypeToIds — skip mappingRules() so a
+          // groups-only read on the broker hot path stays free of DB queries.
           ids = new HashSet<>(eagerGroupsFromClaims);
         } else {
+          // DB path: the group lookup keys off ownerTypeToIds, which must include MAPPING_RULE
+          // when any mapping rules matched the claims.
+          mappingRules();
           ids =
               groupServices
                   .getGroupsByMemberTypeAndMemberIds(
@@ -159,6 +161,9 @@ public class DefaultMembershipService implements MembershipService {
     @Override
     public synchronized List<String> roles() {
       if (roles == null) {
+        // Roles look up against ownerTypeToIds and need MAPPING_RULE seeded too. groups() on the
+        // claims path deliberately skips that, so re-establish the dependency here explicitly.
+        mappingRules();
         groups();
 
         final var ids =

@@ -109,6 +109,33 @@ public class DefaultMembershipServiceTest {
   }
 
   @Test
+  void shouldNotQueryMappingRulesWhenGroupsComeFromOidcClaim() {
+    // given — OIDC with groupsClaim configured: group ids come straight from the JWT, no DB
+    // lookup is needed. Reading authenticatedGroupIds() on the broker hot path must not drag a
+    // getMatchingMappingRules query along for the ride.
+    when(oidcAuthenticationConfiguration.isGroupsClaimConfigured()).thenReturn(true);
+    when(oidcAuthenticationConfiguration.getGroupsClaim()).thenReturn("groups");
+    final var serviceWithGroupsClaim =
+        new DefaultMembershipService(
+            mappingRuleServices,
+            tenantServices,
+            roleServices,
+            groupServices,
+            securityConfiguration);
+
+    final var resolver =
+        serviceWithGroupsClaim.newResolver(
+            Map.of("sub", "demo", "groups", List.of("g1", "g2")), "demo", PrincipalType.USER);
+
+    // when — only groups are read
+    assertThat(resolver.groups()).containsExactlyInAnyOrder("g1", "g2");
+
+    // then — no DB calls at all on this path
+    verify(mappingRuleServices, never()).getMatchingMappingRules(any(), any());
+    verify(groupServices, never()).getGroupsByMemberTypeAndMemberIds(any(), any());
+  }
+
+  @Test
   void basicAuthOverloadShouldUseEmptyClaimsAndUserPrincipal() {
     // given — convenience overload for the BASIC-auth callers
     final var resolver = membershipService.newResolver("demo");
