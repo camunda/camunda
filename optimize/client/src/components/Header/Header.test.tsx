@@ -34,6 +34,8 @@ const defaultUiConfig = {
   commercial: true,
 };
 
+jest.mock('feature-flags', () => ({IS_NAV_V2_ENABLED: false}));
+
 jest.mock('hooks', () => ({
   useErrorHandling: jest.fn(() => ({
     mightFail: jest.fn(async (data, cb) => cb(await data)),

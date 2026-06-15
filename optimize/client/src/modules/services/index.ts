@@ -31,6 +31,7 @@ export {
 } from './reportService';
 export {addSources, getCollection} from './collectionService';
 export {default as getScreenBounds} from './getScreenBounds';
+export {default as getC3SidebarWidth} from './getC3SidebarWidth';
 export {default as ignoreFragments} from './ignoreFragments';
 export {default as isReactElement} from './isReactElement';
 export {incompatibleFilters} from './incompatibleFilters';

@@ -10,6 +10,8 @@ import {shallow} from 'enzyme';
 
 import Analysis from './Analysis';
 
+jest.mock('feature-flags', () => ({IS_NAV_V2_ENABLED: false}));
+
 jest.mock('react-router-dom', () => ({
   ...jest.requireActual('react-router-dom'),
   useLocation: jest.fn().mockReturnValue({pathname: '/analysis/branchAnalysis'}),

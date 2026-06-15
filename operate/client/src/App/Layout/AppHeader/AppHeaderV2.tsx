@@ -172,9 +172,7 @@ const AppHeaderV2: React.FC = observer(() => {
                     link: 'cookies',
                   });
 
-                  window.Osano?.cm?.showDrawer(
-                    'osano-cm-dom-info-dialog-open',
-                  );
+                  window.Osano?.cm?.showDrawer('osano-cm-dom-info-dialog-open');
                 },
               },
             ]),
