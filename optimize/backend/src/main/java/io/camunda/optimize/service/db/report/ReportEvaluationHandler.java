@@ -35,6 +35,8 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepor
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.group.EndDateGroupByDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
 import io.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
 import io.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import io.camunda.optimize.dto.optimize.query.variable.VariableType;
@@ -275,8 +277,7 @@ public abstract class ReportEvaluationHandler {
     final List<SingleProcessReportDefinitionRequestDto> foundSingleReports =
         reportService.getAllSingleProcessReportsForIdsOmitXml(singleReportIds).stream()
             .filter(reportDefinition -> getAuthorizedRole(userId, reportDefinition).isPresent())
-            .peek(
-                reportDefinition -> addAdditionalFiltersForReport(evaluationInfo, reportDefinition))
+            .peek(reportDefinition -> applyEvaluationOverrides(evaluationInfo, reportDefinition))
             .collect(Collectors.toList());
 
     if (foundSingleReports.size() != singleReportIds.size()) {
@@ -294,7 +295,7 @@ public abstract class ReportEvaluationHandler {
 
   private ReportEvaluationResult evaluateSingleReportWithErrorCheck(
       final ReportEvaluationInfo evaluationInfo, final RoleType currentUserRole) {
-    addAdditionalFiltersForReport(evaluationInfo, evaluationInfo.getReport());
+    applyEvaluationOverrides(evaluationInfo, evaluationInfo.getReport());
     addHiddenFlowNodeIds(evaluationInfo);
     try {
       final ReportEvaluationContext<SingleReportDefinitionDto<SingleReportDataDto>> context =
@@ -316,7 +317,7 @@ public abstract class ReportEvaluationHandler {
     }
   }
 
-  private void addAdditionalFiltersForReport(
+  private void applyEvaluationOverrides(
       final ReportEvaluationInfo evaluationInfo, final ReportDefinitionDto<?> reportDefinition) {
     if (evaluationInfo.isSharedReport()) {
       addAdditionalFiltersForReport(reportDefinition, evaluationInfo.getAdditionalFilters());
@@ -324,6 +325,7 @@ public abstract class ReportEvaluationHandler {
       addAdditionalFiltersForAuthorizedReport(
           evaluationInfo.getUserId(), reportDefinition, evaluationInfo.getAdditionalFilters());
     }
+    overrideGroupByDateUnit(reportDefinition, evaluationInfo.getAdditionalFilters());
   }
 
   private void addHiddenFlowNodeIds(final ReportEvaluationInfo evaluationInfo) {
@@ -410,6 +412,22 @@ public abstract class ReportEvaluationHandler {
             "Cannot add additional filters to report [{}] as it is not a process report",
             reportDefinitionDto.getId());
       }
+    }
+  }
+
+  private void overrideGroupByDateUnit(
+      final ReportDefinitionDto<?> reportDefinitionDto,
+      final AdditionalProcessReportEvaluationFilterDto additionalFilters) {
+    if (additionalFilters == null || additionalFilters.getGroupByDateUnit() == null) {
+      return;
+    }
+    if (!(reportDefinitionDto
+        instanceof final SingleProcessReportDefinitionRequestDto definitionDto)) {
+      return;
+    }
+    if (definitionDto.getData().getGroupBy() instanceof final EndDateGroupByDto endDateGroupBy
+        && endDateGroupBy.getValue() instanceof final DateGroupByValueDto dateValue) {
+      dateValue.setUnit(additionalFilters.getGroupByDateUnit());
     }
   }
 }
