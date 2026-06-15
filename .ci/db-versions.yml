@@ -52,6 +52,10 @@ mssql:
   - "2022-latest"
   - "2025-latest"
 
+azure-sql:
+  - "1.0.7"
+  - "2.0.0"
+
 oracle:
   - "21-slim-faststart"
   - "23.26.1-slim-faststart"

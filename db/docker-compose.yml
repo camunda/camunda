@@ -28,6 +28,15 @@ services:
     ports:
       - "1433:1433"
 
+  azure-sql:
+    image: mcr.microsoft.com/azure-sql-edge:${IMAGE_VERSION:-latest}
+    restart: always
+    environment:
+      ACCEPT_EULA: y
+      MSSQL_SA_PASSWORD: Camunda#8_demo
+    ports:
+      - "1433:1433"
+
   mariadb:
     image: mariadb:${IMAGE_VERSION:-12.0}
     restart: always
