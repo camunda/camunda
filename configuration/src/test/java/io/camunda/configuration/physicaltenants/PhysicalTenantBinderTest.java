@@ -62,6 +62,29 @@ class PhysicalTenantBinderTest {
     assertThat(root.getCluster().getReplicationFactor()).isEqualTo(3);
   }
 
+  @Test
+  void bindingShardsCountPerIndexPreservesUntouchedExistingKeys() {
+    final Camunda root = new Camunda();
+    root.getData()
+        .getSecondaryStorage()
+        .getElasticsearch()
+        .setNumberOfShardsPerIndex(Map.of("list-view", 3, "variable", 5));
+
+    final MockEnvironment env = new MockEnvironment();
+    env.getPropertySources()
+        .addFirst(
+            new MapPropertySource(
+                "test",
+                Map.of(
+                    "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.number-of-shards-per-index.list-view",
+                    7)));
+
+    Binder.get(env).bind("camunda.physical-tenants.tenanta", Bindable.ofInstance(root));
+    assertThat(root.getData().getSecondaryStorage().getElasticsearch().getNumberOfShardsPerIndex())
+        .hasFieldOrPropertyWithValue("list-view", 7)
+        .hasFieldOrPropertyWithValue("variable", 5);
+  }
+
   public static class Holder {
     private Nested nested = new Nested();
 
