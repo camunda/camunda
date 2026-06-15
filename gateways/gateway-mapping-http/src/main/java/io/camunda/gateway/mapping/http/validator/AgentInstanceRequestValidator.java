@@ -10,10 +10,12 @@ package io.camunda.gateway.mapping.http.validator;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
+import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateDate;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateKeyFormat;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validatePositiveKeyFormat;
 
 import io.camunda.gateway.protocol.model.AgentInstanceCreationRequest;
+import io.camunda.gateway.protocol.model.AgentInstanceDocumentContent;
 import io.camunda.gateway.protocol.model.AgentInstanceHistoryItemRequest;
 import io.camunda.gateway.protocol.model.AgentInstanceUpdateRequest;
 import java.util.ArrayList;
@@ -101,10 +103,19 @@ public class AgentInstanceRequestValidator {
 
           if (request.getContent() == null || request.getContent().isEmpty()) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("content"));
+          } else {
+            for (int i = 0; i < request.getContent().size(); i++) {
+              final var content = request.getContent().get(i);
+              if (content instanceof final AgentInstanceDocumentContent doc) {
+                validateDocumentContentItem(i, doc, violations);
+              }
+            }
           }
 
           if (request.getProducedAt() == null || request.getProducedAt().isBlank()) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("producedAt"));
+          } else {
+            validateDate(request.getProducedAt(), "producedAt", violations);
           }
 
           return violations;
@@ -147,6 +158,19 @@ public class AgentInstanceRequestValidator {
 
           return violations;
         });
+  }
+
+  private void validateDocumentContentItem(
+      final int index, final AgentInstanceDocumentContent doc, final List<String> violations) {
+    final var ref = doc.getDocumentReference();
+    if (ref == null || ref.getMetadata() == null) {
+      return;
+    }
+    final var expiresAt = ref.getMetadata().getExpiresAt();
+    if (expiresAt != null && !expiresAt.isBlank()) {
+      validateDate(
+          expiresAt, "content[" + index + "].documentReference.metadata.expiresAt", violations);
+    }
   }
 
   private List<String> validateLimit(final String limitName, final Number limit) {
