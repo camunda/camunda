@@ -13,6 +13,7 @@ import static io.camunda.it.util.TestHelper.deployResource;
 import static io.camunda.it.util.TestHelper.startProcessInstance;
 import static io.camunda.it.util.TestHelper.startProcessInstanceWithMessage;
 import static io.camunda.it.util.TestHelper.waitForProcessInstanceToBeTerminated;
+import static io.camunda.it.util.TestHelper.waitForProcessInstancesToBeCompleted;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
 import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
 import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY;
@@ -343,7 +344,7 @@ public class WaitStateMessageIT {
     // when — correlate a message to start the process instance; it completes immediately
     final long pik =
         startProcessInstanceWithMessage(camundaClient, "start-event-msg").getProcessInstanceKey();
-    waitForProcessInstanceToBeTerminated(camundaClient, pik);
+    waitForProcessInstancesToBeCompleted(camundaClient, f -> f.processInstanceKey(pik), 1);
 
     // then — MessageStartEventSubscription records are not tracked by the MESSAGE wait-state
     // transformer; no wait-state row should have been created for this instance
