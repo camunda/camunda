@@ -332,6 +332,7 @@ public class ProcessInstanceMigrationCatchEventBehavior {
           timerRecord.setTenantId(timerInstance.getTenantId());
           timerRecord.setRootProcessInstanceKey(timerInstance.getRootProcessInstanceKey());
           timerRecord.setBpmnProcessId(timerInstance.getBpmnProcessId());
+          timerRecord.setElementType(timerInstance.getElementType());
 
           stateWriter.appendFollowUpEvent(
               timerInstance.getKey(), TimerIntent.MIGRATED, timerRecord);
