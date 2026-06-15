@@ -139,7 +139,9 @@ public class CompositeCommandResult {
                       .forEach(
                           viewMeasure ->
                               measureDataSets
-                                  .get(viewMeasure.getViewMeasureIdentifier())
+                                  .computeIfAbsent(
+                                      viewMeasure.getViewMeasureIdentifier(),
+                                      k -> new ArrayList<>())
                                   .add(
                                       new MapResultEntryDto(
                                           group.getKey(),
@@ -205,8 +207,11 @@ public class CompositeCommandResult {
                               measureMap.put(
                                   new ViewMeasureIdentifier(aggregationType, userTaskDurationTime),
                                   defaultValueSupplier.get())));
-    } else if (ViewProperty.DURATION.equals(viewProperty) || isNumberVariableView()) {
-      // if this is duration view property an entry per aggregationType is expected
+    } else if (ViewProperty.DURATION.equals(viewProperty)
+        || isNumberVariableView()
+        || (viewProperty != null && viewProperty.isAgentToken())) {
+      // duration, numeric variable, and agent token views each produce one entry per
+      // aggregationType
       reportDataDto
           .getConfiguration()
           .getAggregationTypes()
