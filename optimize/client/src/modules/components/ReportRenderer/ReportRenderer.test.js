@@ -40,6 +40,19 @@ it('should render ProcessReportRenderer if the report type is process', () => {
   expect(node.find('ProcessReportRenderer')).toExist();
 });
 
+it('should forward the badge prop to the view component', () => {
+  const badge = <span>badge</span>;
+  const node = shallow(<ReportRenderer report={reportTemplate} badge={badge} />);
+
+  expect(node.find('ProcessReportRenderer').prop('badge')).toBe(badge);
+});
+
+it('should forward an undefined badge prop when badge is not provided', () => {
+  const node = shallow(<ReportRenderer report={reportTemplate} />);
+
+  expect(node.find('ProcessReportRenderer').prop('badge')).toBeUndefined();
+});
+
 it('should include the instance count if indicated in the config', () => {
   const report = {
     ...reportTemplate,

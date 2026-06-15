@@ -177,7 +177,8 @@ export default function OptimizeReportTile({
 
   const isNumberViz = data?.data?.visualization === 'number';
   const currentValue = data?.result?.measures?.[0]?.data;
-  const showDeltaBadge = isNumberViz && tile.configuration?.comparisonPeriod && currentValue != null;
+  const showDeltaBadge =
+    isNumberViz && tile.configuration?.comparisonPeriod && currentValue != null;
   let tileProps = {
     className: classnames('OptimizeReportTile DashboardTile', {
       hasComparisonPeriod: comparisonPeriod,

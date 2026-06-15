@@ -22,16 +22,21 @@ export default function KpiDeltaBadge({
   deltaGoodDirection,
 }: KpiDeltaBadgeProps): JSX.Element | null {
   if (priorValue == null) {
-    return null;
+    return (
+      <Tag size="sm" type="gray">
+        — WoW
+      </Tag>
+    );
   }
 
   const delta = currentValue - priorValue;
-  const isPositive = delta >= 0;
+  const isNeutral = delta === 0;
+  const isPositive = delta > 0;
   const isGood =
-    (deltaGoodDirection === 'up' && isPositive) ||
-    (deltaGoodDirection === 'down' && !isPositive);
+    !isNeutral &&
+    ((deltaGoodDirection === 'up' && isPositive) || (deltaGoodDirection === 'down' && !isPositive));
 
-  const sign = isPositive ? '+' : '-';
+  const sign = isPositive || isNeutral ? '+' : '-';
   const absDelta = Math.abs(delta);
 
   let formatted: string;
@@ -48,8 +53,10 @@ export default function KpiDeltaBadge({
     formatted = `${sign}${Math.round(absDelta)}`;
   }
 
+  const tagType = isNeutral ? 'gray' : isGood ? 'green' : 'red';
+
   return (
-    <Tag size="sm" type={isGood ? 'green' : 'red'}>
+    <Tag size="sm" type={tagType}>
       {formatted} WoW
     </Tag>
   );

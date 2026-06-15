@@ -220,3 +220,39 @@ it('should fall back to measure property formatter when valueFormat is not set',
 
   expect(node.find('.data')).toIncludeText('42');
 });
+
+describe('badge prop', () => {
+  const badge = <span className="testBadge">delta</span>;
+
+  it('should render badge inside the first .data element', () => {
+    const node = shallow(<Number report={report} badge={badge} />);
+
+    expect(node.find('.data').first().find('.testBadge')).toExist();
+  });
+
+  it('should not render badge in subsequent .data elements for multi-measure reports', () => {
+    const multiMeasureReport = {
+      ...report,
+      data: {
+        ...report.data,
+        view: {properties: ['frequency', 'duration']},
+      },
+      result: {
+        measures: [
+          {data: 10, property: 'frequency'},
+          {data: 500, property: 'duration', aggregationType: {type: 'avg', value: null}},
+        ],
+      },
+    };
+    const node = shallow(<Number report={multiMeasureReport} badge={badge} />);
+
+    expect(node.find('.data').at(0).find('.testBadge')).toExist();
+    expect(node.find('.data').at(1).find('.testBadge')).not.toExist();
+  });
+
+  it('should render nothing in .data when badge is not provided', () => {
+    const node = shallow(<Number report={report} />);
+
+    expect(node.find('.data').first().find('.testBadge')).not.toExist();
+  });
+});
