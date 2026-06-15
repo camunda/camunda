@@ -28,8 +28,8 @@ type StatisticsPayload = {
 };
 
 type ModificationBadgePayload = {
-  newTokenCount?: number;
-  cancelledTokenCount?: number;
+  newTokenCount: number;
+  cancelledTokenCount: number;
 };
 
 type WaitingStatePayload = {
@@ -44,6 +44,12 @@ type AgentStatusPayload = {
 type AgentShinePayload = {
   agentInstanceKey: string;
 };
+
+const OVERLAY_TYPE_STATE = 'elementState';
+const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';
+const OVERLAY_TYPE_WAITING_STATE = 'waitingState';
+const OVERLAY_TYPE_AGENT_STATUS = 'agentStatus';
+const OVERLAY_TYPE_AGENT_SHINE = 'agentShine';
 
 const isStatisticsPayload = (
   payload: unknown,
@@ -95,6 +101,11 @@ const isAgentShinePayload = (
 };
 
 export {
+  OVERLAY_TYPE_STATE,
+  OVERLAY_TYPE_MODIFICATIONS_BADGE,
+  OVERLAY_TYPE_WAITING_STATE,
+  OVERLAY_TYPE_AGENT_STATUS,
+  OVERLAY_TYPE_AGENT_SHINE,
   isStatisticsPayload,
   isModificationBadgePayload,
   isWaitingStatePayload,
@@ -104,6 +115,7 @@ export {
 export type {
   ElementState,
   OverlayData,
+  ModificationBadgePayload,
   WaitingStatePayload,
   AgentStatusPayload,
   AgentShinePayload,
