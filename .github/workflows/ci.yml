@@ -1812,6 +1812,7 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@main
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        timeout-minutes: 1
       - uses: ./.github/actions/setup-build
         with:
           dockerhub: true
@@ -1823,10 +1824,15 @@ jobs:
         id: build-optimize-fe
         with:
           directory: ./optimize/client
+      - name: Build zeebe-protocol from source
+        uses: ./.github/actions/run-maven
+        with:
+          parameters: install -pl zeebe/protocol -Dquickly
       - name: Generate Optimize production .tar.gz
         uses: ./.github/actions/run-maven
         with:
-          parameters: install -f optimize -DskipTests -Dskip.docker -PskipFrontendBuild,runAssembly -T1
+          parameters: install -f optimize -DskipTests -Dskip.docker -PskipFrontendBuild,runAssembly
+          threads: 1
       - uses: ./.github/actions/build-platform-docker
         id: build-optimize-docker
         with:
