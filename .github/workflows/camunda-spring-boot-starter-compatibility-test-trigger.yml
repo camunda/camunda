@@ -1,6 +1,6 @@
 # description: trigger workflow to run the camunda-spring-boot-starter-compatibility-test.yml workflow on a schedule
 # type: CI
-# owner: @camunda/camunda-ex
+# owner: @camunda/camundaex
 name: Camunda Spring Boot Starter Compatibility Tests - Trigger
 
 on:

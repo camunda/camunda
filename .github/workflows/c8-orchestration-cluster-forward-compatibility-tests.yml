@@ -3,7 +3,7 @@
 # to ensure forward compatibility of REST endpoints across versions.
 # Scheduled nightly and supports manual dispatch for custom branch combinations.
 # type: CI
-# owner: @camunda/camunda-ex
+# owner: @camunda/camundaex
 ---
 name: C8 REST API Forward Compatibility Tests
 

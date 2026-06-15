@@ -1,6 +1,6 @@
 # description: trigger workflow to run the camunda-client-compatibility-test.yml workflow on a schedule
 # type: CI
-# owner: @camunda/camunda-ex
+# owner: @camunda/camundaex
 name: Camunda Compatibility Tests - Trigger
 
 on:

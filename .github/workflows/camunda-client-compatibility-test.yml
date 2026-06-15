@@ -1,6 +1,6 @@
 # description: Daily compatibility tests for Camunda components across versions
 # type: CI
-# owner: @camunda/camunda-ex
+# owner: @camunda/camundaex
 name: Camunda Compatibility Tests
 
 on:
