@@ -22,6 +22,8 @@ import io.camunda.zeebe.model.bpmn.instance.ConditionExpression;
 import io.camunda.zeebe.model.bpmn.instance.MultiInstanceLoopCharacteristics;
 import io.camunda.zeebe.model.bpmn.instance.StartEvent;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAssignmentDefinition;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledDecision;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledElement;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeInput;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
@@ -500,6 +502,21 @@ public final class ZeebeRuntimeValidationTest {
             expect(
                 ZeebePriorityDefinition.class,
                 "Expected static value to be a valid Number between 0 and 100, but found '33.3'"))
+      },
+      {
+        // invalid versionTag expression in business rule task with versionTag binding
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .businessRuleTask(
+                "task",
+                t ->
+                    t.zeebeCalledDecisionId("decision")
+                        .zeebeBindingType(ZeebeBindingType.versionTag)
+                        .zeebeVersionTagExpression(INVALID_EXPRESSION)
+                        .zeebeResultVariable("result"))
+            .endEvent()
+            .done(),
+        List.of(expect(ZeebeCalledDecision.class, INVALID_EXPRESSION_MESSAGE))
       },
     };
   }

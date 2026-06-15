@@ -19,6 +19,7 @@ import io.camunda.zeebe.model.bpmn.instance.Signal;
 import io.camunda.zeebe.model.bpmn.instance.TimerEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHoc;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAssignmentDefinition;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledDecision;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledElement;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeInput;
@@ -158,6 +159,12 @@ public final class ZeebeRuntimeValidators {
         ZeebeExpressionValidator.verifyThat(ZeebeCalledDecision.class)
             .hasValidExpression(
                 ZeebeCalledDecision::getDecisionId, ExpressionVerification::isMandatory)
+            .hasValidExpression(
+                calledDecision ->
+                    calledDecision.getBindingType() == ZeebeBindingType.versionTag
+                        ? calledDecision.getVersionTag()
+                        : null,
+                ExpressionVerification::isOptional)
             .build(expressionLanguage),
         // ----------------------------------------
         new ZeebeTaskHeadersValidator(),
