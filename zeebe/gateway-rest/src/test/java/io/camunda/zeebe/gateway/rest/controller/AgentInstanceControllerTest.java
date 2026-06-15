@@ -1101,7 +1101,59 @@ class AgentInstanceControllerTest extends RestControllerTest {
                     }
                     """
                         .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY))),
-            "No producedAt provided."));
+            "No producedAt provided."),
+        Arguments.of(
+            named(
+                "invalid producedAt format",
+                new HistoryItemRequest(
+                    validKey,
+                    """
+                    {
+                      "elementInstanceKey": "%d",
+                      "jobKey": "%d",
+                      "jobLease": "lease-abc",
+                      "role": "ASSISTANT",
+                      "content": [{ "contentType": "TEXT", "text": "hello" }],
+                      "producedAt": "not-a-date"
+                    }
+                    """
+                        .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY))),
+            "The provided producedAt 'not-a-date' cannot be parsed as a date"
+                + " according to RFC 3339, section 5.6."),
+        Arguments.of(
+            named(
+                "invalid document metadata expiresAt format",
+                new HistoryItemRequest(
+                    validKey,
+                    """
+                    {
+                      "elementInstanceKey": "%d",
+                      "jobKey": "%d",
+                      "jobLease": "lease-abc",
+                      "role": "USER",
+                      "content": [
+                        {
+                          "contentType": "DOCUMENT",
+                          "documentReference": {
+                            "camunda.document.type": "camunda",
+                            "storeId": "store-1",
+                            "documentId": "doc-abc",
+                            "metadata": {
+                              "contentType": "application/pdf",
+                              "fileName": "invoice.pdf",
+                              "size": 1024,
+                              "expiresAt": "not-a-date",
+                              "customProperties": {}
+                            }
+                          }
+                        }
+                      ],
+                      "producedAt": "2025-06-01T12:00:00Z"
+                    }
+                    """
+                        .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY))),
+            "The provided content[0].documentReference.metadata.expiresAt 'not-a-date'"
+                + " cannot be parsed as a date according to RFC 3339, section 5.6."));
   }
 
   @Test
