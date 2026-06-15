@@ -98,16 +98,48 @@ Runs 12 assertion cells against `GET /physical-tenants/<id>/v2/authentication/me
 **dvta** = `camunda-pt-default-via-tenanta-client` token — issued by the tenanta Keycloak realm
 but carrying `aud=pt-default-via-tenanta-aud` (default's audience, not tenanta's).
 
+## Scenario variants (`providers.assigned`, #54730)
+
+Each variant adds an overlay profile (a thin `application-<profile>.yaml` layered on the base) and a
+dedicated smoke script. Boot OC with the variant profile, then run its script in Terminal 3.
+
+### A — default narrowed + `/v2` ≡ `/physical-tenants/default`
+
+```bash
+./pt-poc-oc.sh pt-poc,pt-poc-default-narrowed   # Terminal 2
+./pt-poc-api-smoke-default-narrowed.sh          # Terminal 3
+```
+
+`default` is assigned `[tenanta]`, dropping the inherited root default slot `oidc`. Since the
+default tenant's resolved config also drives the unprefixed `/v2` cluster chain, a default-realm
+token is rejected on **both** `/v2` and `/pt/default` (proving the cluster/alias unification), while
+the assigned `tenanta` provider is still accepted on both.
+
+### C — reserved-`oidc` keep on a non-default tenant
+
+```bash
+./pt-poc-oc.sh pt-poc,pt-poc-oidc-keep          # Terminal 2
+./pt-poc-api-smoke-oidc-keep.sh                 # Terminal 3
+```
+
+`tenanta` is assigned `[oidc, tenanta]`, so it KEEPS the inherited default slot — a default-realm
+token is **accepted** on `/pt/tenanta`. This is the inverse of the base harness's `[#54730]` cell,
+where `tenanta` is `[tenanta]` only and the same token is rejected cross-issuer.
+
 ## Files
 
 | Path | Purpose |
 |---|---|
 | `pt-poc-idp.sh` | Boots ES (`:9200`) and two Keycloak containers (default on :8081, tenanta on :8082) |
-| `pt-poc-oc.sh` | Rebuilds + boots OC under the pt-poc profile |
-| `pt-poc-api-smoke.sh` | Runs the 12-cell API isolation matrix |
+| `pt-poc-oc.sh` | Rebuilds + boots OC; optional arg = Spring profiles (default `pt-poc`) for the scenario variants below |
+| `pt-poc-api-smoke.sh` | Base API isolation matrix (incl. `/v2` ≡ `/pt/default` identity cells) |
+| `pt-poc-api-smoke-default-narrowed.sh` | Scenario A — default narrowed; default-realm token rejected on **both** `/v2` and `/pt/default` |
+| `pt-poc-api-smoke-oidc-keep.sh` | Scenario C — tenanta keeps `oidc`; default-realm token accepted on `/pt/tenanta` |
 | `dist/src/test/resources/pt-poc/default-realm.json` | Keycloak realm export — default realm |
 | `dist/src/test/resources/pt-poc/tenanta-realm.json` | Keycloak realm export — tenanta realm |
-| `dist/src/main/resources/application-pt-poc.yaml` | PT provider config + trimmed diagnostics |
+| `dist/src/main/resources/application-pt-poc.yaml` | Base PT provider config + trimmed diagnostics |
+| `dist/src/main/resources/application-pt-poc-default-narrowed.yaml` | Scenario A overlay — `default` assigned `[tenanta]` |
+| `dist/src/main/resources/application-pt-poc-oidc-keep.yaml` | Scenario C overlay — `tenanta` assigned `[oidc, tenanta]` |
 | `dist/src/main/resources/application.properties` | `spring.profiles.group.pt-poc{,-basic}=...` entries |
 
 ## BASIC-auth variant

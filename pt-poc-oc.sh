@@ -16,9 +16,15 @@
 # Prerequisite: run ./pt-poc-idp.sh in a separate terminal first.
 #
 # Usage:
-#   ./pt-poc-oc.sh
+#   ./pt-poc-oc.sh                                  # base config (profile: pt-poc)
+#   ./pt-poc-oc.sh pt-poc,pt-poc-default-narrowed   # + scenario A overlay (default narrowed)
+#   ./pt-poc-oc.sh pt-poc,pt-poc-oidc-keep          # + scenario C overlay (tenanta keeps oidc)
 #
-# Once Tomcat reports "Tomcat started on port 8080", run ./pt-poc-api-smoke.sh.
+# The optional argument is the Spring profiles list. A variant adds an extra profile whose
+# application-<profile>.yaml layers a small override onto application-pt-poc.yaml — pt-poc must
+# stay first so its profile group (consolidated-auth, elasticsearch, broker) still expands.
+#
+# Once Tomcat reports "Tomcat started on port 8080", run the matching ./pt-poc-api-smoke*.sh.
 # Press Ctrl-C to stop. Logs stream to the terminal and tee to /tmp/oc.log.
 #
 set -euo pipefail
@@ -51,7 +57,9 @@ rm -rf dist/data
 # belt-and-braces against any stale per-tenant auth-config classes from an earlier build.
 ./mvnw clean install -pl dist -am -DskipTests -DskipChecks -Dskip.fe.build=false -Dmaven.build.cache.enabled=false -T1C
 
-# Step 2: boot OC under the pt-poc profile.
+# Step 2: boot OC under the pt-poc profile (plus any variant overlay profile passed as $1).
+PROFILES="${1:-pt-poc}"
+echo "Booting OC with Spring profiles: $PROFILES"
 exec ./mvnw -pl dist spring-boot:run \
   -DskipChecks \
-  -Dspring-boot.run.profiles=pt-poc 2>&1 | tee /tmp/oc.log
+  -Dspring-boot.run.profiles="$PROFILES" 2>&1 | tee /tmp/oc.log
