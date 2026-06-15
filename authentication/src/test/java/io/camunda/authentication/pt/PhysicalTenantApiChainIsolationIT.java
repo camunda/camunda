@@ -76,6 +76,9 @@ import org.springframework.security.web.SecurityFilterChain;
  *   <li><b>{@code providers.assigned} narrowing</b> (#54730): a token from a cluster provider that
  *       is not assigned to PT-A is rejected on PT-A (401) yet accepted on the tenant it is assigned
  *       to — isolating the selection from plain cross-issuer rejection.
+ *   <li><b>Reserved {@code oidc} id</b> (#54730): a tenant assigned {@code [pta]} drops the
+ *       inherited unnamed default slot (default-slot token → 401), while {@code [oidc, pta]} keeps
+ *       it (default-slot token → 200).
  * </ol>
  *
  * <p>The test uses the OC {@link PhysicalTenantScopeProvider} to produce {@link
@@ -327,6 +330,74 @@ class PhysicalTenantApiChainIsolationIT {
             });
   }
 
+  // -------------------------------------------------------------------------
+  // Scenario 6: reserved `oidc` id — narrowing the unnamed default slot (#54730)
+  // -------------------------------------------------------------------------
+
+  /**
+   * A non-default tenant inherits the cluster's unnamed default slot ({@code
+   * authentication.oidc.*}, here issuer {@code serverB}) but is {@code assigned: [pta]} — which
+   * does NOT include the reserved {@code oidc} id — so narrowing drops the default slot. A
+   * default-slot token is therefore rejected (401) on the tenant's chain, while its assigned named
+   * provider {@code pta} ({@code serverA}) is still accepted. This is the issue's headline
+   * cross-issuer behaviour at the default-slot level (distinct from scenario 5, which drops a NAMED
+   * provider).
+   */
+  @Test
+  void assignedWithoutReservedOidcDropsInheritedDefaultSlotOnPtAPath() {
+    buildRunner(twoDistinctIssuersProperties())
+        .run(
+            ctx -> {
+              final var chains = buildChainsFromProvider(ctx, reservedOidcEnv("pta"));
+              final var proxy = new FilterChainProxy(chains);
+
+              // default-slot issuer (serverB) — dropped because `oidc` is not assigned → 401.
+              final var defaultSlotToken = signForIssuer(serverB, serverB.issuerUri(), List.of());
+              final var reqDefault = new MockHttpServletRequest("GET", PATH_PT_A);
+              reqDefault.addHeader("Authorization", "Bearer " + defaultSlotToken);
+              final var respDefault = new MockHttpServletResponse();
+              proxy.doFilter(reqDefault, respDefault, new MockFilterChain());
+              assertThat(respDefault.getStatus())
+                  .as(
+                      "default-slot token on a tenant assigned [pta] (no `oidc`) → slot dropped → 401")
+                  .isEqualTo(401);
+
+              // Control: the assigned named provider `pta` (serverA) is still accepted → 200.
+              final var ptaToken = signForIssuer(serverA, serverA.issuerUri(), List.of());
+              final var reqPta = new MockHttpServletRequest("GET", PATH_PT_A);
+              reqPta.addHeader("Authorization", "Bearer " + ptaToken);
+              final var respPta = new MockHttpServletResponse();
+              proxy.doFilter(reqPta, respPta, new MockFilterChain());
+              assertThat(respPta.getStatus())
+                  .as("the assigned named provider `pta` is still accepted → 200")
+                  .isEqualTo(200);
+            });
+  }
+
+  /**
+   * Same cluster shape, but the tenant is {@code assigned: [oidc, pta]} — the reserved {@code oidc}
+   * id re-includes the inherited default slot, so a default-slot token ({@code serverB}) is
+   * accepted (200) on the tenant's chain. The inverse of the drop case above.
+   */
+  @Test
+  void reservedOidcIdKeepsInheritedDefaultSlotOnPtAPath() {
+    buildRunner(twoDistinctIssuersProperties())
+        .run(
+            ctx -> {
+              final var chains = buildChainsFromProvider(ctx, reservedOidcEnv("oidc", "pta"));
+              final var proxy = new FilterChainProxy(chains);
+
+              final var defaultSlotToken = signForIssuer(serverB, serverB.issuerUri(), List.of());
+              final var req = new MockHttpServletRequest("GET", PATH_PT_A);
+              req.addHeader("Authorization", "Bearer " + defaultSlotToken);
+              final var resp = new MockHttpServletResponse();
+              proxy.doFilter(req, resp, new MockFilterChain());
+              assertThat(resp.getStatus())
+                  .as("default-slot token on a tenant assigned [oidc, pta] → slot kept → 200")
+                  .isEqualTo(200);
+            });
+  }
+
   // =========================================================================
   // Chain assembly helpers
   // =========================================================================
@@ -534,6 +605,42 @@ class PhysicalTenantApiChainIsolationIT {
         "camunda.physical-tenants.pta.security.authentication.providers.assigned[0]", "pta");
     env.setProperty(
         "camunda.physical-tenants.ptb.security.authentication.providers.assigned[0]", "ptb");
+    return env;
+  }
+
+  /**
+   * Cluster declares an unnamed default slot ({@code authentication.oidc.*}, issuer {@code
+   * serverB}) plus a named provider {@code pta} (issuer {@code serverA}); the {@code pta} tenant
+   * selects the given ids. Used to exercise the reserved {@code oidc} id: {@code [pta]} drops the
+   * inherited default slot, {@code [oidc, pta]} keeps it.
+   */
+  private MockEnvironment reservedOidcEnv(final String... assignedIds) {
+    final var env = new MockEnvironment();
+    env.setProperty("camunda.security.authentication.method", "oidc");
+
+    // Unnamed default slot — issuer serverB.
+    env.setProperty("camunda.security.authentication.oidc.client-id", "client-default");
+    env.setProperty("camunda.security.authentication.oidc.issuer-uri", serverB.issuerUri());
+    env.setProperty(
+        "camunda.security.authentication.oidc.jwk-set-uri", serverB.issuerUri() + "/jwks");
+    env.setProperty("camunda.security.authentication.oidc.redirect-uri", "{baseUrl}/sso-callback");
+
+    // Named cluster provider pta — issuer serverA.
+    env.setProperty("camunda.security.authentication.providers.oidc.pta.client-id", "client-pta");
+    env.setProperty(
+        "camunda.security.authentication.providers.oidc.pta.issuer-uri", serverA.issuerUri());
+    env.setProperty(
+        "camunda.security.authentication.providers.oidc.pta.jwk-set-uri",
+        serverA.issuerUri() + "/jwks");
+    env.setProperty(
+        "camunda.security.authentication.providers.oidc.pta.redirect-uri",
+        "{baseUrl}/sso-callback");
+
+    for (int i = 0; i < assignedIds.length; i++) {
+      env.setProperty(
+          "camunda.physical-tenants.pta.security.authentication.providers.assigned[" + i + "]",
+          assignedIds[i]);
+    }
     return env;
   }
 
