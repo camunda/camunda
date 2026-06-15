@@ -71,8 +71,6 @@ public record RdbmsMapperBundle(
     HistoryDeletionMapper historyDeletionMapper,
     AgentInstanceMapper agentInstanceMapper,
     WaitStateMapper waitStateMapper,
-    // Reader-only mappers (not used by writers, required to build per-tenant
-    // SearchClientReaders bundles in RdbmsConfiguration).
     AuthorizationMapper authorizationMapper,
     FormMapper formMapper,
     GroupMapper groupMapper,
