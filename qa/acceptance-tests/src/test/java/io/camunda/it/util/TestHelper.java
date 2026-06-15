@@ -41,6 +41,7 @@ import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.filter.UserTaskFilter;
 import io.camunda.client.api.search.page.AnyPage;
 import io.camunda.client.api.search.page.CursorForwardPage;
+import io.camunda.client.api.search.response.ElementInstanceWaitStateResult;
 import io.camunda.client.api.search.response.GroupUser;
 import io.camunda.client.api.search.response.Job;
 import io.camunda.client.api.search.response.ProcessInstance;
@@ -2121,5 +2122,16 @@ public final class TestHelper {
         "should wait until audit log entries are available",
         expectedEntries,
         page -> camundaClient.newAuditLogSearchRequest().filter(filter).page(page).execute());
+  }
+
+  public static void waitForWaitStates(final CamundaClient camundaClient, final int expectedCount) {
+    Awaitility.await("should export %d wait states".formatted(expectedCount))
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .untilAsserted(
+            () -> {
+              final List<ElementInstanceWaitStateResult> items =
+                  camundaClient.newElementInstanceWaitStateSearchRequest().send().join().items();
+              assertThat(items).hasSize(expectedCount);
+            });
   }
 }
