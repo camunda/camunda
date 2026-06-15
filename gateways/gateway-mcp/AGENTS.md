@@ -14,10 +14,10 @@ agents. Both servers run inside the same Spring Boot application and are disable
 
 ### Servers
 
-|    Server     |     Endpoint     |           Physical-tenant variant            |                                                       Purpose                                                        |
-|---------------|------------------|----------------------------------------------|----------------------------------------------------------------------------------------------------------------------|
-| **cluster**   | `/mcp/cluster`   | `/physical-tenants/{tenantId}/mcp/cluster`   | Static tools for all cluster operations (search, incidents, user tasks, variables, process definitions, instances)   |
-| **processes** | `/mcp/processes` | `/physical-tenants/{tenantId}/mcp/processes` | Dynamic tools generated from deployed process definitions that are configured as MCP tools, plus shared static tools |
+|    Server     |     Endpoint     |               Physical-tenant variant                |                                                       Purpose                                                        |
+|---------------|------------------|------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------|
+| **cluster**   | `/mcp/cluster`   | `/physical-tenants/{physicalTenantId}/mcp/cluster`   | Static tools for all cluster operations (search, incidents, user tasks, variables, process definitions, instances)   |
+| **processes** | `/mcp/processes` | `/physical-tenants/{physicalTenantId}/mcp/processes` | Dynamic tools generated from deployed process definitions that are configured as MCP tools, plus shared static tools |
 
 The processes server resolves tools at request time by querying open start-event message
 subscriptions that have a `toolName` set. Invoking a tool correlates a message, which starts a new
@@ -73,16 +73,13 @@ before inventing something new, and update this file afterward.
 
 ### Authentication
 
-Never call services directly. Always use the authenticated variant:
+Never call services directly. Obtain the service via `serviceRegistry`, passing
+`PhysicalTenantContext.current()` to scope it to the active physical tenant, then pass
+`authenticationProvider.getCamundaAuthentication()` into each service method call:
 
 ```java
-service.withAuthentication(authenticationProvider.getCamundaAuthentication())
-```
-
-In practice this means passing the authentication to the service method, e.g.:
-
-```java
-processDefinitionServices.getByKey(key, authenticationProvider.getCamundaAuthentication())
+serviceRegistry.processDefinitionServices(PhysicalTenantContext.current())
+    .getByKey(key, authenticationProvider.getCamundaAuthentication())
 ```
 
 ---
