@@ -78,8 +78,8 @@ camunda:
 - Ids are drawn from the union `{oidc} ∪ providers.oidc.<name>`. The reserved id **`oidc`** names the
   unnamed default slot (`camunda.security.authentication.oidc.*`), which has no map key of its own
   and so is referenced by the leaf name of the property that defines it. A named provider literally
-  called `oidc` (`providers.oidc.oidc`) would collide; that pathological name is documented as
-  unsupported.
+  called `oidc` (`providers.oidc.oidc`) would collide; that pathological name is rejected at startup
+  by validation.
 
 **Two responsibilities, two layers.**
 
@@ -125,7 +125,7 @@ camunda:
   `physical-tenants.<id>` namespace; the alternative of a sibling namespace was weighed and rejected
   (see Alternatives).
 - The reserved `oidc` id is a small piece of magic; it collides with a (pathological) named provider
-  called `oidc`. Documented as unsupported rather than guarded.
+  called `oidc`. That collision is rejected at startup by validation.
 - Selection is split across two modules (validation vs application). This mirrors the existing PT
   config/auth split and is deliberate, but it does mean the "must declare a valid list" rule and the
   "apply the list" code live apart and must stay conceptually in sync.

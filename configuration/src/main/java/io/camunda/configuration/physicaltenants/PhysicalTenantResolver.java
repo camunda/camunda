@@ -87,6 +87,7 @@ public final class PhysicalTenantResolver implements PhysicalTenantIds {
   public static PhysicalTenantResolver of(final Environment environment, final Camunda camunda) {
     final Set<String> physicalTenantIds = discover(environment);
     PhysicalTenantOverridePolicyValidation.validate(environment);
+    PhysicalTenantAssignedProvidersValidation.validate(environment);
     final Map<String, Camunda> resolvedPhysicalTenants = new LinkedHashMap<>();
     final Binder binder = Binder.get(environment);
     for (final String physicalTenantId : physicalTenantIds) {
