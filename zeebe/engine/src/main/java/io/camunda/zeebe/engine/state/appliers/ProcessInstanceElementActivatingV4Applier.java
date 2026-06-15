@@ -54,8 +54,8 @@ final class ProcessInstanceElementActivatingV4Applier
     cleanupSequenceFlowsTaken(value);
     final var flowScopeInstance = elementInstanceState.getInstance(value.getFlowScopeKey());
 
-    if (shouldIncrementActivationCount(value, flowScopeInstance)) {
-      elementInstanceState.incrementElementActivationCount(
+    if (shouldIncrementActivationCounter(value, flowScopeInstance)) {
+      elementInstanceState.incrementElementActivationCounter(
           value.getProcessInstanceKey(), value.getElementIdBuffer());
     }
     final var elementInstance =
@@ -321,7 +321,7 @@ final class ProcessInstanceElementActivatingV4Applier
    * BpmnStreamProcessor.shouldCheckLoopDetection}: sequential MI bodies and parallel MI children
    * are skipped; all other elements are counted.
    */
-  private boolean shouldIncrementActivationCount(
+  private boolean shouldIncrementActivationCounter(
       final ProcessInstanceRecord value, final ElementInstance flowScopeInstance) {
     if (value.getBpmnElementType() == BpmnElementType.MULTI_INSTANCE_BODY) {
       // Only count parallel MI bodies; sequential MI bodies share their elementId counter

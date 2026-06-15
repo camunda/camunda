@@ -76,7 +76,7 @@ public final class BpmnLoopDetectionBehavior {
     // ELEMENT_ACTIVATING event was applied (during transitionToActivating, before this check runs),
     // so it already reflects the current activation.
     final long activationCount =
-        elementInstanceState.getElementActivationCount(
+        elementInstanceState.getElementActivationCounter(
             context.getProcessInstanceKey(), context.getElementId());
 
     if (activationCount <= max) {
@@ -115,7 +115,7 @@ public final class BpmnLoopDetectionBehavior {
       return Either.right(null);
     }
     final long bodyCount =
-        elementInstanceState.getElementActivationCount(
+        elementInstanceState.getElementActivationCounter(
             context.getProcessInstanceKey(), context.getElementId());
 
     final long projectedTotal = bodyCount * batchSize;

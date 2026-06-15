@@ -669,7 +669,7 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   }
 
   @Override
-  public void incrementElementActivationCount(
+  public void incrementElementActivationCounter(
       final long processInstanceKey, final DirectBuffer elementId) {
     activationCounterProcessInstanceKey.wrapLong(processInstanceKey);
     activationCounterElementId.wrapBuffer(elementId);
@@ -682,7 +682,7 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   }
 
   @Override
-  public long getElementActivationCount(
+  public long getElementActivationCounter(
       final long processInstanceKey, final DirectBuffer elementId) {
     activationCounterProcessInstanceKey.wrapLong(processInstanceKey);
     activationCounterElementId.wrapBuffer(elementId);
