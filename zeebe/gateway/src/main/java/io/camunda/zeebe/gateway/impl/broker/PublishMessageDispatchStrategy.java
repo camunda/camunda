@@ -24,7 +24,8 @@ public final class PublishMessageDispatchStrategy implements RequestDispatchStra
   }
 
   @Override
-  public int determinePartition(final BrokerTopologyManager topologyManager) {
-    return delegate.determinePartition(topologyManager);
+  public int determinePartition(
+      final BrokerTopologyManager topologyManager, final String partitionGroup) {
+    return delegate.determinePartition(topologyManager, partitionGroup);
   }
 }

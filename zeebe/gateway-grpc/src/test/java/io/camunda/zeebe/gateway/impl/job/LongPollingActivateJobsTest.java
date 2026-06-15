@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.impl.job;
 import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
@@ -1162,6 +1163,7 @@ public final class LongPollingActivateJobsTest {
 
     final var topologyManager = mock(BrokerTopologyManager.class);
     when(topologyManager.getTopology()).thenReturn(clusterState);
+    when(topologyManager.getTopology(anyString())).thenReturn(clusterState);
     when(topologyManager.getClusterConfiguration())
         .thenReturn(ClusterConfiguration.uninitialized());
 

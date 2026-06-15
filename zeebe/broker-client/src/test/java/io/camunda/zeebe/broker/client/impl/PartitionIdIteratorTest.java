@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.client.impl;
 import static io.camunda.zeebe.broker.client.BrokerMemberIds.ZERO;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.protocol.Protocol;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -20,7 +21,8 @@ final class PartitionIdIteratorTest {
   @Test
   void shouldIterateOverAllPartitions() {
     // given
-    final var iterator = new PartitionIdIterator(1, 3, topologyManager);
+    final var iterator =
+        new PartitionIdIterator(1, 3, topologyManager, Protocol.DEFAULT_PARTITION_GROUP_NAME);
     final List<Integer> ids = new ArrayList<>();
     topologyManager.addPartition(1, ZERO).addPartition(2, ZERO).addPartition(3, ZERO);
 
@@ -34,7 +36,8 @@ final class PartitionIdIteratorTest {
   @Test
   void shouldSkipPartitionsWithoutLeaders() {
     // given
-    final var iterator = new PartitionIdIterator(1, 3, topologyManager);
+    final var iterator =
+        new PartitionIdIterator(1, 3, topologyManager, Protocol.DEFAULT_PARTITION_GROUP_NAME);
     final List<Integer> ids = new ArrayList<>();
     topologyManager.addPartition(1, ZERO).addPartition(3, ZERO);
 
@@ -46,12 +49,30 @@ final class PartitionIdIteratorTest {
   }
 
   @Test
+  void shouldFilterLeadersByPartitionGroup() {
+    // given - a leader for partition 2 only exists in group tenant-b
+    topologyManager.addPartition("tenant-b", 2, ZERO);
+
+    // when
+    final var defaultIterator =
+        new PartitionIdIterator(1, 3, topologyManager, Protocol.DEFAULT_PARTITION_GROUP_NAME);
+    final var tenantIterator = new PartitionIdIterator(1, 3, topologyManager, "tenant-b");
+    final List<Integer> ids = new ArrayList<>();
+    tenantIterator.forEachRemaining(ids::add);
+
+    // then
+    assertThat(defaultIterator.hasNext()).isFalse();
+    assertThat(ids).containsExactly(2);
+  }
+
+  @Test
   void shouldSkipAllPartitionsWhenNoTopology() {
     // given
     final var topologyManager = new TestTopologyManager(null);
 
     // when
-    final var iterator = new PartitionIdIterator(1, 3, topologyManager);
+    final var iterator =
+        new PartitionIdIterator(1, 3, topologyManager, Protocol.DEFAULT_PARTITION_GROUP_NAME);
 
     // then
     assertThat(iterator.hasNext()).isFalse();

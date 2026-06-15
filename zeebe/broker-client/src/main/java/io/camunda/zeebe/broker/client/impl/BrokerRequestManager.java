@@ -217,21 +217,23 @@ final class BrokerRequestManager extends Actor {
   }
 
   private BrokerAddressProvider determineBrokerNodeIdProvider(final BrokerRequest<?> request) {
+    final var partitionGroup = request.getPartitionGroup();
     if (request.getBrokerId().isPresent()) {
-      return new BrokerAddressProvider(clusterState -> request.getBrokerId().orElseThrow());
+      return new BrokerAddressProvider(
+          partitionGroup, clusterState -> request.getBrokerId().orElseThrow());
     } else if (request.addressesSpecificPartition()) {
-      final BrokerClusterState topology = topologyManager.getTopology();
+      final BrokerClusterState topology = topologyManager.getTopology(partitionGroup);
       if (topology != null && !topology.getPartitions().contains(request.getPartitionId())) {
         throw new PartitionNotFoundException(request.getPartitionId());
       }
-      throwIfPartitionInactive(request.getPartitionId());
+      throwIfPartitionInactive(partitionGroup, request.getPartitionId());
       // already know partition id
-      return new BrokerAddressProvider(request.getPartitionId());
+      return new BrokerAddressProvider(partitionGroup, request.getPartitionId());
     } else if (request.requiresPartitionId()) {
       final var strategy = request.requestDispatchStrategy().orElse(dispatchStrategy);
 
       // select next partition id for request
-      int partitionId = strategy.determinePartition(topologyManager);
+      int partitionId = strategy.determinePartition(topologyManager, partitionGroup);
       if (partitionId == BrokerClusterState.PARTITION_ID_NULL) {
         // could happen if the topology is not set yet, let's just try with partition 0 but we
         // should find a better solution
@@ -240,17 +242,17 @@ final class BrokerRequestManager extends Actor {
       }
       request.setPartitionId(partitionId);
 
-      throwIfPartitionInactive(partitionId);
+      throwIfPartitionInactive(partitionGroup, partitionId);
 
-      return new BrokerAddressProvider(request.getPartitionId());
+      return new BrokerAddressProvider(partitionGroup, request.getPartitionId());
     } else {
-      // random broker
-      return new BrokerAddressProvider();
+      // random broker of the request's partition group
+      return new BrokerAddressProvider(partitionGroup);
     }
   }
 
-  private void throwIfPartitionInactive(final int partitionId) {
-    final BrokerClusterState topology = topologyManager.getTopology();
+  private void throwIfPartitionInactive(final String partitionGroup, final int partitionId) {
+    final BrokerClusterState topology = topologyManager.getTopology(partitionGroup);
     if (topology == null) {
       throw new NoTopologyAvailableException();
     }
@@ -301,24 +303,27 @@ final class BrokerRequestManager extends Actor {
   @NullMarked
   private class BrokerAddressProvider implements Supplier<@Nullable String> {
 
+    private final String partitionGroup;
     private final Function<BrokerClusterState, @Nullable BrokerMemberId> nodeIdSelector;
 
-    BrokerAddressProvider() {
-      this(BrokerClusterState::getRandomBroker);
+    BrokerAddressProvider(final String partitionGroup) {
+      this(partitionGroup, BrokerClusterState::getRandomBroker);
     }
 
-    BrokerAddressProvider(final int partitionId) {
-      this(state -> state.getLeaderForPartition(partitionId));
+    BrokerAddressProvider(final String partitionGroup, final int partitionId) {
+      this(partitionGroup, state -> state.getLeaderForPartition(partitionId));
     }
 
     BrokerAddressProvider(
+        final String partitionGroup,
         final Function<BrokerClusterState, @Nullable BrokerMemberId> nodeIdSelector) {
+      this.partitionGroup = partitionGroup;
       this.nodeIdSelector = nodeIdSelector;
     }
 
     @Override
     public @Nullable String get() {
-      final BrokerClusterState topology = topologyManager.getTopology();
+      final BrokerClusterState topology = topologyManager.getTopology(partitionGroup);
       if (topology != null) {
         final var brokerId = nodeIdSelector.apply(topology);
         if (brokerId != null) {

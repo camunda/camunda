@@ -16,6 +16,7 @@ import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import java.util.UUID;
+import org.jspecify.annotations.NonNull;
 
 public final class StubbedTopologyManager implements BrokerTopologyManager {
 
@@ -39,7 +40,8 @@ public final class StubbedTopologyManager implements BrokerTopologyManager {
   }
 
   @Override
-  public BrokerClusterState getTopology() {
+  public BrokerClusterState getTopology(final @NonNull String physicalTenantId) {
+    // a single shared state for all partition groups; group-specific stubbing not needed yet
     return clusterState;
   }
 

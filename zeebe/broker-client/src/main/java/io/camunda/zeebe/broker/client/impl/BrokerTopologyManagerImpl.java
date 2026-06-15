@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
+import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,12 +62,7 @@ public final class BrokerTopologyManagerImpl extends Actor
   }
 
   @Override
-  public BrokerClusterState getTopology() {
-    return getTopology(Protocol.DEFAULT_PARTITION_GROUP_NAME);
-  }
-
-  @Override
-  public BrokerClusterState getTopology(final String physicalTenantId) {
+  public BrokerClusterState getTopology(final @NonNull String physicalTenantId) {
     return topologyPerGroup.getOrDefault(
         physicalTenantId, BrokerClientTopologyImpl.uninitialized());
   }
