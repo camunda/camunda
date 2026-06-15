@@ -7,6 +7,6 @@
  */
 
 const IS_VARIABLE_FILTER_V2_ENABLED = false;
-const IS_NAV_V2_ENABLED = false;
+const IS_NAV_V2_ENABLED = true;
 
 export {IS_VARIABLE_FILTER_V2_ENABLED, IS_NAV_V2_ENABLED};
