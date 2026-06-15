@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.1">
 <title data-rh="true">ADR-0004: Per-Physical-Tenant Provider Selection via OC-side assigned Narrowing | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-55227/architecture/components/orchestration-cluster/adr/per-physical-tenant-provider-selection-via-assigned/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="ADR-0004: Per-Physical-Tenant Provider Selection via OC-side assigned Narrowing | Camunda Platform"><meta data-rh="true" name="description" content="Status"><meta data-rh="true" property="og:description" content="Status"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-55227/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-55227/architecture/components/orchestration-cluster/adr/per-physical-tenant-provider-selection-via-assigned/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-55227/architecture/components/orchestration-cluster/adr/per-physical-tenant-provider-selection-via-assigned/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-55227/architecture/components/orchestration-cluster/adr/per-physical-tenant-provider-selection-via-assigned/" hreflang="x-default"><link rel="stylesheet" href="/camunda/pr-preview/pr-55227/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-55227/assets/js/runtime~main.c7e3562e.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-55227/assets/js/main.0e5a9539.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-55227/assets/js/runtime~main.4bb09fd2.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-55227/assets/js/main.c76ccc57.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -37,8 +37,9 @@ select <strong>which</strong> of the cluster&#x27;s providers apply to it, inste
 <p>Acceptance criteria (post-rescope of #54730):</p>
 <ol>
 <li class=""><code>providers.assigned</code> is resolved and validated per PT: the <strong>default tenant has the implicit full
-set</strong>; a <strong>non-default PT must declare an explicit list of valid provider ids</strong> — a missing or
-invalid <code>assigned</code> <strong>fails startup</strong> with a clear error.</li>
+set</strong> when it declares no <code>assigned</code> (but <strong>may</strong> declare one to limit itself); a <strong>non-default
+PT must declare an explicit list of valid provider ids</strong> — a missing or invalid <code>assigned</code>
+<strong>fails startup</strong> with a clear error.</li>
 <li class="">The scope provider <strong>narrows</strong> each PT&#x27;s merged <code>AuthenticationConfiguration</code> to its <code>assigned</code>
 providers.</li>
 <li class="">Tests cover: default-tenant full set, a valid explicit selection, and startup failure on
@@ -69,7 +70,7 @@ and so is referenced by the leaf name of the property that defines it. A named p
 called <code>oidc</code> (<code>providers.oidc.oidc</code>) would collide; that pathological name is documented as
 unsupported.</li>
 </ul>
-<p><strong>Two responsibilities, two layers.</strong></p>
+<p><strong>Three parts.</strong></p>
 <ol>
 <li class="">
 <p><strong>Application (narrowing) — <code>authentication</code> module</strong>, in
@@ -77,20 +78,30 @@ unsupported.</li>
 <code>...providers.assigned</code> via a dedicated <code>Binder</code> call (it is not a field on CSL&#x27;s config), then
 filter the merged config to the selection — keep the default slot iff <code>oidc ∈ assigned</code> (else
 reset it to a content-less <code>OidcConfiguration</code>, which CSL&#x27;s <code>flatten</code> ignores), and retain only
-the named providers whose ids are listed. The implicit <code>default</code> tenant (and its
-<code>/physical-tenants/default</code> alias) is <strong>never</strong> narrowed — it always carries the full set (AC-1).
-A non-default tenant with no <code>assigned</code> list bound is also left at the full union here; requiring
-one is the validation layer&#x27;s job.</p>
+the named providers whose ids are listed. This is applied <strong>uniformly to every tenant, the
+<code>default</code> tenant included</strong>: a tenant with no <code>assigned</code> bound keeps the full union; a tenant
+that declares one is narrowed to it.</p>
+</li>
+<li class="">
+<p><strong>Cluster/default unification — <code>authentication</code> module</strong>
+(<code>PhysicalTenantSecurityConfiguration</code>). The default tenant is reachable at two surfaces: the
+unprefixed <code>/v2</code> cluster chain (CSL builds it from <code>camunda.security.authentication.*</code>) and the
+<code>/physical-tenants/default</code> alias (built from <code>forPhysicalTenant(&quot;default&quot;)</code>). To keep the two
+<strong>identical</strong>, a <code>BeanPostProcessor</code> on CSL&#x27;s <code>CamundaSecurityLibraryProperties</code> — active
+whenever any physical tenant is configured — replaces the cluster <code>authentication</code> with
+<code>forPhysicalTenant(&quot;default&quot;)</code> <em>before</em> CSL builds its chains. So both surfaces carry the default
+tenant&#x27;s resolved config, and <code>camunda.physical-tenants.default.providers.assigned</code> limits the
+cluster surface too. CSL stays PT-agnostic: OC only mutates OC-owned config CSL already consumes.</p>
 </li>
 <li class="">
 <p><strong>Validation — <code>configuration</code> module</strong> (fail-fast at startup, sibling to
 <code>PhysicalTenantOverridePolicyValidation</code>): a non-default PT <strong>must</strong> declare a non-empty
-<code>assigned</code>, and every id must resolve to a known provider (<code>oidc</code> when the root default slot has
-content, or a configured <code>providers.oidc.&lt;name&gt;</code>); otherwise throw
-<code>UnifiedConfigurationException</code>. A &quot;known provider ids&quot; notion analogous to
-<code>PhysicalTenantIds.known()</code> keeps this out of the auth merge. The merge then only ever <em>applies</em>
-an already-valid selection. <em>(This PR spikes the narrowing + tests; the configuration-layer
-validation follows in the same issue.)</em></p>
+<code>assigned</code>; the <code>default</code> tenant <strong>may</strong> declare one (omitting it keeps the full set). When
+present (for any tenant), every id must resolve to a known provider — <code>oidc</code> when the merged
+default slot has content, or a cluster/overlay <code>providers.oidc.&lt;name&gt;</code> — and an empty list or the
+reserved-<code>oidc</code> name collision is rejected; otherwise <code>UnifiedConfigurationException</code>. The merge
+then only ever <em>applies</em> an already-valid selection, so a tenant can never silently end up with
+no providers.</p>
 </li>
 </ol>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="consequences">Consequences<a href="#consequences" class="hash-link" aria-label="Direct link to Consequences" title="Direct link to Consequences" translate="no">​</a></h2>
@@ -104,6 +115,10 @@ full set plus a filter for CSL to re-apply.</li>
 wording) while never touching CSL&#x27;s actual config namespace.</li>
 <li class="">Clean separation of concerns: fail-fast validation in the configuration layer; pure application in
 the auth merge. The merge stays total (it only ever applies a valid selection).</li>
+<li class="">The default tenant&#x27;s two surfaces (<code>/v2</code> and <code>/physical-tenants/default</code>) are <strong>identical by
+construction</strong>, since both derive from <code>forPhysicalTenant(&quot;default&quot;)</code>. This also closes a latent
+#54729 gap where any <code>camunda.physical-tenants.default.*</code> overlay (not just <code>assigned</code>) would have
+diverged the alias from <code>/v2</code>.</li>
 <li class="">Flips the smoke harness&#x27;s cross-issuer <code>[#54730]</code> cell to a pass and is mirrored by an
 <code>PhysicalTenantApiChainIsolationIT</code> case (a provider assigned to PT-A but not PT-B → PT-A&#x27;s token
 rejected on PT-B).</li>
@@ -119,6 +134,12 @@ called <code>oidc</code>. Documented as unsupported rather than guarded.</li>
 <li class="">Selection is split across two modules (validation vs application). This mirrors the existing PT
 config/auth split and is deliberate, but it does mean the &quot;must declare a valid list&quot; rule and the
 &quot;apply the list&quot; code live apart and must stay conceptually in sync.</li>
+<li class=""><code>camunda.physical-tenants.default.*</code> now governs the <strong>cluster-wide <code>/v2</code></strong> surface, not just a
+scoped chain — an operator limiting the default tenant limits the cluster. This is intentional
+(the default physical tenant <em>is</em> the cluster) but is a wider blast radius than a per-tenant knob.</li>
+<li class="">The unification mutates CSL&#x27;s <code>CamundaSecurityLibraryProperties</code> bean via a <code>BeanPostProcessor</code>
+that must run before CSL builds its chains. This is timing-sensitive, but follows the established
+<code>SaasCspModeCompatibility</code> pattern (a <code>static @Bean</code> BPP on the same properties bean).</li>
 </ul>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="alternatives-considered">Alternatives Considered<a href="#alternatives-considered" class="hash-link" aria-label="Direct link to Alternatives Considered" title="Direct link to Alternatives Considered" translate="no">​</a></h2>
 <ol>
