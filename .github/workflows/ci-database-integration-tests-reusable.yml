@@ -62,6 +62,7 @@ defaults:
     shell: bash
 
 env:
+  TEST_OWNER: '@camunda/monorepo-devops-team'
   GHA_BEST_PRACTICES_LINTER: enabled
   FLAKY_TEST_RERUN_COUNT: ${{ github.event_name == 'pull_request' && '3' || '7' }}
 
@@ -157,7 +158,6 @@ jobs:
           job_name: "${{ inputs.test-type }}/${{ inputs.database-type }}"
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
-          user_description: "General"
           detailed_junit_tests: true
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}

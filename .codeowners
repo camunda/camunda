@@ -76,6 +76,9 @@
 /qa/acceptance-tests/src/test/java/io/camunda/it/client/     @camunda/camundaex
 /qa/acceptance-tests/src/test/java/io/camunda/it/spring/     @camunda/camundaex
 
+# CI
+/.github/workflows/camunda-spring-boot-starter-compatibility-test* @camunda/camundaex
+
 ################################
 ## @camunda/connectors-agentic-ai
 ################################
@@ -381,3 +384,13 @@
 /.github/workflows/release-branch-notifications.yml @camunda/monorepo-devops-team
 /.github/workflows/add-release-comments-to-issues.yml @camunda/monorepo-devops-team
 /.github/workflows/update-identity.yml @camunda/monorepo-devops-team
+
+################################
+## Late overrides
+################################
+
+# Codeowners is last-match-wins. Add specific overrides here when a broader
+# earlier rule (e.g. `/.github/workflows/zeebe*`) needs to be reverted to a
+# different team for a particular file.
+/.github/workflows/c8-orchestration-cluster-request-validation-nightly.yml @camunda/qa-engineering
+/.github/workflows/zeebe-release-stable-dry-run.yml @camunda/monorepo-devops-team

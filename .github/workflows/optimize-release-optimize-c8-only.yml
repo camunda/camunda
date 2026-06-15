@@ -35,6 +35,7 @@ defaults:
     shell: bash
 
 env:
+  TEST_OWNER: '@camunda/core-features'
   GH_TOKEN: ${{ github.token }} # needs to be available for the gh CLI tool
 
 jobs:

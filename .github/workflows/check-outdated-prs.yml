@@ -26,6 +26,9 @@ permissions:
   pull-requests: write
   contents: read
 
+env:
+  TEST_OWNER: '@camunda/monorepo-devops-team'
+
 jobs:
   get-prs:
     runs-on: ubuntu-latest

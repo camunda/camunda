@@ -26,6 +26,9 @@ defaults:
     # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
     shell: bash
 
+env:
+  TEST_OWNER: '@camunda/core-features'
+
 jobs:
   cleanup-opensearch-indices:
     name: "[PRE] Cleanup old AWS OpenSearch indices. OS ver.${{ matrix.os_version }}"
@@ -66,7 +69,6 @@ jobs:
         with:
           job_name: "cleanup-opensearch-indices/${{ matrix.os_version }}"
           build_status: ${{ job.status }}
-          user_description: "General"
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
@@ -97,7 +99,7 @@ jobs:
             maven-test-fork-count: 7
             maven-test-profiles: multi-db-test-client
             runs-on: aws-core-8-default
-            owner: "General"
+            owner: '@camunda/monorepo-devops-team'
           - group: camunda-qa-acceptance-tests-non-client
             name: "Camunda QA Module Non-Client Tests"
             maven-modules: "'io.camunda:camunda-qa-acceptance-tests'"
@@ -105,7 +107,7 @@ jobs:
             maven-test-fork-count: 7
             maven-test-profiles: multi-db-test-non-client
             runs-on: aws-core-8-default
-            owner: "General"
+            owner: '@camunda/monorepo-devops-team'
           - group: search-client-opensearch
             name: "Search Client OpenSearch ITs"
             maven-modules: "'io.camunda:camunda-search-client-connect,io.camunda:camunda-search-client-opensearch'"
@@ -113,7 +115,7 @@ jobs:
             maven-test-fork-count: 7
             maven-test-profiles: multi-db-test
             runs-on: aws-core-8-default
-            owner: "Core Features"
+            owner: '@camunda/core-features'
           - group: camunda-exporter
             name: "Camunda Exporter ITs"
             maven-modules: "'io.camunda:camunda-exporter'"
@@ -121,7 +123,7 @@ jobs:
             maven-test-fork-count: 7
             maven-test-profiles: multi-db-test
             runs-on: aws-core-8-default
-            owner: "Data Layer"
+            owner: '@camunda/data-layer'
           - group: zeebe-opensearch-exporter
             name: "Zeebe OpenSearch Exporter ITs"
             maven-modules: "'io.camunda:zeebe-opensearch-exporter'"
@@ -129,7 +131,7 @@ jobs:
             maven-test-fork-count: 7
             maven-test-profiles: multi-db-test
             runs-on: aws-core-8-default
-            owner: "Data Layer"
+            owner: '@camunda/data-layer'
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Setup AWS OpenSearch

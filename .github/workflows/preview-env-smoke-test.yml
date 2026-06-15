@@ -25,6 +25,9 @@ on:
         type: boolean
         default: false
 
+env:
+  TEST_OWNER: '@camunda/monorepo-devops-team'
+
 jobs:
   deploy-8-8:
     name: Deploy 8.8 Preview Environment
