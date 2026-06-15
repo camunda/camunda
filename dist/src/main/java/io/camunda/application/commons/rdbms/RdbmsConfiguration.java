@@ -14,23 +14,26 @@ import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.read.RdbmsReaderConfig;
+import io.camunda.db.rdbms.read.RdbmsTenantReaders;
 import io.camunda.db.rdbms.read.replication.ReplicationLogStatusProviderFactory;
-import io.camunda.db.rdbms.read.service.HistoryDeletionDbReader;
 import io.camunda.db.rdbms.read.service.PersistentWebSessionDbReader;
 import io.camunda.db.rdbms.read.service.RdbmsTableRowCountMetrics;
-import io.camunda.db.rdbms.sql.HistoryDeletionMapper;
 import io.camunda.db.rdbms.sql.PersistentWebSessionMapper;
 import io.camunda.db.rdbms.sql.ReplicationStatusMapper;
 import io.camunda.db.rdbms.sql.TableMetricsMapper;
 import io.camunda.db.rdbms.write.RdbmsMapperBundle;
 import io.camunda.db.rdbms.write.RdbmsWriterFactory;
 import io.camunda.db.rdbms.write.service.PersistentWebSessionWriter;
+import io.camunda.search.clients.CamundaSearchClients;
+import io.camunda.search.clients.auth.ResourceAccessDelegatingController;
 import io.camunda.search.clients.reader.AuthorizationReader;
 import io.camunda.search.clients.reader.SearchClientReaders;
+import io.camunda.security.core.authz.ResourceAccessController;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import javax.sql.DataSource;
 import org.slf4j.Logger;
@@ -66,12 +69,6 @@ public class RdbmsConfiguration {
     final var metricsConfig = configuration.getData().getSecondaryStorage().getRdbms().getMetrics();
     return new RdbmsTableRowCountMetrics(
         tableMetricsMapper, metricsConfig.getTableRowCountCacheDuration());
-  }
-
-  @Bean
-  public HistoryDeletionDbReader historyDeletionDbReader(
-      final HistoryDeletionMapper historyDeletionMapper) {
-    return new HistoryDeletionDbReader(historyDeletionMapper);
   }
 
   @Bean
@@ -121,6 +118,15 @@ public class RdbmsConfiguration {
   }
 
   @Bean
+  public CamundaSearchClients camundaSearchClients(
+      final PhysicalTenantSearchClientReaders physicalTenantSearchClientReaders,
+      final List<ResourceAccessController> resourceAccessControllers) {
+    return new CamundaSearchClients(
+        physicalTenantSearchClientReaders.requireDefaultTenant(),
+        new ResourceAccessDelegatingController(resourceAccessControllers));
+  }
+
+  @Bean
   public AuthorizationReader authorizationReader(
       final Map<String, RdbmsTenantReaders> rdbmsTenantReaders) {
     return defaultReaders(rdbmsTenantReaders).authorizationReader();
@@ -130,52 +136,9 @@ public class RdbmsConfiguration {
   public RdbmsService rdbmsService(
       final RdbmsWriterFactory rdbmsWriterFactory,
       final Map<String, RdbmsTenantReaders> rdbmsTenantReaders,
-      final HistoryDeletionDbReader historyDeletionDbReader,
       final ReplicationLogStatusProviderFactory replicationLogStatusProviderFactory) {
-    final var defaults = defaultReaders(rdbmsTenantReaders);
     return new RdbmsService(
-        rdbmsWriterFactory,
-        defaults.agentInstanceReader(),
-        defaults.auditLogReader(),
-        defaults.authorizationReader(),
-        defaults.decisionDefinitionReader(),
-        defaults.decisionInstanceReader(),
-        defaults.decisionRequirementsReader(),
-        defaults.flowNodeInstanceReader(),
-        defaults.groupReader(),
-        defaults.groupMemberReader(),
-        defaults.incidentReader(),
-        defaults.processDefinitionReader(),
-        defaults.processInstanceReader(),
-        defaults.variableReader(),
-        defaults.clusterVariableReader(),
-        defaults.waitStateReader(),
-        defaults.roleReader(),
-        defaults.roleMemberReader(),
-        defaults.tenantReader(),
-        defaults.tenantMemberReader(),
-        defaults.userReader(),
-        defaults.userTaskReader(),
-        defaults.formReader(),
-        defaults.mappingRuleReader(),
-        defaults.batchOperationReader(),
-        defaults.sequenceFlowReader(),
-        defaults.batchOperationItemReader(),
-        defaults.jobReader(),
-        defaults.jobMetricsBatchReader(),
-        defaults.usageMetricsReader(),
-        defaults.usageMetricsTUReader(),
-        defaults.messageSubscriptionReader(),
-        defaults.processDefinitionMessageSubscriptionStatisticsReader(),
-        defaults.correlatedMessageSubscriptionReader(),
-        defaults.processDefinitionInstanceStatisticsReader(),
-        defaults.processDefinitionInstanceVersionStatisticsReader(),
-        historyDeletionDbReader,
-        defaults.incidentProcessInstanceStatisticsByErrorReader(),
-        defaults.incidentProcessInstanceStatisticsByDefinitionReader(),
-        defaults.globalListenerReader(),
-        defaults.deployedResourceReader(),
-        replicationLogStatusProviderFactory);
+        rdbmsWriterFactory, rdbmsTenantReaders, replicationLogStatusProviderFactory);
   }
 
   @Bean

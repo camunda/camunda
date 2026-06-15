@@ -49,7 +49,7 @@ public class TenantSpecificFilterIT {
   @BeforeEach
   public void beforeAll() {
     rdbmsWriters = rdbmsService.createWriter(0L);
-    tenantReader = rdbmsService.getTenantReader();
+    tenantReader = rdbmsService.getTenantReader("default");
   }
 
   @Test

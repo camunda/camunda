@@ -70,7 +70,7 @@ public class RoleSpecificFilterIT {
   @BeforeEach
   public void beforeAll() {
     rdbmsWriters = rdbmsService.createWriter(0L);
-    roleReader = rdbmsService.getRoleReader();
+    roleReader = rdbmsService.getRoleReader("default");
   }
 
   @Test

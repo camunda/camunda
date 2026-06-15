@@ -117,18 +117,21 @@ public class RdbmsExporterWrapper implements Exporter {
             .queueSize(config.getQueueSize())
             .rdbmsWriter(rdbmsWriters);
 
-    cacheRegistry = new RdbmsCacheRegistry(config, rdbmsService, context.getMeterRegistry());
+    cacheRegistry =
+        new RdbmsCacheRegistry(config, rdbmsService, physicalTenantId, context.getMeterRegistry());
 
     final var historyCleanupService =
         new HistoryCleanupService(
-            rdbmsWriterConfig, rdbmsWriters, rdbmsService.getProcessInstanceReader());
+            rdbmsWriterConfig,
+            rdbmsWriters,
+            rdbmsService.getProcessInstanceReader(physicalTenantId));
     builder.historyCleanupService(historyCleanupService);
     final var historyDeletionService =
         new HistoryDeletionService(
             rdbmsWriters,
-            rdbmsService.getHistoryDeletionDbReader(),
-            rdbmsService.getProcessInstanceReader(),
-            rdbmsService.getDecisionInstanceReader(),
+            rdbmsService.getHistoryDeletionDbReader(physicalTenantId),
+            rdbmsService.getProcessInstanceReader(physicalTenantId),
+            rdbmsService.getDecisionInstanceReader(physicalTenantId),
             new HistoryDeletionConfig(
                 config.getHistoryDeletion().getDelayBetweenRuns(),
                 config.getHistoryDeletion().getMaxDelayBetweenRuns(),

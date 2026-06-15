@@ -38,7 +38,8 @@ public class FormIT {
     final FormDbModel randomizedForm = FormFixtures.createRandomized();
     createAndSaveForm(rdbmsService, randomizedForm);
 
-    final var form = rdbmsService.getFormReader().findOne(randomizedForm.formKey()).orElse(null);
+    final var form =
+        rdbmsService.getFormReader("default").findOne(randomizedForm.formKey()).orElse(null);
     assertFormEntity(form, randomizedForm);
   }
 
@@ -53,7 +54,8 @@ public class FormIT {
         randomizedForm.copy(b -> ((FormDbModelBuilder) b).isDeleted(true));
     rdbmsService.createWriter(1L).getFormWriter().update(updatedModel);
 
-    final var form = rdbmsService.getFormReader().findOne(randomizedForm.formKey()).orElse(null);
+    final var form =
+        rdbmsService.getFormReader("default").findOne(randomizedForm.formKey()).orElse(null);
     assertFormEntity(form, updatedModel);
   }
 
@@ -66,7 +68,7 @@ public class FormIT {
 
     final var searchResult =
         rdbmsService
-            .getFormReader()
+            .getFormReader("default")
             .search(
                 new FormQuery(
                     new FormFilter.Builder().formIds(randomizedForm.formId()).build(),
@@ -88,7 +90,7 @@ public class FormIT {
 
     final var searchResult =
         rdbmsService
-            .getFormReader()
+            .getFormReader("default")
             .search(
                 new FormQuery(
                     new FormFilter.Builder().tenantId(randomizedForm.tenantId()).build(),
@@ -110,7 +112,7 @@ public class FormIT {
 
     final var searchResult =
         rdbmsService
-            .getFormReader()
+            .getFormReader("default")
             .search(
                 new FormQuery(
                     new FormFilter.Builder().formIds(id).build(),
@@ -132,7 +134,7 @@ public class FormIT {
 
     final var searchResult =
         rdbmsService
-            .getFormReader()
+            .getFormReader("default")
             .search(
                 new FormQuery(
                     new FormFilter.Builder().formIds(id).build(),
@@ -148,7 +150,7 @@ public class FormIT {
   @TestTemplate
   public void shouldFindFormWithFullFilter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final FormDbReader formReader = rdbmsService.getFormReader();
+    final FormDbReader formReader = rdbmsService.getFormReader("default");
 
     final String id = FormFixtures.nextStringId();
     createAndSaveRandomForms(rdbmsService, id);

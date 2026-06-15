@@ -5,9 +5,8 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.application.commons.rdbms;
+package io.camunda.db.rdbms.read;
 
-import io.camunda.db.rdbms.read.RdbmsReaderConfig;
 import io.camunda.db.rdbms.read.service.AgentInstanceDbReader;
 import io.camunda.db.rdbms.read.service.AuditLogDbReader;
 import io.camunda.db.rdbms.read.service.AuthorizationDbReader;
@@ -24,6 +23,7 @@ import io.camunda.db.rdbms.read.service.FormDbReader;
 import io.camunda.db.rdbms.read.service.GlobalListenerDbReader;
 import io.camunda.db.rdbms.read.service.GroupDbReader;
 import io.camunda.db.rdbms.read.service.GroupMemberDbReader;
+import io.camunda.db.rdbms.read.service.HistoryDeletionDbReader;
 import io.camunda.db.rdbms.read.service.IncidentDbReader;
 import io.camunda.db.rdbms.read.service.IncidentProcessInstanceStatisticsByDefinitionDbReader;
 import io.camunda.db.rdbms.read.service.IncidentProcessInstanceStatisticsByErrorDbReader;
@@ -52,7 +52,11 @@ import io.camunda.db.rdbms.read.service.WaitStateDbReader;
 import io.camunda.db.rdbms.write.RdbmsMapperBundle;
 import io.camunda.search.clients.reader.SearchClientReaders;
 
-record RdbmsTenantReaders(
+/**
+ * Bundle of all RDBMS read services for a single physical tenant, each backed by that tenant's own
+ * datasource. Built from the tenant's {@link RdbmsMapperBundle} via {@link #create}.
+ */
+public record RdbmsTenantReaders(
     AgentInstanceDbReader agentInstanceReader,
     AuditLogDbReader auditLogReader,
     AuthorizationDbReader authorizationReader,
@@ -69,6 +73,7 @@ record RdbmsTenantReaders(
     GlobalListenerDbReader globalListenerReader,
     GroupDbReader groupReader,
     GroupMemberDbReader groupMemberReader,
+    HistoryDeletionDbReader historyDeletionReader,
     IncidentDbReader incidentReader,
     IncidentProcessInstanceStatisticsByDefinitionDbReader
         incidentProcessInstanceStatisticsByDefinitionReader,
@@ -98,7 +103,7 @@ record RdbmsTenantReaders(
     VariableDbReader variableReader,
     WaitStateDbReader waitStateReader) {
 
-  static RdbmsTenantReaders create(
+  public static RdbmsTenantReaders create(
       final RdbmsMapperBundle mappers, final RdbmsReaderConfig readerConfig) {
     return new RdbmsTenantReaders(
         new AgentInstanceDbReader(mappers.agentInstanceMapper(), readerConfig),
@@ -118,6 +123,7 @@ record RdbmsTenantReaders(
         new GlobalListenerDbReader(mappers.globalListenerMapper(), readerConfig),
         new GroupDbReader(mappers.groupMapper(), readerConfig),
         new GroupMemberDbReader(mappers.groupMapper(), readerConfig),
+        new HistoryDeletionDbReader(mappers.historyDeletionMapper()),
         new IncidentDbReader(mappers.incidentMapper(), readerConfig),
         new IncidentProcessInstanceStatisticsByDefinitionDbReader(
             mappers.incidentMapper(), readerConfig),
@@ -150,7 +156,7 @@ record RdbmsTenantReaders(
         new WaitStateDbReader(mappers.waitStateMapper(), readerConfig));
   }
 
-  SearchClientReaders toSearchClientReaders() {
+  public SearchClientReaders toSearchClientReaders() {
     return new SearchClientReaders(
         agentInstanceReader,
         authorizationReader,

@@ -200,7 +200,7 @@ public class AgentInstanceSortIT {
     final var items =
         testApplication
             .getRdbmsService()
-            .getAgentInstanceDbReader()
+            .getAgentInstanceDbReader("default")
             .search(
                 new AgentInstanceQuery(
                     new AgentInstanceFilter.Builder().processDefinitionIds(procDefId).build(),

@@ -679,7 +679,7 @@ public class BatchOperationIT {
 
     final var searchResult =
         rdbmsService
-            .getBatchOperationReader()
+            .getBatchOperationReader("default")
             .search(
                 new BatchOperationQuery(
                     new BatchOperationFilter.Builder()
@@ -704,7 +704,7 @@ public class BatchOperationIT {
 
     final var searchResult =
         rdbmsService
-            .getBatchOperationReader()
+            .getBatchOperationReader("default")
             .search(
                 new BatchOperationQuery(
                     new BatchOperationFilter.Builder()
@@ -735,7 +735,7 @@ public class BatchOperationIT {
 
     final var searchResult =
         rdbmsService
-            .getBatchOperationReader()
+            .getBatchOperationReader("default")
             .search(
                 new BatchOperationQuery(
                     new BatchOperationFilter.Builder()
@@ -764,7 +764,7 @@ public class BatchOperationIT {
 
     final var searchResult =
         rdbmsService
-            .getBatchOperationReader()
+            .getBatchOperationReader("default")
             .search(
                 new BatchOperationQuery(
                     new BatchOperationFilter.Builder()
@@ -792,7 +792,7 @@ public class BatchOperationIT {
 
     final var searchResult =
         rdbmsService
-            .getBatchOperationReader()
+            .getBatchOperationReader("default")
             .search(
                 new BatchOperationQuery(
                     new BatchOperationFilter.Builder().operationTypes(operationType.name()).build(),
@@ -817,7 +817,7 @@ public class BatchOperationIT {
 
     final var searchResult =
         rdbmsService
-            .getBatchOperationItemReader()
+            .getBatchOperationItemReader("default")
             .search(
                 new BatchOperationItemQuery(
                     new BatchOperationItemFilter.Builder()
@@ -842,7 +842,7 @@ public class BatchOperationIT {
 
     final var searchResult =
         rdbmsService
-            .getBatchOperationReader()
+            .getBatchOperationReader("default")
             .search(
                 new BatchOperationQuery(
                     new BatchOperationFilter.Builder().operationTypes(operationType.name()).build(),
@@ -866,7 +866,7 @@ public class BatchOperationIT {
 
     final var searchResult =
         rdbmsService
-            .getBatchOperationItemReader()
+            .getBatchOperationItemReader("default")
             .search(
                 new BatchOperationItemQuery(
                     new BatchOperationItemFilter.Builder()
@@ -903,7 +903,7 @@ public class BatchOperationIT {
 
     final var searchResult =
         rdbmsService
-            .getBatchOperationItemReader()
+            .getBatchOperationItemReader("default")
             .search(
                 new BatchOperationItemQuery(
                     new BatchOperationItemFilter.Builder()
@@ -937,7 +937,7 @@ public class BatchOperationIT {
   private static SearchQueryResult<BatchOperationEntity> getBatchOperation(
       final RdbmsService rdbmsService, final BatchOperationDbModel batchOperation) {
     return rdbmsService
-        .getBatchOperationReader()
+        .getBatchOperationReader("default")
         .search(
             new BatchOperationQuery(
                 new BatchOperationFilter.Builder()
@@ -950,7 +950,7 @@ public class BatchOperationIT {
   private static SearchQueryResult<BatchOperationItemEntity> getBatchOperationItems(
       final RdbmsService rdbmsService, final String batchOperationKey) {
     return rdbmsService
-        .getBatchOperationItemReader()
+        .getBatchOperationItemReader("default")
         .search(
             new BatchOperationItemQuery(
                 new BatchOperationItemFilter.Builder()

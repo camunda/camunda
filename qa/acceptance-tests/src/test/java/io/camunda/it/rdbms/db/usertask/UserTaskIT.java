@@ -66,7 +66,8 @@ public class UserTaskIT {
     final UserTaskDbModel userTask = UserTaskFixtures.createRandomized();
     createAndSaveUserTask(rdbmsService, userTask);
 
-    final var instance = rdbmsService.getUserTaskReader().findOne(userTask.userTaskKey()).get();
+    final var instance =
+        rdbmsService.getUserTaskReader("default").findOne(userTask.userTaskKey()).get();
     assertUserTaskEntity(instance, userTask);
   }
 
@@ -79,7 +80,8 @@ public class UserTaskIT {
         UserTaskFixtures.createRandomized(b -> b.customHeaders(Map.of("headerKey", "headerValue")));
     createAndSaveUserTask(rdbmsService, userTask);
 
-    final var instance = rdbmsService.getUserTaskReader().findOne(userTask.userTaskKey()).get();
+    final var instance =
+        rdbmsService.getUserTaskReader("default").findOne(userTask.userTaskKey()).get();
     assertUserTaskEntity(instance, userTask);
     assertThat(instance.customHeaders()).containsExactly(entry("headerKey", "headerValue"));
   }
@@ -93,7 +95,8 @@ public class UserTaskIT {
         UserTaskFixtures.createRandomized(b -> b.candidateGroups(null).candidateUsers(null));
     createAndSaveUserTask(rdbmsService, userTask);
 
-    final var instance = rdbmsService.getUserTaskReader().findOne(userTask.userTaskKey()).get();
+    final var instance =
+        rdbmsService.getUserTaskReader("default").findOne(userTask.userTaskKey()).get();
     assertUserTaskEntity(instance, userTask);
   }
 
@@ -110,7 +113,8 @@ public class UserTaskIT {
     writer.getUserTaskWriter().update(updatedModel);
     writer.flush();
 
-    final var instance = rdbmsService.getUserTaskReader().findOne(userTask.userTaskKey()).get();
+    final var instance =
+        rdbmsService.getUserTaskReader("default").findOne(userTask.userTaskKey()).get();
     assertUserTaskEntity(instance, updatedModel);
   }
 
@@ -136,7 +140,8 @@ public class UserTaskIT {
     writer.getUserTaskWriter().update(updatedModel);
     writer.flush();
 
-    final var instance = rdbmsService.getUserTaskReader().findOne(userTask.userTaskKey()).get();
+    final var instance =
+        rdbmsService.getUserTaskReader("default").findOne(userTask.userTaskKey()).get();
     assertUserTaskEntity(instance, updatedModel);
   }
 
@@ -153,7 +158,8 @@ public class UserTaskIT {
     writer.getUserTaskWriter().update(updatedModel);
     writer.flush();
 
-    final var instance = rdbmsService.getUserTaskReader().findOne(userTask.userTaskKey()).get();
+    final var instance =
+        rdbmsService.getUserTaskReader("default").findOne(userTask.userTaskKey()).get();
     assertUserTaskEntity(instance, updatedModel);
   }
 
@@ -174,7 +180,8 @@ public class UserTaskIT {
     rdbmsWriters.getUserTaskWriter().update(updatedModel);
     rdbmsWriters.flush();
 
-    final var instance = rdbmsService.getUserTaskReader().findOne(userTask.userTaskKey()).get();
+    final var instance =
+        rdbmsService.getUserTaskReader("default").findOne(userTask.userTaskKey()).get();
     assertUserTaskEntity(instance, updatedModel);
   }
 
@@ -189,7 +196,7 @@ public class UserTaskIT {
 
     final var searchResult =
         rdbmsService
-            .getUserTaskReader()
+            .getUserTaskReader("default")
             .search(
                 new UserTaskQuery(
                     new UserTaskFilter.Builder().processDefinitionIds(processDefinitionId).build(),
@@ -212,7 +219,7 @@ public class UserTaskIT {
 
     final var searchResult =
         rdbmsService
-            .getUserTaskReader()
+            .getUserTaskReader("default")
             .search(
                 new UserTaskQuery(
                     new UserTaskFilter.Builder()
@@ -240,7 +247,7 @@ public class UserTaskIT {
     // when
     final var searchResult =
         rdbmsService
-            .getUserTaskReader()
+            .getUserTaskReader("default")
             .search(
                 new UserTaskQuery(
                     new UserTaskFilter.Builder()
@@ -275,7 +282,7 @@ public class UserTaskIT {
     // when
     final var searchResult =
         rdbmsService
-            .getUserTaskReader()
+            .getUserTaskReader("default")
             .search(
                 new UserTaskQuery(
                     new UserTaskFilter.Builder()
@@ -304,7 +311,7 @@ public class UserTaskIT {
     // when
     final var searchResult =
         rdbmsService
-            .getUserTaskReader()
+            .getUserTaskReader("default")
             .search(
                 new UserTaskQuery(
                     new UserTaskFilter.Builder()
@@ -333,7 +340,7 @@ public class UserTaskIT {
     // when
     final var searchResult =
         rdbmsService
-            .getUserTaskReader()
+            .getUserTaskReader("default")
             .search(
                 new UserTaskQuery(
                     new UserTaskFilter.Builder()
@@ -365,7 +372,7 @@ public class UserTaskIT {
     // when
     final var searchResult =
         rdbmsService
-            .getUserTaskReader()
+            .getUserTaskReader("default")
             .search(
                 new UserTaskQuery(
                     new UserTaskFilter.Builder()
@@ -398,7 +405,7 @@ public class UserTaskIT {
     // when
     final var searchResult =
         rdbmsService
-            .getUserTaskReader()
+            .getUserTaskReader("default")
             .search(
                 new UserTaskQuery(
                     new UserTaskFilter.Builder()
@@ -430,7 +437,7 @@ public class UserTaskIT {
     // when
     final var searchResult =
         rdbmsService
-            .getUserTaskReader()
+            .getUserTaskReader("default")
             .search(
                 new UserTaskQuery(
                     new UserTaskFilter.Builder()
@@ -459,7 +466,7 @@ public class UserTaskIT {
 
     final var searchResult =
         rdbmsService
-            .getUserTaskReader()
+            .getUserTaskReader("default")
             .search(
                 UserTaskQuery.of(b -> b),
                 resourceAccessChecksFromResourceIds(
@@ -482,7 +489,7 @@ public class UserTaskIT {
 
     final var searchResult =
         rdbmsService
-            .getUserTaskReader()
+            .getUserTaskReader("default")
             .search(
                 UserTaskQuery.of(b -> b), resourceAccessChecksFromTenantIds(userTask.tenantId()));
 
@@ -505,7 +512,7 @@ public class UserTaskIT {
     // when
     final var searchResult =
         rdbmsService
-            .getUserTaskReader()
+            .getUserTaskReader("default")
             .search(
                 UserTaskQuery.of(b -> b),
                 ResourceAccessChecks.of(
@@ -534,7 +541,7 @@ public class UserTaskIT {
     // when - authenticate as the first candidate user
     final var searchResult =
         rdbmsService
-            .getUserTaskReader()
+            .getUserTaskReader("default")
             .search(
                 UserTaskQuery.of(b -> b),
                 ResourceAccessChecks.of(
@@ -565,7 +572,7 @@ public class UserTaskIT {
     // when - authenticate with the first candidate group
     final var searchResult =
         rdbmsService
-            .getUserTaskReader()
+            .getUserTaskReader("default")
             .search(
                 UserTaskQuery.of(b -> b),
                 ResourceAccessChecks.of(
@@ -602,7 +609,7 @@ public class UserTaskIT {
     final var userGroups = List.of(group, generateRandomString("unrelatedGroup"));
     final var searchResult =
         rdbmsService
-            .getUserTaskReader()
+            .getUserTaskReader("default")
             .search(
                 UserTaskQuery.of(b -> b),
                 ResourceAccessChecks.of(
@@ -641,7 +648,7 @@ public class UserTaskIT {
     // when
     final var searchResult =
         rdbmsService
-            .getUserTaskReader()
+            .getUserTaskReader("default")
             .search(
                 UserTaskQuery.of(b -> b),
                 ResourceAccessChecks.of(
@@ -689,7 +696,7 @@ public class UserTaskIT {
     // when
     final var searchResult =
         rdbmsService
-            .getUserTaskReader()
+            .getUserTaskReader("default")
             .search(
                 UserTaskQuery.of(b -> b),
                 ResourceAccessChecks.of(
@@ -732,7 +739,7 @@ public class UserTaskIT {
     // when
     final var searchResult =
         rdbmsService
-            .getUserTaskReader()
+            .getUserTaskReader("default")
             .search(
                 UserTaskQuery.of(b -> b),
                 ResourceAccessChecks.of(
@@ -773,7 +780,7 @@ public class UserTaskIT {
     // when
     final var searchResult =
         rdbmsService
-            .getUserTaskReader()
+            .getUserTaskReader("default")
             .search(
                 UserTaskQuery.of(b -> b),
                 ResourceAccessChecks.of(
@@ -810,7 +817,7 @@ public class UserTaskIT {
     // when
     final var searchResult =
         rdbmsService
-            .getUserTaskReader()
+            .getUserTaskReader("default")
             .search(
                 UserTaskQuery.of(b -> b),
                 ResourceAccessChecks.of(
@@ -853,7 +860,7 @@ public class UserTaskIT {
     // when
     final var searchResult =
         rdbmsService
-            .getUserTaskReader()
+            .getUserTaskReader("default")
             .search(
                 UserTaskQuery.of(b -> b),
                 ResourceAccessChecks.of(
@@ -902,7 +909,7 @@ public class UserTaskIT {
     // when
     final var searchResult =
         rdbmsService
-            .getUserTaskReader()
+            .getUserTaskReader("default")
             .search(
                 UserTaskQuery.of(b -> b),
                 ResourceAccessChecks.of(
@@ -949,7 +956,7 @@ public class UserTaskIT {
     // when - combining ID-based and property-based, but only ID matches
     final var searchResult =
         rdbmsService
-            .getUserTaskReader()
+            .getUserTaskReader("default")
             .search(
                 UserTaskQuery.of(b -> b),
                 ResourceAccessChecks.of(
@@ -990,7 +997,7 @@ public class UserTaskIT {
     // when - combining ID-based and property-based, but only property matches
     final var searchResult =
         rdbmsService
-            .getUserTaskReader()
+            .getUserTaskReader("default")
             .search(
                 UserTaskQuery.of(b -> b),
                 ResourceAccessChecks.of(
@@ -1035,7 +1042,7 @@ public class UserTaskIT {
     // when
     final var searchResult =
         rdbmsService
-            .getUserTaskReader()
+            .getUserTaskReader("default")
             .search(
                 UserTaskQuery.of(b -> b),
                 ResourceAccessChecks.of(
@@ -1088,7 +1095,7 @@ public class UserTaskIT {
 
     final var searchResult =
         rdbmsService
-            .getUserTaskReader()
+            .getUserTaskReader("default")
             .search(
                 new UserTaskQuery(
                     new UserTaskFilter.Builder()
@@ -1132,7 +1139,7 @@ public class UserTaskIT {
 
     final var searchResult =
         rdbmsService
-            .getUserTaskReader()
+            .getUserTaskReader("default")
             .search(
                 new UserTaskQuery(
                     new UserTaskFilter.Builder()
@@ -1170,7 +1177,7 @@ public class UserTaskIT {
 
     final var searchResult =
         rdbmsService
-            .getUserTaskReader()
+            .getUserTaskReader("default")
             .search(
                 new UserTaskQuery(
                     new UserTaskFilter.Builder()
@@ -1218,7 +1225,7 @@ public class UserTaskIT {
 
     final var searchResult =
         rdbmsService
-            .getUserTaskReader()
+            .getUserTaskReader("default")
             .search(
                 new UserTaskQuery(
                     new UserTaskFilter.Builder()
@@ -1262,7 +1269,7 @@ public class UserTaskIT {
 
     final var searchResult =
         rdbmsService
-            .getUserTaskReader()
+            .getUserTaskReader("default")
             .search(
                 new UserTaskQuery(
                     new UserTaskFilter.Builder()
@@ -1308,7 +1315,7 @@ public class UserTaskIT {
 
     final var searchResult =
         rdbmsService
-            .getUserTaskReader()
+            .getUserTaskReader("default")
             .search(
                 new UserTaskQuery(
                     new UserTaskFilter.Builder()
@@ -1339,7 +1346,7 @@ public class UserTaskIT {
 
     final var searchResult =
         rdbmsService
-            .getUserTaskReader()
+            .getUserTaskReader("default")
             .search(
                 new UserTaskQuery(
                     new UserTaskFilter.Builder().processDefinitionIds(processDefinitionId).build(),
@@ -1361,7 +1368,7 @@ public class UserTaskIT {
 
     final var searchResult =
         rdbmsService
-            .getUserTaskReader()
+            .getUserTaskReader("default")
             .search(
                 new UserTaskQuery(
                     new UserTaskFilter.Builder().processDefinitionIds(processDefinitionId).build(),
@@ -1386,7 +1393,7 @@ public class UserTaskIT {
 
     final var searchResult =
         rdbmsService
-            .getUserTaskReader()
+            .getUserTaskReader("default")
             .search(
                 new UserTaskQuery(
                     new UserTaskFilter.Builder()
@@ -1413,7 +1420,7 @@ public class UserTaskIT {
 
     final var searchResult =
         rdbmsService
-            .getUserTaskReader()
+            .getUserTaskReader("default")
             .search(
                 new UserTaskQuery(
                     new UserTaskFilter.Builder()
@@ -1440,7 +1447,7 @@ public class UserTaskIT {
 
     final var searchResult =
         rdbmsService
-            .getUserTaskReader()
+            .getUserTaskReader("default")
             .search(
                 new UserTaskQuery(
                     new UserTaskFilter.Builder()
@@ -1467,7 +1474,7 @@ public class UserTaskIT {
 
     final var searchResultGte =
         rdbmsService
-            .getUserTaskReader()
+            .getUserTaskReader("default")
             .search(
                 new UserTaskQuery(
                     new UserTaskFilter.Builder()
@@ -1492,7 +1499,7 @@ public class UserTaskIT {
 
     final var searchResult =
         rdbmsService
-            .getUserTaskReader()
+            .getUserTaskReader("default")
             .search(
                 new UserTaskQuery(
                     new UserTaskFilter.Builder()
@@ -1517,7 +1524,7 @@ public class UserTaskIT {
 
     final var searchResult =
         rdbmsService
-            .getUserTaskReader()
+            .getUserTaskReader("default")
             .search(
                 new UserTaskQuery(
                     new UserTaskFilter.Builder().dueDateOperations(Operation.lte(dueDate)).build(),
@@ -1542,7 +1549,7 @@ public class UserTaskIT {
 
     final var searchResult =
         rdbmsService
-            .getUserTaskReader()
+            .getUserTaskReader("default")
             .search(
                 new UserTaskQuery(
                     new UserTaskFilter.Builder()
@@ -1569,7 +1576,7 @@ public class UserTaskIT {
 
     final var searchResult =
         rdbmsService
-            .getUserTaskReader()
+            .getUserTaskReader("default")
             .search(
                 new UserTaskQuery(
                     new UserTaskFilter.Builder()
@@ -1596,7 +1603,7 @@ public class UserTaskIT {
 
     final var searchResultGte =
         rdbmsService
-            .getUserTaskReader()
+            .getUserTaskReader("default")
             .search(
                 new UserTaskQuery(
                     new UserTaskFilter.Builder()
@@ -1613,7 +1620,7 @@ public class UserTaskIT {
   @TestTemplate
   public void shouldFindUserTaskWithFullFilter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final UserTaskDbReader processInstanceReader = rdbmsService.getUserTaskReader();
+    final UserTaskDbReader processInstanceReader = rdbmsService.getUserTaskReader("default");
 
     createAndSaveRandomUserTasks(rdbmsService);
     final UserTaskDbModel userTask = UserTaskFixtures.createRandomized(b -> b);
@@ -1648,7 +1655,7 @@ public class UserTaskIT {
   @TestTemplate
   public void shouldFindWithSearchAfter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final UserTaskDbReader reader = rdbmsService.getUserTaskReader();
+    final UserTaskDbReader reader = rdbmsService.getUserTaskReader("default");
 
     createAndSaveRandomUserTasks(rdbmsService, b -> b.tenantId("tenant-1337"));
     final var sort = UserTaskSort.of(s -> s.priority().asc().completionDate().asc().desc());
@@ -1741,7 +1748,7 @@ public class UserTaskIT {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final UserTaskDbReader reader = rdbmsService.getUserTaskReader();
+    final UserTaskDbReader reader = rdbmsService.getUserTaskReader("default");
 
     final var definition =
         ProcessDefinitionFixtures.createAndSaveProcessDefinition(rdbmsWriters, b -> b);
@@ -1783,7 +1790,7 @@ public class UserTaskIT {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final UserTaskDbReader reader = rdbmsService.getUserTaskReader();
+    final UserTaskDbReader reader = rdbmsService.getUserTaskReader("default");
 
     final var definition =
         ProcessDefinitionFixtures.createAndSaveProcessDefinition(rdbmsWriters, b -> b);

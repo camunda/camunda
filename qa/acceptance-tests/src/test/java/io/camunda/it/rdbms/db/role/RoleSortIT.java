@@ -56,7 +56,7 @@ public class RoleSortIT {
       final Function<Builder, ObjectBuilder<RoleSort>> sortBuilder,
       final Comparator<RoleEntity> comparator) {
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final RoleDbReader reader = rdbmsService.getRoleReader();
+    final RoleDbReader reader = rdbmsService.getRoleReader("default");
 
     final var name = nextStringId();
     createAndSaveRandomRoles(rdbmsWriters, b -> b.name(name));

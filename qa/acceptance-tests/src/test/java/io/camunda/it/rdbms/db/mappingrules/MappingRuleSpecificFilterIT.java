@@ -50,7 +50,7 @@ public class MappingRuleSpecificFilterIT {
   @BeforeEach
   public void beforeAll() {
     rdbmsWriters = rdbmsService.createWriter(0L);
-    mappingRuleReader = rdbmsService.getMappingRuleReader();
+    mappingRuleReader = rdbmsService.getMappingRuleReader("default");
   }
 
   @Test

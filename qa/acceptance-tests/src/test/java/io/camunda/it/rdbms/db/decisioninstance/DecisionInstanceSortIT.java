@@ -189,7 +189,7 @@ public class DecisionInstanceSortIT {
       final Function<Builder, ObjectBuilder<DecisionInstanceSort>> sortBuilder,
       final Comparator<DecisionInstanceEntity> comparator) {
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final DecisionInstanceDbReader reader = rdbmsService.getDecisionInstanceReader();
+    final DecisionInstanceDbReader reader = rdbmsService.getDecisionInstanceReader("default");
 
     final var decisionDefinition =
         DecisionDefinitionFixtures.createAndSaveDecisionDefinition(rdbmsWriters, b -> b);

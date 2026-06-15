@@ -118,7 +118,7 @@ public class UserTaskSortIT {
       final RdbmsService rdbmsService,
       final Function<Builder, ObjectBuilder<UserTaskSort>> sortBuilder,
       final Comparator<UserTaskEntity> comparator) {
-    final UserTaskDbReader reader = rdbmsService.getUserTaskReader();
+    final UserTaskDbReader reader = rdbmsService.getUserTaskReader("default");
 
     final var processDefinitionId = nextStringId();
     createAndSaveRandomUserTasks(rdbmsService, b -> b.processDefinitionId(processDefinitionId));

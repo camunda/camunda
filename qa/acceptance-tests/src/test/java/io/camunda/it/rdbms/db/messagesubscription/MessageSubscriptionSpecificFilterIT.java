@@ -57,7 +57,7 @@ public class MessageSubscriptionSpecificFilterIT {
   @BeforeEach
   public void beforeAll() {
     rdbmsWriters = rdbmsService.createWriter(0L);
-    messageSubscriptionDbReader = rdbmsService.getMessageSubscriptionReader();
+    messageSubscriptionDbReader = rdbmsService.getMessageSubscriptionReader("default");
   }
 
   @ParameterizedTest

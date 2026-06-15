@@ -41,7 +41,7 @@ public class DecisionRequirementsSpecificFilterIT {
   @BeforeEach
   public void beforeAll() {
     rdbmsWriters = rdbmsService.createWriter(0L);
-    decisionRequirementsReader = rdbmsService.getDecisionRequirementsReader();
+    decisionRequirementsReader = rdbmsService.getDecisionRequirementsReader("default");
   }
 
   @ParameterizedTest
