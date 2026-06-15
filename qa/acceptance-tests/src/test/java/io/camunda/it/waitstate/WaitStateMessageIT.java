@@ -11,6 +11,7 @@ import static io.camunda.it.util.TestHelper.cancelInstance;
 import static io.camunda.it.util.TestHelper.deployProcessAndWaitForIt;
 import static io.camunda.it.util.TestHelper.deployResource;
 import static io.camunda.it.util.TestHelper.startProcessInstance;
+import static io.camunda.it.util.TestHelper.startProcessInstanceWithMessage;
 import static io.camunda.it.util.TestHelper.waitForProcessInstanceToBeTerminated;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
 import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
@@ -326,6 +327,87 @@ public class WaitStateMessageIT {
                             .join()
                             .items())
                     .isEmpty());
+  }
+
+  @Test
+  void shouldNotTrackMessageStartEventAsWaitState() {
+    // given — a process that is started by a message (not a mid-process catch element)
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("waitStateMessageStartEventProcess")
+            .startEvent()
+            .message(m -> m.name("start-event-msg"))
+            .endEvent()
+            .done();
+    deployProcessAndWaitForIt(camundaClient, process, "waitStateMessageStartEventProcess.bpmn");
+
+    // when — correlate a message to start the process instance; it completes immediately
+    final long pik =
+        startProcessInstanceWithMessage(camundaClient, "start-event-msg").getProcessInstanceKey();
+    waitForProcessInstanceToBeTerminated(camundaClient, pik);
+
+    // then — MessageStartEventSubscription records are not tracked by the MESSAGE wait-state
+    // transformer; no wait-state row should have been created for this instance
+    assertThat(
+            camundaClient
+                .newElementInstanceWaitStateSearchRequest()
+                .filter(f -> f.processInstanceKey(pik).waitStateType(WaitStateType.MESSAGE))
+                .send()
+                .join()
+                .items())
+        .isEmpty();
+  }
+
+  @Test
+  void shouldNotTrackBoundaryMessageEventAsWaitState() {
+    // given — a process with a service task that has an attached boundary message event.
+    // The boundary event creates a MessageSubscription with elementType=BOUNDARY_EVENT,
+    // which is not in the supported set (RECEIVE_TASK, INTERMEDIATE_CATCH_EVENT).
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("waitStateBoundaryMsgProcess")
+            .startEvent()
+            .serviceTask("boundary-service-task", t -> t.zeebeJobType("boundary-job"))
+            .boundaryEvent("boundary-msg-event")
+            .message(m -> m.name("boundary-msg").zeebeCorrelationKeyExpression("boundaryKey"))
+            .endEvent()
+            .moveToActivity("boundary-service-task")
+            .endEvent()
+            .done();
+    deployProcessAndWaitForIt(camundaClient, process, "waitStateBoundaryMsgProcess.bpmn");
+
+    final var instance =
+        startProcessInstance(
+            camundaClient, "waitStateBoundaryMsgProcess", Map.of("boundaryKey", "bnd-xyz"));
+    final long pik = instance.getProcessInstanceKey();
+
+    // Wait for the JOB wait state to appear — the service task and its boundary event subscription
+    // are activated in the same engine step, so the JOB wait state being visible proves the
+    // MessageSubscription CREATED event has also been exported.
+    Awaitility.await("JOB wait state should appear for service task")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .untilAsserted(
+            () ->
+                assertThat(
+                        camundaClient
+                            .newElementInstanceWaitStateSearchRequest()
+                            .filter(f -> f.processInstanceKey(pik).waitStateType(WaitStateType.JOB))
+                            .send()
+                            .join()
+                            .items())
+                    .hasSize(1));
+
+    // then — boundary message subscriptions are not tracked
+    assertThat(
+            camundaClient
+                .newElementInstanceWaitStateSearchRequest()
+                .filter(f -> f.processInstanceKey(pik).waitStateType(WaitStateType.MESSAGE))
+                .send()
+                .join()
+                .items())
+        .isEmpty();
+
+    // cleanup
+    cancelInstance(camundaClient, instance);
+    waitForProcessInstanceToBeTerminated(camundaClient, pik);
   }
 
   private static void waitForWaitStates(final int expectedCount) {
