@@ -69,7 +69,7 @@ used by the monorepo, owned by the Infrastructure team (`#ask-infra`):
 
 ### Release Process
 
-**[Release Process](./release.md)** - Complete software release procedures and guidelines including:
+**[Release Process](./release/index.md)** - Complete software release procedures and guidelines including:
 
 - Release types (Minor, Alpha, Patch) and artifacts
 - BPMN-based release process implementation

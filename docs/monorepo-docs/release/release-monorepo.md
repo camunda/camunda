@@ -1,4 +1,4 @@
-# Release Process
+# Monorepo Release
 
 This document will become a knowledge base around the [C8 monorepo](https://github.com/camunda/camunda) release process and help Camundi to maintain the process. It primarily focuses on the release process of Zeebe and the C8 webapps after they included with the monorepo merger (Camunda 8.6+).
 
@@ -19,7 +19,7 @@ There must not be 2 concurrent releases ongoing with the same major and minor ve
 
 _Caveat: Many places still refer to this process as “Zeebe release process” although with 8.6+ it is the monorepo release process also involving other components like C8 webapps._
 
-Not in scope of this process are [SNAPSHOT releases](./ci.md#available-snapshot-artifacts).
+Not in scope of this process are [SNAPSHOT releases](../ci.md#available-snapshot-artifacts).
 
 ### Release Types
 
@@ -253,7 +253,7 @@ All problems, bugs and feature requests regarding the C8 release process are tra
 
 For visibility and prioritization there is the (internal) [Monorepo Release project board](https://github.com/orgs/camunda/projects/115/views/4) that tracks high-level issues.
 
-For CI-related issues in the release process, also see our [CI & Automation documentation](./ci.md#issue-tracking).
+For CI-related issues in the release process, also see our [CI & Automation documentation](../ci.md#issue-tracking).
 
 ## DRIs
 
@@ -285,7 +285,7 @@ Core Features Medic: can help with questions and tasks related to Operate, Taskl
 
 We want the release process for all supported versions 8.6+ to be as similar as possible, to reduce maintenance effort, surprises and mental load. Improvements and fixes to the release process should always apply to all supported versions, if possible.
 
-For CI-related changes, refer to our [CI & Automation documentation](./ci.md) and the [backporting guidelines](./ci.md#backporting-guidelines).
+For CI-related changes, refer to our [CI & Automation documentation](../ci.md) and the [backporting guidelines](../ci.md#backporting-guidelines).
 
 import PersistentTaskListEnabler from '@site/src/components/PersistentTaskListEnabler';
 
@@ -366,7 +366,7 @@ Ownership model:
 
 ### Minor Release References
 
-- [Release process documentation](./release.md)
+- [Release process documentation](./index.md)
 - [C8 Release Train](https://confluence.camunda.com/spaces/HAN/pages/201853752/C8+Release+Train)
 - [Minor Release Feature Freeze](https://confluence.camunda.com/spaces/HAN/pages/307894801/Minor+Release+Feature+Freeze)
 - [Issue #46249](https://github.com/camunda/camunda/issues/46249)
