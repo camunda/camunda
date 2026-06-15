@@ -847,10 +847,12 @@ components:
           JOB: '#/components/schemas/JobWaitStateDetails'
           MESSAGE: '#/components/schemas/MessageWaitStateDetails'
           USER_TASK: '#/components/schemas/UserTaskWaitStateDetails'
+          TIMER: '#/components/schemas/TimerWaitStateDetails'
       oneOf:
         - $ref: '#/components/schemas/JobWaitStateDetails'
         - $ref: '#/components/schemas/MessageWaitStateDetails'
         - $ref: '#/components/schemas/UserTaskWaitStateDetails'
+        - $ref: '#/components/schemas/TimerWaitStateDetails'
 
     WaitStateTypeEnum:
       description: The type of waiting state an element instance is in.
@@ -859,6 +861,7 @@ components:
         - JOB
         - MESSAGE
         - USER_TASK
+        - TIMER
 
     BaseWaitStateDetails:
       description: Common fields shared by all wait-state details variants.
@@ -939,6 +942,26 @@ components:
           nullable: true
           type: string
           format: date-time
+
+    TimerWaitStateDetails:
+      type: object
+      required:
+        - waitStateType
+        - dueDate
+        - repetitions
+      allOf:
+        - $ref: '#/components/schemas/BaseWaitStateDetails'
+      properties:
+        dueDate:
+          description: When the timer is due, as a UNIX epoch timestamp in milliseconds.
+          nullable: true
+          type: integer
+          format: int64
+        repetitions:
+          description: The number of remaining timer repetitions (-1 for infinite, 0 for non-repeating).
+          nullable: true
+          type: integer
+          format: int32
 
     AdHocSubProcessActivateActivityReference:
       type: object
