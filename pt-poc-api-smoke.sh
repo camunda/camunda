@@ -3,15 +3,19 @@
 #
 # API isolation smoke matrix for the physical-tenant security chains.
 #
-# Demonstrates the isolation this PR actually delivers under the current (post-`assigned`-removal)
-# model, where every physical tenant inherits ALL cluster providers (root ∪ its own overlay):
+# Demonstrates the isolation this PR delivers, including per-tenant provider SELECTION
+# (`providers.assigned`, #54730): a physical tenant receives only the cluster providers it is
+# assigned (root ∪ its own overlay, narrowed to the selection), not all of them.
 #
 #   - A non-default tenant (e.g. `tenanta`) gets a dedicated API chain at the tenant-first path
 #     /physical-tenants/<id>/v2/...  built from its ScopedSecurityDescriptor.
 #   - The implicit `default` tenant is the ROOT: it is served at the unprefixed /v2/... cluster path
 #     AND, as an alias, at /physical-tenants/default/v2/... — PhysicalTenantScopeProvider emits a
-#     default-alias descriptor (built from the root config) whenever PT scoping is active. Both
-#     surfaces accept the same (root) providers/audiences.
+#     default-alias descriptor (built from the root config) whenever PT scoping is active. The
+#     default tenant always carries the FULL provider set.
+#   - Per-tenant ISSUER isolation: tenanta is `assigned: [tenanta]`, so narrowing drops the
+#     inherited root default `oidc` provider (default realm :8081) from tenanta's chain. A
+#     default-realm token is therefore rejected (401) on /pt/tenanta — the [#54730] cell below.
 #   - Per-scope AUDIENCE validation isolates tenants that share one IdP issuer: tenanta's overlay
 #     overrides its provider audience to pt-tenanta-aud, so a same-issuer token with a different
 #     audience is rejected by tenanta's chain even though the issuer matches.
@@ -19,12 +23,6 @@
 # The probe endpoint is GET .../v2/authentication/me (AuthenticationController, a
 # @CamundaRestController — registered under the PT prefix by
 # PhysicalTenantRequestMappingHandlerMapping for scoped tenants, and at /v2 for the cluster).
-#
-# NOT asserted here (deferred): per-tenant ISSUER isolation — rejecting a *different cluster
-# provider's* token on a tenant's chain (e.g. the root default-realm token on /pt/tenanta). That
-# requires per-tenant provider SELECTION (`providers.assigned`), which is deferred to #54730. With
-# all-providers, tenanta inherits the root default `oidc` provider, so it accepts that token. The
-# two cells below marked [#54730] print the current behaviour for visibility but do not pass/fail.
 #
 # Requires: ./pt-poc-idp.sh and ./pt-poc-oc.sh running.
 # Dependencies: curl, jq.
@@ -87,13 +85,6 @@ check_401() {
   fi
 }
 
-# info: print current behaviour without pass/fail (for documented, deferred behaviour).
-info() {
-  local label="$1" tok="$2" path="$3" status
-  status=$(_status "$tok" "$path")
-  printf "%-72s %s  INFO\n" "$label" "$status"
-}
-
 echo "=== Acquiring tokens ==="
 DEF=$(token "$KC_DEFAULT" camunda-pt-default-client default-secret alice alice)
 TA=$(token "$KC_TENANTA" camunda-pt-tenanta-client tenanta-secret bob bob)
@@ -127,15 +118,15 @@ check_401     "tenanta token -> /pt/default  (scope-private client not in root p
 check_not_401 "dvta token    -> /pt/default  (accepted via root tenanta provider)"   "$DVTA" "$(printf "$PROBE_PATH_TEMPLATE" default)"
 echo
 
-echo "=== Deferred to #54730 (per-tenant ISSUER selection via providers.assigned) — informational ==="
-echo "    With all-providers, tenanta inherits the root default 'oidc' provider, so it accepts the"
-echo "    default-realm token (cross-issuer); this becomes a 401 once #54730's provider selection lands."
-info "default token -> /pt/tenanta  (cross-issuer; 200 today, 401 once #54730 lands)" "$DEF" "$(printf "$PROBE_PATH_TEMPLATE" tenanta)"
+echo "=== Per-tenant ISSUER selection via providers.assigned (#54730) ==="
+echo "    tenanta is assigned: [tenanta], so narrowing drops the inherited root default 'oidc'"
+echo "    provider. A default-realm token (different issuer :8081) is rejected cross-issuer."
+check_401 "default token -> /pt/tenanta  (ISSUER ISOLATION: default 'oidc' not assigned to tenanta)" "$DEF" "$(printf "$PROBE_PATH_TEMPLATE" tenanta)"
 echo
 
 rm -f /tmp/pt-poc-api-body
 
-echo "=== Results: $PASS passed, $FAIL failed (informational cells excluded) ==="
+echo "=== Results: $PASS passed, $FAIL failed ==="
 if [[ "$FAIL" -gt 0 ]]; then
   exit 1
 fi

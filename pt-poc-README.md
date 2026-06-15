@@ -25,8 +25,8 @@ Per-PT **API** chain isolation via the CSL `CamundaSecurityScopeProvider` (`Phys
 
 | Config key | Value | Effect |
 |---|---|---|
-| `camunda.physical-tenants.default.security.authentication.providers.assigned` | `[oidc, tenanta]` | default PT uses two providers |
-| `camunda.physical-tenants.tenanta.security.authentication.providers.assigned` | `[tenanta]` | tenanta PT uses one provider with its own clientId/audience override |
+| `camunda.physical-tenants.default.security.authentication.providers` | `{}` (no `assigned`) | default PT implicitly carries the full provider set (`oidc` + `tenanta`); declaring `assigned` under `default` is rejected at startup |
+| `camunda.physical-tenants.tenanta.security.authentication.providers.assigned` | `[tenanta]` | tenanta PT is narrowed to one provider (the inherited default-slot `oidc` is dropped — see the `[#54730]` issuer-isolation cell) with its own clientId/audience override |
 | `camunda.security.authorizations.enabled` | `false` | authorizations disabled (orthogonal to chain isolation) |
 
 The `pt-poc` profile group (`spring.profiles.group.pt-poc=consolidated-auth,elasticsearch,broker`)
