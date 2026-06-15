@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en" dir="ltr" class="docs-wrapper plugin-docs plugin-id-default docs-version-current docs-doc-page docs-doc-id-architecture/components/orchestration-cluster/adr/per-physical-tenant-provider-selection-via-assigned" data-has-hydrated="false">
+<head>
+<meta charset="UTF-8">
+<meta name="generator" content="Docusaurus v3.10.1">
+<title data-rh="true">ADR-0004: Per-Physical-Tenant Provider Selection via OC-side assigned Narrowing | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-55227/architecture/components/orchestration-cluster/adr/per-physical-tenant-provider-selection-via-assigned/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="ADR-0004: Per-Physical-Tenant Provider Selection via OC-side assigned Narrowing | Camunda Platform"><meta data-rh="true" name="description" content="Status"><meta data-rh="true" property="og:description" content="Status"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-55227/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-55227/architecture/components/orchestration-cluster/adr/per-physical-tenant-provider-selection-via-assigned/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-55227/architecture/components/orchestration-cluster/adr/per-physical-tenant-provider-selection-via-assigned/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-55227/architecture/components/orchestration-cluster/adr/per-physical-tenant-provider-selection-via-assigned/" hreflang="x-default"><link rel="stylesheet" href="/camunda/pr-preview/pr-55227/assets/css/styles.44533d03.css">
+<script src="/camunda/pr-preview/pr-55227/assets/js/runtime~main.c7e3562e.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-55227/assets/js/main.223cf12e.js" defer="defer"></script>
+</head>
+<body>
+<svg style="display: none;"><defs>
+<symbol id="theme-svg-external-link" viewBox="0 0 24 24"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"/></symbol>
+</defs></svg>
+<script>!function(){var t=function(){try{return new URLSearchParams(window.location.search).get("docusaurus-theme")}catch(t){}}()||function(){try{return window.localStorage.getItem("theme")}catch(t){}}();document.documentElement.setAttribute("data-theme",t||"light"),document.documentElement.setAttribute("data-theme-choice",t||"light")}(),function(){try{const c=new URLSearchParams(window.location.search).entries();for(var[t,e]of c)if(t.startsWith("docusaurus-data-")){var a=t.replace("docusaurus-data-","data-");document.documentElement.setAttribute(a,e)}}catch(t){}}()</script><div id="__docusaurus"><link rel="preload" as="image" href="/camunda/pr-preview/pr-55227/img/black-C.png"><div role="region" aria-label="Skip to main content"><a class="skipToContent_fXgn" href="#__docusaurus_skipToContent_fallback">Skip to main content</a></div><nav aria-label="Main" class="theme-layout-navbar navbar navbar--fixed-top"><div class="navbar__inner"><div class="theme-layout-navbar-left navbar__items"><button aria-label="Toggle navigation bar" aria-expanded="false" class="navbar__toggle clean-btn" type="button"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><path stroke="currentColor" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2" d="M4 7h22M4 15h22M4 23h22"></path></svg></button><a class="navbar__brand" href="/camunda/pr-preview/pr-55227/"><div class="navbar__logo"><img src="/camunda/pr-preview/pr-55227/img/black-C.png" alt="Camunda Logo" class="themedComponent_mlkZ themedComponent--light_NVdE"><img src="/camunda/pr-preview/pr-55227/img/black-C.png" alt="Camunda Logo" class="themedComponent_mlkZ themedComponent--dark_xIcU"></div><b class="navbar__title text--truncate">Camunda Platform</b></a></div><div class="theme-layout-navbar-right navbar__items navbar__items--right"><a href="https://github.com/camunda/camunda" target="_blank" rel="noopener noreferrer" class="navbar__item navbar__link">GitHub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a><div class="toggle_vylO colorModeToggle_DEke"><button class="clean-btn toggleButton_gllP toggleButtonDisabled_aARS" type="button" disabled="" title="system mode" aria-label="Switch between dark and light mode (currently system mode)"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP lightToggleIcon_pyhR"><path fill="currentColor" d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP darkToggleIcon_wfgR"><path fill="currentColor" d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP systemToggleIcon_QzmC"><path fill="currentColor" d="m12 21c4.971 0 9-4.029 9-9s-4.029-9-9-9-9 4.029-9 9 4.029 9 9 9zm4.95-13.95c1.313 1.313 2.05 3.093 2.05 4.95s-0.738 3.637-2.05 4.95c-1.313 1.313-3.093 2.05-4.95 2.05v-14c1.857 0 3.637 0.737 4.95 2.05z"></path></svg></button></div><div class="navbarSearchContainer_Bca1"><div class="navbar__search"><span aria-label="expand searchbar" role="button" class="search-icon" tabindex="0"></span><input id="search_input_react" type="search" placeholder="Loading..." aria-label="Search" class="navbar__search-input search-bar" disabled=""></div></div></div></div><div role="presentation" class="navbar-sidebar__backdrop"></div></nav><div id="__docusaurus_skipToContent_fallback" class="theme-layout-main main-wrapper mainWrapper_z2l0"><div class="docsWrapper_hBAB"><button aria-label="Scroll back to top" class="clean-btn theme-back-to-top-button backToTopButton_sjWU" type="button"></button><div class="docRoot_UBD9"><main class="docMainContainer_TBSr docMainContainerEnhanced_lQrH"><div class="container padding-top--md padding-bottom--lg"><div class="row"><div class="col docItemCol_VOVn"><div class="docItemContainer_Djhp"><article><div class="tocCollapsible_ETCw theme-doc-toc-mobile tocMobile_ITEo"><button type="button" class="clean-btn tocCollapsibleButton_TO0P">On this page</button></div><div class="theme-doc-markdown markdown"><header><h1>ADR-0004: Per-Physical-Tenant Provider Selection via OC-side <code>assigned</code> Narrowing</h1></header>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="status">Status<a href="#status" class="hash-link" aria-label="Direct link to Status" title="Direct link to Status" translate="no">​</a></h2>
+<p>Proposed</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="deciders">Deciders<a href="#deciders" class="hash-link" aria-label="Direct link to Deciders" title="Direct link to Deciders" translate="no">​</a></h2>
+<ul>
+<li class="">Proposed by: Sebastian Bathke (<a href="https://github.com/megglos" target="_blank" rel="noopener noreferrer" class="">@megglos</a>)</li>
+</ul>
+<p><em>This ADR is a proposal; deciders will be recorded once the team aligns.</em></p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="context">Context<a href="#context" class="hash-link" aria-label="Direct link to Context" title="Direct link to Context" translate="no">​</a></h2>
+<p><a class="" href="/camunda/pr-preview/pr-55227/architecture/components/orchestration-cluster/adr/physical-tenant-request-scoping-via-pre-security-filter/">ADR-0003</a> and OC #54729
+established per-physical-tenant (PT) API security chains: OC contributes a
+<code>CamundaSecurityScopeProvider</code> (<code>PhysicalTenantScopeProvider</code>) that emits one
+<code>ScopedSecurityDescriptor</code> per configured PT, each carrying an <code>AuthenticationConfiguration</code> that
+OC assembles on the OC side from the root cluster config plus the per-tenant overlay
+(<code>PhysicalTenantAuthConfigurations.forPhysicalTenant</code>). CSL builds an issuer-aware decoder / filter
+chain from whatever providers that descriptor carries.</p>
+<p>Today every PT inherits <strong>all</strong> cluster providers — the union of the root providers and the PT&#x27;s
+own overlay providers. The local smoke harness documents the resulting gap as an informational
+cell:</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">default token -&gt; /pt/tenanta  (cross-issuer; 200 today, 401 once #54730 lands)</span><br></div></code></pre></div></div>
+<p>A token minted by the <strong>root/default</strong> realm is currently <strong>accepted</strong> on <code>tenanta</code>&#x27;s chain,
+because <code>tenanta</code> inherited the root <code>oidc</code> provider. #54730 closes this: a PT should be able to
+select <strong>which</strong> of the cluster&#x27;s providers apply to it, instead of inheriting the full set.</p>
+<p>Acceptance criteria (post-rescope of #54730):</p>
+<ol>
+<li class=""><code>providers.assigned</code> is resolved and validated per PT: the <strong>default tenant has the implicit full
+set</strong>; a <strong>non-default PT must declare an explicit list of valid provider ids</strong> — a missing or
+invalid <code>assigned</code> <strong>fails startup</strong> with a clear error.</li>
+<li class="">The scope provider <strong>narrows</strong> each PT&#x27;s merged <code>AuthenticationConfiguration</code> to its <code>assigned</code>
+providers.</li>
+<li class="">Tests cover: default-tenant full set, a valid explicit selection, and startup failure on
+missing/invalid <code>assigned</code>.</li>
+</ol>
+<p>A <strong>hard constraint</strong> carries over from #54729: CSL (<code>camunda-security-library</code>) must remain
+<strong>physical-tenant-agnostic</strong> — the term &quot;physical tenant&quot; must not appear in it. CSL only ever
+receives a finished <code>AuthenticationConfiguration</code>; it never sees <code>camunda.physical-tenants.*</code>.</p>
+<p>The decision is <strong>where</strong> the selection lives and is applied. Two sub-questions:</p>
+<ul>
+<li class=""><strong>Whose config schema owns <code>assigned</code></strong> — CSL&#x27;s provider config, or OC&#x27;s PT namespace?</li>
+<li class=""><strong>Where the narrowing runs</strong> — inside CSL at chain-build time, or in OC before the descriptor is
+built?</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="decision">Decision<a href="#decision" class="hash-link" aria-label="Direct link to Decision" title="Direct link to Decision" translate="no">​</a></h2>
+<p><code>assigned</code> is an <strong>OC-only</strong> selector applied by <strong>OC-side narrowing</strong>. CSL is unchanged and stays
+PT-agnostic.</p>
+<p><strong>Config shape.</strong> The selection is a list of provider ids under the per-tenant namespace:</p>
+<div class="language-yaml codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-yaml codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token key atrule" style="color:#00a4db">camunda</span><span class="token punctuation" style="color:#393A34">:</span><span class="token plain"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  </span><span class="token key atrule" style="color:#00a4db">physical-tenants</span><span class="token punctuation" style="color:#393A34">:</span><span class="token plain"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">    </span><span class="token key atrule" style="color:#00a4db">tenanta</span><span class="token punctuation" style="color:#393A34">:</span><span class="token plain"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">      </span><span class="token key atrule" style="color:#00a4db">security</span><span class="token punctuation" style="color:#393A34">:</span><span class="token plain"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">        </span><span class="token key atrule" style="color:#00a4db">authentication</span><span class="token punctuation" style="color:#393A34">:</span><span class="token plain"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">          </span><span class="token key atrule" style="color:#00a4db">providers</span><span class="token punctuation" style="color:#393A34">:</span><span class="token plain"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">            </span><span class="token key atrule" style="color:#00a4db">assigned</span><span class="token punctuation" style="color:#393A34">:</span><span class="token plain"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">              </span><span class="token punctuation" style="color:#393A34">-</span><span class="token plain"> oidc        </span><span class="token comment" style="color:#999988;font-style:italic"># reserved id → the root default slot (authentication.oidc.*)</span><span class="token plain"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">              </span><span class="token punctuation" style="color:#393A34">-</span><span class="token plain"> tenanta     </span><span class="token comment" style="color:#999988;font-style:italic"># a named provider (authentication.providers.oidc.tenanta)</span><br></div></code></pre></div></div>
+<ul>
+<li class=""><code>assigned</code> appears <strong>only</strong> under <code>camunda.physical-tenants.&lt;id&gt;.*</code>, which is <strong>OC&#x27;s</strong> namespace.
+It never appears under the real CSL namespace (<code>camunda.security.*</code>). It only <em>shape-mirrors</em> CSL&#x27;s
+<code>AuthenticationConfiguration</code> because the PT overlay mirrors it; CSL&#x27;s <code>OidcProvidersConfiguration</code>
+has no <code>assigned</code> field and never binds it. CSL&#x27;s schema is therefore <strong>not</strong> extended.</li>
+<li class="">Ids are drawn from the union <code>{oidc} ∪ providers.oidc.&lt;name&gt;</code>. The reserved id <strong><code>oidc</code></strong> names the
+unnamed default slot (<code>camunda.security.authentication.oidc.*</code>), which has no map key of its own
+and so is referenced by the leaf name of the property that defines it. A named provider literally
+called <code>oidc</code> (<code>providers.oidc.oidc</code>) would collide; that pathological name is documented as
+unsupported.</li>
+</ul>
+<p><strong>Two responsibilities, two layers.</strong></p>
+<ol>
+<li class="">
+<p><strong>Application (narrowing) — <code>authentication</code> module</strong>, in
+<code>PhysicalTenantAuthConfigurations.forPhysicalTenant</code>, after the existing union-merge: read
+<code>...providers.assigned</code> via a dedicated <code>Binder</code> call (it is not a field on CSL&#x27;s config), then
+filter the merged config to the selection — keep the default slot iff <code>oidc ∈ assigned</code> (else
+reset it to a content-less <code>OidcConfiguration</code>, which CSL&#x27;s <code>flatten</code> ignores), and retain only
+the named providers whose ids are listed. The implicit <code>default</code> tenant (and its
+<code>/physical-tenants/default</code> alias) is <strong>never</strong> narrowed — it always carries the full set (AC-1).
+A non-default tenant with no <code>assigned</code> list bound is also left at the full union here; requiring
+one is the validation layer&#x27;s job.</p>
+</li>
+<li class="">
+<p><strong>Validation — <code>configuration</code> module</strong> (fail-fast at startup, sibling to
+<code>PhysicalTenantOverridePolicyValidation</code>): a non-default PT <strong>must</strong> declare a non-empty
+<code>assigned</code>, and every id must resolve to a known provider (<code>oidc</code> when the root default slot has
+content, or a configured <code>providers.oidc.&lt;name&gt;</code>); otherwise throw
+<code>UnifiedConfigurationException</code>. A &quot;known provider ids&quot; notion analogous to
+<code>PhysicalTenantIds.known()</code> keeps this out of the auth merge. The merge then only ever <em>applies</em>
+an already-valid selection. <em>(This PR spikes the narrowing + tests; the configuration-layer
+validation follows in the same issue.)</em></p>
+</li>
+</ol>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="consequences">Consequences<a href="#consequences" class="hash-link" aria-label="Direct link to Consequences" title="Direct link to Consequences" translate="no">​</a></h2>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="positive">Positive<a href="#positive" class="hash-link" aria-label="Direct link to Positive" title="Direct link to Positive" translate="no">​</a></h3>
+<ul>
+<li class="">CSL is untouched and remains PT-agnostic — no PT/selection concept leaks into the shared library,
+honouring the #54729 constraint.</li>
+<li class="">No redundancy: OC already assembles per-PT config, so it narrows in place rather than passing the
+full set plus a filter for CSL to re-apply.</li>
+<li class="">The selector sits adjacent to the providers it selects (matching the issue&#x27;s <code>providers.assigned</code>
+wording) while never touching CSL&#x27;s actual config namespace.</li>
+<li class="">Clean separation of concerns: fail-fast validation in the configuration layer; pure application in
+the auth merge. The merge stays total (it only ever applies a valid selection).</li>
+<li class="">Flips the smoke harness&#x27;s cross-issuer <code>[#54730]</code> cell to a pass and is mirrored by an
+<code>PhysicalTenantApiChainIsolationIT</code> case (a provider assigned to PT-A but not PT-B → PT-A&#x27;s token
+rejected on PT-B).</li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="negative--trade-offs">Negative / trade-offs<a href="#negative--trade-offs" class="hash-link" aria-label="Direct link to Negative / trade-offs" title="Direct link to Negative / trade-offs" translate="no">​</a></h3>
+<ul>
+<li class=""><code>assigned</code> is nominally adjacent to the CSL-shaped subtree (<code>...security.authentication.providers</code>)
+even though CSL does not define it. Mitigated by the fact that it lives only under OC&#x27;s
+<code>physical-tenants.&lt;id&gt;</code> namespace; the alternative of a sibling namespace was weighed and rejected
+(see Alternatives).</li>
+<li class="">The reserved <code>oidc</code> id is a small piece of magic; it collides with a (pathological) named provider
+called <code>oidc</code>. Documented as unsupported rather than guarded.</li>
+<li class="">Selection is split across two modules (validation vs application). This mirrors the existing PT
+config/auth split and is deliberate, but it does mean the &quot;must declare a valid list&quot; rule and the
+&quot;apply the list&quot; code live apart and must stay conceptually in sync.</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="alternatives-considered">Alternatives Considered<a href="#alternatives-considered" class="hash-link" aria-label="Direct link to Alternatives Considered" title="Direct link to Alternatives Considered" translate="no">​</a></h2>
+<ol>
+<li class=""><strong><code>assigned</code> as a CSL config field</strong> (add an <code>assigned</code>/<code>enabled</code>/<code>active</code> field to CSL&#x27;s provider
+config; OC passes the full union and CSL filters at chain-build time). Rejected: it puts a
+selection concept into PT-agnostic CSL that only the PT feature uses, forces &quot;valid provider ids&quot;
+validation into or duplicated across CSL, and is redundant — OC already assembles per-PT config,
+so passing all-then-filter is wasted work.</li>
+<li class=""><strong>OC-side narrowing, but <code>assigned</code> in a dedicated OC sibling namespace</strong> (e.g.
+<code>camunda.physical-tenants.&lt;id&gt;.assigned-providers</code>, outside the CSL-mirrored
+<code>security.authentication</code> subtree). Rejected as the default: it removes the nominal adjacency to
+the CSL shape but diverges from the issue&#x27;s <code>providers.assigned</code> wording, places the selector
+further from the providers it selects, and is less discoverable. Retained as the fallback if the
+nominal adjacency proves confusing in practice.</li>
+<li class=""><strong>Narrow in <code>PhysicalTenantScopeProvider</code> instead of <code>PhysicalTenantAuthConfigurations</code>.</strong>
+Rejected: <code>forPhysicalTenant</code> already owns the per-PT merge semantics and the provider map; the
+scope provider&#x27;s job is descriptor emission and the default alias. Keeping narrowing next to the
+merge keeps both concerns cohesive and unit-testable without a scope provider.</li>
+<li class=""><strong>Drop the default slot for all non-default PTs (no reserved id).</strong> Rejected: it would prevent a
+PT from legitimately sharing the cluster&#x27;s default-slot provider, and the reserved <code>oidc</code> id makes
+the choice explicit and uniform with named providers at negligible cost.</li>
+</ol>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="references">References<a href="#references" class="hash-link" aria-label="Direct link to References" title="Direct link to References" translate="no">​</a></h2>
+<ul>
+<li class="">OC #54730 — per-tenant provider selection (<code>providers.assigned</code>); this ADR.</li>
+<li class="">OC #54729 — per-physical-tenant API security chains (PR
+<a href="https://github.com/camunda/camunda/pull/54971" target="_blank" rel="noopener noreferrer" class="">#54971</a>); the union-merge this narrows.</li>
+<li class=""><a class="" href="/camunda/pr-preview/pr-55227/architecture/components/orchestration-cluster/adr/physical-tenant-request-scoping-via-pre-security-filter/">ADR-0003</a> — pre-security filter
+for PT request scoping (how the tenant id reaches the chain).</li>
+<li class=""><a href="https://github.com/camunda/camunda-security-library/pull/378" target="_blank" rel="noopener noreferrer" class="">camunda/camunda-security-library#378</a>
+— the <code>CamundaSecurityScopeProvider</code> SPI and per-scope issuer-aware chains (consumed at
+<code>0.1.0-alpha30</code>).</li>
+<li class="">OC #54731 — forbidden per-tenant override validation (the <code>PhysicalTenantOverridePolicyValidation</code>
+pattern the <code>assigned</code> validation extends).</li>
+</ul></div><footer class="theme-doc-footer docusaurus-mt-lg"><div class="row margin-top--sm theme-doc-footer-edit-meta-row"><div class="col noPrint_WFHX"><a href="https://github.com/camunda/camunda/edit/main/docs/monorepo-docs/architecture/components/orchestration-cluster/adr/0004-per-physical-tenant-provider-selection-via-assigned.md" target="_blank" rel="noopener noreferrer" class="theme-edit-this-page"><svg fill="currentColor" height="20" width="20" viewBox="0 0 40 40" class="iconEdit_Z9Sw" aria-hidden="true"><g><path d="m34.5 11.7l-3 3.1-6.3-6.3 3.1-3q0.5-0.5 1.2-0.5t1.1 0.5l3.9 3.9q0.5 0.4 0.5 1.1t-0.5 1.2z m-29.5 17.1l18.4-18.5 6.3 6.3-18.4 18.4h-6.3v-6.2z"></path></g></svg>Edit this page</a></div><div class="col lastUpdated_JAkA"></div></div></footer></article><nav class="docusaurus-mt-lg pagination-nav" aria-label="Docs pages"></nav></div></div><div class="col col--3"><div class="tableOfContents_bqdL thin-scrollbar theme-doc-toc-desktop"><ul class="table-of-contents table-of-contents__left-border"><li><a href="#status" class="table-of-contents__link toc-highlight">Status</a></li><li><a href="#deciders" class="table-of-contents__link toc-highlight">Deciders</a></li><li><a href="#context" class="table-of-contents__link toc-highlight">Context</a></li><li><a href="#decision" class="table-of-contents__link toc-highlight">Decision</a></li><li><a href="#consequences" class="table-of-contents__link toc-highlight">Consequences</a><ul><li><a href="#positive" class="table-of-contents__link toc-highlight">Positive</a></li><li><a href="#negative--trade-offs" class="table-of-contents__link toc-highlight">Negative / trade-offs</a></li></ul></li><li><a href="#alternatives-considered" class="table-of-contents__link toc-highlight">Alternatives Considered</a></li><li><a href="#references" class="table-of-contents__link toc-highlight">References</a></li></ul></div></div></div></div></main></div></div></div><footer class="theme-layout-footer footer footer--dark"><div class="container container-fluid"><div class="footer__bottom text--center"><div class="footer__copyright">Copyright © 2026 Camunda.</div></div></div></footer></div>
+</body>
+</html>
