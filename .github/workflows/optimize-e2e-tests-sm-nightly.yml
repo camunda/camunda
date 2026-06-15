@@ -18,6 +18,7 @@ defaults:
     shell: bash
 
 env:
+  TEST_OWNER: '@camunda/core-features'
   GHA_BEST_PRACTICES_LINTER: enabled
 
 permissions:
@@ -34,7 +35,6 @@ jobs:
     timeout-minutes: 120
     env:
       TEST_TYPE: E2E
-      TEST_OWNER: Core Features
 
     steps:
       - name: Checkout code
@@ -140,4 +140,3 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          user_description: "team-core-features"
