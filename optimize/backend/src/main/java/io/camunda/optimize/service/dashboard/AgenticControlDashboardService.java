@@ -301,7 +301,7 @@ public class AgenticControlDashboardService {
         KPI_DURATION_P95_REPORT_ID,
         KPI_DURATION_P95_NAME,
         KPI_DURATION_P95_DESCRIPTION,
-        new PositionDto(6, 4));
+        new PositionDto(9, 4));
   }
 
   private DashboardReportTileDto buildDurationPercentileReport(
