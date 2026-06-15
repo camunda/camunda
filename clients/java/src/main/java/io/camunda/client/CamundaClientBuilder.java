@@ -79,6 +79,13 @@ public interface CamundaClientBuilder {
   CamundaClientBuilder defaultTenantId(String tenantId);
 
   /**
+   * @param physicalTenantId the physical tenant identifier sent as the {@code
+   *     Camunda-Physical-Tenant} gRPC metadata header on every outgoing call. When {@code null} the
+   *     header is omitted and the gateway applies its own default.
+   */
+  CamundaClientBuilder physicalTenantId(String physicalTenantId);
+
+  /**
    * @param tenantIds the tenant identifiers which are used for job-activation commands when no
    *     tenant identifiers are set. The default value contains only {@link
    *     CommandWithTenantStep#DEFAULT_TENANT_IDENTIFIER}.

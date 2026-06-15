@@ -1468,6 +1468,11 @@ public final class CamundaClientTest {
             }
 
             @Override
+            public String getPhysicalTenantId() {
+              return "custom-physical-tenant";
+            }
+
+            @Override
             public List<String> getDefaultJobWorkerTenantIds() {
               return Arrays.asList("tenant-a", "tenant-b");
             }
@@ -1632,6 +1637,7 @@ public final class CamundaClientTest {
       assertThat(builder.getGrpcAddress()).isEqualTo(source.getGrpcAddress());
       assertThat(builder.getRestAddress()).isEqualTo(source.getRestAddress());
       assertThat(builder.getDefaultTenantId()).isEqualTo(source.getDefaultTenantId());
+      assertThat(builder.getPhysicalTenantId()).isEqualTo(source.getPhysicalTenantId());
       assertThat(builder.getDefaultJobWorkerTenantIds())
           .isEqualTo(source.getDefaultJobWorkerTenantIds());
       assertThat(builder.getDefaultJobWorkerTenantFilter())

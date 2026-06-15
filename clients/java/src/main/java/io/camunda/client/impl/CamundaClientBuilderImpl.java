@@ -27,6 +27,7 @@ import static io.camunda.client.ClientProperties.KEEP_ALIVE;
 import static io.camunda.client.ClientProperties.MAX_MESSAGE_SIZE;
 import static io.camunda.client.ClientProperties.MAX_METADATA_SIZE;
 import static io.camunda.client.ClientProperties.OVERRIDE_AUTHORITY;
+import static io.camunda.client.ClientProperties.PHYSICAL_TENANT_ID;
 import static io.camunda.client.ClientProperties.PREFER_REST_OVER_GRPC;
 import static io.camunda.client.ClientProperties.REST_ADDRESS;
 import static io.camunda.client.ClientProperties.STREAM_ENABLED;
@@ -46,6 +47,7 @@ import static io.camunda.client.impl.CamundaClientEnvironmentVariables.MAX_HTTP_
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_CLIENT_ID;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_CLIENT_SECRET;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OVERRIDE_AUTHORITY_VAR;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.PHYSICAL_TENANT_ID_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.PREFER_REST_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.REST_ADDRESS_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.USE_CLIENT_SIDE_LOAD_BALANCING_VAR;
@@ -115,6 +117,7 @@ public final class CamundaClientBuilderImpl
   private URI grpcAddress = DEFAULT_GRPC_ADDRESS;
   private boolean preferRestOverGrpc = DEFAULT_PREFER_REST_OVER_GRPC;
   private String defaultTenantId = CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER;
+  private String physicalTenantId;
   private List<String> defaultJobWorkerTenantIds =
       Collections.singletonList(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
   private TenantFilter defaultJobWorkerTenantFilter = DEFAULT_JOB_WORKER_TENANT_FILTER;
@@ -156,6 +159,11 @@ public final class CamundaClientBuilderImpl
   @Override
   public String getDefaultTenantId() {
     return defaultTenantId;
+  }
+
+  @Override
+  public String getPhysicalTenantId() {
+    return physicalTenantId;
   }
 
   @Override
@@ -337,6 +345,8 @@ public final class CamundaClientBuilderImpl
         ClientProperties.MAX_HTTP_CONNECTIONS);
 
     BuilderUtils.applyPropertyValueIfNotNull(properties, this::defaultTenantId, DEFAULT_TENANT_ID);
+    BuilderUtils.applyPropertyValueIfNotNull(
+        properties, this::physicalTenantId, PHYSICAL_TENANT_ID);
 
     BuilderUtils.applyPropertyValueIfNotNull(
         properties,
@@ -480,6 +490,12 @@ public final class CamundaClientBuilderImpl
   @Override
   public CamundaClientBuilder defaultTenantId(final String tenantId) {
     defaultTenantId = tenantId;
+    return this;
+  }
+
+  @Override
+  public CamundaClientBuilder physicalTenantId(final String physicalTenantId) {
+    this.physicalTenantId = physicalTenantId;
     return this;
   }
 
@@ -691,6 +707,7 @@ public final class CamundaClientBuilderImpl
     applyEnvironmentValueIfNotNull(
         value -> maxHttpConnections(Integer.parseInt(value)), MAX_HTTP_CONNECTIONS);
     applyEnvironmentValueIfNotNull(this::defaultTenantId, DEFAULT_TENANT_ID_VAR);
+    applyEnvironmentValueIfNotNull(this::physicalTenantId, PHYSICAL_TENANT_ID_VAR);
     applyEnvironmentValueIfNotNull(
         value ->
             defaultJobWorkerTenantIds(
@@ -718,6 +735,7 @@ public final class CamundaClientBuilderImpl
     BuilderUtils.appendProperty(sb, "grpcAddress", grpcAddress);
     BuilderUtils.appendProperty(sb, "restAddress", restAddress);
     BuilderUtils.appendProperty(sb, "defaultTenantId", defaultTenantId);
+    BuilderUtils.appendProperty(sb, "physicalTenantId", physicalTenantId);
     BuilderUtils.appendProperty(sb, "jobWorkerMaxJobsActive", jobWorkerMaxJobsActive);
     BuilderUtils.appendProperty(sb, "numJobWorkerExecutionThreads", numJobWorkerExecutionThreads);
     BuilderUtils.appendProperty(sb, "defaultJobWorkerName", defaultJobWorkerName);
@@ -769,6 +787,7 @@ public final class CamundaClientBuilderImpl
     setIfNotNull(properties, GRPC_ADDRESS, configuration.getGrpcAddress());
     setIfNotNull(properties, REST_ADDRESS, configuration.getRestAddress());
     setIfNotNull(properties, DEFAULT_TENANT_ID, configuration.getDefaultTenantId());
+    setIfNotNull(properties, PHYSICAL_TENANT_ID, configuration.getPhysicalTenantId());
     if (configuration.getDefaultJobWorkerTenantIds() != null) {
       properties.setProperty(
           ClientProperties.DEFAULT_JOB_WORKER_TENANT_IDS,

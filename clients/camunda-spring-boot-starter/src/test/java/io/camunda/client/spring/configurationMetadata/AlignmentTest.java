@@ -240,7 +240,10 @@ public class AlignmentTest {
               new Getter(p -> p.getClusterVariables().getGlobal())),
           entry(
               "camunda.client.cluster-variables.tenant",
-              new Getter(p -> p.getClusterVariables().getTenant())));
+              new Getter(p -> p.getClusterVariables().getTenant())),
+          entry(
+              "camunda.client.physical-tenant-id",
+              new Getter(CamundaClientProperties::getPhysicalTenantId)));
 
   @Autowired CamundaClientProperties camundaClientProperties;
 
