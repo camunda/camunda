@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.1">
 <title data-rh="true">ADR-0004: Per-Physical-Tenant Provider Selection via OC-side assigned Narrowing | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-55227/architecture/components/orchestration-cluster/adr/per-physical-tenant-provider-selection-via-assigned/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="ADR-0004: Per-Physical-Tenant Provider Selection via OC-side assigned Narrowing | Camunda Platform"><meta data-rh="true" name="description" content="Status"><meta data-rh="true" property="og:description" content="Status"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-55227/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-55227/architecture/components/orchestration-cluster/adr/per-physical-tenant-provider-selection-via-assigned/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-55227/architecture/components/orchestration-cluster/adr/per-physical-tenant-provider-selection-via-assigned/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-55227/architecture/components/orchestration-cluster/adr/per-physical-tenant-provider-selection-via-assigned/" hreflang="x-default"><link rel="stylesheet" href="/camunda/pr-preview/pr-55227/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-55227/assets/js/runtime~main.4bb09fd2.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-55227/assets/js/main.c76ccc57.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-55227/assets/js/runtime~main.0a0a953d.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-55227/assets/js/main.e535d156.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -17,8 +17,9 @@
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="deciders">Deciders<a href="#deciders" class="hash-link" aria-label="Direct link to Deciders" title="Direct link to Deciders" translate="no">​</a></h2>
 <ul>
 <li class="">Proposed by: Sebastian Bathke (<a href="https://github.com/megglos" target="_blank" rel="noopener noreferrer" class="">@megglos</a>)</li>
+<li class="">Patrick Wunderlich (<a href="https://github.com/p-wunderlich" target="_blank" rel="noopener noreferrer" class="">@p-wunderlich</a>)</li>
 </ul>
-<p><em>This ADR is a proposal; deciders will be recorded once the team aligns.</em></p>
+<p><em>Further deciders will be recorded as the team aligns.</em></p>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="context">Context<a href="#context" class="hash-link" aria-label="Direct link to Context" title="Direct link to Context" translate="no">​</a></h2>
 <p><a class="" href="/camunda/pr-preview/pr-55227/architecture/components/orchestration-cluster/adr/physical-tenant-request-scoping-via-pre-security-filter/">ADR-0003</a> and OC #54729
 established per-physical-tenant (PT) API security chains: OC contributes a
