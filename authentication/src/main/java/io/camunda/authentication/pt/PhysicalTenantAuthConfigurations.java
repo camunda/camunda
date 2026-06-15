@@ -70,8 +70,8 @@ public final class PhysicalTenantAuthConfigurations {
    * Reserved {@code providers.assigned} id for the unnamed default slot ({@code
    * camunda.security.authentication.oidc.*}) — it has no map key of its own, so it is referenced by
    * the leaf name of the property that defines it. A named provider literally called {@code oidc}
-   * ({@code providers.oidc.oidc}) would collide; that pathological name is documented as
-   * unsupported rather than guarded against.
+   * ({@code providers.oidc.oidc}) would collide; that pathological name is rejected at startup by
+   * the configuration-layer validation ({@code PhysicalTenantAssignedProvidersValidation}).
    */
   private static final String DEFAULT_SLOT_ASSIGNED_ID = "oidc";
 
