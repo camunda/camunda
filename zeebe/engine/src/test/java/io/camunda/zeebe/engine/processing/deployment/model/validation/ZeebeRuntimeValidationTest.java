@@ -518,6 +518,21 @@ public final class ZeebeRuntimeValidationTest {
             .done(),
         List.of(expect(ZeebeCalledDecision.class, INVALID_EXPRESSION_MESSAGE))
       },
+      {
+        // valid versionTag expression in business rule task with versionTag binding
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .businessRuleTask(
+                "task",
+                t ->
+                    t.zeebeCalledDecisionId("decision")
+                        .zeebeBindingType(ZeebeBindingType.versionTag)
+                        .zeebeVersionTagExpression("versionTagVariable")
+                        .zeebeResultVariable("result"))
+            .endEvent()
+            .done(),
+        List.of()
+      },
     };
   }
 
