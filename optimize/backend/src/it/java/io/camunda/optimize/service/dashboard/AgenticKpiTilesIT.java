@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.service.dashboard;
 
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.DURATION_STABILITY_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.KPI_AVG_DURATION_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.KPI_AVG_TOKENS_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.KPI_COMPLETED_REPORT_ID;
@@ -29,6 +30,8 @@ import io.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEval
 import io.camunda.optimize.dto.optimize.query.report.CommandEvaluationResult;
 import io.camunda.optimize.dto.optimize.query.report.SingleReportEvaluationResult;
 import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
+import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
+import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateUnit;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.RollingDateFilterDataDto;
@@ -71,11 +74,11 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
 
   @Test
   void shouldCountOnlyCompletedAgenticInstances() {
-    final ProcessInstanceDto completed1 = agenticInstance(PROC_KEY, 100L, 50L).build();
-    final ProcessInstanceDto completed2 = agenticInstance(PROC_KEY, 200L, 100L).build();
+    final ProcessInstanceDto completed1 = agenticInstanceWithTokens(PROC_KEY, 100L, 50L).build();
+    final ProcessInstanceDto completed2 = agenticInstanceWithTokens(PROC_KEY, 200L, 100L).build();
     // running instance — should not be counted
     final ProcessInstanceDto running =
-        agenticInstance(PROC_KEY, 50L, 25L)
+        agenticInstanceWithTokens(PROC_KEY, 50L, 25L)
             .state(ProcessInstanceConstants.ACTIVE_STATE)
             .endDate(null)
             .duration(null)
@@ -96,9 +99,10 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
   @Test
   void shouldComputeAverageDurationOfCompletedAgenticInstances() {
     // durations: 1 h and 3 h → avg = 2 h = 7_200_000 ms
-    final ProcessInstanceDto inst1 = agenticInstance(PROC_KEY, 0L, 0L).duration(3_600_000L).build();
+    final ProcessInstanceDto inst1 =
+        agenticInstanceWithTokens(PROC_KEY, 0L, 0L).duration(3_600_000L).build();
     final ProcessInstanceDto inst2 =
-        agenticInstance(PROC_KEY, 0L, 0L).duration(10_800_000L).build();
+        agenticInstanceWithTokens(PROC_KEY, 0L, 0L).duration(10_800_000L).build();
 
     persistProcessInstances(List.of(inst1, inst2));
 
@@ -115,14 +119,16 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
   void shouldComputeDurationPercentileOfCompletedAgenticInstances(
       final String reportId, final double expectedValue, final double tolerance) {
     // durations: 1h, 2h, 3h, 4h, 5h
-    final ProcessInstanceDto inst1 = agenticInstance(PROC_KEY, 0L, 0L).duration(3_600_000L).build();
-    final ProcessInstanceDto inst2 = agenticInstance(PROC_KEY, 0L, 0L).duration(7_200_000L).build();
+    final ProcessInstanceDto inst1 =
+        agenticInstanceWithTokens(PROC_KEY, 0L, 0L).duration(3_600_000L).build();
+    final ProcessInstanceDto inst2 =
+        agenticInstanceWithTokens(PROC_KEY, 0L, 0L).duration(7_200_000L).build();
     final ProcessInstanceDto inst3 =
-        agenticInstance(PROC_KEY, 0L, 0L).duration(10_800_000L).build();
+        agenticInstanceWithTokens(PROC_KEY, 0L, 0L).duration(10_800_000L).build();
     final ProcessInstanceDto inst4 =
-        agenticInstance(PROC_KEY, 0L, 0L).duration(14_400_000L).build();
+        agenticInstanceWithTokens(PROC_KEY, 0L, 0L).duration(14_400_000L).build();
     final ProcessInstanceDto inst5 =
-        agenticInstance(PROC_KEY, 0L, 0L).duration(18_000_000L).build();
+        agenticInstanceWithTokens(PROC_KEY, 0L, 0L).duration(18_000_000L).build();
 
     persistProcessInstances(List.of(inst1, inst2, inst3, inst4, inst5));
 
@@ -147,19 +153,19 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
             .processInstanceId(instanceId1)
             .build();
     final ProcessInstanceDto withIncident =
-        agenticInstance(PROC_KEY, 100L, 50L)
+        agenticInstanceWithTokens(PROC_KEY, 100L, 50L)
             .processInstanceId(instanceId1)
             .incidents(List.of(resolved))
             .build();
 
     // no incidents
     final ProcessInstanceDto clean =
-        agenticInstance(PROC_KEY, 100L, 50L).processInstanceId(instanceId2).build();
+        agenticInstanceWithTokens(PROC_KEY, 100L, 50L).processInstanceId(instanceId2).build();
 
     // running instance with a resolved incident — must not be counted
     final String runningId = UUID.randomUUID().toString();
     final ProcessInstanceDto running =
-        agenticInstance(PROC_KEY, 100L, 50L)
+        agenticInstanceWithTokens(PROC_KEY, 100L, 50L)
             .processInstanceId(runningId)
             .state(ProcessInstanceConstants.ACTIVE_STATE)
             .endDate(null)
@@ -186,9 +192,9 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
   @Test
   void shouldComputeAverageTokensPerExecution() {
     // totals: 150, 300, 450  → avg = 300
-    final ProcessInstanceDto inst1 = agenticInstance(PROC_KEY, 100L, 50L).build();
-    final ProcessInstanceDto inst2 = agenticInstance(PROC_KEY, 200L, 100L).build();
-    final ProcessInstanceDto inst3 = agenticInstance(PROC_KEY, 300L, 150L).build();
+    final ProcessInstanceDto inst1 = agenticInstanceWithTokens(PROC_KEY, 100L, 50L).build();
+    final ProcessInstanceDto inst2 = agenticInstanceWithTokens(PROC_KEY, 200L, 100L).build();
+    final ProcessInstanceDto inst3 = agenticInstanceWithTokens(PROC_KEY, 300L, 150L).build();
 
     persistProcessInstances(List.of(inst1, inst2, inst3));
 
@@ -203,11 +209,11 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
   @Test
   void shouldComputeMedianTokensPerExecution() {
     // totals: 100, 200, 300, 400, 500 → median = 300
-    final ProcessInstanceDto inst1 = agenticInstance(PROC_KEY, 70L, 30L).build();
-    final ProcessInstanceDto inst2 = agenticInstance(PROC_KEY, 140L, 60L).build();
-    final ProcessInstanceDto inst3 = agenticInstance(PROC_KEY, 210L, 90L).build();
-    final ProcessInstanceDto inst4 = agenticInstance(PROC_KEY, 280L, 120L).build();
-    final ProcessInstanceDto inst5 = agenticInstance(PROC_KEY, 350L, 150L).build();
+    final ProcessInstanceDto inst1 = agenticInstanceWithTokens(PROC_KEY, 70L, 30L).build();
+    final ProcessInstanceDto inst2 = agenticInstanceWithTokens(PROC_KEY, 140L, 60L).build();
+    final ProcessInstanceDto inst3 = agenticInstanceWithTokens(PROC_KEY, 210L, 90L).build();
+    final ProcessInstanceDto inst4 = agenticInstanceWithTokens(PROC_KEY, 280L, 120L).build();
+    final ProcessInstanceDto inst5 = agenticInstanceWithTokens(PROC_KEY, 350L, 150L).build();
 
     persistProcessInstances(List.of(inst1, inst2, inst3, inst4, inst5));
 
@@ -224,17 +230,17 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
   void shouldCountAllInstancesWhenNoDateFilterApplied() {
     // instances spread across a wide range — all should be counted without a date filter
     final ProcessInstanceDto recent =
-        agenticInstance(PROC_KEY, 100L, 50L)
+        agenticInstanceWithTokens(PROC_KEY, 100L, 50L)
             .startDate(OffsetDateTime.now().minusHours(1))
             .endDate(OffsetDateTime.now().minusMinutes(30))
             .build();
     final ProcessInstanceDto older =
-        agenticInstance(PROC_KEY, 100L, 50L)
+        agenticInstanceWithTokens(PROC_KEY, 100L, 50L)
             .startDate(OffsetDateTime.now().minusDays(30))
             .endDate(OffsetDateTime.now().minusDays(29))
             .build();
     final ProcessInstanceDto oldest =
-        agenticInstance(PROC_KEY, 100L, 50L)
+        agenticInstanceWithTokens(PROC_KEY, 100L, 50L)
             .startDate(OffsetDateTime.now().minusDays(365))
             .endDate(OffsetDateTime.now().minusDays(364))
             .build();
@@ -248,13 +254,13 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
   void shouldApplyRollingHourDateFilter() {
     // ended 30 min ago — within last-2-hours window
     final ProcessInstanceDto withinWindow =
-        agenticInstance(PROC_KEY, 100L, 50L)
+        agenticInstanceWithTokens(PROC_KEY, 100L, 50L)
             .startDate(OffsetDateTime.now().minusHours(1))
             .endDate(OffsetDateTime.now().minusMinutes(30))
             .build();
     // ended 6 hours ago — outside window
     final ProcessInstanceDto outsideWindow =
-        agenticInstance(PROC_KEY, 100L, 50L)
+        agenticInstanceWithTokens(PROC_KEY, 100L, 50L)
             .startDate(OffsetDateTime.now().minusHours(7))
             .endDate(OffsetDateTime.now().minusHours(6))
             .build();
@@ -269,13 +275,13 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
   void shouldApplyRollingDayDateFilter() {
     // ended 12 hours ago — within last-1-day window
     final ProcessInstanceDto withinWindow =
-        agenticInstance(PROC_KEY, 100L, 50L)
+        agenticInstanceWithTokens(PROC_KEY, 100L, 50L)
             .startDate(OffsetDateTime.now().minusHours(13))
             .endDate(OffsetDateTime.now().minusHours(12))
             .build();
     // ended 3 days ago — outside window
     final ProcessInstanceDto outsideWindow =
-        agenticInstance(PROC_KEY, 100L, 50L)
+        agenticInstanceWithTokens(PROC_KEY, 100L, 50L)
             .startDate(OffsetDateTime.now().minusDays(4))
             .endDate(OffsetDateTime.now().minusDays(3))
             .build();
@@ -290,13 +296,13 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
   void shouldApplyRollingWeekDateFilter() {
     // ended 3 days ago — within last-1-week window
     final ProcessInstanceDto withinWindow =
-        agenticInstance(PROC_KEY, 100L, 50L)
+        agenticInstanceWithTokens(PROC_KEY, 100L, 50L)
             .startDate(OffsetDateTime.now().minusDays(4))
             .endDate(OffsetDateTime.now().minusDays(3))
             .build();
     // ended 10 days ago — outside window
     final ProcessInstanceDto outsideWindow =
-        agenticInstance(PROC_KEY, 100L, 50L)
+        agenticInstanceWithTokens(PROC_KEY, 100L, 50L)
             .startDate(OffsetDateTime.now().minusDays(11))
             .endDate(OffsetDateTime.now().minusDays(10))
             .build();
@@ -311,13 +317,13 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
   void shouldApplyRollingMonthDateFilter() {
     // ended 15 days ago — within last-1-month window
     final ProcessInstanceDto withinWindow =
-        agenticInstance(PROC_KEY, 100L, 50L)
+        agenticInstanceWithTokens(PROC_KEY, 100L, 50L)
             .startDate(OffsetDateTime.now().minusDays(16))
             .endDate(OffsetDateTime.now().minusDays(15))
             .build();
     // ended 40 days ago — outside window
     final ProcessInstanceDto outsideWindow =
-        agenticInstance(PROC_KEY, 100L, 50L)
+        agenticInstanceWithTokens(PROC_KEY, 100L, 50L)
             .startDate(OffsetDateTime.now().minusDays(41))
             .endDate(OffsetDateTime.now().minusDays(40))
             .build();
@@ -332,18 +338,18 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
   void shouldAggregateMetricsWithinRollingDateFilter() {
     // both within last-1-week: avg tokens should reflect only these two
     final ProcessInstanceDto inst1 =
-        agenticInstance(PROC_KEY, 100L, 100L)
+        agenticInstanceWithTokens(PROC_KEY, 100L, 100L)
             .startDate(OffsetDateTime.now().minusDays(3))
             .endDate(OffsetDateTime.now().minusDays(2))
             .build();
     final ProcessInstanceDto inst2 =
-        agenticInstance(PROC_KEY, 200L, 200L)
+        agenticInstanceWithTokens(PROC_KEY, 200L, 200L)
             .startDate(OffsetDateTime.now().minusDays(2))
             .endDate(OffsetDateTime.now().minusDays(1))
             .build();
     // old instance with very different tokens — outside 1-week window
     final ProcessInstanceDto oldInst =
-        agenticInstance(PROC_KEY, 10_000L, 10_000L)
+        agenticInstanceWithTokens(PROC_KEY, 10_000L, 10_000L)
             .startDate(OffsetDateTime.now().minusDays(30))
             .endDate(OffsetDateTime.now().minusDays(29))
             .build();
@@ -359,14 +365,14 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
   void shouldApplyDateFilterToAvgDuration() {
     // within window: duration 1h
     final ProcessInstanceDto recent =
-        agenticInstance(PROC_KEY, 0L, 0L)
+        agenticInstanceWithTokens(PROC_KEY, 0L, 0L)
             .startDate(OffsetDateTime.now().minusHours(3))
             .endDate(OffsetDateTime.now().minusHours(2))
             .duration(3_600_000L)
             .build();
     // outside window: duration 5h — should not skew the avg
     final ProcessInstanceDto old =
-        agenticInstance(PROC_KEY, 0L, 0L)
+        agenticInstanceWithTokens(PROC_KEY, 0L, 0L)
             .startDate(OffsetDateTime.now().minusDays(10))
             .endDate(OffsetDateTime.now().minusDays(9))
             .duration(18_000_000L)
@@ -382,14 +388,14 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
   void shouldApplyDateFilterToP50Duration() {
     // within window: duration 1h
     final ProcessInstanceDto recent =
-        agenticInstance(PROC_KEY, 0L, 0L)
+        agenticInstanceWithTokens(PROC_KEY, 0L, 0L)
             .startDate(OffsetDateTime.now().minusHours(3))
             .endDate(OffsetDateTime.now().minusHours(2))
             .duration(3_600_000L)
             .build();
     // outside window: duration 5h — should not affect P50
     final ProcessInstanceDto old =
-        agenticInstance(PROC_KEY, 0L, 0L)
+        agenticInstanceWithTokens(PROC_KEY, 0L, 0L)
             .startDate(OffsetDateTime.now().minusDays(10))
             .endDate(OffsetDateTime.now().minusDays(9))
             .duration(18_000_000L)
@@ -405,14 +411,14 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
   void shouldApplyDateFilterToP95Duration() {
     // within window: duration 1h
     final ProcessInstanceDto recent =
-        agenticInstance(PROC_KEY, 0L, 0L)
+        agenticInstanceWithTokens(PROC_KEY, 0L, 0L)
             .startDate(OffsetDateTime.now().minusHours(3))
             .endDate(OffsetDateTime.now().minusHours(2))
             .duration(3_600_000L)
             .build();
     // outside window: duration 5h — should not affect P95
     final ProcessInstanceDto old =
-        agenticInstance(PROC_KEY, 0L, 0L)
+        agenticInstanceWithTokens(PROC_KEY, 0L, 0L)
             .startDate(OffsetDateTime.now().minusDays(10))
             .endDate(OffsetDateTime.now().minusDays(9))
             .duration(18_000_000L)
@@ -429,7 +435,7 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
     // within window: 1 resolved incident
     final String recentId = UUID.randomUUID().toString();
     final ProcessInstanceDto recent =
-        agenticInstance(PROC_KEY, 100L, 50L)
+        agenticInstanceWithTokens(PROC_KEY, 100L, 50L)
             .processInstanceId(recentId)
             .startDate(OffsetDateTime.now().minusHours(3))
             .endDate(OffsetDateTime.now().minusHours(2))
@@ -443,7 +449,7 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
     // outside window: 1 resolved incident — should be excluded
     final String oldId = UUID.randomUUID().toString();
     final ProcessInstanceDto old =
-        agenticInstance(PROC_KEY, 100L, 50L)
+        agenticInstanceWithTokens(PROC_KEY, 100L, 50L)
             .processInstanceId(oldId)
             .startDate(OffsetDateTime.now().minusDays(10))
             .endDate(OffsetDateTime.now().minusDays(9))
@@ -466,23 +472,23 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
   void shouldApplyDateFilterToMedianTokens() {
     // within window: totals 100, 200, 300 → median 200
     final ProcessInstanceDto inst1 =
-        agenticInstance(PROC_KEY, 50L, 50L)
+        agenticInstanceWithTokens(PROC_KEY, 50L, 50L)
             .startDate(OffsetDateTime.now().minusDays(3))
             .endDate(OffsetDateTime.now().minusDays(2))
             .build();
     final ProcessInstanceDto inst2 =
-        agenticInstance(PROC_KEY, 100L, 100L)
+        agenticInstanceWithTokens(PROC_KEY, 100L, 100L)
             .startDate(OffsetDateTime.now().minusDays(2))
             .endDate(OffsetDateTime.now().minusDays(1))
             .build();
     final ProcessInstanceDto inst3 =
-        agenticInstance(PROC_KEY, 150L, 150L)
+        agenticInstanceWithTokens(PROC_KEY, 150L, 150L)
             .startDate(OffsetDateTime.now().minusDays(1))
             .endDate(OffsetDateTime.now().minusHours(1))
             .build();
     // outside window — very high total, should not affect median
     final ProcessInstanceDto old =
-        agenticInstance(PROC_KEY, 10_000L, 10_000L)
+        agenticInstanceWithTokens(PROC_KEY, 10_000L, 10_000L)
             .startDate(OffsetDateTime.now().minusDays(30))
             .endDate(OffsetDateTime.now().minusDays(29))
             .build();
@@ -505,9 +511,9 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
 
     persistProcessInstances(
         List.of(
-            agenticInstance(procKeyA, 100L, 50L).build(),
-            agenticInstance(procKeyB, 200L, 100L).build(),
-            agenticInstance(procKeyB, 300L, 150L).build()));
+            agenticInstanceWithTokens(procKeyA, 100L, 50L).build(),
+            agenticInstanceWithTokens(procKeyB, 200L, 100L).build(),
+            agenticInstanceWithTokens(procKeyB, 300L, 150L).build()));
 
     // no definition filter → all 3 counted
     assertThat(evaluateNumber(KPI_COMPLETED_REPORT_ID, noExtraFilters())).isEqualTo(3.0);
@@ -520,9 +526,9 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
 
     persistProcessInstances(
         List.of(
-            agenticInstance(procKeyA, 100L, 50L).build(),
-            agenticInstance(procKeyA, 200L, 100L).build(),
-            agenticInstance(procKeyB, 300L, 150L).build()));
+            agenticInstanceWithTokens(procKeyA, 100L, 50L).build(),
+            agenticInstanceWithTokens(procKeyA, 200L, 100L).build(),
+            agenticInstanceWithTokens(procKeyB, 300L, 150L).build()));
 
     assertThat(
             evaluateNumber(
@@ -539,9 +545,9 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
 
     persistProcessInstances(
         List.of(
-            agenticInstance(procKeyA, 100L, 50L).build(),
-            agenticInstance(procKeyB, 200L, 100L).build(),
-            agenticInstance(procKeyC, 300L, 150L).build()));
+            agenticInstanceWithTokens(procKeyA, 100L, 50L).build(),
+            agenticInstanceWithTokens(procKeyB, 200L, 100L).build(),
+            agenticInstanceWithTokens(procKeyC, 300L, 150L).build()));
 
     // select A and B only — C excluded
     assertThat(
@@ -563,9 +569,9 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
     // procKeyB: total = 900 — should be excluded
     persistProcessInstances(
         List.of(
-            agenticInstance(procKeyA, 100L, 200L).build(),
-            agenticInstance(procKeyA, 200L, 400L).build(),
-            agenticInstance(procKeyB, 300L, 600L).build()));
+            agenticInstanceWithTokens(procKeyA, 100L, 200L).build(),
+            agenticInstanceWithTokens(procKeyA, 200L, 400L).build(),
+            agenticInstanceWithTokens(procKeyB, 300L, 600L).build()));
 
     assertThat(
             evaluateNumber(
@@ -583,9 +589,9 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
     // procKeyB: duration 10h — should be excluded
     persistProcessInstances(
         List.of(
-            agenticInstance(procKeyA, 0L, 0L).duration(3_600_000L).build(),
-            agenticInstance(procKeyA, 0L, 0L).duration(10_800_000L).build(),
-            agenticInstance(procKeyB, 0L, 0L).duration(36_000_000L).build()));
+            agenticInstanceWithTokens(procKeyA, 0L, 0L).duration(3_600_000L).build(),
+            agenticInstanceWithTokens(procKeyA, 0L, 0L).duration(10_800_000L).build(),
+            agenticInstanceWithTokens(procKeyB, 0L, 0L).duration(36_000_000L).build()));
 
     assertThat(
             evaluateNumber(
@@ -603,9 +609,9 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
     // procKeyB: duration 10h — should be excluded
     persistProcessInstances(
         List.of(
-            agenticInstance(procKeyA, 0L, 0L).duration(3_600_000L).build(),
-            agenticInstance(procKeyA, 0L, 0L).duration(10_800_000L).build(),
-            agenticInstance(procKeyB, 0L, 0L).duration(36_000_000L).build()));
+            agenticInstanceWithDuration(procKeyA, 3_600_000L).build(),
+            agenticInstanceWithDuration(procKeyA, 10_800_000L).build(),
+            agenticInstanceWithDuration(procKeyB, 36_000_000L).build()));
 
     assertThat(
             evaluateNumber(
@@ -623,9 +629,9 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
     // procKeyB: duration 10h — should be excluded
     persistProcessInstances(
         List.of(
-            agenticInstance(procKeyA, 0L, 0L).duration(3_600_000L).build(),
-            agenticInstance(procKeyA, 0L, 0L).duration(10_800_000L).build(),
-            agenticInstance(procKeyB, 0L, 0L).duration(36_000_000L).build()));
+            agenticInstanceWithDuration(procKeyA, 3_600_000L).build(),
+            agenticInstanceWithDuration(procKeyA, 10_800_000L).build(),
+            agenticInstanceWithDuration(procKeyB, 36_000_000L).build()));
 
     assertThat(
             evaluateNumber(
@@ -644,7 +650,7 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
 
     persistProcessInstances(
         List.of(
-            agenticInstance(procKeyA, 100L, 50L)
+            agenticInstanceWithTokens(procKeyA, 100L, 50L)
                 .processInstanceId(idA)
                 .incidents(
                     List.of(
@@ -653,7 +659,7 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
                             .processInstanceId(idA)
                             .build()))
                 .build(),
-            agenticInstance(procKeyB, 100L, 50L)
+            agenticInstanceWithTokens(procKeyB, 100L, 50L)
                 .processInstanceId(idB)
                 .incidents(
                     List.of(
@@ -680,10 +686,10 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
     // procKeyB: total 50_000 — should be excluded
     persistProcessInstances(
         List.of(
-            agenticInstance(procKeyA, 50L, 50L).build(),
-            agenticInstance(procKeyA, 100L, 100L).build(),
-            agenticInstance(procKeyA, 150L, 150L).build(),
-            agenticInstance(procKeyB, 25_000L, 25_000L).build()));
+            agenticInstanceWithTokens(procKeyA, 50L, 50L).build(),
+            agenticInstanceWithTokens(procKeyA, 100L, 100L).build(),
+            agenticInstanceWithTokens(procKeyA, 150L, 150L).build(),
+            agenticInstanceWithTokens(procKeyB, 25_000L, 25_000L).build()));
 
     assertThat(
             evaluateNumber(
@@ -702,7 +708,7 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
     //        plus 5 running agentic instances (no incidents) — running must not count
     final String withIncidentId = UUID.randomUUID().toString();
     final ProcessInstanceDto withIncident =
-        agenticInstance(PROC_KEY, 100L, 50L)
+        agenticInstanceWithTokens(PROC_KEY, 100L, 50L)
             .processInstanceId(withIncidentId)
             .incidents(
                 List.of(
@@ -711,12 +717,13 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
                         .processInstanceId(withIncidentId)
                         .build()))
             .build();
-    final ProcessInstanceDto completedClean = agenticInstance(PROC_KEY, 100L, 50L).build();
+    final ProcessInstanceDto completedClean =
+        agenticInstanceWithTokens(PROC_KEY, 100L, 50L).build();
     final List<ProcessInstanceDto> runningInstances =
         java.util.stream.IntStream.range(0, 5)
             .mapToObj(
                 i ->
-                    agenticInstance(PROC_KEY, 100L, 50L)
+                    agenticInstanceWithTokens(PROC_KEY, 100L, 50L)
                         .state(ProcessInstanceConstants.ACTIVE_STATE)
                         .endDate(null)
                         .duration(null)
@@ -738,7 +745,7 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
     //        plus 8 completed non-agentic instances — non-agentic must not count
     final String withIncidentId = UUID.randomUUID().toString();
     final ProcessInstanceDto withIncident =
-        agenticInstance(PROC_KEY, 100L, 50L)
+        agenticInstanceWithTokens(PROC_KEY, 100L, 50L)
             .processInstanceId(withIncidentId)
             .incidents(
                 List.of(
@@ -747,7 +754,8 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
                         .processInstanceId(withIncidentId)
                         .build()))
             .build();
-    final ProcessInstanceDto completedAgentic = agenticInstance(PROC_KEY, 100L, 50L).build();
+    final ProcessInstanceDto completedAgentic =
+        agenticInstanceWithTokens(PROC_KEY, 100L, 50L).build();
     final List<ProcessInstanceDto> nonAgenticInstances =
         java.util.stream.IntStream.range(0, 8)
             .mapToObj(i -> completedInstance(PROC_KEY).build())
@@ -769,7 +777,7 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
     //        outside window — 10 agentic with incidents (must not affect either side)
     final String recentWithId = UUID.randomUUID().toString();
     final ProcessInstanceDto recentWithIncident =
-        agenticInstance(PROC_KEY, 100L, 50L)
+        agenticInstanceWithTokens(PROC_KEY, 100L, 50L)
             .processInstanceId(recentWithId)
             .startDate(OffsetDateTime.now().minusHours(3))
             .endDate(OffsetDateTime.now().minusHours(2))
@@ -781,7 +789,7 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
                         .build()))
             .build();
     final ProcessInstanceDto recentClean =
-        agenticInstance(PROC_KEY, 100L, 50L)
+        agenticInstanceWithTokens(PROC_KEY, 100L, 50L)
             .startDate(OffsetDateTime.now().minusHours(3))
             .endDate(OffsetDateTime.now().minusHours(2))
             .build();
@@ -790,7 +798,7 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
             .mapToObj(
                 i -> {
                   final String id = UUID.randomUUID().toString();
-                  return agenticInstance(PROC_KEY, 100L, 50L)
+                  return agenticInstanceWithTokens(PROC_KEY, 100L, 50L)
                       .processInstanceId(id)
                       .startDate(OffsetDateTime.now().minusDays(10))
                       .endDate(OffsetDateTime.now().minusDays(9))
@@ -824,7 +832,7 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
 
     final String idA = UUID.randomUUID().toString();
     final ProcessInstanceDto aWithIncident =
-        agenticInstance(procKeyA, 100L, 50L)
+        agenticInstanceWithTokens(procKeyA, 100L, 50L)
             .processInstanceId(idA)
             .incidents(
                 List.of(
@@ -835,14 +843,14 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
             .build();
     final List<ProcessInstanceDto> aClean =
         java.util.stream.IntStream.range(0, 3)
-            .mapToObj(i -> agenticInstance(procKeyA, 100L, 50L).build())
+            .mapToObj(i -> agenticInstanceWithTokens(procKeyA, 100L, 50L).build())
             .toList();
     final List<ProcessInstanceDto> bWithIncidents =
         java.util.stream.IntStream.range(0, 5)
             .mapToObj(
                 i -> {
                   final String id = UUID.randomUUID().toString();
-                  return agenticInstance(procKeyB, 100L, 50L)
+                  return agenticInstanceWithTokens(procKeyB, 100L, 50L)
                       .processInstanceId(id)
                       .incidents(
                           List.of(
@@ -878,11 +886,11 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
     // given two instances within the same week with known input tokens
     persistProcessInstances(
         List.of(
-            agenticInstance(PROC_KEY, 100L, 50L)
+            agenticInstanceWithTokens(PROC_KEY, 100L, 50L)
                 .startDate(OffsetDateTime.now().minusDays(3))
                 .endDate(OffsetDateTime.now().minusDays(2))
                 .build(),
-            agenticInstance(PROC_KEY, 200L, 80L)
+            agenticInstanceWithTokens(PROC_KEY, 200L, 80L)
                 .startDate(OffsetDateTime.now().minusDays(3))
                 .endDate(OffsetDateTime.now().minusDays(2))
                 .build()));
@@ -905,11 +913,11 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
     // given two instances within the same week with known output tokens
     persistProcessInstances(
         List.of(
-            agenticInstance(PROC_KEY, 50L, 100L)
+            agenticInstanceWithTokens(PROC_KEY, 50L, 100L)
                 .startDate(OffsetDateTime.now().minusDays(3))
                 .endDate(OffsetDateTime.now().minusDays(2))
                 .build(),
-            agenticInstance(PROC_KEY, 80L, 200L)
+            agenticInstanceWithTokens(PROC_KEY, 80L, 200L)
                 .startDate(OffsetDateTime.now().minusDays(3))
                 .endDate(OffsetDateTime.now().minusDays(2))
                 .build()));
@@ -938,19 +946,19 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
 
     // procKeyA recent — should be counted
     final ProcessInstanceDto aRecent =
-        agenticInstance(procKeyA, 100L, 50L)
+        agenticInstanceWithTokens(procKeyA, 100L, 50L)
             .startDate(OffsetDateTime.now().minusHours(2))
             .endDate(OffsetDateTime.now().minusHours(1))
             .build();
     // procKeyA old — excluded by date
     final ProcessInstanceDto aOld =
-        agenticInstance(procKeyA, 100L, 50L)
+        agenticInstanceWithTokens(procKeyA, 100L, 50L)
             .startDate(OffsetDateTime.now().minusDays(10))
             .endDate(OffsetDateTime.now().minusDays(9))
             .build();
     // procKeyB recent — excluded by definition
     final ProcessInstanceDto bRecent =
-        agenticInstance(procKeyB, 100L, 50L)
+        agenticInstanceWithTokens(procKeyB, 100L, 50L)
             .startDate(OffsetDateTime.now().minusHours(2))
             .endDate(OffsetDateTime.now().minusHours(1))
             .build();
@@ -964,6 +972,113 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
   }
 
   // ---------------------------------------------------------------------------
+  // Duration stability
+  // ---------------------------------------------------------------------------
+
+  @Test
+  void shouldReturnSingleBucketWithBothAggregations_whenAllInstancesShareEndDate() {
+    // given — 5 instances all ending at the same point in time → AUTOMATIC bucketing produces 1
+    // bucket; durations [1h, 2h, 3h, 4h, 5h] → P50 = 3h, P95 ≈ 5h
+    final OffsetDateTime sharedEnd = OffsetDateTime.now().minusHours(1);
+    final long oneHour = 3_600_000L;
+    persistProcessInstances(
+        List.of(
+            agenticInstanceWithDuration(PROC_KEY, oneHour).endDate(sharedEnd).build(),
+            agenticInstanceWithDuration(PROC_KEY, 2 * oneHour).endDate(sharedEnd).build(),
+            agenticInstanceWithDuration(PROC_KEY, 3 * oneHour).endDate(sharedEnd).build(),
+            agenticInstanceWithDuration(PROC_KEY, 4 * oneHour).endDate(sharedEnd).build(),
+            agenticInstanceWithDuration(PROC_KEY, 5 * oneHour).endDate(sharedEnd).build()));
+
+    // when
+    final MapCommandResult result = evaluateMap(DURATION_STABILITY_REPORT_ID, noExtraFilters());
+
+    // then — exactly two measures, ordered P50 then P95
+    final List<MeasureDto<List<MapResultEntryDto>>> measures = result.getMeasures();
+    assertThat(measures).hasSize(2);
+
+    final MeasureDto<List<MapResultEntryDto>> p50Measure = measures.get(0);
+    assertThat(p50Measure.getAggregationType())
+        .isEqualTo(new AggregationDto(AggregationType.PERCENTILE, 50.0));
+    assertThat(p50Measure.getData()).hasSize(1);
+    assertThat(p50Measure.getData().getFirst().getValue())
+        .isCloseTo(3 * oneHour * 1.0, within((double) oneHour)); // 3h ± 1h tolerance
+
+    final MeasureDto<List<MapResultEntryDto>> p95Measure = measures.get(1);
+    assertThat(p95Measure.getAggregationType())
+        .isEqualTo(new AggregationDto(AggregationType.PERCENTILE, 95.0));
+    assertThat(p95Measure.getData()).hasSize(1);
+    assertThat(p95Measure.getData().getFirst().getValue())
+        .isCloseTo(5 * oneHour * 1.0, within((double) oneHour)); // 5h ± 1h tolerance
+  }
+
+  @Test
+  void shouldReturnMultipleBuckets_whenInstancesEndInDifferentMonths() {
+    // given — two instances ending 60 days apart; AUTOMATIC bucketing over a 60-day range produces
+    // at least 2 buckets (weekly or monthly granularity)
+    final long oneHour = 3_600_000L;
+    persistProcessInstances(
+        List.of(
+            agenticInstanceWithDuration(PROC_KEY, oneHour)
+                .startDate(OffsetDateTime.now().minusDays(61))
+                .endDate(OffsetDateTime.now().minusDays(60))
+                .build(),
+            agenticInstanceWithDuration(PROC_KEY, 3 * oneHour)
+                .startDate(OffsetDateTime.now().minusDays(2))
+                .endDate(OffsetDateTime.now().minusDays(1))
+                .build()));
+
+    // when
+    final MapCommandResult result = evaluateMap(DURATION_STABILITY_REPORT_ID, noExtraFilters());
+
+    // then — both measures have at least 2 distinct time buckets
+    final List<MeasureDto<List<MapResultEntryDto>>> measures = result.getMeasures();
+    assertThat(measures).hasSize(2);
+    assertThat(measures.get(0).getData()).hasSizeGreaterThanOrEqualTo(2);
+    assertThat(measures.get(1).getData()).hasSizeGreaterThanOrEqualTo(2);
+  }
+
+  @Test
+  void shouldHandleLargeDurationValuesWithoutOverflow() {
+    // given — duration of ~115 days (10^10 ms), exercising 64-bit long handling
+    final long largeDuration = 10_000_000_000L;
+    final OffsetDateTime endDate = OffsetDateTime.now().minusHours(1);
+    persistProcessInstances(
+        List.of(agenticInstanceWithDuration(PROC_KEY, largeDuration).endDate(endDate).build()));
+
+    // when
+    final MapCommandResult result = evaluateMap(DURATION_STABILITY_REPORT_ID, noExtraFilters());
+
+    // then — no exception; the single bucket value is close to the expected duration
+    final List<MeasureDto<List<MapResultEntryDto>>> measures = result.getMeasures();
+    assertThat(measures).hasSize(2);
+    measures.forEach(
+        m -> {
+          assertThat(m.getData()).hasSize(1);
+          final Double value = m.getData().getFirst().getValue();
+          assertThat(value).isNotNull().isFinite();
+          // TDigest P50/P95 of a single data point equals that point
+          assertThat(value).isCloseTo((double) largeDuration, within(largeDuration * 0.01));
+        });
+  }
+
+  @Test
+  void shouldExcludeNonAgenticInstances_fromDurationStabilityReport() {
+    // given — one matching agentic+completed instance, plus one without agent instances
+    final OffsetDateTime endDate = OffsetDateTime.now().minusHours(1);
+    final long oneHour = 3_600_000L;
+    final ProcessInstanceDto agentic =
+        agenticInstanceWithDuration(PROC_KEY, oneHour).endDate(endDate).build();
+    final ProcessInstanceDto nonAgentic = completedInstance(PROC_KEY).endDate(endDate).build();
+    persistProcessInstances(List.of(agentic, nonAgentic));
+
+    // when
+    final MapCommandResult result = evaluateMap(DURATION_STABILITY_REPORT_ID, noExtraFilters());
+
+    // then — only 1 data point in each measure (the agentic instance)
+    result.getMeasures().forEach(m -> assertThat(m.getData()).hasSize(1));
+  }
+
+  // ---------------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------------
 
@@ -971,7 +1086,7 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
    * Builds a minimal completed agentic {@link ProcessInstanceDto} with one {@link AgentInstanceDto}
    * and the given total token counts.
    */
-  private ProcessInstanceDto.ProcessInstanceDtoBuilder agenticInstance(
+  private ProcessInstanceDto.ProcessInstanceDtoBuilder agenticInstanceWithTokens(
       final String processDefinitionKey, final long inputTokens, final long outputTokens) {
     final AgentMetricsDto metrics = new AgentMetricsDto();
     metrics.setInputTokens(inputTokens);
@@ -1002,6 +1117,15 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
     return measures.isEmpty() ? List.of() : measures.getFirst().getData();
   }
 
+  /**
+   * Builds a minimal completed agentic {@link ProcessInstanceDto} with one {@link AgentInstanceDto}
+   * and the given execution duration (ms). Use this overload for duration-focused tests.
+   */
+  private ProcessInstanceDto.ProcessInstanceDtoBuilder agenticInstanceWithDuration(
+      final String processDefinitionKey, final long duration) {
+    return agenticInstanceWithTokens(processDefinitionKey, 0L, 0L).duration(duration);
+  }
+
   private Double evaluateNumber(
       final String reportId, final AdditionalProcessReportEvaluationFilterDto filterDto) {
     final NumberCommandResult commandResult =
@@ -1016,6 +1140,17 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
         evaluationService.evaluateSavedReportWithAdditionalFilters(
             USER_ID, UTC, reportId, filterDto, null);
     return ((SingleReportEvaluationResult<?>) result.getEvaluationResult()).getFirstCommandResult();
+  }
+
+  private MapCommandResult evaluateMap(
+      final String reportId, final AdditionalProcessReportEvaluationFilterDto filterDto) {
+    final var result =
+        evaluationService.evaluateSavedReportWithAdditionalFilters(
+            USER_ID, UTC, reportId, filterDto, null);
+    return (MapCommandResult)
+        ((io.camunda.optimize.dto.optimize.query.report.SingleReportEvaluationResult<?>)
+                result.getEvaluationResult())
+            .getFirstCommandResult();
   }
 
   private AdditionalProcessReportEvaluationFilterDto noExtraFilters() {

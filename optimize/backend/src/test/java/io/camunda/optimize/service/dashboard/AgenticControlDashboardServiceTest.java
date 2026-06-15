@@ -35,7 +35,12 @@ import io.camunda.optimize.dto.optimize.query.report.single.configuration.Aggreg
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateUnit;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.RollingDateFilterDataDto;
+import io.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
+import io.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedInstancesOnlyFilterDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.filter.HasAgentInstancesFilterDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.group.EndDateGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import io.camunda.optimize.service.db.reader.DashboardReader;
 import io.camunda.optimize.service.db.writer.DashboardWriter;
@@ -44,6 +49,7 @@ import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.EntityConfiguration;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -83,7 +89,7 @@ public class AgenticControlDashboardServiceTest {
     assertThat(saved.isAgenticControlDashboard()).isTrue();
     assertThat(saved.isManagementDashboard()).isFalse();
     assertThat(saved.getCollectionId()).isNull();
-    assertThat(saved.getTiles()).hasSize(8);
+    assertThat(saved.getTiles()).hasSize(9);
   }
 
   @Test
@@ -163,6 +169,7 @@ public class AgenticControlDashboardServiceTest {
             AgenticControlDashboardService.KPI_INCIDENT_RATE_REPORT_ID,
             AgenticControlDashboardService.KPI_AVG_TOKENS_REPORT_ID,
             AgenticControlDashboardService.KPI_MEDIAN_TOKENS_REPORT_ID,
+            AgenticControlDashboardService.DURATION_STABILITY_REPORT_ID,
             AgenticControlDashboardService.TOKEN_TREND_REPORT_ID,
             AgenticControlDashboardService.KPI_DURATION_P50_REPORT_ID,
             AgenticControlDashboardService.KPI_DURATION_P95_REPORT_ID);
@@ -226,7 +233,7 @@ public class AgenticControlDashboardServiceTest {
     underTest.reconcile();
 
     // then reports are upserted and dashboard tiles are updated, but dashboard is not recreated
-    verify(reportWriter, org.mockito.Mockito.times(8))
+    verify(reportWriter, times(9))
         .createOrUpdateSingleProcessReport(any(), any(), any(), any(), any(), any());
     verify(dashboardWriter, never()).saveDashboard(any());
     verify(dashboardWriter).updateDashboard(any(), any());
@@ -321,8 +328,96 @@ public class AgenticControlDashboardServiceTest {
               AgenticControlDashboardService.KPI_DURATION_P50_NAME,
               AgenticControlDashboardService.KPI_DURATION_P50_DESCRIPTION,
               AgenticControlDashboardService.KPI_DURATION_P95_NAME,
-              AgenticControlDashboardService.KPI_DURATION_P95_DESCRIPTION);
+              AgenticControlDashboardService.KPI_DURATION_P95_DESCRIPTION,
+              AgenticControlDashboardService.DURATION_STABILITY_NAME,
+              AgenticControlDashboardService.DURATION_STABILITY_DESCRIPTION);
     }
+  }
+
+  @Test
+  void shouldSeedDurationStabilityReportWithCorrectDefinition() {
+    // given
+    when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID)).thenReturn(Optional.empty());
+
+    // when
+    underTest.reconcile();
+
+    // then the stability report is upserted with the deterministic ID
+    final ArgumentCaptor<ProcessReportDataDto> dataCaptor =
+        ArgumentCaptor.forClass(ProcessReportDataDto.class);
+    verify(reportWriter)
+        .createOrUpdateSingleProcessReport(
+            org.mockito.ArgumentMatchers.eq(
+                AgenticControlDashboardService.DURATION_STABILITY_REPORT_ID),
+            isNull(),
+            dataCaptor.capture(),
+            org.mockito.ArgumentMatchers.eq(AgenticControlDashboardService.DURATION_STABILITY_NAME),
+            org.mockito.ArgumentMatchers.eq(
+                AgenticControlDashboardService.DURATION_STABILITY_DESCRIPTION),
+            isNull());
+
+    final ProcessReportDataDto data = dataCaptor.getValue();
+
+    // view: PROCESS_INSTANCE + DURATION
+    assertThat(data.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
+    assertThat(data.getView().getFirstProperty()).isEqualTo(ViewProperty.DURATION);
+
+    // groupBy: EndDateGroupByDto with AUTOMATIC unit
+    assertThat(data.getGroupBy()).isInstanceOf(EndDateGroupByDto.class);
+    final EndDateGroupByDto endDateGroupBy = (EndDateGroupByDto) data.getGroupBy();
+    assertThat(endDateGroupBy.getValue().getUnit()).isEqualTo(AggregateByDateUnit.AUTOMATIC);
+
+    // aggregation types: exactly P50 then P95, in order
+    final List<AggregationDto> aggTypes =
+        List.copyOf(data.getConfiguration().getAggregationTypes());
+    assertThat(aggTypes).hasSize(2);
+    assertThat(aggTypes.get(0).getType()).isEqualTo(AggregationType.PERCENTILE);
+    assertThat(aggTypes.get(0).getValue()).isEqualTo(50.0);
+    assertThat(aggTypes.get(1).getType()).isEqualTo(AggregationType.PERCENTILE);
+    assertThat(aggTypes.get(1).getValue()).isEqualTo(95.0);
+
+    // visualization: LINE
+    assertThat(data.getVisualization()).isEqualTo(ProcessVisualization.LINE);
+
+    // filters: completedInstancesOnly + hasAgentInstances
+    assertThat(data.getFilter()).hasAtLeastOneElementOfType(CompletedInstancesOnlyFilterDto.class);
+    assertThat(data.getFilter()).hasAtLeastOneElementOfType(HasAgentInstancesFilterDto.class);
+
+    // flagged as agentic control report
+    assertThat(data.isAgenticControlReport()).isTrue();
+
+    // deterministic ID matches the seed string
+    assertThat(AgenticControlDashboardService.DURATION_STABILITY_REPORT_ID)
+        .isEqualTo(
+            java.util
+                .UUID
+                .nameUUIDFromBytes(
+                    "agentic-duration-stability".getBytes(java.nio.charset.StandardCharsets.UTF_8))
+                .toString());
+  }
+
+  @Test
+  void shouldSeedDurationStabilityTileAtCorrectPositionAndDimensions() {
+    // given
+    when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID)).thenReturn(Optional.empty());
+
+    // when
+    underTest.reconcile();
+
+    // then
+    final DashboardDefinitionRestDto saved = captureSavedDashboard();
+    final var stabilityTile =
+        saved.getTiles().stream()
+            .filter(
+                t -> t.getId().equals(AgenticControlDashboardService.DURATION_STABILITY_REPORT_ID))
+            .findFirst()
+            .orElseThrow();
+
+    assertThat(stabilityTile.getPosition().getX()).isEqualTo(0);
+    assertThat(stabilityTile.getPosition().getY()).isEqualTo(6);
+    assertThat(stabilityTile.getDimensions().getWidth()).isEqualTo(18);
+    assertThat(stabilityTile.getDimensions().getHeight()).isEqualTo(2);
+    assertThat(stabilityTile.getConfiguration()).isEqualTo(Map.of("section", "duration"));
   }
 
   @Test

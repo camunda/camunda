@@ -1558,6 +1558,8 @@
       "agenticKpiExecutionAvgTokensDescription": "Average total tokens consumed per completed agentic process instance in the selected period.",
       "agenticKpiExecutionMedianTokensName": "Median tokens per execution",
       "agenticKpiExecutionMedianTokensDescription": "Median total tokens consumed per completed agentic process instance in the selected period.",
+      "agenticDurationStabilityName": "Execution duration stability (P50 / P95)",
+      "agenticDurationStabilityDescription": "P50 and P95 execution duration of completed agentic process instances over time in the selected period.",
       "agenticKpiTokenTrendName": "Token Trend",
       "agenticKpiTokenTrendFootnote": "If token use rises without more executions, prompts may be growing or the model is producing longer outputs. Raise with engineering.",
       "agenticKpiDurationP50Name": "P50 execution duration",
