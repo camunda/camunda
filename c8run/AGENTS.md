@@ -121,7 +121,7 @@ go version
 | `docs/local-development.md`      | Prerequisites, quick start, and testing code changes against a local Camunda build                           |
 | `docs/package-layout.md`         | Key package areas, runtime artifact list, packaging a distribution                                           |
 | `docs/runtime-rules.md`          | Config precedence, H2 rules, Connectors compatibility, ports, health check timeout, quickstart marker        |
-| `docs/testing-guide.md`          | Platform coverage, process lifecycle, packaging, startup test expectations                                   |
+| `docs/testing-guide.md`          | Platform coverage, process lifecycle, packaging, E2E layers, on-demand all-OS trigger guide                  |
 | `docs/process-lifecycle.md`      | PID locking semantics, 4-state restart machine, signal handling, graceful shutdown, detached mode stub       |
 | `docs/configuration.md`          | JAVA_HOME fallback chain, config directory handling, H2 cleanup decision tree, RDBMS driver detection        |
 | `docs/platform-differences.md`   | Unix vs Windows: process groups, kill implementation, path/classpath conventions, archive formats, test tags |
@@ -140,4 +140,5 @@ go version
 6. Build the changed binary to confirm it compiles: `go build -o c8run ./cmd/c8run`.
 7. For packaging changes, also build and verify `packager`.
 8. Commit with Conventional Commits format, no scope.
+9. For packaging changes (archive layout, JRE bundling, lib stripping, new artifacts), trigger the all-OS on-demand E2E suite against the branch — see [Testing Guide — Triggering the all-OS on-demand suite](docs/testing-guide.md#triggering-the-all-os-on-demand-suite-against-a-feature-branch).
 

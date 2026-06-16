@@ -108,6 +108,48 @@ No config file is passed — H2 is the c8run default for 8.9+. The matrix sets `
 
 The release workflow publishes results to TestRail. Each action accepts `database`, `tasklist_version`, and `version` inputs.
 
+### Triggering the all-OS on-demand suite against a feature branch
+
+Use `playwright_c8Run_release_test.yml` to validate a `camunda/camunda` feature branch across all platforms before merge. The workflow checks out the branch, builds c8run from source, downloads the Camunda distribution from Nexus, packages it, and runs the full Playwright suite.
+
+**Required inputs:**
+
+|        Input        |                  Description                  |                  Where to get it                   |
+|---------------------|-----------------------------------------------|----------------------------------------------------|
+| `c8Version`         | Minor version, e.g. `8.10`                    | `major.minor` of `CAMUNDA_VERSION` in `c8run/.env` |
+| `branchName`        | Branch in `camunda/camunda` to check out      | Your feature branch name                           |
+| `camundaVersion`    | Full version, e.g. `8.10.0-alpha2`            | `CAMUNDA_VERSION` in `c8run/.env`                  |
+| `connectorsVersion` | Full connectors version, e.g. `8.10.0-alpha2` | `CONNECTORS_VERSION` in `c8run/.env`               |
+
+**Trigger via `gh` CLI:**
+
+```bash
+# Read versions from .env
+CAMUNDA_VERSION=$(grep '^CAMUNDA_VERSION=' c8run/.env | cut -d= -f2)
+C8_MINOR=$(echo "$CAMUNDA_VERSION" | cut -d. -f1-2)   # e.g. 8.10
+CONNECTORS_VERSION=$(grep '^CONNECTORS_VERSION=' c8run/.env | cut -d= -f2)
+BRANCH=$(git branch --show-current)
+
+gh api repos/camunda/c8-cross-component-e2e-tests/actions/workflows/playwright_c8Run_release_test.yml/dispatches \
+  -X POST \
+  -f ref=main \
+  -F "inputs[c8Version]=$C8_MINOR" \
+  -F "inputs[branchName]=$BRANCH" \
+  -F "inputs[camundaVersion]=$CAMUNDA_VERSION" \
+  -F "inputs[connectorsVersion]=$CONNECTORS_VERSION"
+```
+
+**Verify it queued** (run within ~10 seconds of dispatch):
+
+```bash
+gh api "repos/camunda/c8-cross-component-e2e-tests/actions/workflows/playwright_c8Run_release_test.yml/runs?per_page=3" \
+  --jq '.workflow_runs[] | {id, status, created_at}'
+```
+
+Then open the run URL from the `id` field: `https://github.com/camunda/c8-cross-component-e2e-tests/actions/runs/<id>`
+
+**When to use:** For any packaging change (archive layout, JRE bundling, lib stripping, new artifacts). The PR trigger (Layer 2 above) only runs Linux; this covers macOS and Windows too.
+
 ### RDBMS configuration summary
 
 |             Layer              |      DB       |             How configured              |
