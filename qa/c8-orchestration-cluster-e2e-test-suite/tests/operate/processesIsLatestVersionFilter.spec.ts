@@ -27,7 +27,13 @@ import {
  */
 
 const SEED_COUNT = 120;
-const REDEPLOY_FOR_V2_COUNT = 10;
+// The regression is triggered purely by `isLatestVersion: true` with more than
+// the server page size (~100) of unique definitions, regardless of how many
+// versions each has — so we deploy a single version per definition.  Operate's
+// dropdown shows the BPMN `name` attribute of the latest version, so adding a
+// v2 deployment would change the option label (e.g. `${pid}-v2`) and break the
+// id-based lookup below.
+const REDEPLOY_FOR_V2_COUNT = 0;
 
 let suffix: string;
 let seededIds: string[];
