@@ -16,6 +16,10 @@ public final class AuthorizationCheckMetrics {
 
   private final Timer timer;
 
+  AuthorizationCheckMetrics(final Timer timer) {
+    this.timer = Objects.requireNonNull(timer, "Timer must not be null");
+  }
+
   public AuthorizationCheckMetrics(final MeterRegistry registry) {
     Objects.requireNonNull(registry, "MeterRegistry must not be null");
     final var meterDoc = AuthorizationMetricsDoc.CHECK_LATENCY;
