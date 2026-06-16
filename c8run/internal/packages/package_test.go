@@ -226,7 +226,7 @@ func TestRocksdbNativeLibNameUnknownPlatformErrors(t *testing.T) {
 	}
 }
 
-func TestRewriteZipKeepingNativeLibStripsOtherPlatforms(t *testing.T) {
+func TestRewriteJarDroppingEntriesStripsOtherPlatforms(t *testing.T) {
 	// given: fake JAR with all 5 native libs plus non-native entries
 	root := t.TempDir()
 	jarPath := filepath.Join(root, "rocksdbjni-9.0.0.jar")
@@ -262,11 +262,18 @@ func TestRewriteZipKeepingNativeLibStripsOtherPlatforms(t *testing.T) {
 	}
 
 	// when
-	err = rewriteZipKeepingNativeLib(jarPath, "librocksdbjni-linux64.so")
+	keepLib := "librocksdbjni-linux64.so"
+	shouldDrop := func(name string) bool {
+		return isRocksdbNativeLib(name) && name != keepLib
+	}
+	dropped, err := rewriteJarDroppingEntries(jarPath, shouldDrop)
 
 	// then
 	if err != nil {
-		t.Fatalf("rewriteZipKeepingNativeLib returned error: %v", err)
+		t.Fatalf("rewriteJarDroppingEntries returned error: %v", err)
+	}
+	if dropped != 4 {
+		t.Fatalf("expected 4 entries dropped, got %d", dropped)
 	}
 
 	r, err := zip.OpenReader(jarPath)
@@ -298,8 +305,8 @@ func TestRewriteZipKeepingNativeLibStripsOtherPlatforms(t *testing.T) {
 	}
 }
 
-func TestRewriteZipKeepingNativeLibErrorsWhenLibNotFound(t *testing.T) {
-	// given: JAR with only a different native lib (target is absent)
+func TestRewriteJarDroppingEntriesDropsNothingWhenPredicateNeverMatches(t *testing.T) {
+	// given: JAR with entries that the predicate does not match
 	root := t.TempDir()
 	jarPath := filepath.Join(root, "rocksdbjni-9.0.0.jar")
 
@@ -308,11 +315,11 @@ func TestRewriteZipKeepingNativeLibErrorsWhenLibNotFound(t *testing.T) {
 		t.Fatalf("failed to create temp jar: %v", err)
 	}
 	w := zip.NewWriter(f)
-	fw, err := w.Create("librocksdbjni-linux64.so")
+	fw, err := w.Create("org/rocksdb/RocksDB.class")
 	if err != nil {
 		t.Fatalf("failed to create zip entry: %v", err)
 	}
-	if _, err := fw.Write([]byte("binary")); err != nil {
+	if _, err := fw.Write([]byte("class-bytes")); err != nil {
 		t.Fatalf("failed to write zip entry: %v", err)
 	}
 	if err := w.Close(); err != nil {
@@ -322,12 +329,18 @@ func TestRewriteZipKeepingNativeLibErrorsWhenLibNotFound(t *testing.T) {
 		t.Fatalf("failed to close jar file: %v", err)
 	}
 
-	// when: ask for a lib name that isn't in the jar
-	err = rewriteZipKeepingNativeLib(jarPath, "librocksdbjni-nonexistent.so")
+	// when: predicate never matches (nothing to drop)
+	shouldDrop := func(name string) bool {
+		return isRocksdbNativeLib(name) && name != "librocksdbjni-linux64.so"
+	}
+	dropped, err := rewriteJarDroppingEntries(jarPath, shouldDrop)
 
 	// then
-	if err == nil {
-		t.Fatal("expected error when target native lib not found in jar, got nil")
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+	if dropped != 0 {
+		t.Fatalf("expected 0 entries dropped, got %d", dropped)
 	}
 }
 

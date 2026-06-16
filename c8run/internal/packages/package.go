@@ -223,10 +223,13 @@ func copyZipEntry(w *zip.Writer, f *zip.File) error {
 	return nil
 }
 
-func rewriteZipKeepingNativeLib(jarPath, libName string) error {
+// rewriteJarDroppingEntries rewrites a JAR (ZIP) in-place, dropping any entry
+// for which shouldDrop returns true. It returns the number of entries that were
+// dropped so callers can validate expected outcomes.
+func rewriteJarDroppingEntries(jarPath string, shouldDrop func(name string) bool) (int, error) {
 	r, err := zip.OpenReader(jarPath)
 	if err != nil {
-		return fmt.Errorf("failed to open jar %s: %w", jarPath, err)
+		return 0, fmt.Errorf("failed to open jar %s: %w", jarPath, err)
 	}
 	// r is closed explicitly before os.Rename — Windows cannot rename over an open file.
 
@@ -234,7 +237,7 @@ func rewriteZipKeepingNativeLib(jarPath, libName string) error {
 	tmpFile, err := os.Create(tmpPath)
 	if err != nil {
 		_ = r.Close()
-		return fmt.Errorf("failed to create temp file %s: %w", tmpPath, err)
+		return 0, fmt.Errorf("failed to create temp file %s: %w", tmpPath, err)
 	}
 
 	removeTmp := func() {
@@ -244,16 +247,13 @@ func rewriteZipKeepingNativeLib(jarPath, libName string) error {
 	}
 
 	w := zip.NewWriter(tmpFile)
-	var nativeLibCount int
+	var dropped int
 	var copyErr error
 
 	for _, f := range r.File {
-		isNativeEntry := isRocksdbNativeLib(f.Name)
-		if isNativeEntry {
-			if f.Name != libName {
-				continue
-			}
-			nativeLibCount++
+		if shouldDrop(f.Name) {
+			dropped++
+			continue
 		}
 		if err := copyZipEntry(w, f); err != nil {
 			copyErr = err
@@ -266,33 +266,28 @@ func rewriteZipKeepingNativeLib(jarPath, libName string) error {
 		_ = tmpFile.Close()
 		_ = r.Close()
 		removeTmp()
-		return copyErr
+		return 0, copyErr
 	}
 	if err := w.Close(); err != nil {
 		_ = tmpFile.Close()
 		_ = r.Close()
 		removeTmp()
-		return fmt.Errorf("failed to finalize temp jar: %w", err)
+		return 0, fmt.Errorf("failed to finalize temp jar: %w", err)
 	}
 	if err := tmpFile.Close(); err != nil {
 		_ = r.Close()
 		removeTmp()
-		return fmt.Errorf("failed to close temp file: %w", err)
-	}
-	if nativeLibCount != 1 {
-		_ = r.Close()
-		removeTmp()
-		return fmt.Errorf("expected exactly 1 native lib %q in jar, got %d: verify rocksdbNativeLibName mapping", libName, nativeLibCount)
+		return 0, fmt.Errorf("failed to close temp file: %w", err)
 	}
 	if err := r.Close(); err != nil {
 		removeTmp()
-		return fmt.Errorf("failed to close source jar before rename: %w", err)
+		return 0, fmt.Errorf("failed to close source jar before rename: %w", err)
 	}
 	if err := os.Rename(tmpPath, jarPath); err != nil {
 		removeTmp()
-		return fmt.Errorf("failed to replace jar with slimmed version: %w", err)
+		return 0, fmt.Errorf("failed to replace jar with slimmed version: %w", err)
 	}
-	return nil
+	return dropped, nil
 }
 
 // stripRocksDbNativeLibs must be called from the c8run working directory:
@@ -316,7 +311,18 @@ func stripRocksDbNativeLibs(camundaVersion, osType, arch string) error {
 	}
 
 	log.Info().Str("jar", jars[0]).Str("keeping", libName).Msg("stripping unused RocksDB native libs")
-	return rewriteZipKeepingNativeLib(jars[0], libName)
+
+	shouldDrop := func(name string) bool {
+		return isRocksdbNativeLib(name) && name != libName
+	}
+	dropped, err := rewriteJarDroppingEntries(jars[0], shouldDrop)
+	if err != nil {
+		return err
+	}
+	if dropped == 0 {
+		return fmt.Errorf("expected to drop native libs from %s but dropped 0: verify rocksdbNativeLibName mapping", jars[0])
+	}
+	return nil
 }
 
 func getJavaArtifactsToken() (string, error) {
