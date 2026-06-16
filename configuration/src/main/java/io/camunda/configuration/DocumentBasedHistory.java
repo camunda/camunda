@@ -24,7 +24,9 @@ public class DocumentBasedHistory {
   private static final String DEFAULT_HISTORY_POLICY_NAME = "camunda-retention-policy";
   private static final String DEFAULT_HISTORY_ELS_ROLLOVER_DATE_FORMAT = "date";
   private static final String DEFAULT_HISTORY_ROLLOVER_INTERVAL = "1d";
+  /* This should be kept in sync with CamundaBackgroundTaskManagerFactory.DEFAULT_HISTORY_ROLLOVER_BATCH_SIZE */
   private static final int DEFAULT_HISTORY_ROLLOVER_BATCH_SIZE = 100;
+  /* This should be kept in sync with CamundaBackgroundTaskManagerFactory.DEFAULT_HISTORY_ARCHIVE_BY_ID_ROLLOVER_BATCH_SIZE */
   private static final int DEFAULT_HISTORY_ARCHIVE_BY_ID_ROLLOVER_BATCH_SIZE = 500;
   private static final int DEFAULT_HISTORY_ARCHIVE_BY_ID_REINDEX_BATCH_SIZE = 2500;
   private static final int DEFAULT_HISTORY_ARCHIVE_BY_ID_MAX_RETRY_ATTEMPTS = 3;
