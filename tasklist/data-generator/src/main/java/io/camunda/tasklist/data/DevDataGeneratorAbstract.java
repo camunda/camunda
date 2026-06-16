@@ -11,6 +11,7 @@ import static io.camunda.tasklist.util.ThreadUtil.sleepFor;
 import static io.camunda.zeebe.protocol.record.value.TenantOwned.DEFAULT_TENANT_IDENTIFIER;
 
 import io.camunda.client.impl.command.StreamUtil;
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
@@ -44,8 +45,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 public abstract class DevDataGeneratorAbstract implements DataGenerator {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(DevDataGeneratorAbstract.class);
-
-  private static final String DEFAULT_PHYSICAL_TENANT_ID = "default";
 
   @Autowired protected TasklistProperties tasklistProperties;
 
@@ -272,7 +271,7 @@ public abstract class DevDataGeneratorAbstract implements DataGenerator {
         executeCamundaServiceAnonymously(
             (authentication) ->
                 serviceRegistry
-                    .resourceServices(DEFAULT_PHYSICAL_TENANT_ID)
+                    .resourceServices(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
                     .deployResources(
                         new DeployResourcesRequest(Map.of(classpathResource, bytes), tenantId),
                         authentication));
@@ -291,7 +290,7 @@ public abstract class DevDataGeneratorAbstract implements DataGenerator {
     return executeCamundaServiceAnonymously(
         (authentication) ->
             serviceRegistry
-                .processInstanceServices(DEFAULT_PHYSICAL_TENANT_ID)
+                .processInstanceServices(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
                 .createProcessInstance(
                     new ProcessInstanceCreateRequest(
                         -1L,

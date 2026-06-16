@@ -8,6 +8,7 @@
 package io.camunda.tasklist.data.es;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.search.connect.tenant.SearchClients;
 import io.camunda.spring.utils.ConditionalOnWebappEnabled;
 import io.camunda.tasklist.data.DataGenerator;
@@ -35,7 +36,8 @@ public class DevDataGeneratorElasticSearch extends DevDataGeneratorAbstract
   private final ElasticsearchClient elasticsearchClient;
 
   public DevDataGeneratorElasticSearch(final SearchClients searchClients) {
-    elasticsearchClient = searchClients.esClients().get("default");
+    elasticsearchClient =
+        searchClients.esClients().get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
   }
 
   @Override

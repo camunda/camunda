@@ -7,6 +7,8 @@
  */
 package io.camunda.application.commons.rdbms;
 
+import static io.camunda.configuration.api.physicaltenants.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+
 import io.camunda.application.commons.search.PhysicalTenantSearchClientReaders;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
@@ -49,12 +51,6 @@ import org.springframework.context.annotation.Import;
 @ConditionalOnSecondaryStorageType(SecondaryStorageType.rdbms)
 @Import(MyBatisConfiguration.class)
 public class RdbmsConfiguration {
-
-  /**
-   * Physical-tenant ID used as the default key in the per-tenant readers map. Must match {@code
-   * CamundaSearchClients.DEFAULT_PHYSICAL_TENANT_ID} and the convention used on the ES/OS side.
-   */
-  static final String DEFAULT_PHYSICAL_TENANT_ID = "default";
 
   private static final Logger LOG = LoggerFactory.getLogger(RdbmsConfiguration.class);
 

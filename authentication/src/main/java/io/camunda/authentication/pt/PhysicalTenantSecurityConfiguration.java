@@ -7,7 +7,7 @@
  */
 package io.camunda.authentication.pt;
 
-import static io.camunda.spring.utils.PhysicalTenantContext.DEFAULT_PHYSICAL_TENANT_ID;
+import static io.camunda.configuration.api.physicaltenants.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 
 import io.camunda.security.api.context.CamundaSecurityScopeProvider;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;

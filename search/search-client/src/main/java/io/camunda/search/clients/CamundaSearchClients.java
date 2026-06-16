@@ -11,6 +11,7 @@ import static io.camunda.search.exception.ErrorMessages.ERROR_ENTITY_BY_ID_NOT_F
 import static io.camunda.search.exception.ErrorMessages.ERROR_ENTITY_BY_KEY_NOT_FOUND;
 import static io.camunda.search.exception.ErrorMessages.ERROR_ENTITY_BY_MULTIPLE_IDS_NOT_FOUND;
 
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.search.clients.reader.SearchClientReaders;
 import io.camunda.search.clients.reader.SearchEntityReader;
 import io.camunda.search.clients.reader.SearchQueryStatisticsReader;
@@ -130,7 +131,6 @@ import org.slf4j.LoggerFactory;
 public class CamundaSearchClients implements SearchClientsProxy {
 
   private static final Logger LOG = LoggerFactory.getLogger(CamundaSearchClients.class);
-  private static final String DEFAULT_PHYSICAL_TENANT_ID = "default";
 
   private final SearchClientReaders readers;
   private final Map<String, SearchClientReaders> tenantReaders;
@@ -141,7 +141,11 @@ public class CamundaSearchClients implements SearchClientsProxy {
   public CamundaSearchClients(
       final Map<String, SearchClientReaders> tenantReaders,
       final ResourceAccessController resourceAccessController) {
-    this(tenantReaders, DEFAULT_PHYSICAL_TENANT_ID, resourceAccessController, null);
+    this(
+        tenantReaders,
+        PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+        resourceAccessController,
+        null);
   }
 
   private CamundaSearchClients(

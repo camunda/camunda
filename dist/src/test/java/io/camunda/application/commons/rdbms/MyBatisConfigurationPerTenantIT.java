@@ -7,12 +7,12 @@
  */
 package io.camunda.application.commons.rdbms;
 
-import static io.camunda.configuration.physicaltenants.PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.UnifiedConfigurationHelper;
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.RdbmsWriterFactory;
@@ -39,19 +39,21 @@ class MyBatisConfigurationPerTenantIT {
 
   @Test
   void shouldBuildIsolatedFactoryAndBundlePerTenantAndExposeDefaultAsSingleton() throws Exception {
-    try (final var fixture = wireTenants(DEFAULT_PHYSICAL_TENANT_ID, "tenantb")) {
-      assertThat(fixture.factories).containsOnlyKeys(DEFAULT_PHYSICAL_TENANT_ID, "tenantb");
-      assertThat(fixture.bundles).containsOnlyKeys(DEFAULT_PHYSICAL_TENANT_ID, "tenantb");
-      assertThat(fixture.factories.get(DEFAULT_PHYSICAL_TENANT_ID))
+    try (final var fixture = wireTenants(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, "tenantb")) {
+      assertThat(fixture.factories)
+          .containsOnlyKeys(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, "tenantb");
+      assertThat(fixture.bundles)
+          .containsOnlyKeys(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, "tenantb");
+      assertThat(fixture.factories.get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
           .isNotSameAs(fixture.factories.get("tenantb"));
       assertThat(MY_BATIS.sqlSessionFactory(fixture.factories))
-          .isSameAs(fixture.factories.get(DEFAULT_PHYSICAL_TENANT_ID));
+          .isSameAs(fixture.factories.get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID));
     }
   }
 
   @Test
   void shouldRouteWriterFactoryByPhysicalTenantId() throws Exception {
-    try (final var fixture = wireTenants(DEFAULT_PHYSICAL_TENANT_ID, "tenantb")) {
+    try (final var fixture = wireTenants(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, "tenantb")) {
       final var writerFactory = fixture.writerFactory();
 
       final var defaultWriters =
@@ -67,7 +69,7 @@ class MyBatisConfigurationPerTenantIT {
 
   @Test
   void shouldRejectUnknownPhysicalTenantId() throws Exception {
-    try (final var fixture = wireTenants(DEFAULT_PHYSICAL_TENANT_ID)) {
+    try (final var fixture = wireTenants(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)) {
       final var writerFactory = fixture.writerFactory();
 
       assertThatThrownBy(
@@ -79,7 +81,7 @@ class MyBatisConfigurationPerTenantIT {
                           .build()))
           .isInstanceOf(IllegalArgumentException.class)
           .hasMessageContaining("unknown")
-          .hasMessageContaining(DEFAULT_PHYSICAL_TENANT_ID);
+          .hasMessageContaining(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
     }
   }
 

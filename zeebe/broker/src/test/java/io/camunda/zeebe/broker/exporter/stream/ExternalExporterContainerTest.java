@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.zeebe.broker.exporter.repo.ExporterLoadException;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector.ExporterInitializationInfo;
 import io.camunda.zeebe.exporter.api.Exporter;
@@ -136,7 +137,7 @@ final class ExternalExporterContainerTest {
         new ExporterContainer(
             descriptor,
             0,
-            "default",
+            PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
             "",
             null,
             new ExporterInitializationInfo(0, null),
@@ -167,7 +168,7 @@ final class ExternalExporterContainerTest {
         new ExporterContainer(
             descriptor,
             0,
-            "default",
+            PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
             "",
             null,
             new ExporterInitializationInfo(0, null),

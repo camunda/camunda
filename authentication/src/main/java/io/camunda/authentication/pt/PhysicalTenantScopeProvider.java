@@ -7,7 +7,7 @@
  */
 package io.camunda.authentication.pt;
 
-import static io.camunda.spring.utils.PhysicalTenantContext.DEFAULT_PHYSICAL_TENANT_ID;
+import static io.camunda.configuration.api.physicaltenants.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static io.camunda.spring.utils.PhysicalTenantContext.PHYSICAL_TENANTS_PATH_SEGMENT;
 
 import io.camunda.security.api.context.CamundaSecurityScopeProvider;
@@ -77,7 +77,7 @@ public final class PhysicalTenantScopeProvider implements CamundaSecurityScopePr
 
   public PhysicalTenantScopeProvider(final Environment environment) {
     this.environment = environment;
-    this.descriptors = buildDescriptors();
+    descriptors = buildDescriptors();
   }
 
   @Override

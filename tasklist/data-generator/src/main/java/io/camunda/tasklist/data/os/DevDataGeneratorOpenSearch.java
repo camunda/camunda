@@ -7,6 +7,7 @@
  */
 package io.camunda.tasklist.data.os;
 
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.search.connect.tenant.SearchClients;
 import io.camunda.spring.utils.ConditionalOnWebappEnabled;
 import io.camunda.tasklist.data.DataGenerator;
@@ -34,7 +35,7 @@ public class DevDataGeneratorOpenSearch extends DevDataGeneratorAbstract impleme
   private final OpenSearchClient opensearchClient;
 
   public DevDataGeneratorOpenSearch(final SearchClients searchClients) {
-    opensearchClient = searchClients.osClients().get("default");
+    opensearchClient = searchClients.osClients().get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
   }
 
   @Override

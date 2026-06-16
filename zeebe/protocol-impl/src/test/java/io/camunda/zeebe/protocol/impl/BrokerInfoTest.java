@@ -126,7 +126,7 @@ final class BrokerInfoTest {
             .setPartitionsCount(3)
             .setClusterSize(3)
             .setReplicationFactor(1)
-            .setPartitionGroup("default");
+            .setPartitionGroup(BrokerInfo.DEFAULT_PARTITION_GROUP);
     original.setVersion("8.10.0");
     original.setCommandApiAddress("10.0.0.1:26501");
     original.setLeaderForPartition(1, 5L);
@@ -147,7 +147,7 @@ final class BrokerInfoTest {
     assertThat(copy.getPartitionRoles()).isEmpty();
     assertThat(copy.getPartitionLeaderTerms()).isEmpty();
     // original is unchanged
-    assertThat(original.getPartitionGroup()).isEqualTo("default");
+    assertThat(original.getPartitionGroup()).isEqualTo(BrokerInfo.DEFAULT_PARTITION_GROUP);
     assertThat(original.getPartitionRoles()).hasSize(1);
   }
 
