@@ -670,6 +670,26 @@ class DecisionSearchIT {
     assertThat(results).containsExactlyInAnyOrderElementsOf(expectedLatest);
   }
 
+  @Test
+  void shouldReturnCorrectTotalItemsWhenFilteredByIsLatestVersion() {
+    // given - decision_model.dmn and decision_model_1.dmn (v1+v2) give 2 unique latest decisions
+    final var expectedTotalLatestVersions = (long) keepLatestDecisionDefinitionVersions().size();
+
+    // when - request fewer items than total unique count
+    final var result =
+        camundaClient
+            .newDecisionDefinitionSearchRequest()
+            .filter(f -> f.isLatestVersion(true))
+            .page(p -> p.limit(1))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).hasSize(1);
+    assertThat(result.page().totalItems()).isEqualTo(expectedTotalLatestVersions);
+    assertThat(result.page().hasMoreTotalItems()).isFalse();
+  }
+
   private static Stream<Arguments> decisionSortOrderWithComparator() {
     return Stream.of(
         Arguments.of(
