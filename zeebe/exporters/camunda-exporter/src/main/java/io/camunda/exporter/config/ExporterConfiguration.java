@@ -257,7 +257,7 @@ public class ExporterConfiguration {
     private boolean processInstanceEnabled = true;
     private ProcessInstanceRetentionMode processInstanceRetentionMode =
         ProcessInstanceRetentionMode.PI_HIERARCHY;
-    private boolean archiveByIdEnabled = false;
+    private boolean archiveByIdEnabled = true;
     private String elsRolloverDateFormat = "date";
     private String rolloverInterval = "1d";
     private String usageMetricsRolloverInterval = "1M";
