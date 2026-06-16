@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.VariableMappingTransformer;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeMapping;
 import io.camunda.zeebe.test.util.MsgPackUtil;
+import io.camunda.zeebe.util.Either;
 import java.time.InstantSource;
 import java.util.List;
 import java.util.Map;
@@ -182,7 +183,7 @@ public final class VariableMappingTransformerTest {
     final var expression = transformer.transformInputMappings(mappings, expressionLanguage);
 
     // when
-    final var result = expressionLanguage.evaluateExpression(expression, name -> null);
+    final var result = expressionLanguage.evaluateExpression(expression, name -> Either.left(null));
 
     // then
     assertThat(result.isFailure())
@@ -272,7 +273,7 @@ public final class VariableMappingTransformerTest {
         fail("Unsupported value type in context: " + value.getClass());
         encodedValue = null;
       }
-      return encodedValue;
+      return Either.left(encodedValue);
     };
   }
 }
