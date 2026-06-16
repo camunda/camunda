@@ -28,7 +28,7 @@ class AuthorizationCheckMetricsTest {
   private SimpleMeterRegistry registry;
   private AuthorizationCheckMetrics metrics;
 
-  @Mock Timer mockTimer;
+  @Mock private Timer mockTimer;
 
   @BeforeEach
   void setUp() {
