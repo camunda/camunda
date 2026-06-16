@@ -18,6 +18,7 @@ import io.camunda.optimize.dto.optimize.query.report.single.configuration.Single
 import io.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessReportDistributedByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
+import io.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessDefinitionKeyGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.VariableGroupByDto;
@@ -370,11 +371,13 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
   }
 
   // Whether this grouped report supports a server-side top-N subset via report pagination.
-  // Today only agentic control reports opt in (e.g. the top token consumers tile); a future
-  // paginatable report would extend this single derivation rather than the generic evaluator.
+  // Today only the agentic control report grouped by process definition key opts in (the top token
+  // consumers tile); other agentic control reports (e.g. number or date-grouped tiles) keep
+  // rejecting pagination. A future paginatable report would extend this single derivation rather
+  // than the generic evaluator.
   @JsonIgnore
   public boolean isGroupByPaginationSupported() {
-    return agenticControlReport;
+    return agenticControlReport && groupBy instanceof ProcessDefinitionKeyGroupByDto;
   }
 
   protected boolean canEqual(final Object other) {
