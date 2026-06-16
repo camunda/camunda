@@ -94,6 +94,11 @@ on:
         type: number
         default: 1
         required: false
+      target-version:
+        description: 'Setup version subfolder to use. Corresponds to load-tests/setup/<target-version>/. Default: main.'
+        type: string
+        default: "main"
+        required: false
       orchestration-tag:
         description: 'Official Docker Hub image tag (docker.io/camunda/camunda). Uses Docker Hub instead of building. ⚠ Cannot be used with reuse-tag.'
         type: string
@@ -185,6 +190,11 @@ on:
         type: string
         required: false
         default: elasticsearch
+      target-version:
+        description: 'Setup version subfolder to use (main, stable-89, stable-88, stable-87). Default: main.'
+        type: string
+        default: "main"
+        required: false
       orchestration-tag:
         description: 'Orchestration Tag: Docker image tag for official Camunda images from Docker Hub (docker.io/camunda/camunda). When set, official Docker Hub images are used instead of building from source. Cannot be used together with reuse-tag.'
         type: string
@@ -532,7 +542,7 @@ jobs:
           git config user.name ${{ github.actor }}
           # Render the load-test folder. newLoadTest.sh no longer creates the namespace — that
           # happens on `make install` via `kubectl apply -f resources/namespace.yaml`.
-          ./newLoadTest.sh ${{ env.NAMESPACE }} ${{ inputs.secondary-storage-type }} ${{ inputs.ttl }} ${{ inputs.enable-optimize }}
+          ./newLoadTest.sh --target-version ${{ inputs.target-version || 'main' }} ${{ env.NAMESPACE }} ${{ inputs.secondary-storage-type }} ${{ inputs.ttl }} ${{ inputs.enable-optimize }}
       - name: Install latest Camunda Platform
         run: |
           cd load-tests/setup/${{ env.NAMESPACE }}
