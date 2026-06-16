@@ -12,7 +12,6 @@ import type {
   AuditLogOperationType,
 } from '@camunda/camunda-api-zod-schemas/8.10/audit-log';
 import {spaceAndCapitalize} from 'modules/utils/spaceAndCapitalize';
-import {Api, User} from '@carbon/react/icons';
 import {Paths} from 'modules/Routes';
 
 const INVALID_PROCESS_INSTANCE_KEY = '-1';
@@ -44,16 +43,9 @@ const formatModalHeading = (auditLog: AuditLog) => {
   )} ${spaceAndCapitalize(auditLog.entityType)}`;
 };
 
-const getActorIcon = (auditLog: AuditLog) => {
-  switch (auditLog.actorType) {
-    case 'USER':
-      return User;
-    case 'CLIENT':
-      return Api;
-    default:
-      return null;
-  }
-};
+function hasActorIcon(auditLog: AuditLog): boolean {
+  return auditLog.actorType === 'USER' || auditLog.actorType === 'CLIENT';
+}
 
 const isValidProcessInstanceKey = (
   processInstanceKey?: string | null,
@@ -147,7 +139,7 @@ const mapToCellDetailsData = (
 export {
   formatBatchTitle,
   formatModalHeading,
-  getActorIcon,
+  hasActorIcon,
   isValidProcessInstanceKey,
   mapToCellEntityKeyData,
   mapToCellDetailsData,

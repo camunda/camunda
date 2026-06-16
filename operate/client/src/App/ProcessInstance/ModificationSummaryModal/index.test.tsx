@@ -432,69 +432,72 @@ describe('Modification Summary Modal', () => {
     expect(mockOnClose).toHaveBeenCalledTimes(2);
   });
 
-  it.skip('should display variable content details on modal icon click', async () => {
-    createAddVariableModification({
-      scopeId: 'element-1',
-      elementName: 'element 1',
-      name: 'test',
-      value: '123',
-    });
+  it.todo(
+    'should display variable content details on modal icon click',
+    async () => {
+      createAddVariableModification({
+        scopeId: 'element-1',
+        elementName: 'element 1',
+        name: 'test',
+        value: '123',
+      });
 
-    modificationsStore.addModification({
-      type: 'variable',
-      payload: {
-        operation: 'EDIT_VARIABLE',
-        scopeId: 'element-2',
-        elementName: 'element 2',
-        id: '1',
-        name: 'anotherVariable',
-        oldValue: '"someOldValue"',
-        newValue: '"someOldValue-edited"',
-      },
-    });
+      modificationsStore.addModification({
+        type: 'variable',
+        payload: {
+          operation: 'EDIT_VARIABLE',
+          scopeId: 'element-2',
+          elementName: 'element 2',
+          id: '1',
+          name: 'anotherVariable',
+          oldValue: '"someOldValue"',
+          newValue: '"someOldValue-edited"',
+        },
+      });
 
-    const {user} = render(
-      <ModificationSummaryModal open setOpen={() => {}} />,
-      {
-        wrapper: getWrapper(),
-      },
-    );
+      const {user} = render(
+        <ModificationSummaryModal open setOpen={() => {}} />,
+        {
+          wrapper: getWrapper(),
+        },
+      );
 
-    const [jsonEditor, diffEditor] = await screen.findAllByRole('button', {
-      name: /expand current row/i,
-    });
-
-    await user.click(jsonEditor!);
-
-    expect(await screen.findByDisplayValue('123')).toBeInTheDocument();
-
-    await user.click(
-      screen.getByRole('button', {name: /collapse current row/i}),
-    );
-
-    expect(
-      screen.getAllByRole('button', {
+      const [jsonEditor, diffEditor] = await screen.findAllByRole('button', {
         name: /expand current row/i,
-      }),
-    ).toHaveLength(2);
+      });
 
-    await user.click(diffEditor!);
+      await user.click(jsonEditor!);
 
-    expect(screen.getByDisplayValue('"someOldValue"')).toBeInTheDocument();
-    expect(
-      screen.getByDisplayValue('"someOldValue-edited"'),
-    ).toBeInTheDocument();
+      expect(await screen.findByDisplayValue('123')).toBeInTheDocument();
 
-    await user.click(
-      screen.getByRole('button', {name: /collapse current row/i}),
-    );
+      await user.click(
+        screen.getByRole('button', {name: /collapse current row/i}),
+      );
 
-    expect(
-      screen.getAllByRole('button', {
-        name: /expand current row/i,
-      }),
-    ).toHaveLength(2);
-  });
+      expect(
+        screen.getAllByRole('button', {
+          name: /expand current row/i,
+        }),
+      ).toHaveLength(2);
+
+      await user.click(diffEditor!);
+
+      expect(screen.getByDisplayValue('"someOldValue"')).toBeInTheDocument();
+      expect(
+        screen.getByDisplayValue('"someOldValue-edited"'),
+      ).toBeInTheDocument();
+
+      await user.click(
+        screen.getByRole('button', {name: /collapse current row/i}),
+      );
+
+      expect(
+        screen.getAllByRole('button', {
+          name: /expand current row/i,
+        }),
+      ).toHaveLength(2);
+    },
+  );
 
   it('should display total affected token count if a subprocess is canceled', async () => {
     mockFetchElementInstancesStatistics().withSuccess({
