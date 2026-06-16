@@ -13,13 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.search.enums;
+package io.camunda.client.impl.search.response;
 
-public enum WaitStateType {
-  JOB,
-  MESSAGE,
-  TIMER,
-  USER_TASK,
-  SIGNAL,
-  UNKNOWN_ENUM_VALUE;
+import io.camunda.client.api.search.enums.WaitStateType;
+import io.camunda.client.api.search.response.SignalWaitStateDetails;
+
+public class SignalWaitStateDetailsImpl implements SignalWaitStateDetails {
+
+  private final String signalName;
+
+  public SignalWaitStateDetailsImpl(
+      final io.camunda.client.protocol.rest.SignalWaitStateDetails details) {
+    signalName = details.getSignalName();
+  }
+
+  @Override
+  public WaitStateType getWaitStateType() {
+    return WaitStateType.SIGNAL;
+  }
+
+  @Override
+  public String getSignalName() {
+    return signalName;
+  }
 }
