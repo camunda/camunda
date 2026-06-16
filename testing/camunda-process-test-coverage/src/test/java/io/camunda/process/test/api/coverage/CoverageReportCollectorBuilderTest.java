@@ -103,8 +103,7 @@ class CoverageReportCollectorBuilderTest {
         .satisfies(
             suite -> {
               assertThat(suite.getId()).isEqualTo(GivenRunTest.class.getName());
-              assertThat(suite.getName())
-                  .isEqualTo("CoverageReportCollectorBuilderTest$GivenRunTest");
+              assertThat(suite.getName()).isEqualTo("GivenRunTest");
               assertThat(suite.getRuns())
                   .singleElement()
                   .satisfies(
@@ -131,7 +130,7 @@ class CoverageReportCollectorBuilderTest {
   }
 
   @Test
-  void shouldUseQualifiedSuiteNameAndMethodRunNameForNestedTests() {
+  void shouldUseEnclosingSuiteNameAndKeepNestedRunNameForNestedTests() {
     // given
     final CoverageCollector coverageCollector = CoverageCollector.newBuilder().build();
     final CoverageTestData testData = createProcessCoverageTestData("process-a", "taskA");
@@ -139,18 +138,17 @@ class CoverageReportCollectorBuilderTest {
     // when
     final CoverageReport report =
         coverageCollector.collectTestRunCoverage(
-            NestedSuiteTest.class, "NestedSuiteTest#run-1", null, testData);
+            NestedSuiteFixture.NestedSuiteTest.class, "NestedSuiteTest#run-1", null, testData);
 
     // then
     assertThat(report.getSuites())
         .singleElement()
         .satisfies(
             suite -> {
-              assertThat(suite.getName())
-                  .isEqualTo("CoverageReportCollectorBuilderTest$NestedSuiteTest");
+              assertThat(suite.getName()).isEqualTo("NestedSuiteFixture");
               assertThat(suite.getRuns())
                   .singleElement()
-                  .satisfies(run -> assertThat(run.getName()).isEqualTo("run-1"));
+                  .satisfies(run -> assertThat(run.getName()).isEqualTo("NestedSuiteTest#run-1"));
             });
   }
 
@@ -184,6 +182,51 @@ class CoverageReportCollectorBuilderTest {
     assertThat(report.getProcessModels())
         .extracting(model -> model.getProcessDefinitionId())
         .containsExactlyInAnyOrder("process-a", "process-b");
+  }
+
+  @Test
+  void shouldCombineNestedSuitesOfSameEnclosingClassInSingleReport() {
+    // given
+    final CoverageCollector coverageCollector = CoverageCollector.newBuilder().build();
+
+    // when
+    final CoverageReport report =
+        coverageCollector.collectTestRunCoverage(
+            NestedCollectorFixture.SecondNestedSuiteTest.class,
+            "SecondNestedSuiteTest#run-2",
+            null,
+            createProcessCoverageTestData("process-b", "taskB"));
+    coverageCollector.collectTestRunCoverage(
+        NestedCollectorFixture.FirstNestedSuiteTest.class,
+        "FirstNestedSuiteTest#run-1",
+        null,
+        createProcessCoverageTestData("process-a", "taskA"));
+
+    // then
+    assertThat(report.getSuites())
+        .anySatisfy(
+            suite -> {
+              if (!suite.getId().equals(NestedCollectorFixture.class.getName())) {
+                return;
+              }
+              assertThat(suite.getName()).isEqualTo("NestedCollectorFixture");
+              assertThat(suite.getRuns())
+                  .extracting(run -> run.getName())
+                  .containsExactly("SecondNestedSuiteTest#run-2");
+            });
+    final CoverageReport aggregatedReport =
+        coverageCollector.generateReport(NestedCollectorFixture.FirstNestedSuiteTest.class);
+    assertThat(aggregatedReport.getSuites())
+        .anySatisfy(
+            suite -> {
+              if (!suite.getId().equals(NestedCollectorFixture.class.getName())) {
+                return;
+              }
+              assertThat(suite.getRuns())
+                  .extracting(run -> run.getName())
+                  .containsExactlyInAnyOrder(
+                      "SecondNestedSuiteTest#run-2", "FirstNestedSuiteTest#run-1");
+            });
   }
 
   private CoverageTestData createProcessCoverageTestData(
@@ -235,12 +278,24 @@ class CoverageReportCollectorBuilderTest {
             .connectTo("end")
             .done());
   }
+}
 
-  private static final class GivenRunTest {}
+final class GivenRunTest {}
 
-  private static final class NestedSuiteTest {}
+final class AggregatedReportTest {}
 
-  private static final class AggregatedReportTest {}
+final class ExclusionTest {}
 
-  private static final class ExclusionTest {}
+final class NestedSuiteFixture {
+  private NestedSuiteFixture() {}
+
+  static final class NestedSuiteTest {}
+}
+
+final class NestedCollectorFixture {
+  private NestedCollectorFixture() {}
+
+  static final class FirstNestedSuiteTest {}
+
+  static final class SecondNestedSuiteTest {}
 }

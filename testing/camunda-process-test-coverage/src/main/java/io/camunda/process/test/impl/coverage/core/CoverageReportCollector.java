@@ -59,8 +59,8 @@ public final class CoverageReportCollector {
       final Class<?> testClass,
       final List<String> excludedProcessDefinitionIds,
       final List<String> excludedDecisionDefinitionIds) {
-    suiteId = testClass.getName();
-    suiteName = extractQualifiedClassName(testClass);
+    suiteId = extractCollectorClassName(testClass);
+    suiteName = extractSuiteName(testClass);
     this.excludedProcessDefinitionIds = excludedProcessDefinitionIds;
     this.excludedDecisionDefinitionIds = excludedDecisionDefinitionIds;
   }
@@ -101,7 +101,7 @@ public final class CoverageReportCollector {
 
     coverageRunReports.add(
         ImmutableCoverageRunReport.builder()
-            .name(extractMethodRunName(runName))
+            .name(runName)
             .displayName(displayName)
             .addAllProcessCoverages(coverages)
             .addAllDecisionCoverages(decisionCoverages)
@@ -173,20 +173,19 @@ public final class CoverageReportCollector {
         .collect(Collectors.toList());
   }
 
-  private static String extractQualifiedClassName(final Class<?> testClass) {
-    final String className = testClass.getName();
-    final int packageSeparatorIndex = className.lastIndexOf('.');
-    if (packageSeparatorIndex < 0) {
-      return className;
+  private static String extractCollectorClassName(final Class<?> testClass) {
+    final Class<?> enclosingClass = testClass.getEnclosingClass();
+    if (enclosingClass != null) {
+      return enclosingClass.getName();
     }
-    return className.substring(packageSeparatorIndex + 1);
+    return testClass.getName();
   }
 
-  private static String extractMethodRunName(final String runName) {
-    final int separatorIndex = runName.lastIndexOf('#');
-    if (separatorIndex < 0) {
-      return runName;
+  private static String extractSuiteName(final Class<?> testClass) {
+    final Class<?> enclosingClass = testClass.getEnclosingClass();
+    if (enclosingClass != null) {
+      return enclosingClass.getSimpleName();
     }
-    return runName.substring(separatorIndex + 1);
+    return testClass.getSimpleName();
   }
 }
