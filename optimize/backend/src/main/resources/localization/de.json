@@ -303,7 +303,9 @@
       "variable": "Variable",
       "process": "Prozessansicht",
       "agentInstance": "Agenteninstanz",
-      "totalTokens": "Tokens insgesamt"
+      "totalTokens": "Tokens insgesamt",
+      "inputTokens": "Eingabe-Tokens",
+      "outputTokens": "Ausgabe-Tokens"
     },
     "groupBy": {
       "label": "Gruppiere nach",
@@ -1556,6 +1558,8 @@
       "agenticKpiExecutionAvgTokensDescription": "Durchschnittliche Gesamtanzahl der verbrauchten Tokens pro abgeschlossener agentischer Prozessinstanz im gewählten Zeitraum.",
       "agenticKpiExecutionMedianTokensName": "Mediane Tokens pro Ausführung",
       "agenticKpiExecutionMedianTokensDescription": "Median der verbrauchten Tokens pro abgeschlossener agentischer Prozessinstanz im gewählten Zeitraum.",
+      "agenticKpiTokenTrendName": "Token-Trend",
+      "agenticKpiTokenTrendFootnote": "Wenn die Token-Nutzung ohne mehr Ausführungen steigt, wachsen möglicherweise die Prompts oder das Modell erzeugt längere Ausgaben. Engineering informieren.",
       "agenticKpiDurationP50Name": "P50-Ausführungsdauer",
       "agenticKpiDurationP50Description": "Median (P50) der Ausführungsdauer abgeschlossener agentischer Prozessinstanzen im gewählten Zeitraum.",
       "agenticKpiDurationP95Name": "P95-Ausführungsdauer",

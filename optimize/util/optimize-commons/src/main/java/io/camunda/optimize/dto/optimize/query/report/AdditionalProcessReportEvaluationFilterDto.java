@@ -8,6 +8,7 @@
 package io.camunda.optimize.dto.optimize.query.report;
 
 import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
+import io.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import java.util.ArrayList;
 import java.util.List;
@@ -17,6 +18,7 @@ public class AdditionalProcessReportEvaluationFilterDto {
 
   protected List<ProcessFilterDto<?>> filter = new ArrayList<>();
   protected List<ReportDataDefinitionDto> definitions = new ArrayList<>();
+  protected AggregateByDateUnit groupByDateUnit;
 
   public AdditionalProcessReportEvaluationFilterDto(final List<ProcessFilterDto<?>> filter) {
     this.filter = filter;
@@ -40,6 +42,14 @@ public class AdditionalProcessReportEvaluationFilterDto {
     this.definitions = definitions;
   }
 
+  public AggregateByDateUnit getGroupByDateUnit() {
+    return groupByDateUnit;
+  }
+
+  public void setGroupByDateUnit(final AggregateByDateUnit groupByDateUnit) {
+    this.groupByDateUnit = groupByDateUnit;
+  }
+
   protected boolean canEqual(final Object other) {
     return other instanceof AdditionalProcessReportEvaluationFilterDto;
   }
@@ -51,12 +61,14 @@ public class AdditionalProcessReportEvaluationFilterDto {
     }
     final AdditionalProcessReportEvaluationFilterDto that =
         (AdditionalProcessReportEvaluationFilterDto) o;
-    return Objects.equals(filter, that.filter) && Objects.equals(definitions, that.definitions);
+    return Objects.equals(filter, that.filter)
+        && Objects.equals(definitions, that.definitions)
+        && Objects.equals(groupByDateUnit, that.groupByDateUnit);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(filter, definitions);
+    return Objects.hash(filter, definitions, groupByDateUnit);
   }
 
   @Override
@@ -65,6 +77,8 @@ public class AdditionalProcessReportEvaluationFilterDto {
         + getFilter()
         + ", definitions="
         + getDefinitions()
+        + ", groupByDateUnit="
+        + getGroupByDateUnit()
         + ")";
   }
 }

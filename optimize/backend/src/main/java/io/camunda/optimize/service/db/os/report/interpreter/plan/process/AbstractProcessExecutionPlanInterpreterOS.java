@@ -102,15 +102,18 @@ public abstract class AbstractProcessExecutionPlanInterpreterOS
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context,
       final Map<String, List<ProcessFilterDto<?>>> filtersByDefinition,
       final List<Query> filterQueries) {
-    // If the user has access to no definitions, management reports may contain no processes in its
-    // data source so we exclude all instances from the result
-    return context.getReportData().getDefinitions().isEmpty()
-            && context.getReportData().isManagementReport()
-        ? new BoolQuery.Builder().filter(not(matchAll()))
-        : new BoolQuery.Builder()
-            .minimumShouldMatch("1")
-            .should(multiDefinitionFilterQueries(context, filtersByDefinition))
-            .filter(filterQueries);
+    if (context.getReportData().getDefinitions().isEmpty()) {
+      if (context.getReportData().isManagementReport()) {
+        // Management report with no accessible definitions: exclude all instances from the result
+        return new BoolQuery.Builder().filter(not(matchAll()));
+      }
+      // No definitions: skip definition-scoped filtering and let other query filters apply
+      return new BoolQuery.Builder().filter(filterQueries);
+    }
+    return new BoolQuery.Builder()
+        .minimumShouldMatch("1")
+        .should(multiDefinitionFilterQueries(context, filtersByDefinition))
+        .filter(filterQueries);
   }
 
   private List<Query> multiDefinitionFilterQueries(
