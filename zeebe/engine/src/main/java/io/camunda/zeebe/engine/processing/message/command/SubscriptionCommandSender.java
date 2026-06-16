@@ -107,6 +107,9 @@ public class SubscriptionCommandSender {
    * @param businessId the business id captured from the subscribing process instance at open time;
    *     used as a post-routing local filter on the subscription partition. May be an empty buffer
    *     when the process instance has no business id.
+   * @param elementId the BPMN element id of the catch element that opened the subscription
+   * @param rootProcessInstanceKey the key of the root process instance in the hierarchy
+   * @param elementType the BPMN element type of the catch element that opened the subscription
    */
   public void sendDirectOpenMessageSubscription(
       final int subscriptionPartitionId,

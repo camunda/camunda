@@ -110,7 +110,7 @@ public interface MessageSubscriptionRecordValue
   /**
    * @return the BPMN element type of the element tied to the subscription, or {@link
    *     BpmnElementType#UNSPECIFIED} for subscriptions created before this field was introduced.
-   * @since 8.9
+   * @since 8.10
    */
   BpmnElementType getElementType();
 }
