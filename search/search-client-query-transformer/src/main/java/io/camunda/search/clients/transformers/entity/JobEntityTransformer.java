@@ -88,6 +88,7 @@ public class JobEntityTransformer
       case "CREATED" -> JobState.CREATED;
       case "COMPLETED" -> JobState.COMPLETED;
       case "FAILED" -> JobState.FAILED;
+      case "PRIORITY_UPDATED" -> JobState.PRIORITY_UPDATED;
       case "RETRIES_UPDATED" -> JobState.RETRIES_UPDATED;
       case "TIMED_OUT" -> JobState.TIMED_OUT;
       case "CANCELED" -> JobState.CANCELED;
