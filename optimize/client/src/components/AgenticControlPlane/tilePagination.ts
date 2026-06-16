@@ -17,10 +17,15 @@ interface PaginatedReportResult {
 }
 
 // Returns the configured server-side top-N limit for a tile, or undefined when the tile does not
-// opt into pagination. Centralises the string-to-number parsing of the `topN` tile configuration.
+// opt into pagination or the configured value is not a positive integer. Centralises the
+// string-to-number parsing of the `topN` tile configuration.
 export function getTileTopNLimit(tile?: DashboardTile): number | undefined {
   const topN = (tile?.configuration as TopNTileConfiguration | undefined)?.topN;
-  return topN ? Number(topN) : undefined;
+  if (!topN) {
+    return undefined;
+  }
+  const parsed = Number(topN);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
 }
 
 // Returns the total number of grouped results reported by the backend pagination, or undefined
