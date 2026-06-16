@@ -10,15 +10,12 @@ package io.camunda.authentication.config;
 import static java.util.stream.Collectors.toMap;
 
 import io.camunda.security.api.context.CamundaAuthenticationConverter;
+import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.api.model.config.initialization.ConfiguredUser;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.security.core.port.in.OidcProviderConfigurationPort;
 import io.camunda.security.core.port.out.MembershipPort;
-import io.camunda.security.oidc.CachingOidcClaimsProvider;
-import io.camunda.security.oidc.NoopOidcClaimsProvider;
-import io.camunda.security.oidc.OidcClaimsProvider;
-import io.camunda.security.oidc.OidcUserInfoClient;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.security.spring.annotation.ConditionalOnAuthenticationMethod;
 import io.camunda.security.spring.converter.LazyTokenClaimsConverter;
@@ -35,18 +32,15 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.micrometer.observation.ObservationRegistry;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
-import java.net.URI;
 import java.net.http.HttpClient;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.ssl.NoSuchSslBundleException;
 import org.springframework.boot.ssl.SslBundles;
@@ -121,14 +115,8 @@ public class OidcOverrideBeansConfiguration {
   @Bean
   public CamundaAuthenticationConverter<Authentication> oidcTokenAuthenticationConverter(
       final LazyTokenClaimsConverter tokenClaimsConverter,
-      final OidcClaimsProvider hostClaimsProvider) {
-    // Bridge host's local OidcClaimsProvider (io.camunda.security.oidc.*) to CSL's
-    // (io.camunda.security.api.context.*). Interfaces have identical shape; this small
-    // adapter avoids touching the broker/gateway codepaths that still depend on the host
-    // interface — tracked as a follow-up in https://github.com/camunda/camunda/issues/53731.
-    final io.camunda.security.api.context.OidcClaimsProvider cslClaimsProvider =
-        hostClaimsProvider::claimsFor;
-    return new OidcTokenAuthenticationConverter(tokenClaimsConverter, cslClaimsProvider);
+      final OidcClaimsProvider oidcClaimsProvider) {
+    return new OidcTokenAuthenticationConverter(tokenClaimsConverter, oidcClaimsProvider);
   }
 
   /**
@@ -180,47 +168,6 @@ public class OidcOverrideBeansConfiguration {
       }
     }
     return builder.build();
-  }
-
-  @Bean
-  @ConditionalOnMissingBean(OidcClaimsProvider.class)
-  public OidcClaimsProvider oidcClaimsProvider(
-      final CamundaSecurityLibraryProperties cslProperties,
-      final ClientRegistrationRepository clientRegistrationRepository,
-      final OidcProviderConfigurationPort oidcProviderRepository,
-      @Qualifier("oidcUserInfoHttpClient") final HttpClient oidcUserInfoHttpClient,
-      final MeterRegistry meterRegistry) {
-    final var oidc = cslProperties.getAuthentication().getOidc();
-    if (oidc == null || !oidc.getUserInfoAugmentation().isEnabled()) {
-      return new NoopOidcClaimsProvider();
-    }
-    // Build a map of issuer -> userinfo URI from the Spring-managed ClientRegistrations.
-    // Each ClientRegistration's ProviderDetails.getIssuerUri() is the canonical 'iss' claim
-    // the IdP emits on its tokens, and UserInfoEndpoint.getUri() is the userinfo URL from
-    // the same discovery document. CachingOidcClaimsProvider uses this to route each
-    // token to its own issuer's userinfo endpoint — never cross-wired.
-    final Map<String, URI> userInfoUriByIssuer =
-        oidcProviderRepository.getOidcAuthenticationConfigurations().keySet().stream()
-            .map(clientRegistrationRepository::findByRegistrationId)
-            .filter(Objects::nonNull)
-            .filter(cr -> cr.getProviderDetails().getIssuerUri() != null)
-            .filter(cr -> cr.getProviderDetails().getUserInfoEndpoint().getUri() != null)
-            .collect(
-                toMap(
-                    cr -> cr.getProviderDetails().getIssuerUri(),
-                    cr -> URI.create(cr.getProviderDetails().getUserInfoEndpoint().getUri()),
-                    (existing, replacement) -> existing));
-    if (userInfoUriByIssuer.isEmpty()) {
-      throw new IllegalStateException(
-          "UserInfo augmentation is enabled but no ClientRegistration exposes a userinfo "
-              + "endpoint. Check the IdP's OIDC discovery document and the userInfoEnabled "
-              + "flag.");
-    }
-    return new CachingOidcClaimsProvider(
-        oidc,
-        userInfoUriByIssuer,
-        new OidcUserInfoClient(oidcUserInfoHttpClient, Duration.ofSeconds(2)),
-        meterRegistry);
   }
 
   @Bean

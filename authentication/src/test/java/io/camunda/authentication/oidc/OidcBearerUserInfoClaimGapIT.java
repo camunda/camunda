@@ -22,8 +22,6 @@ import io.camunda.authentication.config.WebSecurityConfig;
 import io.camunda.authentication.config.controllers.WebSecurityConfigTestContext;
 import io.camunda.authentication.config.controllers.WebSecurityOidcTestContext;
 import io.camunda.security.api.model.CamundaAuthentication;
-import io.camunda.security.oidc.CachingOidcClaimsProvider;
-import io.camunda.security.oidc.OidcClaimsProvider;
 import io.camunda.security.spring.converter.LazyTokenClaimsConverter;
 import io.camunda.security.spring.converter.OidcTokenAuthenticationConverter;
 import java.time.Instant;
@@ -76,20 +74,14 @@ public class OidcBearerUserInfoClaimGapIT extends AbstractWebSecurityConfigTest 
       WireMockExtension.newInstance().configureStaticDsl(true).build();
 
   @Autowired private OidcTokenAuthenticationConverter converter;
-  @Autowired private OidcClaimsProvider oidcClaimsProvider;
 
   @MockitoBean private LazyTokenClaimsConverter tokenClaimsConverter;
 
   @BeforeEach
   void resetStateBetweenTests() {
-    // Reset both the shared WireMock request journal and the process-wide
-    // CachingOidcClaimsProvider cache so test methods don't observe state from
-    // previous tests. This lets tests choose arbitrary jti / sub values without
-    // worrying about cross-test cache collisions.
+    // Reset the shared WireMock request journal between tests. Cross-test cache
+    // collisions are not a concern because each test uses distinct token values.
     wireMock.resetRequests();
-    if (oidcClaimsProvider instanceof final CachingOidcClaimsProvider caching) {
-      caching.invalidateCache();
-    }
   }
 
   @DynamicPropertySource

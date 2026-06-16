@@ -14,11 +14,10 @@ import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.security.configuration.EngineSecurityConfigurations;
-import io.camunda.security.oidc.NoopOidcClaimsProvider;
-import io.camunda.security.oidc.OidcClaimsProvider;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.PartitionRaftListener;
@@ -87,7 +86,7 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   private UserServices userServices = mock(UserServices.class);
   private PasswordEncoder passwordEncoder = mock(PasswordEncoder.class);
   private JwtDecoder jwtDecoder = mock(JwtDecoder.class);
-  private OidcClaimsProvider oidcClaimsProvider = new NoopOidcClaimsProvider();
+  private OidcClaimsProvider oidcClaimsProvider = (jwtClaims, tokenValue) -> jwtClaims;
   private SnapshotApiRequestHandler snapshotApiRequestHandler =
       mock(SnapshotApiRequestHandler.class);
   private BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter =
