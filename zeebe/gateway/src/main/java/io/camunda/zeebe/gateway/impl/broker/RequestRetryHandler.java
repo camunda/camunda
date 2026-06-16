@@ -10,8 +10,10 @@ package io.camunda.zeebe.gateway.impl.broker;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
+import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.broker.client.api.BrokerResponseConsumer;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
+import io.camunda.zeebe.broker.client.api.IllegalBrokerResponseException;
 import io.camunda.zeebe.broker.client.api.NoTopologyAvailableException;
 import io.camunda.zeebe.broker.client.api.RequestDispatchStrategy;
 import io.camunda.zeebe.broker.client.api.RequestRetriesExhaustedException;
@@ -140,7 +142,7 @@ public final class RequestRetryHandler {
         .whenComplete(
             (response, error) -> {
               if (error == null) {
-                responseConsumer.accept(response.getKey(), response.getResponse());
+                acceptBrokerResponse(response, responseConsumer, throwableConsumer);
               } else {
                 throwableConsumer.accept(error);
               }
@@ -173,11 +175,13 @@ public final class RequestRetryHandler {
         .apply(request)
         .whenComplete(
             (response, error) -> {
-              if (error == null) {
+              if (error == null && response.isResponse()) {
                 responseConsumer.accept(response.getKey(), response.getResponse());
-              } else if (shouldRetryWithNextPartition(error)) {
+              } else if (shouldRetryWithNextPartition(response, error)) {
                 LOGGER.trace("Failed to create process on partition {}", partitionId, error);
-                errors.add(error);
+                if (error != null) {
+                  errors.add(error);
+                }
                 sendRequestWithRetry(
                     request,
                     requestSender,
@@ -187,7 +191,8 @@ public final class RequestRetryHandler {
                     throwableConsumer,
                     errors);
               } else {
-                throwableConsumer.accept(error);
+                throwableConsumer.accept(
+                    error == null ? toBrokerResponseException(response) : error);
               }
             });
   }
@@ -225,5 +230,41 @@ public final class RequestRetryHandler {
       return code == ErrorCode.PARTITION_LEADER_MISMATCH || code == ErrorCode.RESOURCE_EXHAUSTED;
     }
     return false;
+  }
+
+  private boolean shouldRetryWithNextPartition(
+      final BrokerResponse<?> response, final Throwable error) {
+    if (error != null) {
+      return shouldRetryWithNextPartition(error);
+    }
+
+    if (response.isError()) {
+      final ErrorCode code = response.getError().getCode();
+      return code == ErrorCode.PARTITION_LEADER_MISMATCH || code == ErrorCode.RESOURCE_EXHAUSTED;
+    }
+
+    return false;
+  }
+
+  private <BrokerResponseT> void acceptBrokerResponse(
+      final BrokerResponse<BrokerResponseT> response,
+      final BrokerResponseConsumer<BrokerResponseT> responseConsumer,
+      final Consumer<Throwable> throwableConsumer) {
+    if (response.isResponse()) {
+      responseConsumer.accept(response.getKey(), response.getResponse());
+    } else {
+      throwableConsumer.accept(toBrokerResponseException(response));
+    }
+  }
+
+  private Throwable toBrokerResponseException(final BrokerResponse<?> response) {
+    if (response.isError()) {
+      return new BrokerErrorException(response.getError());
+    } else if (response.isRejection()) {
+      return new BrokerRejectionException(response.getRejection());
+    }
+
+    return new IllegalBrokerResponseException(
+        "Expected broker response to be either response, rejection, or error, but is neither of them");
   }
 }

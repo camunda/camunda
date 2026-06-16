@@ -18,7 +18,6 @@ import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.api.IllegalBrokerResponseException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -65,26 +64,25 @@ public final class StubbedBrokerClient implements BrokerClient {
   public <T> CompletableFuture<BrokerResponse<T>> sendRequestWithRetry(
       final BrokerRequest<T> request) {
     final CompletableFuture<BrokerResponse<T>> future = new CompletableFuture<>();
-    sendRequestWithRetry(
-        request,
-        (key, response) ->
-            future.complete(new BrokerResponse<>(response, Protocol.decodePartitionId(key), key)),
-        future::completeExceptionally);
+    brokerRequests.add(request);
+
+    try {
+      final RequestHandler requestHandler = requestHandlers.get(request.getClass());
+      future.complete(requestHandler.handle(request));
+    } catch (final TimeoutException e) {
+      // Preserve timeout semantics so endpoint tests can assert gateway timeout mappings.
+      future.completeExceptionally(e);
+    } catch (final Exception e) {
+      future.completeExceptionally(new BrokerResponseException(e));
+    }
+
     return future;
   }
 
   @Override
   public <T> CompletableFuture<BrokerResponse<T>> sendRequestWithRetry(
       final BrokerRequest<T> request, final Duration requestTimeout) {
-    final CompletableFuture<BrokerResponse<T>> result = new CompletableFuture<>();
-
-    sendRequestWithRetry(
-        request,
-        (key, response) ->
-            result.complete(new BrokerResponse<>(response, Protocol.decodePartitionId(key), key)),
-        result::completeExceptionally);
-
-    return result.orTimeout(requestTimeout.toNanos(), TimeUnit.NANOSECONDS);
+    return sendRequestWithRetry(request).orTimeout(requestTimeout.toNanos(), TimeUnit.NANOSECONDS);
   }
 
   @Override

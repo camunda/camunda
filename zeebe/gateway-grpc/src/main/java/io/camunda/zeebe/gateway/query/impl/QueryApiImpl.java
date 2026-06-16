@@ -8,6 +8,9 @@
 package io.camunda.zeebe.gateway.query.impl;
 
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.client.api.BrokerErrorException;
+import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
+import io.camunda.zeebe.broker.client.api.IllegalBrokerResponseException;
 import io.camunda.zeebe.gateway.query.QueryApi;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -70,8 +73,16 @@ public final class QueryApiImpl implements QueryApi {
             (response, error) -> {
               if (error != null) {
                 result.completeExceptionally(error);
-              } else {
+              } else if (response.isResponse()) {
                 result.complete(response.getResponse());
+              } else if (response.isError()) {
+                result.completeExceptionally(new BrokerErrorException(response.getError()));
+              } else if (response.isRejection()) {
+                result.completeExceptionally(new BrokerRejectionException(response.getRejection()));
+              } else {
+                result.completeExceptionally(
+                    new IllegalBrokerResponseException(
+                        "Expected broker response to be either response, rejection, or error, but is neither of them"));
               }
             });
   }

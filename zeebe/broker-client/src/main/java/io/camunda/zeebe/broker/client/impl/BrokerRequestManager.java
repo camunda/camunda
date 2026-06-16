@@ -11,8 +11,6 @@ import io.atomix.cluster.BrokerMemberId;
 import io.camunda.zeebe.broker.client.api.BrokerClientMetricsDoc.AdditionalErrorCodes;
 import io.camunda.zeebe.broker.client.api.BrokerClientRequestMetrics;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
-import io.camunda.zeebe.broker.client.api.BrokerErrorException;
-import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.broker.client.api.BrokerResponseException;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.api.IllegalBrokerResponseException;
@@ -199,10 +197,10 @@ final class BrokerRequestManager extends Actor {
         responseFuture.complete(response);
         return RequestResult.processed();
       } else if (response.isRejection()) {
-        responseFuture.completeExceptionally(new BrokerRejectionException(response.getRejection()));
+        responseFuture.complete(response);
         return RequestResult.processed();
       } else if (response.isError()) {
-        responseFuture.completeExceptionally(new BrokerErrorException(response.getError()));
+        responseFuture.complete(response);
         return RequestResult.failed(response.getError().getCode());
       } else {
         responseFuture.completeExceptionally(

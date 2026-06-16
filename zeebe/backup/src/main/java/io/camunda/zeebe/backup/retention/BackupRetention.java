@@ -17,7 +17,11 @@ import io.camunda.zeebe.backup.client.api.BackupDeleteRequest;
 import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
 import io.camunda.zeebe.backup.schedule.Schedule;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.client.api.BrokerErrorException;
+import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
+import io.camunda.zeebe.broker.client.api.IllegalBrokerResponseException;
+import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -308,7 +312,7 @@ public class BackupRetention extends Actor {
       final var request = new BackupDeleteRequest();
       request.setPartitionId(context.partitionId);
       request.setBackupId(checkpointId);
-      futures.add(brokerClient.sendRequestWithRetry(request));
+      futures.add(brokerClient.sendRequestWithRetry(request).thenAccept(this::throwOnBrokerError));
     }
 
     CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new))
@@ -336,6 +340,17 @@ public class BackupRetention extends Actor {
             actor)
         .whenCompleteAsync(future, actor);
     return future;
+  }
+
+  private void throwOnBrokerError(final BrokerResponse<?> response) {
+    if (response.isError()) {
+      throw new BrokerErrorException(response.getError());
+    } else if (response.isRejection()) {
+      throw new BrokerRejectionException(response.getRejection());
+    } else if (!response.isResponse()) {
+      throw new IllegalBrokerResponseException(
+          "Expected broker response to be either response, rejection, or error, but is neither of them");
+    }
   }
 
   private Instant backupTimestamp(final BackupStatus backup) {

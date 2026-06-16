@@ -12,6 +12,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
+import io.camunda.zeebe.broker.client.api.IllegalBrokerResponseException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.broker.client.impl.PartitionIdIterator;
 import io.camunda.zeebe.broker.client.impl.RoundRobinDispatchStrategy;
@@ -148,8 +149,10 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
       final InflightActivateJobsRequestState requestState,
       final ResponseObserverDelegate delegate) {
     return (brokerResponse, error) -> {
-      if (error == null) {
+      if (error == null && brokerResponse.isResponse()) {
         handleResponseSuccess(request, requestState, delegate, brokerResponse);
+      } else if (error == null) {
+        handleBrokerErrorResponse(request, requestState, delegate, brokerResponse);
       } else {
         handleResponseError(request, requestState, delegate, error);
       }
@@ -233,6 +236,9 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
               if (error != null) {
                 Loggers.GATEWAY_LOGGER.info(
                     "Failed to reactivate job {} due to {}", job.key(), error.getMessage());
+              } else if (!response.isResponse()) {
+                Loggers.GATEWAY_LOGGER.info(
+                    "Failed to reactivate job {} due to broker response {}", job.key(), response);
               }
             },
             actor);
@@ -269,6 +275,26 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
           state.setPollPrevPartition(false);
           activateJobs(request, state, delegate);
         });
+  }
+
+  private void handleBrokerErrorResponse(
+      final InflightActivateJobsRequest<T> request,
+      final InflightActivateJobsRequestState state,
+      final ResponseObserverDelegate delegate,
+      final BrokerResponse<JobBatchRecord> response) {
+    if (response.isRejection()) {
+      handleResponseError(
+          request, state, delegate, new BrokerRejectionException(response.getRejection()));
+    } else if (response.isError()) {
+      handleResponseError(request, state, delegate, new BrokerErrorException(response.getError()));
+    } else {
+      handleResponseError(
+          request,
+          state,
+          delegate,
+          new IllegalBrokerResponseException(
+              "Expected broker response to be either response, rejection, or error, but is neither of them"));
+    }
   }
 
   private boolean isRejection(final Throwable error) {

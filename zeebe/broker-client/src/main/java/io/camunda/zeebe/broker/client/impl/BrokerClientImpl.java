@@ -12,8 +12,11 @@ import io.atomix.cluster.messaging.MessagingService;
 import io.atomix.cluster.messaging.Subscription;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClientRequestMetrics;
+import io.camunda.zeebe.broker.client.api.BrokerErrorException;
+import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.broker.client.api.BrokerResponseConsumer;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
+import io.camunda.zeebe.broker.client.api.IllegalBrokerResponseException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
@@ -121,10 +124,18 @@ public final class BrokerClientImpl implements BrokerClient {
         .sendRequestWithRetry(request)
         .whenComplete(
             (response, error) -> {
-              if (error == null) {
-                responseConsumer.accept(response.getKey(), response.getResponse());
-              } else {
+              if (error != null) {
                 throwableConsumer.accept(error);
+              } else if (response.isResponse()) {
+                responseConsumer.accept(response.getKey(), response.getResponse());
+              } else if (response.isRejection()) {
+                throwableConsumer.accept(new BrokerRejectionException(response.getRejection()));
+              } else if (response.isError()) {
+                throwableConsumer.accept(new BrokerErrorException(response.getError()));
+              } else {
+                throwableConsumer.accept(
+                    new IllegalBrokerResponseException(
+                        "Expected broker response to be either response, rejection, or error, but is neither of them"));
               }
             });
   }
