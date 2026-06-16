@@ -28,7 +28,6 @@ const queryKeys = {
 	systemConfiguration: () => ['systemConfiguration'] as const,
 	license: () => ['license'] as const,
 	userTasks: (body: QueryUserTasksRequestBody) => ['userTasks', body] as const,
-	getRunningInstancesCount: () => ['getRunningInstancesCount'] as const,
 	getProcessDefinitionInstanceStatistics: (body: GetProcessDefinitionInstanceStatisticsRequestBody) =>
 		['getProcessDefinitionInstanceStatistics', body] as const,
 	getIncidentProcessInstanceStatisticsByError: (body: GetIncidentProcessInstanceStatisticsByErrorRequestBody) =>
@@ -147,50 +146,6 @@ const queries = {
 				}
 				return response.json();
 			},
-		}),
-
-	getRunningInstancesCount: () =>
-		queryOptions({
-			queryKey: queryKeys.getRunningInstancesCount(),
-			queryFn: async (): Promise<{total: number; withIncidents: number; withoutIncidents: number}> => {
-				const defaultSort: GetProcessDefinitionInstanceStatisticsRequestBody = {
-					sort: [{field: 'activeInstancesWithoutIncidentCount', order: 'desc'}],
-				};
-
-				const {response: first, error: firstError} = await request(
-					endpoints.getProcessDefinitionInstanceStatistics(defaultSort),
-				);
-				if (firstError !== null) {
-					throw firstError;
-				}
-				const firstPage: GetProcessDefinitionInstanceStatisticsResponseBody = await first.json();
-
-				const allItems =
-					firstPage.page.totalItems <= firstPage.items.length
-						? firstPage.items
-						: await (async () => {
-								const {response: remaining, error: remainingError} = await request(
-									endpoints.getProcessDefinitionInstanceStatistics({
-										...defaultSort,
-										page: {from: firstPage.items.length, limit: firstPage.page.totalItems},
-									}),
-								);
-								if (remainingError !== null) {
-									throw remainingError;
-								}
-								const remainingPage: GetProcessDefinitionInstanceStatisticsResponseBody = await remaining.json();
-								return firstPage.items.concat(remainingPage.items);
-							})();
-
-				let withIncidents = 0;
-				let withoutIncidents = 0;
-				for (const item of allItems) {
-					withIncidents += item.activeInstancesWithIncidentCount;
-					withoutIncidents += item.activeInstancesWithoutIncidentCount;
-				}
-				return {total: withIncidents + withoutIncidents, withIncidents, withoutIncidents};
-			},
-			refetchInterval: 5000,
 		}),
 } as const;
 

@@ -6,16 +6,15 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useSuspenseQuery} from '@tanstack/react-query';
 import {useTranslation} from 'react-i18next';
-import {queries} from '#/shared/http/queries';
+import {useRunningInstancesCount} from './useRunningInstancesCount';
 import {Container, Grid, ScrollableContent, Tile, TileTitle, VisuallyHiddenH1} from './styled';
 import {MetricPanel} from './MetricPanel/MetricPanel';
 import {NoInstancesEmptyState} from './NoInstancesEmptyState';
 
 const Dashboard: React.FC = () => {
 	const {t} = useTranslation();
-	const {data: count} = useSuspenseQuery(queries.getRunningInstancesCount());
+	const {data: count} = useRunningInstancesCount();
 	const hasNoInstances = count.total === 0;
 
 	return (
