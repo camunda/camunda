@@ -30,7 +30,8 @@ import {
 } from "@camunda/camunda-composite-components";
 import type { License as LicenseDto } from "@camunda/camunda-api-zod-schemas/8.10";
 import { observer } from "mobx-react-lite";
-import { SmartLink } from "./SmartLink";
+import { Link } from "react-router-dom";
+import { getSaasModelerUrl } from "src/utility/getSaasModelerUrl";
 import { useState } from "react";
 
 import { useGlobalRoutes } from "src/components/global/useGlobalRoutes";
@@ -82,7 +83,11 @@ const AppHeaderV2 = observer(
       return setTimeout(logout, LOGOUT_DELAY);
     };
 
-    const breadcrumbs = useClusterWebappBreadcrumbs({ currentApp: "admin" });
+    const modelerUrl = getSaasModelerUrl();
+    const breadcrumbs = useClusterWebappBreadcrumbs({
+      currentApp: "admin",
+      webappLinks: modelerUrl ? { modeler: modelerUrl } : undefined,
+    });
 
     const { tools, ToolsProvider } = useCamundaTools({
       notifications: isSaaS
@@ -209,7 +214,7 @@ const AppHeaderV2 = observer(
       sidebarChildren,
       breadcrumbs,
       tools,
-      linkComponent: SmartLink as never,
+      linkComponent: Link as never,
       headerTrailingContent: licenseTag.show ? (
         <C3LicenseTag
           isProductionLicense={licenseTag.isProductionLicense}

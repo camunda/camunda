@@ -9,8 +9,7 @@
 import {useEffect} from 'react';
 import {useTranslation} from 'react-i18next';
 import {observer} from 'mobx-react-lite';
-import {matchPath, useLocation} from 'react-router-dom';
-import {SmartLink} from './SmartLink';
+import {Link as RouterLink, matchPath, useLocation} from 'react-router-dom';
 import {
   C3LicenseTag,
   preview_C3NavigationV2 as C3NavigationV2,
@@ -22,6 +21,7 @@ import {tracking} from 'modules/tracking';
 import {useCurrentUser} from 'modules/api/useCurrentUser.query';
 import {useLicense} from 'modules/api/useLicense';
 import {getClientConfig} from 'modules/config/getClientConfig';
+import {getSaasModelerUrl} from 'modules/config/getSaasModelerUrl';
 import {LanguageSelector} from './LanguageSelector';
 import {ThemeSelector} from './ThemeSelector';
 import {useCustomFiltersDialog} from './use-custom-filters-dialog';
@@ -56,7 +56,11 @@ const HeaderV2: React.FC = observer(() => {
     isProcessesPage,
     taskFilterChildren,
   });
-  const breadcrumbs = useClusterWebappBreadcrumbs({currentApp: 'tasklist'});
+  const modelerUrl = getSaasModelerUrl();
+  const breadcrumbs = useClusterWebappBreadcrumbs({
+    currentApp: 'tasklist',
+    webappLinks: modelerUrl ? {modeler: modelerUrl} : undefined,
+  });
   const {tools, ToolsProvider} = useCamundaToolsConfig({
     currentUser,
     isPaidPlan,
@@ -104,7 +108,7 @@ const HeaderV2: React.FC = observer(() => {
     sidebarChildren,
     breadcrumbs,
     tools,
-    linkComponent: SmartLink as never,
+    linkComponent: RouterLink as never,
     headerTrailingContent: showLicenseTag ? (
       <C3LicenseTag
         isProductionLicense={license.validLicense ?? false}

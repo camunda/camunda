@@ -8,7 +8,8 @@
 
 import {useEffect} from 'react';
 import {observer} from 'mobx-react-lite';
-import {SmartLink} from './SmartLink';
+import {Link} from 'react-router-dom';
+import {getSaasModelerUrl} from 'modules/tracking/getSaasModelerUrl';
 import {
   Activity,
   Dashboard,
@@ -137,7 +138,11 @@ const AppHeaderV2: React.FC = observer(() => {
     typeof currentUser?.salesPlanType === 'string' &&
     ['paid-cc', 'enterprise'].includes(currentUser.salesPlanType);
 
-  const breadcrumbs = useClusterWebappBreadcrumbs({currentApp: 'operate'});
+  const modelerUrl = getSaasModelerUrl();
+  const breadcrumbs = useClusterWebappBreadcrumbs({
+    currentApp: 'operate',
+    webappLinks: modelerUrl ? {modeler: modelerUrl} : undefined,
+  });
 
   const {tools, ToolsProvider} = useCamundaTools({
     notifications: IS_SAAS ? {} : undefined,
@@ -336,7 +341,7 @@ const AppHeaderV2: React.FC = observer(() => {
     sidebarChildren,
     breadcrumbs,
     tools,
-    linkComponent: SmartLink as never,
+    linkComponent: Link as never,
     headerTrailingContent: licenseTagStore.state.isTagVisible ? (
       <C3LicenseTag
         isProductionLicense={licenseTagStore.state.isProductionLicense}

@@ -5,8 +5,7 @@
  */
 
 import {ComponentProps, useEffect, useState} from 'react';
-import {matchPath, useLocation} from 'react-router-dom';
-import {SmartLink} from './SmartLink';
+import {Link, matchPath, useLocation} from 'react-router-dom';
 import {
   C3LicenseTag,
   C3UserConfigurationProvider,
@@ -16,13 +15,7 @@ import {
   preview_useClusterWebappBreadcrumbs as useClusterWebappBreadcrumbs,
   type SidebarNodeDescriptor,
 } from '@camunda/camunda-composite-components';
-import {
-  Branch,
-  ChartLineSmooth,
-  Dashboard,
-  Folder,
-  Task,
-} from '@carbon/react/icons';
+import {Branch, ChartLineSmooth, Dashboard, Folder, Task} from '@carbon/react/icons';
 
 import {showError} from 'notifications';
 import {t} from 'translation';
@@ -39,6 +32,17 @@ function getStage(host: string): 'dev' | 'int' | 'prod' {
   if (host.includes('ultrawombat.com')) return 'int';
   if (host.includes('camunda.io')) return 'prod';
   return 'dev';
+}
+
+const MODELER_URL_BY_STAGE: Record<'dev' | 'int' | 'prod', string> = {
+  dev: 'https://modeler.cloud.dev.ultrawombat.com',
+  int: 'https://modeler.cloud.ultrawombat.com',
+  prod: 'https://modeler.cloud.camunda.io',
+};
+
+function getSaasModelerUrl(): string | null {
+  if (typeof window === 'undefined') return null;
+  return MODELER_URL_BY_STAGE[getStage(window.location.host)] ?? null;
 }
 
 export default function HeaderV2({noActions}: {noActions?: boolean}) {
@@ -134,7 +138,11 @@ function V2Body({
   pathname: string;
   onLogout: () => void;
 }) {
-  const breadcrumbs = useClusterWebappBreadcrumbs({currentApp: 'optimize'});
+  const modelerUrl = getSaasModelerUrl();
+  const breadcrumbs = useClusterWebappBreadcrumbs({
+    currentApp: 'optimize',
+    webappLinks: modelerUrl ? {modeler: modelerUrl} : undefined,
+  });
 
   const {tools, ToolsProvider} = useCamundaTools({
     notifications: isCloud
@@ -143,9 +151,7 @@ function V2Body({
           labels: {
             dismissAll: t('navigation.notificationsDismissAll').toString(),
             emptyTitle: t('navigation.notificationsEmptyTitle').toString(),
-            emptyDescription: t(
-              'navigation.notificationsEmptyDescription',
-            ).toString(),
+            emptyDescription: t('navigation.notificationsEmptyDescription').toString(),
           },
         }
       : undefined,
@@ -162,18 +168,14 @@ function V2Body({
             {
               key: 'academy',
               label: t('navigation.academy').toString(),
-              onClick: () =>
-                window.open('https://academy.camunda.com/', '_blank'),
+              onClick: () => window.open('https://academy.camunda.com/', '_blank'),
             },
             {
               key: 'feedbackAndSupport',
               label: t('navigation.feedback').toString(),
               onClick: () => {
                 if (enterpriseMode) {
-                  window.open(
-                    'https://jira.camunda.com/projects/SUPPORT/queues',
-                    '_blank',
-                  );
+                  window.open('https://jira.camunda.com/projects/SUPPORT/queues', '_blank');
                 } else {
                   window.open('https://forum.camunda.io/', '_blank');
                 }
@@ -209,20 +211,18 @@ function V2Body({
               onClick: () =>
                 window.open(
                   'https://camunda.com/legal/terms/camunda-platform/camunda-platform-8-saas-trial/',
-                  '_blank',
+                  '_blank'
                 ),
             },
             {
               key: 'privacy',
               label: t('navigation.privacyPolicy').toString(),
-              onClick: () =>
-                window.open('https://camunda.com/legal/privacy/', '_blank'),
+              onClick: () => window.open('https://camunda.com/legal/privacy/', '_blank'),
             },
             {
               key: 'imprint',
               label: t('navigation.imprint').toString(),
-              onClick: () =>
-                window.open('https://camunda.com/legal/imprint/', '_blank'),
+              onClick: () => window.open('https://camunda.com/legal/imprint/', '_blank'),
             },
           ],
         },
@@ -237,10 +237,7 @@ function V2Body({
           label: t('navigation.dashboards').toString(),
           icon: Dashboard as never,
           isActive: () =>
-            matchesAny(
-              pathname,
-              ['/', '/processes/', '/processes/*', '/dashboard/instant/*'],
-            ),
+            matchesAny(pathname, ['/', '/processes/', '/processes/*', '/dashboard/instant/*']),
           linkProps: {to: '/'} as never,
         },
         {
@@ -249,10 +246,8 @@ function V2Body({
           label: t('navigation.collections').toString(),
           icon: Folder as never,
           isActive: () =>
-            matchesAny(
-              pathname,
-              ['/collections/', '/report/*', '/dashboard/*', '/collection/*'],
-            ) && !matchesAny(pathname, ['/dashboard/instant/*']),
+            matchesAny(pathname, ['/collections/', '/report/*', '/dashboard/*', '/collection/*']) &&
+            !matchesAny(pathname, ['/dashboard/instant/*']),
           linkProps: {to: '/collections'} as never,
         },
         {
@@ -269,8 +264,7 @@ function V2Body({
               key: 'analysis:task',
               label: t('analysis.task.label').toString(),
               icon: Task as never,
-              isActive: () =>
-                matchesAny(pathname, ['/analysis/', '/analysis/taskAnalysis']),
+              isActive: () => matchesAny(pathname, ['/analysis/', '/analysis/taskAnalysis']),
               linkProps: {to: '/analysis/taskAnalysis'} as never,
             },
             {
@@ -278,8 +272,7 @@ function V2Body({
               key: 'analysis:branch',
               label: t('analysis.branchAnalysis').toString(),
               icon: Branch as never,
-              isActive: () =>
-                matchesAny(pathname, ['/analysis/branchAnalysis']),
+              isActive: () => matchesAny(pathname, ['/analysis/branchAnalysis']),
               linkProps: {to: '/analysis/branchAnalysis'} as never,
             },
           ],
@@ -310,7 +303,7 @@ function V2Body({
     sidebarChildren,
     breadcrumbs,
     tools,
-    linkComponent: SmartLink as never,
+    linkComponent: Link as never,
     headerTrailingContent: showLicenseTag ? (
       <C3LicenseTag
         isProductionLicense={license.validLicense}
@@ -357,9 +350,7 @@ function NavbarWrapper({
         activeOrganizationId={organizationId}
         currentClusterUuid={clusterId}
         currentApp="optimize"
-        stage={getStage(
-          typeof window === 'undefined' ? '' : window.location.host,
-        )}
+        stage={getStage(typeof window === 'undefined' ? '' : window.location.host)}
       >
         {children}
       </C3UserConfigurationProvider>
