@@ -848,11 +848,13 @@ components:
           MESSAGE: '#/components/schemas/MessageWaitStateDetails'
           USER_TASK: '#/components/schemas/UserTaskWaitStateDetails'
           TIMER: '#/components/schemas/TimerWaitStateDetails'
+          SIGNAL: '#/components/schemas/SignalWaitStateDetails'
       oneOf:
         - $ref: '#/components/schemas/JobWaitStateDetails'
         - $ref: '#/components/schemas/MessageWaitStateDetails'
         - $ref: '#/components/schemas/UserTaskWaitStateDetails'
         - $ref: '#/components/schemas/TimerWaitStateDetails'
+        - $ref: '#/components/schemas/SignalWaitStateDetails'
 
     WaitStateTypeEnum:
       description: The type of waiting state an element instance is in.
@@ -862,6 +864,7 @@ components:
         - MESSAGE
         - USER_TASK
         - TIMER
+        - SIGNAL
 
     BaseWaitStateDetails:
       description: Common fields shared by all wait-state details variants.
@@ -962,6 +965,19 @@ components:
           nullable: true
           type: integer
           format: int32
+
+    SignalWaitStateDetails:
+      type: object
+      required:
+        - waitStateType
+        - signalName
+      allOf:
+        - $ref: '#/components/schemas/BaseWaitStateDetails'
+      properties:
+        signalName:
+          description: The name of the signal being awaited.
+          type: string
+      x-added-in-version: "8.10"
 
     AdHocSubProcessActivateActivityReference:
       type: object
