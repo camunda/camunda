@@ -160,7 +160,7 @@ async function setupEnvironment() {
 function buildBackend() {
   return new Promise((resolve, reject) => {
     buildBackendProcess = spawnWithArgs(
-      'mvn -f optimize/pom.xml clean install -T1C -DskipTests -Dskip.docker -pl backend -am',
+      'mvn -f optimize/pom.xml clean install -T1C -DskipTests -Dskip.docker -pl backend,upgrade -am',
       {
         cwd: _resolve(__dirname, '..', '..', '..'),
         shell: true,
@@ -226,7 +226,7 @@ function setVersionInfo() {
         const properties = data.project.properties;
         elasticSearchVersion = properties['elasticsearch.test.version'];
         opensearchVersion = properties['opensearch.test.version'];
-        zeebeVersion = properties['zeebe.version'];
+        zeebeVersion = properties['zeebe.backend.version'];
         identityVersion = properties['identity.version'];
         resolve();
       });
