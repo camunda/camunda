@@ -5,20 +5,8 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.search.entities;
+package io.camunda.zeebe.exporter.common.waitstate.transformers;
 
-public sealed interface WaitStateDetails
-    permits WaitStateJobDetails,
-        WaitStateMessageDetails,
-        WaitStateUserTaskDetails,
-        WaitStateTimerDetails {
+import io.camunda.zeebe.exporter.common.waitstate.WaitStateDetails;
 
-  WaitStateType waitStateType();
-
-  enum WaitStateType {
-    JOB,
-    MESSAGE,
-    USER_TASK,
-    TIMER
-  }
-}
+public record TimerWaitStateDetails(long dueDate, int repetitions) implements WaitStateDetails {}

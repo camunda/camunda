@@ -13,12 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.search.enums;
+package io.camunda.client.api.search.response;
 
-public enum WaitStateType {
-  JOB,
-  MESSAGE,
-  TIMER,
-  USER_TASK,
-  UNKNOWN_ENUM_VALUE;
+/** Details of an element instance waiting on an intermediate catch event timer. */
+public interface TimerWaitStateDetails extends WaitStateDetails {
+
+  /** When the timer is due, as a UNIX epoch timestamp in milliseconds. */
+  Long getDueDate();
+
+  /** The number of remaining timer repetitions (-1 for infinite, 0 for non-repeating). */
+  Integer getRepetitions();
 }
