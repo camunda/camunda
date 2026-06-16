@@ -303,7 +303,7 @@ public final class DbJobState implements JobState, MutableJobState {
   public void updateJobPriority(final long jobKey, final int newPriority) {
     this.jobKey.wrapLong(jobKey);
     final JobRecord job = getJob(jobKey);
-    if (job != null) {
+    if (job != null && isInState(jobKey, State.ACTIVATABLE)) {
       makeJobNotActivatable(job);
       job.setPriority(newPriority);
       updateJobRecord(jobKey, job);

@@ -191,7 +191,7 @@ public class JobUpdateTest {
             .expectRejection()
             .update();
 
-    // then - entire command rejected with the PRIORITY error (priority is checked first)
+    // then - entire command rejected: FAILED jobs are not ACTIVATABLE so priority update is invalid
     Assertions.assertThat(jobRecord)
         .hasRejectionType(RejectionType.INVALID_ARGUMENT)
         .hasRejectionReason(
