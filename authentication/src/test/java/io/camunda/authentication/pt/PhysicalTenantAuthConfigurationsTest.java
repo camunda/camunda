@@ -545,6 +545,42 @@ class PhysicalTenantAuthConfigurationsTest {
     assertThat(cfg.getProviders().getOidc()).containsOnlyKeys("a");
   }
 
+  @Test
+  void shouldKeepFullUnionWhenAssignedIsEmptyList() throws Exception {
+    // An explicitly empty `assigned: []` must be a no-op here (keep the full union), NOT strip
+    // every
+    // provider — the configuration layer rejects the empty list at startup; this guards the merge
+    // when it runs first (e.g. via the cluster-unification BeanPostProcessor).
+    final String yaml =
+        """
+        camunda:
+          security:
+            authentication:
+              method: oidc
+              oidc:
+                client-id: root-client
+                issuer-uri: http://idp/root
+              providers:
+                oidc:
+                  a:
+                    client-id: client-a
+                    issuer-uri: http://idp/a
+          physical-tenants:
+            tenanta:
+              security:
+                authentication:
+                  providers:
+                    assigned: []
+        """;
+
+    final AuthenticationConfiguration cfg =
+        PhysicalTenantAuthConfigurations.forPhysicalTenant("tenanta", yamlEnv(yaml));
+
+    // Nothing stripped: the default slot and the named provider both survive.
+    assertThat(cfg.getOidc().getClientId()).isEqualTo("root-client");
+    assertThat(cfg.getProviders().getOidc()).containsKey("a");
+  }
+
   // -------------------------------------------------------------------------
   // Helpers
   // -------------------------------------------------------------------------
