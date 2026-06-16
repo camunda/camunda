@@ -1153,7 +1153,55 @@ class AgentInstanceControllerTest extends RestControllerTest {
                     """
                         .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY))),
             "The provided content[0].documentReference.metadata.expiresAt 'not-a-date'"
-                + " cannot be parsed as a date according to RFC 3339, section 5.6."));
+                + " cannot be parsed as a date according to RFC 3339, section 5.6."),
+        Arguments.of(
+            named(
+                "TEXT content missing text field",
+                new HistoryItemRequest(
+                    validKey,
+                    """
+                    {
+                      "elementInstanceKey": "%d",
+                      "jobKey": "%d",
+                      "role": "ASSISTANT",
+                      "content": [{ "contentType": "TEXT" }],
+                      "producedAt": "2025-06-01T12:00:00Z"
+                    }
+                    """
+                        .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY))),
+            "No content[0].text provided."),
+        Arguments.of(
+            named(
+                "DOCUMENT content missing documentReference",
+                new HistoryItemRequest(
+                    validKey,
+                    """
+                    {
+                      "elementInstanceKey": "%d",
+                      "jobKey": "%d",
+                      "role": "USER",
+                      "content": [{ "contentType": "DOCUMENT" }],
+                      "producedAt": "2025-06-01T12:00:00Z"
+                    }
+                    """
+                        .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY))),
+            "No content[0].documentReference provided."),
+        Arguments.of(
+            named(
+                "OBJECT content missing object field",
+                new HistoryItemRequest(
+                    validKey,
+                    """
+                    {
+                      "elementInstanceKey": "%d",
+                      "jobKey": "%d",
+                      "role": "ASSISTANT",
+                      "content": [{ "contentType": "OBJECT" }],
+                      "producedAt": "2025-06-01T12:00:00Z"
+                    }
+                    """
+                        .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY))),
+            "No content[0].object provided."));
   }
 
   @Test
