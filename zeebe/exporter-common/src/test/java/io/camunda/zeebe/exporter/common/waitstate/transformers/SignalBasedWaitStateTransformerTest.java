@@ -39,7 +39,7 @@ class SignalBasedWaitStateTransformerTest {
             .withBpmnProcessId("my-process")
             .withTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
             .withSignalName("mySignal")
-            .withBpmnElementType(BpmnElementType.INTERMEDIATE_CATCH_EVENT.name())
+            .withBpmnElementType(BpmnElementType.INTERMEDIATE_CATCH_EVENT)
             .build();
 
     final Record<SignalSubscriptionRecordValue> record =
@@ -140,15 +140,16 @@ class SignalBasedWaitStateTransformerTest {
   }
 
   @Test
-  void shouldSkipPreV810RecordsWithEmptyBpmnElementType() {
-    // given — records exported before 8.10 have an empty bpmnElementType string
+  void shouldSkipPreV810RecordsWithUnspecifiedBpmnElementType() {
+    // given — records from before 8.10 don't carry bpmnElementType; EnumProperty defaults to
+    // UNSPECIFIED
     final SignalSubscriptionRecordValue value =
         ImmutableSignalSubscriptionRecordValue.builder()
             .from(factory.generateObject(SignalSubscriptionRecordValue.class))
             .withProcessInstanceKey(200L)
             .withRootProcessInstanceKey(200L)
             .withBpmnProcessId("my-process")
-            .withBpmnElementType("")
+            .withBpmnElementType(BpmnElementType.UNSPECIFIED)
             .build();
 
     final Record<SignalSubscriptionRecordValue> record =
@@ -174,7 +175,7 @@ class SignalBasedWaitStateTransformerTest {
             .withRootProcessInstanceKey(200L)
             .withBpmnProcessId("my-process")
             .withSignalName("mySignal")
-            .withBpmnElementType(elementType.name())
+            .withBpmnElementType(elementType)
             .build();
 
     return factory.generateRecord(

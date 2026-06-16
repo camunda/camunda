@@ -56,10 +56,11 @@ public interface SignalSubscriptionRecordValue extends RecordValue, TenantOwned,
 
   /**
    * @return the BPMN element type of the catch event (e.g. {@code INTERMEDIATE_CATCH_EVENT}, {@code
-   *     BOUNDARY_EVENT}, {@code START_EVENT}), or an empty string if not set
+   *     BOUNDARY_EVENT}, {@code START_EVENT}), or {@link BpmnElementType#UNSPECIFIED} for records
+   *     written before 8.10 that do not carry this field
    * @since 8.10
    */
-  String getBpmnElementType();
+  BpmnElementType getBpmnElementType();
 
   /**
    * @return the key of the process instance, or {@code -1L} if not set (e.g. start-event

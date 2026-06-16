@@ -28,7 +28,7 @@ public class SignalBasedWaitStateTransformer
   public void extract(
       final Record<SignalSubscriptionRecordValue> record, final WaitStateEntry entry) {
     entry
-        .setElementType(BpmnElementType.INTERMEDIATE_CATCH_EVENT)
+        .setElementType(record.getValue().getBpmnElementType())
         .setDetails(new SignalWaitStateDetails(record.getValue().getSignalName()));
   }
 
@@ -53,8 +53,6 @@ public class SignalBasedWaitStateTransformer
    */
   private static boolean isInstanceSubscription(
       final Record<SignalSubscriptionRecordValue> record) {
-    return BpmnElementType.INTERMEDIATE_CATCH_EVENT
-        .name()
-        .equals(record.getValue().getBpmnElementType());
+    return BpmnElementType.INTERMEDIATE_CATCH_EVENT.equals(record.getValue().getBpmnElementType());
   }
 }

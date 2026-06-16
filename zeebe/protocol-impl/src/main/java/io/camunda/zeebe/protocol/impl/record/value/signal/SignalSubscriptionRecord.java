@@ -10,10 +10,12 @@ package io.camunda.zeebe.protocol.impl.record.value.signal;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.SignalSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import org.agrona.DirectBuffer;
@@ -48,7 +50,8 @@ public final class SignalSubscriptionRecord extends UnifiedRecordValue
       new LongProperty(PROCESS_INSTANCE_KEY_KEY, -1L);
   private final LongProperty rootProcessInstanceKeyProp =
       new LongProperty(ROOT_PROCESS_INSTANCE_KEY_KEY, -1L);
-  private final StringProperty bpmnElementTypeProp = new StringProperty(BPMN_ELEMENT_TYPE_KEY, "");
+  private final EnumProperty<BpmnElementType> bpmnElementTypeProp =
+      new EnumProperty<>(BPMN_ELEMENT_TYPE_KEY, BpmnElementType.class, BpmnElementType.UNSPECIFIED);
 
   public SignalSubscriptionRecord() {
     super(9);
@@ -189,11 +192,11 @@ public final class SignalSubscriptionRecord extends UnifiedRecordValue
   }
 
   @Override
-  public String getBpmnElementType() {
-    return bufferAsString(bpmnElementTypeProp.getValue());
+  public BpmnElementType getBpmnElementType() {
+    return bpmnElementTypeProp.getValue();
   }
 
-  public SignalSubscriptionRecord setBpmnElementType(final String bpmnElementType) {
+  public SignalSubscriptionRecord setBpmnElementType(final BpmnElementType bpmnElementType) {
     bpmnElementTypeProp.setValue(bpmnElementType);
     return this;
   }
