@@ -140,6 +140,7 @@ const FormJSRenderer: React.FC<Props> = ({
     {ids: string[]; labels: string[]} | undefined
   >();
   const [hasLargeFilePayload, setHasLargeFilePayload] = useState(false);
+  // eslint-disable-next-line react-hooks/refs
   const scrollToError = useScrollToError(formManagerRef.current);
   const hasInvalidFields = invalidFields !== undefined;
   const {t} = useTranslation();

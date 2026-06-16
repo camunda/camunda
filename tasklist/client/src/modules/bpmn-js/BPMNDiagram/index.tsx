@@ -28,6 +28,7 @@ function useBpmnJS() {
     return viewerRef.current;
   }
 
+  // eslint-disable-next-line react-hooks/refs
   return getViewer();
 }
 
