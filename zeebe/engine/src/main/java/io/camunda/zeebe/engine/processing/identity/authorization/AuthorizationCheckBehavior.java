@@ -125,15 +125,14 @@ public final class AuthorizationCheckBehavior {
     }
     final long startNanos = System.nanoTime();
     try {
-      final var result = authorizationsCache.get(request);
-      metrics.record(System.nanoTime() - startNanos);
-      return result;
+      return authorizationsCache.get(request);
     } catch (final ExecutionException e) {
-      metrics.record(System.nanoTime() - startNanos);
       return Either.left(
           new Rejection(
               RejectionType.NOT_FOUND,
               "No authorization data was found for the provided authorization claims."));
+    } finally {
+      metrics.record(System.nanoTime() - startNanos);
     }
   }
 
