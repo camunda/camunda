@@ -973,6 +973,57 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
   }
 
   // ---------------------------------------------------------------------------
+  // Reports without configured definitions (seeded dashboard reports)
+  // ---------------------------------------------------------------------------
+
+  @Test
+  void shouldEvaluateAcrossAllDefinitionsWhenReportHasNoConfiguredDefinitions() {
+    // given completed agentic instances spread across two different process definitions; the seeded
+    // report carries no definitions, so an empty definitions list must mean "all", not "none"
+    persistProcessInstances(
+        List.of(
+            agenticInstance("proc-no-def-a", "1", 100L, 50L).build(),
+            agenticInstance("proc-no-def-a", "1", 100L, 50L).build(),
+            agenticInstance("proc-no-def-b", "1", 100L, 50L).build()));
+
+    // when
+    final Double completed = evaluateNumber(KPI_COMPLETED_REPORT_ID, noExtraFilters());
+
+    // then every completed agentic instance is counted regardless of its definition
+    assertThat(completed).isEqualTo(3.0);
+  }
+
+  @Test
+  void shouldScopeByDateAcrossAllDefinitionsWhenReportHasNoConfiguredDefinitions() {
+    // given in-window instances on two definitions plus an out-of-window instance
+    final OffsetDateTime now = OffsetDateTime.now();
+    final ProcessInstanceDto recentA =
+        agenticInstance("proc-no-def-a", "1", 100L, 50L)
+            .startDate(now.minusHours(3))
+            .endDate(now.minusHours(2))
+            .build();
+    final ProcessInstanceDto recentB =
+        agenticInstance("proc-no-def-b", "1", 100L, 50L)
+            .startDate(now.minusHours(3))
+            .endDate(now.minusHours(2))
+            .build();
+    final ProcessInstanceDto old =
+        agenticInstance("proc-no-def-a", "1", 100L, 50L)
+            .startDate(now.minusDays(10))
+            .endDate(now.minusDays(9))
+            .build();
+
+    persistProcessInstances(List.of(recentA, recentB, old));
+
+    // when applying a rolling date filter to the definition-less report
+    final Double completed =
+        evaluateNumber(KPI_COMPLETED_REPORT_ID, rollingEndDateFilter(1L, DateUnit.DAYS));
+
+    // then the global filters still apply across all definitions: only the 2 in-window instances
+    assertThat(completed).isEqualTo(2.0);
+  }
+
+  // ---------------------------------------------------------------------------
   // Duration stability
   // ---------------------------------------------------------------------------
 
