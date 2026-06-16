@@ -21,7 +21,7 @@ import {
   authorizedComponentRequiredFields,
 } from '../beans/requestBeans';
 import {validateResponse} from 'json-body-assertions';
-import {defaultAssertionOptions} from 'utils/constants';
+import {extendedAssertionOptions} from 'utils/constants';
 
 export interface Authorization {
   ownerId: string;
@@ -98,7 +98,10 @@ export async function grantUserResourceAuthorization(
       },
       statusRes,
     );
-  }).toPass(defaultAssertionOptions);
+    // Use an extended timeout: on RDBMS the newly created authorization can
+    // take longer than the default 30s to propagate through the
+    // secondary-storage indexer, leaving the setup step racing the export.
+  }).toPass(extendedAssertionOptions);
   return {
     authorizationKey: authBody.authorizationKey,
   };

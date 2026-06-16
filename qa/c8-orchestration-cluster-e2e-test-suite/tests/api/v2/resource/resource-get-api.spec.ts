@@ -20,7 +20,7 @@ import {
   validateResponseShape,
 } from '../../../../json-body-assertions';
 import {deployResourceAndGetMetadata, ResourceMetadata} from '@requestHelpers';
-import {defaultAssertionOptions} from '../../../../utils/constants';
+import {extendedAssertionOptions} from '../../../../utils/constants';
 
 function validateResourceResponse(
   body: JSONDoc,
@@ -74,7 +74,9 @@ test.describe.parallel('Resource Get API', () => {
         res,
       );
       validateResourceResponse(await res.json(), metadata);
-    }).toPass(defaultAssertionOptions);
+      // Extended timeout: on RDBMS the deployed RPA resource can take longer
+      // than the default 30s to propagate through the secondary-storage indexer.
+    }).toPass(extendedAssertionOptions);
   });
 
   // eslint-disable-next-line playwright/expect-expect

@@ -17,7 +17,10 @@ import {
   encode,
   assertEqualsForKeys,
 } from '../../../../utils/http';
-import {defaultAssertionOptions} from '../../../../utils/constants';
+import {
+  defaultAssertionOptions,
+  extendedAssertionOptions,
+} from '../../../../utils/constants';
 import {validateResponse} from '../../../../json-body-assertions';
 import {
   userRequiredFields,
@@ -150,7 +153,9 @@ async function createCompletedProcessInstance(request: APIRequestContext) {
     );
     expect(completedInstance?.state).toBe('COMPLETED');
     expect(completedInstance?.endDate).toBeTruthy();
-  }).toPass(defaultAssertionOptions);
+    // Extended timeout: on RDBMS the completed process instance can take longer
+    // than the default 30s to propagate through the secondary-storage indexer.
+  }).toPass(extendedAssertionOptions);
 
   return completedInstance as {
     endDate: string;

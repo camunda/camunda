@@ -16,7 +16,7 @@ import {
 } from '../../../../utils/http';
 import {getExpectedContent} from '../../../../utils/beans/requestBeans';
 import {deployResourceAndGetMetadata} from '@requestHelpers';
-import {defaultAssertionOptions} from '../../../../utils/constants';
+import {extendedAssertionOptions} from '../../../../utils/constants';
 
 test.describe.parallel('Resource Get Content API', () => {
   test('Get Resource Content - RPA Success 200', async ({request}) => {
@@ -40,7 +40,9 @@ test.describe.parallel('Resource Get Content API', () => {
 
       await assertStatusCode(res, 200);
       expect(await res.text()).toBe(expectedContent);
-    }).toPass(defaultAssertionOptions);
+      // Extended timeout: on RDBMS the deployed RPA resource can take longer
+      // than the default 30s to propagate through the secondary-storage indexer.
+    }).toPass(extendedAssertionOptions);
   });
 
   // eslint-disable-next-line playwright/expect-expect
