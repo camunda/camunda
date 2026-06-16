@@ -45,13 +45,14 @@ public class UserSpecificFilterIT {
 
   @Autowired private RdbmsService rdbmsService;
 
-  @Autowired private UserDbReader userReader;
+  private UserDbReader userReader;
 
   private RdbmsWriters rdbmsWriters;
 
   @BeforeEach
   public void beforeAll() {
     rdbmsWriters = rdbmsService.createWriter(0L);
+    userReader = rdbmsService.getUserReader("default");
   }
 
   @Test

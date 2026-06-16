@@ -198,7 +198,7 @@ class RdbmsExporterIT {
     // then
     final var key =
         ((ProcessInstanceRecordValue) processInstanceRecord.getValue()).getProcessInstanceKey();
-    final var processInstance = rdbmsService.getProcessInstanceReader().findOne(key);
+    final var processInstance = rdbmsService.getProcessInstanceReader("default").findOne(key);
     assertThat(processInstance).isNotEmpty();
     verifyRootProcessInstanceKey(processInstance.get(), processInstanceRecord);
 
@@ -209,7 +209,8 @@ class RdbmsExporterIT {
     exporter.export(processInstanceCompletedRecord);
 
     // then
-    final var completedProcessInstance = rdbmsService.getProcessInstanceReader().findOne(key);
+    final var completedProcessInstance =
+        rdbmsService.getProcessInstanceReader("default").findOne(key);
     assertThat(completedProcessInstance).isNotEmpty();
     assertThat(completedProcessInstance.get().state()).isEqualTo(ProcessInstanceState.COMPLETED);
     verifyRootProcessInstanceKey(completedProcessInstance.get(), processInstanceRecord);
@@ -227,7 +228,7 @@ class RdbmsExporterIT {
     // then
     final var key =
         ((ProcessInstanceRecordValue) rootProcessInstanceRecord.getValue()).getProcessInstanceKey();
-    final var processInstance = rdbmsService.getProcessInstanceReader().findOne(key);
+    final var processInstance = rdbmsService.getProcessInstanceReader("default").findOne(key);
     assertThat(processInstance).isNotEmpty();
     verifyRootProcessInstanceKey(processInstance.get(), rootProcessInstanceRecord);
 
@@ -239,7 +240,8 @@ class RdbmsExporterIT {
     exporter.export(rootProcessInstanceCompletedRecord);
 
     // then
-    final var rootCompletedProcessInstance = rdbmsService.getProcessInstanceReader().findOne(key);
+    final var rootCompletedProcessInstance =
+        rdbmsService.getProcessInstanceReader("default").findOne(key);
     assertThat(rootCompletedProcessInstance).isNotEmpty();
     assertThat(rootCompletedProcessInstance.get().state())
         .isEqualTo(ProcessInstanceState.COMPLETED);
@@ -258,7 +260,7 @@ class RdbmsExporterIT {
 
     // then
     final var key = ((Process) processDefinitionRecord.getValue()).getProcessDefinitionKey();
-    final var processDefinition = rdbmsService.getProcessDefinitionReader().findOne(key);
+    final var processDefinition = rdbmsService.getProcessDefinitionReader("default").findOne(key);
     assertThat(processDefinition).isNotEmpty();
     assertThat(processDefinition).map(ProcessDefinitionEntity::bpmnXml).isPresent();
     assertThat(processDefinition).map(ProcessDefinitionEntity::formId).contains("test");
@@ -279,7 +281,8 @@ class RdbmsExporterIT {
     exporter.export(variableCreatedRecord);
 
     // then
-    final var variable = rdbmsService.getVariableReader().findOne(variableCreatedRecord.getKey());
+    final var variable =
+        rdbmsService.getVariableReader("default").findOne(variableCreatedRecord.getKey());
     final VariableRecordValue variableRecordValue =
         (VariableRecordValue) variableCreatedRecord.getValue();
     assertThat(variable).isNotNull();
@@ -305,7 +308,7 @@ class RdbmsExporterIT {
     // then
     final var variable =
         rdbmsService
-            .getClusterVariableReader()
+            .getClusterVariableReader("default")
             .getGloballyScopedClusterVariable(
                 clusterVariableRecordValue.getName(),
                 ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled()));
@@ -332,7 +335,7 @@ class RdbmsExporterIT {
     // then
     final var variable =
         rdbmsService
-            .getClusterVariableReader()
+            .getClusterVariableReader("default")
             .getTenantScopedClusterVariable(
                 clusterVariableRecordValue.getName(),
                 clusterVariableRecordValue.getTenantId(),
@@ -366,11 +369,12 @@ class RdbmsExporterIT {
     // then
     final var key =
         ((ProcessInstanceRecordValue) processInstanceRecord.getValue()).getProcessInstanceKey();
-    final var processInstance = rdbmsService.getProcessInstanceReader().findOne(key);
+    final var processInstance = rdbmsService.getProcessInstanceReader("default").findOne(key);
     assertThat(processInstance).isNotEmpty();
     verifyRootProcessInstanceKey(processInstance.get(), processInstanceRecord);
 
-    final var variable = rdbmsService.getVariableReader().findOne(variableCreated.getKey());
+    final var variable =
+        rdbmsService.getVariableReader("default").findOne(variableCreated.getKey());
     final VariableRecordValue variableRecordValue =
         (VariableRecordValue) variableCreated.getValue();
     assertThat(variable).isNotNull();
@@ -387,7 +391,7 @@ class RdbmsExporterIT {
 
     // then
     final var key = elementRecord.getKey();
-    final var element = rdbmsService.getFlowNodeInstanceReader().findOne(key);
+    final var element = rdbmsService.getFlowNodeInstanceReader("default").findOne(key);
     assertThat(element).isNotEmpty();
     verifyRootProcessInstanceKey(element.get(), elementRecord);
 
@@ -398,7 +402,7 @@ class RdbmsExporterIT {
     exporter.export(elementCompleteRecord);
 
     // then
-    final var completedElement = rdbmsService.getFlowNodeInstanceReader().findOne(key);
+    final var completedElement = rdbmsService.getFlowNodeInstanceReader("default").findOne(key);
     assertThat(completedElement).isNotEmpty();
     assertThat(completedElement.get().state()).isEqualTo(FlowNodeState.COMPLETED);
     // Default tree path
@@ -418,7 +422,8 @@ class RdbmsExporterIT {
     final var key = flowTakenRecord.getKey();
     final var sequenceFlowQuery =
         SequenceFlowQuery.of(b -> b.filter(f -> f.processInstanceKey(key)));
-    final var sequenceFlows = rdbmsService.getSequenceFlowReader().search(sequenceFlowQuery);
+    final var sequenceFlows =
+        rdbmsService.getSequenceFlowReader("default").search(sequenceFlowQuery);
     assertThat(sequenceFlows.total()).isEqualTo(1L);
     final var sequenceFlow = sequenceFlows.items().getFirst();
     verifyRootProcessInstanceKey(sequenceFlow, flowTakenRecord);
@@ -431,7 +436,8 @@ class RdbmsExporterIT {
     exporter.export(flowDeletedRecord);
 
     // then
-    final var deletedSequenceFlows = rdbmsService.getSequenceFlowReader().search(sequenceFlowQuery);
+    final var deletedSequenceFlows =
+        rdbmsService.getSequenceFlowReader("default").search(sequenceFlowQuery);
     assertThat(deletedSequenceFlows.total()).isEqualTo(0L);
     assertThat(deletedSequenceFlows.items()).isEmpty();
   }
@@ -447,7 +453,7 @@ class RdbmsExporterIT {
     // then
     final UserTaskRecordValue recordValue = (UserTaskRecordValue) userTaskRecord.getValue();
     final var key = recordValue.getUserTaskKey();
-    final var userTask = rdbmsService.getUserTaskReader().findOne(key);
+    final var userTask = rdbmsService.getUserTaskReader("default").findOne(key);
     assertThat(userTask).isNotEmpty();
     assertThat(userTask.get().processInstanceKey()).isEqualTo(recordValue.getProcessInstanceKey());
     assertThat(userTask.get().rootProcessInstanceKey())
@@ -465,7 +471,7 @@ class RdbmsExporterIT {
     // then
     final var key =
         ((DecisionRequirementsRecordValue) record.getValue()).getDecisionRequirementsKey();
-    final var entity = rdbmsService.getDecisionRequirementsReader().findOne(key);
+    final var entity = rdbmsService.getDecisionRequirementsReader("default").findOne(key);
     assertThat(entity).isNotEmpty();
   }
 
@@ -479,7 +485,7 @@ class RdbmsExporterIT {
 
     // then
     final var key = ((DecisionRecordValue) decisionDefinitionRecord.getValue()).getDecisionKey();
-    final var definition = rdbmsService.getDecisionDefinitionReader().findOne(key);
+    final var definition = rdbmsService.getDecisionDefinitionReader("default").findOne(key);
     assertThat(definition).isNotEmpty();
   }
 
@@ -501,7 +507,7 @@ class RdbmsExporterIT {
 
     // then
     final var key = evaluatedDecisionValue.getDecisionEvaluationInstanceKey();
-    final var decisionInstance = rdbmsService.getDecisionInstanceReader().findOne(key);
+    final var decisionInstance = rdbmsService.getDecisionInstanceReader("default").findOne(key);
     assertThat(decisionInstance).isNotEmpty();
     final var recordValue = (DecisionEvaluationRecordValue) decisionEvaluationRecord.getValue();
     assertThat(decisionInstance.get().processInstanceKey())
@@ -520,7 +526,8 @@ class RdbmsExporterIT {
     exporter.export(userRecord);
 
     // then
-    final var user = rdbmsService.getUserReader().findOneByUsername(userRecordValue.getUsername());
+    final var user =
+        rdbmsService.getUserReader("default").findOneByUsername(userRecordValue.getUsername());
     assertThat(user).isNotEmpty();
     assertThat(user.get().userKey()).isEqualTo(userRecordValue.getUserKey());
     assertThat(user.get().username()).isEqualTo(userRecordValue.getUsername());
@@ -537,7 +544,9 @@ class RdbmsExporterIT {
 
     // then
     final var updatedUser =
-        rdbmsService.getUserReader().findOneByUsername(updateUserRecordValue.getUsername());
+        rdbmsService
+            .getUserReader("default")
+            .findOneByUsername(updateUserRecordValue.getUsername());
     assertThat(updatedUser).isNotEmpty();
     assertThat(updatedUser.get().userKey()).isEqualTo(updateUserRecordValue.getUserKey());
     assertThat(updatedUser.get().username()).isEqualTo(updateUserRecordValue.getUsername());
@@ -550,7 +559,7 @@ class RdbmsExporterIT {
 
     // then
     final var deletedUser =
-        rdbmsService.getUserReader().findOneByUsername(userRecordValue.getUsername());
+        rdbmsService.getUserReader("default").findOneByUsername(userRecordValue.getUsername());
     assertThat(deletedUser).isEmpty();
   }
 
@@ -567,7 +576,7 @@ class RdbmsExporterIT {
     // then
     final var tenant =
         rdbmsService
-            .getTenantReader()
+            .getTenantReader("default")
             .findOne(((TenantRecordValue) tenantRecord.getValue()).getTenantId());
     assertThat(tenant).isNotEmpty();
     assertThat(tenant.get().key()).isEqualTo(tenantRecord.getKey());
@@ -585,7 +594,7 @@ class RdbmsExporterIT {
     // then
     final var updatedTenant =
         rdbmsService
-            .getTenantReader()
+            .getTenantReader("default")
             .findOne(((TenantRecordValue) tenantRecord.getValue()).getTenantId());
     assertThat(updatedTenant).isNotEmpty();
     assertThat(updatedTenant.get().key()).isEqualTo(updateTenantRecordValue.getTenantKey());
@@ -604,7 +613,7 @@ class RdbmsExporterIT {
     exporter.export(roleRecord);
 
     // then
-    final var role = rdbmsService.getRoleReader().findOne(recordValue.getRoleId());
+    final var role = rdbmsService.getRoleReader("default").findOne(recordValue.getRoleId());
     assertThat(role).isNotEmpty();
     assertThat(role.get().roleKey()).isEqualTo(recordValue.getRoleKey());
     assertThat(role.get().roleId()).isEqualTo(recordValue.getRoleId());
@@ -619,7 +628,7 @@ class RdbmsExporterIT {
     exporter.export(updateRoleRecord);
 
     // then
-    final var updatedRole = rdbmsService.getRoleReader().findOne(recordValue.getRoleId());
+    final var updatedRole = rdbmsService.getRoleReader("default").findOne(recordValue.getRoleId());
     assertThat(updatedRole).isNotEmpty();
     assertThat(updatedRole.get().roleKey()).isEqualTo(updateRoleRecordValue.getRoleKey());
     assertThat(updatedRole.get().roleId()).isEqualTo(updateRoleRecordValue.getRoleId());
@@ -630,7 +639,7 @@ class RdbmsExporterIT {
     exporter.export(FIXTURES.getRoleRecord(roleId, RoleIntent.DELETED));
 
     // then
-    final var deletedRole = rdbmsService.getRoleReader().findOne(recordValue.getRoleId());
+    final var deletedRole = rdbmsService.getRoleReader("default").findOne(recordValue.getRoleId());
     assertThat(deletedRole).isEmpty();
   }
 
@@ -648,7 +657,7 @@ class RdbmsExporterIT {
     exporter.export(roleRecord);
 
     // then
-    final var role = rdbmsService.getRoleReader().findOne(recordValue.getRoleId());
+    final var role = rdbmsService.getRoleReader("default").findOne(recordValue.getRoleId());
     assertThat(role).isNotEmpty();
     assertThat(role.get().roleKey()).isEqualTo(recordValue.getRoleKey());
     assertThat(role.get().roleId()).isEqualTo(recordValue.getRoleId());
@@ -659,10 +668,10 @@ class RdbmsExporterIT {
     exporter.export(FIXTURES.getRoleRecord(roleId, RoleIntent.ENTITY_ADDED, username));
 
     // then
-    assertThat(rdbmsService.getRoleReader().findOne(recordValue.getRoleId())).isPresent();
+    assertThat(rdbmsService.getRoleReader("default").findOne(recordValue.getRoleId())).isPresent();
     final var usersWithRole =
         rdbmsService
-            .getUserReader()
+            .getUserReader("default")
             .search(
                 UserQuery.of(q -> q.filter(new Builder().roleId(recordValue.getRoleId()).build())))
             .items();
@@ -672,10 +681,10 @@ class RdbmsExporterIT {
     exporter.export(FIXTURES.getRoleRecord(roleId, RoleIntent.ENTITY_REMOVED, username));
 
     // then
-    assertThat(rdbmsService.getRoleReader().findOne(recordValue.getRoleId())).isPresent();
+    assertThat(rdbmsService.getRoleReader("default").findOne(recordValue.getRoleId())).isPresent();
     final var usersWithRoleAfterDeletion =
         rdbmsService
-            .getUserReader()
+            .getUserReader("default")
             .search(
                 UserQuery.of(q -> q.filter(new Builder().roleId(recordValue.getRoleId()).build())))
             .items();
@@ -695,7 +704,7 @@ class RdbmsExporterIT {
     // then
     final var group =
         rdbmsService
-            .getGroupReader()
+            .getGroupReader("default")
             .findOne(((GroupRecordValue) groupRecord.getValue()).getGroupId());
     assertThat(group).isNotEmpty();
     assertThat(group.get().groupKey()).isEqualTo(groupRecordValue.getGroupKey());
@@ -713,7 +722,7 @@ class RdbmsExporterIT {
     // then
     final var updatedGroup =
         rdbmsService
-            .getGroupReader()
+            .getGroupReader("default")
             .findOne(((GroupRecordValue) groupRecord.getValue()).getGroupId());
     assertThat(updatedGroup).isNotEmpty();
     assertThat(updatedGroup.get().groupKey()).isEqualTo(updateGroupRecordValue.getGroupKey());
@@ -727,7 +736,7 @@ class RdbmsExporterIT {
     // then
     final var deletedGroup =
         rdbmsService
-            .getGroupReader()
+            .getGroupReader("default")
             .findOne(((GroupRecordValue) groupRecord.getValue()).getGroupId());
     assertThat(deletedGroup).isEmpty();
   }
@@ -757,16 +766,18 @@ class RdbmsExporterIT {
     exporter.export(incidentRecord);
 
     // then
-    final var element = rdbmsService.getFlowNodeInstanceReader().findOne(elementInstanceKey);
+    final var element =
+        rdbmsService.getFlowNodeInstanceReader("default").findOne(elementInstanceKey);
     assertThat(element).isNotEmpty();
     assertThat(element.get().incidentKey()).isEqualTo(incidentKey);
     assertThat(element.get().hasIncident()).isTrue();
 
-    final var processInstance = rdbmsService.getProcessInstanceReader().findOne(processInstanceKey);
+    final var processInstance =
+        rdbmsService.getProcessInstanceReader("default").findOne(processInstanceKey);
     assertThat(processInstance).isNotEmpty();
     assertThat(processInstance.get().hasIncident()).isTrue();
 
-    final var incident = rdbmsService.getIncidentReader().findOne(incidentKey);
+    final var incident = rdbmsService.getIncidentReader("default").findOne(incidentKey);
     assertThat(incident).isNotEmpty();
     assertThat(incident.get().incidentKey()).isEqualTo(incidentKey);
     assertThat(incident.get().state()).isEqualTo(IncidentState.ACTIVE);
@@ -786,17 +797,19 @@ class RdbmsExporterIT {
     exporter.export(incidentResolvedRecord);
 
     // then
-    final var element2 = rdbmsService.getFlowNodeInstanceReader().findOne(elementInstanceKey);
+    final var element2 =
+        rdbmsService.getFlowNodeInstanceReader("default").findOne(elementInstanceKey);
     assertThat(element2).isNotEmpty();
     assertThat(element2.get().incidentKey()).isNull();
     assertThat(element2.get().hasIncident()).isFalse();
 
     final var processInstance2 =
-        rdbmsService.getProcessInstanceReader().findOne(processInstanceKey);
+        rdbmsService.getProcessInstanceReader("default").findOne(processInstanceKey);
     assertThat(processInstance2).isNotEmpty();
     assertThat(processInstance2.get().hasIncident()).isFalse();
 
-    final var incident2 = rdbmsService.getIncidentReader().findOne(incidentKey).orElseThrow();
+    final var incident2 =
+        rdbmsService.getIncidentReader("default").findOne(incidentKey).orElseThrow();
     assertThat(incident2.state()).isEqualTo(IncidentState.RESOLVED);
     assertThat(incident2.processInstanceKey()).isEqualTo(processInstanceKey);
     assertThat(incident2.rootProcessInstanceKey()).isEqualTo(rootProcessInstanceKey);
@@ -892,7 +905,7 @@ class RdbmsExporterIT {
       final OffsetDateTime lastCompletedAt) {
     final var jobBatchMetrics =
         rdbmsService
-            .getJobMetricsBatchDbReader()
+            .getJobMetricsBatchDbReader("default")
             .getGlobalJobStatistics(
                 GlobalJobStatisticsQuery.of(
                     b ->
@@ -922,7 +935,7 @@ class RdbmsExporterIT {
 
     // then
     final var formKey = ((Form) formCreatedRecord.getValue()).getFormKey();
-    final var formEntity = rdbmsService.getFormReader().findOne(formKey);
+    final var formEntity = rdbmsService.getFormReader("default").findOne(formKey);
     assertThat(formEntity).isNotEmpty();
   }
 
@@ -942,7 +955,9 @@ class RdbmsExporterIT {
 
     // then
     final var messageSubscription =
-        rdbmsService.getMessageSubscriptionReader().findOne(messageSubscriptionRecord.getKey());
+        rdbmsService
+            .getMessageSubscriptionReader("default")
+            .findOne(messageSubscriptionRecord.getKey());
     assertThat(messageSubscription).isNotEmpty();
     final var recordValue = messageSubscriptionRecord.getValue();
     assertThat(messageSubscription.get().processInstanceKey())
@@ -975,7 +990,9 @@ class RdbmsExporterIT {
 
     // then
     final var messageSubscription =
-        rdbmsService.getMessageSubscriptionReader().findOne(messageSubscriptionRecord.getKey());
+        rdbmsService
+            .getMessageSubscriptionReader("default")
+            .findOne(messageSubscriptionRecord.getKey());
     assertThat(messageSubscription).isPresent();
     assertThat(messageSubscription.get().messageSubscriptionState())
         .isEqualTo(MessageSubscriptionState.DELETED);
@@ -999,7 +1016,7 @@ class RdbmsExporterIT {
     final var recordValue = correlatedMessageSubscriptionRecord.getValue();
     final var correlatedMessageSubscription =
         rdbmsService
-            .getCorrelatedMessageSubscriptionReader()
+            .getCorrelatedMessageSubscriptionReader("default")
             .findOne(recordValue.getMessageKey(), correlatedMessageSubscriptionRecord.getKey());
     assertThat(correlatedMessageSubscription).isNotEmpty();
     assertThat(correlatedMessageSubscription.get().processInstanceKey())
@@ -1026,7 +1043,7 @@ class RdbmsExporterIT {
     final var recordValue = messageStartEventSubRecord.getValue();
     final var correlatedMessageSubscription =
         rdbmsService
-            .getCorrelatedMessageSubscriptionReader()
+            .getCorrelatedMessageSubscriptionReader("default")
             .findOne(recordValue.getMessageKey(), messageStartEventSubRecord.getKey());
     assertThat(correlatedMessageSubscription).isNotEmpty();
     final var processInstanceKey = recordValue.getProcessInstanceKey();
@@ -1047,7 +1064,7 @@ class RdbmsExporterIT {
     // then
     final var mappingRuleId =
         ((MappingRuleRecordValue) mappingRuleCreatedRecord.getValue()).getMappingRuleId();
-    final var mappingRule = rdbmsService.getMappingRuleReader().findOne(mappingRuleId);
+    final var mappingRule = rdbmsService.getMappingRuleReader("default").findOne(mappingRuleId);
     assertThat(mappingRule).isNotEmpty();
 
     // given
@@ -1060,7 +1077,7 @@ class RdbmsExporterIT {
     exporter.export(mappingDeletedRecord);
 
     // then
-    final var deletedMapping = rdbmsService.getMappingRuleReader().findOne(mappingRuleId);
+    final var deletedMapping = rdbmsService.getMappingRuleReader("default").findOne(mappingRuleId);
     assertThat(deletedMapping).isEmpty();
   }
 
@@ -1084,7 +1101,7 @@ class RdbmsExporterIT {
     final var recordValue = (AuthorizationRecordValue) authorizationRecord.getValue();
     final var authorization =
         rdbmsService
-            .getAuthorizationReader()
+            .getAuthorizationReader("default")
             .findOne(
                 recordValue.getOwnerId(),
                 recordValue.getOwnerType().name(),
@@ -1109,7 +1126,7 @@ class RdbmsExporterIT {
     // then
     final var updatedAuthorization =
         rdbmsService
-            .getAuthorizationReader()
+            .getAuthorizationReader("default")
             .findOne(
                 recordValue.getOwnerId(),
                 recordValue.getOwnerType().name(),
@@ -1142,7 +1159,7 @@ class RdbmsExporterIT {
     final var recordValue = (AuthorizationRecordValue) authorizationRecord.getValue();
     final var authorization =
         rdbmsService
-            .getAuthorizationReader()
+            .getAuthorizationReader("default")
             .findOne(
                 recordValue.getOwnerId(),
                 recordValue.getOwnerType().name(),
@@ -1167,7 +1184,7 @@ class RdbmsExporterIT {
     // then
     final var deletedAuthorization =
         rdbmsService
-            .getAuthorizationReader()
+            .getAuthorizationReader("default")
             .findOne(
                 recordValue.getOwnerId(),
                 recordValue.getOwnerType().name(),
@@ -1205,7 +1222,7 @@ class RdbmsExporterIT {
 
     // then
     final var batchOperation =
-        rdbmsService.getBatchOperationReader().findOne(String.valueOf(batchOperationKey));
+        rdbmsService.getBatchOperationReader("default").findOne(String.valueOf(batchOperationKey));
     assertThat(batchOperation)
         .hasValueSatisfying(
             entity -> {
@@ -1225,7 +1242,7 @@ class RdbmsExporterIT {
             io.camunda.zeebe.protocol.record.value.BatchOperationType.MIGRATE_PROCESS_INSTANCE);
 
     final var batchOperation =
-        rdbmsService.getBatchOperationReader().findOne(String.valueOf(batchOperationKey));
+        rdbmsService.getBatchOperationReader("default").findOne(String.valueOf(batchOperationKey));
     assertThat(batchOperation)
         .hasValueSatisfying(
             entity -> {
@@ -1276,7 +1293,7 @@ class RdbmsExporterIT {
 
     // then
     final var batchOperation =
-        rdbmsService.getBatchOperationReader().findOne(String.valueOf(batchOperationKey));
+        rdbmsService.getBatchOperationReader("default").findOne(String.valueOf(batchOperationKey));
     assertThat(batchOperation).isNotEmpty();
     assertThat(batchOperation.get().operationType())
         .isEqualTo(BatchOperationType.MODIFY_PROCESS_INSTANCE);
@@ -1432,7 +1449,7 @@ class RdbmsExporterIT {
     exporter.export(jobCreatedRecord);
 
     // then
-    final var job = rdbmsService.getJobReader().findOne(jobCreatedRecord.getKey());
+    final var job = rdbmsService.getJobReader("default").findOne(jobCreatedRecord.getKey());
     assertThat(job).isNotNull();
     assertThat(job.get().rootProcessInstanceKey())
         .isEqualTo(((JobRecordValue) jobCreatedRecord.getValue()).getRootProcessInstanceKey());
@@ -1459,7 +1476,7 @@ class RdbmsExporterIT {
     final var recordValue = processInstanceCreationRecord.getValue();
     final var results =
         rdbmsService
-            .getAuditLogReader()
+            .getAuditLogReader("default")
             .search(
                 AuditLogQuery.of(
                     b ->
@@ -1624,7 +1641,7 @@ class RdbmsExporterIT {
   private SearchQueryResult<BatchOperationItemEntity> searchBatchOperationItems(
       final long itemKey) {
     return rdbmsService
-        .getBatchOperationItemReader()
+        .getBatchOperationItemReader("default")
         .search(BatchOperationItemQuery.of(b -> b.filter(f -> f.itemKeys(itemKey))));
   }
 }

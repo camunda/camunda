@@ -108,7 +108,8 @@ public class DecisionRequirementsSortIT {
       final Function<Builder, ObjectBuilder<DecisionRequirementsSort>> sortBuilder,
       final Comparator<DecisionRequirementsEntity> comparator) {
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final DecisionRequirementsDbReader reader = rdbmsService.getDecisionRequirementsReader();
+    final DecisionRequirementsDbReader reader =
+        rdbmsService.getDecisionRequirementsReader("default");
 
     final var tenantId = nextStringId();
     createAndSaveRandomDecisionRequirements(rdbmsWriters, b -> b.tenantId(tenantId));

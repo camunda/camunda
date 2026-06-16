@@ -56,7 +56,7 @@ public class IncidentIT {
   public void shouldSaveAndFindIncidentByKey(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final IncidentDbReader incidentReader = rdbmsService.getIncidentReader();
+    final IncidentDbReader incidentReader = rdbmsService.getIncidentReader("default");
 
     final var original = IncidentFixtures.createRandomized(b -> b);
     createAndSaveIncident(rdbmsWriters, original);
@@ -71,7 +71,7 @@ public class IncidentIT {
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final IncidentDbReader incidentReader = rdbmsService.getIncidentReader();
+    final IncidentDbReader incidentReader = rdbmsService.getIncidentReader("default");
 
     final var original = IncidentFixtures.createRandomized(b -> b.errorMessage("x".repeat(9000)));
     createAndSaveIncident(rdbmsWriters, original);
@@ -86,7 +86,7 @@ public class IncidentIT {
   public void shouldSaveAndResolveIncident(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final IncidentDbReader incidentReader = rdbmsService.getIncidentReader();
+    final IncidentDbReader incidentReader = rdbmsService.getIncidentReader("default");
 
     final var original = IncidentFixtures.createRandomized(b -> b);
     createAndSaveIncident(rdbmsWriters, original);
@@ -105,7 +105,7 @@ public class IncidentIT {
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final IncidentDbReader incidentReader = rdbmsService.getIncidentReader();
+    final IncidentDbReader incidentReader = rdbmsService.getIncidentReader("default");
 
     final var original = IncidentFixtures.createRandomized(b -> b);
     rdbmsWriters.getIncidentWriter().create(original);
@@ -123,7 +123,7 @@ public class IncidentIT {
   public void shouldFindIncidentByBpmnProcessId(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final IncidentDbReader incidentReader = rdbmsService.getIncidentReader();
+    final IncidentDbReader incidentReader = rdbmsService.getIncidentReader("default");
 
     final var original = IncidentFixtures.createRandomized(b -> b);
     createAndSaveIncident(rdbmsWriters, original);
@@ -150,7 +150,7 @@ public class IncidentIT {
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final IncidentDbReader incidentReader = rdbmsService.getIncidentReader();
+    final IncidentDbReader incidentReader = rdbmsService.getIncidentReader("default");
 
     final var original = IncidentFixtures.createRandomized(b -> b);
     createAndSaveIncident(rdbmsWriters, original);
@@ -174,7 +174,7 @@ public class IncidentIT {
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final IncidentDbReader incidentReader = rdbmsService.getIncidentReader();
+    final IncidentDbReader incidentReader = rdbmsService.getIncidentReader("default");
 
     final var original = IncidentFixtures.createRandomized(b -> b);
     createAndSaveIncident(rdbmsWriters, original);
@@ -195,7 +195,7 @@ public class IncidentIT {
   public void shouldFindAllIncidentPaged(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final IncidentDbReader incidentReader = rdbmsService.getIncidentReader();
+    final IncidentDbReader incidentReader = rdbmsService.getIncidentReader("default");
 
     final String processDefinitionId = IncidentFixtures.nextStringId();
     createAndSaveRandomIncidents(rdbmsWriters, b -> b.processDefinitionId(processDefinitionId));
@@ -218,7 +218,7 @@ public class IncidentIT {
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final IncidentDbReader incidentReader = rdbmsService.getIncidentReader();
+    final IncidentDbReader incidentReader = rdbmsService.getIncidentReader("default");
 
     final String processDefinitionId = IncidentFixtures.nextStringId();
     createAndSaveRandomIncidents(
@@ -242,7 +242,7 @@ public class IncidentIT {
   public void shouldFindIncidentWithFullFilter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final IncidentDbReader incidentReader = rdbmsService.getIncidentReader();
+    final IncidentDbReader incidentReader = rdbmsService.getIncidentReader("default");
 
     final var original = IncidentFixtures.createRandomized(b -> b);
     createAndSaveIncident(rdbmsWriters, original);
@@ -281,7 +281,7 @@ public class IncidentIT {
   public void shouldFindIncidentWithSearchAfter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final IncidentDbReader incidentReader = rdbmsService.getIncidentReader();
+    final IncidentDbReader incidentReader = rdbmsService.getIncidentReader("default");
 
     final var processDefinitionKey = nextKey();
     createAndSaveRandomIncidents(rdbmsWriters, b -> b.processDefinitionKey(processDefinitionKey));
@@ -333,7 +333,7 @@ public class IncidentIT {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final IncidentDbReader reader = rdbmsService.getIncidentReader();
+    final IncidentDbReader reader = rdbmsService.getIncidentReader("default");
 
     final var definition =
         ProcessDefinitionFixtures.createAndSaveProcessDefinition(rdbmsWriters, b -> b);
@@ -375,7 +375,7 @@ public class IncidentIT {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final IncidentDbReader reader = rdbmsService.getIncidentReader();
+    final IncidentDbReader reader = rdbmsService.getIncidentReader("default");
 
     final var definition =
         ProcessDefinitionFixtures.createAndSaveProcessDefinition(rdbmsWriters, b -> b);
@@ -417,7 +417,7 @@ public class IncidentIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final IncidentProcessInstanceStatisticsByErrorDbReader reader =
-        rdbmsService.getIncidentProcessInstanceStatisticsByErrorDbReader();
+        rdbmsService.getIncidentProcessInstanceStatisticsByErrorDbReader("default");
 
     // Ensure a clean slate for deterministic totals
     rdbmsWriters.getRdbmsPurger().purgeRdbms();
@@ -495,7 +495,7 @@ public class IncidentIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final IncidentProcessInstanceStatisticsByErrorDbReader reader =
-        rdbmsService.getIncidentProcessInstanceStatisticsByErrorDbReader();
+        rdbmsService.getIncidentProcessInstanceStatisticsByErrorDbReader("default");
 
     // Ensure a clean slate for deterministic totals
     rdbmsWriters.getRdbmsPurger().purgeRdbms();
@@ -646,7 +646,7 @@ public class IncidentIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final IncidentProcessInstanceStatisticsByDefinitionDbReader reader =
-        rdbmsService.getIncidentProcessInstanceStatisticsByDefinitionReader();
+        rdbmsService.getIncidentProcessInstanceStatisticsByDefinitionReader("default");
 
     final var errorHashCode = 1337;
 
@@ -726,7 +726,7 @@ public class IncidentIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final IncidentProcessInstanceStatisticsByDefinitionDbReader reader =
-        rdbmsService.getIncidentProcessInstanceStatisticsByDefinitionReader();
+        rdbmsService.getIncidentProcessInstanceStatisticsByDefinitionReader("default");
 
     final var errorHashCode = 7331;
 

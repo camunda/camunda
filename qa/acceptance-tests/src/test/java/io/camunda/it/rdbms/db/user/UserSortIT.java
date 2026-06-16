@@ -80,7 +80,7 @@ public class UserSortIT {
       final Function<Builder, ObjectBuilder<UserSort>> sortBuilder,
       final Comparator<UserEntity> comparator) {
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final UserDbReader reader = rdbmsService.getUserReader();
+    final UserDbReader reader = rdbmsService.getUserReader("default");
 
     final var email = nextStringId();
     createAndSaveRandomUsers(rdbmsWriters, b -> b.email(email));

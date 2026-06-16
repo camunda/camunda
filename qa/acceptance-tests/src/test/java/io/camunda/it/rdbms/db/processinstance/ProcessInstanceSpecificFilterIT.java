@@ -46,13 +46,14 @@ public class ProcessInstanceSpecificFilterIT {
 
   @Autowired private RdbmsService rdbmsService;
 
-  @Autowired private ProcessInstanceDbReader processInstanceReader;
+  private ProcessInstanceDbReader processInstanceReader;
 
   private RdbmsWriters rdbmsWriters;
 
   @BeforeEach
   public void beforeAll() {
     rdbmsWriters = rdbmsService.createWriter(0L);
+    processInstanceReader = rdbmsService.getProcessInstanceReader("default");
   }
 
   @ParameterizedTest

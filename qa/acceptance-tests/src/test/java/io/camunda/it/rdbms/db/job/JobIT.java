@@ -47,7 +47,7 @@ public class JobIT {
   public void shouldSaveAndFindJobByKey(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final JobDbReader processInstanceReader = rdbmsService.getJobReader();
+    final JobDbReader processInstanceReader = rdbmsService.getJobReader("default");
 
     final var original = JobFixtures.createRandomized(b -> b);
     createAndSaveJob(rdbmsWriters, original);
@@ -68,7 +68,7 @@ public class JobIT {
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final JobDbReader jobReader = rdbmsService.getJobReader();
+    final JobDbReader jobReader = rdbmsService.getJobReader("default");
 
     final var original = JobFixtures.createRandomized(b -> b.errorMessage("x".repeat(9000)));
     createAndSaveJob(rdbmsWriters, original);
@@ -84,7 +84,7 @@ public class JobIT {
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final JobDbReader jobReader = rdbmsService.getJobReader();
+    final JobDbReader jobReader = rdbmsService.getJobReader("default");
 
     final var errorMessage = "x".repeat(9000);
 
@@ -105,7 +105,7 @@ public class JobIT {
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final JobDbReader processInstanceReader = rdbmsService.getJobReader();
+    final JobDbReader processInstanceReader = rdbmsService.getJobReader("default");
 
     final var original = JobFixtures.createRandomized(b -> b);
     createAndSaveJob(rdbmsWriters, original);
@@ -132,7 +132,7 @@ public class JobIT {
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final JobDbReader processInstanceReader = rdbmsService.getJobReader();
+    final JobDbReader processInstanceReader = rdbmsService.getJobReader("default");
 
     final var original = JobFixtures.createRandomized(b -> b);
     createAndSaveJob(rdbmsWriters, original);
@@ -155,7 +155,7 @@ public class JobIT {
   public void shouldFindJobByAuthorizedTenantId(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final JobDbReader processInstanceReader = rdbmsService.getJobReader();
+    final JobDbReader processInstanceReader = rdbmsService.getJobReader("default");
 
     final var original = JobFixtures.createRandomized(b -> b);
     createAndSaveJob(rdbmsWriters, original);
@@ -176,7 +176,7 @@ public class JobIT {
   public void shouldFindAllJobPaged(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final JobDbReader processInstanceReader = rdbmsService.getJobReader();
+    final JobDbReader processInstanceReader = rdbmsService.getJobReader("default");
 
     final String processDefinitionId = JobFixtures.nextStringId();
     createAndSaveRandomJobs(rdbmsWriters, b -> b.processDefinitionId(processDefinitionId));
@@ -199,7 +199,7 @@ public class JobIT {
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final JobDbReader processInstanceReader = rdbmsService.getJobReader();
+    final JobDbReader processInstanceReader = rdbmsService.getJobReader("default");
 
     final String processDefinitionId = JobFixtures.nextStringId();
     createAndSaveRandomJobs(rdbmsWriters, 120, b -> b.processDefinitionId(processDefinitionId));
@@ -222,7 +222,7 @@ public class JobIT {
   public void shouldFindJobWithFullFilter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final JobDbReader processInstanceReader = rdbmsService.getJobReader();
+    final JobDbReader processInstanceReader = rdbmsService.getJobReader("default");
 
     final var original = JobFixtures.createRandomized(b -> b);
     createAndSaveJob(rdbmsWriters, original);
@@ -256,7 +256,7 @@ public class JobIT {
   public void shouldFindJobWithSearchAfter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final JobDbReader processInstanceReader = rdbmsService.getJobReader();
+    final JobDbReader processInstanceReader = rdbmsService.getJobReader("default");
 
     final var processDefinitionKey = nextKey();
     createAndSaveRandomJobs(rdbmsWriters, b -> b.processDefinitionKey(processDefinitionKey));
@@ -311,7 +311,7 @@ public class JobIT {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final JobDbReader jobReader = rdbmsService.getJobReader();
+    final JobDbReader jobReader = rdbmsService.getJobReader("default");
 
     final var original =
         JobFixtures.createRandomized(
@@ -369,7 +369,7 @@ public class JobIT {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final JobDbReader reader = rdbmsService.getJobReader();
+    final JobDbReader reader = rdbmsService.getJobReader("default");
 
     final var definition =
         ProcessDefinitionFixtures.createAndSaveProcessDefinition(rdbmsWriters, b -> b);
@@ -411,7 +411,7 @@ public class JobIT {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final JobDbReader reader = rdbmsService.getJobReader();
+    final JobDbReader reader = rdbmsService.getJobReader("default");
 
     final var definition =
         ProcessDefinitionFixtures.createAndSaveProcessDefinition(rdbmsWriters, b -> b);
@@ -452,7 +452,7 @@ public class JobIT {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final JobDbReader jobReader = rdbmsService.getJobReader();
+    final JobDbReader jobReader = rdbmsService.getJobReader("default");
 
     final var processDefinitionKey = nextKey();
     final var target =
@@ -479,7 +479,7 @@ public class JobIT {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final JobDbReader jobReader = rdbmsService.getJobReader();
+    final JobDbReader jobReader = rdbmsService.getJobReader("default");
 
     final var processDefinitionKey = nextKey();
     final var low =
@@ -510,7 +510,7 @@ public class JobIT {
     // given — a job with NULL priority (pre-8.10) and a job with explicit priority
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final JobDbReader jobReader = rdbmsService.getJobReader();
+    final JobDbReader jobReader = rdbmsService.getJobReader("default");
 
     final var processDefinitionKey = nextKey();
     createAndSaveJob(

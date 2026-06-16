@@ -72,7 +72,7 @@ public class BatchOperationItemSortIT {
           sortBuilder,
       final Comparator<BatchOperationItemEntity> comparator) {
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final BatchOperationItemDbReader reader = rdbmsService.getBatchOperationItemReader();
+    final BatchOperationItemDbReader reader = rdbmsService.getBatchOperationItemReader("default");
 
     final var batchOperation = createAndSaveBatchOperation(rdbmsWriters, b -> b);
 

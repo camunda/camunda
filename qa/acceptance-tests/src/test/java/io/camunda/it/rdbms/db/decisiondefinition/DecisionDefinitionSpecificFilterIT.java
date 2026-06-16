@@ -35,13 +35,14 @@ public class DecisionDefinitionSpecificFilterIT {
 
   @Autowired private RdbmsService rdbmsService;
 
-  @Autowired private DecisionDefinitionDbReader decisionDefinitionReader;
+  private DecisionDefinitionDbReader decisionDefinitionReader;
 
   private RdbmsWriters rdbmsWriters;
 
   @BeforeEach
   public void beforeAll() {
     rdbmsWriters = rdbmsService.createWriter(0L);
+    decisionDefinitionReader = rdbmsService.getDecisionDefinitionReader("default");
   }
 
   @ParameterizedTest

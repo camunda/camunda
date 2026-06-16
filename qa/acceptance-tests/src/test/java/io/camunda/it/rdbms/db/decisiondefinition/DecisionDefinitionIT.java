@@ -40,7 +40,7 @@ public class DecisionDefinitionIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final DecisionDefinitionDbReader decisionDefinitionReader =
-        rdbmsService.getDecisionDefinitionReader();
+        rdbmsService.getDecisionDefinitionReader("default");
 
     final var decisionDefinition = DecisionDefinitionFixtures.createRandomized(b -> b);
     createAndSaveDecisionDefinition(rdbmsWriters, decisionDefinition);
@@ -69,7 +69,7 @@ public class DecisionDefinitionIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final DecisionDefinitionDbReader decisionDefinitionReader =
-        rdbmsService.getDecisionDefinitionReader();
+        rdbmsService.getDecisionDefinitionReader("default");
 
     final var decisionDefinition =
         DecisionDefinitionFixtures.createRandomized(
@@ -112,7 +112,7 @@ public class DecisionDefinitionIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final DecisionDefinitionDbReader decisionDefinitionReader =
-        rdbmsService.getDecisionDefinitionReader();
+        rdbmsService.getDecisionDefinitionReader("default");
 
     final var decisionDefinition = DecisionDefinitionFixtures.createRandomized(b -> b);
     createAndSaveDecisionDefinition(rdbmsWriters, decisionDefinition);
@@ -139,7 +139,7 @@ public class DecisionDefinitionIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final DecisionDefinitionDbReader decisionDefinitionReader =
-        rdbmsService.getDecisionDefinitionReader();
+        rdbmsService.getDecisionDefinitionReader("default");
 
     final var decisionDefinition = DecisionDefinitionFixtures.createRandomized(b -> b);
     createAndSaveDecisionDefinition(rdbmsWriters, decisionDefinition);
@@ -164,7 +164,7 @@ public class DecisionDefinitionIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final DecisionDefinitionDbReader decisionDefinitionReader =
-        rdbmsService.getDecisionDefinitionReader();
+        rdbmsService.getDecisionDefinitionReader("default");
 
     final String decisionDefinitionId = DecisionDefinitionFixtures.nextStringId();
     createAndSaveRandomDecisionDefinitions(
@@ -189,7 +189,7 @@ public class DecisionDefinitionIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final DecisionDefinitionDbReader decisionDefinitionReader =
-        rdbmsService.getDecisionDefinitionReader();
+        rdbmsService.getDecisionDefinitionReader("default");
 
     final String decisionDefinitionId = DecisionDefinitionFixtures.nextStringId();
     createAndSaveRandomDecisionDefinitions(
@@ -215,7 +215,7 @@ public class DecisionDefinitionIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final DecisionDefinitionDbReader decisionDefinitionReader =
-        rdbmsService.getDecisionDefinitionReader();
+        rdbmsService.getDecisionDefinitionReader("default");
 
     createAndSaveRandomDecisionDefinitions(rdbmsWriters);
 
@@ -236,7 +236,7 @@ public class DecisionDefinitionIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final DecisionDefinitionDbReader decisionDefinitionReader =
-        rdbmsService.getDecisionDefinitionReader();
+        rdbmsService.getDecisionDefinitionReader("default");
 
     final var decisionDefinition = DecisionDefinitionFixtures.createRandomized(b -> b);
     createAndSaveRandomDecisionDefinitions(rdbmsWriters);
@@ -270,7 +270,7 @@ public class DecisionDefinitionIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final DecisionDefinitionDbReader decisionDefinitionReader =
-        rdbmsService.getDecisionDefinitionReader();
+        rdbmsService.getDecisionDefinitionReader("default");
 
     createAndSaveRandomDecisionDefinitions(rdbmsWriters, b -> b.tenantId("search-after-123456"));
     final var sort =

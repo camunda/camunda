@@ -10,25 +10,34 @@ package io.camunda.db.rdbms.write;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.sql.AgentInstanceMapper;
 import io.camunda.db.rdbms.sql.AuditLogMapper;
+import io.camunda.db.rdbms.sql.AuthorizationMapper;
 import io.camunda.db.rdbms.sql.BatchOperationMapper;
 import io.camunda.db.rdbms.sql.ClusterVariableMapper;
 import io.camunda.db.rdbms.sql.CorrelatedMessageSubscriptionMapper;
 import io.camunda.db.rdbms.sql.DecisionDefinitionMapper;
 import io.camunda.db.rdbms.sql.DecisionInstanceMapper;
 import io.camunda.db.rdbms.sql.DecisionRequirementsMapper;
+import io.camunda.db.rdbms.sql.DeployedResourceMapper;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper;
+import io.camunda.db.rdbms.sql.FormMapper;
+import io.camunda.db.rdbms.sql.GlobalListenerMapper;
+import io.camunda.db.rdbms.sql.GroupMapper;
 import io.camunda.db.rdbms.sql.HistoryDeletionMapper;
 import io.camunda.db.rdbms.sql.IncidentMapper;
 import io.camunda.db.rdbms.sql.JobMapper;
 import io.camunda.db.rdbms.sql.JobMetricsBatchMapper;
+import io.camunda.db.rdbms.sql.MappingRuleMapper;
 import io.camunda.db.rdbms.sql.MessageSubscriptionMapper;
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.PurgeMapper;
+import io.camunda.db.rdbms.sql.RoleMapper;
 import io.camunda.db.rdbms.sql.SequenceFlowMapper;
+import io.camunda.db.rdbms.sql.TenantMapper;
 import io.camunda.db.rdbms.sql.UsageMetricMapper;
 import io.camunda.db.rdbms.sql.UsageMetricTUMapper;
+import io.camunda.db.rdbms.sql.UserMapper;
 import io.camunda.db.rdbms.sql.UserTaskMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.db.rdbms.sql.WaitStateMapper;
@@ -61,7 +70,16 @@ public record RdbmsMapperBundle(
     ClusterVariableMapper clusterVariableMapper,
     HistoryDeletionMapper historyDeletionMapper,
     AgentInstanceMapper agentInstanceMapper,
-    WaitStateMapper waitStateMapper) {
+    WaitStateMapper waitStateMapper,
+    AuthorizationMapper authorizationMapper,
+    FormMapper formMapper,
+    GroupMapper groupMapper,
+    MappingRuleMapper mappingRuleMapper,
+    RoleMapper roleMapper,
+    TenantMapper tenantMapper,
+    UserMapper userMapper,
+    GlobalListenerMapper globalListenerMapper,
+    DeployedResourceMapper deployedResourceMapper) {
 
   public static RdbmsMapperBundle from(
       final SqlSessionFactory sqlSessionFactory,
@@ -93,6 +111,15 @@ public record RdbmsMapperBundle(
         sqlSession.getMapper(ClusterVariableMapper.class),
         sqlSession.getMapper(HistoryDeletionMapper.class),
         sqlSession.getMapper(AgentInstanceMapper.class),
-        sqlSession.getMapper(WaitStateMapper.class));
+        sqlSession.getMapper(WaitStateMapper.class),
+        sqlSession.getMapper(AuthorizationMapper.class),
+        sqlSession.getMapper(FormMapper.class),
+        sqlSession.getMapper(GroupMapper.class),
+        sqlSession.getMapper(MappingRuleMapper.class),
+        sqlSession.getMapper(RoleMapper.class),
+        sqlSession.getMapper(TenantMapper.class),
+        sqlSession.getMapper(UserMapper.class),
+        sqlSession.getMapper(GlobalListenerMapper.class),
+        sqlSession.getMapper(DeployedResourceMapper.class));
   }
 }

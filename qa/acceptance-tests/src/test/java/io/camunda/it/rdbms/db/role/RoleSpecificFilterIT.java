@@ -63,13 +63,14 @@ public class RoleSpecificFilterIT {
 
   @Autowired private RdbmsService rdbmsService;
 
-  @Autowired private RoleDbReader roleReader;
+  private RoleDbReader roleReader;
 
   private RdbmsWriters rdbmsWriters;
 
   @BeforeEach
   public void beforeAll() {
     rdbmsWriters = rdbmsService.createWriter(0L);
+    roleReader = rdbmsService.getRoleReader("default");
   }
 
   @Test

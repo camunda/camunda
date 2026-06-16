@@ -42,13 +42,14 @@ public class TenantSpecificFilterIT {
 
   @Autowired private RdbmsService rdbmsService;
 
-  @Autowired private TenantDbReader tenantReader;
+  private TenantDbReader tenantReader;
 
   private RdbmsWriters rdbmsWriters;
 
   @BeforeEach
   public void beforeAll() {
     rdbmsWriters = rdbmsService.createWriter(0L);
+    tenantReader = rdbmsService.getTenantReader("default");
   }
 
   @Test

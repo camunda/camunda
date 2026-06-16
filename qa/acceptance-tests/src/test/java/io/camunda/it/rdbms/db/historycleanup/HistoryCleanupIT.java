@@ -34,7 +34,9 @@ public class HistoryCleanupIT extends ProcessInstanceHistory {
     final var writers = testApplication.getRdbmsService().createWriter(0);
     final var historyCleanupService =
         new HistoryCleanupService(
-            RdbmsWriterConfig.builder().build(), writers, rdbmsService.getProcessInstanceReader());
+            RdbmsWriterConfig.builder().build(),
+            writers,
+            rdbmsService.getProcessInstanceReader("default"));
 
     final long rootProcessInstanceKey = ProcessInstanceFixtures.nextKey();
     createRandomProcessWithRelevantRelatedData(
@@ -78,7 +80,7 @@ public class HistoryCleanupIT extends ProcessInstanceHistory {
                 .history(HistoryConfig.builder().historyCleanupBatchSize(10).build())
                 .build(),
             writers,
-            rdbmsService.getProcessInstanceReader());
+            rdbmsService.getProcessInstanceReader("default"));
 
     final long rootProcessInstanceKey = ProcessInstanceFixtures.nextKey();
     createRandomProcessWithRelevantRelatedData(
@@ -112,7 +114,9 @@ public class HistoryCleanupIT extends ProcessInstanceHistory {
     final var writers = testApplication.getRdbmsService().createWriter(0);
     final var historyCleanupService =
         new HistoryCleanupService(
-            RdbmsWriterConfig.builder().build(), writers, rdbmsService.getProcessInstanceReader());
+            RdbmsWriterConfig.builder().build(),
+            writers,
+            rdbmsService.getProcessInstanceReader("default"));
 
     final long rootProcessInstanceKey = ProcessInstanceFixtures.nextKey();
     createRandomProcessWithRelevantRelatedData(
@@ -153,7 +157,7 @@ public class HistoryCleanupIT extends ProcessInstanceHistory {
                 .history(HistoryConfig.builder().historyCleanupBatchSize(10).build())
                 .build(),
             writers,
-            rdbmsService.getProcessInstanceReader());
+            rdbmsService.getProcessInstanceReader("default"));
 
     final long rootProcessInstanceKey = ProcessInstanceFixtures.nextKey();
 
@@ -192,7 +196,9 @@ public class HistoryCleanupIT extends ProcessInstanceHistory {
     final var writers = testApplication.getRdbmsService().createWriter(0);
     final var historyCleanupService =
         new HistoryCleanupService(
-            RdbmsWriterConfig.builder().build(), writers, rdbmsService.getProcessInstanceReader());
+            RdbmsWriterConfig.builder().build(),
+            writers,
+            rdbmsService.getProcessInstanceReader("default"));
 
     final long processInstanceKey =
         createRandomProcessWithRelevantRelatedData(

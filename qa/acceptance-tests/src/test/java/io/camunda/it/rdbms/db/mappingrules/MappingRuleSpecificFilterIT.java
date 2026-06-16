@@ -43,13 +43,14 @@ public class MappingRuleSpecificFilterIT {
 
   @Autowired private RdbmsService rdbmsService;
 
-  @Autowired private MappingRuleDbReader mappingRuleReader;
+  private MappingRuleDbReader mappingRuleReader;
 
   private RdbmsWriters rdbmsWriters;
 
   @BeforeEach
   public void beforeAll() {
     rdbmsWriters = rdbmsService.createWriter(0L);
+    mappingRuleReader = rdbmsService.getMappingRuleReader("default");
   }
 
   @Test

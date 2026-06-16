@@ -44,7 +44,7 @@ public class GlobalListenerIT {
     final var entity =
         testApplication
             .getRdbmsService()
-            .getGlobalListenerDbReader()
+            .getGlobalListenerDbReader("default")
             .getGlobalListener(
                 globalListener.listenerId(),
                 globalListener.listenerType(),
@@ -68,7 +68,7 @@ public class GlobalListenerIT {
     final var searchResult =
         testApplication
             .getRdbmsService()
-            .getGlobalListenerDbReader()
+            .getGlobalListenerDbReader("default")
             .search(
                 new GlobalListenerQuery(
                     new GlobalListenerFilter.Builder().types(testIdentifier).build(),
@@ -94,7 +94,7 @@ public class GlobalListenerIT {
     final var searchResult =
         testApplication
             .getRdbmsService()
-            .getGlobalListenerDbReader()
+            .getGlobalListenerDbReader("default")
             .search(
                 new GlobalListenerQuery(
                     new GlobalListenerFilter.Builder().types(testIdentifier).build(),
@@ -130,7 +130,7 @@ public class GlobalListenerIT {
     final var instance =
         testApplication
             .getRdbmsService()
-            .getGlobalListenerDbReader()
+            .getGlobalListenerDbReader("default")
             .getGlobalListener(
                 globalListener.listenerId(),
                 globalListener.listenerType(),
@@ -160,7 +160,7 @@ public class GlobalListenerIT {
     final var instance =
         testApplication
             .getRdbmsService()
-            .getGlobalListenerDbReader()
+            .getGlobalListenerDbReader("default")
             .getGlobalListener(
                 globalListener.listenerId(),
                 globalListener.listenerType(),

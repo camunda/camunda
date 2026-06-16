@@ -40,7 +40,7 @@ public class GroupMemberIT {
   public void shouldFindGroupMember(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final GroupMemberDbReader reader = rdbmsService.getGroupMemberReader();
+    final GroupMemberDbReader reader = rdbmsService.getGroupMemberReader("default");
 
     final var group = GroupFixtures.createAndSaveGroup(rdbmsWriters, b -> b);
     final var userid1 = "user-" + UUID.randomUUID();

@@ -236,7 +236,7 @@ public class VariableValueFilterIT {
     // when we search for it, we should find one
     final var searchResult =
         rdbmsService
-            .getVariableReader()
+            .getVariableReader("default")
             .search(
                 new VariableQuery(
                     variableFilter,
@@ -270,7 +270,7 @@ public class VariableValueFilterIT {
     // when we search for it, we should find one
     final var searchResult =
         rdbmsService
-            .getVariableReader()
+            .getVariableReader("default")
             .search(
                 new VariableQuery(
                     variableFilter,
@@ -296,7 +296,7 @@ public class VariableValueFilterIT {
     // when
     final var actual =
         rdbmsService
-            .getVariableReader()
+            .getVariableReader("default")
             .search(
                 VariableQuery.of(
                     b -> b.filter(f -> f.valueOperations(Operation.like(variableValue + "*")))));
@@ -322,7 +322,7 @@ public class VariableValueFilterIT {
     // when
     final var actual =
         rdbmsService
-            .getVariableReader()
+            .getVariableReader("default")
             .search(
                 VariableQuery.of(
                     b -> b.filter(f -> f.valueOperations(Operation.like(variableValue + "?")))));
@@ -348,7 +348,7 @@ public class VariableValueFilterIT {
     // when
     final var actual =
         rdbmsService
-            .getVariableReader()
+            .getVariableReader("default")
             .search(
                 VariableQuery.of(
                     b -> b.filter(f -> f.valueOperations(Operation.like("ignoreAnyValue\\%X")))));
@@ -373,7 +373,7 @@ public class VariableValueFilterIT {
     // when
     final var actual =
         rdbmsService
-            .getVariableReader()
+            .getVariableReader("default")
             .search(
                 VariableQuery.of(
                     b ->
@@ -397,7 +397,7 @@ public class VariableValueFilterIT {
     // when
     final var actual =
         rdbmsService
-            .getVariableReader()
+            .getVariableReader("default")
             .search(
                 VariableQuery.of(
                     b -> b.filter(f -> f.valueOperations(Operation.like("value\\*any\\%*")))));
@@ -422,7 +422,7 @@ public class VariableValueFilterIT {
     // when
     final var actual =
         rdbmsService
-            .getVariableReader()
+            .getVariableReader("default")
             .search(
                 VariableQuery.of(
                     b ->
@@ -461,7 +461,7 @@ public class VariableValueFilterIT {
 
     final var searchResult =
         rdbmsService
-            .getVariableReader()
+            .getVariableReader("default")
             .search(
                 new VariableQuery(
                     builder.build(),

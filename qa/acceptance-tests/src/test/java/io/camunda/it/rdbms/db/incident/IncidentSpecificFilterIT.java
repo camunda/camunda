@@ -40,13 +40,14 @@ public class IncidentSpecificFilterIT {
 
   @Autowired private RdbmsService rdbmsService;
 
-  @Autowired private IncidentDbReader processDefinitionReader;
+  private IncidentDbReader incidentDbReader;
 
   private RdbmsWriters rdbmsWriters;
 
   @BeforeEach
   public void beforeAll() {
     rdbmsWriters = rdbmsService.createWriter(0L);
+    incidentDbReader = rdbmsService.getIncidentReader("default");
   }
 
   @ParameterizedTest
@@ -73,7 +74,7 @@ public class IncidentSpecificFilterIT {
                     .tenantId("sorting-tenant1")));
 
     final var searchResult =
-        processDefinitionReader.search(
+        incidentDbReader.search(
             new IncidentQuery(
                 filter, IncidentSort.of(b -> b), SearchQueryPage.of(b -> b.from(0).size(5))));
 

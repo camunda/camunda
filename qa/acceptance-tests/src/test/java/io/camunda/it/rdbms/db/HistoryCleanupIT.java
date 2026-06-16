@@ -51,7 +51,8 @@ public class HistoryCleanupIT {
     final var config = new RdbmsWriterConfig.Builder().partitionId(0).build();
     rdbmsWriters = rdbmsService.createWriter(config);
     historyCleanupService =
-        new HistoryCleanupService(config, rdbmsWriters, rdbmsService.getProcessInstanceReader());
+        new HistoryCleanupService(
+            config, rdbmsWriters, rdbmsService.getProcessInstanceReader("default"));
   }
 
   @Test

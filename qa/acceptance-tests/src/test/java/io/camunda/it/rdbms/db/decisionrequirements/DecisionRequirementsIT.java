@@ -42,7 +42,7 @@ public class DecisionRequirementsIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final DecisionRequirementsDbReader decisionRequirementsReader =
-        rdbmsService.getDecisionRequirementsReader();
+        rdbmsService.getDecisionRequirementsReader("default");
 
     final var decisionRequirements = DecisionRequirementsFixtures.createRandomized(b -> b);
     createAndSaveDecisionRequirement(rdbmsWriters, decisionRequirements);
@@ -68,7 +68,7 @@ public class DecisionRequirementsIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final DecisionRequirementsDbReader decisionRequirementsReader =
-        rdbmsService.getDecisionRequirementsReader();
+        rdbmsService.getDecisionRequirementsReader("default");
 
     final var decisionRequirements =
         DecisionRequirementsFixtures.createRandomized(
@@ -106,7 +106,7 @@ public class DecisionRequirementsIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final DecisionRequirementsDbReader decisionRequirementsReader =
-        rdbmsService.getDecisionRequirementsReader();
+        rdbmsService.getDecisionRequirementsReader("default");
 
     final var decisionRequirements = DecisionRequirementsFixtures.createRandomized(b -> b);
     createAndSaveDecisionRequirement(rdbmsWriters, decisionRequirements);
@@ -133,7 +133,7 @@ public class DecisionRequirementsIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final DecisionRequirementsDbReader decisionRequirementsReader =
-        rdbmsService.getDecisionRequirementsReader();
+        rdbmsService.getDecisionRequirementsReader("default");
 
     final var decisionRequirements = DecisionRequirementsFixtures.createRandomized(b -> b);
     createAndSaveDecisionRequirement(rdbmsWriters, decisionRequirements);
@@ -158,7 +158,7 @@ public class DecisionRequirementsIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final DecisionRequirementsDbReader decisionRequirementsReader =
-        rdbmsService.getDecisionRequirementsReader();
+        rdbmsService.getDecisionRequirementsReader("default");
 
     final String decisionRequirementsId = DecisionRequirementsFixtures.nextStringId();
     createAndSaveRandomDecisionRequirements(
@@ -191,7 +191,7 @@ public class DecisionRequirementsIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final DecisionRequirementsDbReader decisionRequirementsReader =
-        rdbmsService.getDecisionRequirementsReader();
+        rdbmsService.getDecisionRequirementsReader("default");
 
     final String decisionRequirementsId = DecisionRequirementsFixtures.nextStringId();
     createAndSaveRandomDecisionRequirements(
@@ -218,7 +218,7 @@ public class DecisionRequirementsIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final DecisionRequirementsDbReader decisionRequirementsReader =
-        rdbmsService.getDecisionRequirementsReader();
+        rdbmsService.getDecisionRequirementsReader("default");
 
     final var decisionRequirements = DecisionRequirementsFixtures.createRandomized(b -> b);
     createAndSaveRandomDecisionRequirements(rdbmsWriters);
@@ -251,7 +251,7 @@ public class DecisionRequirementsIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final DecisionRequirementsDbReader decisionRequirementsReader =
-        rdbmsService.getDecisionRequirementsReader();
+        rdbmsService.getDecisionRequirementsReader("default");
 
     createAndSaveRandomDecisionRequirements(rdbmsWriters, b -> b.tenantId("search-after-123456"));
     final var sort =

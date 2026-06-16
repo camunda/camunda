@@ -39,7 +39,7 @@ public class RoleMemberIT {
   public void shouldFindRoleMember(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final RoleMemberDbReader reader = rdbmsService.getRoleMemberReader();
+    final RoleMemberDbReader reader = rdbmsService.getRoleMemberReader("default");
 
     RoleFixtures.createAndSaveRandomRoles(rdbmsWriters, b -> b);
     final var role = RoleFixtures.createAndSaveRole(rdbmsWriters, b -> b);

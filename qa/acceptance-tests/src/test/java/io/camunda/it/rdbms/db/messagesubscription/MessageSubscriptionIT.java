@@ -44,7 +44,7 @@ public class MessageSubscriptionIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final MessageSubscriptionDbReader messageSubscriptionReader =
-        rdbmsService.getMessageSubscriptionReader();
+        rdbmsService.getMessageSubscriptionReader("default");
 
     final var subscriptionDbModel = MessageSubscriptionFixtures.createRandomized(b -> b);
     MessageSubscriptionFixtures.createAndSaveMessageSubscription(rdbmsWriters, subscriptionDbModel);
@@ -62,7 +62,7 @@ public class MessageSubscriptionIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final MessageSubscriptionDbReader messageSubscriptionReader =
-        rdbmsService.getMessageSubscriptionReader();
+        rdbmsService.getMessageSubscriptionReader("default");
 
     final var subscription = MessageSubscriptionFixtures.createRandomized(b -> b);
     MessageSubscriptionFixtures.createAndSaveMessageSubscription(rdbmsWriters, subscription);
@@ -86,7 +86,7 @@ public class MessageSubscriptionIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final MessageSubscriptionDbReader messageSubscriptionReader =
-        rdbmsService.getMessageSubscriptionReader();
+        rdbmsService.getMessageSubscriptionReader("default");
 
     final var messageName = "message-" + UUID.randomUUID();
 
@@ -110,7 +110,7 @@ public class MessageSubscriptionIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final MessageSubscriptionDbReader messageSubscriptionReader =
-        rdbmsService.getMessageSubscriptionReader();
+        rdbmsService.getMessageSubscriptionReader("default");
 
     final var messageName = "message-more-" + UUID.randomUUID();
     MessageSubscriptionFixtures.createAndSaveRandomMessageSubscriptions(
@@ -135,7 +135,7 @@ public class MessageSubscriptionIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final ProcessDefinitionMessageSubscriptionStatisticsDbReader statisticsReader =
-        rdbmsService.getProcessDefinitionMessageSubscriptionStatisticsDbReader();
+        rdbmsService.getProcessDefinitionMessageSubscriptionStatisticsDbReader("default");
 
     final var messageName = "message-stats-pagination-" + UUID.randomUUID();
     final var processDefinitionKey1 = 101L;
@@ -235,7 +235,7 @@ public class MessageSubscriptionIT {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final MessageSubscriptionDbReader reader = rdbmsService.getMessageSubscriptionReader();
+    final MessageSubscriptionDbReader reader = rdbmsService.getMessageSubscriptionReader("default");
 
     final var subscription1 =
         MessageSubscriptionFixtures.createAndSaveMessageSubscription(rdbmsWriters, b -> b);
@@ -289,7 +289,7 @@ public class MessageSubscriptionIT {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final MessageSubscriptionDbReader reader = rdbmsService.getMessageSubscriptionReader();
+    final MessageSubscriptionDbReader reader = rdbmsService.getMessageSubscriptionReader("default");
 
     final var subscription1 =
         MessageSubscriptionFixtures.createAndSaveMessageSubscription(rdbmsWriters, b -> b);

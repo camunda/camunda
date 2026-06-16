@@ -37,7 +37,8 @@ public class ProcessInstanceTagIT {
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final ProcessInstanceDbReader processInstanceReader = rdbmsService.getProcessInstanceReader();
+    final ProcessInstanceDbReader processInstanceReader =
+        rdbmsService.getProcessInstanceReader("default");
 
     final var processDefinitionId = "test-process-" + nextKey();
     createAndSaveProcessInstance(
@@ -66,7 +67,8 @@ public class ProcessInstanceTagIT {
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final ProcessInstanceDbReader processInstanceReader = rdbmsService.getProcessInstanceReader();
+    final ProcessInstanceDbReader processInstanceReader =
+        rdbmsService.getProcessInstanceReader("default");
 
     final var processDefinitionId = "test-process-" + nextKey();
 

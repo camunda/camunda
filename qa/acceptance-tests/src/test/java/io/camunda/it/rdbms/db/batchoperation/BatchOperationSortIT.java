@@ -31,7 +31,8 @@ public class BatchOperationSortIT {
   @TestTemplate
   public void shouldSortIdAsc(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final BatchOperationDbReader batchOperationReader = rdbmsService.getBatchOperationReader();
+    final BatchOperationDbReader batchOperationReader =
+        rdbmsService.getBatchOperationReader("default");
 
     BatchOperationFixtures.createAndSaveRandomBatchOperations(
         rdbmsService.createWriter(1L), b -> b);

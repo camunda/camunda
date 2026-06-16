@@ -41,7 +41,7 @@ public class UserIT {
   public void shouldSaveAndUpdate(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final UserDbReader userReader = rdbmsService.getUserReader();
+    final UserDbReader userReader = rdbmsService.getUserReader("default");
 
     final var user = UserFixtures.createRandomized(b -> b);
     createAndSaveUser(rdbmsWriters, user);
@@ -60,7 +60,7 @@ public class UserIT {
   public void shouldSaveAndDelete(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final UserDbReader userReader = rdbmsService.getUserReader();
+    final UserDbReader userReader = rdbmsService.getUserReader("default");
 
     final var user = UserFixtures.createRandomized(b -> b);
     createAndSaveUser(rdbmsWriters, user);
@@ -78,7 +78,7 @@ public class UserIT {
   public void shouldFindByUsername(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final UserDbReader userReader = rdbmsService.getUserReader();
+    final UserDbReader userReader = rdbmsService.getUserReader("default");
 
     final var user = UserFixtures.createRandomized(b -> b);
     createAndSaveUser(rdbmsWriters, user);
@@ -107,7 +107,7 @@ public class UserIT {
   public void shouldFindByNameUTF8(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final UserDbReader userReader = rdbmsService.getUserReader();
+    final UserDbReader userReader = rdbmsService.getUserReader("default");
 
     final var username = "カムンダ ユーザー";
     final var user = UserFixtures.createRandomized(b -> b.name(username));
@@ -127,7 +127,7 @@ public class UserIT {
   public void shouldFindAuthorization(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final UserDbReader userReader = rdbmsService.getUserReader();
+    final UserDbReader userReader = rdbmsService.getUserReader("default");
 
     final var user = UserFixtures.createRandomized(b -> b);
     createAndSaveUser(rdbmsWriters, user);
@@ -156,7 +156,7 @@ public class UserIT {
   public void shouldFindAllPaged(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final UserDbReader userReader = rdbmsService.getUserReader();
+    final UserDbReader userReader = rdbmsService.getUserReader("default");
 
     final String userId = UserFixtures.nextStringId();
     createAndSaveRandomUsers(rdbmsWriters, b -> b.name("John Doe"));
@@ -177,7 +177,7 @@ public class UserIT {
   public void shouldFindAllPagedWithHasMoreHits(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final UserDbReader userReader = rdbmsService.getUserReader();
+    final UserDbReader userReader = rdbmsService.getUserReader("default");
 
     createAndSaveRandomUsers(rdbmsWriters, 120, b -> b.name("Jane More"));
 
@@ -198,7 +198,7 @@ public class UserIT {
   public void shouldFindWithFullFilter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final UserDbReader userReader = rdbmsService.getUserReader();
+    final UserDbReader userReader = rdbmsService.getUserReader("default");
 
     final var user = UserFixtures.createRandomized(b -> b);
     createAndSaveRandomUsers(rdbmsWriters);
@@ -224,7 +224,7 @@ public class UserIT {
   public void shouldFindWithSearchAfter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final UserDbReader userReader = rdbmsService.getUserReader();
+    final UserDbReader userReader = rdbmsService.getUserReader("default");
 
     createAndSaveRandomUsers(rdbmsWriters, b -> b.name("Alice Doe"));
     final var sort = UserSort.of(s -> s.name().asc().username().asc().email().desc());

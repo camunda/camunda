@@ -41,13 +41,14 @@ public class AuthorizationSpecificFilterIT {
 
   @Autowired private RdbmsService rdbmsService;
 
-  @Autowired private AuthorizationDbReader authorizationReader;
+  private AuthorizationDbReader authorizationReader;
 
   private RdbmsWriters rdbmsWriters;
 
   @BeforeEach
   public void beforeAll() {
     rdbmsWriters = rdbmsService.createWriter(0L);
+    authorizationReader = rdbmsService.getAuthorizationReader("default");
   }
 
   @ParameterizedTest

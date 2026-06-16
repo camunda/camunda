@@ -7,6 +7,7 @@
  */
 package io.camunda.db.rdbms;
 
+import io.camunda.db.rdbms.read.RdbmsTenantReaders;
 import io.camunda.db.rdbms.read.replication.ReplicationLogStatusProvider;
 import io.camunda.db.rdbms.read.replication.ReplicationLogStatusProviderFactory;
 import io.camunda.db.rdbms.read.service.AgentInstanceDbReader;
@@ -53,325 +54,211 @@ import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig.Builder;
 import io.camunda.db.rdbms.write.RdbmsWriterFactory;
 import io.camunda.db.rdbms.write.RdbmsWriters;
+import java.util.Map;
 import java.util.function.Consumer;
 
-/** A holder for all rdbms services */
+/**
+ * A holder for all rdbms services. Reads are served per physical tenant: each {@code getXxxReader}
+ * accessor takes a {@code physicalTenantId} and returns the reader backed by that tenant's own
+ * datasource.
+ */
 public class RdbmsService {
 
   private final RdbmsWriterFactory rdbmsWriterFactory;
-  private final AgentInstanceDbReader agentInstanceDbReader;
-  private final AuditLogDbReader auditLogReader;
-  private final AuthorizationDbReader authorizationReader;
-  private final DecisionDefinitionDbReader decisionDefinitionReader;
-  private final DecisionInstanceDbReader decisionInstanceReader;
-  private final DecisionRequirementsDbReader decisionRequirementsReader;
-  private final FlowNodeInstanceDbReader flowNodeInstanceReader;
-  private final GroupDbReader groupReader;
-  private final GroupMemberDbReader groupMemberReader;
-  private final IncidentDbReader incidentReader;
-  private final ProcessDefinitionDbReader processDefinitionReader;
-  private final ProcessInstanceDbReader processInstanceReader;
-  private final VariableDbReader variableReader;
-  private final ClusterVariableDbReader clusterVariableDbReader;
-  private final WaitStateDbReader waitStateReader;
-  private final RoleDbReader roleReader;
-  private final RoleMemberDbReader roleMemberReader;
-  private final TenantDbReader tenantReader;
-  private final TenantMemberDbReader tenantMemberReader;
-  private final UserDbReader userReader;
-  private final UserTaskDbReader userTaskReader;
-  private final FormDbReader formReader;
-  private final MappingRuleDbReader mappingRuleReader;
-  private final BatchOperationDbReader batchOperationReader;
-  private final SequenceFlowDbReader sequenceFlowReader;
-  private final BatchOperationItemDbReader batchOperationItemReader;
-  private final JobDbReader jobReader;
-  private final JobMetricsBatchDbReader jobMetricsBatchDbReader;
-  private final UsageMetricsDbReader usageMetricReader;
-  private final UsageMetricTUDbReader usageMetricTUDbReader;
-  private final MessageSubscriptionDbReader messageSubscriptionReader;
-  private final ProcessDefinitionMessageSubscriptionStatisticsDbReader
-      processDefinitionMessageSubscriptionStatisticsDbReader;
-  private final CorrelatedMessageSubscriptionDbReader correlatedMessageSubscriptionReader;
-  private final ProcessDefinitionInstanceStatisticsDbReader
-      processDefinitionInstanceStatisticsDbReader;
-  private final ProcessDefinitionInstanceVersionStatisticsDbReader
-      processDefinitionInstanceVersionStatisticsDbReader;
-  private final HistoryDeletionDbReader historyDeletionDbReader;
-  private final IncidentProcessInstanceStatisticsByErrorDbReader
-      incidentProcessInstanceStatisticsByErrorDbReader;
-  private final IncidentProcessInstanceStatisticsByDefinitionDbReader
-      incidentProcessInstanceStatisticsByDefinitionDbReader;
-  private final GlobalListenerDbReader globalListenerDbReader;
-  private final DeployedResourceDbReader deployedResourceDbReader;
+  private final Map<String, RdbmsTenantReaders> tenantReaders;
   private final ReplicationLogStatusProviderFactory replicationLogStatusProviderFactory;
 
   public RdbmsService(
       final RdbmsWriterFactory rdbmsWriterFactory,
-      final AgentInstanceDbReader agentInstanceDbReader,
-      final AuditLogDbReader auditLogReader,
-      final AuthorizationDbReader authorizationReader,
-      final DecisionDefinitionDbReader decisionDefinitionReader,
-      final DecisionInstanceDbReader decisionInstanceReader,
-      final DecisionRequirementsDbReader decisionRequirementsReader,
-      final FlowNodeInstanceDbReader flowNodeInstanceReader,
-      final GroupDbReader groupReader,
-      final GroupMemberDbReader groupMemberReader,
-      final IncidentDbReader incidentReader,
-      final ProcessDefinitionDbReader processDefinitionReader,
-      final ProcessInstanceDbReader processInstanceReader,
-      final VariableDbReader variableReader,
-      final ClusterVariableDbReader clusterVariableDbReader,
-      final WaitStateDbReader waitStateReader,
-      final RoleDbReader roleReader,
-      final RoleMemberDbReader roleMemberReader,
-      final TenantDbReader tenantReader,
-      final TenantMemberDbReader tenantMemberReader,
-      final UserDbReader userReader,
-      final UserTaskDbReader userTaskReader,
-      final FormDbReader formReader,
-      final MappingRuleDbReader mappingRuleReader,
-      final BatchOperationDbReader batchOperationReader,
-      final SequenceFlowDbReader sequenceFlowReader,
-      final BatchOperationItemDbReader batchOperationItemReader,
-      final JobDbReader jobReader,
-      final JobMetricsBatchDbReader jobMetricsBatchDbReader,
-      final UsageMetricsDbReader usageMetricReader,
-      final UsageMetricTUDbReader usageMetricTUDbReader,
-      final MessageSubscriptionDbReader messageSubscriptionReader,
-      final ProcessDefinitionMessageSubscriptionStatisticsDbReader
-          processDefinitionMessageSubscriptionStatisticsDbReader,
-      final CorrelatedMessageSubscriptionDbReader correlatedMessageSubscriptionReader,
-      final ProcessDefinitionInstanceStatisticsDbReader processDefinitionInstanceStatisticsDbReader,
-      final ProcessDefinitionInstanceVersionStatisticsDbReader
-          processDefinitionInstanceVersionStatisticsDbReader,
-      final HistoryDeletionDbReader historyDeletionDbReader,
-      final IncidentProcessInstanceStatisticsByErrorDbReader
-          incidentProcessInstanceStatisticsByErrorDbReader,
-      final IncidentProcessInstanceStatisticsByDefinitionDbReader
-          incidentProcessInstanceStatisticsByDefinitionDbReader,
-      final GlobalListenerDbReader globalListenerDbReader,
-      final DeployedResourceDbReader deployedResourceDbReader,
+      final Map<String, RdbmsTenantReaders> tenantReaders,
       final ReplicationLogStatusProviderFactory replicationLogStatusProviderFactory) {
     this.rdbmsWriterFactory = rdbmsWriterFactory;
-    this.agentInstanceDbReader = agentInstanceDbReader;
-    this.auditLogReader = auditLogReader;
-    this.authorizationReader = authorizationReader;
-    this.decisionRequirementsReader = decisionRequirementsReader;
-    this.decisionDefinitionReader = decisionDefinitionReader;
-    this.decisionInstanceReader = decisionInstanceReader;
-    this.flowNodeInstanceReader = flowNodeInstanceReader;
-    this.groupReader = groupReader;
-    this.groupMemberReader = groupMemberReader;
-    this.incidentReader = incidentReader;
-    this.processDefinitionReader = processDefinitionReader;
-    this.processInstanceReader = processInstanceReader;
-    this.roleMemberReader = roleMemberReader;
-    this.tenantReader = tenantReader;
-    this.variableReader = variableReader;
-    this.clusterVariableDbReader = clusterVariableDbReader;
-    this.waitStateReader = waitStateReader;
-    this.roleReader = roleReader;
-    this.tenantMemberReader = tenantMemberReader;
-    this.userReader = userReader;
-    this.userTaskReader = userTaskReader;
-    this.formReader = formReader;
-    this.mappingRuleReader = mappingRuleReader;
-    this.batchOperationReader = batchOperationReader;
-    this.sequenceFlowReader = sequenceFlowReader;
-    this.batchOperationItemReader = batchOperationItemReader;
-    this.jobReader = jobReader;
-    this.jobMetricsBatchDbReader = jobMetricsBatchDbReader;
-    this.usageMetricReader = usageMetricReader;
-    this.usageMetricTUDbReader = usageMetricTUDbReader;
-    this.messageSubscriptionReader = messageSubscriptionReader;
-    this.processDefinitionMessageSubscriptionStatisticsDbReader =
-        processDefinitionMessageSubscriptionStatisticsDbReader;
-    this.correlatedMessageSubscriptionReader = correlatedMessageSubscriptionReader;
-    this.processDefinitionInstanceStatisticsDbReader = processDefinitionInstanceStatisticsDbReader;
-    this.processDefinitionInstanceVersionStatisticsDbReader =
-        processDefinitionInstanceVersionStatisticsDbReader;
-    this.historyDeletionDbReader = historyDeletionDbReader;
-    this.incidentProcessInstanceStatisticsByErrorDbReader =
-        incidentProcessInstanceStatisticsByErrorDbReader;
-    this.incidentProcessInstanceStatisticsByDefinitionDbReader =
-        incidentProcessInstanceStatisticsByDefinitionDbReader;
-    this.globalListenerDbReader = globalListenerDbReader;
-    this.deployedResourceDbReader = deployedResourceDbReader;
+    this.tenantReaders = Map.copyOf(tenantReaders);
     this.replicationLogStatusProviderFactory = replicationLogStatusProviderFactory;
   }
 
-  public AuthorizationDbReader getAuthorizationReader() {
-    return authorizationReader;
+  private RdbmsTenantReaders readers(final String physicalTenantId) {
+    final var readers = tenantReaders.get(physicalTenantId);
+    if (readers == null) {
+      throw new IllegalArgumentException(
+          "No RDBMS readers for physical tenant '%s'; known physical tenants: %s"
+              .formatted(physicalTenantId, tenantReaders.keySet()));
+    }
+    return readers;
   }
 
-  public AuditLogDbReader getAuditLogReader() {
-    return auditLogReader;
+  public AuthorizationDbReader getAuthorizationReader(final String physicalTenantId) {
+    return readers(physicalTenantId).authorizationReader();
   }
 
-  public DecisionDefinitionDbReader getDecisionDefinitionReader() {
-    return decisionDefinitionReader;
+  public AuditLogDbReader getAuditLogReader(final String physicalTenantId) {
+    return readers(physicalTenantId).auditLogReader();
   }
 
-  public DecisionInstanceDbReader getDecisionInstanceReader() {
-    return decisionInstanceReader;
+  public DecisionDefinitionDbReader getDecisionDefinitionReader(final String physicalTenantId) {
+    return readers(physicalTenantId).decisionDefinitionReader();
   }
 
-  public DecisionRequirementsDbReader getDecisionRequirementsReader() {
-    return decisionRequirementsReader;
+  public DecisionInstanceDbReader getDecisionInstanceReader(final String physicalTenantId) {
+    return readers(physicalTenantId).decisionInstanceReader();
   }
 
-  public FlowNodeInstanceDbReader getFlowNodeInstanceReader() {
-    return flowNodeInstanceReader;
+  public DecisionRequirementsDbReader getDecisionRequirementsReader(final String physicalTenantId) {
+    return readers(physicalTenantId).decisionRequirementsReader();
   }
 
-  public GroupDbReader getGroupReader() {
-    return groupReader;
+  public FlowNodeInstanceDbReader getFlowNodeInstanceReader(final String physicalTenantId) {
+    return readers(physicalTenantId).flowNodeInstanceReader();
   }
 
-  public GroupMemberDbReader getGroupMemberReader() {
-    return groupMemberReader;
+  public GroupDbReader getGroupReader(final String physicalTenantId) {
+    return readers(physicalTenantId).groupReader();
   }
 
-  public IncidentDbReader getIncidentReader() {
-    return incidentReader;
+  public GroupMemberDbReader getGroupMemberReader(final String physicalTenantId) {
+    return readers(physicalTenantId).groupMemberReader();
   }
 
-  public ProcessDefinitionDbReader getProcessDefinitionReader() {
-    return processDefinitionReader;
+  public IncidentDbReader getIncidentReader(final String physicalTenantId) {
+    return readers(physicalTenantId).incidentReader();
   }
 
-  public ProcessInstanceDbReader getProcessInstanceReader() {
-    return processInstanceReader;
+  public ProcessDefinitionDbReader getProcessDefinitionReader(final String physicalTenantId) {
+    return readers(physicalTenantId).processDefinitionReader();
   }
 
-  public TenantDbReader getTenantReader() {
-    return tenantReader;
+  public ProcessInstanceDbReader getProcessInstanceReader(final String physicalTenantId) {
+    return readers(physicalTenantId).processInstanceReader();
   }
 
-  public TenantMemberDbReader getTenantMemberReader() {
-    return tenantMemberReader;
+  public TenantDbReader getTenantReader(final String physicalTenantId) {
+    return readers(physicalTenantId).tenantReader();
   }
 
-  public VariableDbReader getVariableReader() {
-    return variableReader;
+  public TenantMemberDbReader getTenantMemberReader(final String physicalTenantId) {
+    return readers(physicalTenantId).tenantMemberReader();
   }
 
-  public ClusterVariableDbReader getClusterVariableReader() {
-    return clusterVariableDbReader;
+  public VariableDbReader getVariableReader(final String physicalTenantId) {
+    return readers(physicalTenantId).variableReader();
   }
 
-  public WaitStateDbReader getWaitStateReader() {
-    return waitStateReader;
+  public ClusterVariableDbReader getClusterVariableReader(final String physicalTenantId) {
+    return readers(physicalTenantId).clusterVariableReader();
   }
 
-  public RoleDbReader getRoleReader() {
-    return roleReader;
+  public WaitStateDbReader getWaitStateReader(final String physicalTenantId) {
+    return readers(physicalTenantId).waitStateReader();
   }
 
-  public RoleMemberDbReader getRoleMemberReader() {
-    return roleMemberReader;
+  public RoleDbReader getRoleReader(final String physicalTenantId) {
+    return readers(physicalTenantId).roleReader();
   }
 
-  public UserDbReader getUserReader() {
-    return userReader;
+  public RoleMemberDbReader getRoleMemberReader(final String physicalTenantId) {
+    return readers(physicalTenantId).roleMemberReader();
   }
 
-  public UserTaskDbReader getUserTaskReader() {
-    return userTaskReader;
+  public UserDbReader getUserReader(final String physicalTenantId) {
+    return readers(physicalTenantId).userReader();
   }
 
-  public FormDbReader getFormReader() {
-    return formReader;
+  public UserTaskDbReader getUserTaskReader(final String physicalTenantId) {
+    return readers(physicalTenantId).userTaskReader();
   }
 
-  public MappingRuleDbReader getMappingRuleReader() {
-    return mappingRuleReader;
+  public FormDbReader getFormReader(final String physicalTenantId) {
+    return readers(physicalTenantId).formReader();
   }
 
-  public BatchOperationDbReader getBatchOperationReader() {
-    return batchOperationReader;
+  public MappingRuleDbReader getMappingRuleReader(final String physicalTenantId) {
+    return readers(physicalTenantId).mappingRuleReader();
   }
 
-  public SequenceFlowDbReader getSequenceFlowReader() {
-    return sequenceFlowReader;
+  public BatchOperationDbReader getBatchOperationReader(final String physicalTenantId) {
+    return readers(physicalTenantId).batchOperationReader();
   }
 
-  public UsageMetricsDbReader getUsageMetricReader() {
-    return usageMetricReader;
+  public SequenceFlowDbReader getSequenceFlowReader(final String physicalTenantId) {
+    return readers(physicalTenantId).sequenceFlowReader();
   }
 
-  public UsageMetricTUDbReader getUsageMetricTUReader() {
-    return usageMetricTUDbReader;
+  public UsageMetricsDbReader getUsageMetricReader(final String physicalTenantId) {
+    return readers(physicalTenantId).usageMetricsReader();
   }
 
-  public BatchOperationItemDbReader getBatchOperationItemReader() {
-    return batchOperationItemReader;
+  public UsageMetricTUDbReader getUsageMetricTUReader(final String physicalTenantId) {
+    return readers(physicalTenantId).usageMetricsTUReader();
   }
 
-  public JobDbReader getJobReader() {
-    return jobReader;
+  public BatchOperationItemDbReader getBatchOperationItemReader(final String physicalTenantId) {
+    return readers(physicalTenantId).batchOperationItemReader();
   }
 
-  public JobMetricsBatchDbReader getJobMetricsBatchDbReader() {
-    return jobMetricsBatchDbReader;
+  public JobDbReader getJobReader(final String physicalTenantId) {
+    return readers(physicalTenantId).jobReader();
   }
 
-  public MessageSubscriptionDbReader getMessageSubscriptionReader() {
-    return messageSubscriptionReader;
+  public JobMetricsBatchDbReader getJobMetricsBatchDbReader(final String physicalTenantId) {
+    return readers(physicalTenantId).jobMetricsBatchReader();
+  }
+
+  public MessageSubscriptionDbReader getMessageSubscriptionReader(final String physicalTenantId) {
+    return readers(physicalTenantId).messageSubscriptionReader();
   }
 
   public ProcessDefinitionMessageSubscriptionStatisticsDbReader
-      getProcessDefinitionMessageSubscriptionStatisticsDbReader() {
-    return processDefinitionMessageSubscriptionStatisticsDbReader;
+      getProcessDefinitionMessageSubscriptionStatisticsDbReader(final String physicalTenantId) {
+    return readers(physicalTenantId).processDefinitionMessageSubscriptionStatisticsReader();
   }
 
-  public CorrelatedMessageSubscriptionDbReader getCorrelatedMessageSubscriptionReader() {
-    return correlatedMessageSubscriptionReader;
+  public CorrelatedMessageSubscriptionDbReader getCorrelatedMessageSubscriptionReader(
+      final String physicalTenantId) {
+    return readers(physicalTenantId).correlatedMessageSubscriptionReader();
   }
 
-  public RdbmsWriters createWriter(final long partitionId) { // todo fix in all itests afterwards?
-    return createWriter(new RdbmsWriterConfig.Builder().partitionId((int) partitionId).build());
-  }
-
-  public ProcessDefinitionInstanceStatisticsDbReader
-      getProcessDefinitionInstanceStatisticsReader() {
-    return processDefinitionInstanceStatisticsDbReader;
+  public ProcessDefinitionInstanceStatisticsDbReader getProcessDefinitionInstanceStatisticsReader(
+      final String physicalTenantId) {
+    return readers(physicalTenantId).processDefinitionInstanceStatisticsReader();
   }
 
   public ProcessDefinitionInstanceVersionStatisticsDbReader
-      getProcessDefinitionInstanceVersionStatisticsReader() {
-    return processDefinitionInstanceVersionStatisticsDbReader;
+      getProcessDefinitionInstanceVersionStatisticsReader(final String physicalTenantId) {
+    return readers(physicalTenantId).processDefinitionInstanceVersionStatisticsReader();
   }
 
   public IncidentProcessInstanceStatisticsByErrorDbReader
-      getIncidentProcessInstanceStatisticsByErrorDbReader() {
-    return incidentProcessInstanceStatisticsByErrorDbReader;
-  }
-
-  public HistoryDeletionDbReader getHistoryDeletionDbReader() {
-    return historyDeletionDbReader;
+      getIncidentProcessInstanceStatisticsByErrorDbReader(final String physicalTenantId) {
+    return readers(physicalTenantId).incidentProcessInstanceStatisticsByErrorReader();
   }
 
   public IncidentProcessInstanceStatisticsByDefinitionDbReader
-      getIncidentProcessInstanceStatisticsByDefinitionReader() {
-    return incidentProcessInstanceStatisticsByDefinitionDbReader;
+      getIncidentProcessInstanceStatisticsByDefinitionReader(final String physicalTenantId) {
+    return readers(physicalTenantId).incidentProcessInstanceStatisticsByDefinitionReader();
   }
 
-  public AgentInstanceDbReader getAgentInstanceDbReader() {
-    return agentInstanceDbReader;
+  public HistoryDeletionDbReader getHistoryDeletionDbReader(final String physicalTenantId) {
+    return readers(physicalTenantId).historyDeletionReader();
   }
 
-  public GlobalListenerDbReader getGlobalListenerDbReader() {
-    return globalListenerDbReader;
+  public AgentInstanceDbReader getAgentInstanceDbReader(final String physicalTenantId) {
+    return readers(physicalTenantId).agentInstanceReader();
   }
 
-  public DeployedResourceDbReader getResourceDbReader() {
-    return deployedResourceDbReader;
+  public GlobalListenerDbReader getGlobalListenerDbReader(final String physicalTenantId) {
+    return readers(physicalTenantId).globalListenerReader();
+  }
+
+  public DeployedResourceDbReader getResourceDbReader(final String physicalTenantId) {
+    return readers(physicalTenantId).deployedResourceReader();
   }
 
   public ReplicationLogStatusProvider getReplicationLogStatusProvider() {
     return replicationLogStatusProviderFactory.create();
+  }
+
+  public RdbmsWriters createWriter(final long partitionId) { // todo fix in all itests afterwards?
+    return createWriter(new RdbmsWriterConfig.Builder().partitionId((int) partitionId).build());
   }
 
   public RdbmsWriters createWriter(final RdbmsWriterConfig config) {

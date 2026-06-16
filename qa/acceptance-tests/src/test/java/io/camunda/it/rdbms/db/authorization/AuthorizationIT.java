@@ -42,7 +42,8 @@ public class AuthorizationIT {
   public void shouldSaveAndFindByKey(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final AuthorizationDbReader authorizationReader = rdbmsService.getAuthorizationReader();
+    final AuthorizationDbReader authorizationReader =
+        rdbmsService.getAuthorizationReader("default");
 
     final var authorization = AuthorizationFixtures.createRandomized(b -> b);
     createAndSaveAuthorization(rdbmsWriters, authorization);
@@ -60,7 +61,8 @@ public class AuthorizationIT {
   public void shouldSaveAndUpdate(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final AuthorizationDbReader authorizationReader = rdbmsService.getAuthorizationReader();
+    final AuthorizationDbReader authorizationReader =
+        rdbmsService.getAuthorizationReader("default");
 
     final var authorization =
         AuthorizationFixtures.createRandomized(
@@ -95,7 +97,8 @@ public class AuthorizationIT {
   public void shouldSaveAndDelete(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final AuthorizationDbReader authorizationReader = rdbmsService.getAuthorizationReader();
+    final AuthorizationDbReader authorizationReader =
+        rdbmsService.getAuthorizationReader("default");
 
     final var authorization = AuthorizationFixtures.createRandomized(b -> b);
     createAndSaveAuthorization(rdbmsWriters, authorization);
@@ -117,7 +120,8 @@ public class AuthorizationIT {
   public void shouldFindByResourceId(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final AuthorizationDbReader authorizationReader = rdbmsService.getAuthorizationReader();
+    final AuthorizationDbReader authorizationReader =
+        rdbmsService.getAuthorizationReader("default");
 
     final var authorization = AuthorizationFixtures.createRandomized(b -> b);
     createAndSaveAuthorization(rdbmsWriters, authorization);
@@ -143,7 +147,8 @@ public class AuthorizationIT {
   public void shouldFindByAuthorizedResourceId(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final AuthorizationDbReader authorizationReader = rdbmsService.getAuthorizationReader();
+    final AuthorizationDbReader authorizationReader =
+        rdbmsService.getAuthorizationReader("default");
 
     final var authorization = AuthorizationFixtures.createRandomized(b -> b);
     createAndSaveAuthorization(rdbmsWriters, authorization);
@@ -169,7 +174,8 @@ public class AuthorizationIT {
   public void shouldFindAllPaged(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final AuthorizationDbReader authorizationReader = rdbmsService.getAuthorizationReader();
+    final AuthorizationDbReader authorizationReader =
+        rdbmsService.getAuthorizationReader("default");
 
     createAndSaveRandomAuthorizations(rdbmsWriters, b -> b.ownerType("TEST"));
 
@@ -189,7 +195,8 @@ public class AuthorizationIT {
   public void shouldFindAllPagedWithHasMoreHits(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final AuthorizationDbReader authorizationReader = rdbmsService.getAuthorizationReader();
+    final AuthorizationDbReader authorizationReader =
+        rdbmsService.getAuthorizationReader("default");
 
     createAndSaveRandomAuthorizations(rdbmsWriters, 120, b -> b.ownerType("TEST_MORE"));
 
@@ -210,7 +217,8 @@ public class AuthorizationIT {
   public void shouldFindWithFullFilter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final AuthorizationDbReader authorizationReader = rdbmsService.getAuthorizationReader();
+    final AuthorizationDbReader authorizationReader =
+        rdbmsService.getAuthorizationReader("default");
 
     final var authorization = AuthorizationFixtures.createRandomized(b -> b);
     createAndSaveRandomAuthorizations(rdbmsWriters);
@@ -239,7 +247,8 @@ public class AuthorizationIT {
   public void shouldFindWithSearchAfter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final AuthorizationDbReader authorizationReader = rdbmsService.getAuthorizationReader();
+    final AuthorizationDbReader authorizationReader =
+        rdbmsService.getAuthorizationReader("default");
 
     createAndSaveRandomAuthorizations(rdbmsWriters, b -> b.ownerType("ITEST"));
     final var sort =

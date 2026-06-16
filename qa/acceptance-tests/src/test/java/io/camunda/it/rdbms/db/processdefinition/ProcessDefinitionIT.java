@@ -54,7 +54,7 @@ public class ProcessDefinitionIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final ProcessDefinitionDbReader processDefinitionReader =
-        rdbmsService.getProcessDefinitionReader();
+        rdbmsService.getProcessDefinitionReader("default");
 
     final var processDefinition = ProcessDefinitionFixtures.createRandomized(b -> b);
     createAndSaveProcessDefinition(rdbmsWriters, processDefinition);
@@ -75,7 +75,7 @@ public class ProcessDefinitionIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final ProcessDefinitionDbReader processDefinitionReader =
-        rdbmsService.getProcessDefinitionReader();
+        rdbmsService.getProcessDefinitionReader("default");
 
     final var processDefinition =
         ProcessDefinitionFixtures.createRandomized(
@@ -108,7 +108,7 @@ public class ProcessDefinitionIT {
       final CamundaRdbmsTestApplication testApplication) {
     final var rdbmsService = testApplication.getRdbmsService();
     final var rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final var processDefinitionReader = rdbmsService.getProcessDefinitionReader();
+    final var processDefinitionReader = rdbmsService.getProcessDefinitionReader("default");
 
     final var processDefinitionId =
         RandomStringUtils.insecure()
@@ -138,7 +138,7 @@ public class ProcessDefinitionIT {
       final CamundaRdbmsTestApplication testApplication) {
     final var rdbmsService = testApplication.getRdbmsService();
     final var rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final var processDefinitionReader = rdbmsService.getProcessDefinitionReader();
+    final var processDefinitionReader = rdbmsService.getProcessDefinitionReader("default");
 
     final var name = "カマンダ";
 
@@ -160,7 +160,7 @@ public class ProcessDefinitionIT {
       final CamundaRdbmsTestApplication testApplication) {
     final var rdbmsService = testApplication.getRdbmsService();
     final var rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final var processDefinitionReader = rdbmsService.getProcessDefinitionReader();
+    final var processDefinitionReader = rdbmsService.getProcessDefinitionReader("default");
 
     final var name = "ü".repeat(RdbmsWriterConfig.DEFAULT_MAX_VARCHAR_FIELD_LENGTH);
 
@@ -183,7 +183,7 @@ public class ProcessDefinitionIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final ProcessDefinitionDbReader processDefinitionReader =
-        rdbmsService.getProcessDefinitionReader();
+        rdbmsService.getProcessDefinitionReader("default");
 
     final var processDefinition = createAndSaveRandomProcessDefinition(rdbmsWriters, b -> b);
     createAndSaveRandomProcessDefinitions(rdbmsWriters);
@@ -208,7 +208,7 @@ public class ProcessDefinitionIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final ProcessDefinitionDbReader processDefinitionReader =
-        rdbmsService.getProcessDefinitionReader();
+        rdbmsService.getProcessDefinitionReader("default");
 
     final var processDefinition = createAndSaveRandomProcessDefinition(rdbmsWriters, b -> b);
     createAndSaveRandomProcessDefinitions(rdbmsWriters);
@@ -231,7 +231,7 @@ public class ProcessDefinitionIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final ProcessDefinitionDbReader processDefinitionReader =
-        rdbmsService.getProcessDefinitionReader();
+        rdbmsService.getProcessDefinitionReader("default");
 
     final String processDefinitionId = ProcessDefinitionFixtures.nextStringId();
     createAndSaveRandomProcessDefinitions(
@@ -256,7 +256,7 @@ public class ProcessDefinitionIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final ProcessDefinitionDbReader processDefinitionReader =
-        rdbmsService.getProcessDefinitionReader();
+        rdbmsService.getProcessDefinitionReader("default");
 
     final String processDefinitionId = ProcessDefinitionFixtures.nextStringId();
     createAndSaveRandomProcessDefinitions(
@@ -282,7 +282,7 @@ public class ProcessDefinitionIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final ProcessDefinitionDbReader processDefinitionReader =
-        rdbmsService.getProcessDefinitionReader();
+        rdbmsService.getProcessDefinitionReader("default");
 
     createAndSaveRandomProcessDefinitions(rdbmsWriters);
 
@@ -302,7 +302,7 @@ public class ProcessDefinitionIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final ProcessDefinitionDbReader processDefinitionReader =
-        rdbmsService.getProcessDefinitionReader();
+        rdbmsService.getProcessDefinitionReader("default");
 
     final var processDefinition = ProcessDefinitionFixtures.createRandomized(b -> b);
     createAndSaveRandomProcessDefinitions(rdbmsWriters);
@@ -336,7 +336,7 @@ public class ProcessDefinitionIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final ProcessDefinitionDbReader processDefinitionReader =
-        rdbmsService.getProcessDefinitionReader();
+        rdbmsService.getProcessDefinitionReader("default");
 
     createAndSaveRandomProcessDefinitions(rdbmsWriters, b -> b.versionTag("search-after-123456"));
     final var sort =
@@ -376,7 +376,7 @@ public class ProcessDefinitionIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final ProcessDefinitionInstanceStatisticsDbReader processDefinitionInstanceStatisticsDbReader =
-        rdbmsService.getProcessDefinitionInstanceStatisticsReader();
+        rdbmsService.getProcessDefinitionInstanceStatisticsReader("default");
 
     final var processDefinition =
         createAndSaveProcessDefinition(
@@ -428,7 +428,7 @@ public class ProcessDefinitionIT {
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final ProcessDefinitionInstanceVersionStatisticsDbReader
         processDefinitionInstanceVersionStatisticsDbReader =
-            rdbmsService.getProcessDefinitionInstanceVersionStatisticsReader();
+            rdbmsService.getProcessDefinitionInstanceVersionStatisticsReader("default");
 
     final var processDefinitionV1 =
         createAndSaveProcessDefinition(
@@ -501,7 +501,7 @@ public class ProcessDefinitionIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final ProcessDefinitionDbReader processDefinitionReader =
-        rdbmsService.getProcessDefinitionReader();
+        rdbmsService.getProcessDefinitionReader("default");
 
     final var processDefinition1 = ProcessDefinitionFixtures.createRandomized(b -> b);
     final var processDefinition2 = ProcessDefinitionFixtures.createRandomized(b -> b);

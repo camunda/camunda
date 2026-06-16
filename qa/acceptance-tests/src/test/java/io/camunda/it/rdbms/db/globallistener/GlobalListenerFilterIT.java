@@ -49,7 +49,7 @@ public class GlobalListenerFilterIT {
     final var searchResult =
         testApplication
             .getRdbmsService()
-            .getGlobalListenerDbReader()
+            .getGlobalListenerDbReader("default")
             .search(
                 new GlobalListenerQuery(
                     new GlobalListenerFilter.Builder()
@@ -82,7 +82,7 @@ public class GlobalListenerFilterIT {
     final var searchResult =
         testApplication
             .getRdbmsService()
-            .getGlobalListenerDbReader()
+            .getGlobalListenerDbReader("default")
             .search(
                 new GlobalListenerQuery(
                     new GlobalListenerFilter.Builder()
@@ -115,7 +115,7 @@ public class GlobalListenerFilterIT {
     final var searchResult =
         testApplication
             .getRdbmsService()
-            .getGlobalListenerDbReader()
+            .getGlobalListenerDbReader("default")
             .search(
                 new GlobalListenerQuery(
                     new GlobalListenerFilter.Builder()
@@ -143,7 +143,7 @@ public class GlobalListenerFilterIT {
     final var searchResult =
         testApplication
             .getRdbmsService()
-            .getGlobalListenerDbReader()
+            .getGlobalListenerDbReader("default")
             .search(
                 new GlobalListenerQuery(
                     new GlobalListenerFilter.Builder()
@@ -173,7 +173,7 @@ public class GlobalListenerFilterIT {
     final var searchResult =
         testApplication
             .getRdbmsService()
-            .getGlobalListenerDbReader()
+            .getGlobalListenerDbReader("default")
             .search(
                 new GlobalListenerQuery(
                     new GlobalListenerFilter.Builder()
@@ -203,7 +203,7 @@ public class GlobalListenerFilterIT {
     final var searchResult =
         testApplication
             .getRdbmsService()
-            .getGlobalListenerDbReader()
+            .getGlobalListenerDbReader("default")
             .search(
                 new GlobalListenerQuery(
                     new GlobalListenerFilter.Builder()
@@ -235,7 +235,7 @@ public class GlobalListenerFilterIT {
     final var searchResult =
         testApplication
             .getRdbmsService()
-            .getGlobalListenerDbReader()
+            .getGlobalListenerDbReader("default")
             .search(
                 new GlobalListenerQuery(
                     new GlobalListenerFilter.Builder()
@@ -270,7 +270,7 @@ public class GlobalListenerFilterIT {
     final var searchResult =
         testApplication
             .getRdbmsService()
-            .getGlobalListenerDbReader()
+            .getGlobalListenerDbReader("default")
             .search(
                 new GlobalListenerQuery(
                     new GlobalListenerFilter.Builder()
@@ -305,7 +305,7 @@ public class GlobalListenerFilterIT {
     final var searchResult =
         testApplication
             .getRdbmsService()
-            .getGlobalListenerDbReader()
+            .getGlobalListenerDbReader("default")
             .search(
                 new GlobalListenerQuery(
                     new GlobalListenerFilter.Builder()
@@ -340,7 +340,7 @@ public class GlobalListenerFilterIT {
     final var searchResult =
         testApplication
             .getRdbmsService()
-            .getGlobalListenerDbReader()
+            .getGlobalListenerDbReader("default")
             .search(
                 new GlobalListenerQuery(
                     new GlobalListenerFilter.Builder()
@@ -375,7 +375,7 @@ public class GlobalListenerFilterIT {
     final var searchResult =
         testApplication
             .getRdbmsService()
-            .getGlobalListenerDbReader()
+            .getGlobalListenerDbReader("default")
             .search(
                 new GlobalListenerQuery(
                     new GlobalListenerFilter.Builder()
@@ -410,7 +410,7 @@ public class GlobalListenerFilterIT {
     final var searchResult =
         testApplication
             .getRdbmsService()
-            .getGlobalListenerDbReader()
+            .getGlobalListenerDbReader("default")
             .search(
                 new GlobalListenerQuery(
                     new GlobalListenerFilter.Builder()
@@ -439,7 +439,7 @@ public class GlobalListenerFilterIT {
     final var searchResult =
         testApplication
             .getRdbmsService()
-            .getGlobalListenerDbReader()
+            .getGlobalListenerDbReader("default")
             .search(
                 new GlobalListenerQuery(
                     new GlobalListenerFilter.Builder().afterNonGlobal(true).build(),
@@ -469,7 +469,7 @@ public class GlobalListenerFilterIT {
     final var searchResult =
         testApplication
             .getRdbmsService()
-            .getGlobalListenerDbReader()
+            .getGlobalListenerDbReader("default")
             .search(
                 new GlobalListenerQuery(
                     new GlobalListenerFilter.Builder()
@@ -504,7 +504,7 @@ public class GlobalListenerFilterIT {
     final var searchResult =
         testApplication
             .getRdbmsService()
-            .getGlobalListenerDbReader()
+            .getGlobalListenerDbReader("default")
             .search(
                 new GlobalListenerQuery(
                     new GlobalListenerFilter.Builder()
@@ -539,7 +539,7 @@ public class GlobalListenerFilterIT {
     final var searchResult =
         testApplication
             .getRdbmsService()
-            .getGlobalListenerDbReader()
+            .getGlobalListenerDbReader("default")
             .search(
                 new GlobalListenerQuery(
                     new GlobalListenerFilter.Builder()
@@ -574,7 +574,7 @@ public class GlobalListenerFilterIT {
     final var searchResult =
         testApplication
             .getRdbmsService()
-            .getGlobalListenerDbReader()
+            .getGlobalListenerDbReader("default")
             .search(
                 new GlobalListenerQuery(
                     new GlobalListenerFilter.Builder()
@@ -609,7 +609,7 @@ public class GlobalListenerFilterIT {
     final var searchResult =
         testApplication
             .getRdbmsService()
-            .getGlobalListenerDbReader()
+            .getGlobalListenerDbReader("default")
             .search(
                 new GlobalListenerQuery(
                     new GlobalListenerFilter.Builder()
@@ -644,7 +644,7 @@ public class GlobalListenerFilterIT {
     final var searchResult =
         testApplication
             .getRdbmsService()
-            .getGlobalListenerDbReader()
+            .getGlobalListenerDbReader("default")
             .search(
                 new GlobalListenerQuery(
                     new GlobalListenerFilter.Builder()
@@ -683,7 +683,7 @@ public class GlobalListenerFilterIT {
     final var searchResult =
         testApplication
             .getRdbmsService()
-            .getGlobalListenerDbReader()
+            .getGlobalListenerDbReader("default")
             .search(
                 new GlobalListenerQuery(
                     new GlobalListenerFilter.Builder()
@@ -722,7 +722,7 @@ public class GlobalListenerFilterIT {
     final var searchResult =
         testApplication
             .getRdbmsService()
-            .getGlobalListenerDbReader()
+            .getGlobalListenerDbReader("default")
             .search(
                 new GlobalListenerQuery(
                     new GlobalListenerFilter.Builder()
@@ -761,7 +761,7 @@ public class GlobalListenerFilterIT {
     final var searchResult =
         testApplication
             .getRdbmsService()
-            .getGlobalListenerDbReader()
+            .getGlobalListenerDbReader("default")
             .search(
                 new GlobalListenerQuery(
                     new GlobalListenerFilter.Builder()

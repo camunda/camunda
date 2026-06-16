@@ -107,7 +107,7 @@ public class VariableSortIT {
 
     final var searchResult =
         rdbmsService
-            .getVariableReader()
+            .getVariableReader("default")
             .search(
                 new VariableQuery(
                     new VariableFilter.Builder().processInstanceKeys(processInstanceKey).build(),
@@ -129,7 +129,7 @@ public class VariableSortIT {
 
     final var searchResult =
         rdbmsService
-            .getVariableReader()
+            .getVariableReader("default")
             .search(
                 new VariableQuery(
                     new VariableFilter.Builder().processInstanceKeys(processInstanceKey).build(),
@@ -153,7 +153,7 @@ public class VariableSortIT {
 
     final var searchResult =
         rdbmsService
-            .getVariableReader()
+            .getVariableReader("default")
             .search(
                 new VariableQuery(
                     new VariableFilter.Builder().scopeKeys(scopeKey).build(),
