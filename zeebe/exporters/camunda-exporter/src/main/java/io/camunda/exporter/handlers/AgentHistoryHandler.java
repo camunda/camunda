@@ -96,6 +96,7 @@ public class AgentHistoryHandler
         .setElementInstanceKey(value.getElementInstanceKey())
         .setProcessInstanceKey(value.getProcessInstanceKey())
         .setRootProcessInstanceKey(value.getRootProcessInstanceKey())
+        .setBpmnProcessId(value.getBpmnProcessId())
         .setProcessDefinitionKey(value.getProcessDefinitionKey())
         .setTenantId(value.getTenantId())
         .setJobKey(value.getJobKey())
