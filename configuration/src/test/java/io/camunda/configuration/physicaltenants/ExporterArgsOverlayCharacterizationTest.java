@@ -76,6 +76,10 @@ class ExporterArgsOverlayCharacterizationTest {
     properties.put(
         "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.index-prefix",
         "tenanta");
+    // the tenant must provide its own initialization block (required per-PT override)
+    properties.put(
+        "camunda.physical-tenants.tenanta.security.initialization.default-roles.admin.users[0]",
+        "tenanta-admin");
     environment.getPropertySources().addFirst(new MapPropertySource("test", properties));
 
     final Camunda camunda = new Camunda();

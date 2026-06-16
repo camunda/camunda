@@ -136,6 +136,17 @@ public class PhysicalTenantSearchClientReadersConfigurationIT {
               + TENANT_B
               + ".data.secondary-storage.elasticsearch.index-prefix",
           TENANT_B);
+      // each explicitly-configured tenant must provide its own initialization block
+      env.setProperty(
+          "camunda.physical-tenants."
+              + TENANT_A
+              + ".security.initialization.default-roles.admin.users[0]",
+          TENANT_A + "-admin");
+      env.setProperty(
+          "camunda.physical-tenants."
+              + TENANT_B
+              + ".security.initialization.default-roles.admin.users[0]",
+          TENANT_B + "-admin");
       return env;
     }
 
