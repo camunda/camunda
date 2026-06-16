@@ -111,7 +111,7 @@ const AttachmentButton = styled.button`
   letter-spacing: var(--cds-label-01-letter-spacing);
   color: var(--cds-link-primary);
   border: 1px solid var(--cds-border-subtle-01);
-  whitespace: nowrap;
+  white-space: nowrap;
   cursor: pointer;
 
   & > svg {

@@ -289,9 +289,13 @@ describe('<ConversationHistory />', () => {
     const assistantMessage = within(
       screen.getByTestId('conversation-message-1'),
     );
-    expect(assistantMessage.getByRole('button', {name: 'greet'})).toBeEnabled();
     expect(
-      assistantMessage.getByRole('button', {name: 'search'}),
+      assistantMessage.getByRole('button', {
+        name: '"greet" tool call. Click to open details.',
+      }),
+    ).toBeEnabled();
+    expect(
+      assistantMessage.getByRole('button', {name: '"search" tool call.'}),
     ).toBeDisabled();
   });
 });

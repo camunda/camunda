@@ -52,7 +52,7 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
           content={item.content}
           toolCalls={item.toolCalls}
           onToolCallClick={(toolCall) => {
-            if (toolCall.elementId) {
+            if (toolCall.elementId !== null) {
               selectElement({elementId: toolCall.elementId});
             }
           }}
