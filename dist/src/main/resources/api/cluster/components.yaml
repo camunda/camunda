@@ -140,6 +140,50 @@ schemas:
         type: string
         description: The unique ID of the cluster
         example: "cluster-1234"
+      partitionDistribution:
+        $ref: "components.yaml#/schemas/PartitionDistributionConfig"
+
+  PartitionDistributionConfig:
+    description: The partition distributor configuration agreed on by the cluster.
+    type: object
+    required:
+      - type
+    properties:
+      type:
+        type: string
+        enum: [ROUND_ROBIN, ZONE_AWARE, FIXED]
+        description: >
+          The distributor type. ROUND_ROBIN assigns partitions evenly across all brokers.
+          ZONE_AWARE places replicas according to zone specs. FIXED uses a static mapping
+          defined in each broker's local configuration.
+      zones:
+        type: array
+        description: Zone specifications; present only when type is ZONE_AWARE.
+        items:
+          $ref: "components.yaml#/schemas/ZoneSpec"
+
+  ZoneSpec:
+    description: A zone's participation in partition placement.
+    type: object
+    required:
+      - name
+      - numberOfReplicas
+      - priority
+    properties:
+      name:
+        type: string
+        description: Zone name
+        example: "us-east1"
+      numberOfReplicas:
+        type: integer
+        format: int32
+        description: Number of partition replicas placed in this zone
+        example: 2
+      priority:
+        type: integer
+        format: int32
+        description: Preferred-leader ranking; higher value wins
+        example: 1000
 
   RoutingState:
     description: The routing state, i.e. where requests are sent to and how messages are correlated
@@ -331,6 +375,7 @@ schemas:
           - UPDATE_INCARNATION_NUMBER
           - PRE_SCALING
           - POST_SCALING
+          - UPDATE_PARTITION_DISTRIBUTOR_CONFIG
       brokerId:
         $ref: "components.yaml#/schemas/BrokerId"
       partitionId:
@@ -346,6 +391,8 @@ schemas:
           $ref: "components.yaml#/schemas/BrokerId"
       exporterId:
         $ref: "components.yaml#/schemas/ExporterId"
+      partitionDistributionConfig:
+        $ref: "components.yaml#/schemas/PartitionDistributionConfig"
 
   BrokerState:
     title: BrokerState

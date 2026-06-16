@@ -16,6 +16,7 @@ message ClusterTopology {
   string clusterId = 6;
   int64 incarnationNumber = 7;
   bool recovery = 8;
+  PartitionDistributorConfig partitionDistributor = 9;
 }
 
 message RoutingState {
@@ -109,7 +110,12 @@ message TopologyChangeOperation {
     UpdateIncarnationNumberOperation updateIncarnationNumber = 18;
     PreScalingOperation preScaling = 19;
     PostScalingOperation postScaling = 20;
+    UpdatePartitionDistributorConfigOperation updatePartitionDistributorConfig = 21;
   }
+}
+
+message UpdatePartitionDistributorConfigOperation {
+  PartitionDistributorConfig config = 1;
 }
 
 message CompletedTopologyChangeOperation {
@@ -187,6 +193,24 @@ message PostScalingOperation {
 }
 
 message DeleteHistoryOperation { int32 memberId = 1; }
+
+message PartitionDistributorConfig {
+  oneof kind {
+    RoundRobinDistributor roundRobin = 1;
+    ZoneAwareDistributor zoneAware = 2;
+    FixedDistributor fixed = 3;
+  }
+  message RoundRobinDistributor {}
+  message FixedDistributor {}
+  message ZoneAwareDistributor {
+    repeated ZoneSpec zones = 1;
+  }
+  message ZoneSpec {
+    string name = 1;
+    int32 numberOfReplicas = 2;
+    int32 priority = 3;
+  }
+}
 
 message MemberJoinOperation {}
 

@@ -15,10 +15,12 @@ import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
+import java.util.List;
 import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -91,6 +93,29 @@ final class PersistedClusterConfigurationTest {
     // then
     Assertions.assertThatCode(() -> PersistedClusterConfiguration.ofFile(topologyFile, serializer))
         .isInstanceOf(MissingHeader.class);
+  }
+
+  @Test
+  void shouldPersistAndReadPartitionDistributorConfig() throws IOException {
+    // given
+    final var tmp = Files.createTempDirectory("topology");
+    final var topologyFile = tmp.resolve("topology.meta");
+    final var serializer = new ProtoBufSerializer();
+    final var persisted = PersistedClusterConfiguration.ofFile(topologyFile, serializer);
+    final var zoneAwareConfig =
+        new PartitionDistributorConfig.ZoneAwareConfig(
+            List.of(
+                new PartitionDistributorConfig.ZoneSpec("zone-a", 2, 1000),
+                new PartitionDistributorConfig.ZoneSpec("zone-b", 1, 500)));
+    final var config = ClusterConfiguration.init().setPartitionDistributorConfig(zoneAwareConfig);
+
+    // when
+    persisted.update(config);
+    final var reloaded = PersistedClusterConfiguration.ofFile(topologyFile, serializer);
+
+    // then
+    Assertions.assertThat(reloaded.getConfiguration().partitionDistributorConfig())
+        .hasValue(zoneAwareConfig);
   }
 
   @Test

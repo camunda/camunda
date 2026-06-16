@@ -171,6 +171,8 @@ public final class ClusterConfigurationManagerService
                 managerActor,
                 true))
         .andThen(new RoutingStateInitializer(staticConfiguration.partitionCount()))
+        // Must be initialized by the coordinator only
+        .andThen(new PartitionDistributorInitializer(staticConfiguration))
         .andThen(new ClusterIdInitializer(staticConfiguration.clusterId()));
   }
 

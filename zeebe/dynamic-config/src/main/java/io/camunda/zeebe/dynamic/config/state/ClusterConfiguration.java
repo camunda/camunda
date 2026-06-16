@@ -10,8 +10,11 @@ package io.camunda.zeebe.dynamic.config.state;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedMap;
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.dynamic.config.PartitionDistributor;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.UpdateRoutingState;
 import io.camunda.zeebe.dynamic.config.state.MemberState.State;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
+import io.camunda.zeebe.dynamic.config.util.RoundRobinPartitionDistributor;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -45,7 +48,8 @@ public record ClusterConfiguration(
     Optional<RoutingState> routingState,
     Optional<String> clusterId,
     long incarnationNumber,
-    boolean recovery) {
+    boolean recovery,
+    Optional<PartitionDistributorConfig> partitionDistributorConfig) {
 
   public static final int INITIAL_VERSION = 1;
   public static final long INITIAL_INCARNATION_NUMBER = 0;
@@ -60,7 +64,8 @@ public record ClusterConfiguration(
       final Optional<RoutingState> routingState,
       final Optional<String> clusterId,
       final long incarnationNumber,
-      final boolean recovery) {
+      final boolean recovery,
+      final Optional<PartitionDistributorConfig> partitionDistributorConfig) {
     this(
         version,
         ImmutableSortedMap.copyOf(members),
@@ -69,7 +74,8 @@ public record ClusterConfiguration(
         routingState,
         clusterId,
         incarnationNumber,
-        recovery);
+        recovery,
+        partitionDistributorConfig);
   }
 
   public ClusterConfiguration {
@@ -83,6 +89,7 @@ public record ClusterConfiguration(
     Objects.requireNonNull(pendingChanges);
     Objects.requireNonNull(routingState);
     Objects.requireNonNull(clusterId);
+    Objects.requireNonNull(partitionDistributorConfig);
     if (incarnationNumber < 0) {
       throw new IllegalArgumentException("Incarnation number must be >= 0");
     }
@@ -97,7 +104,8 @@ public record ClusterConfiguration(
         Optional.empty(),
         Optional.empty(),
         INITIAL_INCARNATION_NUMBER,
-        false);
+        false,
+        Optional.empty());
   }
 
   public boolean isUninitialized() {
@@ -113,7 +121,8 @@ public record ClusterConfiguration(
         Optional.empty(),
         Optional.empty(),
         INITIAL_INCARNATION_NUMBER,
-        false);
+        false,
+        Optional.empty());
   }
 
   public ClusterConfiguration addMember(final MemberId memberId, final MemberState state) {
@@ -134,7 +143,8 @@ public record ClusterConfiguration(
         routingState,
         clusterId,
         incarnationNumber,
-        recovery);
+        recovery,
+        partitionDistributorConfig);
   }
 
   public ClusterConfiguration setRoutingState(final RoutingState updatedRoutingState) {
@@ -146,7 +156,29 @@ public record ClusterConfiguration(
         Optional.of(updatedRoutingState),
         clusterId,
         incarnationNumber,
-        recovery);
+        recovery,
+        partitionDistributorConfig);
+  }
+
+  /**
+   * Change the partition distribution configuration. This must be done exclusivelyu from the
+   * coordinator node.
+   */
+  public ClusterConfiguration setPartitionDistributorConfig(
+      final PartitionDistributorConfig config) {
+    if (partitionDistributorConfig.map(cfg -> cfg.equals(config)).orElse(false)) {
+      return this;
+    }
+    return new ClusterConfiguration(
+        version + 1,
+        members,
+        lastChange,
+        pendingChanges,
+        routingState,
+        clusterId,
+        incarnationNumber,
+        recovery,
+        Optional.of(config));
   }
 
   /**
@@ -192,7 +224,8 @@ public record ClusterConfiguration(
         routingState,
         clusterId,
         incarnationNumber,
-        recovery);
+        recovery,
+        partitionDistributorConfig);
   }
 
   public ClusterConfiguration startConfigurationChange(
@@ -214,7 +247,8 @@ public record ClusterConfiguration(
           routingState,
           clusterId,
           incarnationNumber,
-          recovery);
+          recovery,
+          partitionDistributorConfig);
     }
   }
 
@@ -225,6 +259,7 @@ public record ClusterConfiguration(
    *
    * @param other ClusterConfiguration to merge
    * @return merged ClusterConfiguration
+   * @throws IllegalStateException when the two configurations cannot be merged
    */
   public ClusterConfiguration merge(final ClusterConfiguration other) {
     if (version > other.version) {
@@ -246,6 +281,11 @@ public record ClusterConfiguration(
               .flatMap(Optional::stream)
               .reduce(RoutingState::merge);
 
+      final var mergedDistributorConfig =
+          Stream.of(partitionDistributorConfig, other.partitionDistributorConfig)
+              .flatMap(Optional::stream)
+              .reduce(PartitionDistributorConfig::merge);
+
       return new ClusterConfiguration(
           version,
           ImmutableMap.copyOf(mergedMembers),
@@ -254,7 +294,8 @@ public record ClusterConfiguration(
           mergedRoutingState,
           clusterId,
           Math.max(incarnationNumber, other.incarnationNumber()),
-          recovery || other.recovery());
+          recovery || other.recovery(),
+          mergedDistributorConfig);
     }
   }
 
@@ -297,6 +338,11 @@ public record ClusterConfiguration(
     return Optional.of(pendingChanges.orElseThrow().nextPendingOperation());
   }
 
+  public boolean isZoneAware() {
+    return members().keySet().stream().anyMatch(m -> m.zone() != null)
+        || partitionDistributorConfig.map(ZoneAwareConfig.class::isInstance).orElse(false);
+  }
+
   /**
    * When the operation returned by {@link #pendingChangesFor(MemberId)} is completed, the changes
    * should be reflected in ClusterConfiguration by invoking this method. This removes the completed
@@ -324,7 +370,8 @@ public record ClusterConfiguration(
             routingState,
             clusterId,
             incarnationNumber,
-            recovery);
+            recovery,
+            partitionDistributorConfig);
 
     if (!result.hasPendingChanges()) {
       // The last change has been applied. Clean up the members that are marked as LEFT in the
@@ -350,7 +397,8 @@ public record ClusterConfiguration(
           routingState,
           clusterId,
           incarnationNumber,
-          recovery);
+          recovery,
+          partitionDistributorConfig);
     }
 
     return result;
@@ -376,6 +424,12 @@ public record ClusterConfiguration(
 
   public boolean hasPartition(final int partitionId) {
     return members.values().stream().anyMatch(member -> member.hasPartition(partitionId));
+  }
+
+  public PartitionDistributor partitionDistributor() {
+    return partitionDistributorConfig()
+        .map(PartitionDistributorConfig::toDistributor)
+        .orElseGet(RoundRobinPartitionDistributor::new);
   }
 
   public int partitionCount() {
@@ -454,7 +508,8 @@ public record ClusterConfiguration(
           routingState,
           clusterId,
           incarnationNumber,
-          recovery);
+          recovery,
+          partitionDistributorConfig);
     } else {
       return this;
     }
@@ -475,6 +530,7 @@ public record ClusterConfiguration(
     private Optional<String> clusterId = Optional.empty();
     private long incarnationNumber = INITIAL_INCARNATION_NUMBER;
     private boolean recovery = false;
+    private Optional<PartitionDistributorConfig> partitionDistributorConfig = Optional.empty();
 
     /**
      * Copies all properties from the given ClusterConfiguration.
@@ -491,6 +547,7 @@ public record ClusterConfiguration(
       clusterId = config.clusterId;
       incarnationNumber = config.incarnationNumber;
       recovery = config.recovery;
+      partitionDistributorConfig = config.partitionDistributorConfig;
       return this;
     }
 
@@ -583,6 +640,18 @@ public record ClusterConfiguration(
     }
 
     /**
+     * Sets the partition distributor config.
+     *
+     * @param partitionDistributorConfig the partition distributor config
+     * @return this builder
+     */
+    public Builder partitionDistributorConfig(
+        final Optional<PartitionDistributorConfig> partitionDistributorConfig) {
+      this.partitionDistributorConfig = partitionDistributorConfig;
+      return this;
+    }
+
+    /**
      * Builds and returns a new ClusterConfiguration instance.
      *
      * @return the new ClusterConfiguration
@@ -596,7 +665,8 @@ public record ClusterConfiguration(
           routingState,
           clusterId,
           incarnationNumber,
-          recovery);
+          recovery,
+          partitionDistributorConfig);
     }
   }
 }

@@ -10,7 +10,6 @@ package io.camunda.zeebe.it.cluster.management;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 import feign.FeignException;
-import io.atomix.cluster.BrokerMemberId;
 import io.atomix.cluster.MemberId;
 import io.camunda.configuration.Zone;
 import io.camunda.zeebe.management.cluster.BrokerId;
@@ -36,11 +35,6 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
   }
 
   @Override
-  protected int minReplicationFactor() {
-    return 2;
-  }
-
-  @Override
   @SuppressWarnings("resource")
   protected TestCluster createCluster(
       final int brokerCount, final int partitionCount, final int replicationFactor) {
@@ -55,8 +49,43 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
   }
 
   @Override
+  protected int minReplicationFactor() {
+    return 2;
+  }
+
+  @Override
+  protected String zone() {
+    return ZONES[0];
+  }
+
+  @Override
+  protected BrokerId brokerId(final int nodeIdx) {
+    return new BrokerId.String(memberIdForBroker(nodeIdx).toString());
+  }
+
+  @Override
   protected MemberId memberIdForBroker(final int nodeIdx) {
-    return MemberId.from(ZONES[nodeIdx % ZONES.length], nodeIdx / ZONES.length);
+    return MemberId.from(zoneFor(nodeIdx), nodeIdx / ZONES.length);
+  }
+
+  @Override
+  protected void assertClusterScaleResponse(
+      final ClusterActuator actuator, final ClusterConfigPatchRequest request) {
+    assertThatCode(() -> actuator.patchCluster(request, true, false))
+        .isInstanceOf(FeignException.BadRequest.class)
+        .hasMessageContaining("zone-aware");
+  }
+
+  @Override
+  protected void assertClusterPatchResponse(
+      final ClusterActuator actuator, final ClusterConfigPatchRequest request) {
+    assertThatCode(() -> actuator.patchCluster(request, true, false))
+        .isInstanceOf(FeignException.BadRequest.class)
+        .hasMessageContaining("zone-aware");
+  }
+
+  private String zoneFor(final int nodeIdx) {
+    return ZONES[nodeIdx % ZONES.length];
   }
 
   private static List<Zone> zoneConfigs(final int brokerCount, final int replicationFactor) {
@@ -67,17 +96,6 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
     return List.of(
         new Zone(ZONES[0], brokersZoneA, replicasZoneA, 100),
         new Zone(ZONES[1], brokersZoneB, replicasZoneB, 10));
-  }
-
-  @Override
-  protected String zone() {
-    return ZONES[0];
-  }
-
-  @Override
-  protected BrokerId brokerId(final int nodeIdx) {
-    return new BrokerId.String(
-        BrokerMemberId.from(ZONES[nodeIdx % ZONES.length], nodeIdx / ZONES.length).toString());
   }
 
   @Test
