@@ -20,6 +20,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayBlockingStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
 import io.camunda.zeebe.protocol.Protocol;
 import io.grpc.Metadata;
+import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.MetadataUtils;
 import java.util.Set;
@@ -81,9 +82,12 @@ public class BrokerRequestPhysicalTenantRoutingTest extends GatewayTest {
     // when / then
     assertThatThrownBy(
             () -> unknownClient.completeJob(CompleteJobRequest.newBuilder().setJobKey(1L).build()))
-        .isInstanceOf(StatusRuntimeException.class)
-        .hasMessageContaining("NOT_FOUND")
-        .hasMessageContaining("unknown-tenant");
+        .isInstanceOfSatisfying(
+            StatusRuntimeException.class,
+            e -> {
+              assertThat(e.getStatus().getCode()).isEqualTo(Status.Code.NOT_FOUND);
+              assertThat(e.getStatus().getDescription()).contains("unknown-tenant");
+            });
     assertThat(brokerClient.getBrokerRequests()).isEmpty();
   }
 
