@@ -122,7 +122,7 @@ public class RdbmsConfiguration {
       final PhysicalTenantSearchClientReaders physicalTenantSearchClientReaders,
       final List<ResourceAccessController> resourceAccessControllers) {
     return new CamundaSearchClients(
-        physicalTenantSearchClientReaders.requireDefaultTenant(),
+        physicalTenantSearchClientReaders.readersByPhysicalTenant(),
         new ResourceAccessDelegatingController(resourceAccessControllers));
   }
 
