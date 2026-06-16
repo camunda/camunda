@@ -41,7 +41,7 @@ const EmptyState: React.FC<Props> = ({heading, description, icon, button, link, 
 					</Link>
 				)}
 				{link !== undefined && (
-					<Link href={link.href} onClick={link.onClick} target="_blank">
+					<Link href={link.href} onClick={link.onClick} target="_blank" rel="noreferrer">
 						{link.label}
 					</Link>
 				)}

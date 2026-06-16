@@ -395,15 +395,15 @@
 		"operate": {
 			"dashboard": {
 				"title": "Panel de control",
-				"runningInstancesTotal": "{{count}} Running Process Instances in total",
-				"instancesWithIncident": "Process Instances with Incident",
-				"activeInstances": "Active Process Instances",
-				"processesByNameTitle": "Process Instances by Name",
-				"incidentsByErrorTitle": "Process Incidents by Error Message",
-				"noInstancesHeading": "No running process instances",
-				"noInstancesDescription": "To view finished instances, go to the Processes view. Start a new process instance to see activity here.",
-				"learnMoreLink": "Learn more about Operate",
-				"goToModelerButton": "Go to Modeler"
+				"runningInstancesTotal": "{{count}} instancias de proceso en ejecución en total",
+				"instancesWithIncident": "Instancias de proceso con incidente",
+				"activeInstances": "Instancias de proceso activas",
+				"processesByNameTitle": "Instancias de proceso por nombre",
+				"incidentsByErrorTitle": "Incidentes de proceso por mensaje de error",
+				"noInstancesHeading": "No hay instancias de proceso en ejecución",
+				"noInstancesDescription": "Para ver las instancias finalizadas, vaya a la vista de Procesos. Inicie una nueva instancia de proceso para ver actividad aquí.",
+				"learnMoreLink": "Más información sobre Operate",
+				"goToModelerButton": "Ir al Modeler"
 			},
 			"processes": {
 				"title": "Procesos"

@@ -55,7 +55,7 @@ const runningInstancesCountQuery = () =>
 			const {response: remaining, error: remainingError} = await request(
 				endpoints.getProcessDefinitionInstanceStatistics({
 					...DEFAULT_SORT,
-					page: {from: firstPage.items.length, limit: firstPage.page.totalItems},
+					page: {from: firstPage.items.length, limit: firstPage.page.totalItems - firstPage.items.length},
 				}),
 			);
 			if (remainingError !== null) {

@@ -21,7 +21,8 @@ type Props = {
 };
 
 const InstancesBar: React.FC<Props> = ({label, activeInstancesCount, incidentsCount, size, className}) => {
-	const incidentsBarRatio = (100 * incidentsCount) / ((activeInstancesCount ?? 0) + incidentsCount);
+	const total = (activeInstancesCount ?? 0) + incidentsCount;
+	const incidentsBarRatio = total === 0 ? 0 : (100 * incidentsCount) / total;
 	const hasIncidents = incidentsCount > 0;
 	const hasActiveInstances = (activeInstancesCount ?? 0) > 0;
 	const showIncidentsBar = activeInstancesCount !== undefined;
