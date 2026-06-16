@@ -16,6 +16,7 @@
 package io.camunda.process.test.impl.assertions;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.response.EvaluateExpressionResponse;
 import io.camunda.client.api.search.filter.CorrelatedMessageSubscriptionFilter;
 import io.camunda.client.api.search.filter.DecisionInstanceFilter;
 import io.camunda.client.api.search.filter.ElementInstanceFilter;
@@ -37,6 +38,7 @@ import io.camunda.client.api.search.response.ProcessInstanceSequenceFlow;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.api.search.response.Variable;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 
 public class CamundaDataSource {
@@ -115,6 +117,16 @@ public class CamundaDataSource {
 
   public Variable getVariable(final long variableKey) {
     return client.newVariableGetRequest(variableKey).send().join();
+  }
+
+  public EvaluateExpressionResponse evaluateExpression(
+      final String expression, final Map<String, Object> variables) {
+    return client
+        .newEvaluateExpressionCommand()
+        .expression(expression)
+        .variables(variables)
+        .send()
+        .join();
   }
 
   public List<ProcessInstance> findProcessInstances() {

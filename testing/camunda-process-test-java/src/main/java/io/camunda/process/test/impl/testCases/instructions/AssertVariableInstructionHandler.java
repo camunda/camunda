@@ -49,6 +49,12 @@ public class AssertVariableInstructionHandler
     final String variableName = instruction.getVariableName();
 
     instruction
+        .getSatisfiesExpression()
+        .ifPresent(
+            expression ->
+                applyExpressionAssertion(baseAssert, variableName, elementSelector, expression));
+
+    instruction
         .getSatisfiesJudge()
         .ifPresent(judge -> applyJudgeAssertion(baseAssert, variableName, elementSelector, judge));
 
@@ -62,6 +68,20 @@ public class AssertVariableInstructionHandler
   @Override
   public Class<AssertVariableInstruction> getInstructionType() {
     return AssertVariableInstruction.class;
+  }
+
+  private static void applyExpressionAssertion(
+      final ProcessInstanceAssert baseAssert,
+      final String variableName,
+      final Optional<ElementSelector> elementSelector,
+      final String expression) {
+
+    if (elementSelector.isPresent()) {
+      baseAssert.hasLocalVariableSatisfiesExpression(
+          elementSelector.get(), variableName, expression);
+    } else {
+      baseAssert.hasVariableSatisfiesExpression(variableName, expression);
+    }
   }
 
   private static void applyJudgeAssertion(

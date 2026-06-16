@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import io.camunda.client.api.response.EvaluateExpressionResponse;
 import io.camunda.client.api.search.filter.ElementInstanceFilter;
 import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.Variable;
@@ -261,6 +262,37 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
         actualVariablesSupplier);
   }
 
+  public void hasVariableSatisfiesExpression(
+      final long processInstanceKey,
+      final VariableSelector variableSelector,
+      final String variableName,
+      final String expression) {
+
+    assertExpressionNotEmpty(expression);
+
+    final String rawValue =
+        waitForVariable(
+            variableSelector,
+            () -> findGlobalVariablesBySelector(processInstanceKey, variableSelector));
+
+    evaluateExpression(variableSelector, variableName, expression, rawValue);
+  }
+
+  public void hasLocalVariableSatisfiesExpression(
+      final long processInstanceKey,
+      final ElementSelector elementSelector,
+      final VariableSelector variableSelector,
+      final String variableName,
+      final String expression) {
+
+    assertExpressionNotEmpty(expression);
+
+    final String rawValue =
+        waitForLocalVariable(processInstanceKey, elementSelector, variableSelector);
+
+    evaluateExpression(variableSelector, variableName, expression, rawValue);
+  }
+
   public void hasLocalVariables(
       final long processInstanceKey,
       final ElementSelector selector,
@@ -403,6 +435,62 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
         String.format(" for %s variable '%s'", actual, variableSelector.describe()));
   }
 
+  private void evaluateExpression(
+      final VariableSelector variableSelector,
+      final String variableName,
+      final String expression,
+      final String rawValue) {
+    final Map<String, Object> variables = new HashMap<>();
+    variables.put(variableName, jsonMapper.readJson(rawValue, Object.class));
+
+    final ExpressionEvaluationResult directEvaluation =
+        tryEvaluateExpression(normalizeFeelExpression(expression), variables);
+    if (directEvaluation.isBooleanResult()) {
+      assertExpressionMatches(variableSelector, expression, directEvaluation.result());
+      return;
+    }
+
+    final ExpressionEvaluationResult unaryTestEvaluation =
+        tryEvaluateExpression(normalizeUnaryTestExpression(variableName, expression), variables);
+    if (unaryTestEvaluation.isBooleanResult()) {
+      assertExpressionMatches(variableSelector, expression, unaryTestEvaluation.result());
+      return;
+    }
+
+    final String directFailure =
+        directEvaluation.failure() == null
+            ? String.format("returned '%s'", directEvaluation.result())
+            : directEvaluation.failure().getMessage();
+    final String unaryFailure =
+        unaryTestEvaluation.failure() == null
+            ? String.format("returned '%s'", unaryTestEvaluation.result())
+            : unaryTestEvaluation.failure().getMessage();
+
+    fail(
+        "%s variable '%s' should satisfy expression '%s' but the expression evaluation failed. Direct FEEL evaluation %s. Unary-test fallback %s.",
+        actual, variableSelector.describe(), expression, directFailure, unaryFailure);
+  }
+
+  private void assertExpressionMatches(
+      final VariableSelector variableSelector, final String expression, final Object result) {
+    if (!Boolean.TRUE.equals(result)) {
+      fail(
+          "%s variable '%s' should satisfy expression '%s' but the evaluation result was '%s'.",
+          actual, variableSelector.describe(), expression, result);
+    }
+  }
+
+  private ExpressionEvaluationResult tryEvaluateExpression(
+      final String expression, final Map<String, Object> variables) {
+    try {
+      final EvaluateExpressionResponse response =
+          dataSource.evaluateExpression(expression, variables);
+      return new ExpressionEvaluationResult(response.getResult(), null);
+    } catch (final RuntimeException e) {
+      return new ExpressionEvaluationResult(null, e);
+    }
+  }
+
   private String assertVariableExists(
       final VariableSelector variableSelector,
       final Supplier<List<Variable>> actualVariablesSupplier) {
@@ -494,6 +582,26 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
     }
   }
 
+  private static void assertExpressionNotEmpty(final String expression) {
+    if (expression == null || expression.trim().isEmpty()) {
+      throw new IllegalArgumentException("expression must not be null or empty");
+    }
+  }
+
+  private static String normalizeFeelExpression(final String expression) {
+    final String trimmedExpression = expression.trim();
+    return trimmedExpression.startsWith("=") ? trimmedExpression : "=" + trimmedExpression;
+  }
+
+  private static String normalizeUnaryTestExpression(
+      final String variableName, final String expression) {
+    String trimmedExpression = expression.trim();
+    if (trimmedExpression.startsWith("=")) {
+      trimmedExpression = trimmedExpression.substring(1).trim();
+    }
+    return "=" + variableName + " in (" + trimmedExpression + ")";
+  }
+
   private void evaluateSimilarity(
       final String variableName, final String expectedValue, final String variableValue) {
     if (variableValue == null || variableValue.trim().isEmpty()) {
@@ -571,5 +679,28 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
         // However, the toMap collector does not allow null values and would throw an exception.
         // See this Stack Overflow issue for more context: https://stackoverflow.com/a/24634007
         .collect(HashMap::new, (m, v) -> m.put(v.getName(), v.getValue()), HashMap::putAll);
+  }
+
+  private static final class ExpressionEvaluationResult {
+
+    private final Object result;
+    private final RuntimeException failure;
+
+    private ExpressionEvaluationResult(final Object result, final RuntimeException failure) {
+      this.result = result;
+      this.failure = failure;
+    }
+
+    private Object result() {
+      return result;
+    }
+
+    private RuntimeException failure() {
+      return failure;
+    }
+
+    private boolean isBooleanResult() {
+      return result instanceof Boolean;
+    }
   }
 }
