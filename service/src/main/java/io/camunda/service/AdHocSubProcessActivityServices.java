@@ -17,14 +17,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-public class AdHocSubProcessActivityServices extends ApiServices<AdHocSubProcessActivityServices> {
+public class AdHocSubProcessActivityServices
+    extends PhysicalTenantScopedApiServices<AdHocSubProcessActivityServices> {
 
   public AdHocSubProcessActivityServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         executorProvider,

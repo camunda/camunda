@@ -11,38 +11,36 @@ import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.gateway.impl.broker.request.BrokerExpressionEvaluationRequest;
-import io.camunda.zeebe.protocol.impl.record.value.expression.ExpressionRecord;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
+import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
+import java.util.List;
+import java.util.function.BiConsumer;
+import java.util.stream.Stream;
 
-public final class ExpressionServices extends PhysicalTenantScopedApiServices<ExpressionServices> {
+public abstract class PhysicalTenantScopedApiServices<T extends PhysicalTenantScopedApiServices<T>>
+    extends ApiServices<T> {
 
-  public ExpressionServices(
+  private final String physicalTenantId;
+
+  protected PhysicalTenantScopedApiServices(
       final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
-        physicalTenantId,
         brokerClient,
         securityContextProvider,
         executorProvider,
         brokerRequestAuthorizationConverter);
+    this.physicalTenantId = physicalTenantId;
   }
 
-  public CompletableFuture<ExpressionRecord> evaluateExpression(
-      final ExpressionEvaluationRequest request, final CamundaAuthentication authentication) {
-    return sendBrokerRequest(
-        new BrokerExpressionEvaluationRequest()
-            .setExpression(request.expression())
-            .setVariables(request.variables())
-            .setScopeKey(request.scopeKey())
-            .setTenantId(request.tenantId()),
-        authentication);
+  @Override
+  protected final List<BiConsumer<BrokerRequest, CamundaAuthentication>> brokerRequestMutators() {
+    return Stream.concat(
+            super.brokerRequestMutators().stream(),
+            Stream.of(
+                (brokerRequest, ignored) -> brokerRequest.setPartitionGroup(physicalTenantId)))
+        .toList();
   }
-
-  public record ExpressionEvaluationRequest(
-      String expression, String tenantId, Long scopeKey, Map<String, Object> variables) {}
 }

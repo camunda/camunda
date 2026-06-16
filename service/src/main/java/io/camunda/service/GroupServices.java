@@ -38,12 +38,14 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
   private final GroupSearchClient groupSearchClient;
 
   public GroupServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final GroupSearchClient groupSearchClient,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         executorProvider,

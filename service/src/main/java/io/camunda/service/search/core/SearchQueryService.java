@@ -12,22 +12,25 @@ import io.camunda.search.query.SearchQueryBase;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.service.ApiServices;
 import io.camunda.service.ApiServicesExecutorProvider;
+import io.camunda.service.PhysicalTenantScopedApiServices;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import java.util.function.Supplier;
 
-public abstract class SearchQueryService<T extends ApiServices<T>, Q extends SearchQueryBase, D>
-    extends ApiServices<T> {
+public abstract class SearchQueryService<
+        T extends PhysicalTenantScopedApiServices<T>, Q extends SearchQueryBase, D>
+    extends PhysicalTenantScopedApiServices<T> {
 
   protected SearchQueryService(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         executorProvider,

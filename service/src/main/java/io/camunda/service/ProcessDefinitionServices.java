@@ -41,6 +41,7 @@ public class ProcessDefinitionServices
   private final FormServices formServices;
 
   public ProcessDefinitionServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final ProcessDefinitionSearchClient processDefinitionSearchClient,
@@ -48,6 +49,7 @@ public class ProcessDefinitionServices
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         executorProvider,

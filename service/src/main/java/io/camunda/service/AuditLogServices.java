@@ -43,12 +43,14 @@ public class AuditLogServices
   private final AuditLogSearchClient auditLogSearchClient;
 
   public AuditLogServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final AuditLogSearchClient auditLogSearchClient,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         executorProvider,

@@ -17,14 +17,16 @@ import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-public class SignalServices extends ApiServices<SignalServices> {
+public class SignalServices extends PhysicalTenantScopedApiServices<SignalServices> {
 
   public SignalServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         executorProvider,

@@ -41,6 +41,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class AdHocSubProcessActivityServicesTest {
 
+  private static final String PHYSICAL_TENANT_ID = "test-tenant";
   private static final long AD_HOC_SUB_PROCESS_INSTANCE_KEY = 123456L;
   private static final String ELEMENT_ID = "activity1";
 
@@ -73,6 +74,7 @@ public class AdHocSubProcessActivityServicesTest {
         .thenReturn(Map.of(USER_TOKEN_CLAIMS, tokenClaims));
     services =
         new AdHocSubProcessActivityServices(
+            PHYSICAL_TENANT_ID,
             brokerClient,
             securityContextProvider,
             executorProvider,
@@ -125,6 +127,7 @@ public class AdHocSubProcessActivityServicesTest {
     assertThat(result).isEqualTo(expectedResponse);
     assertThat(requestCaptor.getValue().getAuthorization().getClaims())
         .containsExactly(entry(USER_TOKEN_CLAIMS, Map.of("claim", "value")));
+    assertThat(requestCaptor.getValue().getPartitionGroup()).isEqualTo(PHYSICAL_TENANT_ID);
   }
 
   @ParameterizedTest

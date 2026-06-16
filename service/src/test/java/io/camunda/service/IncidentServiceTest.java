@@ -40,6 +40,7 @@ import org.mockito.ArgumentCaptor;
 
 public final class IncidentServiceTest {
 
+  private static final String PHYSICAL_TENANT_ID = "test-tenant";
   private IncidentServices services;
   private IncidentSearchClient client;
   private CamundaAuthentication authentication;
@@ -53,6 +54,7 @@ public final class IncidentServiceTest {
 
     services =
         new IncidentServices(
+            PHYSICAL_TENANT_ID,
             mock(BrokerClient.class),
             securityContextProvider,
             client,

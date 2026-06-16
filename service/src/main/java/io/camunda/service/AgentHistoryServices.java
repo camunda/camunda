@@ -15,14 +15,17 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateAgentHistoryRequ
 import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
 import java.util.concurrent.CompletableFuture;
 
-public final class AgentHistoryServices extends ApiServices<AgentHistoryServices> {
+public final class AgentHistoryServices
+    extends PhysicalTenantScopedApiServices<AgentHistoryServices> {
 
   public AgentHistoryServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         executorProvider,

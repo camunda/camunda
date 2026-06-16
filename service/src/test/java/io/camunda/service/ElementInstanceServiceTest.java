@@ -45,6 +45,7 @@ import org.mockito.Mock;
 
 public final class ElementInstanceServiceTest {
 
+  private static final String PHYSICAL_TENANT_ID = "test-tenant";
   private ElementInstanceServices services;
   private FlowNodeInstanceSearchClient client;
   private WaitStateSearchClient waitStateSearchClient;
@@ -60,6 +61,7 @@ public final class ElementInstanceServiceTest {
     incidentServices = mock(IncidentServices.class);
     services =
         new ElementInstanceServices(
+            PHYSICAL_TENANT_ID,
             mock(BrokerClient.class),
             mock(SecurityContextProvider.class),
             client,

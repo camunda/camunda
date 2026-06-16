@@ -30,12 +30,14 @@ public final class AgentInstanceServices
   private final AgentInstanceSearchClient agentInstanceSearchClient;
 
   public AgentInstanceServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final AgentInstanceSearchClient agentInstanceSearchClient,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         executorProvider,

@@ -85,17 +85,17 @@ public class WebSecurityConfigTestContext {
 
   @Bean
   public RoleServices createRoleServices(final ApiServicesExecutorProvider executorProvider) {
-    return new RoleServices(null, null, null, executorProvider, null);
+    return new RoleServices("default", null, null, null, executorProvider, null);
   }
 
   @Bean
   public GroupServices createGroupServices(final ApiServicesExecutorProvider executorProvider) {
-    return new GroupServices(null, null, null, executorProvider, null);
+    return new GroupServices("default", null, null, null, executorProvider, null);
   }
 
   @Bean
   public TenantServices createTenantServices(final ApiServicesExecutorProvider executorProvider) {
-    return new TenantServices(null, null, null, executorProvider, null);
+    return new TenantServices("default", null, null, null, executorProvider, null);
   }
 
   @Bean
