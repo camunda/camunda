@@ -8,12 +8,12 @@
 package io.camunda.application.commons.search;
 
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
-import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.search.clients.reader.AuthorizationReader;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -42,24 +42,20 @@ public class SearchClientReaderConfiguration {
         });
   }
 
+  /**
+   * SPIKE (ADR-0005): route authorization reads to the physical tenant in context instead of
+   * binding to the {@code default} tenant's reader (#55252). Both authorization-read consumers — the
+   * control-plane {@code AuthorizationRepositoryAdapter} and the data-plane {@code
+   * SearchAuthorizationScopeRepository} — inject this single bean, so re-pointing it here covers both
+   * paths. Was: {@code requireDefault(physicalTenantSearchClientReaders.readersByPhysicalTenant(),
+   * ...).authorizationReader();} (default-pinned).
+   */
   @Bean
   public AuthorizationReader authorizationReader(
       final PhysicalTenantSearchClientReaders physicalTenantSearchClientReaders) {
-    return requireDefault(
-            physicalTenantSearchClientReaders.readersByPhysicalTenant(),
-            "physicalTenantSearchClientReaders")
-        .authorizationReader();
-  }
-
-  private static <T> T requireDefault(final Map<String, T> beansByTenant, final String beanName) {
-    final var defaultBean = beansByTenant.get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
-    if (defaultBean == null) {
-      throw new IllegalStateException(
-          "Missing '"
-              + PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID
-              + "' tenant entry in "
-              + beanName);
-    }
-    return defaultBean;
+    final Map<String, AuthorizationReader> readersByPhysicalTenant =
+        physicalTenantSearchClientReaders.readersByPhysicalTenant().entrySet().stream()
+            .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().authorizationReader()));
+    return new PhysicalTenantRoutingAuthorizationReader(readersByPhysicalTenant);
   }
 }
