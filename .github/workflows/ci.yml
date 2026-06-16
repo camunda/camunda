@@ -892,14 +892,17 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
+      actions: read  # required to list snapshot-workflow runs for base resolution (Workstream D)
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@main
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Check for vulnerable dependencies
-        uses: camunda/infra-global-github-actions/dependency-vuln-check@50f8493e449f1abc6956f158185e58d1d261aa1f # main
+        uses: camunda/infra-global-github-actions/dependency-vuln-check@f1e0bd49b88f17b2caeba3dbc7bebf9abfc1ef33 # main — bump to post-merge SHA after infra-global-github-actions#715 merges
         with:
           base-sha: ${{ github.event.pull_request.base.sha }}
           head-sha: ${{ github.event.pull_request.head.sha }}
+          base-ref: ${{ github.event.pull_request.base.ref }}
+          snapshot-workflow: maven-dependency-snapshot.yml
       - name: Observe build status
         if: always()
         continue-on-error: true
