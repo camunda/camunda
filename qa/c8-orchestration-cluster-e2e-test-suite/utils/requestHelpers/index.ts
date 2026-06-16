@@ -104,6 +104,12 @@ export {
 export {type AuditLog} from './audit-log-requestHelpers';
 export {evaluateExpression, EXPRESSION_URL} from './expression-requestHelpers';
 export {
+  seedUniqueProcessDefinitions,
+  seedUniqueDecisionDefinitions,
+  walkLatestVersionCursor,
+  waitForLatestVersionTotalItems,
+} from './latest-version-test-helpers';
+export {
   type VariableRecord,
   isRootScope,
   isLocalScope,
