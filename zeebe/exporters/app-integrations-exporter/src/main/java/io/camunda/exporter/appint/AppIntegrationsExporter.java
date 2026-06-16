@@ -17,6 +17,7 @@ import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.protocol.record.Record;
 import java.time.Duration;
+import java.util.function.UnaryOperator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,21 +26,39 @@ public class AppIntegrationsExporter implements Exporter {
 
   private final Logger log = LoggerFactory.getLogger(getClass().getPackageName());
 
+  private final UnaryOperator<String> environment;
+
   private Subscription<Event> subscription;
   private Controller controller;
   private Config config;
+  private DeploymentContext deploymentContext;
   private AppIntegrationsExporterMetrics metrics;
+
+  public AppIntegrationsExporter() {
+    this(System::getenv);
+  }
+
+  AppIntegrationsExporter(final UnaryOperator<String> environment) {
+    this.environment = environment;
+  }
 
   @Override
   public void configure(final Context context) {
     config = context.getConfiguration().instantiate(Config.class);
+    deploymentContext =
+        new DeploymentContext(
+            environment.apply(DeploymentContext.ORGANIZATION_ID_ENV_VAR),
+            context.getClusterId(),
+            context.getPhysicalTenantId());
     metrics = new AppIntegrationsExporterMetrics(context.getMeterRegistry());
   }
 
   @Override
   public void open(final Controller controller) {
     this.controller = controller;
-    subscription = SubscriptionFactory.createDefault(config, this::updateExportPosition, metrics);
+    subscription =
+        SubscriptionFactory.createDefault(
+            config, deploymentContext, this::updateExportPosition, metrics);
     scheduleDelayedFlush();
   }
 

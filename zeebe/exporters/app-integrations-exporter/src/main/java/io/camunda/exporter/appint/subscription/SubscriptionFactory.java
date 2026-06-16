@@ -14,6 +14,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import io.camunda.exporter.appint.DeploymentContext;
 import io.camunda.exporter.appint.config.BatchConfig;
 import io.camunda.exporter.appint.config.Config;
 import io.camunda.exporter.appint.config.ConfigValidator;
@@ -24,6 +25,7 @@ import io.camunda.exporter.appint.metrics.AppIntegrationsExporterMetrics;
 import io.camunda.exporter.appint.transport.Authentication;
 import io.camunda.exporter.appint.transport.Authentication.ApiKey;
 import io.camunda.exporter.appint.transport.Authentication.OAuthCredentialsProvider;
+import io.camunda.exporter.appint.transport.ContextHeaders;
 import io.camunda.exporter.appint.transport.DefaultOAuthCredentialsProvider;
 import io.camunda.exporter.appint.transport.HttpTransportConfig;
 import io.camunda.exporter.appint.transport.HttpTransportImpl;
@@ -52,6 +54,14 @@ public class SubscriptionFactory {
       final Config config,
       final Consumer<Long> positionConsumer,
       final AppIntegrationsExporterMetrics metrics) {
+    return createDefault(config, DeploymentContext.EMPTY, positionConsumer, metrics);
+  }
+
+  public static Subscription<Event> createDefault(
+      final Config config,
+      final DeploymentContext deploymentContext,
+      final Consumer<Long> positionConsumer,
+      final AppIntegrationsExporterMetrics metrics) {
     ConfigValidator.validate(config);
     final Authentication auth;
     if (config.getOauth() != null) {
@@ -61,13 +71,20 @@ public class SubscriptionFactory {
     } else {
       auth = None.INSTANCE;
     }
+    final var contextHeaders =
+        ContextHeaders.resolve(
+            config.getClusterId(),
+            deploymentContext.clusterId(),
+            deploymentContext.physicalTenantId(),
+            deploymentContext.orgId());
     final var httpTransportConfig =
         new HttpTransportConfig(
             config.getUrl(),
             auth,
             config.getMaxRetries(),
             config.getRetryDelayMs(),
-            config.getRequestTimeoutMs());
+            config.getRequestTimeoutMs(),
+            contextHeaders);
     final var transport = new HttpTransportImpl(createJsonMapper(), httpTransportConfig, metrics);
     final var mapper = new SupportedRecordsMapper();
     final var batchConfig =

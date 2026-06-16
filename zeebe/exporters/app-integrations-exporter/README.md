@@ -55,6 +55,7 @@ ZEEBE_BROKER_EXPORTERS_APPINTEXPORTER_CLASSNAME=io.camunda.exporter.appint.AppIn
 Additional configuration options:
 - `url` (string, required): The endpoint URL of the App Integration Backend.
 - `apiKey` (string, optional): API key for authentication with the backend.
+- `clusterId` (string, optional): Identifier of the cluster, sent to the backend via the `X-Cluster-Id` header (see [Context headers](#context-headers)). Intended for Self-Managed setups; expected to be unique per cluster/physical-tenant configuration.
 - `continueOnError` (boolean, optional): Whether to continue processing events on error (default: true).
 - `maxRetries` (integer, optional): Maximum number of retry attempts for failed requests (default: 2).
 - `retryDelayMs` (duration, optional): Delay between retry attempts (default: 1500).
@@ -75,6 +76,25 @@ You can provide the API key via the `apiKey` configuration property. The exporte
 ```
 x-api-key: myAPIKey
 ```
+
+## Context headers
+
+On every request the exporter attaches context-identification headers so the backend can tell
+which cluster/org/tenant a batch of events originates from. Each header is sent independently,
+**only when its source value is available** — there is no dependency on the deployment model
+(SaaS vs Self-Managed) or the configured authentication mechanism.
+
+|         Header         |                               Source                                |                   Sent when                    |
+|------------------------|---------------------------------------------------------------------|------------------------------------------------|
+| `X-Org-Id`             | `CAMUNDA_CLOUD_ORGANIZATION_ID` environment variable (set in SaaS)  | present, non-blank and not the `null` sentinel |
+| `X-Cluster-Id`         | `clusterId` config option (preferred), else the broker's cluster id | the chosen value is non-blank                  |
+| `X-Physical-Tenant-Id` | the broker context's physical-tenant id for this exporter instance  | non-blank (the `default` tenant is sent as-is) |
+
+Notes:
+- The configured `clusterId` takes precedence over the broker-provided cluster id, so a
+Self-Managed operator value wins when both are present.
+- In SaaS the org id and cluster id are provided by the environment/broker; no extra
+configuration is required.
 
 ## Metrics
 

@@ -101,6 +101,56 @@ public class HttpTransportTest {
   }
 
   @Test
+  public void shouldSendContextHeaders() {
+    // given
+    final var contextHeaders = new ContextHeaders("org-1", "cluster-1", "tenant-1");
+    final var httpConfig =
+        new HttpTransportConfig(url, new ApiKey("test-key"), 2, 50, 5000, contextHeaders);
+    transport =
+        new HttpTransportImpl(
+            SubscriptionFactory.createJsonMapper(),
+            httpConfig,
+            new AppIntegrationsExporterMetrics(registry));
+    wireMock.stubFor(post("/").willReturn(ok()));
+
+    // when
+    transport.send(new ArrayList<>());
+
+    // then
+    wireMock.verify(
+        exactly(1),
+        postRequestedFor(urlEqualTo("/"))
+            .withHeader(ContextHeaders.X_ORG_ID, equalTo("org-1"))
+            .withHeader(ContextHeaders.X_CLUSTER_ID, equalTo("cluster-1"))
+            .withHeader(ContextHeaders.X_PHYSICAL_TENANT_ID, equalTo("tenant-1")));
+  }
+
+  @Test
+  public void shouldSendContextHeadersOnEveryRetry() {
+    // given
+    final var contextHeaders = new ContextHeaders(null, "cluster-1", null);
+    final var httpConfig =
+        new HttpTransportConfig(url, new ApiKey("test-key"), 2, 50, 5000, contextHeaders);
+    transport =
+        new HttpTransportImpl(
+            SubscriptionFactory.createJsonMapper(),
+            httpConfig,
+            new AppIntegrationsExporterMetrics(registry));
+    wireMock.stubFor(
+        post("/").willReturn(ResponseDefinitionBuilder.responseDefinition().withStatus(500)));
+
+    // when
+    Assertions.assertThatCode(() -> transport.send(new ArrayList<>()))
+        .isInstanceOf(TransportException.class);
+
+    // then
+    wireMock.verify(
+        exactly(3),
+        postRequestedFor(urlEqualTo("/"))
+            .withHeader(ContextHeaders.X_CLUSTER_ID, equalTo("cluster-1")));
+  }
+
+  @Test
   public void shouldRecordExportFailedWhenSendFails() {
     // given
     wireMock.stubFor(

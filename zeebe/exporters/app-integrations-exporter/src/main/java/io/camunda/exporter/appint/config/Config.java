@@ -14,6 +14,11 @@ public class Config {
   private String apiKey;
   private OAuthConfig oauth;
 
+  // Context settings
+  // Operator-supplied cluster identifier. In Self-Managed setups this is expected to be unique
+  // per cluster/physical-tenant configuration. Sent to the backend via the X-Cluster-Id header.
+  private String clusterId;
+
   // Error handling settings
   private boolean continueOnError = true;
   private int maxRetries = 2;
@@ -49,6 +54,15 @@ public class Config {
 
   public Config setOauth(final OAuthConfig oauth) {
     this.oauth = oauth;
+    return this;
+  }
+
+  public String getClusterId() {
+    return clusterId;
+  }
+
+  public Config setClusterId(final String clusterId) {
+    this.clusterId = clusterId;
     return this;
   }
 

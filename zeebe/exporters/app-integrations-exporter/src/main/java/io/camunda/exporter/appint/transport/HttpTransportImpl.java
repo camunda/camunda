@@ -42,6 +42,7 @@ public class HttpTransportImpl implements Transport<Event> {
   private final CloseableHttpClient httpClient;
   private final String url;
   private final Authentication authentication;
+  private final ContextHeaders contextHeaders;
   private final Timeout<Object> timeout;
   private final RetryPolicy<Object> retryPolicy;
   private final AppIntegrationsExporterMetrics metrics;
@@ -55,6 +56,7 @@ public class HttpTransportImpl implements Transport<Event> {
 
     url = httpTransportConfig.url();
     authentication = httpTransportConfig.authentication();
+    contextHeaders = httpTransportConfig.contextHeaders();
 
     retryPolicy =
         RetryPolicy.builder()
@@ -99,6 +101,7 @@ public class HttpTransportImpl implements Transport<Event> {
             case final Authentication.None ignored ->
                 log.warn("No authentication provided for HTTP transport");
           }
+          contextHeaders.applyTo(httpPost::setHeader);
           httpPost.setEntity(entity);
           return httpPost;
         });
