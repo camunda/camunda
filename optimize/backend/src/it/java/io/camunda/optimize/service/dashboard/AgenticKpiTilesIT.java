@@ -16,8 +16,10 @@ import static io.camunda.optimize.service.dashboard.AgenticControlDashboardServi
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.KPI_DURATION_P95_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.KPI_INCIDENT_RATE_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.KPI_MEDIAN_TOKENS_REPORT_ID;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.TOKEN_CONSUMERS_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.TOKEN_TREND_REPORT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.within;
 
 import io.camunda.optimize.AbstractBrokerlessZeebeCCSMIT;
@@ -41,14 +43,17 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.filter.Insta
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.result.MeasureDto;
 import io.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
+import io.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
 import io.camunda.optimize.service.db.report.result.MapCommandResult;
 import io.camunda.optimize.service.db.report.result.NumberCommandResult;
+import io.camunda.optimize.service.exceptions.evaluation.ReportEvaluationException;
 import io.camunda.optimize.service.report.ReportEvaluationService;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
+import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -937,9 +942,106 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
   }
 
   // ---------------------------------------------------------------------------
-  // Combined: process definition + date range
+  // Top token consumers by process
   // ---------------------------------------------------------------------------
 
+  @Test
+  void shouldRankProcessesByTotalTokensConsumed() {
+    final String heavyProc = "heavy-agent-process";
+    final String lightProc = "light-agent-process";
+
+    // heavyProc consumes 450 tokens total, lightProc consumes 120
+    persistProcessInstances(
+        List.of(
+            agenticInstanceWithTokens(heavyProc, 200L, 100L).build(),
+            agenticInstanceWithTokens(heavyProc, 100L, 50L).build(),
+            agenticInstanceWithTokens(lightProc, 80L, 40L).build()));
+
+    // when evaluating the top-consumers report grouped by process definition key
+    final List<MapResultEntryDto> buckets = evaluateMapMeasure(TOKEN_CONSUMERS_REPORT_ID, 0);
+
+    // then each process appears with its summed total tokens, ranked with the heaviest first
+    assertThat(buckets)
+        .filteredOn(e -> e.getValue() != null)
+        .extracting(MapResultEntryDto::getKey)
+        .containsExactly(heavyProc, lightProc);
+    assertThat(buckets.stream().filter(e -> heavyProc.equals(e.getKey())).findFirst())
+        .hasValueSatisfying(e -> assertThat(e.getValue()).isCloseTo(450.0, within(1.0)));
+    assertThat(buckets.stream().filter(e -> lightProc.equals(e.getKey())).findFirst())
+        .hasValueSatisfying(e -> assertThat(e.getValue()).isCloseTo(120.0, within(1.0)));
+  }
+
+  @Test
+  void shouldReturnOnlyTopConsumersWithTotalCountWhenPaginated() {
+    // given three processes with distinct total token sums
+    persistProcessInstances(
+        List.of(
+            agenticInstanceWithTokens("proc-a", 300L, 0L).build(),
+            agenticInstanceWithTokens("proc-b", 200L, 0L).build(),
+            agenticInstanceWithTokens("proc-c", 100L, 0L).build()));
+
+    // when evaluating the top-consumers report limited to the two heaviest processes
+    // (limit only, no offset — mirroring how the dashboard frontend requests the tile)
+    final var result =
+        evaluationService.evaluateSavedReportWithAdditionalFilters(
+            USER_ID, UTC, TOKEN_CONSUMERS_REPORT_ID, noExtraFilters(), new PaginationDto(2, null));
+    final CommandEvaluationResult<?> commandResult =
+        ((SingleReportEvaluationResult<?>) result.getEvaluationResult()).getFirstCommandResult();
+    final List<MapResultEntryDto> buckets =
+        ((MapCommandResult) commandResult).getMeasures().getFirst().getData();
+
+    // then only the two heaviest processes are returned, ranked descending
+    assertThat(buckets)
+        .filteredOn(e -> e.getValue() != null)
+        .extracting(MapResultEntryDto::getKey)
+        .containsExactly("proc-a", "proc-b");
+    // and the total distinct process count is surfaced for the "top N of total" label
+    assertThat(commandResult.getPagination().getTotal()).isEqualTo(3L);
+    // and the pagination is valid, so it survives REST mapping and the total reaches the frontend
+    assertThat(commandResult.getPagination().isValid()).isTrue();
+  }
+
+  @Test
+  void shouldRejectNonZeroOffsetForGroupedTopNReport() {
+    // given a top-consumers report (grouped top-N supports a limit but not paging into results)
+    persistProcessInstances(List.of(agenticInstanceWithTokens("proc-a", 300L, 0L).build()));
+
+    // when evaluating it with a non-zero pagination offset
+    final ThrowingCallable evaluation =
+        () ->
+            evaluationService.evaluateSavedReportWithAdditionalFilters(
+                USER_ID, UTC, TOKEN_CONSUMERS_REPORT_ID, noExtraFilters(), new PaginationDto(2, 1));
+
+    // then the request is rejected rather than silently returning a first page
+    assertThatThrownBy(evaluation)
+        .isInstanceOf(ReportEvaluationException.class)
+        .hasMessageContaining("non-zero pagination offset");
+  }
+
+  @Test
+  void shouldRejectNonZeroOffsetWithoutLimitForGroupedTopNReport() {
+    // given a top-consumers report (grouped top-N supports a limit but not paging into results)
+    persistProcessInstances(List.of(agenticInstanceWithTokens("proc-a", 300L, 0L).build()));
+
+    // when evaluating it with a non-zero offset but no limit
+    final ThrowingCallable evaluation =
+        () ->
+            evaluationService.evaluateSavedReportWithAdditionalFilters(
+                USER_ID,
+                UTC,
+                TOKEN_CONSUMERS_REPORT_ID,
+                noExtraFilters(),
+                new PaginationDto(null, 1));
+
+    // then the request is rejected rather than silently ignoring the offset
+    assertThatThrownBy(evaluation)
+        .isInstanceOf(ReportEvaluationException.class)
+        .hasMessageContaining("non-zero pagination offset");
+  }
+
+  // ---------------------------------------------------------------------------
+  // Combined: process definition + date range
+  // ---------------------------------------------------------------------------
   @Test
   void shouldApplyDefinitionAndDateFilterTogether() {
     final String procKeyA = "proc-combo-a";
