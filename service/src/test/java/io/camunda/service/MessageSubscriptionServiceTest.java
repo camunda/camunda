@@ -31,6 +31,7 @@ import org.junit.jupiter.api.Test;
 
 public class MessageSubscriptionServiceTest {
 
+  private static final String PHYSICAL_TENANT_ID = "test-tenant";
   private MessageSubscriptionServices services;
   private MessageSubscriptionSearchClient client;
   private CamundaAuthentication authentication;
@@ -42,6 +43,7 @@ public class MessageSubscriptionServiceTest {
     authentication = mock(CamundaAuthentication.class);
     services =
         new MessageSubscriptionServices(
+            PHYSICAL_TENANT_ID,
             mock(BrokerClient.class),
             mock(SecurityContextProvider.class),
             client,

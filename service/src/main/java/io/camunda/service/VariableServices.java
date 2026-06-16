@@ -26,12 +26,14 @@ public final class VariableServices
   private final VariableSearchClient variableSearchClient;
 
   public VariableServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final VariableSearchClient variableSearchClient,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         executorProvider,

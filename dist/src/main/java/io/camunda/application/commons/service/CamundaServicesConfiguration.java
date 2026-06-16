@@ -162,23 +162,24 @@ public class CamundaServicesConfiguration {
               // -- leaf services (no service-to-service dependencies) --
               final var form =
                   new FormServices(
-                      brokerClient, securityContextProvider, search, executor, converter);
+                      tenantId, brokerClient, securityContextProvider, search, executor, converter);
               final var incident =
                   new IncidentServices(
-                      brokerClient, securityContextProvider, search, executor, converter);
+                      tenantId, brokerClient, securityContextProvider, search, executor, converter);
               final var variable =
                   new VariableServices(
-                      brokerClient, securityContextProvider, search, executor, converter);
+                      tenantId, brokerClient, securityContextProvider, search, executor, converter);
               final var auditLog =
                   new AuditLogServices(
-                      brokerClient, securityContextProvider, search, executor, converter);
+                      tenantId, brokerClient, securityContextProvider, search, executor, converter);
               final var decisionRequirements =
                   new DecisionRequirementsServices(
-                      brokerClient, securityContextProvider, search, executor, converter);
+                      tenantId, brokerClient, securityContextProvider, search, executor, converter);
 
               // -- mid-tier services (depend on leaf services) --
               final var elementInstance =
                   new ElementInstanceServices(
+                      tenantId,
                       brokerClient,
                       securityContextProvider,
                       search,
@@ -189,11 +190,18 @@ public class CamundaServicesConfiguration {
                       converter);
               final var processDefinition =
                   new ProcessDefinitionServices(
-                      brokerClient, securityContextProvider, search, form, executor, converter);
+                      tenantId,
+                      brokerClient,
+                      securityContextProvider,
+                      search,
+                      form,
+                      executor,
+                      converter);
 
               // -- top-level services --
               final var processInstance =
                   new ProcessInstanceServices(
+                      tenantId,
                       brokerClient,
                       securityContextProvider,
                       search,
@@ -204,6 +212,7 @@ public class CamundaServicesConfiguration {
                       maxNameFieldLength);
               final var userTask =
                   new UserTaskServices(
+                      tenantId,
                       brokerClient,
                       securityContextProvider,
                       search,
@@ -220,38 +229,60 @@ public class CamundaServicesConfiguration {
                   .adHocSubProcessActivityServices(
                       tenantId,
                       new AdHocSubProcessActivityServices(
-                          brokerClient, securityContextProvider, executor, converter))
+                          tenantId, brokerClient, securityContextProvider, executor, converter))
                   .agentHistoryServices(
                       tenantId,
                       new AgentHistoryServices(
-                          brokerClient, securityContextProvider, executor, converter))
+                          tenantId, brokerClient, securityContextProvider, executor, converter))
                   .agentInstanceServices(
                       tenantId,
                       new AgentInstanceServices(
-                          brokerClient, securityContextProvider, search, executor, converter))
+                          tenantId,
+                          brokerClient,
+                          securityContextProvider,
+                          search,
+                          executor,
+                          converter))
                   .auditLogServices(tenantId, auditLog)
                   .authorizationServices(
                       tenantId,
                       new AuthorizationServices(
-                          brokerClient, securityContextProvider, search, executor, converter))
+                          tenantId,
+                          brokerClient,
+                          securityContextProvider,
+                          search,
+                          executor,
+                          converter))
                   .batchOperationServices(
                       tenantId,
                       new BatchOperationServices(
-                          brokerClient, securityContextProvider, search, executor, converter))
+                          tenantId,
+                          brokerClient,
+                          securityContextProvider,
+                          search,
+                          executor,
+                          converter))
                   .clockServices(
                       tenantId,
-                      new ClockServices(brokerClient, securityContextProvider, executor, converter))
+                      new ClockServices(
+                          tenantId, brokerClient, securityContextProvider, executor, converter))
                   .clusterVariableServices(
                       tenantId,
                       new ClusterVariableServices(
-                          brokerClient, securityContextProvider, search, executor, converter))
+                          tenantId,
+                          brokerClient,
+                          securityContextProvider,
+                          search,
+                          executor,
+                          converter))
                   .conditionalServices(
                       tenantId,
                       new ConditionalServices(
-                          brokerClient, securityContextProvider, executor, converter))
+                          tenantId, brokerClient, securityContextProvider, executor, converter))
                   .decisionDefinitionServices(
                       tenantId,
                       new DecisionDefinitionServices(
+                          tenantId,
                           brokerClient,
                           securityContextProvider,
                           search,
@@ -261,11 +292,17 @@ public class CamundaServicesConfiguration {
                   .decisionInstanceServices(
                       tenantId,
                       new DecisionInstanceServices(
-                          brokerClient, securityContextProvider, search, executor, converter))
+                          tenantId,
+                          brokerClient,
+                          securityContextProvider,
+                          search,
+                          executor,
+                          converter))
                   .decisionRequirementsServices(tenantId, decisionRequirements)
                   .documentServices(
                       tenantId,
                       new DocumentServices(
+                          tenantId,
                           brokerClient,
                           securityContextProvider,
                           new SimpleDocumentStoreRegistry(
@@ -278,20 +315,31 @@ public class CamundaServicesConfiguration {
                   .expressionServices(
                       tenantId,
                       new ExpressionServices(
-                          brokerClient, securityContextProvider, executor, converter))
+                          tenantId, brokerClient, securityContextProvider, executor, converter))
                   .formServices(tenantId, form)
                   .globalListenerServices(
                       tenantId,
                       new GlobalListenerServices(
-                          brokerClient, securityContextProvider, search, executor, converter))
+                          tenantId,
+                          brokerClient,
+                          securityContextProvider,
+                          search,
+                          executor,
+                          converter))
                   .groupServices(
                       tenantId,
                       new GroupServices(
-                          brokerClient, securityContextProvider, search, executor, converter))
+                          tenantId,
+                          brokerClient,
+                          securityContextProvider,
+                          search,
+                          executor,
+                          converter))
                   .incidentServices(tenantId, incident)
                   .jobServices(
                       tenantId,
                       new JobServices<>(
+                          tenantId,
                           brokerClient,
                           securityContextProvider,
                           activateJobsHandler,
@@ -302,10 +350,16 @@ public class CamundaServicesConfiguration {
                   .mappingRuleServices(
                       tenantId,
                       new MappingRuleServices(
-                          brokerClient, securityContextProvider, search, executor, converter))
+                          tenantId,
+                          brokerClient,
+                          securityContextProvider,
+                          search,
+                          executor,
+                          converter))
                   .messageServices(
                       tenantId,
                       new MessageServices(
+                          tenantId,
                           brokerClient,
                           securityContextProvider,
                           executor,
@@ -314,12 +368,18 @@ public class CamundaServicesConfiguration {
                   .messageSubscriptionServices(
                       tenantId,
                       new MessageSubscriptionServices(
-                          brokerClient, securityContextProvider, search, executor, converter))
+                          tenantId,
+                          brokerClient,
+                          securityContextProvider,
+                          search,
+                          executor,
+                          converter))
                   .processDefinitionServices(tenantId, processDefinition)
                   .processInstanceServices(tenantId, processInstance)
                   .resourceServices(
                       tenantId,
                       new ResourceServices(
+                          tenantId,
                           brokerClient,
                           securityContextProvider,
                           executor,
@@ -331,26 +391,42 @@ public class CamundaServicesConfiguration {
                   .roleServices(
                       tenantId,
                       new RoleServices(
-                          brokerClient, securityContextProvider, search, executor, converter))
+                          tenantId,
+                          brokerClient,
+                          securityContextProvider,
+                          search,
+                          executor,
+                          converter))
                   .signalServices(
                       tenantId,
                       new SignalServices(
-                          brokerClient, securityContextProvider, executor, converter))
+                          tenantId, brokerClient, securityContextProvider, executor, converter))
                   .tenantServices(
                       tenantId,
                       new TenantServices(
-                          brokerClient, securityContextProvider, search, executor, converter))
+                          tenantId,
+                          brokerClient,
+                          securityContextProvider,
+                          search,
+                          executor,
+                          converter))
                   .topologyServices(
                       tenantId,
                       new TopologyServices(
-                          brokerClient, securityContextProvider, executor, converter))
+                          tenantId, brokerClient, securityContextProvider, executor, converter))
                   .usageMetricsServices(
                       tenantId,
                       new UsageMetricsServices(
-                          brokerClient, securityContextProvider, search, executor, converter))
+                          tenantId,
+                          brokerClient,
+                          securityContextProvider,
+                          search,
+                          executor,
+                          converter))
                   .userServices(
                       tenantId,
                       new UserServices(
+                          tenantId,
                           brokerClient,
                           securityContextProvider,
                           search,

@@ -40,12 +40,14 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
   private final TenantSearchClient tenantSearchClient;
 
   public TenantServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final TenantSearchClient tenantSearchClient,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         executorProvider,

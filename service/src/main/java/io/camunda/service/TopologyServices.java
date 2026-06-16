@@ -27,16 +27,18 @@ import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class TopologyServices extends ApiServices<TopologyServices> {
+public final class TopologyServices extends PhysicalTenantScopedApiServices<TopologyServices> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TopologyServices.class);
 
   public TopologyServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         executorProvider,

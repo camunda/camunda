@@ -35,12 +35,14 @@ public final class ClusterVariableServices
   private final ClusterVariableSearchClient clusterVariableSearchClient;
 
   public ClusterVariableServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final ClusterVariableSearchClient clusterVariableSearchClient,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         executorProvider,

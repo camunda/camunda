@@ -38,12 +38,14 @@ public final class BatchOperationServices
   private final BatchOperationSearchClient batchOperationSearchClient;
 
   public BatchOperationServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final BatchOperationSearchClient batchOperationSearchClient,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         executorProvider,

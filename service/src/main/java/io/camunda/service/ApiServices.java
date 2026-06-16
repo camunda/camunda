@@ -16,10 +16,11 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
-import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.function.BiConsumer;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -43,38 +44,25 @@ public abstract class ApiServices<T extends ApiServices<T>> {
     this.brokerRequestAuthorizationConverter = brokerRequestAuthorizationConverter;
   }
 
-  protected <R> CompletableFuture<R> sendBrokerRequest(
+  protected final <R> CompletableFuture<R> sendBrokerRequest(
       final BrokerRequest<R> brokerRequest, final CamundaAuthentication authentication) {
     return sendBrokerRequestWithFullResponse(brokerRequest, authentication)
         .thenApplyAsync(BrokerResponse::getResponse, executor);
   }
 
-  protected <R> CompletableFuture<R> sendBrokerRequest(
-      final BrokerRequest<R> brokerRequest,
-      final Duration requestTimeout,
-      final CamundaAuthentication authentication) {
-    return sendBrokerRequestWithFullResponse(brokerRequest, requestTimeout, authentication)
-        .thenApplyAsync(BrokerResponse::getResponse, executor);
-  }
-
-  protected <R> CompletableFuture<BrokerResponse<R>> sendBrokerRequestWithFullResponse(
+  protected final <R> CompletableFuture<BrokerResponse<R>> sendBrokerRequestWithFullResponse(
       final BrokerRequest<R> brokerRequest, final CamundaAuthentication authentication) {
-    final var brokerRequestAuthorization =
-        brokerRequestAuthorizationConverter.convert(authentication);
-    brokerRequest.setAuthorization(brokerRequestAuthorization);
+    brokerRequestMutators().forEach(mutator -> mutator.accept(brokerRequest, authentication));
     return brokerClient.sendRequest(brokerRequest).handleAsync(handleBrokerResponse(), executor);
   }
 
-  protected <R> CompletableFuture<BrokerResponse<R>> sendBrokerRequestWithFullResponse(
-      final BrokerRequest<R> brokerRequest,
-      final Duration requestTimeout,
-      final CamundaAuthentication authentication) {
-    final var brokerRequestAuthorization =
-        brokerRequestAuthorizationConverter.convert(authentication);
-    brokerRequest.setAuthorization(brokerRequestAuthorization);
-    return brokerClient
-        .sendRequest(brokerRequest, requestTimeout)
-        .handleAsync(handleBrokerResponse(), executor);
+  protected List<BiConsumer<BrokerRequest, CamundaAuthentication>> brokerRequestMutators() {
+    return List.of(
+        (brokerRequest, authentication) -> {
+          final var brokerRequestAuthorization =
+              brokerRequestAuthorizationConverter.convert(authentication);
+          brokerRequest.setAuthorization(brokerRequestAuthorization);
+        });
   }
 
   private <R>

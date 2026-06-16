@@ -32,6 +32,7 @@ import org.junit.jupiter.api.Test;
 
 final class ProcessInstanceRoundRobinDispatchTest {
 
+  private static final String PHYSICAL_TENANT_ID = "test-tenant";
   private static final int PARTITION_COUNT = 3;
 
   private BrokerClient brokerClient;
@@ -50,6 +51,7 @@ final class ProcessInstanceRoundRobinDispatchTest {
 
     services =
         new ProcessInstanceServices(
+            PHYSICAL_TENANT_ID,
             brokerClient,
             mock(SecurityContextProvider.class),
             mock(ProcessInstanceSearchClient.class),

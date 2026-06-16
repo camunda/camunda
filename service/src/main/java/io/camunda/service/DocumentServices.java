@@ -37,7 +37,7 @@ import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class DocumentServices extends ApiServices<DocumentServices> {
+public class DocumentServices extends PhysicalTenantScopedApiServices<DocumentServices> {
 
   private static final Logger LOG = LoggerFactory.getLogger(DocumentServices.class);
 
@@ -46,6 +46,7 @@ public class DocumentServices extends ApiServices<DocumentServices> {
   private final AuthorizationsConfiguration authorizationsConfig;
 
   public DocumentServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final SimpleDocumentStoreRegistry registry,
@@ -54,6 +55,7 @@ public class DocumentServices extends ApiServices<DocumentServices> {
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         executorProvider,

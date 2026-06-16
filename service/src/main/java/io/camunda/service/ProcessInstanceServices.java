@@ -91,6 +91,7 @@ public final class ProcessInstanceServices
           Caffeine.newBuilder().maximumSize(MAX_CACHED_DEFINITIONS).build();
 
   public ProcessInstanceServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final ProcessInstanceSearchClient processInstanceSearchClient,
@@ -99,6 +100,7 @@ public final class ProcessInstanceServices
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     this(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         processInstanceSearchClient,
@@ -111,6 +113,7 @@ public final class ProcessInstanceServices
   }
 
   public ProcessInstanceServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final ProcessInstanceSearchClient processInstanceSearchClient,
@@ -120,6 +123,7 @@ public final class ProcessInstanceServices
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
       final int maxVariableNameLength) {
     this(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         processInstanceSearchClient,
@@ -132,6 +136,7 @@ public final class ProcessInstanceServices
   }
 
   public ProcessInstanceServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final ProcessInstanceSearchClient processInstanceSearchClient,
@@ -141,6 +146,7 @@ public final class ProcessInstanceServices
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
       final RequestRetryHandler requestRetryHandler) {
     this(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         processInstanceSearchClient,
@@ -153,6 +159,7 @@ public final class ProcessInstanceServices
   }
 
   public ProcessInstanceServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final ProcessInstanceSearchClient processInstanceSearchClient,
@@ -163,6 +170,7 @@ public final class ProcessInstanceServices
       final RequestRetryHandler requestRetryHandler,
       final int maxVariableNameLength) {
     super(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         executorProvider,

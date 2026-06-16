@@ -45,6 +45,7 @@ public final class ElementInstanceServices
   private final IncidentServices incidentServices;
 
   public ElementInstanceServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final FlowNodeInstanceSearchClient flowNodeInstanceSearchClient,
@@ -54,6 +55,7 @@ public final class ElementInstanceServices
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         executorProvider,

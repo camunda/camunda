@@ -37,6 +37,7 @@ import org.mockito.MockitoAnnotations;
 
 class AuditLogServicesTest {
 
+  private static final String PHYSICAL_TENANT_ID = "test-tenant";
   private static final AuditLogEntity AUDIT_LOG_ENTITY =
       new AuditLogEntity.Builder()
           .auditLogKey("auditLogKey")
@@ -83,6 +84,7 @@ class AuditLogServicesTest {
 
     auditLogServices =
         new AuditLogServices(
+            PHYSICAL_TENANT_ID,
             brokerClient,
             securityContextProvider,
             auditLogSearchClient,

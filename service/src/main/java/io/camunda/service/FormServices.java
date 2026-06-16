@@ -26,12 +26,14 @@ public final class FormServices extends SearchQueryService<FormServices, FormQue
   private final FormSearchClient formSearchClient;
 
   public FormServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final FormSearchClient formSearchClient,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         executorProvider,

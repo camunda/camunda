@@ -39,6 +39,7 @@ public final class DecisionDefinitionServices
   private final DecisionRequirementsServices decisionRequirementServices;
 
   public DecisionDefinitionServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final DecisionDefinitionSearchClient decisionDefinitionSearchClient,
@@ -46,6 +47,7 @@ public final class DecisionDefinitionServices
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         executorProvider,

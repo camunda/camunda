@@ -134,7 +134,13 @@ public class BasicAuthWebSecurityConfigParameterizedTest {
     @Bean
     public UserServices userServices() {
       return new UserServices(
-          null, null, null, null, new ApiServicesExecutorProvider(ForkJoinPool.commonPool()), null);
+          "default",
+          null,
+          null,
+          null,
+          null,
+          new ApiServicesExecutorProvider(ForkJoinPool.commonPool()),
+          null);
     }
 
     @Bean

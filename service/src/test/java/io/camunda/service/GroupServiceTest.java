@@ -44,6 +44,7 @@ import org.junit.jupiter.api.Test;
 
 public class GroupServiceTest {
 
+  private static final String PHYSICAL_TENANT_ID = "test-tenant";
   private GroupServices services;
   private GroupSearchClient client;
   private CamundaAuthentication authentication;
@@ -64,6 +65,7 @@ public class GroupServiceTest {
         .thenReturn(Map.of(AUTHORIZED_USERNAME, authentication.authenticatedUsername()));
     services =
         new GroupServices(
+            PHYSICAL_TENANT_ID,
             stubbedBrokerClient,
             mock(SecurityContextProvider.class),
             client,
