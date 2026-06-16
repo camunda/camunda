@@ -21,6 +21,7 @@ import io.camunda.zeebe.gateway.impl.broker.RequestRetryHandler;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.stream.StreamJobsHandler;
+import io.camunda.zeebe.gateway.interceptors.InterceptorUtil;
 import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
@@ -532,7 +533,21 @@ public final class EndpointManager {
 
     final BrokerRequest<BrokerResponseT> brokerRequest = requestMapper.apply(grpcRequest);
     brokerRequest.setAuthorization(getClaims());
+    final String physicalTenantId = getPhysicalTenantId();
+    if (physicalTenantId != null) {
+      brokerRequest.setPartitionGroup(physicalTenantId);
+    }
     return brokerRequest;
+  }
+
+  /**
+   * Returns the physical tenant id resolved by the {@code PhysicalTenantInterceptor} and stored in
+   * the gRPC {@link Context}, or {@code null} when no interceptor populated it (e.g. in tests that
+   * invoke the endpoint without the interceptor chain). The id doubles as the partition group name
+   * the request is dispatched to; a {@code null} leaves the request's default group unchanged.
+   */
+  private String getPhysicalTenantId() throws Exception {
+    return Context.current().call(InterceptorUtil.getPhysicalTenantIdKey()::get);
   }
 
   private Map<String, Object> getClaims() throws Exception {
