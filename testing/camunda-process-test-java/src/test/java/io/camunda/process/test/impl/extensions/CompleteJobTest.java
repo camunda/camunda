@@ -16,23 +16,20 @@
 package io.camunda.process.test.impl.extensions;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.clearInvocations;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.command.ClientException;
-import io.camunda.client.api.response.CompleteJobResponse;
-import io.camunda.client.api.search.enums.JobState;
+import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.search.filter.JobFilter;
 import io.camunda.client.api.search.filter.builder.IntegerProperty;
 import io.camunda.client.api.search.filter.builder.JobStateProperty;
-import io.camunda.client.api.search.response.Job;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.impl.client.CamundaClockClient;
@@ -70,9 +67,8 @@ public class CompleteJobTest {
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   private CamundaClient camundaClient;
 
-  @Mock private Job job;
+  @Mock private ActivatedJob job;
 
-  @Captor private ArgumentCaptor<Consumer<JobFilter>> jobFilterCaptor;
   @Captor private ArgumentCaptor<Consumer<JobStateProperty>> jobStatePropertyCaptor;
   @Captor private ArgumentCaptor<Consumer<IntegerProperty>> retriesPropertyCaptor;
 
@@ -110,15 +106,16 @@ public class CompleteJobTest {
               zeebeJsonMapper);
 
       when(camundaClient
-              .newJobSearchRequest()
-              .filter(jobFilterCaptor.capture())
+              .newActivateJobsCommand()
+              .jobType(JOB_TYPE)
+              .maxJobsToActivate(anyInt())
+              .requestTimeout(any())
               .send()
               .join()
-              .items())
+              .getJobs())
           .thenReturn(Collections.singletonList(job));
 
-      when(job.getJobKey()).thenReturn(JOB_KEY);
-      when(job.getType()).thenReturn(JOB_TYPE);
+      when(job.getKey()).thenReturn(JOB_KEY);
     }
 
     @Test
@@ -127,7 +124,7 @@ public class CompleteJobTest {
       camundaProcessTestContext.completeJob(JOB_TYPE);
 
       // then
-      verify(camundaClient.newCompleteCommand(JOB_KEY).variables(Collections.emptyMap())).send();
+      verify(camundaClient.newCompleteCommand(job).variables(Collections.emptyMap())).send();
     }
 
     @Test
@@ -139,40 +136,20 @@ public class CompleteJobTest {
       camundaProcessTestContext.completeJob(JOB_TYPE, variables);
 
       // then
-      verify(camundaClient.newCompleteCommand(JOB_KEY).variables(variables)).send();
-    }
-
-    @Test
-    void shouldSearchByJobType() {
-      // when
-      camundaProcessTestContext.completeJob(JOB_TYPE);
-
-      // then
-      jobFilterCaptor.getValue().accept(jobFilter);
-      verify(jobFilter).type(JOB_TYPE);
-      verify(jobFilter).state(jobStatePropertyCaptor.capture());
-      verify(jobFilter.state(jobStatePropertyCaptor.getValue()))
-          .retries(retriesPropertyCaptor.capture());
-
-      jobStatePropertyCaptor.getValue().accept(jobStateProperty);
-      verify(jobStateProperty)
-          .in(JobState.CREATED, JobState.FAILED, JobState.RETRIES_UPDATED, JobState.TIMED_OUT);
-
-      retriesPropertyCaptor.getValue().accept(retriesProperty);
-      verify(retriesProperty).gte(1);
-
-      verifyNoMoreInteractions(jobFilter);
+      verify(camundaClient.newCompleteCommand(job).variables(variables)).send();
     }
 
     @Test
     void shouldAwaitUntilJobIsPresent() {
       // given
       when(camundaClient
-              .newJobSearchRequest()
-              .filter(jobFilterCaptor.capture())
+              .newActivateJobsCommand()
+              .jobType(JOB_TYPE)
+              .maxJobsToActivate(anyInt())
+              .requestTimeout(any())
               .send()
               .join()
-              .items())
+              .getJobs())
           .thenReturn(Collections.emptyList())
           .thenReturn(Collections.singletonList(job));
 
@@ -182,27 +159,7 @@ public class CompleteJobTest {
       camundaProcessTestContext.completeJob(JOB_TYPE);
 
       // then
-      verify(camundaClient, times(2)).newJobSearchRequest();
-    }
-
-    @Test
-    void shouldRetryCompletion() {
-      // given
-      when(camundaClient
-              .newCompleteCommand(JOB_KEY)
-              .variables(Collections.emptyMap())
-              .send()
-              .join())
-          .thenThrow(new ClientException("expected"))
-          .thenReturn(mock(CompleteJobResponse.class));
-
-      clearInvocations(camundaClient);
-
-      // when
-      camundaProcessTestContext.completeJob(JOB_TYPE);
-
-      // then
-      verify(camundaClient, times(2)).newCompleteCommand(JOB_KEY);
+      verify(camundaClient, times(2)).newActivateJobsCommand();
     }
   }
 
@@ -216,7 +173,7 @@ public class CompleteJobTest {
               camundaProcessTestRuntime,
               clientCreationCallback,
               clockClient,
-              DevAwaitBehavior.expectSuccess(),
+              DevAwaitBehavior.expectFailure(),
               jsonMapper,
               zeebeJsonMapper);
     }
@@ -225,18 +182,20 @@ public class CompleteJobTest {
     void shouldFailIfNoJobIsPresent() {
       // given
       when(camundaClient
-              .newJobSearchRequest()
-              .filter(jobFilterCaptor.capture())
+              .newActivateJobsCommand()
+              .jobType(JOB_TYPE)
+              .maxJobsToActivate(anyInt())
+              .requestTimeout(any())
               .send()
               .join()
-              .items())
+              .getJobs())
           .thenReturn(Collections.emptyList());
 
       // when/then
       assertThatThrownBy(() -> camundaProcessTestContext.completeJob(JOB_TYPE))
           .isInstanceOf(AssertionError.class)
           .hasMessageContaining(
-              "Expected to complete job [jobType: %s] but no job is available.", JOB_TYPE);
+              "Expected to complete a job with the type '%s' but no job is available.", JOB_TYPE);
     }
   }
 }

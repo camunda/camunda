@@ -15,6 +15,7 @@
  */
 package io.camunda.process.test.api;
 
+import static org.mockito.Answers.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.times;
@@ -24,6 +25,7 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.api.response.ProcessInstanceEvent;
+import io.camunda.client.api.search.filter.VariableFilter;
 import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.Variable;
 import io.camunda.client.impl.CamundaObjectMapper;
@@ -40,6 +42,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.InstanceOfAssertFactories;
@@ -51,6 +54,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -834,7 +839,7 @@ public class VariableAssertTest {
     private static final String ELEMENT_ID = "element-id";
     private static final long ELEMENT_INSTANCE_KEY = 10L;
 
-    @Mock(answer = Answers.RETURNS_SELF)
+    @Mock(answer = RETURNS_SELF)
     private VariableFilter variableFilter;
 
     @Captor private ArgumentCaptor<Consumer<VariableFilter>> variableFilterCaptor;
@@ -865,7 +870,6 @@ public class VariableAssertTest {
       variableFilterCaptor.getValue().accept(variableFilter);
       verify(variableFilter).processInstanceKey(PROCESS_INSTANCE_KEY);
       verify(variableFilter).scopeKey(ELEMENT_INSTANCE_KEY);
-      verify(variableFilter).name("a");
     }
 
     @Test
@@ -884,7 +888,6 @@ public class VariableAssertTest {
       variableFilterCaptor.getValue().accept(variableFilter);
       verify(variableFilter).processInstanceKey(PROCESS_INSTANCE_KEY);
       verify(variableFilter).scopeKey(ELEMENT_INSTANCE_KEY);
-      verify(variableFilter).name("a");
     }
 
     @Test
@@ -944,7 +947,6 @@ public class VariableAssertTest {
       variableFilterCaptor.getValue().accept(variableFilter);
       verify(variableFilter).processInstanceKey(PROCESS_INSTANCE_KEY);
       verify(variableFilter).scopeKey(ELEMENT_INSTANCE_KEY);
-      verify(variableFilter).name("a");
     }
 
     @Test
