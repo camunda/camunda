@@ -102,7 +102,7 @@ public interface ProcessMessageSubscriptionRecordValue
   /**
    * @return the BPMN element type of the catch element that opened this subscription, or {@link
    *     BpmnElementType#UNSPECIFIED} for subscriptions created before this field was introduced.
-   * @since 8.9
+   * @since 8.10
    */
   BpmnElementType getElementType();
 }
