@@ -447,6 +447,114 @@ func TestStripRocksDbNativeLibsErrorsWhenJarMissing(t *testing.T) {
 	}
 }
 
+func TestStripRocksDbNativeLibsErrorsWhenExpectedLibMissing(t *testing.T) {
+	// given: JAR contains only the non-target platform libs (libName absent)
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("failed to get working directory: %v", err)
+	}
+	root := t.TempDir()
+	if err := os.Chdir(root); err != nil {
+		t.Fatalf("failed to chdir to temp dir: %v", err)
+	}
+	defer func() {
+		if err := os.Chdir(cwd); err != nil {
+			t.Fatalf("failed to restore working directory: %v", err)
+		}
+	}()
+
+	version := "8.10.0-test"
+	libDir := filepath.Join("camunda-zeebe-"+version, "lib")
+	if err := os.MkdirAll(libDir, 0o755); err != nil {
+		t.Fatalf("failed to create lib dir: %v", err)
+	}
+	jarPath := filepath.Join(libDir, "rocksdbjni-9.0.0.jar")
+	f, err := os.Create(jarPath)
+	if err != nil {
+		t.Fatalf("failed to create test jar: %v", err)
+	}
+	w := zip.NewWriter(f)
+	// Only non-linux64 entries — the expected lib (librocksdbjni-linux64.so) is absent.
+	for _, name := range []string{
+		"librocksdbjni-linux-aarch64.so",
+		"librocksdbjni-osx-arm64.jnilib",
+	} {
+		fw, err := w.Create(name)
+		if err != nil {
+			t.Fatalf("failed to create zip entry %s: %v", name, err)
+		}
+		if _, err := fw.Write([]byte("binary")); err != nil {
+			t.Fatalf("failed to write zip entry %s: %v", name, err)
+		}
+	}
+	if err := w.Close(); err != nil {
+		t.Fatalf("failed to close zip writer: %v", err)
+	}
+	if err := f.Close(); err != nil {
+		t.Fatalf("failed to close jar file: %v", err)
+	}
+
+	// when
+	err = stripRocksDbNativeLibs(version, "linux", "x86_64")
+
+	// then: should error because the expected lib is not present
+	if err == nil {
+		t.Fatal("expected error when libName not found in JAR, got nil")
+	}
+}
+
+func TestStripRocksDbNativeLibsIsIdempotent(t *testing.T) {
+	// given: JAR already stripped — only the target lib remains
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("failed to get working directory: %v", err)
+	}
+	root := t.TempDir()
+	if err := os.Chdir(root); err != nil {
+		t.Fatalf("failed to chdir to temp dir: %v", err)
+	}
+	defer func() {
+		if err := os.Chdir(cwd); err != nil {
+			t.Fatalf("failed to restore working directory: %v", err)
+		}
+	}()
+
+	version := "8.10.0-test"
+	libDir := filepath.Join("camunda-zeebe-"+version, "lib")
+	if err := os.MkdirAll(libDir, 0o755); err != nil {
+		t.Fatalf("failed to create lib dir: %v", err)
+	}
+	jarPath := filepath.Join(libDir, "rocksdbjni-9.0.0.jar")
+	f, err := os.Create(jarPath)
+	if err != nil {
+		t.Fatalf("failed to create test jar: %v", err)
+	}
+	w := zip.NewWriter(f)
+	// Only the kept lib — simulates a JAR that was already stripped.
+	fw, err := w.Create("librocksdbjni-linux64.so")
+	if err != nil {
+		t.Fatalf("failed to create zip entry: %v", err)
+	}
+	if _, err := fw.Write([]byte("binary")); err != nil {
+		t.Fatalf("failed to write zip entry: %v", err)
+	}
+	if err := w.Close(); err != nil {
+		t.Fatalf("failed to close zip writer: %v", err)
+	}
+	if err := f.Close(); err != nil {
+		t.Fatalf("failed to close jar file: %v", err)
+	}
+
+	// when: first call
+	if err := stripRocksDbNativeLibs(version, "linux", "x86_64"); err != nil {
+		t.Fatalf("first call failed: %v", err)
+	}
+	// when: second call on already-stripped JAR
+	if err := stripRocksDbNativeLibs(version, "linux", "x86_64"); err != nil {
+		t.Fatalf("second call (idempotency) failed: %v", err)
+	}
+}
+
 func TestVerifyClassFileVersionAcceptsJava21Class(t *testing.T) {
 	// given — minimal class file header with major version matching helperJavaRelease
 	dir := t.TempDir()

@@ -310,17 +310,40 @@ func stripRocksDbNativeLibs(camundaVersion, osType, arch string) error {
 		log.Warn().Strs("jars", jars).Msg("multiple rocksdbjni jars found; stripping only the first")
 	}
 
-	log.Info().Str("jar", jars[0]).Str("keeping", libName).Msg("stripping unused RocksDB native libs")
+	// Pre-scan: verify libName exists and count entries to drop before rewriting.
+	// This makes stripping idempotent (already-stripped JARs return early) and
+	// catches wrong libName mappings before any data is modified.
+	r, err := zip.OpenReader(jars[0])
+	if err != nil {
+		return fmt.Errorf("stripRocksDbNativeLibs: open %s: %w", jars[0], err)
+	}
+	var libFound bool
+	var toDrop int
+	for _, f := range r.File {
+		if f.Name == libName {
+			libFound = true
+		}
+		if isRocksdbNativeLib(f.Name) && f.Name != libName {
+			toDrop++
+		}
+	}
+	r.Close()
+
+	if !libFound {
+		return fmt.Errorf("stripRocksDbNativeLibs: expected lib %s not found in %s: verify rocksdbNativeLibName mapping", libName, jars[0])
+	}
+	if toDrop == 0 {
+		log.Info().Str("jar", jars[0]).Str("keeping", libName).Msg("no unused RocksDB native libs to strip (already stripped?)")
+		return nil
+	}
+
+	log.Info().Str("jar", jars[0]).Str("keeping", libName).Int("dropping", toDrop).Msg("stripping unused RocksDB native libs")
 
 	shouldDrop := func(name string) bool {
 		return isRocksdbNativeLib(name) && name != libName
 	}
-	dropped, err := rewriteJarDroppingEntries(jars[0], shouldDrop)
-	if err != nil {
+	if _, err := rewriteJarDroppingEntries(jars[0], shouldDrop); err != nil {
 		return err
-	}
-	if dropped == 0 {
-		return fmt.Errorf("expected to drop native libs from %s but dropped 0: verify rocksdbNativeLibName mapping", jars[0])
 	}
 	return nil
 }
