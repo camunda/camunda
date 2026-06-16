@@ -87,8 +87,7 @@ public class JobUpdateBehaviour {
     return Optional.empty();
   }
 
-  public void applyJobRetries(
-      final long jobKey, final int retries, final JobRecord jobRecord) {
+  public void applyJobRetries(final long jobKey, final int retries, final JobRecord jobRecord) {
     jobRecord.setRetries(retries);
     stateWriter.appendFollowUpEvent(jobKey, JobIntent.RETRIES_UPDATED, jobRecord);
   }
@@ -110,8 +109,7 @@ public class JobUpdateBehaviour {
     return Optional.empty();
   }
 
-  public void applyJobTimeout(
-      final long jobKey, final long timeout, final JobRecord jobRecord) {
+  public void applyJobTimeout(final long jobKey, final long timeout, final JobRecord jobRecord) {
     final long newDeadline = clock.millis() + timeout;
     jobRecord.setDeadline(newDeadline);
     stateWriter.appendFollowUpEvent(jobKey, JobIntent.TIMEOUT_UPDATED, jobRecord);
@@ -139,5 +137,4 @@ public class JobUpdateBehaviour {
     jobRecord.setPriority(newPriority);
     stateWriter.appendFollowUpEvent(jobKey, JobIntent.PRIORITY_UPDATED, jobRecord);
   }
-
 }
