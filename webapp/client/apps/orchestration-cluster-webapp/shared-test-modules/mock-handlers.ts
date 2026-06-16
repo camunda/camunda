@@ -11,7 +11,7 @@ import {createEndpointMock} from './mock-endpoint';
 
 const mockQueryUserTasksEndpoint = createEndpointMock({
 	endpoint: endpoints.queryUserTasks.getUrl(),
-	method: endpoints.queryUserTasks.method,
+	method: endpoints.queryUserTasks.method as 'POST',
 });
 
 const mockGetProcessDefinitionInstanceStatisticsEndpoint = createEndpointMock({

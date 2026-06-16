@@ -33,6 +33,14 @@ class TasklistIndexPage extends BasePage {
 	get processesNavItem() {
 		return this.page.getByRole('link', {name: 'Processes'});
 	}
+
+	taskItem(name: string) {
+		return this.page.getByRole('link', {name: new RegExp(`task.*:.*${name}`, 'i')});
+	}
+
+	get noTasksMessage() {
+		return this.page.getByText('No tasks found');
+	}
 }
 
 export {TasklistIndexPage};
