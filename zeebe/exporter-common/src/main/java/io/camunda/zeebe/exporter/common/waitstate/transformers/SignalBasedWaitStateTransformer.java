@@ -25,6 +25,14 @@ public class SignalBasedWaitStateTransformer
   }
 
   @Override
+  public void extract(
+      final Record<SignalSubscriptionRecordValue> record, final WaitStateEntry entry) {
+    entry
+        .setElementType(BpmnElementType.INTERMEDIATE_CATCH_EVENT)
+        .setDetails(new SignalWaitStateDetails(record.getValue().getSignalName()));
+  }
+
+  @Override
   public boolean triggersAdd(final Record<SignalSubscriptionRecordValue> record) {
     return config().triggersAdd(record) && isInstanceSubscription(record);
   }
@@ -39,17 +47,14 @@ public class SignalBasedWaitStateTransformer
     return config().triggersRemoval(record) && isInstanceSubscription(record);
   }
 
-  @Override
-  public void extract(
-      final Record<SignalSubscriptionRecordValue> record, final WaitStateEntry entry) {
-    entry
-        .setElementType(BpmnElementType.INTERMEDIATE_CATCH_EVENT)
-        .setDetails(new SignalWaitStateDetails(record.getValue().getSignalName()));
-  }
-
-  /** Returns false for process-level start-event subscriptions that have no running instance. */
+  /**
+   * Returns true only for intermediate catch event subscriptions, skipping start and boundary
+   * events.
+   */
   private static boolean isInstanceSubscription(
       final Record<SignalSubscriptionRecordValue> record) {
-    return record.getValue().getCatchEventInstanceKey() != -1;
+    return BpmnElementType.INTERMEDIATE_CATCH_EVENT
+        .name()
+        .equals(record.getValue().getBpmnElementType());
   }
 }

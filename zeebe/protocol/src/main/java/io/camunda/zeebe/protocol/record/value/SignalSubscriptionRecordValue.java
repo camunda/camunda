@@ -55,6 +55,13 @@ public interface SignalSubscriptionRecordValue extends RecordValue, TenantOwned,
   String getSignalName();
 
   /**
+   * @return the BPMN element type of the catch event (e.g. {@code INTERMEDIATE_CATCH_EVENT}, {@code
+   *     BOUNDARY_EVENT}, {@code START_EVENT}), or an empty string if not set
+   * @since 8.10
+   */
+  String getBpmnElementType();
+
+  /**
    * @return the key of the process instance, or {@code -1L} if not set (e.g. start-event
    *     subscriptions that are not tied to a running instance)
    * @since 8.10

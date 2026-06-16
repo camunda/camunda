@@ -2563,14 +2563,15 @@ final class JsonSerializableToJsonTest {
             },
         """
                 {
-                  "processInstanceKey":-1,
-                  "processDefinitionKey":22334,
-                  "bpmnProcessId": "process",
-                  "tenantId": "acme",
-                  "rootProcessInstanceKey":-1,
                   "catchEventId": "startEvent",
                   "signalName": "name",
-                  "catchEventInstanceKey":3
+                  "catchEventInstanceKey":3,
+                  "bpmnElementType":"",
+                  "processInstanceKey":-1,
+                  "processDefinitionKey":22334,
+                  "rootProcessInstanceKey":-1,
+                  "bpmnProcessId": "process",
+                  "tenantId": "acme"
                 }
                 """
       },
@@ -2590,14 +2591,15 @@ final class JsonSerializableToJsonTest {
             },
         """
                 {
-                  "processInstanceKey":-1,
-                  "processDefinitionKey":22334,
-                  "bpmnProcessId":"",
-                  "tenantId": "<default>",
-                  "rootProcessInstanceKey":-1,
                   "catchEventId":"",
                   "signalName":"",
-                  "catchEventInstanceKey":-1
+                  "catchEventInstanceKey":-1,
+                  "bpmnElementType":"",
+                  "processInstanceKey":-1,
+                  "processDefinitionKey":22334,
+                  "rootProcessInstanceKey":-1,
+                  "bpmnProcessId":"",
+                  "tenantId": "<default>"
                 }
                 """
       },
