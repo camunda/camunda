@@ -89,6 +89,50 @@ go version
 - Use `gofmt` — output must be clean before committing.
 - Formatting is managed by `gofmt`; do not override manually.
 
+### Markdown Formatting (Spotless / Flexmark)
+
+All `*.md` files are checked by Spotless using the Flexmark formatter. CI will reject PRs with formatting violations. Key rules:
+
+**Tables:**
+
+- Column width = `max(centered_header_width, widest_cell_content + 2)` — no extra padding beyond what the content requires.
+- Header text is **centered** within the column: `left_pad = floor((width - text_len) / 2)`, `right_pad = ceil((width - text_len) / 2)`.
+- Body cells are **left-aligned**: leading space + content + trailing spaces + trailing space.
+- Separator uses full-width dashes matching the column width.
+- Copy column widths from an existing table in the same file if possible; do not add gratuitous padding.
+
+**Lists with indented code blocks:**
+
+- Fenced code blocks inside list items MUST have a blank line before and after them.
+- When any list item contains blank lines (making it a "loose" list), ALL items must be separated by blank lines.
+
+Correct:
+
+```markdown
+- First item text:
+
+  ```bash
+  command
+  ```
+
+  Continuation paragraph.
+
+- Second item.
+```
+
+Wrong (will fail CI):
+
+```markdown
+- First item text:
+  ```bash
+  command
+  ```
+  Continuation paragraph.
+- Second item.
+```
+
+**Verification:** Run `./mvnw spotless:apply -T1C` from the repo root (requires VPN/Nexus access). If unavailable locally, check the table formatting rules above manually before pushing.
+
 ### Package Design
 
 - Keep package APIs narrow and aligned with the current layout.
