@@ -22,11 +22,10 @@ public record ContextHeaders(String orgId, String clusterId, String physicalTena
   public static final String X_ORG_ID = "X-Org-Id";
   public static final String X_CLUSTER_ID = "X-Cluster-Id";
   public static final String X_PHYSICAL_TENANT_ID = "X-Physical-Tenant-Id";
+  public static final ContextHeaders EMPTY = new ContextHeaders(null, null, null);
 
   /** Sentinel some SaaS environments use to indicate the organization id is unset. */
   private static final String ORG_ID_UNSET_SENTINEL = "null";
-
-  public static final ContextHeaders EMPTY = new ContextHeaders(null, null, null);
 
   /**
    * Resolves the headers from their possible sources.
