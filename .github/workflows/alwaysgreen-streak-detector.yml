@@ -50,6 +50,7 @@ env:
   MEDIC_TEST_AUTOMATION: '<!subteam^S09UF0EV0HG|test-automation-medic>'
   MEDIC_DISTRIBUTION: '<!subteam^S053K7C7QKU|distribution-medic>'
   MEDIC_MONOREPO_DEVOPS: '<!subteam^S07D6C6B18T|monorepo-devops-medic>'
+  MEDIC_CORE_FEATURES: '<!subteam^S08P2CU9V8W|core-features-medic>'
   # Marker used in the Slack message text so subsequent runs can find
   # their own previous message via conversations.history. Includes the
   # base ref so concurrent streaks on `main` and `stable/x` don't
@@ -317,6 +318,9 @@ jobs:
                 ;;
               "@camunda/monorepo-devops-team")
                 mentions+=("${MEDIC_MONOREPO_DEVOPS}")
+                ;;
+              "@camunda/core-features")
+                mentions+=("${MEDIC_CORE_FEATURES}")
                 ;;
             esac
           done <<<"$OWNERS"
