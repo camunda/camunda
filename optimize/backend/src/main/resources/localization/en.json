@@ -6,6 +6,7 @@
     "description": "Monitor AI agent adoption, token spend, behavior, and reliability across your processes.",
     "dateRange": "Date range",
     "tokenUsage": "Token usage",
+    "reliabilityAndToolCalls": "Reliability & Tool Calls",
     "duration": "Duration",
     "presets": {
       "last7Days": "Last 7 days",
@@ -1565,7 +1566,9 @@
       "agenticKpiDurationP50Name": "P50 execution duration",
       "agenticKpiDurationP50Description": "Median (P50) execution duration of completed agentic process instances in the selected period.",
       "agenticKpiDurationP95Name": "P95 execution duration",
-      "agenticKpiDurationP95Description": "95th percentile execution duration of completed agentic process instances in the selected period."
+      "agenticKpiDurationP95Description": "95th percentile execution duration of completed agentic process instances in the selected period.",
+      "agenticFailureRateByVersionName": "Failure rate by process version",
+      "agenticFailureRateByVersionDescription": "Percentage of completed agentic process instances that encountered a resolved incident, broken down by process definition version."
     }
   },
   "managementDashboard": {

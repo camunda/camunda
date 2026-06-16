@@ -224,6 +224,7 @@ public class ExecutionContext<D extends SingleReportDataDto, P extends Execution
         && Objects.equals(allDistributedByKeysAndLabels, that.allDistributedByKeysAndLabels)
         && Objects.equals(allVariablesNames, that.allVariablesNames)
         && Objects.equals(hiddenFlowNodeIds, that.hiddenFlowNodeIds)
+        && Objects.equals(unfilteredInstanceCountsByGroupKey, that.unfilteredInstanceCountsByGroupKey)
         && Objects.equals(filterContext, that.filterContext);
   }
 
@@ -241,6 +242,7 @@ public class ExecutionContext<D extends SingleReportDataDto, P extends Execution
         allDistributedByKeysAndLabels,
         allVariablesNames,
         hiddenFlowNodeIds,
+        unfilteredInstanceCountsByGroupKey,
         filterContext,
         multiIndexAlias);
   }
@@ -272,6 +274,8 @@ public class ExecutionContext<D extends SingleReportDataDto, P extends Execution
         + this.getAllVariablesNames()
         + ", hiddenFlowNodeIds="
         + this.getHiddenFlowNodeIds()
+        + ", unfilteredInstanceCountsByGroupKey="
+        + this.getUnfilteredInstanceCountsByGroupKey()
         + ", filterContext="
         + this.getFilterContext()
         + ", multiIndexAlias="

@@ -8,6 +8,7 @@
 package io.camunda.optimize.service.dashboard;
 
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.DURATION_STABILITY_REPORT_ID;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.FAILURE_RATE_BY_VERSION_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.KPI_AVG_DURATION_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.KPI_AVG_TOKENS_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.KPI_COMPLETED_REPORT_ID;
@@ -1079,6 +1080,159 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
   }
 
   // ---------------------------------------------------------------------------
+  // Failure rate by process version
+  // ---------------------------------------------------------------------------
+
+  @Test
+  void shouldComputeFailureRatePerProcessVersion() {
+    // given version 1: 2 completed agentic instances, 1 with a resolved incident → 50%
+    final ProcessInstanceDto v1WithIncident =
+        resolvedIncident(agenticInstance(PROC_KEY, "1", 100L, 50L));
+    final ProcessInstanceDto v1Clean = agenticInstance(PROC_KEY, "1", 100L, 50L).build();
+    // version 2: 4 completed agentic instances, 1 with a resolved incident → 25%
+    final ProcessInstanceDto v2WithIncident =
+        resolvedIncident(agenticInstance(PROC_KEY, "2", 100L, 50L));
+    final List<ProcessInstanceDto> v2Clean =
+        repeat(3, () -> agenticInstance(PROC_KEY, "2", 100L, 50L).build());
+
+    persistProcessInstances(
+        Stream.concat(Stream.of(v1WithIncident, v1Clean, v2WithIncident), v2Clean.stream())
+            .toList());
+
+    // when
+    final List<MapResultEntryDto> buckets =
+        evaluateMapData(FAILURE_RATE_BY_VERSION_REPORT_ID, noExtraFilters());
+
+    // then
+    assertThat(rateForVersion(buckets, "1")).isEqualTo(50.0);
+    assertThat(rateForVersion(buckets, "2")).isEqualTo(25.0);
+  }
+
+  @Test
+  void shouldScopeDenominatorPerVersionBucket() {
+    // given version 1: 1 completed agentic with incident, 1 completed agentic clean → 50%
+    final ProcessInstanceDto withIncident =
+        resolvedIncident(agenticInstance(PROC_KEY, "1", 100L, 50L));
+    final ProcessInstanceDto clean = agenticInstance(PROC_KEY, "1", 100L, 50L).build();
+    // running agentic instances on the same version — must be excluded from the denominator
+    final List<ProcessInstanceDto> running =
+        repeat(
+            5,
+            () ->
+                agenticInstance(PROC_KEY, "1", 100L, 50L)
+                    .state(ProcessInstanceConstants.ACTIVE_STATE)
+                    .endDate(null)
+                    .duration(null)
+                    .build());
+    // completed non-agentic instances on the same version — must be excluded from the denominator
+    final List<ProcessInstanceDto> nonAgentic =
+        repeat(8, () -> completedInstance(PROC_KEY).processDefinitionVersion("1").build());
+
+    persistProcessInstances(
+        Stream.of(List.of(withIncident, clean), running, nonAgentic)
+            .flatMap(List::stream)
+            .toList());
+
+    // when
+    final List<MapResultEntryDto> buckets =
+        evaluateMapData(FAILURE_RATE_BY_VERSION_REPORT_ID, noExtraFilters());
+
+    // then denominator = 2 completed agentic instances (not 15); numerator = 1 → 50%
+    assertThat(rateForVersion(buckets, "1")).isEqualTo(50.0);
+  }
+
+  @Test
+  void shouldScopeFailureRatePerVersionByDateFilter() {
+    // given version 1 in window: 1 with incident, 1 clean → 50%
+    final ProcessInstanceDto recentWithIncident =
+        resolvedIncident(
+            agenticInstance(PROC_KEY, "1", 100L, 50L)
+                .startDate(OffsetDateTime.now().minusHours(3))
+                .endDate(OffsetDateTime.now().minusHours(2)));
+    final ProcessInstanceDto recentClean =
+        agenticInstance(PROC_KEY, "1", 100L, 50L)
+            .startDate(OffsetDateTime.now().minusHours(3))
+            .endDate(OffsetDateTime.now().minusHours(2))
+            .build();
+    // version 1 out of window: 10 with incidents — must not affect the bucket
+    final List<ProcessInstanceDto> oldWithIncidents =
+        repeat(
+            10,
+            () ->
+                resolvedIncident(
+                    agenticInstance(PROC_KEY, "1", 100L, 50L)
+                        .startDate(OffsetDateTime.now().minusDays(10))
+                        .endDate(OffsetDateTime.now().minusDays(9))));
+
+    persistProcessInstances(
+        Stream.concat(Stream.of(recentWithIncident, recentClean), oldWithIncidents.stream())
+            .toList());
+
+    // when
+    final List<MapResultEntryDto> buckets =
+        evaluateMapData(FAILURE_RATE_BY_VERSION_REPORT_ID, rollingEndDateFilter(1L, DateUnit.DAYS));
+
+    // then only the 2 in-window instances count → 1/2 = 50%
+    assertThat(rateForVersion(buckets, "1")).isEqualTo(50.0);
+  }
+
+  @Test
+  void shouldReturnOnlyScopedProcessVersionsWhenDefinitionFilterApplied() {
+    final String procKeyA = "proc-fr-a";
+    final String procKeyB = "proc-fr-b";
+
+    // procKeyA version 1: 2 instances, 1 with incident → 50%
+    final ProcessInstanceDto aV1WithIncident =
+        resolvedIncident(agenticInstance(procKeyA, "1", 100L, 50L));
+    final ProcessInstanceDto aV1Clean = agenticInstance(procKeyA, "1", 100L, 50L).build();
+    // procKeyA version 2: 4 instances, 1 with incident → 25%
+    final ProcessInstanceDto aV2WithIncident =
+        resolvedIncident(agenticInstance(procKeyA, "2", 100L, 50L));
+    final List<ProcessInstanceDto> aV2Clean =
+        repeat(3, () -> agenticInstance(procKeyA, "2", 100L, 50L).build());
+    // procKeyB version 1: 5 instances all with incidents — must not inflate procKeyA's version 1
+    final List<ProcessInstanceDto> bV1WithIncidents =
+        repeat(5, () -> resolvedIncident(agenticInstance(procKeyB, "1", 100L, 50L)));
+
+    persistProcessInstances(
+        Stream.of(List.of(aV1WithIncident, aV1Clean, aV2WithIncident), aV2Clean, bV1WithIncidents)
+            .flatMap(List::stream)
+            .toList());
+
+    // when
+    final List<MapResultEntryDto> buckets =
+        evaluateMapData(
+            FAILURE_RATE_BY_VERSION_REPORT_ID,
+            withDefinitions(List.of(new ReportDataDefinitionDto(procKeyA))));
+
+    // then scope to procKeyA → only its versions appear, each with its own scoped rate
+    assertThat(buckets).extracting(MapResultEntryDto::getKey).containsExactlyInAnyOrder("1", "2");
+    assertThat(rateForVersion(buckets, "1")).isEqualTo(50.0);
+    assertThat(rateForVersion(buckets, "2")).isEqualTo(25.0);
+  }
+
+  @Test
+  void shouldReturnNoErrorWhenNoCompletedAgenticInstancesMatch() {
+    // given only running agentic and completed non-agentic instances — nothing to group
+    final ProcessInstanceDto running =
+        agenticInstance(PROC_KEY, "1", 100L, 50L)
+            .state(ProcessInstanceConstants.ACTIVE_STATE)
+            .endDate(null)
+            .duration(null)
+            .build();
+    final ProcessInstanceDto nonAgentic = completedInstance(PROC_KEY).build();
+
+    persistProcessInstances(List.of(running, nonAgentic));
+
+    // when
+    final List<MapResultEntryDto> buckets =
+        evaluateMapData(FAILURE_RATE_BY_VERSION_REPORT_ID, noExtraFilters());
+
+    // then evaluation succeeds with empty buckets (no NaN, no exception)
+    assertThat(buckets).isEmpty();
+  }
+
+  // ---------------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------------
 
@@ -1124,6 +1278,53 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
   private ProcessInstanceDto.ProcessInstanceDtoBuilder agenticInstanceWithDuration(
       final String processDefinitionKey, final long duration) {
     return agenticInstanceWithTokens(processDefinitionKey, 0L, 0L).duration(duration);
+  }
+
+  /**
+   * Builds a completed agentic {@link ProcessInstanceDto} pinned to a specific process definition
+   * version, so reports grouped by version see distinct buckets.
+   */
+  private ProcessInstanceDto.ProcessInstanceDtoBuilder agenticInstance(
+      final String processDefinitionKey,
+      final String processDefinitionVersion,
+      final long inputTokens,
+      final long outputTokens) {
+    return agenticInstanceWithTokens(processDefinitionKey, inputTokens, outputTokens)
+        .processDefinitionVersion(processDefinitionVersion)
+        .processDefinitionId(processDefinitionKey + ":" + processDefinitionVersion + ":1");
+  }
+
+  private List<ProcessInstanceDto> repeat(
+      final int count, final java.util.function.Supplier<ProcessInstanceDto> supplier) {
+    return java.util.stream.IntStream.range(0, count).mapToObj(i -> supplier.get()).toList();
+  }
+
+  private ProcessInstanceDto resolvedIncident(
+      final ProcessInstanceDto.ProcessInstanceDtoBuilder builder) {
+    final String instanceId = UUID.randomUUID().toString();
+    return builder
+        .processInstanceId(instanceId)
+        .incidents(
+            List.of(
+                IncidentDto.builder()
+                    .incidentStatus(IncidentStatus.RESOLVED)
+                    .processInstanceId(instanceId)
+                    .build()))
+        .build();
+  }
+
+  private List<MapResultEntryDto> evaluateMapData(
+      final String reportId, final AdditionalProcessReportEvaluationFilterDto filterDto) {
+    return evaluateMap(reportId, filterDto).getFirstMeasureData();
+  }
+
+  private Double rateForVersion(
+      final List<MapResultEntryDto> buckets, final String processDefinitionVersion) {
+    return buckets.stream()
+        .filter(entry -> processDefinitionVersion.equals(entry.getKey()))
+        .map(MapResultEntryDto::getValue)
+        .findFirst()
+        .orElse(null);
   }
 
   private Double evaluateNumber(

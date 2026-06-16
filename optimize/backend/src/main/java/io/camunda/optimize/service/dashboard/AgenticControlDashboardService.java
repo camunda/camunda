@@ -32,6 +32,7 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.distributed.
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.EndDateGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessDefinitionVersionGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
@@ -85,6 +86,9 @@ public class AgenticControlDashboardService {
   public static final String KPI_DURATION_P50_DESCRIPTION = "agenticKpiDurationP50Description";
   public static final String KPI_DURATION_P95_NAME = "agenticKpiDurationP95Name";
   public static final String KPI_DURATION_P95_DESCRIPTION = "agenticKpiDurationP95Description";
+  public static final String FAILURE_RATE_BY_VERSION_NAME = "agenticFailureRateByVersionName";
+  public static final String FAILURE_RATE_BY_VERSION_DESCRIPTION =
+      "agenticFailureRateByVersionDescription";
 
   public static final String DURATION_STABILITY_NAME = "agenticDurationStabilityName";
   public static final String DURATION_STABILITY_DESCRIPTION = "agenticDurationStabilityDescription";
@@ -114,6 +118,9 @@ public class AgenticControlDashboardService {
       UUID.nameUUIDFromBytes("agentic-duration-p50".getBytes(StandardCharsets.UTF_8)).toString();
   public static final String KPI_DURATION_P95_REPORT_ID =
       UUID.nameUUIDFromBytes("agentic-duration-p95".getBytes(StandardCharsets.UTF_8)).toString();
+  public static final String FAILURE_RATE_BY_VERSION_REPORT_ID =
+      UUID.nameUUIDFromBytes("agentic-failure-rate-by-version".getBytes(StandardCharsets.UTF_8))
+          .toString();
 
   private static final long INSTANCE_END_DATE_ROLLING_DAYS = 30L;
 
@@ -158,6 +165,7 @@ public class AgenticControlDashboardService {
     tiles.add(buildTokenTrendReport());
     tiles.add(buildP50DurationReport());
     tiles.add(buildP95DurationReport());
+    tiles.add(buildFailureRateByVersionReport());
 
     // Always upsert the dashboard too — tile list can grow across versions and the cold-start
     // guard would leave an existing deployment stuck on the old layout.
@@ -435,6 +443,39 @@ public class AgenticControlDashboardService {
         new PositionDto(0, 6),
         new DimensionDto(18, 2),
         Map.of("section", "duration"));
+  }
+
+  private DashboardReportTileDto buildFailureRateByVersionReport() {
+    final ProcessReportDataDto reportData =
+        ProcessReportDataDto.builder()
+            .definitions(Collections.emptyList())
+            .view(new ProcessViewDto(ProcessViewEntity.PROCESS_INSTANCE, ViewProperty.PERCENTAGE))
+            .groupBy(new ProcessDefinitionVersionGroupByDto())
+            .distributedBy(new NoneDistributedByDto())
+            .visualization(ProcessVisualization.BAR)
+            .filter(
+                ProcessFilterBuilder.filter()
+                    .completedInstancesOnly()
+                    .add()
+                    .hasAgentInstances()
+                    .add()
+                    .withResolvedIncident()
+                    .add()
+                    .buildList())
+            .agenticControlReport(true)
+            .build();
+    reportWriter.createOrUpdateSingleProcessReport(
+        FAILURE_RATE_BY_VERSION_REPORT_ID,
+        null,
+        reportData,
+        FAILURE_RATE_BY_VERSION_NAME,
+        FAILURE_RATE_BY_VERSION_DESCRIPTION,
+        null);
+    return buildTile(
+        FAILURE_RATE_BY_VERSION_REPORT_ID,
+        new PositionDto(0, 6),
+        new DimensionDto(18, 2),
+        Map.of("visibleInL1Only", true, "section", "reliabilityAndToolCalls"));
   }
 
   private DashboardDefinitionRestDto buildAgentDashboard(final List<DashboardReportTileDto> tiles) {
