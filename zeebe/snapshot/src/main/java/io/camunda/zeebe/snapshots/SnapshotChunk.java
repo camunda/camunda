@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.snapshots;
 
+import java.nio.ByteBuffer;
+
 /** A chunk of an already persisted Snapshot. */
 public interface SnapshotChunk {
 
@@ -34,6 +36,13 @@ public interface SnapshotChunk {
    * @return the content of the current chunk
    */
   byte[] getContent();
+
+  /**
+   * @return the content of the current chunk as a {@link ByteBuffer}
+   */
+  default ByteBuffer getContentBuffer() {
+    return ByteBuffer.wrap(getContent()).asReadOnlyBuffer();
+  }
 
   /**
    * @return the index of the part of the chunk contents.

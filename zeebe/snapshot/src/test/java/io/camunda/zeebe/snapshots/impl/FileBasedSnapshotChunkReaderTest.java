@@ -99,7 +99,10 @@ public final class FileBasedSnapshotChunkReaderTest {
         assertThat(chunk.getSnapshotId()).isEqualTo(snapshotDirectory.getFileName().toString());
         assertThat(chunk.getTotalCount()).isEqualTo(SNAPSHOT_CHUNK.size());
         assertThat(chunk.getChecksum())
-            .isEqualTo(SnapshotChunkUtil.createChecksum(chunk.getContent()));
+            .isEqualTo(SnapshotChunkUtil.createChecksum(chunk.getContentBuffer()));
+        assertThat(chunk.getContentBuffer())
+            .as("file chunks should expose direct buffers for snapshot replication")
+            .matches(ByteBuffer::isDirect);
         assertThat(snapshotDirectory.resolve(chunk.getChunkName()))
             .hasBinaryContent(chunk.getContent());
       }
