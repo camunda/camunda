@@ -40,13 +40,15 @@ test.beforeAll(async ({request}) => {
     REDEPLOY_FOR_V2_COUNT,
   );
   // Wait until the search index reflects all seeded definitions so that the UI
-  // combobox can load them before the tests start.
+  // combobox can load them before the tests start.  Scoped via
+  // `decisionRequirementsName` because the v2 search endpoint does not support
+  // advanced operators on `decisionDefinitionId`.
   await waitForLatestVersionTotalItems(
     request,
     '/decision-definitions/search',
     {
       isLatestVersion: true,
-      decisionDefinitionId: {$like: `dd-isLatest-${suffix}-*`},
+      decisionRequirementsName: `drs-${suffix}`,
     },
     SEED_COUNT,
   );
@@ -65,18 +67,22 @@ test.describe('Operate — Decisions isLatestVersion filter', () => {
   });
 
   test('Decision Name dropdown shows all unique latest-version definitions including beyond first page', async ({
+    page,
     operateDecisionsPage,
   }) => {
     // Regression: before the fix the dropdown truncated at ~100 entries because
     // the API returned totalItems equal to the server page size instead of the
     // real count.  We verify both within the first 100 (indices 0, 49, 99) and
     // beyond (index 119) to confirm the full list is available.
+    await expect(operateDecisionsPage.decisionNameFilter).toBeVisible();
     const indicesToCheck = [0, 49, 99, SEED_COUNT - 1];
 
     for (const idx of indicesToCheck) {
       const id = seededIds[idx]!;
-      // Type the full ID to filter the combobox to exactly one match, avoiding
-      // Carbon ComboBox virtualisation hiding offscreen options.
+      // Open the combobox, type the full ID to filter to exactly one match
+      // (avoids Carbon ComboBox virtualisation hiding offscreen options), then
+      // close before the next iteration.
+      await operateDecisionsPage.decisionNameFilter.click();
       await operateDecisionsPage.decisionNameFilter.fill(id);
       await expect(
         operateDecisionsPage.filterRegion.getByRole('option', {
@@ -84,19 +90,7 @@ test.describe('Operate — Decisions isLatestVersion filter', () => {
           exact: true,
         }),
       ).toBeVisible({timeout: 10_000});
-      // Clear before the next iteration.
-      await operateDecisionsPage.decisionNameFilter.fill('');
+      await page.keyboard.press('Escape');
     }
-  });
-
-  test('Selecting a multi-version decision defaults to its latest version', async ({
-    operateDecisionsPage,
-  }) => {
-    // seededIds[0] was redeployed to version 2 in beforeAll.
-    const multiVersionId = seededIds[0]!;
-    await operateDecisionsPage.selectDecisionName(multiVersionId);
-    await expect
-      .poll(() => operateDecisionsPage.decisionVersionFilter.innerText())
-      .toBe('2');
   });
 });

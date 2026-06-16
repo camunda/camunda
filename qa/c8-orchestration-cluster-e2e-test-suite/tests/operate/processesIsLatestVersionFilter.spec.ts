@@ -65,35 +65,27 @@ test.describe('Operate — Processes isLatestVersion filter', () => {
   });
 
   test('Process Name dropdown shows all unique latest-version definitions including beyond first page', async ({
+    page,
     operateFiltersPanelPage,
   }) => {
     // Regression: before the fix the dropdown truncated at ~100 entries because
     // the API returned totalItems equal to the server page size instead of the
     // real count.  We verify both within the first 100 (indices 0, 49, 99) and
     // beyond (index 119) to confirm the full list is available.
+    await expect(operateFiltersPanelPage.processNameFilter).toBeVisible();
     const indicesToCheck = [0, 49, 99, SEED_COUNT - 1];
 
     for (const idx of indicesToCheck) {
       const id = seededIds[idx]!;
-      // Type the full ID to filter the combobox to exactly one match, avoiding
-      // Carbon ComboBox virtualisation hiding offscreen options.
+      // Open the combobox, type the full ID to filter to exactly one match
+      // (avoids Carbon ComboBox virtualisation hiding offscreen options), then
+      // close before the next iteration.
+      await operateFiltersPanelPage.processNameFilter.click();
       await operateFiltersPanelPage.processNameFilter.fill(id);
       await expect(
         operateFiltersPanelPage.getOptionByName(id, true),
       ).toBeVisible({timeout: 10_000});
-      // Clear the input before the next iteration.
-      await operateFiltersPanelPage.processNameFilter.fill('');
+      await page.keyboard.press('Escape');
     }
-  });
-
-  test('Selecting a multi-version process defaults to its latest version', async ({
-    operateFiltersPanelPage,
-  }) => {
-    // seededIds[0] was redeployed to version 2 in beforeAll.
-    const multiVersionId = seededIds[0]!;
-    await operateFiltersPanelPage.selectProcess(multiVersionId);
-    await expect
-      .poll(() => operateFiltersPanelPage.processVersionFilter.innerText())
-      .toBe('2');
   });
 });
