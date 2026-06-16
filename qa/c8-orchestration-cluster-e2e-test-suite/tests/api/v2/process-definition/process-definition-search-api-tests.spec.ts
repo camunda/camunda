@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {randomUUID} from 'node:crypto';
 import {expect, test} from '@playwright/test';
 import {
   assertBadRequest,
@@ -16,7 +17,14 @@ import {
 } from '../../../../utils/http';
 import {validateResponseShape} from '../../../../json-body-assertions';
 import {createInstances, deploy} from '../../../../utils/zeebeClient';
-import {defaultAssertionOptions} from '../../../../utils/constants';
+import {
+  defaultAssertionOptions,
+  extendedAssertionOptions,
+} from '../../../../utils/constants';
+import {
+  seedUniqueProcessDefinitions,
+  walkLatestVersionCursor,
+} from '@requestHelpers';
 
 /* eslint-disable playwright/expect-expect */
 test.describe.parallel('Process Definition Search API', () => {
@@ -296,5 +304,100 @@ test.describe.parallel('Process Definition Search API', () => {
       data: {},
     });
     await assertUnauthorizedRequest(res);
+  });
+
+  test.describe('isLatestVersion totalItems', () => {
+    let suffix: string;
+
+    test.beforeAll(async () => {
+      suffix = randomUUID().slice(0, 8);
+      await seedUniqueProcessDefinitions(suffix, 15, 5);
+    });
+
+    test('totalItems reflects unique count beyond page limit', async ({
+      request,
+    }) => {
+      await expect(async () => {
+        const res = await request.post(
+          buildUrl('/process-definitions/search'),
+          {
+            headers: jsonHeaders(),
+            data: {
+              filter: {
+                isLatestVersion: true,
+                processDefinitionId: {$like: `pd-isLatest-${suffix}-*`},
+              },
+              page: {limit: 5},
+            },
+          },
+        );
+        await assertStatusCode(res, 200);
+        const body = await res.json();
+        expect(body.page.totalItems).toBe(15);
+        expect(body.items).toHaveLength(5);
+        expect(body.page.endCursor).toBeTruthy();
+      }).toPass(extendedAssertionOptions);
+    });
+
+    test('forward cursor pagination collects all unique latest-version items', async ({
+      request,
+    }) => {
+      await expect(async () => {
+        const items = await walkLatestVersionCursor(
+          request,
+          '/process-definitions/search',
+          {
+            isLatestVersion: true,
+            processDefinitionId: {$like: `pd-isLatest-${suffix}-*`},
+          },
+          5,
+        );
+        const uniqueIds = new Set(
+          (items as {processDefinitionId?: string}[]).map(
+            (item) => item.processDefinitionId,
+          ),
+        );
+        expect(uniqueIds.size).toBe(15);
+        expect(
+          [...uniqueIds].every((id) =>
+            id?.startsWith(`pd-isLatest-${suffix}-`),
+          ),
+        ).toBe(true);
+      }).toPass(extendedAssertionOptions);
+    });
+
+    test('rejects pagination with from when isLatestVersion is set', async ({
+      request,
+    }) => {
+      const res = await request.post(buildUrl('/process-definitions/search'), {
+        headers: jsonHeaders(),
+        data: {
+          filter: {isLatestVersion: true},
+          page: {from: 5, limit: 5},
+        },
+      });
+      await assertInvalidArgument(
+        res,
+        400,
+        "The field 'from' is not supported",
+      );
+    });
+
+    test('rejects pagination with before when isLatestVersion is set', async ({
+      request,
+    }) => {
+      const res = await request.post(buildUrl('/process-definitions/search'), {
+        headers: jsonHeaders(),
+        data: {
+          filter: {isLatestVersion: true},
+          page: {before: 'some-cursor', limit: 5},
+        },
+      });
+      await assertInvalidArgument(
+        res,
+        400,
+        "The field 'before' is not supported",
+      );
+    });
   });
 });

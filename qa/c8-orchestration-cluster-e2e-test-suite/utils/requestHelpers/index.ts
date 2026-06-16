@@ -96,3 +96,9 @@ export {
 } from './global-task-listener-requestHelpers';
 export {type AuditLog} from './audit-log-requestHelpers';
 export {evaluateExpression, EXPRESSION_URL} from './expression-requestHelpers';
+export {
+  seedUniqueProcessDefinitions,
+  seedUniqueDecisionDefinitions,
+  walkLatestVersionCursor,
+  waitForLatestVersionTotalItems,
+} from './latest-version-test-helpers';
