@@ -43,6 +43,9 @@ concurrency:
 permissions:
   contents: read # for git clone
 
+env:
+  TEST_OWNER: '@camunda/identity'
+
 jobs:
   generate-db-versions:
     name: "Generate DB versions"
