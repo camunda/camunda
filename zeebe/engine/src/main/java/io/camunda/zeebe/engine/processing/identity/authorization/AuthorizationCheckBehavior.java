@@ -120,11 +120,11 @@ public final class AuthorizationCheckBehavior {
    *     {@link Void} if the user is authorized
    */
   public Either<Rejection, Void> isAuthorized(final AuthorizationRequest request) {
-    if (shouldSkipAllChecks()) {
-      return AUTHORIZED;
-    }
     final long startNanos = System.nanoTime();
     try {
+      if (shouldSkipAllChecks()) {
+        return AUTHORIZED;
+      }
       return authorizationsCache.get(request);
     } catch (final ExecutionException e) {
       return Either.left(
