@@ -1,4 +1,4 @@
-name: "[Legacy] Operate / Test Backup Restore"
+name: "Operate / Test Backup Restore"
 on:
   workflow_dispatch:
   push:
@@ -63,7 +63,7 @@ jobs:
         if: failure()
         uses: ./.github/actions/collect-test-artifacts
         with:
-          name: "[Legacy] Operate Test Backup Restore"
+          name: "Operate Test Backup Restore"
       - name: Observe build status
         if: always()
         continue-on-error: true
