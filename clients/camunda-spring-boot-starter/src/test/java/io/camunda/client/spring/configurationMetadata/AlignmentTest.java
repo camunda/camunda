@@ -56,7 +56,7 @@ public class AlignmentTest {
   private static final Function<JsonNode, Object> URI_MAPPER = p -> URI.create(p.asText());
   private static final Function<JsonNode, Object> DOUBLE_MAPPER = JsonNode::doubleValue;
   private static final Map<String, Getter> NEW_GETTERS =
-      Map.ofEntries(
+      Map.<String, Getter>ofEntries(
           entry(
               "camunda.client.execution-threads",
               new Getter(CamundaClientProperties::getExecutionThreads)),
@@ -240,22 +240,33 @@ public class AlignmentTest {
   @Autowired CamundaClientProperties camundaClientProperties;
 
   /**
-   * This test enforces the alignment between the additional properties defined in the metadata json
-   * and the code
+   * This test enforces the alignment between the generated Spring configuration metadata
+   * (META-INF/spring-configuration-metadata.json) and the code, covering all camunda.client.*
+   * properties and skipping deprecated ones.
    */
   @TestFactory
   Stream<DynamicTest> alignmentWithDefaultPropertiesTest() throws IOException {
     final JsonNode jsonNode =
         MAPPER.readTree(
-            ResourceUtils.getFile(
-                "classpath:META-INF/additional-spring-configuration-metadata.json"));
+            ResourceUtils.getFile("classpath:META-INF/spring-configuration-metadata.json"));
     final ArrayNode properties = (ArrayNode) jsonNode.get("properties");
     return properties
         .valueStream()
-        .filter(p -> p.has("defaultValue"))
+        .filter(p -> !p.has("deprecation"))
+        .filter(p -> p.get("name").asText().startsWith("camunda.client."))
         .map(
             p -> {
               final String name = p.get("name").asText();
+              if (!p.has("defaultValue")) {
+                return DynamicTest.dynamicTest(
+                    "Property " + name + " without default value",
+                    () -> {
+                      assertThat(NEW_GETTERS).containsKey(name);
+                      final Getter getter = NEW_GETTERS.get(name);
+                      final Object value = getter.getter().apply(camundaClientProperties);
+                      assertThat(value).isNull();
+                    });
+              }
               final JsonNode defaultValue = p.get("defaultValue");
               return DynamicTest.dynamicTest(
                   "Property " + name + " with default value " + defaultValue,
