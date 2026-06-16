@@ -64,13 +64,14 @@ public final class AgentHistoryCreateProcessor implements TypedRecordProcessor<A
       return;
     }
 
+    final var bpmnProcessId = agentInstanceRecord.getBpmnProcessId();
     final var authRequest =
         AuthorizationRequest.builder()
             .command(command)
             .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
             .permissionType(PermissionType.UPDATE_PROCESS_INSTANCE)
             .tenantId(agentInstanceRecord.getTenantId())
-            .addResourceId(agentInstanceRecord.getBpmnProcessId())
+            .addResourceId(bpmnProcessId)
             .build();
     final var authResult = authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
     if (authResult.isLeft()) {
@@ -118,6 +119,7 @@ public final class AgentHistoryCreateProcessor implements TypedRecordProcessor<A
             .setElementInstanceKey(jobElementInstanceKey)
             .setProcessInstanceKey(job.getProcessInstanceKey())
             .setRootProcessInstanceKey(job.getRootProcessInstanceKey())
+            .setBpmnProcessId(bpmnProcessId)
             .setProcessDefinitionKey(job.getProcessDefinitionKey())
             .setTenantId(job.getTenantId())
             .setJobKey(commandValue.getJobKey())
