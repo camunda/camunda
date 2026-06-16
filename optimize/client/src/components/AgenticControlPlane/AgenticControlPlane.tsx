@@ -43,12 +43,6 @@ interface RollingFilter {
   };
 }
 
-function presetToGroupByDateUnit(presetId: string): string {
-  if (presetId === '7d') return 'day';
-  if (presetId === '30d') return 'week';
-  return 'month';
-}
-
 function presetToFilter(preset: (typeof DATE_PRESETS)[number]): RollingFilter {
   return {
     type: 'instanceEndDate',
@@ -74,7 +68,6 @@ export function AgenticControlPlane() {
   }, [mightFail]);
 
   const selectedPreset = DATE_PRESETS.find((p) => p.id === preset)!;
-  const definitions = processScope ? [{key: processScope, versions: ['all']}] : [];
   const filter = [presetToFilter(selectedPreset)];
 
   const scopedEvaluateReport = useCallback(
@@ -82,18 +75,11 @@ export function AgenticControlPlane() {
       id: ReportEvaluationPayload,
       tileFilter: Parameters<typeof evaluateReport>[1],
       query: Parameters<typeof evaluateReport>[2]
-    ) => evaluateReport(id, tileFilter, query, definitions),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [processScope]
-  );
-
-  const scopedEvaluateTokenTrendReport = useCallback(
-    (
-      id: ReportEvaluationPayload,
-      tileFilter: Parameters<typeof evaluateReport>[1],
-      query: Parameters<typeof evaluateReport>[2]
-    ) => evaluateReport(id, tileFilter, query, definitions, presetToGroupByDateUnit(preset)),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    ) => {
+      const definitions = processScope ? [{key: processScope, versions: ['all']}] : [];
+      const groupByDateUnit = DATE_PRESETS.find((p) => p.id === preset)!.groupByDateUnit;
+      return evaluateReport(id, tileFilter, query, definitions, groupByDateUnit);
+    },
     [processScope, preset]
   );
 
@@ -117,7 +103,7 @@ export function AgenticControlPlane() {
     {
       key: 'token',
       titleKey: 'agenticControlPlane.tokenUsage',
-      loadTile: scopedEvaluateTokenTrendReport,
+      loadTile: scopedEvaluateReport,
     },
     {
       key: 'reliabilityAndToolCalls',

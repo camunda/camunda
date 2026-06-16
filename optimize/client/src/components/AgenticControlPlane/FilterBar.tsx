@@ -17,15 +17,40 @@ import {t} from 'translation';
 import './FilterBar.scss';
 
 export const DATE_PRESETS = [
-  {id: '7d', translationKey: 'agenticControlPlane.presets.last7Days', value: 7, unit: 'days'},
-  {id: '30d', translationKey: 'agenticControlPlane.presets.last30Days', value: 30, unit: 'days'},
-  {id: '3m', translationKey: 'agenticControlPlane.presets.last3Months', value: 3, unit: 'months'},
-  {id: '6m', translationKey: 'agenticControlPlane.presets.last6Months', value: 6, unit: 'months'},
+  {
+    id: '7d',
+    translationKey: 'agenticControlPlane.presets.last7Days',
+    value: 7,
+    unit: 'days',
+    groupByDateUnit: 'day',
+  },
+  {
+    id: '30d',
+    translationKey: 'agenticControlPlane.presets.last30Days',
+    value: 30,
+    unit: 'days',
+    groupByDateUnit: 'week',
+  },
+  {
+    id: '3m',
+    translationKey: 'agenticControlPlane.presets.last3Months',
+    value: 3,
+    unit: 'months',
+    groupByDateUnit: 'month',
+  },
+  {
+    id: '6m',
+    translationKey: 'agenticControlPlane.presets.last6Months',
+    value: 6,
+    unit: 'months',
+    groupByDateUnit: 'month',
+  },
   {
     id: '12m',
     translationKey: 'agenticControlPlane.presets.last12Months',
     value: 12,
     unit: 'months',
+    groupByDateUnit: 'month',
   },
 ] as const;
 

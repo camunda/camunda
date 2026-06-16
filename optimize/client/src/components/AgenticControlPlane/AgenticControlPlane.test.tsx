@@ -185,9 +185,13 @@ it('should include definitions in evaluate calls when a process is selected', as
     .prop('loadTile') as (id: string, filter: unknown[], params: unknown) => void;
   loadTile('report-id', [], {});
 
-  expect(evaluateReport).toHaveBeenCalledWith('report-id', [], {}, [
-    {key: 'my-process', versions: ['all']},
-  ]);
+  expect(evaluateReport).toHaveBeenCalledWith(
+    'report-id',
+    [],
+    {},
+    [{key: 'my-process', versions: ['all']}],
+    'week'
+  );
 });
 
 it('should pass empty definitions in evaluate calls when no process is selected', async () => {
@@ -200,5 +204,20 @@ it('should pass empty definitions in evaluate calls when no process is selected'
     .prop('loadTile') as (id: string, filter: unknown[], params: unknown) => void;
   loadTile('report-id', [], {});
 
-  expect(evaluateReport).toHaveBeenCalledWith('report-id', [], {}, []);
+  expect(evaluateReport).toHaveBeenCalledWith('report-id', [], {}, [], 'week');
+});
+
+it('should derive the groupByDateUnit from the selected preset', async () => {
+  const node = shallow(<AgenticControlPlane />);
+  await runAllEffects();
+
+  (node.find('FilterBar').prop('onPresetChange') as (v: string) => void)('7d');
+
+  const loadTile = node
+    .find('.kpi-section')
+    .find('DashboardRenderer')
+    .prop('loadTile') as (id: string, filter: unknown[], params: unknown) => void;
+  loadTile('report-id', [], {});
+
+  expect(evaluateReport).toHaveBeenCalledWith('report-id', [], {}, [], 'day');
 });
