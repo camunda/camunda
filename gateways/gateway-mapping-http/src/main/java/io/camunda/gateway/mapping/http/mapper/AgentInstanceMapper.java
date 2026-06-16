@@ -236,13 +236,13 @@ public class AgentInstanceMapper {
         .setContentType(meta.getContentType() != null ? meta.getContentType() : "")
         .setFileName(meta.getFileName() != null ? meta.getFileName() : "")
         .setSize(meta.getSize() != null ? meta.getSize() : -1L);
-    if (meta.getExpiresAt() != null) {
+    if (meta.getExpiresAt() != null && !meta.getExpiresAt().isBlank()) {
       recordMeta.setExpiresAt(OffsetDateTime.parse(meta.getExpiresAt()).toInstant().toEpochMilli());
     }
     if (meta.getProcessDefinitionId() != null) {
       recordMeta.setProcessDefinitionId(meta.getProcessDefinitionId());
     }
-    if (meta.getProcessInstanceKey() != null) {
+    if (meta.getProcessInstanceKey() != null && !meta.getProcessInstanceKey().isBlank()) {
       recordMeta.setProcessInstanceKey(Long.parseLong(meta.getProcessInstanceKey()));
     }
     if (meta.getCustomProperties() != null && !meta.getCustomProperties().isEmpty()) {
