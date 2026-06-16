@@ -9,6 +9,7 @@ package io.camunda.configuration.physicaltenants;
 
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.UnifiedConfigurationException;
+import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -57,12 +58,12 @@ import org.springframework.core.env.Environment;
 final class PhysicalTenantAssignedProvidersValidation {
 
   /**
-   * Reserved {@code assigned} id for the unnamed default slot ({@code
-   * camunda.security.authentication.oidc.*}). Mirrored from {@code
-   * PhysicalTenantAuthConfigurations.DEFAULT_SLOT_ASSIGNED_ID} in the {@code authentication} module
-   * (the two modules do not share a type for it); keep the two in sync.
+   * Reserved {@code assigned} id for the unnamed default slot — CSL's {@link
+   * OidcConfiguration#DEFAULT_REGISTRATION_ID} ({@code "oidc"}), the registration id of the default
+   * slot. The auth-merge narrowing ({@code PhysicalTenantAuthConfigurations}) sources the same CSL
+   * constant, so the two layers cannot drift.
    */
-  private static final String DEFAULT_SLOT_ASSIGNED_ID = "oidc";
+  private static final String DEFAULT_SLOT_ASSIGNED_ID = OidcConfiguration.DEFAULT_REGISTRATION_ID;
 
   private static final String PHYSICAL_TENANTS_PREFIX = Camunda.PREFIX + ".physical-tenants";
   private static final ConfigurationPropertyName PHYSICAL_TENANTS_NAME =
@@ -80,8 +81,11 @@ final class PhysicalTenantAssignedProvidersValidation {
   static void validate(final Environment environment) {
     final Binder binder = Binder.get(environment);
     final boolean oidcMethod = isOidcMethod(binder);
+    // Cluster-level (root) scans are identical for every tenant — compute them once.
+    final Set<String> rootNamedIds = childSegments(environment, ROOT_NAMED_PROVIDERS);
+    final boolean rootDefaultSlotPresent = hasDescendant(environment, ROOT_DEFAULT_SLOT);
 
-    for (final String tenantId : discoverTenantIds(environment)) {
+    for (final String tenantId : childSegments(environment, PHYSICAL_TENANTS_NAME)) {
       final List<String> assigned = bindAssigned(binder, tenantId);
       final boolean isDefault = PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID.equals(tenantId);
 
@@ -100,7 +104,8 @@ final class PhysicalTenantAssignedProvidersValidation {
       // every
       // tenant under OIDC, including the default tenant on its implicit full-set path. Otherwise a
       // config whose only tenant is `default` (no `assigned`) would not fail fast on the collision.
-      final Set<String> namedIds = namedProviderIds(environment, tenantId);
+      final Set<String> namedIds = new LinkedHashSet<>(rootNamedIds);
+      namedIds.addAll(tenantOverlayNamedIds(environment, tenantId));
       if (namedIds.contains(DEFAULT_SLOT_ASSIGNED_ID)) {
         throw fail(
             ("a named OIDC provider may not be called '%s' (configured for physical tenant '%s') — "
@@ -137,7 +142,7 @@ final class PhysicalTenantAssignedProvidersValidation {
       }
 
       final Set<String> known = new LinkedHashSet<>(namedIds);
-      if (hasDefaultSlotContent(environment, tenantId)) {
+      if (rootDefaultSlotPresent || hasTenantOverlayDefaultSlot(environment, tenantId)) {
         known.add(DEFAULT_SLOT_ASSIGNED_ID);
       }
 
@@ -174,28 +179,23 @@ final class PhysicalTenantAssignedProvidersValidation {
         .formatted(PHYSICAL_TENANTS_PREFIX, tenantId);
   }
 
-  /** Cluster-level (root) ∪ tenant-overlay named provider ids visible to the given tenant. */
-  private static Set<String> namedProviderIds(
+  /** Named provider ids declared in the given tenant's own overlay (root ids are hoisted). */
+  private static Set<String> tenantOverlayNamedIds(
       final Environment environment, final String tenantId) {
-    final Set<String> ids = new LinkedHashSet<>();
-    ids.addAll(childSegments(environment, ROOT_NAMED_PROVIDERS));
-    ids.addAll(
-        childSegments(
-            environment,
-            ConfigurationPropertyName.of(
-                "%s.%s.security.authentication.providers.oidc"
-                    .formatted(PHYSICAL_TENANTS_PREFIX, tenantId))));
-    return ids;
+    return childSegments(
+        environment,
+        ConfigurationPropertyName.of(
+            "%s.%s.security.authentication.providers.oidc"
+                .formatted(PHYSICAL_TENANTS_PREFIX, tenantId)));
   }
 
-  /** Whether the merged default slot (root ∪ tenant overlay) carries any content. */
-  private static boolean hasDefaultSlotContent(
+  /** Whether the given tenant's own overlay declares default-slot content. */
+  private static boolean hasTenantOverlayDefaultSlot(
       final Environment environment, final String tenantId) {
-    return hasDescendant(environment, ROOT_DEFAULT_SLOT)
-        || hasDescendant(
-            environment,
-            ConfigurationPropertyName.of(
-                "%s.%s.security.authentication.oidc".formatted(PHYSICAL_TENANTS_PREFIX, tenantId)));
+    return hasDescendant(
+        environment,
+        ConfigurationPropertyName.of(
+            "%s.%s.security.authentication.oidc".formatted(PHYSICAL_TENANTS_PREFIX, tenantId)));
   }
 
   /** The distinct id segments declared immediately under {@code prefix.<id>.*}. */
@@ -225,24 +225,6 @@ final class PhysicalTenantAssignedProvidersValidation {
       }
     }
     return false;
-  }
-
-  private static Set<String> discoverTenantIds(final Environment environment) {
-    final Set<String> tenants = new LinkedHashSet<>();
-    for (final ConfigurationPropertySource source : ConfigurationPropertySources.get(environment)) {
-      if (source instanceof final IterableConfigurationPropertySource iter) {
-        iter.stream()
-            .filter(PHYSICAL_TENANTS_NAME::isAncestorOf)
-            .filter(
-                name -> name.getNumberOfElements() > PHYSICAL_TENANTS_NAME.getNumberOfElements())
-            .forEach(
-                name ->
-                    tenants.add(
-                        name.getElement(
-                            PHYSICAL_TENANTS_NAME.getNumberOfElements(), Form.UNIFORM)));
-      }
-    }
-    return tenants;
   }
 
   private static UnifiedConfigurationException fail(final String detail) {

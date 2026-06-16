@@ -70,13 +70,14 @@ public final class PhysicalTenantAuthConfigurations {
       "camunda.physical-tenants.%s.security.authentication";
 
   /**
-   * Reserved {@code providers.assigned} id for the unnamed default slot ({@code
-   * camunda.security.authentication.oidc.*}) — it has no map key of its own, so it is referenced by
-   * the leaf name of the property that defines it. A named provider literally called {@code oidc}
-   * ({@code providers.oidc.oidc}) would collide; that pathological name is rejected at startup by
-   * the configuration-layer validation ({@code PhysicalTenantAssignedProvidersValidation}).
+   * Reserved {@code providers.assigned} id for the unnamed default slot — CSL's {@link
+   * OidcConfiguration#DEFAULT_REGISTRATION_ID} ({@code "oidc"}), the registration id of the default
+   * slot ({@code camunda.security.authentication.oidc.*}). Sourcing it from the CSL constant keeps
+   * it in lockstep with the configuration-layer validation, which references the same constant — so
+   * the two layers cannot drift. A named provider literally called this id collides and is rejected
+   * at startup by validation.
    */
-  private static final String DEFAULT_SLOT_ASSIGNED_ID = "oidc";
+  private static final String DEFAULT_SLOT_ASSIGNED_ID = OidcConfiguration.DEFAULT_REGISTRATION_ID;
 
   private PhysicalTenantAuthConfigurations() {}
 
@@ -137,14 +138,17 @@ public final class PhysicalTenantAuthConfigurations {
       final Binder binder, final String ptPrefix, final AuthenticationConfiguration config) {
     final List<String> assigned =
         binder.bind(ptPrefix + ".providers.assigned", Bindable.listOf(String.class)).orElse(null);
-    if (assigned == null) {
+    if (assigned == null || assigned.isEmpty()) {
+      // No selection — or an empty list — keeps the full union here. The configuration layer
+      // rejects
+      // an empty `assigned` at startup with a clear message; returning early avoids stripping every
+      // provider first (this can run before that validation, via the cluster-unification BPP).
       return;
     }
     // Defensive: tolerate null/blank list elements (some yaml list shapes bind them) so this never
-    // throws an opaque NPE — it can run before the configuration-layer validation (e.g. from the
-    // cluster-unification BeanPostProcessor). Blank ids match no provider, so dropping them is
-    // safe;
-    // the configuration layer still rejects them at startup with a clear message.
+    // throws an opaque NPE. Blank ids match no provider, so dropping them is safe; the
+    // configuration
+    // layer still rejects them at startup with a clear message.
     final Set<String> assignedIds = new LinkedHashSet<>();
     for (final String id : assigned) {
       if (id != null && !id.isBlank()) {

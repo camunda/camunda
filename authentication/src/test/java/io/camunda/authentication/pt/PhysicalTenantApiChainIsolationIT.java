@@ -512,6 +512,22 @@ class PhysicalTenantApiChainIsolationIT {
   // =========================================================================
 
   /**
+   * Sets the four OIDC properties every provider needs ({@code client-id}, {@code issuer-uri},
+   * {@code jwk-set-uri}, {@code redirect-uri}) under {@code basePath}, pointing at {@code server}.
+   * A new required property is then added in one place rather than across each copy.
+   */
+  private static void addOidcProvider(
+      final MockEnvironment env,
+      final String basePath,
+      final String clientId,
+      final JwksTestServer server) {
+    env.setProperty(basePath + ".client-id", clientId);
+    env.setProperty(basePath + ".issuer-uri", server.issuerUri());
+    env.setProperty(basePath + ".jwk-set-uri", server.issuerUri() + "/jwks");
+    env.setProperty(basePath + ".redirect-uri", "{baseUrl}/sso-callback");
+  }
+
+  /**
    * Configures two physical tenants with distinct issuers and JWKS servers. Each PT's
    * distinguishing provider lives in that PT's OVERLAY only (not at root), so each PT trusts only
    * its own issuer via the union-of-ids merge — no {@code assigned} selection needed:
@@ -526,33 +542,17 @@ class PhysicalTenantApiChainIsolationIT {
     // Root method
     env.setProperty("camunda.security.authentication.method", "oidc");
 
-    // PT-A overlay: pta provider lives only in PT-A's overlay (not at root)
-    env.setProperty(
-        "camunda.physical-tenants.pta.security.authentication.providers.oidc.pta.client-id",
-        "client-pta");
-    env.setProperty(
-        "camunda.physical-tenants.pta.security.authentication.providers.oidc.pta.issuer-uri",
-        serverA.issuerUri());
-    env.setProperty(
-        "camunda.physical-tenants.pta.security.authentication.providers.oidc.pta.jwk-set-uri",
-        serverA.issuerUri() + "/jwks");
-    env.setProperty(
-        "camunda.physical-tenants.pta.security.authentication.providers.oidc.pta.redirect-uri",
-        "{baseUrl}/sso-callback");
-
-    // PT-B overlay: ptb provider lives only in PT-B's overlay (not at root)
-    env.setProperty(
-        "camunda.physical-tenants.ptb.security.authentication.providers.oidc.ptb.client-id",
-        "client-ptb");
-    env.setProperty(
-        "camunda.physical-tenants.ptb.security.authentication.providers.oidc.ptb.issuer-uri",
-        serverB.issuerUri());
-    env.setProperty(
-        "camunda.physical-tenants.ptb.security.authentication.providers.oidc.ptb.jwk-set-uri",
-        serverB.issuerUri() + "/jwks");
-    env.setProperty(
-        "camunda.physical-tenants.ptb.security.authentication.providers.oidc.ptb.redirect-uri",
-        "{baseUrl}/sso-callback");
+    // PT-A / PT-B overlays: each provider lives only in its own PT's overlay (not at root).
+    addOidcProvider(
+        env,
+        "camunda.physical-tenants.pta.security.authentication.providers.oidc.pta",
+        "client-pta",
+        serverA);
+    addOidcProvider(
+        env,
+        "camunda.physical-tenants.ptb.security.authentication.providers.oidc.ptb",
+        "client-ptb",
+        serverB);
 
     return env;
   }
@@ -581,24 +581,10 @@ class PhysicalTenantApiChainIsolationIT {
     env.setProperty("camunda.security.authentication.method", "oidc");
 
     // Both providers declared at ROOT — without selection each PT would inherit both.
-    env.setProperty("camunda.security.authentication.providers.oidc.pta.client-id", "client-pta");
-    env.setProperty(
-        "camunda.security.authentication.providers.oidc.pta.issuer-uri", serverA.issuerUri());
-    env.setProperty(
-        "camunda.security.authentication.providers.oidc.pta.jwk-set-uri",
-        serverA.issuerUri() + "/jwks");
-    env.setProperty(
-        "camunda.security.authentication.providers.oidc.pta.redirect-uri",
-        "{baseUrl}/sso-callback");
-    env.setProperty("camunda.security.authentication.providers.oidc.ptb.client-id", "client-ptb");
-    env.setProperty(
-        "camunda.security.authentication.providers.oidc.ptb.issuer-uri", serverB.issuerUri());
-    env.setProperty(
-        "camunda.security.authentication.providers.oidc.ptb.jwk-set-uri",
-        serverB.issuerUri() + "/jwks");
-    env.setProperty(
-        "camunda.security.authentication.providers.oidc.ptb.redirect-uri",
-        "{baseUrl}/sso-callback");
+    addOidcProvider(
+        env, "camunda.security.authentication.providers.oidc.pta", "client-pta", serverA);
+    addOidcProvider(
+        env, "camunda.security.authentication.providers.oidc.ptb", "client-ptb", serverB);
 
     // Per-PT selection: each tenant keeps only its own provider.
     env.setProperty(
@@ -619,22 +605,10 @@ class PhysicalTenantApiChainIsolationIT {
     env.setProperty("camunda.security.authentication.method", "oidc");
 
     // Unnamed default slot — issuer serverB.
-    env.setProperty("camunda.security.authentication.oidc.client-id", "client-default");
-    env.setProperty("camunda.security.authentication.oidc.issuer-uri", serverB.issuerUri());
-    env.setProperty(
-        "camunda.security.authentication.oidc.jwk-set-uri", serverB.issuerUri() + "/jwks");
-    env.setProperty("camunda.security.authentication.oidc.redirect-uri", "{baseUrl}/sso-callback");
-
+    addOidcProvider(env, "camunda.security.authentication.oidc", "client-default", serverB);
     // Named cluster provider pta — issuer serverA.
-    env.setProperty("camunda.security.authentication.providers.oidc.pta.client-id", "client-pta");
-    env.setProperty(
-        "camunda.security.authentication.providers.oidc.pta.issuer-uri", serverA.issuerUri());
-    env.setProperty(
-        "camunda.security.authentication.providers.oidc.pta.jwk-set-uri",
-        serverA.issuerUri() + "/jwks");
-    env.setProperty(
-        "camunda.security.authentication.providers.oidc.pta.redirect-uri",
-        "{baseUrl}/sso-callback");
+    addOidcProvider(
+        env, "camunda.security.authentication.providers.oidc.pta", "client-pta", serverA);
 
     for (int i = 0; i < assignedIds.length; i++) {
       env.setProperty(
