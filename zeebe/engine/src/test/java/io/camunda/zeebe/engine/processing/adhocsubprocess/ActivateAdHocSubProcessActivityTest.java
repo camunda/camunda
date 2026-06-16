@@ -21,10 +21,13 @@ import io.camunda.zeebe.protocol.record.RecordAssert;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.JobKind;
+import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.test.util.record.ProcessInstanceRecordStream;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -396,6 +399,37 @@ public class ActivateAdHocSubProcessActivityTest {
                     && ((SignalRecord) r.getValue()).getSignalName().equals(signalName))
         .processInstanceRecords()
         .withProcessInstanceKey(processInstanceKey);
+  }
+
+  @Test
+  public void shouldCreateJobWithCorrectFieldsForBpmnTypeAdHocSubProcessInnerServiceTask() {
+    // given — BPMN-type AHSP (no zeebeJobType on the AHSP itself); inner task auto-activated
+    final var bpmnAhspProcessId = "bpmnAhspJobFieldsProcess";
+    final var process =
+        Bpmn.createExecutableProcess(bpmnAhspProcessId)
+            .startEvent()
+            .adHocSubProcess(
+                "bpmn-ahsp",
+                a -> {
+                  a.serviceTask("inner-svc").zeebeJobType("inner-svc-job");
+                  a.zeebeActiveElementsCollectionExpression("=[\"inner-svc\"]");
+                })
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long pik = ENGINE.processInstance().ofBpmnProcessId(bpmnAhspProcessId).create();
+
+    // then — the job is created with correct field values
+    final Record<JobRecordValue> jobCreated =
+        RecordingExporter.jobRecords(JobIntent.CREATED).withProcessInstanceKey(pik).getFirst();
+
+    assertThat(jobCreated.getValue().getType()).isEqualTo("inner-svc-job");
+    assertThat(jobCreated.getValue().getJobKind()).isEqualTo(JobKind.BPMN_ELEMENT);
+    assertThat(jobCreated.getValue().getElementId()).isEqualTo("inner-svc");
+    assertThat(jobCreated.getValue().getElementType()).isEqualTo(BpmnElementType.SERVICE_TASK);
+    assertThat(jobCreated.getValue().getProcessInstanceKey()).isEqualTo(pik);
   }
 
   private void deployProcess(

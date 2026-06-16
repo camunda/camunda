@@ -471,6 +471,68 @@ public class WaitStateJobIT {
                     .isEmpty());
   }
 
+  @Test
+  void shouldReturnWaitStateForServiceTaskInsideBpmnTypeAdHocSubProcess() {
+    // given — BPMN-type AHSP (no zeebeJobType on the AHSP itself); inner service task is
+    // auto-activated via activeElementsCollectionExpression so no API call is needed.
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("bpmnAhspWaitStateProcess")
+            .startEvent()
+            .adHocSubProcess(
+                "bpmn-ahsp",
+                a -> {
+                  a.serviceTask("inner-svc").zeebeJobType("inner-svc-job");
+                  a.zeebeActiveElementsCollectionExpression("=[\"inner-svc\"]");
+                })
+            .endEvent()
+            .done();
+
+    deployProcessAndWaitForIt(camundaClient, process, "bpmnAhspWaitStateProcess.bpmn");
+    final long pik =
+        startProcessInstance(camundaClient, "bpmnAhspWaitStateProcess").getProcessInstanceKey();
+
+    // when / then
+    Awaitility.await("wait state for inner service task should appear")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .untilAsserted(
+            () ->
+                assertThat(
+                        camundaClient
+                            .newElementInstanceWaitStateSearchRequest()
+                            .filter(f -> f.processInstanceKey(pik))
+                            .send()
+                            .join()
+                            .items())
+                    .hasSize(1)
+                    .allSatisfy(
+                        item -> {
+                          assertThat(item.getElementId()).isEqualTo("inner-svc");
+                          assertThat(item.getElementType())
+                              .isEqualTo(WaitStateElementType.SERVICE_TASK);
+                          assertThat(item.getDetails()).isInstanceOf(JobWaitStateDetails.class);
+                          final var details = (JobWaitStateDetails) item.getDetails();
+                          assertThat(details.getJobKind()).isEqualTo(JobKind.BPMN_ELEMENT);
+                          assertThat(details.getJobType()).isEqualTo("inner-svc-job");
+                          assertThat(details.getWaitStateType()).isEqualTo(WaitStateType.JOB);
+                        }));
+
+    // cleanup
+    camundaClient.newCancelInstanceCommand(pik).execute();
+    waitForProcessInstanceToBeTerminated(camundaClient, pik);
+    Awaitility.await("wait state should be removed after cleanup")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .untilAsserted(
+            () ->
+                assertThat(
+                        camundaClient
+                            .newElementInstanceWaitStateSearchRequest()
+                            .filter(f -> f.processInstanceKey(pik))
+                            .send()
+                            .join()
+                            .items())
+                    .isEmpty());
+  }
+
   /**
    * Filters by both element type and element id, then asserts the wait state type, element type,
    * element id, and all fields of the typed {@link JobWaitStateDetails}.
