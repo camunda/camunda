@@ -130,7 +130,7 @@ describe('OperationsPresentational', () => {
     );
 
     await user.click(screen.getByRole('button', {name: /delete instance/i}));
-    await user.click(screen.getByRole('button', {name: /danger delete/i}));
+    await user.click(screen.getByRole('button', {name: /^delete$/i}));
 
     expect(mockOnExecute).toHaveBeenCalled();
   });
@@ -219,9 +219,7 @@ describe('OperationsPresentational', () => {
 
     const modalText = `About to delete Instance ${PROCESS_INSTANCE_KEY}.`;
     expect(screen.getByText(modalText)).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', {name: /danger delete/i}),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: /^delete$/i})).toBeInTheDocument();
     expect(screen.getByRole('button', {name: 'Cancel'})).toBeInTheDocument();
   });
 

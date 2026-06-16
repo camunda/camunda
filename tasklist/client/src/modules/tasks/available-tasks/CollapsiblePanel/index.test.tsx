@@ -473,7 +473,7 @@ describe('<CollapsiblePanel />', () => {
       within(screen.getByRole('dialog', {name: /delete filter/i})).getByRole(
         'button',
         {
-          name: /danger confirm deletion/i,
+          name: /^confirm deletion$/i,
         },
       ),
     );
