@@ -30,8 +30,6 @@ public class JobUpdateBehaviour {
 
   public static final String NO_DEADLINE_FOUND_MESSAGE =
       "Expected to update the timeout of job with key '%d', but it is not active";
-  public static final String NOT_ACTIVATABLE_FOR_PRIORITY_UPDATE_MESSAGE =
-      "Expected to update the priority of job with key '%d', but it is not activatable";
   private static final String NEGATIVE_RETRIES_MESSAGE =
       "Expected to update retries for job with key '%d' with a positive amount of retries, "
           + "but the amount given was '%d'";
@@ -122,13 +120,6 @@ public class JobUpdateBehaviour {
       return error;
     }
     applyJobTimeout(jobKey, timeout, jobRecord);
-    return Optional.empty();
-  }
-
-  public Optional<String> validateJobPriority(final long jobKey) {
-    if (!jobState.isInState(jobKey, State.ACTIVATABLE)) {
-      return Optional.of(NOT_ACTIVATABLE_FOR_PRIORITY_UPDATE_MESSAGE.formatted(jobKey));
-    }
     return Optional.empty();
   }
 

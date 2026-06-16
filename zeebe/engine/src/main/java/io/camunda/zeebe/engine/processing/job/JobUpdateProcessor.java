@@ -55,10 +55,6 @@ public class JobUpdateProcessor implements TypedRecordProcessor<JobRecord> {
               if (changeset.contains(JobRecord.TIMEOUT)) {
                 jobUpdateBehaviour.validateJobTimeout(jobKey, job).ifPresent(errors::add);
               }
-              if (changeset.contains(JobRecord.PRIORITY)) {
-                jobUpdateBehaviour.validateJobPriority(jobKey).ifPresent(errors::add);
-              }
-
               if (!errors.isEmpty()) {
                 handleRejection(errors, command);
                 return;

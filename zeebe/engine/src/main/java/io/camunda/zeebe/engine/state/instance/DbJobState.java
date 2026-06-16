@@ -303,11 +303,18 @@ public final class DbJobState implements JobState, MutableJobState {
   public void updateJobPriority(final long jobKey, final int newPriority) {
     this.jobKey.wrapLong(jobKey);
     final JobRecord job = getJob(jobKey);
-    if (job != null && isInState(jobKey, State.ACTIVATABLE)) {
-      makeJobNotActivatable(job);
-      job.setPriority(newPriority);
+    if (job == null) {
+      return;
+    }
+    final int oldPriority = job.getPriority();
+    job.setPriority(newPriority);
+
+    if (getState(jobKey) == State.ACTIVATABLE) {
+      makeJobNotActivatable(job.getTypeBuffer(), job.getTenantId(), oldPriority);
       updateJobRecord(jobKey, job);
       makeJobActivatable(job.getTypeBuffer(), jobKey, job.getTenantId(), newPriority);
+    } else {
+      updateJobRecord(jobKey, job);
     }
   }
 
@@ -656,15 +663,18 @@ public final class DbJobState implements JobState, MutableJobState {
   // makeJobNotActivatable does NOT set jobKey. Callers are responsible for setting it
   // (via jobKey.wrapLong or via updateJobRecord) before calling it.
   private void makeJobNotActivatable(final JobRecord record) {
-    final DirectBuffer type = record.getTypeBuffer();
-    final String tenantId = record.getTenantId();
+    makeJobNotActivatable(record.getTypeBuffer(), record.getTenantId(), record.getPriority());
+  }
+
+  private void makeJobNotActivatable(
+      final DirectBuffer type, final String tenantId, final int priority) {
     EnsureUtil.ensureNotNullOrEmpty("type", type);
     EnsureUtil.ensureNotNullOrEmpty("tenantid", tenantId);
 
     jobTypeKey.wrapBuffer(type);
     tenantIdKey.wrapString(tenantId);
     // overflow for negative priorities is intentional (see invertedPriorityKey field comment above)
-    invertedPriorityKey.wrapInt(Integer.MAX_VALUE - record.getPriority());
+    invertedPriorityKey.wrapInt(Integer.MAX_VALUE - priority);
     // Requires jobKey to already be set by the caller (directly or via updateJobRecord).
     // This method does not set jobKey because it is not passed as a parameter.
     priorityActivatableColumnFamily.deleteIfExists(tenantAwarePriorityKey);
