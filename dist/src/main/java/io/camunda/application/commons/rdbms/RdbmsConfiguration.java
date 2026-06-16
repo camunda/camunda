@@ -7,8 +7,7 @@
  */
 package io.camunda.application.commons.rdbms;
 
-import static io.camunda.configuration.api.physicaltenants.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
-
+import io.camunda.application.commons.search.PhysicalTenantRoutingAuthorizationReader;
 import io.camunda.application.commons.search.PhysicalTenantSearchClientReaders;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
@@ -37,6 +36,7 @@ import java.sql.DatabaseMetaData;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import javax.sql.DataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -122,10 +122,25 @@ public class RdbmsConfiguration {
         new ResourceAccessDelegatingController(resourceAccessControllers));
   }
 
+  /**
+   * SPIKE (ADR-0005): route authorization reads to the physical tenant in context instead of
+   * binding to the {@code default} tenant's reader (#55252) — the RDBMS counterpart of the ES/OS
+   * routing in {@code SearchClientReaderConfiguration}, over the per-PT {@code RdbmsTenantReaders}
+   * introduced in #54474. This single {@code authorizationReader} bean feeds both the control-plane
+   * {@code AuthorizationRepositoryAdapter} and the data-plane {@code
+   * SearchAuthorizationScopeRepository}. Was: {@code
+   * defaultReaders(rdbmsTenantReaders).authorizationReader();} (default-pinned).
+   */
   @Bean
   public AuthorizationReader authorizationReader(
       final Map<String, RdbmsTenantReaders> rdbmsTenantReaders) {
-    return defaultReaders(rdbmsTenantReaders).authorizationReader();
+    final Map<String, AuthorizationReader> readersByPhysicalTenant =
+        rdbmsTenantReaders.entrySet().stream()
+            .collect(
+                Collectors.toMap(
+                    Map.Entry::getKey,
+                    e -> (AuthorizationReader) e.getValue().authorizationReader()));
+    return new PhysicalTenantRoutingAuthorizationReader(readersByPhysicalTenant);
   }
 
   @Bean
@@ -152,16 +167,5 @@ public class RdbmsConfiguration {
   HealthContributor rdbmsStatusHealthIndicator(final DataSource dataSource) {
     // Equivalent to what Boot would normally wire for "db"
     return new DataSourceHealthIndicator(dataSource);
-  }
-
-  private static RdbmsTenantReaders defaultReaders(
-      final Map<String, RdbmsTenantReaders> rdbmsTenantReaders) {
-    final var defaults = rdbmsTenantReaders.get(DEFAULT_PHYSICAL_TENANT_ID);
-    if (defaults == null) {
-      throw new IllegalStateException(
-          "Missing default physical tenant '%s' in rdbmsTenantReaders; known tenants: %s"
-              .formatted(DEFAULT_PHYSICAL_TENANT_ID, rdbmsTenantReaders.keySet()));
-    }
-    return defaults;
   }
 }

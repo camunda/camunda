@@ -44,10 +44,11 @@ public class SearchClientReaderConfiguration {
 
   /**
    * SPIKE (ADR-0005): route authorization reads to the physical tenant in context instead of
-   * binding to the {@code default} tenant's reader (#55252). Both authorization-read consumers — the
-   * control-plane {@code AuthorizationRepositoryAdapter} and the data-plane {@code
-   * SearchAuthorizationScopeRepository} — inject this single bean, so re-pointing it here covers both
-   * paths. Was: {@code requireDefault(physicalTenantSearchClientReaders.readersByPhysicalTenant(),
+   * binding to the {@code default} tenant's reader (#55252). Both authorization-read consumers —
+   * the control-plane {@code AuthorizationRepositoryAdapter} and the data-plane {@code
+   * SearchAuthorizationScopeRepository} — inject this single bean, so re-pointing it here covers
+   * both paths. Was: {@code
+   * requireDefault(physicalTenantSearchClientReaders.readersByPhysicalTenant(),
    * ...).authorizationReader();} (default-pinned).
    */
   @Bean
