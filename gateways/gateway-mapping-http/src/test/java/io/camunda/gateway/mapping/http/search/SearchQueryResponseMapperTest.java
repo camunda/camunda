@@ -18,6 +18,15 @@ import io.camunda.gateway.protocol.model.JobListenerEventTypeEnum;
 import io.camunda.gateway.protocol.model.JobSearchQueryResult;
 import io.camunda.gateway.protocol.model.JobWaitStateDetails;
 import io.camunda.search.entities.AgentInstanceEntity;
+import io.camunda.search.entities.AgentInstanceHistoryEntity;
+import io.camunda.search.entities.AgentInstanceHistoryEntity.AgentInstanceHistoryCommitStatus;
+import io.camunda.search.entities.AgentInstanceHistoryEntity.AgentInstanceHistoryRole;
+import io.camunda.search.entities.AgentInstanceHistoryEntity.ContentItem;
+import io.camunda.search.entities.AgentInstanceHistoryEntity.ContentItem.ContentType;
+import io.camunda.search.entities.AgentInstanceHistoryEntity.DocumentMetadata;
+import io.camunda.search.entities.AgentInstanceHistoryEntity.DocumentReference;
+import io.camunda.search.entities.AgentInstanceHistoryEntity.Metrics;
+import io.camunda.search.entities.AgentInstanceHistoryEntity.ToolCall;
 import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.AuditLogEntity.AuditLogActorType;
 import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
@@ -57,6 +66,7 @@ import io.camunda.security.api.model.user.CamundaUserDTO;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 class SearchQueryResponseMapperTest {
@@ -1009,5 +1019,180 @@ class SearchQueryResponseMapperTest {
     // then
     final var responseDetails = (JobWaitStateDetails) result.getItems().getFirst().getDetails();
     assertThat(responseDetails.getListenerEventType()).isNull();
+  }
+
+  @Nested
+  class AgentHistoryItemResult {
+
+    @Test
+    void shouldMapTextContentItem() {
+      // given
+      final var producedAt = OffsetDateTime.parse("2025-01-01T10:00:00Z");
+      final var entity =
+          new AgentInstanceHistoryEntity(
+              100L,
+              200L,
+              300L,
+              400L,
+              500L,
+              "process-1",
+              "tenant-1",
+              600L,
+              "lease-1",
+              3,
+              AgentInstanceHistoryRole.USER,
+              List.of(new ContentItem(ContentType.TEXT, "Hello", null, null)),
+              List.of(),
+              new Metrics(10, 20, 30),
+              AgentInstanceHistoryCommitStatus.COMMITTED,
+              producedAt);
+
+      // when
+      final var result = SearchQueryResponseMapper.toAgentHistoryItemResult(entity);
+
+      // then
+      assertThat(result.getHistoryItemKey()).isEqualTo("100");
+      assertThat(result.getAgentInstanceKey()).isEqualTo("200");
+      assertThat(result.getElementInstanceKey()).isEqualTo("300");
+      assertThat(result.getJobKey()).isEqualTo("600");
+      assertThat(result.getJobLease()).isEqualTo("lease-1");
+      assertThat(result.getIteration()).isEqualTo(3);
+      assertThat(result.getRole().getValue()).isEqualTo("USER");
+      assertThat(result.getCommitStatus().getValue()).isEqualTo("COMMITTED");
+      assertThat(result.getMetrics().getInputTokens()).isEqualTo(10);
+      assertThat(result.getMetrics().getOutputTokens()).isEqualTo(20);
+      assertThat(result.getMetrics().getDurationMs()).isEqualTo(30);
+      assertThat(result.getContent()).hasSize(1);
+      assertThat(result.getContent().get(0).getContentType()).isEqualTo("TEXT");
+    }
+
+    @Test
+    void shouldMapDocumentContentItem() {
+      // given
+      final var docMeta =
+          new DocumentMetadata("text/pdf", "report.pdf", null, 1024L, "pd-1", 999L, Map.of());
+      final var docRef = new DocumentReference("store-1", "doc-1", "hash-abc", docMeta);
+      final var entity =
+          new AgentInstanceHistoryEntity(
+              1L,
+              2L,
+              3L,
+              4L,
+              5L,
+              "pd-1",
+              "<default>",
+              6L,
+              "",
+              null,
+              AgentInstanceHistoryRole.ASSISTANT,
+              List.of(new ContentItem(ContentType.DOCUMENT, null, docRef, null)),
+              List.of(),
+              new Metrics(0, 0, 0),
+              AgentInstanceHistoryCommitStatus.PENDING,
+              OffsetDateTime.now());
+
+      // when
+      final var result = SearchQueryResponseMapper.toAgentHistoryItemResult(entity);
+
+      // then
+      assertThat(result.getContent()).hasSize(1);
+      final var content = result.getContent().get(0);
+      assertThat(content.getContentType()).isEqualTo("DOCUMENT");
+      assertThat(result.getRole().getValue()).isEqualTo("ASSISTANT");
+    }
+
+    @Test
+    void shouldMapNullContentAndToolCallsAsEmptyLists() {
+      // given
+      final var entity =
+          new AgentInstanceHistoryEntity(
+              1L,
+              2L,
+              3L,
+              4L,
+              5L,
+              "",
+              "<default>",
+              6L,
+              "",
+              null,
+              AgentInstanceHistoryRole.TOOL_RESULT,
+              null,
+              null,
+              new Metrics(0, 0, 0),
+              AgentInstanceHistoryCommitStatus.DISCARDED,
+              OffsetDateTime.now());
+
+      // when
+      final var result = SearchQueryResponseMapper.toAgentHistoryItemResult(entity);
+
+      // then
+      assertThat(result.getContent()).isEmpty();
+      assertThat(result.getToolCalls()).isEmpty();
+    }
+
+    @Test
+    void shouldMapToolCalls() {
+      // given
+      final var toolCall = new ToolCall("tc-1", "MyTool", "elem-1", Map.of("param", "value"));
+      final var entity =
+          new AgentInstanceHistoryEntity(
+              1L,
+              2L,
+              3L,
+              4L,
+              5L,
+              "",
+              "<default>",
+              6L,
+              "",
+              1,
+              AgentInstanceHistoryRole.ASSISTANT,
+              List.of(),
+              List.of(toolCall),
+              new Metrics(5, 10, 100),
+              AgentInstanceHistoryCommitStatus.COMMITTED,
+              OffsetDateTime.now());
+
+      // when
+      final var result = SearchQueryResponseMapper.toAgentHistoryItemResult(entity);
+
+      // then
+      assertThat(result.getToolCalls()).hasSize(1);
+      assertThat(result.getToolCalls().get(0).getToolCallId()).isEqualTo("tc-1");
+      assertThat(result.getToolCalls().get(0).getToolName()).isEqualTo("MyTool");
+      assertThat(result.getToolCalls().get(0).getElementId()).isEqualTo("elem-1");
+    }
+
+    @Test
+    void shouldWrapEntityListInSearchQueryResult() {
+      // given
+      final var entity =
+          new AgentInstanceHistoryEntity(
+              42L,
+              7L,
+              8L,
+              9L,
+              10L,
+              "",
+              "<default>",
+              11L,
+              "",
+              null,
+              AgentInstanceHistoryRole.USER,
+              List.of(),
+              List.of(),
+              new Metrics(0, 0, 0),
+              AgentInstanceHistoryCommitStatus.COMMITTED,
+              OffsetDateTime.now());
+      final var queryResult = new SearchQueryResult<>(1L, false, List.of(entity), null, null);
+
+      // when
+      final var response = SearchQueryResponseMapper.toAgentHistorySearchQueryResponse(queryResult);
+
+      // then
+      assertThat(response.getItems()).hasSize(1);
+      assertThat(response.getItems().get(0).getHistoryItemKey()).isEqualTo("42");
+    }
   }
 }
