@@ -103,6 +103,8 @@ class CoverageReportCollectorBuilderTest {
         .satisfies(
             suite -> {
               assertThat(suite.getId()).isEqualTo(GivenRunTest.class.getName());
+              assertThat(suite.getName())
+                  .isEqualTo("CoverageReportCollectorBuilderTest$GivenRunTest");
               assertThat(suite.getRuns())
                   .singleElement()
                   .satisfies(
@@ -125,6 +127,30 @@ class CoverageReportCollectorBuilderTest {
             model -> {
               assertThat(model.getProcessDefinitionId()).isEqualTo(processDefinitionId);
               assertThat(model.getXml()).contains("id=\"" + processDefinitionId + "\"");
+            });
+  }
+
+  @Test
+  void shouldUseQualifiedSuiteNameAndMethodRunNameForNestedTests() {
+    // given
+    final CoverageCollector coverageCollector = CoverageCollector.newBuilder().build();
+    final CoverageTestData testData = createProcessCoverageTestData("process-a", "taskA");
+
+    // when
+    final CoverageReport report =
+        coverageCollector.collectTestRunCoverage(
+            NestedSuiteTest.class, "NestedSuiteTest#run-1", null, testData);
+
+    // then
+    assertThat(report.getSuites())
+        .singleElement()
+        .satisfies(
+            suite -> {
+              assertThat(suite.getName())
+                  .isEqualTo("CoverageReportCollectorBuilderTest$NestedSuiteTest");
+              assertThat(suite.getRuns())
+                  .singleElement()
+                  .satisfies(run -> assertThat(run.getName()).isEqualTo("run-1"));
             });
   }
 
@@ -211,6 +237,8 @@ class CoverageReportCollectorBuilderTest {
   }
 
   private static final class GivenRunTest {}
+
+  private static final class NestedSuiteTest {}
 
   private static final class AggregatedReportTest {}
 

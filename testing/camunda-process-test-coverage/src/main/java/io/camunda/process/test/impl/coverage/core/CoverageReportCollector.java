@@ -60,7 +60,7 @@ public final class CoverageReportCollector {
       final List<String> excludedProcessDefinitionIds,
       final List<String> excludedDecisionDefinitionIds) {
     suiteId = testClass.getName();
-    suiteName = testClass.getSimpleName();
+    suiteName = extractQualifiedClassName(testClass);
     this.excludedProcessDefinitionIds = excludedProcessDefinitionIds;
     this.excludedDecisionDefinitionIds = excludedDecisionDefinitionIds;
   }
@@ -101,7 +101,7 @@ public final class CoverageReportCollector {
 
     coverageRunReports.add(
         ImmutableCoverageRunReport.builder()
-            .name(runName)
+            .name(extractMethodRunName(runName))
             .displayName(displayName)
             .addAllProcessCoverages(coverages)
             .addAllDecisionCoverages(decisionCoverages)
@@ -171,5 +171,22 @@ public final class CoverageReportCollector {
             })
         .filter(dc -> dc != null)
         .collect(Collectors.toList());
+  }
+
+  private static String extractQualifiedClassName(final Class<?> testClass) {
+    final String className = testClass.getName();
+    final int packageSeparatorIndex = className.lastIndexOf('.');
+    if (packageSeparatorIndex < 0) {
+      return className;
+    }
+    return className.substring(packageSeparatorIndex + 1);
+  }
+
+  private static String extractMethodRunName(final String runName) {
+    final int separatorIndex = runName.lastIndexOf('#');
+    if (separatorIndex < 0) {
+      return runName;
+    }
+    return runName.substring(separatorIndex + 1);
   }
 }
