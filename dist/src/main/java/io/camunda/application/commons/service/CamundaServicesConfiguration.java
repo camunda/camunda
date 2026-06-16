@@ -234,7 +234,12 @@ public class CamundaServicesConfiguration {
                   .agentHistoryServices(
                       tenantId,
                       new AgentHistoryServices(
-                          tenantId, brokerClient, securityContextProvider, executor, converter))
+                          tenantId,
+                          brokerClient,
+                          securityContextProvider,
+                          search,
+                          executor,
+                          converter))
                   .agentInstanceServices(
                       tenantId,
                       new AgentInstanceServices(
