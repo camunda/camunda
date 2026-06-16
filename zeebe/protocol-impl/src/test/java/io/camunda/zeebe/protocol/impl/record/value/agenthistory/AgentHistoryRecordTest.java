@@ -35,6 +35,7 @@ final class AgentHistoryRecordTest {
     assertThat(record.getRole()).isEqualTo(AgentHistoryRole.UNSPECIFIED);
     assertThat(record.getProducedAt()).isEqualTo(-1L);
     assertThat(record.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    assertThat(record.getBpmnProcessId()).isEmpty();
     assertThat(record.getProcessInstanceKey()).isEqualTo(-1L);
     assertThat(record.getRootProcessInstanceKey()).isEqualTo(-1L);
     assertThat(record.getProcessDefinitionKey()).isEqualTo(-1L);
@@ -223,6 +224,7 @@ final class AgentHistoryRecordTest {
     final AgentHistoryRecord original =
         new AgentHistoryRecord()
             .setTenantId("tenant-a")
+            .setBpmnProcessId("invoice-handling-process")
             .setProcessInstanceKey(2251799813685260L)
             .setRootProcessInstanceKey(2251799813685262L)
             .setProcessDefinitionKey(2251799813685261L);
@@ -233,6 +235,7 @@ final class AgentHistoryRecordTest {
 
     // then
     assertThat(copy.getTenantId()).isEqualTo("tenant-a");
+    assertThat(copy.getBpmnProcessId()).isEqualTo("invoice-handling-process");
     assertThat(copy.getProcessInstanceKey()).isEqualTo(2251799813685260L);
     assertThat(copy.getRootProcessInstanceKey()).isEqualTo(2251799813685262L);
     assertThat(copy.getProcessDefinitionKey()).isEqualTo(2251799813685261L);

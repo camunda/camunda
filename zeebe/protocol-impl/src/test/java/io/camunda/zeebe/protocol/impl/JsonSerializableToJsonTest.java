@@ -4889,6 +4889,7 @@ final class JsonSerializableToJsonTest {
                       .setJobLease("job-lease-abc123")
                       .setIteration(3)
                       .setRole(AgentHistoryRole.ASSISTANT)
+                      .setBpmnProcessId("invoice-handling-process")
                       .setProducedAt(1748860800000L);
               record.addContent(
                   new AgentHistoryMessageContent()
@@ -4983,6 +4984,7 @@ final class JsonSerializableToJsonTest {
           "tenantId": "<default>",
           "processInstanceKey": -1,
           "rootProcessInstanceKey": -1,
+          "bpmnProcessId": "invoice-handling-process",
           "processDefinitionKey": -1
         }
         """
@@ -5006,6 +5008,7 @@ final class JsonSerializableToJsonTest {
           "tenantId": "<default>",
           "processInstanceKey": -1,
           "rootProcessInstanceKey": -1,
+          "bpmnProcessId": "",
           "processDefinitionKey": -1
         }
         """
