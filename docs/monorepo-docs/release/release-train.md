@@ -2,7 +2,9 @@
 
 ## Scope and Boundaries
 
-This page documents the Big Release Train and the SaaS generation flow. It covers how patch, alpha, and minor release trains are started and coordinated, how the train progresses across component releases, SaaS generation, tests, and rollout, and how to recover when the train is already in progress and something breaks.
+This page documents the C8 Release Train and the SaaS generation flow. It covers how patch, alpha, and minor release trains are started and coordinated, how the train progresses across component releases, SaaS generation, tests, and rollout, and how to recover when the train is already in progress and something breaks.
+
+The Monorepo release (camunda/camunda) is a step within the C8 Release Train. The train can only proceed once the Monorepo artifacts it depends on are confirmed as released. See [Monorepo Release](./release-monorepo.md) for how to produce those artifacts.
 
 For now, the agreed home for these docs is the existing release docs site under `camunda.github.io/camunda/release/`.
 
@@ -14,7 +16,7 @@ For now, the agreed home for these docs is the existing release docs site under 
 
 ## Happy-Path Flow
 
-At a high level, the Big Release Train starts from a scheduled or ad-hoc trigger, collects the target release lines and base generations, coordinates the component releases, creates SaaS generations for dev/int, runs release validation and rollout work, and ends with support communication and the remaining release wrap-up.
+At a high level, the C8 Release Train starts from a scheduled or ad-hoc trigger, collects the target release lines and base generations, coordinates the component releases (including the Monorepo release), creates SaaS generations for dev/int/prod, runs release validation and rollout work, and ends with support communication and the remaining release wrap-up.
 
 A concise happy-path view:
 
@@ -35,8 +37,8 @@ To skip a component that does not need a new release, fill in that component's r
 
 Use these as short operational rules that help readers decide what is normal and what is drift.
 
-* There must not be two concurrent releases for the same major/minor line.
-* The Big Release Train can only proceed once the Monorepo artifacts it depends on are confirmed as released.
+* There must not be two concurrent release trains for the same major/minor version.
+* The C8 Release Train can only proceed once the Monorepo artifacts it depends on are confirmed as released.
 * Patch releases can be done on demand, but they should still be based on the previous generation for that line.
 * Only patch releases can be triggered ad-hoc. Alphas and minors always follow the monthly release cadence — a team requesting an ad-hoc alpha must wait for the next monthly cycle.
 * SaaS generation create/change operations are restricted to `@c8-release-train-manager`, coordinated in [`#c8-release-announcements`](https://camunda.slack.com/archives/C03NFMH4KC6).
@@ -48,7 +50,7 @@ Use these as short operational rules that help readers decide what is normal and
 
 ## SaaS Generation
 
-This section covers the SaaS-specific part of the Big Release Train: creating the new dev/int generation, running the SaaS rollout tasks, and verifying that the resulting generation and upgrade paths match the intended release state.
+This section covers the SaaS-specific part of the C8 Release Train: creating the new dev/int generation, running the SaaS rollout tasks, and verifying that the resulting generation and upgrade paths match the intended release state.
 
 The SaaS Generation section stays operational and happy-path focused. Incident recovery patterns such as replaying the SaaS flow after a flawed generation was created belong in [Troubleshooting](#troubleshooting).
 
@@ -193,6 +195,26 @@ This means the cluster was still being provisioned when the generation update wa
 * Internal test clusters (e.g. Controller Team Enterprise Test) typically have lower urgency than customer clusters.
 * A similar error occurred during the 8.9+gen4 → 8.9+gen5 transition; see incident `inc-dead-partition-due-to-missing-log-entries` for prior context.
 
+### Clusters with missing health or deleted status during bulk auto-upgrade
+
+During the prod rollout, you may see clusters with an unknown/missing health status or a deleted status included in a bulk auto-upgrade operation. This is expected behavior — do not treat it as a stop condition.
+
+**How auto-upgrade handles these clusters**
+
+* **Unhealthy or unknown-health clusters** are included in bulk auto-upgrades. The rationale is that upgrading may help resolve the unhealthy state.
+* **Sleeping clusters** are excluded from auto-upgrades automatically.
+* **Deleted clusters** appearing in a bulk operation count should be investigated — they are likely already gone and will not actually be upgraded.
+
+**Notes**
+
+* A cluster without a reported health status is not automatically a blocker — but investigate before assuming it is safe to upgrade.
+* If a deleted cluster appears in the operation, confirm it is genuinely deleted and not in an ambiguous state before continuing.
+* The sleeping-cluster exclusion is enforced by the controller; no manual action is needed.
+
+**References**
+
+* [ask-controller thread confirming behavior](https://camunda.slack.com/archives/C051AA63QV8/p1781596129229369?thread_ts=1781527382.832229&cid=C051AA63QV8)
+
 ### Recovery verification checklist
 
 Use this after patching a running train and replaying the SaaS generation or rollout steps.
@@ -207,9 +229,9 @@ Use this after patching a running train and replaying the SaaS generation or rol
 
 ## FAQ
 
-### 1. How do Monorepo releases relate to the Big Release Train?
+### 1. Where does the Monorepo release fit in the C8 Release Train?
 
-The Monorepo release and the Big Release Train are related, but they are not the same process. The Monorepo release produces the core backend artifacts first. The Big Release Train then consumes those released artifacts and coordinates the downstream component steps, SaaS generation, release tests, rollout, and support communication.
+The Monorepo release is a step within the C8 Release Train, not a separate process. The train waits for the Monorepo to produce its core backend artifacts, then continues with the downstream component steps, SaaS generation, release tests, rollout, and support communication.
 
 As a rule of thumb:
 

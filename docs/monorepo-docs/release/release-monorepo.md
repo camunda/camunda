@@ -547,9 +547,9 @@ If one needs to retry the failed release (assuming no need to clear the released
 - delete these two commits from the git history
 - delete the GitHub release and git tag from GitHub
 
-## 3. How do Monorepo releases relate to the Big Release Train?
+## 3. Where does the Monorepo release fit in the C8 Release Train?
 
-The Monorepo release produces core backend artifacts, while the Big Release Train bundles downstream services and UI components. The train can only depart once the Monorepo artifacts are confirmed as released.
+The Monorepo release is a step within the C8 Release Train. It produces the core backend artifacts that the train depends on before it can continue with downstream services, UI components, SaaS generation, and rollout. The train can only proceed once those Monorepo artifacts are confirmed as released.
 
 While Monorepo (camunda/camunda) releases artifacts for:
 * [Camunda](https://hub.docker.com/r/camunda/camunda/)
