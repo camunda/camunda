@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.1">
 <title data-rh="true">ADR-0005: Physical-Tenant Routing of Authorization Reads in the Service and CSL Adapter Layers | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-55325/architecture/components/orchestration-cluster/adr/physical-tenant-routing-of-authorization-reads/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="ADR-0005: Physical-Tenant Routing of Authorization Reads in the Service and CSL Adapter Layers | Camunda Platform"><meta data-rh="true" name="description" content="Status"><meta data-rh="true" property="og:description" content="Status"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-55325/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-55325/architecture/components/orchestration-cluster/adr/physical-tenant-routing-of-authorization-reads/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-55325/architecture/components/orchestration-cluster/adr/physical-tenant-routing-of-authorization-reads/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-55325/architecture/components/orchestration-cluster/adr/physical-tenant-routing-of-authorization-reads/" hreflang="x-default"><link rel="stylesheet" href="/camunda/pr-preview/pr-55325/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-55325/assets/js/runtime~main.5f42450c.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-55325/assets/js/main.cbd221af.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-55325/assets/js/runtime~main.7bf6ce09.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-55325/assets/js/main.6c01dd35.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -138,6 +138,21 @@ bean-construction time — negligible cost.</li>
 </ul>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="alternatives-considered">Alternatives Considered<a href="#alternatives-considered" class="hash-link" aria-label="Direct link to Alternatives Considered" title="Direct link to Alternatives Considered" translate="no">​</a></h2>
 <ol>
+<li class="">
+<p><strong>Embed the routing inside the host-side port adapter(s)</strong>, inlining the
+<code>PhysicalTenantContext.current()</code> lookup over a <code>Map&lt;String, AuthorizationReader&gt;</code> in the OC port
+impls — mirroring <code>BasicAuthUserDetailsAdapter</code>, which resolves the PT inline. <strong>Not adopted.</strong> The
+data-plane port impl (<code>SearchAuthorizationScopeRepository</code>) lives in the PT-agnostic <code>security/</code>
+library and must stay PT-unaware, so it has to be <em>fed</em> a PT-correct reader from the OC wiring
+regardless — a routing reader must exist either way. Once it does, having both ports consume that
+one bean is the simpler, DRY choice with no adapter or CSL changes; embedding would add a <em>second</em>
+routing implementation inline in the control-plane adapter on top of the still-required one,
+duplicating the resolution for no functional gain (KISS/YAGNI). <code>BasicAuthUserDetailsAdapter</code>
+inlines because it has a single consumer; authorization has two consumers backed by the same
+reader, so a shared routing reader is the equivalent &quot;simplest thing&quot; here. Would be reconsidered
+only under a team convention requiring every CSL host-port adapter to resolve the PT inline (none
+exists today).</p>
+</li>
 <li class="">
 <p><strong>Instance-bound data-plane resolution.</strong> Bind the data-plane read to the PT the executing
 <code>CamundaSearchClients</code> instance is scoped to — e.g. per-PT <code>ResourceAccessController</code>/repository
