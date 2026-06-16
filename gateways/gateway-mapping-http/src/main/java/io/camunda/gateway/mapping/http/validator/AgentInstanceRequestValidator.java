@@ -17,6 +17,8 @@ import static io.camunda.gateway.mapping.http.validator.RequestValidator.validat
 import io.camunda.gateway.protocol.model.AgentInstanceCreationRequest;
 import io.camunda.gateway.protocol.model.AgentInstanceDocumentContent;
 import io.camunda.gateway.protocol.model.AgentInstanceHistoryItemRequest;
+import io.camunda.gateway.protocol.model.AgentInstanceObjectContent;
+import io.camunda.gateway.protocol.model.AgentInstanceTextContent;
 import io.camunda.gateway.protocol.model.AgentInstanceUpdateRequest;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -106,8 +108,18 @@ public class AgentInstanceRequestValidator {
           } else {
             for (int i = 0; i < request.getContent().size(); i++) {
               final var content = request.getContent().get(i);
-              if (content instanceof final AgentInstanceDocumentContent doc) {
+              if (content instanceof final AgentInstanceTextContent text) {
+                if (text.getText() == null || text.getText().isBlank()) {
+                  violations.add(
+                      ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("content[" + i + "].text"));
+                }
+              } else if (content instanceof final AgentInstanceDocumentContent doc) {
                 validateDocumentContentItem(i, doc, violations);
+              } else if (content instanceof final AgentInstanceObjectContent obj) {
+                if (obj.getObject() == null) {
+                  violations.add(
+                      ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("content[" + i + "].object"));
+                }
               }
             }
           }
@@ -163,7 +175,12 @@ public class AgentInstanceRequestValidator {
   private void validateDocumentContentItem(
       final int index, final AgentInstanceDocumentContent doc, final List<String> violations) {
     final var ref = doc.getDocumentReference();
-    if (ref == null || ref.getMetadata() == null) {
+    if (ref == null) {
+      violations.add(
+          ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("content[" + index + "].documentReference"));
+      return;
+    }
+    if (ref.getMetadata() == null) {
       return;
     }
     final var expiresAt = ref.getMetadata().getExpiresAt();
