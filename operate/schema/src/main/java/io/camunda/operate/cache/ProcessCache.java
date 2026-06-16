@@ -12,6 +12,8 @@ import static io.camunda.operate.util.ThreadUtil.sleepFor;
 import io.camunda.operate.store.ProcessStore;
 import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.webapps.schema.entities.ProcessFlowNodeEntity;
+import io.camunda.zeebe.util.logging.ThrottledLogger;
+import java.time.Duration;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
@@ -26,6 +28,8 @@ import org.springframework.util.StringUtils;
 public class ProcessCache {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ProcessCache.class);
+  private static final Logger THROTTLED_LOGGER =
+      new ThrottledLogger(LOGGER, Duration.ofSeconds(60L));
   private static final int CACHE_MAX_SIZE = 100;
   private static final int MAX_ATTEMPTS = 5;
   private static final long WAIT_TIME = 200;
@@ -139,6 +143,13 @@ public class ProcessCache {
             attemptsCount,
             (attemptsCount - 1) * sleepInMilliseconds);
       }
+    }
+    if (foundProcess.isEmpty()) {
+      THROTTLED_LOGGER.warn(
+          "Unable to find process {} after {} attempts and wait of {} ms.",
+          processDefinitionKey,
+          attemptsCount,
+          attemptsCount * sleepInMilliseconds);
     }
     return foundProcess;
   }
