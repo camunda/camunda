@@ -228,10 +228,15 @@ install-load-test:
 		$(additional_load_test_configuration)
 
 
+# The metrics exporter only supports Elasticsearch, not OpenSearch.
 .PHONY: install-metrics-exporter
 install-metrics-exporter:
+ifeq ($(secondary_storage),opensearch)
+	@echo "Skipping metrics exporter installation (OpenSearch is not supported)"
+else
 	@echo "Deploying metrics exporter..."
 	kubectl apply -n $(namespace) -f resources/metrics-exporter.yaml
+endif
 
 # Setup leader balancing cronjob
 .PHONY: setup-leader-balancer
