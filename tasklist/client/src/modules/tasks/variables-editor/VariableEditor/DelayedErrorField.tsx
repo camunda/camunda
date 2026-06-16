@@ -43,6 +43,7 @@ const DelayedErrorField: React.FC<Props> = ({
         setDelayedError(error);
       }, 500);
     } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setDelayedError(error);
     }
 

@@ -38,6 +38,7 @@ function useAutoSelectNextTaskSideEffects() {
   const [previousFilters, setPreviousFilters] = useState<string>(filtersKey);
   useEffect(() => {
     if (previousFilters !== filtersKey && !isFetching) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPreviousFilters(filtersKey);
       const firstTask = tasks[0];
 
@@ -65,6 +66,7 @@ function useAutoSelectNextTaskSideEffects() {
   const [isFinishedLoading, setIsFinishedLoading] = useState(false);
   useEffect(() => {
     if (!isFinishedLoading && !isLoading) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsFinishedLoading(true);
       const firstTask = tasks[0];
 
