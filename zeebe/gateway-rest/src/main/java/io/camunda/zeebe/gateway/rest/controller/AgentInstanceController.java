@@ -121,7 +121,7 @@ public class AgentInstanceController {
   @CamundaPostMapping(path = "/{agentInstanceKey}/history/search")
   public ResponseEntity<AgentInstanceHistorySearchQueryResult> searchAgentInstanceHistory(
       @PhysicalTenantId final String physicalTenantId,
-      @PathVariable("agentInstanceKey") final long agentInstanceKey,
+      @PathVariable final long agentInstanceKey,
       @RequestBody(required = false) final AgentInstanceHistorySearchQuery request) {
     return SearchQueryRequestMapper.toAgentInstanceHistoryQuery(request, agentInstanceKey)
         .fold(
