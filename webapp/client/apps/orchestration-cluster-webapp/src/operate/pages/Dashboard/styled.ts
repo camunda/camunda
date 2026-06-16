@@ -10,6 +10,13 @@ import styled, {css} from 'styled-components';
 import {styles} from '@carbon/type';
 import {Tile as BaseTile} from '@carbon/react';
 
+const Container = styled.main`
+	height: 100%;
+	padding-top: var(--cds-spacing-09);
+	box-sizing: border-box;
+	overflow: hidden;
+`;
+
 const Grid = styled.div<{$numberOfColumns: 1 | 2}>`
 	${({$numberOfColumns}) => css`
 		width: 100%;
@@ -63,4 +70,4 @@ const VisuallyHiddenH1 = styled.h1`
 	border: 0;
 `;
 
-export {Grid, ScrollableContent, Tile, TileTitle, VisuallyHiddenH1};
+export {Container, Grid, ScrollableContent, Tile, TileTitle, VisuallyHiddenH1};

@@ -9,7 +9,7 @@
 import {useSuspenseQuery} from '@tanstack/react-query';
 import {useTranslation} from 'react-i18next';
 import {queries} from '#/shared/http/queries';
-import {Grid, ScrollableContent, Tile, TileTitle, VisuallyHiddenH1} from './styled';
+import {Container, Grid, ScrollableContent, Tile, TileTitle, VisuallyHiddenH1} from './styled';
 import {MetricPanel} from './MetricPanel/MetricPanel';
 import {NoInstancesEmptyState} from './NoInstancesEmptyState';
 
@@ -19,22 +19,24 @@ const Dashboard: React.FC = () => {
 	const hasNoInstances = count.total === 0;
 
 	return (
-		<Grid $numberOfColumns={hasNoInstances ? 1 : 2}>
-			<VisuallyHiddenH1>{t('operate.dashboard.title')}</VisuallyHiddenH1>
-			<Tile data-testid="metric-panel">
-				<MetricPanel count={count} />
-			</Tile>
-			<Tile>
-				<TileTitle>{t('operate.dashboard.processesByNameTitle')}</TileTitle>
-				<ScrollableContent>{hasNoInstances ? <NoInstancesEmptyState /> : null}</ScrollableContent>
-			</Tile>
-			{!hasNoInstances && (
-				<Tile>
-					<TileTitle>{t('operate.dashboard.incidentsByErrorTitle')}</TileTitle>
-					<ScrollableContent />
+		<Container>
+			<Grid $numberOfColumns={hasNoInstances ? 1 : 2}>
+				<VisuallyHiddenH1>{t('operate.dashboard.title')}</VisuallyHiddenH1>
+				<Tile data-testid="metric-panel">
+					<MetricPanel count={count} />
 				</Tile>
-			)}
-		</Grid>
+				<Tile>
+					<TileTitle>{t('operate.dashboard.processesByNameTitle')}</TileTitle>
+					<ScrollableContent>{hasNoInstances ? <NoInstancesEmptyState /> : null}</ScrollableContent>
+				</Tile>
+				{!hasNoInstances && (
+					<Tile>
+						<TileTitle>{t('operate.dashboard.incidentsByErrorTitle')}</TileTitle>
+						<ScrollableContent />
+					</Tile>
+				)}
+			</Grid>
+		</Container>
 	);
 };
 
