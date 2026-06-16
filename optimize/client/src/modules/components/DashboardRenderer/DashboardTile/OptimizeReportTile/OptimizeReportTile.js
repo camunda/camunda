@@ -187,7 +187,7 @@ export default function OptimizeReportTile({
           }
         />
       </div>
-      {children?.({loadTileData: refreshTile})}
+      {children?.({loadTileData: refreshTile, data})}
     </div>
   );
 }

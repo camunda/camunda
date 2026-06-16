@@ -8,6 +8,7 @@
     "tokenUsage": "Token usage",
     "reliabilityAndToolCalls": "Reliability & Tool Calls",
     "duration": "Duration",
+    "topNNotice": "Top {shown} of {total}.",
     "presets": {
       "last7Days": "Last 7 days",
       "last30Days": "Last 30 days",
@@ -1570,6 +1571,8 @@
       "agenticDurationStabilityDescription": "P50 and P95 execution duration of completed agentic process instances over time in the selected period.",
       "agenticKpiTokenTrendName": "Token Trend",
       "agenticKpiTokenTrendFootnote": "If token use rises without more executions, prompts may be growing or the model is producing longer outputs. Raise with engineering.",
+      "agenticKpiTokenConsumersName": "Top token consumers by process",
+      "agenticKpiTokenConsumersFootnote": "Reducing the top consumer will have the biggest impact on overall token spend.",
       "agenticKpiDurationP50Name": "P50 execution duration",
       "agenticKpiDurationP50Description": "Median (P50) execution duration of completed agentic process instances in the selected period.",
       "agenticKpiDurationP95Name": "P95 execution duration",
