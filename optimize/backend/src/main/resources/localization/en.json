@@ -14,6 +14,13 @@
       "last6Months": "Last 6 months",
       "last12Months": "Last 12 months"
     },
+    "comparison": {
+      "wow": "WoW",
+      "mom": "MoM",
+      "qoq": "QoQ",
+      "hoh": "HoH",
+      "yoy": "YoY"
+    },
     "processFilter": {
       "label": "Process",
       "placeholder": "All processes"

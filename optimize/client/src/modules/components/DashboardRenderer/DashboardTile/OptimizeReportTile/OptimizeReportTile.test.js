@@ -237,6 +237,16 @@ describe('KpiDeltaBadge visibility', () => {
     configuration: {comparisonPeriod: true, deltaGoodDirection: 'up'},
   };
 
+  // A rolling end-date filter is required for a baseline (prior) window to exist;
+  // without one the comparison has nothing to compare against and is skipped.
+  const rollingFilter = [
+    {
+      type: 'instanceEndDate',
+      filterLevel: 'instance',
+      data: {type: 'rolling', start: {value: 30, unit: 'days'}, end: null},
+    },
+  ];
+
   const makeReport = (visualization, measureData) => ({
     id: 'a',
     data: {visualization, view: {properties: ['frequency']}},
@@ -248,11 +258,13 @@ describe('KpiDeltaBadge visibility', () => {
       .mockReturnValueOnce(makeReport('number', 10))
       .mockReturnValueOnce(makeReport('number', 5));
 
-    const node = shallow(<OptimizeReportTile {...props} tile={numberTileWithComparison} />);
+    const node = shallow(
+      <OptimizeReportTile {...props} tile={numberTileWithComparison} filter={rollingFilter} />
+    );
     runAllEffects();
     await flushPromises();
 
-    const badge = node.find(ReportRenderer).prop('badge');
+    const badge = node.find(ReportRenderer).prop('overlay');
     expect(badge).not.toBeNull();
     expect(badge.props).toMatchObject({currentValue: 10, priorValue: 5});
   });
@@ -262,11 +274,13 @@ describe('KpiDeltaBadge visibility', () => {
       .mockReturnValueOnce(makeReport('number', 8))
       .mockReturnValueOnce(makeReport('number', null));
 
-    const node = shallow(<OptimizeReportTile {...props} tile={numberTileWithComparison} />);
+    const node = shallow(
+      <OptimizeReportTile {...props} tile={numberTileWithComparison} filter={rollingFilter} />
+    );
     runAllEffects();
     await flushPromises();
 
-    const badge = node.find(ReportRenderer).prop('badge');
+    const badge = node.find(ReportRenderer).prop('overlay');
     expect(badge).not.toBeNull();
     expect(badge.props).toMatchObject({currentValue: 8, priorValue: null});
   });
@@ -276,21 +290,25 @@ describe('KpiDeltaBadge visibility', () => {
       .mockReturnValueOnce(makeReport('number', null))
       .mockReturnValueOnce(makeReport('number', 5));
 
-    const node = shallow(<OptimizeReportTile {...props} tile={numberTileWithComparison} />);
+    const node = shallow(
+      <OptimizeReportTile {...props} tile={numberTileWithComparison} filter={rollingFilter} />
+    );
     runAllEffects();
     await flushPromises();
 
-    expect(node.find(ReportRenderer).prop('badge')).toBeNull();
+    expect(node.find(ReportRenderer).prop('overlay')).toBeNull();
   });
 
   it('should not pass badge for non-number visualizations', async () => {
     loadTile.mockReturnValueOnce(makeReport('bar', 10)).mockReturnValueOnce(makeReport('bar', 5));
 
-    const node = shallow(<OptimizeReportTile {...props} tile={numberTileWithComparison} />);
+    const node = shallow(
+      <OptimizeReportTile {...props} tile={numberTileWithComparison} filter={rollingFilter} />
+    );
     runAllEffects();
     await flushPromises();
 
-    expect(node.find(ReportRenderer).prop('badge')).toBeNull();
+    expect(node.find(ReportRenderer).prop('overlay')).toBeNull();
   });
 
   it('should not pass badge when comparisonPeriod is not enabled', async () => {
@@ -302,7 +320,7 @@ describe('KpiDeltaBadge visibility', () => {
     runAllEffects();
     await flushPromises();
 
-    expect(node.find(ReportRenderer).prop('badge')).toBeNull();
+    expect(node.find(ReportRenderer).prop('overlay')).toBeNull();
   });
 
   it('should call loadTile with new filter and prior period filter after filter change', async () => {
@@ -311,7 +329,9 @@ describe('KpiDeltaBadge visibility', () => {
     // call args rather than rendered badge props.
     loadTile.mockReturnValue(makeReport('number', 10));
 
-    const node = shallow(<OptimizeReportTile {...props} tile={numberTileWithComparison} />);
+    const node = shallow(
+      <OptimizeReportTile {...props} tile={numberTileWithComparison} filter={rollingFilter} />
+    );
     runAllEffects();
     await flushPromises();
 

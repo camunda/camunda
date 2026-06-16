@@ -25,60 +25,10 @@ import {track} from 'tracking';
 import {t} from 'translation';
 
 import KpiDeltaBadge from './KpiDeltaBadge';
+import useComparisonData from './useComparisonData';
+import {comparisonLabelKey, getRollingPeriod, propertyToValueUnit} from './comparison';
 
 import './OptimizeReportTile.scss';
-
-const UNIT_TO_MS = {
-  seconds: 1000,
-  minutes: 60 * 1000,
-  hours: 60 * 60 * 1000,
-  days: 24 * 60 * 60 * 1000,
-  weeks: 7 * 24 * 60 * 60 * 1000,
-  months: 30.44 * 24 * 60 * 60 * 1000,
-  quarters: 91.31 * 24 * 60 * 60 * 1000,
-  years: 365.25 * 24 * 60 * 60 * 1000,
-};
-
-function buildPriorPeriodFilter(filter) {
-  if (!filter) {
-    return filter;
-  }
-  const rollingDateFilter = filter.find(
-    (f) => f.type === 'instanceEndDate' && f.data?.type === 'rolling'
-  );
-  if (!rollingDateFilter) {
-    return filter;
-  }
-  const {value, unit} = rollingDateFilter.data.start;
-  const periodMs = value * (UNIT_TO_MS[unit] ?? UNIT_TO_MS.days);
-  const now = Date.now();
-  const priorEnd = new Date(now - periodMs).toISOString();
-  const priorStart = new Date(now - 2 * periodMs).toISOString();
-  return [
-    ...filter.filter((f) => f.type !== 'instanceEndDate'),
-    {
-      type: 'instanceEndDate',
-      filterLevel: 'instance',
-      data: {
-        type: 'fixed',
-        start: priorStart,
-        end: priorEnd,
-        includeUndefined: false,
-        excludeUndefined: false,
-      },
-    },
-  ];
-}
-
-function propertyToUnit(property) {
-  if (property === 'duration') {
-    return 'ms';
-  }
-  if (property === 'percentage') {
-    return '%';
-  }
-  return '';
-}
 
 export default function OptimizeReportTile({
   tile,
@@ -92,13 +42,18 @@ export default function OptimizeReportTile({
   const [data, setData] = useState();
   const [error, setError] = useState(null);
   const [lastParams, setLastParams] = useState({});
-  const [priorData, setPriorData] = useState(null);
   const {mightFail} = useErrorHandling();
   const history = useHistory();
   const prevTile = useRef(tile);
   const prevFilter = useRef(filter);
 
   const comparisonPeriod = tile.configuration?.comparisonPeriod;
+  const {priorData, loadPriorData, resetPriorData} = useComparisonData({
+    tile,
+    filter,
+    loadTile,
+    enabled: comparisonPeriod,
+  });
 
   const loadTileData = useCallback(
     (params) => {
@@ -122,43 +77,20 @@ export default function OptimizeReportTile({
     [mightFail, loadTile, tile, filter]
   );
 
-  const loadPriorPeriodData = useCallback(() => {
-    const priorFilter = buildPriorPeriodFilter(filter);
-    if (!priorFilter) {
-      return Promise.resolve();
-    }
-    return new Promise((resolve) => {
-      mightFail(
-        loadTile(tile.id ?? tile.report, priorFilter, {}),
-        (result) => {
-          setPriorData(result);
-          resolve();
-        },
-        () => {
-          setPriorData(null);
-          resolve();
-        }
-      );
-    });
-  }, [mightFail, loadTile, tile, filter]);
-
   const loadInitialTile = useCallback(async () => {
     setLoading(true);
-    await Promise.all([
-      loadTileData({}),
-      comparisonPeriod ? loadPriorPeriodData() : Promise.resolve(),
-    ]);
+    await Promise.all([loadTileData({}), loadPriorData()]);
     setLoading(false);
-  }, [loadTileData, comparisonPeriod, loadPriorPeriodData]);
+  }, [loadTileData, loadPriorData]);
 
   useEffect(() => {
     if (!deepEqual(tile, prevTile.current) || !deepEqual(filter, prevFilter.current)) {
       prevTile.current = tile;
       prevFilter.current = filter;
-      setPriorData(null);
+      resetPriorData();
       loadInitialTile();
     }
-  }, [tile, filter, loadInitialTile, comparisonPeriod, loadPriorPeriodData]);
+  }, [tile, filter, loadInitialTile, resetPriorData]);
 
   useEffect(() => {
     loadInitialTile();
@@ -177,8 +109,9 @@ export default function OptimizeReportTile({
 
   const isNumberViz = data?.data?.visualization === 'number';
   const currentValue = data?.result?.measures?.[0]?.data;
-  const showDeltaBadge =
-    isNumberViz && tile.configuration?.comparisonPeriod && currentValue != null;
+  const showDeltaBadge = isNumberViz && comparisonPeriod && currentValue != null;
+  const labelKey = showDeltaBadge && comparisonLabelKey(getRollingPeriod(filter));
+  const periodLabel = labelKey ? t(`agenticControlPlane.comparison.${labelKey}`).toString() : '';
   let tileProps = {
     className: classnames('OptimizeReportTile DashboardTile', {
       hasComparisonPeriod: comparisonPeriod,
@@ -241,13 +174,14 @@ export default function OptimizeReportTile({
           report={data}
           context="dashboard"
           loadReport={loadTileData}
-          badge={
+          overlay={
             showDeltaBadge ? (
               <KpiDeltaBadge
                 currentValue={currentValue}
                 priorValue={priorData?.result?.measures?.[0]?.data ?? null}
-                unit={propertyToUnit(data.data.view?.properties?.[0])}
-                deltaGoodDirection={tile.configuration.deltaGoodDirection}
+                unit={propertyToValueUnit(data.data.view?.properties?.[0])}
+                deltaGoodDirection={tile.configuration?.deltaGoodDirection}
+                periodLabel={periodLabel}
               />
             ) : null
           }

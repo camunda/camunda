@@ -8,56 +8,52 @@
 
 import {Tag} from '@carbon/react';
 
+import {
+  classifyDelta,
+  formatDelta,
+  type DeltaDirection,
+  type DeltaGoodDirection,
+  type ValueUnit,
+} from './comparison';
+
 interface KpiDeltaBadgeProps {
   currentValue: number;
   priorValue: number | null | undefined;
-  unit: 'ms' | '%' | '';
-  deltaGoodDirection: 'up' | 'down';
+  unit: ValueUnit;
+  deltaGoodDirection: DeltaGoodDirection;
+  periodLabel: string;
 }
 
+const TAG_TYPE: Record<DeltaDirection, 'green' | 'red' | 'gray'> = {
+  good: 'green',
+  bad: 'red',
+  neutral: 'gray',
+};
+
+/**
+ * Presents the period-over-period change for a KPI tile. Delta semantics and
+ * formatting live in `comparison`; this component only maps them to a Tag.
+ */
 export default function KpiDeltaBadge({
   currentValue,
   priorValue,
   unit,
   deltaGoodDirection,
-}: KpiDeltaBadgeProps): JSX.Element | null {
+  periodLabel,
+}: KpiDeltaBadgeProps): JSX.Element {
   if (priorValue == null) {
     return (
       <Tag size="sm" type="gray">
-        — WoW
+        — {periodLabel}
       </Tag>
     );
   }
 
-  const delta = currentValue - priorValue;
-  const isNeutral = delta === 0;
-  const isPositive = delta > 0;
-  const isGood =
-    !isNeutral &&
-    ((deltaGoodDirection === 'up' && isPositive) || (deltaGoodDirection === 'down' && !isPositive));
-
-  const sign = isPositive || isNeutral ? '+' : '-';
-  const absDelta = Math.abs(delta);
-
-  let formatted: string;
-  if (unit === 'ms') {
-    if (absDelta >= 1000) {
-      formatted = `${sign}${(absDelta / 1000).toFixed(1)}s`;
-    } else {
-      formatted = `${sign}${Math.round(absDelta)}ms`;
-    }
-  } else if (unit === '%') {
-    const decimals = absDelta < 1 ? 1 : 0;
-    formatted = `${sign}${absDelta.toFixed(decimals)}%`;
-  } else {
-    formatted = `${sign}${Math.round(absDelta)}`;
-  }
-
-  const tagType = isNeutral ? 'gray' : isGood ? 'green' : 'red';
+  const {delta, direction} = classifyDelta(currentValue, priorValue, deltaGoodDirection);
 
   return (
-    <Tag size="sm" type={tagType}>
-      {formatted} WoW
+    <Tag size="sm" type={TAG_TYPE[direction]}>
+      {formatDelta(delta, unit)} {periodLabel}
     </Tag>
   );
 }
