@@ -7,8 +7,6 @@
  */
 package io.camunda.application.commons.search;
 
-import static io.camunda.configuration.physicaltenants.PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID;
-
 import io.camunda.search.clients.reader.SearchClientReaders;
 import java.util.Map;
 
@@ -21,19 +19,4 @@ import java.util.Map;
  * SearchClientReaders} and key them by bean name rather than by physical tenant id.
  */
 public record PhysicalTenantSearchClientReaders(
-    Map<String, SearchClientReaders> readersByPhysicalTenant) {
-
-  /**
-   * Returns the per-tenant readers, asserting the global {@code default} physical tenant is
-   * present. The default tenant always maps to the global secondary-storage configuration, so its
-   * absence indicates a wiring error.
-   */
-  public Map<String, SearchClientReaders> requireDefaultTenant() {
-    if (!readersByPhysicalTenant.containsKey(DEFAULT_PHYSICAL_TENANT_ID)) {
-      throw new IllegalStateException(
-          "Missing '%s' physical tenant; the global secondary-storage configuration must provide it. Known physical tenants: %s"
-              .formatted(DEFAULT_PHYSICAL_TENANT_ID, readersByPhysicalTenant.keySet()));
-    }
-    return readersByPhysicalTenant;
-  }
-}
+    Map<String, SearchClientReaders> readersByPhysicalTenant) {}
