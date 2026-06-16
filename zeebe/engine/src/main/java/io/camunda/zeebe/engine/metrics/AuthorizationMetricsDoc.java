@@ -44,7 +44,7 @@ public enum AuthorizationMetricsDoc implements ExtendedMeterDocumentation {
 
     @Override
     public String getBaseUnit() {
-      return "ms";
+      return "ns";
     }
 
     @Override
