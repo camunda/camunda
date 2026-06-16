@@ -7,6 +7,7 @@
 # type: CI
 # owner: @camunda/reliability-testing
 name: Scheduled Camunda Release Load Tests
+
 on:
   schedule:
     - cron: '0 2 * * 1-5' # every weekday (Mon-Fri) at 02:00 UTC
@@ -57,7 +58,10 @@ jobs:
   release-load-test-main:
     name: Release load test (main)
     uses: ./.github/workflows/camunda-release-load-test.yaml
-    secrets: inherit
+    secrets:
+      VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+      VAULT_ROLE_ID: ${{ secrets.VAULT_ROLE_ID }}
+      VAULT_SECRET_ID: ${{ secrets.VAULT_SECRET_ID }}
     with:
       name: schedule-release-main
       tag: '8.9.1'
@@ -69,7 +73,10 @@ jobs:
     needs: [release-load-test-8-7]
     if: always()
     uses: ./.github/workflows/camunda-verify-and-cleanup-load-test.yml
-    secrets: inherit
+    secrets:
+      VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+      VAULT_ROLE_ID: ${{ secrets.VAULT_ROLE_ID }}
+      VAULT_SECRET_ID: ${{ secrets.VAULT_SECRET_ID }}
     with:
       namespace: c8-schedule-release-8-7-x
 
@@ -78,7 +85,10 @@ jobs:
     needs: [release-load-test-8-8]
     if: always()
     uses: ./.github/workflows/camunda-verify-and-cleanup-load-test.yml
-    secrets: inherit
+    secrets:
+      VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+      VAULT_ROLE_ID: ${{ secrets.VAULT_ROLE_ID }}
+      VAULT_SECRET_ID: ${{ secrets.VAULT_SECRET_ID }}
     with:
       namespace: c8-schedule-release-8-8-x
 
@@ -87,7 +97,10 @@ jobs:
     needs: [release-load-test-8-9]
     if: always()
     uses: ./.github/workflows/camunda-verify-and-cleanup-load-test.yml
-    secrets: inherit
+    secrets:
+      VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+      VAULT_ROLE_ID: ${{ secrets.VAULT_ROLE_ID }}
+      VAULT_SECRET_ID: ${{ secrets.VAULT_SECRET_ID }}
     with:
       namespace: c8-schedule-release-8-9-x
 
@@ -96,7 +109,10 @@ jobs:
     needs: [release-load-test-main]
     if: always()
     uses: ./.github/workflows/camunda-verify-and-cleanup-load-test.yml
-    secrets: inherit
+    secrets:
+      VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+      VAULT_ROLE_ID: ${{ secrets.VAULT_ROLE_ID }}
+      VAULT_SECRET_ID: ${{ secrets.VAULT_SECRET_ID }}
     with:
       namespace: c8-schedule-release-main
 
@@ -114,6 +130,8 @@ jobs:
     permissions: {}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
       - name: Import Slack webhook from Vault
         id: slack-secrets
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
@@ -176,6 +194,8 @@ jobs:
     permissions: {}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
       - name: Import Slack webhook from Vault
         id: slack-secrets
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0

@@ -11,6 +11,7 @@
 # type: CI
 # owner: @camunda/reliability-testing
 name: Camunda Release load test workflow
+
 on:
   workflow_dispatch:
     inputs:
@@ -62,6 +63,13 @@ on:
         type: string
         default: ""
         required: false
+    secrets:
+      VAULT_ADDR:
+        required: true
+      VAULT_ROLE_ID:
+        required: true
+      VAULT_SECRET_ID:
+        required: true
 
 defaults:
   run:
@@ -92,7 +100,10 @@ jobs:
     name: Create release load test
     needs: sanitize-inputs
     uses: ./.github/workflows/camunda-load-test.yml
-    secrets: inherit
+    secrets:
+      VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+      VAULT_ROLE_ID: ${{ secrets.VAULT_ROLE_ID }}
+      VAULT_SECRET_ID: ${{ secrets.VAULT_SECRET_ID }}
     with:
       name: ${{ needs.sanitize-inputs.outputs.sanitized-name }}
       ref: main
@@ -112,6 +123,8 @@ jobs:
     permissions: {}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
       - name: Import Slack webhook from Vault
         id: slack-secrets
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0

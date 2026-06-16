@@ -7,6 +7,7 @@
 # type: CI
 # owner: @camunda/reliability-testing
 name: Camunda Smoke Load Test
+
 on:
   workflow_call:
     inputs:
@@ -25,6 +26,13 @@ on:
         type: string
         default: ""
         required: false
+    secrets:
+      VAULT_ADDR:
+        required: true
+      VAULT_ROLE_ID:
+        required: true
+      VAULT_SECRET_ID:
+        required: true
   workflow_dispatch:
     inputs:
       target-version:
@@ -75,15 +83,19 @@ jobs:
       - id: compute-namespace
         name: Compute safe namespace from PR author, number and version
         run: |
-          author="${{ steps.sanitize-author.outputs.branch_name || github.actor }}"
+          author="${SANITIZED_AUTHOR_BRANCH_NAME:-$GITHUB_ACTOR}"
           pr_number="${{ github.event.pull_request.number || github.run_id }}"
-          version_slug="${{ inputs.target-version || 'main' }}"
+          version_slug="${INPUTS_TARGET_VERSION:-main}"
           version_slug_sanitized="${version_slug//-/}"
           echo "namespace=c8-smoke-${author}-${pr_number}-${version_slug_sanitized}" >> "$GITHUB_OUTPUT"
+        env:
+          SANITIZED_AUTHOR_BRANCH_NAME: ${{ steps.sanitize-author.outputs.branch_name }}
+          INPUTS_TARGET_VERSION: ${{ inputs.target-version }}
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           sparse-checkout: .github
+          persist-credentials: false
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -98,7 +110,10 @@ jobs:
     name: Smoke Install
     needs: sanitize-branch-name
     uses: ./.github/workflows/camunda-load-test.yml
-    secrets: inherit
+    secrets:
+      VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+      VAULT_ROLE_ID: ${{ secrets.VAULT_ROLE_ID }}
+      VAULT_SECRET_ID: ${{ secrets.VAULT_SECRET_ID }}
     with:
       name: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
       ref: ${{ github.event.pull_request.head.ref || inputs.ref || github.event.inputs.ref }}
@@ -119,7 +134,10 @@ jobs:
       contents: 'read'
       id-token: 'write'
     uses: ./.github/workflows/camunda-verify-load-test.yml
-    secrets: inherit
+    secrets:
+      VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+      VAULT_ROLE_ID: ${{ secrets.VAULT_ROLE_ID }}
+      VAULT_SECRET_ID: ${{ secrets.VAULT_SECRET_ID }}
     with:
       namespace: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
 
@@ -129,7 +147,10 @@ jobs:
     name: Smoke update
     needs: [sanitize-branch-name, verify-install]
     uses: ./.github/workflows/camunda-load-test.yml
-    secrets: inherit
+    secrets:
+      VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+      VAULT_ROLE_ID: ${{ secrets.VAULT_ROLE_ID }}
+      VAULT_SECRET_ID: ${{ secrets.VAULT_SECRET_ID }}
     with:
       name: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
       ref: ${{ github.event.pull_request.head.ref || inputs.ref || github.event.inputs.ref }}
@@ -150,7 +171,10 @@ jobs:
       contents: 'read'
       id-token: 'write'
     uses: ./.github/workflows/camunda-verify-load-test.yml
-    secrets: inherit
+    secrets:
+      VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+      VAULT_ROLE_ID: ${{ secrets.VAULT_ROLE_ID }}
+      VAULT_SECRET_ID: ${{ secrets.VAULT_SECRET_ID }}
     with:
       namespace: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
 
@@ -162,6 +186,9 @@ jobs:
       contents: read
       id-token: write
     uses: ./.github/workflows/camunda-delete-load-test.yml
-    secrets: inherit
+    secrets:
+      VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+      VAULT_ROLE_ID: ${{ secrets.VAULT_ROLE_ID }}
+      VAULT_SECRET_ID: ${{ secrets.VAULT_SECRET_ID }}
     with:
       namespace: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}

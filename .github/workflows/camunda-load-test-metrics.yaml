@@ -42,6 +42,13 @@ on:
       results-json:
         description: 'JSON object {name: number, ...} from loadTestMetrics.sh stdout (queries that scrape no data are omitted)'
         value: ${{ jobs.query-and-summarize.outputs.results-json }}
+    secrets:
+      VAULT_ADDR:
+        required: true
+      VAULT_ROLE_ID:
+        required: true
+      VAULT_SECRET_ID:
+        required: true
 
 defaults:
   run:
@@ -76,6 +83,8 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
 
       - name: Import Prometheus credentials from Vault
         id: secrets

@@ -15,6 +15,13 @@ on:
         description: 'Exact Kubernetes namespace to delete (caller must already have resolved the name)'
         type: string
         required: true
+    secrets:
+      VAULT_ADDR:
+        required: true
+      VAULT_ROLE_ID:
+        required: true
+      VAULT_SECRET_ID:
+        required: true
   workflow_dispatch:
     inputs:
       namespace:
@@ -40,6 +47,8 @@ jobs:
       id-token: 'write'
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
       - name: Set up Teleport
         uses: teleport-actions/setup@b638ff596557cc3959eb6b5287d5e58e0c8ac6a6 # v1.1.1
         with:

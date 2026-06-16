@@ -21,6 +21,7 @@
 # No workflow-level concurrency: all event-triggered runs coexist independently. The reusable
 # pipeline's job conditions ensure correct create vs. delete behavior per DB per event.
 name: Camunda PR Benchmark
+
 on:
   pull_request:
     types:

@@ -9,6 +9,7 @@
 # type: CI
 # owner: @camunda/reliability-testing
 name: Daily Camunda Platform Load Tests
+
 on:
   workflow_dispatch:
      inputs:
@@ -40,10 +41,12 @@ jobs:
       benchmark: ${{ steps.data.outputs.benchmark }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
       - name: Collect benchmark data
         id: data
         run: |
-          var=${{ inputs.reuse-tag || '' }}
+          var=${INPUTS_REUSE_TAG}
           # ${#var} will return the length of the string
           if [[ ${#var} -eq 0 ]]; then
             echo "Creating new daily load test benchmark"
@@ -54,11 +57,13 @@ jobs:
             # medic-daily-2025-12-18-b1bd4006-test-b1bd400
             # $ echo ${tag%-*}
             # medic-daily-2025-12-18-b1bd4006-test
-            tag=${{ inputs.reuse-tag }}
+            tag=${INPUTS_REUSE_TAG}
             var=${tag%-*}
             echo "Re-creating daily load test, with name: $var and tag: $tag"
             echo "benchmark=$var" >> "$GITHUB_OUTPUT"
           fi
+        env:
+          INPUTS_REUSE_TAG: ${{ inputs.reuse-tag }}
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -75,7 +80,10 @@ jobs:
     needs:
       - benchmark-data
     uses: ./.github/workflows/camunda-load-test.yml
-    secrets: inherit
+    secrets:
+      VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+      VAULT_ROLE_ID: ${{ secrets.VAULT_ROLE_ID }}
+      VAULT_SECRET_ID: ${{ secrets.VAULT_SECRET_ID }}
     with:
       name: ${{ needs.benchmark-data.outputs.benchmark }}
       ttl: 1
@@ -87,7 +95,10 @@ jobs:
     needs:
       - benchmark-data
     uses: ./.github/workflows/camunda-load-test.yml
-    secrets: inherit
+    secrets:
+      VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+      VAULT_ROLE_ID: ${{ secrets.VAULT_ROLE_ID }}
+      VAULT_SECRET_ID: ${{ secrets.VAULT_SECRET_ID }}
     with:
       name: ${{ needs.benchmark-data.outputs.benchmark }}-rest
       ttl: 1
@@ -115,6 +126,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           sparse-checkout: .github
+          persist-credentials: false
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -132,7 +144,10 @@ jobs:
     needs: [ benchmark-data, setup-max-load-test, soak ]
     if: needs.soak.result == 'success' && needs.setup-max-load-test.result == 'success'
     uses: ./.github/workflows/camunda-load-test-metrics.yaml
-    secrets: inherit
+    secrets:
+      VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+      VAULT_ROLE_ID: ${{ secrets.VAULT_ROLE_ID }}
+      VAULT_SECRET_ID: ${{ secrets.VAULT_SECRET_ID }}
     with:
       namespace: c8-${{ needs.benchmark-data.outputs.benchmark }}
       duration-seconds: '10800'
@@ -143,7 +158,10 @@ jobs:
     needs: [ benchmark-data, setup-max-rest-load-test, soak ]
     if: needs.soak.result == 'success' && needs.setup-max-rest-load-test.result == 'success'
     uses: ./.github/workflows/camunda-load-test-metrics.yaml
-    secrets: inherit
+    secrets:
+      VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+      VAULT_ROLE_ID: ${{ secrets.VAULT_ROLE_ID }}
+      VAULT_SECRET_ID: ${{ secrets.VAULT_SECRET_ID }}
     with:
       namespace: c8-${{ needs.benchmark-data.outputs.benchmark }}-rest
       duration-seconds: '10800'
@@ -177,6 +195,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           sparse-checkout: .github
+          persist-credentials: false
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -198,6 +217,8 @@ jobs:
     permissions: { }
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
       - name: Import Slack webhook from Vault
         id: slack-secrets
         uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
@@ -242,7 +263,10 @@ jobs:
       contents: read
       id-token: write
     uses: ./.github/workflows/camunda-delete-load-test.yml
-    secrets: inherit
+    secrets:
+      VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+      VAULT_ROLE_ID: ${{ secrets.VAULT_ROLE_ID }}
+      VAULT_SECRET_ID: ${{ secrets.VAULT_SECRET_ID }}
     with:
       namespace: c8-${{ needs.benchmark-data.outputs.benchmark }}
 
@@ -254,7 +278,10 @@ jobs:
       contents: read
       id-token: write
     uses: ./.github/workflows/camunda-delete-load-test.yml
-    secrets: inherit
+    secrets:
+      VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+      VAULT_ROLE_ID: ${{ secrets.VAULT_ROLE_ID }}
+      VAULT_SECRET_ID: ${{ secrets.VAULT_SECRET_ID }}
     with:
       namespace: c8-${{ needs.benchmark-data.outputs.benchmark }}-rest
 
@@ -267,6 +294,8 @@ jobs:
     permissions: { }
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
       - name: Import Slack webhook from Vault
         id: slack-secrets
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0

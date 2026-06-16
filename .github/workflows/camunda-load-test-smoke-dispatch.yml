@@ -35,10 +35,11 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
+          persist-credentials: false
       - id: detect
         name: Detect which setup versions changed
         run: |
-          changed=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD")
+          changed=$(git diff --name-only "origin/${GITHUB_BASE_REF}...HEAD")
 
           run_all=false
           if echo "$changed" | grep -qE '\.github/workflows/camunda-load-test'; then
@@ -81,7 +82,10 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJson(needs.detect-versions.outputs.matrix) }}
     uses: ./.github/workflows/camunda-load-test-smoke.yml
-    secrets: inherit
+    secrets:
+      VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+      VAULT_ROLE_ID: ${{ secrets.VAULT_ROLE_ID }}
+      VAULT_SECRET_ID: ${{ secrets.VAULT_SECRET_ID }}
     with:
       target-version: ${{ matrix.version }}
       orchestration-tag: ${{ matrix.orchestration-tag }}

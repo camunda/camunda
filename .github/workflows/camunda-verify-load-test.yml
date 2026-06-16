@@ -10,6 +10,13 @@ on:
         description: 'Kubernetes namespace where the load test is deployed'
         type: string
         required: true
+    secrets:
+      VAULT_ADDR:
+        required: true
+      VAULT_ROLE_ID:
+        required: true
+      VAULT_SECRET_ID:
+        required: true
 
 env:
   CLUSTER: camunda-benchmark-prod
@@ -25,6 +32,8 @@ jobs:
       id-token: 'write'
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
       - uses: teleport-actions/setup@b638ff596557cc3959eb6b5287d5e58e0c8ac6a6 # v1.1.1
         with:
           proxy: camunda.teleport.sh:443
@@ -37,7 +46,7 @@ jobs:
       - name: Verify Load test
         env:
           NAMESPACE: ${{ inputs.namespace }}
-        run: load-tests/docs/scripts/verify-test.sh ${{ env.NAMESPACE }}
+        run: load-tests/docs/scripts/verify-test.sh "${NAMESPACE}"
       - name: Observe build status
         if: always()
         continue-on-error: true

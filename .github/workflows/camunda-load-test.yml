@@ -215,6 +215,13 @@ on:
         type: string
         default: ""
         required: false
+    secrets:
+      VAULT_ADDR:
+        required: true
+      VAULT_ROLE_ID:
+        required: true
+      VAULT_SECRET_ID:
+        required: true
 
 env:
   CLUSTER: camunda-benchmark-prod  # change this to "camunda-benchmark-dev" when experimenting
@@ -238,31 +245,49 @@ jobs:
     steps:
       - name: Show summary
         run: |-
-          cat >> "$GITHUB_STEP_SUMMARY" <<'EOF'
-          ## Load test: `${{ env.NAMESPACE }}`
+          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
+          ## Load test: \`${NAMESPACE}\`
 
-          > 📊 **[Open Grafana Dashboard](https://dashboard.benchmark.camunda.cloud/d/zeebe-dashboard/zeebe?var-namespace=${{ env.NAMESPACE }})**
+          > 📊 **[Open Grafana Dashboard](https://dashboard.benchmark.camunda.cloud/d/zeebe-dashboard/zeebe?var-namespace=${NAMESPACE})**
 
           | Input | Value |
           |-------|-------|
-          | Name | `${{ inputs.name }}` |
-          | Ref | `${{ inputs.ref }}` |
-          | Scenario | `${{ inputs.scenario }}` |
-          | Secondary storage | `${{ inputs.secondary-storage-type }}` |
-          | Reuse tag | ${{ inputs.reuse-tag || '—' }} |
-          | Orchestration tag | ${{ inputs.orchestration-tag || '—' }} |
-          | Load test load | ${{ inputs.load-test-load || '—' }} |
-          | Platform helm values | ${{ inputs.platform-helm-values || '—' }} |
-          | TTL (days) | `${{ inputs.ttl }}` |
-          | Stable VMs | `${{ inputs.stable-vms }}` |
-          | Enable Optimize | `${{ inputs.enable-optimize }}` |
-          | Enable Optimize report metrics | `${{ inputs.enable-optimize-report-metrics }}` |
-          | Build frontend | `${{ inputs.build-frontend }}` |
-          | Perform read benchmarks | `${{ inputs.perform-read-benchmarks }}` |
-          | Optimize tag | ${{ inputs.optimize-tag || '—' }} |
-          | Identity tag | ${{ inputs.identity-tag || '—' }} |
-          | Connectors tag | ${{ inputs.connectors-tag || '—' }} |
+          | Name | \`${INPUTS_NAME}\` |
+          | Ref | \`${INPUTS_REF}\` |
+          | Scenario | \`${INPUTS_SCENARIO}\` |
+          | Secondary storage | \`${INPUTS_SECONDARY_STORAGE_TYPE}\` |
+          | Reuse tag | ${INPUTS_REUSE_TAG:----} |
+          | Orchestration tag | ${INPUTS_ORCHESTRATION_TAG:----} |
+          | Load test load | ${INPUTS_LOAD_TEST_LOAD:----} |
+          | Platform helm values | ${INPUTS_PLATFORM_HELM_VALUES:----} |
+          | TTL (days) | \`${INPUTS_TTL}\` |
+          | Stable VMs | \`${INPUTS_STABLE_VMS}\` |
+          | Enable Optimize | \`${INPUTS_ENABLE_OPTIMIZE}\` |
+          | Enable Optimize report metrics | \`${INPUTS_ENABLE_OPTIMIZE_REPORT_METRICS}\` |
+          | Build frontend | \`${INPUTS_BUILD_FRONTEND}\` |
+          | Perform read benchmarks | \`${INPUTS_PERFORM_READ_BENCHMARKS}\` |
+          | Optimize tag | ${INPUTS_OPTIMIZE_TAG:----} |
+          | Identity tag | ${INPUTS_IDENTITY_TAG:----} |
+          | Connectors tag | ${INPUTS_CONNECTORS_TAG:----} |
           EOF
+        env:
+          INPUTS_NAME: ${{ inputs.name }}
+          INPUTS_REF: ${{ inputs.ref }}
+          INPUTS_SCENARIO: ${{ inputs.scenario }}
+          INPUTS_SECONDARY_STORAGE_TYPE: ${{ inputs.secondary-storage-type }}
+          INPUTS_REUSE_TAG: ${{ inputs.reuse-tag }}
+          INPUTS_ORCHESTRATION_TAG: ${{ inputs.orchestration-tag }}
+          INPUTS_LOAD_TEST_LOAD: ${{ inputs.load-test-load }}
+          INPUTS_PLATFORM_HELM_VALUES: ${{ inputs.platform-helm-values }}
+          INPUTS_TTL: ${{ inputs.ttl }}
+          INPUTS_STABLE_VMS: ${{ inputs.stable-vms }}
+          INPUTS_ENABLE_OPTIMIZE: ${{ inputs.enable-optimize }}
+          INPUTS_ENABLE_OPTIMIZE_REPORT_METRICS: ${{ inputs.enable-optimize-report-metrics }}
+          INPUTS_BUILD_FRONTEND: ${{ inputs.build-frontend }}
+          INPUTS_PERFORM_READ_BENCHMARKS: ${{ inputs.perform-read-benchmarks }}
+          INPUTS_OPTIMIZE_TAG: ${{ inputs.optimize-tag }}
+          INPUTS_IDENTITY_TAG: ${{ inputs.identity-tag }}
+          INPUTS_CONNECTORS_TAG: ${{ inputs.connectors-tag }}
 
   calculate-image-tag:
     name: Calculate Image Tag
@@ -280,13 +305,16 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ inputs.ref }}
+          persist-credentials: false
       - name: Get image tag
         id: image-tag
         if: ${{ inputs.orchestration-tag == '' && inputs.reuse-tag == '' }}
         run: |
-          image_tag="${{ inputs.name }}-$(git rev-parse --short HEAD)"
+          image_tag="${INPUTS_NAME}-$(git rev-parse --short HEAD)"
           echo "image-tag=${image_tag}" >> "$GITHUB_OUTPUT"
           echo "**Built image tag:** \`${image_tag}\`" >> "$GITHUB_STEP_SUMMARY"
+        env:
+          INPUTS_NAME: ${{ inputs.name }}
       - name: Validate Docker image tags exist
         if: ${{ inputs.orchestration-tag != '' || inputs.optimize-tag != '' || inputs.identity-tag != '' || inputs.connectors-tag != '' }}
         env:
@@ -358,6 +386,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ inputs.ref }}
+          persist-credentials: false
       - uses: ./.github/actions/setup-build
         with:
           dockerhub-readonly: true
@@ -441,6 +470,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ inputs.ref }}
+          persist-credentials: false
       - uses: ./.github/actions/setup-build
         with:
           dockerhub-readonly: true
@@ -450,9 +480,13 @@ jobs:
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - run: ./mvnw -B -D skipTests -D skipChecks -P\!include-optimize -pl load-tests/load-tester -am install
       - name: Build Starter Image
-        run: ./mvnw -pl load-tests/load-tester jib:build -P starter -P\!include-optimize -D image="${{ env.IMAGE_REPOSITORY }}/starter:${{ needs.calculate-image-tag.outputs.image-tag }}"
+        run: ./mvnw -pl load-tests/load-tester jib:build -P starter -P\!include-optimize -D image="${{ env.IMAGE_REPOSITORY }}/starter:${NEEDS_CALCULATE_IMAGE_TAG_OUTPUTS_IMAGE_TAG}"
+        env:
+          NEEDS_CALCULATE_IMAGE_TAG_OUTPUTS_IMAGE_TAG: ${{ needs.calculate-image-tag.outputs.image-tag }}
       - name: Build Worker Image
-        run: ./mvnw -pl load-tests/load-tester jib:build -P worker -P\!include-optimize -D image="${{ env.IMAGE_REPOSITORY }}/worker:${{ needs.calculate-image-tag.outputs.image-tag }}"
+        run: ./mvnw -pl load-tests/load-tester jib:build -P worker -P\!include-optimize -D image="${{ env.IMAGE_REPOSITORY }}/worker:${NEEDS_CALCULATE_IMAGE_TAG_OUTPUTS_IMAGE_TAG}"
+        env:
+          NEEDS_CALCULATE_IMAGE_TAG_OUTPUTS_IMAGE_TAG: ${{ needs.calculate-image-tag.outputs.image-tag }}
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -485,6 +519,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ inputs.ref }}
+          persist-credentials: false
       # camunda-platform-8.10 requires Helm CLI v4; runners ship v3.x.
       - name: Set up Helm
         uses: asdf-vm/actions/install@b7bcd026f18772e44fe1026d729e1611cc435d47 # v4.0.1
@@ -539,16 +574,21 @@ jobs:
           cd load-tests/setup
           # The namespace label created-by will not be able resolve the actual user which triggered
           # the GitHub action by default. We need to correctly configure the git user here to make it work
-          git config user.name ${{ github.actor }}
+          git config user.name "${GITHUB_ACTOR}"
           # Render the load-test folder. newLoadTest.sh no longer creates the namespace — that
           # happens on `make install` via `kubectl apply -f resources/namespace.yaml`.
-          ./newLoadTest.sh --target-version ${{ inputs.target-version || 'main' }} ${{ env.NAMESPACE }} ${{ inputs.secondary-storage-type }} ${{ inputs.ttl }} ${{ inputs.enable-optimize }}
+          ./newLoadTest.sh --target-version "${INPUTS_TARGET_VERSION:-main}" "${NAMESPACE}" "${INPUTS_SECONDARY_STORAGE_TYPE}" "${INPUTS_TTL}" "${INPUTS_ENABLE_OPTIMIZE}"
+        env:
+          INPUTS_SECONDARY_STORAGE_TYPE: ${{ inputs.secondary-storage-type }}
+          INPUTS_TARGET_VERSION: ${{ inputs.target-version }}
+          INPUTS_TTL: ${{ inputs.ttl }}
+          INPUTS_ENABLE_OPTIMIZE: ${{ inputs.enable-optimize }}
       - name: Install latest Camunda Platform
         run: |
-          cd load-tests/setup/${{ env.NAMESPACE }}
+          cd "load-tests/setup/${NAMESPACE}"
 
           # Build load test configuration
-          load_test_config="--set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} \
+          load_test_config="--set global.image.tag=${NEEDS_CALCULATE_IMAGE_TAG_OUTPUTS_IMAGE_TAG} \
                             --set global.image.repository=${{ env.IMAGE_REPOSITORY }} \
                             --set global.image.pullSecrets[0].name=harbor-registry \
                             --set global.performReadBenchmarks=${{inputs.perform-read-benchmarks}}"
@@ -560,14 +600,14 @@ jobs:
           fi
 
           # Append custom load test inputs
-          load_test_config="$load_test_config ${{ inputs.load-test-load }}"
+          load_test_config="$load_test_config ${INPUTS_LOAD_TEST_LOAD}"
 
           # Resolve image registry/repository: Docker Hub when orchestration-tag is set, internal registry otherwise
           # optimize_repo is only consumed in the custom build path where orchestration-tag is empty
           image_registry="${{ inputs.orchestration-tag != '' && 'docker.io' || 'registry.camunda.cloud' }}"
           camunda_repo="${{ inputs.orchestration-tag != '' && 'camunda/camunda' || 'team-zeebe/camunda' }}"
           optimize_repo="${{ inputs.orchestration-tag != '' && 'camunda/optimize' || 'team-zeebe/optimize' }}"
-          image_tag="${{ needs.calculate-image-tag.outputs.image-tag }}"
+          image_tag="${NEEDS_CALCULATE_IMAGE_TAG_OUTPUTS_IMAGE_TAG}"
 
           # Build platform configuration
           additional_platform_config="--set global.image.tag=${image_tag} \
@@ -577,11 +617,11 @@ jobs:
 
           # Append optimize image config: optimize-tag wins if set, otherwise custom builds use internal registry
           if [[ "${{ inputs.enable-optimize }}" == "true" ]]; then
-            if [[ -n "${{ inputs.optimize-tag }}" ]]; then
+            if [[ -n "${INPUTS_OPTIMIZE_TAG}" ]]; then
               # Explicit optimize tag provided: use it directly (Docker Hub image)
               additional_platform_config+=" \
-                --set optimize.image.tag=${{ inputs.optimize-tag }}"
-            elif [[ -z "${{ inputs.orchestration-tag }}" ]]; then
+                --set optimize.image.tag=${INPUTS_OPTIMIZE_TAG}"
+            elif [[ -z "${INPUTS_ORCHESTRATION_TAG}" ]]; then
               # Custom build without explicit optimize tag: use the built image from internal registry
               additional_platform_config+=" \
                 --set optimize.image.registry=${image_registry} \
@@ -591,54 +631,68 @@ jobs:
           fi
 
           # Append identity image config if a dedicated tag is provided
-          if [[ -n "${{ inputs.identity-tag }}" ]]; then
+          if [[ -n "${INPUTS_IDENTITY_TAG}" ]]; then
             additional_platform_config+=" \
-              --set identity.image.tag=${{ inputs.identity-tag }}"
+              --set identity.image.tag=${INPUTS_IDENTITY_TAG}"
           fi
 
           # Append connectors image config if a dedicated tag is provided
-          if [[ -n "${{ inputs.connectors-tag }}" ]]; then
+          if [[ -n "${INPUTS_CONNECTORS_TAG}" ]]; then
             additional_platform_config+=" \
-              --set connectors.image.tag=${{ inputs.connectors-tag }}"
+              --set connectors.image.tag=${INPUTS_CONNECTORS_TAG}"
           fi
 
           # Append user-provided helm values if present
-          if [[ -n "${{ inputs.platform-helm-values }}" ]]; then
-            additional_platform_config+=" ${{ inputs.platform-helm-values }}"
+          if [[ -n "${INPUTS_PLATFORM_HELM_VALUES}" ]]; then
+            additional_platform_config+=" ${INPUTS_PLATFORM_HELM_VALUES}"
           fi
 
           make ${{ inputs.stable-vms && 'install-stable' || 'install' }} \
-            scenario=${{ inputs.scenario }} \
-            secondary_storage=${{ inputs.secondary-storage-type }} \
+            scenario="${INPUTS_SCENARIO}" \
+            secondary_storage="${INPUTS_SECONDARY_STORAGE_TYPE}" \
             enable_optimize=${{ inputs.enable-optimize }} \
             additional_platform_configuration="$additional_platform_config" \
             additional_load_test_configuration="$load_test_config"
+        env:
+          NEEDS_CALCULATE_IMAGE_TAG_OUTPUTS_IMAGE_TAG: ${{ needs.calculate-image-tag.outputs.image-tag }}
+          INPUTS_LOAD_TEST_LOAD: ${{ inputs.load-test-load }}
+          INPUTS_OPTIMIZE_TAG: ${{ inputs.optimize-tag }}
+          INPUTS_ORCHESTRATION_TAG: ${{ inputs.orchestration-tag }}
+          INPUTS_IDENTITY_TAG: ${{ inputs.identity-tag }}
+          INPUTS_CONNECTORS_TAG: ${{ inputs.connectors-tag }}
+          INPUTS_PLATFORM_HELM_VALUES: ${{ inputs.platform-helm-values }}
+          INPUTS_SCENARIO: ${{ inputs.scenario }}
+          INPUTS_SECONDARY_STORAGE_TYPE: ${{ inputs.secondary-storage-type }}
       - name: Annotate namespace with workflow run URL
         run: |
           # Traceability annotation, applied after `make install` has created the namespace.
-          kubectl annotate namespace ${{ env.NAMESPACE }} \
+          kubectl annotate namespace "${NAMESPACE}" \
             "github.com/workflow-run-url=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
             --overwrite
       - name: Summarize platform deployment
         if: success()
         run: |
           cat >> "$GITHUB_STEP_SUMMARY" <<EOF
-            ## Camunda platform \`${{ inputs.name }}\` values
+            ## Camunda platform \`${INPUTS_NAME}\` values
             \`\`\`yaml
-            $(helm get values ${{ env.NAMESPACE }} -n ${{ env.NAMESPACE }})
+            $(helm get values "${NAMESPACE}" -n "${NAMESPACE}")
             \`\`\`
           EOF
+        env:
+          INPUTS_NAME: ${{ inputs.name }}
       - name: Summarize load test deployment
         if: success()
         run: |
           cat >> "$GITHUB_STEP_SUMMARY" <<EOF
             # Load test
-            The test has been set up successfully. You can observe it [here](https://dashboard.benchmark.camunda.cloud/d/zeebe-dashboard/zeebe?var-namespace=${{ env.NAMESPACE }})
-            ## Load test \`${{ inputs.name }}\` values
+            The test has been set up successfully. You can observe it [here](https://dashboard.benchmark.camunda.cloud/d/zeebe-dashboard/zeebe?var-namespace=${NAMESPACE})
+            ## Load test \`${INPUTS_NAME}\` values
             \`\`\`yaml
-            $(helm get values ${{ env.NAMESPACE }}-test -n ${{ env.NAMESPACE }})
+            $(helm get values "${NAMESPACE}-test" -n "${NAMESPACE}")
             \`\`\`
           EOF
+        env:
+          INPUTS_NAME: ${{ inputs.name }}
       - name: Observe build status
         if: always()
         continue-on-error: true

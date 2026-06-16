@@ -11,6 +11,13 @@ on:
         description: 'Kubernetes namespace where the load test is deployed'
         type: string
         required: true
+    secrets:
+      VAULT_ADDR:
+        required: true
+      VAULT_ROLE_ID:
+        required: true
+      VAULT_SECRET_ID:
+        required: true
 
 env:
   CLUSTER: camunda-benchmark-prod
@@ -23,7 +30,10 @@ jobs:
       contents: 'read'
       id-token: 'write'
     uses: ./.github/workflows/camunda-verify-load-test.yml
-    secrets: inherit
+    secrets:
+      VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+      VAULT_ROLE_ID: ${{ secrets.VAULT_ROLE_ID }}
+      VAULT_SECRET_ID: ${{ secrets.VAULT_SECRET_ID }}
     with:
       namespace: ${{ inputs.namespace }}
 
@@ -35,6 +45,9 @@ jobs:
       contents: read
       id-token: write
     uses: ./.github/workflows/camunda-delete-load-test.yml
-    secrets: inherit
+    secrets:
+      VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+      VAULT_ROLE_ID: ${{ secrets.VAULT_ROLE_ID }}
+      VAULT_SECRET_ID: ${{ secrets.VAULT_SECRET_ID }}
     with:
       namespace: ${{ inputs.namespace }}

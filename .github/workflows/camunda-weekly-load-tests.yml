@@ -5,6 +5,7 @@
 # type: CI
 # owner: @camunda/reliability-testing
 name: Camunda weekly medic load test
+
 on:
   workflow_dispatch:
      inputs:
@@ -42,6 +43,8 @@ jobs:
       image-tag: ${{ steps.data.outputs.image-tag }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
       - name: Collect test data
         id: data
         env:
@@ -75,6 +78,8 @@ jobs:
       id-token: 'write'
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/setup-build
         with:
           dockerhub-readonly: true
@@ -145,6 +150,8 @@ jobs:
       id-token: 'write'
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/setup-build
         with:
           dockerhub-readonly: true
@@ -154,9 +161,13 @@ jobs:
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - run: ./mvnw -B -DskipTests -DskipChecks -P\!include-optimize -pl load-tests/load-tester -am install
       - name: Build Starter Image
-        run: ./mvnw -pl load-tests/load-tester jib:build -P starter -P\!include-optimize -D image="${{ env.IMAGE_REPOSITORY }}/starter:${{ needs.test-data.outputs.image-tag }}"
+        run: ./mvnw -pl load-tests/load-tester jib:build -P starter -P\!include-optimize -D image="${{ env.IMAGE_REPOSITORY }}/starter:${NEEDS_TEST_DATA_OUTPUTS_IMAGE_TAG}"
+        env:
+          NEEDS_TEST_DATA_OUTPUTS_IMAGE_TAG: ${{ needs.test-data.outputs.image-tag }}
       - name: Build Worker Image
-        run: ./mvnw -pl load-tests/load-tester jib:build -P worker -P\!include-optimize -D image="${{ env.IMAGE_REPOSITORY }}/worker:${{ needs.test-data.outputs.image-tag }}"
+        run: ./mvnw -pl load-tests/load-tester jib:build -P worker -P\!include-optimize -D image="${{ env.IMAGE_REPOSITORY }}/worker:${NEEDS_TEST_DATA_OUTPUTS_IMAGE_TAG}"
+        env:
+          NEEDS_TEST_DATA_OUTPUTS_IMAGE_TAG: ${{ needs.test-data.outputs.image-tag }}
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -179,7 +190,10 @@ jobs:
       (needs.build-camunda-image.result == 'success' || needs.build-camunda-image.result == 'skipped') &&
       (needs.build-load-test-images.result == 'success' || needs.build-load-test-images.result == 'skipped')
     uses: ./.github/workflows/camunda-load-test.yml
-    secrets: inherit
+    secrets:
+      VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+      VAULT_ROLE_ID: ${{ secrets.VAULT_ROLE_ID }}
+      VAULT_SECRET_ID: ${{ secrets.VAULT_SECRET_ID }}
     with:
       name: ${{ needs.test-data.outputs.image-tag }}-rdbms-realistic
       ttl: ${{ fromJSON(inputs.ttl || '28') }}
@@ -199,7 +213,10 @@ jobs:
       (needs.build-camunda-image.result == 'success' || needs.build-camunda-image.result == 'skipped') &&
       (needs.build-load-test-images.result == 'success' || needs.build-load-test-images.result == 'skipped')
     uses: ./.github/workflows/camunda-load-test.yml
-    secrets: inherit
+    secrets:
+      VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+      VAULT_ROLE_ID: ${{ secrets.VAULT_ROLE_ID }}
+      VAULT_SECRET_ID: ${{ secrets.VAULT_SECRET_ID }}
     with:
       name: ${{ needs.test-data.outputs.image-tag }}-opensearch-realistic
       ttl: ${{ fromJSON(inputs.ttl || '28') }}
@@ -210,7 +227,10 @@ jobs:
   setup-realistic-test:
     name: Realistic load test
     uses: ./.github/workflows/camunda-load-test.yml
-    secrets: inherit
+    secrets:
+      VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+      VAULT_ROLE_ID: ${{ secrets.VAULT_ROLE_ID }}
+      VAULT_SECRET_ID: ${{ secrets.VAULT_SECRET_ID }}
     needs:
       - test-data
       - build-camunda-image
@@ -229,7 +249,10 @@ jobs:
   setup-latency-test:
     name: Latency test
     uses: ./.github/workflows/camunda-load-test.yml
-    secrets: inherit
+    secrets:
+      VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+      VAULT_ROLE_ID: ${{ secrets.VAULT_ROLE_ID }}
+      VAULT_SECRET_ID: ${{ secrets.VAULT_SECRET_ID }}
     needs:
       - test-data
       - build-camunda-image
@@ -271,6 +294,8 @@ jobs:
     permissions: { }
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
       - name: Import Slack webhook from Vault
         id: slack-secrets
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
