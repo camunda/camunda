@@ -25,7 +25,12 @@ const sidebars = {
     },
     'infrastructure-services',
     'processes',
-    'release',
+    {
+      type: 'category',
+      label: 'Release Process',
+      link: { type: 'doc', id: 'release/index' },
+      items: ['release/release-monorepo', 'release/release-train'],
+    },
     {
       type: 'category',
       label: 'Architecture',
