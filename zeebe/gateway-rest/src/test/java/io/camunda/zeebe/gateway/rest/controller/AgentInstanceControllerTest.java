@@ -1201,7 +1201,23 @@ class AgentInstanceControllerTest extends RestControllerTest {
                     }
                     """
                         .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY))),
-            "No content[0].object provided."));
+            "No content[0].object provided."),
+        Arguments.of(
+            named(
+                "DOCUMENT content with missing documentId",
+                new HistoryItemRequest(
+                    validKey,
+                    """
+                    {
+                      "elementInstanceKey": "%d",
+                      "jobKey": "%d",
+                      "role": "USER",
+                      "content": [{ "contentType": "DOCUMENT", "documentReference": {} }],
+                      "producedAt": "2025-06-01T12:00:00Z"
+                    }
+                    """
+                        .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY))),
+            "No content[0].documentReference.documentId provided."));
   }
 
   @Test

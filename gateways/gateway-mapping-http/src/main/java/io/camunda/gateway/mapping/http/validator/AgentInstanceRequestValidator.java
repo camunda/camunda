@@ -180,6 +180,12 @@ public class AgentInstanceRequestValidator {
           ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("content[" + index + "].documentReference"));
       return;
     }
+    if (ref.getDocumentId() == null || ref.getDocumentId().isBlank()) {
+      violations.add(
+          ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted(
+              "content[" + index + "].documentReference.documentId"));
+      return;
+    }
     if (ref.getMetadata() == null) {
       return;
     }
