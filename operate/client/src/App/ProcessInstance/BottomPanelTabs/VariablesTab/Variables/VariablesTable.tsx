@@ -60,14 +60,13 @@ const VariablesTable: React.FC<Props> = ({
     data: variablesData,
     fetchNextPage,
     hasNextPage,
-    isFetchingNextPage,
+    isFetching,
     isPlaceholderData,
+    isFetchingNextPage,
   } = useVariables({
     documentsOnly: showDocumentsOnly,
     keepPreviousResults: true,
   });
-
-  const isFilterLoading = isPlaceholderData;
 
   const processedVariables = useMemo(() => {
     const allVariables =
@@ -207,7 +206,6 @@ const VariablesTable: React.FC<Props> = ({
         <FilterSwitcher role="group" aria-label="Variable filter">
           <FilterSwitcherButton
             type="button"
-            $selected={!showDocumentsOnly}
             aria-pressed={!showDocumentsOnly}
             onClick={() => setShowDocumentsOnly(false)}
           >
@@ -215,7 +213,6 @@ const VariablesTable: React.FC<Props> = ({
           </FilterSwitcherButton>
           <FilterSwitcherButton
             type="button"
-            $selected={showDocumentsOnly}
             aria-pressed={showDocumentsOnly}
             onClick={() => setShowDocumentsOnly(true)}
           >
@@ -223,16 +220,15 @@ const VariablesTable: React.FC<Props> = ({
           </FilterSwitcherButton>
         </FilterSwitcher>
       </FilterSwitcherContainer>
-      {!isFilterLoading &&
+      {!isFetching &&
       showDocumentsOnly &&
       variablesData !== undefined &&
-      processedVariables.length === 0 &&
-      !isFetchingNextPage ? (
+      processedVariables.length === 0 ? (
         <EmptyMessageWrapper>
           <EmptyMessage message="There are no document variables" />
         </EmptyMessageWrapper>
       ) : (
-        <DimmableResults $dimmed={isFilterLoading}>
+        <DimmableResults $dimmed={isPlaceholderData}>
           <StructuredList
             dataTestId="variables-list"
             headerColumns={[

@@ -34,14 +34,14 @@ function useVariables(options?: {
     queryKey: queryKeys.variables.searchWithFilter({
       processInstanceKey: processInstanceId,
       scopeKey,
-      ...(valueFilter !== undefined ? {value: valueFilter} : {}),
+      value: valueFilter,
     }),
     queryFn: async ({pageParam = 0}) => {
       const {response, error} = await searchVariables({
         filter: {
           processInstanceKey: {$eq: processInstanceId},
           scopeKey: {$eq: scopeKey ?? undefined},
-          ...(valueFilter !== undefined ? {value: {$like: valueFilter}} : {}),
+          value: valueFilter !== undefined ? {$like: valueFilter} : undefined,
         },
         page: {
           from: pageParam,
@@ -82,8 +82,7 @@ function useVariables(options?: {
   const displayStatus = useDisplayStatus({
     scopeKey,
     isLoading: result.isLoading,
-    isFetchingNextPage: result.isFetchingNextPage,
-    isFetchingPreviousPage: result.isFetchingPreviousPage,
+    isFetching: result.isFetching,
     isFetched: result.isFetched,
     isError: result.isError,
     hasItems: (result.data?.pages?.[0]?.items?.length ?? 0) > 0,

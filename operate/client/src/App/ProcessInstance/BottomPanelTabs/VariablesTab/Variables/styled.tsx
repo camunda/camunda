@@ -62,23 +62,29 @@ const FilterSwitcher = styled.div`
   background-color: var(--cds-layer-accent-01);
 `;
 
-const FilterSwitcherButton = styled.button<{$selected: boolean}>`
+const FilterSwitcherButton = styled.button`
   ${styles.label01};
   appearance: none;
   border: none;
   cursor: pointer;
   padding: var(--cds-spacing-02) var(--cds-spacing-04);
   border-radius: 4px;
-  background-color: ${({$selected}) =>
-    $selected ? 'var(--cds-layer-01)' : 'transparent'};
-  color: ${({$selected}) =>
-    $selected ? 'var(--cds-text-primary)' : 'var(--cds-text-secondary)'};
-  box-shadow: ${({$selected}) =>
-    $selected ? '0 1px 2px rgba(0, 0, 0, 0.15)' : 'none'};
+  background-color: transparent;
+  color: var(--cds-text-secondary);
+  box-shadow: none;
+
+  &[aria-pressed='true'] {
+    background-color: var(--cds-layer-01);
+    color: var(--cds-text-primary);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  }
 
   &:hover {
-    background-color: ${({$selected}) =>
-      $selected ? 'var(--cds-layer-01)' : 'var(--cds-layer-hover-01)'};
+    background-color: var(--cds-layer-hover-01);
+  }
+
+  &[aria-pressed='true']:hover {
+    background-color: var(--cds-layer-01);
   }
 
   &:focus-visible {

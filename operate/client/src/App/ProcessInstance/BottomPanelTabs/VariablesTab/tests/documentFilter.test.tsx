@@ -8,7 +8,7 @@
 
 import {VariablesTab} from '../index';
 import {render, screen, waitFor} from 'modules/testing-library';
-import {createVariable} from 'modules/testUtils';
+import {createVariable, searchResult} from 'modules/testUtils';
 import {mockFetchElementInstancesStatistics} from 'modules/mocks/api/v2/elementInstances/elementInstancesStatistics/fetchElementInstancesStatistics';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
@@ -33,18 +33,10 @@ const DOCUMENT_VALUE = JSON.stringify({
   },
 });
 
-const allVariables = {
-  items: [
-    createVariable({name: 'regularVar', value: '"hello"'}),
-    createVariable({name: 'documentVar', value: DOCUMENT_VALUE}),
-  ],
-  page: {
-    totalItems: 2,
-    startCursor: null,
-    endCursor: null,
-    hasMoreTotalItems: false,
-  },
-};
+const allVariables = searchResult([
+  createVariable({name: 'regularVar', value: '"hello"'}),
+  createVariable({name: 'documentVar', value: DOCUMENT_VALUE}),
+]);
 
 // The server-side $like also matches values that merely contain the document
 // marker text (e.g. plain strings or nested objects). These must be filtered
@@ -56,19 +48,11 @@ const STRING_DECOY_VALUE = JSON.stringify(
   'please attach your camunda.document.type here',
 );
 
-const documentOnlyVariables = {
-  items: [
-    createVariable({name: 'documentVar', value: DOCUMENT_VALUE}),
-    createVariable({name: 'nestedDecoy', value: NESTED_DECOY_VALUE}),
-    createVariable({name: 'stringDecoy', value: STRING_DECOY_VALUE}),
-  ],
-  page: {
-    totalItems: 3,
-    startCursor: null,
-    endCursor: null,
-    hasMoreTotalItems: false,
-  },
-};
+const documentOnlyVariables = searchResult([
+  createVariable({name: 'documentVar', value: DOCUMENT_VALUE}),
+  createVariable({name: 'nestedDecoy', value: NESTED_DECOY_VALUE}),
+  createVariable({name: 'stringDecoy', value: STRING_DECOY_VALUE}),
+]);
 
 describe('VariablesTab - document filter', () => {
   beforeEach(() => {
@@ -81,15 +65,7 @@ describe('VariablesTab - document filter', () => {
     mockFetchElementInstancesStatistics().withSuccess({items: []});
 
     mockFetchProcessDefinitionXml().withSuccess('');
-    mockSearchJobs().withSuccess({
-      items: [],
-      page: {
-        totalItems: 0,
-        startCursor: null,
-        endCursor: null,
-        hasMoreTotalItems: false,
-      },
-    });
+    mockSearchJobs().withSuccess(searchResult([]));
 
     // Persistent handler: returns filtered or all variables based on request body
     mockServer.use(
@@ -163,24 +139,16 @@ describe('VariablesTab - document filter', () => {
           body?.filter?.value?.$like === '*camunda.document.type*';
         return HttpResponse.json(
           isDocumentFilter
-            ? {
-                items: [
-                  createVariable({
-                    name: 'nestedDecoy',
-                    value: NESTED_DECOY_VALUE,
-                  }),
-                  createVariable({
-                    name: 'stringDecoy',
-                    value: STRING_DECOY_VALUE,
-                  }),
-                ],
-                page: {
-                  totalItems: 2,
-                  startCursor: null,
-                  endCursor: null,
-                  hasMoreTotalItems: false,
-                },
-              }
+            ? searchResult([
+                createVariable({
+                  name: 'nestedDecoy',
+                  value: NESTED_DECOY_VALUE,
+                }),
+                createVariable({
+                  name: 'stringDecoy',
+                  value: STRING_DECOY_VALUE,
+                }),
+              ])
             : allVariables,
         );
       }),
