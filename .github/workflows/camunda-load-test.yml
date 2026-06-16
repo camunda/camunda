@@ -555,6 +555,7 @@ jobs:
             load-tests/setup/stable-87
             load-tests/setup/newLoadTest.sh
             load-tests/setup/utils.sh
+            .github/actions
       # camunda-platform-8.10 requires Helm CLI v4; runners ship v3.x.
       - name: Set up Helm
         uses: asdf-vm/actions/install@b7bcd026f18772e44fe1026d729e1611cc435d47 # v4.0.1
