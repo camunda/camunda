@@ -148,7 +148,7 @@ describe('<ProcessOperations />', () => {
       ),
     );
 
-    await user.click(screen.getByRole('button', {name: /danger Delete/}));
+    await user.click(screen.getByRole('button', {name: /^delete$/i}));
 
     await waitFor(() =>
       expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
@@ -192,7 +192,7 @@ describe('<ProcessOperations />', () => {
       ),
     );
 
-    await user.click(screen.getByRole('button', {name: /danger Delete/}));
+    await user.click(screen.getByRole('button', {name: /^delete$/i}));
 
     await waitFor(() => {
       expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
@@ -236,7 +236,7 @@ describe('<ProcessOperations />', () => {
       ),
     );
 
-    await user.click(screen.getByRole('button', {name: /danger Delete/}));
+    await user.click(screen.getByRole('button', {name: /^delete$/i}));
 
     await waitFor(() => {
       expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
@@ -281,7 +281,7 @@ describe('<ProcessOperations />', () => {
       ),
     );
 
-    fireEvent.click(screen.getByRole('button', {name: /danger Delete/}));
+    fireEvent.click(screen.getByRole('button', {name: /^delete$/i}));
     expect(screen.getByTestId('delete-operation-spinner')).toBeInTheDocument();
     expect(
       screen.getByRole('button', {
@@ -323,7 +323,7 @@ describe('<ProcessOperations />', () => {
       ),
     );
 
-    fireEvent.click(screen.getByRole('button', {name: /danger Delete/}));
+    fireEvent.click(screen.getByRole('button', {name: /^delete$/i}));
     expect(screen.getByTestId('delete-operation-spinner')).toBeInTheDocument();
     expect(
       screen.getByRole('button', {
@@ -369,7 +369,7 @@ describe('<ProcessOperations />', () => {
       }),
     );
 
-    await user.click(screen.getByRole('button', {name: /danger Delete/}));
+    await user.click(screen.getByRole('button', {name: /^delete$/i}));
 
     expect(
       await screen.findByText('Please tick this box if you want to proceed.'),
