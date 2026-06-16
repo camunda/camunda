@@ -16,10 +16,14 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
+import io.camunda.service.AgentHistoryServices;
 import io.camunda.service.AgentInstanceServices;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryContentType;
+import java.time.OffsetDateTime;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,14 +42,18 @@ class AgentInstanceControllerTest extends RestControllerTest {
   private static final String AGENT_INSTANCES_URL = "/v2/agent-instances";
   private static final long ELEMENT_INSTANCE_KEY = 2251799813685248L;
   private static final long AGENT_INSTANCE_KEY = 9007199254741017L;
+  private static final long JOB_KEY = 2251799813685249L;
+  private static final long HISTORY_ITEM_KEY = 9007199254741018L;
 
   @MockitoBean private AgentInstanceServices agentInstanceServices;
+  @MockitoBean private AgentHistoryServices agentHistoryServices;
   @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
   @MockitoBean private ServiceRegistry serviceRegistry;
 
   @BeforeEach
   void setUp() {
     when(serviceRegistry.agentInstanceServices(any())).thenReturn(agentInstanceServices);
+    when(serviceRegistry.agentHistoryServices(any())).thenReturn(agentHistoryServices);
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
   }
@@ -727,5 +735,521 @@ class AgentInstanceControllerTest extends RestControllerTest {
         .is5xxServerError();
   }
 
+  // --------------------------------- history item tests -----------------------------------------
+
+  @Test
+  void shouldCreateAgentHistoryItemWithTextContent() {
+    // given
+    final var responseRecord = new AgentHistoryRecord();
+    responseRecord.setAgentHistoryKey(HISTORY_ITEM_KEY);
+    when(agentHistoryServices.createAgentHistoryItem(any(AgentHistoryRecord.class), any()))
+        .thenReturn(CompletableFuture.completedFuture(responseRecord));
+
+    final var requestBody =
+        """
+        {
+          "elementInstanceKey": "%d",
+          "jobKey": "%d",
+          "jobLease": "lease-abc",
+          "role": "ASSISTANT",
+          "content": [
+            { "contentType": "TEXT", "text": "I will process the invoice." }
+          ],
+          "producedAt": "2025-06-01T12:00:00Z"
+        }
+        """
+            .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY);
+
+    // when / then
+    webClient
+        .post()
+        .uri(AGENT_INSTANCES_URL + "/%d/history".formatted(AGENT_INSTANCE_KEY))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(requestBody)
+        .exchange()
+        .expectStatus()
+        .isCreated()
+        .expectBody()
+        .json(
+            """
+            { "historyItemKey": "%d" }
+            """
+                .formatted(HISTORY_ITEM_KEY),
+            JsonCompareMode.STRICT);
+
+    verify(agentHistoryServices)
+        .createAgentHistoryItem(
+            assertArg(
+                record -> {
+                  assertThat(record.getAgentInstanceKey()).isEqualTo(AGENT_INSTANCE_KEY);
+                  assertThat(record.getElementInstanceKey()).isEqualTo(ELEMENT_INSTANCE_KEY);
+                  assertThat(record.getJobKey()).isEqualTo(JOB_KEY);
+                  assertThat(record.getJobLease()).isEqualTo("lease-abc");
+                  assertThat(record.getRole().name()).isEqualTo("ASSISTANT");
+                  assertThat(record.getContent()).hasSize(1);
+                  assertThat(record.getContent().get(0).getText())
+                      .isEqualTo("I will process the invoice.");
+                }),
+            any());
+  }
+
+  @Test
+  void shouldCreateAgentHistoryItemWithAllFields() {
+    // given
+    final var responseRecord = new AgentHistoryRecord();
+    responseRecord.setAgentHistoryKey(HISTORY_ITEM_KEY);
+    when(agentHistoryServices.createAgentHistoryItem(any(AgentHistoryRecord.class), any()))
+        .thenReturn(CompletableFuture.completedFuture(responseRecord));
+
+    final var requestBody =
+        """
+        {
+          "elementInstanceKey": "%d",
+          "jobKey": "%d",
+          "jobLease": "lease-abc",
+          "role": "USER",
+          "iteration": 2,
+          "content": [
+            { "contentType": "TEXT", "text": "What is in the invoice?" },
+            { "contentType": "OBJECT", "object": { "key": "value" } }
+          ],
+          "toolCalls": [
+            { "toolCallId": "tc-001", "toolName": "extract_data", "elementId": "extract-task" }
+          ],
+          "metrics": {
+            "inputTokens": 512,
+            "outputTokens": 128,
+            "durationMs": 1500
+          },
+          "producedAt": "2025-06-01T12:00:00Z"
+        }
+        """
+            .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY);
+
+    // when / then
+    webClient
+        .post()
+        .uri(AGENT_INSTANCES_URL + "/%d/history".formatted(AGENT_INSTANCE_KEY))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(requestBody)
+        .exchange()
+        .expectStatus()
+        .isCreated();
+
+    verify(agentHistoryServices)
+        .createAgentHistoryItem(
+            assertArg(
+                record -> {
+                  assertThat(record.getIteration()).isEqualTo(2);
+                  assertThat(record.getContent()).hasSize(2);
+                  assertThat(record.getToolCalls()).hasSize(1);
+                  assertThat(record.getToolCalls().get(0).getToolCallId()).isEqualTo("tc-001");
+                  assertThat(record.getToolCalls().get(0).getToolName()).isEqualTo("extract_data");
+                  assertThat(record.getMetrics().getInputTokens()).isEqualTo(512L);
+                  assertThat(record.getMetrics().getOutputTokens()).isEqualTo(128L);
+                  assertThat(record.getMetrics().getDurationMs()).isEqualTo(1500L);
+                }),
+            any());
+  }
+
+  @Test
+  void shouldCreateAgentHistoryItemWithDocumentContent() {
+    // given
+    final var responseRecord = new AgentHistoryRecord();
+    responseRecord.setAgentHistoryKey(HISTORY_ITEM_KEY);
+    when(agentHistoryServices.createAgentHistoryItem(any(AgentHistoryRecord.class), any()))
+        .thenReturn(CompletableFuture.completedFuture(responseRecord));
+
+    final var requestBody =
+        """
+        {
+          "elementInstanceKey": "%d",
+          "jobKey": "%d",
+          "jobLease": "lease-abc",
+          "role": "USER",
+          "content": [
+            {
+              "contentType": "DOCUMENT",
+              "documentReference": {
+                "camunda.document.type": "camunda",
+                "storeId": "store-1",
+                "documentId": "doc-abc",
+                "contentHash": "sha256:deadbeef",
+                "metadata": {
+                  "contentType": "application/pdf",
+                  "fileName": "invoice.pdf",
+                  "expiresAt": "2025-12-31T23:59:59Z",
+                  "size": 12345,
+                  "processDefinitionId": "invoice-process",
+                  "processInstanceKey": "%d",
+                  "customProperties": {"source": "email"}
+                }
+              }
+            }
+          ],
+          "producedAt": "2025-06-01T12:00:00Z"
+        }
+        """
+            .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY, ELEMENT_INSTANCE_KEY);
+
+    // when / then
+    webClient
+        .post()
+        .uri(AGENT_INSTANCES_URL + "/%d/history".formatted(AGENT_INSTANCE_KEY))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(requestBody)
+        .exchange()
+        .expectStatus()
+        .isCreated();
+
+    verify(agentHistoryServices)
+        .createAgentHistoryItem(
+            assertArg(
+                record -> {
+                  assertThat(record.getContent()).hasSize(1);
+                  final var docContent = record.getContent().get(0);
+                  assertThat(docContent.getContentType())
+                      .isEqualTo(AgentHistoryContentType.DOCUMENT);
+                  final var docRef = docContent.getDocumentReference();
+                  assertThat(docRef.getDocumentId()).isEqualTo("doc-abc");
+                  assertThat(docRef.getStoreId()).isEqualTo("store-1");
+                  assertThat(docRef.getContentHash()).isEqualTo("sha256:deadbeef");
+                  final var meta = docRef.getMetadata();
+                  assertThat(meta.getContentType()).isEqualTo("application/pdf");
+                  assertThat(meta.getFileName()).isEqualTo("invoice.pdf");
+                  assertThat(meta.getExpiresAt())
+                      .isEqualTo(
+                          OffsetDateTime.parse("2025-12-31T23:59:59Z").toInstant().toEpochMilli());
+                  assertThat(meta.getSize()).isEqualTo(12345L);
+                  assertThat(meta.getProcessDefinitionId()).isEqualTo("invoice-process");
+                  assertThat(meta.getProcessInstanceKey()).isEqualTo(ELEMENT_INSTANCE_KEY);
+                  assertThat(meta.getCustomProperties()).containsEntry("source", "email");
+                }),
+            any());
+  }
+
+  @ParameterizedTest(name = "[{index}] {0}")
+  @MethodSource("invalidHistoryItemRequests")
+  void shouldRejectInvalidHistoryItemRequest(
+      final HistoryItemRequest request, final String expectedDetail) {
+    // when / then
+    webClient
+        .post()
+        .uri(AGENT_INSTANCES_URL + "/%s/history".formatted(request.agentInstanceKeyPath()))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request.requestBody())
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "title": "INVALID_ARGUMENT",
+              "status": 400,
+              "detail": "%s",
+              "instance": "/v2/agent-instances/%s/history"
+            }
+            """
+                .formatted(expectedDetail, request.agentInstanceKeyPath()),
+            JsonCompareMode.STRICT);
+
+    verifyNoInteractions(agentHistoryServices);
+  }
+
+  static Stream<Arguments> invalidHistoryItemRequests() {
+    final String validKey = String.valueOf(AGENT_INSTANCE_KEY);
+    final String validBody =
+        """
+        {
+          "elementInstanceKey": "%d",
+          "jobKey": "%d",
+          "jobLease": "lease-abc",
+          "role": "ASSISTANT",
+          "content": [{ "contentType": "TEXT", "text": "hello" }],
+          "producedAt": "2025-06-01T12:00:00Z"
+        }
+        """
+            .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY);
+
+    return Stream.of(
+        Arguments.of(
+            named("zero agentInstanceKey", new HistoryItemRequest("0", validBody)),
+            "The value for agentInstanceKey is '0' but must be > 0."),
+        Arguments.of(
+            named("non-numeric agentInstanceKey", new HistoryItemRequest("not-a-key", validBody)),
+            "The provided agentInstanceKey 'not-a-key' is not a valid key."
+                + " Expected a numeric value."
+                + " Did you pass an entity id instead of an entity key?."),
+        Arguments.of(
+            named(
+                "missing elementInstanceKey",
+                new HistoryItemRequest(
+                    validKey,
+                    """
+                    {
+                      "jobKey": "%d",
+                      "jobLease": "lease-abc",
+                      "role": "ASSISTANT",
+                      "content": [{ "contentType": "TEXT", "text": "hello" }],
+                      "producedAt": "2025-06-01T12:00:00Z"
+                    }
+                    """
+                        .formatted(JOB_KEY))),
+            "No elementInstanceKey provided."),
+        Arguments.of(
+            named(
+                "zero elementInstanceKey",
+                new HistoryItemRequest(
+                    validKey,
+                    """
+                    {
+                      "elementInstanceKey": "0",
+                      "jobKey": "%d",
+                      "jobLease": "lease-abc",
+                      "role": "ASSISTANT",
+                      "content": [{ "contentType": "TEXT", "text": "hello" }],
+                      "producedAt": "2025-06-01T12:00:00Z"
+                    }
+                    """
+                        .formatted(JOB_KEY))),
+            "The value for elementInstanceKey is '0' but must be > 0."),
+        Arguments.of(
+            named(
+                "missing jobKey",
+                new HistoryItemRequest(
+                    validKey,
+                    """
+                    {
+                      "elementInstanceKey": "%d",
+                      "jobLease": "lease-abc",
+                      "role": "ASSISTANT",
+                      "content": [{ "contentType": "TEXT", "text": "hello" }],
+                      "producedAt": "2025-06-01T12:00:00Z"
+                    }
+                    """
+                        .formatted(ELEMENT_INSTANCE_KEY))),
+            "No jobKey provided."),
+        Arguments.of(
+            named(
+                "missing role",
+                new HistoryItemRequest(
+                    validKey,
+                    """
+                    {
+                      "elementInstanceKey": "%d",
+                      "jobKey": "%d",
+                      "jobLease": "lease-abc",
+                      "content": [{ "contentType": "TEXT", "text": "hello" }],
+                      "producedAt": "2025-06-01T12:00:00Z"
+                    }
+                    """
+                        .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY))),
+            "No role provided."),
+        Arguments.of(
+            named(
+                "missing content",
+                new HistoryItemRequest(
+                    validKey,
+                    """
+                    {
+                      "elementInstanceKey": "%d",
+                      "jobKey": "%d",
+                      "jobLease": "lease-abc",
+                      "role": "ASSISTANT",
+                      "producedAt": "2025-06-01T12:00:00Z"
+                    }
+                    """
+                        .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY))),
+            "No content provided."),
+        Arguments.of(
+            named(
+                "empty content list",
+                new HistoryItemRequest(
+                    validKey,
+                    """
+                    {
+                      "elementInstanceKey": "%d",
+                      "jobKey": "%d",
+                      "jobLease": "lease-abc",
+                      "role": "ASSISTANT",
+                      "content": [],
+                      "producedAt": "2025-06-01T12:00:00Z"
+                    }
+                    """
+                        .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY))),
+            "No content provided."),
+        Arguments.of(
+            named(
+                "missing producedAt",
+                new HistoryItemRequest(
+                    validKey,
+                    """
+                    {
+                      "elementInstanceKey": "%d",
+                      "jobKey": "%d",
+                      "jobLease": "lease-abc",
+                      "role": "ASSISTANT",
+                      "content": [{ "contentType": "TEXT", "text": "hello" }]
+                    }
+                    """
+                        .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY))),
+            "No producedAt provided."),
+        Arguments.of(
+            named(
+                "invalid producedAt format",
+                new HistoryItemRequest(
+                    validKey,
+                    """
+                    {
+                      "elementInstanceKey": "%d",
+                      "jobKey": "%d",
+                      "jobLease": "lease-abc",
+                      "role": "ASSISTANT",
+                      "content": [{ "contentType": "TEXT", "text": "hello" }],
+                      "producedAt": "not-a-date"
+                    }
+                    """
+                        .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY))),
+            "The provided producedAt 'not-a-date' cannot be parsed as a date"
+                + " according to RFC 3339, section 5.6."),
+        Arguments.of(
+            named(
+                "invalid document metadata expiresAt format",
+                new HistoryItemRequest(
+                    validKey,
+                    """
+                    {
+                      "elementInstanceKey": "%d",
+                      "jobKey": "%d",
+                      "jobLease": "lease-abc",
+                      "role": "USER",
+                      "content": [
+                        {
+                          "contentType": "DOCUMENT",
+                          "documentReference": {
+                            "camunda.document.type": "camunda",
+                            "storeId": "store-1",
+                            "documentId": "doc-abc",
+                            "metadata": {
+                              "contentType": "application/pdf",
+                              "fileName": "invoice.pdf",
+                              "size": 1024,
+                              "expiresAt": "not-a-date",
+                              "customProperties": {}
+                            }
+                          }
+                        }
+                      ],
+                      "producedAt": "2025-06-01T12:00:00Z"
+                    }
+                    """
+                        .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY))),
+            "The provided content[0].documentReference.metadata.expiresAt 'not-a-date'"
+                + " cannot be parsed as a date according to RFC 3339, section 5.6."),
+        Arguments.of(
+            named(
+                "TEXT content missing text field",
+                new HistoryItemRequest(
+                    validKey,
+                    """
+                    {
+                      "elementInstanceKey": "%d",
+                      "jobKey": "%d",
+                      "role": "ASSISTANT",
+                      "content": [{ "contentType": "TEXT" }],
+                      "producedAt": "2025-06-01T12:00:00Z"
+                    }
+                    """
+                        .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY))),
+            "No content[0].text provided."),
+        Arguments.of(
+            named(
+                "DOCUMENT content missing documentReference",
+                new HistoryItemRequest(
+                    validKey,
+                    """
+                    {
+                      "elementInstanceKey": "%d",
+                      "jobKey": "%d",
+                      "role": "USER",
+                      "content": [{ "contentType": "DOCUMENT" }],
+                      "producedAt": "2025-06-01T12:00:00Z"
+                    }
+                    """
+                        .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY))),
+            "No content[0].documentReference provided."),
+        Arguments.of(
+            named(
+                "OBJECT content missing object field",
+                new HistoryItemRequest(
+                    validKey,
+                    """
+                    {
+                      "elementInstanceKey": "%d",
+                      "jobKey": "%d",
+                      "role": "ASSISTANT",
+                      "content": [{ "contentType": "OBJECT" }],
+                      "producedAt": "2025-06-01T12:00:00Z"
+                    }
+                    """
+                        .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY))),
+            "No content[0].object provided."),
+        Arguments.of(
+            named(
+                "DOCUMENT content with missing documentId",
+                new HistoryItemRequest(
+                    validKey,
+                    """
+                    {
+                      "elementInstanceKey": "%d",
+                      "jobKey": "%d",
+                      "role": "USER",
+                      "content": [{ "contentType": "DOCUMENT", "documentReference": {} }],
+                      "producedAt": "2025-06-01T12:00:00Z"
+                    }
+                    """
+                        .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY))),
+            "No content[0].documentReference.documentId provided."));
+  }
+
+  @Test
+  void shouldReturn5xxOnHistoryItemServiceError() {
+    // given
+    when(agentHistoryServices.createAgentHistoryItem(any(AgentHistoryRecord.class), any()))
+        .thenReturn(CompletableFuture.failedFuture(new RuntimeException("broker unavailable")));
+
+    // when / then
+    webClient
+        .post()
+        .uri(AGENT_INSTANCES_URL + "/%d/history".formatted(AGENT_INSTANCE_KEY))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            """
+            {
+              "elementInstanceKey": "%d",
+              "jobKey": "%d",
+              "jobLease": "lease-abc",
+              "role": "ASSISTANT",
+              "content": [{ "contentType": "TEXT", "text": "hello" }],
+              "producedAt": "2025-06-01T12:00:00Z"
+            }
+            """
+                .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY))
+        .exchange()
+        .expectStatus()
+        .is5xxServerError();
+  }
+
   private record UpdateRequest(long agentInstanceKey, String requestBody) {}
+
+  private record HistoryItemRequest(String agentInstanceKeyPath, String requestBody) {}
 }
