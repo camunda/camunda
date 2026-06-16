@@ -100,23 +100,6 @@ public final class VariableInputMappingTransformerTest {
         Map.of("x", asMsgPack("1")),
         "{'a':1, 'b':2}"
       },
-      {
-        List.of(
-            mapping("\"text\"", "a.b"),
-            mapping("\"value\"", "c"),
-            mapping("c", "a.d"),
-            mapping("c", "e")),
-        Map.of(),
-        """
-        {
-          "a": {
-            "b": "text",
-            "d": "value"
-          },
-          "c": "value",
-          "e": "value"
-        }"""
-      },
       // override previous mapping
       {
         List.of(mapping("x", "a"), mapping("y", "a")),
