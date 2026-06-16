@@ -22,6 +22,7 @@ import com.github.tomakehurst.wiremock.stubbing.ServeEvent;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.impl.CamundaObjectMapper;
 import io.camunda.client.protocol.rest.AgentInstanceCreationResult;
+import io.camunda.client.protocol.rest.AgentInstanceHistoryItemCreationResult;
 import io.camunda.client.protocol.rest.AgentInstanceResult;
 import io.camunda.client.protocol.rest.AgentInstanceSearchQueryResult;
 import io.camunda.client.protocol.rest.AuditLogResult;
@@ -370,6 +371,11 @@ public class RestGatewayService {
 
   public void onCreateAgentInstanceRequest(final AgentInstanceCreationResult response) {
     registerPost(RestGatewayPaths.getAgentInstancesUrl(), response);
+  }
+
+  public void onCreateAgentHistoryItemRequest(
+      final long agentInstanceKey, final AgentInstanceHistoryItemCreationResult response) {
+    registerPost(RestGatewayPaths.getAgentHistoryItemUrl(agentInstanceKey), response);
   }
 
   public void onUpdateAgentInstanceRequest(final long agentInstanceKey) {

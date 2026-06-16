@@ -14,6 +14,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.CreateAgentHistoryItemCommandStep1.AgentHistoryContent;
+import io.camunda.client.api.command.CreateAgentHistoryItemCommandStep1.AgentHistoryRole;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.TestUser;
@@ -24,6 +26,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import java.time.OffsetDateTime;
 import java.util.List;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -205,6 +208,33 @@ public class AgentInstanceTenancyIT {
             .actual();
 
     // then
+    assertThat(exception.getMessage()).startsWith("Failed with code 404");
+    assertThat(exception.details()).isNotNull();
+    assertThat(exception.details().getTitle()).isEqualTo("NOT_FOUND");
+    assertThat(exception.details().getStatus()).isEqualTo(404);
+  }
+
+  // ── createHistoryItem ─────────────────────────────────────────────────────
+
+  @Test
+  void createHistoryItemShouldReturn404ForCrossTenantRequest(
+      @Authenticated(USER1) final CamundaClient camundaClient) {
+    // given — user1 belongs to TENANT_A only; agentInstanceKeyB is in TENANT_B
+    final var exception =
+        assertThatExceptionOfType(ProblemException.class)
+            .isThrownBy(
+                () ->
+                    camundaClient
+                        .newCreateAgentHistoryItemCommand(agentInstanceKeyB)
+                        .elementInstanceKey(elementInstanceKeyB)
+                        .jobKey(elementInstanceKeyB)
+                        .role(AgentHistoryRole.USER)
+                        .content(List.of(AgentHistoryContent.text("hello")))
+                        .producedAt(OffsetDateTime.parse("2025-06-01T12:00:00Z"))
+                        .execute())
+            .actual();
+
+    // then — tenant boundary surfaced as 404, not 403
     assertThat(exception.getMessage()).startsWith("Failed with code 404");
     assertThat(exception.details()).isNotNull();
     assertThat(exception.details().getTitle()).isEqualTo("NOT_FOUND");

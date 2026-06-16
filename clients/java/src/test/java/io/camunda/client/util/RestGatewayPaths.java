@@ -23,6 +23,8 @@ public class RestGatewayPaths {
   private static final String URL_AUTHORIZATIONS = REST_API_PATH + "/authorizations";
   private static final String URL_AGENT_INSTANCES = REST_API_PATH + "/agent-instances";
   private static final String URL_AGENT_INSTANCE = REST_API_PATH + "/agent-instances/%s";
+  private static final String URL_AGENT_HISTORY_ITEM =
+      REST_API_PATH + "/agent-instances/%s/history";
   private static final String URL_AGENT_INSTANCES_SEARCH =
       REST_API_PATH + "/agent-instances/search";
   private static final String URL_BATCH_OPERATION = REST_API_PATH + "/batch-operations/%s";
@@ -502,6 +504,10 @@ public class RestGatewayPaths {
 
   public static String getAgentInstanceUrl(final long agentInstanceKey) {
     return String.format(URL_AGENT_INSTANCE, agentInstanceKey);
+  }
+
+  public static String getAgentHistoryItemUrl(final long agentInstanceKey) {
+    return String.format(URL_AGENT_HISTORY_ITEM, agentInstanceKey);
   }
 
   public static String getAgentInstancesSearchUrl() {

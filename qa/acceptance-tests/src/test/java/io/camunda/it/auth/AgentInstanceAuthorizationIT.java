@@ -20,9 +20,12 @@ import static io.camunda.it.util.TestHelper.waitForAgentInstanceToBeIndexed;
 import static io.camunda.it.util.TestHelper.waitForElementInstances;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.CreateAgentHistoryItemCommandStep1.AgentHistoryContent;
+import io.camunda.client.api.command.CreateAgentHistoryItemCommandStep1.AgentHistoryRole;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.response.AgentInstance;
 import io.camunda.qa.util.auth.Authenticated;
@@ -34,6 +37,7 @@ import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import java.time.OffsetDateTime;
 import java.util.List;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeAll;
@@ -268,6 +272,49 @@ class AgentInstanceAuthorizationIT {
                     .newUpdateAgentInstanceCommand(agentInstanceKey3)
                     .elementInstanceKey(elementInstanceKey3)
                     .execute());
+  }
+
+  // ── createHistoryItem ─────────────────────────────────────────────────────
+
+  @Test
+  void createHistoryItemShouldReturn403WhenUnauthorized(
+      @Authenticated(USER1) final CamundaClient camundaClient) {
+    // given — user1 has READ_PROCESS_INSTANCE on PROCESS_ID_1 but not UPDATE_PROCESS_INSTANCE
+    final ThrowingCallable execute =
+        () ->
+            camundaClient
+                .newCreateAgentHistoryItemCommand(agentInstanceKey1)
+                .elementInstanceKey(elementInstanceKey1)
+                .jobKey(elementInstanceKey1)
+                .role(AgentHistoryRole.USER)
+                .content(List.of(AgentHistoryContent.text("hello")))
+                .producedAt(OffsetDateTime.parse("2025-06-01T12:00:00Z"))
+                .execute();
+
+    // then
+    final var problemException =
+        assertThatExceptionOfType(ProblemException.class).isThrownBy(execute).actual();
+    assertThat(problemException.code()).isEqualTo(403);
+    assertThat(problemException.details().getDetail()).contains("'UPDATE_PROCESS_INSTANCE'");
+  }
+
+  @Test
+  void createHistoryItemShouldPassAuthorizationForAuthorizedUser(
+      @Authenticated(USER3) final CamundaClient camundaClient) {
+    // given — user3 has UPDATE_PROCESS_INSTANCE on PROCESS_ID_3; there is no active job, so the
+    // engine rejects with 404 after authorization, not 403
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newCreateAgentHistoryItemCommand(agentInstanceKey3)
+                    .elementInstanceKey(elementInstanceKey3)
+                    .jobKey(elementInstanceKey3)
+                    .role(AgentHistoryRole.USER)
+                    .content(List.of(AgentHistoryContent.text("hello")))
+                    .producedAt(OffsetDateTime.parse("2025-06-01T12:00:00Z"))
+                    .execute())
+        .isInstanceOf(ProblemException.class)
+        .satisfies(ex -> assertThat(((ProblemException) ex).code()).isNotEqualTo(403));
   }
 
   // ── helpers ───────────────────────────────────────────────────────────────
