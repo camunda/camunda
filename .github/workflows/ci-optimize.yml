@@ -433,8 +433,10 @@ jobs:
           project_name: e2e
           additional_flags: "--profile self-managed"
 
-      - name: Build backend
-        run: ./mvnw -T1C clean install -Dmaven.test.skip=true -DskipChecks -Dskip.docker -pl optimize/backend -am -PskipFrontendBuild
+      - uses: ./.github/actions/build-zeebe
+        id: build-camunda
+        with:
+          maven-extra-args: -PskipFrontendBuild -Dskip.docker
 
       - name: Create backend logs file
         run: mkdir -p ./optimize/client/build && touch ./optimize/client/build/backendLogs.log
@@ -559,8 +561,10 @@ jobs:
         with:
           directory: ./optimize/client
           node-version: ${{ steps.pom-info.outputs.x_version_node }}
-      - name: Build backend
-        run: ./mvnw -T1C clean install -Dmaven.test.skip=true -DskipChecks -Dskip.docker -pl optimize/backend -am -PskipFrontendBuild
+      - uses: ./.github/actions/build-zeebe
+        id: build-camunda
+        with:
+          maven-extra-args: -PskipFrontendBuild -Dskip.docker
       - name: Create backend logs file
         run: mkdir -p ./optimize/client/build && touch ./optimize/client/build/backendLogs.log
       - name: Start backend
