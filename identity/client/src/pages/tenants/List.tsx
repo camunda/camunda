@@ -19,6 +19,7 @@ import useModal, { useEntityModal } from "src/components/modal/useModal";
 import AddModal from "src/pages/tenants/modals/AddModal";
 import DeleteModal from "src/pages/tenants/modals/DeleteModal";
 import PageEmptyState from "src/components/layout/PageEmptyState";
+import { isDefaultTenant } from "src/pages/tenants/defaultTenant";
 
 const List: FC = () => {
   const { t } = useTranslate("tenants");
@@ -81,6 +82,7 @@ const List: FC = () => {
             label: t("delete"),
             icon: TrashCan,
             isDangerous: true,
+            disabled: (tenant) => isDefaultTenant(tenant.tenantId),
             onClick: (tenant) =>
               deleteTenant({
                 tenantId: tenant.tenantId,
