@@ -123,6 +123,7 @@ public abstract class ArchiverJobIT<T extends ArchiverJob<?>> {
   void withArchiverJob(final ExporterConfiguration config, final ArchiveJobConsumer<T> jobConsumer)
       throws Exception {
     config.getHistory().getRetention().setEnabled(true);
+    config.getIndex().setNumberOfShards(3);
     createSchemas(config);
 
     final ExporterResourceProvider exporterResourceProvider = exporterResourceProvider(config);
