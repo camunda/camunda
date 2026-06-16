@@ -327,7 +327,9 @@ func stripRocksDbNativeLibs(camundaVersion, osType, arch string) error {
 			toDrop++
 		}
 	}
-	r.Close()
+	if err := r.Close(); err != nil {
+		return fmt.Errorf("stripRocksDbNativeLibs: close %s: %w", jars[0], err)
+	}
 
 	if !libFound {
 		return fmt.Errorf("stripRocksDbNativeLibs: expected lib %s not found in %s: verify rocksdbNativeLibName mapping", libName, jars[0])
