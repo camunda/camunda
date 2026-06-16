@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 
 public final class FormServiceTest {
 
+  private static final String PHYSICAL_TENANT_ID = "test-tenant";
   private CamundaAuthentication authentication;
   private FormServices services;
   private FormSearchClient client;
@@ -34,6 +35,7 @@ public final class FormServiceTest {
     when(client.withSecurityContext(any())).thenReturn(client);
     services =
         new FormServices(
+            PHYSICAL_TENANT_ID,
             mock(BrokerClient.class),
             mock(SecurityContextProvider.class),
             client,

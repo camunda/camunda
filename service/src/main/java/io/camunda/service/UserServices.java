@@ -34,6 +34,7 @@ public class UserServices extends SearchQueryService<UserServices, UserQuery, Us
   private final PasswordEncoder passwordEncoder;
 
   public UserServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final UserSearchClient userSearchClient,
@@ -41,6 +42,7 @@ public class UserServices extends SearchQueryService<UserServices, UserQuery, Us
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         executorProvider,

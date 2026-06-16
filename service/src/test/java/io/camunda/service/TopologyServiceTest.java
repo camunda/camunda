@@ -42,6 +42,7 @@ import org.mockito.Mockito;
 @NullMarked
 public class TopologyServiceTest {
 
+  private static final String PHYSICAL_TENANT_ID = "test-tenant";
   private final int partitionId1 = 1;
   private final int partitionId2 = 2;
   private final int partitionId3 = 3;
@@ -62,6 +63,7 @@ public class TopologyServiceTest {
     when(topologyManager.getTopology()).thenReturn(clusterState);
     services =
         new TopologyServices(
+            PHYSICAL_TENANT_ID,
             brokerClient,
             mock(SecurityContextProvider.class),
             mock(ApiServicesExecutorProvider.class),

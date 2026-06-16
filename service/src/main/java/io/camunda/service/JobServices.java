@@ -52,6 +52,7 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
   private final int maxVariableNameLength;
 
   public JobServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final ActivateJobsHandler<T> activateJobsHandler,
@@ -59,6 +60,7 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     this(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         activateJobsHandler,
@@ -69,6 +71,7 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
   }
 
   public JobServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final ActivateJobsHandler<T> activateJobsHandler,
@@ -77,6 +80,7 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
       final int maxVariableNameLength) {
     super(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         executorProvider,

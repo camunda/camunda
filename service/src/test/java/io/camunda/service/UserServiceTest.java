@@ -36,6 +36,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 public class UserServiceTest {
 
+  private static final String PHYSICAL_TENANT_ID = "test-tenant";
   ArgumentCaptor<BrokerUserDeleteRequest> userDeleteRequestArgumentCaptor;
   private UserServices services;
   private UserSearchClient client;
@@ -56,6 +57,7 @@ public class UserServiceTest {
     brokerRequestAuthorizationConverter = mock(BrokerRequestAuthorizationConverter.class);
     services =
         new UserServices(
+            PHYSICAL_TENANT_ID,
             brokerClient,
             mock(SecurityContextProvider.class),
             client,
@@ -93,6 +95,8 @@ public class UserServiceTest {
     services.deleteUser(username, authentication);
 
     verify(brokerClient).sendRequest(userDeleteRequestArgumentCaptor.capture());
+    assertThat(userDeleteRequestArgumentCaptor.getValue().getPartitionGroup())
+        .isEqualTo(PHYSICAL_TENANT_ID);
     final var request = userDeleteRequestArgumentCaptor.getValue().getRequestWriter();
     assertThat(request.getUsername()).isEqualTo(username);
     assertThat(request.getUserKey()).isEqualTo(-1L);

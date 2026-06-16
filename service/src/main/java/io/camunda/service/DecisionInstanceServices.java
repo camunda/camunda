@@ -39,12 +39,18 @@ public final class DecisionInstanceServices
   private final DecisionInstanceSearchClient decisionInstanceSearchClient;
 
   public DecisionInstanceServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityHandler,
       final DecisionInstanceSearchClient decisionInstanceSearchClient,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
-    super(brokerClient, securityHandler, executorProvider, brokerRequestAuthorizationConverter);
+    super(
+        physicalTenantId,
+        brokerClient,
+        securityHandler,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
     this.decisionInstanceSearchClient = decisionInstanceSearchClient;
   }
 

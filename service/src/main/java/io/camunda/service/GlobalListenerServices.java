@@ -33,12 +33,14 @@ public final class GlobalListenerServices
   private final GlobalListenerSearchClient globalListenerSearchClient;
 
   public GlobalListenerServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final GlobalListenerSearchClient globalListenerSearchClient,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         executorProvider,

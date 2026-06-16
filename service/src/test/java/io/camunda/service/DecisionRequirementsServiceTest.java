@@ -31,6 +31,7 @@ import org.junit.jupiter.api.Test;
 
 public final class DecisionRequirementsServiceTest {
 
+  private static final String PHYSICAL_TENANT_ID = "test-tenant";
   private CamundaAuthentication authentication;
   private DecisionRequirementsServices services;
   private DecisionRequirementSearchClient client;
@@ -42,6 +43,7 @@ public final class DecisionRequirementsServiceTest {
     when(client.withSecurityContext(any())).thenReturn(client);
     services =
         new DecisionRequirementsServices(
+            PHYSICAL_TENANT_ID,
             mock(BrokerClient.class),
             mock(SecurityContextProvider.class),
             client,

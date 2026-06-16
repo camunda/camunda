@@ -35,12 +35,14 @@ public class MappingRuleServices
   private final MappingRuleSearchClient mappingRuleSearchClient;
 
   public MappingRuleServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final MappingRuleSearchClient mappingRuleSearchClient,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         executorProvider,

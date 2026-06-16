@@ -35,7 +35,7 @@ import io.camunda.zeebe.protocol.record.value.ResourceType;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-public final class ResourceServices extends ApiServices<ResourceServices> {
+public final class ResourceServices extends PhysicalTenantScopedApiServices<ResourceServices> {
 
   private final ProcessDefinitionSearchClient processDefinitionSearchClient;
   private final DecisionRequirementSearchClient decisionRequirementSearchClient;
@@ -43,6 +43,7 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
   private final boolean secondaryStorageEnabled;
 
   public ResourceServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final ApiServicesExecutorProvider executorProvider,
@@ -52,6 +53,7 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
       final DeployedResourceSearchClient deployedResourceSearchClient,
       final boolean secondaryStorageEnabled) {
     super(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         executorProvider,

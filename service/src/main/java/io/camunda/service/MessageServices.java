@@ -22,15 +22,17 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import org.jspecify.annotations.Nullable;
 
-public final class MessageServices extends ApiServices<MessageServices> {
+public final class MessageServices extends PhysicalTenantScopedApiServices<MessageServices> {
   private final int maxVariableNameLength;
 
   public MessageServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     this(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         executorProvider,
@@ -39,12 +41,14 @@ public final class MessageServices extends ApiServices<MessageServices> {
   }
 
   public MessageServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
       final int maxVariableNameLength) {
     super(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         executorProvider,

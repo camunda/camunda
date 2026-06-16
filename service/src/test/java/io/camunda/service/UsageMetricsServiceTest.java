@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
 
 public final class UsageMetricsServiceTest {
 
+  private static final String PHYSICAL_TENANT_ID = "test-tenant";
   private UsageMetricsServices services;
   private UsageMetricsSearchClient client;
   private CamundaAuthentication authentication;
@@ -39,6 +40,7 @@ public final class UsageMetricsServiceTest {
     authentication = mock(CamundaAuthentication.class);
     services =
         new UsageMetricsServices(
+            PHYSICAL_TENANT_ID,
             mock(BrokerClient.class),
             mock(SecurityContextProvider.class),
             client,

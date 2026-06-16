@@ -48,6 +48,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 public class TenantServiceTest {
 
+  private static final String PHYSICAL_TENANT_ID = "test-tenant";
   private TenantServices services;
   private TenantSearchClient client;
   private StubbedBrokerClient stubbedBrokerClient;
@@ -68,6 +69,7 @@ public class TenantServiceTest {
     brokerRequestAuthorizationConverter = mock(BrokerRequestAuthorizationConverter.class);
     services =
         new TenantServices(
+            PHYSICAL_TENANT_ID,
             stubbedBrokerClient,
             mock(SecurityContextProvider.class),
             client,

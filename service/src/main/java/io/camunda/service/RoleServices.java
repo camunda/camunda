@@ -38,12 +38,14 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
   private final RoleSearchClient roleSearchClient;
 
   public RoleServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final RoleSearchClient roleSearchClient,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         executorProvider,

@@ -84,6 +84,7 @@ import org.mockito.ArgumentCaptor;
 
 public final class ProcessInstanceServiceTest {
 
+  private static final String PHYSICAL_TENANT_ID = "test-tenant";
   private ProcessInstanceServices services;
   private ProcessInstanceSearchClient processInstanceSearchClient;
   private SequenceFlowSearchClient sequenceFlowSearchClient;
@@ -116,6 +117,7 @@ public final class ProcessInstanceServiceTest {
     brokerRequestAuthorizationConverter = mock(BrokerRequestAuthorizationConverter.class);
     services =
         new ProcessInstanceServices(
+            PHYSICAL_TENANT_ID,
             brokerClient,
             securityContextProvider,
             processInstanceSearchClient,
@@ -590,6 +592,7 @@ public final class ProcessInstanceServiceTest {
     services.deleteProcessInstance(processInstanceKey, null, authentication).join();
 
     // then
+    assertThat(captor.getValue().getPartitionGroup()).isEqualTo(PHYSICAL_TENANT_ID);
     final var brokerRequest = (HistoryDeletionRecord) captor.getValue().getRequestWriter();
     assertThat(brokerRequest.getResourceKey()).isEqualTo(processInstanceKey);
     assertThat(brokerRequest.getResourceType()).isEqualTo(HistoryDeletionType.PROCESS_INSTANCE);

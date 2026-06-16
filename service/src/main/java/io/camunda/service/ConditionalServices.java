@@ -17,14 +17,16 @@ import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalEvalua
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-public class ConditionalServices extends ApiServices<ConditionalServices> {
+public class ConditionalServices extends PhysicalTenantScopedApiServices<ConditionalServices> {
 
   public ConditionalServices(
+      final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
+        physicalTenantId,
         brokerClient,
         securityContextProvider,
         executorProvider,

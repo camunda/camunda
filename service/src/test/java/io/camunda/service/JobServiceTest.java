@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 
 public class JobServiceTest {
 
+  private static final String PHYSICAL_TENANT_ID = "test-tenant";
   private JobServices<SearchQueryResult<JobEntity>> services;
   private JobSearchClient client;
   private CamundaAuthentication authentication;
@@ -35,6 +36,7 @@ public class JobServiceTest {
     authentication = mock(CamundaAuthentication.class);
     services =
         new JobServices<>(
+            PHYSICAL_TENANT_ID,
             mock(BrokerClient.class),
             mock(SecurityContextProvider.class),
             null,

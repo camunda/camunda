@@ -43,6 +43,7 @@ import org.mockito.ArgumentCaptor;
 
 public class MappingRuleServicesTest {
 
+  private static final String PHYSICAL_TENANT_ID = "test-tenant";
   ArgumentCaptor<BrokerMappingRuleDeleteRequest> mappingRuleDeleteRequestArgumentCaptor;
   ArgumentCaptor<BrokerMappingRuleUpdateRequest> mappingRuleUpdateRequestArgumentCaptor;
   private MappingRuleServices services;
@@ -70,6 +71,7 @@ public class MappingRuleServicesTest {
     brokerRequestAuthorizationConverter = mock(BrokerRequestAuthorizationConverter.class);
     services =
         new MappingRuleServices(
+            PHYSICAL_TENANT_ID,
             stubbedBrokerClient,
             mock(SecurityContextProvider.class),
             client,
@@ -141,6 +143,7 @@ public class MappingRuleServicesTest {
     final BrokerClient mockBrokerClient = mock(BrokerClient.class);
     final MappingRuleServices testMappingRuleServices =
         new MappingRuleServices(
+            PHYSICAL_TENANT_ID,
             mockBrokerClient,
             mock(SecurityContextProvider.class),
             client,
@@ -157,6 +160,8 @@ public class MappingRuleServicesTest {
 
     // then
     verify(mockBrokerClient).sendRequest(mappingRuleDeleteRequestArgumentCaptor.capture());
+    assertThat(mappingRuleDeleteRequestArgumentCaptor.getValue().getPartitionGroup())
+        .isEqualTo(PHYSICAL_TENANT_ID);
     final var request = mappingRuleDeleteRequestArgumentCaptor.getValue();
     assertThat(request.getRequestWriter().getMappingRuleId()).isEqualTo("id");
   }
@@ -169,6 +174,7 @@ public class MappingRuleServicesTest {
     final BrokerClient mockBrokerClient = mock(BrokerClient.class);
     final MappingRuleServices testMappingRuleServices =
         new MappingRuleServices(
+            PHYSICAL_TENANT_ID,
             mockBrokerClient,
             mock(SecurityContextProvider.class),
             client,
@@ -192,6 +198,8 @@ public class MappingRuleServicesTest {
 
     // then
     verify(mockBrokerClient).sendRequest(mappingRuleUpdateRequestArgumentCaptor.capture());
+    assertThat(mappingRuleUpdateRequestArgumentCaptor.getValue().getPartitionGroup())
+        .isEqualTo(PHYSICAL_TENANT_ID);
     final var request = mappingRuleUpdateRequestArgumentCaptor.getValue();
     assertThat(request.getRequestWriter().getMappingRuleId())
         .isEqualTo(mappingRuleDTO.mappingRuleId());
