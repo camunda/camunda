@@ -37,6 +37,7 @@ final class AgentHistoryRecordTest {
     assertThat(record.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     assertThat(record.getProcessInstanceKey()).isEqualTo(-1L);
     assertThat(record.getRootProcessInstanceKey()).isEqualTo(-1L);
+    assertThat(record.getBpmnProcessId()).isEmpty();
     assertThat(record.getProcessDefinitionKey()).isEqualTo(-1L);
   }
 
@@ -222,6 +223,7 @@ final class AgentHistoryRecordTest {
     // given
     final AgentHistoryRecord original =
         new AgentHistoryRecord()
+            .setBpmnProcessId("my-process")
             .setTenantId("tenant-a")
             .setProcessInstanceKey(2251799813685260L)
             .setRootProcessInstanceKey(2251799813685262L)
@@ -233,6 +235,7 @@ final class AgentHistoryRecordTest {
 
     // then
     assertThat(copy.getTenantId()).isEqualTo("tenant-a");
+    assertThat(copy.getBpmnProcessId()).isEqualTo("my-process");
     assertThat(copy.getProcessInstanceKey()).isEqualTo(2251799813685260L);
     assertThat(copy.getRootProcessInstanceKey()).isEqualTo(2251799813685262L);
     assertThat(copy.getProcessDefinitionKey()).isEqualTo(2251799813685261L);
