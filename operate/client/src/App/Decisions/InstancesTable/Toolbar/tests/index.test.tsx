@@ -88,8 +88,14 @@ describe('<Toolbar />', () => {
       wrapper: Wrapper,
     });
 
-    expect(screen.getByRole('button', {name: 'Delete'})).toBeInTheDocument();
-    expect(screen.getByRole('button', {name: 'Discard'})).toBeInTheDocument();
+    const toolbar = screen.getByRole('group', {name: 'data table toolbar'});
+
+    expect(
+      within(toolbar).getByRole('button', {name: 'Delete'}),
+    ).toBeInTheDocument();
+    expect(
+      within(toolbar).getByRole('button', {name: 'Discard'}),
+    ).toBeInTheDocument();
     expect(screen.getByText('1 item selected')).toBeInTheDocument();
   });
 
@@ -100,7 +106,8 @@ describe('<Toolbar />', () => {
 
     const {user} = render(<Toolbar selectedCount={2} />, {wrapper: Wrapper});
 
-    await user.click(screen.getByRole('button', {name: 'Delete'}));
+    const toolbar = screen.getByRole('group', {name: 'data table toolbar'});
+    await user.click(within(toolbar).getByRole('button', {name: 'Delete'}));
 
     const modal = screen.getByRole('dialog');
     expect(
