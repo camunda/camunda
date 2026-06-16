@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.1">
 <title data-rh="true">Processes | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-54928/processes/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Processes | Camunda Platform"><meta data-rh="true" name="description" content="This page collects processes we follow in the camunda/camunda monorepo."><meta data-rh="true" property="og:description" content="This page collects processes we follow in the camunda/camunda monorepo."><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-54928/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-54928/processes/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-54928/processes/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-54928/processes/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Processes","item":"https://camunda.github.io/camunda/pr-preview/pr-54928/processes"}]}</script><link rel="stylesheet" href="/camunda/pr-preview/pr-54928/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-54928/assets/js/runtime~main.da5fa8ff.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-54928/assets/js/main.d7070ce4.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-54928/assets/js/runtime~main.1a307704.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-54928/assets/js/main.78660157.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -15,31 +15,32 @@
 <p>This page collects processes we follow in the <code>camunda/camunda</code> monorepo.</p>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="green-checks-on-main-and-stable-branches">Green Checks on <code>main</code> and <code>stable/*</code> Branches<a href="#green-checks-on-main-and-stable-branches" class="hash-link" aria-label="Direct link to green-checks-on-main-and-stable-branches" title="Direct link to green-checks-on-main-and-stable-branches" translate="no">​</a></h2>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="purpose">Purpose<a href="#purpose" class="hash-link" aria-label="Direct link to Purpose" title="Direct link to Purpose" translate="no">​</a></h3>
-<p>This process ensures that <code>main</code> and <code>stable/*</code> branches stay green continuously.</p>
+<p>This process ensures that <code>main</code> and <code>stable/*</code> base branches stay green continuously. Every build failure is unexpected and will be handled as an incident.</p>
 <p>We use this process because:</p>
 <ul>
-<li class="">These branches are our release and integration baseline, so red checks indicate reduced stability and release-readiness.</li>
+<li class="">These branches are our release and integration baseline, so red checks indicate reduced stability and threaten release-readiness.</li>
 <li class="">For base branches, we expect no failing checks after CI stabilization work; every red check matters.</li>
 <li class="">Some important scheduled workflows are not part of Unified CI, so Unified CI thresholds alone are not sufficient.</li>
 </ul>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="approach">Approach<a href="#approach" class="hash-link" aria-label="Direct link to Approach" title="Direct link to Approach" translate="no">​</a></h3>
-<p>Use this process to create a fast feedback loop for any failed check on base branches:</p>
+<p>We want a fast feedback loop for any failed check on base branches that leads to short-term fixes and mid-term improvement work being done to prevent reoccurance and increase reliability.</p>
+<p>High-level steps:</p>
 <ul>
-<li class="">Detect failures across <code>on: push</code> and <code>on: schedule</code> workflows.</li>
+<li class="">Detect GHA job failures across <code>on: push</code> and <code>on: schedule</code> workflows <code>main</code> and <code>stable/*</code>.</li>
 <li class="">Alert immediately via Grafana on any unsuccessful job.</li>
-<li class="">Create and route incidents to the right owners/medics.</li>
+<li class="">Create and route incidents to the right owners/medics based on <code>.codeowners</code>.</li>
 <li class="">Drive mitigation and resolution via the established incident process.</li>
 <li class="">Keep base branches green over time instead of reacting ad hoc.</li>
 </ul>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="implementation">Implementation<a href="#implementation" class="hash-link" aria-label="Direct link to Implementation" title="Direct link to Implementation" translate="no">​</a></h3>
 <ol>
-<li class=""><strong>Coverage enforcement:</strong> CI policy checks ensure relevant workflows/jobs submit CI Analytics data.</li>
-<li class=""><strong>Detection:</strong> CI Analytics data is queried for unsuccessful jobs on <code>main</code> and <code>stable/*</code> for push/schedule triggers.</li>
-<li class=""><strong>Alerting:</strong> Grafana raises <code>base-branch-unsuccessful-job</code> alerts for any detected red check.</li>
-<li class=""><strong>Incident propagation:</strong> Alerts are propagated into incident.io incidents (with alert grouping configured there).</li>
-<li class=""><strong>Ownership routing:</strong> Incidents are assigned to the responsible medic/owner based on ownership information.</li>
-<li class=""><strong>Response and resolution:</strong> Medics follow <a class="" href="/camunda/pr-preview/pr-54928/ci-runbooks/#base-branch-unsuccessful-job">runbooks</a> and the <a href="#ci-incident-management" class="">CI incident management process</a> to mitigate and fix root causes.</li>
-<li class=""><strong>Verification:</strong> Job trends and alert behavior are monitored until checks are consistently green again.</li>
+<li class=""><strong>Coverage enforcement:</strong> <a href="https://github.com/camunda/camunda/blob/main/.github/conftest-unified-ci-rules.rego" target="_blank" rel="noopener noreferrer" class="">CI policy checks</a> ensure that all relevant GHA workflows/jobs submit CI Analytics data.</li>
+<li class=""><strong>Detection:</strong> CI Analytics data is <a href="https://github.com/camunda/infra-core/blob/stage/camunda-int/kustomize/prod/monitoring/dashboard.int.camunda.com/config/alerts-monorepo-ci.yml" target="_blank" rel="noopener noreferrer" class="">queried regularly by Grafana</a> for unsuccessful jobs on <code>main</code> and <code>stable/*</code> for push/schedule triggers.</li>
+<li class=""><strong>Alerting:</strong> Grafana raises <code>base-branch-unsuccessful-job</code> <a href="https://github.com/camunda/infra-core/blob/stage/camunda-int/kustomize/prod/monitoring/dashboard.int.camunda.com/config/alerts-monorepo-ci.yml" target="_blank" rel="noopener noreferrer" class="">alerts</a> for any detected red check. Alerts are enriched with context about failed GHA job links, unsuccesful test cases and ownership information.</li>
+<li class=""><strong>Incident propagation:</strong> Alerts are propagated into incident.io which groups them by base branch and GHA workflow job name and raises <code>C8 Monoprepo CI</code> type incidents.</li>
+<li class=""><strong>Ownership routing:</strong> Incidents are assigned to the responsible medic/owner based on ownership information from <a href="https://github.com/camunda/camunda/blob/main/.codeowners" target="_blank" rel="noopener noreferrer" class="">.codeowners file</a>. If the attribution is incorrect, the assignee is responsible for updating the ownership information.</li>
+<li class=""><strong>Response and resolution:</strong> Medics can use incident.io MCP and follow <a class="" href="/camunda/pr-preview/pr-54928/ci-runbooks/#base-branch-unsuccessful-job">runbooks</a> and the <a href="#ci-incident-management" class="">CI incident management process</a> to mitigate the problem and fix root causes. Those measures include stopping the bleeding (TODO: for example by quarantining tests), preventing the problem from happening again and increasing reliability constantly.</li>
+<li class=""><strong>Verification:</strong> Job trends and alert behavior are monitored by medic via Grafana until checks are consistently green again.</li>
 </ol>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="operating-notes">Operating Notes<a href="#operating-notes" class="hash-link" aria-label="Direct link to Operating Notes" title="Direct link to Operating Notes" translate="no">​</a></h3>
 <ul>
