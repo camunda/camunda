@@ -60,6 +60,15 @@
             },
             "businessId": {
               "type": "keyword"
+            },
+            "elementId": {
+              "type": "keyword"
+            },
+            "rootProcessInstanceKey": {
+              "type": "long"
+            },
+            "elementType": {
+              "type": "keyword"
             }
           }
         }

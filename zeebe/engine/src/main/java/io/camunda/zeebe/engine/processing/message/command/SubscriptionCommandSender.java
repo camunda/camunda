@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageStartCorrelationKeyLockRel
 import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.MessageStartCorrelationKeyLockReleaseRecordValue.MessageStartLockReleaseHolderValue;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import org.agrona.DirectBuffer;
@@ -66,7 +67,10 @@ public class SubscriptionCommandSender {
       final DirectBuffer correlationKey,
       final boolean closeOnCorrelate,
       final String tenantId,
-      final DirectBuffer businessId) {
+      final DirectBuffer businessId,
+      final DirectBuffer elementId,
+      final long rootProcessInstanceKey,
+      final BpmnElementType elementType) {
     return handleFollowUpCommandBasedOnPartition(
         subscriptionPartitionId,
         ValueType.MESSAGE_SUBSCRIPTION,
@@ -81,7 +85,10 @@ public class SubscriptionCommandSender {
             .setCorrelationKey(correlationKey)
             .setInterrupting(closeOnCorrelate)
             .setTenantId(tenantId)
-            .setBusinessId(businessId));
+            .setBusinessId(businessId)
+            .setElementId(elementId)
+            .setRootProcessInstanceKey(rootProcessInstanceKey)
+            .setElementType(elementType));
   }
 
   /**
@@ -100,6 +107,9 @@ public class SubscriptionCommandSender {
    * @param businessId the business id captured from the subscribing process instance at open time;
    *     used as a post-routing local filter on the subscription partition. May be an empty buffer
    *     when the process instance has no business id.
+   * @param elementId the BPMN element id of the catch element that opened the subscription
+   * @param rootProcessInstanceKey the key of the root process instance in the hierarchy
+   * @param elementType the BPMN element type of the catch element that opened the subscription
    */
   public void sendDirectOpenMessageSubscription(
       final int subscriptionPartitionId,
@@ -111,7 +121,10 @@ public class SubscriptionCommandSender {
       final DirectBuffer correlationKey,
       final boolean closeOnCorrelate,
       final String tenantId,
-      final DirectBuffer businessId) {
+      final DirectBuffer businessId,
+      final DirectBuffer elementId,
+      final long rootProcessInstanceKey,
+      final BpmnElementType elementType) {
     interPartitionCommandSender.sendCommand(
         subscriptionPartitionId,
         ValueType.MESSAGE_SUBSCRIPTION,
@@ -126,7 +139,10 @@ public class SubscriptionCommandSender {
             .setCorrelationKey(correlationKey)
             .setInterrupting(closeOnCorrelate)
             .setTenantId(tenantId)
-            .setBusinessId(businessId));
+            .setBusinessId(businessId)
+            .setElementId(elementId)
+            .setRootProcessInstanceKey(rootProcessInstanceKey)
+            .setElementType(elementType));
   }
 
   public boolean openProcessMessageSubscription(
