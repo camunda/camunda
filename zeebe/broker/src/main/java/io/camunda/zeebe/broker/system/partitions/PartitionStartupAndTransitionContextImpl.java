@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.system.partitions;
 
 import io.atomix.cluster.BrokerMemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
+import io.atomix.primitive.partition.PartitionId;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.security.configuration.EngineSecurityConfig;
@@ -80,7 +81,7 @@ public class PartitionStartupAndTransitionContextImpl
   private final TypedRecordProcessorsFactory typedRecordProcessorsFactory;
   private final CommandApiService commandApiService;
   private final PersistedSnapshotStore persistedSnapshotStore;
-  private final Integer partitionId;
+  private final PartitionId partitionId;
   private final int maxFragmentSize;
   private final ExporterRepository exporterRepository;
   private final PartitionProcessingState partitionProcessingState;
@@ -159,7 +160,7 @@ public class PartitionStartupAndTransitionContextImpl
     this.persistedSnapshotStore = persistedSnapshotStore;
     this.partitionListeners = Collections.unmodifiableList(partitionListeners);
     this.partitionRaftListeners = Collections.unmodifiableList(partitionRaftListeners);
-    partitionId = raftPartition.id().id();
+    partitionId = raftPartition.id();
     this.actorSchedulingService = actorSchedulingService;
     maxFragmentSize = (int) brokerCfg.getNetwork().getMaxMessageSizeInBytes();
     this.exporterRepository = exporterRepository;
@@ -185,6 +186,11 @@ public class PartitionStartupAndTransitionContextImpl
 
   @Override
   public int getPartitionId() {
+    return partitionId.id();
+  }
+
+  @Override
+  public PartitionId partitionId() {
     return partitionId;
   }
 

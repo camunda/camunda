@@ -76,7 +76,7 @@ public final class BackupApiRequestHandlerStep implements PartitionTransitionSte
             checkpointState,
             checkpointMetadataState,
             backupRangeState,
-            context.getRaftPartition().id(),
+            context.partitionId(),
             isBackupEnabled);
     context.getActorSchedulingService().submitActor(requestHandler).onComplete(installed);
     installed.onComplete(

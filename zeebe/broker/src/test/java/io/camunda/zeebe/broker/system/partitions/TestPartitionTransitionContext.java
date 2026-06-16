@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.system.partitions;
 
 import io.atomix.cluster.BrokerMemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
+import io.atomix.primitive.partition.PartitionId;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.security.configuration.EngineSecurityConfig;
@@ -40,6 +41,7 @@ import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.logstreams.log.LogStream;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -103,6 +105,11 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   @Override
   public int getPartitionId() {
     return 1;
+  }
+
+  @Override
+  public PartitionId partitionId() {
+    return PartitionId.from(Protocol.DEFAULT_PARTITION_GROUP_NAME, getPartitionId());
   }
 
   @Override
