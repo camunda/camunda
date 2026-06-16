@@ -201,7 +201,7 @@ public class JobUpdateTest {
                 .limit(3))
         .extracting(Record::getIntent)
         .containsSubsequence(
-            JobIntent.PRIORITY_UPDATED, JobIntent.RETRIES_UPDATED, JobIntent.UPDATED);
+            JobIntent.RETRIES_UPDATED, JobIntent.PRIORITY_UPDATED, JobIntent.UPDATED);
 
     assertThat(
             RecordingExporter.jobRecords()
