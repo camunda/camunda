@@ -8,7 +8,6 @@
 package io.camunda.zeebe.engine.metrics;
 
 import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
-import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.Meter.Type;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
@@ -27,13 +26,6 @@ public enum AuthorizationMetricsDoc implements ExtendedMeterDocumentation {
       Duration.ofMillis(100),
       Duration.ofMillis(500),
     };
-
-    private static final KeyName[] KEY_NAMES =
-        new KeyName[] {
-          AuthorizationKeyNames.RESOURCE_TYPE,
-          AuthorizationKeyNames.PERMISSION_TYPE,
-          AuthorizationKeyNames.OUTCOME,
-        };
 
     @Override
     public String getName() {
@@ -59,54 +51,5 @@ public enum AuthorizationMetricsDoc implements ExtendedMeterDocumentation {
     public Duration[] getTimerSLOs() {
       return TIMER_SLOS;
     }
-
-    @Override
-    public KeyName[] getKeyNames() {
-      return KEY_NAMES;
-    }
   };
-
-  /** Tags used by authorization metrics. */
-  public enum AuthorizationKeyNames implements KeyName {
-
-    /** The resource type being authorized (e.g. PROCESS_DEFINITION, DECISION_DEFINITION). */
-    RESOURCE_TYPE {
-      @Override
-      public String asString() {
-        return "resourceType";
-      }
-    },
-
-    /** The permission type being checked (e.g. READ, CREATE, UPDATE, DELETE). */
-    PERMISSION_TYPE {
-      @Override
-      public String asString() {
-        return "permissionType";
-      }
-    },
-
-    /** The outcome of the authorization check. See {@link AuthorizationOutcome}. */
-    OUTCOME {
-      @Override
-      public String asString() {
-        return "outcome";
-      }
-    }
-  }
-
-  /** Possible outcomes of an authorization check recorded in metrics. */
-  public enum AuthorizationOutcome {
-    AUTHORIZED("authorized"),
-    DENIED("denied");
-
-    private final String label;
-
-    AuthorizationOutcome(final String label) {
-      this.label = label;
-    }
-
-    public String getLabel() {
-      return label;
-    }
-  }
 }
