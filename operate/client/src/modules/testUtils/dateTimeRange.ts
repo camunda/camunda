@@ -13,26 +13,6 @@ const pad = (value: string | number) => {
   return String(value).padStart(2, '0');
 };
 
-/**
- * Finds a day button within the flatpickr calendar grid by its day number.
- * Scoped to .flatpickr-days to avoid matching unrelated buttons.
- */
-const pickCalendarDay = (day: string): HTMLElement | undefined => {
-  const calendarGrid = document.querySelector('.flatpickr-days');
-  if (!calendarGrid) {
-    return undefined;
-  }
-
-  const dayButtons = Array.from(
-    calendarGrid.querySelectorAll<HTMLElement>('.flatpickr-day'),
-  );
-
-  return dayButtons.find(
-    (el) =>
-      el.textContent?.trim() === day && !el.classList.contains('prevMonthDay'),
-  );
-};
-
 const pickDateTimeRange = async ({
   user,
   screen,
@@ -54,16 +34,17 @@ const pickDateTimeRange = async ({
   const month = new Date(`${monthName} 01, ${year}`).getMonth() + 1;
 
   await user.click(screen.getByLabelText('From date'));
-
-  const fromDayButton = pickCalendarDay(fromDay);
-  expect(fromDayButton).toBeDefined();
-  await user.click(fromDayButton!);
-
+  await user.click(
+    screen.getByRole('button', {
+      name: new RegExp(`${monthName} ${fromDay}, ${year}`),
+    }),
+  );
   await user.click(screen.getByLabelText('To date'));
-
-  const toDayButton = pickCalendarDay(toDay);
-  expect(toDayButton).toBeDefined();
-  await user.click(toDayButton!);
+  await user.click(
+    screen.getByRole('button', {
+      name: new RegExp(`${monthName} ${toDay}, ${year}`),
+    }),
+  );
 
   if (fromTime !== undefined) {
     await user.clear(screen.getByTestId('fromTime'));
