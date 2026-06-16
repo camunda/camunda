@@ -175,7 +175,13 @@ public class ElasticsearchSearchClient
       final SearchIndexRequestTransformer<T> requestTransformer =
           getSearchIndexRequestTransformer();
       final var request = requestTransformer.apply(indexRequest);
-      final var rawIndexResponse = client.index(request);
+      final var rawIndexResponse =
+          client
+              ._transport()
+              .performRequest(
+                  request,
+                  AliasAwareIndexResponseDeserializer.ENDPOINT,
+                  client._transportOptions());
       final var indexResponseTransformer = getSearchWriteResponseTransformer();
       return indexResponseTransformer.apply(rawIndexResponse);
     } catch (final IOException | ElasticsearchException e) {
