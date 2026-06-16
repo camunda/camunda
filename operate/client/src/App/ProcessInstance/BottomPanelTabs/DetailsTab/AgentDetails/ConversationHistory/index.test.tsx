@@ -178,15 +178,16 @@ describe('<ConversationHistory />', () => {
   });
 
   it('should toggle the history sort order when the sort button is clicked', async () => {
-    let query;
-    mockSearchAgentInstanceHistory().withSuccess(searchResult([]));
-    mockSearchAgentInstanceHistory().withSuccess(searchResult([]));
+    let query: unknown;
     mockServer.use(
       http.post(
         endpoints.searchAgentInstanceHistory.getUrl({
           agentInstanceKey: AGENT_INSTANCE_KEY,
         }),
-        async ({request}) => void (query = await request.json()),
+        async ({request}) => {
+          query = await request.json();
+          return Response.json(searchResult([]));
+        },
       ),
     );
 
