@@ -75,6 +75,7 @@ const VariableEditor: React.FC<Props> = ({
   const {dirtyFields} = useFormState<FormValues>();
   const {t} = useTranslation();
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const virtualizer = useVirtualizer({
     count: totalVariables,
     getScrollElement: () => scrollContainerRef.current,

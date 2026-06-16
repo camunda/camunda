@@ -29,6 +29,7 @@ const AgentShineOverlay: React.FC<Props> = ({container, elementId}) => {
       `[data-element-id="${elementId}"] .djs-visual rect`,
     );
     if (hostElement === null) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSize(null);
       return;
     }

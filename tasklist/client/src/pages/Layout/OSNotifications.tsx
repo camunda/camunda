@@ -68,6 +68,7 @@ function useStateMachine(enable: boolean) {
       tracking.track({
         eventName: 'os-notification-opted-out',
       });
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setState('stopped');
       return;
     }

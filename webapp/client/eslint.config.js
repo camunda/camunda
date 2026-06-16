@@ -11,7 +11,7 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 import {defineConfig} from 'eslint/config';
 import licenseHeaderPlugin from 'eslint-plugin-license-header';
-import importPlugin from 'eslint-plugin-import';
+import importPlugin from 'eslint-plugin-import-x';
 import reactHooksPlugin from 'eslint-plugin-react-hooks';
 import reactRefreshPlugin from 'eslint-plugin-react-refresh';
 import tanstackPlugin from '@tanstack/eslint-plugin-query';
@@ -92,7 +92,7 @@ export default defineConfig([
 
 	{
 		files: [...ocFiles.browser, ...ocFiles.test],
-		plugins: {import: importPlugin},
+		plugins: {'import-x': importPlugin},
 		languageOptions: {
 			ecmaVersion: 2022,
 			sourceType: 'module',
@@ -109,8 +109,8 @@ export default defineConfig([
 			},
 		},
 		rules: {
-			'import/no-default-export': 'error',
-			'import/group-exports': 'error',
+			'import-x/no-default-export': 'error',
+			'import-x/group-exports': 'error',
 			'@typescript-eslint/no-unused-vars': [
 				'error',
 				{
@@ -125,7 +125,7 @@ export default defineConfig([
 			],
 		},
 		settings: {
-			'import/resolver': {
+			'import-x/resolver': {
 				node: {
 					extensions: ['.js', '.jsx', '.ts', '.tsx'],
 				},
@@ -136,7 +136,7 @@ export default defineConfig([
 	{
 		files: [`${ocPath}/src/shared/svg/**`],
 		rules: {
-			'import/no-default-export': 'off',
+			'import-x/no-default-export': 'off',
 		},
 	},
 

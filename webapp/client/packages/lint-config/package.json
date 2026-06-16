@@ -15,7 +15,7 @@
 		"@typescript-eslint/parser": ">=8",
 		"@vitest/eslint-plugin": ">=1.6",
 		"eslint": ">=9",
-		"eslint-plugin-import": ">=2",
+		"eslint-plugin-import-x": ">=4",
 		"eslint-plugin-license-header": ">=0.9",
 		"eslint-plugin-react-hooks": ">=5",
 		"eslint-plugin-react-refresh": ">=0.4",
@@ -29,7 +29,7 @@
 		"@vitest/eslint-plugin": {
 			"optional": true
 		},
-		"eslint-plugin-import": {
+		"eslint-plugin-import-x": {
 			"optional": true
 		},
 		"eslint-plugin-testing-library": {

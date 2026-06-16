@@ -38,15 +38,15 @@ import {OperationsLogStateIcon} from 'modules/components/OperationsLogStateIcon'
 import {
   formatBatchTitle,
   formatModalHeading,
-  getActorIcon,
+  hasActorIcon,
   isValidProcessInstanceKey,
   mapToCellDetailsData,
   mapToCellEntityKeyData,
 } from 'modules/utils/operationsLog';
 import {Paths} from 'modules/Routes';
-import {useMemo} from 'react';
 import AiAgentIcon from 'modules/components/Icon/ai-agent.svg?react';
 import {getClientConfig} from 'modules/utils/getClientConfig';
+import {ActorIcon} from 'modules/utils/operationsLog/ActorIcon';
 
 type Props = {
   isOpen: boolean;
@@ -60,7 +60,6 @@ type DetailsModalState = {
 };
 
 const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
-  const ActorIcon = useMemo(() => getActorIcon(auditLog), [auditLog]);
   const clientConfig = getClientConfig();
   const entityKeyData = mapToCellEntityKeyData(
     auditLog,
@@ -118,11 +117,11 @@ const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
               </IconText>
             </FirstColumn>
             <SecondColumn>
-              {!ActorIcon ? (
+              {!hasActorIcon(auditLog) ? (
                 auditLog.actorId
               ) : (
                 <IconText>
-                  <ActorIcon />
+                  <ActorIcon auditLog={auditLog} />
                   <CodeSnippet type="inline" wrapText>
                     {auditLog.actorId}
                   </CodeSnippet>

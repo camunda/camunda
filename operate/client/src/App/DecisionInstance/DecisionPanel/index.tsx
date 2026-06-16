@@ -24,6 +24,7 @@ const DecisionPanel: React.FC<DecisionPanelProps> = (props) => {
     error: decisionInstanceLoadError,
     isPending: isInstancePending,
   } = useDecisionInstance(props.decisionEvaluationInstanceKey);
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization
   const highlightableRules = useMemo(() => {
     if (!decisionInstance?.matchedRules) {
       return [];

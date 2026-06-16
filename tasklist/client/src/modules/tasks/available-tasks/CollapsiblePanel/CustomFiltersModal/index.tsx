@@ -39,6 +39,7 @@ function useCustomFilters(options: {isOpen: boolean; filterId?: string}) {
 
   useEffect(() => {
     if (isOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCustomFilters(getCustomFilterParams(filterId));
     }
   }, [isOpen, filterId]);
