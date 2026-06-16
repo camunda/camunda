@@ -18,6 +18,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.ProcessInstanceRetentionMode;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.tasks.archiver.ArchiveByIdTaskSupplier.IdWithRouting;
 import io.camunda.exporter.tasks.utils.TestExporterResourceProvider;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
@@ -229,6 +230,37 @@ final class OpenSearchArchiverRepositoryTest extends AbstractArchiverRepositoryT
     inOrder.verifyNoMoreInteractions();
   }
 
+  @Test
+  void shouldPropagateRoutingForEachBulkDeleteOperation() throws IOException {
+    // given
+    final var docs =
+        List.of(
+            new IdWithRouting("4", "routing-4"),
+            new IdWithRouting("5", "routing-5"),
+            new IdWithRouting("6", "routing-6"));
+    when(client.bulk(any(BulkRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(bulkResponse("4", "5", "6")));
+
+    // when
+    final var deleted =
+        ((OpenSearchArchiverRepository) repository).deleteDocumentsById("from-index", docs).join();
+
+    // then
+    assertThat(deleted).isEqualTo(3L);
+
+    final ArgumentCaptor<BulkRequest> captor = ArgumentCaptor.forClass(BulkRequest.class);
+    verify(client).bulk(captor.capture());
+
+    final var operations = captor.getValue().operations();
+    assertThat(operations).hasSize(3);
+    assertThat(operations.get(0).delete().id()).isEqualTo("4");
+    assertThat(operations.get(0).delete().routing()).isEqualTo("routing-4");
+    assertThat(operations.get(1).delete().id()).isEqualTo("5");
+    assertThat(operations.get(1).delete().routing()).isEqualTo("routing-5");
+    assertThat(operations.get(2).delete().id()).isEqualTo("6");
+    assertThat(operations.get(2).delete().routing()).isEqualTo("routing-6");
+  }
+
   private SearchResponse<Object> searchResponse(final String... ids) {
     final var hits =
         Arrays.stream(ids).map(id -> Hit.<Object>of(h -> h.id(id).index("from-index"))).toList();
@@ -253,7 +285,8 @@ final class OpenSearchArchiverRepositoryTest extends AbstractArchiverRepositoryT
                             h.id(id)
                                 .operationType(OperationType.Delete)
                                 .index("from-index")
-                                .status(200)))
+                                .status(200)
+                                .result("deleted")))
             .toList();
     return BulkResponse.of(b -> b.took(123L).errors(false).items(items));
   }

@@ -33,8 +33,8 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
   private final String destinationIdx;
   private final Function<List<SortFieldType>, CompletableFuture<ArchiveDocIdsBatch<SortFieldType>>>
       idsSupplier;
-  private final TriFunction<String, String, List<String>, CompletableFuture<Long>> reindexer;
-  private final BiFunction<String, List<String>, CompletableFuture<Long>> deleter;
+  private final TriFunction<String, String, List<IdWithRouting>, CompletableFuture<Long>> reindexer;
+  private final BiFunction<String, List<IdWithRouting>, CompletableFuture<Long>> deleter;
   private final Executor executor;
   private final CamundaExporterMetrics metrics;
   private final Logger logger;
@@ -53,8 +53,8 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
       final String destinationIdx,
       final Function<List<SortFieldType>, CompletableFuture<ArchiveDocIdsBatch<SortFieldType>>>
           idsSupplier,
-      final TriFunction<String, String, List<String>, CompletableFuture<Long>> reindexer,
-      final BiFunction<String, List<String>, CompletableFuture<Long>> deleter,
+      final TriFunction<String, String, List<IdWithRouting>, CompletableFuture<Long>> reindexer,
+      final BiFunction<String, List<IdWithRouting>, CompletableFuture<Long>> deleter,
       final Executor executor,
       final CamundaExporterMetrics metrics,
       final Logger logger) {
@@ -152,16 +152,18 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
 
   private CompletableFuture<Long> reindex(final ArchiveDocIdsBatch<SortFieldType> response) {
     return reindexer
-        .apply(sourceIdx, destinationIdx, response.ids())
+        .apply(sourceIdx, destinationIdx, response.documents())
         .thenApply(
-            reindexCount -> validateProcessedCount("reindex", reindexCount, response.ids().size()));
+            reindexCount ->
+                validateProcessedCount("reindex", reindexCount, response.documents().size()));
   }
 
   private CompletableFuture<Long> delete(final ArchiveDocIdsBatch<SortFieldType> response) {
     return deleter
-        .apply(sourceIdx, response.ids())
+        .apply(sourceIdx, response.documents())
         .thenApply(
-            deleteCount -> validateProcessedCount("delete", deleteCount, response.ids().size()));
+            deleteCount ->
+                validateProcessedCount("delete", deleteCount, response.documents().size()));
   }
 
   private long validateProcessedCount(
@@ -187,17 +189,24 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
     return false;
   }
 
-  public record ArchiveDocIdsBatch<T>(List<String> ids, List<T> searchAfter) {
+  public record ArchiveDocIdsBatch<T>(List<IdWithRouting> documents, List<T> searchAfter) {
     static <T> ArchiveDocIdsBatch<T> empty() {
       return new ArchiveDocIdsBatch<>(List.of(), List.of());
     }
 
-    static <T> ArchiveDocIdsBatch<T> from(final List<String> ids, final List<T> searchAfter) {
-      return new ArchiveDocIdsBatch<>(ids, searchAfter);
+    static <T> ArchiveDocIdsBatch<T> from(
+        final List<IdWithRouting> documents, final List<T> searchAfter) {
+      return new ArchiveDocIdsBatch<>(documents, searchAfter);
     }
 
     public boolean isEmpty() {
-      return ids.isEmpty();
+      return documents.isEmpty();
+    }
+  }
+
+  public record IdWithRouting(String id, String routing) {
+    public static IdWithRouting of(final String id) {
+      return new IdWithRouting(id, null);
     }
   }
 
