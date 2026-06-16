@@ -7,7 +7,11 @@
  */
 package io.camunda.authentication.pt;
 
+import static io.camunda.spring.utils.PhysicalTenantContext.DEFAULT_PHYSICAL_TENANT_ID;
+
 import io.camunda.security.api.context.CamundaSecurityScopeProvider;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
+import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
@@ -41,5 +45,42 @@ public class PhysicalTenantSecurityConfiguration {
   public static CamundaSecurityScopeProvider physicalTenantScopeProvider(
       final Environment environment) {
     return new PhysicalTenantScopeProvider(environment);
+  }
+
+  /**
+   * Unifies the unprefixed cluster ({@code /v2}) security chain with the {@code default} physical
+   * tenant, so the two surfaces for the default tenant are identical.
+   *
+   * <p>CSL builds the cluster chain from {@link
+   * CamundaSecurityLibraryProperties#getAuthentication()} (raw root {@code
+   * camunda.security.authentication.*}), while {@link PhysicalTenantScopeProvider} builds the
+   * {@code /physical-tenants/default} alias from {@link
+   * PhysicalTenantAuthConfigurations#forPhysicalTenant} (root + the {@code
+   * camunda.physical-tenants.default.*} overlay, narrowed to {@code providers.assigned}). When any
+   * physical tenant is configured, this {@link BeanPostProcessor} replaces the cluster
+   * authentication with the default tenant's resolved config <em>before</em> CSL builds its chains
+   * — so {@code /v2} and {@code /physical-tenants/default} carry the same providers, and {@code
+   * camunda.physical-tenants.default.security.authentication.providers.assigned} limits the cluster
+   * surface too. CSL stays physical-tenant-agnostic: this only mutates OC-owned config it already
+   * consumes.
+   *
+   * <p>Declared {@code static} for the same reason as {@link #physicalTenantScopeProvider} — a
+   * {@code BeanPostProcessor} must be instantiated before the beans it post-processes.
+   */
+  @Bean
+  public static BeanPostProcessor physicalTenantClusterAuthUnification(
+      final Environment environment) {
+    return new BeanPostProcessor() {
+      @Override
+      public Object postProcessAfterInitialization(final Object bean, final String beanName) {
+        if (bean instanceof final CamundaSecurityLibraryProperties props
+            && PhysicalTenantScopeProvider.hasConfiguredPhysicalTenants(environment)) {
+          props.setAuthentication(
+              PhysicalTenantAuthConfigurations.forPhysicalTenant(
+                  DEFAULT_PHYSICAL_TENANT_ID, environment));
+        }
+        return bean;
+      }
+    };
   }
 }

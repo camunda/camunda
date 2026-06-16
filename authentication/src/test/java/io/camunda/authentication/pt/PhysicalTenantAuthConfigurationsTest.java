@@ -20,9 +20,10 @@ import org.springframework.mock.env.MockEnvironment;
  *
  * <p>All tests bind config from a {@link MockEnvironment} — no Spring context is loaded.
  *
- * <p>Semantics under test: the returned config contains <em>all</em> cluster providers (root
- * providers ∪ PT overlay providers). Per-PT provider selection ({@code assigned}) has been dropped;
- * per-PT OVERLAY (field overrides and PT-only providers) is still supported.
+ * <p>Semantics under test: the returned config is the union of all cluster providers (root
+ * providers ∪ PT overlay providers), then — for a non-default tenant that declares one — narrowed
+ * to its {@code providers.assigned} selection (#54730). Per-PT OVERLAY (field overrides and PT-only
+ * providers) is applied before narrowing.
  */
 class PhysicalTenantAuthConfigurationsTest {
 
@@ -161,9 +162,9 @@ class PhysicalTenantAuthConfigurationsTest {
   }
 
   // -------------------------------------------------------------------------
-  // 3d. Faithful application-pt-poc.yaml shape: default slot "oidc" + named provider "tenanta"
-  //     whose name equals the PT id; the tenanta overlay overrides client/secret/audiences and
-  //     inherits issuer-uri. Guards the exact runtime config the smoke harness exercises.
+  // 3d. A representative cluster shape: default slot "oidc" + a named provider "tenanta" whose name
+  //     equals the PT id; the tenanta overlay overrides client/secret/audiences and inherits
+  //     issuer-uri.
   // -------------------------------------------------------------------------
 
   @Test
@@ -342,7 +343,7 @@ class PhysicalTenantAuthConfigurationsTest {
   }
 
   // -------------------------------------------------------------------------
-  // Real YAML environment (mirrors application-pt-poc.yaml) — guards against a
+  // Real YAML-loaded environment (not MockEnvironment) — guards against a
   // MockEnvironment-vs-real-Environment binding discrepancy in the overlay merge.
   // -------------------------------------------------------------------------
 
@@ -388,6 +389,199 @@ class PhysicalTenantAuthConfigurationsTest {
   }
 
   // -------------------------------------------------------------------------
+  // 7. providers.assigned narrows a non-default tenant to its selected providers (#54730)
+  // -------------------------------------------------------------------------
+
+  @Test
+  void shouldNarrowToAssignedNamedProviderAndDropDefaultSlotAndUnlistedProvider() {
+    // Cluster: a default slot + two named providers; tenanta is assigned ONLY the named "tenanta".
+    // Expectation: the inherited root default slot is dropped (content-less → ignored by CSL
+    // flatten), the unlisted "other" provider is removed, and only "tenanta" survives. This is the
+    // cross-issuer acceptance behaviour: a root/default token no longer matches tenanta's chain.
+    final var env =
+        env(
+            Map.of(
+                "camunda.security.authentication.method", "oidc",
+                "camunda.security.authentication.oidc.client-id", "root-client",
+                "camunda.security.authentication.oidc.issuer-uri", "http://idp/root",
+                "camunda.security.authentication.providers.oidc.tenanta.client-id",
+                    "client-tenanta",
+                "camunda.security.authentication.providers.oidc.tenanta.issuer-uri",
+                    "http://idp/tenanta",
+                "camunda.security.authentication.providers.oidc.other.client-id", "client-other",
+                "camunda.security.authentication.providers.oidc.other.issuer-uri",
+                    "http://idp/other",
+                "camunda.physical-tenants.tenanta.security.authentication.providers.assigned[0]",
+                    "tenanta"));
+
+    final AuthenticationConfiguration cfg =
+        PhysicalTenantAuthConfigurations.forPhysicalTenant("tenanta", env);
+
+    // default slot dropped: present-but-content-less (the api setter never stores null).
+    assertThat(cfg.getOidc()).isNotNull();
+    assertThat(cfg.getOidc().getClientId()).isNull();
+    assertThat(cfg.getOidc().getIssuerUri()).isNull();
+    // only the assigned named provider survives.
+    assertThat(cfg.getProviders().getOidc()).containsOnlyKeys("tenanta");
+    assertThat(cfg.getProviders().getOidc().get("tenanta").getClientId())
+        .isEqualTo("client-tenanta");
+  }
+
+  @Test
+  void shouldKeepDefaultSlotWhenReservedOidcIdIsAssigned() {
+    // assigned = [oidc, tenanta] → the reserved id "oidc" keeps the default slot alongside the
+    // named provider; the unlisted "other" provider is still dropped.
+    final var env =
+        env(
+            Map.of(
+                "camunda.security.authentication.method", "oidc",
+                "camunda.security.authentication.oidc.client-id", "root-client",
+                "camunda.security.authentication.oidc.issuer-uri", "http://idp/root",
+                "camunda.security.authentication.providers.oidc.tenanta.client-id",
+                    "client-tenanta",
+                "camunda.security.authentication.providers.oidc.tenanta.issuer-uri",
+                    "http://idp/tenanta",
+                "camunda.security.authentication.providers.oidc.other.client-id", "client-other",
+                "camunda.security.authentication.providers.oidc.other.issuer-uri",
+                    "http://idp/other",
+                "camunda.physical-tenants.tenanta.security.authentication.providers.assigned[0]",
+                    "oidc",
+                "camunda.physical-tenants.tenanta.security.authentication.providers.assigned[1]",
+                    "tenanta"));
+
+    final AuthenticationConfiguration cfg =
+        PhysicalTenantAuthConfigurations.forPhysicalTenant("tenanta", env);
+
+    assertThat(cfg.getOidc().getClientId()).isEqualTo("root-client"); // default slot kept
+    assertThat(cfg.getProviders().getOidc()).containsOnlyKeys("tenanta"); // "other" dropped
+  }
+
+  @Test
+  void shouldNarrowDefaultTenantWhenAssignedDeclared() {
+    // The default tenant is narrowed by its own assigned just like any other tenant. Its resolved
+    // config also drives the cluster /v2 chain (see PhysicalTenantSecurityConfiguration), so a
+    // default selection limits that surface too.
+    final var env =
+        env(
+            Map.of(
+                "camunda.security.authentication.method", "oidc",
+                "camunda.security.authentication.oidc.client-id", "root-client",
+                "camunda.security.authentication.oidc.issuer-uri", "http://idp/root",
+                "camunda.security.authentication.providers.oidc.a.client-id", "client-a",
+                "camunda.security.authentication.providers.oidc.a.issuer-uri", "http://idp/a",
+                "camunda.physical-tenants.default.security.authentication.providers.assigned[0]",
+                    "a"));
+
+    final AuthenticationConfiguration cfg =
+        PhysicalTenantAuthConfigurations.forPhysicalTenant("default", env);
+
+    // default slot dropped (oidc not assigned); only "a" kept
+    assertThat(cfg.getOidc().getClientId()).isNull();
+    assertThat(cfg.getProviders().getOidc()).containsOnlyKeys("a");
+  }
+
+  @Test
+  void shouldKeepFullSetForDefaultTenantWhenNoAssignedDeclared() {
+    // No assigned under default → full set (the common case; the alias and cluster surface keep all
+    // providers).
+    final var env =
+        env(
+            Map.of(
+                "camunda.security.authentication.method", "oidc",
+                "camunda.security.authentication.oidc.client-id", "root-client",
+                "camunda.security.authentication.oidc.issuer-uri", "http://idp/root",
+                "camunda.security.authentication.providers.oidc.a.client-id", "client-a",
+                "camunda.security.authentication.providers.oidc.a.issuer-uri", "http://idp/a"));
+
+    final AuthenticationConfiguration cfg =
+        PhysicalTenantAuthConfigurations.forPhysicalTenant("default", env);
+
+    assertThat(cfg.getOidc().getClientId()).isEqualTo("root-client"); // default slot kept
+    assertThat(cfg.getProviders().getOidc()).containsKey("a");
+  }
+
+  @Test
+  void shouldKeepFullUnionWhenNoAssignedDeclared() {
+    // A non-default tenant with no assigned list bound keeps the full union (selection is enforced
+    // by the configuration layer, not this merge).
+    final var env =
+        env(
+            Map.of(
+                "camunda.security.authentication.method", "oidc",
+                "camunda.security.authentication.oidc.client-id", "root-client",
+                "camunda.security.authentication.oidc.issuer-uri", "http://idp/root",
+                "camunda.security.authentication.providers.oidc.a.client-id", "client-a",
+                "camunda.security.authentication.providers.oidc.a.issuer-uri", "http://idp/a"));
+
+    final AuthenticationConfiguration cfg =
+        PhysicalTenantAuthConfigurations.forPhysicalTenant("tenanta", env);
+
+    assertThat(cfg.getOidc().getClientId()).isEqualTo("root-client");
+    assertThat(cfg.getProviders().getOidc()).containsKey("a");
+  }
+
+  @Test
+  void shouldIgnoreBlankAssignedEntryWhenNarrowing() {
+    // Defensive: a blank entry in assigned must not break narrowing (it matches no provider and is
+    // dropped). The configuration layer rejects blank entries at startup; this guards the merge in
+    // case it runs first (e.g. via the cluster-unification BeanPostProcessor).
+    final var env =
+        env(
+            Map.of(
+                "camunda.security.authentication.method", "oidc",
+                "camunda.security.authentication.providers.oidc.a.client-id", "client-a",
+                "camunda.security.authentication.providers.oidc.a.issuer-uri", "http://idp/a",
+                "camunda.security.authentication.providers.oidc.b.client-id", "client-b",
+                "camunda.security.authentication.providers.oidc.b.issuer-uri", "http://idp/b",
+                "camunda.physical-tenants.tenanta.security.authentication.providers.assigned[0]",
+                    "",
+                "camunda.physical-tenants.tenanta.security.authentication.providers.assigned[1]",
+                    "a"));
+
+    final AuthenticationConfiguration cfg =
+        PhysicalTenantAuthConfigurations.forPhysicalTenant("tenanta", env);
+
+    // blank ignored; only the real id "a" is kept, "b" dropped — and no exception thrown.
+    assertThat(cfg.getProviders().getOidc()).containsOnlyKeys("a");
+  }
+
+  @Test
+  void shouldKeepFullUnionWhenAssignedIsEmptyList() throws Exception {
+    // An explicitly empty `assigned: []` must be a no-op here (keep the full union), NOT strip
+    // every
+    // provider — the configuration layer rejects the empty list at startup; this guards the merge
+    // when it runs first (e.g. via the cluster-unification BeanPostProcessor).
+    final String yaml =
+        """
+        camunda:
+          security:
+            authentication:
+              method: oidc
+              oidc:
+                client-id: root-client
+                issuer-uri: http://idp/root
+              providers:
+                oidc:
+                  a:
+                    client-id: client-a
+                    issuer-uri: http://idp/a
+          physical-tenants:
+            tenanta:
+              security:
+                authentication:
+                  providers:
+                    assigned: []
+        """;
+
+    final AuthenticationConfiguration cfg =
+        PhysicalTenantAuthConfigurations.forPhysicalTenant("tenanta", yamlEnv(yaml));
+
+    // Nothing stripped: the default slot and the named provider both survive.
+    assertThat(cfg.getOidc().getClientId()).isEqualTo("root-client");
+    assertThat(cfg.getProviders().getOidc()).containsKey("a");
+  }
+
+  // -------------------------------------------------------------------------
   // Helpers
   // -------------------------------------------------------------------------
 
@@ -402,7 +596,7 @@ class PhysicalTenantAuthConfigurationsTest {
     final var loaded =
         new org.springframework.boot.env.YamlPropertySourceLoader()
             .load(
-                "pt-poc",
+                "test",
                 new org.springframework.core.io.ByteArrayResource(
                     yaml.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
     final var env = new org.springframework.core.env.StandardEnvironment();

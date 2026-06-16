@@ -38,15 +38,19 @@ import org.springframework.core.env.Environment;
  *       apiPaths} to build a per-tenant API {@link
  *       org.springframework.security.web.SecurityFilterChain}.
  *   <li>A merged {@link io.camunda.security.api.model.config.AuthenticationConfiguration}
- *       containing all cluster providers (root ∪ PT overlay), each merged with PT-side overrides;
- *       per-PT provider selection is deferred to #54730.
+ *       containing the cluster providers (root ∪ PT overlay) merged with PT-side overrides, then
+ *       narrowed to the tenant's {@code providers.assigned} selection (#54730) when it declares
+ *       one.
  * </ul>
  *
  * <p><b>Default alias:</b> when at least one physical tenant is configured, this provider also
  * emits a descriptor for the implicit {@code default} tenant at {@code /physical-tenants/default},
- * built from the root configuration. The default (root) tenant is therefore addressable both via
- * the unprefixed cluster paths ({@code /v2/...}) and via {@code /physical-tenants/default/v2/...}
- * as an alias. This mirrors {@code PhysicalTenantResolver}'s synthesis of a default entry.
+ * built from {@code forPhysicalTenant("default")} (root + any {@code physical-tenants.default}
+ * overlay, narrowed by its {@code assigned}). The default (root) tenant is therefore addressable
+ * both via the unprefixed cluster paths ({@code /v2/...}) and via {@code
+ * /physical-tenants/default/v2/...} as an alias — and {@code PhysicalTenantSecurityConfiguration}
+ * feeds that same resolved config to CSL's cluster chain, so the two surfaces are identical. This
+ * mirrors {@code PhysicalTenantResolver}'s synthesis of a default entry.
  *
  * <p><b>Empty-list behaviour:</b> if no {@code camunda.physical-tenants.*} entries are present in
  * the {@link Environment}, this provider returns an empty list (the default alias is <em>not</em>
@@ -81,8 +85,19 @@ public final class PhysicalTenantScopeProvider implements CamundaSecurityScopePr
     return descriptors;
   }
 
+  /**
+   * Whether any physical tenant is configured (any key under {@code
+   * camunda.physical-tenants.<id>.*} with a valid id). When {@code true}, PT-scoped chains and the
+   * {@code /physical-tenants/default} alias are active — and the cluster {@code /v2} chain must be
+   * unified with the default tenant's resolved config (see {@code
+   * PhysicalTenantSecurityConfiguration}).
+   */
+  public static boolean hasConfiguredPhysicalTenants(final Environment environment) {
+    return !discoverExplicitTenantIds(environment).isEmpty();
+  }
+
   private List<ScopedSecurityDescriptor> buildDescriptors() {
-    final Set<String> tenantIds = discoverExplicitTenantIds();
+    final Set<String> tenantIds = discoverExplicitTenantIds(environment);
     if (tenantIds.isEmpty()) {
       LOG.debug("No camunda.physical-tenants.* entries found; PT-scoped security chains disabled.");
       return List.of();
@@ -154,7 +169,7 @@ public final class PhysicalTenantScopeProvider implements CamundaSecurityScopePr
    * constraint enforced by {@code PhysicalTenantResolver} to keep yaml and env-var forms addressing
    * the same tenant.
    */
-  private Set<String> discoverExplicitTenantIds() {
+  private static Set<String> discoverExplicitTenantIds(final Environment environment) {
     final Set<String> tenants = new LinkedHashSet<>();
     for (final ConfigurationPropertySource source : ConfigurationPropertySources.get(environment)) {
       if (source instanceof final IterableConfigurationPropertySource iter) {
