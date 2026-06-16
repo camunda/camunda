@@ -56,9 +56,9 @@ jobs:
           if [[ "$run_all" == "true" ]] || echo "$changed" | grep -q 'load-tests/setup/stable-89/'; then
             matrix_entries+=('{"version":"stable-89","orchestration-tag":"8.9-SNAPSHOT"}')
           fi
-          # if [[ "$run_all" == "true" ]] || echo "$changed" | grep -q 'load-tests/setup/stable-88/'; then
-          #   matrix_entries+=('{"version":"stable-88","orchestration-tag":"8.8-SNAPSHOT"}')
-          # fi
+          if [[ "$run_all" == "true" ]] || echo "$changed" | grep -q 'load-tests/setup/stable-88/'; then
+            matrix_entries+=('{"version":"stable-88","orchestration-tag":"8.8-SNAPSHOT"}')
+          fi
           # if [[ "$run_all" == "true" ]] || echo "$changed" | grep -q 'load-tests/setup/stable-87/'; then
           #   matrix_entries+=('{"version":"stable-87","orchestration-tag":"8.7-SNAPSHOT"}')
           # fi

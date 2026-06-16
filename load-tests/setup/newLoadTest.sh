@@ -13,7 +13,7 @@ Options:
 All other options are forwarded to the target version's newLoadTest.sh.
 For version-specific help, run: ./newLoadTest.sh --target-version main -h
 
-Available versions: main, stable-89
+Available versions: main, stable-89, stable-88
 EOF
 }
 
