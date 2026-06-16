@@ -57,6 +57,7 @@ public class MockJobWorkerTest {
   @Mock private Consumer<AutoCloseable> clientCreationCallback;
   @Mock private CamundaClockClient clockClient;
   @Mock private JsonMapper jsonMapper;
+  @Mock private io.camunda.zeebe.client.api.JsonMapper zeebeJsonMapper;
   @Mock private CamundaClientBuilderFactory camundaClientBuilderFactory;
   @Mock private CamundaClientBuilder camundaClientBuilder;
 
@@ -83,6 +84,7 @@ public class MockJobWorkerTest {
             clockClient,
             DevAwaitBehavior::expectSuccess,
             jsonMapper,
+            zeebeJsonMapper,
             new ConditionalBehaviorEngine());
   }
 

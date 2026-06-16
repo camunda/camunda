@@ -47,7 +47,6 @@ import io.camunda.process.test.impl.extension.ConditionalBehaviorEngine;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
 import io.camunda.process.test.utils.DevAwaitBehavior;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -616,6 +615,7 @@ public class CompleteJobTest {
               clockClient,
               DevAwaitBehavior::expectSuccess,
               jsonMapper,
+              zeebeJsonMapper,
               new ConditionalBehaviorEngine());
 
       when(camundaClient
