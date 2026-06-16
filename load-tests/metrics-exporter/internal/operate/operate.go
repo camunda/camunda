@@ -49,7 +49,9 @@ func (c *Collector) Name() string { return "operate" }
 func (c *Collector) Collect(ctx context.Context) error {
 	const (
 		index = "operate-list-view-*"
-		// The query to match all interesting documents.
+		// joinRelation=processInstance selects only root-level process instances.
+		// Child instances (e.g. called sub-processes) have a different joinRelation value
+		// and are excluded so we count each started process exactly once.
 		query = `{"term": {"joinRelation": "processInstance"}}`
 	)
 

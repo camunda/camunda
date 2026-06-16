@@ -48,6 +48,9 @@ func (c *Collector) Name() string { return "optimize" }
 
 func (c *Collector) Collect(ctx context.Context) error {
 	const (
+		// Optimize stores process instances in per-process definition indices following the
+		// pattern "optimize-process-instance-<process definition name>".
+		// The wildcard covers all of them.
 		index = "optimize-process-instance-*"
 		// The query to match all interesting documents.
 		query = `{"match_all": {}}`
