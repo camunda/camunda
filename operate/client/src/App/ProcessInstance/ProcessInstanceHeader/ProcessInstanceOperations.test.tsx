@@ -288,7 +288,7 @@ describe('ProcessInstanceOperations', () => {
     );
 
     await user.click(screen.getByRole('button', {name: /Delete Instance/}));
-    await user.click(screen.getByRole('button', {name: 'danger Delete'}));
+    await user.click(screen.getByRole('button', {name: /^delete$/i}));
 
     expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
       kind: 'error',
@@ -310,7 +310,7 @@ describe('ProcessInstanceOperations', () => {
     );
 
     await user.click(screen.getByRole('button', {name: /Delete Instance/}));
-    await user.click(screen.getByRole('button', {name: 'danger Delete'}));
+    await user.click(screen.getByRole('button', {name: /^delete$/i}));
 
     expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
       kind: 'info',

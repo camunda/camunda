@@ -172,7 +172,7 @@ describe('Footer', () => {
 
     await user.click(screen.getByRole('button', {name: 'Exit migration'}));
 
-    await user.click(screen.getByRole('button', {name: 'danger Exit'}));
+    await user.click(screen.getByRole('button', {name: 'Exit'}));
     expect(processInstanceMigrationStore.isEnabled).toBe(false);
   });
 
