@@ -170,13 +170,12 @@ class CoverageReportCollectorBuilderTest {
 
     // then
     assertThat(report.getSuites())
-        .anySatisfy(
+        .singleElement()
+        .satisfies(
             suite -> {
-              if (suite.getId().equals(AggregatedReportTest.class.getName())) {
-                assertThat(suite.getRuns())
-                    .extracting(run -> run.getName())
-                    .containsExactly("run-1", "run-2");
-              }
+              assertThat(suite.getRuns())
+                  .extracting(run -> run.getName())
+                  .containsExactly("run-1", "run-2");
             });
     assertThat(report.getProcessCoverages()).hasSize(2);
     assertThat(report.getProcessModels())
@@ -190,38 +189,24 @@ class CoverageReportCollectorBuilderTest {
     final CoverageCollector coverageCollector = CoverageCollector.newBuilder().build();
 
     // when
+    coverageCollector.collectTestRunCoverage(
+        NestedCollectorFixture.SecondNestedSuiteTest.class,
+        "SecondNestedSuiteTest#run-2",
+        null,
+        createProcessCoverageTestData("process-b", "taskB"));
     final CoverageReport report =
         coverageCollector.collectTestRunCoverage(
-            NestedCollectorFixture.SecondNestedSuiteTest.class,
-            "SecondNestedSuiteTest#run-2",
+            NestedCollectorFixture.FirstNestedSuiteTest.class,
+            "FirstNestedSuiteTest#run-1",
             null,
-            createProcessCoverageTestData("process-b", "taskB"));
-    coverageCollector.collectTestRunCoverage(
-        NestedCollectorFixture.FirstNestedSuiteTest.class,
-        "FirstNestedSuiteTest#run-1",
-        null,
-        createProcessCoverageTestData("process-a", "taskA"));
+            createProcessCoverageTestData("process-a", "taskA"));
 
     // then
     assertThat(report.getSuites())
-        .anySatisfy(
+        .singleElement()
+        .satisfies(
             suite -> {
-              if (!suite.getId().equals(NestedCollectorFixture.class.getName())) {
-                return;
-              }
               assertThat(suite.getName()).isEqualTo("NestedCollectorFixture");
-              assertThat(suite.getRuns())
-                  .extracting(run -> run.getName())
-                  .containsExactly("SecondNestedSuiteTest#run-2");
-            });
-    final CoverageReport aggregatedReport =
-        coverageCollector.generateReport(NestedCollectorFixture.FirstNestedSuiteTest.class);
-    assertThat(aggregatedReport.getSuites())
-        .anySatisfy(
-            suite -> {
-              if (!suite.getId().equals(NestedCollectorFixture.class.getName())) {
-                return;
-              }
               assertThat(suite.getRuns())
                   .extracting(run -> run.getName())
                   .containsExactlyInAnyOrder(
