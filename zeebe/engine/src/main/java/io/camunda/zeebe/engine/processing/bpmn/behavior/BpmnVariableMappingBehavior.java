@@ -20,7 +20,6 @@ import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.instance.EventTrigger;
-import io.camunda.zeebe.msgpack.MsgPackUtil;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.util.Either;
@@ -134,24 +133,12 @@ public final class BpmnVariableMappingBehavior {
             variables);
       }
 
+      // apply the output mappings
       return expressionProcessor
           .evaluateVariableMappingExpression(
               outputMappingExpression.get(), elementInstanceKey, tenantId)
           .map(
-              localScopeVars -> {
-                // For multi-instance inner activities, scopeKey == elementInstanceKey.
-                // For activities directly inside an ad-hoc sub-process inner instance, the flow
-                // scope carries variables that were set local to that scope
-                // on activation (e.g. `toolCall`, `toolCallResult` for the AI Agent connector).
-                final DirectBuffer resultDoc;
-                if (isMultiInstanceActivity(elementInstanceKey)
-                    || isAdHocSubProcessInnerInstance(context)) {
-                  resultDoc = localScopeVars;
-                } else {
-                  final DirectBuffer parentScopeVars =
-                      variablesState.getVariablesAsDocument(scopeKey);
-                  resultDoc = MsgPackUtil.mergeMsgPackDocuments(parentScopeVars, localScopeVars);
-                }
+              result -> {
                 variableBehavior.mergeDocument(
                     scopeKey,
                     processDefinitionKey,
@@ -159,7 +146,7 @@ public final class BpmnVariableMappingBehavior {
                     rootProcessInstanceKey,
                     bpmnProcessId,
                     context.getTenantId(),
-                    resultDoc);
+                    result);
                 return null;
               });
 
@@ -196,24 +183,9 @@ public final class BpmnVariableMappingBehavior {
 
     // an inner multi-instance activity needs to read from/write to its own scope
     // to access the input and output element variables
-    return isMultiInstanceActivity(elementInstanceKey)
-        ? elementInstanceKey
-        : context.getFlowScopeKey();
-  }
-
-  private boolean isMultiInstanceActivity(final long elementInstanceKey) {
-    return elementInstanceState.getInstance(elementInstanceKey).getMultiInstanceLoopCounter() > 0;
-  }
-
-  private boolean isAdHocSubProcessInnerInstance(final BpmnElementContext context) {
-    final var flowScopeKey = context.getFlowScopeKey();
-    if (flowScopeKey < 0) {
-      return false;
-    }
-    final var flowScopeInstance = elementInstanceState.getInstance(flowScopeKey);
-    return flowScopeInstance != null
-        && BpmnElementType.AD_HOC_SUB_PROCESS_INNER_INSTANCE
-            == flowScopeInstance.getValue().getBpmnElementType();
+    final var isMultiInstanceActivity =
+        elementInstanceState.getInstance(elementInstanceKey).getMultiInstanceLoopCounter() > 0;
+    return isMultiInstanceActivity ? elementInstanceKey : context.getFlowScopeKey();
   }
 
   private boolean isConnectedToEventBasedGateway(final ExecutableFlowNode element) {
