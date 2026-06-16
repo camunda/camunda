@@ -198,8 +198,10 @@ class PhysicalTenantOverridablePropertiesGoldenTest {
 
   /**
    * All {@code camunda.*} property names declared in any {@code spring-configuration-metadata.json}
-   * on the classpath. Only this module declares {@code camunda.*} configuration metadata, so
-   * merging across resources is safe and avoids depending on classpath ordering.
+   * on the classpath. Two sources contribute: this module's generated metadata and the Camunda
+   * Security Library jar, which ships hand-authored {@code camunda.security.*} metadata. Merging is
+   * a union of names across all resources, so it is order-independent and safe regardless of
+   * classpath ordering.
    */
   private static Set<String> readMetadataPropertyNames() {
     final Set<String> names = new TreeSet<>();
