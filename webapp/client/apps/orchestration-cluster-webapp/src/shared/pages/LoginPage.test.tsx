@@ -31,16 +31,16 @@ describe('<Login />', () => {
 
 		await userEvent.click(screen.getByRole('button', {name: /login/i}));
 
-		await expect.element(screen.getByLabelText(/username/i)).toHaveAccessibleDescription(/username is required/i);
+		await expect.element(screen.getByLabelText(/username/i)).toHaveAccessibleErrorMessage(/username is required/i);
 		await expect.element(screen.getByLabelText(/username/i)).toBeInvalid();
-		await expect.element(screen.getByLabelText(/^password$/i)).toHaveAccessibleDescription(/password is required/i);
+		await expect.element(screen.getByLabelText(/^password$/i)).toHaveAccessibleErrorMessage(/password is required/i);
 		await expect.element(screen.getByLabelText(/^password$/i)).toBeInvalid();
 
 		await userEvent.fill(screen.getByLabelText(/username/i), 'demo');
 		await userEvent.click(screen.getByRole('button', {name: /login/i}));
 
 		await expect.element(screen.getByLabelText(/username/i)).toBeValid();
-		await expect.element(screen.getByLabelText(/^password$/i)).toHaveAccessibleDescription(/password is required/i);
+		await expect.element(screen.getByLabelText(/^password$/i)).toHaveAccessibleErrorMessage(/password is required/i);
 		await expect.element(screen.getByLabelText(/^password$/i)).toBeInvalid();
 
 		await userEvent.fill(screen.getByLabelText(/username/i), '');
@@ -48,7 +48,7 @@ describe('<Login />', () => {
 		await userEvent.click(screen.getByRole('button', {name: /login/i}));
 
 		await expect.element(screen.getByLabelText(/^password$/i)).toBeValid();
-		await expect.element(screen.getByLabelText(/username/i)).toHaveAccessibleDescription(/username is required/i);
+		await expect.element(screen.getByLabelText(/username/i)).toHaveAccessibleErrorMessage(/username is required/i);
 		await expect.element(screen.getByLabelText(/username/i)).toBeInvalid();
 	});
 });

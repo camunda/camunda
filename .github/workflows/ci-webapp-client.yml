@@ -11,7 +11,7 @@ on:
 env:
   GHA_BEST_PRACTICES_LINTER: enabled
   TEST_PRODUCT: Orchestration Cluster Webapp
-  TEST_OWNER: '@camunda/core-features'
+  TEST_OWNER: "@camunda/core-features"
 
 jobs:
   typecheck:
@@ -162,7 +162,7 @@ jobs:
     timeout-minutes: 10
     permissions: {} # GITHUB_TOKEN unused in this job
     container:
-      image: mcr.microsoft.com/playwright:v1.60.0
+      image: mcr.microsoft.com/playwright:v1.61.0
       options: --user 1001:1000
     defaults:
       run:
@@ -207,7 +207,7 @@ jobs:
     timeout-minutes: 15
     permissions: {} # GITHUB_TOKEN unused in this job
     container:
-      image: mcr.microsoft.com/playwright:v1.60.0
+      image: mcr.microsoft.com/playwright:v1.61.0
       options: --user 1001:1000
     defaults:
       run:
@@ -253,7 +253,7 @@ jobs:
     timeout-minutes: 10
     permissions: {} # GITHUB_TOKEN unused in this job
     container:
-      image: mcr.microsoft.com/playwright:v1.60.0
+      image: mcr.microsoft.com/playwright:v1.61.0
       options: --user 1001:1000
     defaults:
       run:
@@ -299,7 +299,7 @@ jobs:
     timeout-minutes: 15
     permissions: {} # GITHUB_TOKEN unused in this job
     container:
-      image: mcr.microsoft.com/playwright:v1.60.0
+      image: mcr.microsoft.com/playwright:v1.61.0
       options: --user 1001:1000
     defaults:
       run:
