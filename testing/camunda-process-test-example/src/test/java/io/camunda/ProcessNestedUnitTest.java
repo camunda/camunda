@@ -44,8 +44,10 @@ public class ProcessNestedUnitTest {
   }
 
   @Nested
-  @DisplayName("Happy path")
+  @DisplayName("Happy path tests")
   class HappyPathTests {
+
+    @DisplayName("The happy path")
     @Test
     void happyPath() {
       // given
@@ -89,6 +91,8 @@ public class ProcessNestedUnitTest {
 
   @Nested
   class ExceptionalTests {
+
+    @DisplayName("Request tracking code")
     @Test
     void requestTrackingCode() {
       // given
