@@ -9,6 +9,7 @@ package io.camunda.search.clients.transformers.aggregation.result;
 
 import static io.camunda.search.aggregation.DecisionDefinitionLatestVersionAggregation.AGGREGATION_NAME_BY_DECISION_ID;
 import static io.camunda.search.aggregation.DecisionDefinitionLatestVersionAggregation.AGGREGATION_NAME_LATEST_DEFINITION;
+import static io.camunda.search.aggregation.DecisionDefinitionLatestVersionAggregation.AGGREGATION_NAME_TOTAL_COUNT;
 
 import io.camunda.search.aggregation.result.DecisionDefinitionLatestVersionAggregationResult;
 import io.camunda.search.clients.core.AggregationResult;
@@ -23,7 +24,7 @@ public class DecisionDefinitionLatestVersionAggregationResultTransformer
   @Override
   public DecisionDefinitionLatestVersionAggregationResult apply(
       final Map<String, AggregationResult> aggregations) {
-    return new DecisionDefinitionLatestVersionAggregationResult(
+    final var items =
         aggregations.get(AGGREGATION_NAME_BY_DECISION_ID).aggregations().values().stream()
             .flatMap(
                 aggregationResult -> {
@@ -35,7 +36,10 @@ public class DecisionDefinitionLatestVersionAggregationResultTransformer
                       .map(DecisionDefinitionEntity.class::cast)
                       .map(new DecisionDefinitionEntityTransformer()::apply);
                 })
-            .toList(),
-        aggregations.get(AGGREGATION_NAME_BY_DECISION_ID).endCursor());
+            .toList();
+    final var totalItems =
+        Math.toIntExact(aggregations.get(AGGREGATION_NAME_TOTAL_COUNT).docCount());
+    final var endCursor = aggregations.get(AGGREGATION_NAME_BY_DECISION_ID).endCursor();
+    return new DecisionDefinitionLatestVersionAggregationResult(items, totalItems, endCursor);
   }
 }

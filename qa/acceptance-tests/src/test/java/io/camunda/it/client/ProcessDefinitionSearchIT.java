@@ -116,6 +116,27 @@ public class ProcessDefinitionSearchIT {
   }
 
   @Test
+  void shouldReturnCorrectTotalItemsWhenFilteredByIsLatestVersion() {
+    // given - multiple versions of processA_ID and processB_ID are deployed, so
+    // totalItems must reflect unique process IDs, not the page size
+    final var expectedTotalLatestVersions = (long) keepLatestProcessDefinitionVersions().size();
+
+    // when - request fewer items than the total unique count
+    final var result =
+        camundaClient
+            .newProcessDefinitionSearchRequest()
+            .filter(f -> f.isLatestVersion(true))
+            .page(p -> p.limit(1))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).hasSize(1);
+    assertThat(result.page().totalItems()).isEqualTo(expectedTotalLatestVersions);
+    assertThat(result.page().hasMoreTotalItems()).isFalse();
+  }
+
+  @Test
   void shouldPaginateWithSortingByProcessDefinitionKey() {
     // given
     final var resultAll =
