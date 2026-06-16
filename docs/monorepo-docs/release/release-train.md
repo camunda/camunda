@@ -235,7 +235,7 @@ The Monorepo release is a step within the C8 Release Train, not a separate proce
 
 As a rule of thumb:
 
-* If the issue is about producing or validating Monorepo artifacts → use [#release-monorepo](./release-monorepo.md).
+* If the issue is about producing or validating Monorepo artifacts → use [Monorepo Release](./release-monorepo.md).
 * If the issue is about train coordination, generations, upgrade paths, channels, release-train variables, or support-notification timing → use this page.
 
 ### 2. What should I do if a flawed generation was already created in dev/int?
