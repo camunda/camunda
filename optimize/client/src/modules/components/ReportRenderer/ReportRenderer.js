@@ -53,7 +53,7 @@ function ReportRenderer(props) {
     return (
       <ErrorBoundary>
         <div className="ReportRenderer">
-          <View {...props} badge={props.badge} />
+          <View {...props} />
           {report.data.configuration.showInstanceCount && (
             <div className="additionalInfo">
               {t('report.totalCount.instance', {

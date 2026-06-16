@@ -221,16 +221,16 @@ it('should fall back to measure property formatter when valueFormat is not set',
   expect(node.find('.data')).toIncludeText('42');
 });
 
-describe('badge prop', () => {
-  const badge = <span className="testBadge">delta</span>;
+describe('overlay prop', () => {
+  const overlay = <span className="testBadge">delta</span>;
 
-  it('should render badge inside the first .data element', () => {
-    const node = shallow(<Number report={report} badge={badge} />);
+  it('should render overlay inside the first .data element', () => {
+    const node = shallow(<Number report={report} overlay={overlay} />);
 
     expect(node.find('.data').first().find('.testBadge')).toExist();
   });
 
-  it('should not render badge in subsequent .data elements for multi-measure reports', () => {
+  it('should not render overlay in subsequent .data elements for multi-measure reports', () => {
     const multiMeasureReport = {
       ...report,
       data: {
@@ -244,13 +244,13 @@ describe('badge prop', () => {
         ],
       },
     };
-    const node = shallow(<Number report={multiMeasureReport} badge={badge} />);
+    const node = shallow(<Number report={multiMeasureReport} overlay={overlay} />);
 
     expect(node.find('.data').at(0).find('.testBadge')).toExist();
     expect(node.find('.data').at(1).find('.testBadge')).not.toExist();
   });
 
-  it('should render nothing in .data when badge is not provided', () => {
+  it('should render nothing in .data when overlay is not provided', () => {
     const node = shallow(<Number report={report} />);
 
     expect(node.find('.data').first().find('.testBadge')).not.toExist();
