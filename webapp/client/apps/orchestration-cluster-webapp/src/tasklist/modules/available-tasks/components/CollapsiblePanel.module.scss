@@ -56,7 +56,7 @@
 	box-sizing: border-box;
 
 	h2 {
-		@include type.type-style('heading-02');
+		@include type.type-style('heading-01');
 		color: var(--cds-text-primary);
 	}
 }
@@ -82,7 +82,7 @@
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
-	cursor: default;
+	text-decoration: none;
 
 	&.active:not(:focus) {
 		border-left: layout.to-rem(4px) solid var(--cds-border-interactive);

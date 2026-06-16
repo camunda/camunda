@@ -21,21 +21,39 @@ const SORTING_OPTIONS_ORDER = [
 	'priority',
 ] as const satisfies TasklistIndexSearch['sortBy'][];
 
+const COMPLETED_SORTING_OPTIONS_ORDER = [
+	'creation',
+	'due',
+	'follow-up',
+	'priority',
+	'completion',
+] as const satisfies TasklistIndexSearch['sortBy'][];
+
 const SORTING_OPTION_LABEL_KEYS = {
 	creation: 'tasklist.taskFiltersSortCreationDate',
 	due: 'tasklist.taskFiltersSortDueDate',
 	'follow-up': 'tasklist.taskFiltersSortFollowUpDate',
+	completion: 'tasklist.taskFiltersSortCompletionDate',
 	priority: 'tasklist.taskFiltersSortPriority',
 } as const;
 
+const FILTER_HEADER_LABEL_KEYS: Record<TasklistIndexSearch['filter'], string> = {
+	'all-open': 'tasklist.taskFiltersAllOpenTasks',
+	'assigned-to-me': 'tasklist.taskFiltersAssignedToMe',
+	unassigned: 'tasklist.taskFiltersUnassigned',
+	completed: 'tasklist.taskFiltersCompleted',
+};
+
 const Filters: React.FC = () => {
 	const {t} = useTranslation();
-	const {sortBy} = useSearch({from: '/_auth/tasklist/_tasks'});
+	const {sortBy, filter} = useSearch({from: '/_auth/tasklist/_tasks'});
 	const navigate = useNavigate();
+
+	const sortOptionsOrder = filter === 'completed' ? COMPLETED_SORTING_OPTIONS_ORDER : SORTING_OPTIONS_ORDER;
 
 	return (
 		<section className={styles.panelHeader} aria-label={t('tasklist.taskFiltersHeaderAria')}>
-			<h1 className={styles.header}>{t('tasklist.taskFiltersAllOpenTasks')}</h1>
+			<h1 className={styles.header}>{t(FILTER_HEADER_LABEL_KEYS[filter])}</h1>
 			<OverflowMenu
 				aria-label={t('tasklist.taskFiltersSortButton')}
 				iconDescription={t('tasklist.taskFiltersSortButton')}
@@ -44,7 +62,7 @@ const Filters: React.FC = () => {
 				align="bottom"
 				menuOptionsClass={styles.overflowMenu}
 			>
-				{SORTING_OPTIONS_ORDER.map((id) => (
+				{sortOptionsOrder.map((id) => (
 					<OverflowMenuItem
 						key={id}
 						aria-selected={sortBy === id}
@@ -58,7 +76,7 @@ const Filters: React.FC = () => {
 							navigate({to: '.', search: (prev) => ({...prev, sortBy: id})});
 							tracking.track({
 								eventName: 'tasklist:tasks-filtered',
-								filter: 'all-open',
+								filter,
 								sorting: id,
 								customFilters: [],
 								customFilterVariableCount: 0,
