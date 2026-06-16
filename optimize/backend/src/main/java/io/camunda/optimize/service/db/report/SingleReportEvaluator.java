@@ -77,14 +77,25 @@ public class SingleReportEvaluator {
     if (executionPlan.isRawDataReport()) {
       addDefaultMissingPaginationValues(reportEvaluationContext);
     } else if (supportsGroupedPagination(reportEvaluationContext)) {
-      // A grouped top-N request only carries a limit. Normalise it to a complete first page by
-      // defaulting the offset to 0; this is the natural first-page value and also keeps the
-      // resulting PaginationScrollableDto valid so the "top N of total" count is serialized back
-      // to the client. No limit is injected, leaving every other agentic tile untouched.
+      // A grouped top-N request only carries a limit: the group-by interpreters apply size=limit
+      // but ignore offset, so paging into the results is not supported. Reject a non-zero offset
+      // rather than silently returning a first page that contradicts the request, and default a
+      // missing offset to 0. This keeps the resulting PaginationScrollableDto valid so the
+      // "top N of total" count is serialized back to the client, and injects no limit, leaving
+      // every other agentic tile untouched.
       reportEvaluationContext
           .getPagination()
-          .filter(pagination -> pagination.getLimit() != null && pagination.getOffset() == null)
-          .ifPresent(pagination -> pagination.setOffset(PAGINATION_DEFAULT_OFFSET));
+          .filter(pagination -> pagination.getLimit() != null)
+          .ifPresent(
+              pagination -> {
+                if (pagination.getOffset() != null
+                    && pagination.getOffset() != PAGINATION_DEFAULT_OFFSET) {
+                  throw new OptimizeValidationException(
+                      "A grouped top-N report only supports a limit; a non-zero pagination offset "
+                          + "is not supported");
+                }
+                pagination.setOffset(PAGINATION_DEFAULT_OFFSET);
+              });
     } else {
       reportEvaluationContext
           .getPagination()

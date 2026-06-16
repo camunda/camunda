@@ -17,6 +17,7 @@ import static io.camunda.optimize.service.dashboard.AgenticControlDashboardServi
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.TOKEN_CONSUMERS_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.TOKEN_TREND_REPORT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.within;
 
 import io.camunda.optimize.AbstractBrokerlessZeebeCCSMIT;
@@ -41,12 +42,14 @@ import io.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResu
 import io.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
 import io.camunda.optimize.service.db.report.result.MapCommandResult;
 import io.camunda.optimize.service.db.report.result.NumberCommandResult;
+import io.camunda.optimize.service.exceptions.evaluation.ReportEvaluationException;
 import io.camunda.optimize.service.report.ReportEvaluationService;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
+import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -810,6 +813,23 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
     assertThat(commandResult.getPagination().getTotal()).isEqualTo(3L);
     // and the pagination is valid, so it survives REST mapping and the total reaches the frontend
     assertThat(commandResult.getPagination().isValid()).isTrue();
+  }
+
+  @Test
+  void shouldRejectNonZeroOffsetForGroupedTopNReport() {
+    // given a top-consumers report (grouped top-N supports a limit but not paging into results)
+    persistProcessInstances(List.of(agenticInstance("proc-a", 300L, 0L).build()));
+
+    // when evaluating it with a non-zero pagination offset
+    final ThrowingCallable evaluation =
+        () ->
+            evaluationService.evaluateSavedReportWithAdditionalFilters(
+                USER_ID, UTC, TOKEN_CONSUMERS_REPORT_ID, noExtraFilters(), new PaginationDto(2, 1));
+
+    // then the request is rejected rather than silently returning a first page
+    assertThatThrownBy(evaluation)
+        .isInstanceOf(ReportEvaluationException.class)
+        .hasMessageContaining("non-zero pagination offset");
   }
 
   // ---------------------------------------------------------------------------
