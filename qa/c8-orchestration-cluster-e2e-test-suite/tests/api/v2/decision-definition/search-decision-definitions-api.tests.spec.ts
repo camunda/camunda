@@ -719,7 +719,7 @@ test.describe.parallel('Search Decision Definitions API Tests', () => {
             data: {
               filter: {
                 isLatestVersion: true,
-                decisionDefinitionId: {$like: `dd-isLatest-${suffix}-*`},
+                decisionRequirementsName: `drs-${suffix}`,
               },
               page: {limit: 5},
             },
@@ -742,7 +742,7 @@ test.describe.parallel('Search Decision Definitions API Tests', () => {
           '/decision-definitions/search',
           {
             isLatestVersion: true,
-            decisionDefinitionId: {$like: `dd-isLatest-${suffix}-*`},
+            decisionRequirementsName: `drs-${suffix}`,
           },
           5,
         );

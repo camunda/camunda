@@ -51,9 +51,15 @@ export async function seedUniqueProcessDefinitions(
 
 /**
  * Deploys N unique decision definitions with IDs `dd-isLatest-${suffix}-0` …
- * `dd-isLatest-${suffix}-${count-1}`.  The first `redeployForV2Count` are
- * redeployed with a name change so that Zeebe registers them as version 2.
- * Returns the array of seeded decision definition IDs.
+ * `dd-isLatest-${suffix}-${count-1}`.  All deployments share the same DRG name
+ * `drs-${suffix}`, which lets tests scope queries via `decisionRequirementsName`
+ * (the v2 search endpoint does not support advanced operators on
+ * `decisionDefinitionId`, so a name-prefix `$like` is not available).
+ * Each deployment uses a unique DRG id so Zeebe creates a separate DRG per
+ * decision rather than versioning a shared one.
+ *
+ * The first `redeployForV2Count` decisions are redeployed with a name change so
+ * Zeebe registers them as version 2.  Returns the seeded decision IDs.
  */
 export async function seedUniqueDecisionDefinitions(
   suffix: string,
@@ -61,18 +67,26 @@ export async function seedUniqueDecisionDefinitions(
   redeployForV2Count: number,
 ): Promise<string[]> {
   const ids: string[] = [];
+  const drgName = `drs-${suffix}`;
   for (let i = 0; i < count; i++) {
     const did = `dd-isLatest-${suffix}-${i}`;
+    const drgId = `def-${suffix}-${i}`;
     ids.push(did);
     await deployWithSubstitutions('./resources/simpleDecisionTable1.dmn', {
+      Definitions_1lja2g1: drgId,
+      'name="DRD"': `name="${drgName}"`,
       Decision_f6ej9i5: did,
       SingleTableDecision: did,
     });
   }
   for (let i = 0; i < redeployForV2Count; i++) {
     const did = ids[i]!;
-    // Same id, different name → Zeebe creates version 2 of the decision.
+    const drgId = `def-${suffix}-${i}`;
+    // Same DRG id and decision id, different decision name → Zeebe creates v2
+    // of the DRG and v2 of the decision under the stable decision id.
     await deployWithSubstitutions('./resources/simpleDecisionTable1.dmn', {
+      Definitions_1lja2g1: drgId,
+      'name="DRD"': `name="${drgName}"`,
       Decision_f6ej9i5: did,
       SingleTableDecision: `${did}-v2`,
     });
