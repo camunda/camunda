@@ -33,6 +33,7 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
       new LongProperty("processDefinitionKey", -1L);
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId", "");
   private final LongProperty jobKeyProp = new LongProperty("jobKey", -1L);
   private final StringProperty jobLeaseProp = new StringProperty("jobLease", "");
   private final IntegerProperty iterationProp = new IntegerProperty("iteration", 0);
@@ -47,7 +48,7 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
       new ObjectProperty<>("metrics", new AgentHistoryMetrics());
 
   public AgentHistoryRecord() {
-    super(15);
+    super(16);
     declareProperty(agentHistoryKeyProp)
         .declareProperty(agentInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
@@ -55,6 +56,7 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
         .declareProperty(rootProcessInstanceKeyProp)
         .declareProperty(processDefinitionKeyProp)
         .declareProperty(tenantIdProp)
+        .declareProperty(bpmnProcessIdProp)
         .declareProperty(jobKeyProp)
         .declareProperty(jobLeaseProp)
         .declareProperty(iterationProp)
@@ -132,6 +134,16 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
 
   public AgentHistoryRecord setTenantId(final String tenantId) {
     tenantIdProp.setValue(tenantId);
+    return this;
+  }
+
+  @Override
+  public String getBpmnProcessId() {
+    return BufferUtil.bufferAsString(bpmnProcessIdProp.getValue());
+  }
+
+  public AgentHistoryRecord setBpmnProcessId(final String bpmnProcessId) {
+    bpmnProcessIdProp.setValue(bpmnProcessId);
     return this;
   }
 

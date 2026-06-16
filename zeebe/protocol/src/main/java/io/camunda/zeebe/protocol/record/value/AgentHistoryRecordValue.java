@@ -55,6 +55,9 @@ public interface AgentHistoryRecordValue extends RecordValue, TenantOwned, Proce
   @Override
   String getTenantId();
 
+  /** Returns the BPMN process id of the process definition this history entry belongs to. */
+  String getBpmnProcessId();
+
   /** Returns the key of the job that triggered the agent for this entry. */
   long getJobKey();
 
