@@ -23,6 +23,16 @@ public final class SearchQueryBuilders {
     return fn.apply(agentInstanceSearchQuery()).build();
   }
 
+  public static AgentInstanceHistoryQuery.Builder agentInstanceHistorySearchQuery() {
+    return new AgentInstanceHistoryQuery.Builder();
+  }
+
+  public static AgentInstanceHistoryQuery agentInstanceHistorySearchQuery(
+      final Function<AgentInstanceHistoryQuery.Builder, ObjectBuilder<AgentInstanceHistoryQuery>>
+          fn) {
+    return fn.apply(agentInstanceHistorySearchQuery()).build();
+  }
+
   public static UsageMetricsQuery.Builder usageMetricsSearchQuery() {
     return new UsageMetricsQuery.Builder();
   }

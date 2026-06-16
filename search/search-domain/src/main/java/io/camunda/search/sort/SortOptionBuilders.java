@@ -23,6 +23,16 @@ public final class SortOptionBuilders {
     return fn.apply(agentInstance()).build();
   }
 
+  public static AgentInstanceHistorySort.Builder agentInstanceHistory() {
+    return new AgentInstanceHistorySort.Builder();
+  }
+
+  public static AgentInstanceHistorySort agentInstanceHistory(
+      final Function<AgentInstanceHistorySort.Builder, ObjectBuilder<AgentInstanceHistorySort>>
+          fn) {
+    return fn.apply(agentInstanceHistory()).build();
+  }
+
   public static UsageMetricsSort.Builder usageMetrics() {
     return new UsageMetricsSort.Builder();
   }
