@@ -23,8 +23,7 @@ class SequenceFlowTransformerTest {
 
   @ParameterizedTest
   @ValueSource(strings = {"sourceRef", "targetRef"})
-  void shouldFailFastOnUnresolvedSequenceFlowReferences(
-      final String missingReferenceAttribute) {
+  void shouldFailFastOnUnresolvedSequenceFlowReferences(final String missingReferenceAttribute) {
     // given
     final BpmnModelInstance modelInstance = createModelWithDanglingSequenceFlow();
     final SequenceFlow sequenceFlow =
