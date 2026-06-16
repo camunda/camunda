@@ -13,6 +13,7 @@ import io.camunda.optimize.service.db.os.report.interpreter.groupby.process.Proc
 import io.camunda.optimize.service.db.os.report.interpreter.view.process.ProcessViewInterpreterFacadeOS;
 import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import io.camunda.optimize.service.db.report.interpreter.plan.process.GenericProcessExecutionPlanInterpreter;
+import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
@@ -31,18 +32,21 @@ public class GenericProcessExecutionPlanInterpreterOS
   private final ProcessQueryFilterEnhancerOS queryFilterEnhancer;
   private final ProcessGroupByInterpreterFacadeOS groupByInterpreter;
   private final ProcessViewInterpreterFacadeOS viewInterpreter;
+  private final ConfigurationService configurationService;
 
   public GenericProcessExecutionPlanInterpreterOS(
       final ProcessDefinitionReader processDefinitionReader,
       final OptimizeOpenSearchClient osClient,
       final ProcessQueryFilterEnhancerOS queryFilterEnhancer,
       final ProcessGroupByInterpreterFacadeOS groupByInterpreter,
-      final ProcessViewInterpreterFacadeOS viewInterpreter) {
+      final ProcessViewInterpreterFacadeOS viewInterpreter,
+      final ConfigurationService configurationService) {
     this.processDefinitionReader = processDefinitionReader;
     this.osClient = osClient;
     this.queryFilterEnhancer = queryFilterEnhancer;
     this.groupByInterpreter = groupByInterpreter;
     this.viewInterpreter = viewInterpreter;
+    this.configurationService = configurationService;
   }
 
   public ProcessDefinitionReader getProcessDefinitionReader() {
@@ -63,5 +67,9 @@ public class GenericProcessExecutionPlanInterpreterOS
 
   public ProcessViewInterpreterFacadeOS getViewInterpreter() {
     return this.viewInterpreter;
+  }
+
+  public ConfigurationService getConfigurationService() {
+    return this.configurationService;
   }
 }

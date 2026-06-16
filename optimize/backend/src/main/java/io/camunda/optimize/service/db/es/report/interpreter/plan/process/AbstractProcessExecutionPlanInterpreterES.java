@@ -9,20 +9,21 @@ package io.camunda.optimize.service.db.es.report.interpreter.plan.process;
 
 import static io.camunda.optimize.dto.optimize.ReportConstants.APPLIED_TO_ALL_DEFINITIONS;
 import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
+import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.PROCESS_INSTANCE_PERCENTAGE_GROUP_BY_PROCESS_DEFINITION_VERSION;
+import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.PROCESS_DEFINITION_VERSION;
+import static java.util.stream.Collectors.toMap;
 
+import co.elastic.clients.elasticsearch._types.SortOrder;
+import co.elastic.clients.elasticsearch._types.aggregations.StringTermsBucket;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch.core.search.ResponseBody;
+import co.elastic.clients.util.NamedValue;
 import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import io.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedInstancesOnlyFilterDto;
-import io.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
-import io.camunda.optimize.dto.optimize.query.report.single.process.filter.FlowNodeEndDateFilterDto;
-import io.camunda.optimize.dto.optimize.query.report.single.process.filter.FlowNodeStartDateFilterDto;
-import io.camunda.optimize.dto.optimize.query.report.single.process.filter.HasAgentInstancesFilterDto;
-import io.camunda.optimize.dto.optimize.query.report.single.process.filter.InstanceEndDateFilterDto;
-import io.camunda.optimize.dto.optimize.query.report.single.process.filter.InstanceStartDateFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import io.camunda.optimize.service.db.es.builders.OptimizeBoolQueryBuilderES;
+import io.camunda.optimize.service.db.es.builders.OptimizeSearchRequestBuilderES;
 import io.camunda.optimize.service.db.es.filter.ProcessQueryFilterEnhancerES;
 import io.camunda.optimize.service.db.es.report.interpreter.groupby.process.ProcessGroupByInterpreterES;
 import io.camunda.optimize.service.db.es.report.interpreter.plan.AbstractExecutionPlanInterpreterES;
@@ -33,6 +34,8 @@ import io.camunda.optimize.service.db.report.MinMaxStatDto;
 import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
 import io.camunda.optimize.service.util.DefinitionQueryUtilES;
 import io.camunda.optimize.service.util.InstanceIndexUtil;
+import io.camunda.optimize.service.util.configuration.ConfigurationService;
+import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -43,30 +46,14 @@ import java.util.stream.Stream;
 public abstract class AbstractProcessExecutionPlanInterpreterES
     extends AbstractExecutionPlanInterpreterES<ProcessReportDataDto, ProcessExecutionPlan>
     implements ProcessExecutionPlanInterpreterES {
-  // Instance date filters should also reduce the total count (baseline) considered for report
-  // evaluation
-  private static final List<Class<? extends ProcessFilterDto<?>>> FILTERS_AFFECTING_BASELINE =
-      List.of(
-          InstanceStartDateFilterDto.class,
-          InstanceEndDateFilterDto.class,
-          FlowNodeStartDateFilterDto.class,
-          FlowNodeEndDateFilterDto.class);
 
-  // For agentic reports the baseline must also be scoped to completed agentic instances so that the
-  // percentage denominator matches the same population as the numerator filter set.
-  private static final List<Class<? extends ProcessFilterDto<?>>>
-      FILTERS_AFFECTING_AGENTIC_BASELINE =
-          List.of(
-              InstanceStartDateFilterDto.class,
-              InstanceEndDateFilterDto.class,
-              FlowNodeStartDateFilterDto.class,
-              FlowNodeEndDateFilterDto.class,
-              CompletedInstancesOnlyFilterDto.class,
-              HasAgentInstancesFilterDto.class);
+  private static final String VERSION_BASELINE_AGGREGATION = "versionBaselineAgg";
 
   protected abstract ProcessDefinitionReader getProcessDefinitionReader();
 
   protected abstract ProcessQueryFilterEnhancerES getQueryFilterEnhancer();
+
+  protected abstract ConfigurationService getConfigurationService();
 
   @Override
   public Optional<MinMaxStatDto> getGroupByMinMaxStats(
@@ -104,25 +91,8 @@ public abstract class AbstractProcessExecutionPlanInterpreterES
   @Override
   protected BoolQuery.Builder setupUnfilteredBaseQueryBuilder(
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    // Instance level date filters are also applied to the baseline so are included here.
-    // For agentic reports the baseline is further scoped to completed agentic instances so that the
-    // percentage denominator matches the correct population.
-    final List<Class<? extends ProcessFilterDto<?>>> effectiveBaselineFilters =
-        context.getReportData().isAgenticControlReport()
-            ? FILTERS_AFFECTING_AGENTIC_BASELINE
-            : FILTERS_AFFECTING_BASELINE;
     final Map<String, List<ProcessFilterDto<?>>> instanceLevelDateFiltersByDefinitionKey =
-        context.getReportData().groupFiltersByDefinitionIdentifier().entrySet().stream()
-            .collect(
-                Collectors.toMap(
-                    Map.Entry::getKey,
-                    entry ->
-                        entry.getValue().stream()
-                            .filter(
-                                filter ->
-                                    filter.getFilterLevel() == FilterApplicationLevel.INSTANCE)
-                            .filter(filter -> effectiveBaselineFilters.contains(filter.getClass()))
-                            .collect(Collectors.toList())));
+        buildBaselineFiltersByDefinition(context);
     final BoolQuery.Builder multiDefinitionFilterQuery =
         buildDefinitionBaseQueryForFilters(context, instanceLevelDateFiltersByDefinitionKey);
 
@@ -133,6 +103,46 @@ public abstract class AbstractProcessExecutionPlanInterpreterES
                 APPLIED_TO_ALL_DEFINITIONS, Collections.emptyList()),
             context.getFilterContext());
     return multiDefinitionFilterQuery;
+  }
+
+  @Override
+  protected void populatePerGroupBaselineCounts(
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context,
+      final String[] indices)
+      throws IOException {
+    if (context.getPlan() == PROCESS_INSTANCE_PERCENTAGE_GROUP_BY_PROCESS_DEFINITION_VERSION) {
+      final BoolQuery.Builder baselineQuery = setupUnfilteredBaseQueryBuilder(context);
+      final ResponseBody<?> response =
+          getEsClient()
+              .search(
+                  OptimizeSearchRequestBuilderES.of(
+                      r ->
+                          r.optimizeIndex(getEsClient(), indices)
+                              .query(q -> q.bool(baselineQuery.build()))
+                              .size(0)
+                              .aggregations(
+                                  VERSION_BASELINE_AGGREGATION,
+                                  a ->
+                                      a.terms(
+                                          t ->
+                                              t.field(PROCESS_DEFINITION_VERSION)
+                                                  .size(
+                                                      getConfigurationService()
+                                                          .getElasticSearchConfiguration()
+                                                          .getAggregationBucketLimit())
+                                                  .order(NamedValue.of("_key", SortOrder.Asc))))),
+                  Object.class);
+      final Map<String, Long> perVersionCounts =
+          response
+              .aggregations()
+              .get(VERSION_BASELINE_AGGREGATION)
+              .sterms()
+              .buckets()
+              .array()
+              .stream()
+              .collect(toMap(b -> b.key().stringValue(), StringTermsBucket::docCount));
+      context.setUnfilteredInstanceCountsByGroupKey(perVersionCounts);
+    }
   }
 
   private BoolQuery.Builder buildDefinitionBaseQueryForFilters(

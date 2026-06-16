@@ -10,7 +10,9 @@ package io.camunda.optimize.service.db.es.report.interpreter.groupby.process;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.PROCESS_GROUP_BY_PROCESS_DEFINITION_VERSION;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.PROCESS_DEFINITION_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -35,6 +37,7 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -149,6 +152,29 @@ class ProcessGroupByProcessDefinitionVersionInterpreterESTest {
     underTest.addQueryResult(result, response, context);
 
     assertThat(result.isGroupByKeyOfNumericType()).isTrue();
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void shouldRestoreGlobalBaselineCountWhenDistributedByRetrievalFails() {
+    final ResponseBody<?> response = mock(ResponseBody.class);
+    when(response.aggregations())
+        .thenReturn(Map.of("processDefinitionVersionAgg", stringTermsAggregate("1")));
+    when(context.getUnfilteredTotalInstanceCount()).thenReturn(10L);
+    when(context.getUnfilteredInstanceCountsByGroupKey()).thenReturn(Map.of("1", 3L));
+    when(distributedByInterpreter.retrieveResult(any(), any(), any()))
+        .thenThrow(new RuntimeException("boom"));
+
+    final CompositeCommandResult result =
+        new CompositeCommandResult(new ProcessReportDataDto(), ViewProperty.FREQUENCY);
+
+    assertThatThrownBy(() -> underTest.addQueryResult(result, response, context))
+        .isInstanceOf(RuntimeException.class)
+        .hasMessage("boom");
+
+    final InOrder inOrder = inOrder(context);
+    inOrder.verify(context).setUnfilteredTotalInstanceCount(3L);
+    inOrder.verify(context).setUnfilteredTotalInstanceCount(10L);
   }
 
   private static Aggregate stringTermsAggregate(final String... keys) {

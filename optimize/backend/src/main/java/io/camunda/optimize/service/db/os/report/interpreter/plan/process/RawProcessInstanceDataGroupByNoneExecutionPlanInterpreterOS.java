@@ -19,6 +19,7 @@ import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import io.camunda.optimize.service.db.report.ExecutionContext;
 import io.camunda.optimize.service.db.report.interpreter.plan.process.RawProcessInstanceDataGroupByNoneExecutionPlanInterpreter;
 import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
+import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import java.util.Set;
 import org.springframework.context.annotation.Conditional;
@@ -35,18 +36,21 @@ public class RawProcessInstanceDataGroupByNoneExecutionPlanInterpreterOS
   private final OptimizeOpenSearchClient osClient;
   private final ProcessDefinitionReader processDefinitionReader;
   private final ProcessQueryFilterEnhancerOS queryFilterEnhancer;
+  private final ConfigurationService configurationService;
 
   public RawProcessInstanceDataGroupByNoneExecutionPlanInterpreterOS(
       final ProcessGroupByInterpreterFacadeOS groupByInterpreter,
       final ProcessViewInterpreterFacadeOS viewInterpreter,
       final OptimizeOpenSearchClient osClient,
       final ProcessDefinitionReader processDefinitionReader,
-      final ProcessQueryFilterEnhancerOS queryFilterEnhancer) {
+      final ProcessQueryFilterEnhancerOS queryFilterEnhancer,
+      final ConfigurationService configurationService) {
     this.groupByInterpreter = groupByInterpreter;
     this.viewInterpreter = viewInterpreter;
     this.osClient = osClient;
     this.processDefinitionReader = processDefinitionReader;
     this.queryFilterEnhancer = queryFilterEnhancer;
+    this.configurationService = configurationService;
   }
 
   @Override
@@ -80,5 +84,9 @@ public class RawProcessInstanceDataGroupByNoneExecutionPlanInterpreterOS
 
   public ProcessQueryFilterEnhancerOS getQueryFilterEnhancer() {
     return this.queryFilterEnhancer;
+  }
+
+  public ConfigurationService getConfigurationService() {
+    return this.configurationService;
   }
 }

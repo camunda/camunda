@@ -6,7 +6,7 @@
     "description": "Überwachen Sie die Einführung, das Verhalten und die Zuverlässigkeit von KI-Agenten sowie den Token-Verbrauch prozessübergreifend.",
     "dateRange": "Zeitraum",
     "tokenUsage": "Token-Nutzung",
-    "reliabilityAndToolCalls": "Zuverlässigkeit & Tool Aufrufe",
+    "reliabilityAndToolCalls": "Zuverlässigkeit & Tool-Aufrufe",
     "duration": "Dauer",
     "presets": {
       "last7Days": "Letzte 7 Tage",

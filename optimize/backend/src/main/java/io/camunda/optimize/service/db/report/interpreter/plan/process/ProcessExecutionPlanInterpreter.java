@@ -48,7 +48,7 @@ public interface ProcessExecutionPlanInterpreter
           CompletedInstancesOnlyFilterDto.class,
           HasAgentInstancesFilterDto.class);
 
-  default Map<String, List<ProcessFilterDto<?>>> getInstanceLevelDateFiltersByDefinitionKey(
+  default Map<String, List<ProcessFilterDto<?>>> buildBaselineFiltersByDefinition(
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     final List<Class<? extends ProcessFilterDto<?>>> effectiveBaselineFilters =
         context.getReportData().isAgenticControlReport()
@@ -63,6 +63,6 @@ public interface ProcessExecutionPlanInterpreter
                         .filter(
                             filter -> filter.getFilterLevel() == FilterApplicationLevel.INSTANCE)
                         .filter(filter -> effectiveBaselineFilters.contains(filter.getClass()))
-                        .toList()));
+                        .collect(Collectors.toList())));
   }
 }

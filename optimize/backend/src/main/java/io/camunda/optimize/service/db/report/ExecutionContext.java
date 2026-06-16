@@ -57,6 +57,9 @@ public class ExecutionContext<D extends SingleReportDataDto, P extends Execution
   // for these nodes are calculated up front and removed during result retrieval
   private Set<String> hiddenFlowNodeIds = new HashSet<>();
 
+  // Per-group-key baseline counts for grouped percentage reports; empty means use the global count
+  private Map<String, Long> unfilteredInstanceCountsByGroupKey = new HashMap<>();
+
   private FilterContext filterContext;
 
   private boolean multiIndexAlias = false;
@@ -145,6 +148,10 @@ public class ExecutionContext<D extends SingleReportDataDto, P extends Execution
     return this.hiddenFlowNodeIds;
   }
 
+  public Map<String, Long> getUnfilteredInstanceCountsByGroupKey() {
+    return this.unfilteredInstanceCountsByGroupKey;
+  }
+
   public FilterContext getFilterContext() {
     return this.filterContext;
   }
@@ -198,6 +205,11 @@ public class ExecutionContext<D extends SingleReportDataDto, P extends Execution
     this.hiddenFlowNodeIds = hiddenFlowNodeIds;
   }
 
+  public void setUnfilteredInstanceCountsByGroupKey(
+      final Map<String, Long> unfilteredInstanceCountsByGroupKey) {
+    this.unfilteredInstanceCountsByGroupKey = unfilteredInstanceCountsByGroupKey;
+  }
+
   public void setFilterContext(final FilterContext filterContext) {
     this.filterContext = filterContext;
   }
@@ -224,7 +236,8 @@ public class ExecutionContext<D extends SingleReportDataDto, P extends Execution
         && Objects.equals(allDistributedByKeysAndLabels, that.allDistributedByKeysAndLabels)
         && Objects.equals(allVariablesNames, that.allVariablesNames)
         && Objects.equals(hiddenFlowNodeIds, that.hiddenFlowNodeIds)
-        && Objects.equals(unfilteredInstanceCountsByGroupKey, that.unfilteredInstanceCountsByGroupKey)
+        && Objects.equals(
+            unfilteredInstanceCountsByGroupKey, that.unfilteredInstanceCountsByGroupKey)
         && Objects.equals(filterContext, that.filterContext);
   }
 

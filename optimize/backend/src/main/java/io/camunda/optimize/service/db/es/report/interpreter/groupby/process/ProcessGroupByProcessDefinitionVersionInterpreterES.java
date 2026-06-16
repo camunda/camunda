@@ -89,14 +89,26 @@ public class ProcessGroupByProcessDefinitionVersionInterpreterES
     final StringTermsAggregate processDefinitionVersionAggregation =
         response.aggregations().get(PROCESS_DEFINITION_VERSION_AGGREGATION).sterms();
     final List<GroupByResult> groupedData = new ArrayList<>();
-    for (final StringTermsBucket processDefinitionVersionBucket :
-        processDefinitionVersionAggregation.buckets().array()) {
-      final String processDefinitionVersion = processDefinitionVersionBucket.key().stringValue();
-      final List<CompositeCommandResult.DistributedByResult> distributedByResult =
-          distributedByInterpreter.retrieveResult(
-              response, processDefinitionVersionBucket.aggregations(), context);
-      groupedData.add(
-          GroupByResult.createGroupByResult(processDefinitionVersion, distributedByResult));
+    // Save the global baseline count so we can restore it after the loop; the per-bucket override
+    // is only relevant inside the view interpreter and must not leak into the report-level count.
+    final long globalBaselineCount = context.getUnfilteredTotalInstanceCount();
+    final Map<String, Long> perGroupCounts = context.getUnfilteredInstanceCountsByGroupKey();
+    try {
+      for (final StringTermsBucket processDefinitionVersionBucket :
+          processDefinitionVersionAggregation.buckets().array()) {
+        final String processDefinitionVersion = processDefinitionVersionBucket.key().stringValue();
+        if (!perGroupCounts.isEmpty()) {
+          context.setUnfilteredTotalInstanceCount(
+              perGroupCounts.getOrDefault(processDefinitionVersion, 0L));
+        }
+        final List<CompositeCommandResult.DistributedByResult> distributedByResult =
+            distributedByInterpreter.retrieveResult(
+                response, processDefinitionVersionBucket.aggregations(), context);
+        groupedData.add(
+            GroupByResult.createGroupByResult(processDefinitionVersion, distributedByResult));
+      }
+    } finally {
+      context.setUnfilteredTotalInstanceCount(globalBaselineCount);
     }
     compositeCommandResult.setGroups(groupedData);
     compositeCommandResult.setGroupByKeyOfNumericType(true);

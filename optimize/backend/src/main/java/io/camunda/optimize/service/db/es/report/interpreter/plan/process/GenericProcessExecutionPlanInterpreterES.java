@@ -13,6 +13,7 @@ import io.camunda.optimize.service.db.es.report.interpreter.groupby.process.Proc
 import io.camunda.optimize.service.db.es.report.interpreter.view.process.ProcessViewInterpreterFacadeES;
 import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import io.camunda.optimize.service.db.report.interpreter.plan.process.GenericProcessExecutionPlanInterpreter;
+import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
@@ -31,18 +32,21 @@ public class GenericProcessExecutionPlanInterpreterES
   private final ProcessQueryFilterEnhancerES queryFilterEnhancer;
   private final ProcessGroupByInterpreterFacadeES groupByInterpreter;
   private final ProcessViewInterpreterFacadeES viewInterpreter;
+  private final ConfigurationService configurationService;
 
   public GenericProcessExecutionPlanInterpreterES(
       final ProcessDefinitionReader processDefinitionReader,
       final OptimizeElasticsearchClient esClient,
       final ProcessQueryFilterEnhancerES queryFilterEnhancer,
       final ProcessGroupByInterpreterFacadeES groupByInterpreter,
-      final ProcessViewInterpreterFacadeES viewInterpreter) {
+      final ProcessViewInterpreterFacadeES viewInterpreter,
+      final ConfigurationService configurationService) {
     this.processDefinitionReader = processDefinitionReader;
     this.esClient = esClient;
     this.queryFilterEnhancer = queryFilterEnhancer;
     this.groupByInterpreter = groupByInterpreter;
     this.viewInterpreter = viewInterpreter;
+    this.configurationService = configurationService;
   }
 
   public ProcessDefinitionReader getProcessDefinitionReader() {
@@ -63,5 +67,9 @@ public class GenericProcessExecutionPlanInterpreterES
 
   public ProcessViewInterpreterFacadeES getViewInterpreter() {
     return this.viewInterpreter;
+  }
+
+  public ConfigurationService getConfigurationService() {
+    return this.configurationService;
   }
 }
