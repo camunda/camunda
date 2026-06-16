@@ -53,6 +53,9 @@ public final class AgentHistoryEntity
   private String tenantId;
 
   @SinceVersion(value = "8.10.0", requireDefault = false)
+  private String bpmnProcessId;
+
+  @SinceVersion(value = "8.10.0", requireDefault = false)
   private int partitionId;
 
   @SinceVersion(value = "8.10.0", requireDefault = false)
@@ -162,6 +165,15 @@ public final class AgentHistoryEntity
 
   public AgentHistoryEntity setTenantId(final String tenantId) {
     this.tenantId = tenantId;
+    return this;
+  }
+
+  public String getBpmnProcessId() {
+    return bpmnProcessId;
+  }
+
+  public AgentHistoryEntity setBpmnProcessId(final String bpmnProcessId) {
+    this.bpmnProcessId = bpmnProcessId;
     return this;
   }
 
@@ -286,6 +298,7 @@ public final class AgentHistoryEntity
         rootProcessInstanceKey,
         processDefinitionKey,
         tenantId,
+        bpmnProcessId,
         partitionId,
         jobKey,
         jobLease,
@@ -317,6 +330,7 @@ public final class AgentHistoryEntity
         && rootProcessInstanceKey == that.rootProcessInstanceKey
         && processDefinitionKey == that.processDefinitionKey
         && Objects.equals(tenantId, that.tenantId)
+        && Objects.equals(bpmnProcessId, that.bpmnProcessId)
         && partitionId == that.partitionId
         && jobKey == that.jobKey
         && Objects.equals(jobLease, that.jobLease)
@@ -351,6 +365,9 @@ public final class AgentHistoryEntity
         + processDefinitionKey
         + ", tenantId='"
         + tenantId
+        + '\''
+        + ", bpmnProcessId='"
+        + bpmnProcessId
         + '\''
         + ", partitionId="
         + partitionId

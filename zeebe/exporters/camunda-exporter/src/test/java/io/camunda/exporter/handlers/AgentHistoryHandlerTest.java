@@ -99,6 +99,7 @@ final class AgentHistoryHandlerTest {
     final long rootProcessInstanceKey = 250L;
     final long processDefinitionKey = 400L;
     final String tenantId = "<default>";
+    final String bpmnProcessId = "my-process";
     final long jobKey = 500L;
     final String jobLease = "lease-token-abc";
     final int iteration = 3;
@@ -130,6 +131,7 @@ final class AgentHistoryHandlerTest {
             .withRootProcessInstanceKey(rootProcessInstanceKey)
             .withProcessDefinitionKey(processDefinitionKey)
             .withTenantId(tenantId)
+            .withBpmnProcessId(bpmnProcessId)
             .withJobKey(jobKey)
             .withJobLease(jobLease)
             .withIteration(iteration)
@@ -176,6 +178,7 @@ final class AgentHistoryHandlerTest {
     assertThat(entity.getRootProcessInstanceKey()).isEqualTo(rootProcessInstanceKey);
     assertThat(entity.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
     assertThat(entity.getTenantId()).isEqualTo(tenantId);
+    assertThat(entity.getBpmnProcessId()).isEqualTo(bpmnProcessId);
     assertThat(entity.getJobKey()).isEqualTo(jobKey);
     assertThat(entity.getJobLease()).isEqualTo(jobLease);
     assertThat(entity.getIteration()).isEqualTo(iteration);

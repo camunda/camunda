@@ -98,6 +98,7 @@ public class AgentHistoryHandler
         .setRootProcessInstanceKey(value.getRootProcessInstanceKey())
         .setProcessDefinitionKey(value.getProcessDefinitionKey())
         .setTenantId(value.getTenantId())
+        .setBpmnProcessId(value.getBpmnProcessId())
         .setJobKey(value.getJobKey())
         .setJobLease(value.getJobLease())
         .setIteration(ExporterUtil.positiveOrNull(value.getIteration()))

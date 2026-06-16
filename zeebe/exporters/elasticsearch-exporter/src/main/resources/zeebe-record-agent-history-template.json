@@ -40,6 +40,9 @@
             "tenantId": {
               "type": "keyword"
             },
+            "bpmnProcessId": {
+              "type": "keyword"
+            },
             "jobKey": {
               "type": "long"
             },

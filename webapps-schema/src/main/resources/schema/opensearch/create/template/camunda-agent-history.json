@@ -26,6 +26,9 @@
       "tenantId": {
         "type": "keyword"
       },
+      "bpmnProcessId": {
+        "type": "keyword"
+      },
       "partitionId": {
         "type": "integer"
       },
