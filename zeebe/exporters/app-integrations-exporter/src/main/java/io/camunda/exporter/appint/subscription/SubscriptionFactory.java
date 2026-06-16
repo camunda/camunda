@@ -66,7 +66,7 @@ public class SubscriptionFactory {
     final Authentication auth;
     if (config.getOauth() != null) {
       auth = new Authentication.OAuth(buildOAuthProvider(config.getOauth(), metrics));
-    } else if (config.getApiKey() != null) {
+    } else if (config.getApiKey() != null && !config.getApiKey().isBlank()) {
       auth = new ApiKey(config.getApiKey());
     } else {
       auth = None.INSTANCE;

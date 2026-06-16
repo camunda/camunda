@@ -62,6 +62,22 @@ class SubscriptionFactoryAuthTest {
   }
 
   @Test
+  void shouldUseNoneWhenApiKeyIsBlank() throws Exception {
+    // given
+    final Config config = new Config().setUrl("http://example.com").setApiKey("   ");
+
+    // when
+    final var subscription =
+        SubscriptionFactory.createDefault(
+            config, position -> {}, AppIntegrationsExporterMetrics.disabled());
+
+    // then
+    final Authentication auth = extractAuthentication(subscription);
+    assertThat(auth).isInstanceOf(Authentication.None.class);
+    subscription.close();
+  }
+
+  @Test
   void shouldUseNoneWhenNeitherConfigured() throws Exception {
     // given
     final Config config = new Config().setUrl("http://example.com");
