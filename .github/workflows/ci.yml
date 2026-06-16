@@ -467,7 +467,7 @@ jobs:
           BACKUP="':zeebe-backup',':zeebe-backup-store-azure',':zeebe-backup-store-common',':zeebe-backup-store-filesystem',':zeebe-backup-store-gcs',':zeebe-backup-store-s3',':zeebe-backup-testkit'"
 
           # Zeebe modules owned by @camunda/zeebe-distributed-platform
-          DISTRIBUTED="':zeebe-atomix-cluster',':zeebe-atomix-utils',':zeebe-broker',':zeebe-broker-client',':zeebe-cluster-config',':dynamic-node-id-provider',':zeebe-journal',':zeebe-logstreams',':zeebe-restore',':zeebe-scheduler',':zeebe-snapshots',':zeebe-stream-platform',':zeebe-transport',':zeebe-qa-util'"
+          DISTRIBUTED="':zeebe-atomix-cluster',':zeebe-atomix-utils',':zeebe-broker',':zeebe-broker-client',':zeebe-cluster-config',':dynamic-node-id-provider',':zeebe-journal',':zeebe-logstreams',':zeebe-restore',':zeebe-scheduler',':zeebe-snapshots',':zeebe-stream-platform',':zeebe-transport'"
 
           # Zeebe modules owned by @camunda/camundaex
           CLIENT="':camunda-client-java'"
@@ -481,7 +481,9 @@ jobs:
           # ============================================================================
 
           # IT Distributed = DISTRIBUTED + BACKUP (all distributed platform modules)
-          IT_DISTRIBUTED="${DISTRIBUTED},${BACKUP}"
+          # zeebe-qa-util is excluded from DISTRIBUTED (skipQaBuild=true skips zeebe/qa/ in UT jobs)
+          # but must run its ITs, so it is added here explicitly
+          IT_DISTRIBUTED="${DISTRIBUTED},${BACKUP},':zeebe-qa-util'"
 
           # IT Exporter = EXPORTER (direct reuse)
           IT_EXPORTER="$EXPORTER"
