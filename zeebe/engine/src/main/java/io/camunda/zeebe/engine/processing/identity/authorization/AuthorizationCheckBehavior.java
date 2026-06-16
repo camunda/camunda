@@ -14,7 +14,6 @@ import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.security.core.auth.MappingRuleMatcher;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.AuthorizationCheckMetrics;
-import io.camunda.zeebe.engine.metrics.AuthorizationMetricsDoc.AuthorizationOutcome;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
 import io.camunda.zeebe.engine.processing.identity.authorization.aggregator.RejectionAggregator;
@@ -127,18 +126,10 @@ public final class AuthorizationCheckBehavior {
     final long startNanos = System.nanoTime();
     try {
       final var result = authorizationsCache.get(request);
-      metrics.record(
-          request.resourceType(),
-          request.permissionType(),
-          result.isRight() ? AuthorizationOutcome.AUTHORIZED : AuthorizationOutcome.DENIED,
-          System.nanoTime() - startNanos);
+      metrics.record(System.nanoTime() - startNanos);
       return result;
     } catch (final ExecutionException e) {
-      metrics.record(
-          request.resourceType(),
-          request.permissionType(),
-          AuthorizationOutcome.DENIED,
-          System.nanoTime() - startNanos);
+      metrics.record(System.nanoTime() - startNanos);
       return Either.left(
           new Rejection(
               RejectionType.NOT_FOUND,
