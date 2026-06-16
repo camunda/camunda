@@ -7,17 +7,13 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.model.transformer;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.BpmnTransformer;
 import io.camunda.zeebe.engine.util.FakeExpressionLanguage;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.SequenceFlow;
-import java.util.List;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -27,7 +23,8 @@ class SequenceFlowTransformerTest {
 
   @ParameterizedTest
   @ValueSource(strings = {"sourceRef", "targetRef"})
-  void shouldIgnoreUnresolvedSequenceFlowReferences(final String missingReferenceAttribute) {
+  void shouldFailFastOnUnresolvedSequenceFlowReferences(
+      final String missingReferenceAttribute) {
     // given
     final BpmnModelInstance modelInstance = createModelWithDanglingSequenceFlow();
     final SequenceFlow sequenceFlow =
@@ -35,25 +32,10 @@ class SequenceFlowTransformerTest {
     sequenceFlow.setAttributeValue(missingReferenceAttribute, "missing", false);
 
     // when
-    final List<ExecutableProcess> processes = transformer.transformDefinitions(modelInstance);
-
-    // then
-    assertThat(processes)
-        .singleElement()
-        .satisfies(
-            process -> {
-              final ExecutableSequenceFlow executableSequenceFlow =
-                  process.getElementById("flow", ExecutableSequenceFlow.class);
-              final ExecutableFlowNode source =
-                  process.getElementById("source", ExecutableFlowNode.class);
-              final ExecutableFlowNode target =
-                  process.getElementById("target", ExecutableFlowNode.class);
-
-              assertThat(executableSequenceFlow.getSource()).isNull();
-              assertThat(executableSequenceFlow.getTarget()).isNull();
-              assertThat(source.getOutgoing()).isEmpty();
-              assertThat(target.getIncoming()).isEmpty();
-            });
+    assertThatThrownBy(() -> transformer.transformDefinitions(modelInstance))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("Sequence flow 'flow'")
+        .hasMessageContaining("unresolved " + missingReferenceAttribute);
   }
 
   private static BpmnModelInstance createModelWithDanglingSequenceFlow() {

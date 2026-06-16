@@ -42,7 +42,10 @@ public final class SequenceFlowTransformer implements ModelElementTransformer<Se
     final FlowNode targetRef = element.getTarget();
 
     if (sourceRef == null || targetRef == null) {
-      return;
+      final String missingReference = sourceRef == null ? "sourceRef" : "targetRef";
+      throw new IllegalStateException(
+          "Sequence flow '%s' has an unresolved %s reference".formatted(
+              element.getId(), missingReference));
     }
 
     final ExecutableFlowNode source =
@@ -51,7 +54,15 @@ public final class SequenceFlowTransformer implements ModelElementTransformer<Se
         process.getElementById(targetRef.getId(), ExecutableFlowNode.class);
 
     if (source == null || target == null) {
-      return;
+      final String missingNode =
+          source == null
+              ? "source"
+              : "target";
+      final String missingNodeId =
+          source == null ? sourceRef.getId() : targetRef.getId();
+      throw new IllegalStateException(
+          "Sequence flow '%s' references unknown %s node '%s'".formatted(
+              element.getId(), missingNode, missingNodeId));
     }
 
     source.addOutgoing(sequenceFlow);
