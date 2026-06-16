@@ -12,18 +12,16 @@ import type {
   AuditLogActorType,
 } from '@camunda/camunda-api-zod-schemas/8.10/audit-log';
 import {AuthorTooltip, OperationLogName, TooltipCodeSnippet} from '../styled';
-import {useMemo} from 'react';
 import {spaceAndCapitalize} from 'modules/utils/spaceAndCapitalize';
 import {Tooltip} from '@carbon/react';
-import {getActorIcon} from 'modules/utils/operationsLog';
+import {ActorIcon} from 'modules/utils/operationsLog/ActorIcon';
+import {hasActorIcon} from 'modules/utils/operationsLog';
 
 type Props = {
   item: AuditLog;
 };
 
 const CellActor: React.FC<Props> = ({item}) => {
-  const ActorIcon = useMemo(() => getActorIcon(item), [item]);
-
   const getTooltipActorContent = (actor: AuditLogActorType | 'AGENT') => {
     const label =
       actor !== 'AGENT'
@@ -41,12 +39,12 @@ const CellActor: React.FC<Props> = ({item}) => {
 
   return item.actorId ? (
     <OperationLogName>
-      {ActorIcon && (
+      {hasActorIcon(item) && (
         <Tooltip
           align="bottom-start"
           description={getTooltipActorContent(item.actorType)}
         >
-          <ActorIcon />
+          <ActorIcon auditLog={item} />
         </Tooltip>
       )}
       {item.agentElementId && (

@@ -86,6 +86,7 @@ const BottomPanelContent: React.FC = () => {
 
   if (isDesktop) {
     const panelMinWidth =
+      // eslint-disable-next-line react-hooks/refs
       (containerRef.current?.clientWidth ?? 0) / 4 || undefined;
 
     return (
