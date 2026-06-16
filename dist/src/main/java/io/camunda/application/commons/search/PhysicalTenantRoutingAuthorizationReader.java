@@ -21,24 +21,26 @@ import org.jspecify.annotations.NullMarked;
  * SPIKE (ADR-0005): a physical-tenant-routing {@link AuthorizationReader}.
  *
  * <p>Resolves the physical tenant in context on each call and delegates to that tenant's reader, so
- * authorization reads target the in-context tenant's secondary storage rather than a single
- * {@code default}-pinned reader (#55252). Because both authorization-read consumers inject the same
- * {@code AuthorizationReader} bean — the control-plane {@code AuthorizationRepositoryAdapter} (Spring
- * Security permission checks) and the data-plane {@code SearchAuthorizationScopeRepository}
- * ({@code CamundaSearchClients} result authorization) — re-pointing that one bean here makes both
- * paths physical-tenant aware.
+ * authorization reads target the in-context tenant's secondary storage rather than a single {@code
+ * default}-pinned reader (#55252). Because both authorization-read consumers inject the same {@code
+ * AuthorizationReader} bean — the control-plane {@code AuthorizationRepositoryAdapter} (Spring
+ * Security permission checks) and the data-plane {@code SearchAuthorizationScopeRepository} ({@code
+ * CamundaSearchClients} result authorization) — re-pointing that one bean here makes both paths
+ * physical-tenant aware.
  *
- * <p>This implements the ADR-0005 <b>control-plane</b> mechanism: lazy resolution via {@link
- * PhysicalTenantContext#current()}. The pre-security filter (ADR-0003) guarantees the id is stamped
- * on the request before the check runs, and {@code current()} falls back to {@code default} for
- * non-prefixed cluster requests.
+ * <p>Resolution is lazy via {@link PhysicalTenantContext#current()}. The pre-security filter
+ * (ADR-0003) guarantees the id is stamped on the request before the check runs, and {@code
+ * current()} falls back to {@code default} for non-prefixed cluster requests.
  *
- * <p><b>Spike caveat:</b> on the data-plane this relies on the thread-bound {@link
- * PhysicalTenantContext} being present where the check executes. If a search runs off the request
- * thread (e.g. the API-services executor), the thread-local would fall back to {@code default}. The
- * ADR-0005 <b>data-plane</b> decision (instance-bound resolution via the {@code CamundaSearchClients}
- * instance's tenant) addresses that and is the larger structural change this spike deliberately
- * does not yet make — see the spike notes.
+ * <p><b>Data-plane spike finding:</b> this thread-bound resolution is sufficient for the data-plane
+ * too, not only the control-plane. The data-plane authorization read runs <em>synchronously on the
+ * request thread</em> — {@code SearchQueryService#executeSearchRequest} calls {@code
+ * searchRequest.get()} inline, and the {@code ApiServices} executor is used only for the broker
+ * (write) path, never for reads — so the thread-bound {@link PhysicalTenantContext} is present
+ * where the check executes (proven by {@code PhysicalTenantRoutingAuthorizationReaderTest}). The
+ * instance-bound data-plane mechanism the ADR floated as a hedge against off-request-thread
+ * execution is therefore not required for the API read paths; it would only matter for a future
+ * consumer that performs an authorization-checked search off the request thread.
  */
 @NullMarked
 public final class PhysicalTenantRoutingAuthorizationReader implements AuthorizationReader {
