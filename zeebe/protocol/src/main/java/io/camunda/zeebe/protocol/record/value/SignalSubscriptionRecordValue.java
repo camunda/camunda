@@ -27,7 +27,7 @@ import org.immutables.value.Value;
  */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableSignalSubscriptionRecordValue.Builder.class)
-public interface SignalSubscriptionRecordValue extends RecordValue, TenantOwned {
+public interface SignalSubscriptionRecordValue extends RecordValue, TenantOwned, WaitStateRelated {
 
   /**
    * @return the process key tied to the subscription
@@ -53,4 +53,46 @@ public interface SignalSubscriptionRecordValue extends RecordValue, TenantOwned 
    * @return the name of the signal
    */
   String getSignalName();
+
+  /**
+   * @return the key of the process instance, or {@code -1L} if not set (e.g. start-event
+   *     subscriptions that are not tied to a running instance)
+   * @since 8.10
+   */
+  @Override
+  long getProcessInstanceKey();
+
+  /**
+   * @return the key of the root process instance, or {@code -1L} if not set
+   * @since 8.10
+   */
+  @Override
+  long getRootProcessInstanceKey();
+
+  /**
+   * Bridges {@link WaitStateRelated#getElementId()} to {@link #getCatchEventId()}.
+   *
+   * <p>Implementations should annotate this override with {@code @JsonIgnore} to avoid duplicating
+   * {@code catchEventId} in serialised output.
+   *
+   * @since 8.10
+   */
+  @Override
+  default String getElementId() {
+    return getCatchEventId();
+  }
+
+  /**
+   * Bridges {@link WaitStateRelated#getElementInstanceKey()} to {@link
+   * #getCatchEventInstanceKey()}.
+   *
+   * <p>Implementations should annotate this override with {@code @JsonIgnore} to avoid duplicating
+   * {@code catchEventInstanceKey} in serialised output.
+   *
+   * @since 8.10
+   */
+  @Override
+  default long getElementInstanceKey() {
+    return getCatchEventInstanceKey();
+  }
 }

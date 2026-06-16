@@ -30,6 +30,9 @@ public final class SignalSubscriptionRecord extends UnifiedRecordValue
   private static final StringValue CATCH_EVENT_INSTANCE_KEY_KEY =
       new StringValue("catchEventInstanceKey");
   private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
+  private static final StringValue PROCESS_INSTANCE_KEY_KEY = new StringValue("processInstanceKey");
+  private static final StringValue ROOT_PROCESS_INSTANCE_KEY_KEY =
+      new StringValue("rootProcessInstanceKey");
 
   private final LongProperty processDefinitionKeyProp =
       new LongProperty(PROCESS_DEFINITION_KEY_KEY, -1L);
@@ -40,15 +43,21 @@ public final class SignalSubscriptionRecord extends UnifiedRecordValue
       new LongProperty(CATCH_EVENT_INSTANCE_KEY_KEY, -1L);
   private final StringProperty tenantIdProp =
       new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  private final LongProperty processInstanceKeyProp =
+      new LongProperty(PROCESS_INSTANCE_KEY_KEY, -1L);
+  private final LongProperty rootProcessInstanceKeyProp =
+      new LongProperty(ROOT_PROCESS_INSTANCE_KEY_KEY, -1L);
 
   public SignalSubscriptionRecord() {
-    super(6);
+    super(8);
     declareProperty(processDefinitionKeyProp)
         .declareProperty(signalNameProp)
         .declareProperty(catchEventIdProp)
         .declareProperty(bpmnProcessIdProp)
         .declareProperty(catchEventInstanceKeyProp)
-        .declareProperty(tenantIdProp);
+        .declareProperty(tenantIdProp)
+        .declareProperty(processInstanceKeyProp)
+        .declareProperty(rootProcessInstanceKeyProp);
   }
 
   public void wrap(final SignalSubscriptionRecord record) {
@@ -58,6 +67,8 @@ public final class SignalSubscriptionRecord extends UnifiedRecordValue
     catchEventIdProp.setValue(record.getCatchEventId());
     catchEventInstanceKeyProp.setValue(record.getCatchEventInstanceKey());
     tenantIdProp.setValue(record.getTenantId());
+    processInstanceKeyProp.setValue(record.getProcessInstanceKey());
+    rootProcessInstanceKeyProp.setValue(record.getRootProcessInstanceKey());
   }
 
   @JsonIgnore
@@ -138,6 +149,38 @@ public final class SignalSubscriptionRecord extends UnifiedRecordValue
 
   public SignalSubscriptionRecord setTenantId(final String tenantId) {
     tenantIdProp.setValue(tenantId);
+    return this;
+  }
+
+  @JsonIgnore
+  @Override
+  public String getElementId() {
+    return getCatchEventId();
+  }
+
+  @JsonIgnore
+  @Override
+  public long getElementInstanceKey() {
+    return getCatchEventInstanceKey();
+  }
+
+  @Override
+  public long getProcessInstanceKey() {
+    return processInstanceKeyProp.getValue();
+  }
+
+  public SignalSubscriptionRecord setProcessInstanceKey(final long processInstanceKey) {
+    processInstanceKeyProp.setValue(processInstanceKey);
+    return this;
+  }
+
+  @Override
+  public long getRootProcessInstanceKey() {
+    return rootProcessInstanceKeyProp.getValue();
+  }
+
+  public SignalSubscriptionRecord setRootProcessInstanceKey(final long rootProcessInstanceKey) {
+    rootProcessInstanceKeyProp.setValue(rootProcessInstanceKey);
     return this;
   }
 }
