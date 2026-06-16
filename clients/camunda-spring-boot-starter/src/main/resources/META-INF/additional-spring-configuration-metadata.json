@@ -190,6 +190,18 @@
       "defaultValue": 1
     },
     {
+      "name": "camunda.client.keep-alive",
+      "defaultValue": "PT45S"
+    },
+    {
+      "name": "camunda.client.worker.override",
+      "defaultValue": {}
+    },
+    {
+      "name": "camunda.client.auth.proactive-token-refresh-threshold",
+      "defaultValue": "PT30S"
+    },
+    {
       "name": "common.auth-url",
       "type": "java.lang.String",
       "sourceType": "io.camunda.spring.client.properties.CommonConfigurationProperties",
