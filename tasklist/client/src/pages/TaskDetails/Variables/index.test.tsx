@@ -405,7 +405,7 @@ describe('<Variables />', () => {
     await waitFor(() =>
       expect(
         screen.getByLabelText(/1st variable name/i),
-      ).toHaveAccessibleDescription(/name has to be filled/i),
+      ).toHaveAccessibleErrorMessage(/name has to be filled/i),
     );
   });
 
@@ -461,7 +461,7 @@ describe('<Variables />', () => {
     await waitFor(() =>
       expect(
         screen.getByLabelText(/1st variable name/i),
-      ).toHaveAccessibleDescription(/name is invalid/i),
+      ).toHaveAccessibleErrorMessage(/name is invalid/i),
     );
 
     await user.clear(screen.getByLabelText(/1st variable name/i));
@@ -473,7 +473,7 @@ describe('<Variables />', () => {
     await waitFor(() =>
       expect(
         screen.getByLabelText(/1st variable name/i),
-      ).not.toHaveAccessibleDescription(/name is invalid/i),
+      ).not.toHaveAccessibleErrorMessage(/name is invalid/i),
     );
 
     await user.type(screen.getByLabelText(/1st variable name/i), 'test ');
@@ -531,7 +531,7 @@ describe('<Variables />', () => {
     await waitFor(() =>
       expect(
         screen.getByLabelText(/1st variable value/i),
-      ).toHaveAccessibleDescription(/value has to be json or a literal/i),
+      ).toHaveAccessibleErrorMessage(/value has to be json or a literal/i),
     );
   });
 
@@ -585,11 +585,11 @@ describe('<Variables />', () => {
     await waitFor(() =>
       expect(
         screen.getByLabelText(/1st variable name/i),
-      ).toHaveAccessibleDescription(/name has to be filled/i),
+      ).toHaveAccessibleErrorMessage(/name has to be filled/i),
     );
     expect(
       screen.getByLabelText(/1st variable value/i),
-    ).toHaveAccessibleDescription(/value has to be json or a literal/i);
+    ).toHaveAccessibleErrorMessage(/value has to be json or a literal/i);
   });
 
   it('should not validate valid variables', async () => {
@@ -991,7 +991,7 @@ describe('<Variables />', () => {
 
     vi.runOnlyPendingTimers();
     await waitFor(() =>
-      expect(screen.getByLabelText('myVar')).toHaveAccessibleDescription(
+      expect(screen.getByLabelText('myVar')).toHaveAccessibleErrorMessage(
         /value has to be json or a literal/i,
       ),
     );
@@ -1047,7 +1047,7 @@ describe('<Variables />', () => {
     await waitFor(() =>
       expect(
         screen.getByLabelText(/1st variable value/i),
-      ).toHaveAccessibleDescription(/value has to be json or a literal/i),
+      ).toHaveAccessibleErrorMessage(/value has to be json or a literal/i),
     );
 
     expect(screen.getByText(/complete task/i)).toBeDisabled();
@@ -1423,11 +1423,11 @@ describe('<Variables />', () => {
       await waitFor(() =>
         expect(
           screen.getByLabelText(/1st variable value/i),
-        ).toHaveAccessibleDescription(/value has to be json or a literal/i),
+        ).toHaveAccessibleErrorMessage(/value has to be json or a literal/i),
       );
       expect(
         screen.getByLabelText(/1st variable name/i),
-      ).toHaveAccessibleDescription(/name must be unique/i);
+      ).toHaveAccessibleErrorMessage(/name must be unique/i);
     });
 
     it('should display duplicate name error on last edited variable', async () => {
@@ -1461,7 +1461,7 @@ describe('<Variables />', () => {
 
       expect(
         screen.getByLabelText(/1st variable name/i),
-      ).not.toHaveAccessibleDescription(/name must be unique/i);
+      ).not.toHaveAccessibleErrorMessage(/name must be unique/i);
 
       await user.click(screen.getByText(/add variable/i));
       await user.type(screen.getByLabelText(/2nd variable name/i), 'myVar2');
@@ -1471,7 +1471,7 @@ describe('<Variables />', () => {
       await waitFor(() =>
         expect(
           screen.getByLabelText(/2nd variable name/i),
-        ).toHaveAccessibleDescription(/name must be unique/i),
+        ).toHaveAccessibleErrorMessage(/name must be unique/i),
       );
 
       await user.type(screen.getByLabelText(/2nd variable name/i), 'foo');
@@ -1479,7 +1479,7 @@ describe('<Variables />', () => {
       await waitFor(() =>
         expect(
           screen.getByLabelText(/2nd variable name/i),
-        ).not.toHaveAccessibleDescription(/name must be unique/i),
+        ).not.toHaveAccessibleErrorMessage(/name must be unique/i),
       );
 
       await user.type(screen.getByLabelText(/1st variable name/i), 'foo');
@@ -1489,11 +1489,11 @@ describe('<Variables />', () => {
       await waitFor(() =>
         expect(
           screen.getByLabelText(/1st variable name/i),
-        ).toHaveAccessibleDescription(/name must be unique/i),
+        ).toHaveAccessibleErrorMessage(/name must be unique/i),
       );
       expect(
         screen.getByLabelText(/2nd variable name/i),
-      ).not.toHaveAccessibleDescription(/name must be unique/i);
+      ).not.toHaveAccessibleErrorMessage(/name must be unique/i);
     });
 
     it('should display error if duplicate name is used and immediately started typing on to the value field', async () => {
@@ -1552,12 +1552,12 @@ describe('<Variables />', () => {
       await waitFor(() =>
         expect(
           screen.getByLabelText(/2nd variable name/i),
-        ).toHaveAccessibleDescription(/name must be unique/i),
+        ).toHaveAccessibleErrorMessage(/name must be unique/i),
       );
 
       expect(
         screen.getByLabelText(/1st variable name/i),
-      ).not.toHaveAccessibleDescription(/name must be unique/i);
+      ).not.toHaveAccessibleErrorMessage(/name must be unique/i);
     });
 
     it('should continue to display existing duplicate name error', async () => {
@@ -1616,7 +1616,7 @@ describe('<Variables />', () => {
       await waitFor(() =>
         expect(
           screen.getByLabelText(/2nd variable name/i),
-        ).toHaveAccessibleDescription(/name must be unique/i),
+        ).toHaveAccessibleErrorMessage(/name must be unique/i),
       );
 
       await user.click(screen.getByText(/add variable/i));
@@ -1629,15 +1629,15 @@ describe('<Variables />', () => {
       await waitFor(() =>
         expect(
           screen.getByLabelText(/3rd variable name/i),
-        ).toHaveAccessibleDescription(/name must be unique/i),
+        ).toHaveAccessibleErrorMessage(/name must be unique/i),
       );
 
       expect(
         screen.getByLabelText(/2nd variable name/i),
-      ).toHaveAccessibleDescription(/name must be unique/i);
+      ).toHaveAccessibleErrorMessage(/name must be unique/i);
       expect(
         screen.getByLabelText(/1st variable name/i),
-      ).not.toHaveAccessibleDescription(/name must be unique/i);
+      ).not.toHaveAccessibleErrorMessage(/name must be unique/i);
     });
   });
 
