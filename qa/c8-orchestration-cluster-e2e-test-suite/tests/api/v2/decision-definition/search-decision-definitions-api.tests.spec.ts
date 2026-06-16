@@ -6,19 +6,26 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {randomUUID} from 'node:crypto';
 import {test, expect} from '@playwright/test';
 import {
   buildUrl,
   jsonHeaders,
+  assertStatusCode,
   assertUnauthorizedRequest,
   assertPaginatedRequest,
   assertBadRequest,
 } from '../../../../utils/http';
-import {defaultAssertionOptions} from '../../../../utils/constants';
+import {
+  defaultAssertionOptions,
+  extendedAssertionOptions,
+} from '../../../../utils/constants';
 import {
   assertDecisionDefinitionInResponse,
   DECISION_DEFINITION_RESPONSE_FROM_DEPLOYMENT,
   deployDecisionAndStoreResponse,
+  seedUniqueDecisionDefinitions,
+  walkLatestVersionCursor,
 } from '@requestHelpers';
 import {DecisionDeployment} from '@camunda8/sdk/dist/c8/lib/C8Dto';
 import {validateResponse} from 'json-body-assertions';
@@ -691,5 +698,66 @@ test.describe.parallel('Search Decision Definitions API Tests', () => {
         decisionDefinition2.decisionDefinitionKey as string,
       );
     }).toPass(defaultAssertionOptions);
+  });
+
+  test.describe('isLatestVersion totalItems', () => {
+    let suffix: string;
+
+    test.beforeAll(async () => {
+      suffix = randomUUID().slice(0, 8);
+      await seedUniqueDecisionDefinitions(suffix, 15, 5);
+    });
+
+    test('totalItems reflects unique count beyond page limit', async ({
+      request,
+    }) => {
+      await expect(async () => {
+        const res = await request.post(
+          buildUrl('/decision-definitions/search', {}),
+          {
+            headers: jsonHeaders(),
+            data: {
+              filter: {
+                isLatestVersion: true,
+                decisionDefinitionId: {$like: `dd-isLatest-${suffix}-*`},
+              },
+              page: {limit: 5},
+            },
+          },
+        );
+        await assertStatusCode(res, 200);
+        const body = await res.json();
+        expect(body.page.totalItems).toBe(15);
+        expect(body.items).toHaveLength(5);
+        expect(body.page.endCursor).toBeTruthy();
+      }).toPass(extendedAssertionOptions);
+    });
+
+    test('forward cursor pagination collects all unique latest-version items', async ({
+      request,
+    }) => {
+      await expect(async () => {
+        const items = await walkLatestVersionCursor(
+          request,
+          '/decision-definitions/search',
+          {
+            isLatestVersion: true,
+            decisionDefinitionId: {$like: `dd-isLatest-${suffix}-*`},
+          },
+          5,
+        );
+        const uniqueIds = new Set(
+          (items as {decisionDefinitionId?: string}[]).map(
+            (item) => item.decisionDefinitionId,
+          ),
+        );
+        expect(uniqueIds.size).toBe(15);
+        expect(
+          [...uniqueIds].every((id) =>
+            id?.startsWith(`dd-isLatest-${suffix}-`),
+          ),
+        ).toBe(true);
+      }).toPass(extendedAssertionOptions);
+    });
   });
 });
