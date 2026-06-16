@@ -120,6 +120,7 @@ public final class AgentHistoryCreateProcessor implements TypedRecordProcessor<A
             .setRootProcessInstanceKey(job.getRootProcessInstanceKey())
             .setProcessDefinitionKey(job.getProcessDefinitionKey())
             .setTenantId(job.getTenantId())
+            .setBpmnProcessId(agentInstanceRecord.getBpmnProcessId())
             .setJobKey(commandValue.getJobKey())
             .setJobLease(commandValue.getJobLease())
             .setIteration(commandValue.getIteration())
