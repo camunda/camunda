@@ -977,11 +977,17 @@ final class ElasticsearchArchiverRepositoryIT {
   }
 
   @Test
-  void shouldCacheIndicesWhichHaveRetentionPolicyAppliedAndNotReapplyPointlessly() {
+  void shouldCacheIndicesWhichHaveRetentionPolicyAppliedAndNotReapplyPointlessly()
+      throws IOException {
     // given
     retention.setEnabled(true);
     final var indexName1 = processInstanceIndex + UUID.randomUUID();
     final var indexName2 = processInstanceIndex + UUID.randomUUID();
+    // setIndexLifeCycle now short-circuits when the target index doesn't exist (to avoid
+    // poisoning the applied-policy cache for indices that haven't been created yet), so the
+    // test must create both indices before exercising the cache behavior.
+    testClient.indices().create(r -> r.index(indexName1));
+    testClient.indices().create(r -> r.index(indexName2));
 
     final var clientSpy = spy(new ElasticsearchAsyncClient(transport));
     final var indicesClientSpy = spy(clientSpy.indices());
@@ -1026,6 +1032,11 @@ final class ElasticsearchArchiverRepositoryIT {
     retention.setEnabled(true);
     final var indexName1 = processInstanceIndex + UUID.randomUUID();
     final var indexName2 = processInstanceIndex + UUID.randomUUID();
+    // setIndexLifeCycle now short-circuits when the target index doesn't exist (to avoid
+    // poisoning the applied-policy cache for indices that haven't been created yet), so the
+    // test must create both indices before exercising the cache behavior.
+    testClient.indices().create(r -> r.index(indexName1));
+    testClient.indices().create(r -> r.index(indexName2));
 
     final var clientSpy = spy(new ElasticsearchAsyncClient(transport));
     final var indicesClientSpy = spy(clientSpy.indices());
@@ -1350,6 +1361,46 @@ final class ElasticsearchArchiverRepositoryIT {
         .first()
         .extracting(Hit::id)
         .isEqualTo("3");
+  }
+
+  @Test
+  void shouldDeleteDocumentsByIdWithRoutingOnMultiShardIndex() throws IOException {
+    // given - a 3-shard index seeded with docs whose custom routing differs from their id.
+    // On a multi-shard index, a delete-by-id without routing is routed by hash(_id); for
+    // docs indexed with custom routing this lands on the wrong shard and ES silently
+    // returns result=not_found. This test proves the bulk delete carries routing through
+    // and that getDeletedDocCount only counts items actually deleted.
+    final var indexName = UUID.randomUUID().toString();
+    testClient
+        .indices()
+        .create(r -> r.index(indexName).settings(s -> s.numberOfShards("3").numberOfReplicas("0")));
+
+    final var repository = createRepository();
+    final int total = 50;
+    final var docs =
+        IntStream.rangeClosed(1, total).mapToObj(i -> new TestDocument(String.valueOf(i))).toList();
+    // routing is deliberately different from id, so hash(routing) != hash(id) for most
+    // docs across 3 shards.
+    docs.forEach(d -> index(indexName, d, "r-" + (Integer.parseInt(d.id()) % 7)));
+    testClient.indices().refresh(r -> r.index(indexName));
+
+    // when - delete with the routing each doc was indexed under
+    final var idsWithRouting =
+        docs.stream()
+            .map(d -> new IdWithRouting(d.id(), "r-" + (Integer.parseInt(d.id()) % 7)))
+            .toList();
+    final var result = repository.deleteDocumentsById(indexName, idsWithRouting);
+
+    // then - every doc reports result=deleted, and the index is empty
+    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
+    assertThat(result.join())
+        .as(
+            "all docs must report result=deleted on multi-shard index when routing is carried"
+                + " through; if this drops below %d the routing param is being ignored",
+            total)
+        .isEqualTo(total);
+    testClient.indices().refresh(r -> r.index(indexName));
+    assertThat(testClient.count(c -> c.index(indexName)).count()).isEqualTo(0L);
   }
 
   @Test
