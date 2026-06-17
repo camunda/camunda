@@ -276,7 +276,9 @@ final class ElasticsearchArchiverRepositoryTest extends AbstractArchiverReposito
             CompletableFuture.completedFuture(searchResponse("4", "5", "6")),
             CompletableFuture.completedFuture(searchResponse()));
     when(client.reindex(any(ReindexRequest.class)))
-        .thenReturn(CompletableFuture.completedFuture(ReindexResponse.of(b -> b.total(3L))));
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                ReindexResponse.of(b -> b.total(3L).created(3L).updated(0L))));
     when(client.bulk(any(BulkRequest.class)))
         .thenReturn(CompletableFuture.completedFuture(bulkResponse("4", "5", "6")));
 
