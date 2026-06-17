@@ -141,7 +141,9 @@ public final class PartitionManagerImpl
             topologyManager,
             featureFlags,
             securityConfig,
-            searchClientsProxy,
+            searchClientsProxy != null
+                ? searchClientsProxy.withPhysicalTenant(partitionGroup)
+                : null,
             brokerRequestAuthorizationConverter,
             clusterConfigurationService,
             rocksDbResources);
