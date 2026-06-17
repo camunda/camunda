@@ -1,7 +1,7 @@
 @use '@carbon/react' as * with (
   $css--reset: false,
   $css--default-type: false,
-  $font-path: 'https://fonts.camunda.io'
+  $font-path: '@ibm/plex'
 ); // the 'with' part is temporary solution and has to be deleted when whole Optimize will be carbonized
 
 @use '@carbon/react/scss/fonts/sans';
