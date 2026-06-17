@@ -6,18 +6,32 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import type {SearchMiddleware} from '@tanstack/react-router';
 import {z} from 'zod';
 
-const SORT_BY_VALUES = ['creation', 'follow-up', 'due', 'completion', 'priority'] as const;
+const FILTER_VALUES = ['all-open', 'assigned-to-me', 'unassigned', 'completed'] as const;
 
 const tasklistIndexSearchSchema = z.object({
-	sortBy: z.enum(SORT_BY_VALUES).default('creation'),
+	filter: z.enum(FILTER_VALUES).default('all-open'),
+	sortBy: z.enum(['creation', 'follow-up', 'due', 'completion', 'priority']).default('creation'),
 });
 
 type TasklistIndexSearch = z.infer<typeof tasklistIndexSearchSchema>;
 
 const tasklistIndexSearchDefaults = {
+	filter: 'all-open',
 	sortBy: 'creation',
 } as const satisfies TasklistIndexSearch;
 
-export {tasklistIndexSearchSchema, tasklistIndexSearchDefaults, type TasklistIndexSearch};
+const enforceSortInvariant: SearchMiddleware<TasklistIndexSearch> = ({search, next}) => {
+	const result = next(search);
+	return result.filter !== 'completed' && result.sortBy === 'completion' ? {...result, sortBy: 'creation'} : result;
+};
+
+export {
+	tasklistIndexSearchSchema,
+	tasklistIndexSearchDefaults,
+	enforceSortInvariant,
+	FILTER_VALUES,
+	type TasklistIndexSearch,
+};
