@@ -31,7 +31,6 @@ import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchRequest.Builder;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
-import co.elastic.clients.elasticsearch.core.bulk.OperationType;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
 import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsResponse;
@@ -562,10 +561,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
     }
 
     // only count DELETE bulk operation where result was `deleted`
-    return response.items().stream()
-        .filter(i -> OperationType.Delete.equals(i.operationType()))
-        .filter(i -> "deleted".equals(i.result()))
-        .count();
+    return response.items().stream().filter(i -> "deleted".equals(i.result())).count();
   }
 
   private Query finishedProcessInstancesQuery(

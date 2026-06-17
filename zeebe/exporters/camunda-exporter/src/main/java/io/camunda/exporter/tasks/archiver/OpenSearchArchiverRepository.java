@@ -67,7 +67,6 @@ import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchRequest.Builder;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
-import org.opensearch.client.opensearch.core.bulk.OperationType;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.generic.OpenSearchGenericClient;
 import org.opensearch.client.opensearch.generic.Requests;
@@ -570,10 +569,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     }
 
     // only count DELETE bulk operation where result was `deleted`
-    return response.items().stream()
-        .filter(i -> OperationType.Delete.equals(i.operationType()))
-        .filter(i -> "deleted".equals(i.result()))
-        .count();
+    return response.items().stream().filter(i -> "deleted".equals(i.result())).count();
   }
 
   private SearchRequest createUsageMetricSearchRequest(
