@@ -13,6 +13,7 @@ import static org.mockito.Mockito.mock;
 
 import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.zeebe.gateway.interceptors.InterceptorUtil;
+import io.camunda.zeebe.gateway.protocol.GrpcHeaders;
 import io.grpc.Metadata;
 import io.grpc.MethodDescriptor;
 import io.grpc.Status;
@@ -30,7 +31,7 @@ final class PhysicalTenantInterceptorTest {
     // given
     final var interceptor = new PhysicalTenantInterceptor(() -> Set.of("my-tenant"));
     final var headers = new Metadata();
-    headers.put(PhysicalTenantInterceptor.PHYSICAL_TENANT_HEADER, "my-tenant");
+    headers.put(GrpcHeaders.PHYSICAL_TENANT, "my-tenant");
     final AtomicReference<String> captured = new AtomicReference<>();
 
     // when
@@ -71,7 +72,7 @@ final class PhysicalTenantInterceptorTest {
     final PhysicalTenantIds knownTenants = () -> Set.of("tenant-a", "tenant-b");
     final var interceptor = new PhysicalTenantInterceptor(knownTenants);
     final var headers = new Metadata();
-    headers.put(PhysicalTenantInterceptor.PHYSICAL_TENANT_HEADER, "tenant-a");
+    headers.put(GrpcHeaders.PHYSICAL_TENANT, "tenant-a");
     final AtomicReference<String> captured = new AtomicReference<>();
 
     // when
@@ -93,7 +94,7 @@ final class PhysicalTenantInterceptorTest {
     final PhysicalTenantIds knownTenants = () -> Set.of("tenant-a");
     final var interceptor = new PhysicalTenantInterceptor(knownTenants);
     final var headers = new Metadata();
-    headers.put(PhysicalTenantInterceptor.PHYSICAL_TENANT_HEADER, "unknown-tenant");
+    headers.put(GrpcHeaders.PHYSICAL_TENANT, "unknown-tenant");
     final var closedCall = new CloseStatusCapturingServerCall<String, String>();
 
     // when
@@ -113,7 +114,7 @@ final class PhysicalTenantInterceptorTest {
     // given
     final var interceptor = new PhysicalTenantInterceptor(Set::of);
     final var headers = new Metadata();
-    headers.put(PhysicalTenantInterceptor.PHYSICAL_TENANT_HEADER, "any-tenant");
+    headers.put(GrpcHeaders.PHYSICAL_TENANT, "any-tenant");
     final var closedCall = new CloseStatusCapturingServerCall<String, String>();
 
     // when

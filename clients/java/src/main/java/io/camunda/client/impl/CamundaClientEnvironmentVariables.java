@@ -26,6 +26,7 @@ public final class CamundaClientEnvironmentVariables {
   public static final String PREFER_REST_VAR = "CAMUNDA_PREFER_REST";
   public static final String MAX_HTTP_CONNECTIONS = "CAMUNDA_MAX_HTTP_CONNECTIONS";
   public static final String DEFAULT_TENANT_ID_VAR = "CAMUNDA_DEFAULT_TENANT_ID";
+  public static final String PHYSICAL_TENANT_ID_VAR = "CAMUNDA_PHYSICAL_TENANT_ID";
   public static final String DEFAULT_JOB_WORKER_TENANT_IDS_VAR =
       "CAMUNDA_DEFAULT_JOB_WORKER_TENANT_IDS";
   public static final String DEFAULT_JOB_WORKER_TENANT_FILTER_MODE_VAR =

@@ -414,6 +414,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -571,9 +572,12 @@ public final class CamundaClientImpl implements CamundaClient {
       final ManagedChannel channel, final CamundaClientConfiguration config) {
     final CallCredentials credentials = buildCallCredentials(config);
     final GatewayStub gatewayStub = GatewayGrpc.newStub(channel).withCallCredentials(credentials);
-    if (!config.getInterceptors().isEmpty()) {
-      return gatewayStub.withInterceptors(
-          config.getInterceptors().toArray(new ClientInterceptor[] {}));
+    final List<ClientInterceptor> allInterceptors = new ArrayList<>(config.getInterceptors());
+    if (config.getPhysicalTenantId() != null) {
+      allInterceptors.add(new PhysicalTenantInterceptor(config.getPhysicalTenantId()));
+    }
+    if (!allInterceptors.isEmpty()) {
+      return gatewayStub.withInterceptors(allInterceptors.toArray(new ClientInterceptor[] {}));
     }
     return gatewayStub;
   }

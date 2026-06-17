@@ -106,6 +106,12 @@ public class CamundaClientProperties {
   /** The tenant ID used for tenant-aware commands when no tenant ID is set. */
   private String tenantId = CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER;
 
+  /**
+   * The physical tenant ID sent as the {@code Camunda-Physical-Tenant} gRPC header on every
+   * outgoing call. When {@code null} the header is omitted.
+   */
+  private String physicalTenantId;
+
   /** The request timeout to use when not overridden by a specific command. */
   private Duration requestTimeout = DEFAULT_REQUEST_TIMEOUT;
 
@@ -156,6 +162,14 @@ public class CamundaClientProperties {
 
   public void setTenantId(final String tenantId) {
     this.tenantId = tenantId;
+  }
+
+  public String getPhysicalTenantId() {
+    return physicalTenantId;
+  }
+
+  public void setPhysicalTenantId(final String physicalTenantId) {
+    this.physicalTenantId = physicalTenantId;
   }
 
   public CamundaClientWorkerProperties getWorker() {

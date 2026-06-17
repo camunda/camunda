@@ -44,6 +44,11 @@ public interface CamundaClientConfiguration {
   String getDefaultTenantId();
 
   /**
+   * @see CamundaClientBuilder#physicalTenantId(String)
+   */
+  String getPhysicalTenantId();
+
+  /**
    * @see CamundaClientBuilder#defaultJobWorkerTenantIds(List)
    */
   List<String> getDefaultJobWorkerTenantIds();
