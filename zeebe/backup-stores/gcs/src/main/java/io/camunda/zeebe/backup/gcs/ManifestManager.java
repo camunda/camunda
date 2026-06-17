@@ -30,8 +30,10 @@ import io.camunda.zeebe.backup.common.Manifest;
 import io.camunda.zeebe.backup.common.Manifest.InProgressManifest;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Predicate;
@@ -52,6 +54,9 @@ public final class ManifestManager {
           .disable(WRITE_DATES_AS_TIMESTAMPS)
           .setSerializationInclusion(Include.NON_ABSENT);
   public static final int PRECONDITION_FAILED = 412;
+  private static final int MAX_LIST_ATTEMPTS = 6;
+  private static final Duration INITIAL_LIST_RETRY_DELAY = Duration.ofMillis(100);
+  private static final Duration MAX_LIST_RETRY_DELAY = Duration.ofSeconds(2);
   private static final Logger LOG = LoggerFactory.getLogger(ManifestManager.class);
 
   /**
@@ -193,10 +198,7 @@ public final class ManifestManager {
   public Collection<BackupStatus> listBackupStatuses(final BackupIdentifierWildcard wildcard) {
     final var blobFilter = filterBlobsByWildcard(wildcard);
     LOG.debug("Listing backup statuses for wildcard {}", wildcard);
-    final var listing =
-        client
-            .list(bucketInfo.getName(), BlobListOption.prefix(wildcardPrefix(wildcard)))
-            .iterateAll();
+    final var listing = listManifestBlobsWithRetry(wildcardPrefix(wildcard));
     final var statusFutures = new ArrayList<CompletableFuture<BackupStatus>>();
     for (final var blob : listing) {
       if (!blobFilter.test(blob)) {
@@ -218,6 +220,67 @@ public final class ManifestManager {
         .map(CompletableFuture::join)
         .filter(status -> wildcard.matches(status.id()))
         .toList();
+  }
+
+  private List<Blob> listManifestBlobsWithRetry(final String prefix) {
+    for (int attempt = 1; ; attempt++) {
+      try {
+        final var blobs = new ArrayList<Blob>();
+        client
+            .list(bucketInfo.getName(), BlobListOption.prefix(prefix))
+            .iterateAll()
+            .forEach(blobs::add);
+        return blobs;
+      } catch (final StorageException e) {
+        if (attempt >= MAX_LIST_ATTEMPTS || !shouldRetryListOperation(e)) {
+          throw e;
+        }
+
+        LOG.warn(
+            "Failed to list GCS backup manifests from bucket '{}' with prefix '{}' on attempt {}/{}. Retrying.",
+            bucketInfo.getName(),
+            prefix,
+            attempt,
+            MAX_LIST_ATTEMPTS,
+            e);
+        waitBeforeListRetry(attempt);
+      }
+    }
+  }
+
+  private boolean shouldRetryListOperation(final StorageException e) {
+    return e.isRetryable() || isServerError(e) || isTransientComputeEngineMetadataError(e);
+  }
+
+  private boolean isServerError(final StorageException e) {
+    final var statusCode = e.getCode();
+    return statusCode >= 500 && statusCode < 600;
+  }
+
+  private boolean isTransientComputeEngineMetadataError(final StorageException e) {
+    for (Throwable current = e; current != null; current = current.getCause()) {
+      final var message = current.getMessage();
+      if (message != null
+          && message.contains("Unexpected Error code 500")
+          && message.contains("Compute Engine metadata")) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private void waitBeforeListRetry(final int attempt) {
+    final var delay =
+        Duration.ofMillis(
+            Math.min(
+                MAX_LIST_RETRY_DELAY.toMillis(),
+                INITIAL_LIST_RETRY_DELAY.toMillis() << (attempt - 1)));
+    try {
+      Thread.sleep(delay);
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new StorageException(0, "Interrupted while retrying GCS backup manifest listing", e);
+    }
   }
 
   private CompletableFuture<BackupStatus> downloadManifestStatus(final Blob blob) {
