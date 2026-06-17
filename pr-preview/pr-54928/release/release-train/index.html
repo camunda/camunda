@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en" dir="ltr" class="docs-wrapper plugin-docs plugin-id-default docs-version-current docs-doc-page docs-doc-id-release/release-train" data-has-hydrated="false">
+<head>
+<meta charset="UTF-8">
+<meta name="generator" content="Docusaurus v3.10.1">
+<title data-rh="true">Release Train | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-54928/release/release-train/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Release Train | Camunda Platform"><meta data-rh="true" name="description" content="Scope and Boundaries"><meta data-rh="true" property="og:description" content="Scope and Boundaries"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-54928/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-54928/release/release-train/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-54928/release/release-train/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-54928/release/release-train/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Release Process","item":"https://camunda.github.io/camunda/pr-preview/pr-54928/release/"},{"@type":"ListItem","position":2,"name":"Release Train","item":"https://camunda.github.io/camunda/pr-preview/pr-54928/release/release-train"}]}</script><link rel="stylesheet" href="/camunda/pr-preview/pr-54928/assets/css/styles.44533d03.css">
+<script src="/camunda/pr-preview/pr-54928/assets/js/runtime~main.175eca6d.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-54928/assets/js/main.e3d4cf43.js" defer="defer"></script>
+</head>
+<body>
+<svg style="display: none;"><defs>
+<symbol id="theme-svg-external-link" viewBox="0 0 24 24"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"/></symbol>
+</defs></svg>
+<script>!function(){var t=function(){try{return new URLSearchParams(window.location.search).get("docusaurus-theme")}catch(t){}}()||function(){try{return window.localStorage.getItem("theme")}catch(t){}}();document.documentElement.setAttribute("data-theme",t||"light"),document.documentElement.setAttribute("data-theme-choice",t||"light")}(),function(){try{const c=new URLSearchParams(window.location.search).entries();for(var[t,e]of c)if(t.startsWith("docusaurus-data-")){var a=t.replace("docusaurus-data-","data-");document.documentElement.setAttribute(a,e)}}catch(t){}}()</script><div id="__docusaurus"><link rel="preload" as="image" href="/camunda/pr-preview/pr-54928/img/black-C.png"><div role="region" aria-label="Skip to main content"><a class="skipToContent_fXgn" href="#__docusaurus_skipToContent_fallback">Skip to main content</a></div><nav aria-label="Main" class="theme-layout-navbar navbar navbar--fixed-top"><div class="navbar__inner"><div class="theme-layout-navbar-left navbar__items"><button aria-label="Toggle navigation bar" aria-expanded="false" class="navbar__toggle clean-btn" type="button"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><path stroke="currentColor" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2" d="M4 7h22M4 15h22M4 23h22"></path></svg></button><a class="navbar__brand" href="/camunda/pr-preview/pr-54928/"><div class="navbar__logo"><img src="/camunda/pr-preview/pr-54928/img/black-C.png" alt="Camunda Logo" class="themedComponent_mlkZ themedComponent--light_NVdE"><img src="/camunda/pr-preview/pr-54928/img/black-C.png" alt="Camunda Logo" class="themedComponent_mlkZ themedComponent--dark_xIcU"></div><b class="navbar__title text--truncate">Camunda Platform</b></a></div><div class="theme-layout-navbar-right navbar__items navbar__items--right"><a href="https://github.com/camunda/camunda" target="_blank" rel="noopener noreferrer" class="navbar__item navbar__link">GitHub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a><div class="toggle_vylO colorModeToggle_DEke"><button class="clean-btn toggleButton_gllP toggleButtonDisabled_aARS" type="button" disabled="" title="system mode" aria-label="Switch between dark and light mode (currently system mode)"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP lightToggleIcon_pyhR"><path fill="currentColor" d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP darkToggleIcon_wfgR"><path fill="currentColor" d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP systemToggleIcon_QzmC"><path fill="currentColor" d="m12 21c4.971 0 9-4.029 9-9s-4.029-9-9-9-9 4.029-9 9 4.029 9 9 9zm4.95-13.95c1.313 1.313 2.05 3.093 2.05 4.95s-0.738 3.637-2.05 4.95c-1.313 1.313-3.093 2.05-4.95 2.05v-14c1.857 0 3.637 0.737 4.95 2.05z"></path></svg></button></div><div class="navbarSearchContainer_Bca1"><div class="navbar__search"><span aria-label="expand searchbar" role="button" class="search-icon" tabindex="0"></span><input id="search_input_react" type="search" placeholder="Loading..." aria-label="Search" class="navbar__search-input search-bar" disabled=""></div></div></div></div><div role="presentation" class="navbar-sidebar__backdrop"></div></nav><div id="__docusaurus_skipToContent_fallback" class="theme-layout-main main-wrapper mainWrapper_z2l0"><div class="docsWrapper_hBAB"><button aria-label="Scroll back to top" class="clean-btn theme-back-to-top-button backToTopButton_sjWU" type="button"></button><div class="docRoot_UBD9"><aside class="theme-doc-sidebar-container docSidebarContainer_YfHR"><div class="sidebarViewport_aRkj"><div class="sidebar_njMd"><nav aria-label="Docs sidebar" class="menu thin-scrollbar menu_SIkG"><ul class="theme-doc-sidebar-menu menu__list"><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/camunda/pr-preview/pr-54928/"><span title="Camunda Platform Developer Documentation" class="linkLabel_WmDU">Camunda Platform Developer Documentation</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/camunda/pr-preview/pr-54928/monorepo-devops-team-processes/"><span title="Monorepo DevOps Team Processes" class="linkLabel_WmDU">Monorepo DevOps Team Processes</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/camunda/pr-preview/pr-54928/collaboration-guidelines/"><span title="Collaboration Guidelines" class="linkLabel_WmDU">Collaboration Guidelines</span></a></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist" href="/camunda/pr-preview/pr-54928/ci/"><span title="CI" class="categoryLinkLabel_W154">CI</span></a><button aria-label="Expand sidebar category &#x27;CI&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/camunda/pr-preview/pr-54928/infrastructure-services/"><span title="Infrastructure Services" class="linkLabel_WmDU">Infrastructure Services</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/camunda/pr-preview/pr-54928/processes/"><span title="Processes" class="linkLabel_WmDU">Processes</span></a></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--active" href="/camunda/pr-preview/pr-54928/release/"><span title="Release Process" class="categoryLinkLabel_W154">Release Process</span></a><button aria-label="Collapse sidebar category &#x27;Release Process&#x27;" aria-expanded="true" type="button" class="clean-btn menu__caret"></button></div><ul class="menu__list"><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/camunda/pr-preview/pr-54928/release/release-monorepo/"><span title="Monorepo Release" class="linkLabel_WmDU">Monorepo Release</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link menu__link--active" aria-current="page" tabindex="0" href="/camunda/pr-preview/pr-54928/release/release-train/"><span title="Release Train" class="linkLabel_WmDU">Release Train</span></a></li></ul></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/camunda/pr-preview/pr-54928/architecture/components/rdbms/rdbms_architecture_docs/"><span title="Architecture" class="categoryLinkLabel_W154">Architecture</span></a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist" href="/camunda/pr-preview/pr-54928/frontend/"><span title="Frontend" class="categoryLinkLabel_W154">Frontend</span></a><button aria-label="Expand sidebar category &#x27;Frontend&#x27;" aria-expanded="false" type="button" class="clean-btn menu__caret"></button></div></li></ul></nav><button type="button" title="Collapse sidebar" aria-label="Collapse sidebar" class="button button--secondary button--outline collapseSidebarButton_PEFL"><svg width="20" height="20" aria-hidden="true" class="collapseSidebarButtonIcon_kv0_"><g fill="#7a7a7a"><path d="M9.992 10.023c0 .2-.062.399-.172.547l-4.996 7.492a.982.982 0 01-.828.454H1c-.55 0-1-.453-1-1 0-.2.059-.403.168-.551l4.629-6.942L.168 3.078A.939.939 0 010 2.528c0-.548.45-.997 1-.997h2.996c.352 0 .649.18.828.45L9.82 9.472c.11.148.172.347.172.55zm0 0"></path><path d="M19.98 10.023c0 .2-.058.399-.168.547l-4.996 7.492a.987.987 0 01-.828.454h-3c-.547 0-.996-.453-.996-1 0-.2.059-.403.168-.551l4.625-6.942-4.625-6.945a.939.939 0 01-.168-.55 1 1 0 01.996-.997h3c.348 0 .649.18.828.45l4.996 7.492c.11.148.168.347.168.55zm0 0"></path></g></svg></button></div></div></aside><main class="docMainContainer_TBSr"><div class="container padding-top--md padding-bottom--lg"><div class="row"><div class="col docItemCol_VOVn"><div class="docItemContainer_Djhp"><article><nav class="theme-doc-breadcrumbs breadcrumbsContainer_Z_bl" aria-label="Breadcrumbs"><ul class="breadcrumbs"><li class="breadcrumbs__item"><a aria-label="Home page" class="breadcrumbs__link" href="/camunda/pr-preview/pr-54928/"><svg viewBox="0 0 24 24" class="breadcrumbHomeIcon_YNFT"><path d="M10 19v-5h4v5c0 .55.45 1 1 1h3c.55 0 1-.45 1-1v-7h1.7c.46 0 .68-.57.33-.87L12.67 3.6c-.38-.34-.96-.34-1.34 0l-8.36 7.53c-.34.3-.13.87.33.87H5v7c0 .55.45 1 1 1h3c.55 0 1-.45 1-1z" fill="currentColor"></path></svg></a></li><li class="breadcrumbs__item"><a class="breadcrumbs__link" href="/camunda/pr-preview/pr-54928/release/"><span>Release Process</span></a></li><li class="breadcrumbs__item breadcrumbs__item--active"><span class="breadcrumbs__link">Release Train</span></li></ul></nav><div class="tocCollapsible_ETCw theme-doc-toc-mobile tocMobile_ITEo"><button type="button" class="clean-btn tocCollapsibleButton_TO0P">On this page</button></div><div class="theme-doc-markdown markdown"><header><h1>Release Train</h1></header>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="scope-and-boundaries">Scope and Boundaries<a href="#scope-and-boundaries" class="hash-link" aria-label="Direct link to Scope and Boundaries" title="Direct link to Scope and Boundaries" translate="no">​</a></h2>
+<p>This page documents the C8 Release Train and the SaaS generation flow. It covers how patch, alpha, and minor release trains are started and coordinated, how the train progresses across component releases, SaaS generation, tests, and rollout, and how to recover when the train is already in progress and something breaks.</p>
+<p>The Monorepo release (camunda/camunda) is a step within the C8 Release Train. The train can only proceed once the Monorepo artifacts it depends on are confirmed as released. See <a class="" href="/camunda/pr-preview/pr-54928/release/release-monorepo/">Monorepo Release</a> for how to produce those artifacts.</p>
+<p>For now, the agreed home for these docs is the existing release docs site under <code>camunda.github.io/camunda/release/</code>.</p>
+<p><strong>References</strong></p>
+<ul>
+<li class=""><a href="https://lamppost.camunda-it.rocks/handbook/index.html?continue#departments/products/product-management/release-management-process/c8-release-train/index.md" target="_blank" rel="noopener noreferrer" class="">C8 Release Train</a></li>
+<li class=""><a href="https://lamppost.camunda-it.rocks/handbook/index.html?continue#departments/products/product-management/release-management-process/c8-release-train/basic-operational-instructions/index.md" target="_blank" rel="noopener noreferrer" class="">Basic Operational Instructions</a></li>
+<li class=""><a class="" href="/camunda/pr-preview/pr-54928/release/">Release Process</a></li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="happy-path-flow">Happy-Path Flow<a href="#happy-path-flow" class="hash-link" aria-label="Direct link to Happy-Path Flow" title="Direct link to Happy-Path Flow" translate="no">​</a></h2>
+<p>At a high level, the C8 Release Train starts from a scheduled or ad-hoc trigger, collects the target release lines and base generations, coordinates the component releases (including the Monorepo release), creates SaaS generations for dev/int/prod, runs release validation and rollout work, and ends with support communication and the remaining release wrap-up.</p>
+<p>A concise happy-path view:</p>
+<ol>
+<li class="">Start the train from the release-train trigger process, selecting the release type and base generations for the lines being released.</li>
+<li class="">Release or confirm the required component versions as the train progresses through the user tasks.</li>
+<li class="">Once the component releases are ready, create the SaaS generation for dev/int and continue with rollout-related user tasks.</li>
+<li class="">Complete the test and rollout steps, then continue with the remaining self-managed and communication steps until the train is done.</li>
+</ol>
+<p>For ad-hoc patch releases:</p>
+<ul>
+<li class="">Patches can be triggered any time during the month.</li>
+<li class="">They should be based on the previous generation for that line.</li>
+<li class="">Support notification should be enabled when starting the train.</li>
+</ul>
+<p>To skip a component that does not need a new release, fill in that component&#x27;s release form in Tasklist with the most recently released version, mark it as released, and submit. See <a href="https://lamppost.camunda-it.rocks/handbook/index.html?continue#departments/products/product-management/release-management-process/c8-release-train/basic-operational-instructions/index.md~skipping-components-for-an-ongoing-release-train" target="_blank" rel="noopener noreferrer" class="">Skipping components for an ongoing release train</a> in the Lamppost handbook.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="rules-and-invariants">Rules and Invariants<a href="#rules-and-invariants" class="hash-link" aria-label="Direct link to Rules and Invariants" title="Direct link to Rules and Invariants" translate="no">​</a></h2>
+<p>Use these as short operational rules that help readers decide what is normal and what is drift.</p>
+<ul>
+<li class="">There must not be two concurrent release trains for the same major/minor version.</li>
+<li class="">The C8 Release Train can only proceed once the Monorepo artifacts it depends on are confirmed as released.</li>
+<li class="">Patch releases can be done on demand, but they should still be based on the previous generation for that line.</li>
+<li class="">Only patch releases can be triggered ad-hoc. Alphas and minors always follow the monthly release cadence — a team requesting an ad-hoc alpha must wait for the next monthly cycle.</li>
+<li class="">SaaS generation create/change operations are restricted to <code>@c8-release-train-manager</code>, coordinated in <a href="https://camunda.slack.com/archives/C03NFMH4KC6" target="_blank" rel="noopener noreferrer" class=""><code>#c8-release-announcements</code></a>.</li>
+<li class="">The expected upgrade path for a generation is: to the latest patch of the same minor; if already on the latest patch, to the latest patch of the next minor. Alpha generations cannot be upgraded to — their <code>updatableFrom</code> list is expected to be empty.</li>
+<li class="">Upgrade path configuration must be consistent across dev, int, and prod. A path configured in one environment but not others is drift and should be investigated.</li>
+<li class="">If an already running train needs to switch to a rereleased component version, patch the running train by updating the old version references in the process variables — always <code>releaseSteps</code> and the relevant component version vars, plus <code>baseVersions</code>.</li>
+<li class="">If part of the process must be repeated, process-instance modification can move the token back, but this is dangerous and should be reviewed before doing it.</li>
+<li class="">If there is a serious issue during release execution, open an incident rather than trying to normalize the failure informally.</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="saas-generation">SaaS Generation<a href="#saas-generation" class="hash-link" aria-label="Direct link to SaaS Generation" title="Direct link to SaaS Generation" translate="no">​</a></h2>
+<p>This section covers the SaaS-specific part of the C8 Release Train: creating the new dev/int generation, running the SaaS rollout tasks, and verifying that the resulting generation and upgrade paths match the intended release state.</p>
+<p>The SaaS Generation section stays operational and happy-path focused. Incident recovery patterns such as replaying the SaaS flow after a flawed generation was created belong in <a href="#troubleshooting" class="">Troubleshooting</a>.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="what-this-part-of-the-train-does">What this part of the train does<a href="#what-this-part-of-the-train-does" class="hash-link" aria-label="Direct link to What this part of the train does" title="Direct link to What this part of the train does" translate="no">​</a></h3>
+<p>On the happy path, the release train first collects the target release lines and component versions, then creates the new generation for dev/int, continues with the rollout tasks, and later proceeds with the remaining release and communication steps.</p>
+<p>In practice, this part of the process is where the train turns released component versions into a concrete SaaS generation for the target line.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="inputs-and-prerequisites">Inputs and prerequisites<a href="#inputs-and-prerequisites" class="hash-link" aria-label="Direct link to Inputs and prerequisites" title="Direct link to Inputs and prerequisites" translate="no">​</a></h3>
+<p>Before the SaaS Generation part runs, make sure:</p>
+<ul>
+<li class="">The train was started with the correct base generation for the release line.</li>
+<li class="">The intended new generation name was provided in the train start form.</li>
+<li class="">The required component versions were released or explicitly reused if a component is being skipped.</li>
+<li class="">Support notification was enabled when the train was started.</li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="ownership-and-coordination">Ownership and coordination<a href="#ownership-and-coordination" class="hash-link" aria-label="Direct link to Ownership and coordination" title="Direct link to Ownership and coordination" translate="no">​</a></h3>
+<p>SaaS generation create/change operations are restricted to <code>@c8-release-train-manager</code> and must be coordinated in <a href="https://camunda.slack.com/archives/C03NFMH4KC6" target="_blank" rel="noopener noreferrer" class=""><code>#c8-release-announcements</code></a>.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="what-to-verify-after-saas-generation">What to verify after SaaS Generation<a href="#what-to-verify-after-saas-generation" class="hash-link" aria-label="Direct link to What to verify after SaaS Generation" title="Direct link to What to verify after SaaS Generation" translate="no">​</a></h3>
+<p>After the generation is created and the rollout proceeds, verify:</p>
+<ul>
+<li class="">The fresh generation exists with the expected name.</li>
+<li class="">The generation contains the intended component versions.</li>
+<li class="">The upgrade paths point to the intended safe generations.</li>
+<li class="">Stable and support channel references match the intended release state.</li>
+</ul>
+<p>If any of these checks fail, continue in <a href="#troubleshooting" class="">Troubleshooting</a> rather than trying to normalize the state informally.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="support-notification-timing">Support notification timing<a href="#support-notification-timing" class="hash-link" aria-label="Direct link to Support notification timing" title="Direct link to Support notification timing" translate="no">​</a></h3>
+<p>Enable support notification when starting the train unless there is an explicit reason not to. The &quot;Send support notification?&quot; toggle is in the train initiation form.</p>
+<p>Additional timing notes:</p>
+<ul>
+<li class="">Ask-support notifications must be sent as soon as all releases in the trigger batch are complete (SM and SaaS), excluding the SaaS autoupgrade step — approve the ask-support message send-out as soon as everything else is done.</li>
+<li class=""><strong>Autoupgrades</strong> are the lowest-priority step and can be done after the rest of the train completes — typically the next business day if no blockers exist.</li>
+<li class=""><strong>Alpha releases</strong> do not include SaaS autoupgrades.</li>
+<li class="">If autoupgrades are pending and not yet triggered, they do not block the train from being considered released. Communicate the pending status clearly in the train thread.</li>
+<li class="">If an active incident is causing a release delay, you do not need to proactively communicate ETAs to stakeholders — they will receive <code>ask-support</code> messages when the train completes.</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="troubleshooting">Troubleshooting<a href="#troubleshooting" class="hash-link" aria-label="Direct link to Troubleshooting" title="Direct link to Troubleshooting" translate="no">​</a></h2>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="flawed-generation-already-created-in-devint">Flawed generation already created in dev/int<a href="#flawed-generation-already-created-in-devint" class="hash-link" aria-label="Direct link to Flawed generation already created in dev/int" title="Direct link to Flawed generation already created in dev/int" translate="no">​</a></h3>
+<p>Use this when the Monorepo is already released with a flaw, the current train already created dev/int SaaS generations with the flawed component versions.</p>
+<p><strong>Symptoms</strong></p>
+<ul>
+<li class="">The train is still in progress, but dev/int generations already exist with flawed component.</li>
+<li class="">The flawed generation is already used by clusters, so deleting it is not an option.</li>
+<li class="">The issue has not reached prod yet.</li>
+</ul>
+<p><strong>Prerequisites</strong></p>
+<ul>
+<li class="">The Monorepo fix must be released before you can patch the train. The version you will patch into the process variables is the Monorepo re-release version — confirm it is available before changing any variables.</li>
+</ul>
+<p><strong>Recommended recovery path</strong></p>
+<ol>
+<li class="">Do not silently reuse the flawed generation.</li>
+<li class="">Rename the broken generation in dev/int to make it explicit that it must not be used, for example <code>8.9+gen8 BROKEN DO NOT USE</code>. Be aware that clusters on the previous generation (e.g. <code>8.8+gen24</code>) will temporarily have no valid upgrade target — see Notes below.</li>
+<li class="">Patch the running train variables with the corrected versions, using the version number from the Monorepo re-release. See <a href="#patching-running-train-variables" class="">Patching running train variables</a> for the exact steps.</li>
+<li class="">Move the BPMN token back to the <code>SaaS Generation Rollout Dev/Int</code> step so the corresponding flow is repeated and a fresh generation with the original name is created from the corrected variables.</li>
+<li class="">After the fresh generation is created, repair upgrade paths and channels/stable references:<!-- -->
+<ul>
+<li class="">Remove upgrade paths to the flawed generation first if not already done.</li>
+<li class="">Restore upgrade paths to the latest unflawed generation as soon as possible. If needed, temporarily add the previous patch as a backup path while the corrected generation is being rebuilt.</li>
+<li class="">Make sure stable and support channels reflect the same intended safe state before proceeding with the rest of the train.</li>
+</ul>
+</li>
+</ol>
+<p><strong>Notes and watch-outs</strong></p>
+<ul>
+<li class="">Treat process-instance modification with care. Moving tokens or changing variables can create inconsistencies if preconditions are not met — have another engineer review the plan when possible.</li>
+<li class="">Generations used by clusters cannot be deleted. Prefer rename-and-recreate over delete-and-recreate.</li>
+<li class="">A bad generation is a stop sign. Do not proceed until the state is understood or resolved.</li>
+<li class="">Do not remove upgrade paths from the previous generation to the flawed generation without first providing a safe alternative. Customers on the previous generation may be left with no valid upgrade target. Either redirect those paths to a known-good generation as a temporary target, or minimize the window by moving quickly to restore paths to the fresh generation.</li>
+<li class="">Alpha generations cannot be upgraded to — an empty <code>updatableFrom</code> list on an alpha generation is expected, not a sign of drift.</li>
+</ul>
+<p><strong>Where to check the audit trail</strong></p>
+<ul>
+<li class="">Dev and int generation audit logs: <a href="https://camunda.slack.com/archives/C01EXB99MJ7" target="_blank" rel="noopener noreferrer" class=""><code>#cloud-admin-preprod</code></a></li>
+<li class="">Prod generation audit logs: <a href="https://camunda.slack.com/archives/C01EGCSLGTZ" target="_blank" rel="noopener noreferrer" class=""><code>#cloud-admin</code></a></li>
+</ul>
+<p><strong>Worked example: 8.8+gen25</strong></p>
+<p>During the June 2026 incident, a critical bug was found in the Monorepo after <code>8.8+gen25</code> was already created in dev/int with the flawed version <code>8.8.26</code>. The recovery looked like this:</p>
+<ol start="0">
+<li class="">Waited for the Monorepo re-release to complete and confirmed that <code>8.8.27</code> was available before touching any train variables.</li>
+<li class="">Renamed <code>Camunda 8.8+gen25</code> → <code>Camunda 8.8+gen25 BROKEN DO NOT USE</code> in dev and int. Clusters on <code>8.8+gen24</code> were temporarily left without an upgrade path — this window was minimized by moving quickly through the next steps.</li>
+<li class="">Patched process variables: bumped <code>monorepoVersion</code>, <code>zeebeVersion</code>, <code>operateVersion</code>, <code>tasklistVersion</code>, <code>identityVersion</code>, <code>optimizeVersion</code>, and <code>baseVersions</code> from <code>8.8.26</code> to <code>8.8.27</code>. Also updated <code>releaseSteps</code> to reflect the new versions.</li>
+<li class="">Moved the BPMN token back to <code>SaaS Generation Rollout Dev/Int</code>.</li>
+<li class="">The train recreated <code>Camunda 8.8+gen25</code> with the corrected versions.</li>
+<li class="">Repaired upgrade paths so that <code>8.8+gen24 → 8.8+gen25 → 8.9+gen8</code> were correctly wired, and updated stable/support channels. Stable versions restored across lines were <code>8.9+gen6</code>, <code>8.8+gen23</code>, and <code>8.7+gen28</code> — ensuring customers had a safe upgrade target while the corrected trains were being rebuilt.</li>
+</ol>
+<p><strong>References</strong></p>
+<ul>
+<li class=""><a href="https://camunda.slack.com/archives/CHY2S7KDJ/p1780928211613299?thread_ts=1780674684.007179&amp;cid=CHY2S7KDJ" target="_blank" rel="noopener noreferrer" class="">Incident discussion and recovery approach</a></li>
+<li class=""><a href="https://camunda.slack.com/archives/C03NFMH4KC6/p1781115581813819?thread_ts=1780994207.740159&amp;cid=C03NFMH4KC6" target="_blank" rel="noopener noreferrer" class="">8.8+gen25 release thread</a></li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="patching-running-train-variables">Patching running train variables<a href="#patching-running-train-variables" class="hash-link" aria-label="Direct link to Patching running train variables" title="Direct link to Patching running train variables" translate="no">​</a></h3>
+<p>Use this when a component version changes after the train has already started and variables in the running process instance need to be updated. The base procedure — finding the instance in Operate, amending variables, and saving — is documented in the Lamppost handbook:</p>
+<ul>
+<li class=""><a href="https://lamppost.camunda-it.rocks/handbook/index.html?continue#departments/products/product-management/release-management-process/c8-release-train/basic-operational-instructions/index.md~changing-component-version-variables-for-an-ongoing-release-train" target="_blank" rel="noopener noreferrer" class="">Changing component version variables for an ongoing release train</a></li>
+<li class=""><a href="https://lamppost.camunda-it.rocks/handbook/index.html?continue#departments/products/product-management/release-management-process/c8-release-train/basic-operational-instructions/index.md~changing-a-version-of-an-already-released-component" target="_blank" rel="noopener noreferrer" class="">Changing a version of an already released component</a></li>
+</ul>
+<p><strong>Monorepo-specific additions</strong></p>
+<ol>
+<li class="">Before changing anything, leave a message in the Slack thread of the release train:<!-- -->
+<blockquote>
+<p>⚠️ I&#x27;m patching the release train to use &lt;component&gt; version a.b.c instead of version a.b.d</p>
+</blockquote>
+</li>
+<li class="">Beyond <code>&lt;component&gt;Version</code> and <code>baseVersions</code>, also update <code>releaseSteps</code> — the JSON object containing per-component version info that the handbook examples omit.</li>
+<li class="">For a <strong>Monorepo re-release</strong> specifically, update all of:<!-- -->
+<ul>
+<li class=""><code>monorepoVersion</code>, <code>zeebeVersion</code>, <code>operateVersion</code>, <code>tasklistVersion</code></li>
+<li class=""><code>identityVersion</code> — <strong>not</strong> <code>identityManagementVersion</code>; these are different components</li>
+<li class=""><code>releaseSteps</code> and <code>baseVersions</code></li>
+<li class="">plus any other component vars also rereleased (e.g. <code>optimizeVersion</code> for 8.8+)</li>
+</ul>
+</li>
+</ol>
+<p><strong>Notes</strong></p>
+<ul>
+<li class=""><code>releaseSteps</code> and <code>baseVersions</code> are the two variables most commonly forgotten. Both must be updated.</li>
+<li class=""><code>identityVersion</code> is the orchestration-cluster identity component; <code>identityManagementVersion</code> is the separate Identity Management component — always update <code>identityVersion</code> for Monorepo re-releases.</li>
+<li class="">The later you are in the train flow, the more likely it is safer to abandon and restart with a new train rather than patching.</li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="generation-rollout-error-cluster-not-fully-created-yet">Generation rollout error: cluster not fully created yet<a href="#generation-rollout-error-cluster-not-fully-created-yet" class="hash-link" aria-label="Direct link to Generation rollout error: cluster not fully created yet" title="Direct link to Generation rollout error: cluster not fully created yet" translate="no">​</a></h3>
+<p>During SaaS generation rollout, some clusters may reject the generation update with an admission webhook error:</p>
+<blockquote>
+<p>updates to generation are not possible as cluster is not fully created yet</p>
+</blockquote>
+<p>This means the cluster was still being provisioned when the generation update was applied. The controller rejects the update to avoid leaving the cluster in an inconsistent state.</p>
+<p><strong>What to do</strong></p>
+<ul>
+<li class="">Identify which clusters triggered the error and check whether they belong to external customers.</li>
+<li class="">Open an incident for each affected customer cluster.</li>
+<li class="">Check whether the cluster completed provisioning and whether the generation update needs to be retried.</li>
+</ul>
+<p><strong>Notes</strong></p>
+<ul>
+<li class="">Internal test clusters (e.g. Controller Team Enterprise Test) typically have lower urgency than customer clusters.</li>
+<li class="">A similar error occurred during the 8.9+gen4 → 8.9+gen5 transition; see incident <code>inc-dead-partition-due-to-missing-log-entries</code> for prior context.</li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="clusters-with-missing-health-or-deleted-status-during-bulk-auto-upgrade">Clusters with missing health or deleted status during bulk auto-upgrade<a href="#clusters-with-missing-health-or-deleted-status-during-bulk-auto-upgrade" class="hash-link" aria-label="Direct link to Clusters with missing health or deleted status during bulk auto-upgrade" title="Direct link to Clusters with missing health or deleted status during bulk auto-upgrade" translate="no">​</a></h3>
+<p>During the prod rollout, you may see clusters with an unknown/missing health status or a deleted status included in a bulk auto-upgrade operation. This is expected behavior — do not treat it as a stop condition.</p>
+<p><strong>How auto-upgrade handles these clusters</strong></p>
+<ul>
+<li class=""><strong>Unhealthy or unknown-health clusters</strong> are included in bulk auto-upgrades. The rationale is that upgrading may help resolve the unhealthy state.</li>
+<li class=""><strong>Sleeping clusters</strong> are excluded from auto-upgrades automatically.</li>
+<li class=""><strong>Deleted clusters</strong> appearing in a bulk operation count should be investigated — they are likely already gone and will not actually be upgraded.</li>
+</ul>
+<p><strong>Notes</strong></p>
+<ul>
+<li class="">A cluster without a reported health status is not automatically a blocker — but investigate before assuming it is safe to upgrade.</li>
+<li class="">If a deleted cluster appears in the operation, confirm it is genuinely deleted and not in an ambiguous state before continuing.</li>
+<li class="">The sleeping-cluster exclusion is enforced by the controller; no manual action is needed.</li>
+</ul>
+<p><strong>References</strong></p>
+<ul>
+<li class=""><a href="https://camunda.slack.com/archives/C051AA63QV8/p1781596129229369?thread_ts=1781527382.832229&amp;cid=C051AA63QV8" target="_blank" rel="noopener noreferrer" class="">ask-controller thread confirming behavior</a></li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="recovery-verification-checklist">Recovery verification checklist<a href="#recovery-verification-checklist" class="hash-link" aria-label="Direct link to Recovery verification checklist" title="Direct link to Recovery verification checklist" translate="no">​</a></h3>
+<p>Use this after patching a running train and replaying the SaaS generation or rollout steps.</p>
+<ul class="contains-task-list containsTaskList_mC6p">
+<li class="task-list-item"><input type="checkbox" disabled=""> <!-- -->Confirm the fresh generation exists with the expected original name.</li>
+<li class="task-list-item"><input type="checkbox" disabled=""> <!-- -->Confirm the fresh generation contains the corrected component versions.</li>
+<li class="task-list-item"><input type="checkbox" disabled=""> <!-- -->Confirm the train is continuing against the fresh generation, not the renamed broken one.</li>
+<li class="task-list-item"><input type="checkbox" disabled=""> <!-- -->Confirm upgrade paths point to the intended safe generations.</li>
+<li class="task-list-item"><input type="checkbox" disabled=""> <!-- -->Confirm stable and support channels point to the intended generations.</li>
+<li class="task-list-item"><input type="checkbox" disabled=""> <!-- -->Confirm the dev/int SaaS rollout completed successfully.</li>
+<li class="task-list-item"><input type="checkbox" disabled=""> <!-- -->If the old broken generation is still visible, confirm it is clearly renamed and not the active target for the train.</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="faq">FAQ<a href="#faq" class="hash-link" aria-label="Direct link to FAQ" title="Direct link to FAQ" translate="no">​</a></h2>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="1-where-does-the-monorepo-release-fit-in-the-c8-release-train">1. Where does the Monorepo release fit in the C8 Release Train?<a href="#1-where-does-the-monorepo-release-fit-in-the-c8-release-train" class="hash-link" aria-label="Direct link to 1. Where does the Monorepo release fit in the C8 Release Train?" title="Direct link to 1. Where does the Monorepo release fit in the C8 Release Train?" translate="no">​</a></h3>
+<p>The Monorepo release is a step within the C8 Release Train, not a separate process. The train waits for the Monorepo to produce its core backend artifacts, then continues with the downstream component steps, SaaS generation, release tests, rollout, and support communication.</p>
+<p>As a rule of thumb:</p>
+<ul>
+<li class="">If the issue is about producing or validating Monorepo artifacts → use <a class="" href="/camunda/pr-preview/pr-54928/release/release-monorepo/">Monorepo Release</a>.</li>
+<li class="">If the issue is about train coordination, generations, upgrade paths, channels, release-train variables, or support-notification timing → use this page.</li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="2-what-should-i-do-if-a-flawed-generation-was-already-created-in-devint">2. What should I do if a flawed generation was already created in dev/int?<a href="#2-what-should-i-do-if-a-flawed-generation-was-already-created-in-devint" class="hash-link" aria-label="Direct link to 2. What should I do if a flawed generation was already created in dev/int?" title="Direct link to 2. What should I do if a flawed generation was already created in dev/int?" translate="no">​</a></h3>
+<p>Rename the broken generation to <code>BROKEN DO NOT USE</code>, patch the train variables (including <code>releaseSteps</code> and <code>baseVersions</code>), move the BPMN token back to the SaaS generation or rollout step, and verify the fresh generation before continuing.</p>
+<p>See <a href="#flawed-generation-already-created-in-devint" class="">Flawed generation already created in dev/int</a> in Troubleshooting for the full procedure and the 8.8+gen25 worked example.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="3-how-do-i-know-which-part-of-the-train-must-be-replayed">3. How do I know which part of the train must be replayed?<a href="#3-how-do-i-know-which-part-of-the-train-must-be-replayed" class="hash-link" aria-label="Direct link to 3. How do I know which part of the train must be replayed?" title="Direct link to 3. How do I know which part of the train must be replayed?" translate="no">​</a></h3>
+<p>Look at the current train state first. If Monorepo is already completed but the SaaS generation or SaaS rollout part still needs to be rebuilt, replay the SaaS side rather than the Monorepo release itself. In the release-train flow, dev/int generation creation and the later SaaS generation release are separate parts of the process.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="4-can-i-retry-or-skip-parts-of-the-bpmn-flow">4. Can I retry or skip parts of the BPMN flow?<a href="#4-can-i-retry-or-skip-parts-of-the-bpmn-flow" class="hash-link" aria-label="Direct link to 4. Can I retry or skip parts of the BPMN flow?" title="Direct link to 4. Can I retry or skip parts of the BPMN flow?" translate="no">​</a></h3>
+<p>Yes, but carefully. Process-instance modification in Operate lets you retry earlier steps or skip later ones. The risk is that moving tokens or changing variables can create inconsistencies if preconditions are not met.</p>
+<p>A safe rule is:</p>
+<ul>
+<li class="">First fix the underlying variables or external state.</li>
+<li class="">Only then move the token to the exact step that needs to be repeated.</li>
+<li class="">If in doubt, get another release engineer to review the plan before modifying the instance.</li>
+</ul>
+<p><strong>References</strong></p>
+<ul>
+<li class=""><a href="#patching-running-train-variables" class="">Patching running train variables</a></li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="5-when-should-i-open-an-incident-instead-of-continuing-manually">5. When should I open an incident instead of continuing manually?<a href="#5-when-should-i-open-an-incident-instead-of-continuing-manually" class="hash-link" aria-label="Direct link to 5. When should I open an incident instead of continuing manually?" title="Direct link to 5. When should I open an incident instead of continuing manually?" translate="no">​</a></h3>
+<p>If there is a serious issue during release execution, open an incident instead of trying to normalize the failure informally.</p>
+<p>That is especially true when:</p>
+<ul>
+<li class="">The release state is unclear and different engineers have conflicting interpretations.</li>
+<li class="">Customer upgradeability is affected.</li>
+<li class="">Multiple release lines are impacted at once.</li>
+<li class="">The fix requires manual process-instance modification, generation replacement, or channel/path repair.</li>
+</ul></div><footer class="theme-doc-footer docusaurus-mt-lg"><div class="row margin-top--sm theme-doc-footer-edit-meta-row"><div class="col noPrint_WFHX"><a href="https://github.com/camunda/camunda/edit/main/docs/monorepo-docs/release/release-train.md" target="_blank" rel="noopener noreferrer" class="theme-edit-this-page"><svg fill="currentColor" height="20" width="20" viewBox="0 0 40 40" class="iconEdit_Z9Sw" aria-hidden="true"><g><path d="m34.5 11.7l-3 3.1-6.3-6.3 3.1-3q0.5-0.5 1.2-0.5t1.1 0.5l3.9 3.9q0.5 0.4 0.5 1.1t-0.5 1.2z m-29.5 17.1l18.4-18.5 6.3 6.3-18.4 18.4h-6.3v-6.2z"></path></g></svg>Edit this page</a></div><div class="col lastUpdated_JAkA"></div></div></footer></article><nav class="docusaurus-mt-lg pagination-nav" aria-label="Docs pages"><a class="pagination-nav__link pagination-nav__link--prev" href="/camunda/pr-preview/pr-54928/release/release-monorepo/"><div class="pagination-nav__sublabel">Previous</div><div class="pagination-nav__label">Monorepo Release</div></a><a class="pagination-nav__link pagination-nav__link--next" href="/camunda/pr-preview/pr-54928/architecture/components/rdbms/rdbms_architecture_docs/"><div class="pagination-nav__sublabel">Next</div><div class="pagination-nav__label">Architecture Documentation</div></a></nav></div></div><div class="col col--3"><div class="tableOfContents_bqdL thin-scrollbar theme-doc-toc-desktop"><ul class="table-of-contents table-of-contents__left-border"><li><a href="#scope-and-boundaries" class="table-of-contents__link toc-highlight">Scope and Boundaries</a></li><li><a href="#happy-path-flow" class="table-of-contents__link toc-highlight">Happy-Path Flow</a></li><li><a href="#rules-and-invariants" class="table-of-contents__link toc-highlight">Rules and Invariants</a></li><li><a href="#saas-generation" class="table-of-contents__link toc-highlight">SaaS Generation</a><ul><li><a href="#what-this-part-of-the-train-does" class="table-of-contents__link toc-highlight">What this part of the train does</a></li><li><a href="#inputs-and-prerequisites" class="table-of-contents__link toc-highlight">Inputs and prerequisites</a></li><li><a href="#ownership-and-coordination" class="table-of-contents__link toc-highlight">Ownership and coordination</a></li><li><a href="#what-to-verify-after-saas-generation" class="table-of-contents__link toc-highlight">What to verify after SaaS Generation</a></li><li><a href="#support-notification-timing" class="table-of-contents__link toc-highlight">Support notification timing</a></li></ul></li><li><a href="#troubleshooting" class="table-of-contents__link toc-highlight">Troubleshooting</a><ul><li><a href="#flawed-generation-already-created-in-devint" class="table-of-contents__link toc-highlight">Flawed generation already created in dev/int</a></li><li><a href="#patching-running-train-variables" class="table-of-contents__link toc-highlight">Patching running train variables</a></li><li><a href="#generation-rollout-error-cluster-not-fully-created-yet" class="table-of-contents__link toc-highlight">Generation rollout error: cluster not fully created yet</a></li><li><a href="#clusters-with-missing-health-or-deleted-status-during-bulk-auto-upgrade" class="table-of-contents__link toc-highlight">Clusters with missing health or deleted status during bulk auto-upgrade</a></li><li><a href="#recovery-verification-checklist" class="table-of-contents__link toc-highlight">Recovery verification checklist</a></li></ul></li><li><a href="#faq" class="table-of-contents__link toc-highlight">FAQ</a><ul><li><a href="#1-where-does-the-monorepo-release-fit-in-the-c8-release-train" class="table-of-contents__link toc-highlight">1. Where does the Monorepo release fit in the C8 Release Train?</a></li><li><a href="#2-what-should-i-do-if-a-flawed-generation-was-already-created-in-devint" class="table-of-contents__link toc-highlight">2. What should I do if a flawed generation was already created in dev/int?</a></li><li><a href="#3-how-do-i-know-which-part-of-the-train-must-be-replayed" class="table-of-contents__link toc-highlight">3. How do I know which part of the train must be replayed?</a></li><li><a href="#4-can-i-retry-or-skip-parts-of-the-bpmn-flow" class="table-of-contents__link toc-highlight">4. Can I retry or skip parts of the BPMN flow?</a></li><li><a href="#5-when-should-i-open-an-incident-instead-of-continuing-manually" class="table-of-contents__link toc-highlight">5. When should I open an incident instead of continuing manually?</a></li></ul></li></ul></div></div></div></div></main></div></div></div><footer class="theme-layout-footer footer footer--dark"><div class="container container-fluid"><div class="footer__bottom text--center"><div class="footer__copyright">Copyright © 2026 Camunda.</div></div></div></footer></div>
+</body>
+</html>
