@@ -22,7 +22,7 @@ const SORT_BY_FIELD: Record<
 
 function getTasksRequestBody(
 	{filter, sortBy}: Pick<TasklistIndexSearch, 'filter' | 'sortBy'>,
-	{currentUsername}: {currentUsername?: string},
+	{currentUsername}: {currentUsername: string},
 ): QueryUserTasksRequestBody {
 	const sort: QueryUserTasksRequestBody['sort'] = [
 		{
@@ -35,7 +35,7 @@ function getTasksRequestBody(
 		case 'assigned-to-me':
 			return {
 				filter: {
-					assignee: currentUsername!,
+					assignee: currentUsername,
 					state: 'CREATED',
 				},
 				sort,
