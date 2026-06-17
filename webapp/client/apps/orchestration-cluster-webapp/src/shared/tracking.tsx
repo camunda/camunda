@@ -108,6 +108,7 @@ type Events =
 			eventName: 'operate:navigation';
 			link:
 				| 'header-logo'
+				| 'header-dashboard'
 				| 'header-processes'
 				| 'header-decisions'
 				| 'header-operations-log'

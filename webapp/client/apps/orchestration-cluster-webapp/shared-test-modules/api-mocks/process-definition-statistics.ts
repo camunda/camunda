@@ -6,7 +6,24 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {GetProcessDefinitionInstanceStatisticsResponseBody} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {
+	GetProcessDefinitionInstanceStatisticsResponseBody,
+	ProcessDefinitionInstanceStatistics,
+} from '@camunda/camunda-api-zod-schemas/8.10';
+
+function createProcessDefinitionInstanceStatistics(
+	overrides?: Partial<ProcessDefinitionInstanceStatistics>,
+): ProcessDefinitionInstanceStatistics {
+	return {
+		processDefinitionId: 'process',
+		latestProcessDefinitionName: 'My Process',
+		hasMultipleVersions: false,
+		activeInstancesWithoutIncidentCount: 0,
+		activeInstancesWithIncidentCount: 0,
+		tenantId: '<default>',
+		...overrides,
+	};
+}
 
 function createProcessDefinitionInstanceStatisticsResponse(
 	overrides?: Partial<GetProcessDefinitionInstanceStatisticsResponseBody>,
@@ -18,4 +35,4 @@ function createProcessDefinitionInstanceStatisticsResponse(
 	};
 }
 
-export {createProcessDefinitionInstanceStatisticsResponse};
+export {createProcessDefinitionInstanceStatistics, createProcessDefinitionInstanceStatisticsResponse};

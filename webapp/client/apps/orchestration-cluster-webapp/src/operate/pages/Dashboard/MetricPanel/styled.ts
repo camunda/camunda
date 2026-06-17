@@ -11,10 +11,13 @@ import {styles} from '@carbon/type';
 import {Link} from '@tanstack/react-router';
 
 const Title = styled(Link)`
-	${styles.productiveHeading04};
-	color: var(--cds-text-primary) !important;
-	display: inline-block;
-	margin-bottom: var(--cds-spacing-05);
+	&& {
+		${styles.productiveHeading04};
+		color: var(--cds-text-primary);
+		text-decoration: none;
+		display: inline-block;
+		margin-bottom: var(--cds-spacing-05);
+	}
 `;
 
 const LabelContainer = styled.div`
@@ -24,8 +27,11 @@ const LabelContainer = styled.div`
 `;
 
 const Label = styled(Link)`
-	${styles.productiveHeading03};
-	color: var(--cds-text-primary) !important;
+	&& {
+		${styles.productiveHeading03};
+		color: var(--cds-text-primary);
+		text-decoration: none;
+	}
 `;
 
 export {Title, LabelContainer, Label};

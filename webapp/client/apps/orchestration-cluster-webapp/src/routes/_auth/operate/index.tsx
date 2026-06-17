@@ -11,7 +11,7 @@ import {runningInstancesCountQuery} from '#/operate/pages/Dashboard/useRunningIn
 import {Dashboard} from '#/operate/pages/Dashboard/Dashboard';
 
 export const Route = createFileRoute('/_auth/operate/')({
-	beforeLoad: async ({context: {queryClient}}) => {
+	loader: async ({context: {queryClient}}) => {
 		await queryClient.ensureQueryData(runningInstancesCountQuery());
 	},
 	component: Dashboard,

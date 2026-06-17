@@ -14,34 +14,34 @@ import {
 	mockGetProcessDefinitionInstanceStatisticsEndpoint,
 	mockCurrentUserEndpoint,
 } from '#/shared-test-modules/mock-handlers';
+import {
+	createProcessDefinitionInstanceStatistics,
+	createProcessDefinitionInstanceStatisticsResponse,
+} from '#/shared-test-modules/api-mocks/process-definition-statistics';
 import {Dashboard} from './Dashboard';
 
-const STATS_RESPONSE_WITH_INSTANCES = HttpResponse.json({
-	items: [
-		{
-			processDefinitionId: 'process-1',
-			latestProcessDefinitionName: 'Process One',
-			hasMultipleVersions: false,
-			activeInstancesWithoutIncidentCount: 10,
-			activeInstancesWithIncidentCount: 3,
-			tenantId: '<default>',
-		},
-		{
-			processDefinitionId: 'process-2',
-			latestProcessDefinitionName: 'Process Two',
-			hasMultipleVersions: true,
-			activeInstancesWithoutIncidentCount: 5,
-			activeInstancesWithIncidentCount: 2,
-			tenantId: '<default>',
-		},
-	],
-	page: {totalItems: 2, startCursor: null, endCursor: null, hasMoreTotalItems: false},
-});
+const STATS_RESPONSE_WITH_INSTANCES = HttpResponse.json(
+	createProcessDefinitionInstanceStatisticsResponse({
+		items: [
+			createProcessDefinitionInstanceStatistics({
+				processDefinitionId: 'process-1',
+				latestProcessDefinitionName: 'Process One',
+				activeInstancesWithoutIncidentCount: 10,
+				activeInstancesWithIncidentCount: 3,
+			}),
+			createProcessDefinitionInstanceStatistics({
+				processDefinitionId: 'process-2',
+				latestProcessDefinitionName: 'Process Two',
+				hasMultipleVersions: true,
+				activeInstancesWithoutIncidentCount: 5,
+				activeInstancesWithIncidentCount: 2,
+			}),
+		],
+		page: {totalItems: 2, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+	}),
+);
 
-const STATS_RESPONSE_EMPTY = HttpResponse.json({
-	items: [],
-	page: {totalItems: 0, startCursor: null, endCursor: null, hasMoreTotalItems: false},
-});
+const STATS_RESPONSE_EMPTY = HttpResponse.json(createProcessDefinitionInstanceStatisticsResponse());
 
 const CURRENT_USER_RESPONSE = HttpResponse.json({
 	userId: 'test-user',
