@@ -17,6 +17,7 @@ import static io.camunda.optimize.service.dashboard.AgenticControlDashboardServi
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.KPI_INCIDENT_RATE_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.KPI_MEDIAN_TOKENS_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.TOKEN_CONSUMERS_REPORT_ID;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.TOKEN_OUTLIER_BANDS_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.TOKEN_TREND_REPORT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -939,6 +940,39 @@ class AgenticKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
             .mapToDouble(MapResultEntryDto::getValue)
             .sum();
     assertThat(totalOutput).isCloseTo(300.0, within(1.0));
+  }
+
+  // ---------------------------------------------------------------------------
+  // Token outlier bands report (weekly P5/P50/P95 token line chart)
+  // ---------------------------------------------------------------------------
+
+  @Test
+  void shouldReturnThreePercentileMeasures_forTokenOutlierBands() {
+    // given — 5 instances sharing an end date with total tokens [100, 200, 300, 400, 500]
+    final OffsetDateTime sharedEnd = OffsetDateTime.now().minusDays(2);
+    persistProcessInstances(
+        List.of(
+            agenticInstanceWithTokens(PROC_KEY, 100L, 0L).endDate(sharedEnd).build(),
+            agenticInstanceWithTokens(PROC_KEY, 200L, 0L).endDate(sharedEnd).build(),
+            agenticInstanceWithTokens(PROC_KEY, 300L, 0L).endDate(sharedEnd).build(),
+            agenticInstanceWithTokens(PROC_KEY, 400L, 0L).endDate(sharedEnd).build(),
+            agenticInstanceWithTokens(PROC_KEY, 500L, 0L).endDate(sharedEnd).build()));
+
+    // when
+    final MapCommandResult result = evaluateMap(TOKEN_OUTLIER_BANDS_REPORT_ID, noExtraFilters());
+
+    // then — exactly three measures, ordered p5, p50, p95
+    final List<MeasureDto<List<MapResultEntryDto>>> measures = result.getMeasures();
+    assertThat(measures).hasSize(3);
+    assertThat(measures.get(0).getAggregationType())
+        .isEqualTo(new AggregationDto(AggregationType.PERCENTILE, 5.0));
+    assertThat(measures.get(1).getAggregationType())
+        .isEqualTo(new AggregationDto(AggregationType.PERCENTILE, 50.0));
+    assertThat(measures.get(2).getAggregationType())
+        .isEqualTo(new AggregationDto(AggregationType.PERCENTILE, 95.0));
+
+    // and the p50 band reflects the median total tokens (300) — ES percentile approximation
+    assertThat(measures.get(1).getData().getFirst().getValue()).isCloseTo(300.0, within(50.0));
   }
 
   // ---------------------------------------------------------------------------

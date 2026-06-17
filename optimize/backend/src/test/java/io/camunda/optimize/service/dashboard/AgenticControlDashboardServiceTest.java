@@ -93,7 +93,7 @@ public class AgenticControlDashboardServiceTest {
     assertThat(saved.isAgenticControlDashboard()).isTrue();
     assertThat(saved.isManagementDashboard()).isFalse();
     assertThat(saved.getCollectionId()).isNull();
-    assertThat(saved.getTiles()).hasSize(11);
+    assertThat(saved.getTiles()).hasSize(12);
   }
 
   @Test
@@ -175,6 +175,7 @@ public class AgenticControlDashboardServiceTest {
             AgenticControlDashboardService.KPI_MEDIAN_TOKENS_REPORT_ID,
             AgenticControlDashboardService.DURATION_STABILITY_REPORT_ID,
             AgenticControlDashboardService.TOKEN_TREND_REPORT_ID,
+            AgenticControlDashboardService.TOKEN_OUTLIER_BANDS_REPORT_ID,
             AgenticControlDashboardService.TOKEN_CONSUMERS_REPORT_ID,
             AgenticControlDashboardService.KPI_DURATION_P50_REPORT_ID,
             AgenticControlDashboardService.KPI_DURATION_P95_REPORT_ID,
@@ -239,7 +240,7 @@ public class AgenticControlDashboardServiceTest {
     underTest.reconcile();
 
     // then reports are upserted and dashboard tiles are updated, but dashboard is not recreated
-    verify(reportWriter, times(11))
+    verify(reportWriter, times(12))
         .createOrUpdateSingleProcessReport(any(), any(), any(), any(), any(), any());
     verify(dashboardWriter, never()).saveDashboard(any());
     verify(dashboardWriter).updateDashboard(any(), any());
@@ -330,6 +331,10 @@ public class AgenticControlDashboardServiceTest {
               AgenticControlDashboardService.KPI_EXECUTION_INCIDENT_RATE_NAME,
               AgenticControlDashboardService.KPI_EXECUTION_INCIDENT_RATE_DESCRIPTION,
               AgenticControlDashboardService.KPI_TOKEN_TREND_NAME,
+              AgenticControlDashboardService.KPI_TOKEN_TREND_FOOTNOTE,
+              AgenticControlDashboardService.KPI_TOKEN_OUTLIER_BANDS_NAME,
+              AgenticControlDashboardService.KPI_TOKEN_OUTLIER_BANDS_FOOTNOTE,
+              AgenticControlDashboardService.KPI_TOKEN_OUTLIER_BANDS_DESCRIPTION,
               AgenticControlDashboardService.KPI_TOKEN_TREND_FOOTNOTE,
               AgenticControlDashboardService.KPI_TOKEN_CONSUMERS_NAME,
               AgenticControlDashboardService.KPI_TOKEN_CONSUMERS_FOOTNOTE,
@@ -428,6 +433,36 @@ public class AgenticControlDashboardServiceTest {
     assertThat(stabilityTile.getDimensions().getWidth()).isEqualTo(18);
     assertThat(stabilityTile.getDimensions().getHeight()).isEqualTo(2);
     assertThat(stabilityTile.getConfiguration()).isEqualTo(Map.of("section", "duration"));
+  }
+
+  @Test
+  void shouldSeedTokenOutlierBandsTileNextToTokenTrend() {
+    // given
+    when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID)).thenReturn(Optional.empty());
+
+    // when
+    underTest.reconcile();
+
+    // then — placed in the right half of the token-trend row, matching its size
+    final DashboardDefinitionRestDto saved = captureSavedDashboard();
+    final var outlierTile =
+        saved.getTiles().stream()
+            .filter(
+                t -> t.getId().equals(AgenticControlDashboardService.TOKEN_OUTLIER_BANDS_REPORT_ID))
+            .findFirst()
+            .orElseThrow();
+
+    assertThat(outlierTile.getPosition().getX()).isEqualTo(9);
+    assertThat(outlierTile.getPosition().getY()).isEqualTo(6);
+    assertThat(outlierTile.getDimensions().getWidth()).isEqualTo(9);
+    assertThat(outlierTile.getDimensions().getHeight()).isEqualTo(4);
+    assertThat(outlierTile.getConfiguration())
+        .isEqualTo(
+            Map.of(
+                "section",
+                "token",
+                "footnote",
+                AgenticControlDashboardService.KPI_TOKEN_OUTLIER_BANDS_FOOTNOTE_KEY));
   }
 
   @Test
