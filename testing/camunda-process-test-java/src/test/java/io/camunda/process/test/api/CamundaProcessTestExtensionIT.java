@@ -1414,7 +1414,7 @@ public class CamundaProcessTestExtensionIT {
   @Nested
   class ConditionalBehaviorTests {
 
-    private static final String processId = "user-happiness-check";
+    private static final String PROCESS_ID = "user-happiness-check";
     private static final String USER_TASK_ID = "State_Happiness";
     private static final String SERVICE_TASK_ID = "Export_Happiness";
     private static final String JOB_TYPE = "io.camunda:http-json:1";
@@ -1424,14 +1424,14 @@ public class CamundaProcessTestExtensionIT {
       // Deploy the process model
       client
           .newDeployResourceCommand()
-          .addProcessModel(conditionalBehaviorProcess(), processId + ".bpmn")
+          .addProcessModel(conditionalBehaviorProcess(), PROCESS_ID + ".bpmn")
           .send()
           .join();
 
       processTestContext
           .when(
               () ->
-                  CamundaAssert.assertThat(ProcessInstanceSelectors.byProcessId(processId))
+                  CamundaAssert.assertThat(ProcessInstanceSelectors.byProcessId(PROCESS_ID))
                       .hasActiveElement(USER_TASK_ID, 1))
           .then(
               () ->
@@ -1445,7 +1445,7 @@ public class CamundaProcessTestExtensionIT {
       processTestContext
           .when(
               () ->
-                  assertThatProcessInstance(ProcessInstanceSelectors.byProcessId(processId))
+                  assertThatProcessInstance(ProcessInstanceSelectors.byProcessId(PROCESS_ID))
                       .hasActiveElements(SERVICE_TASK_ID))
           .then(
               () ->
@@ -1456,7 +1456,7 @@ public class CamundaProcessTestExtensionIT {
     @Test
     void shouldCompleteProcessFirstRun() {
       final ProcessInstanceEvent processInstanceEvent =
-          client.newCreateInstanceCommand().bpmnProcessId(processId).latestVersion().execute();
+          client.newCreateInstanceCommand().bpmnProcessId(PROCESS_ID).latestVersion().execute();
 
       // increase assertion timeout because the immediate loop-back occasionally activates
       // the reset gate timeout of 5 seconds
@@ -1474,7 +1474,7 @@ public class CamundaProcessTestExtensionIT {
       // Same behavior — proves @BeforeEach re-registers fresh behaviors for each test,
       // including a fresh action chain (happy=false first, then happy=true)
       final ProcessInstanceEvent processInstanceEvent =
-          client.newCreateInstanceCommand().bpmnProcessId(processId).latestVersion().execute();
+          client.newCreateInstanceCommand().bpmnProcessId(PROCESS_ID).latestVersion().execute();
 
       // increase assertion timeout because the immediate loop-back occasionally activates
       // the reset gate timeout of 5 seconds
@@ -1488,7 +1488,7 @@ public class CamundaProcessTestExtensionIT {
     }
 
     private BpmnModelInstance conditionalBehaviorProcess() {
-      return Bpmn.createExecutableProcess(processId)
+      return Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
           .userTask(USER_TASK_ID)
           .zeebeUserTask()
