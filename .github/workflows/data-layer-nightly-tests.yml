@@ -24,8 +24,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        branch: [stable/8.9, main]
-    # Run on schedule, manual dispatch, or PR with 'run-dl-nightly-tests' label
+        branch: ${{ fromJSON(github.event_name == 'schedule' && '["stable/8.9","main"]' || format('[{0}]', toJSON(github.event.pull_request.head.ref || github.ref_name))) }}
+    # Run fixed branches on schedule, or the current branch for manual dispatch and PR label runs
     if: |
       github.event_name == 'schedule' ||
       github.event_name == 'workflow_dispatch' ||
@@ -39,7 +39,8 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
-          ref: refs/heads/${{ matrix.branch }}
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.event.pull_request.head.sha || format('refs/heads/{0}', matrix.branch) }}
 
       - name: Import Secrets
         id: secrets
