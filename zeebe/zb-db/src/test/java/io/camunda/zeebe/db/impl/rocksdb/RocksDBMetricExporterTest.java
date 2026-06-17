@@ -20,8 +20,10 @@ import org.rocksdb.RocksDB;
 
 final class RocksDBMetricExporterTest {
 
+  private static final String CF_STATS_PROPERTY = "rocksdb.cfstats";
+
   @Test
-  void shouldExportIoStallMetricsFromCfStatsMap(@TempDir final File dir) throws Exception {
+  void shouldRegisterAllIoStallGaugesOnExport(@TempDir final File dir) throws Exception {
     // given
     RocksDB.loadLibrary();
     final var registry = new SimpleMeterRegistry();
@@ -33,15 +35,39 @@ final class RocksDBMetricExporterTest {
       // when
       exporter.exportMetrics(db);
 
-      // then -- every documented io-stall counter is present in the cfstats map and was registered
+      // then
       assertThat(RocksDbIoStallMetricsDoc.values())
           .allSatisfy(
               doc ->
-                  assertThat(registry.find(doc.getName()).functionCounter())
-                      .as(
-                          "counter '%s' (cfstats key '%s') is registered",
-                          doc.getName(), doc.propertyName())
+                  assertThat(registry.find(doc.getName()).gauge())
+                      .as("gauge '%s' is registered", doc.getName())
                       .isNotNull());
+    }
+  }
+
+  @Test
+  void shouldExposeAllDocumentedIoStallKeysInCfStats(@TempDir final File dir) throws Exception {
+    // given
+    RocksDB.loadLibrary();
+    final var registry = new SimpleMeterRegistry();
+    final var exporter = new RocksDBMetricExporter(registry);
+
+    try (final var options = new Options().setCreateIfMissing(true);
+        final var db = RocksDB.open(options, dir.getAbsolutePath())) {
+
+      // when
+      exporter.exportMetrics(db);
+      final var cfStats = db.getMapProperty(CF_STATS_PROPERTY);
+
+      // then
+      assertThat(RocksDbIoStallMetricsDoc.values())
+          .allSatisfy(
+              doc ->
+                  assertThat(cfStats)
+                      .as(
+                          "cfstats map contains key '%s' for gauge '%s'",
+                          doc.propertyName(), doc.getName())
+                      .containsKey(doc.propertyName()));
     }
   }
 }

@@ -20,12 +20,12 @@ import io.micrometer.core.instrument.Meter.Type;
  * is a cumulative count, since the database was opened, of how many times writes were stopped
  * (fully halted) or slowed down (throttled) for the given reason.
  *
- * <p>These counters come from RocksDB's always-on {@code InternalStats}, so reading them does not
+ * <p>These values come from RocksDB's always-on {@code InternalStats}, so reading them does not
  * require enabling the (more expensive) RocksDB {@code Statistics} object.
  *
- * <p>Each value is a cumulative count and is exported as a counter (see {@link #getType()}). It
- * resets to zero when the database is reopened, which Prometheus {@code rate()} handles as a
- * counter reset.
+ * <p>RocksDB already maintains the cumulative count, so each value is exported as a gauge (see
+ * {@link #getType()}) that mirrors the latest reading. It resets to zero when the database is
+ * reopened, consistent with {@code rocksdb.background-errors} and the other RocksDB gauges.
  */
 public enum RocksDbIoStallMetricsDoc implements RocksDbMeterDoc {
   TOTAL_STOP(
@@ -86,7 +86,7 @@ public enum RocksDbIoStallMetricsDoc implements RocksDbMeterDoc {
 
   @Override
   public Type getType() {
-    return Type.COUNTER;
+    return Type.GAUGE;
   }
 
   @Override

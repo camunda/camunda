@@ -19000,7 +19000,7 @@
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "sum(rate(zeebe_rocksdb_writes_io_stalls_memtable_stop_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (pod, partition)",
+              "expr": "sum(rate(zeebe_rocksdb_writes_io_stalls_memtable_stop{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (pod, partition)",
               "interval": "",
               "legendFormat": "{{pod}}  memtable {{partition}}",
               "refId": "A"
@@ -19010,7 +19010,7 @@
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "sum(rate(zeebe_rocksdb_writes_io_stalls_l0_file_count_stop_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (pod, partition)",
+              "expr": "sum(rate(zeebe_rocksdb_writes_io_stalls_l0_file_count_stop{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (pod, partition)",
               "interval": "",
               "legendFormat": "{{pod}}  L0 file count {{partition}}",
               "refId": "B"
@@ -19020,7 +19020,7 @@
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "sum(rate(zeebe_rocksdb_writes_io_stalls_pending_compaction_bytes_stop_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (pod, partition)",
+              "expr": "sum(rate(zeebe_rocksdb_writes_io_stalls_pending_compaction_bytes_stop{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (pod, partition)",
               "interval": "",
               "legendFormat": "{{pod}}  pending compaction bytes {{partition}}",
               "refId": "C"
@@ -19118,7 +19118,7 @@
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "sum(rate(zeebe_rocksdb_writes_io_stalls_memtable_slowdown_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (pod, partition)",
+              "expr": "sum(rate(zeebe_rocksdb_writes_io_stalls_memtable_slowdown{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (pod, partition)",
               "interval": "",
               "legendFormat": "{{pod}}  memtable {{partition}}",
               "refId": "A"
@@ -19128,7 +19128,7 @@
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "sum(rate(zeebe_rocksdb_writes_io_stalls_l0_file_count_slowdown_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (pod, partition)",
+              "expr": "sum(rate(zeebe_rocksdb_writes_io_stalls_l0_file_count_slowdown{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (pod, partition)",
               "interval": "",
               "legendFormat": "{{pod}}  L0 file count {{partition}}",
               "refId": "B"
@@ -19138,7 +19138,7 @@
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "sum(rate(zeebe_rocksdb_writes_io_stalls_pending_compaction_bytes_slowdown_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (pod, partition)",
+              "expr": "sum(rate(zeebe_rocksdb_writes_io_stalls_pending_compaction_bytes_slowdown{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (pod, partition)",
               "interval": "",
               "legendFormat": "{{pod}}  pending compaction bytes {{partition}}",
               "refId": "C"

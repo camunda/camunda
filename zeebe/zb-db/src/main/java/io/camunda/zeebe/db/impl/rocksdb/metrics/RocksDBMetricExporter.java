@@ -8,12 +8,10 @@
 package io.camunda.zeebe.db.impl.rocksdb.metrics;
 
 import io.camunda.zeebe.util.micrometer.StatefulGauge;
-import io.micrometer.core.instrument.FunctionCounter;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 import org.rocksdb.RocksDB;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,7 +24,7 @@ public final class RocksDBMetricExporter {
 
   private final Map<RocksDbMetricsDoc, StatefulGauge> metrics =
       new EnumMap<>(RocksDbMetricsDoc.class);
-  private final Map<RocksDbIoStallMetricsDoc, AtomicLong> ioStallMetrics =
+  private final Map<RocksDbIoStallMetricsDoc, StatefulGauge> ioStallMetrics =
       new EnumMap<>(RocksDbIoStallMetricsDoc.class);
   private final MeterRegistry registry;
 
@@ -50,7 +48,7 @@ public final class RocksDBMetricExporter {
         TimeUnit.MILLISECONDS.convert(elapsedTime, TimeUnit.NANOSECONDS));
   }
 
-  private StatefulGauge registerMetric(final RocksDbMetricsDoc doc) {
+  private StatefulGauge registerMetric(final RocksDbMeterDoc doc) {
     return StatefulGauge.builder(doc.getName())
         .description(doc.getDescription())
         .register(registry);
@@ -82,14 +80,14 @@ public final class RocksDBMetricExporter {
     }
 
     for (final var metric : RocksDbIoStallMetricsDoc.values()) {
+      final var gauge = ioStallMetrics.computeIfAbsent(metric, this::registerMetric);
       final var value = cfStats.get(metric.propertyName());
       if (value == null) {
         continue;
       }
 
       try {
-        final long count = Long.parseLong(value.trim());
-        ioStallMetrics.computeIfAbsent(metric, this::registerIoStallCounter).set(count);
+        gauge.set(Long.parseLong(value.trim()));
       } catch (final NumberFormatException exception) {
         LOG.debug(
             "Could not parse io-stall metric {} with value {}",
@@ -98,18 +96,5 @@ public final class RocksDBMetricExporter {
             exception);
       }
     }
-  }
-
-  /**
-   * Registers a {@link FunctionCounter} backed by the returned {@link AtomicLong}. RocksDB hands us
-   * the absolute cumulative count each cycle (not a delta), so the exporter holds the latest value
-   * in the {@code AtomicLong} and the counter simply reports it.
-   */
-  private AtomicLong registerIoStallCounter(final RocksDbIoStallMetricsDoc doc) {
-    final var state = new AtomicLong();
-    FunctionCounter.builder(doc.getName(), state, AtomicLong::doubleValue)
-        .description(doc.getDescription())
-        .register(registry);
-    return state;
   }
 }
