@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.1">
 <title data-rh="true">ADR-0005: Physical-Tenant Routing of Authorization Reads in the Service and CSL Adapter Layers | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-55325/architecture/components/orchestration-cluster/adr/physical-tenant-routing-of-authorization-reads/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="ADR-0005: Physical-Tenant Routing of Authorization Reads in the Service and CSL Adapter Layers | Camunda Platform"><meta data-rh="true" name="description" content="Status"><meta data-rh="true" property="og:description" content="Status"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-55325/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-55325/architecture/components/orchestration-cluster/adr/physical-tenant-routing-of-authorization-reads/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-55325/architecture/components/orchestration-cluster/adr/physical-tenant-routing-of-authorization-reads/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-55325/architecture/components/orchestration-cluster/adr/physical-tenant-routing-of-authorization-reads/" hreflang="x-default"><link rel="stylesheet" href="/camunda/pr-preview/pr-55325/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-55325/assets/js/runtime~main.91b9ee35.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-55325/assets/js/main.6d5f9fb7.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-55325/assets/js/runtime~main.206d6a0d.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-55325/assets/js/main.301a6deb.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -89,10 +89,10 @@ path still resolves through a process-wide controller and a <code>default</code>
 thread-local resolution therefore cannot be correct on the data-plane: there is no request context
 in the engine to read. The data-plane must resolve the PT <strong>instance-bound</strong> — from the PT the
 executing <code>CamundaSearchClients</code> is scoped to — not from a thread-local.</p>
-<p>(An earlier spike, #55336, concluded a single thread-local mechanism sufficed, having examined only
+<p>(An earlier iteration concluded a single thread-local mechanism would suffice, having examined only
 the request path; the engine batch-operation path above is the off-request-thread consumer that
-disproves that conclusion. It also matches the isolation principle agreed by the squad: a per-PT
-engine incarnation must read only its own PT&#x27;s secondary storage.)</p>
+disproves it. This also matches the squad&#x27;s isolation principle: a per-PT engine incarnation must
+read only its own PT&#x27;s secondary storage.)</p>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="decision">Decision<a href="#decision" class="hash-link" aria-label="Direct link to Decision" title="Direct link to Decision" translate="no">​</a></h2>
 <p>Resolve authorization reads to the in-context physical tenant with <strong>two mechanisms, chosen by where
 each consumer executes</strong>, both built on a single shared building block, with CSL kept
@@ -163,8 +163,8 @@ explicitly.</li>
 <li class="">
 <p><strong>Single thread-local routing <code>AuthorizationReader</code> for both planes</strong> — re-point the one
 <code>authorizationReader</code> bean to a reader that resolves <code>PhysicalTenantContext.current()</code> and both
-ports inherit it. <strong>Superseded.</strong> A spike (#55336) adopted this after concluding the data-plane
-read always runs on the request thread — but that examined only the request path. Batch operations
+ports inherit it. <strong>Superseded.</strong> This was initially adopted after concluding the data-plane read
+always runs on the request thread — but that examined only the request path. Batch operations
 run authorization-checked secondary-storage searches <strong>in the engine</strong>, off the request thread,
 where <code>PhysicalTenantContext.current()</code> falls back to <code>default</code>. Thread-local is correct for the
 request-only control-plane but unsafe for the data-plane, which is why the data-plane is resolved
@@ -198,8 +198,6 @@ that stamps the PT id on the request (the control-plane&#x27;s PT source).</li>
 <code>ResourceAccessController</code>).</li>
 <li class=""><code>BasicAuthUserDetailsAdapter</code> (<code>authentication/.../config/spi/BasicAuthUserDetailsAdapter.java</code>) —
 the request-scoped adapter resolution pattern reused on the control-plane.</li>
-<li class="">Spike #55336 — prototyped the superseded single thread-local approach; to be reworked to the
-instance-bound data-plane design above.</li>
 </ul></div><footer class="theme-doc-footer docusaurus-mt-lg"><div class="row margin-top--sm theme-doc-footer-edit-meta-row"><div class="col noPrint_WFHX"><a href="https://github.com/camunda/camunda/edit/main/docs/monorepo-docs/architecture/components/orchestration-cluster/adr/0005-physical-tenant-routing-of-authorization-reads.md" target="_blank" rel="noopener noreferrer" class="theme-edit-this-page"><svg fill="currentColor" height="20" width="20" viewBox="0 0 40 40" class="iconEdit_Z9Sw" aria-hidden="true"><g><path d="m34.5 11.7l-3 3.1-6.3-6.3 3.1-3q0.5-0.5 1.2-0.5t1.1 0.5l3.9 3.9q0.5 0.4 0.5 1.1t-0.5 1.2z m-29.5 17.1l18.4-18.5 6.3 6.3-18.4 18.4h-6.3v-6.2z"></path></g></svg>Edit this page</a></div><div class="col lastUpdated_JAkA"></div></div></footer></article><nav class="docusaurus-mt-lg pagination-nav" aria-label="Docs pages"></nav></div></div><div class="col col--3"><div class="tableOfContents_bqdL thin-scrollbar theme-doc-toc-desktop"><ul class="table-of-contents table-of-contents__left-border"><li><a href="#status" class="table-of-contents__link toc-highlight">Status</a></li><li><a href="#deciders" class="table-of-contents__link toc-highlight">Deciders</a></li><li><a href="#context" class="table-of-contents__link toc-highlight">Context</a></li><li><a href="#decision" class="table-of-contents__link toc-highlight">Decision</a></li><li><a href="#consequences" class="table-of-contents__link toc-highlight">Consequences</a><ul><li><a href="#positive" class="table-of-contents__link toc-highlight">Positive</a></li><li><a href="#negative--trade-offs" class="table-of-contents__link toc-highlight">Negative / trade-offs</a></li><li><a href="#neutral" class="table-of-contents__link toc-highlight">Neutral</a></li></ul></li><li><a href="#alternatives-considered" class="table-of-contents__link toc-highlight">Alternatives Considered</a></li><li><a href="#references" class="table-of-contents__link toc-highlight">References</a></li></ul></div></div></div></div></main></div></div></div><footer class="theme-layout-footer footer footer--dark"><div class="container container-fluid"><div class="footer__bottom text--center"><div class="footer__copyright">Copyright © 2026 Camunda.</div></div></div></footer></div>
 </body>
 </html>
