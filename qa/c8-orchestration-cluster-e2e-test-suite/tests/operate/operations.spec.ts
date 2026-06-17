@@ -18,6 +18,7 @@ import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToAppHome} from '@pages/UtilitiesPage';
 import {waitForAssertion} from 'utils/waitForAssertion';
 import {sleep} from 'utils/sleep';
+import {jsonHeaders} from 'utils/http';
 
 type ProcessInstance = {
   processInstanceKey: string;
@@ -230,6 +231,125 @@ test.describe('Operations', () => {
         onFailure: async () => {
           await page.reload();
         },
+      });
+    });
+  });
+});
+
+let deleteTestData: {
+  instances: ProcessInstance[];
+};
+
+const batchDeleteProcessId = `batchDeleteProcess-${runSuffix}`;
+
+test.beforeAll(async ({request}) => {
+  await deployWithSubstitutions('./resources/batch_delete_process.bpmn', {
+    batchDeleteProcess: batchDeleteProcessId,
+  });
+
+  const instances = await createInstances(batchDeleteProcessId, 1, 5);
+  deleteTestData = {
+    instances: instances.map((instance) => ({
+      processInstanceKey: instance.processInstanceKey,
+      bpmnProcessId: batchDeleteProcessId,
+    })),
+  };
+
+  // Poll until all instances are COMPLETED and indexed in the search backend
+  // before the test runs. Avoids a fixed sleep that is too short on slow runners
+  // and wastes time on fast ones.
+  const instanceKeys = instances.map((i) => i.processInstanceKey.toString());
+  await expect
+    .poll(
+      async () => {
+        const response = await request.post('/v2/process-instances/search', {
+          headers: jsonHeaders(),
+          data: {
+            filter: {
+              state: 'COMPLETED',
+              processInstanceKey: {$in: instanceKeys},
+            },
+          },
+        });
+        if (response.status() !== 200) {
+          throw new Error(
+            `process-instances/search returned ${response.status()}: ${await response.text()}`,
+          );
+        }
+        const result = await response.json();
+        return result.page?.totalItems ?? 0;
+      },
+      {timeout: 60_000, intervals: [2_000, 5_000]},
+    )
+    .toBe(instances.length);
+});
+
+test.describe('Delete Operations', () => {
+  test.beforeEach(async ({page, operateHomePage}) => {
+    await navigateToAppHome(page, 'operate');
+    await expect(operateHomePage.operateBanner).toBeVisible();
+    await operateHomePage.clickProcessesTab();
+  });
+
+  test.afterEach(async ({page}, testInfo) => {
+    await captureScreenshot(page, testInfo);
+    await captureFailureVideo(page, testInfo);
+  });
+
+  test('Delete completed instances in batch', async ({
+    operateProcessesPage,
+    operateFiltersPanelPage,
+    page,
+  }) => {
+    test.slow();
+    const instances = deleteTestData.instances;
+
+    await test.step('Enable finished instances filter and filter by process instance keys', async () => {
+      await operateFiltersPanelPage.clickFinishedInstancesCheckbox();
+      await expect(operateProcessesPage.dataList).toBeVisible();
+      await operateFiltersPanelPage.displayOptionalFilter(
+        'Process Instance Key(s)',
+      );
+      await operateFiltersPanelPage.processInstanceKeysFilter.fill(
+        instances.map((instance) => instance.processInstanceKey).join(','),
+      );
+      await expect(operateProcessesPage.dataList.getByRole('row')).toHaveCount(
+        instances.length,
+      );
+    });
+
+    await test.step('Select all completed instances', async () => {
+      await operateProcessesPage.selectAllRowsCheckbox.click();
+    });
+
+    await test.step('Click Delete batch operation button', async () => {
+      await expect(operateProcessesPage.deleteButton).toBeEnabled();
+      await operateProcessesPage.deleteButton.click();
+    });
+
+    await test.step('Confirm deletion in modal', async () => {
+      await operateProcessesPage.deleteBatchOperationConfirmButton.click();
+    });
+
+    await test.step('Verify batch delete operation started', async () => {
+      await expect(
+        operateProcessesPage.batchOperationStartedMessage(
+          'Delete Process Instance',
+        ),
+      ).toBeVisible({timeout: 60000});
+    });
+
+    await test.step('Verify instances are removed from the list after deletion', async () => {
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(
+            operateProcessesPage.noMatchingInstancesMessage,
+          ).toBeVisible();
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+        maxRetries: 5,
       });
     });
   });
