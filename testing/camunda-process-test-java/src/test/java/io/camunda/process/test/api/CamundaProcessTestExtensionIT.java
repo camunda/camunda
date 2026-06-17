@@ -68,7 +68,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
-import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 
 @CamundaProcessTest
@@ -1504,122 +1503,141 @@ public class CamundaProcessTestExtensionIT {
   }
 
   @Nested
-  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-  class JudgeDocumentResolutionTests {
+  static class JudgeDocumentResolutionTests {
 
-    private final String processId = "judge-document";
-    private final String attachmentVariable = "attachment";
-    private final String fakeResponse = "{\"score\": 1.0, \"reasoning\": \"ok\"}";
-    private final String fileName = "note.txt";
-    private final String contentType = "text/plain";
-    private final byte[] noteContent = "remember the milk".getBytes();
+    private static final String PROCESS_ID = "judge-document";
+    private static final String ATTACHMENT_VARIABLE = "attachment";
+    private static final String FAKE_RESPONSE = "{\"score\": 1.0, \"reasoning\": \"ok\"}";
+    private static final String CONTENT_TYPE = "text/plain";
+    private static final String NOTE_FILE_NAME = "note.txt";
+    private static final String NOTE_TEXT = "remember the milk";
+    private static final String MEMO_FILE_NAME = "memo.txt";
+    private static final String MEMO_TEXT = "buy bread";
 
-    private final CapturingMultimodalChatModelAdapter stub =
+    private static final CapturingMultimodalChatModelAdapter STUB =
         new CapturingMultimodalChatModelAdapter();
 
+    // injected by @CamundaProcessTest on the enclosing class's extension
+    private CamundaClient client;
+
     @BeforeAll
-    void setUpJudgeConfig() {
-      CamundaAssert.setJudgeConfig(JudgeConfig.of(stub).withAttachDocuments(true));
+    static void setUpJudgeConfig() {
+      CamundaAssert.setJudgeConfig(JudgeConfig.of(STUB).withAttachDocuments(true));
     }
 
     @BeforeEach
     void resetCaptures() {
-      stub.reset();
+      STUB.reset();
     }
 
     @Test
     void shouldResolveAndAttachUploadedDocumentToJudgeCall() {
       // given
-      final DocumentReferenceResponse reference = uploadNoteDocument();
-      final ProcessInstanceEvent instance = startProcessWithAttachment(reference);
+      final DocumentReferenceResponse reference = uploadDocument(client, NOTE_FILE_NAME, NOTE_TEXT);
+      final ProcessInstanceEvent instance = startProcessWithAttachment(client, reference);
 
       // when
       assertThatProcessInstance(instance)
           .isCompleted()
-          .hasVariableSatisfiesJudge(attachmentVariable, "should be a short note");
+          .hasVariableSatisfiesJudge(ATTACHMENT_VARIABLE, "should be a short note");
 
       // then
       assertMultimodalPathTaken();
-      assertSingleAttachedDocumentMatches(reference);
+      assertAttachedDocumentsMatch(Arrays.asList(reference), Arrays.asList(NOTE_TEXT.getBytes()));
       assertPromptCarriesResolvedDocumentSection(reference);
     }
 
     @Test
-    void shouldDeduplicateRepeatedReferencesBeforeDownload() {
-      // given — one document, referenced twice from different paths
-      final DocumentReferenceResponse reference = uploadNoteDocument();
+    void shouldResolveMultipleDistinctDocumentsAndDeduplicate() {
+      // given — two distinct uploads; the first is referenced twice across nested paths,
+      // the second is referenced once
+      final DocumentReferenceResponse noteReference =
+          uploadDocument(client, NOTE_FILE_NAME, NOTE_TEXT);
+      final DocumentReferenceResponse memoReference =
+          uploadDocument(client, MEMO_FILE_NAME, MEMO_TEXT);
+
       final Map<String, Object> nestedMessage = new HashMap<>();
       nestedMessage.put("role", "user");
-      nestedMessage.put("attachments", Arrays.asList(reference));
+      nestedMessage.put("attachments", Arrays.asList(noteReference, memoReference));
       final Map<String, Object> attachmentWithDuplicates = new HashMap<>();
-      attachmentWithDuplicates.put("tool_result", reference);
+      attachmentWithDuplicates.put("tool_result", noteReference);
       attachmentWithDuplicates.put("history", Arrays.asList(nestedMessage));
 
-      final ProcessInstanceEvent instance = startProcessWithAttachment(attachmentWithDuplicates);
+      final ProcessInstanceEvent instance =
+          startProcessWithAttachment(client, attachmentWithDuplicates);
 
       // when
       assertThatProcessInstance(instance)
           .isCompleted()
-          .hasVariableSatisfiesJudge(attachmentVariable, "should describe a short note");
+          .hasVariableSatisfiesJudge(ATTACHMENT_VARIABLE, "should describe two short notes");
 
-      // then — duplicate references collapse to a single resolved document
-      assertSingleAttachedDocumentMatches(reference);
+      // then — duplicate references collapse but distinct documents are preserved in order
+      assertAttachedDocumentsMatch(
+          Arrays.asList(noteReference, memoReference),
+          Arrays.asList(NOTE_TEXT.getBytes(), MEMO_TEXT.getBytes()));
     }
 
-    private DocumentReferenceResponse uploadNoteDocument() {
+    private static DocumentReferenceResponse uploadDocument(
+        final CamundaClient client, final String fileName, final String text) {
       return client
           .newCreateDocumentCommand()
-          .content(noteContent)
+          .content(text.getBytes())
           .fileName(fileName)
-          .contentType(contentType)
+          .contentType(CONTENT_TYPE)
           .send()
           .join();
     }
 
-    private ProcessInstanceEvent startProcessWithAttachment(final Object attachmentValue) {
-      deployJudgeDocumentProcess();
+    private static ProcessInstanceEvent startProcessWithAttachment(
+        final CamundaClient client, final Object attachmentValue) {
+      deployJudgeDocumentProcess(client);
       return client
           .newCreateInstanceCommand()
-          .bpmnProcessId(processId)
+          .bpmnProcessId(PROCESS_ID)
           .latestVersion()
-          .variables(Collections.singletonMap(attachmentVariable, attachmentValue))
+          .variables(Collections.singletonMap(ATTACHMENT_VARIABLE, attachmentValue))
           .send()
           .join();
     }
 
-    private void deployJudgeDocumentProcess() {
+    private static void deployJudgeDocumentProcess(final CamundaClient client) {
       client
           .newDeployResourceCommand()
           .addProcessModel(
-              Bpmn.createExecutableProcess(processId).startEvent().endEvent().done(),
-              processId + ".bpmn")
+              Bpmn.createExecutableProcess(PROCESS_ID).startEvent().endEvent().done(),
+              PROCESS_ID + ".bpmn")
           .send()
           .join();
     }
 
-    private void assertMultimodalPathTaken() {
-      assertThat(stub.multimodalCalls.get()).isEqualTo(1);
-      assertThat(stub.textOnlyCalls.get()).isZero();
+    private static void assertMultimodalPathTaken() {
+      assertThat(STUB.multimodalCalls.get()).isEqualTo(1);
+      assertThat(STUB.textOnlyCalls.get()).isZero();
     }
 
-    private void assertSingleAttachedDocumentMatches(final DocumentReferenceResponse expected) {
-      final List<ResolvedDocument> captured = stub.documents.get();
-      assertThat(captured).hasSize(1);
-      final ResolvedDocument attached = captured.get(0);
-      assertThat(attached.getDocumentId()).isEqualTo(expected.getDocumentId());
-      assertThat(attached.getFileName()).isEqualTo(fileName);
-      assertThat(attached.getContentType()).isEqualTo(contentType);
-      assertThat(attached.getContent()).isEqualTo(noteContent);
+    private static void assertAttachedDocumentsMatch(
+        final List<DocumentReferenceResponse> expectedReferences,
+        final List<byte[]> expectedContents) {
+      final List<ResolvedDocument> captured = STUB.documents.get();
+      assertThat(captured).hasSameSizeAs(expectedReferences);
+      for (int i = 0; i < expectedReferences.size(); i++) {
+        final DocumentReferenceResponse expected = expectedReferences.get(i);
+        final ResolvedDocument attached = captured.get(i);
+        assertThat(attached.getDocumentId()).isEqualTo(expected.getDocumentId());
+        assertThat(attached.getContentType()).isEqualTo(CONTENT_TYPE);
+        assertThat(attached.getContent()).isEqualTo(expectedContents.get(i));
+      }
     }
 
-    private void assertPromptCarriesResolvedDocumentSection(
+    private static void assertPromptCarriesResolvedDocumentSection(
         final DocumentReferenceResponse expected) {
-      assertThat(stub.prompt.get())
+      assertThat(STUB.prompt.get())
           .contains("<resolved_documents>")
           .contains(expected.getDocumentId());
     }
 
-    private final class CapturingMultimodalChatModelAdapter implements MultimodalChatModelAdapter {
+    private static final class CapturingMultimodalChatModelAdapter
+        implements MultimodalChatModelAdapter {
 
       private final AtomicReference<String> prompt = new AtomicReference<>();
       private final AtomicReference<List<ResolvedDocument>> documents = new AtomicReference<>();
@@ -1630,7 +1648,7 @@ public class CamundaProcessTestExtensionIT {
       public String generate(final String prompt) {
         this.prompt.set(prompt);
         textOnlyCalls.incrementAndGet();
-        return fakeResponse;
+        return FAKE_RESPONSE;
       }
 
       @Override
@@ -1638,7 +1656,7 @@ public class CamundaProcessTestExtensionIT {
         this.prompt.set(prompt);
         this.documents.set(documents);
         multimodalCalls.incrementAndGet();
-        return fakeResponse;
+        return FAKE_RESPONSE;
       }
 
       void reset() {
