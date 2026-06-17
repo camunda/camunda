@@ -22,6 +22,11 @@ export async function seedUniqueProcessDefinitions(
   count: number,
   redeployForV2Count: number,
 ): Promise<string[]> {
+  if (redeployForV2Count > count) {
+    throw new Error(
+      `redeployForV2Count (${redeployForV2Count}) must not exceed count (${count}).`,
+    );
+  }
   const ids: string[] = [];
   for (let i = 0; i < count; i++) {
     const pid = `pd-isLatest-${suffix}-${i}`;
@@ -66,6 +71,11 @@ export async function seedUniqueDecisionDefinitions(
   count: number,
   redeployForV2Count: number,
 ): Promise<string[]> {
+  if (redeployForV2Count > count) {
+    throw new Error(
+      `redeployForV2Count (${redeployForV2Count}) must not exceed count (${count}).`,
+    );
+  }
   const ids: string[] = [];
   const drgName = `drs-${suffix}`;
   for (let i = 0; i < count; i++) {
