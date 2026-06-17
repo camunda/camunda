@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.1">
 <title data-rh="true">ADR-0005: Physical-Tenant Routing of Authorization Reads in the Service and CSL Adapter Layers | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-55325/architecture/components/orchestration-cluster/adr/physical-tenant-routing-of-authorization-reads/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="ADR-0005: Physical-Tenant Routing of Authorization Reads in the Service and CSL Adapter Layers | Camunda Platform"><meta data-rh="true" name="description" content="Status"><meta data-rh="true" property="og:description" content="Status"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-55325/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-55325/architecture/components/orchestration-cluster/adr/physical-tenant-routing-of-authorization-reads/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-55325/architecture/components/orchestration-cluster/adr/physical-tenant-routing-of-authorization-reads/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-55325/architecture/components/orchestration-cluster/adr/physical-tenant-routing-of-authorization-reads/" hreflang="x-default"><link rel="stylesheet" href="/camunda/pr-preview/pr-55325/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-55325/assets/js/runtime~main.206d6a0d.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-55325/assets/js/main.301a6deb.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-55325/assets/js/runtime~main.5a3dbd5e.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-55325/assets/js/main.1c04fdad.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -15,13 +15,13 @@
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="status">Status<a href="#status" class="hash-link" aria-label="Direct link to Status" title="Direct link to Status" translate="no">​</a></h2>
 <p>Proposed</p>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="deciders">Deciders<a href="#deciders" class="hash-link" aria-label="Direct link to Deciders" title="Direct link to Deciders" translate="no">​</a></h2>
-<p>Proposed for review by the Physical Tenants Identity squad (the ADR-0003 deciders):</p>
+<p>Proposed for review by the Physical Tenants Identity squad:</p>
 <ul>
 <li class="">Sebastian Bathke (<a href="https://github.com/megglos" target="_blank" rel="noopener noreferrer" class="">@megglos</a>) — proposer</li>
 <li class="">Ben Sheppard (<a href="https://github.com/Ben-Sheppard" target="_blank" rel="noopener noreferrer" class="">@Ben-Sheppard</a>)</li>
-<li class="">Tobias Metzke (<a href="https://github.com/tmetzke" target="_blank" rel="noopener noreferrer" class="">@tmetzke</a>)</li>
 <li class="">Deepthi Akkoorath (<a href="https://github.com/deepthidevaki" target="_blank" rel="noopener noreferrer" class="">@deepthidevaki</a>)</li>
 <li class="">Patrick Wunderlich (<a href="https://github.com/p-wunderlich" target="_blank" rel="noopener noreferrer" class="">@p-wunderlich</a>)</li>
+<li class="">Houssain Barouni (<a href="https://github.com/houssain-barouni" target="_blank" rel="noopener noreferrer" class="">@houssain-barouni</a>)</li>
 </ul>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="context">Context<a href="#context" class="hash-link" aria-label="Direct link to Context" title="Direct link to Context" translate="no">​</a></h2>
 <p><a class="" href="/camunda/pr-preview/pr-55325/architecture/components/orchestration-cluster/adr/physical-tenant-request-scoping-via-pre-security-filter/">ADR-0003</a> established that the
