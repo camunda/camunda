@@ -25,8 +25,7 @@ import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 /**
- * JMH microbenchmarks comparing the four candidate mix functions in {@link HashSampler} and the
- * overall {@link HashSampler#shouldSample(long, double)} hot path.
+ * JMH microbenchmarks for {@link HashSampler#shouldSample(long, double)}.
  *
  * <p>Run via: {@code mvn verify -pl zeebe/exporters/analytics-exporter -Dtest=HashSamplerBenchmark
  * -DskipTests=false -Dbenchmark=true}
@@ -47,35 +46,7 @@ public class HashSamplerBenchmark {
     position = 42_000_001L;
   }
 
-  // ---------------------------------------------------------------------------
-  // Mix function candidates
-  // ---------------------------------------------------------------------------
-
-  @Benchmark
-  public long mixStafford() {
-    return HashSampler.mixStafford(position);
-  }
-
-  @Benchmark
-  public long mixMurmur3() {
-    return HashSampler.mixMurmur3(position);
-  }
-
-  @Benchmark
-  public long mixMultiplyShift() {
-    return HashSampler.mixMultiplyShift(position);
-  }
-
-  @Benchmark
-  public long mixFnv1a() {
-    return HashSampler.mixFnv1a(position);
-  }
-
-  // ---------------------------------------------------------------------------
-  // Full shouldSample paths
-  // ---------------------------------------------------------------------------
-
-  /** Measures the normal (non-trivial) sampling path at a low rate. */
+  /** Measures the normal sampling path at a low rate (hash + modulo + compare). */
   @Benchmark
   public boolean shouldSampleWithRate() {
     return HashSampler.shouldSample(position, 0.01);

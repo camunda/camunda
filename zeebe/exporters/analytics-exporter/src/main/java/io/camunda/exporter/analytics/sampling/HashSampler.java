@@ -39,40 +39,12 @@ public final class HashSampler {
         < (long) (rate * SAMPLING_RESOLUTION);
   }
 
-  // Selected via JMH benchmark (HashSamplerBenchmark). Stafford Mix13 has the best
-  // avalanche properties among the candidates while being competitive in throughput.
-  private static long mix(final long x) {
-    return mixStafford(x);
-  }
-
-  // Candidate mix functions — package-private so the JMH benchmark can compare them.
-
-  static long mixStafford(long x) {
+  // Stafford Mix13 — selected via JMH benchmark (HashSamplerBenchmark) over Murmur3,
+  // multiply-shift, and FNV-1a for best avalanche properties at competitive throughput.
+  private static long mix(long x) {
     x = (x ^ (x >>> 30)) * 0xbf58476d1ce4e5b9L;
     x = (x ^ (x >>> 27)) * 0x94d049bb133111ebL;
     x = x ^ (x >>> 31);
-    return x;
-  }
-
-  static long mixMurmur3(long x) {
-    x ^= x >>> 33;
-    x *= 0xff51afd7ed558ccdL;
-    x ^= x >>> 33;
-    x *= 0xc4ceb9fe1a85ec53L;
-    x ^= x >>> 33;
-    return x;
-  }
-
-  static long mixMultiplyShift(long x) {
-    x = x * 0x9E3779B97F4A7C15L;
-    x = x ^ (x >>> 32);
-    return x;
-  }
-
-  static long mixFnv1a(long x) {
-    x ^= x >>> 23;
-    x *= 0x2127599bf4325c37L;
-    x ^= x >>> 47;
     return x;
   }
 }

@@ -10,9 +10,13 @@ package io.camunda.exporter.analytics.sampling;
 import static io.camunda.exporter.analytics.sampling.HashSampler.MAX_SAMPLE_RATE;
 import static io.camunda.exporter.analytics.sampling.HashSampler.MIN_SAMPLE_RATE;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.within;
 
 import java.util.ArrayList;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class HashSamplerTest {
 
@@ -50,7 +54,7 @@ class HashSamplerTest {
     final int total = 10_000;
 
     // when
-    long count = 0;
+    int count = 0;
     for (int i = 0; i < total; i++) {
       if (HashSampler.shouldSample(i, 0.01)) {
         count++;
@@ -58,7 +62,7 @@ class HashSamplerTest {
     }
 
     // then
-    assertThat(count).isBetween(50L, 150L);
+    assertThat(count).isCloseTo(100, within(20));
   }
 
   @Test
@@ -67,7 +71,7 @@ class HashSamplerTest {
     final int total = 10_000;
 
     // when
-    long count = 0;
+    int count = 0;
     for (int i = 0; i < total; i++) {
       if (HashSampler.shouldSample(i, 0.5)) {
         count++;
@@ -75,13 +79,13 @@ class HashSamplerTest {
     }
 
     // then
-    assertThat(count).isBetween(4500L, 5500L);
+    assertThat(count).isCloseTo(5000, within(500));
   }
 
   @Test
   void shouldDistributeUniformlyForSparsePositions() {
     // given — 100 events at every 1000th position
-    long count = 0;
+    int count = 0;
     for (int i = 0; i < 100; i++) {
       if (HashSampler.shouldSample(1L + (long) i * 1000, 0.1)) {
         count++;
@@ -89,7 +93,7 @@ class HashSamplerTest {
     }
 
     // then
-    assertThat(count).isBetween(5L, 15L);
+    assertThat(count).isCloseTo(10, within(5));
   }
 
   @Test
@@ -111,10 +115,9 @@ class HashSamplerTest {
     assertThat(secondPass).isEqualTo(firstPass);
   }
 
-  @Test
-  void shouldHandleEdgePositions() {
-    HashSampler.shouldSample(0L, 0.5);
-    HashSampler.shouldSample(Long.MAX_VALUE, 0.5);
-    HashSampler.shouldSample(Long.MIN_VALUE, 0.5);
+  @ParameterizedTest
+  @ValueSource(longs = {0L, Long.MAX_VALUE, Long.MIN_VALUE})
+  void shouldHandleEdgePositions(final long position) {
+    assertThatCode(() -> HashSampler.shouldSample(position, 0.5)).doesNotThrowAnyException();
   }
 }
