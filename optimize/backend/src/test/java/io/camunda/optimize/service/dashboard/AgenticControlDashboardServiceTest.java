@@ -418,7 +418,7 @@ public class AgenticControlDashboardServiceTest {
             .orElseThrow();
 
     assertThat(stabilityTile.getPosition().getX()).isEqualTo(0);
-    assertThat(stabilityTile.getPosition().getY()).isEqualTo(6);
+    assertThat(stabilityTile.getPosition().getY()).isEqualTo(12);
     assertThat(stabilityTile.getDimensions().getWidth()).isEqualTo(18);
     assertThat(stabilityTile.getDimensions().getHeight()).isEqualTo(2);
     assertThat(stabilityTile.getConfiguration()).isEqualTo(Map.of("section", "duration"));

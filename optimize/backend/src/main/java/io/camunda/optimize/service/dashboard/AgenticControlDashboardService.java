@@ -317,7 +317,7 @@ public class AgenticControlDashboardService {
 
     return buildTile(
         TOKEN_TREND_REPORT_ID,
-        new PositionDto(0, 6),
+        new PositionDto(0, 4),
         new DimensionDto(9, 4),
         Map.of("section", "token", "footnote", KPI_TOKEN_TREND_FOOTNOTE_KEY));
   }
@@ -359,7 +359,7 @@ public class AgenticControlDashboardService {
         KPI_DURATION_P50_REPORT_ID,
         KPI_DURATION_P50_NAME,
         KPI_DURATION_P50_DESCRIPTION,
-        new PositionDto(0, 4));
+        new PositionDto(0, 10));
   }
 
   private DashboardReportTileDto buildP95DurationReport() {
@@ -368,7 +368,7 @@ public class AgenticControlDashboardService {
         KPI_DURATION_P95_REPORT_ID,
         KPI_DURATION_P95_NAME,
         KPI_DURATION_P95_DESCRIPTION,
-        new PositionDto(9, 4));
+        new PositionDto(9, 10));
   }
 
   private DashboardReportTileDto buildDurationPercentileReport(
@@ -440,7 +440,7 @@ public class AgenticControlDashboardService {
         null);
     return buildTile(
         DURATION_STABILITY_REPORT_ID,
-        new PositionDto(0, 6),
+        new PositionDto(0, 12),
         new DimensionDto(18, 2),
         Map.of("section", "duration"));
   }
@@ -473,7 +473,7 @@ public class AgenticControlDashboardService {
         null);
     return buildTile(
         FAILURE_RATE_BY_VERSION_REPORT_ID,
-        new PositionDto(0, 6),
+        new PositionDto(0, 8),
         new DimensionDto(18, 2),
         Map.of("visibleInL1Only", true, "section", "reliabilityAndToolCalls"));
   }
