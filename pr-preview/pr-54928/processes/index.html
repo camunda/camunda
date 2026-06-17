@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.1">
 <title data-rh="true">Processes | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-54928/processes/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Processes | Camunda Platform"><meta data-rh="true" name="description" content="This page collects processes we follow in the camunda/camunda monorepo."><meta data-rh="true" property="og:description" content="This page collects processes we follow in the camunda/camunda monorepo."><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-54928/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-54928/processes/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-54928/processes/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-54928/processes/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Processes","item":"https://camunda.github.io/camunda/pr-preview/pr-54928/processes"}]}</script><link rel="stylesheet" href="/camunda/pr-preview/pr-54928/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-54928/assets/js/runtime~main.eab405ec.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-54928/assets/js/main.67f2b3e1.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-54928/assets/js/runtime~main.38d3ebab.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-54928/assets/js/main.065a6e52.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -242,11 +242,18 @@
 <p>Incidents are resolved according to the <a href="https://confluence.camunda.com/display/HAN/Incident+Management" target="_blank" rel="noopener noreferrer" class="">Engineering Incident Management Process</a> by the <a href="https://confluence.camunda.com/display/HAN/IM+-+Roles+and+Responsibilities#IMRolesandResponsibilities-TheIncidentResponseTeam" target="_blank" rel="noopener noreferrer" class="">Incident Response Team</a>. Helpful resources:</p>
 <ul>
 <li class=""><a class="" href="/camunda/pr-preview/pr-54928/ci-runbooks/">Runbooks</a> for CI-related problems</li>
+<li class=""><code>/ci-incident</code> and <code>/ci-fix-failure</code> skills for LLM assistance</li>
 <li class="">generically applicable <a href="https://confluence.camunda.com/display/SRE/Incident+Checklist" target="_blank" rel="noopener noreferrer" class="">Incident Checklist</a> of the Infra team</li>
+</ul>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="sla">SLA<a href="#sla" class="hash-link" aria-label="Direct link to SLA" title="Direct link to SLA" translate="no">​</a></h5>
+<p>The Incident Commander needs to ensure that mitigations are in place with timelines depending on the severity of the incident:</p>
+<ul>
+<li class="">L1: Within 2-4 hours after assignment</li>
+<li class="">L2: Within 1 day after assignment</li>
 </ul>
 <p>The Communications Lead should send out periodic updates depending on the severity of the incident:</p>
 <ul>
-<li class="">L1: Once per hour until resolved</li>
+<li class="">L1: Once per hour until mitigated, afterwards once per day until resolved</li>
 <li class="">L2: Once per day until resolved</li>
 </ul>
 <h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="3-follow-up">3. Follow-Up<a href="#3-follow-up" class="hash-link" aria-label="Direct link to 3. Follow-Up" title="Direct link to 3. Follow-Up" translate="no">​</a></h4>
