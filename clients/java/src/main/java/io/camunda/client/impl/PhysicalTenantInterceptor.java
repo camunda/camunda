@@ -15,6 +15,7 @@
  */
 package io.camunda.client.impl;
 
+import io.camunda.zeebe.gateway.protocol.GrpcHeaders;
 import io.grpc.CallOptions;
 import io.grpc.Channel;
 import io.grpc.ClientCall;
@@ -29,9 +30,6 @@ import java.util.Objects;
  * gateway can route the request to the correct physical tenant partition.
  */
 public final class PhysicalTenantInterceptor implements ClientInterceptor {
-
-  static final Metadata.Key<String> PHYSICAL_TENANT_HEADER =
-      Metadata.Key.of("Camunda-Physical-Tenant", Metadata.ASCII_STRING_MARSHALLER);
 
   private final String physicalTenantId;
 
@@ -48,7 +46,7 @@ public final class PhysicalTenantInterceptor implements ClientInterceptor {
     return new SimpleForwardingClientCall<ReqT, RespT>(next.newCall(method, callOptions)) {
       @Override
       public void start(final Listener<RespT> responseListener, final Metadata headers) {
-        headers.put(PHYSICAL_TENANT_HEADER, physicalTenantId);
+        headers.put(GrpcHeaders.PHYSICAL_TENANT, physicalTenantId);
         super.start(responseListener, headers);
       }
     };

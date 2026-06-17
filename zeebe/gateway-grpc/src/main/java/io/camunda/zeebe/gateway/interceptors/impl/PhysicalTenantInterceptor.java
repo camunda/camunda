@@ -11,6 +11,7 @@ import static io.camunda.configuration.api.physicaltenants.PhysicalTenantIds.DEF
 
 import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.zeebe.gateway.interceptors.InterceptorUtil;
+import io.camunda.zeebe.gateway.protocol.GrpcHeaders;
 import io.grpc.Context;
 import io.grpc.Contexts;
 import io.grpc.Metadata;
@@ -32,9 +33,6 @@ import io.grpc.Status;
  */
 public final class PhysicalTenantInterceptor implements ServerInterceptor {
 
-  static final Metadata.Key<String> PHYSICAL_TENANT_HEADER =
-      Metadata.Key.of("Camunda-Physical-Tenant", Metadata.ASCII_STRING_MARSHALLER);
-
   private final PhysicalTenantIds physicalTenantIds;
 
   public PhysicalTenantInterceptor(final PhysicalTenantIds physicalTenantIds) {
@@ -46,7 +44,7 @@ public final class PhysicalTenantInterceptor implements ServerInterceptor {
       final ServerCall<ReqT, RespT> call,
       final Metadata headers,
       final ServerCallHandler<ReqT, RespT> next) {
-    final var tenantId = headers.get(PHYSICAL_TENANT_HEADER);
+    final var tenantId = headers.get(GrpcHeaders.PHYSICAL_TENANT);
     final var resolvedTenantId = tenantId != null ? tenantId : DEFAULT_PHYSICAL_TENANT_ID;
 
     if (!physicalTenantIds.known().contains(resolvedTenantId)) {

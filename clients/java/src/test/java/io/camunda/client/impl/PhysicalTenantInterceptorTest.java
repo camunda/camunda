@@ -21,6 +21,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 
+import io.camunda.zeebe.gateway.protocol.GrpcHeaders;
 import io.grpc.CallOptions;
 import io.grpc.Channel;
 import io.grpc.ClientCall;
@@ -48,8 +49,7 @@ final class PhysicalTenantInterceptorTest {
     call.start(new NoopListener<>(), new Metadata());
 
     // then
-    assertThat(capturedHeaders.get().get(PhysicalTenantInterceptor.PHYSICAL_TENANT_HEADER))
-        .isEqualTo("tenant-x");
+    assertThat(capturedHeaders.get().get(GrpcHeaders.PHYSICAL_TENANT)).isEqualTo("tenant-x");
   }
 
   @Test
