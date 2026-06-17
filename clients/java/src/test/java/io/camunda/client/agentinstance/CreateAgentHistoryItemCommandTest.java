@@ -309,6 +309,25 @@ class CreateAgentHistoryItemCommandTest extends ClientRestTest {
         .hasMessageContaining("documentReference must not be null");
   }
 
+  @Test
+  void shouldRejectNullDocumentId() {
+    final DocumentReferenceResponseImpl doc =
+        new DocumentReferenceResponseImpl(
+            new DocumentReference()
+                .camundaDocumentType(CamundaDocumentTypeEnum.CAMUNDA)
+                .storeId("store-1")); // documentId not set → null
+    assertThatThrownBy(
+            () ->
+                client
+                    .newCreateAgentHistoryItemCommand(AGENT_INSTANCE_KEY)
+                    .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+                    .jobKey(JOB_KEY)
+                    .role(AgentHistoryRole.USER)
+                    .content(Collections.singletonList(AgentHistoryContent.document(doc))))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("documentId must not be null or blank");
+  }
+
   // ── Argument validation: metrics (all fields required) ───────────────────
 
   @Test

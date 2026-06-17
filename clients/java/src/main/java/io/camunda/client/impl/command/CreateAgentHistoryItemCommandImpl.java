@@ -136,6 +136,9 @@ public class CreateAgentHistoryItemCommandImpl
 
   private AgentInstanceDocumentContent toProtocolDocumentContent(final DocumentContent item) {
     final DocumentReferenceResponse ref = item.getDocumentReference();
+    if (ref.getDocumentId() == null || ref.getDocumentId().trim().isEmpty()) {
+      throw new IllegalArgumentException("documentReference.documentId must not be null or blank");
+    }
     final DocumentReference protocolRef =
         new DocumentReference()
             .camundaDocumentType(CamundaDocumentTypeEnum.CAMUNDA)
