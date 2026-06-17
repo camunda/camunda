@@ -73,7 +73,6 @@ test.describe('Operate — Decisions isLatestVersion filter', () => {
   });
 
   test('Decision Name dropdown shows all unique latest-version definitions including beyond first page', async ({
-    page,
     operateDecisionsPage,
   }) => {
     // Regression: before the fix the dropdown truncated at ~100 entries because
@@ -85,18 +84,7 @@ test.describe('Operate — Decisions isLatestVersion filter', () => {
 
     for (const idx of indicesToCheck) {
       const id = seededIds[idx]!;
-      // Open the combobox, type the full ID to filter to exactly one match
-      // (avoids Carbon ComboBox virtualisation hiding offscreen options), then
-      // close before the next iteration.
-      await operateDecisionsPage.decisionNameFilter.click();
-      await operateDecisionsPage.decisionNameFilter.fill(id);
-      await expect(
-        operateDecisionsPage.filterRegion.getByRole('option', {
-          name: id,
-          exact: true,
-        }),
-      ).toBeVisible({timeout: 10_000});
-      await page.keyboard.press('Escape');
+      await operateDecisionsPage.assertDecisionNameOptionVisible(id);
     }
   });
 });

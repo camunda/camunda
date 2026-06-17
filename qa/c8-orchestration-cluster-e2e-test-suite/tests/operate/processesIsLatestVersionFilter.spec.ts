@@ -71,7 +71,6 @@ test.describe('Operate — Processes isLatestVersion filter', () => {
   });
 
   test('Process Name dropdown shows all unique latest-version definitions including beyond first page', async ({
-    page,
     operateFiltersPanelPage,
   }) => {
     // Regression: before the fix the dropdown truncated at ~100 entries because
@@ -83,15 +82,7 @@ test.describe('Operate — Processes isLatestVersion filter', () => {
 
     for (const idx of indicesToCheck) {
       const id = seededIds[idx]!;
-      // Open the combobox, type the full ID to filter to exactly one match
-      // (avoids Carbon ComboBox virtualisation hiding offscreen options), then
-      // close before the next iteration.
-      await operateFiltersPanelPage.processNameFilter.click();
-      await operateFiltersPanelPage.processNameFilter.fill(id);
-      await expect(
-        operateFiltersPanelPage.getOptionByName(id, true),
-      ).toBeVisible({timeout: 10_000});
-      await page.keyboard.press('Escape');
+      await operateFiltersPanelPage.assertProcessNameOptionVisible(id);
     }
   });
 });

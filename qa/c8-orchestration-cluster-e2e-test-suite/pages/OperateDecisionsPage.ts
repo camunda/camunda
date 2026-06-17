@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Page, Locator} from '@playwright/test';
+import {Page, Locator, expect} from '@playwright/test';
 
 type OptionalFilter =
   | 'Process Instance Key'
@@ -29,6 +29,7 @@ class OperateDecisionsPage {
   readonly filterRegion: Locator;
   readonly clearSelectedItemButton: Locator;
   readonly moreFiltersButton: Locator;
+  readonly getOptionByName: (name: string, exact?: boolean) => Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -52,6 +53,8 @@ class OperateDecisionsPage {
       name: 'Clear selected item',
     });
     this.moreFiltersButton = page.getByRole('button', {name: 'More Filters'});
+    this.getOptionByName = (name: string, exact = true) =>
+      this.filterRegion.getByRole('option', {name, exact});
   }
 
   async clickViewDecisionInstanceLink(
@@ -80,16 +83,19 @@ class OperateDecisionsPage {
 
   async selectDecisionName(option: string): Promise<void> {
     await this.decisionNameFilter.click();
-    await this.filterRegion
-      .getByRole('option', {name: option, exact: true})
-      .click();
+    await this.getOptionByName(option).click();
   }
 
   async selectVersion(option: string): Promise<void> {
     await this.decisionVersionFilter.click();
-    await this.filterRegion
-      .getByRole('option', {name: option, exact: true})
-      .click();
+    await this.getOptionByName(option).click();
+  }
+
+  async assertDecisionNameOptionVisible(option: string): Promise<void> {
+    await this.decisionNameFilter.click();
+    await this.decisionNameFilter.fill(option);
+    await expect(this.getOptionByName(option)).toBeVisible({timeout: 10_000});
+    await this.page.keyboard.press('Escape');
   }
 
   async clearComboBox(): Promise<void> {

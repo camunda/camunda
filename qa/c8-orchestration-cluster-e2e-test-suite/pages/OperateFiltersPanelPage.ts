@@ -213,6 +213,13 @@ export class OperateFiltersPanelPage {
     await expect(this.processVersionFilter).toBeEnabled({timeout: 3000});
   }
 
+  async assertProcessNameOptionVisible(option: string) {
+    await this.processNameFilter.click();
+    await this.processNameFilter.fill(option);
+    await expect(this.getOptionByName(option)).toBeVisible({timeout: 10_000});
+    await this.page.keyboard.press('Escape');
+  }
+
   async selectVersion(option: string) {
     await expect(this.processNameFilter).toBeVisible();
     await expect(this.processVersionFilter).toBeEnabled();
