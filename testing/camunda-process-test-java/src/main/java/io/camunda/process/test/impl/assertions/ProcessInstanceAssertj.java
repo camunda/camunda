@@ -409,8 +409,14 @@ public class ProcessInstanceAssertj
   @Override
   public ProcessInstanceAssert hasVariableSatisfiesExpression(
       final String variableName, final String expression) {
+    return hasVariableSatisfiesExpression(VariableSelectors.byName(variableName), expression);
+  }
+
+  @Override
+  public ProcessInstanceAssert hasVariableSatisfiesExpression(
+      final VariableSelector variableSelector, final String expression) {
     variableAssertj.hasVariableSatisfiesExpression(
-        getProcessInstanceKey(), VariableSelectors.byName(variableName), variableName, expression);
+        getProcessInstanceKey(), variableSelector, expression);
     return this;
   }
 
@@ -424,12 +430,17 @@ public class ProcessInstanceAssertj
   @Override
   public ProcessInstanceAssert hasLocalVariableSatisfiesExpression(
       final ElementSelector selector, final String variableName, final String expression) {
+    return hasLocalVariableSatisfiesExpression(
+        selector, VariableSelectors.byName(variableName), expression);
+  }
+
+  @Override
+  public ProcessInstanceAssert hasLocalVariableSatisfiesExpression(
+      final ElementSelector selector,
+      final VariableSelector variableSelector,
+      final String expression) {
     variableAssertj.hasLocalVariableSatisfiesExpression(
-        getProcessInstanceKey(),
-        selector,
-        VariableSelectors.byName(variableName),
-        variableName,
-        expression);
+        getProcessInstanceKey(), selector, variableSelector, expression);
     return this;
   }
 

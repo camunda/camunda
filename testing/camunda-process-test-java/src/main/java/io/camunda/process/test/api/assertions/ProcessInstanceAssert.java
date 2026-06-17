@@ -518,28 +518,44 @@ public interface ProcessInstanceAssert extends WithAssertionConfiguration<Proces
 
   /**
    * Verifies that the process instance has a variable whose value satisfies the given FEEL
-   * expression or FEEL unary-test-like expression. The expression is evaluated with a context
-   * containing {@code {variableName: variableValue}} and must evaluate to {@code true}.
+   * expression. The expression is evaluated with a context containing {@code {variableName:
+   * variableValue}} and must evaluate to {@code true}.
    *
    * <p>The assertion waits until the variable exists and the expression evaluates to {@code true}.
    *
    * @param variableName the variable name
-   * @param expression the FEEL expression or FEEL unary-test-like expression
+   * @param expression the FEEL expression
    * @return the assertion object
    */
   ProcessInstanceAssert hasVariableSatisfiesExpression(String variableName, String expression);
 
   /**
+   * Verifies that the process instance has a variable matching the selector whose value satisfies
+   * the given FEEL expression. The expression is evaluated with a context containing the matching
+   * variable under its variable name and must evaluate to {@code true}.
+   *
+   * <p>The assertion waits until a matching variable exists and the expression evaluates to {@code
+   * true}.
+   *
+   * @param variableSelector the selector to identify the variable
+   * @param expression the FEEL expression
+   * @return the assertion object
+   * @see VariableSelectors
+   */
+  ProcessInstanceAssert hasVariableSatisfiesExpression(
+      VariableSelector variableSelector, String expression);
+
+  /**
    * Verifies that the process instance has a local variable whose value satisfies the given FEEL
-   * expression or FEEL unary-test-like expression. The expression is evaluated with a context
-   * containing {@code {variableName: variableValue}} and must evaluate to {@code true}.
+   * expression. The expression is evaluated with a context containing {@code {variableName:
+   * variableValue}} and must evaluate to {@code true}.
    *
    * <p>The assertion waits until the local variable exists and the expression evaluates to {@code
    * true}.
    *
    * @param elementId id of the element the local variable is associated with
    * @param variableName the variable name
-   * @param expression the FEEL expression or FEEL unary-test-like expression
+   * @param expression the FEEL expression
    * @return the assertion object
    */
   ProcessInstanceAssert hasLocalVariableSatisfiesExpression(
@@ -547,20 +563,38 @@ public interface ProcessInstanceAssert extends WithAssertionConfiguration<Proces
 
   /**
    * Verifies that the process instance has a local variable whose value satisfies the given FEEL
-   * expression or FEEL unary-test-like expression. The expression is evaluated with a context
-   * containing {@code {variableName: variableValue}} and must evaluate to {@code true}.
+   * expression. The expression is evaluated with a context containing {@code {variableName:
+   * variableValue}} and must evaluate to {@code true}.
    *
    * <p>The assertion waits until the local variable exists and the expression evaluates to {@code
    * true}.
    *
    * @param selector the selector for the BPMN element the variable is associated with
    * @param variableName the variable name
-   * @param expression the FEEL expression or FEEL unary-test-like expression
+   * @param expression the FEEL expression
    * @return the assertion object
    * @see ElementSelectors
    */
   ProcessInstanceAssert hasLocalVariableSatisfiesExpression(
       ElementSelector selector, String variableName, String expression);
+
+  /**
+   * Verifies that the process instance has a local variable matching the selector whose value
+   * satisfies the given FEEL expression. The expression is evaluated with a context containing the
+   * matching variable under its variable name and must evaluate to {@code true}.
+   *
+   * <p>The assertion waits until a matching local variable exists and the expression evaluates to
+   * {@code true}.
+   *
+   * @param elementSelector the selector for the BPMN element the variable is associated with
+   * @param variableSelector the selector to identify the variable
+   * @param expression the FEEL expression
+   * @return the assertion object
+   * @see ElementSelectors
+   * @see VariableSelectors
+   */
+  ProcessInstanceAssert hasLocalVariableSatisfiesExpression(
+      ElementSelector elementSelector, VariableSelector variableSelector, String expression);
 
   /**
    * Verifies that the process instance has the given variables. The verification fails if at least

@@ -218,8 +218,23 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
         .untilAsserted(
             () -> {
               final String rawValue =
-                  assertVariableExists(variableSelector, actualVariablesSupplier);
+                  assertVariableMatches(variableSelector, actualVariablesSupplier).getValue();
               rawRequirement.accept(rawValue);
+            });
+  }
+
+  private void hasMatchingVariableSatisfies(
+      final VariableSelector variableSelector,
+      final ThrowingConsumer<Variable> requirement,
+      final Supplier<List<Variable>> actualVariablesSupplier) {
+
+    awaitBehavior
+        .get()
+        .untilAsserted(
+            () -> {
+              final Variable variable =
+                  assertVariableMatches(variableSelector, actualVariablesSupplier);
+              requirement.accept(variable);
             });
   }
 
@@ -265,32 +280,34 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
   public void hasVariableSatisfiesExpression(
       final long processInstanceKey,
       final VariableSelector variableSelector,
-      final String variableName,
       final String expression) {
 
     assertExpressionNotEmpty(expression);
 
-    final String rawValue =
-        waitForVariable(
-            variableSelector,
-            () -> findGlobalVariablesBySelector(processInstanceKey, variableSelector));
-
-    evaluateExpression(variableSelector, variableName, expression, rawValue);
+    hasVariableSatisfiesExpression(
+        variableSelector,
+        expression,
+        () -> findGlobalVariablesBySelector(processInstanceKey, variableSelector));
   }
 
   public void hasLocalVariableSatisfiesExpression(
       final long processInstanceKey,
       final ElementSelector elementSelector,
       final VariableSelector variableSelector,
-      final String variableName,
       final String expression) {
 
     assertExpressionNotEmpty(expression);
 
-    final String rawValue =
-        waitForLocalVariable(processInstanceKey, elementSelector, variableSelector);
-
-    evaluateExpression(variableSelector, variableName, expression, rawValue);
+    withLocalVariableAssertion(
+        processInstanceKey,
+        elementSelector,
+        instance ->
+            hasVariableSatisfiesExpression(
+                variableSelector,
+                expression,
+                () ->
+                    findLocalVariablesBySelector(
+                        processInstanceKey, instance.getElementInstanceKey(), variableSelector)));
   }
 
   public void hasLocalVariables(
@@ -436,62 +453,59 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
   }
 
   private void evaluateExpression(
-      final VariableSelector variableSelector,
-      final String variableName,
-      final String expression,
-      final String rawValue) {
-    final Map<String, Object> variables = new HashMap<>();
-    variables.put(variableName, jsonMapper.readJson(rawValue, Object.class));
+      final VariableSelector variableSelector, final Variable variable, final String expression) {
+    try {
+      final Map<String, Object> variables = new HashMap<>();
+      variables.put(variable.getName(), jsonMapper.readJson(variable.getValue(), Object.class));
 
-    final ExpressionEvaluationResult directEvaluation =
-        tryEvaluateExpression(normalizeFeelExpression(expression), variables);
-    if (directEvaluation.isBooleanResult()) {
-      assertExpressionMatches(variableSelector, expression, directEvaluation.result());
-      return;
+      final EvaluateExpressionResponse response =
+          dataSource.evaluateExpression(normalizeFeelExpression(expression), variables);
+
+      assertExpressionMatches(variableSelector, expression, response);
+    } catch (final JsonMappingException e) {
+      final Throwable reason =
+          Optional.ofNullable(e.getCause())
+              .map(cause -> Optional.ofNullable(cause.getCause()).orElse(cause))
+              .orElse(e);
+
+      fail(
+          "%s should have a variable '%s' that satisfies expression '%s', but the JSON mapping failed:\n"
+              + "Error: %s\n"
+              + "Reason: %s",
+          actual, variableSelector.describe(), expression, e.getMessage(), reason);
+    } catch (final RuntimeException e) {
+      fail(
+          "%s variable '%s' should satisfy expression '%s' but the expression evaluation failed: %s.",
+          actual, variableSelector.describe(), expression, e.getMessage());
     }
-
-    final ExpressionEvaluationResult unaryTestEvaluation =
-        tryEvaluateExpression(normalizeUnaryTestExpression(variableName, expression), variables);
-    if (unaryTestEvaluation.isBooleanResult()) {
-      assertExpressionMatches(variableSelector, expression, unaryTestEvaluation.result());
-      return;
-    }
-
-    final String directFailure =
-        directEvaluation.failure() == null
-            ? String.format("returned '%s'", directEvaluation.result())
-            : directEvaluation.failure().getMessage();
-    final String unaryFailure =
-        unaryTestEvaluation.failure() == null
-            ? String.format("returned '%s'", unaryTestEvaluation.result())
-            : unaryTestEvaluation.failure().getMessage();
-
-    fail(
-        "%s variable '%s' should satisfy expression '%s' but the expression evaluation failed. Direct FEEL evaluation %s. Unary-test fallback %s.",
-        actual, variableSelector.describe(), expression, directFailure, unaryFailure);
   }
 
   private void assertExpressionMatches(
-      final VariableSelector variableSelector, final String expression, final Object result) {
-    if (!Boolean.TRUE.equals(result)) {
+      final VariableSelector variableSelector,
+      final String expression,
+      final EvaluateExpressionResponse response) {
+    if (!Boolean.TRUE.equals(response.getResult())) {
       fail(
-          "%s variable '%s' should satisfy expression '%s' but the evaluation result was '%s'.",
-          actual, variableSelector.describe(), expression, result);
+          "%s variable '%s' should satisfy expression '%s' but the evaluation result was '%s'.%s",
+          actual,
+          variableSelector.describe(),
+          expression,
+          response.getResult(),
+          formatEvaluationWarnings(response));
     }
   }
 
-  private ExpressionEvaluationResult tryEvaluateExpression(
-      final String expression, final Map<String, Object> variables) {
-    try {
-      final EvaluateExpressionResponse response =
-          dataSource.evaluateExpression(expression, variables);
-      return new ExpressionEvaluationResult(response.getResult(), null);
-    } catch (final RuntimeException e) {
-      return new ExpressionEvaluationResult(null, e);
-    }
+  private void hasVariableSatisfiesExpression(
+      final VariableSelector variableSelector,
+      final String expression,
+      final Supplier<List<Variable>> actualVariablesSupplier) {
+    hasMatchingVariableSatisfies(
+        variableSelector,
+        variable -> evaluateExpression(variableSelector, variable, expression),
+        actualVariablesSupplier);
   }
 
-  private String assertVariableExists(
+  private Variable assertVariableMatches(
       final VariableSelector variableSelector,
       final Supplier<List<Variable>> actualVariablesSupplier) {
     final List<Variable> variables = actualVariablesSupplier.get();
@@ -502,7 +516,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
             "%s should have a variable '%s', but the variable doesn't exist.",
             actual, variableSelector.describe())
         .isPresent();
-    return matchingVariable.get().getValue();
+    return matchingVariable.get();
   }
 
   private String waitForVariable(
@@ -512,7 +526,9 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
     awaitBehavior
         .get()
         .untilAsserted(
-            () -> result.set(assertVariableExists(variableSelector, actualVariablesSupplier)));
+            () ->
+                result.set(
+                    assertVariableMatches(variableSelector, actualVariablesSupplier).getValue()));
     return result.get();
   }
 
@@ -526,13 +542,14 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
         elementSelector,
         instance ->
             result.set(
-                assertVariableExists(
-                    variableSelector,
-                    () ->
-                        findLocalVariablesBySelector(
-                            processInstanceKey,
-                            instance.getElementInstanceKey(),
-                            variableSelector))));
+                assertVariableMatches(
+                        variableSelector,
+                        () ->
+                            findLocalVariablesBySelector(
+                                processInstanceKey,
+                                instance.getElementInstanceKey(),
+                                variableSelector))
+                    .getValue()));
     return result.get();
   }
 
@@ -593,13 +610,17 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
     return trimmedExpression.startsWith("=") ? trimmedExpression : "=" + trimmedExpression;
   }
 
-  private static String normalizeUnaryTestExpression(
-      final String variableName, final String expression) {
-    String trimmedExpression = expression.trim();
-    if (trimmedExpression.startsWith("=")) {
-      trimmedExpression = trimmedExpression.substring(1).trim();
+  private static String formatEvaluationWarnings(final EvaluateExpressionResponse response) {
+    if (response.getWarnings().isEmpty()) {
+      return "";
     }
-    return "=" + variableName + " in (" + trimmedExpression + ")";
+
+    final String warnings =
+        response.getWarnings().stream()
+            .map(warning -> warning.getMessage())
+            .collect(Collectors.joining("; "));
+
+    return " Warnings: " + warnings;
   }
 
   private void evaluateSimilarity(
@@ -679,28 +700,5 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
         // However, the toMap collector does not allow null values and would throw an exception.
         // See this Stack Overflow issue for more context: https://stackoverflow.com/a/24634007
         .collect(HashMap::new, (m, v) -> m.put(v.getName(), v.getValue()), HashMap::putAll);
-  }
-
-  private static final class ExpressionEvaluationResult {
-
-    private final Object result;
-    private final RuntimeException failure;
-
-    private ExpressionEvaluationResult(final Object result, final RuntimeException failure) {
-      this.result = result;
-      this.failure = failure;
-    }
-
-    private Object result() {
-      return result;
-    }
-
-    private RuntimeException failure() {
-      return failure;
-    }
-
-    private boolean isBooleanResult() {
-      return result instanceof Boolean;
-    }
   }
 }

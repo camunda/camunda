@@ -41,15 +41,9 @@ import io.camunda.process.test.api.coverage.model.CoverageReport;
 import io.camunda.process.test.api.coverage.model.CoverageRunReport;
 import io.camunda.process.test.api.coverage.model.ProcessCoverage;
 import io.camunda.process.test.api.mock.JobWorkerMockBuilder.JobWorkerMock;
-import io.camunda.process.test.api.testCases.ImmutableElementSelector;
-import io.camunda.process.test.api.testCases.ImmutableProcessDefinitionSelector;
-import io.camunda.process.test.api.testCases.ImmutableProcessInstanceSelector;
-import io.camunda.process.test.api.testCases.ImmutableTestCase;
 import io.camunda.process.test.api.testCases.TestCase;
 import io.camunda.process.test.api.testCases.TestCaseRunner;
 import io.camunda.process.test.api.testCases.TestCaseSource;
-import io.camunda.process.test.api.testCases.instructions.ImmutableAssertVariableInstruction;
-import io.camunda.process.test.api.testCases.instructions.ImmutableCreateProcessInstanceInstruction;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.coverage.CoverageCollector;
 import io.camunda.process.test.impl.coverage.CoverageTestDataCollector;
@@ -431,156 +425,6 @@ public class CamundaProcessTestExtensionIT {
       CamundaAssert.assertThatProcessInstance(ProcessInstanceSelectors.byProcessId("process"))
           .isCreated();
     }
-
-    @Test
-    void shouldAssertGlobalVariableWithExpression() {
-      // given
-      final Map<String, Object> helmet = new HashMap<>();
-      helmet.put("name", "Helmet");
-      helmet.put("quantity", 1);
-      final Map<String, Object> flag = new HashMap<>();
-      flag.put("name", "Flag");
-      flag.put("quantity", 1);
-      final Map<String, Object> oxygenTank = new HashMap<>();
-      oxygenTank.put("name", "Oxygen tank");
-      oxygenTank.put("quantity", 3);
-      final Map<String, Object> order = new HashMap<>();
-      order.put("status", "approved");
-      order.put("items", Arrays.asList(helmet, flag, oxygenTank));
-
-      client
-          .newDeployResourceCommand()
-          .addProcessModel(
-              Bpmn.createExecutableProcess("process")
-                  .startEvent()
-                  .userTask("review")
-                  .zeebeUserTask()
-                  .endEvent()
-                  .done(),
-              "process.bpmn")
-          .send()
-          .join();
-
-      final TestCase testCase =
-          ImmutableTestCase.builder()
-              .name("assert global variable")
-              .addInstructions(
-                  ImmutableCreateProcessInstanceInstruction.builder()
-                      .processDefinitionSelector(
-                          ImmutableProcessDefinitionSelector.builder()
-                              .processDefinitionId("process")
-                              .build())
-                      .putVariables("order", order)
-                      .build())
-              .addInstructions(
-                  ImmutableAssertVariableInstruction.builder()
-                      .processInstanceSelector(
-                          ImmutableProcessInstanceSelector.builder()
-                              .processDefinitionId("process")
-                              .build())
-                      .variableName("order")
-                      .satisfiesExpression(
-                          "order.status = \"approved\" and count(order.items) = 3 and "
-                              + "order.items[name = \"Helmet\"][1].quantity = 1")
-                      .build())
-              .build();
-
-      // when / then
-      testCaseRunner.run(testCase);
-    }
-
-    @Test
-    void shouldAssertLocalVariableWithExpression() {
-      // given
-      final Map<String, Object> order = new HashMap<>();
-      order.put("status", "approved");
-
-      client
-          .newDeployResourceCommand()
-          .addProcessModel(
-              Bpmn.createExecutableProcess("process")
-                  .startEvent()
-                  .userTask("review")
-                  .zeebeUserTask()
-                  .zeebeInputExpression("order.status", "localStatus")
-                  .endEvent()
-                  .done(),
-              "process.bpmn")
-          .send()
-          .join();
-
-      final TestCase testCase =
-          ImmutableTestCase.builder()
-              .name("assert local variable")
-              .addInstructions(
-                  ImmutableCreateProcessInstanceInstruction.builder()
-                      .processDefinitionSelector(
-                          ImmutableProcessDefinitionSelector.builder()
-                              .processDefinitionId("process")
-                              .build())
-                      .putVariables("order", order)
-                      .build())
-              .addInstructions(
-                  ImmutableAssertVariableInstruction.builder()
-                      .processInstanceSelector(
-                          ImmutableProcessInstanceSelector.builder()
-                              .processDefinitionId("process")
-                              .build())
-                      .elementSelector(
-                          ImmutableElementSelector.builder().elementId("review").build())
-                      .variableName("localStatus")
-                      .satisfiesExpression("\"approved\"")
-                      .build())
-              .build();
-
-      // when / then
-      testCaseRunner.run(testCase);
-    }
-
-    @Test
-    void shouldFailWhenVariableDoesNotSatisfyExpression() {
-      // given
-      client
-          .newDeployResourceCommand()
-          .addProcessModel(
-              Bpmn.createExecutableProcess("process")
-                  .startEvent()
-                  .userTask("review")
-                  .zeebeUserTask()
-                  .endEvent()
-                  .done(),
-              "process.bpmn")
-          .send()
-          .join();
-
-      final TestCase testCase =
-          ImmutableTestCase.builder()
-              .name("assert variable failure")
-              .addInstructions(
-                  ImmutableCreateProcessInstanceInstruction.builder()
-                      .processDefinitionSelector(
-                          ImmutableProcessDefinitionSelector.builder()
-                              .processDefinitionId("process")
-                              .build())
-                      .putVariables("status", "approved")
-                      .build())
-              .addInstructions(
-                  ImmutableAssertVariableInstruction.builder()
-                      .processInstanceSelector(
-                          ImmutableProcessInstanceSelector.builder()
-                              .processDefinitionId("process")
-                              .build())
-                      .variableName("status")
-                      .satisfiesExpression("\"rejected\"")
-                      .build())
-              .build();
-
-      // when / then
-      org.assertj.core.api.Assertions.assertThatThrownBy(() -> testCaseRunner.run(testCase))
-          .isInstanceOf(AssertionError.class)
-          .hasMessageContaining("should satisfy expression")
-          .hasMessageContaining("evaluation result was 'false'");
-    }
   }
 
   @Nested
@@ -766,6 +610,99 @@ public class CamundaProcessTestExtensionIT {
           .hasVariable("global", "updated")
           .hasVariable("other", "new")
           .hasLocalVariable(ElementSelectors.byId("task"), "local", "updated");
+    }
+
+    @Test
+    void shouldAssertVariableSatisfiesExpression() {
+      // given
+      final Map<String, Object> helmet = new HashMap<>();
+      helmet.put("name", "Helmet");
+      helmet.put("quantity", 1);
+      final Map<String, Object> flag = new HashMap<>();
+      flag.put("name", "Flag");
+      flag.put("quantity", 1);
+      final Map<String, Object> oxygenTank = new HashMap<>();
+      oxygenTank.put("name", "Oxygen tank");
+      oxygenTank.put("quantity", 3);
+      final Map<String, Object> order = new HashMap<>();
+      order.put("status", "approved");
+      order.put("items", Arrays.asList(helmet, flag, oxygenTank));
+
+      deployProcessModel(
+          Bpmn.createExecutableProcess("process")
+              .startEvent()
+              .userTask("review")
+              .zeebeUserTask()
+              .endEvent()
+              .done());
+
+      final ProcessInstanceEvent processInstance =
+          client
+              .newCreateInstanceCommand()
+              .bpmnProcessId("process")
+              .latestVersion()
+              .variable("order", order)
+              .send()
+              .join();
+
+      // then
+      assertThatProcessInstance(processInstance)
+          .hasVariableSatisfiesExpression(
+              VariableSelectors.byName("order"),
+              "order.status = \"approved\" and count(order.items) = 3 and "
+                  + "order.items[name = \"Helmet\"][1].quantity = 1");
+    }
+
+    @Test
+    void shouldAssertLocalVariableSatisfiesExpression() {
+      // given
+      deployProcessModel(
+          Bpmn.createExecutableProcess("process")
+              .startEvent()
+              .userTask("review")
+              .zeebeUserTask()
+              .zeebeInputExpression("order.status", "localStatus")
+              .endEvent()
+              .done());
+
+      final ProcessInstanceEvent processInstance =
+          client
+              .newCreateInstanceCommand()
+              .bpmnProcessId("process")
+              .latestVersion()
+              .variable("order", Collections.singletonMap("status", "approved"))
+              .send()
+              .join();
+
+      // then
+      assertThatProcessInstance(processInstance)
+          .hasLocalVariableSatisfiesExpression(
+              ElementSelectors.byId("review"),
+              VariableSelectors.byName("localStatus"),
+              "localStatus = \"approved\"");
+    }
+
+    @Test
+    void shouldFailWhenVariableDoesNotSatisfyExpression() {
+      // given
+      deployProcessModel(Bpmn.createExecutableProcess("process").startEvent().endEvent().done());
+
+      final ProcessInstanceEvent processInstance =
+          client
+              .newCreateInstanceCommand()
+              .bpmnProcessId("process")
+              .latestVersion()
+              .variable("status", "approved")
+              .send()
+              .join();
+
+      // when / then
+      org.assertj.core.api.Assertions.assertThatThrownBy(
+              () ->
+                  assertThatProcessInstance(processInstance)
+                      .hasVariableSatisfiesExpression("status", "status = \"rejected\""))
+          .isInstanceOf(AssertionError.class)
+          .hasMessageContaining("should satisfy expression");
     }
 
     private BpmnModelInstance processModelWithVariables() {
