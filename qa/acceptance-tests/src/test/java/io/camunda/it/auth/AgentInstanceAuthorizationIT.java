@@ -18,6 +18,7 @@ import static io.camunda.it.util.TestHelper.deployProcessAndWaitForIt;
 import static io.camunda.it.util.TestHelper.startProcessInstance;
 import static io.camunda.it.util.TestHelper.waitForAgentInstanceToBeIndexed;
 import static io.camunda.it.util.TestHelper.waitForElementInstances;
+import static io.camunda.it.util.TestHelper.waitForJobs;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -28,6 +29,7 @@ import io.camunda.client.api.command.CreateAgentHistoryItemCommandStep1.AgentHis
 import io.camunda.client.api.command.CreateAgentHistoryItemCommandStep1.AgentHistoryRole;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.response.AgentInstance;
+import io.camunda.client.api.search.response.Job;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.TestUser;
@@ -105,18 +107,22 @@ class AgentInstanceAuthorizationIT {
   private static long agentInstanceKey3;
   private static long elementInstanceKey1;
   private static long elementInstanceKey3;
+  private static long jobKey1;
+  private static long jobKey3;
 
   @BeforeAll
   static void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {
     final var result1 = createAgentInstance(adminClient, PROCESS_ID_1);
     agentInstanceKey1 = result1.agentInstanceKey();
     elementInstanceKey1 = result1.elementInstanceKey();
+    jobKey1 = result1.jobKey();
 
     agentInstanceKey2 = createAgentInstance(adminClient, PROCESS_ID_2).agentInstanceKey();
     final var result3 = createAgentInstance(adminClient, PROCESS_ID_3);
 
     agentInstanceKey3 = result3.agentInstanceKey();
     elementInstanceKey3 = result3.elementInstanceKey();
+    jobKey3 = result3.jobKey();
     waitForAgentInstanceToBeIndexed(adminClient, agentInstanceKey1);
     waitForAgentInstanceToBeIndexed(adminClient, agentInstanceKey2);
     waitForAgentInstanceToBeIndexed(adminClient, agentInstanceKey3);
@@ -285,7 +291,7 @@ class AgentInstanceAuthorizationIT {
             camundaClient
                 .newCreateAgentHistoryItemCommand(agentInstanceKey1)
                 .elementInstanceKey(elementInstanceKey1)
-                .jobKey(elementInstanceKey1)
+                .jobKey(jobKey1)
                 .role(AgentHistoryRole.USER)
                 .content(List.of(AgentHistoryContent.text("hello")))
                 .producedAt(OffsetDateTime.parse("2025-06-01T12:00:00Z"))
@@ -308,7 +314,7 @@ class AgentInstanceAuthorizationIT {
                 camundaClient
                     .newCreateAgentHistoryItemCommand(agentInstanceKey3)
                     .elementInstanceKey(elementInstanceKey3)
-                    .jobKey(elementInstanceKey3)
+                    .jobKey(jobKey3)
                     .role(AgentHistoryRole.USER)
                     .content(List.of(AgentHistoryContent.text("hello")))
                     .producedAt(OffsetDateTime.parse("2025-06-01T12:00:00Z"))
@@ -356,8 +362,19 @@ class AgentInstanceAuthorizationIT {
             .execute()
             .getAgentInstanceKey();
 
-    return new AgentInstanceCreationResult(agentInstanceKey, elementInstanceKey);
+    final long jobKey =
+        waitForJobs(adminClient, List.of(processInstanceKey)).stream()
+            .filter(j -> JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX.equals(j.getType()))
+            .findFirst()
+            .map(Job::getJobKey)
+            .orElseThrow(
+                () ->
+                    new AssertionError(
+                        "No agent job found for process instance " + processInstanceKey));
+
+    return new AgentInstanceCreationResult(agentInstanceKey, elementInstanceKey, jobKey);
   }
 
-  private record AgentInstanceCreationResult(long agentInstanceKey, long elementInstanceKey) {}
+  private record AgentInstanceCreationResult(
+      long agentInstanceKey, long elementInstanceKey, long jobKey) {}
 }
