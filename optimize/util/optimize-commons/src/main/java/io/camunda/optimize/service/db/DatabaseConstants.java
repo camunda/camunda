@@ -79,6 +79,7 @@ public final class DatabaseConstants {
   public static final String INGESTED_DATA_SOURCE = "ingested";
   // Aggregation constants
   public static final String FREQUENCY_AGGREGATION = "_frequency";
+  public static final String VERSION_BASELINE_AGGREGATION = "versionBaselineAgg";
   // Units
   public static final String GB_UNIT = "gb";
 

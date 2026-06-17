@@ -119,6 +119,11 @@ export function AgenticControlPlane() {
       titleKey: 'agenticControlPlane.tokenUsage',
       loadTile: scopedEvaluateTokenTrendReport,
     },
+    {
+      key: 'reliabilityAndToolCalls',
+      titleKey: 'agenticControlPlane.reliabilityAndToolCalls',
+      loadTile: scopedEvaluateReport,
+    },
     {key: 'duration', titleKey: 'agenticControlPlane.duration', loadTile: scopedEvaluateReport},
   ];
 

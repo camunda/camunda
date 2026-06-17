@@ -37,6 +37,7 @@ import org.opensearch.client.opensearch._types.query_dsl.Query;
 public abstract class AbstractProcessExecutionPlanInterpreterOS
     extends AbstractExecutionPlanInterpreterOS<ProcessReportDataDto, ProcessExecutionPlan>
     implements ProcessExecutionPlanInterpreterOS {
+
   protected abstract ProcessDefinitionReader getProcessDefinitionReader();
 
   protected abstract ProcessQueryFilterEnhancerOS getQueryFilterEnhancer();
@@ -86,16 +87,15 @@ public abstract class AbstractProcessExecutionPlanInterpreterOS
   @Override
   protected BoolQuery.Builder unfilteredBaseQueryBuilder(
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    // Instance level date filters are also applied to the baseline so are included here
-    final Map<String, List<ProcessFilterDto<?>>> instanceLevelDateFiltersByDefinitionKey =
-        getInstanceLevelDateFiltersByDefinitionKey(context);
+    final Map<String, List<ProcessFilterDto<?>>> instanceLevelFiltersByDefinitionKey =
+        buildBaselineFiltersByDefinition(context);
     final List<ProcessFilterDto<?>> filters =
-        instanceLevelDateFiltersByDefinitionKey.getOrDefault(
+        instanceLevelFiltersByDefinitionKey.getOrDefault(
             APPLIED_TO_ALL_DEFINITIONS, Collections.emptyList());
     final List<Query> filterQueries =
         getQueryFilterEnhancer().filterQueries(filters, context.getFilterContext());
     return buildDefinitionBaseQueryForFilters(
-        context, instanceLevelDateFiltersByDefinitionKey, filterQueries);
+        context, instanceLevelFiltersByDefinitionKey, filterQueries);
   }
 
   private BoolQuery.Builder buildDefinitionBaseQueryForFilters(

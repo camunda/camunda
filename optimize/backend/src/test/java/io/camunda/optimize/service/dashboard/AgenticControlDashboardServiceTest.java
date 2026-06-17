@@ -41,6 +41,7 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisua
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedInstancesOnlyFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.HasAgentInstancesFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.EndDateGroupByDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessDefinitionVersionGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import io.camunda.optimize.service.db.reader.DashboardReader;
 import io.camunda.optimize.service.db.writer.DashboardWriter;
@@ -89,7 +90,7 @@ public class AgenticControlDashboardServiceTest {
     assertThat(saved.isAgenticControlDashboard()).isTrue();
     assertThat(saved.isManagementDashboard()).isFalse();
     assertThat(saved.getCollectionId()).isNull();
-    assertThat(saved.getTiles()).hasSize(9);
+    assertThat(saved.getTiles()).hasSize(10);
   }
 
   @Test
@@ -172,7 +173,8 @@ public class AgenticControlDashboardServiceTest {
             AgenticControlDashboardService.DURATION_STABILITY_REPORT_ID,
             AgenticControlDashboardService.TOKEN_TREND_REPORT_ID,
             AgenticControlDashboardService.KPI_DURATION_P50_REPORT_ID,
-            AgenticControlDashboardService.KPI_DURATION_P95_REPORT_ID);
+            AgenticControlDashboardService.KPI_DURATION_P95_REPORT_ID,
+            AgenticControlDashboardService.FAILURE_RATE_BY_VERSION_REPORT_ID);
   }
 
   @Test
@@ -233,7 +235,7 @@ public class AgenticControlDashboardServiceTest {
     underTest.reconcile();
 
     // then reports are upserted and dashboard tiles are updated, but dashboard is not recreated
-    verify(reportWriter, times(9))
+    verify(reportWriter, times(10))
         .createOrUpdateSingleProcessReport(any(), any(), any(), any(), any(), any());
     verify(dashboardWriter, never()).saveDashboard(any());
     verify(dashboardWriter).updateDashboard(any(), any());
@@ -330,7 +332,9 @@ public class AgenticControlDashboardServiceTest {
               AgenticControlDashboardService.KPI_DURATION_P95_NAME,
               AgenticControlDashboardService.KPI_DURATION_P95_DESCRIPTION,
               AgenticControlDashboardService.DURATION_STABILITY_NAME,
-              AgenticControlDashboardService.DURATION_STABILITY_DESCRIPTION);
+              AgenticControlDashboardService.DURATION_STABILITY_DESCRIPTION,
+              AgenticControlDashboardService.FAILURE_RATE_BY_VERSION_NAME,
+              AgenticControlDashboardService.FAILURE_RATE_BY_VERSION_DESCRIPTION);
     }
   }
 
@@ -414,7 +418,7 @@ public class AgenticControlDashboardServiceTest {
             .orElseThrow();
 
     assertThat(stabilityTile.getPosition().getX()).isEqualTo(0);
-    assertThat(stabilityTile.getPosition().getY()).isEqualTo(6);
+    assertThat(stabilityTile.getPosition().getY()).isEqualTo(12);
     assertThat(stabilityTile.getDimensions().getWidth()).isEqualTo(18);
     assertThat(stabilityTile.getDimensions().getHeight()).isEqualTo(2);
     assertThat(stabilityTile.getConfiguration()).isEqualTo(Map.of("section", "duration"));
@@ -540,6 +544,56 @@ public class AgenticControlDashboardServiceTest {
             any(),
             any());
     verify(dashboardWriter, never()).saveDashboard(any());
+  }
+
+  @Test
+  void shouldSeedFailureRateByVersionReportWithGroupedBarShape() {
+    // given
+    when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID)).thenReturn(Optional.empty());
+    final ArgumentCaptor<ProcessReportDataDto> dataCaptor =
+        ArgumentCaptor.forClass(ProcessReportDataDto.class);
+
+    // when
+    underTest.reconcile();
+
+    // then the report is upserted with the correct deterministic ID and localization keys
+    verify(reportWriter)
+        .createOrUpdateSingleProcessReport(
+            eq(AgenticControlDashboardService.FAILURE_RATE_BY_VERSION_REPORT_ID),
+            isNull(),
+            dataCaptor.capture(),
+            eq(AgenticControlDashboardService.FAILURE_RATE_BY_VERSION_NAME),
+            eq(AgenticControlDashboardService.FAILURE_RATE_BY_VERSION_DESCRIPTION),
+            isNull());
+
+    final ProcessReportDataDto reportData = dataCaptor.getValue();
+    assertThat(reportData.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
+    assertThat(reportData.getView().getProperties()).contains(ViewProperty.PERCENTAGE);
+    assertThat(reportData.getGroupBy()).isInstanceOf(ProcessDefinitionVersionGroupByDto.class);
+    assertThat(reportData.getVisualization()).isEqualTo(ProcessVisualization.BAR);
+    assertThat(reportData.isAgenticControlReport()).isTrue();
+  }
+
+  @Test
+  void shouldMarkFailureRateByVersionTileAsL1Only() {
+    // given
+    when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID)).thenReturn(Optional.empty());
+
+    // when
+    underTest.reconcile();
+
+    // then the tile carries the L1-only visibility flag so the frontend hides it in the L0 view
+    final DashboardDefinitionRestDto saved = captureSavedDashboard();
+    final DashboardReportTileDto failureRateTile =
+        saved.getTiles().stream()
+            .filter(
+                tile ->
+                    AgenticControlDashboardService.FAILURE_RATE_BY_VERSION_REPORT_ID.equals(
+                        tile.getId()))
+            .findFirst()
+            .orElseThrow();
+    assertThat(failureRateTile.getConfiguration())
+        .isEqualTo(Map.of("section", "reliabilityAndToolCalls", "visibleInL1Only", true));
   }
 
   @SuppressWarnings("unchecked")

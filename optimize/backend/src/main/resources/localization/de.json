@@ -6,6 +6,7 @@
     "description": "Überwachen Sie die Einführung, das Verhalten und die Zuverlässigkeit von KI-Agenten sowie den Token-Verbrauch prozessübergreifend.",
     "dateRange": "Zeitraum",
     "tokenUsage": "Token-Nutzung",
+    "reliabilityAndToolCalls": "Zuverlässigkeit & Tool-Aufrufe",
     "duration": "Dauer",
     "presets": {
       "last7Days": "Letzte 7 Tage",
@@ -1572,7 +1573,9 @@
       "agenticKpiDurationP50Name": "P50-Ausführungsdauer",
       "agenticKpiDurationP50Description": "Median (P50) der Ausführungsdauer abgeschlossener agentischer Prozessinstanzen im gewählten Zeitraum.",
       "agenticKpiDurationP95Name": "P95-Ausführungsdauer",
-      "agenticKpiDurationP95Description": "95. Perzentil der Ausführungsdauer abgeschlossener agentischer Prozessinstanzen im gewählten Zeitraum."
+      "agenticKpiDurationP95Description": "95. Perzentil der Ausführungsdauer abgeschlossener agentischer Prozessinstanzen im gewählten Zeitraum.",
+      "agenticFailureRateByVersionName": "Vorfallsrate nach Prozessversion",
+      "agenticFailureRateByVersionDescription": "Prozentsatz der abgeschlossenen agentischen Prozessinstanzen mit einem gelösten Vorfall, aufgeschlüsselt nach Prozessdefinitionsversion."
     }
   },
   "managementDashboard": {
