@@ -54,6 +54,7 @@ import io.camunda.exporter.rdbms.handlers.batchoperation.BatchOperationInitializ
 import io.camunda.exporter.rdbms.handlers.batchoperation.BatchOperationLifecycleManagementExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.DecisionInstanceHistoryDeletionBatchOperationExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.IncidentBatchOperationExportHandler;
+import io.camunda.exporter.rdbms.handlers.batchoperation.JobBatchOperationExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.ProcessInstanceCancellationBatchOperationExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.ProcessInstanceHistoryDeletionBatchOperationExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.ProcessInstanceMigrationBatchOperationExportHandler;
@@ -356,6 +357,10 @@ public class RdbmsExporterWrapper implements Exporter {
             rdbmsWriters.getBatchOperationWriter(),
             cacheRegistry.batchOperationCache(),
             BatchOperationType.DELETE_DECISION_INSTANCE));
+    builder.withHandler(
+        ValueType.JOB,
+        new JobBatchOperationExportHandler(
+            rdbmsWriters.getBatchOperationWriter(), cacheRegistry.batchOperationCache()));
   }
 
   private void registerAuditLogHandlers(

@@ -128,6 +128,41 @@ public class JobIT {
   }
 
   @TestTemplate
+  public void shouldFindJobByPartitionId(final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final JobDbReader jobReader = rdbmsService.getJobReader("default");
+
+    final String processDefinitionId = JobFixtures.nextStringId();
+    final int targetPartitionId = 7;
+    createAndSaveRandomJobs(
+        rdbmsWriters,
+        3,
+        b -> b.processDefinitionId(processDefinitionId).partitionId(targetPartitionId));
+    createAndSaveRandomJobs(
+        rdbmsWriters,
+        2,
+        b -> b.processDefinitionId(processDefinitionId).partitionId(targetPartitionId + 1));
+
+    // when
+    final var searchResult =
+        jobReader.search(
+            JobQuery.of(
+                b ->
+                    b.filter(
+                            f ->
+                                f.processDefinitionIds(processDefinitionId)
+                                    .partitionId(targetPartitionId))
+                        .sort(s -> s)
+                        .page(p -> p.from(0).size(20))));
+
+    // then
+    assertThat(searchResult.total()).isEqualTo(3);
+    assertThat(searchResult.items()).hasSize(3);
+  }
+
+  @TestTemplate
   public void shouldFindJobByAuthorizedResourceId(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();

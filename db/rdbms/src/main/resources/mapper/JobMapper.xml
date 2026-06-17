@@ -223,6 +223,9 @@
           <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
         </foreach>
       </if>
+      <if test="filter.partitionId != null">
+        AND PARTITION_ID = #{filter.partitionId}
+      </if>
     </where>
   </sql>
 

@@ -53,7 +53,12 @@ public interface BatchOperationCreationRecordValue extends BatchOperationRelated
   BatchOperationProcessInstanceModificationPlanValue getModificationPlan();
 
   /**
-   * The list of partitions this batch operation is executed on. THis list will be filled by the
+   * @return the job update plan, this is only used for {@link BatchOperationType#UPDATE_JOB}
+   */
+  BatchOperationJobUpdatePlanValue getJobUpdatePlan();
+
+  /**
+   * The list of partitions this batch operation is executed on. This list will be filled by the
    * engine and is only available after the batch operation was created.
    *
    * @return the list of partitions
@@ -119,5 +124,25 @@ public interface BatchOperationCreationRecordValue extends BatchOperationRelated
      * @return Returns a list of move instructions
      */
     List<ProcessInstanceModificationMoveInstructionValue> getMoveInstructions();
+  }
+
+  @Value.Immutable
+  @ImmutableProtocol(builder = ImmutableBatchOperationJobUpdatePlanValue.Builder.class)
+  interface BatchOperationJobUpdatePlanValue {
+
+    /**
+     * @return the new retries, or {@code null} if retries are not being updated
+     */
+    Integer getRetries();
+
+    /**
+     * @return the new timeout, or {@code null} if the timeout is not being updated
+     */
+    Long getTimeout();
+
+    /**
+     * @return the new priority, or {@code null} if the priority is not being updated
+     */
+    Integer getPriority();
   }
 }
