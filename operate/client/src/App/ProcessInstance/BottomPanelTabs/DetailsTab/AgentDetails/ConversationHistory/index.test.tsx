@@ -224,6 +224,59 @@ describe('<ConversationHistory />', () => {
     );
   });
 
+  it('should show a "Show more" button when more items exist and load them on click', async () => {
+    mockSearchAgentInstanceHistory().withSuccess(
+      searchResult(
+        [
+          mockAgentInstanceHistoryItem({
+            historyItemKey: '2',
+            role: 'ASSISTANT',
+            content: [{contentType: 'TEXT', text: 'Second page message'}],
+          }),
+        ],
+        2,
+      ),
+    );
+    mockSearchAgentInstanceHistory().withSuccess(
+      searchResult(
+        [
+          mockAgentInstanceHistoryItem({
+            historyItemKey: '1',
+            role: 'USER',
+            content: [{contentType: 'TEXT', text: 'First page message'}],
+          }),
+        ],
+        2,
+      ),
+    );
+
+    const {user} = render(
+      <ConversationHistory
+        agentInstanceKey={AGENT_INSTANCE_KEY}
+        enablePeriodicRefetch={false}
+      />,
+      {wrapper: createWrapper()},
+    );
+
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('conversation-history-skeleton'),
+    );
+
+    expect(screen.getByText('First page message')).toBeInTheDocument();
+    expect(screen.queryByText('Second page message')).not.toBeInTheDocument();
+
+    const showMoreButton = screen.getByRole('button', {name: 'Show more'});
+    expect(showMoreButton).toBeInTheDocument();
+
+    await user.click(showMoreButton);
+
+    expect(await screen.findByText('Second page message')).toBeInTheDocument();
+    expect(screen.getByText('First page message')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {name: 'Show more'}),
+    ).not.toBeInTheDocument();
+  });
+
   it('should render document references', async () => {
     mockSearchAgentInstanceHistory().withSuccess(
       searchResult([

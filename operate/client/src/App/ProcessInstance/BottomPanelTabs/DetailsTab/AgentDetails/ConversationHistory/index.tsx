@@ -13,7 +13,8 @@ import type {QuerySortOrder} from '@camunda/camunda-api-zod-schemas/8.10';
 import {useAgentInstanceHistory} from 'modules/queries/agentInstances/useAgentInstanceHistory';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {ConversationMessage} from '../ConversationMessage';
-import {ConversationContainer, ErrorHint} from './styled';
+import {ConversationContainer, ErrorHint, ShowMoreButton} from './styled';
+import {flattenPaginatedPages} from 'modules/queries/flattenPaginatedPages';
 
 type ConversationHistoryProps = {
   agentInstanceKey: string;
@@ -26,10 +27,12 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
 }) => {
   const [sortOrder, setSortOrder] = useState<QuerySortOrder>('desc');
   const {selectElement} = useProcessInstanceElementSelection();
-  const {data, status} = useAgentInstanceHistory(agentInstanceKey, {
-    enablePeriodicRefetch,
-    sortOrder,
-  });
+  const {data, status, hasNextPage, fetchNextPage, isFetchingNextPage} =
+    useAgentInstanceHistory(agentInstanceKey, {
+      enablePeriodicRefetch,
+      sortOrder,
+      select: flattenPaginatedPages,
+    });
 
   if (status === 'pending') {
     return (
@@ -73,6 +76,12 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
           }}
         />
       ))}
+      {isFetchingNextPage && <SkeletonText paragraph lineCount={2} />}
+      {!isFetchingNextPage && hasNextPage && (
+        <ShowMoreButton kind="ghost" size="sm" onClick={() => fetchNextPage()}>
+          Show more
+        </ShowMoreButton>
+      )}
     </ConversationContainer>
   );
 };

@@ -6,32 +6,43 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useQuery} from '@tanstack/react-query';
+import {useInfiniteQuery, type InfiniteData} from '@tanstack/react-query';
 import type {
   QuerySortOrder,
   SearchAgentInstanceHistoryRequestBody,
+  SearchAgentInstanceHistoryResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {searchAgentInstanceHistory} from 'modules/api/v2/agentInstances/searchAgentInstanceHistory';
 import {queryKeys} from '../queryKeys';
 
-const useAgentInstanceHistory = (
+const PAGE_LIMIT = 100;
+
+type QueryOptions<T> = {
+  enablePeriodicRefetch?: boolean;
+  sortOrder?: QuerySortOrder;
+  select?: (result: InfiniteData<SearchAgentInstanceHistoryResponseBody>) => T;
+};
+
+const useAgentInstanceHistory = <
+  T = InfiniteData<SearchAgentInstanceHistoryResponseBody>,
+>(
   agentInstanceKey: string,
-  options?: {enablePeriodicRefetch?: boolean; sortOrder?: QuerySortOrder},
+  options?: QueryOptions<T>,
 ) => {
   const historyPayload: SearchAgentInstanceHistoryRequestBody = {
     sort: [{field: 'producedAt', order: options?.sortOrder ?? 'desc'}],
     filter: {commitStatus: 'COMMITTED'},
   };
 
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: queryKeys.agentInstanceHistory.search(
       agentInstanceKey,
       historyPayload,
     ),
-    queryFn: async ({signal}) => {
+    queryFn: async ({pageParam, signal}) => {
       const {response, error} = await searchAgentInstanceHistory(
         agentInstanceKey,
-        historyPayload,
+        {...historyPayload, page: {limit: PAGE_LIMIT, from: pageParam}},
         signal,
       );
       if (response !== null) {
@@ -39,6 +50,13 @@ const useAgentInstanceHistory = (
       }
       throw error;
     },
+    select: options?.select,
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, _, lastPageParam) => {
+      const nextPage = lastPageParam + lastPage.items.length;
+      return nextPage >= lastPage.page.totalItems ? null : nextPage;
+    },
+    staleTime: 5000,
     refetchInterval: options?.enablePeriodicRefetch ? 5000 : undefined,
   });
 };
