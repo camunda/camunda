@@ -394,7 +394,16 @@
 		},
 		"operate": {
 			"dashboard": {
-				"title": "Dashboard"
+				"title": "Dashboard",
+				"runningInstancesTotal": "{{count}} laufende Prozessinstanzen insgesamt",
+				"instancesWithIncident": "Prozessinstanzen mit Vorfall",
+				"activeInstances": "Aktive Prozessinstanzen",
+				"processesByNameTitle": "Prozessinstanzen nach Name",
+				"incidentsByErrorTitle": "Prozessvorfälle nach Fehlermeldung",
+				"noInstancesHeading": "Keine laufenden Prozessinstanzen",
+				"noInstancesDescription": "Um abgeschlossene Instanzen anzuzeigen, wechseln Sie zur Prozessansicht. Starten Sie eine neue Prozessinstanz, um hier Aktivitäten zu sehen.",
+				"learnMoreLink": "Mehr über Operate erfahren",
+				"goToModelerButton": "Zum Modeler"
 			},
 			"processes": {
 				"title": "Prozesse"

@@ -394,7 +394,16 @@
 		},
 		"operate": {
 			"dashboard": {
-				"title": "Panel de control"
+				"title": "Panel de control",
+				"runningInstancesTotal": "{{count}} instancias de proceso en ejecución en total",
+				"instancesWithIncident": "Instancias de proceso con incidente",
+				"activeInstances": "Instancias de proceso activas",
+				"processesByNameTitle": "Instancias de proceso por nombre",
+				"incidentsByErrorTitle": "Incidentes de proceso por mensaje de error",
+				"noInstancesHeading": "No hay instancias de proceso en ejecución",
+				"noInstancesDescription": "Para ver las instancias finalizadas, vaya a la vista de Procesos. Inicie una nueva instancia de proceso para ver actividad aquí.",
+				"learnMoreLink": "Más información sobre Operate",
+				"goToModelerButton": "Ir al Modeler"
 			},
 			"processes": {
 				"title": "Procesos"

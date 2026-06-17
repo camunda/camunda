@@ -123,6 +123,18 @@ function useNavbar(currentUser: CurrentUser): NavbarConfig {
 			elements: hasOperateAccess
 				? [
 						{
+							key: 'dashboard',
+							label: t('operate.dashboard.title'),
+							isCurrentPage: pathname === tabRoutes['operate'],
+							routeProps: {
+								to: tabRoutes['operate'],
+								activeOptions: {exact: true},
+								onClick: () => {
+									tracking.track({eventName: 'operate:navigation', link: 'header-dashboard'});
+								},
+							},
+						},
+						{
 							key: 'processes',
 							label: t('operate.processes.title'),
 							isCurrentPage: pathname.startsWith(tabRoutes['operateProcesses']),
