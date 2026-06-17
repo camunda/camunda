@@ -30,6 +30,7 @@ import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.ExpandWildcard;
 import org.opensearch.client.opensearch._types.OpenSearchException;
+import org.opensearch.client.opensearch.cat.indices.IndicesRecord;
 import org.opensearch.client.opensearch.cluster.DeleteComponentTemplateRequest;
 import org.opensearch.client.opensearch.cluster.GetComponentTemplateResponse;
 import org.opensearch.client.opensearch.core.GetResponse;
@@ -175,13 +176,24 @@ final class TestClient implements CloseableSilently {
 
   void deleteIndices() {
     try {
-      osClient
-          .indices()
-          .delete(
-              DeleteIndexRequest.builder()
-                  .index(config.index.prefix + "*")
-                  .expandWildcards(ExpandWildcard.All)
-                  .build());
+      // Delete indices one per request to avoid tripping the AWS Managed OpenSearch
+      // kraken-index-management-extension, which throws IllegalArgumentException ("Cannot get
+      // metadata for more than one index ... when using a custom index type") when a single
+      // cluster-state change deletes more than one index, aborting the ISM sweep and failing
+      // concurrent searches. See camunda/camunda#52892.
+      final var indices =
+          osClient.cat().indices(r -> r.index(config.index.prefix + "*")).valueBody().stream()
+              .map(IndicesRecord::index)
+              .toList();
+      for (final var index : indices) {
+        osClient
+            .indices()
+            .delete(
+                DeleteIndexRequest.builder()
+                    .index(index)
+                    .expandWildcards(ExpandWildcard.All)
+                    .build());
+      }
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
     }

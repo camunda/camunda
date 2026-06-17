@@ -90,7 +90,19 @@ public class OSClient implements DocumentClient {
 
   @Override
   public void deleteAllIndices(final String indexPrefix) throws IOException {
-    opensearchClient.indices().delete(DeleteIndexRequest.of(b -> b.index("*")));
+    // Delete indices one per request to avoid tripping the AWS Managed OpenSearch
+    // kraken-index-management-extension, which throws IllegalArgumentException ("Cannot get
+    // metadata
+    // for more than one index ... when using a custom index type") when a single cluster-state
+    // change deletes more than one index, aborting the ISM sweep and failing concurrent searches.
+    // See camunda/camunda#52892.
+    final var indices =
+        opensearchClient.cat().indices(r -> r.index("*")).valueBody().stream()
+            .map(IndicesRecord::index)
+            .toList();
+    for (final var index : indices) {
+      opensearchClient.indices().delete(DeleteIndexRequest.of(b -> b.index(index)));
+    }
   }
 
   @Override
