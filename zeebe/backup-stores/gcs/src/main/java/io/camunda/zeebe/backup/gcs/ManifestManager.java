@@ -29,9 +29,18 @@ import io.camunda.zeebe.backup.common.Manifest;
 import io.camunda.zeebe.backup.common.Manifest.InProgressManifest;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+<<<<<<< HEAD
 import java.util.Collection;
 import java.util.Spliterator;
 import java.util.Spliterators;
+=======
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+>>>>>>> 83a12974d (fix: retry transient GCS manifest listing failures)
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.StreamSupport;
@@ -49,6 +58,13 @@ public final class ManifestManager {
           .disable(WRITE_DATES_AS_TIMESTAMPS)
           .setSerializationInclusion(Include.NON_ABSENT);
   public static final int PRECONDITION_FAILED = 412;
+<<<<<<< HEAD
+=======
+  private static final int MAX_LIST_ATTEMPTS = 6;
+  private static final Duration INITIAL_LIST_RETRY_DELAY = Duration.ofMillis(100);
+  private static final Duration MAX_LIST_RETRY_DELAY = Duration.ofSeconds(2);
+  private static final Logger LOG = LoggerFactory.getLogger(ManifestManager.class);
+>>>>>>> 83a12974d (fix: retry transient GCS manifest listing failures)
 
   /**
    * Format for path to all manifests.
@@ -173,6 +189,7 @@ public final class ManifestManager {
     }
   }
 
+<<<<<<< HEAD
   public Collection<Manifest> listManifests(final BackupIdentifierWildcard wildcard) {
     final var spliterator =
         Spliterators.spliteratorUnknownSize(
@@ -198,6 +215,137 @@ public final class ManifestManager {
 
   public void deleteManifest(final BackupIdentifier id) {
     client.delete(manifestBlobInfo(id).getBlobId());
+=======
+  /**
+   * Lists backup statuses by reading status information directly from blob custom metadata,
+   * avoiding the need to download each manifest's content. Falls back to downloading the manifest
+   * for blobs that don't have metadata (written by older versions).
+   */
+  public Collection<BackupStatus> listBackupStatuses(final BackupIdentifierWildcard wildcard) {
+    final var blobFilter = filterBlobsByWildcard(wildcard);
+    LOG.debug("Listing backup statuses for wildcard {}", wildcard);
+    final var listing = listManifestBlobsWithRetry(wildcardPrefix(wildcard));
+    final var statusFutures = new ArrayList<CompletableFuture<BackupStatus>>();
+    for (final var blob : listing) {
+      if (!blobFilter.test(blob)) {
+        continue;
+      }
+      final var fromMetadata = ManifestMetadata.toBackupStatus(blob, basePath, MANIFEST_BLOB_NAME);
+      if (fromMetadata.isPresent()) {
+        statusFutures.add(CompletableFuture.completedFuture(fromMetadata.get()));
+      } else {
+        // Fallback: download the manifest for blobs without metadata
+        statusFutures.add(downloadManifestStatus(blob));
+      }
+    }
+
+    CompletableFuture.allOf(statusFutures.toArray(CompletableFuture[]::new)).join();
+    LOG.debug("Found {} matching backup statuses for wildcard {}", statusFutures.size(), wildcard);
+
+    return statusFutures.stream()
+        .map(CompletableFuture::join)
+        .filter(status -> wildcard.matches(status.id()))
+        .toList();
+  }
+
+  private List<Blob> listManifestBlobsWithRetry(final String prefix) {
+    for (int attempt = 1; ; attempt++) {
+      try {
+        final var blobs = new ArrayList<Blob>();
+        client
+            .list(bucketInfo.getName(), BlobListOption.prefix(prefix))
+            .iterateAll()
+            .forEach(blobs::add);
+        return blobs;
+      } catch (final StorageException e) {
+        if (attempt >= MAX_LIST_ATTEMPTS || !shouldRetryListOperation(e)) {
+          throw e;
+        }
+
+        LOG.warn(
+            "Failed to list GCS backup manifests from bucket '{}' with prefix '{}' on attempt {}/{}. Retrying.",
+            bucketInfo.getName(),
+            prefix,
+            attempt,
+            MAX_LIST_ATTEMPTS,
+            e);
+        waitBeforeListRetry(attempt);
+      }
+    }
+  }
+
+  private boolean shouldRetryListOperation(final StorageException e) {
+    return e.isRetryable() || isServerError(e) || isTransientComputeEngineMetadataError(e);
+  }
+
+  private boolean isServerError(final StorageException e) {
+    final var statusCode = e.getCode();
+    return statusCode >= 500 && statusCode < 600;
+  }
+
+  private boolean isTransientComputeEngineMetadataError(final StorageException e) {
+    for (Throwable current = e; current != null; current = current.getCause()) {
+      final var message = current.getMessage();
+      if (message != null
+          && message.contains("Unexpected Error code 500")
+          && message.contains("Compute Engine metadata")) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private void waitBeforeListRetry(final int attempt) {
+    final var delay =
+        Duration.ofMillis(
+            Math.min(
+                MAX_LIST_RETRY_DELAY.toMillis(),
+                INITIAL_LIST_RETRY_DELAY.toMillis() << (attempt - 1)));
+    try {
+      Thread.sleep(delay);
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new StorageException(0, "Interrupted while retrying GCS backup manifest listing", e);
+    }
+  }
+
+  private CompletableFuture<BackupStatus> downloadManifestStatus(final Blob blob) {
+    return CompletableFuture.supplyAsync(
+        () -> {
+          try {
+            final var manifest =
+                MAPPER.readValue(client.readAllBytes(blob.getBlobId()), Manifest.class);
+            return Manifest.toStatus(manifest);
+          } catch (final IOException e) {
+            throw new UncheckedIOException(e);
+          }
+        },
+        executor);
+  }
+
+  public void deleteManifest(final Manifest manifest) {
+    final var blobInfo = manifestBlobInfo(manifest.id());
+    client.delete(blobInfo.getBlobId());
+  }
+
+  public void markAsDeleted(final Manifest manifest) {
+    final var deletedManifest =
+        switch (manifest.statusCode()) {
+          case DELETED -> manifest;
+          case COMPLETED -> manifest.asCompleted().delete();
+          case IN_PROGRESS -> manifest.asInProgress().delete();
+          case FAILED -> manifest.asFailed().delete();
+        };
+    if (manifest != deletedManifest) {
+      try {
+        client.create(
+            manifestBlobInfoWithMetadata(manifest.id(), deletedManifest),
+            MAPPER.writeValueAsBytes(deletedManifest));
+      } catch (final JsonProcessingException e) {
+        throw new RuntimeException(e);
+      }
+    }
+>>>>>>> 83a12974d (fix: retry transient GCS manifest listing failures)
   }
 
   private BlobInfo manifestBlobInfo(final BackupIdentifier id) {

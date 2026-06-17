@@ -7,22 +7,34 @@
  */
 package io.camunda.zeebe.backup.gcs;
 
+import com.google.api.gax.paging.Page;
 import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.BucketInfo;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.Storage.BlobTargetOption;
 import com.google.cloud.storage.StorageException;
+import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
+import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
+import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
 import io.camunda.zeebe.backup.common.BackupImpl;
 import io.camunda.zeebe.backup.common.BackupStoreException.UnexpectedManifestState;
 import io.camunda.zeebe.backup.common.Manifest;
 import io.camunda.zeebe.backup.common.NamedFileSetImpl;
 import java.io.IOException;
 import java.nio.file.Path;
+<<<<<<< HEAD
 import java.util.Map;
 import java.util.Optional;
+=======
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.Executors;
+>>>>>>> 83a12974d (fix: retry transient GCS manifest listing failures)
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -209,4 +221,204 @@ final class ManifestManagerTest {
         .isInstanceOf(StorageException.class)
         .hasMessageContaining("expected but unhandled");
   }
+<<<<<<< HEAD
+=======
+
+  @SuppressWarnings("unchecked")
+  @Test
+  void shouldRetryListBackupStatusesWhenTransientMetadataErrorOccurs() {
+    // given
+    final var client = Mockito.mock(Storage.class);
+    final var manager =
+        new ManifestManager(
+            client, BucketInfo.of("bucket"), "basePath", Executors.newSingleThreadExecutor());
+    final var backup =
+        new BackupImpl(
+            new BackupIdentifierImpl(1, 2, 3),
+            new BackupDescriptorImpl(1, 1, "version", Instant.now(), CheckpointType.MANUAL_BACKUP),
+            new NamedFileSetImpl(Map.of()),
+            new NamedFileSetImpl(Map.of()));
+    final var manifest = Manifest.createInProgress(backup).complete();
+    final var blob = Mockito.mock(Blob.class);
+    Mockito.when(blob.getName()).thenReturn("basePathmanifests/2/3/1/manifest.json");
+    Mockito.when(blob.getMetadata()).thenReturn(ManifestMetadata.fromManifest(manifest));
+    final var page = Mockito.mock(Page.class);
+    Mockito.when(page.iterateAll()).thenReturn(List.of(blob));
+    Mockito.when(client.list(Mockito.eq("bucket"), Mockito.any()))
+        .thenThrow(
+            new StorageException(
+                new IOException(
+                    "Unexpected Error code 500 trying to get universe domain from Compute Engine metadata")))
+        .thenReturn(page);
+    final var wildcard =
+        new BackupIdentifierWildcardImpl(
+            Optional.empty(), Optional.empty(), BackupIdentifierWildcard.CheckpointPattern.any());
+
+    // when
+    final var statuses = manager.listBackupStatuses(wildcard);
+
+    // then
+    Assertions.assertThat(statuses)
+        .singleElement()
+        .satisfies(
+            status -> {
+              Assertions.assertThat(status.id()).isEqualTo(backup.id());
+              Assertions.assertThat(status.statusCode()).isEqualTo(BackupStatusCode.COMPLETED);
+            });
+    Mockito.verify(client, Mockito.times(2)).list(Mockito.eq("bucket"), Mockito.any());
+  }
+
+  @Test
+  void shouldNotRetryListBackupStatusesWhenErrorIsNotTransient() {
+    // given
+    final var client = Mockito.mock(Storage.class);
+    final var manager =
+        new ManifestManager(
+            client, BucketInfo.of("bucket"), "basePath", Executors.newSingleThreadExecutor());
+    Mockito.when(client.list(Mockito.eq("bucket"), Mockito.any()))
+        .thenThrow(new StorageException(400, "bad request"));
+    final var wildcard =
+        new BackupIdentifierWildcardImpl(
+            Optional.empty(), Optional.empty(), BackupIdentifierWildcard.CheckpointPattern.any());
+
+    // when/then
+    Assertions.assertThatThrownBy(() -> manager.listBackupStatuses(wildcard))
+        .isInstanceOf(StorageException.class)
+        .hasMessageContaining("bad request");
+    Mockito.verify(client).list(Mockito.eq("bucket"), Mockito.any());
+  }
+
+  @Nested
+  class ManifestDeleteTransitionTest {
+    @Test
+    void shouldMarkInProgressManifestAsDeleted() throws IOException {
+      // given
+      final var client = Mockito.mock(Storage.class);
+      final var manager =
+          new ManifestManager(
+              client, BucketInfo.of("bucket"), "basePath", Executors.newSingleThreadExecutor());
+      final var backup =
+          new BackupImpl(
+              new BackupIdentifierImpl(1, 2, 3),
+              new BackupDescriptorImpl(
+                  1, 1, "version", Instant.now(), CheckpointType.MANUAL_BACKUP),
+              new NamedFileSetImpl(Map.of()),
+              new NamedFileSetImpl(Map.of()));
+      final var inProgressManifest = Manifest.createInProgress(backup);
+
+      final var blob = Mockito.mock(Blob.class);
+      Mockito.when(blob.getContent())
+          .thenReturn(ManifestManager.MAPPER.writeValueAsBytes(inProgressManifest));
+      Mockito.when(client.get(Mockito.any(BlobId.class))).thenReturn(blob);
+
+      // when
+      manager.markAsDeleted(inProgressManifest);
+
+      // then
+      final var captor = ArgumentCaptor.forClass(byte[].class);
+      Mockito.verify(client).create(Mockito.any(BlobInfo.class), captor.capture());
+
+      final var actualManifest =
+          ManifestManager.MAPPER.readValue(captor.getValue(), Manifest.class);
+      Assertions.assertThat(actualManifest.statusCode()).isEqualTo(StatusCode.DELETED);
+      Assertions.assertThat(actualManifest.id()).isEqualTo(inProgressManifest.id());
+    }
+
+    @Test
+    void shouldMarkCompletedManifestAsDeleted() throws IOException {
+      // given
+      final var client = Mockito.mock(Storage.class);
+      final var manager =
+          new ManifestManager(
+              client, BucketInfo.of("bucket"), "basePath", Executors.newSingleThreadExecutor());
+      final var backup =
+          new BackupImpl(
+              new BackupIdentifierImpl(1, 2, 3),
+              new BackupDescriptorImpl(
+                  1, 1, "version", Instant.now(), CheckpointType.MANUAL_BACKUP),
+              new NamedFileSetImpl(Map.of()),
+              new NamedFileSetImpl(Map.of()));
+      final var completedManifest = Manifest.createInProgress(backup).complete();
+
+      final var blob = Mockito.mock(Blob.class);
+      Mockito.when(blob.getContent())
+          .thenReturn(ManifestManager.MAPPER.writeValueAsBytes(completedManifest));
+      Mockito.when(client.get(Mockito.any(BlobId.class))).thenReturn(blob);
+
+      // when
+      manager.markAsDeleted(completedManifest);
+
+      // then
+      final var captor = ArgumentCaptor.forClass(byte[].class);
+      Mockito.verify(client).create(Mockito.any(BlobInfo.class), captor.capture());
+
+      final var actualManifest =
+          ManifestManager.MAPPER.readValue(captor.getValue(), Manifest.class);
+      Assertions.assertThat(actualManifest.statusCode()).isEqualTo(StatusCode.DELETED);
+      Assertions.assertThat(actualManifest.id()).isEqualTo(completedManifest.id());
+    }
+
+    @Test
+    void shouldMarkFailedManifestAsDeleted() throws IOException {
+      // given
+      final var client = Mockito.mock(Storage.class);
+      final var manager =
+          new ManifestManager(
+              client, BucketInfo.of("bucket"), "basePath", Executors.newSingleThreadExecutor());
+      final var backup =
+          new BackupImpl(
+              new BackupIdentifierImpl(1, 2, 3),
+              new BackupDescriptorImpl(
+                  1, 1, "version", Instant.now(), CheckpointType.MANUAL_BACKUP),
+              new NamedFileSetImpl(Map.of()),
+              new NamedFileSetImpl(Map.of()));
+      final var failedManifest = Manifest.createInProgress(backup).fail("failure reason");
+
+      final var blob = Mockito.mock(Blob.class);
+      Mockito.when(blob.getContent())
+          .thenReturn(ManifestManager.MAPPER.writeValueAsBytes(failedManifest));
+      Mockito.when(client.get(Mockito.any(BlobId.class))).thenReturn(blob);
+
+      // when
+      manager.markAsDeleted(failedManifest);
+
+      // then
+      final var captor = ArgumentCaptor.forClass(byte[].class);
+      Mockito.verify(client).create(Mockito.any(BlobInfo.class), captor.capture());
+
+      final var actualManifest =
+          ManifestManager.MAPPER.readValue(captor.getValue(), Manifest.class);
+      Assertions.assertThat(actualManifest.statusCode()).isEqualTo(StatusCode.DELETED);
+      Assertions.assertThat(actualManifest.id()).isEqualTo(failedManifest.id());
+    }
+
+    @Test
+    void shouldNotUpdateAlreadyDeletedManifest() throws IOException {
+      // given
+      final var client = Mockito.mock(Storage.class);
+      final var manager =
+          new ManifestManager(
+              client, BucketInfo.of("bucket"), "basePath", Executors.newSingleThreadExecutor());
+      final var backup =
+          new BackupImpl(
+              new BackupIdentifierImpl(1, 2, 3),
+              new BackupDescriptorImpl(
+                  1, 1, "version", Instant.now(), CheckpointType.MANUAL_BACKUP),
+              new NamedFileSetImpl(Map.of()),
+              new NamedFileSetImpl(Map.of()));
+      final var deletedManifest = Manifest.createInProgress(backup).complete().delete();
+
+      final var blob = Mockito.mock(Blob.class);
+      Mockito.when(blob.getContent())
+          .thenReturn(ManifestManager.MAPPER.writeValueAsBytes(deletedManifest));
+      Mockito.when(client.get(Mockito.any(BlobId.class))).thenReturn(blob);
+
+      // when
+      manager.markAsDeleted(deletedManifest);
+
+      // then - should not call create since manifest is already deleted
+      Mockito.verify(client, Mockito.never()).create(Mockito.any(BlobInfo.class), Mockito.any());
+    }
+  }
+>>>>>>> 83a12974d (fix: retry transient GCS manifest listing failures)
 }
