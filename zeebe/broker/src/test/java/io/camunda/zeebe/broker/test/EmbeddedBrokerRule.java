@@ -18,8 +18,8 @@ import io.atomix.cluster.AtomixCluster;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.impl.util.AddressUtil;
 import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
+import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.configuration.EngineSecurityConfigurations;
-import io.camunda.security.oidc.NoopOidcClaimsProvider;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
@@ -252,7 +252,7 @@ public final class EmbeddedBrokerRule extends ExternalResource {
             null,
             null,
             null,
-            new NoopOidcClaimsProvider(),
+            (OidcClaimsProvider) (jwtClaims, tokenValue) -> jwtClaims,
             null,
             null,
             NodeIdProvider.staticProvider(brokerCfg.getCluster().getNodeId()),

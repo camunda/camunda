@@ -2,7 +2,11 @@
 
 ## Status
 
-Proposed
+Superseded — implementation ownership moved to the Camunda Security Library (CSL).
+The classes described below (`OidcClaimsProvider`, `NoopOidcClaimsProvider`,
+`CachingOidcClaimsProvider`, `OidcUserInfoClient`) were removed from this monorepo in favour of
+the equivalent types in `camunda-security-library` (≥ 0.1.0-alpha31). The architectural
+decisions and rationale recorded here remain valid; the implementation location changed.
 
 ## Context
 

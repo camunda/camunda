@@ -8,8 +8,8 @@
 package io.camunda.zeebe.broker.system;
 
 import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
+import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.configuration.EngineSecurityConfig;
-import io.camunda.security.oidc.OidcClaimsProvider;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;

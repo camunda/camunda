@@ -11,8 +11,8 @@ import static io.camunda.zeebe.broker.test.EmbeddedBrokerRule.assignSocketAddres
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
+import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.configuration.EngineSecurityConfigurations;
-import io.camunda.security.oidc.NoopOidcClaimsProvider;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.system.SystemContext;
@@ -91,7 +91,7 @@ final class PhysicalTenantPartitionManagerIT {
             null,
             null,
             null,
-            new NoopOidcClaimsProvider(),
+            (OidcClaimsProvider) (jwtClaims, tokenValue) -> jwtClaims,
             null,
             null,
             NodeIdProvider.staticProvider(brokerCfg.getCluster().getNodeId()),
