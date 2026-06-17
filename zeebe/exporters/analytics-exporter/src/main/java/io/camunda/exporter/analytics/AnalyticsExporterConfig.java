@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.analytics;
 
+import io.camunda.exporter.analytics.sampling.HashSampler;
 import java.time.Duration;
 
 /** Configuration for the Analytics Exporter. Instantiated from the exporter's args map. */
@@ -18,6 +19,7 @@ public class AnalyticsExporterConfig {
   private String pushInterval = "PT5M";
   private String heartbeatInterval = "PT10M";
   private boolean signing = true;
+  private double samplingRate = HashSampler.MAX_SAMPLE_RATE;
 
   public String getEndpoint() {
     return endpoint;
@@ -73,6 +75,15 @@ public class AnalyticsExporterConfig {
     return this;
   }
 
+  public double getSamplingRate() {
+    return samplingRate;
+  }
+
+  public AnalyticsExporterConfig setSamplingRate(final double samplingRate) {
+    this.samplingRate = samplingRate;
+    return this;
+  }
+
   public AnalyticsExporterConfig validate() {
     if (endpoint == null || endpoint.isBlank()) {
       throw new IllegalArgumentException("Analytics exporter endpoint is not configured");
@@ -105,6 +116,17 @@ public class AnalyticsExporterConfig {
               + ") must not exceed maxQueueSize ("
               + maxQueueSize
               + ")");
+    }
+    if (Double.isNaN(samplingRate)
+        || samplingRate < HashSampler.MIN_SAMPLE_RATE
+        || samplingRate > HashSampler.MAX_SAMPLE_RATE) {
+      throw new IllegalArgumentException(
+          "samplingRate must be between "
+              + HashSampler.MIN_SAMPLE_RATE
+              + " and "
+              + HashSampler.MAX_SAMPLE_RATE
+              + ", got: "
+              + samplingRate);
     }
     return this;
   }

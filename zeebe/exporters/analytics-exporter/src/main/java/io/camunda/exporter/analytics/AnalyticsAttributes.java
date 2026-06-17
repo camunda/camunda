@@ -38,6 +38,8 @@ public final class AnalyticsAttributes {
   // Event domain
   public static final AttributeKey<Long> EVENT_SEQUENCE_NUMBER =
       AttributeKey.longKey("camunda.event.sequence_number");
+  public static final AttributeKey<Double> EVENT_SAMPLE_RATE =
+      AttributeKey.doubleKey("camunda.event.sample_rate");
   public static final AttributeKey<Long> EVENT_TIME_MIN =
       AttributeKey.longKey("camunda.event.time_min");
   public static final AttributeKey<Long> EVENT_TIME_MAX =
