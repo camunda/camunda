@@ -85,37 +85,18 @@ jobs:
       fail-fast: false
       matrix:
         os_version: ${{ fromJSON(format('[{0}]', github.event.inputs.opensearch-version || '"2.19", "3.5"')) }}
+        # EXPERIMENT (camunda#52892): matrix temporarily reduced to a single group to test
+        # whether the AWS-MOS IT failures are caused by cross-job contention on the shared
+        # single-node domain. Running camunda-exporter alone removes the other 4 concurrent
+        # jobs. The other groups/includes are COMMENTED OUT (not deleted) below — restore
+        # them before merging. This branch is throwaway.
         group:
-        - camunda-qa-acceptance-tests-client
-        - camunda-qa-acceptance-tests-non-client
-        - search-client-opensearch
         - camunda-exporter
-        - zeebe-opensearch-exporter
+        # - camunda-qa-acceptance-tests-client
+        # - camunda-qa-acceptance-tests-non-client
+        # - search-client-opensearch
+        # - zeebe-opensearch-exporter
         include:
-          - group: camunda-qa-acceptance-tests-client
-            name: "Camunda QA Module Client Tests"
-            maven-modules: "'io.camunda:camunda-qa-acceptance-tests'"
-            maven-build-threads: 2
-            maven-test-fork-count: 7
-            maven-test-profiles: multi-db-test-client
-            runs-on: aws-core-8-default
-            owner: "General"
-          - group: camunda-qa-acceptance-tests-non-client
-            name: "Camunda QA Module Non-Client Tests"
-            maven-modules: "'io.camunda:camunda-qa-acceptance-tests'"
-            maven-build-threads: 2
-            maven-test-fork-count: 7
-            maven-test-profiles: multi-db-test-non-client
-            runs-on: aws-core-8-default
-            owner: "General"
-          - group: search-client-opensearch
-            name: "Search Client OpenSearch ITs"
-            maven-modules: "'io.camunda:camunda-search-client-connect,io.camunda:camunda-search-client-opensearch'"
-            maven-build-threads: 2
-            maven-test-fork-count: 7
-            maven-test-profiles: multi-db-test
-            runs-on: aws-core-8-default
-            owner: "Core Features"
           - group: camunda-exporter
             name: "Camunda Exporter ITs"
             maven-modules: "'io.camunda:camunda-exporter'"
@@ -124,14 +105,39 @@ jobs:
             maven-test-profiles: multi-db-test
             runs-on: aws-core-8-default
             owner: "Data Layer"
-          - group: zeebe-opensearch-exporter
-            name: "Zeebe OpenSearch Exporter ITs"
-            maven-modules: "'io.camunda:zeebe-opensearch-exporter'"
-            maven-build-threads: 2
-            maven-test-fork-count: 7
-            maven-test-profiles: multi-db-test
-            runs-on: aws-core-8-default
-            owner: "Data Layer"
+          # --- EXPERIMENT: restore the groups below (and the list entries above) before merging ---
+          # - group: camunda-qa-acceptance-tests-client
+          #   name: "Camunda QA Module Client Tests"
+          #   maven-modules: "'io.camunda:camunda-qa-acceptance-tests'"
+          #   maven-build-threads: 2
+          #   maven-test-fork-count: 7
+          #   maven-test-profiles: multi-db-test-client
+          #   runs-on: aws-core-8-default
+          #   owner: "General"
+          # - group: camunda-qa-acceptance-tests-non-client
+          #   name: "Camunda QA Module Non-Client Tests"
+          #   maven-modules: "'io.camunda:camunda-qa-acceptance-tests'"
+          #   maven-build-threads: 2
+          #   maven-test-fork-count: 7
+          #   maven-test-profiles: multi-db-test-non-client
+          #   runs-on: aws-core-8-default
+          #   owner: "General"
+          # - group: search-client-opensearch
+          #   name: "Search Client OpenSearch ITs"
+          #   maven-modules: "'io.camunda:camunda-search-client-connect,io.camunda:camunda-search-client-opensearch'"
+          #   maven-build-threads: 2
+          #   maven-test-fork-count: 7
+          #   maven-test-profiles: multi-db-test
+          #   runs-on: aws-core-8-default
+          #   owner: "Core Features"
+          # - group: zeebe-opensearch-exporter
+          #   name: "Zeebe OpenSearch Exporter ITs"
+          #   maven-modules: "'io.camunda:zeebe-opensearch-exporter'"
+          #   maven-build-threads: 2
+          #   maven-test-fork-count: 7
+          #   maven-test-profiles: multi-db-test
+          #   runs-on: aws-core-8-default
+          #   owner: "Data Layer"
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Setup AWS OpenSearch
