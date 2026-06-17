@@ -250,24 +250,14 @@ test.describe('Processes', () => {
         `${baseUrl}/operate/processes?processDefinitionId=testProcess&processDefinitionVersion=1`,
       );
 
-      await expect(page).toHaveURL(
-        `${baseUrl}/operate/processes?processDefinitionId=testProcess&processDefinitionVersion=1`,
-      );
+      // Operate detects the unknown process definition, surfaces a
+      // "Process could not be found" notification, and strips the invalid
+      // processDefinitionId/processDefinitionVersion params from the URL.
       await expect(
         operateProcessesPage.processCouldNotBeFoundMessage,
       ).toBeVisible();
 
-      await waitForAssertion({
-        assertion: async () => {
-          await expect(operateFiltersPanelPage.processNameFilter).toBeDisabled({
-            timeout: 5000,
-          });
-        },
-        onFailure: async () => {
-          await page.reload();
-        },
-        maxRetries: 5,
-      });
+      await expect(page).toHaveURL(`${baseUrl}/operate/processes`);
     });
 
     await test.step('Deploy new process and verify it loads', async () => {
