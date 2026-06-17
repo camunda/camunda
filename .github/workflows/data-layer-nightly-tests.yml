@@ -33,9 +33,17 @@ jobs:
        (github.event.action == 'labeled' && github.event.label.name == 'run-dl-nightly-tests' ||
         github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'run-dl-nightly-tests')))
     runs-on: gcp-perf-core-8-default
-    timeout-minutes: 60
+    timeout-minutes: 90
     permissions:
       contents: read
+    # Local Docker registry used by the rolling-update test to serve the current-test image
+    services:
+      registry:
+        image: registry:3
+        ports:
+          - 5000:5000
+    env:
+      CAMUNDA_TEST_DOCKER_IMAGE: localhost:5000/camunda/camunda:current-test
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
@@ -59,6 +67,7 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          minimus: "true"
 
       - name: Set up JDK 21
         uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
@@ -86,8 +95,17 @@ jobs:
           mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
 
       - uses: ./.github/actions/build-zeebe
+        id: build-zeebe
         with:
           maven-extra-args: "-Dskip.fe.build=true -DskipOptimize=true"
+
+      - uses: ./.github/actions/build-platform-docker
+        with:
+          repository: localhost:5000/camunda/camunda
+          version: current-test
+          dockerfile: camunda.Dockerfile
+          push: true
+          distball: ${{ steps.build-zeebe.outputs.distball }}
 
       - name: Run Nightly Tests
         env:
