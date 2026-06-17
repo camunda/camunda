@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.1">
 <title data-rh="true">ADR-0005: Physical-Tenant Routing of Authorization Reads in the Service and CSL Adapter Layers | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-55325/architecture/components/orchestration-cluster/adr/physical-tenant-routing-of-authorization-reads/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="ADR-0005: Physical-Tenant Routing of Authorization Reads in the Service and CSL Adapter Layers | Camunda Platform"><meta data-rh="true" name="description" content="Status"><meta data-rh="true" property="og:description" content="Status"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-55325/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-55325/architecture/components/orchestration-cluster/adr/physical-tenant-routing-of-authorization-reads/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-55325/architecture/components/orchestration-cluster/adr/physical-tenant-routing-of-authorization-reads/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-55325/architecture/components/orchestration-cluster/adr/physical-tenant-routing-of-authorization-reads/" hreflang="x-default"><link rel="stylesheet" href="/camunda/pr-preview/pr-55325/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-55325/assets/js/runtime~main.7bf6ce09.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-55325/assets/js/main.6c01dd35.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-55325/assets/js/runtime~main.91b9ee35.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-55325/assets/js/main.6d5f9fb7.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -69,126 +69,137 @@ the OC side in the host-supplied adapters and bean wiring. The basic-auth path a
 shape — <code>BasicAuthUserDetailsAdapter</code> (an OC-supplied <code>BasicAuthUserDetailsPort</code>) resolves
 <code>PhysicalTenantContext.current()</code> and selects <code>serviceRegistry.userServices(physicalTenantId)</code> at
 call time. The authorization adapters are the missing counterpart.</p>
-<p>Both consumers inject the <strong>same</strong> <code>authorizationReader</code> bean, so re-pointing that one bean (per
-backend) makes both paths physical-tenant aware in a single place. The one open question was whether
-a single thread-bound resolution (<code>PhysicalTenantContext.current()</code>) is safe on the data-plane,
-since that check runs inside <code>CamundaSearchClients</code> rather than in a Spring Security filter, and its
-<code>ResourceAccessController</code> chain is a process-wide singleton. A spike (prototyped in #55336) resolved
-it: the data-plane authorization read executes <strong>synchronously on the request thread</strong> —
-<code>SearchQueryService#executeSearchRequest</code> calls <code>searchRequest.get()</code> inline, and the <code>ApiServices</code>
-executor is used only for the broker (write) path, never for reads — so the thread-bound
-<code>PhysicalTenantContext</code> stamped by the pre-security filter (ADR-0003) is present where the check
-runs. Thread-local resolution is therefore sufficient for both paths; no instance-bound machinery is
-required.</p>
+<p>Both consumers currently inject the <strong>same</strong> singleton <code>authorizationReader</code> bean, but they run in
+<strong>different execution contexts</strong>, and that difference is decisive:</p>
+<ul>
+<li class="">The <strong>control-plane</strong> check runs only inside a Spring Security filter, on the <strong>request thread</strong>,
+where <code>PhysicalTenantContext.current()</code> is populated by the pre-security filter (ADR-0003).</li>
+<li class="">The <strong>data-plane</strong> check runs inside <code>CamundaSearchClients</code>, which is invoked <strong>both</strong> from the
+request path <strong>and from the engine</strong>. Batch operations materialise their item set by querying
+secondary storage from the broker — <code>ProcessInstanceItemProvider</code> / <code>IncidentItemProvider</code> /
+<code>DecisionInstanceItemProvider</code> call <code>searchClientsProxy.withSecurityContext(creatorAuth).search…(…)</code>,
+which runs the resource-access check <strong>off the request thread</strong>, where no <code>PhysicalTenantContext</code>
+is bound and <code>PhysicalTenantContext.current()</code> falls back to <code>default</code>.</li>
+</ul>
+<p>The engine is already structured per physical tenant (one <code>PartitionManager</code> per PT; partition group
+= PT id), and #55401 scopes the engine&#x27;s <em>data</em> reads to the partition&#x27;s PT via
+<code>searchClientsProxy.withPhysicalTenant(partitionGroup)</code>. But <code>withPhysicalTenant</code> today swaps only
+the data <code>readers</code>, <strong>not</strong> the <code>ResourceAccessController</code> — so the <strong>authorization</strong> read on that
+path still resolves through a process-wide controller and a <code>default</code>-pinned reader. A pure
+thread-local resolution therefore cannot be correct on the data-plane: there is no request context
+in the engine to read. The data-plane must resolve the PT <strong>instance-bound</strong> — from the PT the
+executing <code>CamundaSearchClients</code> is scoped to — not from a thread-local.</p>
+<p>(An earlier spike, #55336, concluded a single thread-local mechanism sufficed, having examined only
+the request path; the engine batch-operation path above is the off-request-thread consumer that
+disproves that conclusion. It also matches the isolation principle agreed by the squad: a per-PT
+engine incarnation must read only its own PT&#x27;s secondary storage.)</p>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="decision">Decision<a href="#decision" class="hash-link" aria-label="Direct link to Decision" title="Direct link to Decision" translate="no">​</a></h2>
-<p><strong>Re-point the single <code>authorizationReader</code> bean, per secondary-storage backend, to a
-physical-tenant-routing <code>AuthorizationReader</code></strong> that resolves <code>PhysicalTenantContext.current()</code> on
-each call and delegates to that PT&#x27;s reader from the existing per-PT reader map — never a
-<code>default</code>-pinned reader. All PT resolution stays on the OC side; CSL remains physical-tenant-agnostic.</p>
+<p>Resolve authorization reads to the in-context physical tenant with <strong>two mechanisms, chosen by where
+each consumer executes</strong>, both built on a single shared building block, with CSL kept
+physical-tenant-agnostic. The <code>default</code>-pinned singleton <code>authorizationReader</code> is removed.</p>
+<p><strong>Shared building block — the per-PT <code>AuthorizationReader</code>.</strong> Each configured PT already owns an
+<code>AuthorizationReader</code> inside its reader bundle (<code>SearchClientReaders.authorizationReader()</code> /
+<code>RdbmsTenantReaders.authorizationReader()</code>). Both mechanisms select one of these; neither falls back
+to <code>default</code> implicitly.</p>
 <ol>
 <li class="">
-<p><strong>One mechanism, both paths.</strong> Both authorization-read consumers inject the same
-<code>authorizationReader</code> bean — the control-plane <code>AuthorizationRepositoryAdapter</code> (Spring Security
-permission checks) and the data-plane <code>SearchAuthorizationScopeRepository</code> (the
-<code>CamundaSearchClients</code> <code>ResourceAccessController</code> chain). Re-pointing that one bean makes both
-PT-aware, with <strong>no change</strong> to the adapters, to <code>CamundaSearchClients</code>, or to CSL.</p>
+<p><strong>Data-plane → instance-bound, via <code>CamundaSearchClients</code>.</strong> <code>CamundaSearchClients</code> holds a
+<code>Map&lt;String, ResourceAccessController&gt;</code> and <code>withPhysicalTenant(pt)</code> selects <strong>both</strong> the PT&#x27;s
+data <code>readers</code> <strong>and</strong> the PT&#x27;s <code>ResourceAccessController</code> (today it switches only the readers).
+Each per-PT controller is the existing chain — <code>DocumentBased</code> / <code>RdbmsResourceAccessController</code> →
+<code>DefaultResourceAccessProvider</code> → CSL <code>AuthorizationChecker</code> → <code>SearchAuthorizationScopeRepository</code>
+— constructed over that PT&#x27;s <code>AuthorizationReader</code>. Because the controller is bound to the search
+client&#x27;s PT, the authorization read follows the data read in <strong>every</strong> caller: the request path
+(search client scoped from <code>PhysicalTenantContext</code>) <strong>and</strong> the engine (search client scoped from
+the partition&#x27;s PT, #55401). No thread-local is consulted here.</p>
 </li>
 <li class="">
-<p><strong>Thread-local resolution, including the data-plane.</strong> Resolution is lazy via
-<code>PhysicalTenantContext.current()</code>, exactly as <code>BasicAuthUserDetailsAdapter</code> does for users. The
-pre-security filter (ADR-0003) stamps the id before the security chain, and the data-plane read
-runs synchronously on that same request thread (see Context), so no instance-bound resolution or
-context-propagation machinery is needed.</p>
-</li>
-<li class="">
-<p><strong>Both backends, no lingering default-only bean.</strong> ES/OS
-<code>SearchClientReaderConfiguration.authorizationReader()</code> routes over <code>Map&lt;String, SearchClientReaders&gt;</code>; RDBMS <code>RdbmsConfiguration.authorizationReader()</code> routes over <code>Map&lt;String, RdbmsTenantReaders&gt;</code> (#54474). The default-pinned construction is removed in both — the
-authorization-decision path no longer has a <code>default</code>-only fallback bean to bind to by mistake.</p>
+<p><strong>Control-plane → request-scoped, in the adapter.</strong> Spring Security permission checks run only on
+the request thread (the engine never calls <code>hasPermission</code>). The <code>AuthorizationRepositoryAdapter</code>
+(OC&#x27;s <code>AuthorizationRepositoryPort</code> impl) resolves <code>PhysicalTenantContext.current()</code> and reads
+from that PT&#x27;s <code>AuthorizationReader</code>. This adapter reads with <code>ResourceAccessChecks.disabled()</code> —
+it <em>is</em> the permission-computation data source, so it does not (and must not) go through a
+<code>ResourceAccessController</code>; it routes at the <code>AuthorizationReader</code> layer, the same building block
+the data-plane controller sits on.</p>
 </li>
 </ol>
-<p>The net contract: for any request carrying PT <code>X</code> (or <code>default</code> when unprefixed), both the
-Spring-Security permission check and the <code>CamundaSearchClients</code> result-authorization check read
-PT <code>X</code>&#x27;s authorization records.</p>
+<p>CSL is untouched — all PT resolution lives in OC&#x27;s port adapters and bean wiring. Net contract: for
+any caller carrying PT <code>X</code> (the request&#x27;s PT, or a partition&#x27;s PT in the engine), both the permission
+check and the result-authorization check read PT <code>X</code>&#x27;s authorization records.</p>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="consequences">Consequences<a href="#consequences" class="hash-link" aria-label="Direct link to Consequences" title="Direct link to Consequences" translate="no">​</a></h2>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="positive">Positive<a href="#positive" class="hash-link" aria-label="Direct link to Positive" title="Direct link to Positive" translate="no">​</a></h3>
 <ul>
-<li class="">Authorization is enforced against the correct PT&#x27;s data on both paths and both backends, closing
-#55252.</li>
-<li class="">A single, uniform mechanism (one routing reader per backend); both consumers inherit it from the
-one bean, so there are <strong>no</strong> adapter, <code>CamundaSearchClients</code>, or CSL changes.</li>
-<li class="">Reuses the per-PT reader infrastructure already on <code>main</code> (ES/OS, and RDBMS via #54474); no new
-storage-access machinery.</li>
-<li class="">Mirrors the accepted <code>BasicAuthUserDetailsAdapter</code> pattern, so users and authorizations resolve
-PTs the same way, and CSL stays physical-tenant-agnostic (Slice 1).</li>
+<li class="">Authorization is enforced against the correct PT on <strong>both</strong> planes, <strong>both</strong> backends, and in
+<strong>both</strong> execution contexts (request and engine) — closing #55252 including the batch-operation
+path.</li>
+<li class="">Upholds the engine <strong>isolation</strong> principle: a per-PT engine incarnation reads only its own PT&#x27;s
+authorization data; no usual execution path reaches another PT&#x27;s secondary storage.</li>
+<li class="">No implicit <code>default</code> routing on the data-plane — the PT is always explicit (the search client&#x27;s
+scope), in line with the agreed direction to set the PT explicitly and never silently fall back to
+<code>default</code>.</li>
+<li class="">CSL stays physical-tenant-agnostic (Slice 1); the per-PT <code>AuthorizationReader</code> reuses the per-PT
+reader infrastructure already on <code>main</code> (ES/OS, and RDBMS via #54474).</li>
 </ul>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="negative--trade-offs">Negative / trade-offs<a href="#negative--trade-offs" class="hash-link" aria-label="Direct link to Negative / trade-offs" title="Direct link to Negative / trade-offs" translate="no">​</a></h3>
 <ul>
-<li class="">Correctness depends on the data-plane authorization read staying on the request thread. Today it
-does (reads are synchronous; the <code>ApiServices</code> executor is write-only). A <strong>future</strong> consumer that
-performs an authorization-checked search off the request thread would silently fall back to
-<code>default</code>; such a consumer must propagate the PT or be handed a PT-bound reader. The routing reader
-<strong>fails fast</strong> on an unconfigured PT, which bounds the blast radius.</li>
-<li class="">The routing reader resolves the per-PT reader on each call (a map lookup) rather than at
-bean-construction time — negligible cost.</li>
+<li class=""><strong>Two mechanisms</strong> rather than one — justified by genuinely different execution contexts
+(request-only control-plane vs request-and-engine data-plane), but more to understand than a single
+bean swap.</li>
+<li class="">The data-plane change requires <strong>per-PT instances of the resource-access chain</strong>
+(<code>ResourceAccessController</code> → <code>ResourceAccessProvider</code> → <code>AuthorizationChecker</code> →
+<code>AuthorizationScopeRepository</code>), constructed alongside the per-PT readers and held in
+<code>CamundaSearchClients</code>. The components are thin wrappers, so the cost is wiring, not logic.</li>
+<li class="">The control-plane still resolves via the thread-bound <code>PhysicalTenantContext</code>. Acceptable because
+that path is request-only; a hypothetical non-request permission check would need the PT supplied
+explicitly.</li>
 </ul>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="neutral">Neutral<a href="#neutral" class="hash-link" aria-label="Direct link to Neutral" title="Direct link to Neutral" translate="no">​</a></h3>
 <ul>
-<li class="">No change to the authorization <strong>query</strong> API, which is already PT-routed, and none to CSL.</li>
-<li class="">Single/default-PT deployments are behaviourally unchanged (everything resolves to <code>default</code>).</li>
+<li class="">No change to the authorization <strong>query</strong> API (already PT-routed) and none to CSL.</li>
+<li class="">Single/default-PT deployments are unchanged (everything resolves to the one <code>default</code> PT).</li>
 </ul>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="alternatives-considered">Alternatives Considered<a href="#alternatives-considered" class="hash-link" aria-label="Direct link to Alternatives Considered" title="Direct link to Alternatives Considered" translate="no">​</a></h2>
 <ol>
 <li class="">
-<p><strong>Embed the routing inside the host-side port adapter(s)</strong>, inlining the
-<code>PhysicalTenantContext.current()</code> lookup over a <code>Map&lt;String, AuthorizationReader&gt;</code> in the OC port
-impls — mirroring <code>BasicAuthUserDetailsAdapter</code>, which resolves the PT inline. <strong>Not adopted.</strong> The
-data-plane port impl (<code>SearchAuthorizationScopeRepository</code>) lives in the PT-agnostic <code>security/</code>
-library and must stay PT-unaware, so it has to be <em>fed</em> a PT-correct reader from the OC wiring
-regardless — a routing reader must exist either way. Once it does, having both ports consume that
-one bean is the simpler, DRY choice with no adapter or CSL changes; embedding would add a <em>second</em>
-routing implementation inline in the control-plane adapter on top of the still-required one,
-duplicating the resolution for no functional gain (KISS/YAGNI). <code>BasicAuthUserDetailsAdapter</code>
-inlines because it has a single consumer; authorization has two consumers backed by the same
-reader, so a shared routing reader is the equivalent &quot;simplest thing&quot; here. Would be reconsidered
-only under a team convention requiring every CSL host-port adapter to resolve the PT inline (none
-exists today).</p>
+<p><strong>Single thread-local routing <code>AuthorizationReader</code> for both planes</strong> — re-point the one
+<code>authorizationReader</code> bean to a reader that resolves <code>PhysicalTenantContext.current()</code> and both
+ports inherit it. <strong>Superseded.</strong> A spike (#55336) adopted this after concluding the data-plane
+read always runs on the request thread — but that examined only the request path. Batch operations
+run authorization-checked secondary-storage searches <strong>in the engine</strong>, off the request thread,
+where <code>PhysicalTenantContext.current()</code> falls back to <code>default</code>. Thread-local is correct for the
+request-only control-plane but unsafe for the data-plane, which is why the data-plane is resolved
+instance-bound instead. (It also implicitly routes to <code>default</code>, which the squad agreed to avoid.)</p>
 </li>
 <li class="">
-<p><strong>Instance-bound data-plane resolution.</strong> Bind the data-plane read to the PT the executing
-<code>CamundaSearchClients</code> instance is scoped to — e.g. per-PT <code>ResourceAccessController</code>/repository
-constructed alongside the per-PT readers — rather than re-reading the thread-local. Considered as
-a hedge against off-request-thread execution. <strong>Not adopted:</strong> the spike showed data-plane reads
-run synchronously on the request thread, so the thread-local is reliable; the per-PT controller
-wiring would be materially more invasive for no current benefit. Revisit only if an
-off-request-thread authorization-checked read is introduced.</p>
+<p><strong>Embed the routing inline in the host-side adapter(s)</strong> (à la <code>BasicAuthUserDetailsAdapter</code>).
+This is in fact <em>how the control-plane is resolved</em> in the decision above — the adapter selects
+the per-PT reader from <code>PhysicalTenantContext</code>. It does <strong>not</strong> help the data-plane, whose check
+runs in the engine with no request context; hence the separate instance-bound mechanism there.</p>
 </li>
 <li class="">
-<p><strong>Carry the PT inside CSL&#x27;s <code>SecurityContext</code></strong> so the data could be threaded explicitly.
+<p><strong>Carry the PT inside CSL&#x27;s <code>SecurityContext</code></strong> so it could be threaded explicitly through CSL.
 Rejected: it makes CSL&#x27;s context object physical-tenant-aware, violating the Slice 1 principle
-that CSL stays PT-agnostic, and couples the CSL contract to a PT concept it should not own.</p>
+that CSL stays PT-agnostic.</p>
 </li>
 <li class="">
-<p><strong>Do nothing for now / defer past alpha3.</strong> Rejected as the standing decision: multi-PT
-authorization is incorrect without this, the per-PT read infrastructure to fix it now exists for
-both backends, and the spike shows the change is small. Final alpha3 scoping is confirmed on
-#55252 / #54728.</p>
+<p><strong>Do nothing / defer past alpha3.</strong> Rejected: multi-PT authorization is incorrect without this,
+and it is also an engine isolation concern. Final alpha3 scoping is confirmed on #55252 / #54728.</p>
 </li>
 </ol>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="references">References<a href="#references" class="hash-link" aria-label="Direct link to References" title="Direct link to References" translate="no">​</a></h2>
 <ul>
-<li class=""><a class="" href="/camunda/pr-preview/pr-55325/architecture/components/orchestration-cluster/adr/physical-tenant-request-scoping-via-pre-security-filter/">ADR-0003</a> — single pre-security
-filter that stamps the PT id before Spring Security (the foundation this ADR builds on).</li>
-<li class="">#55252 — <code>AuthorizationReader</code> is hardwired to the <code>default</code> physical tenant (the defect this ADR
-resolves; adopted into Slice 1).</li>
-<li class="">#54728 — Physical Tenants Identity, Slice 1 (parent; the CSL-agnostic API-chain work this routing
-complements).</li>
-<li class="">#54474 — per-physical-tenant RDBMS readers (<code>RdbmsTenantReaders</code>), merged; the per-PT reader
-resolution this ADR routes over on the RDBMS side.</li>
+<li class=""><a class="" href="/camunda/pr-preview/pr-55325/architecture/components/orchestration-cluster/adr/physical-tenant-request-scoping-via-pre-security-filter/">ADR-0003</a> — pre-security filter
+that stamps the PT id on the request (the control-plane&#x27;s PT source).</li>
+<li class="">#55252 — <code>AuthorizationReader</code> hardwired to the <code>default</code> physical tenant (the defect this resolves).</li>
+<li class="">#54728 — Physical Tenants Identity, Slice 1 (parent).</li>
+<li class="">#54474 — per-physical-tenant RDBMS readers (<code>RdbmsTenantReaders</code>), merged.</li>
+<li class="">#55401 — engine uses the partition&#x27;s PT-scoped <code>SearchClient</code> for batch operations (scopes the
+<em>data</em> read; this ADR extends the same scoping to the <em>authorization</em> read via the per-PT
+<code>ResourceAccessController</code>).</li>
 <li class=""><code>BasicAuthUserDetailsAdapter</code> (<code>authentication/.../config/spi/BasicAuthUserDetailsAdapter.java</code>) —
-the resolution pattern this ADR reuses for authorizations.</li>
-<li class="">Spike (#55336): <code>PhysicalTenantRoutingAuthorizationReader</code> + the re-pointed <code>authorizationReader</code>
-beans (ES/OS and RDBMS), and <code>PhysicalTenantRoutingAuthorizationReaderTest</code>, which proves the
-data-plane read is routed on the request thread.</li>
+the request-scoped adapter resolution pattern reused on the control-plane.</li>
+<li class="">Spike #55336 — prototyped the superseded single thread-local approach; to be reworked to the
+instance-bound data-plane design above.</li>
 </ul></div><footer class="theme-doc-footer docusaurus-mt-lg"><div class="row margin-top--sm theme-doc-footer-edit-meta-row"><div class="col noPrint_WFHX"><a href="https://github.com/camunda/camunda/edit/main/docs/monorepo-docs/architecture/components/orchestration-cluster/adr/0005-physical-tenant-routing-of-authorization-reads.md" target="_blank" rel="noopener noreferrer" class="theme-edit-this-page"><svg fill="currentColor" height="20" width="20" viewBox="0 0 40 40" class="iconEdit_Z9Sw" aria-hidden="true"><g><path d="m34.5 11.7l-3 3.1-6.3-6.3 3.1-3q0.5-0.5 1.2-0.5t1.1 0.5l3.9 3.9q0.5 0.4 0.5 1.1t-0.5 1.2z m-29.5 17.1l18.4-18.5 6.3 6.3-18.4 18.4h-6.3v-6.2z"></path></g></svg>Edit this page</a></div><div class="col lastUpdated_JAkA"></div></div></footer></article><nav class="docusaurus-mt-lg pagination-nav" aria-label="Docs pages"></nav></div></div><div class="col col--3"><div class="tableOfContents_bqdL thin-scrollbar theme-doc-toc-desktop"><ul class="table-of-contents table-of-contents__left-border"><li><a href="#status" class="table-of-contents__link toc-highlight">Status</a></li><li><a href="#deciders" class="table-of-contents__link toc-highlight">Deciders</a></li><li><a href="#context" class="table-of-contents__link toc-highlight">Context</a></li><li><a href="#decision" class="table-of-contents__link toc-highlight">Decision</a></li><li><a href="#consequences" class="table-of-contents__link toc-highlight">Consequences</a><ul><li><a href="#positive" class="table-of-contents__link toc-highlight">Positive</a></li><li><a href="#negative--trade-offs" class="table-of-contents__link toc-highlight">Negative / trade-offs</a></li><li><a href="#neutral" class="table-of-contents__link toc-highlight">Neutral</a></li></ul></li><li><a href="#alternatives-considered" class="table-of-contents__link toc-highlight">Alternatives Considered</a></li><li><a href="#references" class="table-of-contents__link toc-highlight">References</a></li></ul></div></div></div></div></main></div></div></div><footer class="theme-layout-footer footer footer--dark"><div class="container container-fluid"><div class="footer__bottom text--center"><div class="footer__copyright">Copyright © 2026 Camunda.</div></div></div></footer></div>
 </body>
 </html>
