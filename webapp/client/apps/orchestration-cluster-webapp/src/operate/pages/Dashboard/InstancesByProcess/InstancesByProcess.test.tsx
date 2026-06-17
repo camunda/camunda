@@ -29,9 +29,23 @@ const FAILURE_RESPONSE = new HttpResponse(null, {status: 400});
 const PAGE_1_RESPONSE = HttpResponse.json(
 	createProcessDefinitionInstanceStatisticsResponse({
 		items: [
-			createProcessDefinitionInstanceStatistics({processDefinitionId: 'p1', latestProcessDefinitionName: 'Alpha Process', activeInstancesWithoutIncidentCount: 5, activeInstancesWithIncidentCount: 1}),
-			createProcessDefinitionInstanceStatistics({processDefinitionId: 'p2', latestProcessDefinitionName: 'Beta Process', activeInstancesWithoutIncidentCount: 3}),
-			createProcessDefinitionInstanceStatistics({processDefinitionId: 'p3', latestProcessDefinitionName: 'Gamma Process', activeInstancesWithoutIncidentCount: 2, activeInstancesWithIncidentCount: 1}),
+			createProcessDefinitionInstanceStatistics({
+				processDefinitionId: 'p1',
+				latestProcessDefinitionName: 'Alpha Process',
+				activeInstancesWithoutIncidentCount: 5,
+				activeInstancesWithIncidentCount: 1,
+			}),
+			createProcessDefinitionInstanceStatistics({
+				processDefinitionId: 'p2',
+				latestProcessDefinitionName: 'Beta Process',
+				activeInstancesWithoutIncidentCount: 3,
+			}),
+			createProcessDefinitionInstanceStatistics({
+				processDefinitionId: 'p3',
+				latestProcessDefinitionName: 'Gamma Process',
+				activeInstancesWithoutIncidentCount: 2,
+				activeInstancesWithIncidentCount: 1,
+			}),
 		],
 		page: {totalItems: 60, startCursor: null, endCursor: null, hasMoreTotalItems: true},
 	}),
@@ -40,7 +54,11 @@ const PAGE_1_RESPONSE = HttpResponse.json(
 const PAGE_2_RESPONSE = HttpResponse.json(
 	createProcessDefinitionInstanceStatisticsResponse({
 		items: [
-			createProcessDefinitionInstanceStatistics({processDefinitionId: 'p51', latestProcessDefinitionName: 'Page Two Process', activeInstancesWithoutIncidentCount: 1}),
+			createProcessDefinitionInstanceStatistics({
+				processDefinitionId: 'p51',
+				latestProcessDefinitionName: 'Page Two Process',
+				activeInstancesWithoutIncidentCount: 1,
+			}),
 		],
 		page: {totalItems: 60, startCursor: null, endCursor: null, hasMoreTotalItems: false},
 	}),
@@ -48,7 +66,12 @@ const PAGE_2_RESPONSE = HttpResponse.json(
 
 describe('<InstancesByProcess />', () => {
 	it('should render the list of instances by process', async ({worker}) => {
-		worker.use(mockGetProcessDefinitionInstanceStatisticsEndpointSequential([PAGE_1_RESPONSE], {schema: REQUEST_SCHEMA, failureResponse: FAILURE_RESPONSE}));
+		worker.use(
+			mockGetProcessDefinitionInstanceStatisticsEndpointSequential([PAGE_1_RESPONSE], {
+				schema: REQUEST_SCHEMA,
+				failureResponse: FAILURE_RESPONSE,
+			}),
+		);
 
 		const screen = await renderWithRouter(
 			() => (
@@ -66,10 +89,10 @@ describe('<InstancesByProcess />', () => {
 
 	it('should fetch the next page when scrolled to the bottom', async ({worker}) => {
 		worker.use(
-			mockGetProcessDefinitionInstanceStatisticsEndpointSequential(
-				[PAGE_1_RESPONSE, PAGE_2_RESPONSE],
-				{schema: REQUEST_SCHEMA, failureResponse: FAILURE_RESPONSE},
-			),
+			mockGetProcessDefinitionInstanceStatisticsEndpointSequential([PAGE_1_RESPONSE, PAGE_2_RESPONSE], {
+				schema: REQUEST_SCHEMA,
+				failureResponse: FAILURE_RESPONSE,
+			}),
 		);
 
 		const screen = await renderWithRouter(

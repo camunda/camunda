@@ -31,7 +31,9 @@ const instancesByProcessInfiniteQuery = () =>
 					page: {from: pageParam, limit: PAGE_SIZE},
 				}),
 			);
-			if (error !== null) throw error;
+			if (error !== null) {
+				throw error;
+			}
 			return response.json();
 		},
 		initialPageParam: 0,

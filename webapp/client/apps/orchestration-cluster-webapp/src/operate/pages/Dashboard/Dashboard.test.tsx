@@ -61,16 +61,22 @@ const STATS_RESPONSE_EMPTY = HttpResponse.json(createProcessDefinitionInstanceSt
 const INCIDENTS_RESPONSE_WITH_ERRORS = HttpResponse.json(
 	createIncidentProcessInstanceStatisticsByErrorResponse({
 		items: [
-			createIncidentProcessInstanceStatisticsByError({errorHashCode: 1, errorMessage: 'Connection timeout', activeInstancesWithErrorCount: 5}),
-			createIncidentProcessInstanceStatisticsByError({errorHashCode: 2, errorMessage: 'Null pointer exception', activeInstancesWithErrorCount: 3}),
+			createIncidentProcessInstanceStatisticsByError({
+				errorHashCode: 1,
+				errorMessage: 'Connection timeout',
+				activeInstancesWithErrorCount: 5,
+			}),
+			createIncidentProcessInstanceStatisticsByError({
+				errorHashCode: 2,
+				errorMessage: 'Null pointer exception',
+				activeInstancesWithErrorCount: 3,
+			}),
 		],
 		page: {totalItems: 2, startCursor: null, endCursor: null, hasMoreTotalItems: false},
 	}),
 );
 
-const INCIDENTS_RESPONSE_EMPTY = HttpResponse.json(
-	createIncidentProcessInstanceStatisticsByErrorResponse(),
-);
+const INCIDENTS_RESPONSE_EMPTY = HttpResponse.json(createIncidentProcessInstanceStatisticsByErrorResponse());
 
 const CURRENT_USER_RESPONSE = HttpResponse.json({
 	userId: 'test-user',

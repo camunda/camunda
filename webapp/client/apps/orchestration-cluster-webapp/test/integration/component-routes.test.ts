@@ -10,6 +10,7 @@ import {test, expect} from '#/pw-modules/test-extend';
 import {HttpResponse} from 'msw';
 import {
 	mockCurrentUserEndpoint,
+	mockGetIncidentProcessInstanceStatisticsByErrorEndpoint,
 	mockGetProcessDefinitionInstanceStatisticsEndpoint,
 	mockLicenseEndpoint,
 	mockQueryUserTasksEndpoint,
@@ -20,6 +21,7 @@ import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createQueryUserTasksResponse} from '#/shared-test-modules/api-mocks/user-tasks';
 import {createProcessDefinitionInstanceStatisticsResponse} from '#/shared-test-modules/api-mocks/process-definition-statistics';
+import {createIncidentProcessInstanceStatisticsByErrorResponse} from '#/shared-test-modules/api-mocks/incident-statistics';
 
 test.describe('component routes', () => {
 	test('should render Operate when component is active', async ({network, page}) => {
@@ -35,6 +37,9 @@ test.describe('component routes', () => {
 			}),
 			mockGetProcessDefinitionInstanceStatisticsEndpoint({
 				successResponse: HttpResponse.json(createProcessDefinitionInstanceStatisticsResponse()),
+			}),
+			mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({
+				successResponse: HttpResponse.json(createIncidentProcessInstanceStatisticsByErrorResponse()),
 			}),
 		);
 

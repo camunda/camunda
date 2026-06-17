@@ -28,9 +28,21 @@ const FAILURE_RESPONSE = new HttpResponse(null, {status: 400});
 const PAGE_1_RESPONSE = HttpResponse.json(
 	createIncidentProcessInstanceStatisticsByErrorResponse({
 		items: [
-			createIncidentProcessInstanceStatisticsByError({errorHashCode: 1, errorMessage: 'Alpha Connection Timeout', activeInstancesWithErrorCount: 5}),
-			createIncidentProcessInstanceStatisticsByError({errorHashCode: 2, errorMessage: 'Beta Null Pointer', activeInstancesWithErrorCount: 3}),
-			createIncidentProcessInstanceStatisticsByError({errorHashCode: 3, errorMessage: 'Gamma Service Unavailable', activeInstancesWithErrorCount: 2}),
+			createIncidentProcessInstanceStatisticsByError({
+				errorHashCode: 1,
+				errorMessage: 'Alpha Connection Timeout',
+				activeInstancesWithErrorCount: 5,
+			}),
+			createIncidentProcessInstanceStatisticsByError({
+				errorHashCode: 2,
+				errorMessage: 'Beta Null Pointer',
+				activeInstancesWithErrorCount: 3,
+			}),
+			createIncidentProcessInstanceStatisticsByError({
+				errorHashCode: 3,
+				errorMessage: 'Gamma Service Unavailable',
+				activeInstancesWithErrorCount: 2,
+			}),
 		],
 		page: {totalItems: 60, startCursor: null, endCursor: null, hasMoreTotalItems: true},
 	}),
@@ -39,7 +51,11 @@ const PAGE_1_RESPONSE = HttpResponse.json(
 const PAGE_2_RESPONSE = HttpResponse.json(
 	createIncidentProcessInstanceStatisticsByErrorResponse({
 		items: [
-			createIncidentProcessInstanceStatisticsByError({errorHashCode: 51, errorMessage: 'Page Two Only Error', activeInstancesWithErrorCount: 1}),
+			createIncidentProcessInstanceStatisticsByError({
+				errorHashCode: 51,
+				errorMessage: 'Page Two Only Error',
+				activeInstancesWithErrorCount: 1,
+			}),
 		],
 		page: {totalItems: 60, startCursor: null, endCursor: null, hasMoreTotalItems: false},
 	}),
@@ -47,7 +63,12 @@ const PAGE_2_RESPONSE = HttpResponse.json(
 
 describe('<IncidentsByError />', () => {
 	it('should render the list of incidents by error', async ({worker}) => {
-		worker.use(mockGetIncidentProcessInstanceStatisticsByErrorEndpointSequential([PAGE_1_RESPONSE], {schema: REQUEST_SCHEMA, failureResponse: FAILURE_RESPONSE}));
+		worker.use(
+			mockGetIncidentProcessInstanceStatisticsByErrorEndpointSequential([PAGE_1_RESPONSE], {
+				schema: REQUEST_SCHEMA,
+				failureResponse: FAILURE_RESPONSE,
+			}),
+		);
 
 		const screen = await renderWithRouter(
 			() => (
@@ -65,10 +86,10 @@ describe('<IncidentsByError />', () => {
 
 	it('should fetch the next page when scrolled to the bottom', async ({worker}) => {
 		worker.use(
-			mockGetIncidentProcessInstanceStatisticsByErrorEndpointSequential(
-				[PAGE_1_RESPONSE, PAGE_2_RESPONSE],
-				{schema: REQUEST_SCHEMA, failureResponse: FAILURE_RESPONSE},
-			),
+			mockGetIncidentProcessInstanceStatisticsByErrorEndpointSequential([PAGE_1_RESPONSE, PAGE_2_RESPONSE], {
+				schema: REQUEST_SCHEMA,
+				failureResponse: FAILURE_RESPONSE,
+			}),
 		);
 
 		const screen = await renderWithRouter(

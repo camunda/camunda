@@ -16,8 +16,15 @@ import {ScrollableList, Row, LoadingRow} from './styled';
 const ROW_HEIGHT = 64;
 
 function InstancesByProcess() {
-	const {data, fetchNextPage, fetchPreviousPage, hasNextPage, hasPreviousPage, isFetchingNextPage, isFetchingPreviousPage} =
-		useInstancesByProcess();
+	const {
+		data,
+		fetchNextPage,
+		fetchPreviousPage,
+		hasNextPage,
+		hasPreviousPage,
+		isFetchingNextPage,
+		isFetchingPreviousPage,
+	} = useInstancesByProcess();
 
 	const items = useMemo(() => data.pages.flatMap((page) => page.items), [data]);
 

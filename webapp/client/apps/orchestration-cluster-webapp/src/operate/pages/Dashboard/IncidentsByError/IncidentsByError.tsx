@@ -20,8 +20,15 @@ const ROW_HEIGHT = 64;
 
 function IncidentsByError() {
 	const {t} = useTranslation();
-	const {data, fetchNextPage, fetchPreviousPage, hasNextPage, hasPreviousPage, isFetchingNextPage, isFetchingPreviousPage} =
-		useIncidentsByError();
+	const {
+		data,
+		fetchNextPage,
+		fetchPreviousPage,
+		hasNextPage,
+		hasPreviousPage,
+		isFetchingNextPage,
+		isFetchingPreviousPage,
+	} = useIncidentsByError();
 
 	const items = useMemo(() => data.pages.flatMap((page) => page.items), [data]);
 	const totalItems = data.pages[0]?.page.totalItems ?? 0;
