@@ -11,6 +11,7 @@ import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 
 import io.atomix.cluster.messaging.ManagedMessagingService;
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
@@ -27,7 +28,6 @@ import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
-import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
@@ -95,7 +95,7 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   private CheckpointSchedulingService checkpointSchedulingService =
       mock(CheckpointSchedulingService.class);
   private NodeIdProvider nodeIdProvider = mock(NodeIdProvider.class);
-  private List<String> physicalTenantIds = List.of(PartitionManagerImpl.DEFAULT_GROUP_NAME);
+  private PhysicalTenantIds physicalTenantIds = PhysicalTenantIds.DEFAULT;
 
   @Override
   public BrokerInfo getBrokerInfo() {
@@ -448,11 +448,11 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   }
 
   @Override
-  public List<String> getPhysicalTenantIds() {
+  public PhysicalTenantIds getPhysicalTenantIds() {
     return physicalTenantIds;
   }
 
-  public void setPhysicalTenantIds(final List<String> physicalTenantIds) {
+  public void setPhysicalTenantIds(final PhysicalTenantIds physicalTenantIds) {
     this.physicalTenantIds = physicalTenantIds;
   }
 }

@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.partitioning;
 import static io.camunda.zeebe.broker.test.EmbeddedBrokerRule.assignSocketAddresses;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.security.configuration.EngineSecurityConfigurations;
 import io.camunda.security.oidc.NoopOidcClaimsProvider;
 import io.camunda.zeebe.broker.Broker;
@@ -129,7 +130,7 @@ final class PartitionJoinTest {
             null,
             null,
             NodeIdProvider.staticProvider(brokerCfg.getCluster().getNodeId()),
-            List.of(PartitionManagerImpl.DEFAULT_GROUP_NAME));
+            PhysicalTenantIds.DEFAULT);
 
     return new Broker(systemContext, new SpringBrokerBridge(), List.of());
   }

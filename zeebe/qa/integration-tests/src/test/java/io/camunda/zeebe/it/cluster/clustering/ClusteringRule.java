@@ -35,6 +35,7 @@ import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.response.BrokerInfo;
 import io.camunda.client.api.response.Topology;
 import io.camunda.client.impl.util.AddressUtil;
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.GatewayBasedProperties;
 import io.camunda.security.configuration.EngineSecurityConfigurations;
@@ -405,7 +406,7 @@ public class ClusteringRule extends ExternalResource {
             null,
             null,
             NodeIdProvider.staticProvider(brokerCfg.getCluster().getNodeId()),
-            List.of(PartitionManagerImpl.DEFAULT_GROUP_NAME));
+            PhysicalTenantIds.DEFAULT);
 
     final Broker broker =
         new Broker(

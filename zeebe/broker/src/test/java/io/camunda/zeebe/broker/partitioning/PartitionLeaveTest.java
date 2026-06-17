@@ -11,6 +11,7 @@ import static io.camunda.zeebe.broker.test.EmbeddedBrokerRule.assignSocketAddres
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.security.configuration.EngineSecurityConfigurations;
 import io.camunda.security.oidc.NoopOidcClaimsProvider;
 import io.camunda.zeebe.broker.Broker;
@@ -245,7 +246,7 @@ final class PartitionLeaveTest {
             null,
             null,
             NodeIdProvider.staticProvider(brokerCfg.getCluster().getNodeId()),
-            List.of(PartitionManagerImpl.DEFAULT_GROUP_NAME));
+            PhysicalTenantIds.DEFAULT);
 
     return new Broker(systemContext, new SpringBrokerBridge(), List.of());
   }
