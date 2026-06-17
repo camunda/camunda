@@ -18212,7 +18212,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "Write health signals.\n\n- **Write stopped**: returns 1 when RocksDB has halted writes.\n- **Background errors**: cumulative count of errors hit during background flush/compaction; a non-zero value indicates a serious problem and is often the cause of a write stop.\n\nhttps://github.com/facebook/rocksdb/blob/e66199d848cd484b816d07359f1dc0f0b99e5351/include/rocksdb/db.h#L908",
+          "description": "Returns 1 when RocksDB has halted writes. A sustained value of 1 means the engine cannot make progress on this partition.\n\nhttps://github.com/facebook/rocksdb/blob/e66199d848cd484b816d07359f1dc0f0b99e5351/include/rocksdb/db.h#L908",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -18269,7 +18269,7 @@
           },
           "gridPos": {
             "h": 6,
-            "w": 6,
+            "w": 8,
             "x": 0,
             "y": 3927
           },
@@ -18299,7 +18299,93 @@
               "interval": "",
               "legendFormat": "{{pod}}  stopped write {{partition}}",
               "refId": "A"
+            }
+          ],
+          "title": "Write stopped",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "Cumulative count of errors hit during background flush or compaction. A non-zero value indicates a serious problem and is often the cause of a write stop.\n\nhttps://github.com/facebook/rocksdb/blob/e66199d848cd484b816d07359f1dc0f0b99e5351/include/rocksdb/db.h#L908",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
             },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 8,
+            "x": 8,
+            "y": 3927
+          },
+          "id": 735,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "desc"
+            }
+          },
+          "pluginVersion": "12.1.0",
+          "targets": [
             {
               "datasource": {
                 "type": "prometheus",
@@ -18308,10 +18394,10 @@
               "expr": "sum(zeebe_rocksdb_writes_background_errors{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}) by (pod, partition)",
               "interval": "",
               "legendFormat": "{{pod}}  background errors {{partition}}",
-              "refId": "B"
+              "refId": "A"
             }
           ],
-          "title": "Write stopped / background errors",
+          "title": "Background errors",
           "type": "timeseries"
         },
         {
@@ -18378,8 +18464,8 @@
           },
           "gridPos": {
             "h": 6,
-            "w": 6,
-            "x": 6,
+            "w": 8,
+            "x": 16,
             "y": 3927
           },
           "id": 157,
@@ -18475,10 +18561,10 @@
             "overrides": []
           },
           "gridPos": {
-            "h": 6,
-            "w": 12,
-            "x": 12,
-            "y": 3927
+            "h": 7,
+            "w": 8,
+            "x": 8,
+            "y": 3948
           },
           "id": 146,
           "options": {
@@ -18574,9 +18660,9 @@
           },
           "gridPos": {
             "h": 7,
-            "w": 6,
-            "x": 0,
-            "y": 3933
+            "w": 8,
+            "x": 8,
+            "y": 3941
           },
           "id": 159,
           "options": {
@@ -18672,9 +18758,9 @@
           },
           "gridPos": {
             "h": 7,
-            "w": 6,
-            "x": 6,
-            "y": 3933
+            "w": 8,
+            "x": 16,
+            "y": 3941
           },
           "id": 160,
           "options": {
@@ -18771,9 +18857,9 @@
           },
           "gridPos": {
             "h": 7,
-            "w": 12,
-            "x": 12,
-            "y": 3933
+            "w": 8,
+            "x": 16,
+            "y": 3948
           },
           "id": 153,
           "options": {
@@ -18873,7 +18959,7 @@
             "h": 11,
             "w": 24,
             "x": 0,
-            "y": 3940
+            "y": 3955
           },
           "id": 603,
           "options": {
@@ -18977,9 +19063,9 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 3952
+            "y": 3933
           },
-          "id": 725,
+          "id": 731,
           "options": {
             "legend": {
               "calcs": [],
@@ -19095,9 +19181,9 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 3952
+            "y": 3933
           },
-          "id": 726,
+          "id": 732,
           "options": {
             "legend": {
               "calcs": [],
@@ -19210,12 +19296,12 @@
             "overrides": []
           },
           "gridPos": {
-            "h": 8,
-            "w": 12,
+            "h": 7,
+            "w": 8,
             "x": 0,
-            "y": 3960
+            "y": 3941
           },
-          "id": 727,
+          "id": 733,
           "options": {
             "legend": {
               "calcs": [],
@@ -19308,12 +19394,12 @@
             "overrides": []
           },
           "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 12,
-            "y": 3960
+            "h": 7,
+            "w": 8,
+            "x": 0,
+            "y": 3948
           },
-          "id": 728,
+          "id": 734,
           "options": {
             "legend": {
               "calcs": [],
