@@ -172,11 +172,19 @@ Once an incident is identified, the [Monorepo CI Medic](#monorepo-ci-medic) beco
 Incidents are resolved according to the [Engineering Incident Management Process](https://confluence.camunda.com/display/HAN/Incident+Management) by the [Incident Response Team](https://confluence.camunda.com/display/HAN/IM+-+Roles+and+Responsibilities#IMRolesandResponsibilities-TheIncidentResponseTeam). Helpful resources:
 
 - [Runbooks](./ci-runbooks.md) for CI-related problems
+- `/ci-incident` and `/ci-fix-failure` skills for LLM assistance
 - generically applicable [Incident Checklist](https://confluence.camunda.com/display/SRE/Incident+Checklist) of the Infra team
+
+##### SLA
+
+The Incident Commander needs to ensure that mitigations are in place with timelines depending on the severity of the incident:
+
+- L1: Within 1 day after opening
+- L2: Within 2 days after opening
 
 The Communications Lead should send out periodic updates depending on the severity of the incident:
 
-- L1: Once per hour until resolved
+- L1: Once per hour until mitigated, afterwards once per day until resolved
 - L2: Once per day until resolved
 
 #### 3. Follow-Up
