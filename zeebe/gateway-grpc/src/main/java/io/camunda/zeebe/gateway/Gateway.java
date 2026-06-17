@@ -130,7 +130,7 @@ public final class Gateway implements CloseableSilently {
         userServices,
         passwordEncoder,
         jwtDecoder,
-        (OidcClaimsProvider) (jwtClaims, tokenValue) -> jwtClaims,
+        (jwtClaims, tokenValue) -> jwtClaims,
         meterRegistry,
         VariableNameLengthValidator.DEFAULT_MAX_NAME_FIELD_LENGTH,
         PhysicalTenantIds.DEFAULT);

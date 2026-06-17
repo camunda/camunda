@@ -113,7 +113,7 @@ public class OidcBearerUserInfoClaimGapIT extends AbstractWebSecurityConfigTest 
   }
 
   @Test
-  void groupsFromUserInfoShouldReachLazyTokenClaimsConverterButCurrentlyDoNot() {
+  void groupsFromUserInfoShouldReachLazyTokenClaimsConverter() {
     // The IdP is configured to return the groups on /userinfo (common SaaS IdP pattern).
     wireMock.stubFor(
         get(urlMatching(".*/userinfo"))
@@ -140,15 +140,10 @@ public class OidcBearerUserInfoClaimGapIT extends AbstractWebSecurityConfigTest 
     final ArgumentCaptor<Map<String, Object>> claimsCaptor = ArgumentCaptor.forClass(Map.class);
     verify(tokenClaimsConverter).convert(claimsCaptor.capture());
 
-    // The customer's acceptance criterion: groups must arrive at LazyTokenClaimsConverter so that
-    // MembershipService.resolveMemberships(...) can grant group-based authorizations. On current
-    // code this assertion fails because only JWT claims are passed through.
     assertThat(claimsCaptor.getValue())
         .containsEntry("sub", "alice")
         .containsEntry("groups", List.of("engineering"));
 
-    // Additionally: /userinfo should have been consulted at least once. On current code it is
-    // never called for bearer-token flows.
     wireMock.verify(exactly(1), getRequestedFor(urlMatching(".*/userinfo")));
   }
 
