@@ -22,13 +22,11 @@ import io.grpc.ClientInterceptor;
 import io.grpc.ForwardingClientCall.SimpleForwardingClientCall;
 import io.grpc.Metadata;
 import io.grpc.MethodDescriptor;
+import java.util.Objects;
 
 /**
  * Sets the {@code Camunda-Physical-Tenant} gRPC metadata header on every outgoing call so the
  * gateway can route the request to the correct physical tenant partition.
- *
- * <p>When no physical tenant id is configured the header is omitted and the gateway applies its own
- * default.
  */
 public final class PhysicalTenantInterceptor implements ClientInterceptor {
 
@@ -38,7 +36,8 @@ public final class PhysicalTenantInterceptor implements ClientInterceptor {
   private final String physicalTenantId;
 
   public PhysicalTenantInterceptor(final String physicalTenantId) {
-    this.physicalTenantId = physicalTenantId;
+    this.physicalTenantId =
+        Objects.requireNonNull(physicalTenantId, "physicalTenantId must not be null");
   }
 
   @Override
@@ -49,9 +48,7 @@ public final class PhysicalTenantInterceptor implements ClientInterceptor {
     return new SimpleForwardingClientCall<ReqT, RespT>(next.newCall(method, callOptions)) {
       @Override
       public void start(final Listener<RespT> responseListener, final Metadata headers) {
-        if (physicalTenantId != null) {
-          headers.put(PHYSICAL_TENANT_HEADER, physicalTenantId);
-        }
+        headers.put(PHYSICAL_TENANT_HEADER, physicalTenantId);
         super.start(responseListener, headers);
       }
     };

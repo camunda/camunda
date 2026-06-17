@@ -16,6 +16,7 @@
 package io.camunda.client.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -52,21 +53,10 @@ final class PhysicalTenantInterceptorTest {
   }
 
   @Test
-  @SuppressWarnings("unchecked")
-  void shouldOmitHeaderWhenTenantIdIsNull() {
-    // given
-    final PhysicalTenantInterceptor interceptor = new PhysicalTenantInterceptor(null);
-    final AtomicReference<Metadata> capturedHeaders = new AtomicReference<>();
-    final Channel channel = channelReturning(new CapturingClientCall<>(capturedHeaders));
-
-    // when
-    final ClientCall<Object, Object> call =
-        interceptor.interceptCall(mock(MethodDescriptor.class), CallOptions.DEFAULT, channel);
-    call.start(new NoopListener<>(), new Metadata());
-
-    // then
-    assertThat(capturedHeaders.get().get(PhysicalTenantInterceptor.PHYSICAL_TENANT_HEADER))
-        .isNull();
+  void shouldThrowWhenTenantIdIsNull() {
+    assertThatThrownBy(() -> new PhysicalTenantInterceptor(null))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessageContaining("physicalTenantId must not be null");
   }
 
   @SuppressWarnings({"rawtypes"})
