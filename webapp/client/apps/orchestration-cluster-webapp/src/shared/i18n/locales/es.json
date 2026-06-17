@@ -404,7 +404,9 @@
 				"noInstancesHeading": "No hay instancias de proceso en ejecución",
 				"noInstancesDescription": "Para ver las instancias finalizadas, vaya a la vista de Procesos. Inicie una nueva instancia de proceso para ver actividad aquí.",
 				"learnMoreLink": "Más información sobre Operate",
-				"goToModelerButton": "Ir al Modeler"
+				"goToModelerButton": "Ir al Modeler",
+				"healthyProcessesHeading": "Sus procesos están saludables",
+				"healthyProcessesDescription": "No hay incidentes en ninguna instancia."
 			},
 			"processes": {
 				"title": "Procesos"

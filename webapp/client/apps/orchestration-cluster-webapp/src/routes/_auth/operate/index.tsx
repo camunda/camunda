@@ -8,11 +8,17 @@
 
 import {createFileRoute} from '@tanstack/react-router';
 import {runningInstancesCountQuery} from '#/operate/pages/Dashboard/useRunningInstancesCount';
+import {instancesByProcessInfiniteQuery} from '#/operate/pages/Dashboard/InstancesByProcess/useInstancesByProcess';
+import {incidentsByErrorInfiniteQuery} from '#/operate/pages/Dashboard/IncidentsByError/useIncidentsByError';
 import {Dashboard} from '#/operate/pages/Dashboard/Dashboard';
 
 export const Route = createFileRoute('/_auth/operate/')({
 	loader: async ({context: {queryClient}}) => {
-		await queryClient.ensureQueryData(runningInstancesCountQuery());
+		await Promise.all([
+			queryClient.ensureQueryData(runningInstancesCountQuery()),
+			queryClient.ensureInfiniteQueryData(instancesByProcessInfiniteQuery()),
+			queryClient.ensureInfiniteQueryData(incidentsByErrorInfiniteQuery()),
+		]);
 	},
 	component: Dashboard,
 });

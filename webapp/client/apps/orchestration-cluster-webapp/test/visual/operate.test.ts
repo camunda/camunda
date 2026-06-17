@@ -10,6 +10,7 @@ import {test, expect} from '#/pw-modules/test-extend';
 import {HttpResponse} from 'msw';
 import {
 	mockCurrentUserEndpoint,
+	mockGetIncidentProcessInstanceStatisticsByErrorEndpoint,
 	mockGetProcessDefinitionInstanceStatisticsEndpoint,
 	mockLicenseEndpoint,
 	mockSystemConfigurationEndpoint,
@@ -18,6 +19,7 @@ import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createProcessDefinitionInstanceStatisticsResponse} from '#/shared-test-modules/api-mocks/process-definition-statistics';
+import {createIncidentProcessInstanceStatisticsByErrorResponse} from '#/shared-test-modules/api-mocks/incident-statistics';
 
 test.beforeEach(({network}) => {
 	network.use(
@@ -32,6 +34,9 @@ test.beforeEach(({network}) => {
 		}),
 		mockGetProcessDefinitionInstanceStatisticsEndpoint({
 			successResponse: HttpResponse.json(createProcessDefinitionInstanceStatisticsResponse()),
+		}),
+		mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({
+			successResponse: HttpResponse.json(createIncidentProcessInstanceStatisticsByErrorResponse()),
 		}),
 	);
 });

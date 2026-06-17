@@ -7,7 +7,7 @@
  */
 
 import {endpoints} from '@camunda/camunda-api-zod-schemas/8.10';
-import {createEndpointMock} from './mock-endpoint';
+import {createEndpointMock, createSequentialEndpointMock} from './mock-endpoint';
 
 const mockQueryUserTasksEndpoint = createEndpointMock({
 	endpoint: endpoints.queryUserTasks.getUrl(),
@@ -16,7 +16,7 @@ const mockQueryUserTasksEndpoint = createEndpointMock({
 
 const mockGetProcessDefinitionInstanceStatisticsEndpoint = createEndpointMock({
 	endpoint: endpoints.getProcessDefinitionInstanceStatistics.getUrl(),
-	method: endpoints.getProcessDefinitionInstanceStatistics.method,
+	method: endpoints.getProcessDefinitionInstanceStatistics.method as 'POST',
 });
 
 const mockQueryProcessDefinitionsEndpoint = createEndpointMock({
@@ -26,7 +26,17 @@ const mockQueryProcessDefinitionsEndpoint = createEndpointMock({
 
 const mockGetIncidentProcessInstanceStatisticsByErrorEndpoint = createEndpointMock({
 	endpoint: endpoints.getIncidentProcessInstanceStatisticsByError.getUrl(),
-	method: endpoints.getIncidentProcessInstanceStatisticsByError.method,
+	method: endpoints.getIncidentProcessInstanceStatisticsByError.method as 'POST',
+});
+
+const mockGetProcessDefinitionInstanceStatisticsEndpointSequential = createSequentialEndpointMock({
+	endpoint: endpoints.getProcessDefinitionInstanceStatistics.getUrl(),
+	method: endpoints.getProcessDefinitionInstanceStatistics.method as 'POST',
+});
+
+const mockGetIncidentProcessInstanceStatisticsByErrorEndpointSequential = createSequentialEndpointMock({
+	endpoint: endpoints.getIncidentProcessInstanceStatisticsByError.getUrl(),
+	method: endpoints.getIncidentProcessInstanceStatisticsByError.method as 'POST',
 });
 
 const mockCurrentUserEndpoint = createEndpointMock({
@@ -69,5 +79,7 @@ export {
 	mockQueryUserTasksEndpoint,
 	mockQueryProcessDefinitionsEndpoint,
 	mockGetProcessDefinitionInstanceStatisticsEndpoint,
+	mockGetProcessDefinitionInstanceStatisticsEndpointSequential,
 	mockGetIncidentProcessInstanceStatisticsByErrorEndpoint,
+	mockGetIncidentProcessInstanceStatisticsByErrorEndpointSequential,
 };

@@ -79,4 +79,49 @@ function createEndpointMock<Method extends RequestMethod>({
 	};
 }
 
-export {createEndpointMock};
+type SequentialMockValidation<Schema extends z.ZodType> = {
+	schema: Schema;
+	failureResponse: Response;
+};
+
+function createSequentialEndpointMock<Method extends RequestMethod>({
+	endpoint,
+	method,
+}: CreateEndpointMockParams<Method>): <Schema extends z.ZodType>(
+	responses: Response[],
+	validation?: SequentialMockValidation<Schema>,
+) => RequestHandler {
+	return (responses, validation) => {
+		let callIndex = 0;
+		const resolver = async ({request}: {request: Request}) => {
+			if (validation) {
+				try {
+					const payload = await request.json();
+					const result = validation.schema.safeParse(payload);
+					if (!result.success) return validation.failureResponse.clone();
+				} catch {
+					return validation.failureResponse.clone();
+				}
+			}
+			const response = responses[Math.min(callIndex, responses.length - 1)]!;
+			callIndex++;
+			return response.clone();
+		};
+
+		switch (method) {
+			case 'POST':
+				return http.post(endpoint, resolver);
+			case 'PUT':
+				return http.put(endpoint, resolver);
+			case 'PATCH':
+				return http.patch(endpoint, resolver);
+			case 'DELETE':
+				return http.delete(endpoint, resolver);
+			case 'GET':
+			default:
+				return http.get(endpoint, resolver);
+		}
+	};
+}
+
+export {createEndpointMock, createSequentialEndpointMock};

@@ -404,7 +404,9 @@
 				"noInstancesHeading": "Keine laufenden Prozessinstanzen",
 				"noInstancesDescription": "Um abgeschlossene Instanzen anzuzeigen, wechseln Sie zur Prozessansicht. Starten Sie eine neue Prozessinstanz, um hier Aktivitäten zu sehen.",
 				"learnMoreLink": "Mehr über Operate erfahren",
-				"goToModelerButton": "Zum Modeler"
+				"goToModelerButton": "Zum Modeler",
+				"healthyProcessesHeading": "Ihre Prozesse sind fehlerfrei",
+				"healthyProcessesDescription": "Es gibt keine Vorfälle bei irgendwelchen Instanzen."
 			},
 			"processes": {
 				"title": "Prozesse"
