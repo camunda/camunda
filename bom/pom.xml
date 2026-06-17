@@ -13,7 +13,7 @@
 
   <groupId>io.camunda</groupId>
   <artifactId>zeebe-bom</artifactId>
-  <version>8.7.33-SNAPSHOT</version>
+  <version>8.7.34-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>Zeebe BOM</name>
@@ -382,6 +382,10 @@
       <id>central-sonatype-publish</id>
       <properties>
         <plugin.version.gpg>1.6</plugin.version.gpg>
+        <!-- TEMP override: release-parent 4.0.0 pins central-publishing-maven-plugin 0.7.0,
+             which fails to deserialize Sonatype Central's new "warnings" response field.
+             Remove once release-parent is bumped to >=4.1.0 (which pins 0.8.0). -->
+        <plugin.version.central-publishing>0.8.0</plugin.version.central-publishing>
       </properties>
       <build>
         <pluginManagement>
