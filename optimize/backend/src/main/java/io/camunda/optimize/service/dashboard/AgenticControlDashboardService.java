@@ -86,6 +86,9 @@ public class AgenticControlDashboardService {
   public static final String KPI_DURATION_P95_NAME = "agenticKpiDurationP95Name";
   public static final String KPI_DURATION_P95_DESCRIPTION = "agenticKpiDurationP95Description";
 
+  public static final String DURATION_STABILITY_NAME = "agenticDurationStabilityName";
+  public static final String DURATION_STABILITY_DESCRIPTION = "agenticDurationStabilityDescription";
+
   // Deterministic report IDs — derived from fixed seed strings so IDs are stable across restarts
   // and DB reimports. Same seed always produces the same UUID (UUID v3 / name-based).
   public static final String KPI_COMPLETED_REPORT_ID =
@@ -101,6 +104,9 @@ public class AgenticControlDashboardService {
       UUID.nameUUIDFromBytes("agentic-kpi-avg-tokens".getBytes(StandardCharsets.UTF_8)).toString();
   public static final String KPI_MEDIAN_TOKENS_REPORT_ID =
       UUID.nameUUIDFromBytes("agentic-kpi-median-tokens".getBytes(StandardCharsets.UTF_8))
+          .toString();
+  public static final String DURATION_STABILITY_REPORT_ID =
+      UUID.nameUUIDFromBytes("agentic-duration-stability".getBytes(StandardCharsets.UTF_8))
           .toString();
   public static final String TOKEN_TREND_REPORT_ID =
       UUID.nameUUIDFromBytes("agentic-token-trend".getBytes(StandardCharsets.UTF_8)).toString();
@@ -148,6 +154,7 @@ public class AgenticControlDashboardService {
     tiles.add(buildIncidentRateReport());
     tiles.add(buildAvgTokensReport());
     tiles.add(buildMedianTokensReport());
+    tiles.add(buildDurationStabilityReport());
     tiles.add(buildTokenTrendReport());
     tiles.add(buildP50DurationReport());
     tiles.add(buildP95DurationReport());
@@ -384,6 +391,50 @@ public class AgenticControlDashboardService {
     reportWriter.createOrUpdateSingleProcessReport(
         reportId, null, reportData, nameKey, descriptionKey, null);
     return buildTile(reportId, position, new DimensionDto(9, 2), Map.of("section", "duration"));
+  }
+
+  private DashboardReportTileDto buildDurationStabilityReport() {
+    final EndDateGroupByDto groupBy = new EndDateGroupByDto();
+    final DateGroupByValueDto groupByValue = new DateGroupByValueDto();
+    groupByValue.setUnit(AggregateByDateUnit.AUTOMATIC);
+    groupBy.setValue(groupByValue);
+
+    final ProcessReportDataDto reportData =
+        ProcessReportDataDto.builder()
+            .definitions(Collections.emptyList())
+            .view(new ProcessViewDto(ProcessViewEntity.PROCESS_INSTANCE, ViewProperty.DURATION))
+            .groupBy(groupBy)
+            .distributedBy(new NoneDistributedByDto())
+            .visualization(ProcessVisualization.LINE)
+            .configuration(
+                SingleReportConfigurationDto.builder()
+                    .aggregationTypes(
+                        new LinkedHashSet<>(
+                            List.of(
+                                new AggregationDto(AggregationType.PERCENTILE, 50.0),
+                                new AggregationDto(AggregationType.PERCENTILE, 95.0))))
+                    .build())
+            .filter(
+                ProcessFilterBuilder.filter()
+                    .completedInstancesOnly()
+                    .add()
+                    .hasAgentInstances()
+                    .add()
+                    .buildList())
+            .agenticControlReport(true)
+            .build();
+    reportWriter.createOrUpdateSingleProcessReport(
+        DURATION_STABILITY_REPORT_ID,
+        null,
+        reportData,
+        DURATION_STABILITY_NAME,
+        DURATION_STABILITY_DESCRIPTION,
+        null);
+    return buildTile(
+        DURATION_STABILITY_REPORT_ID,
+        new PositionDto(0, 6),
+        new DimensionDto(18, 2),
+        Map.of("section", "duration"));
   }
 
   private DashboardDefinitionRestDto buildAgentDashboard(final List<DashboardReportTileDto> tiles) {
