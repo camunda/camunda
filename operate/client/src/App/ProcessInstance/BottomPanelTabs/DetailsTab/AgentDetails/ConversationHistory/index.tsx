@@ -6,7 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {SkeletonText} from '@carbon/react';
+import {useState} from 'react';
+import {Button, SkeletonText} from '@carbon/react';
+import {SortAscending, SortDescending} from '@carbon/react/icons';
+import type {QuerySortOrder} from '@camunda/camunda-api-zod-schemas/8.10';
 import {useAgentInstanceHistory} from 'modules/queries/agentInstances/useAgentInstanceHistory';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {ConversationMessage} from '../ConversationMessage';
@@ -21,9 +24,11 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
   agentInstanceKey,
   enablePeriodicRefetch,
 }) => {
+  const [sortOrder, setSortOrder] = useState<QuerySortOrder>('desc');
   const {selectElement} = useProcessInstanceElementSelection();
   const {data, status} = useAgentInstanceHistory(agentInstanceKey, {
     enablePeriodicRefetch,
+    sortOrder,
   });
 
   if (status === 'pending') {
@@ -44,6 +49,16 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
 
   return (
     <ConversationContainer>
+      <Button
+        kind="ghost"
+        size="xs"
+        renderIcon={sortOrder === 'desc' ? SortDescending : SortAscending}
+        onClick={() =>
+          setSortOrder((prev) => (prev === 'desc' ? 'asc' : 'desc'))
+        }
+      >
+        {sortOrder === 'desc' ? 'Most recent first' : 'Oldest first'}
+      </Button>
       {data.items.map((item) => (
         <ConversationMessage
           key={item.historyItemKey}

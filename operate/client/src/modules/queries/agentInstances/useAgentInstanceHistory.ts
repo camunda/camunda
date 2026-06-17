@@ -7,28 +7,31 @@
  */
 
 import {useQuery} from '@tanstack/react-query';
-import type {SearchAgentInstanceHistoryRequestBody} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {
+  QuerySortOrder,
+  SearchAgentInstanceHistoryRequestBody,
+} from '@camunda/camunda-api-zod-schemas/8.10';
 import {searchAgentInstanceHistory} from 'modules/api/v2/agentInstances/searchAgentInstanceHistory';
 import {queryKeys} from '../queryKeys';
 
-const HISTORY_PAYLOAD: SearchAgentInstanceHistoryRequestBody = {
-  sort: [{field: 'producedAt', order: 'desc'}],
-  filter: {commitStatus: 'COMMITTED'},
-};
-
 const useAgentInstanceHistory = (
   agentInstanceKey: string,
-  options?: {enablePeriodicRefetch?: boolean},
+  options?: {enablePeriodicRefetch?: boolean; sortOrder?: QuerySortOrder},
 ) => {
+  const historyPayload: SearchAgentInstanceHistoryRequestBody = {
+    sort: [{field: 'producedAt', order: options?.sortOrder ?? 'desc'}],
+    filter: {commitStatus: 'COMMITTED'},
+  };
+
   return useQuery({
     queryKey: queryKeys.agentInstanceHistory.search(
       agentInstanceKey,
-      HISTORY_PAYLOAD,
+      historyPayload,
     ),
     queryFn: async ({signal}) => {
       const {response, error} = await searchAgentInstanceHistory(
         agentInstanceKey,
-        HISTORY_PAYLOAD,
+        historyPayload,
         signal,
       );
       if (response !== null) {

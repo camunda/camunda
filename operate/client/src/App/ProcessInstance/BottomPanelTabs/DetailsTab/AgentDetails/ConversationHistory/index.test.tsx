@@ -21,6 +21,9 @@ import {ConversationHistory} from './index';
 import {searchResult} from 'modules/testUtils';
 import {mockAgentInstanceHistoryItem} from 'modules/mocks/mockAgentInstanceHistoryItem';
 import {Paths} from 'modules/Routes';
+import {mockServer} from 'modules/mock-server/node';
+import {http} from 'msw';
+import {endpoints} from '@camunda/camunda-api-zod-schemas/8.10';
 
 const AGENT_INSTANCE_KEY = '2251799813851828';
 
@@ -172,6 +175,53 @@ describe('<ConversationHistory />', () => {
         },
       ),
     ).toBeInTheDocument();
+  });
+
+  it('should toggle the history sort order when the sort button is clicked', async () => {
+    let query: unknown;
+    mockServer.use(
+      http.post(
+        endpoints.searchAgentInstanceHistory.getUrl({
+          agentInstanceKey: AGENT_INSTANCE_KEY,
+        }),
+        async ({request}) => {
+          query = await request.json();
+          return Response.json(searchResult([]));
+        },
+      ),
+    );
+
+    const {user} = render(
+      <ConversationHistory
+        agentInstanceKey={AGENT_INSTANCE_KEY}
+        enablePeriodicRefetch={false}
+      />,
+      {wrapper: createWrapper()},
+    );
+
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('conversation-history-skeleton'),
+    );
+
+    const sortButton = screen.getByRole('button', {name: 'Most recent first'});
+    expect(sortButton).toBeVisible();
+    expect(query).toEqual(
+      expect.objectContaining({
+        sort: [{field: 'producedAt', order: 'desc'}],
+      }),
+    );
+
+    await user.click(sortButton);
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('conversation-history-skeleton'),
+    );
+
+    expect(screen.getByRole('button', {name: 'Oldest first'})).toBeVisible();
+    expect(query).toEqual(
+      expect.objectContaining({
+        sort: [{field: 'producedAt', order: 'asc'}],
+      }),
+    );
   });
 
   it('should render document references', async () => {
