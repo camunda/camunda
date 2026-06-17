@@ -18,29 +18,26 @@ import java.util.function.Supplier;
 import org.jspecify.annotations.NullMarked;
 
 /**
- * SPIKE (ADR-0005): a physical-tenant-routing {@link AuthorizationReader}.
+ * SPIKE (ADR-0005): the <b>control-plane</b> physical-tenant-routing {@link AuthorizationReader}.
  *
- * <p>Resolves the physical tenant in context on each call and delegates to that tenant's reader, so
- * authorization reads target the in-context tenant's secondary storage rather than a single {@code
- * default}-pinned reader (#55252). Because both authorization-read consumers inject the same {@code
- * AuthorizationReader} bean — the control-plane {@code AuthorizationRepositoryAdapter} (Spring
- * Security permission checks) and the data-plane {@code SearchAuthorizationScopeRepository} ({@code
- * CamundaSearchClients} result authorization) — re-pointing that one bean here makes both paths
- * physical-tenant aware.
+ * <p>Resolves {@link PhysicalTenantContext#current()} on each call and delegates to that tenant's
+ * {@link AuthorizationReader}, so a control-plane permission check reads the in-context tenant's
+ * authorization data instead of a single {@code default}-pinned reader (#55252). It is the
+ * <b>control-plane</b> mechanism of ADR-0005's two-mechanism decision: the reader behind the
+ * OC-supplied {@code AuthorizationRepositoryPort} adapter ({@code AuthorizationRepositoryAdapter})
+ * used by Spring Security's permission checks.
  *
- * <p>Resolution is lazy via {@link PhysicalTenantContext#current()}. The pre-security filter
- * (ADR-0003) guarantees the id is stamped on the request before the check runs, and {@code
- * current()} falls back to {@code default} for non-prefixed cluster requests.
+ * <p>The control-plane runs exclusively on the request thread — the engine never invokes {@code
+ * hasPermission} — where the pre-security filter (ADR-0003) has already stamped the physical tenant.
+ * Thread-bound resolution via {@link PhysicalTenantContext#current()} is therefore safe here,
+ * including in a standalone-gateway deployment (the permission check only ever runs on the gateway's
+ * request thread). {@code current()} falls back to {@code default} for non-prefixed cluster requests.
  *
- * <p><b>Data-plane spike finding:</b> this thread-bound resolution is sufficient for the data-plane
- * too, not only the control-plane. The data-plane authorization read runs <em>synchronously on the
- * request thread</em> — {@code SearchQueryService#executeSearchRequest} calls {@code
- * searchRequest.get()} inline, and the {@code ApiServices} executor is used only for the broker
- * (write) path, never for reads — so the thread-bound {@link PhysicalTenantContext} is present
- * where the check executes (proven by {@code PhysicalTenantRoutingAuthorizationReaderTest}). The
- * instance-bound data-plane mechanism the ADR floated as a hedge against off-request-thread
- * execution is therefore not required for the API read paths; it would only matter for a future
- * consumer that performs an authorization-checked search off the request thread.
+ * <p><b>The data-plane does NOT rely on thread-local resolution.</b> Result authorization inside
+ * {@code CamundaSearchClients} is <em>instance-bound</em>: {@code withPhysicalTenant(pt)} selects
+ * that tenant's {@code ResourceAccessController} (built over the tenant's {@link AuthorizationReader}),
+ * so it stays correct even when the search runs off the request thread (e.g. batch operations in the
+ * engine), where no {@link PhysicalTenantContext} is bound. See ADR-0005's two-mechanism decision.
  */
 @NullMarked
 public final class PhysicalTenantRoutingAuthorizationReader implements AuthorizationReader {

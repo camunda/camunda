@@ -27,19 +27,16 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 /**
- * SPIKE (ADR-0005) data-plane proof. The data-plane authorization read ({@code
- * CamundaSearchClients} -> {@code ResourceAccessController} -> CSL {@code AuthorizationChecker} ->
- * {@code SearchAuthorizationScopeRepository} -> {@code AuthorizationReader}) runs <b>synchronously
- * on the request thread</b>: {@code SearchQueryService#executeSearchRequest} calls {@code
- * searchRequest.get()} inline, and the {@code ApiServices} executor is used only for the broker
- * (write) path, never for reads. The pre-security filter (ADR-0003) stamps the physical tenant on
- * that same thread before Spring Security runs.
+ * SPIKE (ADR-0005) <b>control-plane</b> proof. The control-plane permission check ({@code
+ * AuthorizationRepositoryAdapter} -> this {@link PhysicalTenantRoutingAuthorizationReader}) runs on
+ * the request thread, where the pre-security filter (ADR-0003) has stamped the physical tenant. So
+ * the control-plane resolves the in-context tenant's reader via {@link
+ * PhysicalTenantContext#current()}.
  *
- * <p>Therefore the data-plane's physical-tenant correctness is fully delegated to this routing
- * reader resolving {@link PhysicalTenantContext#current()}. These tests exercise the <b>real</b>
- * thread-bound context (not a stubbed supplier) to confirm a read is routed to the in-context
- * tenant's reader, falls back to {@code default} when no request is bound, and fails fast for an
- * unconfigured tenant.
+ * <p>These tests exercise the <b>real</b> thread-bound context (not a stubbed supplier) to confirm a
+ * read is routed to the in-context tenant's reader, falls back to {@code default} when no request is
+ * bound, and fails fast for an unconfigured tenant. (The data-plane is proven separately and
+ * instance-bound — see {@code CamundaSearchClientsPhysicalTenantResourceAccessControllerTest}.)
  */
 final class PhysicalTenantRoutingAuthorizationReaderTest {
 
