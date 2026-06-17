@@ -77,6 +77,7 @@ final class JobHandlerTest {
         "TIMED_OUT",
         "FAILED",
         "RETRIES_UPDATED",
+        "PRIORITY_UPDATED",
         "CANCELED",
         "ERROR_THROWN",
         "MIGRATED"
@@ -99,6 +100,7 @@ final class JobHandlerTest {
         "TIMED_OUT",
         "FAILED",
         "RETRIES_UPDATED",
+        "PRIORITY_UPDATED",
         "CANCELED",
         "ERROR_THROWN",
         "MIGRATED"

@@ -259,6 +259,7 @@ public record JobEntity(
     ERROR_THROWN,
     FAILED,
     MIGRATED,
+    PRIORITY_UPDATED,
     RETRIES_UPDATED,
     TIMED_OUT,
   }

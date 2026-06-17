@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.job;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
@@ -155,6 +156,109 @@ public class JobUpdateTest {
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
             "Expected to update job with key '%d', but no such job was found".formatted(jobKey));
+  }
+
+  @Test
+  public void shouldUpdateJobWithOnlyPriority() {
+    // given
+    final Record<JobRecordValue> jobCreated = ENGINE.createJob(jobType, PROCESS_ID);
+    final long jobKey = jobCreated.getKey();
+
+    // when
+    ENGINE.job().withKey(jobKey).withPriority(10).withChangeset(Set.of("priority")).update();
+
+    // then
+    assertThat(RecordingExporter.jobRecords().withIntent(JobIntent.PRIORITY_UPDATED).getFirst())
+        .extracting(record -> record.getValue().getPriority())
+        .isEqualTo(10);
+  }
+
+  @Test
+  public void shouldUpdatePriorityAndRetriesForFailedJob() {
+    // given - a FAILED job; both priority and retries updates are valid for any non-terminal state
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final var batchRecord = ENGINE.jobs().withType(jobType).activate();
+    final long jobKey = batchRecord.getValue().getJobKeys().get(0);
+    ENGINE.job().withKey(jobKey).withRetries(0).fail();
+
+    // when
+    ENGINE
+        .job()
+        .withKey(jobKey)
+        .withPriority(10)
+        .withRetries(5)
+        .withChangeset(Set.of("priority", "retries"))
+        .update();
+
+    // then - PRIORITY_UPDATED and RETRIES_UPDATED both emitted; job record reflects new values
+    assertThat(
+            RecordingExporter.jobRecords()
+                .filter(
+                    r ->
+                        r.getIntent() == JobIntent.PRIORITY_UPDATED
+                            || r.getIntent() == JobIntent.RETRIES_UPDATED
+                            || r.getIntent() == JobIntent.UPDATED)
+                .limit(3))
+        .extracting(Record::getIntent)
+        .containsSubsequence(
+            JobIntent.RETRIES_UPDATED, JobIntent.PRIORITY_UPDATED, JobIntent.UPDATED);
+
+    assertThat(
+            RecordingExporter.jobRecords()
+                .withIntent(JobIntent.UPDATED)
+                .withRecordKey(jobKey)
+                .getFirst()
+                .getValue())
+        .satisfies(
+            v -> {
+              assertThat(v.getPriority()).isEqualTo(10);
+              assertThat(v.getRetries()).isEqualTo(5);
+            });
+  }
+
+  @Test
+  public void shouldUpdatePriorityForActivatedJob() {
+    // given - an ACTIVATED job
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final var batchRecord = ENGINE.jobs().withType(jobType).activate();
+    final long jobKey = batchRecord.getValue().getJobKeys().get(0);
+
+    // when
+    ENGINE.job().withKey(jobKey).withPriority(20).withChangeset(Set.of("priority")).update();
+
+    // then - PRIORITY_UPDATED emitted; job record stores new priority (CF update deferred to
+    // re-entry)
+    assertThat(
+            RecordingExporter.jobRecords()
+                .withIntent(JobIntent.PRIORITY_UPDATED)
+                .withRecordKey(jobKey)
+                .getFirst()
+                .getValue()
+                .getPriority())
+        .isEqualTo(20);
+  }
+
+  @Test
+  public void shouldApplyUpdatedPriorityWhenActivatedJobTimesOut() {
+    // given - activate a job, then update its priority while it is ACTIVATED
+    final long shortTimeout = Duration.ofMillis(10).toMillis();
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final var batchRecord = ENGINE.jobs().withType(jobType).withTimeout(shortTimeout).activate();
+    final long jobKey = batchRecord.getValue().getJobKeys().get(0);
+
+    ENGINE.job().withKey(jobKey).withPriority(99).withChangeset(Set.of("priority")).update();
+
+    // when - advance time so the job times out and re-enters ACTIVATABLE
+    ENGINE.increaseTime(EngineConfiguration.DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL);
+    RecordingExporter.jobRecords().withIntent(JobIntent.TIMED_OUT).withRecordKey(jobKey).await();
+
+    // then - re-activating the job returns it at the updated priority (99)
+    final var reactivated = ENGINE.jobs().withType(jobType).activate();
+    assertThat(reactivated.getValue().getJobs())
+        .hasSize(1)
+        .first()
+        .extracting(JobRecordValue::getPriority)
+        .isEqualTo(99);
   }
 
   @Test
