@@ -17,6 +17,7 @@ import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.read.RdbmsReaderConfig;
 import io.camunda.db.rdbms.read.RdbmsTenantReaders;
 import io.camunda.db.rdbms.read.replication.ReplicationLogStatusProviderFactory;
+import io.camunda.db.rdbms.read.security.RdbmsResourceAccessController;
 import io.camunda.db.rdbms.read.service.PersistentWebSessionDbReader;
 import io.camunda.db.rdbms.read.service.RdbmsTableRowCountMetrics;
 import io.camunda.db.rdbms.sql.PersistentWebSessionMapper;
@@ -26,13 +27,22 @@ import io.camunda.db.rdbms.write.RdbmsMapperBundle;
 import io.camunda.db.rdbms.write.RdbmsWriterFactory;
 import io.camunda.db.rdbms.write.service.PersistentWebSessionWriter;
 import io.camunda.search.clients.CamundaSearchClients;
+import io.camunda.search.clients.auth.AnonymousResourceAccessController;
+import io.camunda.search.clients.auth.DefaultResourceAccessProvider;
+import io.camunda.search.clients.auth.DisabledResourceAccessProvider;
 import io.camunda.search.clients.auth.ResourceAccessDelegatingController;
 import io.camunda.search.clients.reader.AuthorizationReader;
 import io.camunda.search.clients.reader.SearchClientReaders;
+import io.camunda.security.core.authz.AuthorizationChecker;
 import io.camunda.security.core.authz.ResourceAccessController;
+import io.camunda.security.core.authz.ResourceAccessProvider;
+import io.camunda.security.core.authz.TenantAccessProvider;
+import io.camunda.security.impl.SearchAuthorizationScopeRepository;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -116,10 +126,28 @@ public class RdbmsConfiguration {
   @Bean
   public CamundaSearchClients camundaSearchClients(
       final PhysicalTenantSearchClientReaders physicalTenantSearchClientReaders,
-      final List<ResourceAccessController> resourceAccessControllers) {
+      final Map<String, RdbmsTenantReaders> rdbmsTenantReaders,
+      final CamundaSecurityLibraryProperties cslProperties,
+      final TenantAccessProvider tenantAccessProvider) {
+    final Map<String, ResourceAccessController> racByTenant = new HashMap<>();
+    for (final Map.Entry<String, RdbmsTenantReaders> entry : rdbmsTenantReaders.entrySet()) {
+      final String tenantId = entry.getKey();
+      final AuthorizationReader reader = entry.getValue().authorizationReader();
+      final var scopeRepo = new SearchAuthorizationScopeRepository(reader);
+      final var checker = new AuthorizationChecker(scopeRepo);
+      final ResourceAccessProvider provider =
+          cslProperties.getAuthorizations().isEnabled()
+              ? new DefaultResourceAccessProvider(checker)
+              : new DisabledResourceAccessProvider();
+      final ResourceAccessController rac =
+          new RdbmsResourceAccessController(provider, tenantAccessProvider);
+      final ResourceAccessController delegating =
+          new ResourceAccessDelegatingController(
+              List.of(new AnonymousResourceAccessController(), rac));
+      racByTenant.put(tenantId, delegating);
+    }
     return new CamundaSearchClients(
-        physicalTenantSearchClientReaders.readersByPhysicalTenant(),
-        new ResourceAccessDelegatingController(resourceAccessControllers));
+        physicalTenantSearchClientReaders.readersByPhysicalTenant(), racByTenant);
   }
 
   /**
