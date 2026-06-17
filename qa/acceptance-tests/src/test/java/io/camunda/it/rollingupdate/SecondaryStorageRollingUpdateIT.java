@@ -131,7 +131,7 @@ final class SecondaryStorageRollingUpdateIT {
           StorageTestCase.rdbms(), StorageTestCase.elasticsearch(), StorageTestCase.opensearch());
 
   static Stream<Arguments> versionAndStorageMatrix() throws IOException, InterruptedException {
-    final List<String> versions = ExporterMigrationTestHelper.fetchAllPatchesFromPreviousMinor();
+    final List<String> versions = ExporterMigrationTestHelper.fetchLatestPatchFromPreviousMinor();
 
     return versions.stream()
         .flatMap(
@@ -141,10 +141,10 @@ final class SecondaryStorageRollingUpdateIT {
   }
 
   static Stream<Arguments> versionAndStorageMatrixLocal() throws IOException, InterruptedException {
-    final List<String> versions = ExporterMigrationTestHelper.fetchLatestPatchFromPreviousMinor();
+    final List<String> versions = ExporterMigrationTestHelper.fetchAllPatchesFromPreviousMinor();
 
     return versions.stream()
-        .map(fromVersion -> Arguments.of(fromVersion, "SNAPSHOT", StorageTestCase.rdbms()));
+        .map(fromVersion -> Arguments.of(fromVersion, "SNAPSHOT", StorageTestCase.elasticsearch()));
   }
 
   // ---------------------------------------------------------------------------
