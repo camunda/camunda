@@ -66,7 +66,7 @@ final class UserTaskVariableExportIT {
     if (openSearchAwsInstanceUrl.isEmpty()) {
       searchDB.esClient().indices().delete(req -> req.index(CUSTOM_PREFIX + "*"));
     }
-    searchDB.osClient().indices().delete(req -> req.index(CUSTOM_PREFIX + "*"));
+    searchDB.deleteOpenSearchIndicesByPrefix(CUSTOM_PREFIX);
   }
 
   @TestTemplate

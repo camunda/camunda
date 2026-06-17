@@ -94,7 +94,7 @@ public abstract class ArchiverJobIT<T extends ArchiverJob<?>> {
     if (openSearchAwsInstanceUrl.isEmpty()) {
       searchDB.esClient().indices().delete(req -> req.index(CUSTOM_PREFIX + "*"));
     }
-    searchDB.osClient().indices().delete(req -> req.index(CUSTOM_PREFIX + "*"));
+    searchDB.deleteOpenSearchIndicesByPrefix(CUSTOM_PREFIX);
 
     if (executor != null) {
       executor.shutdown();

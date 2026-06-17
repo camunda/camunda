@@ -98,7 +98,7 @@ final class ExporterBulkConsistencyIT {
     if (openSearchAwsInstanceUrl.isEmpty()) {
       SEARCH_DB.esClient().indices().delete(req -> req.index(CUSTOM_PREFIX + "*"));
     }
-    SEARCH_DB.osClient().indices().delete(req -> req.index(CUSTOM_PREFIX + "*"));
+    SEARCH_DB.deleteOpenSearchIndicesByPrefix(CUSTOM_PREFIX);
   }
 
   /**
