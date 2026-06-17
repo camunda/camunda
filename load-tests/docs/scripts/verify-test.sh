@@ -55,17 +55,39 @@ wait_for_pods() {
     wait_output=$(kubectl wait --for=condition=ready pod \
         -l "$label" \
         --timeout="${POD_TIMEOUT}s" -n "$NAMESPACE" 2>&1) && {
+      echo "::group::Wait output"
       echo "$wait_output"
+      echo "::endgroup::"
       echo "${description} are ready in $NAMESPACE"
       return 0
     }
-    echo "Output: '$wait_output'"
+    echo "::group::Wait output"
+    echo "$wait_output"
+    echo "::endgroup::"
 
     # Retry on errors (pod rescheduled/timeouts);
     echo "::error::Not all ${description} are ready in $NAMESPACE"
     if [[ "$attempt" -lt "$max_retries" ]]; then
       echo "Pod wasn't ready yet. Retrying in ${retry_delay}s..."
       sleep "$retry_delay"
+    fi
+
+    # Get pod status
+    pods="$(kubectl get pod --no-headers -o wide -n "$NAMESPACE")"
+    echo "::group::Pods status"
+    echo "$pods"
+    echo "::endgroup::"
+
+    out_of_cpu_pods="$(echo "$pods" | grep OutOfCpu | awk '{print $1}')"
+    if [[ -n "$out_of_cpu_pods" ]]; then
+        echo "Detected pods with OutOfCpu status, will delete them..."
+        # Mitigation: sometimes, many pods are scheduled on the same node and the
+        # kubelet fails to start them with a "OutOfCpu" error.
+        # Although it looks like a Kubernetes bug, these pods stay and are being
+        # taken into account by the `kubectl wait` call above, which then never
+        # terminates successfully.
+        # As a mitigation, we delete these OutOfCpu pods as they are dead anyway.
+        echo "$out_of_cpu_pods" | xargs -t kubectl delete pod -n "$NAMESPACE"
     fi
   done
 
