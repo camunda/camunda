@@ -12,6 +12,7 @@ import static io.camunda.optimize.dto.optimize.ReportConstants.BAR_LINE_VISUALIZ
 import static io.camunda.optimize.dto.optimize.ReportConstants.BAR_VISUALIZATION;
 import static io.camunda.optimize.dto.optimize.ReportConstants.HEAT_VISUALIZATION;
 import static io.camunda.optimize.dto.optimize.ReportConstants.LINE_VISUALIZATION;
+import static io.camunda.optimize.dto.optimize.ReportConstants.OUTLIER_BAND_VISUALIZATION;
 import static io.camunda.optimize.dto.optimize.ReportConstants.PIE_VISUALIZATION;
 import static io.camunda.optimize.dto.optimize.ReportConstants.SINGLE_NUMBER_VISUALIZATION;
 import static io.camunda.optimize.dto.optimize.ReportConstants.TABLE_VISUALIZATION;
@@ -26,7 +27,8 @@ public enum ProcessVisualization {
   LINE(LINE_VISUALIZATION),
   PIE(PIE_VISUALIZATION),
   BADGE(BADGE_VISUALIZATION),
-  HEAT(HEAT_VISUALIZATION);
+  HEAT(HEAT_VISUALIZATION),
+  OUTLIER_BAND(OUTLIER_BAND_VISUALIZATION);
 
   private final String id;
 
