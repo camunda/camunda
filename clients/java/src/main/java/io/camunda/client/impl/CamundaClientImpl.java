@@ -397,6 +397,7 @@ import java.io.Closeable;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
@@ -467,7 +468,7 @@ public final class CamundaClientImpl implements CamundaClient {
     asyncStub = gatewayStub;
     this.executorResource = executorResource;
     this.httpClient = httpClient;
-    warnIfInsecureRestAddress(config);
+    warnIfInsecureRestAddress(config.getRestAddress());
 
     if (config.getCredentialsProvider() != null) {
       credentialsProvider = config.getCredentialsProvider();
@@ -482,12 +483,31 @@ public final class CamundaClientImpl implements CamundaClient {
     return new HttpClientFactory(config).createClient();
   }
 
-  private static void warnIfInsecureRestAddress(final CamundaClientConfiguration config) {
-    final URI restAddress = config.getRestAddress();
+  static void warnIfInsecureRestAddress(final URI restAddress) {
     if (restAddress != null && "http".equalsIgnoreCase(restAddress.getScheme())) {
       Loggers.LOGGER.warn(
           "Using the Camunda Client with an insecure REST address [{}]; traffic, including authentication credentials, will not be encrypted. Configure an HTTPS REST address for production use.",
-          restAddress);
+          sanitizeRestAddressForLogging(restAddress));
+    }
+  }
+
+  private static String sanitizeRestAddressForLogging(final URI restAddress) {
+    if (restAddress.getHost() == null) {
+      return restAddress.getScheme() + ":<redacted>";
+    }
+
+    try {
+      return new URI(
+              restAddress.getScheme(),
+              null,
+              restAddress.getHost(),
+              restAddress.getPort(),
+              restAddress.getPath(),
+              null,
+              null)
+          .toString();
+    } catch (final URISyntaxException e) {
+      return restAddress.getScheme() + "://<redacted>";
     }
   }
 
