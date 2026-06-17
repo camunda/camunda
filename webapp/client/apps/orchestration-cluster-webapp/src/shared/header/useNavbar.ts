@@ -6,11 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useRouterState, type RegisteredRouter} from '@tanstack/react-router';
+import {useMatchRoute, type RegisteredRouter} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
 import type {C3NavigationAppProps, C3NavigationNavBarElement} from '@camunda/camunda-composite-components';
 import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.10';
 import {tracking} from '#/shared/tracking';
+import {useCallback} from 'react';
 
 type NavbarConfig = {
 	app: C3NavigationAppProps;
@@ -35,10 +36,19 @@ const tabRoutes = {
 
 function useNavbar(currentUser: CurrentUser): NavbarConfig {
 	const {t} = useTranslation();
-	const pathname = useRouterState({select: ({location}) => location.pathname});
+	const matchRoute = useMatchRoute();
 	const {authorizedComponents} = currentUser;
 
-	if (pathname.startsWith(tabRoutes['tasklistIndex'])) {
+	const hasRouteMatch = useCallback(
+		(...routes: FileRouteTypes['to'][]) => routes.some((to) => matchRoute({to}) !== false),
+		[matchRoute],
+	);
+	const hasComponentRouteMatch = useCallback(
+		(component: 'tasklist' | 'admin' | 'operate') => matchRoute({to: `/${component}`, fuzzy: true}) !== false,
+		[matchRoute],
+	);
+
+	if (hasComponentRouteMatch('tasklist')) {
 		const hasTasklistAccess = isAuthorized('tasklist', authorizedComponents);
 
 		return {
@@ -57,22 +67,24 @@ function useNavbar(currentUser: CurrentUser): NavbarConfig {
 						{
 							key: 'tasks',
 							label: t('tasklist.headerNavItemTasks'),
-							isCurrentPage: pathname === tabRoutes['tasklistIndex'],
+							isCurrentPage: !hasRouteMatch('/tasklist/processes') && hasRouteMatch('/tasklist', '/tasklist/$id'),
 							routeProps: {
 								to: tabRoutes['tasklistIndex'],
-								activeOptions: {exact: true},
 								onClick: () => {
 									tracking.track({
 										eventName: 'tasklist:navigation',
 										link: 'header-tasks',
 									});
 								},
+								activeOptions: {
+									exact: true,
+								},
 							},
 						},
 						{
 							key: 'processes',
 							label: t('tasklist.headerNavItemProcesses'),
-							isCurrentPage: pathname.startsWith(tabRoutes['tasklistProcesses']),
+							isCurrentPage: hasRouteMatch('/tasklist/processes'),
 							routeProps: {
 								to: tabRoutes['tasklistProcesses'],
 								onClick: () => {
@@ -88,7 +100,7 @@ function useNavbar(currentUser: CurrentUser): NavbarConfig {
 		};
 	}
 
-	if (pathname.startsWith(tabRoutes['admin'])) {
+	if (hasComponentRouteMatch('admin')) {
 		const hasAdminAccess = isAuthorized('admin', authorizedComponents);
 
 		return {
@@ -106,7 +118,7 @@ function useNavbar(currentUser: CurrentUser): NavbarConfig {
 		};
 	}
 
-	if (pathname.startsWith(tabRoutes['operate'])) {
+	if (hasComponentRouteMatch('operate')) {
 		const hasOperateAccess = isAuthorized('operate', authorizedComponents);
 
 		return {
@@ -125,7 +137,7 @@ function useNavbar(currentUser: CurrentUser): NavbarConfig {
 						{
 							key: 'dashboard',
 							label: t('operate.dashboard.title'),
-							isCurrentPage: pathname === tabRoutes['operate'],
+							isCurrentPage: hasRouteMatch('/operate'),
 							routeProps: {
 								to: tabRoutes['operate'],
 								activeOptions: {exact: true},
@@ -137,7 +149,7 @@ function useNavbar(currentUser: CurrentUser): NavbarConfig {
 						{
 							key: 'processes',
 							label: t('operate.processes.title'),
-							isCurrentPage: pathname.startsWith(tabRoutes['operateProcesses']),
+							isCurrentPage: hasRouteMatch('/operate/processes'),
 							routeProps: {
 								to: tabRoutes['operateProcesses'],
 								onClick: () => {
@@ -148,7 +160,7 @@ function useNavbar(currentUser: CurrentUser): NavbarConfig {
 						{
 							key: 'decisions',
 							label: t('operate.decisions.title'),
-							isCurrentPage: pathname.startsWith(tabRoutes['operateDecisions']),
+							isCurrentPage: hasRouteMatch('/operate/decisions'),
 							routeProps: {
 								to: tabRoutes['operateDecisions'],
 								onClick: () => {
@@ -159,7 +171,7 @@ function useNavbar(currentUser: CurrentUser): NavbarConfig {
 						{
 							key: 'operations-log',
 							label: t('operate.operationsLog.title'),
-							isCurrentPage: pathname.startsWith(tabRoutes['operateOperationsLog']),
+							isCurrentPage: hasRouteMatch('/operate/operations-log'),
 							routeProps: {
 								to: tabRoutes['operateOperationsLog'],
 								onClick: () => {
@@ -170,7 +182,7 @@ function useNavbar(currentUser: CurrentUser): NavbarConfig {
 						{
 							key: 'batch-operations',
 							label: t('operate.batchOperations.title'),
-							isCurrentPage: pathname.startsWith(tabRoutes['operateBatchOperations']),
+							isCurrentPage: hasRouteMatch('/operate/batch-operations'),
 							routeProps: {
 								to: tabRoutes['operateBatchOperations'],
 								onClick: () => {
