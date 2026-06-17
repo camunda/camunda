@@ -157,6 +157,11 @@ class RdbmsConfigurationPerTenantReadersIT {
           "jdbc:h2:mem:rdbms-test-" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL");
       env.setProperty(base + "rdbms.username", "sa");
       env.setProperty(base + "rdbms.password", "");
+      env.setProperty(
+          "camunda.physical-tenants."
+              + tenantId
+              + ".security.initialization.default-roles.admin.users[0]",
+          tenantId + "-admin");
     }
   }
 }

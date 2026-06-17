@@ -95,6 +95,12 @@ class MyBatisConfigurationPerTenantIT {
           "jdbc:h2:mem:rdbms-test-" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL");
       props.put(base + "rdbms.username", "sa");
       props.put(base + "rdbms.password", "");
+      // every explicitly-configured tenant must provide its own initialization block
+      props.put(
+          "camunda.physical-tenants."
+              + tenantId
+              + ".security.initialization.default-roles.admin.users[0]",
+          tenantId + "-admin");
     }
     final var env = new MockEnvironment();
     env.getPropertySources().addFirst(new MapPropertySource("test", props));

@@ -15,6 +15,7 @@ import io.camunda.configuration.Camunda;
 import io.camunda.configuration.UnifiedConfigurationException;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
+import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -49,6 +50,23 @@ class PhysicalTenantResolverTest {
     environment.getPropertySources().addFirst(new MapPropertySource("test", properties));
   }
 
+  /**
+   * Sets {@code properties} and, for each given non-default tenant, adds the minimal {@code
+   * security.initialization} block that {@link PhysicalTenantRequiredOverrideValidation} now
+   * requires of every explicitly-configured tenant.
+   */
+  private void setProperties(final Map<String, Object> properties, final String... tenantIds) {
+    final Map<String, Object> all = new HashMap<>(properties);
+    for (final String tenantId : tenantIds) {
+      all.put(
+          "camunda.physical-tenants."
+              + tenantId
+              + ".security.initialization.default-roles.admin.users[0]",
+          tenantId + "-admin");
+    }
+    environment.getPropertySources().addFirst(new MapPropertySource("test", all));
+  }
+
   private static String indexPrefixOf(final Camunda camunda) {
     return camunda.getData().getSecondaryStorage().getElasticsearch().getIndexPrefix();
   }
@@ -62,7 +80,9 @@ class PhysicalTenantResolverTest {
             "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.index-prefix",
             "tenanta",
             "camunda.physical-tenants.tenantb.data.secondary-storage.elasticsearch.index-prefix",
-            "tenantb"));
+            "tenantb"),
+        "tenanta",
+        "tenantb");
 
     // when
     final Map<String, Camunda> resolved = newResolver().getAll();
@@ -82,7 +102,8 @@ class PhysicalTenantResolverTest {
             "camunda.cluster.replication-factor", 3,
             "camunda.physical-tenants.tenanta.cluster.partition-count", 7,
             "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.index-prefix",
-                "tenanta"));
+                "tenanta"),
+        "tenanta");
 
     // when
     final Camunda tenantA = newResolver().forPhysicalTenant("tenanta");
@@ -102,7 +123,8 @@ class PhysicalTenantResolverTest {
             "zeebe.broker.cluster.partitionsCount",
             9,
             "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.index-prefix",
-            "tenanta"));
+            "tenanta"),
+        "tenanta");
 
     // when
     final Camunda tenantA = newResolver().forPhysicalTenant("tenanta");
@@ -123,7 +145,8 @@ class PhysicalTenantResolverTest {
             "camunda.data.secondary-storage.elasticsearch.index-prefix", "default",
             "camunda.physical-tenants.tenanta.document.aws.aws1.bucket-name", "tenant-bucket",
             "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.index-prefix",
-                "tenanta"));
+                "tenanta"),
+        "tenanta");
 
     // when
     final PhysicalTenantResolver resolver = newResolver();
@@ -178,7 +201,8 @@ class PhysicalTenantResolverTest {
             "camunda.cluster.size",
             5,
             "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.index-prefix",
-            "tenanta"));
+            "tenanta"),
+        "tenanta");
 
     // when
     final PhysicalTenantResolver resolver = newResolver();
@@ -223,7 +247,9 @@ class PhysicalTenantResolverTest {
             "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.url",
                 "http://shared:9200",
             "camunda.physical-tenants.tenantb.data.secondary-storage.elasticsearch.url",
-                "http://shared:9200"));
+                "http://shared:9200"),
+        "tenanta",
+        "tenantb");
 
     // when / then resolution fails fast at boot
     assertThatExceptionOfType(UnifiedConfigurationException.class)
@@ -242,7 +268,9 @@ class PhysicalTenantResolverTest {
                 "tenanta",
             "camunda.physical-tenants.tenantb.data.secondary-storage.type", "rdbms",
             "camunda.physical-tenants.tenantb.data.secondary-storage.rdbms.url",
-                "jdbc:h2:mem:tenantb"));
+                "jdbc:h2:mem:tenantb"),
+        "tenanta",
+        "tenantb");
 
     // when / then resolution fails fast at boot
     assertThatExceptionOfType(UnifiedConfigurationException.class)
@@ -259,7 +287,9 @@ class PhysicalTenantResolverTest {
             "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.index-prefix",
                 "tenanta",
             "camunda.physical-tenants.tenantb.data.secondary-storage.elasticsearch.index-prefix",
-                "tenantb"));
+                "tenantb"),
+        "tenanta",
+        "tenantb");
 
     // when / then resolution succeeds
     final PhysicalTenantResolver resolver = newResolver();
