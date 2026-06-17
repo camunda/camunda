@@ -64,6 +64,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import javax.annotation.WillCloseWhenClosed;
@@ -497,7 +498,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
         .thenApplyAsync(
             response -> {
               validateReindexResponse(sourceIndexName, response);
-              return response.total();
+              return getReindexedDocumentsCount(response);
             },
             executor)
         .whenCompleteAsync(
@@ -510,11 +511,17 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
       throw new IllegalStateException("Reindex request from %s timed out".formatted(sourceIndex));
     }
     final var failures = response.failures();
-    if (failures != null && !failures.isEmpty()) {
+    if (!failures.isEmpty()) {
       throw new IllegalStateException(
           "Reindex request from %s index completed with %d failures"
               .formatted(sourceIndex, failures.size()));
     }
+  }
+
+  private static long getReindexedDocumentsCount(final ReindexResponse response) {
+    return Math.addExact(
+        Objects.requireNonNullElse(response.created(), 0L),
+        Objects.requireNonNullElse(response.updated(), 0L));
   }
 
   @VisibleForTesting
