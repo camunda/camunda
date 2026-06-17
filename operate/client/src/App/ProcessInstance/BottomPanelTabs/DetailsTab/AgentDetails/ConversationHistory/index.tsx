@@ -18,17 +18,20 @@ import {flattenPaginatedPages} from 'modules/queries/flattenPaginatedPages';
 
 type ConversationHistoryProps = {
   agentInstanceKey: string;
+  isVisible: boolean;
   enablePeriodicRefetch: boolean;
 };
 
 const ConversationHistory: React.FC<ConversationHistoryProps> = ({
   agentInstanceKey,
+  isVisible,
   enablePeriodicRefetch,
 }) => {
   const [sortOrder, setSortOrder] = useState<QuerySortOrder>('desc');
   const {selectElement} = useProcessInstanceElementSelection();
   const {data, status, hasNextPage, fetchNextPage, isFetchingNextPage} =
     useAgentInstanceHistory(agentInstanceKey, {
+      enabled: isVisible,
       enablePeriodicRefetch,
       sortOrder,
       select: flattenPaginatedPages,

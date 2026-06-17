@@ -50,6 +50,7 @@ describe('<ConversationHistory />', () => {
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
         enablePeriodicRefetch={false}
+        isVisible
       />,
       {wrapper: createWrapper()},
     );
@@ -66,6 +67,7 @@ describe('<ConversationHistory />', () => {
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
         enablePeriodicRefetch={false}
+        isVisible
       />,
       {wrapper: createWrapper()},
     );
@@ -104,6 +106,7 @@ describe('<ConversationHistory />', () => {
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
         enablePeriodicRefetch={false}
+        isVisible
       />,
       {wrapper: createWrapper()},
     );
@@ -153,6 +156,7 @@ describe('<ConversationHistory />', () => {
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
         enablePeriodicRefetch={false}
+        isVisible
       />,
       {wrapper: createWrapper()},
     );
@@ -195,6 +199,7 @@ describe('<ConversationHistory />', () => {
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
         enablePeriodicRefetch={false}
+        isVisible
       />,
       {wrapper: createWrapper()},
     );
@@ -254,6 +259,7 @@ describe('<ConversationHistory />', () => {
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
         enablePeriodicRefetch={false}
+        isVisible
       />,
       {wrapper: createWrapper()},
     );
@@ -330,6 +336,7 @@ describe('<ConversationHistory />', () => {
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
         enablePeriodicRefetch={false}
+        isVisible
       />,
       {wrapper: createWrapper()},
     );
@@ -377,6 +384,7 @@ describe('<ConversationHistory />', () => {
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
         enablePeriodicRefetch={false}
+        isVisible
       />,
       {wrapper: createWrapper()},
     );

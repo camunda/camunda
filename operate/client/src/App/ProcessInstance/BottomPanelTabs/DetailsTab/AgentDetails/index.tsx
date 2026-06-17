@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useState} from 'react';
 import type {
   AgentInstance,
   AgentInstanceStatus,
@@ -74,6 +75,9 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
   isLoading,
   isError,
 }) => {
+  const [isConversationHistoryOpen, setIsConversationHistoryOpen] =
+    useState(false);
+
   if (isLoading) {
     return (
       <AgentDetailsContainer>
@@ -139,6 +143,8 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
         {IS_CONVERSATION_HISTORY_ENABLED && (
           <AccordionItem
             data-testid="agent-conversation-history-section"
+            open={isConversationHistoryOpen}
+            onHeadingClick={({isOpen}) => setIsConversationHistoryOpen(isOpen)}
             title={
               <SectionTitle icon={<Chat size={16} />}>
                 Conversation history
@@ -147,6 +153,7 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
           >
             <ConversationHistory
               agentInstanceKey={agentInstance.agentInstanceKey}
+              isVisible={isConversationHistoryOpen}
               enablePeriodicRefetch={isAgentInstanceRunning(agentInstance)}
             />
           </AccordionItem>

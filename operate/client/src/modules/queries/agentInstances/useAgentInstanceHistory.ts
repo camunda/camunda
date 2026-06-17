@@ -18,6 +18,7 @@ import {queryKeys} from '../queryKeys';
 const PAGE_LIMIT = 100;
 
 type QueryOptions<T> = {
+  enabled?: boolean;
   enablePeriodicRefetch?: boolean;
   sortOrder?: QuerySortOrder;
   select?: (result: InfiniteData<SearchAgentInstanceHistoryResponseBody>) => T;
@@ -39,6 +40,10 @@ const useAgentInstanceHistory = <
       agentInstanceKey,
       historyPayload,
     ),
+    enabled: options?.enabled,
+    select: options?.select,
+    staleTime: 5000,
+    refetchInterval: options?.enablePeriodicRefetch ? 5000 : undefined,
     queryFn: async ({pageParam, signal}) => {
       const {response, error} = await searchAgentInstanceHistory(
         agentInstanceKey,
@@ -50,14 +55,11 @@ const useAgentInstanceHistory = <
       }
       throw error;
     },
-    select: options?.select,
     initialPageParam: 0,
     getNextPageParam: (lastPage, _, lastPageParam) => {
       const nextPage = lastPageParam + lastPage.items.length;
       return nextPage >= lastPage.page.totalItems ? null : nextPage;
     },
-    staleTime: 5000,
-    refetchInterval: options?.enablePeriodicRefetch ? 5000 : undefined,
   });
 };
 
