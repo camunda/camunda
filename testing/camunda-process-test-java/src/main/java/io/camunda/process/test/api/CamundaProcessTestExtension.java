@@ -401,16 +401,12 @@ public class CamundaProcessTestExtension
   }
 
   private String getCoverageTestName(final ExtensionContext context) {
-    final StringBuilder prefix = new StringBuilder();
-
-    ExtensionContext parentContext = context.getParent().orElse(null);
-
-    while (parentContext != null && !hasProcessTestExtension(parentContext)) {
-      prefix.insert(0, parentContext.getDisplayName() + "#");
-      parentContext = parentContext.getParent().orElse(null);
+    final String testMethodName = context.getRequiredTestMethod().getName();
+    final Class<?> testClass = context.getRequiredTestClass();
+    if (testClass.getEnclosingClass() != null) {
+      return testClass.getSimpleName() + "#" + testMethodName;
     }
-
-    return prefix + context.getRequiredTestMethod().getName();
+    return testMethodName;
   }
 
   /**
