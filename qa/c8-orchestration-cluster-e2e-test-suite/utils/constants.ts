@@ -47,6 +47,11 @@ export const defaultAssertionOptions = {
   timeout: 30_000,
 };
 
+export const extendedAssertionOptions = {
+  intervals: [5_000, 10_000, 15_000],
+  timeout: 90_000,
+};
+
 // Create unique auth role with optional custom ID
 export const createUniqueAuthRole = (customId?: string) => {
   const id = customId || generateUniqueId();

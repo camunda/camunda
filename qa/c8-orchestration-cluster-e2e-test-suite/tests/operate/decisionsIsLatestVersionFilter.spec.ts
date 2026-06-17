@@ -10,7 +10,7 @@ import {randomUUID} from 'node:crypto';
 import {test} from 'fixtures';
 import {expect} from '@playwright/test';
 import {captureScreenshot, captureFailureVideo} from '@setup';
-import {navigateToAppHome} from '@pages/UtilitiesPage';
+import {navigateToApp} from '@pages/UtilitiesPage';
 import {
   seedUniqueDecisionDefinitions,
   waitForLatestVersionTotalItems,
@@ -62,7 +62,7 @@ test.beforeAll(async ({request}) => {
 
 test.describe('Operate — Decisions isLatestVersion filter', () => {
   test.beforeEach(async ({page, operateHomePage}) => {
-    await navigateToAppHome(page, 'operate');
+    await navigateToApp(page, 'operate');
     await expect(operateHomePage.operateBanner).toBeVisible();
     await operateHomePage.clickDecisionsTab();
   });

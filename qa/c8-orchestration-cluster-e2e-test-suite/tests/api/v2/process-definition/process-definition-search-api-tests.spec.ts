@@ -10,6 +10,7 @@ import {randomUUID} from 'node:crypto';
 import {expect, test} from '@playwright/test';
 import {
   assertBadRequest,
+  assertInvalidArgument,
   assertStatusCode,
   assertUnauthorizedRequest,
   buildUrl,
