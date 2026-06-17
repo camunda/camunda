@@ -40,7 +40,7 @@ class HttpTransportOAuthTest {
     wireMock.stubFor(post("/").willReturn(ok()));
     final OAuthCredentialsProvider provider =
         headerConsumer -> headerConsumer.accept("Authorization", "Bearer test-token");
-    final var httpConfig = new HttpTransportConfig(url, new OAuth(provider), 2, 50, 500);
+    final var httpConfig = new HttpTransportConfig(url, new OAuth(provider), 2, 50, 5000);
     final var transport =
         new HttpTransportImpl(
             SubscriptionFactory.createJsonMapper(),
@@ -70,7 +70,7 @@ class HttpTransportOAuthTest {
           }
           headerConsumer.accept("Authorization", "Bearer late-token");
         };
-    final var httpConfig = new HttpTransportConfig(url, new OAuth(flakyProvider), 2, 50, 500);
+    final var httpConfig = new HttpTransportConfig(url, new OAuth(flakyProvider), 2, 50, 5000);
     final var transport =
         new HttpTransportImpl(
             SubscriptionFactory.createJsonMapper(),

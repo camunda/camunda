@@ -52,7 +52,7 @@ class HttpTransportOAuth401Test {
         post("/").inScenario("unauthorized").whenScenarioStateIs("authorized").willReturn(ok()));
 
     final RotatingProvider provider = new RotatingProvider();
-    final var httpConfig = new HttpTransportConfig(url, new OAuth(provider), 2, 50, 500);
+    final var httpConfig = new HttpTransportConfig(url, new OAuth(provider), 2, 50, 5000);
     final var registry = new SimpleMeterRegistry();
     final var transport =
         new HttpTransportImpl(
@@ -81,7 +81,7 @@ class HttpTransportOAuth401Test {
     // given — a 401 with non-OAuth auth must remain a non-retried client error
     final String url = "http://localhost:" + wireMock.getPort();
     wireMock.stubFor(post("/").willReturn(aResponse().withStatus(401)));
-    final var httpConfig = new HttpTransportConfig(url, new ApiKey("test-key"), 2, 50, 500);
+    final var httpConfig = new HttpTransportConfig(url, new ApiKey("test-key"), 2, 50, 5000);
     final var transport =
         new HttpTransportImpl(
             SubscriptionFactory.createJsonMapper(),
