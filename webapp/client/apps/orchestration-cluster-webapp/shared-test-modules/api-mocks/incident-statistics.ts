@@ -9,6 +9,8 @@
 import type {
 	GetIncidentProcessInstanceStatisticsByErrorResponseBody,
 	IncidentProcessInstanceStatisticsByError,
+	GetIncidentProcessInstanceStatisticsByDefinitionResponseBody,
+	IncidentProcessInstanceStatisticsByDefinition,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 
 function createIncidentProcessInstanceStatisticsByError(
@@ -32,4 +34,33 @@ function createIncidentProcessInstanceStatisticsByErrorResponse(
 	};
 }
 
-export {createIncidentProcessInstanceStatisticsByError, createIncidentProcessInstanceStatisticsByErrorResponse};
+function createIncidentProcessInstanceStatisticsByDefinition(
+	overrides?: Partial<IncidentProcessInstanceStatisticsByDefinition>,
+): IncidentProcessInstanceStatisticsByDefinition {
+	return {
+		processDefinitionId: 'process',
+		processDefinitionKey: 'process-key',
+		processDefinitionName: 'My Process',
+		processDefinitionVersion: 1,
+		tenantId: '<default>',
+		activeInstancesWithErrorCount: 1,
+		...overrides,
+	};
+}
+
+function createIncidentProcessInstanceStatisticsByDefinitionResponse(
+	overrides?: Partial<GetIncidentProcessInstanceStatisticsByDefinitionResponseBody>,
+): GetIncidentProcessInstanceStatisticsByDefinitionResponseBody {
+	return {
+		items: [],
+		page: {totalItems: 0, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+		...overrides,
+	};
+}
+
+export {
+	createIncidentProcessInstanceStatisticsByError,
+	createIncidentProcessInstanceStatisticsByErrorResponse,
+	createIncidentProcessInstanceStatisticsByDefinition,
+	createIncidentProcessInstanceStatisticsByDefinitionResponse,
+};

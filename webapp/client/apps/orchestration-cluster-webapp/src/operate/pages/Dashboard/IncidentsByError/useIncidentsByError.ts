@@ -6,8 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {infiniteQueryOptions, useSuspenseInfiniteQuery} from '@tanstack/react-query';
-import type {GetIncidentProcessInstanceStatisticsByErrorResponseBody} from '@camunda/camunda-api-zod-schemas/8.10';
+import {infiniteQueryOptions, useSuspenseInfiniteQuery, useQuery} from '@tanstack/react-query';
+import type {
+	GetIncidentProcessInstanceStatisticsByErrorResponseBody,
+	GetIncidentProcessInstanceStatisticsByDefinitionResponseBody,
+} from '@camunda/camunda-api-zod-schemas/8.10';
 import {request} from '#/shared/http/request';
 import {endpoints} from '#/shared/http/endpoints';
 
@@ -47,4 +50,21 @@ function useIncidentsByError() {
 	});
 }
 
-export {incidentsByErrorInfiniteQuery, useIncidentsByError, PAGE_SIZE};
+function useIncidentsByErrorDefinitions(errorHashCode: number) {
+	return useQuery({
+		queryKey: ['incidentsByErrorDefinitions', errorHashCode] as const,
+		queryFn: async (): Promise<GetIncidentProcessInstanceStatisticsByDefinitionResponseBody> => {
+			const {response, error} = await request(
+				endpoints.getIncidentProcessInstanceStatisticsByDefinition({
+					filter: {errorHashCode},
+				}),
+			);
+			if (error !== null) {
+				throw error;
+			}
+			return response.json();
+		},
+	});
+}
+
+export {incidentsByErrorInfiniteQuery, useIncidentsByError, useIncidentsByErrorDefinitions, PAGE_SIZE};

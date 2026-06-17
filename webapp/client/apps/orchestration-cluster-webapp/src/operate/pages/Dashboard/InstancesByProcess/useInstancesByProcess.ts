@@ -6,10 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {infiniteQueryOptions, useSuspenseInfiniteQuery} from '@tanstack/react-query';
+import {infiniteQueryOptions, useSuspenseInfiniteQuery, useQuery} from '@tanstack/react-query';
 import type {
 	GetProcessDefinitionInstanceStatisticsRequestBody,
 	GetProcessDefinitionInstanceStatisticsResponseBody,
+	GetProcessDefinitionInstanceVersionStatisticsResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {request} from '#/shared/http/request';
 import {endpoints} from '#/shared/http/endpoints';
@@ -18,7 +19,10 @@ const PAGE_SIZE = 50;
 const MAX_PAGES = 5;
 
 const DEFAULT_SORT: Pick<GetProcessDefinitionInstanceStatisticsRequestBody, 'sort'> = {
-	sort: [{field: 'activeInstancesWithoutIncidentCount', order: 'desc'}],
+	sort: [
+		{field: 'activeInstancesWithIncidentCount', order: 'desc'},
+		{field: 'activeInstancesWithoutIncidentCount', order: 'desc'},
+	],
 };
 
 const instancesByProcessInfiniteQuery = () =>
@@ -55,4 +59,22 @@ function useInstancesByProcess() {
 	});
 }
 
-export {instancesByProcessInfiniteQuery, useInstancesByProcess, PAGE_SIZE};
+function useInstancesByProcessVersions(processDefinitionId: string, tenantId: string | null) {
+	return useQuery({
+		queryKey: ['instancesByProcessVersions', processDefinitionId, tenantId] as const,
+		queryFn: async (): Promise<GetProcessDefinitionInstanceVersionStatisticsResponseBody> => {
+			const {response, error} = await request(
+				endpoints.getProcessDefinitionInstanceVersionStatistics({
+					filter: {processDefinitionId, tenantId},
+					sort: [{field: 'processDefinitionVersion', order: 'desc'}],
+				}),
+			);
+			if (error !== null) {
+				throw error;
+			}
+			return response.json();
+		},
+	});
+}
+
+export {instancesByProcessInfiniteQuery, useInstancesByProcess, useInstancesByProcessVersions, PAGE_SIZE};

@@ -6,16 +6,21 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useCallback, useMemo} from 'react';
+import React, {useCallback, useMemo} from 'react';
 import {InlineLoading} from '@carbon/react';
+import {useTranslation} from 'react-i18next';
 import type {ProcessDefinitionInstanceStatistics} from '@camunda/camunda-api-zod-schemas/8.10';
+import {tracking} from '#/shared/tracking';
 import {InstancesBar} from '#/operate/components/InstancesBar/InstancesBar';
+import {PartiallyExpandableDataTable} from '../PartiallyExpandableDataTable/PartiallyExpandableDataTable';
 import {useInstancesByProcess, PAGE_SIZE} from './useInstancesByProcess';
-import {ScrollableList, Row, LoadingRow} from './styled';
+import {InstancesByProcessVersions} from './InstancesByProcessVersions';
+import {ScrollableList, LoadingRow, LinkWrapper} from './styled';
 
 const ROW_HEIGHT = 64;
 
 function InstancesByProcess() {
+	const {t} = useTranslation();
 	const {
 		data,
 		fetchNextPage,
@@ -44,6 +49,54 @@ function InstancesByProcess() {
 		[hasNextPage, hasPreviousPage, isFetchingNextPage, isFetchingPreviousPage, fetchNextPage, fetchPreviousPage],
 	);
 
+	const rows = useMemo(
+		() =>
+			items.map((item: ProcessDefinitionInstanceStatistics) => {
+				const total = item.activeInstancesWithoutIncidentCount + item.activeInstancesWithIncidentCount;
+				const versionKey = item.hasMultipleVersions
+					? 'operate.dashboard.instancesInMultipleVersions'
+					: 'operate.dashboard.instancesInOneVersion';
+				const labelText = `${item.latestProcessDefinitionName || item.processDefinitionId} – ${t(versionKey, {count: total})}`;
+
+				return {
+					id: `${item.processDefinitionId}:${item.tenantId}`,
+					instance: (
+						<LinkWrapper
+							to="/"
+							title={labelText}
+							onClick={() => {
+								tracking.track({
+									eventName: 'operate:navigation',
+									link: 'dashboard-process-instances-by-name-all-versions',
+								});
+							}}
+						>
+							<InstancesBar
+								label={{type: 'process', size: 'medium', text: labelText}}
+								activeInstancesCount={item.activeInstancesWithoutIncidentCount}
+								incidentsCount={item.activeInstancesWithIncidentCount}
+								size="medium"
+							/>
+						</LinkWrapper>
+					),
+				};
+			}),
+		[items, t],
+	);
+
+	const expandedContents = useMemo(
+		() =>
+			items.reduce<Record<string, React.ReactElement<{tabIndex: number}>>>((accumulator, item) => {
+				if (item.hasMultipleVersions) {
+					accumulator[`${item.processDefinitionId}:${item.tenantId}`] = (
+						<InstancesByProcessVersions processDefinitionId={item.processDefinitionId} tenantId={item.tenantId} />
+					);
+				}
+				return accumulator;
+			}, {}),
+		[items],
+	);
+
 	return (
 		<ScrollableList onScroll={handleScroll} data-testid="instances-by-process-list">
 			{isFetchingPreviousPage && (
@@ -51,20 +104,12 @@ function InstancesByProcess() {
 					<InlineLoading />
 				</LoadingRow>
 			)}
-			{items.map((item: ProcessDefinitionInstanceStatistics) => (
-				<Row key={`${item.processDefinitionId}:${item.tenantId}`}>
-					<InstancesBar
-						label={{
-							type: 'process',
-							size: 'medium',
-							text: item.latestProcessDefinitionName || item.processDefinitionId,
-						}}
-						activeInstancesCount={item.activeInstancesWithoutIncidentCount}
-						incidentsCount={item.activeInstancesWithIncidentCount}
-						size="medium"
-					/>
-				</Row>
-			))}
+			<PartiallyExpandableDataTable
+				dataTestId="instances-by-process-definition"
+				headers={[{key: 'instance', header: 'instance'}]}
+				rows={rows}
+				expandedContents={expandedContents}
+			/>
 			{isFetchingNextPage && (
 				<LoadingRow>
 					<InlineLoading />

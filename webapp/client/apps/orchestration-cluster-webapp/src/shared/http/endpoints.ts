@@ -11,7 +11,9 @@ import {
 	type QueryUserTasksRequestBody,
 	type QueryProcessDefinitionsRequestBody,
 	type GetProcessDefinitionInstanceStatisticsRequestBody,
+	type GetProcessDefinitionInstanceVersionStatisticsRequestBody,
 	type GetIncidentProcessInstanceStatisticsByErrorRequestBody,
+	type GetIncidentProcessInstanceStatisticsByDefinitionRequestBody,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {getBootConfig} from '#/shared/config/getBootConfig';
 import {mergePathname} from './mergePathname';
@@ -105,6 +107,24 @@ const endpoints = {
 		new Request(getFullURL(unifiedAPIEndpoints.getIncidentProcessInstanceStatisticsByError.getUrl()), {
 			...BASE_REQUEST_OPTIONS,
 			method: unifiedAPIEndpoints.getIncidentProcessInstanceStatisticsByError.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getProcessDefinitionInstanceVersionStatistics: (body: GetProcessDefinitionInstanceVersionStatisticsRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getProcessDefinitionInstanceVersionStatistics.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getProcessDefinitionInstanceVersionStatistics.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getIncidentProcessInstanceStatisticsByDefinition: (
+		body: GetIncidentProcessInstanceStatisticsByDefinitionRequestBody,
+	) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getIncidentProcessInstanceStatisticsByDefinition.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getIncidentProcessInstanceStatisticsByDefinition.method,
 			body: JSON.stringify(body),
 			headers: {'Content-Type': 'application/json'},
 		}),

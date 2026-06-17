@@ -7,6 +7,7 @@
  */
 
 import styled from 'styled-components';
+import {Link} from '@tanstack/react-router';
 
 const ScrollableList = styled.div`
 	flex: 1;
@@ -15,19 +16,23 @@ const ScrollableList = styled.div`
 	flex-direction: column;
 `;
 
-const Row = styled.div`
-	padding: var(--cds-spacing-03) 0;
-	border-bottom: 1px solid var(--cds-border-subtle-01);
-
-	&:last-child {
-		border-bottom: none;
-	}
-`;
-
 const LoadingRow = styled.div`
 	padding: var(--cds-spacing-03) 0;
 	display: flex;
 	justify-content: center;
 `;
 
-export {ScrollableList, Row, LoadingRow};
+const LinkWrapper = styled(Link)`
+	display: block;
+	text-decoration: none !important;
+	padding: var(--cds-spacing-03) 0;
+`;
+
+const Li = styled.li`
+	// override the hover color on expandable row's children
+	&:hover {
+		background-color: var(--cds-layer-hover);
+	}
+`;
+
+export {ScrollableList, LoadingRow, LinkWrapper, Li};

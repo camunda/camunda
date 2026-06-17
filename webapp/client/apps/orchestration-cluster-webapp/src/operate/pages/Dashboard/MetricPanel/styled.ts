@@ -17,6 +17,9 @@ const Title = styled(Link)`
 		text-decoration: none;
 		display: inline-block;
 		margin-bottom: var(--cds-spacing-05);
+		&:hover {
+			text-decoration: underline;
+		}
 	}
 `;
 
@@ -31,6 +34,9 @@ const Label = styled(Link)`
 		${styles.productiveHeading03};
 		color: var(--cds-text-primary);
 		text-decoration: none;
+		&:hover {
+			text-decoration: underline;
+		}
 	}
 `;
 

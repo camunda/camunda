@@ -9,6 +9,8 @@
 import type {
 	GetProcessDefinitionInstanceStatisticsResponseBody,
 	ProcessDefinitionInstanceStatistics,
+	GetProcessDefinitionInstanceVersionStatisticsResponseBody,
+	ProcessDefinitionInstanceVersionStatistics,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 
 function createProcessDefinitionInstanceStatistics(
@@ -35,4 +37,34 @@ function createProcessDefinitionInstanceStatisticsResponse(
 	};
 }
 
-export {createProcessDefinitionInstanceStatistics, createProcessDefinitionInstanceStatisticsResponse};
+function createProcessDefinitionInstanceVersionStatistics(
+	overrides?: Partial<ProcessDefinitionInstanceVersionStatistics>,
+): ProcessDefinitionInstanceVersionStatistics {
+	return {
+		processDefinitionId: 'process',
+		processDefinitionKey: 'process-key',
+		processDefinitionName: 'My Process',
+		processDefinitionVersion: 1,
+		activeInstancesWithoutIncidentCount: 0,
+		activeInstancesWithIncidentCount: 0,
+		tenantId: '<default>',
+		...overrides,
+	};
+}
+
+function createProcessDefinitionInstanceVersionStatisticsResponse(
+	overrides?: Partial<GetProcessDefinitionInstanceVersionStatisticsResponseBody>,
+): GetProcessDefinitionInstanceVersionStatisticsResponseBody {
+	return {
+		items: [],
+		page: {totalItems: 0, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+		...overrides,
+	};
+}
+
+export {
+	createProcessDefinitionInstanceStatistics,
+	createProcessDefinitionInstanceStatisticsResponse,
+	createProcessDefinitionInstanceVersionStatistics,
+	createProcessDefinitionInstanceVersionStatisticsResponse,
+};

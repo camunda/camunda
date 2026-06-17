@@ -27,7 +27,12 @@ import {
 import {Dashboard} from './Dashboard';
 
 const PROCESS_STATS_REQUEST_SCHEMA = z.object({
-	sort: z.array(z.object({field: z.literal('activeInstancesWithoutIncidentCount'), order: z.literal('desc')})),
+	sort: z.array(
+		z.object({
+			field: z.enum(['activeInstancesWithoutIncidentCount', 'activeInstancesWithIncidentCount']),
+			order: z.literal('desc'),
+		}),
+	),
 	page: z.object({from: z.number(), limit: z.number()}).optional(),
 });
 const INCIDENTS_REQUEST_SCHEMA = z.object({

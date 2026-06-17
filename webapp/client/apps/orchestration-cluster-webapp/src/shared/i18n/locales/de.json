@@ -406,13 +406,22 @@
 				"learnMoreLink": "Mehr über Operate erfahren",
 				"goToModelerButton": "Zum Modeler",
 				"healthyProcessesHeading": "Ihre Prozesse sind fehlerfrei",
-				"healthyProcessesDescription": "Es gibt keine Vorfälle bei irgendwelchen Instanzen."
+				"healthyProcessesDescription": "Es gibt keine Vorfälle bei irgendwelchen Instanzen.",
+				"instancesInOneVersion_one": "1 Instanz in 1 Version",
+				"instancesInOneVersion_other": "{{count}} Instanzen in 1 Version",
+				"instancesInMultipleVersions_one": "1 Instanz in 2+ Versionen",
+				"instancesInMultipleVersions_other": "{{count}} Instanzen in 2+ Versionen",
+				"instancesInVersion_one": "1 Instanz in Version {{version}}",
+				"instancesInVersion_other": "{{count}} Instanzen in Version {{version}}"
 			},
 			"processes": {
 				"title": "Prozesse"
 			},
 			"decisions": {
 				"title": "Entscheidungen"
+			},
+			"operations": {
+				"title": "Operationen"
 			},
 			"operationsLog": {
 				"title": "Vorgangsprotokoll"

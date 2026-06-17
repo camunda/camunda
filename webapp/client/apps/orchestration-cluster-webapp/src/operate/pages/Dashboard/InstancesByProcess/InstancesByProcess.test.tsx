@@ -21,7 +21,12 @@ import {
 import {InstancesByProcess} from './InstancesByProcess';
 
 const REQUEST_SCHEMA = z.object({
-	sort: z.array(z.object({field: z.literal('activeInstancesWithoutIncidentCount'), order: z.literal('desc')})),
+	sort: z.array(
+		z.object({
+			field: z.enum(['activeInstancesWithIncidentCount', 'activeInstancesWithoutIncidentCount']),
+			order: z.literal('desc'),
+		}),
+	),
 	page: z.object({from: z.number(), limit: z.literal(50)}),
 });
 const FAILURE_RESPONSE = new HttpResponse(null, {status: 400});

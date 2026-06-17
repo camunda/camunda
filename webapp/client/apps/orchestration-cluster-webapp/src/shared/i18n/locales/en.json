@@ -418,13 +418,22 @@
 				"learnMoreLink": "Learn more about Operate",
 				"goToModelerButton": "Go to Modeler",
 				"healthyProcessesHeading": "Your processes are healthy",
-				"healthyProcessesDescription": "There are no incidents on any instances."
+				"healthyProcessesDescription": "There are no incidents on any instances.",
+				"instancesInOneVersion_one": "1 Instance in 1 Version",
+				"instancesInOneVersion_other": "{{count}} Instances in 1 Version",
+				"instancesInMultipleVersions_one": "1 Instance in 2+ Versions",
+				"instancesInMultipleVersions_other": "{{count}} Instances in 2+ Versions",
+				"instancesInVersion_one": "1 Instance in Version {{version}}",
+				"instancesInVersion_other": "{{count}} Instances in Version {{version}}"
 			},
 			"processes": {
 				"title": "Processes"
 			},
 			"decisions": {
 				"title": "Decisions"
+			},
+			"operations": {
+				"title": "Operations"
 			},
 			"operationsLog": {
 				"title": "Operations Log"

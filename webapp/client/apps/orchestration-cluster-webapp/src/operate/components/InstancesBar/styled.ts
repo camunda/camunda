@@ -54,8 +54,9 @@ const ActiveCount = styled.div<{$hasActiveInstances?: boolean}>`
 
 const Label = styled.div<{$isRed?: boolean; $size?: 'small' | 'medium'}>`
 	${({$size, $isRed}) => css`
-		white-space: nowrap;
+		flex: 1;
 		overflow: hidden;
+		white-space: nowrap;
 		text-overflow: ellipsis;
 		${styles.bodyCompact01}
 		color: var(--cds-text-secondary);

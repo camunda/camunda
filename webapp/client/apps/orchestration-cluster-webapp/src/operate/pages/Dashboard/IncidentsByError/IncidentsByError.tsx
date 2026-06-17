@@ -6,15 +6,18 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useCallback, useMemo} from 'react';
+import React, {useCallback, useMemo} from 'react';
 import {InlineLoading} from '@carbon/react';
 import {useTranslation} from 'react-i18next';
 import type {IncidentProcessInstanceStatisticsByError} from '@camunda/camunda-api-zod-schemas/8.10';
+import {tracking} from '#/shared/tracking';
 import {InstancesBar} from '#/operate/components/InstancesBar/InstancesBar';
 import {EmptyState} from '#/operate/components/EmptyState/EmptyState';
 import emptyStateIconUrl from '#/operate/assets/empty-state-process-instances-by-name.svg';
+import {PartiallyExpandableDataTable} from '../PartiallyExpandableDataTable/PartiallyExpandableDataTable';
 import {useIncidentsByError, PAGE_SIZE} from './useIncidentsByError';
-import {ScrollableList, Row, LoadingRow} from './styled';
+import {IncidentsByErrorDefinitions} from './IncidentsByErrorDefinitions';
+import {ScrollableList, LoadingRow, LinkWrapper} from './styled';
 
 const ROW_HEIGHT = 64;
 
@@ -49,6 +52,41 @@ function IncidentsByError() {
 		[hasNextPage, hasPreviousPage, isFetchingNextPage, isFetchingPreviousPage, fetchNextPage, fetchPreviousPage],
 	);
 
+	const rows = useMemo(
+		() =>
+			items.map((item: IncidentProcessInstanceStatisticsByError) => ({
+				id: String(item.errorHashCode),
+				incident: (
+					<LinkWrapper
+						to="/"
+						title={item.errorMessage}
+						onClick={() => {
+							tracking.track({
+								eventName: 'operate:navigation',
+								link: 'dashboard-process-incidents-by-error-message-all-processes',
+							});
+						}}
+					>
+						<InstancesBar
+							label={{type: 'incident', size: 'small', text: item.errorMessage}}
+							incidentsCount={item.activeInstancesWithErrorCount}
+							size="medium"
+						/>
+					</LinkWrapper>
+				),
+			})),
+		[items],
+	);
+
+	const expandedContents = useMemo(
+		() =>
+			items.reduce<Record<string, React.ReactElement<{tabIndex: number}>>>((accumulator, item) => {
+				accumulator[String(item.errorHashCode)] = <IncidentsByErrorDefinitions errorHashCode={item.errorHashCode} />;
+				return accumulator;
+			}, {}),
+		[items],
+	);
+
 	if (totalItems === 0) {
 		return (
 			<EmptyState
@@ -66,15 +104,12 @@ function IncidentsByError() {
 					<InlineLoading />
 				</LoadingRow>
 			)}
-			{items.map((item: IncidentProcessInstanceStatisticsByError) => (
-				<Row key={item.errorHashCode}>
-					<InstancesBar
-						label={{type: 'incident', size: 'small', text: item.errorMessage}}
-						incidentsCount={item.activeInstancesWithErrorCount}
-						size="medium"
-					/>
-				</Row>
-			))}
+			<PartiallyExpandableDataTable
+				dataTestId="incident-byError"
+				headers={[{key: 'incident', header: 'incident'}]}
+				rows={rows}
+				expandedContents={expandedContents}
+			/>
 			{isFetchingNextPage && (
 				<LoadingRow>
 					<InlineLoading />

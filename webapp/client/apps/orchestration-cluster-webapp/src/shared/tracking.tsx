@@ -115,7 +115,11 @@ type Events =
 				| 'header-batch-operations'
 				| 'dashboard-running-processes'
 				| 'dashboard-processes-with-incidents'
-				| 'dashboard-active-processes';
+				| 'dashboard-active-processes'
+				| 'dashboard-process-instances-by-name-all-versions'
+				| 'dashboard-process-instances-by-name-single-version'
+				| 'dashboard-process-incidents-by-error-message-all-processes'
+				| 'dashboard-process-incidents-by-error-message-single-version';
 	  }
 	| {
 			eventName: 'operate:dashboard-link-clicked';
