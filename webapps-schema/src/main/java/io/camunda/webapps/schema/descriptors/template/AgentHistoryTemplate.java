@@ -27,6 +27,7 @@ public class AgentHistoryTemplate extends AbstractTemplateDescriptor
   public static final String INDEX_VERSION = "8.10.0";
 
   public static final String KEY = "key";
+  public static final String BPMN_PROCESS_ID = "bpmnProcessId";
   public static final String ELEMENT_INSTANCE_KEY = "elementInstanceKey";
   public static final String TENANT_ID = "tenantId";
   public static final String JOB_KEY = "jobKey";

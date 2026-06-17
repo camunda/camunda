@@ -128,6 +128,7 @@ final class AgentHistoryHandlerTest {
             .withElementInstanceKey(elementInstanceKey)
             .withProcessInstanceKey(processInstanceKey)
             .withRootProcessInstanceKey(rootProcessInstanceKey)
+            .withBpmnProcessId("my-process")
             .withProcessDefinitionKey(processDefinitionKey)
             .withTenantId(tenantId)
             .withJobKey(jobKey)
@@ -174,6 +175,7 @@ final class AgentHistoryHandlerTest {
     assertThat(entity.getElementInstanceKey()).isEqualTo(elementInstanceKey);
     assertThat(entity.getProcessInstanceKey()).isEqualTo(processInstanceKey);
     assertThat(entity.getRootProcessInstanceKey()).isEqualTo(rootProcessInstanceKey);
+    assertThat(entity.getBpmnProcessId()).isEqualTo("my-process");
     assertThat(entity.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
     assertThat(entity.getTenantId()).isEqualTo(tenantId);
     assertThat(entity.getJobKey()).isEqualTo(jobKey);
@@ -579,6 +581,7 @@ final class AgentHistoryHandlerTest {
         .withElementInstanceKey(1L)
         .withProcessInstanceKey(10L)
         .withRootProcessInstanceKey(10L)
+        .withBpmnProcessId("my-process")
         .withProcessDefinitionKey(20L)
         .withTenantId("<default>")
         .withJobKey(30L)

@@ -47,6 +47,9 @@ public final class AgentHistoryEntity
   private long rootProcessInstanceKey;
 
   @SinceVersion(value = "8.10.0", requireDefault = false)
+  private String bpmnProcessId;
+
+  @SinceVersion(value = "8.10.0", requireDefault = false)
   private long processDefinitionKey;
 
   @SinceVersion(value = "8.10.0", requireDefault = false)
@@ -152,6 +155,15 @@ public final class AgentHistoryEntity
 
   public AgentHistoryEntity setProcessDefinitionKey(final long processDefinitionKey) {
     this.processDefinitionKey = processDefinitionKey;
+    return this;
+  }
+
+  public String getBpmnProcessId() {
+    return bpmnProcessId;
+  }
+
+  public AgentHistoryEntity setBpmnProcessId(final String bpmnProcessId) {
+    this.bpmnProcessId = bpmnProcessId;
     return this;
   }
 
@@ -284,6 +296,7 @@ public final class AgentHistoryEntity
         elementInstanceKey,
         processInstanceKey,
         rootProcessInstanceKey,
+        bpmnProcessId,
         processDefinitionKey,
         tenantId,
         partitionId,
@@ -315,6 +328,7 @@ public final class AgentHistoryEntity
         && elementInstanceKey == that.elementInstanceKey
         && processInstanceKey == that.processInstanceKey
         && rootProcessInstanceKey == that.rootProcessInstanceKey
+        && Objects.equals(bpmnProcessId, that.bpmnProcessId)
         && processDefinitionKey == that.processDefinitionKey
         && Objects.equals(tenantId, that.tenantId)
         && partitionId == that.partitionId
@@ -347,6 +361,9 @@ public final class AgentHistoryEntity
         + processInstanceKey
         + ", rootProcessInstanceKey="
         + rootProcessInstanceKey
+        + ", bpmnProcessId='"
+        + bpmnProcessId
+        + '\''
         + ", processDefinitionKey="
         + processDefinitionKey
         + ", tenantId='"
