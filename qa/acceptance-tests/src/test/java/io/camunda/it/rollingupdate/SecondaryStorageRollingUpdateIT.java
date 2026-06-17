@@ -43,7 +43,6 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.agrona.CloseHelper;
-import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -578,7 +577,7 @@ final class SecondaryStorageRollingUpdateIT {
     }
 
     @Override
-    public @NonNull String toString() {
+    public String toString() {
       return name;
     }
   }
