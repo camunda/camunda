@@ -19,6 +19,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch.cat.indices.IndicesRecord;
 import org.opensearch.client.opensearch.cluster.DeleteComponentTemplateRequest;
 import org.opensearch.client.opensearch.cluster.PutClusterSettingsRequest;
 import org.opensearch.client.opensearch.cluster.PutClusterSettingsRequest.Builder;
@@ -107,7 +108,18 @@ public class AWSOpenSearchSetupHelper extends OpenSearchSetupHelper {
   @Override
   public void cleanup(final String prefix) {
     try {
-      client.indices().delete(new DeleteIndexRequest.Builder().index(prefix + "*").build());
+      // Delete indices one per request to avoid tripping the AWS Managed OpenSearch
+      // kraken-index-management-extension, which throws IllegalArgumentException ("Cannot get
+      // metadata for more than one index ... when using a custom index type") when a single
+      // cluster-state change deletes more than one index, aborting the ISM sweep and failing
+      // concurrent searches across the shared domain. See camunda/camunda#52892.
+      final var indices =
+          client.cat().indices(r -> r.index(prefix + "*")).valueBody().stream()
+              .map(IndicesRecord::index)
+              .toList();
+      for (final var index : indices) {
+        client.indices().delete(new DeleteIndexRequest.Builder().index(index).build());
+      }
     } catch (final IOException e) {
       LOGGER.warn("Exception on cleaning indexes {}", prefix, e);
     }
