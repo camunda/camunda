@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.response.DocumentReferenceResponse;
 import io.camunda.client.api.response.EvaluateDecisionResponse;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.enums.UserTaskState;
@@ -40,6 +41,9 @@ import io.camunda.process.test.api.assertions.VariableSelectors;
 import io.camunda.process.test.api.coverage.model.CoverageReport;
 import io.camunda.process.test.api.coverage.model.CoverageRunReport;
 import io.camunda.process.test.api.coverage.model.ProcessCoverage;
+import io.camunda.process.test.api.judge.JudgeConfig;
+import io.camunda.process.test.api.judge.MultimodalChatModelAdapter;
+import io.camunda.process.test.api.judge.ResolvedDocument;
 import io.camunda.process.test.api.mock.JobWorkerMockBuilder.JobWorkerMock;
 import io.camunda.process.test.api.testCases.TestCase;
 import io.camunda.process.test.api.testCases.TestCaseRunner;
@@ -54,12 +58,17 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 
 @CamundaProcessTest
@@ -1405,7 +1414,7 @@ public class CamundaProcessTestExtensionIT {
   @Nested
   class ConditionalBehaviorTests {
 
-    private static final String PROCESS_ID = "user-happiness-check";
+    private static final String processId = "user-happiness-check";
     private static final String USER_TASK_ID = "State_Happiness";
     private static final String SERVICE_TASK_ID = "Export_Happiness";
     private static final String JOB_TYPE = "io.camunda:http-json:1";
@@ -1415,14 +1424,14 @@ public class CamundaProcessTestExtensionIT {
       // Deploy the process model
       client
           .newDeployResourceCommand()
-          .addProcessModel(conditionalBehaviorProcess(), PROCESS_ID + ".bpmn")
+          .addProcessModel(conditionalBehaviorProcess(), processId + ".bpmn")
           .send()
           .join();
 
       processTestContext
           .when(
               () ->
-                  CamundaAssert.assertThat(ProcessInstanceSelectors.byProcessId(PROCESS_ID))
+                  CamundaAssert.assertThat(ProcessInstanceSelectors.byProcessId(processId))
                       .hasActiveElement(USER_TASK_ID, 1))
           .then(
               () ->
@@ -1436,7 +1445,7 @@ public class CamundaProcessTestExtensionIT {
       processTestContext
           .when(
               () ->
-                  assertThatProcessInstance(ProcessInstanceSelectors.byProcessId(PROCESS_ID))
+                  assertThatProcessInstance(ProcessInstanceSelectors.byProcessId(processId))
                       .hasActiveElements(SERVICE_TASK_ID))
           .then(
               () ->
@@ -1447,7 +1456,7 @@ public class CamundaProcessTestExtensionIT {
     @Test
     void shouldCompleteProcessFirstRun() {
       final ProcessInstanceEvent processInstanceEvent =
-          client.newCreateInstanceCommand().bpmnProcessId(PROCESS_ID).latestVersion().execute();
+          client.newCreateInstanceCommand().bpmnProcessId(processId).latestVersion().execute();
 
       // increase assertion timeout because the immediate loop-back occasionally activates
       // the reset gate timeout of 5 seconds
@@ -1465,7 +1474,7 @@ public class CamundaProcessTestExtensionIT {
       // Same behavior — proves @BeforeEach re-registers fresh behaviors for each test,
       // including a fresh action chain (happy=false first, then happy=true)
       final ProcessInstanceEvent processInstanceEvent =
-          client.newCreateInstanceCommand().bpmnProcessId(PROCESS_ID).latestVersion().execute();
+          client.newCreateInstanceCommand().bpmnProcessId(processId).latestVersion().execute();
 
       // increase assertion timeout because the immediate loop-back occasionally activates
       // the reset gate timeout of 5 seconds
@@ -1479,7 +1488,7 @@ public class CamundaProcessTestExtensionIT {
     }
 
     private BpmnModelInstance conditionalBehaviorProcess() {
-      return Bpmn.createExecutableProcess(PROCESS_ID)
+      return Bpmn.createExecutableProcess(processId)
           .startEvent()
           .userTask(USER_TASK_ID)
           .zeebeUserTask()
@@ -1491,6 +1500,153 @@ public class CamundaProcessTestExtensionIT {
           .defaultFlow()
           .connectTo(USER_TASK_ID)
           .done();
+    }
+  }
+
+  @Nested
+  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+  class JudgeDocumentResolutionTests {
+
+    private final String processId = "judge-document";
+    private final String attachmentVariable = "attachment";
+    private final String fakeResponse = "{\"score\": 1.0, \"reasoning\": \"ok\"}";
+    private final String fileName = "note.txt";
+    private final String contentType = "text/plain";
+    private final byte[] noteContent = "remember the milk".getBytes();
+
+    private final CapturingMultimodalChatModelAdapter stub =
+        new CapturingMultimodalChatModelAdapter();
+
+    @BeforeAll
+    void setUpJudgeConfig() {
+      CamundaAssert.setJudgeConfig(JudgeConfig.of(stub).withAttachDocuments(true));
+    }
+
+    @BeforeEach
+    void resetCaptures() {
+      stub.reset();
+    }
+
+    @Test
+    void shouldResolveAndAttachUploadedDocumentToJudgeCall() {
+      // given
+      final DocumentReferenceResponse reference = uploadNoteDocument();
+      final ProcessInstanceEvent instance = startProcessWithAttachment(reference);
+
+      // when
+      assertThatProcessInstance(instance)
+          .isCompleted()
+          .hasVariableSatisfiesJudge(attachmentVariable, "should be a short note");
+
+      // then
+      assertMultimodalPathTaken();
+      assertSingleAttachedDocumentMatches(reference);
+      assertPromptCarriesResolvedDocumentSection(reference);
+    }
+
+    @Test
+    void shouldDeduplicateRepeatedReferencesBeforeDownload() {
+      // given — one document, referenced twice from different paths
+      final DocumentReferenceResponse reference = uploadNoteDocument();
+      final Map<String, Object> nestedMessage = new HashMap<>();
+      nestedMessage.put("role", "user");
+      nestedMessage.put("attachments", Arrays.asList(reference));
+      final Map<String, Object> attachmentWithDuplicates = new HashMap<>();
+      attachmentWithDuplicates.put("tool_result", reference);
+      attachmentWithDuplicates.put("history", Arrays.asList(nestedMessage));
+
+      final ProcessInstanceEvent instance = startProcessWithAttachment(attachmentWithDuplicates);
+
+      // when
+      assertThatProcessInstance(instance)
+          .isCompleted()
+          .hasVariableSatisfiesJudge(attachmentVariable, "should describe a short note");
+
+      // then — duplicate references collapse to a single resolved document
+      assertSingleAttachedDocumentMatches(reference);
+    }
+
+    private DocumentReferenceResponse uploadNoteDocument() {
+      return client
+          .newCreateDocumentCommand()
+          .content(noteContent)
+          .fileName(fileName)
+          .contentType(contentType)
+          .send()
+          .join();
+    }
+
+    private ProcessInstanceEvent startProcessWithAttachment(final Object attachmentValue) {
+      deployJudgeDocumentProcess();
+      return client
+          .newCreateInstanceCommand()
+          .bpmnProcessId(processId)
+          .latestVersion()
+          .variables(Collections.singletonMap(attachmentVariable, attachmentValue))
+          .send()
+          .join();
+    }
+
+    private void deployJudgeDocumentProcess() {
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(
+              Bpmn.createExecutableProcess(processId).startEvent().endEvent().done(),
+              processId + ".bpmn")
+          .send()
+          .join();
+    }
+
+    private void assertMultimodalPathTaken() {
+      assertThat(stub.multimodalCalls.get()).isEqualTo(1);
+      assertThat(stub.textOnlyCalls.get()).isZero();
+    }
+
+    private void assertSingleAttachedDocumentMatches(final DocumentReferenceResponse expected) {
+      final List<ResolvedDocument> captured = stub.documents.get();
+      assertThat(captured).hasSize(1);
+      final ResolvedDocument attached = captured.get(0);
+      assertThat(attached.getDocumentId()).isEqualTo(expected.getDocumentId());
+      assertThat(attached.getFileName()).isEqualTo(fileName);
+      assertThat(attached.getContentType()).isEqualTo(contentType);
+      assertThat(attached.getContent()).isEqualTo(noteContent);
+    }
+
+    private void assertPromptCarriesResolvedDocumentSection(
+        final DocumentReferenceResponse expected) {
+      assertThat(stub.prompt.get())
+          .contains("<resolved_documents>")
+          .contains(expected.getDocumentId());
+    }
+
+    private final class CapturingMultimodalChatModelAdapter implements MultimodalChatModelAdapter {
+
+      private final AtomicReference<String> prompt = new AtomicReference<>();
+      private final AtomicReference<List<ResolvedDocument>> documents = new AtomicReference<>();
+      private final AtomicInteger textOnlyCalls = new AtomicInteger();
+      private final AtomicInteger multimodalCalls = new AtomicInteger();
+
+      @Override
+      public String generate(final String prompt) {
+        this.prompt.set(prompt);
+        textOnlyCalls.incrementAndGet();
+        return fakeResponse;
+      }
+
+      @Override
+      public String generate(final String prompt, final List<ResolvedDocument> documents) {
+        this.prompt.set(prompt);
+        this.documents.set(documents);
+        multimodalCalls.incrementAndGet();
+        return fakeResponse;
+      }
+
+      void reset() {
+        prompt.set(null);
+        documents.set(null);
+        textOnlyCalls.set(0);
+        multimodalCalls.set(0);
+      }
     }
   }
 }
