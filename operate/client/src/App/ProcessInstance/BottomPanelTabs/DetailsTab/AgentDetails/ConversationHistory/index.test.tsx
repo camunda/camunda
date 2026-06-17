@@ -12,7 +12,7 @@ import {
   waitForElementToBeRemoved,
   within,
 } from 'modules/testing-library';
-import {createMemoryRouter, RouterProvider} from 'react-router-dom';
+import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import type {ReactNode} from 'react';
@@ -27,17 +27,13 @@ const AGENT_INSTANCE_KEY = '2251799813851828';
 function createWrapper() {
   const queryClient = getMockQueryClient();
   return ({children}: {children: ReactNode}) => {
-    const router = createMemoryRouter(
-      [{path: Paths.processInstance(undefined, true), element: children}],
-      {
-        initialEntries: [
-          Paths.processInstanceDetails({processInstanceId: AGENT_INSTANCE_KEY}),
-        ],
-      },
-    );
     return (
       <QueryClientProvider client={queryClient}>
-        <RouterProvider router={router} />
+        <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
+          <Routes>
+            <Route path={Paths.processInstance()} element={children} />
+          </Routes>
+        </MemoryRouter>
       </QueryClientProvider>
     );
   };
