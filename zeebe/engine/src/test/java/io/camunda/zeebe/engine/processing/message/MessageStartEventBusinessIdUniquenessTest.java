@@ -16,6 +16,7 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -83,6 +84,28 @@ public final class MessageStartEventBusinessIdUniquenessTest {
           .endEvent()
           .moveToProcess(DUAL_PROCESS_ID)
           .startEvent("msgStart")
+          .message(MESSAGE_NAME)
+          .serviceTask("msgTask", t -> t.zeebeJobType(MESSAGE_JOB_TYPE))
+          .endEvent()
+          .done();
+
+  private static final String VERSIONED_PROCESS_ID = "wf-versioned";
+
+  // An older version (v1) of the process that has ONLY a none-start event — no message start event.
+  // An instance of it can hold a businessId via CreateProcessInstance.
+  private static final BpmnModelInstance VERSIONED_PROCESS_V1 =
+      Bpmn.createExecutableProcess(VERSIONED_PROCESS_ID)
+          .startEvent("noneStartV1")
+          .serviceTask("holderTask", t -> t.zeebeJobType(HOLDER_JOB_TYPE))
+          .endEvent()
+          .done();
+
+  // A newer version (v2) of the SAME bpmnProcessId that adds a message start event. The
+  // message-start
+  // subscription belongs to this latest version, while the businessId-holding instance runs v1.
+  private static final BpmnModelInstance VERSIONED_PROCESS_V2 =
+      Bpmn.createExecutableProcess(VERSIONED_PROCESS_ID)
+          .startEvent("msgStartV2")
           .message(MESSAGE_NAME)
           .serviceTask("msgTask", t -> t.zeebeJobType(MESSAGE_JOB_TYPE))
           .endEvent()
@@ -582,5 +605,63 @@ public final class MessageStartEventBusinessIdUniquenessTest {
         .as(
             "a banned holder does not trigger the completion hook; the blocked start expires at TTL")
         .isEqualTo(1L);
+  }
+
+  @Test
+  public void shouldCorrelateBusinessIdBlockedMessageWhenHolderOfOlderVersionWithoutMessageStart() {
+    // Pins that the businessId re-drive does NOT depend on the *holder's own* version having a
+    // message start event. Business ID uniqueness is scoped per (businessId, bpmnProcessId) across
+    // versions, so a holder running an older version that has only a none-start event still frees
+    // the businessId on completion and must unblock a message-start owned by the latest version
+    // (ADR 0002 D5). Without the broadened guard, the holder's completion is skipped because its
+    // own
+    // process element has no message start event, and the buffered start strands until TTL.
+
+    // given v1 (none-start only) deployed and an instance of it holding "biz-versioned"
+    engine.deployment().withXmlResource(VERSIONED_PROCESS_V1).deploy();
+    final long holderPiKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId(VERSIONED_PROCESS_ID)
+            .withBusinessId("biz-versioned")
+            .create();
+    final var holderJob =
+        RecordingExporter.jobRecords(JobIntent.CREATED).withType(HOLDER_JOB_TYPE).getFirst();
+
+    // and v2 deployed afterwards, adding a message start event for the same bpmnProcessId
+    engine.deployment().withXmlResource(VERSIONED_PROCESS_V2).deploy();
+    RecordingExporter.messageStartEventSubscriptionRecords(
+            MessageStartEventSubscriptionIntent.CREATED)
+        .withMessageName(MESSAGE_NAME)
+        .getFirst();
+
+    // and a message-start publish carrying the same businessId — blocked by the v1 holder
+    engine
+        .message()
+        .withName(MESSAGE_NAME)
+        .withCorrelationKey("k-msg")
+        .withBusinessId("biz-versioned")
+        .withTimeToLive(Duration.ofMinutes(5))
+        .publish();
+
+    // when the v1 holder (whose own version has no message start event) completes, freeing the
+    // businessId
+    engine.job().withKey(holderJob.getKey()).complete();
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+        .withProcessInstanceKey(holderPiKey)
+        .filterRootScope()
+        .await();
+
+    // then the buffered message-start (owned by v2) is re-driven and a new PI is created
+    final var messagePiActivating =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withElementType(BpmnElementType.PROCESS)
+            .withBpmnProcessId(VERSIONED_PROCESS_ID)
+            .filter(r -> r.getValue().getProcessInstanceKey() != holderPiKey)
+            .getFirst();
+    assertThat(messagePiActivating.getValue().getBusinessId()).isEqualTo("biz-versioned");
+    assertThat(messagePiActivating.getValue().getVersion())
+        .as("the re-driven instance is created from the latest version that owns the message start")
+        .isEqualTo(2);
   }
 }

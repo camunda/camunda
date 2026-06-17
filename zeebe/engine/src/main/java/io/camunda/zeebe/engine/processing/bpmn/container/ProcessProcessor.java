@@ -242,12 +242,19 @@ public final class ProcessProcessor
         }
       };
 
-    } else if (processElement.hasMessageStartEvent()) {
-      // the process might be created by a message (but not by a call activity)
-      // capture the holder's correlation key and businessId now, before the completion transition
+    } else if (processElement.hasMessageStartEvent()
+        || bufferedMessageStartEventBehavior.shouldRedriveBlockedBusinessIdOnCompletion(context)) {
+      // The process might be created by a message (but not by a call activity), or it may simply
+      // hold a Business ID that is blocking a buffered message-start of the same bpmnProcessId.
+      // Capture the holder's correlation key and businessId now, before the completion transition
       // removes them; after the transition both are re-driven to pick up any message buffered
-      // behind
-      // the freed correlation-key lock and/or the freed Business ID (ADR 0002 D5)
+      // behind the freed correlation-key lock and/or the freed Business ID (ADR 0002 D5).
+      //
+      // The Business ID arm fires even when this instance's own process has no message start event:
+      // a none-start instance (e.g. CreateProcessInstance) or an older version can hold the
+      // Business ID that blocks a message-start owned by the latest version. The re-drive resolves
+      // the latest version, so it correctly finds (or finds nothing) regardless of the holder's own
+      // version.
       final var correlationKey =
           bufferedMessageStartEventBehavior.findCorrelationKey(context).orElse(null);
       final var businessId = context.getBusinessId();

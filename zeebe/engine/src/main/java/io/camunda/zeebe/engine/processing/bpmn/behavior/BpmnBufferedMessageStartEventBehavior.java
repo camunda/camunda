@@ -96,6 +96,24 @@ public final class BpmnBufferedMessageStartEventBehavior {
   }
 
   /**
+   * Returns {@code true} when the completing/terminating instance holds a Business ID that the
+   * on-completion re-drive should act on — i.e. the feature is enabled and the instance carries a
+   * non-empty Business ID.
+   *
+   * <p>Unlike the correlation-key arm, the Business ID arm does <em>not</em> require the completing
+   * instance's own process to have a message start event. Business ID uniqueness is scoped per
+   * {@code (businessId, bpmnProcessId)} across versions, so the holder may be an older version — or
+   * a none-start instance created via {@code CreateProcessInstance} — whose version lacks a message
+   * start event, while the <em>latest</em> version that owns the buffered message-start
+   * subscription has one. Gating the re-drive on the holder's own {@code hasMessageStartEvent()}
+   * would strand such a buffered start until TTL (ADR 0002 D5).
+   */
+  public boolean shouldRedriveBlockedBusinessIdOnCompletion(final BpmnElementContext context) {
+    final var businessId = context.getBusinessId();
+    return businessIdUniquenessEnabled && businessId != null && !businessId.isEmpty();
+  }
+
+  /**
    * Picks the next eligible buffered message-start message for the given {@code (process,
    * correlationKey)} and triggers it, if any.
    *
