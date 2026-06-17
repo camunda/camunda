@@ -33,9 +33,9 @@ import org.springframework.web.context.request.ServletRequestAttributes;
  * the control-plane resolves the in-context tenant's reader via {@link
  * PhysicalTenantContext#current()}.
  *
- * <p>These tests exercise the <b>real</b> thread-bound context (not a stubbed supplier) to confirm a
- * read is routed to the in-context tenant's reader, falls back to {@code default} when no request is
- * bound, and fails fast for an unconfigured tenant. (The data-plane is proven separately and
+ * <p>These tests exercise the <b>real</b> thread-bound context (not a stubbed supplier) to confirm
+ * a read is routed to the in-context tenant's reader, falls back to {@code default} when no request
+ * is bound, and fails fast for an unconfigured tenant. (The data-plane is proven separately and
  * instance-bound — see {@code CamundaSearchClientsPhysicalTenantResourceAccessControllerTest}.)
  */
 final class PhysicalTenantRoutingAuthorizationReaderTest {

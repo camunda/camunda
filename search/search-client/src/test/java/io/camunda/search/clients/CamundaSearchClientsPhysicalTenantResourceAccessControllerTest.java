@@ -7,6 +7,7 @@
  */
 package io.camunda.search.clients;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -55,26 +56,22 @@ class CamundaSearchClientsPhysicalTenantResourceAccessControllerTest {
   }
 
   @Test
-  void shouldUseDefaultPhysicalTenantWhenNotSwitched() {
-    // given
+  void shouldFailFastWhenNoPhysicalTenantScoped() {
+    // given — unscoped base instance: withPhysicalTenant was never called
     final var readersDefault = mock(SearchClientReaders.class);
     final var readersB = mock(SearchClientReaders.class);
     final var racDefault = mock(ResourceAccessController.class);
     final var racB = mock(ResourceAccessController.class);
-
-    when(racDefault.doSearch(any(), any())).thenReturn(SearchQueryResult.empty());
-    when(racB.doSearch(any(), any())).thenReturn(SearchQueryResult.empty());
 
     final var clients =
         new CamundaSearchClients(
             Map.of("default", readersDefault, "tenant-b", readersB),
             Map.of("default", racDefault, "tenant-b", racB));
 
-    // when — no withPhysicalTenant call; must default to "default"
-    clients.searchAuthorizations(AuthorizationQuery.of(q -> q));
-
-    // then — only the default controller must be invoked; tenant-b controller must not be touched
-    verify(racDefault).doSearch(any(), any());
-    verifyNoInteractions(racB);
+    // when / then — any read on the unscoped base must fail fast; silently reading "default" is the
+    // bug class we are eliminating (ADR-0005 B.3)
+    assertThatThrownBy(() -> clients.searchAuthorizations(AuthorizationQuery.of(q -> q)))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("withPhysicalTenant");
   }
 }

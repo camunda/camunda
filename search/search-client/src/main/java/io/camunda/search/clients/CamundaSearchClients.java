@@ -11,7 +11,6 @@ import static io.camunda.search.exception.ErrorMessages.ERROR_ENTITY_BY_ID_NOT_F
 import static io.camunda.search.exception.ErrorMessages.ERROR_ENTITY_BY_KEY_NOT_FOUND;
 import static io.camunda.search.exception.ErrorMessages.ERROR_ENTITY_BY_MULTIPLE_IDS_NOT_FOUND;
 
-import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.search.clients.reader.SearchClientReaders;
 import io.camunda.search.clients.reader.SearchEntityReader;
 import io.camunda.search.clients.reader.SearchQueryStatisticsReader;
@@ -128,46 +127,61 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * A router over per-physical-tenant search clients. The base instance is <em>unscoped</em> — it
+ * holds no default physical tenant. Callers <strong>must</strong> call {@link
+ * #withPhysicalTenant(String)} before issuing any reads; unscoped reads fail fast with {@link
+ * IllegalStateException}.
+ *
+ * <p>This is intentional: silently falling back to a "default" tenant is the bug class we are
+ * eliminating (ADR-0005 B.3). The engine scopes per partition via PR #55401; until that lands,
+ * engine reads will throw — the desired loud behaviour over silent-default reads.
+ *
+ * <p>See ADR-0005 B.3 for the full design rationale.
+ */
 public class CamundaSearchClients implements SearchClientsProxy {
 
   private static final Logger LOG = LoggerFactory.getLogger(CamundaSearchClients.class);
 
-  private final SearchClientReaders readers;
+  /** Null when the base instance is unscoped (no physical tenant selected yet). */
+  private final SearchClientReaders scopedReaders;
+
   private final Map<String, SearchClientReaders> tenantReaders;
+
   private final String currentPhysicalTenantId;
   private final Map<String, ResourceAccessController> resourceAccessControllerByTenant;
-  private final ResourceAccessController resourceAccessController;
+
+  /** Null when the base instance is unscoped (no physical tenant selected yet). */
+  private final ResourceAccessController scopedResourceAccessController;
+
   private final SecurityContext securityContext;
 
   /**
    * Backward-compatible ctor: a single {@link ResourceAccessController} is shared across all
-   * physical tenants. All existing construction sites compile and behave unchanged.
+   * physical tenants. The base instance is <em>unscoped</em>; call {@link
+   * #withPhysicalTenant(String)} before reading.
    */
   public CamundaSearchClients(
       final Map<String, SearchClientReaders> tenantReaders,
       final ResourceAccessController resourceAccessController) {
     this(
         tenantReaders,
-        PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+        null,
         tenantReaders.keySet().stream()
             .collect(Collectors.toMap(k -> k, k -> resourceAccessController)),
         null);
   }
 
   /**
-   * SPIKE (ADR-0005) data-plane ctor: per-PT {@link ResourceAccessController} map. The active
-   * controller is selected from the map by the current physical tenant id when {@link
-   * #withPhysicalTenant(String)} is called, so authorization scope checks follow the search
-   * client's tenant even when running off the request thread.
+   * SPIKE (ADR-0005) data-plane ctor: per-PT {@link ResourceAccessController} map. The base
+   * instance is <em>unscoped</em>; call {@link #withPhysicalTenant(String)} to obtain a scoped
+   * client whose reads are routed to the correct tenant's controller — so authorization scope
+   * checks follow the search client's tenant even when running off the request thread.
    */
   public CamundaSearchClients(
       final Map<String, SearchClientReaders> tenantReaders,
       final Map<String, ResourceAccessController> resourceAccessControllerByTenant) {
-    this(
-        tenantReaders,
-        PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
-        resourceAccessControllerByTenant,
-        null);
+    this(tenantReaders, null, resourceAccessControllerByTenant, null);
   }
 
   private CamundaSearchClients(
@@ -176,67 +190,101 @@ public class CamundaSearchClients implements SearchClientsProxy {
       final Map<String, ResourceAccessController> resourceAccessControllerByTenant,
       final SecurityContext securityContext) {
     this.tenantReaders = Map.copyOf(tenantReaders);
-    readers = this.tenantReaders.get(currentPhysicalTenantId);
-    if (readers == null) {
-      throw new IllegalArgumentException(
-          "Missing readers for physical tenant '%s'. Known physical tenants: %s"
-              .formatted(currentPhysicalTenantId, this.tenantReaders.keySet()));
-    }
     this.currentPhysicalTenantId = currentPhysicalTenantId;
     this.resourceAccessControllerByTenant = Map.copyOf(resourceAccessControllerByTenant);
-    resourceAccessController = this.resourceAccessControllerByTenant.get(currentPhysicalTenantId);
-    if (resourceAccessController == null) {
-      throw new IllegalArgumentException(
-          "Missing ResourceAccessController for physical tenant '%s'. Known physical tenants: %s"
-              .formatted(currentPhysicalTenantId, this.resourceAccessControllerByTenant.keySet()));
-    }
     this.securityContext = securityContext;
+
+    // Only resolve scoped fields when a physical tenant has been selected.
+    if (currentPhysicalTenantId != null) {
+      scopedReaders = this.tenantReaders.get(currentPhysicalTenantId);
+      if (scopedReaders == null) {
+        throw new IllegalArgumentException(
+            "Missing readers for physical tenant '%s'. Known physical tenants: %s"
+                .formatted(currentPhysicalTenantId, this.tenantReaders.keySet()));
+      }
+      scopedResourceAccessController =
+          this.resourceAccessControllerByTenant.get(currentPhysicalTenantId);
+      if (scopedResourceAccessController == null) {
+        throw new IllegalArgumentException(
+            "Missing ResourceAccessController for physical tenant '%s'. Known physical tenants: %s"
+                .formatted(
+                    currentPhysicalTenantId, this.resourceAccessControllerByTenant.keySet()));
+      }
+    } else {
+      // Unscoped base: construction is allowed; reads are blocked by the accessors below.
+      scopedReaders = null;
+      scopedResourceAccessController = null;
+    }
+  }
+
+  /**
+   * Returns the scoped readers. Throws {@link IllegalStateException} if this instance has not been
+   * scoped via {@link #withPhysicalTenant(String)}.
+   */
+  private SearchClientReaders readers() {
+    if (scopedReaders == null) {
+      throw new IllegalStateException(
+          "CamundaSearchClients has no physical tenant scoped — call withPhysicalTenant(...) before reading");
+    }
+    return scopedReaders;
+  }
+
+  /**
+   * Returns the scoped resource-access controller. Throws {@link IllegalStateException} if this
+   * instance has not been scoped via {@link #withPhysicalTenant(String)}.
+   */
+  private ResourceAccessController resourceAccessController() {
+    if (scopedResourceAccessController == null) {
+      throw new IllegalStateException(
+          "CamundaSearchClients has no physical tenant scoped — call withPhysicalTenant(...) before reading");
+    }
+    return scopedResourceAccessController;
   }
 
   @Override
   public AgentInstanceEntity getAgentInstance(final long key) {
-    return doGetWithReader(readers.agentInstanceReader(), key)
+    return doGetWithReader(readers().agentInstanceReader(), key)
         .orElseThrow(() -> entityByKeyNotFoundException("Agent Instance", key));
   }
 
   @Override
   public SearchQueryResult<AgentInstanceEntity> searchAgentInstances(
       final AgentInstanceQuery query) {
-    return doSearchWithReader(readers.agentInstanceReader(), query);
+    return doSearchWithReader(readers().agentInstanceReader(), query);
   }
 
   @Override
   public AuthorizationEntity getAuthorization(final long key) {
-    return doGetWithReader(readers.authorizationReader(), key)
+    return doGetWithReader(readers().authorizationReader(), key)
         .orElseThrow(() -> entityByKeyNotFoundException("Authorization", key));
   }
 
   @Override
   public SearchQueryResult<AuthorizationEntity> searchAuthorizations(
       final AuthorizationQuery query) {
-    return doSearchWithReader(readers.authorizationReader(), query, this::disableTenantCheck);
+    return doSearchWithReader(readers().authorizationReader(), query, this::disableTenantCheck);
   }
 
   @Override
   public SearchQueryResult<SequenceFlowEntity> searchSequenceFlows(final SequenceFlowQuery query) {
-    return doSearchWithReader(readers.sequenceFlowReader(), query);
+    return doSearchWithReader(readers().sequenceFlowReader(), query);
   }
 
   @Override
   public SearchQueryResult<MessageSubscriptionEntity> searchMessageSubscriptions(
       final MessageSubscriptionQuery query) {
-    return doSearchWithReader(readers.messageSubscriptionReader(), query);
+    return doSearchWithReader(readers().messageSubscriptionReader(), query);
   }
 
   @Override
   public SearchQueryResult<CorrelatedMessageSubscriptionEntity>
       searchCorrelatedMessageSubscriptions(final CorrelatedMessageSubscriptionQuery query) {
-    return doSearchWithReader(readers.correlatedMessageSubscriptionReader(), query);
+    return doSearchWithReader(readers().correlatedMessageSubscriptionReader(), query);
   }
 
   @Override
   public MessageSubscriptionEntity getMessageSubscription(final long key) {
-    return doGetWithReader(readers.messageSubscriptionReader(), key)
+    return doGetWithReader(readers().messageSubscriptionReader(), key)
         .orElseThrow(() -> entityByKeyNotFoundException("Message Subscription", key));
   }
 
@@ -244,7 +292,7 @@ public class CamundaSearchClients implements SearchClientsProxy {
   public ClusterVariableEntity getClusterVariable(final String name, final String tenant) {
     return doGet(
             resourceAccessChecks ->
-                readers
+                readers()
                     .clusterVariableReader()
                     .getTenantScopedClusterVariable(name, tenant, resourceAccessChecks))
         .orElseThrow(
@@ -257,7 +305,7 @@ public class CamundaSearchClients implements SearchClientsProxy {
   public ClusterVariableEntity getClusterVariable(final String name) {
     return doGet(
             resourceAccessChecks ->
-                readers
+                readers()
                     .clusterVariableReader()
                     .getGloballyScopedClusterVariable(name, resourceAccessChecks))
         .orElseThrow(
@@ -269,18 +317,18 @@ public class CamundaSearchClients implements SearchClientsProxy {
   @Override
   public SearchQueryResult<ClusterVariableEntity> searchClusterVariables(
       final ClusterVariableQuery query) {
-    return doSearchWithReader(readers.clusterVariableReader(), query);
+    return doSearchWithReader(readers().clusterVariableReader(), query);
   }
 
   @Override
   public AuditLogEntity getAuditLog(final String id) {
-    return doGetWithReader(readers.auditLogReader(), id)
+    return doGetWithReader(readers().auditLogReader(), id)
         .orElseThrow(() -> entityByIdNotFoundException("Audit log", id));
   }
 
   @Override
   public SearchQueryResult<AuditLogEntity> searchAuditLogs(final AuditLogQuery query) {
-    return doSearchWithReader(readers.auditLogReader(), query);
+    return doSearchWithReader(readers().auditLogReader(), query);
   }
 
   @Override
@@ -296,13 +344,14 @@ public class CamundaSearchClients implements SearchClientsProxy {
 
   @Override
   public CamundaSearchClients withSecurityContext(final SecurityContext securityContext) {
+    // Preserves the current physical-tenant scope (which may be null for the unscoped base).
     return new CamundaSearchClients(
         tenantReaders, currentPhysicalTenantId, resourceAccessControllerByTenant, securityContext);
   }
 
   @Override
   public MappingRuleEntity getMappingRule(final String id) {
-    return doGetWithReader(readers.mappingRuleReader(), id)
+    return doGetWithReader(readers().mappingRuleReader(), id)
         .orElseThrow(() -> entityByIdNotFoundException("Mapping Rule", id));
   }
 
@@ -310,78 +359,78 @@ public class CamundaSearchClients implements SearchClientsProxy {
   public SearchQueryResult<MappingRuleEntity> searchMappingRules(
       final MappingRuleQuery mappingRuleQuery) {
     return doSearchWithReader(
-        readers.mappingRuleReader(), mappingRuleQuery, this::disableTenantCheck);
+        readers().mappingRuleReader(), mappingRuleQuery, this::disableTenantCheck);
   }
 
   @Override
   public DecisionDefinitionEntity getDecisionDefinition(final long key) {
-    return doGetWithReader(readers.decisionDefinitionReader(), key)
+    return doGetWithReader(readers().decisionDefinitionReader(), key)
         .orElseThrow(() -> entityByKeyNotFoundException("Decision Definition", key));
   }
 
   @Override
   public SearchQueryResult<DecisionDefinitionEntity> searchDecisionDefinitions(
       final DecisionDefinitionQuery query) {
-    return doSearchWithReader(readers.decisionDefinitionReader(), query);
+    return doSearchWithReader(readers().decisionDefinitionReader(), query);
   }
 
   @Override
   public DecisionInstanceEntity getDecisionInstance(final String id) {
-    return doGetWithReader(readers.decisionInstanceReader(), id)
+    return doGetWithReader(readers().decisionInstanceReader(), id)
         .orElseThrow(() -> entityByIdNotFoundException("Decision Instance", id));
   }
 
   @Override
   public SearchQueryResult<DecisionInstanceEntity> searchDecisionInstances(
       final DecisionInstanceQuery query) {
-    return doSearchWithReader(readers.decisionInstanceReader(), query);
+    return doSearchWithReader(readers().decisionInstanceReader(), query);
   }
 
   @Override
   public DecisionRequirementsEntity getDecisionRequirements(
       final long key, final boolean includeXml) {
-    return doGet(a -> readers.decisionRequirementsReader().getByKey(key, a, includeXml))
+    return doGet(a -> readers().decisionRequirementsReader().getByKey(key, a, includeXml))
         .orElseThrow(() -> entityByKeyNotFoundException("Decision Requirements", key));
   }
 
   @Override
   public SearchQueryResult<DecisionRequirementsEntity> searchDecisionRequirements(
       final DecisionRequirementsQuery query) {
-    return doSearchWithReader(readers.decisionRequirementsReader(), query);
+    return doSearchWithReader(readers().decisionRequirementsReader(), query);
   }
 
   @Override
   public FlowNodeInstanceEntity getFlowNodeInstance(final long key) {
-    return doGetWithReader(readers.flowNodeInstanceReader(), key)
+    return doGetWithReader(readers().flowNodeInstanceReader(), key)
         .orElseThrow(() -> entityByKeyNotFoundException("Element Instance", key));
   }
 
   @Override
   public SearchQueryResult<FlowNodeInstanceEntity> searchFlowNodeInstances(
       final FlowNodeInstanceQuery query) {
-    return doSearchWithReader(readers.flowNodeInstanceReader(), query);
+    return doSearchWithReader(readers().flowNodeInstanceReader(), query);
   }
 
   @Override
   public FormEntity getForm(final long key) {
-    return doGetWithReader(readers.formReader(), key)
+    return doGetWithReader(readers().formReader(), key)
         .orElseThrow(() -> entityByKeyNotFoundException("Form", key));
   }
 
   @Override
   public SearchQueryResult<FormEntity> searchForms(final FormQuery query) {
-    return doSearchWithReader(readers.formReader(), query);
+    return doSearchWithReader(readers().formReader(), query);
   }
 
   @Override
   public IncidentEntity getIncident(final long key) {
-    return doGetWithReader(readers.incidentReader(), key)
+    return doGetWithReader(readers().incidentReader(), key)
         .orElseThrow(() -> entityByKeyNotFoundException("Incident", key));
   }
 
   @Override
   public SearchQueryResult<IncidentEntity> searchIncidents(final IncidentQuery query) {
-    return doSearchWithReader(readers.incidentReader(), query);
+    return doSearchWithReader(readers().incidentReader(), query);
   }
 
   @Override
@@ -389,7 +438,7 @@ public class CamundaSearchClients implements SearchClientsProxy {
       incidentProcessInstanceStatisticsByError(
           final IncidentProcessInstanceStatisticsByErrorQuery query) {
 
-    return doSearchWithReader(readers.incidentProcessInstanceStatisticsByErrorReader(), query);
+    return doSearchWithReader(readers().incidentProcessInstanceStatisticsByErrorReader(), query);
   }
 
   @Override
@@ -397,19 +446,20 @@ public class CamundaSearchClients implements SearchClientsProxy {
       searchIncidentProcessInstanceStatisticsByDefinition(
           final IncidentProcessInstanceStatisticsByDefinitionQuery query) {
 
-    return doSearchWithReader(readers.incidentProcessInstanceStatisticsByDefinitionReader(), query);
+    return doSearchWithReader(
+        readers().incidentProcessInstanceStatisticsByDefinitionReader(), query);
   }
 
   @Override
   public ProcessDefinitionEntity getProcessDefinition(final long key) {
-    return doGetWithReader(readers.processDefinitionReader(), key)
+    return doGetWithReader(readers().processDefinitionReader(), key)
         .orElseThrow(() -> entityByKeyNotFoundException("Process Definition", key));
   }
 
   @Override
   public SearchQueryResult<ProcessDefinitionEntity> searchProcessDefinitions(
       final ProcessDefinitionQuery query) {
-    return doSearchWithReader(readers.processDefinitionReader(), query);
+    return doSearchWithReader(readers().processDefinitionReader(), query);
   }
 
   @Override
@@ -417,7 +467,7 @@ public class CamundaSearchClients implements SearchClientsProxy {
       final ProcessDefinitionStatisticsFilter filter) {
     return doReadWithResourceAccessController(
         access ->
-            readers
+            readers()
                 .processDefinitionStatisticsReader()
                 .aggregate(new ProcessDefinitionFlowNodeStatisticsQuery(filter), access));
   }
@@ -425,7 +475,7 @@ public class CamundaSearchClients implements SearchClientsProxy {
   @Override
   public SearchQueryResult<ProcessDefinitionInstanceStatisticsEntity>
       processDefinitionInstanceStatistics(final ProcessDefinitionInstanceStatisticsQuery query) {
-    return doSearchWithReader(readers.processDefinitionInstanceStatisticsReader(), query);
+    return doSearchWithReader(readers().processDefinitionInstanceStatisticsReader(), query);
   }
 
   @Override
@@ -433,26 +483,26 @@ public class CamundaSearchClients implements SearchClientsProxy {
       getProcessDefinitionMessageSubscriptionStatistics(
           final ProcessDefinitionMessageSubscriptionStatisticsQuery query) {
     return doSearchWithReader(
-        readers.processDefinitionMessageSubscriptionStatisticsReader(), query);
+        readers().processDefinitionMessageSubscriptionStatisticsReader(), query);
   }
 
   @Override
   public SearchQueryResult<ProcessDefinitionInstanceVersionStatisticsEntity>
       processDefinitionInstanceVersionStatistics(
           final ProcessDefinitionInstanceVersionStatisticsQuery query) {
-    return doSearchWithReader(readers.processDefinitionInstanceVersionStatisticsReader(), query);
+    return doSearchWithReader(readers().processDefinitionInstanceVersionStatisticsReader(), query);
   }
 
   @Override
   public ProcessInstanceEntity getProcessInstance(final long processInstanceKey) {
-    return doGetWithReader(readers.processInstanceReader(), processInstanceKey)
+    return doGetWithReader(readers().processInstanceReader(), processInstanceKey)
         .orElseThrow(() -> entityByKeyNotFoundException("Process Instance", processInstanceKey));
   }
 
   @Override
   public SearchQueryResult<ProcessInstanceEntity> searchProcessInstances(
       final ProcessInstanceQuery query) {
-    return doSearchWithReader(readers.processInstanceReader(), query);
+    return doSearchWithReader(readers().processInstanceReader(), query);
   }
 
   @Override
@@ -460,7 +510,7 @@ public class CamundaSearchClients implements SearchClientsProxy {
       final long processInstanceKey) {
     return doReadWithResourceAccessController(
         access ->
-            readers
+            readers()
                 .processInstanceStatisticsReader()
                 .aggregate(
                     new ProcessInstanceFlowNodeStatisticsQuery(
@@ -470,152 +520,152 @@ public class CamundaSearchClients implements SearchClientsProxy {
 
   @Override
   public SearchQueryResult<JobEntity> searchJobs(final JobQuery query) {
-    return doSearchWithReader(readers.jobReader(), query);
+    return doSearchWithReader(readers().jobReader(), query);
   }
 
   @Override
   public GlobalJobStatisticsEntity getGlobalJobStatistics(final GlobalJobStatisticsQuery query) {
     return doReadWithResourceAccessController(
-        access -> readers.jobMetricsBatchReader().getGlobalJobStatistics(query, access));
+        access -> readers().jobMetricsBatchReader().getGlobalJobStatistics(query, access));
   }
 
   @Override
   public SearchQueryResult<JobTypeStatisticsEntity> getJobTypeStatistics(
       final JobTypeStatisticsQuery query) {
     return doReadWithResourceAccessController(
-        access -> readers.jobMetricsBatchReader().getJobTypeStatistics(query, access));
+        access -> readers().jobMetricsBatchReader().getJobTypeStatistics(query, access));
   }
 
   @Override
   public SearchQueryResult<JobWorkerStatisticsEntity> getJobWorkerStatistics(
       final JobWorkerStatisticsQuery query) {
     return doReadWithResourceAccessController(
-        access -> readers.jobMetricsBatchReader().getJobWorkerStatistics(query, access));
+        access -> readers().jobMetricsBatchReader().getJobWorkerStatistics(query, access));
   }
 
   @Override
   public SearchQueryResult<JobTimeSeriesStatisticsEntity> getJobTimeSeriesStatistics(
       final JobTimeSeriesStatisticsQuery query) {
     return doReadWithResourceAccessController(
-        access -> readers.jobMetricsBatchReader().getJobTimeSeriesStatistics(query, access));
+        access -> readers().jobMetricsBatchReader().getJobTimeSeriesStatistics(query, access));
   }
 
   @Override
   public SearchQueryResult<JobErrorStatisticsEntity> getJobErrorStatistics(
       final JobErrorStatisticsQuery query) {
     return doReadWithResourceAccessController(
-        access -> readers.jobMetricsBatchReader().getJobErrorStatistics(query, access));
+        access -> readers().jobMetricsBatchReader().getJobErrorStatistics(query, access));
   }
 
   @Override
   public RoleEntity getRole(final String id) {
-    return doGetWithReader(readers.roleReader(), id)
+    return doGetWithReader(readers().roleReader(), id)
         .orElseThrow(() -> entityByIdNotFoundException("Role", id));
   }
 
   @Override
   public SearchQueryResult<RoleEntity> searchRoles(final RoleQuery query) {
-    return doSearchWithReader(readers.roleReader(), query, this::disableTenantCheck);
+    return doSearchWithReader(readers().roleReader(), query, this::disableTenantCheck);
   }
 
   @Override
   public SearchQueryResult<RoleMemberEntity> searchRoleMembers(final RoleMemberQuery query) {
-    return doSearchWithReader(readers.roleMemberReader(), query, this::disableTenantCheck);
+    return doSearchWithReader(readers().roleMemberReader(), query, this::disableTenantCheck);
   }
 
   @Override
   public TenantEntity getTenant(final String id) {
-    return doGetWithReader(readers.tenantReader(), id)
+    return doGetWithReader(readers().tenantReader(), id)
         .orElseThrow(() -> entityByIdNotFoundException("Tenant", id));
   }
 
   @Override
   public SearchQueryResult<TenantEntity> searchTenants(final TenantQuery query) {
-    return doSearchWithReader(readers.tenantReader(), query, this::disableTenantCheck);
+    return doSearchWithReader(readers().tenantReader(), query, this::disableTenantCheck);
   }
 
   @Override
   public SearchQueryResult<TenantMemberEntity> searchTenantMembers(final TenantMemberQuery query) {
-    return doSearchWithReader(readers.tenantMemberReader(), query, this::disableTenantCheck);
+    return doSearchWithReader(readers().tenantMemberReader(), query, this::disableTenantCheck);
   }
 
   @Override
   public GroupEntity getGroup(final String id) {
-    return doGetWithReader(readers.groupReader(), id)
+    return doGetWithReader(readers().groupReader(), id)
         .orElseThrow(() -> entityByIdNotFoundException("Group", id));
   }
 
   @Override
   public SearchQueryResult<GroupEntity> searchGroups(final GroupQuery query) {
-    return doSearchWithReader(readers.groupReader(), query, this::disableTenantCheck);
+    return doSearchWithReader(readers().groupReader(), query, this::disableTenantCheck);
   }
 
   @Override
   public SearchQueryResult<GroupMemberEntity> searchGroupMembers(final GroupMemberQuery query) {
-    return doSearchWithReader(readers.groupMemberReader(), query, this::disableTenantCheck);
+    return doSearchWithReader(readers().groupMemberReader(), query, this::disableTenantCheck);
   }
 
   @Override
   public UserEntity getUser(final String username) {
-    return doGetWithReader(readers.userReader(), username)
+    return doGetWithReader(readers().userReader(), username)
         .orElseThrow(() -> entityByUsernameNotFoundException(username));
   }
 
   @Override
   public SearchQueryResult<UserEntity> searchUsers(final UserQuery query) {
-    return doSearchWithReader(readers.userReader(), query, this::disableTenantCheck);
+    return doSearchWithReader(readers().userReader(), query, this::disableTenantCheck);
   }
 
   @Override
   public UserTaskEntity getUserTask(final long key) {
-    return doGetWithReader(readers.userTaskReader(), key)
+    return doGetWithReader(readers().userTaskReader(), key)
         .orElseThrow(() -> entityByKeyNotFoundException("User Task", key));
   }
 
   @Override
   public SearchQueryResult<UserTaskEntity> searchUserTasks(final UserTaskQuery query) {
-    return doSearchWithReader(readers.userTaskReader(), query);
+    return doSearchWithReader(readers().userTaskReader(), query);
   }
 
   @Override
   public VariableEntity getVariable(final long key) {
-    return doGetWithReader(readers.variableReader(), key)
+    return doGetWithReader(readers().variableReader(), key)
         .orElseThrow(() -> entityByKeyNotFoundException("Variable", key));
   }
 
   @Override
   public SearchQueryResult<VariableEntity> searchVariables(final VariableQuery query) {
-    return doSearchWithReader(readers.variableReader(), query);
+    return doSearchWithReader(readers().variableReader(), query);
   }
 
   @Override
   public UsageMetricStatisticsEntity usageMetricStatistics(final UsageMetricsQuery query) {
     return doReadWithResourceAccessController(
-        access -> readers.usageMetricsReader().usageMetricStatistics(query, access));
+        access -> readers().usageMetricsReader().usageMetricStatistics(query, access));
   }
 
   @Override
   public UsageMetricTUStatisticsEntity usageMetricTUStatistics(final UsageMetricsTUQuery query) {
     return doReadWithResourceAccessController(
-        access -> readers.usageMetricsTUReader().usageMetricTUStatistics(query, access));
+        access -> readers().usageMetricsTUReader().usageMetricTUStatistics(query, access));
   }
 
   @Override
   public BatchOperationEntity getBatchOperation(final String id) {
-    return doGetWithReader(readers.batchOperationReader(), id)
+    return doGetWithReader(readers().batchOperationReader(), id)
         .orElseThrow(() -> entityByIdNotFoundException("Batch Operation", id));
   }
 
   @Override
   public SearchQueryResult<BatchOperationEntity> searchBatchOperations(
       final BatchOperationQuery query) {
-    return doSearchWithReader(readers.batchOperationReader(), query);
+    return doSearchWithReader(readers().batchOperationReader(), query);
   }
 
   @Override
   public SearchQueryResult<BatchOperationItemEntity> searchBatchOperationItems(
       final BatchOperationItemQuery query) {
-    return doSearchWithReader(readers.batchOperationItemReader(), query);
+    return doSearchWithReader(readers().batchOperationItemReader(), query);
   }
 
   @Override
@@ -623,7 +673,7 @@ public class CamundaSearchClients implements SearchClientsProxy {
       final String listenerId, final GlobalListenerType listenerType) {
     return doGet(
             resourceAccessChecks ->
-                readers
+                readers()
                     .globalListenerReader()
                     .getGlobalListener(listenerId, listenerType, resourceAccessChecks))
         .orElseThrow(
@@ -638,25 +688,25 @@ public class CamundaSearchClients implements SearchClientsProxy {
   @Override
   public SearchQueryResult<GlobalListenerEntity> searchGlobalListeners(
       final GlobalListenerQuery query) {
-    return doSearchWithReader(readers.globalListenerReader(), query);
+    return doSearchWithReader(readers().globalListenerReader(), query);
   }
 
   @Override
   public DeployedResourceEntity getDeployedResource(final long key) {
-    return doGet(a -> readers.deployedResourceReader().getByKey(key, a))
+    return doGet(a -> readers().deployedResourceReader().getByKey(key, a))
         .orElseThrow(() -> entityByKeyNotFoundException("Resource", key));
   }
 
   @Override
   public DeployedResourceEntity getDeployedResourceMetadata(final long key) {
-    return doGet(a -> readers.deployedResourceReader().getByKeyMetadata(key, a))
+    return doGet(a -> readers().deployedResourceReader().getByKeyMetadata(key, a))
         .orElseThrow(() -> entityByKeyNotFoundException("Resource", key));
   }
 
   @Override
   public SearchQueryResult<DeployedResourceEntity> searchDeployedResources(
       final DeployedResourceQuery query) {
-    return doSearchWithReader(readers.deployedResourceReader(), query);
+    return doSearchWithReader(readers().deployedResourceReader(), query);
   }
 
   protected <T, Q extends TypedSearchQuery<?, ?>> Optional<T> doGetWithReader(
@@ -769,12 +819,12 @@ public class CamundaSearchClients implements SearchClientsProxy {
 
   protected <T> T doReadWithResourceAccessController(
       final Function<ResourceAccessChecks, T> applier) {
-    return resourceAccessController.doSearch(securityContext, applier);
+    return resourceAccessController().doSearch(securityContext, applier);
   }
 
   protected <T> T doGetWithResourceAccessController(
       final Function<ResourceAccessChecks, T> applier) {
-    return resourceAccessController.doGet(securityContext, applier);
+    return resourceAccessController().doGet(securityContext, applier);
   }
 
   protected CamundaSearchException entityByKeyNotFoundException(
@@ -800,7 +850,7 @@ public class CamundaSearchClients implements SearchClientsProxy {
   @Override
   public SearchQueryResult<WaitStateEntity> searchWaitStates(
       final ElementInstanceWaitStateQuery query) {
-    return doSearchWithReader(readers.waitStateReader(), query);
+    return doSearchWithReader(readers().waitStateReader(), query);
   }
 
   private CamundaSearchException entityByIdNotFoundException(

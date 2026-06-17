@@ -28,16 +28,18 @@ import org.jspecify.annotations.NullMarked;
  * used by Spring Security's permission checks.
  *
  * <p>The control-plane runs exclusively on the request thread — the engine never invokes {@code
- * hasPermission} — where the pre-security filter (ADR-0003) has already stamped the physical tenant.
- * Thread-bound resolution via {@link PhysicalTenantContext#current()} is therefore safe here,
- * including in a standalone-gateway deployment (the permission check only ever runs on the gateway's
- * request thread). {@code current()} falls back to {@code default} for non-prefixed cluster requests.
+ * hasPermission} — where the pre-security filter (ADR-0003) has already stamped the physical
+ * tenant. Thread-bound resolution via {@link PhysicalTenantContext#current()} is therefore safe
+ * here, including in a standalone-gateway deployment (the permission check only ever runs on the
+ * gateway's request thread). {@code current()} falls back to {@code default} for non-prefixed
+ * cluster requests.
  *
  * <p><b>The data-plane does NOT rely on thread-local resolution.</b> Result authorization inside
  * {@code CamundaSearchClients} is <em>instance-bound</em>: {@code withPhysicalTenant(pt)} selects
- * that tenant's {@code ResourceAccessController} (built over the tenant's {@link AuthorizationReader}),
- * so it stays correct even when the search runs off the request thread (e.g. batch operations in the
- * engine), where no {@link PhysicalTenantContext} is bound. See ADR-0005's two-mechanism decision.
+ * that tenant's {@code ResourceAccessController} (built over the tenant's {@link
+ * AuthorizationReader}), so it stays correct even when the search runs off the request thread (e.g.
+ * batch operations in the engine), where no {@link PhysicalTenantContext} is bound. See ADR-0005's
+ * two-mechanism decision.
  */
 @NullMarked
 public final class PhysicalTenantRoutingAuthorizationReader implements AuthorizationReader {
