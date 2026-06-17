@@ -11,5 +11,5 @@ process-execution data path). These are module-scoped decisions; see the
 |                                 ADR                                 |                                                   Decision                                                    |
 |---------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------|
 | [0001](0001-810-message-correlation-business-id-cross-partition.md) | Business ID message correlation: `P_K` owns messages, `P_B` enforces uniqueness, `P_K` pulls for lock release |
-| [0002](0002-810-message-start-rejection-retry.md)                   | A way out for rejected cross-partition message-starts: retry the ask with back-off                            |
+| [0002](0002-810-message-start-rejection-retry.md)                   | Retry rejected message-starts until they start or their TTL expires                                           |
 

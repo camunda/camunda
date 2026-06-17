@@ -1,4 +1,4 @@
-# A way out for rejected cross-partition message-starts: retry the ask with back-off
+# Retry rejected message-starts until they start or their TTL expires
 
 **DRI**: Mustafa Dagher
 
@@ -19,11 +19,10 @@ unstarted at its TTL, even if the blocker cleared seconds earlier. The correlati
 wrong thing to wait on: the unblocking event is a Business ID freeing, which may come from an
 instance with a different correlation key or none at all.
 
-The outcome: a rejected start is retried until it starts or its TTL expires; a remote Business ID
-reuses the existing cross-partition ask, while a local Business ID is retried by re-driving the local
-start when its holder frees the ID — discovered through a Business-ID index on the buffered message.
-The same observable guarantee applies whether the Business ID is local or remote, even though the
-mechanism differs.
+The outcome: a rejected start is retried until it starts or its TTL expires — a remote Business ID
+reuses the existing cross-partition ask, a local one re-drives the local start when its holder frees
+the ID. The same observable guarantee holds whether the Business ID is local or remote, even though
+the mechanism differs.
 
 ## Decision
 
@@ -36,19 +35,12 @@ is kept rather than removed; the scheduler re-sends the `REQUEST`, `P_B` re-eval
 the attempt flips to `STARTED` once the blocker clears. The existing `(processDefinitionKey,
 messageKey)` dedup row on `P_B` makes the retried ask idempotent — no duplicate instance.
 
-**D3. The cross-partition ask retries use capped exponential back-off, advanced by the event
-applier.** Back-off prevents a long-blocked message from storming `P_B`. Because schedulers may not
-mutate persisted state, the back-off is event-sourced as a per-ask **magnitude**: the rejection
-applier doubles a persisted back-off magnitude (capped) on each rejection reply. This advance is a
-pure function of the prior persisted value and the configured bounds — it needs no clock and no event
-timestamp, so it is trivially deterministic on replay. The scheduler derives the next-retry time from
-that magnitude plus its transient last-sent tracking, re-sending an ask once `lastSent +
-max(baseInterval, magnitude)` has passed; the transient also serves as the in-flight guard between a
-send and its reply. On recovery the magnitude survives in persisted state while the transient
-last-sent is rebuilt, so a long-blocked ask resumes at its backed-off cadence rather than resetting to
-a base-interval storm (at the cost of a bounded one-interval phase imprecision after a leader change).
-The same-partition retry (D5) needs no back-off: it is event-driven — re-driven once when a holder
-frees the Business ID — not polled, so there is nothing to storm.
+**D3. Cross-partition ask retries use capped exponential back-off, event-sourced by the rejection
+applier.** Each rejection doubles a persisted, capped back-off magnitude — a clock-free, pure function
+of the prior value, so it stays deterministic on replay and survives leader changes without resetting
+to a base-interval storm. The scheduler only derives the next-retry time from that magnitude, since
+schedulers may not mutate persisted state. The same-partition retry (D5) needs no back-off: it is
+event-driven, not polled, so there is nothing to storm.
 
 **D4. The correlation-key buffer is never relied on to retry a Business-ID rejection — it keys on the
 wrong thing.** The unblocking event is a Business ID freeing, which may come from a holder with a
@@ -60,31 +52,23 @@ drives the retry; should the correlation-key scan happen to revisit the same mes
 free, the ordinary correlation guards (`existMessageCorrelation`, the deadline check) make the overlap
 a harmless no-op rather than a double start.
 
-**D5. Same-partition rejections are retried by re-driving the local start when the Business ID frees,
-discovered through a Business-ID index on the buffered message — no scheduler, no cross-partition
-machinery.** When the Business ID hashes to the local partition (`P_K = P_B`, always so on
-single-partition clusters), both success and retry stay local. A successful start uses the normal
-local message-start flow (synchronous, no handshake). On rejection the message simply stays buffered;
-it is made discoverable by Business ID through a secondary index on the buffered-message store, keyed
-by `(tenantId, businessId, messageKey)` and maintained on the **same publish/expiry lifecycle as the
-message itself** (written when the message is buffered, removed when it expires) — so it needs no
-separate registry, enrollment event, or cleanup path. When a holder instance completes or terminates,
-the post-transition action that already re-drives the correlation-key buffer additionally looks up
-buffered messages by the freed Business ID and re-drives the ordinary local start for each (routing
-still honours D6). The existing correlation guards make a redundant re-drive a no-op. This path uses
-**no** `MessageStartProcessInstanceRequest` records, dedup row, cross-partition lock, scheduler, or
-back-off.
+**D5. Same-partition rejections are retried locally — re-driving the start when the Business ID frees
+— with no scheduler or cross-partition machinery.** When the Business ID is local (`P_K = P_B`, always
+so on single-partition clusters), success uses the normal synchronous local message-start flow; on
+rejection the message stays buffered and is indexed by Business ID so the existing holder-completion
+hook re-drives the ordinary local start when the ID frees (routing still honours D6). The hook fires
+whenever a completing instance held the Business ID, independent of that instance's own start type,
+because uniqueness is scoped per `(businessId, bpmnProcessId)` across versions — the holder may be a
+none-start instance or an older version that has no message start event, while the latest version that
+owns the buffered start does. This path uses **no** cross-partition records, dedup row, lock,
+scheduler, or back-off.
 
-This deliberately mirrors the existing correlation-key buffer, which is likewise only re-driven on a
-holder's completion/termination. It therefore inherits the same boundary: a Business ID also frees on
-**banning** (banned holders are treated as free) and on migration, neither of which fires a
-completion/termination event, so a start blocked behind a banned or migrated holder waits until its
-TTL rather than restarting immediately. This is **accepted** because it is exactly the existing
-behaviour of the correlation-key buffer — a message buffered behind a banned holder is already
-stranded until TTL today — so the Business-ID buffer is made a faithful twin of it rather than being
-granted a new, stronger liveness guarantee on only one arm. The cross-partition ask (D2/D3) is engaged
-**only** when the Business ID is remote; the two topologies share the goal (a blocked start eventually
-runs, bounded by its TTL) but deliberately **not** the mechanism.
+This mirrors the correlation-key buffer and inherits its boundary: a holder that frees the Business ID
+*without* a completion/termination event — a **banned** holder (treated as free) or a **migrated** one
+— leaves the start blocked until its TTL rather than restarting immediately. This is **accepted** so
+the Business-ID buffer stays a faithful twin of the correlation-key buffer (already stranded behind a
+banned holder until TTL today) rather than gaining a stronger one-arm guarantee. The cross-partition
+ask (D2/D3) is engaged **only** when the Business ID is remote.
 
 **D6. The uniqueness flag gates the rejection, not the routing/placement.** `businessIdUniquenessEnabled`
 controls only whether a uniqueness conflict is *rejected*, never whether a Business-ID-carrying
@@ -145,13 +129,11 @@ flag-independent — the instance is already local — so this matters for the c
   same-partition retry needs no scheduler or back-off — it is event-driven off holder completion.
 - A start still expires unstarted if its Business ID stays held for the entire TTL — the legitimate
   "blocked the whole window" outcome.
-- Accepted limitation (same-partition): a start blocked behind a holder that frees its Business ID
-  *without* a completion/termination event — a **banned** holder (banned holders are treated as free)
-  or a **migrated** one — waits until its TTL rather than restarting immediately. This is identical to
-  the existing correlation-key buffer, which is also only re-driven on completion/termination, so the
-  Business-ID buffer is a faithful twin of it rather than a new, stronger guarantee on one arm.
+- Accepted limitation (D5): a start blocked behind a holder that frees its Business ID *without* a
+  completion/termination event — a **banned** or **migrated** holder — waits until its TTL, matching
+  the correlation-key buffer rather than gaining a stronger guarantee.
 - The same-partition path stays fully local: success is synchronous and a blocked start is re-driven
-  locally on holder completion — no cross-partition records, no scheduler, on either path.
+  locally on holder completion — no cross-partition records, no scheduler.
 - Routing to `P_B` is independent of the uniqueness flag (D6), so the placement invariant holds even
   while the feature is switched off, and toggling the flag never strands instances on the wrong
   partition.
