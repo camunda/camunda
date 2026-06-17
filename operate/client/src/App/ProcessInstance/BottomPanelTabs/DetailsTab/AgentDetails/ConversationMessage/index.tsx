@@ -8,7 +8,7 @@
 
 import {useReducer} from 'react';
 import {Button} from '@carbon/react';
-import {Maximize} from '@carbon/react/icons';
+import {Document, Maximize} from '@carbon/react/icons';
 import type {
   AgentInstanceHistoryItem,
   AgentInstanceHistoryRole,
@@ -21,14 +21,18 @@ import {
   TextContent,
   MessageActions,
   ObjectContent,
+  AttachmentsContainer,
+  AttachmentsLabel,
+  AttachmentButton,
 } from './styled';
 import {MarkdownMessage} from './MarkdownMessage';
 import {RichTextEditorModal} from 'modules/components/RichTextEditorModal';
 
 type Actor = AgentInstanceHistoryRole | 'SYSTEM';
 type ContentItem = AgentInstanceHistoryItem['content'][number];
+type ToolCall = AgentInstanceHistoryItem['toolCalls'][number];
 
-const editorModalTitleByActor: Record<Actor, string> = {
+const readableTitleByActor: Record<Actor, string> = {
   SYSTEM: 'System prompt',
   USER: 'User message',
   ASSISTANT: 'Assistant message',
@@ -46,22 +50,31 @@ type ConversationMessageProps = {
   actor: Actor;
   content: ContentItem[];
   historyItemKey?: string;
+  toolCalls?: ToolCall[];
+  onToolCallClick?: (toolCall: ToolCall) => void;
 };
 
 const ConversationMessage: React.FC<ConversationMessageProps> = ({
   actor,
   content,
   historyItemKey,
+  toolCalls = [],
+  onToolCallClick,
 }) => {
   const [messageDetails, dispatch] = useReducer(
     messageDetailsReducer,
     initialMessageDetailsState,
   );
 
+  const documentEntries = content.filter(
+    (entry) => entry.contentType === 'DOCUMENT',
+  );
+
   return (
     <Container
       $actor={actor}
       data-testid={`conversation-message${historyItemKey ? `-${historyItemKey}` : ''}`}
+      aria-label={readableTitleByActor[actor]}
     >
       <ActorLabel>{labelByActor[actor]}</ActorLabel>
       {content.map((entry, index) => {
@@ -100,6 +113,38 @@ const ConversationMessage: React.FC<ConversationMessageProps> = ({
           }
         }
       })}
+      {documentEntries.length > 0 && (
+        <AttachmentsContainer>
+          <AttachmentsLabel>Documents</AttachmentsLabel>
+          {documentEntries.map(({documentReference}) => (
+            <AttachmentButton key={documentReference.documentId} disabled>
+              <Document size={12} />
+              {documentReference.metadata.fileName}
+            </AttachmentButton>
+          ))}
+        </AttachmentsContainer>
+      )}
+      {toolCalls.length > 0 && (
+        <AttachmentsContainer>
+          <AttachmentsLabel>Tool calls</AttachmentsLabel>
+          {toolCalls.map((tc) => {
+            const isDisabled = tc.elementId === null;
+            const label = isDisabled
+              ? `"${tc.toolName}" tool call.`
+              : `"${tc.toolName}" tool call. Click to open details.`;
+            return (
+              <AttachmentButton
+                key={tc.toolCallId}
+                aria-label={label}
+                disabled={isDisabled}
+                onClick={() => onToolCallClick?.(tc)}
+              >
+                {tc.toolName}
+              </AttachmentButton>
+            );
+          })}
+        </AttachmentsContainer>
+      )}
       <RichTextEditorModal
         title={messageDetails.title}
         readOnly
@@ -169,14 +214,14 @@ function messageDetailsReducer(
         state: 'visible',
         language: 'markdown',
         content: action.text,
-        title: editorModalTitleByActor[action.actor],
+        title: readableTitleByActor[action.actor],
       };
     case 'show-object':
       return {
         state: 'visible',
         language: 'json',
         content: action.value,
-        title: editorModalTitleByActor[action.actor],
+        title: readableTitleByActor[action.actor],
       };
     case 'hide':
       return initialMessageDetailsState;

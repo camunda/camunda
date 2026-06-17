@@ -8,6 +8,7 @@
 
 import {SkeletonText} from '@carbon/react';
 import {useAgentInstanceHistory} from 'modules/queries/agentInstances/useAgentInstanceHistory';
+import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {ConversationMessage} from '../ConversationMessage';
 import {ConversationContainer, ErrorHint} from './styled';
 
@@ -20,6 +21,7 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
   agentInstanceKey,
   enablePeriodicRefetch,
 }) => {
+  const {selectElement} = useProcessInstanceElementSelection();
   const {data, status} = useAgentInstanceHistory(agentInstanceKey, {
     enablePeriodicRefetch,
   });
@@ -48,6 +50,12 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
           historyItemKey={item.historyItemKey}
           actor={item.role}
           content={item.content}
+          toolCalls={item.toolCalls}
+          onToolCallClick={(toolCall) => {
+            if (toolCall.elementId !== null) {
+              selectElement({elementId: toolCall.elementId});
+            }
+          }}
         />
       ))}
     </ConversationContainer>

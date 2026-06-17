@@ -12,6 +12,7 @@ import {
   waitForElementToBeRemoved,
   within,
 } from 'modules/testing-library';
+import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import type {ReactNode} from 'react';
@@ -19,14 +20,23 @@ import {mockSearchAgentInstanceHistory} from 'modules/mocks/api/v2/agentInstance
 import {ConversationHistory} from './index';
 import {searchResult} from 'modules/testUtils';
 import {mockAgentInstanceHistoryItem} from 'modules/mocks/mockAgentInstanceHistoryItem';
+import {Paths} from 'modules/Routes';
 
 const AGENT_INSTANCE_KEY = '2251799813851828';
 
 function createWrapper() {
   const queryClient = getMockQueryClient();
-  return ({children}: {children: ReactNode}) => (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-  );
+  return ({children}: {children: ReactNode}) => {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
+          <Routes>
+            <Route path={Paths.processInstance()} element={children} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+  };
 }
 
 describe('<ConversationHistory />', () => {
@@ -162,5 +172,126 @@ describe('<ConversationHistory />', () => {
         },
       ),
     ).toBeInTheDocument();
+  });
+
+  it('should render document references', async () => {
+    mockSearchAgentInstanceHistory().withSuccess(
+      searchResult([
+        mockAgentInstanceHistoryItem({
+          historyItemKey: '1',
+          role: 'USER',
+          content: [
+            {contentType: 'TEXT', text: 'Here are the documents.'},
+            {
+              contentType: 'DOCUMENT',
+              documentReference: {
+                'camunda.document.type': 'camunda',
+                contentHash: 'abc123',
+                documentId: 'doc-1',
+                storeId: 'default',
+                metadata: {
+                  contentType: 'text/plain',
+                  fileName: 'report.txt',
+                  size: 1234,
+                  expiresAt: null,
+                  processDefinitionId: null,
+                  processInstanceKey: null,
+                  customProperties: {},
+                },
+              },
+            },
+            {
+              contentType: 'DOCUMENT',
+              documentReference: {
+                'camunda.document.type': 'camunda',
+                contentHash: 'def456',
+                documentId: 'doc-2',
+                storeId: 'default',
+                metadata: {
+                  contentType: 'image/png',
+                  fileName: 'screenshot.png',
+                  size: 5678,
+                  expiresAt: null,
+                  processDefinitionId: null,
+                  processInstanceKey: null,
+                  customProperties: {},
+                },
+              },
+            },
+          ],
+        }),
+      ]),
+    );
+
+    render(
+      <ConversationHistory
+        agentInstanceKey={AGENT_INSTANCE_KEY}
+        enablePeriodicRefetch={false}
+      />,
+      {wrapper: createWrapper()},
+    );
+
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('conversation-history-skeleton'),
+    );
+
+    const message = within(screen.getByTestId('conversation-message-1'));
+    expect(message.getByText('Here are the documents.')).toBeInTheDocument();
+    expect(
+      message.getByRole('button', {name: 'report.txt'}),
+    ).toBeInTheDocument();
+    expect(
+      message.getByRole('button', {name: 'screenshot.png'}),
+    ).toBeInTheDocument();
+  });
+
+  it('should render tool calls and enable them when a tool links to an element', async () => {
+    mockSearchAgentInstanceHistory().withSuccess(
+      searchResult([
+        mockAgentInstanceHistoryItem({
+          historyItemKey: '1',
+          role: 'ASSISTANT',
+          content: [{contentType: 'TEXT', text: 'Calling tools now.'}],
+          toolCalls: [
+            {
+              toolCallId: 'tc-1',
+              toolName: 'greet',
+              elementId: 'greet-element',
+              arguments: {},
+            },
+            {
+              toolCallId: 'tc-2',
+              toolName: 'search',
+              elementId: null,
+              arguments: {},
+            },
+          ],
+        }),
+      ]),
+    );
+
+    render(
+      <ConversationHistory
+        agentInstanceKey={AGENT_INSTANCE_KEY}
+        enablePeriodicRefetch={false}
+      />,
+      {wrapper: createWrapper()},
+    );
+
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('conversation-history-skeleton'),
+    );
+
+    const assistantMessage = within(
+      screen.getByTestId('conversation-message-1'),
+    );
+    expect(
+      assistantMessage.getByRole('button', {
+        name: '"greet" tool call. Click to open details.',
+      }),
+    ).toBeEnabled();
+    expect(
+      assistantMessage.getByRole('button', {name: '"search" tool call.'}),
+    ).toBeDisabled();
   });
 });
