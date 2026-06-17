@@ -1,38 +1,14 @@
-# description: Workflow for Front-End end to end tests for Operate only. Tests will use a running instance of Operate for the API
+# description: DISABLED - Workflow for Front-End end to end tests for Operate only. Tests will use a running instance of Operate for the API
+#              These tests are flaky and block PRs. They continue to run nightly via c8-orchestration-cluster-nightly-*-e2e.yml workflows.
+#              New smoke tests will be introduced as part of the FE Unification epic.
 # test location: qa/c8-orchestration-cluster-e2e-test-suite
 # type: CI
 # owner: @camunda/core-features
 name: "[Legacy] Operate / E2E Tests"
 on:
-  push:
-    branches:
-      - "main"
-      - "stable/**"
-      - "release**"
-    paths:
-      - ".ci/**"
-      - ".github/actions/**"
-      - ".github/workflows/operate-*"
-      - "bom/*"
-      - "distro/**"
-      - "operate.Dockerfile"
-      - "operate/**"
-      - "zeebe/exporters/camunda-exporter/**"
-      - "parent/*"
-      - "pom.xml"
-
-  pull_request:
-    paths:
-      - ".ci/**"
-      - ".github/actions/**"
-      - ".github/workflows/operate-*"
-      - "bom/*"
-      - "distro/**"
-      - "operate.Dockerfile"
-      - "operate/**"
-      - "zeebe/exporters/camunda-exporter/**"
-      - "parent/*"
-      - "pom.xml"
+  # Temporarily disabled - tests run nightly instead
+  # See: https://github.com/camunda/camunda/issues/50125
+  workflow_dispatch: {}
 
 # Limit workflow to 1 concurrent run per ref (branch): new commit -> old runs are canceled to save costs
 # Exception for main branch: complete builds for every commit needed for confidenence
