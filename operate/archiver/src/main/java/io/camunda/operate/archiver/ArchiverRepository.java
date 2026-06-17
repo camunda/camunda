@@ -8,6 +8,7 @@
 package io.camunda.operate.archiver;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 public interface ArchiverRepository {
@@ -16,6 +17,13 @@ public interface ArchiverRepository {
   CompletableFuture<ArchiveBatch> getProcessInstancesNextBatch(List<Integer> partitionIds);
 
   CompletableFuture<ArchiveBatch> getStandaloneDecisionNextBatch(List<Integer> partitionIds);
+
+  CompletableFuture<Void> moveDocumentsById(
+      String sourceIndexName,
+      String destinationIndexName,
+      Map<String, List<Object>> keysByField,
+      Map<String, String> inclusionFilters,
+      Map<String, String> exclusionFilters);
 
   void setIndexLifeCycle(final String destinationIndexName);
 
