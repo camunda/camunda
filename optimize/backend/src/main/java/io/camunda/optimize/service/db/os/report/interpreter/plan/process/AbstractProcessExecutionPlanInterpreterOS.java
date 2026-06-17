@@ -11,9 +11,6 @@ import static io.camunda.optimize.dto.optimize.ReportConstants.APPLIED_TO_ALL_DE
 import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.matchAll;
 import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.not;
-import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.PROCESS_INSTANCE_PERCENTAGE_GROUP_BY_PROCESS_DEFINITION_VERSION;
-import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.PROCESS_DEFINITION_VERSION;
-import static java.util.stream.Collectors.toMap;
 
 import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -29,31 +26,21 @@ import io.camunda.optimize.service.db.report.ExecutionContext;
 import io.camunda.optimize.service.db.report.MinMaxStatDto;
 import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
 import io.camunda.optimize.service.util.InstanceIndexUtil;
-import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.opensearch.client.opensearch._types.SortOrder;
-import org.opensearch.client.opensearch._types.aggregations.StringTermsAggregate;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
-import org.opensearch.client.opensearch.core.SearchRequest;
-import org.opensearch.client.opensearch.core.SearchResponse;
 
 public abstract class AbstractProcessExecutionPlanInterpreterOS
     extends AbstractExecutionPlanInterpreterOS<ProcessReportDataDto, ProcessExecutionPlan>
     implements ProcessExecutionPlanInterpreterOS {
 
-  private static final String VERSION_BASELINE_AGGREGATION = "versionBaselineAgg";
-
   protected abstract ProcessDefinitionReader getProcessDefinitionReader();
 
   protected abstract ProcessQueryFilterEnhancerOS getQueryFilterEnhancer();
-
-  protected abstract ConfigurationService getConfigurationService();
 
   @Override
   public Optional<MinMaxStatDto> getGroupByMinMaxStats(
@@ -95,40 +82,6 @@ public abstract class AbstractProcessExecutionPlanInterpreterOS
   @Override
   protected String[] getMultiIndexAlias() {
     return new String[] {PROCESS_INSTANCE_MULTI_ALIAS};
-  }
-
-  @Override
-  protected void populatePerGroupBaselineCounts(
-      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context,
-      final String[] indices) {
-    if (context.getPlan() == PROCESS_INSTANCE_PERCENTAGE_GROUP_BY_PROCESS_DEFINITION_VERSION) {
-      final BoolQuery.Builder baselineQuery = unfilteredBaseQueryBuilder(context);
-      final SearchRequest.Builder requestBuilder =
-          new SearchRequest.Builder()
-              .index(Arrays.asList(indices))
-              .query(baselineQuery.build().toQuery())
-              .size(0)
-              .aggregations(
-                  VERSION_BASELINE_AGGREGATION,
-                  a ->
-                      a.terms(
-                          t ->
-                              t.field(PROCESS_DEFINITION_VERSION)
-                                  .size(
-                                      getConfigurationService()
-                                          .getOpenSearchConfiguration()
-                                          .getAggregationBucketLimit())
-                                  .order(Map.of("_key", SortOrder.Asc))));
-      final SearchResponse<?> response =
-          getOsClient()
-              .searchWithFixedAggregations(
-                  requestBuilder, Object.class, "Could not retrieve per-version baseline counts");
-      final StringTermsAggregate versionsAgg =
-          response.aggregations().get(VERSION_BASELINE_AGGREGATION).sterms();
-      final Map<String, Long> perVersionCounts =
-          versionsAgg.buckets().array().stream().collect(toMap(b -> b.key(), b -> b.docCount()));
-      context.setUnfilteredInstanceCountsByGroupKey(perVersionCounts);
-    }
   }
 
   @Override

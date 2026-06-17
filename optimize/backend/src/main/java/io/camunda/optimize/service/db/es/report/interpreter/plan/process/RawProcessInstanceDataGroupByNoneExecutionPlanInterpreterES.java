@@ -19,7 +19,6 @@ import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import io.camunda.optimize.service.db.report.ExecutionContext;
 import io.camunda.optimize.service.db.report.interpreter.plan.process.RawProcessInstanceDataGroupByNoneExecutionPlanInterpreter;
 import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
-import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.util.Set;
 import org.springframework.context.annotation.Conditional;
@@ -36,21 +35,18 @@ public class RawProcessInstanceDataGroupByNoneExecutionPlanInterpreterES
   private final OptimizeElasticsearchClient esClient;
   private final ProcessDefinitionReader processDefinitionReader;
   private final ProcessQueryFilterEnhancerES queryFilterEnhancer;
-  private final ConfigurationService configurationService;
 
   public RawProcessInstanceDataGroupByNoneExecutionPlanInterpreterES(
       final ProcessGroupByInterpreterFacadeES groupByInterpreter,
       final ProcessViewInterpreterFacadeES viewInterpreter,
       final OptimizeElasticsearchClient esClient,
       final ProcessDefinitionReader processDefinitionReader,
-      final ProcessQueryFilterEnhancerES queryFilterEnhancer,
-      final ConfigurationService configurationService) {
+      final ProcessQueryFilterEnhancerES queryFilterEnhancer) {
     this.groupByInterpreter = groupByInterpreter;
     this.viewInterpreter = viewInterpreter;
     this.esClient = esClient;
     this.processDefinitionReader = processDefinitionReader;
     this.queryFilterEnhancer = queryFilterEnhancer;
-    this.configurationService = configurationService;
   }
 
   @Override
@@ -84,9 +80,5 @@ public class RawProcessInstanceDataGroupByNoneExecutionPlanInterpreterES
 
   public ProcessQueryFilterEnhancerES getQueryFilterEnhancer() {
     return this.queryFilterEnhancer;
-  }
-
-  public ConfigurationService getConfigurationService() {
-    return this.configurationService;
   }
 }

@@ -110,10 +110,12 @@ public abstract class AbstractExecutionPlanInterpreterES<
   protected abstract BoolQuery.Builder setupUnfilteredBaseQueryBuilder(
       final ExecutionContext<DATA, PLAN> reportData);
 
-  // Hook for subclasses to populate per-group baseline counts (e.g. per process definition version)
-  // when the report uses a grouped percentage view. Default implementation is a no-op.
-  protected void populatePerGroupBaselineCounts(
-      final ExecutionContext<DATA, PLAN> context, final String[] indices) throws IOException {}
+  // Hook for subclasses to provide per-group baseline counts (e.g. per process definition version)
+  // when the report uses a grouped percentage view. Default implementation contributes no counts.
+  protected Map<String, Long> retrievePerGroupBaselineCounts(
+      final ExecutionContext<DATA, PLAN> context, final String[] indices) {
+    return Map.of();
+  }
 
   private OptimizeSearchRequestBuilderES createBaseQuerySearchRequest(
       final ExecutionContext<DATA, PLAN> executionContext, final String... indexes) {
@@ -167,7 +169,8 @@ public abstract class AbstractExecutionPlanInterpreterES<
     final BoolQuery.Builder countQueryBuilder = setupUnfilteredBaseQueryBuilder(executionContext);
     executionContext.setUnfilteredTotalInstanceCount(
         getEsClient().count(indices, countQueryBuilder));
-    populatePerGroupBaselineCounts(executionContext, indices);
+    executionContext.setUnfilteredInstanceCountsByGroupKey(
+        retrievePerGroupBaselineCounts(executionContext, indices));
     return response;
   }
 

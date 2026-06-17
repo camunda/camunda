@@ -13,6 +13,7 @@ import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.
 import static io.camunda.optimize.service.db.report.result.CompositeCommandResult.GroupByResult;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.PROCESS_DEFINITION_VERSION;
 
+import io.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.service.db.os.report.interpreter.RawResult;
 import io.camunda.optimize.service.db.os.report.interpreter.distributedby.process.ProcessDistributedByInterpreterFacadeOS;
@@ -26,6 +27,7 @@ import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondit
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
@@ -60,6 +62,17 @@ public class ProcessGroupByProcessDefinitionVersionInterpreterOS
   @Override
   public Set<ProcessGroupBy> getSupportedGroupBys() {
     return Set.of(PROCESS_GROUP_BY_PROCESS_DEFINITION_VERSION);
+  }
+
+  @Override
+  public Optional<String> getBaselineCountAggregationField(
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+    // Percentage reports are relative to the unfiltered instance count. When grouped by version,
+    // that denominator must be computed per version, so we aggregate baseline counts on the
+    // version field. Other views use the report-level baseline count.
+    return context.getReportData().getViewProperties().contains(ViewProperty.PERCENTAGE)
+        ? Optional.of(PROCESS_DEFINITION_VERSION)
+        : Optional.empty();
   }
 
   @Override
