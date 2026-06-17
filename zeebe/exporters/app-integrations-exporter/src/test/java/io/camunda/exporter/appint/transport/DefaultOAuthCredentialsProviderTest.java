@@ -14,6 +14,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static com.github.tomakehurst.wiremock.stubbing.Scenario.STARTED;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
@@ -205,7 +206,96 @@ class DefaultOAuthCredentialsProviderTest {
     assertThat(applyAndCaptureAuthorization()).isEqualTo("Bearer tok-A");
   }
 
+  @Test
+  void shouldRecordTokenTimeoutMetricWhenTokenEndpointStalls() {
+    // given — the endpoint accepts the connection but never responds within the read timeout
+    wireMock.stubFor(
+        post(TOKEN_PATH).willReturn(tokenResponse("tok-A", 3600).withFixedDelay(2000)));
+
+    // when — a provider with a short read timeout fetches in the background
+    provider = newProvider(Duration.ofSeconds(5), Duration.ofMillis(200));
+
+    // then — the token-phase timeout metric is recorded
+    await()
+        .atMost(Duration.ofSeconds(10))
+        .untilAsserted(
+            () ->
+                assertThat(
+                        registry
+                            .get("zeebe.app.integrations.exporter.timeout")
+                            .tag("phase", "token")
+                            .counter()
+                            .count())
+                    .isGreaterThanOrEqualTo(1.0));
+  }
+
+  @Test
+  void shouldApplyTokenWhenResponseOmitsExpiresIn() throws IOException {
+    // given — a token response without an expires_in field falls back to the default lifetime
+    wireMock.stubFor(
+        post(TOKEN_PATH)
+            .willReturn(
+                aResponse()
+                    .withStatus(200)
+                    .withHeader("Content-Type", "application/json")
+                    .withBody("{\"access_token\":\"tok-A\",\"token_type\":\"Bearer\"}")));
+
+    // when
+    provider = newProvider();
+
+    // then — the token is treated as valid (for DEFAULT_LIFETIME) and attached
+    await()
+        .atMost(Duration.ofSeconds(5))
+        .ignoreExceptions()
+        .untilAsserted(() -> assertThat(applyAndCaptureAuthorization()).isEqualTo("Bearer tok-A"));
+  }
+
+  @Test
+  void shouldDefaultTokenTypeToBearerWhenOmitted() throws IOException {
+    // given — a token response without a token_type field
+    wireMock.stubFor(
+        post(TOKEN_PATH)
+            .willReturn(
+                aResponse()
+                    .withStatus(200)
+                    .withHeader("Content-Type", "application/json")
+                    .withBody("{\"access_token\":\"tok-A\",\"expires_in\":3600}")));
+
+    // when
+    provider = newProvider();
+
+    // then — the Authorization header falls back to the Bearer scheme
+    await()
+        .atMost(Duration.ofSeconds(5))
+        .ignoreExceptions()
+        .untilAsserted(() -> assertThat(applyAndCaptureAuthorization()).isEqualTo("Bearer tok-A"));
+  }
+
+  @Test
+  void shouldPropagateErrorBodyOnNon2xxResponse() {
+    // given — the token endpoint returns a 4xx with a descriptive error body
+    wireMock.stubFor(
+        post(TOKEN_PATH)
+            .willReturn(
+                aResponse()
+                    .withStatus(400)
+                    .withHeader("Content-Type", "application/json")
+                    .withBody("{\"error\":\"invalid_client\"}")));
+    provider = newProvider();
+
+    // when / then — a synchronous fetch surfaces the status and the error body
+    assertThatThrownBy(this::applyAndCaptureAuthorization)
+        .isInstanceOf(IOException.class)
+        .hasMessageContaining("HTTP 400")
+        .hasMessageContaining("invalid_client");
+  }
+
   private DefaultOAuthCredentialsProvider newProvider() {
+    return newProvider(Duration.ofSeconds(5), Duration.ofSeconds(5));
+  }
+
+  private DefaultOAuthCredentialsProvider newProvider(
+      final Duration connectTimeout, final Duration readTimeout) {
     registry = new SimpleMeterRegistry();
     return new DefaultOAuthCredentialsProvider(
         wireMock.baseUrl() + TOKEN_PATH,
@@ -214,8 +304,8 @@ class DefaultOAuthCredentialsProviderTest {
         null,
         null,
         null,
-        Duration.ofSeconds(5),
-        Duration.ofSeconds(5),
+        connectTimeout,
+        readTimeout,
         new AppIntegrationsExporterMetrics(registry));
   }
 

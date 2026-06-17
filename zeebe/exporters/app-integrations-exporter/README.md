@@ -66,8 +66,10 @@ Additional configuration options:
 
 ### Authentication
 
-The exporter supports different authentication mechanisms.
-Currently, it supports API key authentication as well as no authentication (if the backend does not require it).
+The exporter supports different authentication mechanisms: OAuth 2.0 (client credentials),
+API key, and no authentication (if the backend does not require it). At most one mechanism may be
+configured: setting both `oauth` and `apiKey` is rejected at startup. When `oauth` is set it is
+used; otherwise an `apiKey` (when set) is used; otherwise requests are sent without authentication.
 
 #### Example of API key authentication:
 
@@ -76,6 +78,50 @@ You can provide the API key via the `apiKey` configuration property. The exporte
 ```
 x-api-key: myAPIKey
 ```
+
+#### Example of OAuth 2.0 authentication:
+
+For backends protected by an OAuth 2.0 authorization server, configure the `oauth` block. The
+exporter performs a [client-credentials grant](https://datatracker.ietf.org/doc/html/rfc6749#section-4.4)
+against the configured `authorizationServerUrl`, caches the resulting access token in memory, and
+proactively rotates it on a background thread ahead of expiry. Each export request then carries the
+token in the `Authorization` header:
+
+```
+Authorization: Bearer <access-token>
+```
+
+```yaml
+zeebe:
+  broker:
+    exporters:
+      app-integrations:
+        className: io.camunda.exporter.appint.AppIntegrationsExporter
+        args:
+          url: "http://app-integration-backend:8080/events"
+          oauth:
+            clientId: "my-client-id"
+            clientSecret: "my-client-secret"
+            authorizationServerUrl: "https://auth.example.com/oauth/token"
+            audience: "app-integration-backend"
+```
+
+OAuth configuration keys (nested under `oauth`):
+
+|           Key            |  Type   | Required |                                      Description                                      |
+|--------------------------|---------|----------|---------------------------------------------------------------------------------------|
+| `clientId`               | string  | yes      | OAuth client identifier sent as `client_id` in the token request.                     |
+| `clientSecret`           | string  | yes      | OAuth client secret sent as `client_secret` in the token request.                     |
+| `authorizationServerUrl` | string  | yes      | Token endpoint URL of the authorization server (the client-credentials grant target). |
+| `audience`               | string  | no       | Sent as `audience` in the token request when set; omitted otherwise.                  |
+| `scope`                  | string  | no       | Sent as `scope` in the token request when set; omitted otherwise.                     |
+| `resource`               | string  | no       | Sent as `resource` in the token request when set; omitted otherwise.                  |
+| `connectTimeoutMs`       | integer | no       | Connect timeout for the token request, in milliseconds (default: 5000).               |
+| `readTimeoutMs`          | integer | no       | Read (socket) timeout for the token request, in milliseconds (default: 5000).         |
+
+The `connectTimeoutMs` / `readTimeoutMs` defaults ensure the token fetch — which runs synchronously
+on the export dispatch thread on a cache miss — always has a bounded ceiling, so enabling OAuth
+without explicit timeouts cannot stall exporting against an unresponsive token endpoint.
 
 ## Context headers
 

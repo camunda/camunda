@@ -66,6 +66,17 @@ public final class DefaultOAuthCredentialsProvider implements OAuthCredentialsPr
   /** Assumed token lifetime when the response does not report a positive {@code expires_in}. */
   static final Duration DEFAULT_LIFETIME = Duration.ofMinutes(5);
 
+  /**
+   * Fallback connect/read timeouts applied when none are configured. Without these, Apache
+   * HttpClient defaults both to {@code 0} (infinite), so a hung token endpoint that accepts the
+   * connection but never responds would block the synchronous {@link #obtainToken()} fetch — which
+   * runs on the single export dispatcher thread — indefinitely and stall exporting for that
+   * partition. A bounded default keeps enabling OAuth without explicit timeouts safe.
+   */
+  static final Duration DEFAULT_CONNECT_TIMEOUT = Duration.ofSeconds(5);
+
+  static final Duration DEFAULT_READ_TIMEOUT = Duration.ofSeconds(5);
+
   private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
 
   private final Logger log = LoggerFactory.getLogger(getClass().getPackageName());
@@ -104,8 +115,8 @@ public final class DefaultOAuthCredentialsProvider implements OAuthCredentialsPr
     this.audience = audience;
     this.scope = scope;
     this.resource = resource;
-    this.connectTimeout = connectTimeout;
-    this.readTimeout = readTimeout;
+    this.connectTimeout = connectTimeout != null ? connectTimeout : DEFAULT_CONNECT_TIMEOUT;
+    this.readTimeout = readTimeout != null ? readTimeout : DEFAULT_READ_TIMEOUT;
     this.metrics = metrics;
 
     // Build the shared client once; it is thread-safe and reused by both the background refresher
@@ -229,14 +240,12 @@ public final class DefaultOAuthCredentialsProvider implements OAuthCredentialsPr
     post.setHeader("Accept", "application/json");
     post.setEntity(new StringEntity(buildFormBody(), StandardCharsets.UTF_8));
 
-    final RequestConfig.Builder requestConfig = RequestConfig.custom();
-    if (connectTimeout != null) {
-      requestConfig.setConnectTimeout(Math.toIntExact(connectTimeout.toMillis()));
-    }
-    if (readTimeout != null) {
-      requestConfig.setSocketTimeout(Math.toIntExact(readTimeout.toMillis()));
-    }
-    post.setConfig(requestConfig.build());
+    final RequestConfig requestConfig =
+        RequestConfig.custom()
+            .setConnectTimeout(Math.toIntExact(connectTimeout.toMillis()))
+            .setSocketTimeout(Math.toIntExact(readTimeout.toMillis()))
+            .build();
+    post.setConfig(requestConfig);
 
     try (final CloseableHttpResponse response = httpClient.execute(post)) {
       final int statusCode = response.getStatusLine().getStatusCode();
