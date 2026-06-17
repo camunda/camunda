@@ -725,6 +725,14 @@ test.describe.parallel('Search Decision Definitions API Tests', () => {
             },
           },
         );
+        await validateResponse(
+          {
+            path: '/decision-definitions/search',
+            method: 'POST',
+            status: '200',
+          },
+          res,
+        );
         await assertStatusCode(res, 200);
         const body = await res.json();
         expect(body.page.totalItems).toBe(15);

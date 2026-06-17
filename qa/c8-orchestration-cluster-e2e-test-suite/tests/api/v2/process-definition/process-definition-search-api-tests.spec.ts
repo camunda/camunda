@@ -333,6 +333,14 @@ test.describe.parallel('Process Definition Search API', () => {
         );
         await assertStatusCode(res, 200);
         const body = await res.json();
+        validateResponseShape(
+          {
+            path: '/process-definitions/search',
+            method: 'POST',
+            status: '200',
+          },
+          body,
+        );
         expect(body.page.totalItems).toBe(15);
         expect(body.items).toHaveLength(5);
         expect(body.page.endCursor).toBeTruthy();
