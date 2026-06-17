@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.1">
 <title data-rh="true">ADR-0005: Physical-Tenant Routing of the Authorization Layer | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-55325/architecture/components/orchestration-cluster/adr/physical-tenant-routing-of-authorization-reads/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="ADR-0005: Physical-Tenant Routing of the Authorization Layer | Camunda Platform"><meta data-rh="true" name="description" content="Status"><meta data-rh="true" property="og:description" content="Status"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-55325/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-55325/architecture/components/orchestration-cluster/adr/physical-tenant-routing-of-authorization-reads/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-55325/architecture/components/orchestration-cluster/adr/physical-tenant-routing-of-authorization-reads/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-55325/architecture/components/orchestration-cluster/adr/physical-tenant-routing-of-authorization-reads/" hreflang="x-default"><link rel="stylesheet" href="/camunda/pr-preview/pr-55325/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-55325/assets/js/runtime~main.acfccd6b.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-55325/assets/js/main.73bc8cd2.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-55325/assets/js/runtime~main.2c89c653.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-55325/assets/js/main.9ddb510f.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -91,9 +91,13 @@ singleton.</p>
 <p>These run on the request thread (PT stamped by ADR-0003&#x27;s pre-security filter), mirroring
 <code>BasicAuthUserDetailsAdapter</code>:</p>
 <ol>
-<li class=""><strong>Membership resolution.</strong> <code>DefaultMembershipService</code> passes <code>PhysicalTenantContext.current()</code>
-(not <code>DEFAULT_PHYSICAL_TENANT_ID</code>) to <code>serviceRegistry.{group,role,tenant,mappingRule}Services(...)</code>,
-so the principal&#x27;s groups, roles, tenants, and mapping-rules are read from the in-context PT. The
+<li class=""><strong>Identity &amp; membership resolution.</strong> Every request-time read that builds or gates on the
+<code>CamundaAuthentication</code> resolves the in-context PT via <code>PhysicalTenantContext.current()</code> instead of
+<code>DEFAULT_PHYSICAL_TENANT_ID</code>. These are call sites in the authentication / Spring Security services
+that today call <code>serviceRegistry.*Services(&quot;default&quot;)</code> — inventoried in #54327
+(&quot;Authentication &amp; Spring Security services&quot;): <code>DefaultMembershipService</code> (groups, roles, tenants,
+mapping-rules), <code>BasicCamundaUserService</code> and <code>OidcCamundaUserService</code> (user + tenants),
+<code>CamundaUserDetailsService</code> (user details), and <code>AdminUserPresenceAdapter</code> (admin-role check). The
 resolved memberships are persisted in <code>CamundaAuthentication</code> and reused everywhere downstream
 (including the engine), so this single request-time resolution is sufficient.</li>
 <li class=""><strong>Control-plane authorization decision.</strong> <code>AuthorizationRepositoryAdapter</code> (OC&#x27;s
@@ -189,6 +193,9 @@ that stamps the PT id on the request (the request-scoped reads&#x27; PT source).
 the original <code>AuthorizationReader</code>-only scope to membership resolution + both decision-read planes).</li>
 <li class="">#54728 — Physical Tenants Identity, Slice 1 (parent).</li>
 <li class="">#54474 — per-physical-tenant RDBMS readers (<code>RdbmsTenantReaders</code>), merged.</li>
+<li class="">#54327 — inventory of hardcoded-<code>default</code> <code>serviceRegistry.*Services(...)</code> call sites in the
+authentication / Spring Security services (the request-scoped reads routed under A.1) and the wider
+per-tenant service-registry integration.</li>
 <li class="">#55401 — engine uses the partition&#x27;s PT-scoped <code>SearchClient</code> for batch operations (scopes the
 <em>data</em> read; this ADR extends the same scoping to the data-plane <em>authorization</em> read via the per-PT
 <code>ResourceAccessController</code>).</li>
