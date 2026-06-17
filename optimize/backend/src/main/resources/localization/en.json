@@ -223,6 +223,10 @@
   "report": {
     "label": "Report",
     "label-plural": "Reports",
+    "outlierBand": {
+      "percentile": "p{value}",
+      "yAxis": "Tokens per execution"
+    },
     "textTile": "Text tile",
     "externalUrl": "External URL",
     "create": "Create report",

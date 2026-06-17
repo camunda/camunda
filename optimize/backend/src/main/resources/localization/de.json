@@ -223,6 +223,10 @@
   "report": {
     "label": "Bericht",
     "label-plural": "Berichte",
+    "outlierBand": {
+      "percentile": "p{value}",
+      "yAxis": "Token pro Ausführung"
+    },
     "textTile": "Textkachel",
     "externalUrl": "Externe URL",
     "create": "Bericht Erstellen",
