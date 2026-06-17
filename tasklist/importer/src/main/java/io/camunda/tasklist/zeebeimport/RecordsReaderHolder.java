@@ -15,7 +15,6 @@ import io.camunda.webapps.schema.entities.ImportPositionEntity;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -40,7 +39,8 @@ public class RecordsReaderHolder {
 
   private final Set<Integer> partitionsCompletedImporting = ConcurrentHashMap.newKeySet();
 
-  private final Map<RecordsReader, Integer> countEmptyBatchesAfterImportingDone = new HashMap<>();
+  private final Map<RecordsReader, Integer> countEmptyBatchesAfterImportingDone =
+      new ConcurrentHashMap<>();
 
   @Autowired private BeanFactory beanFactory;
 

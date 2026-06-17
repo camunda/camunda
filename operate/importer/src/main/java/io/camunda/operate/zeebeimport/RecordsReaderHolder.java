@@ -16,11 +16,11 @@ import io.camunda.operate.zeebe.PartitionHolder;
 import io.camunda.webapps.schema.entities.ImportPositionEntity;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanFactory;
@@ -44,7 +44,8 @@ public class RecordsReaderHolder {
 
   @Autowired private OperateProperties operateProperties;
 
-  private final Map<RecordsReader, Integer> countEmptyBatchesAfterImportingDone = new HashMap<>();
+  private final Map<RecordsReader, Integer> countEmptyBatchesAfterImportingDone =
+      new ConcurrentHashMap<>();
 
   public Set<RecordsReader> getAllRecordsReaders() {
     if (CollectionUtil.isNotEmpty(recordsReaders)) {
