@@ -28,35 +28,36 @@ test.beforeAll(async ({request}) => {
 
   processInstanceWithFailedDecision = await createSingleInstance('invoice', 1);
 
-  // Valid inputs → both Invoice Classification and Assign Approver Group evaluate successfully
-  processInstanceWithSuccessfulDecision = await createSingleInstance(
-    'invoice',
-    1,
-    {amount: 500, invoiceCategory: 'Misc'},
-  );
+  await test.step('Create evaluated decision instance', async () => {
+    processInstanceWithSuccessfulDecision = await createSingleInstance(
+      'invoice',
+      1,
+      {amount: 500, invoiceCategory: 'Misc'},
+    );
+  });
 
-  // Poll until our specific failed decision instance is indexed before any test runs.
-  // A fixed sleep is unreliable on slow runners and wasteful on fast ones.
-  await expect
-    .poll(
-      async () => {
-        const response = await request.post('/v2/decision-instances/search', {
-          headers: jsonHeaders(),
-          data: {
-            filter: {
-              state: 'FAILED',
-              processInstanceKey:
-                processInstanceWithFailedDecision.processInstanceKey,
+  await test.step('Wait for failed instance to be indexed', async () => {
+    await expect
+      .poll(
+        async () => {
+          const response = await request.post('/v2/decision-instances/search', {
+            headers: jsonHeaders(),
+            data: {
+              filter: {
+                state: 'FAILED',
+                processInstanceKey:
+                  processInstanceWithFailedDecision.processInstanceKey,
+              },
             },
-          },
-        });
-        if (response.status() !== 200) return 0;
-        const result = await response.json();
-        return result.page?.totalItems ?? 0;
-      },
-      {timeout: 60_000, intervals: [2_000, 5_000]},
-    )
-    .toBeGreaterThanOrEqual(1);
+          });
+          if (response.status() !== 200) return 0;
+          const result = await response.json();
+          return result.page?.totalItems ?? 0;
+        },
+        {timeout: 60_000, intervals: [2_000, 5_000]},
+      )
+      .toBeGreaterThanOrEqual(1);
+  });
 });
 
 test.describe('Decision Navigation', () => {

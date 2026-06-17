@@ -22,38 +22,39 @@ test.beforeAll(async ({request}) => {
     './resources/invoice.bpmn',
   ]);
 
-  // No variables → decision evaluation error → FAILED decision instance
-  const failedInstance = await createSingleInstance('invoice', 1);
-  failedInstanceProcessKey = failedInstance.processInstanceKey;
-
-  // Valid inputs → decision evaluates successfully → EVALUATED decision instance
-  await createSingleInstance('invoice', 1, {
-    amount: 500,
-    invoiceCategory: 'Misc',
+  await test.step('Create failed decision instance', async () => {
+    const failedInstance = await createSingleInstance('invoice', 1);
+    failedInstanceProcessKey = failedInstance.processInstanceKey;
   });
 
-  // Poll until the FAILED decision instance for OUR specific process instance is indexed.
-  // Scoping by processInstanceKey prevents a false-positive from parallel tests'
-  // failed instances satisfying the global FAILED filter before ours is ready.
-  await expect
-    .poll(
-      async () => {
-        const response = await request.post('/v2/decision-instances/search', {
-          headers: jsonHeaders(),
-          data: {
-            filter: {
-              state: 'FAILED',
-              processInstanceKey: failedInstanceProcessKey,
+  await test.step('Create evaluated decision instance', async () => {
+    await createSingleInstance('invoice', 1, {
+      amount: 500,
+      invoiceCategory: 'Misc',
+    });
+  });
+
+  await test.step('Wait for failed instance to be indexed', async () => {
+    await expect
+      .poll(
+        async () => {
+          const response = await request.post('/v2/decision-instances/search', {
+            headers: jsonHeaders(),
+            data: {
+              filter: {
+                state: 'FAILED',
+                processInstanceKey: failedInstanceProcessKey,
+              },
             },
-          },
-        });
-        if (response.status() !== 200) return 0;
-        const result = await response.json();
-        return result.page?.totalItems ?? 0;
-      },
-      {timeout: 60_000, intervals: [2_000, 5_000]},
-    )
-    .toBeGreaterThanOrEqual(1);
+          });
+          if (response.status() !== 200) return 0;
+          const result = await response.json();
+          return result.page?.totalItems ?? 0;
+        },
+        {timeout: 60_000, intervals: [2_000, 5_000]},
+      )
+      .toBeGreaterThanOrEqual(1);
+  });
 });
 
 test.describe('Decision Filters', () => {
