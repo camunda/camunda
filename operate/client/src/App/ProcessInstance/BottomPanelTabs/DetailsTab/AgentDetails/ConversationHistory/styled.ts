@@ -15,7 +15,7 @@ const ConversationContainer = styled.div`
   gap: var(--cds-spacing-04);
 `;
 
-const ErrorHint = styled.span`
+const StatusHint = styled.span`
   font-size: var(--cds-body-compact-01-font-size);
   font-weight: var(--cds-body-compact-01-font-weight);
   line-height: var(--cds-body-compact-01-line-height);
@@ -27,4 +27,4 @@ const ShowMoreButton = styled(Button)`
   align-self: center;
 `;
 
-export {ConversationContainer, ErrorHint, ShowMoreButton};
+export {ConversationContainer, StatusHint, ShowMoreButton};

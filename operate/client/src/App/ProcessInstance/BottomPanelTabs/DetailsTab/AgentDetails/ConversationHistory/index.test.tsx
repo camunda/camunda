@@ -81,6 +81,27 @@ describe('<ConversationHistory />', () => {
     ).toBeInTheDocument();
   });
 
+  it('should show a hint when there are no conversation messages', async () => {
+    mockSearchAgentInstanceHistory().withSuccess(searchResult([]));
+
+    render(
+      <ConversationHistory
+        agentInstanceKey={AGENT_INSTANCE_KEY}
+        enablePeriodicRefetch={false}
+        isVisible
+      />,
+      {wrapper: createWrapper()},
+    );
+
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('conversation-history-skeleton'),
+    );
+
+    expect(
+      screen.getByText('No conversation with this agent instance found.'),
+    ).toBeInTheDocument();
+  });
+
   it('should render conversation items with text', async () => {
     mockSearchAgentInstanceHistory().withSuccess(
       searchResult([
@@ -183,6 +204,7 @@ describe('<ConversationHistory />', () => {
 
   it('should toggle the history sort order when the sort button is clicked', async () => {
     let query: unknown;
+    const item = mockAgentInstanceHistoryItem();
     mockServer.use(
       http.post(
         endpoints.searchAgentInstanceHistory.getUrl({
@@ -190,7 +212,7 @@ describe('<ConversationHistory />', () => {
         }),
         async ({request}) => {
           query = await request.json();
-          return Response.json(searchResult([]));
+          return Response.json(searchResult([item]));
         },
       ),
     );
