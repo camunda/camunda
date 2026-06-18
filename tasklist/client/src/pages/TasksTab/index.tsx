@@ -133,8 +133,9 @@ const TasksTab: React.FC = observer(() => {
 
   return (
     <main
-      className={cn(styles.container, {'nav-v2-tasks': IS_NAV_V2_ENABLED})}
-      style={IS_NAV_V2_ENABLED ? {gridTemplateColumns: '312px 1fr'} : undefined}
+      className={cn(styles.container, {
+        [styles.navV2!]: IS_NAV_V2_ENABLED,
+      })}
     >
       {!IS_NAV_V2_ENABLED && <CollapsiblePanel />}
       <Stack
