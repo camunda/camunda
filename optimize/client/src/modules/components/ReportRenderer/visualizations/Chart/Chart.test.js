@@ -12,10 +12,12 @@ import {Chart} from './Chart';
 import createDefaultChartConfig from './defaultChart';
 import createHyperChartConfig from './hyperChart';
 import createTargetLineConfig from './targetLineChart';
+import createOutlierBandConfig from './outlierBandChart';
 
 jest.mock('./targetLineChart', () => jest.fn());
 jest.mock('./hyperChart', () => jest.fn());
 jest.mock('./defaultChart', () => jest.fn());
+jest.mock('./outlierBandChart', () => jest.fn());
 
 const report = {
   data: {
@@ -75,4 +77,18 @@ it('should render default normal chart if report is a single report', () => {
   );
 
   expect(createDefaultChartConfig).toHaveBeenCalled();
+});
+
+it('should use the outlier band config when visualization is outlierBand', () => {
+  shallow(
+    <Chart
+      report={{
+        ...report,
+        result: {data: {}, measures: []},
+        data: {...report.data, visualization: 'outlierBand'},
+      }}
+    />
+  );
+
+  expect(createOutlierBandConfig).toHaveBeenCalled();
 });

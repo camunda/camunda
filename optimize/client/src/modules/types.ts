@@ -156,7 +156,15 @@ interface DistributedBy {
   value: GroupByValue | null;
 }
 
-type ProcessReportVisualization = 'number' | 'table' | 'bar' | 'barLine' | 'line' | 'pie' | 'heat';
+type ProcessReportVisualization =
+  | 'number'
+  | 'table'
+  | 'bar'
+  | 'barLine'
+  | 'line'
+  | 'pie'
+  | 'heat'
+  | 'outlierBand';
 
 type AggregationTypeType = 'avg' | 'min' | 'max' | 'sum' | 'percentile';
 
@@ -313,8 +321,10 @@ export interface SingleProcessReportResultData {
   value: string | number;
 }
 
-export interface Report<Data extends object = SingleProcessReportData, Result = unknown | undefined>
-  extends GenericEntity<Data> {
+export interface Report<
+  Data extends object = SingleProcessReportData,
+  Result = unknown | undefined,
+> extends GenericEntity<Data> {
   id: string;
   collectionId?: string | null;
   description: string | null;

@@ -223,6 +223,10 @@
   "report": {
     "label": "Bericht",
     "label-plural": "Berichte",
+    "outlierBand": {
+      "percentile": "P{value}",
+      "yAxis": "Token pro Ausführung"
+    },
     "textTile": "Textkachel",
     "externalUrl": "Externe URL",
     "create": "Bericht Erstellen",
@@ -1571,6 +1575,9 @@
       "agenticDurationStabilityDescription": "P50- und P95-Ausführungsdauer abgeschlossener agentischer Prozessinstanzen über die Zeit im gewählten Zeitraum.",
       "agenticKpiTokenTrendName": "Token-Trend",
       "agenticKpiTokenTrendFootnote": "Wenn die Token-Nutzung ohne mehr Ausführungen steigt, wachsen möglicherweise die Prompts oder das Modell erzeugt längere Ausgaben. Engineering informieren.",
+      "agenticKpiTokenOutlierBandsName": "Token-Ausreißerbänder (P5 / P50 / P95)",
+      "agenticKpiTokenOutlierBandsDescription": "P5, P50 und P95 der insgesamt verbrauchten Token pro abgeschlossener agentischer Prozessinstanz im ausgewählten Zeitraum.",
+      "agenticKpiTokenOutlierBandsFootnote": "Eine größer werdende Lücke zwischen P5 und P95 bedeutet, dass sich Ausführungen inkonsistent verhalten. Achten Sie auf Prompt-Variabilität oder Nicht-Determinismus.",
       "agenticKpiTokenConsumersName": "Top-Token-Verbraucher nach Prozess",
       "agenticKpiTokenConsumersFootnote": "Die Reduzierung des größten Verbrauchers hat die größte Auswirkung auf die gesamten Token-Kosten.",
       "agenticKpiDurationP50Name": "P50-Ausführungsdauer",

@@ -85,6 +85,13 @@ public class AgenticControlDashboardService {
   public static final String KPI_TOKEN_TREND_FOOTNOTE = "agenticKpiTokenTrendFootnote";
   public static final String KPI_TOKEN_TREND_FOOTNOTE_KEY =
       "agenticControl.report." + KPI_TOKEN_TREND_FOOTNOTE;
+  public static final String KPI_TOKEN_OUTLIER_BANDS_NAME = "agenticKpiTokenOutlierBandsName";
+  public static final String KPI_TOKEN_OUTLIER_BANDS_DESCRIPTION =
+      "agenticKpiTokenOutlierBandsDescription";
+  public static final String KPI_TOKEN_OUTLIER_BANDS_FOOTNOTE =
+      "agenticKpiTokenOutlierBandsFootnote";
+  public static final String KPI_TOKEN_OUTLIER_BANDS_FOOTNOTE_KEY =
+      "agenticControl.report." + KPI_TOKEN_OUTLIER_BANDS_FOOTNOTE;
   public static final String KPI_TOKEN_CONSUMERS_NAME = "agenticKpiTokenConsumersName";
   public static final String KPI_TOKEN_CONSUMERS_FOOTNOTE = "agenticKpiTokenConsumersFootnote";
   public static final String KPI_TOKEN_CONSUMERS_FOOTNOTE_KEY =
@@ -126,6 +133,9 @@ public class AgenticControlDashboardService {
       UUID.nameUUIDFromBytes("agentic-token-trend".getBytes(StandardCharsets.UTF_8)).toString();
   public static final String TOKEN_CONSUMERS_REPORT_ID =
       UUID.nameUUIDFromBytes("agentic-token-consumers".getBytes(StandardCharsets.UTF_8)).toString();
+  public static final String TOKEN_OUTLIER_BANDS_REPORT_ID =
+      UUID.nameUUIDFromBytes("agentic-token-outlier-bands".getBytes(StandardCharsets.UTF_8))
+          .toString();
   public static final String KPI_DURATION_P50_REPORT_ID =
       UUID.nameUUIDFromBytes("agentic-duration-p50".getBytes(StandardCharsets.UTF_8)).toString();
   public static final String KPI_DURATION_P95_REPORT_ID =
@@ -186,6 +196,7 @@ public class AgenticControlDashboardService {
     tiles.add(buildMedianTokensReport());
     tiles.add(buildDurationStabilityReport());
     tiles.add(buildTokenTrendReport());
+    tiles.add(buildTokenOutlierBandsReport());
     tiles.add(buildTopTokenConsumersReport());
     tiles.add(buildP50DurationReport());
     tiles.add(buildP95DurationReport());
@@ -392,6 +403,53 @@ public class AgenticControlDashboardService {
                 .buildList())
         .agenticControlReport(true)
         .build();
+  }
+
+  // Token consumption stability: p5/p50/p95 total tokens per execution over time, rendered as
+  // shaded outlier bands. Reuses the multi-percentile-in-one-report support (see the duration
+  // stability report) and mirrors the token-trend tile's weekly date grouping.
+  private DashboardReportTileDto buildTokenOutlierBandsReport() {
+    final EndDateGroupByDto groupBy = new EndDateGroupByDto();
+    groupBy.setValue(new DateGroupByValueDto(AggregateByDateUnit.WEEK));
+
+    final ProcessReportDataDto reportData =
+        ProcessReportDataDto.builder()
+            .definitions(Collections.emptyList())
+            .view(new ProcessViewDto(ProcessViewEntity.AGENT_INSTANCE, ViewProperty.TOTAL_TOKENS))
+            .groupBy(groupBy)
+            .distributedBy(new NoneDistributedByDto())
+            .visualization(ProcessVisualization.OUTLIER_BAND)
+            .configuration(
+                SingleReportConfigurationDto.builder()
+                    .aggregationTypes(
+                        new LinkedHashSet<>(
+                            List.of(
+                                new AggregationDto(AggregationType.PERCENTILE, 5.0),
+                                new AggregationDto(AggregationType.PERCENTILE, 50.0),
+                                new AggregationDto(AggregationType.PERCENTILE, 95.0))))
+                    .build())
+            .filter(
+                ProcessFilterBuilder.filter()
+                    .completedInstancesOnly()
+                    .add()
+                    .hasAgentInstances()
+                    .add()
+                    .buildList())
+            .agenticControlReport(true)
+            .build();
+    reportWriter.createOrUpdateSingleProcessReport(
+        TOKEN_OUTLIER_BANDS_REPORT_ID,
+        null,
+        reportData,
+        KPI_TOKEN_OUTLIER_BANDS_NAME,
+        KPI_TOKEN_OUTLIER_BANDS_DESCRIPTION,
+        null);
+    return buildTile(
+        TOKEN_OUTLIER_BANDS_REPORT_ID,
+        // sits in the right half of the token-trend row, mirroring its size
+        new PositionDto(9, 6),
+        new DimensionDto(9, 4),
+        Map.of("section", "token", "footnote", KPI_TOKEN_OUTLIER_BANDS_FOOTNOTE_KEY));
   }
 
   private DashboardReportTileDto buildTopTokenConsumersReport() {

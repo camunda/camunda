@@ -223,6 +223,10 @@
   "report": {
     "label": "Report",
     "label-plural": "Reports",
+    "outlierBand": {
+      "percentile": "P{value}",
+      "yAxis": "Tokens per execution"
+    },
     "textTile": "Text tile",
     "externalUrl": "External URL",
     "create": "Create report",
@@ -1571,6 +1575,9 @@
       "agenticDurationStabilityDescription": "P50 and P95 execution duration of completed agentic process instances over time in the selected period.",
       "agenticKpiTokenTrendName": "Token Trend",
       "agenticKpiTokenTrendFootnote": "If token use rises without more executions, prompts may be growing or the model is producing longer outputs. Raise with engineering.",
+      "agenticKpiTokenOutlierBandsName": "Token outlier bands (P5 / P50 / P95)",
+      "agenticKpiTokenOutlierBandsDescription": "P5, P50 and P95 total tokens consumed per completed agentic process instance over time in the selected period.",
+      "agenticKpiTokenOutlierBandsFootnote": "A widening gap between P5 and P95 means executions are behaving inconsistently. Look for prompt variability or non-determinism.",
       "agenticKpiTokenConsumersName": "Top token consumers by process",
       "agenticKpiTokenConsumersFootnote": "Reducing the top consumer will have the biggest impact on overall token spend.",
       "agenticKpiDurationP50Name": "P50 execution duration",
