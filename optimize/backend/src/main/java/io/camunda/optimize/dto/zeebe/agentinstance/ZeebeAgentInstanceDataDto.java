@@ -33,6 +33,7 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
   private AgentDefinitionValueDto definition = new AgentDefinitionValueDto();
   private AgentMetricsValueDto metrics = new AgentMetricsValueDto();
   private List<AgentToolValueDto> tools = new ArrayList<>();
+  private List<String> changedAttributes = new ArrayList<>();
 
   public ZeebeAgentInstanceDataDto() {}
 
@@ -179,7 +180,11 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
 
   @Override
   public List<String> getChangedAttributes() {
-    return List.of();
+    return changedAttributes != null ? changedAttributes : List.of();
+  }
+
+  public void setChangedAttributes(final List<String> changedAttributes) {
+    this.changedAttributes = changedAttributes;
   }
 
   @Override

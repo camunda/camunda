@@ -9,12 +9,40 @@ package io.camunda.optimize.dto.zeebe.agentinstance;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.zeebe.agentinstance.ZeebeAgentInstanceDataDto.AgentToolValueDto;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class ZeebeAgentInstanceDataDtoTest {
+
+  // ── changedAttributes deserialization ─────────────────────────────────────
+
+  @Test
+  void shouldDeserializeRecordWithPopulatedChangedAttributes() throws Exception {
+    // given — a record where changedAttributes is non-empty (e.g. an UPDATED record)
+    final ObjectMapper objectMapper = new ObjectMapper();
+    final String json =
+        "{\"agentInstanceKey\":1,\"status\":\"THINKING\",\"changedAttributes\":[\"status\",\"metrics\"]}";
+
+    // when — deserialization must not fail mutating an immutable list
+    final ZeebeAgentInstanceDataDto dto =
+        objectMapper.readValue(json, ZeebeAgentInstanceDataDto.class);
+
+    // then
+    assertThat(dto.getChangedAttributes()).containsExactly("status", "metrics");
+  }
+
+  @Test
+  void shouldReturnEmptyListWhenChangedAttributesIsNull() {
+    // given
+    final ZeebeAgentInstanceDataDto dto = new ZeebeAgentInstanceDataDto();
+    dto.setChangedAttributes(null);
+
+    // when / then
+    assertThat(dto.getChangedAttributes()).isNotNull().isEmpty();
+  }
 
   // ── getTools() null-safety ────────────────────────────────────────────────
 
