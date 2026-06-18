@@ -202,3 +202,37 @@ it('should pass empty definitions in evaluate calls when no process is selected'
 
   expect(evaluateReport).toHaveBeenCalledWith('report-id', [], {}, []);
 });
+
+it('should inject the configured top-N limit when evaluating a tile with a topN config', async () => {
+  const tiles = [
+    {id: 'consumers', configuration: {section: 'token', topN: '10'}, position: {x: 0, y: 0}},
+  ];
+  (loadAgenticDashboard as jest.Mock).mockReturnValueOnce({tiles, availableFilters: []});
+
+  const node = shallow(<AgenticControlPlane />);
+  await runAllEffects();
+
+  const loadTile = node
+    .find('.token-section')
+    .find('DashboardRenderer')
+    .prop('loadTile') as (id: string, filter: unknown[], params: unknown) => void;
+  loadTile('consumers', [], {});
+
+  expect(evaluateReport).toHaveBeenCalledWith('consumers', [], {limit: 10}, [], 'week');
+});
+
+it('should not inject a limit for token tiles without a topN config', async () => {
+  const tiles = [{id: 'token-trend', configuration: {section: 'token'}, position: {x: 0, y: 0}}];
+  (loadAgenticDashboard as jest.Mock).mockReturnValueOnce({tiles, availableFilters: []});
+
+  const node = shallow(<AgenticControlPlane />);
+  await runAllEffects();
+
+  const loadTile = node
+    .find('.token-section')
+    .find('DashboardRenderer')
+    .prop('loadTile') as (id: string, filter: unknown[], params: unknown) => void;
+  loadTile('token-trend', [], {});
+
+  expect(evaluateReport).toHaveBeenCalledWith('token-trend', [], {}, [], 'week');
+});
