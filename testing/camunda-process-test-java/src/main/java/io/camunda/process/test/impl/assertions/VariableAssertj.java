@@ -31,6 +31,7 @@ import io.camunda.process.test.api.similarity.SemanticSimilarityConfig;
 import io.camunda.process.test.impl.assertions.util.CamundaAssertJsonMapper;
 import io.camunda.process.test.impl.assertions.util.CamundaAssertJsonMapper.JsonMappingException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -188,8 +189,9 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
         instance ->
             hasVariableSatisfies(
                 variableSelector,
-                variableValueType,
-                requirement,
+                variable ->
+                    assertSatisfiesRequirement(
+                        variableSelector, variable, variableValueType, requirement),
                 () ->
                     findLocalVariablesBySelector(
                         processInstanceKey, instance.getElementInstanceKey(), variableSelector)));
@@ -203,27 +205,12 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
 
     hasVariableSatisfies(
         variableSelector,
-        variableValueType,
-        requirement,
+        variable ->
+            assertSatisfiesRequirement(variableSelector, variable, variableValueType, requirement),
         () -> findGlobalVariablesBySelector(processInstanceKey, variableSelector));
   }
 
   private void hasVariableSatisfies(
-      final VariableSelector variableSelector,
-      final ThrowingConsumer<String> rawRequirement,
-      final Supplier<List<Variable>> actualVariablesSupplier) {
-
-    awaitBehavior
-        .get()
-        .untilAsserted(
-            () -> {
-              final String rawValue =
-                  assertVariableMatches(variableSelector, actualVariablesSupplier).getValue();
-              rawRequirement.accept(rawValue);
-            });
-  }
-
-  private void hasMatchingVariableSatisfies(
       final VariableSelector variableSelector,
       final ThrowingConsumer<Variable> requirement,
       final Supplier<List<Variable>> actualVariablesSupplier) {
@@ -238,43 +225,37 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
             });
   }
 
-  private <T> void hasVariableSatisfies(
+  private <T> void assertSatisfiesRequirement(
       final VariableSelector variableSelector,
+      final Variable variable,
       final Class<T> variableValueType,
-      final ThrowingConsumer<T> requirement,
-      final Supplier<List<Variable>> actualVariablesSupplier) {
+      final ThrowingConsumer<T> requirement) {
+    try {
+      final T actualValue = jsonMapper.readJson(variable.getValue(), variableValueType);
+      requirement.accept(actualValue);
+    } catch (final AssertionError e) {
+      fail(
+          "%s should have a variable '%s' but the following requirement was not satisfied: %s.",
+          actual, variableSelector.describe(), e.getMessage());
+    } catch (final JsonMappingException e) {
+      final Throwable reason =
+          Optional.ofNullable(e.getCause())
+              .map(cause -> Optional.ofNullable(cause.getCause()).orElse(cause))
+              .orElse(e);
 
-    hasVariableSatisfies(
-        variableSelector,
-        rawValue -> {
-          try {
-            final T actualValue = jsonMapper.readJson(rawValue, variableValueType);
-            requirement.accept(actualValue);
-          } catch (final AssertionError e) {
-            fail(
-                "%s should have a variable '%s' but the following requirement was not satisfied: %s.",
-                actual, variableSelector.describe(), e.getMessage());
-          } catch (final JsonMappingException e) {
-            final Throwable reason =
-                Optional.ofNullable(e.getCause())
-                    .map(cause -> Optional.ofNullable(cause.getCause()).orElse(cause))
-                    .orElse(e);
+      final String failureMessage =
+          String.format(
+              "%s should have a variable '%s' of type '%s', but the JSON mapping failed:\n"
+                  + "Error: %s\n"
+                  + "Reason: %s",
+              actual,
+              variableSelector.describe(),
+              variableValueType.getName(),
+              e.getMessage(),
+              reason);
 
-            final String failureMessage =
-                String.format(
-                    "%s should have a variable '%s' of type '%s', but the JSON mapping failed:\n"
-                        + "Error: %s\n"
-                        + "Reason: %s",
-                    actual,
-                    variableSelector.describe(),
-                    variableValueType.getName(),
-                    e.getMessage(),
-                    reason);
-
-            fail(failureMessage);
-          }
-        },
-        actualVariablesSupplier);
+      fail(failureMessage);
+    }
   }
 
   public void hasVariableSatisfiesExpression(
@@ -284,9 +265,9 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
 
     assertExpressionNotEmpty(expression);
 
-    hasVariableSatisfiesExpression(
+    hasVariableSatisfies(
         variableSelector,
-        expression,
+        variable -> assertSatisfiesExpression(variableSelector, variable, expression),
         () -> findGlobalVariablesBySelector(processInstanceKey, variableSelector));
   }
 
@@ -301,13 +282,15 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
     withLocalVariableAssertion(
         processInstanceKey,
         elementSelector,
-        instance ->
-            hasVariableSatisfiesExpression(
+        elementInstance ->
+            hasVariableSatisfies(
                 variableSelector,
-                expression,
+                variable -> assertSatisfiesExpression(variableSelector, variable, expression),
                 () ->
                     findLocalVariablesBySelector(
-                        processInstanceKey, instance.getElementInstanceKey(), variableSelector)));
+                        processInstanceKey,
+                        elementInstance.getElementInstanceKey(),
+                        variableSelector)));
   }
 
   public void hasLocalVariables(
@@ -452,16 +435,26 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
         String.format(" for %s variable '%s'", actual, variableSelector.describe()));
   }
 
-  private void evaluateExpression(
+  private void assertSatisfiesExpression(
       final VariableSelector variableSelector, final Variable variable, final String expression) {
     try {
-      final Map<String, Object> variables = new HashMap<>();
-      variables.put(variable.getName(), jsonMapper.readJson(variable.getValue(), Object.class));
+      final Object variableValue = jsonMapper.readJson(variable.getValue(), Object.class);
+      final Map<String, Object> variables =
+          Collections.singletonMap(variable.getName(), variableValue);
 
       final EvaluateExpressionResponse response =
           dataSource.evaluateExpression(normalizeFeelExpression(expression), variables);
 
-      assertExpressionMatches(variableSelector, expression, response);
+      assertThat(response.getResult())
+          .withFailMessage(
+              "%s variable '%s' should satisfy expression '%s' but the evaluation result was '%s'.%s",
+              actual,
+              variableSelector.describe(),
+              expression,
+              response.getResult(),
+              formatEvaluationWarnings(response))
+          .isEqualTo(true);
+
     } catch (final JsonMappingException e) {
       final Throwable reason =
           Optional.ofNullable(e.getCause())
@@ -478,31 +471,6 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
           "%s variable '%s' should satisfy expression '%s' but the expression evaluation failed: %s.",
           actual, variableSelector.describe(), expression, e.getMessage());
     }
-  }
-
-  private void assertExpressionMatches(
-      final VariableSelector variableSelector,
-      final String expression,
-      final EvaluateExpressionResponse response) {
-    if (!Boolean.TRUE.equals(response.getResult())) {
-      fail(
-          "%s variable '%s' should satisfy expression '%s' but the evaluation result was '%s'.%s",
-          actual,
-          variableSelector.describe(),
-          expression,
-          response.getResult(),
-          formatEvaluationWarnings(response));
-    }
-  }
-
-  private void hasVariableSatisfiesExpression(
-      final VariableSelector variableSelector,
-      final String expression,
-      final Supplier<List<Variable>> actualVariablesSupplier) {
-    hasMatchingVariableSatisfies(
-        variableSelector,
-        variable -> evaluateExpression(variableSelector, variable, expression),
-        actualVariablesSupplier);
   }
 
   private Variable assertVariableMatches(
