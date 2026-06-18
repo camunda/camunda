@@ -79,6 +79,7 @@ public final class BatchOperationJobUpdatePlan extends ObjectValue
   }
 
   public BatchOperationJobUpdatePlan wrap(final BatchOperationJobUpdatePlanValue record) {
+    changedAttributesProp.reset();
     setRetries(record.getRetries());
     setTimeout(record.getTimeout());
     setPriority(record.getPriority());
