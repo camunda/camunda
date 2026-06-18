@@ -127,6 +127,13 @@ public final class PublishMessageCommandImpl extends CommandWithVariables<Publis
   }
 
   @Override
+  public PublishMessageCommandStep3 businessId(final String businessId) {
+    grpcRequestObjectBuilder.setBusinessId(businessId);
+    httpRequestObject.setBusinessId(businessId);
+    return this;
+  }
+
+  @Override
   public FinalCommandStep<PublishMessageResponse> requestTimeout(final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
     httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
