@@ -197,12 +197,17 @@ public class ExporterConfiguration {
   }
 
   public static class HistoryConfiguration {
+    /* This should be kept in sync with BackgroundTaskManagerFactory.DEFAULT_HISTORY_ROLLOVER_BATCH_SIZE */
+    private static final int DEFAULT_HISTORY_ROLLOVER_BATCH_SIZE = 100;
+    /* This should be kept in sync with BackgroundTaskManagerFactory.DEFAULT_HISTORY_ARCHIVE_BY_ID_ROLLOVER_BATCH_SIZE */
+    private static final int DEFAULT_HISTORY_ARCHIVE_BY_ID_ROLLOVER_BATCH_SIZE = 500;
+
     private boolean processInstanceEnabled = true;
-    private boolean archiveByIdEnabled = false;
+    private boolean archiveByIdEnabled = true;
     private String elsRolloverDateFormat = "date";
     private String rolloverInterval = "1d";
     private String usageMetricsRolloverInterval = "1M";
-    private int rolloverBatchSize = 100;
+    private Integer rolloverBatchSize;
     private int reindexBatchSize = 2500;
     private int archiveByIdMaxRetryAttempts = 3;
     private int archiveByIdRetryDelayMs = 1000;
@@ -257,6 +262,12 @@ public class ExporterConfiguration {
     }
 
     public int getRolloverBatchSize() {
+      if (rolloverBatchSize == null) {
+        rolloverBatchSize =
+            archiveByIdEnabled
+                ? DEFAULT_HISTORY_ARCHIVE_BY_ID_ROLLOVER_BATCH_SIZE
+                : DEFAULT_HISTORY_ROLLOVER_BATCH_SIZE;
+      }
       return rolloverBatchSize;
     }
 
