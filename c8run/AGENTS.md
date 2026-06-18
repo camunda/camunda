@@ -108,7 +108,7 @@ Most `*.md` files in this repo are checked by Spotless using the Flexmark format
 
 Correct:
 
-```markdown
+````markdown
 - First item text:
 
   ```bash
@@ -118,18 +118,18 @@ Correct:
   Continuation paragraph.
 
 - Second item.
-```
+````
 
 Wrong (will fail CI):
 
-```markdown
+````markdown
 - First item text:
   ```bash
   command
   ```
   Continuation paragraph.
 - Second item.
-```
+````
 
 **Verification:** Run `./mvnw spotless:apply -T1C` from the repo root. This requires access to Camunda's internal Nexus (`repository.nexus.camunda.cloud`), configured via `NEXUS_USR`/`NEXUS_PSW` credentials — CI sets these automatically from Vault. If you don't have those credentials locally, verify formatting manually using the rules above before pushing.
 
