@@ -9,8 +9,15 @@
 import {IS_NAV_V2_ENABLED} from 'modules/featureFlags';
 import {HeaderV2} from './HeaderV2';
 import {LegacyHeader} from './LegacyHeader';
+import {CustomFiltersProvider} from 'modules/tasks/available-tasks/CollapsiblePanel/CustomFiltersModal/CustomFiltersProvider';
 
 const Header: React.FC = () =>
-  IS_NAV_V2_ENABLED ? <HeaderV2 /> : <LegacyHeader />;
+  IS_NAV_V2_ENABLED ? (
+    <CustomFiltersProvider>
+      <HeaderV2 />
+    </CustomFiltersProvider>
+  ) : (
+    <LegacyHeader />
+  );
 
 export {Header};

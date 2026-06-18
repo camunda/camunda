@@ -14,7 +14,7 @@ type Props = {
   isOpen: boolean;
   filterName: string;
   onClose: () => void;
-  onDelete: () => void;
+  onDelete: (filterName: string) => void;
   'data-testid'?: string;
 };
 
@@ -50,7 +50,7 @@ const DeleteFilterModal: React.FC<Props> = ({
           ),
         );
 
-        onDelete();
+        onDelete(filterName);
       }}
     >
       <p>

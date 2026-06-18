@@ -53,6 +53,7 @@ type Props = Omit<
 > & {
   filterId?: string;
   onSuccess: (filterId: string) => void;
+  onEditSuccess?: (filterId: string) => void;
 };
 
 const CustomFiltersModal: React.FC<Props> = ({
@@ -60,6 +61,7 @@ const CustomFiltersModal: React.FC<Props> = ({
   isOpen,
   onSuccess,
   onDelete,
+  onEditSuccess,
   ...props
 }) => {
   const [customFilters, setCustomFilters] = useCustomFilters({
@@ -111,6 +113,7 @@ const CustomFiltersModal: React.FC<Props> = ({
           });
 
           onSuccess(filterId!);
+          onEditSuccess?.(filterId!);
         }}
         onDelete={() => {
           setCurrentStep('delete');
@@ -154,7 +157,7 @@ const CustomFiltersModal: React.FC<Props> = ({
             eventName: 'custom-filter-deleted',
           });
           setCurrentStep('fields');
-          onDelete();
+          onDelete(filterId!);
         }}
         filterName={filterId ?? ''}
       />
