@@ -81,6 +81,23 @@ Use this category only when the annotations / log lines clearly point at infra:
 leak or oversized fixture in code under test). Only treat OOM as D if it killed an unrelated
 process (e.g. the runner agent itself).
 
+## "Install dependencies" / setup step timed out
+
+Common shape: a setup step (`npm ci`, `mvn dependency:resolve`, image pull) hit its `timeout-minutes` and the job was cancelled. **This is NOT Category D by default** and **never** an excuse to extend the timeout (Hard Rule 1 in `SKILL.md`).
+
+Diagnose in this order:
+
+1. **Cache hit or miss?** Search the log for `Cache restored`, `Cache hit`, `Cache miss`, `Found in cache`. Per `ci.md` §"GitHub Actions Cache", NPM/Maven/Go caches are written **only** from `main`/`stable*` builds; a PR run against a recent lockfile change will see a miss and that is expected.
+2. **Is the prescribed composite action in use?** NPM → `setup-yarn-cache`; Maven → `setup-maven-cache`. If the workflow rolls its own cache step, that's the fix — switch to the composite action. Quote the `ci.md` line in the brief.
+3. **Cache is on and warm but `npm ci` still slow?** Likely a registry slowness; check status pages. On `pull_request` rerun. On `push`/`merge_group` propose a recurring hardening only if the metric trend shows this isn't a one-off — see CI Health dashboard.
+4. **Lockfile churn?** Frequent lockfile updates invalidate the cache on every push. The fix is upstream (group Renovate updates), not in this workflow.
+
+What NOT to propose:
+
+- ❌ Bumping `timeout-minutes`.
+- ❌ `actions/cache` with hand-rolled keys when `setup-yarn-cache` / `setup-maven-cache` exists.
+- ❌ `cache-from: type=gha` for Docker images (forbidden by `ci.md` §caching).
+
 ## Don't
 
 - Don't close out a `main` / `stable/*` / `schedule` / `merge_group` brief with just "rerun." Propose
