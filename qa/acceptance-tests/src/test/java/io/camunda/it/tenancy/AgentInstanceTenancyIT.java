@@ -10,11 +10,15 @@ package io.camunda.it.tenancy;
 import static io.camunda.it.util.TestHelper.deployProcessForTenantAndWaitForIt;
 import static io.camunda.it.util.TestHelper.waitForAgentInstanceToBeIndexed;
 import static io.camunda.it.util.TestHelper.waitForElementInstances;
+import static io.camunda.it.util.TestHelper.waitForJobs;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.CreateAgentHistoryItemCommandStep1.AgentHistoryContent;
+import io.camunda.client.api.command.CreateAgentHistoryItemCommandStep1.AgentHistoryRole;
 import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.search.response.Job;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
@@ -24,6 +28,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import java.time.OffsetDateTime;
 import java.util.List;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -62,6 +67,7 @@ public class AgentInstanceTenancyIT {
   private static long agentInstanceKeyA;
   private static long agentInstanceKeyB;
   private static long elementInstanceKeyB;
+  private static long jobKeyB;
 
   @BeforeAll
   static void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {
@@ -87,6 +93,7 @@ public class AgentInstanceTenancyIT {
     final var resultB = createAgentInstanceWithResult(adminClient, TENANT_B);
     agentInstanceKeyB = resultB.agentInstanceKey();
     elementInstanceKeyB = resultB.elementInstanceKey();
+    jobKeyB = resultB.jobKey();
 
     waitForAgentInstanceToBeIndexed(adminClient, agentInstanceKeyA);
     waitForAgentInstanceToBeIndexed(adminClient, agentInstanceKeyB);
@@ -211,6 +218,33 @@ public class AgentInstanceTenancyIT {
     assertThat(exception.details().getStatus()).isEqualTo(404);
   }
 
+  // ── createHistoryItem ─────────────────────────────────────────────────────
+
+  @Test
+  void createHistoryItemShouldReturn404ForCrossTenantRequest(
+      @Authenticated(USER1) final CamundaClient camundaClient) {
+    // given — user1 belongs to TENANT_A only; agentInstanceKeyB is in TENANT_B
+    final var exception =
+        assertThatExceptionOfType(ProblemException.class)
+            .isThrownBy(
+                () ->
+                    camundaClient
+                        .newCreateAgentHistoryItemCommand(agentInstanceKeyB)
+                        .elementInstanceKey(elementInstanceKeyB)
+                        .jobKey(jobKeyB)
+                        .role(AgentHistoryRole.USER)
+                        .content(List.of(AgentHistoryContent.text("hello")))
+                        .producedAt(OffsetDateTime.parse("2025-06-01T12:00:00Z"))
+                        .execute())
+            .actual();
+
+    // then — tenant boundary surfaced as 404, not 403
+    assertThat(exception.getMessage()).startsWith("Failed with code 404");
+    assertThat(exception.details()).isNotNull();
+    assertThat(exception.details().getTitle()).isEqualTo("NOT_FOUND");
+    assertThat(exception.details().getStatus()).isEqualTo(404);
+  }
+
   // ── helpers ───────────────────────────────────────────────────────────────
 
   private static void createTenant(final CamundaClient client, final String tenantId) {
@@ -266,8 +300,19 @@ public class AgentInstanceTenancyIT {
             .execute()
             .getAgentInstanceKey();
 
-    return new AgentInstanceCreationResult(agentInstanceKey, elementInstanceKey);
+    final long jobKey =
+        waitForJobs(client, List.of(processInstanceKey)).stream()
+            .filter(j -> JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX.equals(j.getType()))
+            .findFirst()
+            .map(Job::getJobKey)
+            .orElseThrow(
+                () ->
+                    new AssertionError(
+                        "No agent job found for process instance " + processInstanceKey));
+
+    return new AgentInstanceCreationResult(agentInstanceKey, elementInstanceKey, jobKey);
   }
 
-  private record AgentInstanceCreationResult(long agentInstanceKey, long elementInstanceKey) {}
+  private record AgentInstanceCreationResult(
+      long agentInstanceKey, long elementInstanceKey, long jobKey) {}
 }
