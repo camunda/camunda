@@ -10,18 +10,7 @@ import {skipToken, useQuery} from '@tanstack/react-query';
 import type {AgentInstance} from '@camunda/camunda-api-zod-schemas/8.10';
 import {fetchAgentInstance} from 'modules/api/v2/agentInstances/fetchAgentInstance';
 import {queryKeys} from '../queryKeys';
-
-const RUNNING_STATUSES: ReadonlySet<AgentInstance['status']> = new Set([
-  'INITIALIZING',
-  'TOOL_DISCOVERY',
-  'THINKING',
-  'TOOL_CALLING',
-  'IDLE',
-]);
-
-const isAgentInstanceRunning = (agentInstance: AgentInstance): boolean => {
-  return RUNNING_STATUSES.has(agentInstance.status);
-};
+import {isAgentInstanceRunning} from './agentInstanceStatus';
 
 const useAgentInstance = <T = AgentInstance>(
   agentInstanceKey: string | undefined,
@@ -56,4 +45,4 @@ const useAgentInstance = <T = AgentInstance>(
   });
 };
 
-export {useAgentInstance, isAgentInstanceRunning};
+export {useAgentInstance};

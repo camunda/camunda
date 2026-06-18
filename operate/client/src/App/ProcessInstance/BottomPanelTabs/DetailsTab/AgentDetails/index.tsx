@@ -38,7 +38,7 @@ import {ConversationMessage} from './ConversationMessage';
 import {ConversationHistory} from './ConversationHistory';
 import {LatestAgentMessage} from './ConversationHistory/LatestAgentMessage';
 import {IS_CONVERSATION_HISTORY_ENABLED} from 'modules/feature-flags';
-import {isAgentInstanceRunning} from 'modules/queries/agentInstances/useAgentInstance';
+import {isAgentInstanceActive} from 'modules/queries/agentInstances/agentInstanceStatus';
 
 const STATUS_LABELS: Record<AgentInstanceStatus, string> = {
   INITIALIZING: 'Initializing',
@@ -134,7 +134,7 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
           {IS_CONVERSATION_HISTORY_ENABLED && (
             <LatestAgentMessage
               agentInstanceKey={agentInstance.agentInstanceKey}
-              enablePeriodicRefetch={isAgentInstanceRunning(agentInstance)}
+              enablePeriodicRefetch={isAgentInstanceActive(agentInstance)}
             />
           )}
         </AccordionItem>
@@ -174,7 +174,7 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
             <ConversationHistory
               agentInstanceKey={agentInstance.agentInstanceKey}
               isVisible={isConversationHistoryOpen}
-              enablePeriodicRefetch={isAgentInstanceRunning(agentInstance)}
+              enablePeriodicRefetch={isAgentInstanceActive(agentInstance)}
             />
           </AccordionItem>
         )}
