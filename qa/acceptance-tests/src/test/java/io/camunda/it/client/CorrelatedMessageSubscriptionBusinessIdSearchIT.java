@@ -21,8 +21,8 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Verifies the businessId carried by a message-start-event correlation flows end to end (engine ->
- * exporter -> secondary storage -> search API) and can be read back and filtered on every secondary
- * storage backend.
+ * exporter -> secondary storage -> search API) and can be read back, filtered, and sorted on every
+ * secondary storage backend.
  *
  * <p>Intentionally a plain {@code @MultiDbTest} (not {@code @CompatibilityTest}): the start-event
  * businessId is new in 8.10, so it cannot be asserted against an older broker that does not emit
@@ -108,6 +108,33 @@ public class CorrelatedMessageSubscriptionBusinessIdSearchIT {
 
     // then
     assertThat(searchResponse.items()).isEmpty();
+  }
+
+  @Test
+  void shouldSortByBusinessId() {
+    // when ascending
+    final var ascending =
+        camundaClient
+            .newCorrelatedMessageSubscriptionSearchRequest()
+            .sort(s -> s.businessId().asc())
+            .send()
+            .join();
+
+    // when descending
+    final var descending =
+        camundaClient
+            .newCorrelatedMessageSubscriptionSearchRequest()
+            .sort(s -> s.businessId().desc())
+            .send()
+            .join();
+
+    // then
+    assertThat(ascending.items())
+        .extracting(CorrelatedMessageSubscription::getBusinessId)
+        .containsExactly(BUSINESS_ID_A, BUSINESS_ID_B);
+    assertThat(descending.items())
+        .extracting(CorrelatedMessageSubscription::getBusinessId)
+        .containsExactly(BUSINESS_ID_B, BUSINESS_ID_A);
   }
 
   private static void startProcessViaMessageStartWithBusinessId(final String businessId) {
