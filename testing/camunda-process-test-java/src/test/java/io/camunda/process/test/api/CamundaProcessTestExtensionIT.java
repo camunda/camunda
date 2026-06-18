@@ -63,7 +63,6 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -1520,14 +1519,10 @@ public class CamundaProcessTestExtensionIT {
     // injected by @CamundaProcessTest on the enclosing class's extension
     private CamundaClient client;
 
-    @BeforeAll
-    static void setUpJudgeConfig() {
-      CamundaAssert.setJudgeConfig(JudgeConfig.of(STUB).withAttachDocuments(true));
-    }
-
     @BeforeEach
-    void resetCaptures() {
+    void setUp() {
       STUB.reset();
+      CamundaAssert.setJudgeConfig(JudgeConfig.of(STUB).withAttachDocuments(true));
     }
 
     @Test
@@ -1575,6 +1570,30 @@ public class CamundaProcessTestExtensionIT {
       assertAttachedDocumentsMatch(
           Arrays.asList(noteReference, memoReference),
           Arrays.asList(NOTE_TEXT.getBytes(), MEMO_TEXT.getBytes()));
+    }
+
+    @Test
+    void shouldUseTextOnlyPathWhenDocumentAttachmentDisabled() {
+      // given — judge config explicitly disables document attachment for this test
+      CamundaAssert.setJudgeConfig(JudgeConfig.of(STUB).withAttachDocuments(false));
+
+      final DocumentReferenceResponse reference = uploadDocument(client, NOTE_FILE_NAME, NOTE_TEXT);
+      final ProcessInstanceEvent instance = startProcessWithAttachment(client, reference);
+
+      // when
+      assertThatProcessInstance(instance)
+          .isCompleted()
+          .hasVariableSatisfiesJudge(ATTACHMENT_VARIABLE, "should be a short note");
+
+      // then — text-only generate(String) is used; no documents are resolved or attached
+      assertTextOnlyPathTaken();
+      assertThat(STUB.documents.get()).isNull();
+      assertThat(STUB.prompt.get()).doesNotContain("<resolved_documents>");
+    }
+
+    private static void assertTextOnlyPathTaken() {
+      assertThat(STUB.textOnlyCalls.get()).isEqualTo(1);
+      assertThat(STUB.multimodalCalls.get()).isZero();
     }
 
     private static DocumentReferenceResponse uploadDocument(
