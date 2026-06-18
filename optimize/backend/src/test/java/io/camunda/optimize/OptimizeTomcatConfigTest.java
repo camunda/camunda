@@ -17,6 +17,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants;
 import org.apache.catalina.connector.Connector;
+import org.apache.tomcat.util.net.SSLHostConfig;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -47,7 +48,6 @@ public class OptimizeTomcatConfigTest {
     when(environment.getProperty(EnvironmentPropertiesConstants.HTTP_PORT_KEY)).thenReturn("8090");
     when(environment.getProperty(EnvironmentPropertiesConstants.HTTPS_PORT_KEY)).thenReturn("8091");
 
-    when(configurationService.getContainerHost()).thenReturn("localhost");
     // then
     optimizeTomcatConfig.tomcatFactoryCustomizer().customize(factory);
 
@@ -65,6 +65,7 @@ public class OptimizeTomcatConfigTest {
     final Connector httpConnector = connectorCaptor.getValue();
     assertThat(httpConnector.getPort()).isEqualTo(8090);
     assertThat(httpConnector.getScheme()).isEqualTo("http");
+    assertThat(httpsConnector.getProperty("SSLEnabled")).isEqualTo(true);
     assertThat(httpConnector.getSecure()).isFalse();
   }
 
@@ -75,7 +76,6 @@ public class OptimizeTomcatConfigTest {
     when(environment.getProperty(EnvironmentPropertiesConstants.HTTP_PORT_KEY)).thenReturn("");
     when(environment.getProperty(EnvironmentPropertiesConstants.HTTPS_PORT_KEY)).thenReturn("8091");
 
-    when(configurationService.getContainerHost()).thenReturn("localhost");
     // then
     optimizeTomcatConfig.tomcatFactoryCustomizer().customize(factory);
 
@@ -89,6 +89,23 @@ public class OptimizeTomcatConfigTest {
     assertThat(httpsConnector.getPort()).isEqualTo(8091);
     assertThat(httpsConnector.getScheme()).isEqualTo("https");
     assertThat(httpsConnector.getSecure()).isTrue();
+    assertThat(httpsConnector.getProperty("SSLEnabled")).isEqualTo(true);
+  }
+
+  @Test
+  public void shouldNotSetHostNameOnSslHostConfig() {
+    // given
+    when(environment.getProperty(anyString())).thenReturn("property");
+    when(environment.getProperty(EnvironmentPropertiesConstants.HTTPS_PORT_KEY)).thenReturn("8091");
+
+    // when
+    final Connector httpsConnector = new Connector();
+    optimizeTomcatConfig.configureHttpsConnector(httpsConnector);
+
+    // then - hostname on the SSLHostConfig should not be set to the container host
+    final SSLHostConfig[] sslHostConfigs = httpsConnector.findSslHostConfigs();
+    assertThat(sslHostConfigs).hasSize(1);
+    assertThat(sslHostConfigs[0].getHostName()).isEqualTo("_default_");
   }
 
   @Test
