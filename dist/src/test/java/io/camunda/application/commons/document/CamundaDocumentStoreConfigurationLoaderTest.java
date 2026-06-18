@@ -50,41 +50,58 @@ class CamundaDocumentStoreConfigurationLoaderTest {
     localStore.setPath("/var/camunda/documents");
     camunda.getDocument().getLocal().put("local1", localStore);
 
-    final var loader = new CamundaDocumentStoreConfigurationLoader(camunda);
+    final var mockEnv = new MockEnvironment();
+    mockEnv.setProperty("camunda.document.default-store-id", "aws1");
+    mockEnv.setProperty("camunda.document.thread-pool-size", "10");
+    mockEnv.setProperty("camunda.document.aws.aws1.bucket-name", "docs");
+    mockEnv.setProperty("camunda.document.aws.aws1.bucket-path", "prod/");
+    mockEnv.setProperty("camunda.document.aws.aws1.bucket-ttl", "30");
+    mockEnv.setProperty("camunda.document.gcp.gcp1.bucket-name", "gcp-docs");
+    mockEnv.setProperty("camunda.document.gcp.gcp1.prefix", "temp/");
+    mockEnv.setProperty("camunda.document.azure.az1.container-name", "container");
+    mockEnv.setProperty(
+        "camunda.document.azure.az1.endpoint", "https://account.blob.core.windows.net");
+    mockEnv.setProperty("camunda.document.local.local1.path", "/var/camunda/documents");
+    UnifiedConfigurationHelper.setCustomEnvironment(mockEnv);
 
-    // when
-    final var configuration = loader.loadConfiguration();
+    try {
+      // when
+      final var configuration =
+          new CamundaDocumentStoreConfigurationLoader(camunda).loadConfiguration();
 
-    // then
-    assertThat(configuration.defaultDocumentStoreId()).isEqualTo("aws1");
-    assertThat(configuration.threadPoolSize()).isEqualTo(10);
-    assertThat(configuration.documentStores())
-        .extracting(DocumentStoreConfigurationRecord::id)
-        .containsExactly("aws1", "gcp1", "az1", "local1");
+      // then
+      assertThat(configuration.defaultDocumentStoreId()).isEqualTo("aws1");
+      assertThat(configuration.threadPoolSize()).isEqualTo(10);
+      assertThat(configuration.documentStores())
+          .extracting(DocumentStoreConfigurationRecord::id)
+          .containsExactly("aws1", "gcp1", "az1", "local1");
 
-    assertThat(store("aws1", configuration.documentStores()).providerClass())
-        .isEqualTo(AwsDocumentStoreProvider.class);
-    assertThat(store("aws1", configuration.documentStores()).properties())
-        .containsEntry("BUCKET", "docs")
-        .containsEntry("BUCKET_PATH", "prod/")
-        .containsEntry("BUCKET_TTL", "30");
+      assertThat(store("aws1", configuration.documentStores()).providerClass())
+          .isEqualTo(AwsDocumentStoreProvider.class);
+      assertThat(store("aws1", configuration.documentStores()).properties())
+          .containsEntry("BUCKET", "docs")
+          .containsEntry("BUCKET_PATH", "prod/")
+          .containsEntry("BUCKET_TTL", "30");
 
-    assertThat(store("gcp1", configuration.documentStores()).providerClass())
-        .isEqualTo(GcpDocumentStoreProvider.class);
-    assertThat(store("gcp1", configuration.documentStores()).properties())
-        .containsEntry("BUCKET", "gcp-docs")
-        .containsEntry("PREFIX", "temp/");
+      assertThat(store("gcp1", configuration.documentStores()).providerClass())
+          .isEqualTo(GcpDocumentStoreProvider.class);
+      assertThat(store("gcp1", configuration.documentStores()).properties())
+          .containsEntry("BUCKET", "gcp-docs")
+          .containsEntry("PREFIX", "temp/");
 
-    assertThat(store("az1", configuration.documentStores()).providerClass())
-        .isEqualTo(AzureBlobDocumentStoreProvider.class);
-    assertThat(store("az1", configuration.documentStores()).properties())
-        .containsEntry("CONTAINER", "container")
-        .containsEntry("ENDPOINT", "https://account.blob.core.windows.net");
+      assertThat(store("az1", configuration.documentStores()).providerClass())
+          .isEqualTo(AzureBlobDocumentStoreProvider.class);
+      assertThat(store("az1", configuration.documentStores()).properties())
+          .containsEntry("CONTAINER", "container")
+          .containsEntry("ENDPOINT", "https://account.blob.core.windows.net");
 
-    assertThat(store("local1", configuration.documentStores()).providerClass())
-        .isEqualTo(LocalStorageDocumentStoreProvider.class);
-    assertThat(store("local1", configuration.documentStores()).properties())
-        .containsEntry("PATH", "/var/camunda/documents");
+      assertThat(store("local1", configuration.documentStores()).providerClass())
+          .isEqualTo(LocalStorageDocumentStoreProvider.class);
+      assertThat(store("local1", configuration.documentStores()).properties())
+          .containsEntry("PATH", "/var/camunda/documents");
+    } finally {
+      UnifiedConfigurationHelper.setCustomEnvironment(null);
+    }
   }
 
   @Test
@@ -92,8 +109,12 @@ class CamundaDocumentStoreConfigurationLoaderTest {
     // given
     final var mockEnv = new MockEnvironment();
     mockEnv.setProperty("DOCUMENT_DEFAULT_STORE_ID", "GCP");
+    mockEnv.setProperty(
+        "DOCUMENT_STORE_GCP_CLASS", "io.camunda.document.store.gcp.GcpDocumentStoreProvider");
+    mockEnv.setProperty("DOCUMENT_STORE_GCP_BUCKET", "legacy-bucket");
     UnifiedConfigurationHelper.setCustomEnvironment(mockEnv);
 
+    System.setProperty("DOCUMENT_DEFAULT_STORE_ID", "GCP");
     System.setProperty(
         "DOCUMENT_STORE_GCP_CLASS", "io.camunda.document.store.gcp.GcpDocumentStoreProvider");
     System.setProperty("DOCUMENT_STORE_GCP_BUCKET", "legacy-bucket");
@@ -113,6 +134,7 @@ class CamundaDocumentStoreConfigurationLoaderTest {
           .containsEntry("BUCKET", "legacy-bucket");
     } finally {
       UnifiedConfigurationHelper.setCustomEnvironment(null);
+      System.clearProperty("DOCUMENT_DEFAULT_STORE_ID");
       System.clearProperty("DOCUMENT_STORE_GCP_CLASS");
       System.clearProperty("DOCUMENT_STORE_GCP_BUCKET");
     }
@@ -120,21 +142,28 @@ class CamundaDocumentStoreConfigurationLoaderTest {
 
   @Test
   void shouldOmitNullUnifiedFieldsFromStoreProperties() {
-    // given — partial store: only bucketName set, all other fields null
+    // given
     final Camunda camunda = new Camunda();
     final Document.AwsStore awsStore = new Document.AwsStore();
     awsStore.setBucketName("my-bucket");
     camunda.getDocument().getAws().put("s3", awsStore);
 
-    final var loader = new CamundaDocumentStoreConfigurationLoader(camunda);
+    final var mockEnv = new MockEnvironment();
+    mockEnv.setProperty("camunda.document.aws.s3.bucket-name", "my-bucket");
+    UnifiedConfigurationHelper.setCustomEnvironment(mockEnv);
 
-    // when
-    final var configuration = loader.loadConfiguration();
+    try {
+      // when
+      final var configuration =
+          new CamundaDocumentStoreConfigurationLoader(camunda).loadConfiguration();
 
-    // then — null fields must not appear in the properties map
-    assertThat(store("s3", configuration.documentStores()).properties())
-        .containsOnlyKeys("BUCKET")
-        .containsEntry("BUCKET", "my-bucket");
+      // then
+      assertThat(store("s3", configuration.documentStores()).properties())
+          .containsOnlyKeys("BUCKET")
+          .containsEntry("BUCKET", "my-bucket");
+    } finally {
+      UnifiedConfigurationHelper.setCustomEnvironment(null);
+    }
   }
 
   @Test
@@ -147,16 +176,27 @@ class CamundaDocumentStoreConfigurationLoaderTest {
     awsStore.setBucketName("new-bucket");
     camunda.getDocument().getAws().put("aws1", awsStore);
 
-    final var loader = new CamundaDocumentStoreConfigurationLoader(camunda);
+    final var mockEnv = new MockEnvironment();
+    mockEnv.setProperty("camunda.document.default-store-id", "aws1");
+    mockEnv.setProperty("camunda.document.thread-pool-size", "12");
+    mockEnv.setProperty("camunda.document.aws.aws1.bucket-name", "new-bucket");
+    mockEnv.setProperty("DOCUMENT_DEFAULT_STORE_ID", "LEGACY");
+    mockEnv.setProperty("DOCUMENT_THREAD_POOL_SIZE", "5");
+    mockEnv.setProperty(
+        "DOCUMENT_STORE_AWS1_CLASS", "io.camunda.document.store.aws.AwsDocumentStoreProvider");
+    mockEnv.setProperty("DOCUMENT_STORE_AWS1_BUCKET", "legacy-bucket");
+    UnifiedConfigurationHelper.setCustomEnvironment(mockEnv);
+
     System.setProperty("DOCUMENT_DEFAULT_STORE_ID", "LEGACY");
     System.setProperty("DOCUMENT_THREAD_POOL_SIZE", "5");
     System.setProperty(
-        "DOCUMENT_STORE_AWS1_CLASS", "io.camunda.document.store.gcp.GcpDocumentStoreProvider");
+        "DOCUMENT_STORE_AWS1_CLASS", "io.camunda.document.store.aws.AwsDocumentStoreProvider");
     System.setProperty("DOCUMENT_STORE_AWS1_BUCKET", "legacy-bucket");
 
     try {
       // when
-      final var configuration = loader.loadConfiguration();
+      final var configuration =
+          new CamundaDocumentStoreConfigurationLoader(camunda).loadConfiguration();
 
       // then
       assertThat(configuration.defaultDocumentStoreId()).isEqualTo("aws1");
@@ -166,6 +206,7 @@ class CamundaDocumentStoreConfigurationLoaderTest {
       assertThat(store("aws1", configuration.documentStores()).properties())
           .containsEntry("BUCKET", "new-bucket");
     } finally {
+      UnifiedConfigurationHelper.setCustomEnvironment(null);
       System.clearProperty("DOCUMENT_DEFAULT_STORE_ID");
       System.clearProperty("DOCUMENT_THREAD_POOL_SIZE");
       System.clearProperty("DOCUMENT_STORE_AWS1_CLASS");
