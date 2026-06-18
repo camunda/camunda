@@ -51,6 +51,11 @@ it('should load the agentic dashboard on mount', async () => {
 });
 
 it('should render the dashboard once tiles are loaded', async () => {
+  (loadAgenticDashboard as jest.Mock).mockReturnValueOnce({
+    tiles: [{id: 'kpi-tile', configuration: {}, position: {x: 0, y: 0}}],
+    availableFilters: [],
+  });
+
   const node = shallow(<AgenticControlPlane />);
 
   await runAllEffects();
@@ -60,6 +65,14 @@ it('should render the dashboard once tiles are loaded', async () => {
 });
 
 it('should pass the default Last 30 days filter to DashboardRenderer', async () => {
+  (loadAgenticDashboard as jest.Mock).mockReturnValueOnce({
+    tiles: [
+      {id: 'kpi-tile', configuration: {}, position: {x: 0, y: 0}},
+      {id: 'token-tile', configuration: {section: 'token'}, position: {x: 1, y: 0}},
+    ],
+    availableFilters: [],
+  });
+
   const node = shallow(<AgenticControlPlane />);
 
   await runAllEffects();
@@ -86,6 +99,14 @@ it('should pass the default Last 30 days filter to DashboardRenderer', async () 
 });
 
 it('should update the filter when the date preset changes', async () => {
+  (loadAgenticDashboard as jest.Mock).mockReturnValueOnce({
+    tiles: [
+      {id: 'kpi-tile', configuration: {}, position: {x: 0, y: 0}},
+      {id: 'token-tile', configuration: {section: 'token'}, position: {x: 1, y: 0}},
+    ],
+    availableFilters: [],
+  });
+
   const node = shallow(<AgenticControlPlane />);
 
   await runAllEffects();
@@ -174,6 +195,11 @@ it('should hide visibleInL1Only tiles when no process is selected (L0)', async (
 });
 
 it('should include definitions in evaluate calls when a process is selected', async () => {
+  (loadAgenticDashboard as jest.Mock).mockReturnValueOnce({
+    tiles: [{id: 'kpi-tile', configuration: {}, position: {x: 0, y: 0}}],
+    availableFilters: [],
+  });
+
   const node = shallow(<AgenticControlPlane />);
   await runAllEffects();
 
@@ -191,6 +217,11 @@ it('should include definitions in evaluate calls when a process is selected', as
 });
 
 it('should pass empty definitions in evaluate calls when no process is selected', async () => {
+  (loadAgenticDashboard as jest.Mock).mockReturnValueOnce({
+    tiles: [{id: 'kpi-tile', configuration: {}, position: {x: 0, y: 0}}],
+    availableFilters: [],
+  });
+
   const node = shallow(<AgenticControlPlane />);
   await runAllEffects();
 
@@ -201,4 +232,44 @@ it('should pass empty definitions in evaluate calls when no process is selected'
   loadTile('report-id', [], {});
 
   expect(evaluateReport).toHaveBeenCalledWith('report-id', [], {}, []);
+});
+
+it('should not render a section that has no visible tiles', async () => {
+  const tiles = [
+    {id: 'kpi-tile', configuration: {}, position: {x: 0, y: 0}},
+    {
+      id: 'reliability-tile',
+      configuration: {section: 'reliabilityAndToolCalls', visibleInL1Only: true},
+      position: {x: 1, y: 0},
+    },
+  ];
+  (loadAgenticDashboard as jest.Mock).mockReturnValueOnce({tiles, availableFilters: []});
+
+  const node = shallow(<AgenticControlPlane />);
+  await runAllEffects();
+
+  // L0 (no process selected): the only reliability tile is visibleInL1Only, so the
+  // section has no visible tiles and must not render its title or DashboardRenderer.
+  expect(node.find('.reliabilityAndToolCalls-section')).not.toExist();
+  expect(node.find('.kpi-section')).toExist();
+});
+
+it('should render a section once it has visible tiles for the selected scope', async () => {
+  const tiles = [
+    {id: 'kpi-tile', configuration: {}, position: {x: 0, y: 0}},
+    {
+      id: 'reliability-tile',
+      configuration: {section: 'reliabilityAndToolCalls', visibleInL1Only: true},
+      position: {x: 1, y: 0},
+    },
+  ];
+  (loadAgenticDashboard as jest.Mock).mockReturnValueOnce({tiles, availableFilters: []});
+
+  const node = shallow(<AgenticControlPlane />);
+  await runAllEffects();
+
+  (node.find('FilterBar').prop('onProcessScopeChange') as (v: string) => void)('my-process');
+
+  // L1 (process selected): the reliability tile becomes visible, so the section renders.
+  expect(node.find('.reliabilityAndToolCalls-section')).toExist();
 });

@@ -144,6 +144,9 @@ export function AgenticControlPlane() {
           (tile) =>
             ((tile.configuration as AgenticTileConfiguration | undefined)?.section ?? 'kpi') === key
         );
+        if (!tiles?.length) {
+          return null;
+        }
         return (
           <div key={key}>
             {titleKey && (
