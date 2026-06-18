@@ -110,6 +110,7 @@ There are three runnable smoke scenarios. Each boots OC (Terminal 2), then runs 
 | **B — Default narrowing** | The default tenant's own selection limits the **cluster** surface: `default` is `[tenanta]`, dropping the inherited root default slot, so a default-realm token is rejected on **both** `/v2` and `/pt/default` — proving they resolve from one config (`forPhysicalTenant("default")`). | `./pt-smoke-test-oc.sh pt-smoke-test,pt-smoke-test-default-narrowed` | `./pt-smoke-test-api-default-narrowed.sh` |
 | **C — Reserved-`oidc` keep** | A non-default tenant can re-include the default slot: `tenanta` is `[oidc, tenanta]`, so it KEEPS the inherited default slot and a default-realm token is **accepted** on `/pt/tenanta` — the inverse of the base `[#54730]` cell. | `./pt-smoke-test-oc.sh pt-smoke-test,pt-smoke-test-oidc-keep` | `./pt-smoke-test-api-oidc-keep.sh` |
 | **D — Two non-default tenants** | Selection among multiple *named* cluster providers + PT-to-PT isolation: `tenanta=[tenanta]` and `tenantb=[tenantb]` (distinct Keycloak realms :8082/:8083), so each rejects the **other's** token even though both are valid cluster providers. Requires the tenantb realm (`pt-smoke-test-idp.sh` starts it on :8083). | `./pt-smoke-test-oc.sh pt-smoke-test,pt-smoke-test-two-tenants` | `./pt-smoke-test-api-two-tenants.sh` |
+| **E — Shared IdP (audience isolation)** | One realm, two explicitly-assigned PTs, isolated by audience: `tenanta` (aud=`pt-tenanta-aud`) and `tenantc` (aud=`pt-tenantc-aud`) both have `assigned: [tenanta]` pointing at the same tenanta Keycloak realm on :8082. A token with the wrong audience is rejected even though the issuer matches. Only needs the default (:8081) and tenanta (:8082) realms. | `./pt-smoke-test-oc.sh pt-smoke-test,pt-smoke-test-shared-idp` | `./pt-smoke-test-api-shared-idp.sh` |
 
 > Validation failures (e.g. a non-default tenant with no `assigned`, or an unknown id) fail OC
 > startup — that path is covered by unit tests (`PhysicalTenantAssignedProvidersValidationTest`),
@@ -132,7 +133,9 @@ There are three runnable smoke scenarios. Each boots OC (Terminal 2), then runs 
 | `dist/src/main/resources/application-pt-smoke-test-default-narrowed.yaml` | Scenario B overlay — `default` assigned `[tenanta]` |
 | `dist/src/main/resources/application-pt-smoke-test-oidc-keep.yaml` | Scenario C overlay — `tenanta` assigned `[oidc, tenanta]` |
 | `dist/src/main/resources/application-pt-smoke-test-two-tenants.yaml` | Scenario D overlay — adds cluster provider `tenantb` + PT `tenantb` assigned `[tenantb]` |
-| `dist/src/main/resources/application.properties` | `spring.profiles.group.pt-smoke-test{,-basic}=...` entries |
+| `pt-smoke-test-api-shared-idp.sh` | **Scenario E** — shared IdP audience isolation: one realm, PT `tenanta` and PT `tenantc` isolated by audience |
+| `dist/src/main/resources/application-pt-smoke-test-shared-idp.yaml` | Scenario E overlay — adds PT `tenantc` assigned `[tenanta]` with audience `pt-tenantc-aud` |
+| `dist/src/main/resources/application.properties` | `spring.profiles.group.pt-smoke-test{,-basic,-shared-idp}=...` entries |
 
 ## BASIC-auth variant
 
