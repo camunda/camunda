@@ -447,7 +447,7 @@ public class DefinitionService implements ConfigurationReloadable {
                     getDefinition(
                         DefinitionType.PROCESS,
                         processDefinition.getLeft(),
-                        List.of(processDefinition.getRight()),
+                        Stream.ofNullable(processDefinition.getRight()).toList(),
                         Collections.emptyList()))
             .filter(Optional::isPresent)
             .map(Optional::get)
