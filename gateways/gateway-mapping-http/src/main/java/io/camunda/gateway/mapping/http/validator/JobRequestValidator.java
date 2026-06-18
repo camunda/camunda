@@ -63,9 +63,12 @@ public final class JobRequestValidator {
         violations -> {
           final JobChangeset changeset = updateRequest.getChangeset();
           if (changeset == null
-              || (changeset.getRetries() == null && changeset.getTimeout() == null)) {
+              || (changeset.getRetries() == null
+                  && changeset.getTimeout() == null
+                  && changeset.getPriority() == null)) {
             violations.add(
-                ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted(List.of("retries", "timeout")));
+                ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted(
+                    List.of("retries", "timeout", "priority")));
           }
         });
   }
