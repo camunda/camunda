@@ -722,7 +722,7 @@
               <value>${version.identity}</value>
             </property>
           </systemProperties>
-          <excludedGroups>rdbms, multi-db-test, compatibility-test, dl-nightly</excludedGroups>
+          <excludedGroups>rdbms, rdbms-aurora, multi-db-test, compatibility-test, dl-nightly</excludedGroups>
         </configuration>
         <dependencies>
           <dependency>
@@ -776,6 +776,26 @@
             <artifactId>maven-failsafe-plugin</artifactId>
             <configuration>
               <groups>rdbms</groups>
+              <excludedGroups>rdbms-aurora, multi-db-test, compatibility-test, history</excludedGroups>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <!--
+    This profile runs the Aurora async replication IT against a pre-provisioned AWS Aurora
+    Global Database. Requires TEST_AURORA_* environment variables to be set.
+    -->
+    <profile>
+      <id>rdbms-aurora</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <groups>rdbms-aurora</groups>
               <excludedGroups>multi-db-test, compatibility-test, history</excludedGroups>
             </configuration>
           </plugin>

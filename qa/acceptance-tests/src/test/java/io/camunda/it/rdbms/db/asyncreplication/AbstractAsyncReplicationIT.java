@@ -34,12 +34,12 @@ import org.junit.jupiter.api.TestInstance.Lifecycle;
 
 @Tag("rdbms")
 @TestInstance(Lifecycle.PER_CLASS)
-abstract class AbstractAsyncReplicationIT {
+abstract class AbstractAsyncReplicationIT<R extends ReplicationClusterContainer> {
 
-  protected static final Duration MAX_LAG = Duration.ofSeconds(3);
+  protected static final Duration DEFAULT_MAX_LAG = Duration.ofSeconds(3);
 
   /** The replication cluster; created by {@link #createCluster()} in {@link #beforeAll()}. */
-  protected @AutoClose ReplicationClusterContainer cluster;
+  protected @AutoClose R cluster;
 
   protected @AutoClose TestCamundaApplication testInstance;
   protected @AutoClose CamundaClient camundaClient;
@@ -49,7 +49,11 @@ abstract class AbstractAsyncReplicationIT {
    * Creates the database replication cluster for this test. Called once before any test runs.
    * Subclasses return a concrete cluster implementation (Postgres or MSSQL).
    */
-  protected abstract ReplicationClusterContainer createCluster();
+  protected abstract R createCluster();
+
+  protected Duration getMaxLag() {
+    return DEFAULT_MAX_LAG;
+  }
 
   @BeforeAll
   void beforeAll() {
@@ -68,8 +72,10 @@ abstract class AbstractAsyncReplicationIT {
                   cfg.setClassName("io.camunda.db.rdbms.exporter.RdbmsExporter");
                   cfg.setArgs(
                       Map.of(
+                          // PT0S causes replication checks on each record which is too aggressive
+                          // and causes too much latency
                           "flushInterval",
-                          "PT0S",
+                          "PT0.5S",
                           "asyncReplication",
                           Map.of(
                               "enabled",
@@ -77,7 +83,7 @@ abstract class AbstractAsyncReplicationIT {
                               "pollingInterval",
                               "PT1S",
                               "maxLag",
-                              MAX_LAG.toString(),
+                              getMaxLag().toString(),
                               "pauseOnMaxLagExceeded",
                               true)));
                 })

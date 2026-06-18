@@ -123,6 +123,18 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
+  aurora-async-replication:
+    name: "Aurora Async Replication IT"
+    concurrency:
+      group: aurora-async-replication-test
+      cancel-in-progress: false
+    uses: ./.github/workflows/aurora-async-replication-test.yml
+    secrets: inherit
+    permissions: { }
+    if: |
+      github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch'
+
   notify-failure:
     name: Notify on failure
     runs-on: ubuntu-latest

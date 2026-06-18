@@ -9,11 +9,14 @@ package io.camunda.it.rdbms.db.util;
 
 import static org.awaitility.Awaitility.await;
 
+import io.camunda.zeebe.util.Unit;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
@@ -108,21 +111,23 @@ public final class PostgresReplicationClusterContainer
   }
 
   @Override
-  public void stopReplica() {
+  public Future<Void> stopReplica() {
     if (!replicaStopped) {
       LOG.info("Stopping PostgreSQL replica");
       replicaStopped = true;
       replica.stop();
       LOG.info("PostgreSQL replica stopped");
     }
+    return CompletableFuture.completedFuture(Unit.unit());
   }
 
   @Override
-  public void startReplica() {
+  public Future<Void> startReplica() {
     LOG.info("Starting PostgreSQL replica");
     replicaStopped = false;
     replica.start();
     waitForReplication();
+    return CompletableFuture.completedFuture(Unit.unit());
   }
 
   private void waitForReplication() {

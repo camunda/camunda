@@ -9,6 +9,7 @@ package io.camunda.it.rdbms.db.util;
 
 import static org.awaitility.Awaitility.await;
 
+import io.camunda.zeebe.util.Unit;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -18,6 +19,8 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
@@ -166,17 +169,18 @@ public final class MSSQLReplicationClusterContainer
   }
 
   @Override
-  public void stopReplica() {
+  public Future<Void> stopReplica() {
     if (!replicaStopped) {
       LOG.info("Stopping MSSQL replica");
       replicaStopped = true;
       replica.stop();
       LOG.info("MSSQL replica stopped");
     }
+    return CompletableFuture.completedFuture(Unit.unit());
   }
 
   @Override
-  public void startReplica() {
+  public Future<Void> startReplica() {
     LOG.info("Starting MSSQL replica");
     replicaStopped = false;
     replica.start();
@@ -184,6 +188,7 @@ public final class MSSQLReplicationClusterContainer
     transferCertsToReplica();
     initReplica();
     waitForReplication();
+    return CompletableFuture.completedFuture(Unit.unit());
   }
 
   /**
