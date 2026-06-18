@@ -21,7 +21,6 @@ import static org.awaitility.Awaitility.await;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ClientStatusException;
-import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.container.ClusterHelper;
 import io.camunda.container.cluster.BrokerNode;
@@ -133,7 +132,7 @@ final class SecondaryStorageRollingUpdateIT {
           StorageTestCase.rdbms(), StorageTestCase.elasticsearch(), StorageTestCase.opensearch());
 
   static Stream<Arguments> versionAndStorageMatrix() throws IOException, InterruptedException {
-    final List<String> versions = ExporterMigrationTestHelper.fetchLatestPatchFromPreviousMinor();
+    final List<String> versions = ExporterMigrationTestHelper.fetchAllPatchesFromPreviousMinor();
 
     return versions.stream()
         .flatMap(
@@ -327,18 +326,6 @@ final class SecondaryStorageRollingUpdateIT {
     // process advances to user task — complete it, leaving the finalize job pending
     LOGGER.info("Waiting for user task");
     awaitAndCompleteUserTaskInSecondaryStorage(client, piKey);
-
-    // process is now at "finalize" job (still ACTIVE) — cancel it via batch operation
-    LOGGER.info("Cancelling process instance {} via batch operation", piKey);
-    final var batchResponse =
-        client
-            .newCreateBatchOperationCommand()
-            .processInstanceCancel()
-            .filter(f -> f.processInstanceKey(piKey))
-            .send()
-            .join();
-    waitForBatchOperationStatus(
-        client, batchResponse.getBatchOperationKey(), BatchOperationState.COMPLETED);
   }
 
   // ---------------------------------------------------------------------------
