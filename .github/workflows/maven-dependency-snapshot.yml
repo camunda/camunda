@@ -69,8 +69,11 @@ jobs:
         run: |
           if [ -d "clients/camunda-spring-boot-starter" ]; then
             echo "SPRING_STARTER_MODULE=clients/camunda-spring-boot-starter" >> $GITHUB_ENV
-          else
+          elif [ -d "clients/spring-boot-starter-camunda-sdk" ]; then
             echo "SPRING_STARTER_MODULE=clients/spring-boot-starter-camunda-sdk" >> $GITHUB_ENV
+          else
+            echo "ERROR: neither clients/camunda-spring-boot-starter nor clients/spring-boot-starter-camunda-sdk found" >&2
+            exit 1
           fi
       - name: Submit Maven dependency snapshot
         uses: advanced-security/maven-dependency-submission-action@b275d12641ac2d2108b2cbb7598b154ad2f2cee8 # v5.0.0
