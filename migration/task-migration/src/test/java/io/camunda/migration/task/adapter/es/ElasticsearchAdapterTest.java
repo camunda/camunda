@@ -11,28 +11,45 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.Result;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch.core.ReindexRequest;
+import co.elastic.clients.elasticsearch.core.ReindexResponse;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
+import co.elastic.clients.elasticsearch.core.UpdateRequest;
+import co.elastic.clients.elasticsearch.core.UpdateResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.core.search.HitsMetadata;
+import co.elastic.clients.elasticsearch.indices.ElasticsearchIndicesClient;
+import co.elastic.clients.elasticsearch.indices.UpdateAliasesResponse;
+import co.elastic.clients.elasticsearch.tasks.ElasticsearchTasksClient;
+import co.elastic.clients.elasticsearch.tasks.GetTasksResponse;
+import co.elastic.clients.elasticsearch.tasks.TaskInfo;
+import co.elastic.clients.json.JsonData;
 import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.commons.configuration.MigrationConfiguration;
+import io.camunda.migration.commons.storage.ProcessorStep;
 import io.camunda.migration.task.adapter.TaskEntityPair;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskJoinRelationship.TaskJoinRelationshipType;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonValue;
 import java.io.IOException;
 import java.util.List;
+import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -345,6 +362,177 @@ class ElasticsearchAdapterTest {
     // Size should match the number of unique task keys from the destination query (12 tasks)
     // This ensures we exceed the default ES search size of 10
     assertThat(sourceRequest.size()).isEqualTo(12);
+  }
+
+  @Test
+  void shouldSubmitAsyncReindexAndPollForMainIndex() throws Exception {
+    // given - pre-create mocks before any when() calls to avoid Mockito unfinished stubbing
+    final SearchResponse<ProcessorStep> emptyStep = mockEmptyProcessorStepResponse();
+    when(client.search(any(SearchRequest.class), eq(ProcessorStep.class))).thenReturn(emptyStep);
+
+    final ReindexResponse reindexResponse = mock(ReindexResponse.class);
+    when(reindexResponse.task()).thenReturn("es-task-123");
+    when(client.reindex(any(ReindexRequest.class))).thenReturn(reindexResponse);
+
+    @SuppressWarnings("unchecked")
+    final UpdateResponse<ProcessorStep> updateResponse = mock(UpdateResponse.class);
+    when(updateResponse.result()).thenReturn(Result.Created);
+    when(client.update(any(UpdateRequest.class), eq(ProcessorStep.class)))
+        .thenReturn(updateResponse);
+
+    final GetTasksResponse completedTask = buildCompletedGetTasksResponse(5, 5, 0, 0);
+    final ElasticsearchTasksClient tasksClient = mock(ElasticsearchTasksClient.class);
+    when(client.tasks()).thenReturn(tasksClient);
+    when(tasksClient.get(any(Function.class))).thenReturn(completedTask);
+
+    // when
+    adapter.reindexLegacyMainIndex();
+
+    // then - async reindex submitted with waitForCompletion=false
+    final ArgumentCaptor<ReindexRequest> reindexCaptor =
+        ArgumentCaptor.forClass(ReindexRequest.class);
+    verify(client).reindex(reindexCaptor.capture());
+    assertThat(reindexCaptor.getValue().waitForCompletion()).isEqualTo(Boolean.FALSE);
+
+    // task was polled
+    verify(tasksClient, atLeastOnce()).get(any(Function.class));
+
+    // step persisted twice: pending then completed
+    verify(client, times(2)).update(any(UpdateRequest.class), eq(ProcessorStep.class));
+  }
+
+  @Test
+  void shouldSkipMainIndexReindexIfAlreadyCompleted() throws Exception {
+    // given - existing step with applied=true
+    final SearchResponse<ProcessorStep> completedStep = mockCompletedProcessorStepResponse();
+    when(client.search(any(SearchRequest.class), eq(ProcessorStep.class)))
+        .thenReturn(completedStep);
+
+    // when
+    adapter.reindexLegacyMainIndex();
+
+    // then - no reindex submitted, no tasks polled
+    verify(client, never()).reindex(any(ReindexRequest.class));
+    verify(client, never()).tasks();
+  }
+
+  @Test
+  void shouldCallAliasUpdateWhenDatedIndexDocumentsCreated() throws Exception {
+    // given - pre-create mocks before any when() calls
+    final SearchResponse<ProcessorStep> emptyStep = mockEmptyProcessorStepResponse();
+    when(client.search(any(SearchRequest.class), eq(ProcessorStep.class))).thenReturn(emptyStep);
+
+    final ReindexResponse reindexResponse = mock(ReindexResponse.class);
+    when(reindexResponse.task()).thenReturn("es-task-456");
+    when(client.reindex(any(ReindexRequest.class))).thenReturn(reindexResponse);
+
+    @SuppressWarnings("unchecked")
+    final UpdateResponse<ProcessorStep> updateResponse = mock(UpdateResponse.class);
+    when(updateResponse.result()).thenReturn(Result.Created);
+    when(client.update(any(UpdateRequest.class), eq(ProcessorStep.class)))
+        .thenReturn(updateResponse);
+
+    final GetTasksResponse completedTask = buildCompletedGetTasksResponse(3, 3, 0, 0);
+    final ElasticsearchTasksClient tasksClient = mock(ElasticsearchTasksClient.class);
+    when(client.tasks()).thenReturn(tasksClient);
+    when(tasksClient.get(any(Function.class))).thenReturn(completedTask);
+
+    final UpdateAliasesResponse aliasResponse = mock(UpdateAliasesResponse.class);
+    final ElasticsearchIndicesClient indicesClient = mock(ElasticsearchIndicesClient.class);
+    when(client.indices()).thenReturn(indicesClient);
+    when(indicesClient.updateAliases(
+            any(co.elastic.clients.elasticsearch.indices.UpdateAliasesRequest.class)))
+        .thenReturn(aliasResponse);
+
+    // when
+    adapter.reindexLegacyDatedIndex(INDEX_PREFIX + "-tasklist-task-8.5.0_2024-01-01");
+
+    // then - alias update called because documents were created
+    verify(indicesClient)
+        .updateAliases(any(co.elastic.clients.elasticsearch.indices.UpdateAliasesRequest.class));
+  }
+
+  @Test
+  void shouldNotCallAliasUpdateWhenDatedIndexNoDocumentsCreated() throws Exception {
+    // given - pre-create mocks before any when() calls
+    final SearchResponse<ProcessorStep> emptyStep = mockEmptyProcessorStepResponse();
+    when(client.search(any(SearchRequest.class), eq(ProcessorStep.class))).thenReturn(emptyStep);
+
+    final ReindexResponse reindexResponse = mock(ReindexResponse.class);
+    when(reindexResponse.task()).thenReturn("es-task-789");
+    when(client.reindex(any(ReindexRequest.class))).thenReturn(reindexResponse);
+
+    @SuppressWarnings("unchecked")
+    final UpdateResponse<ProcessorStep> updateResponse = mock(UpdateResponse.class);
+    when(updateResponse.result()).thenReturn(Result.Created);
+    when(client.update(any(UpdateRequest.class), eq(ProcessorStep.class)))
+        .thenReturn(updateResponse);
+
+    // total=0: source index had no documents
+    final GetTasksResponse completedTask = buildCompletedGetTasksResponse(0, 0, 0, 0);
+    final ElasticsearchTasksClient tasksClient = mock(ElasticsearchTasksClient.class);
+    when(client.tasks()).thenReturn(tasksClient);
+    when(tasksClient.get(any(Function.class))).thenReturn(completedTask);
+
+    // when
+    adapter.reindexLegacyDatedIndex(INDEX_PREFIX + "-tasklist-task-8.5.0_2024-01-01");
+
+    // then - alias update NOT called because source had no documents
+    verify(client, never()).indices();
+  }
+
+  @SuppressWarnings("unchecked")
+  private SearchResponse<ProcessorStep> mockEmptyProcessorStepResponse() {
+    final SearchResponse<ProcessorStep> response = mock(SearchResponse.class);
+    final HitsMetadata<ProcessorStep> hitsMetadata = mock(HitsMetadata.class);
+    when(response.hits()).thenReturn(hitsMetadata);
+    when(hitsMetadata.hits()).thenReturn(List.of());
+    when(response.timedOut()).thenReturn(false);
+    when(response.terminatedEarly()).thenReturn(false);
+    return response;
+  }
+
+  @SuppressWarnings("unchecked")
+  private SearchResponse<ProcessorStep> mockCompletedProcessorStepResponse() {
+    final SearchResponse<ProcessorStep> response = mock(SearchResponse.class);
+    final HitsMetadata<ProcessorStep> hitsMetadata = mock(HitsMetadata.class);
+    final Hit<ProcessorStep> hit = mock(Hit.class);
+    final ProcessorStep step = new ProcessorStep();
+    step.setApplied(true);
+    step.setContent("es-task-done");
+    when(hit.source()).thenReturn(step);
+    when(response.hits()).thenReturn(hitsMetadata);
+    when(hitsMetadata.hits()).thenReturn(List.of(hit));
+    when(response.timedOut()).thenReturn(false);
+    when(response.terminatedEarly()).thenReturn(false);
+    return response;
+  }
+
+  private GetTasksResponse buildCompletedGetTasksResponse(
+      final int total, final int created, final int updated, final int conflicts) {
+    final GetTasksResponse taskResponse = mock(GetTasksResponse.class);
+    when(taskResponse.completed()).thenReturn(true);
+    when(taskResponse.error()).thenReturn(null);
+
+    final TaskInfo taskInfo = mock(TaskInfo.class);
+    when(taskResponse.task()).thenReturn(taskInfo);
+
+    final JsonData jsonData = mock(JsonData.class);
+    when(taskInfo.status()).thenReturn(jsonData);
+
+    final JsonValue jsonValue = mock(JsonValue.class);
+    when(jsonData.toJson()).thenReturn(jsonValue);
+
+    final JsonObject jsonObject = mock(JsonObject.class);
+    when(jsonValue.asJsonObject()).thenReturn(jsonObject);
+    when(jsonObject.getInt("created", 0)).thenReturn(created);
+    when(jsonObject.getInt("updated", 0)).thenReturn(updated);
+    when(jsonObject.getInt("deleted", 0)).thenReturn(0);
+    when(jsonObject.getInt("version_conflicts", 0)).thenReturn(conflicts);
+    when(jsonObject.getInt("total", 0)).thenReturn(total);
+    when(jsonObject.getJsonArray("failures")).thenReturn(null);
+
+    return taskResponse;
   }
 
   @SuppressWarnings("unchecked")

@@ -11,13 +11,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.commons.configuration.MigrationConfiguration;
+import io.camunda.migration.commons.storage.ProcessorStep;
 import io.camunda.migration.task.adapter.TaskEntityPair;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.schema.config.RetentionConfiguration;
@@ -26,6 +29,7 @@ import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskJoinRelationship.TaskJoinRelationshipType;
 import java.io.IOException;
 import java.util.List;
+import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,12 +40,23 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.Result;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
+import org.opensearch.client.opensearch.core.ReindexRequest;
+import org.opensearch.client.opensearch.core.ReindexResponse;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
+import org.opensearch.client.opensearch.core.UpdateRequest;
+import org.opensearch.client.opensearch.core.UpdateResponse;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.core.search.HitsMetadata;
+import org.opensearch.client.opensearch.indices.OpenSearchIndicesClient;
+import org.opensearch.client.opensearch.indices.UpdateAliasesResponse;
+import org.opensearch.client.opensearch.tasks.GetTasksResponse;
+import org.opensearch.client.opensearch.tasks.Info;
+import org.opensearch.client.opensearch.tasks.OpenSearchTasksClient;
+import org.opensearch.client.opensearch.tasks.Status;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -345,6 +360,171 @@ class OpensearchAdapterTest {
     // Size should match the number of unique task keys from the destination query (12 tasks)
     // This ensures we exceed the default OS search size of 10
     assertThat(sourceRequest.size()).isEqualTo(12);
+  }
+
+  @Test
+  void shouldSubmitAsyncReindexAndPollForMainIndex() throws Exception {
+    // given - pre-create mocks before any when() calls to avoid Mockito unfinished stubbing
+    final SearchResponse<ProcessorStep> emptyStep = mockEmptyProcessorStepResponse();
+    when(client.search(any(SearchRequest.class), eq(ProcessorStep.class))).thenReturn(emptyStep);
+
+    final ReindexResponse reindexResponse = mock(ReindexResponse.class);
+    when(reindexResponse.task()).thenReturn("os-task-123");
+    when(client.reindex(any(ReindexRequest.class))).thenReturn(reindexResponse);
+
+    @SuppressWarnings("unchecked")
+    final UpdateResponse<ProcessorStep> updateResponse = mock(UpdateResponse.class);
+    when(updateResponse.result()).thenReturn(Result.Created);
+    when(client.update(any(UpdateRequest.class), eq(ProcessorStep.class)))
+        .thenReturn(updateResponse);
+
+    final GetTasksResponse completedTask = buildCompletedGetTasksResponse(5L, 5L, 0L, 0L);
+    final OpenSearchTasksClient tasksClient = mock(OpenSearchTasksClient.class);
+    when(client.tasks()).thenReturn(tasksClient);
+    when(tasksClient.get(any(Function.class))).thenReturn(completedTask);
+
+    // when
+    adapter.reindexLegacyMainIndex();
+
+    // then - async reindex submitted with waitForCompletion=false
+    final ArgumentCaptor<ReindexRequest> reindexCaptor =
+        ArgumentCaptor.forClass(ReindexRequest.class);
+    verify(client).reindex(reindexCaptor.capture());
+    assertThat(reindexCaptor.getValue().waitForCompletion()).isEqualTo(Boolean.FALSE);
+
+    // task was polled
+    verify(tasksClient, atLeastOnce()).get(any(Function.class));
+
+    // step persisted twice: pending then completed
+    verify(client, times(2)).update(any(UpdateRequest.class), eq(ProcessorStep.class));
+  }
+
+  @Test
+  void shouldSkipMainIndexReindexIfAlreadyCompleted() throws Exception {
+    // given - existing step with applied=true
+    final SearchResponse<ProcessorStep> completedStep = mockCompletedProcessorStepResponse();
+    when(client.search(any(SearchRequest.class), eq(ProcessorStep.class)))
+        .thenReturn(completedStep);
+
+    // when
+    adapter.reindexLegacyMainIndex();
+
+    // then - no reindex submitted, no tasks polled
+    verify(client, never()).reindex(any(ReindexRequest.class));
+    verify(client, never()).tasks();
+  }
+
+  @Test
+  void shouldCallAliasUpdateWhenDatedIndexDocumentsCreated() throws Exception {
+    // given - pre-create mocks before any when() calls
+    final SearchResponse<ProcessorStep> emptyStep = mockEmptyProcessorStepResponse();
+    when(client.search(any(SearchRequest.class), eq(ProcessorStep.class))).thenReturn(emptyStep);
+
+    final ReindexResponse reindexResponse = mock(ReindexResponse.class);
+    when(reindexResponse.task()).thenReturn("os-task-456");
+    when(client.reindex(any(ReindexRequest.class))).thenReturn(reindexResponse);
+
+    @SuppressWarnings("unchecked")
+    final UpdateResponse<ProcessorStep> updateResponse = mock(UpdateResponse.class);
+    when(updateResponse.result()).thenReturn(Result.Created);
+    when(client.update(any(UpdateRequest.class), eq(ProcessorStep.class)))
+        .thenReturn(updateResponse);
+
+    final GetTasksResponse completedTask = buildCompletedGetTasksResponse(3L, 3L, 0L, 0L);
+    final OpenSearchTasksClient tasksClient = mock(OpenSearchTasksClient.class);
+    when(client.tasks()).thenReturn(tasksClient);
+    when(tasksClient.get(any(Function.class))).thenReturn(completedTask);
+
+    final UpdateAliasesResponse aliasResponse = mock(UpdateAliasesResponse.class);
+    final OpenSearchIndicesClient indicesClient = mock(OpenSearchIndicesClient.class);
+    when(client.indices()).thenReturn(indicesClient);
+    when(indicesClient.updateAliases(
+            any(org.opensearch.client.opensearch.indices.UpdateAliasesRequest.class)))
+        .thenReturn(aliasResponse);
+
+    // when
+    adapter.reindexLegacyDatedIndex(INDEX_PREFIX + "-tasklist-task-8.5.0_2024-01-01");
+
+    // then - alias update called because documents were created
+    verify(indicesClient)
+        .updateAliases(any(org.opensearch.client.opensearch.indices.UpdateAliasesRequest.class));
+  }
+
+  @Test
+  void shouldNotCallAliasUpdateWhenDatedIndexNoDocumentsCreated() throws Exception {
+    // given - pre-create mocks before any when() calls
+    final SearchResponse<ProcessorStep> emptyStep = mockEmptyProcessorStepResponse();
+    when(client.search(any(SearchRequest.class), eq(ProcessorStep.class))).thenReturn(emptyStep);
+
+    final ReindexResponse reindexResponse = mock(ReindexResponse.class);
+    when(reindexResponse.task()).thenReturn("os-task-789");
+    when(client.reindex(any(ReindexRequest.class))).thenReturn(reindexResponse);
+
+    @SuppressWarnings("unchecked")
+    final UpdateResponse<ProcessorStep> updateResponse = mock(UpdateResponse.class);
+    when(updateResponse.result()).thenReturn(Result.Created);
+    when(client.update(any(UpdateRequest.class), eq(ProcessorStep.class)))
+        .thenReturn(updateResponse);
+
+    // total=0: source index had no documents
+    final GetTasksResponse completedTask = buildCompletedGetTasksResponse(0L, 0L, 0L, 0L);
+    final OpenSearchTasksClient tasksClient = mock(OpenSearchTasksClient.class);
+    when(client.tasks()).thenReturn(tasksClient);
+    when(tasksClient.get(any(Function.class))).thenReturn(completedTask);
+
+    // when
+    adapter.reindexLegacyDatedIndex(INDEX_PREFIX + "-tasklist-task-8.5.0_2024-01-01");
+
+    // then - alias update NOT called because source had no documents
+    verify(client, never()).indices();
+  }
+
+  @SuppressWarnings("unchecked")
+  private SearchResponse<ProcessorStep> mockEmptyProcessorStepResponse() {
+    final SearchResponse<ProcessorStep> response = mock(SearchResponse.class);
+    final HitsMetadata<ProcessorStep> hitsMetadata = mock(HitsMetadata.class);
+    when(response.hits()).thenReturn(hitsMetadata);
+    when(hitsMetadata.hits()).thenReturn(List.of());
+    when(response.timedOut()).thenReturn(false);
+    when(response.terminatedEarly()).thenReturn(false);
+    return response;
+  }
+
+  @SuppressWarnings("unchecked")
+  private SearchResponse<ProcessorStep> mockCompletedProcessorStepResponse() {
+    final SearchResponse<ProcessorStep> response = mock(SearchResponse.class);
+    final HitsMetadata<ProcessorStep> hitsMetadata = mock(HitsMetadata.class);
+    final Hit<ProcessorStep> hit = mock(Hit.class);
+    final ProcessorStep step = new ProcessorStep();
+    step.setApplied(true);
+    step.setContent("os-task-done");
+    when(hit.source()).thenReturn(step);
+    when(response.hits()).thenReturn(hitsMetadata);
+    when(hitsMetadata.hits()).thenReturn(List.of(hit));
+    when(response.timedOut()).thenReturn(false);
+    when(response.terminatedEarly()).thenReturn(false);
+    return response;
+  }
+
+  private GetTasksResponse buildCompletedGetTasksResponse(
+      final long total, final long created, final long updated, final long conflicts) {
+    final GetTasksResponse taskResponse = mock(GetTasksResponse.class);
+    when(taskResponse.completed()).thenReturn(true);
+    when(taskResponse.error()).thenReturn(null);
+
+    final Info taskInfo = mock(Info.class);
+    when(taskResponse.task()).thenReturn(taskInfo);
+
+    final Status status = mock(Status.class);
+    when(taskInfo.status()).thenReturn(status);
+    when(status.total()).thenReturn(total);
+    when(status.created()).thenReturn(created);
+    when(status.updated()).thenReturn(updated);
+    when(status.deleted()).thenReturn(0L);
+    when(status.versionConflicts()).thenReturn(conflicts);
+    when(status.failures()).thenReturn(null);
+
+    return taskResponse;
   }
 
   @SuppressWarnings("unchecked")

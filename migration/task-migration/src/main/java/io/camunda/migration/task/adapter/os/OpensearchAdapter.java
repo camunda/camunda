@@ -14,8 +14,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.commons.configuration.MigrationConfiguration;
+import io.camunda.migration.commons.configuration.MigrationConfiguration.MigrationRetryConfiguration;
 import io.camunda.migration.commons.storage.ProcessorStep;
 import io.camunda.migration.commons.storage.TasklistMigrationRepositoryIndex;
+import io.camunda.migration.task.adapter.ReindexTaskStatus;
 import io.camunda.migration.task.adapter.TaskEntityPair;
 import io.camunda.migration.task.adapter.TaskLegacyIndex;
 import io.camunda.migration.task.adapter.TaskMigrationAdapter;
@@ -31,9 +33,12 @@ import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.ImportPositionEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskJoinRelationship.TaskJoinRelationshipType;
+import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.retry.RetryDecorator;
 import java.io.IOException;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -71,6 +76,7 @@ import org.opensearch.client.opensearch.generic.Requests;
 import org.opensearch.client.opensearch.indices.DeleteIndexRequest;
 import org.opensearch.client.opensearch.indices.PutMappingRequest;
 import org.opensearch.client.opensearch.indices.UpdateAliasesRequest;
+import org.opensearch.client.opensearch.tasks.GetTasksResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,6 +87,11 @@ public class OpensearchAdapter implements TaskMigrationAdapter {
   private static final String LEGACY_RUNTIME_POLICY =
       "/opensearch-legacy-runtime-index-policy.json";
   private static final String ISM_POLICIES_ENDPOINT = "_plugins/_ism/policies";
+
+  private static final String MAIN_REINDEX_STEP_ID = VersionUtil.getVersion() + "-reindex-main";
+  private static final String DATED_REINDEX_STEP_PREFIX =
+      VersionUtil.getVersion() + "-reindex-dated-";
+
   private final OpenSearchClient client;
   private final OpenSearchGenericClient genericClient;
   private final MigrationConfiguration migrationConfiguration;
@@ -166,8 +177,77 @@ public class OpensearchAdapter implements TaskMigrationAdapter {
   @Override
   public void reindexLegacyDatedIndex(final String legacyDatedIndex) throws MigrationException {
     final String newDatedIndex = MigrationUtils.generateNewIndexNameFromLegacy(legacyDatedIndex);
-    final var documentsWereProcessed = reindex(legacyDatedIndex, newDatedIndex);
-    if (documentsWereProcessed) {
+    final String stepId = DATED_REINDEX_STEP_PREFIX + sanitizeIndexName(legacyDatedIndex);
+    final ProcessorStep existingStep = getReindexStep(stepId);
+
+    if (existingStep != null && existingStep.isApplied()) {
+      LOG.info("Dated index reindex for {} already completed, skipping", legacyDatedIndex);
+      return;
+    }
+
+    final String taskId;
+    if (existingStep != null) {
+      final ReindexTaskStatus status;
+      try {
+        status =
+            retryDecorator.decorate(
+                "Check reindex task status " + existingStep.getContent(),
+                () -> getReindexTaskStatus(existingStep.getContent()),
+                s -> false);
+      } catch (final MigrationException e) {
+        throw e;
+      } catch (final Exception e) {
+        throw new MigrationException(e);
+      }
+      if (status.found() && status.completed()) {
+        writeReindexStep(stepId, existingStep.getContent(), true);
+        if (status.total() > 0) {
+          updateIndexAlias(newDatedIndex);
+          setIndexLifecycle(newDatedIndex);
+        } else {
+          LOG.info(
+              "No documents were reindexed from {} to {}. {} was not created.",
+              legacyDatedIndex,
+              newDatedIndex,
+              newDatedIndex);
+        }
+        return;
+      } else if (status.found()) {
+        taskId = existingStep.getContent();
+      } else {
+        taskId = submitReindex(legacyDatedIndex, newDatedIndex);
+        writeReindexStep(stepId, taskId, false);
+      }
+    } else {
+      taskId = submitReindex(legacyDatedIndex, newDatedIndex);
+      writeReindexStep(stepId, taskId, false);
+    }
+
+    final ReindexTaskStatus finalStatus;
+    try {
+      finalStatus =
+          busyRetryDecorator()
+              .decorate(
+                  "Wait for dated index reindex " + legacyDatedIndex,
+                  () -> {
+                    final var status = getReindexTaskStatus(taskId);
+                    if (!status.found()) {
+                      throw new MigrationException(
+                          "Reindex task " + taskId + " disappeared; restart migration to resubmit");
+                    }
+                    if (status.completed()) {
+                      writeReindexStep(stepId, taskId, true);
+                    }
+                    return status;
+                  },
+                  status -> !status.completed());
+    } catch (final MigrationException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new MigrationException(e);
+    }
+
+    if (finalStatus.total() > 0) {
       updateIndexAlias(newDatedIndex);
       setIndexLifecycle(newDatedIndex);
     } else {
@@ -181,7 +261,67 @@ public class OpensearchAdapter implements TaskMigrationAdapter {
 
   @Override
   public void reindexLegacyMainIndex() throws MigrationException {
-    reindex(legacyIndex.getFullQualifiedName(), destinationIndex.getFullQualifiedName());
+    final String stepId = MAIN_REINDEX_STEP_ID;
+    final ProcessorStep existingStep = getReindexStep(stepId);
+
+    if (existingStep != null && existingStep.isApplied()) {
+      LOG.info("Main index reindex already completed, skipping");
+      return;
+    }
+
+    final String taskId;
+    if (existingStep != null) {
+      final ReindexTaskStatus status;
+      try {
+        status =
+            retryDecorator.decorate(
+                "Check reindex task status " + existingStep.getContent(),
+                () -> getReindexTaskStatus(existingStep.getContent()),
+                s -> false);
+      } catch (final MigrationException e) {
+        throw e;
+      } catch (final Exception e) {
+        throw new MigrationException(e);
+      }
+      if (status.found() && status.completed()) {
+        writeReindexStep(stepId, existingStep.getContent(), true);
+        return;
+      } else if (status.found()) {
+        taskId = existingStep.getContent();
+      } else {
+        taskId =
+            submitReindex(
+                legacyIndex.getFullQualifiedName(), destinationIndex.getFullQualifiedName());
+        writeReindexStep(stepId, taskId, false);
+      }
+    } else {
+      taskId =
+          submitReindex(
+              legacyIndex.getFullQualifiedName(), destinationIndex.getFullQualifiedName());
+      writeReindexStep(stepId, taskId, false);
+    }
+
+    try {
+      busyRetryDecorator()
+          .decorate(
+              "Wait for main index reindex",
+              () -> {
+                final var status = getReindexTaskStatus(taskId);
+                if (!status.found()) {
+                  throw new MigrationException(
+                      "Reindex task " + taskId + " disappeared; restart migration to resubmit");
+                }
+                if (status.completed()) {
+                  writeReindexStep(stepId, taskId, true);
+                }
+                return status;
+              },
+              status -> !status.completed());
+    } catch (final MigrationException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new MigrationException(e);
+    }
   }
 
   @Override
@@ -550,7 +690,8 @@ public class OpensearchAdapter implements TaskMigrationAdapter {
                                         FieldValue.of(TaskJoinRelationshipType.TASK.getType())))));
   }
 
-  private boolean reindex(final String source, final String destination) throws MigrationException {
+  private String submitReindex(final String source, final String destination)
+      throws MigrationException {
     final ReindexRequest createMissingRequest =
         new ReindexRequest.Builder()
             .source(
@@ -565,16 +706,133 @@ public class OpensearchAdapter implements TaskMigrationAdapter {
                     .build())
             .conflicts(Conflicts.Proceed) // ignore version conflicts
             .refresh(true)
+            .waitForCompletion(false)
             .build();
 
     try {
-      final var reindexResponse = client.reindex(createMissingRequest);
-      return reindexResponse != null
-          && reindexResponse.total() != null
-          && reindexResponse.total() > 0;
-    } catch (final IOException e) {
+      final var response =
+          retryDecorator.decorate(
+              "Submit reindex from " + source,
+              () -> client.reindex(createMissingRequest),
+              res -> res == null || res.task() == null);
+      return response.task();
+    } catch (final Exception e) {
       throw new MigrationException(e);
     }
+  }
+
+  private ReindexTaskStatus getReindexTaskStatus(final String taskId)
+      throws IOException, OpenSearchException {
+    final GetTasksResponse res;
+    try {
+      res = client.tasks().get(req -> req.taskId(taskId));
+    } catch (final OpenSearchException e) {
+      if (e.status() == 404) {
+        return ReindexTaskStatus.notFound();
+      }
+      throw e;
+    }
+    if (res == null || res.task() == null) {
+      return ReindexTaskStatus.notFound();
+    }
+    final var status = res.task().status();
+    if (status == null) {
+      LOG.warn("Status of reindex task {} is null", taskId);
+      return ReindexTaskStatus.notFound();
+    }
+    if (res.completed()) {
+      if (res.error() != null) {
+        throw new MigrationException(
+            "Reindex task " + taskId + " failed with error: " + res.error());
+      }
+      if (status.failures() != null && !status.failures().isEmpty()) {
+        throw new MigrationException(
+            "Reindex task " + taskId + " completed with " + status.failures().size() + " failures");
+      }
+    }
+    final boolean completed =
+        res.completed()
+            && (status.created() + status.updated() + status.deleted() + status.versionConflicts()
+                >= status.total());
+    return new ReindexTaskStatus(
+        taskId,
+        true,
+        completed,
+        status.total(),
+        status.created(),
+        status.updated(),
+        status.deleted());
+  }
+
+  private void writeReindexStep(final String stepId, final String taskId, final boolean completed) {
+    final ProcessorStep step = new ProcessorStep();
+    step.setContent(taskId);
+    step.setDescription("Reindex task step " + stepId);
+    step.setAppliedDate(OffsetDateTime.now(ZoneId.systemDefault()));
+    step.setIndexName(TaskTemplate.INDEX_NAME);
+    step.setVersion(VersionUtil.getVersion());
+    step.setApplied(completed);
+
+    final UpdateRequest<ProcessorStep, ProcessorStep> updateRequest =
+        new UpdateRequest.Builder<ProcessorStep, ProcessorStep>()
+            .index(migrationIndex.getFullQualifiedName())
+            .id(stepId)
+            .docAsUpsert(true)
+            .doc(step)
+            .refresh(Refresh.True)
+            .upsert(step)
+            .build();
+    try {
+      retryDecorator.decorate(
+          "Write reindex step " + stepId,
+          () -> client.update(updateRequest, ProcessorStep.class),
+          res -> res.result() != Result.Created && res.result() != Result.Updated);
+    } catch (final Exception e) {
+      throw new MigrationException("Failed to write reindex step " + stepId, e);
+    }
+  }
+
+  private ProcessorStep getReindexStep(final String stepId) {
+    final SearchRequest searchRequest =
+        new SearchRequest.Builder()
+            .index(migrationIndex.getFullQualifiedName())
+            .size(1)
+            .query(
+                q ->
+                    q.term(
+                        t ->
+                            t.field(TasklistMigrationRepositoryIndex.ID)
+                                .value(FieldValue.of(stepId))))
+            .build();
+    try {
+      final SearchResponse<ProcessorStep> response =
+          retryDecorator.decorate(
+              "Fetch reindex step " + stepId,
+              () -> client.search(searchRequest, ProcessorStep.class),
+              res -> res.timedOut() || Boolean.TRUE.equals(res.terminatedEarly()));
+      return response.hits().hits().stream()
+          .map(Hit::source)
+          .filter(Objects::nonNull)
+          .findFirst()
+          .orElse(null);
+    } catch (final Exception e) {
+      throw new MigrationException("Failed to fetch reindex step " + stepId, e);
+    }
+  }
+
+  private RetryDecorator busyRetryDecorator() {
+    final var retryConfiguration = new MigrationRetryConfiguration();
+    retryConfiguration.setMaxRetries(Integer.MAX_VALUE);
+    retryConfiguration.setMinRetryDelay(migrationConfiguration.getRetry().getMinRetryDelay());
+    retryConfiguration.setMaxRetryDelay(migrationConfiguration.getRetry().getMaxRetryDelay());
+    retryConfiguration.setRetryDelayMultiplier(
+        migrationConfiguration.getRetry().getRetryDelayMultiplier());
+    return new RetryDecorator(retryConfiguration)
+        .withRetryOnException(e -> !(e instanceof MigrationException));
+  }
+
+  private static String sanitizeIndexName(final String indexName) {
+    return indexName.replaceAll("[/\\s]", "-");
   }
 
   private void updateIndexAlias(final String newDatedIndex) throws MigrationException {
