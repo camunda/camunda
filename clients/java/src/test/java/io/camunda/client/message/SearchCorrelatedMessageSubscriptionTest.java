@@ -19,15 +19,21 @@ import static io.camunda.client.util.assertions.SortAssert.assertSort;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
+import io.camunda.client.api.search.response.CorrelatedMessageSubscription;
+import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.impl.search.request.SearchRequestSort;
 import io.camunda.client.impl.search.request.SearchRequestSortMapper;
+import io.camunda.client.protocol.rest.CorrelatedMessageSubscriptionResult;
 import io.camunda.client.protocol.rest.CorrelatedMessageSubscriptionSearchQuery;
+import io.camunda.client.protocol.rest.CorrelatedMessageSubscriptionSearchQueryResult;
+import io.camunda.client.protocol.rest.SearchQueryPageResponse;
 import io.camunda.client.protocol.rest.SortOrderEnum;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayService;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import org.junit.jupiter.api.Test;
@@ -160,5 +166,53 @@ public class SearchCorrelatedMessageSubscriptionTest extends ClientRestTest {
     assertSort(sorts.get(9), "processInstanceKey", SortOrderEnum.DESC);
     assertSort(sorts.get(10), "subscriptionKey", SortOrderEnum.ASC);
     assertSort(sorts.get(11), "tenantId", SortOrderEnum.DESC);
+  }
+
+  @Test
+  void shouldMapBusinessIdInResponse() {
+    // Given
+    final CorrelatedMessageSubscriptionResult item = new CorrelatedMessageSubscriptionResult();
+    item.setMessageKey("123");
+    item.setSubscriptionKey("987");
+    item.setBusinessId("order-12345");
+    gatewayService.onSearchCorrelatedMessageSubscriptionsRequest(buildResponseWith(item));
+
+    // When
+    final SearchResponse<CorrelatedMessageSubscription> response =
+        client.newCorrelatedMessageSubscriptionSearchRequest().send().join();
+
+    // Then
+    assertThat(response.items()).hasSize(1);
+    assertThat(response.items().get(0).getBusinessId()).isEqualTo("order-12345");
+  }
+
+  @Test
+  void shouldMapNullBusinessIdInResponse() {
+    // Given
+    final CorrelatedMessageSubscriptionResult item = new CorrelatedMessageSubscriptionResult();
+    item.setMessageKey("123");
+    item.setSubscriptionKey("987");
+    item.setBusinessId(null);
+    gatewayService.onSearchCorrelatedMessageSubscriptionsRequest(buildResponseWith(item));
+
+    // When
+    final SearchResponse<CorrelatedMessageSubscription> response =
+        client.newCorrelatedMessageSubscriptionSearchRequest().send().join();
+
+    // Then
+    assertThat(response.items()).hasSize(1);
+    assertThat(response.items().get(0).getBusinessId()).isNull();
+  }
+
+  private static CorrelatedMessageSubscriptionSearchQueryResult buildResponseWith(
+      final CorrelatedMessageSubscriptionResult item) {
+    final CorrelatedMessageSubscriptionSearchQueryResult response =
+        new CorrelatedMessageSubscriptionSearchQueryResult();
+    final SearchQueryPageResponse page = new SearchQueryPageResponse();
+    page.setTotalItems(1L);
+    response.setPage(page);
+    response.setItems(new ArrayList<>());
+    response.addItemsItem(item);
+    return response;
   }
 }

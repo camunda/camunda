@@ -1280,6 +1280,7 @@ public final class SearchQueryResponseMapper {
   private static CorrelatedMessageSubscriptionResult toCorrelatedMessageSubscription(
       final CorrelatedMessageSubscriptionEntity correlatedMessageSubscription) {
     return CorrelatedMessageSubscriptionResult.Builder.create()
+        .businessId(correlatedMessageSubscription.businessId())
         .correlationKey(correlatedMessageSubscription.correlationKey())
         .correlationTime(formatDate(correlatedMessageSubscription.correlationTime()))
         .elementId(correlatedMessageSubscription.flowNodeId())

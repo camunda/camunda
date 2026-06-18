@@ -556,6 +556,66 @@ class SearchQueryResponseMapperTest {
   }
 
   @Test
+  void shouldMapBusinessIdForCorrelatedMessageSubscription() {
+    // given
+    final var entity =
+        CorrelatedMessageSubscriptionEntity.builder()
+            .correlationKey("corrKey")
+            .correlationTime(OffsetDateTime.now())
+            .flowNodeId("messageCatch")
+            .flowNodeInstanceKey(111L)
+            .messageKey(222L)
+            .messageName("testMessage")
+            .partitionId(1)
+            .processDefinitionId("processId")
+            .processDefinitionKey(456L)
+            .processInstanceKey(789L)
+            .rootProcessInstanceKey(999L)
+            .subscriptionKey(333L)
+            .tenantId("tenant")
+            .businessId("order-12345")
+            .build();
+
+    // when
+    final var subscriptions =
+        SearchQueryResponseMapper.toCorrelatedMessageSubscriptionSearchQueryResponse(
+            new SearchQueryResult<CorrelatedMessageSubscriptionEntity>(
+                1, false, List.of(entity), null, null));
+
+    // then
+    assertThat(subscriptions.getItems().getFirst().getBusinessId()).isEqualTo("order-12345");
+  }
+
+  @Test
+  void shouldMapNullBusinessIdForCorrelatedMessageSubscription() {
+    // given
+    final var entity =
+        CorrelatedMessageSubscriptionEntity.builder()
+            .correlationKey("corrKey")
+            .correlationTime(OffsetDateTime.now())
+            .flowNodeId("flowNode")
+            .messageKey(222L)
+            .messageName("testMessage")
+            .partitionId(1)
+            .processDefinitionId("processId")
+            .processDefinitionKey(456L)
+            .processInstanceKey(789L)
+            .subscriptionKey(333L)
+            .tenantId("tenant")
+            .businessId(null)
+            .build();
+
+    // when
+    final var subscriptions =
+        SearchQueryResponseMapper.toCorrelatedMessageSubscriptionSearchQueryResponse(
+            new SearchQueryResult<CorrelatedMessageSubscriptionEntity>(
+                1, false, List.of(entity), null, null));
+
+    // then
+    assertThat(subscriptions.getItems().getFirst().getBusinessId()).isNull();
+  }
+
+  @Test
   void shouldMapRootProcessInstanceKeyForSequenceFlow() {
     // given
     final var entity =
