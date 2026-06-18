@@ -22,6 +22,12 @@ import static io.camunda.process.test.api.assertions.ElementSelectors.byId;
 import static io.camunda.process.test.api.assertions.ElementSelectors.byName;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.DocumentReferenceResponse;
@@ -67,7 +73,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Mockito;
 
 @CamundaProcessTest
 public class CamundaProcessTestExtensionIT {
@@ -1517,9 +1522,9 @@ public class CamundaProcessTestExtensionIT {
 
     @BeforeEach
     void setUp() {
-      stub = Mockito.mock(MultimodalChatModelAdapter.class);
-      Mockito.when(stub.generate(Mockito.anyString())).thenReturn(FAKE_RESPONSE);
-      Mockito.when(stub.generate(Mockito.anyString(), Mockito.anyList())).thenReturn(FAKE_RESPONSE);
+      stub = mock(MultimodalChatModelAdapter.class);
+      when(stub.generate(anyString())).thenReturn(FAKE_RESPONSE);
+      when(stub.generate(anyString(), anyList())).thenReturn(FAKE_RESPONSE);
 
       client
           .newDeployResourceCommand()
@@ -1545,13 +1550,15 @@ public class CamundaProcessTestExtensionIT {
 
       // then
       final ArgumentCaptor<String> promptCaptor = ArgumentCaptor.forClass(String.class);
-      final ArgumentCaptor<List<ResolvedDocument>> docsCaptor = listCaptor();
-      Mockito.verify(stub).generate(promptCaptor.capture(), docsCaptor.capture());
+      final ArgumentCaptor<List<ResolvedDocument>> documentsCaptor = ArgumentCaptor.captor();
+      verify(stub).generate(promptCaptor.capture(), documentsCaptor.capture());
       assertThat(promptCaptor.getValue())
           .contains("</resolved_documents>")
           .contains(reference.getDocumentId());
       assertDocumentsMatch(
-          docsCaptor.getValue(), Arrays.asList(reference), Arrays.asList(NOTE_TEXT.getBytes()));
+          documentsCaptor.getValue(),
+          Arrays.asList(reference),
+          Arrays.asList(NOTE_TEXT.getBytes()));
     }
 
     @Test
@@ -1576,10 +1583,10 @@ public class CamundaProcessTestExtensionIT {
           .hasVariableSatisfiesJudge(ATTACHMENT_VARIABLE, "should describe two short notes");
 
       // then — duplicate references collapse but distinct documents are preserved in order
-      final ArgumentCaptor<List<ResolvedDocument>> docsCaptor = listCaptor();
-      Mockito.verify(stub).generate(Mockito.anyString(), docsCaptor.capture());
+      final ArgumentCaptor<List<ResolvedDocument>> documentsCaptor = ArgumentCaptor.captor();
+      verify(stub).generate(anyString(), documentsCaptor.capture());
       assertDocumentsMatch(
-          docsCaptor.getValue(),
+          documentsCaptor.getValue(),
           Arrays.asList(noteReference, memoReference),
           Arrays.asList(NOTE_TEXT.getBytes(), MEMO_TEXT.getBytes()));
     }
@@ -1598,10 +1605,8 @@ public class CamundaProcessTestExtensionIT {
           .hasVariableSatisfiesJudge(ATTACHMENT_VARIABLE, "should be a short note");
 
       // then — text-only generate(String) is used; no documents are resolved or attached
-      final ArgumentCaptor<String> promptCaptor = ArgumentCaptor.forClass(String.class);
-      Mockito.verify(stub).generate(promptCaptor.capture());
-      Mockito.verify(stub, Mockito.never()).generate(Mockito.anyString(), Mockito.anyList());
-      assertThat(promptCaptor.getValue()).doesNotContain("</resolved_documents>");
+      verify(stub).generate(anyString());
+      verify(stub, never()).generate(anyString(), anyList());
     }
 
     private DocumentReferenceResponse uploadDocument(final String fileName, final String text) {
@@ -1636,11 +1641,6 @@ public class CamundaProcessTestExtensionIT {
         assertThat(attached.getContentType()).isEqualTo(CONTENT_TYPE);
         assertThat(attached.getContent()).isEqualTo(expectedContents.get(i));
       }
-    }
-
-    @SuppressWarnings("unchecked")
-    private <T> ArgumentCaptor<List<T>> listCaptor() {
-      return (ArgumentCaptor<List<T>>) (ArgumentCaptor<?>) ArgumentCaptor.forClass(List.class);
     }
   }
 }

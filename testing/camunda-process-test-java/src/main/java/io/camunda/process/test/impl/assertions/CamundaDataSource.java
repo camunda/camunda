@@ -16,11 +16,8 @@
 package io.camunda.process.test.impl.assertions;
 
 import io.camunda.client.CamundaClient;
-<<<<<<< HEAD
-import io.camunda.client.api.response.EvaluateExpressionResponse;
-=======
 import io.camunda.client.api.response.DocumentReferenceResponse;
->>>>>>> b3aa5c9813f (refactor: encapsulate document content fetching in CamundaDataSource)
+import io.camunda.client.api.response.EvaluateExpressionResponse;
 import io.camunda.client.api.search.filter.CorrelatedMessageSubscriptionFilter;
 import io.camunda.client.api.search.filter.DecisionInstanceFilter;
 import io.camunda.client.api.search.filter.ElementInstanceFilter;
