@@ -14,6 +14,33 @@ For now, the agreed home for these docs is the existing release docs site under 
 * [Basic Operational Instructions](https://lamppost.camunda-it.rocks/handbook/index.html?continue#departments/products/product-management/release-management-process/c8-release-train/basic-operational-instructions/index.md)
 * [Release Process](./index.md)
 
+## Release Train Repository
+
+The release train BPMN and supporting code lives in [camunda-release/release-train](https://github.com/camunda/camunda-release). Development via Camunda Modeler is no longer supported — all contributions go through GitHub pull requests.
+
+To contribute:
+
+1. Open a pull request to `camunda-release/release-train`.
+2. Test your changes on the dev cluster before merging (see [Testing Changes on Dev](#testing-changes-on-dev)).
+3. Roll back any dev overrides before merging to `main`.
+
+## Testing Changes on Dev
+
+Use this to validate release train changes before they reach prod.
+
+1. Create a branch from `main` in `camunda/camunda-release`.
+2. Apply dev overrides to your branch.
+3. Commit and push your branch.
+4. Deploy to dev: go to **Actions → Release Train - Deploy → Run workflow**, select your branch, and set cluster to `dev`.
+5. Validate in the dev cluster Operate and Tasklist.
+6. Roll back the dev overrides before merging to `main`.
+
+**Example:** [camunda-release PR #100](https://github.com/camunda/camunda-release/pull/100/changes/ce63df782ab2685a408e73370b5e0267e2063fba)
+
+> **Coordinate before deploying.** Each deploy creates a new version of every changed process. If two people deploy different branches, the latest deploy wins. Align in [`#c8-release-train-development`](https://camunda.slack.com/archives/CHY2S7KDJ) before you deploy.
+
+> **Lint enforcement.** The lint workflow blocks any PR to `main` that contains dev-only values (dev cluster ID, test Slack channel, `development=true`). Dev overrides cannot be merged to prod.
+
 ## Happy-Path Flow
 
 At a high level, the C8 Release Train starts from a scheduled or ad-hoc trigger, collects the target release lines and base generations, coordinates the component releases (including the Monorepo release), creates SaaS generations for dev/int/prod, runs release validation and rollout work, and ends with support communication and the remaining release wrap-up.
