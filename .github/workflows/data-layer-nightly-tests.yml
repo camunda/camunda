@@ -32,7 +32,7 @@ jobs:
       (github.event_name == 'pull_request' &&
        (github.event.action == 'labeled' && github.event.label.name == 'run-dl-nightly-tests' ||
         github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'run-dl-nightly-tests')))
-    runs-on: gcp-perf-core-8-default
+    runs-on: gcp-perf-core-16-default
     timeout-minutes: 90
     permissions:
       contents: read
