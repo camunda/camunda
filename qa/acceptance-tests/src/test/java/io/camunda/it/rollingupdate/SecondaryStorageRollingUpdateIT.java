@@ -237,6 +237,7 @@ final class SecondaryStorageRollingUpdateIT {
         testCluster(client);
       }
     } catch (final RuntimeException | Error e) {
+      LOGGER.error("Test failed, dumping broker logs before rethrowing", e);
       logBrokerContainerLogs("oldVersionBroker", oldVersionBroker, oldVersionBrokerLogs);
       logBrokerContainerLogs("newVersionBroker", newVersionBroker, newVersionBrokerLogs);
       throw e;
