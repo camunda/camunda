@@ -55,30 +55,6 @@ public class ResourceAccessControllerConfiguration {
   }
 
   @Bean
-  public ResourceAccessController anonymousResourceAccessController() {
-    return new AnonymousResourceAccessController();
-  }
-
-  @Bean
-  @ConditionalOnSecondaryStorageType({
-    SecondaryStorageType.elasticsearch,
-    SecondaryStorageType.opensearch
-  })
-  public ResourceAccessController documentBasedResourceAccessController(
-      final ResourceAccessProvider resourceAccessProvider,
-      final TenantAccessProvider tenantAccessProvider) {
-    return new DocumentBasedResourceAccessController(resourceAccessProvider, tenantAccessProvider);
-  }
-
-  @Bean
-  @ConditionalOnSecondaryStorageType(SecondaryStorageType.rdbms)
-  public ResourceAccessController rdbmsResourceAccessController(
-      final ResourceAccessProvider resourceAccessProvider,
-      final TenantAccessProvider tenantAccessProvider) {
-    return new RdbmsResourceAccessController(resourceAccessProvider, tenantAccessProvider);
-  }
-
-  @Bean
   @ConditionalOnSecondaryStorageType({
     SecondaryStorageType.elasticsearch,
     SecondaryStorageType.opensearch

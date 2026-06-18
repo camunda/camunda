@@ -15,8 +15,8 @@
   <dependencies>
 
     <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>configuration-api</artifactId>
+      <groupId>org.jspecify</groupId>
+      <artifactId>jspecify</artifactId>
     </dependency>
 
     <dependency>

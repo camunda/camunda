@@ -47,7 +47,10 @@ class CamundaSearchClientsTest {
   @BeforeEach
   void setUp() {
     camundaSearchClients =
-        new CamundaSearchClients(Map.of("default", readers), resourceAccessController);
+        (CamundaSearchClients)
+            new CamundaSearchClients(
+                    Map.of("default", readers), Map.of("default", resourceAccessController))
+                .withPhysicalTenant("default");
 
     // Make the resource access controller simply invoke the applier with a no-op check
     when(resourceAccessController.doSearch(any(), any()))
@@ -218,7 +221,10 @@ class CamundaSearchClientsTest {
       final var clients =
           new CamundaSearchClients(
               Map.of(DEFAULT, readers, TENANT_A, tenantAReaders, TENANT_B, tenantBReaders),
-              resourceAccessController);
+              Map.of(
+                  DEFAULT, resourceAccessController,
+                  TENANT_A, resourceAccessController,
+                  TENANT_B, resourceAccessController));
 
       // when / then
       assertThatThrownBy(() -> clients.withPhysicalTenant("unknown"))
@@ -237,7 +243,10 @@ class CamundaSearchClientsTest {
       final var clients =
           new CamundaSearchClients(
               Map.of(DEFAULT, readers, TENANT_A, tenantAReaders, TENANT_B, tenantBReaders),
-              resourceAccessController);
+              Map.of(
+                  DEFAULT, resourceAccessController,
+                  TENANT_A, resourceAccessController,
+                  TENANT_B, resourceAccessController));
 
       // when
       clients.withPhysicalTenant(TENANT_A).searchProcessInstances(ProcessInstanceQuery.of(b -> b));
@@ -248,6 +257,20 @@ class CamundaSearchClientsTest {
     }
 
     @Test
+    void shouldThrowWhenReadIsAttemptedWithoutScopingToAPhysicalTenant() {
+      // given — an unscoped base instance (withPhysicalTenant not yet called)
+      final var unscopedClients =
+          new CamundaSearchClients(
+              Map.of(DEFAULT, readers), Map.of(DEFAULT, resourceAccessController));
+
+      // when / then
+      assertThatThrownBy(
+              () -> unscopedClients.searchProcessInstances(ProcessInstanceQuery.of(b -> b)))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessageContaining("withPhysicalTenant");
+    }
+
+    @Test
     void shouldPreserveSecurityContextAndResourceAccessControllerOnTheReturnedInstance() {
       // given
       when(tenantAReaders.processInstanceReader()).thenReturn(tenantAProcessInstanceReader);
@@ -255,7 +278,8 @@ class CamundaSearchClientsTest {
       final var securityContext = SecurityContext.of(b -> b);
       final var clients =
           new CamundaSearchClients(
-              Map.of(DEFAULT, readers, TENANT_A, tenantAReaders), resourceAccessController);
+              Map.of(DEFAULT, readers, TENANT_A, tenantAReaders),
+              Map.of(DEFAULT, resourceAccessController, TENANT_A, resourceAccessController));
 
       // when
       clients
