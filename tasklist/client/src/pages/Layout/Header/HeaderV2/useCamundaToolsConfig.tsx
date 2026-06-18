@@ -68,7 +68,6 @@ function getInfoSidebarItems(isPaidPlan: boolean) {
 const LOGOUT_DELAY = 1000;
 
 const logoutWithNotification = async () => {
-  console.log('Logging out user and showing notification');
   notificationsStore.displayNotification({
     kind: 'info',
     title: t('notificationLogOutTitle'),
