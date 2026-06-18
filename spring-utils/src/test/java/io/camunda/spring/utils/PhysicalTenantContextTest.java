@@ -8,6 +8,7 @@
 package io.camunda.spring.utils;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import jakarta.servlet.http.HttpServletRequest;
@@ -49,9 +50,21 @@ class PhysicalTenantContextTest {
   }
 
   @Test
-  void shouldReturnDefaultFromCurrentWhenNoRequestBound() {
+  void shouldThrowWhenNoRequestBound() {
     // given: no RequestContextHolder bound
     RequestContextHolder.resetRequestAttributes();
+
+    // when / then
+    assertThatThrownBy(PhysicalTenantContext::current)
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("request scope");
+  }
+
+  @Test
+  void shouldReturnDefaultFromCurrentWhenRequestBoundButNoPtAttribute() {
+    // given: request bound but no PT attribute set (non-prefixed /v2/... cluster request)
+    final MockHttpServletRequest request = new MockHttpServletRequest();
+    RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
 
     // when / then
     assertThat(PhysicalTenantContext.current())

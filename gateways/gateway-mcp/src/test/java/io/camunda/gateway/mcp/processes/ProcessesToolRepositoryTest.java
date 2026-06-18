@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -46,6 +47,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
@@ -67,6 +71,14 @@ class ProcessesToolRepositoryTest {
         .when(serviceRegistry.messageSubscriptionServices(any()))
         .thenReturn(messageSubscriptionServices);
     lenient().when(serviceRegistry.messageServices(any())).thenReturn(messageServices);
+    // Bind a plain request with no PT attribute — models a non-prefixed /mcp/... cluster request
+    RequestContextHolder.setRequestAttributes(
+        new ServletRequestAttributes(new MockHttpServletRequest()));
+  }
+
+  @AfterEach
+  void clearRequestContext() {
+    RequestContextHolder.resetRequestAttributes();
   }
 
   private static MessageSubscriptionEntity buildStartSubscriptionEntity(

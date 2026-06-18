@@ -40,7 +40,10 @@ class PhysicalTenantIdArgumentResolverTest {
 
   @Test
   void defaultsForClusterPathWithoutStampedId() {
-    // given a cluster (non-prefixed) request — no PT id is stamped
+    // given a cluster (non-prefixed) request — request is bound but no PT id is stamped
+    RequestContextHolder.setRequestAttributes(
+        new ServletRequestAttributes(new MockHttpServletRequest()));
+
     // when / then: must default, never null (a null id breaks command building downstream)
     assertThat(resolver.resolveArgument(null, null, null, null))
         .isEqualTo(DEFAULT_PHYSICAL_TENANT_ID);

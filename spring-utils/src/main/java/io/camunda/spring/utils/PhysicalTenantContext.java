@@ -51,14 +51,23 @@ public final class PhysicalTenantContext {
   }
 
   /**
-   * @return the resolved physical tenant id for the request being processed on this thread, or
-   *     {@link PhysicalTenantIds#DEFAULT_PHYSICAL_TENANT_ID} when no request context is bound or
-   *     the attribute is not set.
+   * Returns the resolved physical tenant id for the request being processed on the current thread.
+   *
+   * <p>When the request carries the {@code /physical-tenants/{physicalTenantId}/...} prefix, the id
+   * stamped by {@code PhysicalTenantFilter} (gateway-rest) or the MCP {@code defaultTenantFilter}
+   * is returned. For non-prefixed requests (plain {@code /v2/...} or {@code /mcp/...}) the filter
+   * stamps {@link PhysicalTenantIds#DEFAULT_PHYSICAL_TENANT_ID} and that value is returned.
+   *
+   * @return the physical tenant id for the current request; never {@code null}
+   * @throws IllegalStateException if called outside a servlet-request scope (i.e. {@link
+   *     RequestContextHolder#getRequestAttributes()} returns {@code null})
    */
   public static String current() {
     final RequestAttributes attributes = RequestContextHolder.getRequestAttributes();
     if (attributes == null) {
-      return PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+      throw new IllegalStateException(
+          "PhysicalTenantContext.current() called outside a request scope; "
+              + "the physical tenant must be resolved on the request thread (or supplied explicitly).");
     }
     final String value =
         asString(

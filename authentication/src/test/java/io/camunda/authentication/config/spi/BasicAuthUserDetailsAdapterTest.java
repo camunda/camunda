@@ -46,8 +46,9 @@ class BasicAuthUserDetailsAdapterTest {
                 b.userServices("default", defaultUserServices)
                     .userServices("tenanta", tenantAUserServices));
     adapter = new BasicAuthUserDetailsAdapter(serviceRegistry);
-    // Ensure no stale request context from a previous test
-    RequestContextHolder.resetRequestAttributes();
+    // Bind a plain request with no PT attribute — models a non-prefixed /v2/... cluster request
+    RequestContextHolder.setRequestAttributes(
+        new ServletRequestAttributes(new MockHttpServletRequest()));
   }
 
   @AfterEach
@@ -57,7 +58,7 @@ class BasicAuthUserDetailsAdapterTest {
 
   @Test
   void shouldMapUserEntityToCamundaUserDetails() {
-    // given — no request context: defaults to "default" tenant
+    // given — request bound with no PT attribute: resolves to the "default" tenant
     when(defaultUserServices.getUser(any(), any()))
         .thenReturn(new UserEntity(100L, TEST_USER_ID, "Foo Bar", "email@tested", "password1"));
 
@@ -90,8 +91,8 @@ class BasicAuthUserDetailsAdapterTest {
   }
 
   @Test
-  void shouldFallBackToDefaultTenantWhenNoRequestContextBound() {
-    // given — no request context at all
+  void shouldUseDefaultTenantWhenRequestHasNoPhysicalTenantPrefix() {
+    // given — request bound (set in setUp) but no PT attribute stamped (non-prefixed /v2/... path)
     when(defaultUserServices.getUser(any(), any()))
         .thenReturn(new UserEntity(100L, TEST_USER_ID, "Foo Bar", "email@tested", "password1"));
 
