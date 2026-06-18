@@ -14,6 +14,7 @@ import static org.awaitility.Awaitility.await;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ClientStatusException;
 import io.camunda.client.api.response.ActivateJobsResponse;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -42,12 +43,9 @@ final class PhysicalTenantIsolationIT {
   private final TestStandaloneBroker broker =
       new TestStandaloneBroker()
           .withUnauthenticatedAccess()
-          // the default tenant uses no secondary storage (broker-only, M1 scope) ...
-          .withProperty("camunda.data.secondary-storage.type", "none")
-          // ... and declaring tenant A with a matching storage type starts a second, fully
-          // isolated partition group / engine for it
-          .withProperty(
-              "camunda.physical-tenants." + TENANT_A + ".data.secondary-storage.type", "none")
+          // the cluster uses no secondary storage (broker-only) ...
+          .withDataConfig(
+              dataCfg -> dataCfg.getSecondaryStorage().setType(SecondaryStorageType.none))
           // each explicitly-configured physical tenant must provide its own initialization block
           .withProperty(
               "camunda.physical-tenants."
@@ -91,7 +89,7 @@ final class PhysicalTenantIsolationIT {
                             .getProcesses())
                     .isNotEmpty());
 
-    // when - an instance is created and activated in tenant A
+    // when - an instance is created in tenant A, making a job available there
     final long processInstanceKey =
         tenantAClient
             .newCreateInstanceCommand()
@@ -101,31 +99,8 @@ final class PhysicalTenantIsolationIT {
             .join()
             .getProcessInstanceKey();
 
-    final ActivateJobsResponse tenantAJobs =
-        tenantAClient
-            .newActivateJobsCommand()
-            .jobType(JOB_TYPE)
-            .maxJobsToActivate(10)
-            .send()
-            .join();
-
-    // then - tenant A sees and can complete the job for its own instance
-    assertThat(tenantAJobs.getJobs()).hasSize(1);
-    assertThat(tenantAJobs.getJobs().get(0).getProcessInstanceKey()).isEqualTo(processInstanceKey);
-    tenantAClient.newCompleteCommand(tenantAJobs.getJobs().get(0).getKey()).send().join();
-
-    // and - the default tenant is unaffected: the process was never deployed there
-    assertThatThrownBy(
-            () ->
-                defaultClient
-                    .newCreateInstanceCommand()
-                    .bpmnProcessId(processId)
-                    .latestVersion()
-                    .send()
-                    .join())
-        .isInstanceOf(ClientStatusException.class);
-
-    // ... and none of tenant A's jobs leaked into the default tenant
+    // then - the default tenant cannot see that job while it is still live in tenant A: the job
+    // lives in tenant A's partition group and never leaks across the tenant boundary
     final ActivateJobsResponse defaultJobs =
         defaultClient
             .newActivateJobsCommand()
@@ -135,5 +110,29 @@ final class PhysicalTenantIsolationIT {
             .send()
             .join();
     assertThat(defaultJobs.getJobs()).isEmpty();
+
+    // and - tenant A sees the job for its own instance and can complete it
+    final ActivateJobsResponse tenantAJobs =
+        tenantAClient
+            .newActivateJobsCommand()
+            .jobType(JOB_TYPE)
+            .maxJobsToActivate(10)
+            .send()
+            .join();
+    assertThat(tenantAJobs.getJobs()).hasSize(1);
+    assertThat(tenantAJobs.getJobs().getFirst().getProcessInstanceKey())
+        .isEqualTo(processInstanceKey);
+    tenantAClient.newCompleteCommand(tenantAJobs.getJobs().getFirst().getKey()).send().join();
+
+    // and - the process was never deployed to the default tenant
+    assertThatThrownBy(
+            () ->
+                defaultClient
+                    .newCreateInstanceCommand()
+                    .bpmnProcessId(processId)
+                    .latestVersion()
+                    .send()
+                    .join())
+        .isInstanceOf(ClientStatusException.class);
   }
 }
