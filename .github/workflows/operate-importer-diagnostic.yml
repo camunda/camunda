@@ -1,0 +1,100 @@
+# DIAGNOSTIC / THROWAWAY — do not merge.
+# Runs the full operateItImport suite (*ZeebeImportIT) to completion in one job:
+#   - failures ignored so every class runs and reports (the prod job aborts/times out)
+#   - reruns disabled so true (non-flaky-masked) failures are visible
+#   - 90m timeout so the slow classes (ProcessInstance ~11m) actually finish
+# Emits a per-class pass/fail/time table to the job summary and uploads the
+# failsafe reports. Triggered by pushing this branch (workflow_dispatch from a
+# non-default branch is not reliably dispatchable).
+name: "DIAGNOSTIC: Operate importer ITs (full run)"
+on:
+  push:
+    branches:
+      - "54793-importer-diagnostic"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+env:
+  JAVA_VERSION: "21"
+  LIMITS_CPU: "8"
+
+jobs:
+  importer-full:
+    name: "Importer ITs (full, failures ignored)"
+    runs-on: gcp-perf-core-8-default
+    timeout-minutes: 90
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@d1720f055e0635fd932a1d2a48f87a666a57906c # v3.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/github.com/organizations/camunda NEXUS_USR;
+            secret/data/github.com/organizations/camunda NEXUS_PSW;
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "adopt"
+          java-version: "21"
+      - name: Configure Maven
+        uses: ./.github/actions/setup-maven-cache
+        with:
+          maven-cache-key-modifier: operate-tests
+      - name: "Create settings.xml"
+        uses: s4u/maven-settings-action@7802f6aec16c9098b4798ad1f1d8ac75198194bd # v3.0.0
+        with:
+          githubServer: false
+          servers: |
+            [{
+               "id": "camunda-nexus",
+               "username": "${{ steps.secrets.outputs.NEXUS_USR }}",
+               "password": "${{ steps.secrets.outputs.NEXUS_PSW }}"
+             }]
+          mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
+      - name: Build Operate
+        run: ./mvnw -B -T1C -DskipChecks -DskipTests -P skipFrontendBuild clean install
+      - name: Run importer ITs (all classes, no rerun, failures ignored)
+        run: |
+          ./mvnw -B -pl operate/qa/integration-tests verify \
+            -P skipFrontendBuild,operateItImport \
+            -DskipChecks \
+            -Dfailsafe.rerunFailingTestsCount=0 \
+            -Dmaven.test.failure.ignore=true \
+            -T${LIMITS_CPU}
+      - name: Summarize per-class results
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "## operateItImport per-class results"
+            echo ""
+            echo "| Class | Tests | Failures | Errors | Skipped | Time (s) |"
+            echo "|---|---:|---:|---:|---:|---:|"
+          } >> "$GITHUB_STEP_SUMMARY"
+          shopt -s nullglob
+          total_f=0; total_e=0
+          for f in operate/qa/integration-tests/target/failsafe-reports/TEST-*.xml; do
+            head="$(grep -oE '<testsuite [^>]*>' "$f" | head -1)"
+            cls="$(basename "$f" .xml | sed 's/^TEST-//')"
+            get() { echo "$head" | grep -oE "$1=\"[0-9.]+\"" | grep -oE '[0-9.]+' | head -1; }
+            t="$(get tests)"; fa="$(get failures)"; er="$(get errors)"; sk="$(get skipped)"; tm="$(get time)"
+            total_f=$((total_f + ${fa:-0})); total_e=$((total_e + ${er:-0}))
+            echo "| ${cls} | ${t:-0} | ${fa:-0} | ${er:-0} | ${sk:-0} | ${tm:-?} |" >> "$GITHUB_STEP_SUMMARY"
+          done
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Totals — failures: ${total_f}, errors: ${total_e}**" >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload failsafe reports
+        if: always()
+        uses: ./.github/actions/collect-test-artifacts
+        with:
+          name: "importer-diagnostic-failsafe-reports"
+          path: |
+            **/failsafe-reports/
