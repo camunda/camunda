@@ -149,8 +149,7 @@ class JobWaitStateHandlerTest {
     assertThat(details.get("jobKey").longValue()).isEqualTo(JOB_KEY);
     assertThat(details.get("jobType").textValue()).isEqualTo("payment-service");
     assertThat(details.get("jobKind").textValue()).isEqualTo(JobKind.BPMN_ELEMENT.name());
-    assertThat(details.get("listenerEventType").textValue())
-        .isEqualTo(JobListenerEventType.UNSPECIFIED.name());
+    assertThat(details.get("listenerEventType").isNull()).isTrue();
     assertThat(details.get("retries").intValue()).isEqualTo(3);
   }
 
