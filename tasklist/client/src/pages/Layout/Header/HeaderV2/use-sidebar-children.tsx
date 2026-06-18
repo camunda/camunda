@@ -15,11 +15,6 @@ import {tracking} from 'modules/tracking';
 import {getStateLocally} from 'modules/local-storage';
 import {isForbidden} from 'modules/utils/isForbidden';
 
-/**
- * Top-level sidebar layout: a Tasks group containing the task-filter
- * children, plus a flat Processes entry. Empty when the user is not
- * authorised to view tasklist.
- */
 export function useSidebarChildren(params: {
   currentUser: CurrentUser | undefined;
   isProcessesPage: boolean;

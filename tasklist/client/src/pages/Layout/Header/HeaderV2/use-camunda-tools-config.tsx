@@ -17,12 +17,6 @@ import {getInfoSidebarItems} from './info-sidebar-items';
 
 const LOGOUT_DELAY = 1000;
 
-/**
- * Wraps `useCamundaTools` with Tasklist-specific options: notifications panel
- * (SaaS only), info panel (Documentation / Academy / Feedback / Community
- * Forum), and user panel (theme + language selectors, optional cookie
- * preferences, legal links, logout).
- */
 export function useCamundaToolsConfig(params: {
   currentUser: CurrentUser | undefined;
   isPaidPlan: boolean;

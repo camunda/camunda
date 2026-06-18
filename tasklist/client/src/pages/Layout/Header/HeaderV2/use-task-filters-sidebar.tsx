@@ -29,11 +29,6 @@ const stopRowNavigation = (e: React.SyntheticEvent) => {
   e.preventDefault();
 };
 
-/**
- * Builds the children of the "Tasks" sidebar group: the four built-in filter
- * entries, one per custom filter (with hover-revealed Edit/Delete actions),
- * and a final "New filter" trigger.
- */
 export function useTaskFiltersSidebar(
   dialog: CustomFiltersDialog,
 ): SidebarNodeDescriptor[] {

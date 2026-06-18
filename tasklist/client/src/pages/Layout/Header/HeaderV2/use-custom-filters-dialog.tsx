@@ -31,13 +31,6 @@ export type CustomFiltersDialog = {
   modals: React.ReactElement;
 };
 
-/**
- * Owns the custom-filters modal lifecycle (open/edit/delete state, navigation
- * side-effects, and the localStorage read trigger). `customFilters` reads
- * from `getStateLocally` on every render after a save/delete via an internal
- * bump counter — the modal mutates localStorage and we need the next render
- * to see the new entries.
- */
 export function useCustomFiltersDialog(): CustomFiltersDialog {
   const navigate = useNavigate();
   const location = useLocation();
