@@ -286,6 +286,61 @@ public class CorrelatedMessageSubscriptionIT {
   }
 
   @TestTemplate
+  public void shouldFindCorrelatedMessageSubscriptionWithSearchAfterByNullableBusinessId(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final CorrelatedMessageSubscriptionDbReader reader =
+        rdbmsService.getCorrelatedMessageSubscriptionReader("default");
+
+    final var processDefinitionKey = nextKey();
+    // 16 subscriptions without a businessId and 4 with one. Sorted ascending, businessId is
+    // NULLS FIRST on every database, so the 15-row page boundary (and therefore the keyset
+    // cursor) falls on a null businessId - exercising the nullable keyset path.
+    createAndSaveRandomCorrelatedMessageSubscriptions(
+        rdbmsWriters, 16, b -> b.processDefinitionKey(processDefinitionKey).businessId(null));
+    createAndSaveRandomCorrelatedMessageSubscriptions(
+        rdbmsWriters, 4, b -> b.processDefinitionKey(processDefinitionKey));
+
+    final var sort = CorrelatedMessageSubscriptionSort.of(s -> s.businessId().asc());
+    final var allItems =
+        reader.search(
+            CorrelatedMessageSubscriptionQuery.of(
+                b ->
+                    b.filter(f -> f.processDefinitionKeys(processDefinitionKey))
+                        .sort(sort)
+                        .page(p -> p.from(0).size(20))));
+
+    final var firstPage =
+        reader.search(
+            CorrelatedMessageSubscriptionQuery.of(
+                b ->
+                    b.filter(f -> f.processDefinitionKeys(processDefinitionKey))
+                        .sort(sort)
+                        .page(p -> p.size(15))));
+
+    final var nextPage =
+        reader.search(
+            CorrelatedMessageSubscriptionQuery.of(
+                b ->
+                    b.filter(f -> f.processDefinitionKeys(processDefinitionKey))
+                        .sort(sort)
+                        .page(p -> p.size(5).after(firstPage.endCursor()))));
+
+    // the whole result is ordered nulls-first by businessId
+    assertThat(allItems.items())
+        .extracting(CorrelatedMessageSubscriptionEntity::businessId)
+        .isSortedAccordingTo(Comparator.nullsFirst(Comparator.naturalOrder()));
+    // the cursor boundary sits on a null businessId
+    assertThat(firstPage.items()).hasSize(15);
+    assertThat(firstPage.items().get(14).businessId()).isNull();
+    // paging continues correctly across the null -> non-null boundary from a null cursor
+    assertThat(nextPage.total()).isEqualTo(20);
+    assertThat(nextPage.items()).hasSize(5);
+    assertThat(nextPage.items()).isEqualTo(allItems.items().subList(15, 20));
+  }
+
+  @TestTemplate
   public void shouldSortByBusinessId(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
