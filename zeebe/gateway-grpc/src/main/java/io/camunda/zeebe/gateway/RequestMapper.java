@@ -140,7 +140,8 @@ public final class RequestMapper extends RequestUtil {
         .setMessageId(grpcRequest.getMessageId())
         .setTimeToLive(grpcRequest.getTimeToLive())
         .setVariables(ensureJsonSet(grpcRequest.getVariables()))
-        .setTenantId(ensureTenantIdSet("PublishMessage", grpcRequest.getTenantId()));
+        .setTenantId(ensureTenantIdSet("PublishMessage", grpcRequest.getTenantId()))
+        .setBusinessId(ensureBusinessIdValid(grpcRequest.getBusinessId()));
 
     return brokerRequest;
   }

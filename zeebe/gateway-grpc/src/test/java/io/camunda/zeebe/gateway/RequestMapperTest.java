@@ -850,4 +850,69 @@ public class RequestMapperTest {
           .hasMessageContaining("non-empty name");
     }
   }
+
+  @Nested
+  class PublishMessageRequestBusinessIdTest {
+
+    @Test
+    public void shouldAcceptValidBusinessId() {
+      // given
+      final var grpcRequest =
+          PublishMessageRequest.newBuilder()
+              .setName("message")
+              .setBusinessId("order-12345")
+              .build();
+
+      // when
+      final var brokerRequest = RequestMapper.toPublishMessageRequest(grpcRequest);
+
+      // then
+      assertThat(brokerRequest.getRequestWriter().getBusinessId()).isEqualTo("order-12345");
+    }
+
+    @Test
+    public void shouldAcceptBusinessIdAtMaxLength() {
+      // given
+      final String maxLengthBusinessId = "a".repeat(256);
+      final var grpcRequest =
+          PublishMessageRequest.newBuilder()
+              .setName("message")
+              .setBusinessId(maxLengthBusinessId)
+              .build();
+
+      // when
+      final var brokerRequest = RequestMapper.toPublishMessageRequest(grpcRequest);
+
+      // then
+      assertThat(brokerRequest.getRequestWriter().getBusinessId()).isEqualTo(maxLengthBusinessId);
+    }
+
+    @Test
+    public void shouldRejectBusinessIdExceedingMaxLength() {
+      // given
+      final var grpcRequest =
+          PublishMessageRequest.newBuilder()
+              .setName("message")
+              .setBusinessId("a".repeat(257))
+              .build();
+
+      // when/then
+      assertThatThrownBy(() -> RequestMapper.toPublishMessageRequest(grpcRequest))
+          .isInstanceOf(InvalidBusinessIdException.class)
+          .hasMessageContaining("business id")
+          .hasMessageContaining("256");
+    }
+
+    @Test
+    public void shouldAcceptEmptyBusinessId() {
+      // given
+      final var grpcRequest = PublishMessageRequest.newBuilder().setName("message").build();
+
+      // when
+      final var brokerRequest = RequestMapper.toPublishMessageRequest(grpcRequest);
+
+      // then
+      assertThat(brokerRequest.getRequestWriter().getBusinessId()).isEmpty();
+    }
+  }
 }
