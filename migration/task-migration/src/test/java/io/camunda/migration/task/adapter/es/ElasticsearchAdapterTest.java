@@ -45,6 +45,7 @@ import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskJoinRelationship.TaskJoinRelationshipType;
+import jakarta.json.JsonNumber;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonValue;
 import java.io.IOException;
@@ -583,14 +584,21 @@ class ElasticsearchAdapterTest {
 
     final JsonObject jsonObject = mock(JsonObject.class);
     when(jsonValue.asJsonObject()).thenReturn(jsonObject);
-    when(jsonObject.getInt("created", 0)).thenReturn(created);
-    when(jsonObject.getInt("updated", 0)).thenReturn(updated);
-    when(jsonObject.getInt("deleted", 0)).thenReturn(0);
-    when(jsonObject.getInt("version_conflicts", 0)).thenReturn(conflicts);
-    when(jsonObject.getInt("total", 0)).thenReturn(total);
+    mockJsonNumber(jsonObject, "created", created);
+    mockJsonNumber(jsonObject, "updated", updated);
+    mockJsonNumber(jsonObject, "deleted", 0);
+    mockJsonNumber(jsonObject, "version_conflicts", conflicts);
+    mockJsonNumber(jsonObject, "total", total);
     when(jsonObject.getJsonArray("failures")).thenReturn(null);
 
     return taskResponse;
+  }
+
+  private static void mockJsonNumber(
+      final JsonObject jsonObject, final String field, final long value) {
+    final JsonNumber jsonNumber = mock(JsonNumber.class);
+    when(jsonNumber.longValue()).thenReturn(value);
+    when(jsonObject.getJsonNumber(field)).thenReturn(jsonNumber);
   }
 
   @SuppressWarnings("unchecked")
@@ -634,11 +642,11 @@ class ElasticsearchAdapterTest {
     when(jsonData.toJson()).thenReturn(jsonValue);
     final JsonObject jsonObject = mock(JsonObject.class);
     when(jsonValue.asJsonObject()).thenReturn(jsonObject);
-    when(jsonObject.getInt("created", 0)).thenReturn(0);
-    when(jsonObject.getInt("updated", 0)).thenReturn(0);
-    when(jsonObject.getInt("deleted", 0)).thenReturn(0);
-    when(jsonObject.getInt("version_conflicts", 0)).thenReturn(0);
-    when(jsonObject.getInt("total", 0)).thenReturn(5);
+    mockJsonNumber(jsonObject, "created", 0);
+    mockJsonNumber(jsonObject, "updated", 0);
+    mockJsonNumber(jsonObject, "deleted", 0);
+    mockJsonNumber(jsonObject, "version_conflicts", 0);
+    mockJsonNumber(jsonObject, "total", 5);
     when(jsonObject.getJsonArray("failures")).thenReturn(null);
     return taskResponse;
   }

@@ -61,6 +61,7 @@ import io.camunda.webapps.schema.entities.usertask.TaskJoinRelationship.TaskJoin
 import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.retry.RetryDecorator;
+import jakarta.json.JsonNumber;
 import jakarta.json.JsonObject;
 import java.io.IOException;
 import java.time.OffsetDateTime;
@@ -696,12 +697,12 @@ public class ElasticsearchAdapter implements TaskMigrationAdapter {
       LOG.warn("Status of reindex task {} is null", taskId);
       return ReindexTaskStatus.notFound();
     }
-    final long created = status.getInt("created", 0);
-    final long updated = status.getInt("updated", 0);
-    final long deleted = status.getInt("deleted", 0);
-    final long conflicts = status.getInt("version_conflicts", 0);
+    final long created = getLongField(status, "created");
+    final long updated = getLongField(status, "updated");
+    final long deleted = getLongField(status, "deleted");
+    final long conflicts = getLongField(status, "version_conflicts");
     final var failures = status.getJsonArray("failures");
-    final long total = status.getInt("total", 0);
+    final long total = getLongField(status, "total");
     if (res.completed()) {
       if (res.error() != null) {
         throw new MigrationException(
@@ -781,6 +782,11 @@ public class ElasticsearchAdapter implements TaskMigrationAdapter {
         migrationConfiguration.getRetry().getRetryDelayMultiplier());
     return new RetryDecorator(retryConfiguration)
         .withRetryOnException(e -> !(e instanceof MigrationException));
+  }
+
+  private static long getLongField(final JsonObject obj, final String field) {
+    final JsonNumber n = obj.getJsonNumber(field);
+    return n != null ? n.longValue() : 0L;
   }
 
   private static String sanitizeIndexName(final String indexName) {
