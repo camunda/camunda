@@ -13,7 +13,10 @@ import io.camunda.zeebe.exporter.common.waitstate.WaitStateEntry;
 import io.camunda.zeebe.exporter.common.waitstate.WaitStateTransformer;
 import io.camunda.zeebe.exporter.common.waitstate.WaitStateTransformerConfig;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.value.JobKind;
+import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import org.jspecify.annotations.Nullable;
 
 public class JobBasedWaitStateTransformer implements WaitStateTransformer<JobRecordValue> {
 
@@ -32,7 +35,18 @@ public class JobBasedWaitStateTransformer implements WaitStateTransformer<JobRec
                 record.getKey(),
                 value.getType(),
                 value.getJobKind(),
-                value.getJobListenerEventType(),
+                listenerEventType(value),
                 value.getRetries()));
+  }
+
+  private static @Nullable JobListenerEventType listenerEventType(final JobRecordValue value) {
+    return isListenerJob(value.getJobKind()) ? value.getJobListenerEventType() : null;
+  }
+
+  private static boolean isListenerJob(final JobKind jobKind) {
+    return switch (jobKind) {
+      case EXECUTION_LISTENER, TASK_LISTENER -> true;
+      case BPMN_ELEMENT, AD_HOC_SUB_PROCESS -> false;
+    };
   }
 }

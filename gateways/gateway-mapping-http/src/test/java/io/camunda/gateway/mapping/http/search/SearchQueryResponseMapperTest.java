@@ -16,6 +16,7 @@ import io.camunda.gateway.protocol.model.IncidentErrorTypeEnum;
 import io.camunda.gateway.protocol.model.IncidentStateEnum;
 import io.camunda.gateway.protocol.model.JobListenerEventTypeEnum;
 import io.camunda.gateway.protocol.model.JobSearchQueryResult;
+import io.camunda.gateway.protocol.model.JobWaitStateDetails;
 import io.camunda.search.entities.AgentInstanceEntity;
 import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.AuditLogEntity.AuditLogActorType;
@@ -49,6 +50,8 @@ import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.UserTaskEntity.UserTaskState;
 import io.camunda.search.entities.VariableEntity;
+import io.camunda.search.entities.WaitStateEntity;
+import io.camunda.search.entities.WaitStateJobDetails;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.api.model.user.CamundaUserDTO;
 import java.time.OffsetDateTime;
@@ -974,5 +977,37 @@ class SearchQueryResponseMapperTest {
           .isNotNull()
           .isEqualTo(JobListenerEventTypeEnum.fromValue(type.name()));
     }
+  }
+
+  @Test
+  void shouldMapUnspecifiedListenerEventTypeToNullInWaitStateJobDetails() {
+    // given
+    final var jobDetails =
+        new WaitStateJobDetails(
+            111L, // jobKey
+            "service-task-job", // jobType
+            JobKind.BPMN_ELEMENT, // jobKind
+            ListenerEventType.UNSPECIFIED, // listenerEventType — sentinel for non-listener jobs
+            3); // retries
+    final var entity =
+        new WaitStateEntity.Builder()
+            .processInstanceKey(789L)
+            .elementInstanceKey(111L)
+            .elementId("serviceTask")
+            .elementType(FlowNodeType.SERVICE_TASK)
+            .rootProcessInstanceKey(999L)
+            .bpmnProcessId("process1")
+            .details(jobDetails)
+            .tenantId("default")
+            .build();
+
+    // when
+    final var result =
+        SearchQueryResponseMapper.toElementInstanceWaitStateQueryResult(
+            new SearchQueryResult<>(1, false, List.of(entity), null, null));
+
+    // then
+    final var responseDetails = (JobWaitStateDetails) result.getItems().getFirst().getDetails();
+    assertThat(responseDetails.getListenerEventType()).isNull();
   }
 }

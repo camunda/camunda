@@ -171,7 +171,7 @@ public class SearchElementInstanceWaitStatesTest extends ClientRestTest {
     jobDetails.setJobKey("999");
     jobDetails.setJobType("payment");
     jobDetails.setJobKind(JobKindEnum.BPMN_ELEMENT);
-    jobDetails.setListenerEventType(JobListenerEventTypeEnum.UNSPECIFIED);
+    jobDetails.setListenerEventType(null);
     jobDetails.setRetries(3);
 
     final io.camunda.client.protocol.rest.ElementInstanceWaitStateResult item =
@@ -208,8 +208,47 @@ public class SearchElementInstanceWaitStatesTest extends ClientRestTest {
     assertThat(details.getJobKey()).isEqualTo("999");
     assertThat(details.getJobType()).isEqualTo("payment");
     assertThat(details.getJobKind()).isEqualTo(JobKind.BPMN_ELEMENT);
-    assertThat(details.getListenerEventType()).isEqualTo(ListenerEventType.UNSPECIFIED);
+    assertThat(details.getListenerEventType()).isNull();
     assertThat(details.getRetries()).isEqualTo(3);
+  }
+
+  @Test
+  public void shouldMapListenerJobResponseFields() {
+    // given — an EXECUTION_LISTENER job with START listenerEventType
+    final io.camunda.client.protocol.rest.JobWaitStateDetails jobDetails =
+        new io.camunda.client.protocol.rest.JobWaitStateDetails();
+    jobDetails.setWaitStateType("JOB");
+    jobDetails.setJobKey("888");
+    jobDetails.setJobType("exec-listener");
+    jobDetails.setJobKind(JobKindEnum.EXECUTION_LISTENER);
+    jobDetails.setListenerEventType(JobListenerEventTypeEnum.START);
+    jobDetails.setRetries(3);
+
+    final io.camunda.client.protocol.rest.ElementInstanceWaitStateResult item =
+        new io.camunda.client.protocol.rest.ElementInstanceWaitStateResult();
+    item.setProcessInstanceKey("200");
+    item.setRootProcessInstanceKey("100");
+    item.setElementInstanceKey("300");
+    item.setElementId("sub-el");
+    item.setTenantId("<default>");
+    item.setBpmnProcessId("el-process");
+    item.setDetails(jobDetails);
+
+    final ElementInstanceWaitStateQueryResult response = buildEmptyResponse();
+    response.addItemsItem(item);
+    gatewayService.onSearchElementInstanceWaitStatesRequest(response);
+
+    // when
+    final SearchResponse<io.camunda.client.api.search.response.ElementInstanceWaitStateResult>
+        result = client.newElementInstanceWaitStateSearchRequest().send().join();
+
+    // then
+    assertThat(result.items()).hasSize(1);
+    final io.camunda.client.api.search.response.ElementInstanceWaitStateResult mapped =
+        result.items().get(0);
+    final JobWaitStateDetails details = (JobWaitStateDetails) mapped.getDetails();
+    assertThat(details.getJobKind()).isEqualTo(JobKind.EXECUTION_LISTENER);
+    assertThat(details.getListenerEventType()).isEqualTo(ListenerEventType.START);
   }
 
   @Test
