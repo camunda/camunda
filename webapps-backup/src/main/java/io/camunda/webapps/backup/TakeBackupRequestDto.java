@@ -10,13 +10,23 @@ package io.camunda.webapps.backup;
 public class TakeBackupRequestDto {
 
   private Long backupId;
+  private boolean skipSchemaCheck = false;
 
   public Long getBackupId() {
     return backupId;
   }
 
+  public boolean isSkipSchemaCheck() {
+    return skipSchemaCheck;
+  }
+
   public TakeBackupRequestDto setBackupId(final Long backupId) {
     this.backupId = backupId;
+    return this;
+  }
+
+  public TakeBackupRequestDto setSkipSchemaCheck(final boolean skipSchemaCheck) {
+    this.skipSchemaCheck = skipSchemaCheck;
     return this;
   }
 }
