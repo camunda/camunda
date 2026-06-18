@@ -49,7 +49,11 @@ type RenderOptions = {
 };
 
 function deepEqual(a: unknown, b: unknown): boolean {
-	return JSON.stringify(a) === JSON.stringify(b);
+	try {
+		return JSON.stringify(a) === JSON.stringify(b);
+	} catch {
+		return false;
+	}
 }
 
 function isNonSelectableElement(element: BpmnElement, selectableElements: string[]): boolean {
@@ -87,15 +91,19 @@ class BpmnJS {
 	onRootChange?: (rootElementId: string) => void;
 	onOverlayChange?: (overlays: OverlayEntry[]) => void;
 
+	#handleViewboxChanging = () => {
+		this.onViewboxChange?.(true);
+	};
+
+	#handleViewboxChanged = () => {
+		this.onViewboxChange?.(false);
+	};
+
 	import = async (xml: string) => {
 		this.#navigatedViewer!.off('element.click', this.#handleElementClick);
 		this.#navigatedViewer!.off('element.dblclick', this.#handleElementDoubleClick);
-		this.#navigatedViewer!.off('canvas.viewbox.changing', () => {
-			this.onViewboxChange?.(true);
-		});
-		this.#navigatedViewer!.off('canvas.viewbox.changed', () => {
-			this.onViewboxChange?.(false);
-		});
+		this.#navigatedViewer!.off('canvas.viewbox.changing', this.#handleViewboxChanging);
+		this.#navigatedViewer!.off('canvas.viewbox.changed', this.#handleViewboxChanged);
 		this.#navigatedViewer!.off('root.set', this.#handleRootChange);
 
 		this.#overlaysData = [];
@@ -112,12 +120,8 @@ class BpmnJS {
 		this.zoomReset();
 		this.#navigatedViewer!.on('element.click', this.#handleElementClick);
 		this.#navigatedViewer!.on('element.dblclick', this.#handleElementDoubleClick);
-		this.#navigatedViewer!.on('canvas.viewbox.changing', () => {
-			this.onViewboxChange?.(true);
-		});
-		this.#navigatedViewer!.on('canvas.viewbox.changed', () => {
-			this.onViewboxChange?.(false);
-		});
+		this.#navigatedViewer!.on('canvas.viewbox.changing', this.#handleViewboxChanging);
+		this.#navigatedViewer!.on('canvas.viewbox.changed', this.#handleViewboxChanged);
 		this.#navigatedViewer!.on('root.set', this.#handleRootChange);
 
 		this.#rootElement = this.#navigatedViewer?.get('canvas')?.getRootElement();
@@ -258,11 +262,12 @@ class BpmnJS {
 
 			overlaysData.forEach(({payload, elementId, position, type, isZoomFixed}) => {
 				const container = document.createElement('div');
+				const overlayId = this.#attachOverlay({elementId, children: container, position, type, isZoomFixed});
 
-				this.#attachOverlay({elementId, children: container, position, type, isZoomFixed});
-
-				const existing = this.#overlaysByType.get(type) ?? [];
-				this.#overlaysByType.set(type, [...existing, {container, payload, elementId, type}]);
+				if (overlayId !== null) {
+					const existing = this.#overlaysByType.get(type) ?? [];
+					this.#overlaysByType.set(type, [...existing, {container, payload, elementId, type}]);
+				}
 			});
 
 			this.#notifyOverlayChange();

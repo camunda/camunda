@@ -139,6 +139,8 @@ function Diagram({
 	const handleZoomReset = useCallback(() => viewerRef.current?.zoomReset(), []);
 
 	useLayoutEffect(() => {
+		let mounted = true;
+
 		async function renderDiagram() {
 			if (!diagramCanvasRef.current) {
 				return;
@@ -166,10 +168,16 @@ function Diagram({
 				customElementClasses,
 			});
 
-			setIsDiagramRendered(true);
-			resetMinimap();
+			if (mounted) {
+				setIsDiagramRendered(true);
+				resetMinimap();
+			}
 		}
 		renderDiagram();
+
+		return () => {
+			mounted = false;
+		};
 	}, [
 		xml,
 		selectableElements,
@@ -189,13 +197,16 @@ function Diagram({
 			return;
 		}
 
+		viewer.onElementSelection = undefined;
+		viewer.onViewboxChange = undefined;
+		viewer.onRootChange = undefined;
+
 		if (onElementSelection !== undefined) {
 			viewer.onElementSelection = (elementId, isMultiInstance) => {
 				setSelectedElement(viewer.selectedElement);
 				onElementSelection(elementId, isMultiInstance);
 			};
 			viewer.onViewboxChange = setIsViewboxChanging;
-
 			viewer.onRootChange = (rootElementId) => {
 				const getSelectionRootId = (elementId: string) => viewer.findRootId(elementId);
 				onRootChange?.(rootElementId, getSelectionRootId);
@@ -229,7 +240,7 @@ function Diagram({
 						{children}
 					</>
 				)}
-				{!isViewboxChanging && React.isValidElement(selectedElementOverlay)
+				{!isViewboxChanging && React.isValidElement(selectedElementOverlay) && selectedElement !== undefined
 					? React.cloneElement(selectedElementOverlay, {
 							selectedElementRef: selectedElement,
 							diagramCanvasRef,
