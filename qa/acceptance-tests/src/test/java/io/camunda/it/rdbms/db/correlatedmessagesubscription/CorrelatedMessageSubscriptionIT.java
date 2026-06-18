@@ -81,6 +81,31 @@ public class CorrelatedMessageSubscriptionIT {
   }
 
   @TestTemplate
+  public void shouldFindCorrelatedMessageSubscriptionByBusinessId(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final CorrelatedMessageSubscriptionDbReader reader =
+        rdbmsService.getCorrelatedMessageSubscriptionReader("default");
+
+    final var original = CorrelatedMessageSubscriptionFixtures.createRandomized(b -> b);
+    createAndSaveCorrelatedMessageSubscription(rdbmsWriters, original);
+    createAndSaveRandomCorrelatedMessageSubscriptions(rdbmsWriters);
+
+    final var searchResult =
+        reader.search(
+            CorrelatedMessageSubscriptionQuery.of(
+                b ->
+                    b.filter(f -> f.businessIds(original.businessId()))
+                        .sort(s -> s)
+                        .page(p -> p.from(0).size(10))));
+
+    assertThat(searchResult.total()).isEqualTo(1);
+    assertThat(searchResult.items()).hasSize(1);
+    assertThat(searchResult.items().getFirst().businessId()).isEqualTo(original.businessId());
+  }
+
+  @TestTemplate
   public void shouldFindCorrelatedMessageSubscriptionByAuthorizedResourceId(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -206,6 +231,7 @@ public class CorrelatedMessageSubscriptionIT {
                                     .processDefinitionIds(original.processDefinitionId())
                                     .processDefinitionKeys(original.processDefinitionKey())
                                     .subscriptionKeys(original.subscriptionKey())
+                                    .businessIds(original.businessId())
                                     .tenantIds(original.tenantId()))
                         .sort(s -> s)
                         .page(p -> p.from(0).size(5))));

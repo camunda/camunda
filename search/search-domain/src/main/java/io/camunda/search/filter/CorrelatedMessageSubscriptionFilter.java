@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Objects;
 
 public record CorrelatedMessageSubscriptionFilter(
+    List<Operation<String>> businessIdOperations,
     List<Operation<String>> correlationKeyOperations,
     List<Operation<OffsetDateTime>> correlationTimeOperations,
     List<Operation<String>> flowNodeIdOperations,
@@ -36,6 +37,7 @@ public record CorrelatedMessageSubscriptionFilter(
       new CorrelatedMessageSubscriptionFilter.Builder().build();
 
   public static final class Builder implements ObjectBuilder<CorrelatedMessageSubscriptionFilter> {
+    private List<Operation<String>> businessIdOperations;
     private List<Operation<String>> correlationKeyOperations;
     private List<Operation<OffsetDateTime>> correlationTimeOperations;
     private List<Operation<String>> flowNodeIdOperations;
@@ -48,6 +50,21 @@ public record CorrelatedMessageSubscriptionFilter(
     private List<Operation<Long>> processInstanceKeyOperations;
     private List<Operation<Long>> subscriptionKeyOperations;
     private List<Operation<String>> tenantIdOperations;
+
+    public Builder businessIdOperations(final List<Operation<String>> operations) {
+      businessIdOperations = addValuesToList(businessIdOperations, operations);
+      return this;
+    }
+
+    public Builder businessIds(final String value, final String... values) {
+      return businessIdOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    @SafeVarargs
+    public final Builder businessIdOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return businessIdOperations(collectValues(operation, operations));
+    }
 
     public Builder correlationKeyOperations(final List<Operation<String>> operations) {
       correlationKeyOperations = addValuesToList(correlationKeyOperations, operations);
@@ -232,6 +249,7 @@ public record CorrelatedMessageSubscriptionFilter(
     @Override
     public CorrelatedMessageSubscriptionFilter build() {
       return new CorrelatedMessageSubscriptionFilter(
+          Objects.requireNonNullElse(businessIdOperations, Collections.emptyList()),
           Objects.requireNonNullElse(correlationKeyOperations, Collections.emptyList()),
           Objects.requireNonNullElse(correlationTimeOperations, Collections.emptyList()),
           Objects.requireNonNullElse(flowNodeIdOperations, Collections.emptyList()),

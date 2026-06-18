@@ -126,6 +126,12 @@
 
   <sql id="searchFilter">
     <!-- basic filter -->
+    <if test="filter.businessIdOperations != null and !filter.businessIdOperations.isEmpty()">
+      <foreach collection="filter.businessIdOperations" item="operation">
+        AND BUSINESS_ID
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
     <if test="filter.correlationKeyOperations != null and !filter.correlationKeyOperations.isEmpty()">
       <foreach collection="filter.correlationKeyOperations" item="operation">
         AND CORRELATION_KEY
