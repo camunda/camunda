@@ -171,7 +171,6 @@ public class ProtoBufSerializer
             : Optional.of(encodedClusterTopology.getClusterId());
 
     final long incarnationNumber = encodedClusterTopology.getIncarnationNumber();
-    final boolean recovery = encodedClusterTopology.getRecovery();
 
     return new ClusterConfiguration(
         encodedClusterTopology.getVersion(),

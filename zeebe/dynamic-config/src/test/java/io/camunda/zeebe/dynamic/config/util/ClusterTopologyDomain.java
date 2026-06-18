@@ -76,8 +76,7 @@ public final class ClusterTopologyDomain extends DomainContextBase {
                 pendingChanges,
                 routingState,
                 clusterId,
-                incarnationNumber,
-                recovery) ->
+                incarnationNumber) ->
                 partitionDistributorConfigs()
                     .map(
                         distributorConfig ->

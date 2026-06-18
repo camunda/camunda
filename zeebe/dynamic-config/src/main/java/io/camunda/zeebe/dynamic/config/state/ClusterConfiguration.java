@@ -62,7 +62,7 @@ public record ClusterConfiguration(
       final Optional<RoutingState> routingState,
       final Optional<String> clusterId,
       final long incarnationNumber,
-      Optional<PartitionDistributorConfig> partitionDistributorConfig) {
+      final Optional<PartitionDistributorConfig> partitionDistributorConfig) {
     this(
         version,
         ImmutableSortedMap.copyOf(members),
@@ -71,7 +71,7 @@ public record ClusterConfiguration(
         routingState,
         clusterId,
         incarnationNumber,
-        Optional<PartitionDistributorConfig> partitionDistributorConfig);
+        partitionDistributorConfig);
   }
 
   public ClusterConfiguration {
@@ -169,7 +169,6 @@ public record ClusterConfiguration(
         routingState,
         clusterId,
         incarnationNumber,
-        recovery,
         Optional.of(config));
   }
 
