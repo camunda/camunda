@@ -12,7 +12,10 @@ import static java.lang.Long.max;
 import io.camunda.zeebe.backup.common.CheckpointIdGenerator;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
+import io.camunda.zeebe.broker.client.api.BrokerErrorException;
+import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
+import io.camunda.zeebe.broker.client.api.IllegalBrokerResponseException;
 import io.camunda.zeebe.broker.client.api.NoTopologyAvailableException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
@@ -169,9 +172,24 @@ public final class BackupRequestHandler implements BackupApi {
                       ignored ->
                           responses.stream()
                               .map(CompletableFuture::join)
-                              .map(BrokerResponse::getResponse)
+                              .map(BackupRequestHandler::getResponseOrThrow)
                               .collect(Collectors.toSet()));
             });
+  }
+
+  private static <R> R getResponseOrThrow(final BrokerResponse<R> response) {
+    if (response == null) {
+      throw new IllegalBrokerResponseException("Expected broker response, but received null");
+    } else if (response.isResponse()) {
+      return response.getResponse();
+    } else if (response.isError()) {
+      throw new BrokerErrorException(response.getError());
+    } else if (response.isRejection()) {
+      throw new BrokerRejectionException(response.getRejection());
+    }
+
+    throw new IllegalBrokerResponseException(
+        "Expected broker response to be either response, rejection, or error, but is neither of them");
   }
 
   private List<BackupStatus> aggregateBackupList(

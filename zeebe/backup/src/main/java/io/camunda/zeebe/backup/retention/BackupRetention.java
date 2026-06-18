@@ -312,7 +312,10 @@ public class BackupRetention extends Actor {
       final var request = new BackupDeleteRequest();
       request.setPartitionId(context.partitionId);
       request.setBackupId(checkpointId);
-      futures.add(brokerClient.sendRequestWithRetry(request).thenAccept(this::throwOnBrokerError));
+      futures.add(
+          brokerClient
+              .sendRequestWithRetry(request)
+              .thenAcceptAsync(this::throwOnBrokerError, actor));
     }
 
     CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new))
