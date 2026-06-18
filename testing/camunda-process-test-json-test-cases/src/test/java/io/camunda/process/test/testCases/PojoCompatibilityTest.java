@@ -556,6 +556,29 @@ public class PojoCompatibilityTest {
                             .customPrompt("You are evaluating data accuracy")
                             .build())
                     .build())),
+        Arguments.of(
+            "assert variable: satisfies expression global",
+            singleTestCase(
+                ImmutableAssertVariableInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .variableName("order")
+                    .satisfiesExpression("order.status = \"approved\" and count(order.items) = 3")
+                    .build())),
+        Arguments.of(
+            "assert variable: satisfies expression local",
+            singleTestCase(
+                ImmutableAssertVariableInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .elementSelector(ImmutableElementSelector.builder().elementId("task_A").build())
+                    .variableName("status")
+                    .satisfiesExpression("status = \"approved\"")
+                    .build())),
         // ===== ASSERT_VARIABLE with similarTo =====
         Arguments.of(
             "assert variable similar to: minimal",

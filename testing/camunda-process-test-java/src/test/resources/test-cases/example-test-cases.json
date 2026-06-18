@@ -22,6 +22,45 @@
           "state": "IS_COMPLETED"
         }
       ]
+    },
+    {
+      "name": "Verify order variable",
+      "description": "Using an FEEL expression to verify the order variable.",
+      "instructions": [
+        {
+          "type": "CREATE_PROCESS_INSTANCE",
+          "processDefinitionSelector": {
+            "processDefinitionId": "process"
+          },
+          "variables": {
+            "order": {
+              "status": "approved",
+              "items": [
+                {
+                  "name": "Helmet",
+                  "quantity": 1
+                },
+                {
+                  "name": "Flag",
+                  "quantity": 1
+                },
+                {
+                  "name": "Oxygen tank",
+                  "quantity": 3
+                }
+              ]
+            }
+          }
+        },
+        {
+          "type": "ASSERT_VARIABLE",
+          "processInstanceSelector": {
+            "processDefinitionId": "process"
+          },
+          "variableName": "order",
+          "satisfiesExpression": "order.status = \"approved\" and count(order.items) = 3 and order.items[name = \"Helmet\"][1].quantity = 1"
+        }
+      ]
     }
   ]
 }

@@ -612,6 +612,76 @@ public class CamundaProcessTestExtensionIT {
           .hasLocalVariable(ElementSelectors.byId("task"), "local", "updated");
     }
 
+    @Test
+    void shouldAssertVariableSatisfiesExpression() {
+      // given
+      final Map<String, Object> helmet = new HashMap<>();
+      helmet.put("name", "Helmet");
+      helmet.put("quantity", 1);
+      final Map<String, Object> flag = new HashMap<>();
+      flag.put("name", "Flag");
+      flag.put("quantity", 1);
+      final Map<String, Object> oxygenTank = new HashMap<>();
+      oxygenTank.put("name", "Oxygen tank");
+      oxygenTank.put("quantity", 3);
+      final Map<String, Object> order = new HashMap<>();
+      order.put("status", "approved");
+      order.put("items", Arrays.asList(helmet, flag, oxygenTank));
+
+      deployProcessModel(
+          Bpmn.createExecutableProcess("process")
+              .startEvent()
+              .userTask("review")
+              .zeebeUserTask()
+              .endEvent()
+              .done());
+
+      final ProcessInstanceEvent processInstance =
+          client
+              .newCreateInstanceCommand()
+              .bpmnProcessId("process")
+              .latestVersion()
+              .variable("order", order)
+              .send()
+              .join();
+
+      // then
+      assertThatProcessInstance(processInstance)
+          .hasVariableSatisfiesExpression(
+              VariableSelectors.byName("order"),
+              "order.status = \"approved\" and count(order.items) = 3 and "
+                  + "order.items[name = \"Helmet\"][1].quantity = 1");
+    }
+
+    @Test
+    void shouldAssertLocalVariableSatisfiesExpression() {
+      // given
+      deployProcessModel(
+          Bpmn.createExecutableProcess("process")
+              .startEvent()
+              .userTask("review")
+              .zeebeUserTask()
+              .zeebeInputExpression("order.status", "localStatus")
+              .endEvent()
+              .done());
+
+      final ProcessInstanceEvent processInstance =
+          client
+              .newCreateInstanceCommand()
+              .bpmnProcessId("process")
+              .latestVersion()
+              .variable("order", Collections.singletonMap("status", "approved"))
+              .send()
+              .join();
+
+      // then
+      assertThatProcessInstance(processInstance)
+          .hasLocalVariableSatisfiesExpression(
+              ElementSelectors.byId("review"),
+              VariableSelectors.byName("localStatus"),
+              "localStatus = \"approved\"");
+    }
+
     private BpmnModelInstance processModelWithVariables() {
       return Bpmn.createExecutableProcess("test-process-variables")
           .startEvent()

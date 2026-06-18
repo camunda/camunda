@@ -63,6 +63,61 @@ public class AssertVariableInstructionTest {
       new AssertVariableInstructionHandler();
 
   @Nested
+  class SatisfiesExpression {
+
+    private static final String EXPRESSION = "agentResponse.status = \"approved\"";
+
+    @Test
+    void shouldAssertGlobalVariable() {
+      // given
+      final ProcessInstanceAssert mockAssert = assertionFacade.assertThatProcessInstance(any());
+
+      final AssertVariableInstruction instruction =
+          ImmutableAssertVariableInstruction.builder()
+              .processInstanceSelector(
+                  ImmutableProcessInstanceSelector.builder()
+                      .processDefinitionId(PROCESS_DEFINITION_ID)
+                      .build())
+              .variableName(VARIABLE_NAME)
+              .satisfiesExpression(EXPRESSION)
+              .build();
+
+      // when
+      instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
+
+      // then
+      verify(mockAssert).hasVariableSatisfiesExpression(eq(VARIABLE_NAME), eq(EXPRESSION));
+      verifyNoMoreInteractions(camundaClient, processTestContext, mockAssert);
+    }
+
+    @Test
+    void shouldAssertLocalVariable() {
+      // given
+      final ProcessInstanceAssert mockAssert = assertionFacade.assertThatProcessInstance(any());
+
+      final AssertVariableInstruction instruction =
+          ImmutableAssertVariableInstruction.builder()
+              .processInstanceSelector(
+                  ImmutableProcessInstanceSelector.builder()
+                      .processDefinitionId(PROCESS_DEFINITION_ID)
+                      .build())
+              .elementSelector(ImmutableElementSelector.builder().elementId(ELEMENT_ID).build())
+              .variableName(VARIABLE_NAME)
+              .satisfiesExpression(EXPRESSION)
+              .build();
+
+      // when
+      instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
+
+      // then
+      verify(mockAssert)
+          .hasLocalVariableSatisfiesExpression(
+              any(ElementSelector.class), eq(VARIABLE_NAME), eq(EXPRESSION));
+      verifyNoMoreInteractions(camundaClient, processTestContext, mockAssert);
+    }
+  }
+
+  @Nested
   class SatisfiesJudge {
 
     private static final String EXPECTATION = "should contain a valid summary";

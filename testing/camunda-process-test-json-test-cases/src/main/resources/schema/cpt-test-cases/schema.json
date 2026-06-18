@@ -1084,6 +1084,10 @@
           "description": "A judge-based assertion that evaluates the variable against a semantic expectation.",
           "$ref": "#/definitions/JudgeAssertion"
         },
+        "satisfiesExpression": {
+          "description": "The FEEL expression assertion to evaluate on the variable. The expression is evaluated with a context containing the variable value under its name and must return true to be satisfied. Optional.",
+          "type": "string"
+        },
         "similarTo": {
           "description": "A semantic similarity assertion that checks the variable value against an expected value using text embeddings. Optional.",
           "$ref": "#/definitions/SemanticSimilarityAssertion"
