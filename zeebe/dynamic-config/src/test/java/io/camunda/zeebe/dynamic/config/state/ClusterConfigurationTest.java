@@ -459,14 +459,18 @@ class ClusterConfigurationTest {
     @Test
     void shouldClassifyZoneAwarenessForUnzoned() {
       // given
-      final var config =
-          ClusterConfiguration.init()
-              .addMember(member(1), MemberState.initializeAsActive(Map.of()));
+      final var configs =
+          List.of(
+              ClusterConfiguration.init(),
+              ClusterConfiguration.init()
+                  .addMember(member(1), MemberState.initializeAsActive(Map.of())));
 
-      assertThat(config)
-          .returns(true, ClusterConfiguration::isUnzoned)
-          .returns(false, ClusterConfiguration::isPartiallyZoneAware)
-          .returns(false, ClusterConfiguration::isFullyZoneAware);
+      for (final var config : configs) {
+        assertThat(config)
+            .returns(true, ClusterConfiguration::isUnzoned)
+            .returns(false, ClusterConfiguration::isPartiallyZoneAware)
+            .returns(false, ClusterConfiguration::isFullyZoneAware);
+      }
     }
 
     @Test

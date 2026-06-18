@@ -47,23 +47,23 @@ public final class ClusterScaleRequestTransformer implements ConfigurationChange
       // Nothing to change
       return Either.right(List.of());
     }
-
-    if (zone.isPresent() && newReplicationFactor.isPresent()) {
-      return Either.left(
-          new InvalidRequest(
-              "Change of replication factor is not allowed when zone is set. To change replication factor use `/partition-distribution` endpoint"));
-    }
-
-    if (!clusterConfiguration.isFullyZoneAware() && zone.isPresent()) {
-      return Either.left(
-          new InvalidRequest(
-              "Scaling operation with zone is only allowed when cluster is zone-aware"));
-    }
-
-    if (clusterConfiguration.isFullyZoneAware() && zone.isEmpty()) {
-      return Either.left(
-          new InvalidRequest(
-              "Scaling operation without zone is not allowed when cluster is zone-aware"));
+    if (zone.isPresent()) {
+      if (newReplicationFactor.isPresent()) {
+        return Either.left(
+            new InvalidRequest(
+                "Change of replication factor is not allowed when zone is set. To change replication factor use `/partition-distribution` endpoint"));
+      }
+      if (!clusterConfiguration.isFullyZoneAware()) {
+        return Either.left(
+            new InvalidRequest(
+                "Scaling operation with zone is only allowed when cluster is zone-aware"));
+      }
+    } else {
+      if (!clusterConfiguration.isUnzoned()) {
+        return Either.left(
+            new InvalidRequest(
+                "Scaling operation without zone is allowed only when no broker is zone-aware"));
+      }
     }
 
     // replicationFactor and partitionCount is validated in the delegated transformer.

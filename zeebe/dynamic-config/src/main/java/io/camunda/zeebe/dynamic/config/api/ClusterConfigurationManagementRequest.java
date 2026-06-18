@@ -59,7 +59,8 @@ public sealed interface ClusterConfigurationManagementRequest {
    * @param newPartitionCount the target number of partitions, or empty to leave it unchanged.
    *     Partitions can only be scaled up.
    * @param newReplicationFactor the target replication factor, or empty to leave it unchanged. When
-   *     {@code zone} is set this is interpreted as that zone's replica count.
+   *     {@code zone} is set it must not be set. To change replication factor in zone aware clusters
+   *     use {@link UpdatePartitionDistributorConfigRequest}
    * @param zone the zone to scale, or empty to scale a plain cluster. Required when scaling a
    *     zone-aware cluster and rejected on a plain one.
    * @param dryRun when true, the resulting plan is computed and returned without being applied.

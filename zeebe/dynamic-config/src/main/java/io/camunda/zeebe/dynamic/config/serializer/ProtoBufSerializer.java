@@ -1211,6 +1211,8 @@ public class ProtoBufSerializer
           clusterScaleRequest.getDryRun());
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);
+    } catch (final IllegalArgumentException e) {
+      throw new DecodingFailed(e);
     }
   }
 

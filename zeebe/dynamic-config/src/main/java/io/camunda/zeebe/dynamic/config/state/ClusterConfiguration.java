@@ -353,6 +353,9 @@ public record ClusterConfiguration(
    */
   public boolean isPartiallyZoneAware() {
     final var membersCount = members.size();
+    if (membersCount == 0) {
+      return false;
+    }
     final var zonedCount = members().keySet().stream().filter(m -> m.zone() != null).count();
     final var distributionIsNotZoned =
         partitionDistributorConfig.filter(ZoneAwareConfig.class::isInstance).isEmpty();

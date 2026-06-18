@@ -42,8 +42,8 @@ message ClusterScaleRequest {
   optional uint32 newClusterSize = 1;
   optional uint32 newPartitionCount = 2;
   optional uint32 newReplicationFactor = 3;
-  optional string zone= 5;
   bool dryRun = 4;
+  optional string zone= 5;
 }
 
 message ClusterPatchRequest {
