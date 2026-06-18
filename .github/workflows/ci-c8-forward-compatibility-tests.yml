@@ -1,0 +1,257 @@
+# description: Runs forward compatibility tests for C8 REST API endpoints.
+# Tests a server built from one branch against API tests from another branch
+# to ensure forward compatibility of REST endpoints across versions.
+# Called from ci.yml (Unified CI) and supports manual dispatch.
+# type: CI
+# owner: @camunda/camunda-ex
+---
+name: C8 REST API Forward Compatibility Tests
+
+on:
+  workflow_call: {}
+  workflow_dispatch:
+    inputs:
+      server_branch:
+        description: "Branch to build the server from (e.g., main, stable/8.9)."
+        required: true
+        type: string
+      test_branch:
+        description: "Branch to run the API tests from (e.g., stable/8.8, stable/8.9)."
+        required: true
+        type: string
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  forward-compatibility-api-tests:
+    name: Forward Compatibility API Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions: {}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Resolve server image
+        id: resolve
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_SERVER_BRANCH: ${{ inputs.server_branch }}
+          INPUT_TEST_BRANCH: ${{ inputs.test_branch }}
+          GH_BASE_REF: ${{ github.base_ref }}
+          GH_HEAD_REF: ${{ github.head_ref }}
+          GH_REF: ${{ github.ref }}
+          MG_BASE_REF: ${{ github.event.merge_group.base_ref }}
+        run: |
+          # Resolve the public Docker image for a branch.
+          # - stable/X.Y → camunda/camunda:X.Y-SNAPSHOT
+          # - main       → camunda/camunda:SNAPSHOT
+          resolve_image() {
+            local branch="$1"
+            if [[ "$branch" =~ ^stable/([0-9]+\.[0-9]+)$ ]]; then
+              echo "camunda/camunda:${BASH_REMATCH[1]}-SNAPSHOT"
+            else
+              echo "camunda/camunda:SNAPSHOT"
+            fi
+          }
+
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            # Manual trigger: both inputs are required by the workflow definition.
+            SERVER_BRANCH="$INPUT_SERVER_BRANCH"
+            TEST_BRANCH="$INPUT_TEST_BRANCH"
+            echo "Manual trigger: Testing Server=$SERVER_BRANCH with Tests=$TEST_BRANCH"
+            SERVER_IMAGE=$(resolve_image "$SERVER_BRANCH")
+            echo "Resolved server image: $SERVER_IMAGE"
+          else
+            # PR / merge queue (via workflow_call from ci.yml):
+            # Test the PR branch against the next server version.
+            # The base branch determines which server image to use:
+            #   PR → main          → server = SNAPSHOT (main)
+            #   PR → stable/8.8    → server = 8.9-SNAPSHOT (next minor)
+            #   PR → stable/8.9    → server = 8.10-SNAPSHOT if stable/8.10 exists, else SNAPSHOT (main)
+            if [[ "$EVENT_NAME" == "pull_request" || "$EVENT_NAME" == "workflow_call" ]]; then
+              BASE_REF="$GH_BASE_REF"
+              TEST_REF="$GH_HEAD_REF"
+            else
+              BASE_REF="${MG_BASE_REF#refs/heads/}"
+              TEST_REF="$GH_REF"
+            fi
+            echo "Base branch: $BASE_REF"
+            echo "Test ref: $TEST_REF"
+
+            if [[ "$BASE_REF" =~ ^stable/([0-9]+)\.([0-9]+)$ ]]; then
+              MAJOR="${BASH_REMATCH[1]}"
+              MINOR="${BASH_REMATCH[2]}"
+              NEXT_MINOR=$((MINOR + 1))
+              NEXT_BRANCH="stable/${MAJOR}.${NEXT_MINOR}"
+
+              if git ls-remote --exit-code --heads origin "refs/heads/${NEXT_BRANCH}" > /dev/null 2>&1; then
+                SERVER_BRANCH="${NEXT_BRANCH}"
+                SERVER_IMAGE="camunda/camunda:${MAJOR}.${NEXT_MINOR}-SNAPSHOT"
+              else
+                # Next minor has no stable branch yet — main is the next version
+                SERVER_BRANCH="main"
+                SERVER_IMAGE="camunda/camunda:SNAPSHOT"
+              fi
+            else
+              echo "::error::Unsupported base branch for forward compatibility: $BASE_REF"
+              exit 1
+            fi
+
+            TEST_BRANCH="$TEST_REF"
+            echo "Resolved: base=$BASE_REF → server=$SERVER_BRANCH ($SERVER_IMAGE), tests=$TEST_BRANCH"
+          fi
+
+          {
+            echo "server_branch=$SERVER_BRANCH"
+            echo "server_image=$SERVER_IMAGE"
+            echo "test_branch=$TEST_BRANCH"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Print test configuration
+        run: |
+          echo "===== Forward Compatibility Test Configuration ====="
+          echo "Server branch: ${{ steps.resolve.outputs.server_branch }}"
+          echo "Server image:  ${{ steps.resolve.outputs.server_image }}"
+          echo "Test branch:   ${{ steps.resolve.outputs.test_branch }}"
+          echo "===================================================="
+
+      - name: Pull server Docker image
+        run: |
+          echo "Pulling image: ${{ steps.resolve.outputs.server_image }}"
+          # Retry to absorb transient Docker Hub registry timeouts
+          # (e.g. "Get https://registry-1.docker.io/v2/: context deadline exceeded").
+          attempts=3
+          for attempt in $(seq 1 "$attempts"); do
+            if docker pull "${{ steps.resolve.outputs.server_image }}"; then
+              echo "Image pulled on attempt ${attempt}."
+              exit 0
+            fi
+            echo "Attempt ${attempt}/${attempts} to pull image failed."
+            if [[ "$attempt" -lt "$attempts" ]]; then
+              echo "Retrying in 15s..."
+              sleep 15
+            fi
+          done
+          echo "Failed to pull image after ${attempts} attempts."
+          exit 1
+
+      - name: Start Camunda
+        run: CAMUNDA_DOCKER_IMAGE=${{ steps.resolve.outputs.server_image }} DATABASE=elasticsearch docker compose up -d camunda
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
+
+      - name: List running Docker containers
+        run: docker ps -a
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
+
+      - name: Wait for services to be ready
+        id: wait-for-services
+        run: |
+          echo "Checking if services are up..."
+          ready=false
+          for i in {1..90}; do
+            # Use curl -sf to fail on non-2xx HTTP responses (e.g. 404, 503).
+            # Probe /v2/topology with basic auth as a reliable readiness signal:
+            # it only returns 200 once the broker and gateway are fully operational.
+            if curl -sf -u demo:demo -m 5 http://localhost:8080/v2/topology > /dev/null 2>&1; then
+              echo "Camunda is ready! (topology endpoint returned 200)"
+              ready=true
+              break
+            fi
+
+            echo "Waiting for services... ($i/90)"
+            sleep 10
+          done
+
+          if [ "$ready" = true ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Services failed to start in time."
+            exit 1
+          fi
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
+
+      - name: Print Docker logs before failing
+        if: failure()
+        run: docker compose logs camunda
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
+
+      - name: Setup Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: qa/c8-orchestration-cluster-e2e-test-suite/package-lock.json
+
+      - name: Clean install dependencies
+        run: npm ci
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+
+      - name: Install Playwright Browsers
+        run: npx --node-options=--inspect playwright install --with-deps chromium
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+
+      - name: Run API tests
+        env:
+          LOCAL_TEST: "false"
+          CORE_APPLICATION_URL: "http://localhost:8080"
+          ZEEBE_REST_ADDRESS: "http://localhost:8080"
+          CAMUNDA_AUTH_STRATEGY: "BASIC"
+          CAMUNDA_BASIC_AUTH_USERNAME: "demo"
+          CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
+          INCLUDE_SLACK_REPORTER: "false"
+          VERSION: "Forward Compat - Server: ${{ steps.resolve.outputs.server_branch }} / Tests: ${{ steps.resolve.outputs.test_branch }}"
+          API_TESTS_ONLY: "true"
+          DATABASE: "Elasticsearch"
+          AJB_ALLOW_EXTRA_FIELDS: "true"
+          AJB_ALLOW_NULL_VALUES: "true"
+          FORWARD_COMPAT_MODE: "true"
+        run: |
+          echo "Running forward compatibility API tests"
+          echo "Server built from: ${{ steps.resolve.outputs.server_branch }}"
+          echo "Tests checked out from: ${{ steps.resolve.outputs.test_branch }}"
+          npm run test -- --project=api-tests --retries=4 tests/api/v2/
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+
+      - name: Sanitize branch names for artifact names
+        id: sanitize
+        if: always()
+        env:
+          SERVER_BRANCH: ${{ steps.resolve.outputs.server_branch }}
+          TEST_BRANCH: ${{ steps.resolve.outputs.test_branch }}
+        run: |
+          safe_server="${SERVER_BRANCH//\//-}"
+          safe_test="${TEST_BRANCH//\//-}"
+          echo "safe_server=$safe_server" >> "$GITHUB_OUTPUT"
+          echo "safe_test=$safe_test" >> "$GITHUB_OUTPUT"
+
+      - name: Upload JSON report to GitHub Actions Artifacts
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: json-report-forward-compat-server-${{ steps.sanitize.outputs.safe_server }}-tests-${{ steps.sanitize.outputs.safe_test }}
+          path: qa/c8-orchestration-cluster-e2e-test-suite/json-report/**
+          if-no-files-found: ignore
+          retention-days: 60
+
+      - name: Upload HTML report on failure
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: html-report-forward-compat-server-${{ steps.sanitize.outputs.safe_server }}-tests-${{ steps.sanitize.outputs.safe_test }}
+          path: qa/c8-orchestration-cluster-e2e-test-suite/html-report
+          if-no-files-found: ignore
+          retention-days: 10
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

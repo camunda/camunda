@@ -61,6 +61,7 @@ jobs:
       renovate-config-changes: ${{ steps.filter.outputs.renovate-config-changes }}
       client-components-changes: ${{ steps.filter.outputs.client-components-changes }}
       docs-changes: ${{ steps.filter.outputs.docs-changes }}
+      forward-compat-tests-changes: ${{ steps.filter.outputs.forward-compat-tests-changes }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -1436,6 +1437,16 @@ jobs:
     secrets: inherit
     permissions: { }
 
+  forward-compat-tests:
+    if: |
+      needs.detect-changes.outputs.forward-compat-tests-changes == 'true'
+      && startsWith(github.base_ref, 'stable/')
+    name: "C8 Forward Compatibility"
+    needs: [ detect-changes ]
+    uses: ./.github/workflows/ci-c8-forward-compatibility-tests.yml
+    secrets: inherit
+    permissions: { }
+
   protobuf-checks:
     name: "Protobuf Backwards Compatibility"
     needs: [ detect-changes ]
@@ -1607,6 +1618,7 @@ jobs:
       - detect-changes
       - detect-new-flaky-tests
       - docker-checks
+      - forward-compat-tests
       - general-unit-tests
       - generate-db-versions
       - history-tests
