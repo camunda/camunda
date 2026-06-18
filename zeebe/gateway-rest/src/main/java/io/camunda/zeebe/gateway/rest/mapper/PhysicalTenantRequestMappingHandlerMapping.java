@@ -10,7 +10,6 @@ package io.camunda.zeebe.gateway.rest.mapper;
 import static io.camunda.spring.utils.PhysicalTenantContext.PHYSICAL_TENANT_URI_PREFIX;
 
 import io.camunda.zeebe.gateway.rest.annotation.ClusterScoped;
-import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.lang.reflect.Method;
 import java.util.LinkedHashSet;
@@ -21,7 +20,8 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 
 public class PhysicalTenantRequestMappingHandlerMapping extends RequestMappingHandlerMapping {
 
-  private static final String V2 = "/v2";
+  private static final Set<String> PREFIXABLE_ROOTS =
+      Set.of("/v2", "/operate", "/tasklist", "/admin", "/webapp");
 
   @Override
   protected void registerHandlerMethod(
@@ -42,9 +42,7 @@ public class PhysicalTenantRequestMappingHandlerMapping extends RequestMappingHa
 
   @VisibleForTesting
   boolean shouldPrefix(final Class<?> beanType) {
-    return beanType != null
-        && AnnotatedElementUtils.hasAnnotation(beanType, CamundaRestController.class)
-        && !AnnotatedElementUtils.hasAnnotation(beanType, ClusterScoped.class);
+    return beanType != null && !AnnotatedElementUtils.hasAnnotation(beanType, ClusterScoped.class);
   }
 
   @VisibleForTesting
@@ -74,16 +72,15 @@ public class PhysicalTenantRequestMappingHandlerMapping extends RequestMappingHa
   }
 
   private String prefix(final String pattern) {
-    if (pattern == null || !pattern.startsWith(V2)) {
-      // Only /v2 routes participate in the physical-tenant addressing scheme.
+    if (pattern == null) {
       return null;
     }
-    final String tail = pattern.substring(V2.length());
-    if (!tail.isEmpty() && !tail.startsWith("/")) {
-      // Avoid prefixing things like "/v2foo".
-      return null;
+    for (final String root : PREFIXABLE_ROOTS) {
+      if (pattern.equals(root) || pattern.startsWith(root + "/")) {
+        return PHYSICAL_TENANT_URI_PREFIX + pattern;
+      }
     }
-    return PHYSICAL_TENANT_URI_PREFIX + pattern;
+    return null;
   }
 
   private Class<?> resolveBeanType(final Object handler) {

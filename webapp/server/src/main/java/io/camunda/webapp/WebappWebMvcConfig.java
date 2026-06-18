@@ -8,6 +8,7 @@
 package io.camunda.webapp;
 
 import io.camunda.spring.utils.ConditionalOnWebappUiEnabled;
+import io.camunda.spring.utils.PhysicalTenantContext;
 import java.time.Duration;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.CacheControl;
@@ -41,6 +42,11 @@ public class WebappWebMvcConfig implements WebMvcConfigurer {
   public void addResourceHandlers(final ResourceHandlerRegistry registry) {
     registry
         .addResourceHandler(ASSETS_PATH_PATTERN)
+        .addResourceLocations(ASSETS_CLASSPATH_LOCATION)
+        .setCacheControl(CacheControl.maxAge(ASSETS_CACHE_MAX_AGE).cachePublic().immutable());
+    registry
+        .addResourceHandler(
+            PhysicalTenantContext.PHYSICAL_TENANTS_PATH_SEGMENT + "*" + ASSETS_PATH_PATTERN)
         .addResourceLocations(ASSETS_CLASSPATH_LOCATION)
         .setCacheControl(CacheControl.maxAge(ASSETS_CACHE_MAX_AGE).cachePublic().immutable());
   }
