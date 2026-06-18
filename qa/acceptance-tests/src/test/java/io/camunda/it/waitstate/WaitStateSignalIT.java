@@ -7,12 +7,14 @@
  */
 package io.camunda.it.waitstate;
 
+import static io.camunda.it.util.TestHelper.cancelInstance;
 import static io.camunda.it.util.TestHelper.deployProcessAndWaitForIt;
 import static io.camunda.it.util.TestHelper.startProcessInstance;
 import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.MigrationPlan;
 import io.camunda.client.api.search.enums.WaitStateElementType;
 import io.camunda.client.api.search.enums.WaitStateType;
 import io.camunda.client.api.search.response.ElementInstanceWaitStateResult;
@@ -29,8 +31,8 @@ import org.junit.jupiter.api.Test;
  * Verifies the element instance wait-state search command for signal-based wait states. Each test
  * deploys its own isolated process to avoid interference with shared state.
  *
- * <p>Start-event and boundary-event signal subscription filtering is covered at the unit level in
- * {@code SignalBasedWaitStateTransformerTest}.
+ * <p>Boundary-event signal subscription filtering is covered at the unit level in {@code
+ * SignalBasedWaitStateTransformerTest}.
  */
 @MultiDbTest
 public class WaitStateSignalIT {
@@ -206,6 +208,151 @@ public class WaitStateSignalIT {
 
     // then
     assertThat(result.items()).isEmpty();
+  }
+
+  @Test
+  void shouldNotTrackSignalStartEventSubscriptionAsWaitState() {
+    // given — a process whose only trigger is a signal start event; these subscriptions have
+    //   processInstanceKey == -1 and must never produce a wait-state entry
+    final BpmnModelInstance startEventProcess =
+        Bpmn.createExecutableProcess("signalStartOnlyProcess")
+            .startEvent()
+            .signal("startOnlySignal")
+            .endEvent()
+            .done();
+
+    // Deploy a second process with an ICE to generate known export traffic so we can verify
+    // the exporter has processed the signal subscription records before asserting.
+    final BpmnModelInstance iceProcess =
+        Bpmn.createExecutableProcess("signalStartTrafficProcess")
+            .startEvent()
+            .intermediateCatchEvent("ice-marker")
+            .signal("startTrafficSignal")
+            .endEvent()
+            .done();
+
+    deployProcessAndWaitForIt(camundaClient, startEventProcess, "signalStartOnlyProcess.bpmn");
+    deployProcessAndWaitForIt(camundaClient, iceProcess, "signalStartTrafficProcess.bpmn");
+
+    final var trafficInstance = startProcessInstance(camundaClient, "signalStartTrafficProcess");
+    final long pik = trafficInstance.getProcessInstanceKey();
+
+    // when — wait for the ICE wait state; this proves the exporter has caught up on all
+    //   signal records, including the start-event subscription for signalStartOnlyProcess
+    Awaitility.await("ICE wait state should appear")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .untilAsserted(
+            () ->
+                assertThat(
+                        camundaClient
+                            .newElementInstanceWaitStateSearchRequest()
+                            .filter(
+                                f -> f.processInstanceKey(pik).waitStateType(WaitStateType.SIGNAL))
+                            .send()
+                            .join()
+                            .items())
+                    .hasSize(1));
+
+    // then — ALL signal wait states in the system must have a positive processInstanceKey;
+    //   signal start-event subscriptions (processInstanceKey == -1) must not appear
+    final var allSignalWaitStates =
+        camundaClient
+            .newElementInstanceWaitStateSearchRequest()
+            .filter(f -> f.waitStateType(WaitStateType.SIGNAL))
+            .send()
+            .join()
+            .items();
+
+    assertThat(allSignalWaitStates)
+        .isNotEmpty()
+        .allSatisfy(ws -> assertThat(Long.parseLong(ws.getProcessInstanceKey())).isPositive());
+
+    // cleanup
+    cancelInstance(camundaClient, trafficInstance);
+  }
+
+  @Test
+  void shouldUpdateWaitStateWhenSignalElementIsMigrated() {
+    // given — V1 has ICE "signal-catch-v1", V2 has ICE "signal-catch-v2" at the same position
+    final BpmnModelInstance v1 =
+        Bpmn.createExecutableProcess("signalMigrationV1")
+            .startEvent()
+            .intermediateCatchEvent("signal-catch-v1")
+            .signal("migrationSignalV1")
+            .endEvent()
+            .done();
+    final BpmnModelInstance v2 =
+        Bpmn.createExecutableProcess("signalMigrationV2")
+            .startEvent()
+            .intermediateCatchEvent("signal-catch-v2")
+            .signal("migrationSignalV2")
+            .endEvent()
+            .done();
+
+    deployProcessAndWaitForIt(camundaClient, v1, "signalMigrationV1.bpmn");
+    final long v2Key =
+        deployProcessAndWaitForIt(camundaClient, v2, "signalMigrationV2.bpmn")
+            .getProcessDefinitionKey();
+
+    final var instance = startProcessInstance(camundaClient, "signalMigrationV1");
+    final long pik = instance.getProcessInstanceKey();
+
+    Awaitility.await("wait state with signal-catch-v1 should appear")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .untilAsserted(
+            () ->
+                assertThat(
+                        camundaClient
+                            .newElementInstanceWaitStateSearchRequest()
+                            .filter(f -> f.processInstanceKey(pik))
+                            .send()
+                            .join()
+                            .items())
+                    .hasSize(1)
+                    .allSatisfy(
+                        item -> assertThat(item.getElementId()).isEqualTo("signal-catch-v1")));
+
+    // when — migrate the process instance, remapping signal-catch-v1 → signal-catch-v2
+    camundaClient
+        .newMigrateProcessInstanceCommand(pik)
+        .migrationPlan(
+            MigrationPlan.newBuilder()
+                .withTargetProcessDefinitionKey(v2Key)
+                .addMappingInstruction("signal-catch-v1", "signal-catch-v2")
+                .build())
+        .send()
+        .join();
+
+    // then — wait state is updated to reflect the new element id
+    Awaitility.await("wait state should be updated to signal-catch-v2")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .untilAsserted(
+            () ->
+                assertThat(
+                        camundaClient
+                            .newElementInstanceWaitStateSearchRequest()
+                            .filter(f -> f.processInstanceKey(pik))
+                            .send()
+                            .join()
+                            .items())
+                    .hasSize(1)
+                    .allSatisfy(
+                        item -> assertThat(item.getElementId()).isEqualTo("signal-catch-v2")));
+
+    // cleanup
+    cancelInstance(camundaClient, instance);
+    Awaitility.await("wait state should be removed after cancellation")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .untilAsserted(
+            () ->
+                assertThat(
+                        camundaClient
+                            .newElementInstanceWaitStateSearchRequest()
+                            .filter(f -> f.processInstanceKey(pik))
+                            .send()
+                            .join()
+                            .items())
+                    .isEmpty());
   }
 
   @Test
