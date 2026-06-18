@@ -210,6 +210,9 @@ operate:
     # https://docs.camunda.io/docs/8.7/self-managed/operate-deployment/operate-configuration/#json-logging-configuration
     - name: OPERATE_LOG_APPENDER
       value: Stackdriver
+    # https://docs.camunda.io/docs/8.7/self-managed/operate-deployment/operate-configuration/#settings-for-shards-and-replicas
+    - name: CAMUNDA_OPERATE_ELASTICSEARCH_NUMBER_OF_REPLICAS
+      value: "1"
   nodeSelector:
     topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
   tolerations:
@@ -235,6 +238,9 @@ tasklist:
     # https://docs.camunda.io/docs/8.7/self-managed/tasklist-deployment/tasklist-configuration/#json-logging-configuration
     - name: TASKLIST_LOG_APPENDER
       value: Stackdriver
+    # https://docs.camunda.io/docs/8.7/self-managed/tasklist-deployment/tasklist-configuration/#settings-for-shards-and-replicas
+    - name: CAMUNDA_TASKLIST_ELASTICSEARCH_NUMBER_OF_REPLICAS
+      value: "1"
   nodeSelector:
     topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
   tolerations:
@@ -383,6 +389,9 @@ zeebe:
       # application-override.yml is listed second so it has higher priority and can override application.yml.
       # Marked optional so Spring does not fail if this file is not mounted in a given deployment configuration.
       value: "/usr/local/zeebe/config/application.yml,optional:/usr/local/zeebe/config/application-override.yml"
+
+    - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_NUMBEROFREPLICAS
+      value: "1"
 
 zeebeGateway:
   # Replicas defines how many standalone gateways are deployed

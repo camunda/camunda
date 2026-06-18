@@ -88,6 +88,8 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
+            - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_INDEX_NUMBEROFREPLICAS
+              value: "1"
             - name: ZEEBE_LOG_APPENDER
               value: Stackdriver
             - name: ZEEBE_LOG_STACKDRIVER_SERVICENAME
