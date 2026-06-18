@@ -203,7 +203,8 @@ class CreateAgentHistoryItemCommandTest extends ClientRestTest {
                     .elementInstanceKey(ELEMENT_INSTANCE_KEY)
                     .jobKey(JOB_KEY)
                     .role(null))
-        .isInstanceOf(IllegalArgumentException.class);
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("role must not be null");
   }
 
   @Test
@@ -216,7 +217,8 @@ class CreateAgentHistoryItemCommandTest extends ClientRestTest {
                     .jobKey(JOB_KEY)
                     .role(AgentHistoryRole.USER)
                     .content(null))
-        .isInstanceOf(IllegalArgumentException.class);
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("content must not be null");
   }
 
   @Test
@@ -230,7 +232,8 @@ class CreateAgentHistoryItemCommandTest extends ClientRestTest {
                     .role(AgentHistoryRole.USER)
                     .content(Collections.singletonList(AgentHistoryContent.text("hello")))
                     .producedAt(null))
-        .isInstanceOf(IllegalArgumentException.class);
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("producedAt must not be null");
   }
 
   // ── Argument validation: jobLease (optional, but non-blank when set) ──────
@@ -248,7 +251,8 @@ class CreateAgentHistoryItemCommandTest extends ClientRestTest {
                     .content(Collections.singletonList(AgentHistoryContent.text("hello")))
                     .producedAt(PRODUCED_AT)
                     .jobLease(jobLease))
-        .isInstanceOf(IllegalArgumentException.class);
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("jobLease must not be blank");
   }
 
   // ── Argument validation: content (empty list) ─────────────────────────────
