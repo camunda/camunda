@@ -103,9 +103,10 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
             .setTimeout(request.timeout())
             .setWorker(request.worker())
             .setVariables(request.fetchVariable());
-    final var brokerRequestAuthorization =
-        brokerRequestAuthorizationConverter.convert(authentication);
-    brokerRequest.setAuthorization(brokerRequestAuthorization);
+    // Apply the full mutator set (authorization AND, for physical-tenant-scoped services, the
+    // partition group) so job activation round-robins over the tenant's partition group. The
+    // handler reads brokerRequest.getPartitionGroup() when selecting partitions.
+    applyBrokerRequestMutators(brokerRequest, authentication);
     activateJobsHandler.activateJobs(
         brokerRequest, responseObserver, cancelationHandlerConsumer, request.requestTimeout());
   }
