@@ -930,6 +930,7 @@ public class SearchQuerySortRequestMapper {
       validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
     } else {
       switch (field) {
+        case BUSINESS_ID -> builder.businessId();
         case CORRELATION_KEY -> builder.correlationKey();
         case CORRELATION_TIME -> builder.correlationTime();
         case ELEMENT_ID -> builder.flowNodeId();

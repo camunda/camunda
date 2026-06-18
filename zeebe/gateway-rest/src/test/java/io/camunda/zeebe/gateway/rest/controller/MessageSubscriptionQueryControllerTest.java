@@ -558,6 +558,10 @@ public class MessageSubscriptionQueryControllerTest extends RestControllerTest {
             {
               "sort": [
                 {
+                  "field": "businessId",
+                  "order": "asc"
+                },
+                {
                   "field": "correlationKey",
                   "order": "asc"
                 },
@@ -621,7 +625,9 @@ public class MessageSubscriptionQueryControllerTest extends RestControllerTest {
                 new CorrelatedMessageSubscriptionQuery.Builder()
                     .sort(
                         s ->
-                            s.correlationKey()
+                            s.businessId()
+                                .asc()
+                                .correlationKey()
                                 .asc()
                                 .correlationTime()
                                 .desc()

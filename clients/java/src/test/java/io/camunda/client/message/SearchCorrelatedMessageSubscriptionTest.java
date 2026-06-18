@@ -165,7 +165,9 @@ public class SearchCorrelatedMessageSubscriptionTest extends ClientRestTest {
                     .subscriptionKey()
                     .asc()
                     .tenantId()
-                    .desc())
+                    .desc()
+                    .businessId()
+                    .asc())
         .send()
         .join();
 
@@ -175,7 +177,7 @@ public class SearchCorrelatedMessageSubscriptionTest extends ClientRestTest {
     final List<SearchRequestSort> sorts =
         SearchRequestSortMapper.fromCorrelatedMessageSubscriptionSearchQuerySortRequest(
             Objects.requireNonNull(request.getSort()));
-    assertThat(sorts).hasSize(12);
+    assertThat(sorts).hasSize(13);
     assertSort(sorts.get(0), "correlationKey", SortOrderEnum.ASC);
     assertSort(sorts.get(1), "correlationTime", SortOrderEnum.ASC);
     assertSort(sorts.get(2), "elementId", SortOrderEnum.ASC);
@@ -188,6 +190,7 @@ public class SearchCorrelatedMessageSubscriptionTest extends ClientRestTest {
     assertSort(sorts.get(9), "processInstanceKey", SortOrderEnum.DESC);
     assertSort(sorts.get(10), "subscriptionKey", SortOrderEnum.ASC);
     assertSort(sorts.get(11), "tenantId", SortOrderEnum.DESC);
+    assertSort(sorts.get(12), "businessId", SortOrderEnum.ASC);
   }
 
   @Test
