@@ -124,6 +124,18 @@ class ZeebeAgentInstanceDataDtoTest {
   }
 
   @Test
+  void shouldNotBeEqualWhenChangedAttributesDiffer() {
+    // given — same agentInstanceKey but different changedAttributes
+    final ZeebeAgentInstanceDataDto a = buildDto(1L, List.of(10L));
+    final ZeebeAgentInstanceDataDto b = buildDto(1L, List.of(10L));
+    a.setChangedAttributes(List.of("status"));
+    b.setChangedAttributes(List.of("metrics"));
+
+    // then
+    assertThat(a).isNotEqualTo(b);
+  }
+
+  @Test
   void shouldNotBeEqualWhenAgentInstanceKeyDiffers() {
     // given
     final ZeebeAgentInstanceDataDto a = buildDto(1L, List.of(10L));

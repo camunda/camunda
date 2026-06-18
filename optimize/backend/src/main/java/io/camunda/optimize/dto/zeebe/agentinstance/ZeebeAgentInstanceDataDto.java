@@ -203,7 +203,8 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
         status,
         definition,
         metrics,
-        tools);
+        tools,
+        changedAttributes);
   }
 
   @Override
@@ -225,7 +226,8 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
         && Objects.equals(status, that.status)
         && Objects.equals(definition, that.definition)
         && Objects.equals(metrics, that.metrics)
-        && Objects.equals(tools, that.tools);
+        && Objects.equals(tools, that.tools)
+        && Objects.equals(changedAttributes, that.changedAttributes);
   }
 
   @Override
@@ -254,6 +256,8 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
         + metrics
         + ", tools="
         + tools
+        + ", changedAttributes="
+        + changedAttributes
         + ")";
   }
 
@@ -273,6 +277,7 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
     public static final String definition = "definition";
     public static final String metrics = "metrics";
     public static final String tools = "tools";
+    public static final String changedAttributes = "changedAttributes";
   }
 
   public static class AgentDefinitionValueDto implements AgentInstanceDefinitionValue {
