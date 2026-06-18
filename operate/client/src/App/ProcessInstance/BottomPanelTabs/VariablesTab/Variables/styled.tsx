@@ -56,8 +56,8 @@ const FilterSwitcherContainer = styled.div`
 
 const FilterSwitcher = styled.div`
   display: inline-flex;
-  gap: 2px;
-  padding: 2px;
+  gap: var(--cds-spacing-01);
+  padding: var(--cds-spacing-01);
   border-radius: 6px;
   background-color: var(--cds-layer-accent-01);
 `;

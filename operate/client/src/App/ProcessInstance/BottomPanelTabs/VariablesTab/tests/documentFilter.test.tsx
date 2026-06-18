@@ -16,6 +16,7 @@ import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 import {getWrapper, mockProcessInstance} from './mocks';
 import {mockServer} from 'modules/mock-server/node';
 import {http, HttpResponse} from 'msw';
+import type {DocumentReference} from '@camunda/camunda-api-zod-schemas/8.10';
 
 const DOCUMENT_VALUE = JSON.stringify({
   'camunda.document.type': 'camunda',
@@ -31,7 +32,7 @@ const DOCUMENT_VALUE = JSON.stringify({
     processInstanceKey: null,
     customProperties: {},
   },
-});
+} satisfies DocumentReference);
 
 const allVariables = searchResult([
   createVariable({name: 'regularVar', value: '"hello"'}),
