@@ -100,24 +100,14 @@ export function useTaskFiltersSidebar(
         });
       },
       trailingElement: (
-        <span
-          className={styles.hoverActions}
-          onClick={stopRowNavigation}
-          onMouseDown={stopRowNavigation}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              stopRowNavigation(e);
-            }
-          }}
-        >
+        <span className={styles.hoverActions} onClick={stopRowNavigation}>
           <IconButton
             kind="ghost"
             size="sm"
             label={t('taskFilterPanelEdit')}
             align="bottom-left"
             autoAlign
-            onClick={(e) => {
-              stopRowNavigation(e);
+            onClick={() => {
               dialog.openEditFilterModal(key);
             }}
           >
@@ -129,8 +119,7 @@ export function useTaskFiltersSidebar(
             label={t('taskFilterPanelDelete')}
             align="bottom-left"
             autoAlign
-            onClick={(e) => {
-              stopRowNavigation(e);
+            onClick={() => {
               dialog.openDeleteFilterModal(key);
             }}
           >
