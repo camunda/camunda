@@ -55,7 +55,7 @@ runs:
         secretId: ${{ inputs.secret_vault_secretId }}
         exportEnv: false # we rely on step outputs, no need for environment variables
         secrets: |
-          secret/data/products/zeebe/ci/ci-analytics gcloud_sa_key;
+          secret/data/products/zeebe/ci/ci-analytics-dev gcloud_sa_key;
 
     - name: Check secrets availability
       if: ${{ steps.secrets.outputs.gcloud_sa_key == '' }}
