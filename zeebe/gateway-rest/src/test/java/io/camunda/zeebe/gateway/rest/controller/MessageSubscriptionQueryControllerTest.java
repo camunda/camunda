@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.CorrelatedMessageSubscriptionEntity;
 import io.camunda.search.entities.MessageSubscriptionEntity;
+import io.camunda.search.filter.Operation;
 import io.camunda.search.query.CorrelatedMessageSubscriptionQuery;
 import io.camunda.search.query.MessageSubscriptionQuery;
 import io.camunda.search.query.SearchQueryResult;
@@ -108,7 +109,8 @@ public class MessageSubscriptionQueryControllerTest extends RestControllerTest {
                   "processInstanceKey": "2251799813685849",
                   "subscriptionKey": "2251799813685860",
                   "tenantId": "test-tenant",
-                  "rootProcessInstanceKey": null
+                  "rootProcessInstanceKey": null,
+                  "businessId": "order-12345"
                 }
             ],
             "page": {
@@ -140,6 +142,7 @@ public class MessageSubscriptionQueryControllerTest extends RestControllerTest {
                           .processInstanceKey(2251799813685849L)
                           .subscriptionKey(2251799813685860L)
                           .tenantId("test-tenant")
+                          .businessId("order-12345")
                           .build()))
               .startCursor("WzIyNTE3OTk4MTM2ODU4Mjld")
               .endCursor("WzIyNTE3OTk4MTM2ODU4NjZd")
@@ -453,6 +456,7 @@ public class MessageSubscriptionQueryControllerTest extends RestControllerTest {
             """
             {
               "filter": {
+                "businessId": "order-12345",
                 "correlationKey": "test",
                   "correlationTime": "2025-07-05T12:11:00.975Z",
                   "elementId": "Activity_1ludhs2",
@@ -481,7 +485,8 @@ public class MessageSubscriptionQueryControllerTest extends RestControllerTest {
                 new CorrelatedMessageSubscriptionQuery.Builder()
                     .filter(
                         f ->
-                            f.correlationKeys("test")
+                            f.businessIds("order-12345")
+                                .correlationKeys("test")
                                 .correlationTimes(OffsetDateTime.parse("2025-07-05T12:11:00.975Z"))
                                 .flowNodeIds("Activity_1ludhs2")
                                 .flowNodeInstanceKeys(2251799813685853L)
@@ -493,6 +498,46 @@ public class MessageSubscriptionQueryControllerTest extends RestControllerTest {
                                 .processInstanceKeys(2251799813685849L)
                                 .subscriptionKeys(2251799813685860L)
                                 .tenantIds("test-tenant"))
+                    .build()),
+            any());
+  }
+
+  @Test
+  public void shouldSearchCorrelatedWithAdvancedBusinessIdFilter() {
+    // given
+    when(services.searchCorrelated(any(), any())).thenReturn(SEARCH_CORRELATED_QUERY_RESULT);
+
+    // when / then
+    webClient
+        .post()
+        .uri(CORRELATED_MESSAGE_SUBSCRIPTIONS_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            """
+            {
+              "filter": {
+                "businessId": { "$like": "order-*", "$neq": "order-0", "$exists": true }
+              }
+            }""")
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_CORRELATED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
+
+    verify(services)
+        .searchCorrelated(
+            eq(
+                new CorrelatedMessageSubscriptionQuery.Builder()
+                    .filter(
+                        f ->
+                            f.businessIdOperations(
+                                Operation.neq("order-0"),
+                                Operation.exists(true),
+                                Operation.like("order-*")))
                     .build()),
             any());
   }

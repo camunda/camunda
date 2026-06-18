@@ -26,6 +26,24 @@ import java.util.function.Consumer;
 public interface CorrelatedMessageSubscriptionFilter extends SearchRequestFilter {
 
   /**
+   * Filter by business id.
+   *
+   * @param businessId the business id of the correlated message subscription
+   * @return the updated filter
+   */
+  CorrelatedMessageSubscriptionFilter businessId(String businessId);
+
+  /**
+   * Filter by business id using a {@link StringProperty} consumer. Supports advanced string
+   * operators including {@code $like} with wildcards.
+   *
+   * @param fn the business id {@link StringProperty} consumer for the correlated message
+   *     subscription
+   * @return the updated filter
+   */
+  CorrelatedMessageSubscriptionFilter businessId(Consumer<StringProperty> fn);
+
+  /**
    * Filter by correlation key.
    *
    * @param correlationKey the correlation key of the correlated message subscription

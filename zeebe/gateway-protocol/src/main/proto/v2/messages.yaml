@@ -752,6 +752,12 @@ components:
       description: Correlated message subscriptions search filter.
       type: object
       properties:
+        businessId:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+          description: |
+            The business id of the correlated message. Supports advanced string filtering, including
+            `$like` with `*`/`?` wildcards.
         correlationKey:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
@@ -800,6 +806,9 @@ components:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
           description: The tenant ID associated with this correlated message subscription.
+      x-properties-added-in-version:
+        - propertyName: businessId
+          addedInVersion: "8.10"
 
     MessageSubscriptionTypeFilterProperty:
       description: MessageSubscriptionTypeEnum with full advanced search capabilities.

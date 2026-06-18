@@ -77,6 +77,7 @@ public class SearchCorrelatedMessageSubscriptionTest extends ClientRestTest {
                     .processDefinitionKey(654L)
                     .processInstanceKey(456L)
                     .subscriptionKey(987L)
+                    .businessId("business-id")
                     .tenantId("tenant-id"))
         .send()
         .join();
@@ -111,6 +112,27 @@ public class SearchCorrelatedMessageSubscriptionTest extends ClientRestTest {
     assertThat(request.getFilter().getSubscriptionKey().get$Eq()).isEqualTo("987");
     assertThat(request.getFilter().getTenantId()).isNotNull();
     assertThat(request.getFilter().getTenantId().get$Eq()).isEqualTo("tenant-id");
+    assertThat(request.getFilter().getBusinessId()).isNotNull();
+    assertThat(request.getFilter().getBusinessId().get$Eq()).isEqualTo("business-id");
+  }
+
+  @Test
+  void shouldSearchWithAdvancedBusinessIdFilter() {
+    // When
+    client
+        .newCorrelatedMessageSubscriptionSearchRequest()
+        .filter(f -> f.businessId(b -> b.like("order-*").neq("order-0").exists(true)))
+        .send()
+        .join();
+
+    // Then
+    final CorrelatedMessageSubscriptionSearchQuery request =
+        gatewayService.getLastRequest(CorrelatedMessageSubscriptionSearchQuery.class);
+    assertThat(request.getFilter()).isNotNull();
+    assertThat(request.getFilter().getBusinessId()).isNotNull();
+    assertThat(request.getFilter().getBusinessId().get$Like()).isEqualTo("order-*");
+    assertThat(request.getFilter().getBusinessId().get$Neq()).isEqualTo("order-0");
+    assertThat(request.getFilter().getBusinessId().get$Exists()).isTrue();
   }
 
   @Test

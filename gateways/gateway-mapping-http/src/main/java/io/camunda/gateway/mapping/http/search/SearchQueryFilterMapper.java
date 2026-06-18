@@ -1161,6 +1161,9 @@ public class SearchQueryFilterMapper {
     final List<String> validationErrors = new ArrayList<>();
 
     if (filter != null) {
+      ofNullable(filter.getBusinessId())
+          .map(mapToStringOperations())
+          .ifPresent(builder::businessIdOperations);
       ofNullable(filter.getCorrelationKey())
           .map(mapToStringOperations())
           .ifPresent(builder::correlationKeyOperations);
