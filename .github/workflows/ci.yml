@@ -1666,7 +1666,7 @@ jobs:
       - uses: camunda/infra-global-github-actions/start-build-monitor@main
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Check for vulnerable dependencies
-        uses: camunda/infra-global-github-actions/dependency-vuln-check@f1e0bd49b88f17b2caeba3dbc7bebf9abfc1ef33 # main — bump to post-merge SHA after infra-global-github-actions#715 merges
+        uses: camunda/infra-global-github-actions/dependency-vuln-check@5d109398b8e6b977dfac8e4ab463bba3e798f462 # main
         with:
           base-sha: ${{ github.event.pull_request.base.sha }}
           head-sha: ${{ github.event.pull_request.head.sha }}
