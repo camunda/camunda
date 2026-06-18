@@ -20,7 +20,7 @@ import {
   jsonHeaders,
 } from '../http';
 import {expect} from '@playwright/test';
-import {generateUniqueId} from '../constants';
+import {defaultAssertionOptions, generateUniqueId} from '../constants';
 import {
   CREATE_NEW_TENANT,
   roleRequiredFields,
@@ -48,11 +48,15 @@ export async function assignUsersToTenant(
       userId: user.username,
       tenantId: tenantId,
     };
-    const res = await request.put(
-      buildUrl('/tenants/{tenantId}/users/{userId}', p),
-      {headers: jsonHeaders()},
-    );
-    await assertStatusCode(res, 204);
+    // Retry: the freshly created user/tenant may not yet be visible to the
+    // assignment command, which surfaces as a transient 404.
+    await expect(async () => {
+      const res = await request.put(
+        buildUrl('/tenants/{tenantId}/users/{userId}', p),
+        {headers: jsonHeaders()},
+      );
+      await assertStatusCode(res, 204);
+    }).toPass(defaultAssertionOptions);
     state[`username${tenantId}${i}`] = user.username;
   }
 }
@@ -158,13 +162,17 @@ export async function assignRolesToTenant(
       roleId: roleIdValueUsingKey(tenantIdKey, state, i) as string,
       tenantId: tenantId as string,
     };
-    const res = await request.put(
-      buildUrl('/tenants/{tenantId}/roles/{roleId}', p),
-      {
-        headers: jsonHeaders(),
-      },
-    );
-    await assertStatusCode(res, 204);
+    // Retry: the freshly created role/tenant may not yet be visible to the
+    // assignment command, which surfaces as a transient 404.
+    await expect(async () => {
+      const res = await request.put(
+        buildUrl('/tenants/{tenantId}/roles/{roleId}', p),
+        {
+          headers: jsonHeaders(),
+        },
+      );
+      await assertStatusCode(res, 204);
+    }).toPass(defaultAssertionOptions);
   }
 }
 

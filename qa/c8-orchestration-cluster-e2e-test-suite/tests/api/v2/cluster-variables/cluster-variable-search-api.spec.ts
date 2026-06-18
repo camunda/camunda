@@ -409,7 +409,7 @@ test.describe.parallel('Search Cluster Variables API Tests', () => {
         },
         body,
       );
-      assertPaginatedRequest(res, {
+      await assertPaginatedRequest(res, {
         itemLengthGreaterThan: 1,
         totalItemGreaterThan: 1,
       });
