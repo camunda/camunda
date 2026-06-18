@@ -84,6 +84,18 @@ Shared baseline platform config lives in `camunda-platform-values-defaults.yaml`
 
 ### How to set up a load test namespace
 
+The root `newLoadTest.sh` is a **version dispatcher** — it forwards to a version-specific script
+under `setup/<version>/newLoadTest.sh`, defaulting to `main`. This lets each stable branch carry
+its own setup without path conflicts. To target a specific version explicitly, pass
+`--target-version <version>` (or `-t <version>`) before the namespace argument:
+
+```sh
+./newLoadTest.sh --target-version main my-load-test
+```
+
+Running without `--target-version` targets `main` by default. The rest of this section documents
+the `main` setup.
+
 If you run `newLoadTest.sh` without arguments, it will display the following help message.
 
 ```sh
@@ -114,7 +126,7 @@ Example:
 
 This will source and run the `newLoadTest.sh` script. A new folder is created with the given name, containing a rendered Makefile, Helm values, and (under `resources/`) two Kubernetes manifests: `namespace.yaml` (labels, AZ pinning, TTL) and `camunda-credentials.yaml` (randomly generated passwords/tokens). The cluster itself is unchanged by this script — `make install` from inside the folder runs `kubectl apply -f resources/…` to create the namespace and secret. Reruns after a TTL deletion reapply the same manifests, so the orchestration secret stays in sync with `load-test-values.yaml` and you don't lose credentials.
 
-The template files live under `setup/default/`:
+The template files live under `setup/main/`:
 
 - `Makefile` — rendered into the namespace folder with placeholders substituted.
 - `values/` — Helm values files. All installs start from
