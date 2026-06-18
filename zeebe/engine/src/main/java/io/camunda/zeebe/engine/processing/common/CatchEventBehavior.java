@@ -248,7 +248,7 @@ public final class CatchEventBehavior {
 
     // conditional events don't require expression evaluation for subscription
     // condition expressions are stored as-is and evaluated when a variable changes
-    subscribeToConditionalEvents(context, supplier);
+    subscribeToConditionalEvents(context, supplier, filterBeforeEvaluation);
 
     return evaluationResults.map(r -> null);
   }
@@ -516,9 +516,12 @@ public final class CatchEventBehavior {
   }
 
   private void subscribeToConditionalEvents(
-      final BpmnElementContext context, final ExecutableCatchEventSupplier supplier) {
+      final BpmnElementContext context,
+      final ExecutableCatchEventSupplier supplier,
+      final Predicate<ExecutableCatchEvent> filter) {
     supplier.getEvents().stream()
         .filter(ExecutableCatchEvent::isConditional)
+        .filter(filter)
         .forEach(event -> subscribeToConditionalEvent(context, event));
   }
 
