@@ -44,6 +44,7 @@ import io.camunda.exporter.ExporterResourceProvider;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiveByIdTaskSupplier.ArchiveDocIdsBatch;
+import io.camunda.exporter.tasks.archiver.ArchiveByIdTaskSupplier.IdWithRouting;
 import io.camunda.exporter.tasks.util.DateOfArchivedDocumentsUtil;
 import io.camunda.exporter.tasks.util.ElasticsearchRepository;
 import io.camunda.search.schema.config.RetentionConfiguration;
@@ -447,17 +448,21 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
                 return ArchiveDocIdsBatch.empty();
               }
               return ArchiveDocIdsBatch.from(
-                  hits.stream().map(Hit::id).toList(), hits.getLast().sort());
+                  hits.stream().map(h -> new IdWithRouting(h.id(), h.routing())).toList(),
+                  hits.getLast().sort());
             });
   }
 
   @VisibleForTesting
   CompletableFuture<Long> reindexDocumentsById(
-      final String sourceIndexName, final String destinationIndexName, final List<String> docIds) {
-    if (docIds.isEmpty()) {
+      final String sourceIndexName,
+      final String destinationIndexName,
+      final List<IdWithRouting> docs) {
+    if (docs.isEmpty()) {
       return CompletableFuture.completedFuture(0L);
     }
 
+    final var docIds = docs.stream().map(IdWithRouting::id).toList();
     final var query = QueryBuilders.bool(q -> q.filter(b -> b.ids(id -> id.values(docIds))));
     final var request =
         new ReindexRequest.Builder()
@@ -496,14 +501,18 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
 
   @VisibleForTesting
   CompletableFuture<Long> deleteDocumentsById(
-      final String sourceIndexName, final List<String> docIds) {
-    if (docIds.isEmpty()) {
+      final String sourceIndexName, final List<IdWithRouting> docs) {
+    if (docs.isEmpty()) {
       return CompletableFuture.completedFuture(0L);
     }
 
     final var operations =
-        docIds.stream()
-            .map(docId -> new BulkOperation.Builder().delete(d -> d.id(docId)).build())
+        docs.stream()
+            .map(
+                d ->
+                    new BulkOperation.Builder()
+                        .delete(del -> del.id(d.id()).routing(d.routing()))
+                        .build())
             .toList();
 
     final var request =
@@ -525,7 +534,9 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
           "Deleting reindexed documents from %s index completed with %d failures"
               .formatted(sourceIndex, errorCount));
     }
-    return response.items().size();
+
+    // only count DELETE bulk operation where result was `deleted`
+    return response.items().stream().filter(i -> "deleted".equals(i.result())).count();
   }
 
   private CompletableFuture<ArchivingStatus> withArchivingStatus() {

@@ -19,6 +19,7 @@ import static org.mockito.Mockito.verify;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.tasks.archiver.ArchiveByIdTaskSupplier.IdWithRouting;
 import io.camunda.exporter.tasks.util.DateOfArchivedDocumentsUtil;
 import io.camunda.exporter.tasks.utils.TestExporterResourceProvider;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
@@ -1079,11 +1080,12 @@ final class OpenSearchArchiverRepositoryIT {
     // create the index template first to ensure ID is a keyword, otherwise the surrounding
     // aggregation will fail
     createProcessInstanceIndex();
-    documents.forEach(doc -> index(processInstanceIndex, doc));
+    documents.forEach(
+        doc -> index(processInstanceIndex, doc, String.valueOf(doc.processInstanceKey())));
     testClient.indices().refresh(r -> r.index(processInstanceIndex));
 
     // when searching for process instance key 111
-    // then - we expect documents with IDs 1,2 and 4 to be returned
+    // then - we expect documents with IDs 1,2 and 4 to be returned with routing=111
     final var batch =
         repository
             .getArchiveDocIdsBatch(
@@ -1095,7 +1097,10 @@ final class OpenSearchArchiverRepositoryIT {
                 null)
             .join();
 
-    assertThat(batch.ids()).containsExactlyInAnyOrder("1", "2", "4");
+    assertThat(batch.documents())
+        .extracting(IdWithRouting::id)
+        .containsExactlyInAnyOrder("1", "2", "4");
+    assertThat(batch.documents()).extracting(IdWithRouting::routing).containsOnly("111");
     assertThat(batch.searchAfter()).hasSize(1);
     assertThat(batch.searchAfter().getFirst().stringValue()).isEqualTo("4");
 
@@ -1113,7 +1118,7 @@ final class OpenSearchArchiverRepositoryIT {
             .join();
 
     assertThat(emptyBatch.isEmpty()).isTrue();
-    assertThat(emptyBatch.ids()).isEmpty();
+    assertThat(emptyBatch.documents()).isEmpty();
     assertThat(emptyBatch.searchAfter()).isEmpty();
 
     // when searching for process instance key 111 with reindex batch size of 2
@@ -1130,7 +1135,9 @@ final class OpenSearchArchiverRepositoryIT {
                 null)
             .join();
 
-    assertThat(batchPg1.ids()).containsExactlyInAnyOrder("1", "2");
+    assertThat(batchPg1.documents())
+        .extracting(IdWithRouting::id)
+        .containsExactlyInAnyOrder("1", "2");
     assertThat(batchPg1.searchAfter().getFirst().stringValue()).isEqualTo("2");
 
     // when searching for process instance key 111 with searchAfter from page 1
@@ -1147,7 +1154,7 @@ final class OpenSearchArchiverRepositoryIT {
                 batchPg1.searchAfter())
             .join();
 
-    assertThat(batchPg2.ids()).containsExactlyInAnyOrder("4");
+    assertThat(batchPg2.documents()).extracting(IdWithRouting::id).containsExactlyInAnyOrder("4");
     assertThat(batchPg2.searchAfter().getFirst().stringValue()).isEqualTo("4");
 
     // when searching for process instance key 111 with searchAfter from page 2
@@ -1165,7 +1172,7 @@ final class OpenSearchArchiverRepositoryIT {
             .join();
 
     assertThat(batchPg3.isEmpty()).isTrue();
-    assertThat(batchPg3.ids()).isEmpty();
+    assertThat(batchPg3.documents()).isEmpty();
     assertThat(batchPg3.searchAfter()).isEmpty();
 
     // when searching for process instance key 111 with exclusion filter for joinRelation=activity
@@ -1182,7 +1189,9 @@ final class OpenSearchArchiverRepositoryIT {
                 null)
             .join();
 
-    assertThat(batchExcluded.ids()).containsExactlyInAnyOrder("1", "4");
+    assertThat(batchExcluded.documents())
+        .extracting(IdWithRouting::id)
+        .containsExactlyInAnyOrder("1", "4");
 
     // when searching for process instance key 111 with inclusion filter for joinRelation=variable
     // and exclusion filter for joinRelation=activity
@@ -1198,7 +1207,9 @@ final class OpenSearchArchiverRepositoryIT {
                 null)
             .join();
 
-    assertThat(batchBothFilters.ids()).containsExactlyInAnyOrder("1", "4");
+    assertThat(batchBothFilters.documents())
+        .extracting(IdWithRouting::id)
+        .containsExactlyInAnyOrder("1", "4");
   }
 
   @Test
@@ -1215,7 +1226,8 @@ final class OpenSearchArchiverRepositoryIT {
 
     // when - reindex the first two documents
     final var result =
-        repository.reindexDocumentsById(sourceIndexName, destIndexName, List.of("1", "2"));
+        repository.reindexDocumentsById(
+            sourceIndexName, destIndexName, List.of(IdWithRouting.of("1"), IdWithRouting.of("2")));
 
     // then
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
@@ -1247,7 +1259,9 @@ final class OpenSearchArchiverRepositoryIT {
     testClient.indices().refresh(r -> r.index(indexName));
 
     // when - delete the first two documents
-    final var result = repository.deleteDocumentsById(indexName, List.of("1", "2"));
+    final var result =
+        repository.deleteDocumentsById(
+            indexName, List.of(IdWithRouting.of("1"), IdWithRouting.of("2")));
 
     // then
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
@@ -1280,7 +1294,8 @@ final class OpenSearchArchiverRepositoryIT {
     // create the index template first to ensure ID is a keyword, otherwise the surrounding
     // aggregation will fail
     createProcessInstanceIndex();
-    documents.forEach(doc -> index(processInstanceIndex, doc));
+    documents.forEach(
+        doc -> index(processInstanceIndex, doc, String.valueOf(doc.processInstanceKey())));
     testClient.indices().refresh(r -> r.index(processInstanceIndex));
 
     // when moving documents by id
@@ -1509,8 +1524,13 @@ final class OpenSearchArchiverRepositoryIT {
   }
 
   private <T extends TDocument> void index(final String index, final T document) {
+    index(index, document, null);
+  }
+
+  private <T extends TDocument> void index(
+      final String index, final T document, final String routing) {
     try {
-      testClient.index(b -> b.index(index).document(document).id(document.id()));
+      testClient.index(b -> b.index(index).document(document).id(document.id()).routing(routing));
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
     }

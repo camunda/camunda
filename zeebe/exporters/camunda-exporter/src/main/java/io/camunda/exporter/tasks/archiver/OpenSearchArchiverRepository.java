@@ -18,6 +18,7 @@ import io.camunda.exporter.ExporterResourceProvider;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiveByIdTaskSupplier.ArchiveDocIdsBatch;
+import io.camunda.exporter.tasks.archiver.ArchiveByIdTaskSupplier.IdWithRouting;
 import io.camunda.exporter.tasks.util.DateOfArchivedDocumentsUtil;
 import io.camunda.exporter.tasks.util.OpensearchRepository;
 import io.camunda.search.schema.config.RetentionConfiguration;
@@ -452,17 +453,21 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
                 return ArchiveDocIdsBatch.empty();
               }
               return ArchiveDocIdsBatch.from(
-                  hits.stream().map(Hit::id).toList(), hits.getLast().sortVals());
+                  hits.stream().map(h -> new IdWithRouting(h.id(), h.routing())).toList(),
+                  hits.getLast().sortVals());
             });
   }
 
   @VisibleForTesting
   CompletableFuture<Long> reindexDocumentsById(
-      final String sourceIndexName, final String destinationIndexName, final List<String> docIds) {
-    if (docIds.isEmpty()) {
+      final String sourceIndexName,
+      final String destinationIndexName,
+      final List<IdWithRouting> docs) {
+    if (docs.isEmpty()) {
       return CompletableFuture.completedFuture(0L);
     }
 
+    final var docIds = docs.stream().map(IdWithRouting::id).toList();
     final var query = QueryBuilders.bool().filter(b -> b.ids(id -> id.values(docIds))).build();
     final var request =
         new ReindexRequest.Builder()
@@ -500,13 +505,15 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
 
   @VisibleForTesting
   CompletableFuture<Long> deleteDocumentsById(
-      final String sourceIndexName, final List<String> docIds) {
-    if (docIds.isEmpty()) {
+      final String sourceIndexName, final List<IdWithRouting> docs) {
+    if (docs.isEmpty()) {
       return CompletableFuture.completedFuture(0L);
     }
 
     final var operations =
-        docIds.stream().map(docId -> BulkOperation.of(b -> b.delete(d -> d.id(docId)))).toList();
+        docs.stream()
+            .map(d -> BulkOperation.of(b -> b.delete(del -> del.id(d.id()).routing(d.routing()))))
+            .toList();
 
     final BulkRequest request =
         BulkRequest.of(b -> b.index(sourceIndexName).operations(operations));
@@ -526,7 +533,9 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
           "Deleting reindexed documents from %s index completed with %d failures"
               .formatted(sourceIndex, errorCount));
     }
-    return response.items().size();
+
+    // only count DELETE bulk operation where result was `deleted`
+    return response.items().stream().filter(i -> "deleted".equals(i.result())).count();
   }
 
   private SearchRequest createUsageMetricSearchRequest(
