@@ -15,10 +15,13 @@ import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mapping.http.validator.AgentInstanceRequestValidator;
 import io.camunda.gateway.protocol.model.AgentInstanceCreationRequest;
 import io.camunda.gateway.protocol.model.AgentInstanceHistoryItemRequest;
+import io.camunda.gateway.protocol.model.AgentInstanceHistorySearchQuery;
+import io.camunda.gateway.protocol.model.AgentInstanceHistorySearchQueryResult;
 import io.camunda.gateway.protocol.model.AgentInstanceResult;
 import io.camunda.gateway.protocol.model.AgentInstanceSearchQuery;
 import io.camunda.gateway.protocol.model.AgentInstanceSearchQueryResult;
 import io.camunda.gateway.protocol.model.AgentInstanceUpdateRequest;
+import io.camunda.search.query.AgentInstanceHistoryQuery;
 import io.camunda.search.query.AgentInstanceQuery;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.registry.ServiceRegistry;
@@ -114,6 +117,17 @@ public class AgentInstanceController {
         .fold(RestErrorMapper::mapProblemToResponse, query -> search(physicalTenantId, query));
   }
 
+  @RequiresSecondaryStorage
+  @CamundaPostMapping(path = "/{agentInstanceKey}/history/search")
+  public ResponseEntity<AgentInstanceHistorySearchQueryResult> searchAgentInstanceHistory(
+      @PhysicalTenantId final String physicalTenantId,
+      @PathVariable final long agentInstanceKey,
+      @RequestBody(required = false) final AgentInstanceHistorySearchQuery request) {
+    return SearchQueryRequestMapper.toAgentInstanceHistoryQuery(request, agentInstanceKey)
+        .fold(
+            RestErrorMapper::mapProblemToResponse, query -> searchHistory(physicalTenantId, query));
+  }
+
   private CompletableFuture<ResponseEntity<Object>> create(
       final String physicalTenantId, final AgentInstanceRecord record) {
     final var agentInstanceServices = serviceRegistry.agentInstanceServices(physicalTenantId);
@@ -150,6 +164,18 @@ public class AgentInstanceController {
           agentInstanceServices.search(query, authenticationProvider.getCamundaAuthentication());
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toAgentInstanceSearchQueryResponse(result));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
+  }
+
+  private ResponseEntity<AgentInstanceHistorySearchQueryResult> searchHistory(
+      final String physicalTenantId, final AgentInstanceHistoryQuery query) {
+    final var agentHistoryServices = serviceRegistry.agentHistoryServices(physicalTenantId);
+    try {
+      final var result =
+          agentHistoryServices.search(query, authenticationProvider.getCamundaAuthentication());
+      return ResponseEntity.ok(SearchQueryResponseMapper.toAgentHistorySearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }

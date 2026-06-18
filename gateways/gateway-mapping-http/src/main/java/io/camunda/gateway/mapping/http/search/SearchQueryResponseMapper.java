@@ -17,11 +17,21 @@ import static java.util.Optional.ofNullable;
 import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
 
 import io.camunda.gateway.protocol.model.AgentInstanceDefinition;
+import io.camunda.gateway.protocol.model.AgentInstanceDocumentContent;
+import io.camunda.gateway.protocol.model.AgentInstanceHistoryCommitStatusEnum;
+import io.camunda.gateway.protocol.model.AgentInstanceHistoryItemMetrics;
+import io.camunda.gateway.protocol.model.AgentInstanceHistoryItemResult;
+import io.camunda.gateway.protocol.model.AgentInstanceHistoryRoleEnum;
+import io.camunda.gateway.protocol.model.AgentInstanceHistorySearchQueryResult;
 import io.camunda.gateway.protocol.model.AgentInstanceLimits;
+import io.camunda.gateway.protocol.model.AgentInstanceMessageContent;
 import io.camunda.gateway.protocol.model.AgentInstanceMetrics;
+import io.camunda.gateway.protocol.model.AgentInstanceObjectContent;
 import io.camunda.gateway.protocol.model.AgentInstanceResult;
 import io.camunda.gateway.protocol.model.AgentInstanceSearchQueryResult;
 import io.camunda.gateway.protocol.model.AgentInstanceStatusEnum;
+import io.camunda.gateway.protocol.model.AgentInstanceTextContent;
+import io.camunda.gateway.protocol.model.AgentInstanceToolCall;
 import io.camunda.gateway.protocol.model.AgentTool;
 import io.camunda.gateway.protocol.model.AuditLogActorTypeEnum;
 import io.camunda.gateway.protocol.model.AuditLogCategoryEnum;
@@ -57,6 +67,7 @@ import io.camunda.gateway.protocol.model.DecisionInstanceSearchQueryResult;
 import io.camunda.gateway.protocol.model.DecisionInstanceStateEnum;
 import io.camunda.gateway.protocol.model.DecisionRequirementsResult;
 import io.camunda.gateway.protocol.model.DecisionRequirementsSearchQueryResult;
+import io.camunda.gateway.protocol.model.DocumentMetadataResponse;
 import io.camunda.gateway.protocol.model.ElementInstanceResult;
 import io.camunda.gateway.protocol.model.ElementInstanceSearchQueryResult;
 import io.camunda.gateway.protocol.model.ElementInstanceStateEnum;
@@ -163,6 +174,7 @@ import io.camunda.gateway.protocol.model.VariableSearchResult;
 import io.camunda.gateway.protocol.model.WaitStateElementTypeEnum;
 import io.camunda.gateway.protocol.model.WaitStateTypeEnum;
 import io.camunda.search.entities.AgentInstanceEntity;
+import io.camunda.search.entities.AgentInstanceHistoryEntity;
 import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.BatchOperationEntity;
@@ -2081,6 +2093,122 @@ public final class SearchQueryResponseMapper {
                             .map(SearchQueryResponseMapper::toAgentInstanceResult)
                             .toList())
                 .orElseGet(Collections::emptyList))
+        .build();
+  }
+
+  public static AgentInstanceHistoryItemResult toAgentHistoryItemResult(
+      final AgentInstanceHistoryEntity entity) {
+    final var content =
+        ofNullable(entity.content())
+            .map(
+                items ->
+                    items.stream()
+                        .map(SearchQueryResponseMapper::toAgentInstanceMessageContent)
+                        .toList())
+            .orElseGet(Collections::emptyList);
+
+    final var toolCalls =
+        ofNullable(entity.toolCalls())
+            .map(
+                calls ->
+                    calls.stream().map(SearchQueryResponseMapper::toAgentInstanceToolCall).toList())
+            .orElseGet(Collections::emptyList);
+
+    final var m = entity.metrics();
+    final var metrics =
+        AgentInstanceHistoryItemMetrics.Builder.create()
+            .inputTokens(m.inputTokens())
+            .outputTokens(m.outputTokens())
+            .durationMs(m.durationMs())
+            .build();
+
+    return AgentInstanceHistoryItemResult.Builder.create()
+        .historyItemKey(keyToString(entity.historyItemKey()))
+        .agentInstanceKey(keyToString(entity.agentInstanceKey()))
+        .elementInstanceKey(keyToString(entity.elementInstanceKey()))
+        .jobKey(keyToString(entity.jobKey()))
+        .jobLease(entity.jobLease())
+        .iteration(entity.iteration())
+        .role(AgentInstanceHistoryRoleEnum.fromValue(entity.role().name()))
+        .content(content)
+        .toolCalls(toolCalls)
+        .metrics(metrics)
+        .commitStatus(AgentInstanceHistoryCommitStatusEnum.fromValue(entity.commitStatus().name()))
+        .producedAt(formatDate(entity.producedAt()))
+        .build();
+  }
+
+  public static AgentInstanceHistorySearchQueryResult toAgentHistorySearchQueryResponse(
+      final SearchQueryResult<AgentInstanceHistoryEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return AgentInstanceHistorySearchQueryResult.Builder.create()
+        .page(page)
+        .items(
+            ofNullable(result.items())
+                .map(
+                    items ->
+                        items.stream()
+                            .map(SearchQueryResponseMapper::toAgentHistoryItemResult)
+                            .toList())
+                .orElseGet(Collections::emptyList))
+        .build();
+  }
+
+  private static AgentInstanceMessageContent toAgentInstanceMessageContent(
+      final AgentInstanceHistoryEntity.ContentItem item) {
+    return switch (item.contentType()) {
+      case TEXT ->
+          AgentInstanceTextContent.Builder.create()
+              .contentType(item.contentType().name())
+              .text(requireNonNullElse(item.text(), ""))
+              .build();
+      case DOCUMENT ->
+          AgentInstanceDocumentContent.Builder.create()
+              .contentType(item.contentType().name())
+              .documentReference(
+                  toDocumentReference(
+                      requireNonNull(item.documentReference(), "documentReference")))
+              .build();
+      case OBJECT ->
+          AgentInstanceObjectContent.Builder.create()
+              .contentType(item.contentType().name())
+              .object(requireNonNullElse(item.object(), Collections.emptyMap()))
+              .build();
+    };
+  }
+
+  private static io.camunda.gateway.protocol.model.DocumentReference toDocumentReference(
+      final AgentInstanceHistoryEntity.DocumentReference ref) {
+    return io.camunda.gateway.protocol.model.DocumentReference.Builder.create()
+        .camundaDocumentType(
+            io.camunda.gateway.protocol.model.DocumentReference.CamundaDocumentTypeEnum.CAMUNDA)
+        .storeId(ref.storeId())
+        .documentId(ref.documentId())
+        .contentHash(ref.contentHash())
+        .metadata(toDocumentMetadataResponse(ref.metadata()))
+        .build();
+  }
+
+  private static DocumentMetadataResponse toDocumentMetadataResponse(
+      final AgentInstanceHistoryEntity.DocumentMetadata meta) {
+    return DocumentMetadataResponse.Builder.create()
+        .fileName(meta.fileName())
+        .expiresAt(formatDateOrNull(meta.expiresAt()))
+        .size(meta.size())
+        .contentType(meta.contentType())
+        .customProperties(meta.customProperties())
+        .processDefinitionId(meta.processDefinitionId())
+        .processInstanceKey(keyToStringOrNull(meta.processInstanceKey()))
+        .build();
+  }
+
+  private static AgentInstanceToolCall toAgentInstanceToolCall(
+      final AgentInstanceHistoryEntity.ToolCall call) {
+    return AgentInstanceToolCall.Builder.create()
+        .toolCallId(call.toolCallId())
+        .toolName(call.toolName())
+        .elementId(call.elementId())
+        .arguments(call.arguments())
         .build();
   }
 

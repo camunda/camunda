@@ -16,6 +16,7 @@ import io.camunda.search.clients.reader.SearchClientReaders;
 import io.camunda.search.clients.reader.SearchEntityReader;
 import io.camunda.search.clients.reader.SearchQueryStatisticsReader;
 import io.camunda.search.entities.AgentInstanceEntity;
+import io.camunda.search.entities.AgentInstanceHistoryEntity;
 import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.BatchOperationEntity;
@@ -67,6 +68,7 @@ import io.camunda.search.exception.TenantAccessDeniedException;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.filter.ProcessInstanceStatisticsFilter;
 import io.camunda.search.page.SearchQueryPage.SearchQueryResultType;
+import io.camunda.search.query.AgentInstanceHistoryQuery;
 import io.camunda.search.query.AgentInstanceQuery;
 import io.camunda.search.query.AuditLogQuery;
 import io.camunda.search.query.AuthorizationQuery;
@@ -175,6 +177,12 @@ public class CamundaSearchClients implements SearchClientsProxy {
   public SearchQueryResult<AgentInstanceEntity> searchAgentInstances(
       final AgentInstanceQuery query) {
     return doSearchWithReader(readers.agentInstanceReader(), query);
+  }
+
+  @Override
+  public SearchQueryResult<AgentInstanceHistoryEntity> searchAgentHistoryItems(
+      final AgentInstanceHistoryQuery query) {
+    return doSearchWithReader(readers.agentHistoryReader(), query);
   }
 
   @Override

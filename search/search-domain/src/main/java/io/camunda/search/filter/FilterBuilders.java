@@ -23,6 +23,16 @@ public final class FilterBuilders {
     return fn.apply(agentInstance()).build();
   }
 
+  public static AgentInstanceHistoryFilter.Builder agentInstanceHistory() {
+    return new AgentInstanceHistoryFilter.Builder();
+  }
+
+  public static AgentInstanceHistoryFilter agentInstanceHistory(
+      final Function<AgentInstanceHistoryFilter.Builder, ObjectBuilder<AgentInstanceHistoryFilter>>
+          fn) {
+    return fn.apply(agentInstanceHistory()).build();
+  }
+
   public static UsageMetricsFilter.Builder usageMetrics() {
     return new UsageMetricsFilter.Builder();
   }

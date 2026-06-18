@@ -41,11 +41,13 @@ import io.camunda.gateway.protocol.model.StringFilterProperty;
 import io.camunda.gateway.protocol.model.UserTaskAuditLogFilter;
 import io.camunda.gateway.protocol.model.UserTaskVariableFilter;
 import io.camunda.gateway.protocol.model.VariableValueFilterProperty;
+import io.camunda.search.entities.AgentInstanceHistoryEntity;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.search.entities.GlobalListenerType;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.search.filter.AgentInstanceFilter;
+import io.camunda.search.filter.AgentInstanceHistoryFilter;
 import io.camunda.search.filter.AuditLogFilter;
 import io.camunda.search.filter.AuthorizationFilter;
 import io.camunda.search.filter.BatchOperationFilter;
@@ -1568,6 +1570,46 @@ public class SearchQueryFilterMapper {
           .ifPresent(builder::versionTagOperations);
     }
 
+    return validationErrors.isEmpty()
+        ? Either.right(builder.build())
+        : Either.left(validationErrors);
+  }
+
+  static Either<List<String>, AgentInstanceHistoryFilter> toAgentInstanceHistoryFilter(
+      final io.camunda.gateway.protocol.model.@Nullable AgentInstanceHistoryFilter filter,
+      final long agentInstanceKey) {
+    final var builder = FilterBuilders.agentInstanceHistory();
+    final List<String> validationErrors = new ArrayList<>();
+    // Inject agentInstanceKey from path variable — not present in the REST filter model
+    builder.agentInstanceKeyOperations(List.of(Operation.eq(agentInstanceKey)));
+    if (filter == null || filter.getCommitStatus() == null) {
+      // Default to COMMITTED when the caller omits commitStatus
+      builder.commitStatusOperations(
+          List.of(
+              Operation.eq(
+                  AgentInstanceHistoryEntity.AgentInstanceHistoryCommitStatus.COMMITTED.name())));
+    }
+    if (filter != null) {
+      ofNullable(filter.getHistoryItemKey())
+          .map(mapToKeyOperations("historyItemKey", validationErrors))
+          .ifPresent(builder::historyItemKeyOperations);
+      ofNullable(filter.getRole()).map(mapToStringOperations()).ifPresent(builder::roleOperations);
+      ofNullable(filter.getElementInstanceKey())
+          .map(mapToKeyOperations("elementInstanceKey", validationErrors))
+          .ifPresent(builder::elementInstanceKeyOperations);
+      ofNullable(filter.getJobKey())
+          .map(mapToKeyOperations("jobKey", validationErrors))
+          .ifPresent(builder::jobKeyOperations);
+      ofNullable(filter.getIteration())
+          .map(mapToIntegerOperations("iteration", validationErrors))
+          .ifPresent(builder::iterationOperations);
+      ofNullable(filter.getCommitStatus())
+          .map(mapToStringOperations())
+          .ifPresent(builder::commitStatusOperations);
+      ofNullable(filter.getProducedAt())
+          .map(mapToOffsetDateTimeOperations("producedAt", validationErrors))
+          .ifPresent(builder::producedAtOperations);
+    }
     return validationErrors.isEmpty()
         ? Either.right(builder.build())
         : Either.left(validationErrors);

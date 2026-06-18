@@ -16,6 +16,8 @@ import com.fasterxml.jackson.databind.cfg.CoercionInputShape;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import io.camunda.gateway.protocol.model.AgentInstanceHistoryCommitStatusFilterProperty;
+import io.camunda.gateway.protocol.model.AgentInstanceHistoryRoleFilterProperty;
 import io.camunda.gateway.protocol.model.AgentInstanceStatusFilterProperty;
 import io.camunda.gateway.protocol.model.AuditLogActorTypeFilterProperty;
 import io.camunda.gateway.protocol.model.AuditLogResultFilterProperty;
@@ -48,6 +50,8 @@ import io.camunda.gateway.protocol.model.StringFilterProperty;
 import io.camunda.gateway.protocol.model.UserTaskStateFilterProperty;
 import io.camunda.gateway.protocol.model.WaitStateElementTypeFilterProperty;
 import io.camunda.gateway.protocol.model.WaitStateTypeFilterProperty;
+import io.camunda.zeebe.gateway.rest.deserializer.AgentInstanceHistoryCommitStatusFilterPropertyDeserializer;
+import io.camunda.zeebe.gateway.rest.deserializer.AgentInstanceHistoryRoleFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.AgentInstanceStatusFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.AuditLogActorTypeFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.AuditLogCategoryFilterPropertyDeserializer;
@@ -156,6 +160,12 @@ public class JacksonConfig {
     module.addDeserializer(
         AgentInstanceStatusFilterProperty.class,
         new AgentInstanceStatusFilterPropertyDeserializer());
+    module.addDeserializer(
+        AgentInstanceHistoryRoleFilterProperty.class,
+        new AgentInstanceHistoryRoleFilterPropertyDeserializer());
+    module.addDeserializer(
+        AgentInstanceHistoryCommitStatusFilterProperty.class,
+        new AgentInstanceHistoryCommitStatusFilterPropertyDeserializer());
     module.addDeserializer(
         WaitStateElementTypeFilterProperty.class,
         new WaitStateElementTypeFilterPropertyDeserializer());
