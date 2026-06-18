@@ -6,6 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-const IS_NAV_V2_ENABLED = true;
+const IS_NAV_V2_ENABLED = false;
 
 export {IS_NAV_V2_ENABLED};
