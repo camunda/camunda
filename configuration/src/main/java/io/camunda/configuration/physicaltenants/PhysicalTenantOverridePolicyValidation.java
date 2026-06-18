@@ -97,7 +97,9 @@ final class PhysicalTenantOverridePolicyValidation {
               "security.http-headers",
               // forward declaration — property lands with #54898
               "security.cluster-admin",
-              "security.multi-tenancy")
+              "security.multi-tenancy",
+              "security.session",
+              "security.transport-layer-security.cluster")
           .map(ConfigurationPropertyName::of)
           .toList();
 

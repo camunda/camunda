@@ -97,6 +97,13 @@ security.http-headers.referrer-policy.value
 security.multi-tenancy
 security.multi-tenancy.api-enabled
 security.multi-tenancy.checks-enabled
+security.session
+security.session.persistent.enabled
+security.transport-layer-security.cluster.certificate-chain-path
+security.transport-layer-security.cluster.certificate-private-key-path
+security.transport-layer-security.cluster.enabled
+security.transport-layer-security.cluster.key-store.file-path
+security.transport-layer-security.cluster.key-store.password
 system.actor.idle.max-park-period
 system.actor.idle.max-spins
 system.actor.idle.max-yields

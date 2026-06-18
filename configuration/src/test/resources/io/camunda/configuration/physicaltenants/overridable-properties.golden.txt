@@ -356,13 +356,6 @@ security.initialization.users
 security.saas
 security.saas.cluster-id
 security.saas.organization-id
-security.session
-security.session.persistent.enabled
-security.transport-layer-security.cluster.certificate-chain-path
-security.transport-layer-security.cluster.certificate-private-key-path
-security.transport-layer-security.cluster.enabled
-security.transport-layer-security.cluster.key-store.file-path
-security.transport-layer-security.cluster.key-store.password
 system.clock-controlled
 webapps.identity.enabled
 webapps.identity.ui-enabled

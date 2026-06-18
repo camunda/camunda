@@ -237,11 +237,51 @@ class PhysicalTenantOverridePolicyValidationTest {
   void shouldAllowTenantOverridingOtherSecurityProperties() {
     // given a tenant overriding a security property that is not on the deny-list
     final MockEnvironment environment =
-        environmentWith(Map.of("camunda.physical-tenants.tenanta.security.session.timeout", "30m"));
+        environmentWith(
+            Map.of("camunda.physical-tenants.tenanta.security.authorizations.enabled", true));
 
     // when / then freely overridable security properties are allowed
     assertThatCode(() -> PhysicalTenantOverridePolicyValidation.validate(environment))
         .doesNotThrowAnyException();
+  }
+
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "security.session",
+        "security.session.persistent.enabled",
+      })
+  void shouldRejectTenantOverridingSessionProperties(final String relativeKey) {
+    // given a tenant overriding a session property (installation-wide, must not vary per tenant)
+    final MockEnvironment environment =
+        environmentWith(Map.of("camunda.physical-tenants.tenanta." + relativeKey, "somevalue"));
+
+    // when / then the entire session subtree is blocked
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> PhysicalTenantOverridePolicyValidation.validate(environment))
+        .withMessageContaining("may not be overridden per physical tenant")
+        .withMessageContaining("tenanta")
+        .withMessageContaining(relativeKey);
+  }
+
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "security.transport-layer-security.cluster.enabled",
+        "security.transport-layer-security.cluster.certificate-chain-path",
+        "security.transport-layer-security.cluster.key-store.password",
+      })
+  void shouldRejectTenantOverridingClusterTlsProperties(final String relativeKey) {
+    // given a tenant overriding a cluster TLS property (installation-level infrastructure)
+    final MockEnvironment environment =
+        environmentWith(Map.of("camunda.physical-tenants.tenanta." + relativeKey, "somevalue"));
+
+    // when / then the entire cluster TLS subtree is blocked
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> PhysicalTenantOverridePolicyValidation.validate(environment))
+        .withMessageContaining("may not be overridden per physical tenant")
+        .withMessageContaining("tenanta")
+        .withMessageContaining(relativeKey);
   }
 
   @Test
