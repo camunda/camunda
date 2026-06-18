@@ -96,6 +96,8 @@ Customer admin → Console UI → Console DB + AWS SM/GCP SM → ZeebeCluster CR
 | **Phase 3**                                                        | Groups-claim productization. Camunda Support BYO-IdP onboarding. Auth0-disable toggle for user login. Closure of the PoC validation items.                                            |
 | **Phase 4** *(may be split out as its own epic — see action item)* | Session idle timeout (cluster default + per-IdP override) with audit logging.                                                                                                         |
 
+TODO: move the groups claim to phase 2, move connectors to phase 3
+
 Each phase is intended to be shippable on its own.
 
 ---
@@ -125,11 +127,13 @@ path that replaces it), Story 7 (documentation clarity).
   client-credentials test) is **explicitly out of scope for Phase 1**. The historic doc defers
   it; the AC's "real-time feedback on errors" is achieved through cluster startup failure
   surfacing instead. Productizing validation is a follow-on item — action item 12.
+TODO move to a later phase
 - The form **surfaces a lockout-risk warning before commit** (per the updated product brief).
   Final copy is an action item with Design.
 - The friendly display name is also configurable for the existing Auth0 entry, so the login picker
   can show both providers with sensible labels. Today Auth0 has no friendly name in the picker.
 - Visibility/edit gated to organization admins, matching the Authorizations toggle gating.
+TODO Camundi only plus specific customer by email domain
 - **Number of custom IdPs per cluster in the Phase 1 UI is unresolved** (see action items). The
   POC, the CSL config layer, and the Operator CRD (array shape) all support multiple custom IdPs
   per cluster. Whether the Phase 1 UI exposes a single-form (simpler) or a list/CRUD shape from
@@ -197,11 +201,13 @@ adding observability:
   IdP was used to login"*). Add the issuer / friendly name of the IdP that authenticated the
   current session to the user-profile pane in the OC webapp. Small frontend change in
   `webapp/client/`. Open question Q11 if Console renders this instead — see open questions.
+TODO move to a later phase or delegate to another team member
 - **Authentication-event audit scoping** (epic AC: *"Tokens, sessions, and audit events reflect
   correct scoping"*). Authentication and session events must carry which IdP issued the
   underlying token so audit consumers can attribute access. Scope of change depends on the
   current audit-event schema — Phase 1 adds the IdP attribution to login/logout/session-create
   audit records.
+TODO add IdP name to the login screen, re-do the login screen in a later phase
 
 ### Out of repo (Phase 1)
 
@@ -411,15 +417,18 @@ Each item below needs an owner and a resolution; many gate scope refinement in t
    and Operator CRD all support multiple custom IdPs; the question is whether the Console UI
    ships a single-form shape or a list/CRUD shape in Phase 1. Heavier FE work for the latter.
    Owner: Product Design + Console FE engineering.
+TODO stick with 1 IdP per cluster for Phase 1
 12. **Pre-save configuration validation** (OIDC discovery fetch, claim-presence checks,
     `client_credentials` test) — confirm Phase 1 deferral with PM, and either file a follow-on
     ticket for productized validation or document the indefinite deferral. Owner: PM.
+TODO discuss how to do proper validation for a later phase, will need CSL work
 13. **Security review.** This is a security-critical feature (two trusted issuers, SaaS
     validators tolerating missing org/clusterId claims). Schedule an explicit security review of
     the Phase 1 design before code lands. Owner: Security team + breakdown author.
 14. **Cluster generation / minimum-version gate.** The sibling multi-tenancy epic gated the UI
     on Zeebe 8.8.0-alpha7+. Decide which cluster generations expose the BYOIDP toggle, and gate
     the Console UI accordingly. Owner: PM + Console engineering.
+TODO figure out if we need to backport to earlier minors due to customer demand
 15. **Feature rollout.** Decide whether BYOIDP is exposed behind a Console feature flag, and what
     the rollout plan looks like. Owner: PM.
 
