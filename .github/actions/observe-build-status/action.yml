@@ -95,7 +95,7 @@ runs:
         job_name_override: "${{ inputs.job_name }}"
         gcp_credentials_json: "${{ steps.secrets.outputs.gcloud_sa_key }}"
    ######################## Report build result #############################
-    - uses: camunda/infra-global-github-actions/submit-build-status@main
+    - uses: camunda/infra-global-github-actions/submit-build-status@infra-1080-add-workflow-ref-to-build-status-v2
       if: ${{ always() && steps.secrets.outputs.gcloud_sa_key != '' }}
       with:
         job_name_override: "${{ inputs.job_name }}"
@@ -104,3 +104,4 @@ runs:
         user_reason: "${{ inputs.user_reason }}"
         user_description: "${{ inputs.user_description != '' && inputs.user_description || env.TEST_OWNER }}"
         gcp_credentials_json: "${{ steps.secrets.outputs.gcloud_sa_key }}"
+        big_query_table_name: "ci-30-162810:dev_ci_analytics.build_status_v2"

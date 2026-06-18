@@ -41,7 +41,8 @@ runs:
         secrets: |
           secret/data/products/zeebe/ci/ci-analytics gcloud_sa_key;
 
-    - uses: camunda/infra-global-github-actions/submit-aborted-gha-status@main
+    - uses: camunda/infra-global-github-actions/submit-aborted-gha-status@infra-1080-add-workflow-ref-to-build-status-v2
       if: ${{ always() && steps.secrets.outputs.gcloud_sa_key != '' }}
       with:
         gcp_credentials_json: "${{ steps.secrets.outputs.gcloud_sa_key }}"
+        big_query_table_name: "ci-30-162810:dev_ci_analytics.build_status_v2"
