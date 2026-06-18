@@ -10,6 +10,7 @@ package io.camunda.gateway.mapping.http.validator;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_TOO_MANY_CHARACTERS;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
+import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateBusinessId;
 
 import io.camunda.gateway.protocol.model.MessageCorrelationRequest;
 import io.camunda.gateway.protocol.model.MessagePublicationRequest;
@@ -41,6 +42,7 @@ public final class MessageRequestValidator {
           }
           validateCorrelationKeyLength(
               publicationRequest.getCorrelationKey(), maxNameFieldLength, violations);
+          validateBusinessId(publicationRequest.getBusinessId(), violations);
         });
   }
 

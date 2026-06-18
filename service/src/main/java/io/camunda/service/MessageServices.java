@@ -88,7 +88,8 @@ public final class MessageServices extends PhysicalTenantScopedApiServices<Messa
             .setTimeToLive(request.timeToLive)
             .setMessageId(request.messageId)
             .setVariables(getDocumentOrEmpty(request.variables))
-            .setTenantId(request.tenantId);
+            .setTenantId(request.tenantId)
+            .setBusinessId(request.businessId);
     return sendBrokerRequestWithFullResponse(brokerRequest, authentication);
   }
 
@@ -101,5 +102,6 @@ public final class MessageServices extends PhysicalTenantScopedApiServices<Messa
       Long timeToLive,
       String messageId,
       Map<String, Object> variables,
-      String tenantId) {}
+      String tenantId,
+      @Nullable String businessId) {}
 }

@@ -88,4 +88,37 @@ class MessageRequestValidatorTest {
     // then
     assertThat(validationResult).isEmpty();
   }
+
+  @Test
+  void shouldRejectPublicationRequestWhenBusinessIdExceedsMaxLength() {
+    // given
+    final var request =
+        MessagePublicationRequest.Builder.create()
+            .name("message-name")
+            .businessId("a".repeat(257))
+            .build();
+
+    // when
+    final var validationResult = validateMessagePublicationRequest(request, MAX_NAME_FIELD_LENGTH);
+
+    // then
+    assertThat(validationResult).isPresent();
+    assertThat(validationResult.get().getDetail()).contains("businessId").contains("256");
+  }
+
+  @Test
+  void shouldAcceptPublicationRequestWhenBusinessIdAtMaxLength() {
+    // given
+    final var request =
+        MessagePublicationRequest.Builder.create()
+            .name("message-name")
+            .businessId("a".repeat(256))
+            .build();
+
+    // when
+    final var validationResult = validateMessagePublicationRequest(request, MAX_NAME_FIELD_LENGTH);
+
+    // then
+    assertThat(validationResult).isEmpty();
+  }
 }

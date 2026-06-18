@@ -551,7 +551,8 @@ public class RequestMapper {
                 getStringOrEmpty(
                     messagePublicationRequest, MessagePublicationRequest::getMessageId),
                 getMapOrEmpty(messagePublicationRequest, MessagePublicationRequest::getVariables),
-                tenantId));
+                tenantId,
+                messagePublicationRequest.getBusinessId()));
   }
 
   public static Either<ProblemDetail, ResourceDeletionRequest> toResourceDeletion(
