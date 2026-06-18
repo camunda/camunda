@@ -5,256 +5,161 @@ description: Diagnose a failing GitHub Actions run in camunda/camunda from a run
 
 # CI Job Failure Diagnosis
 
-Given a GitHub Actions run or job URL, walk an unsuccessful (failed, cancelled) run down to the root cause and propose a fix.
-Scope is **diagnose + propose** — never apply, commit, or push automatically.
+**Scope: diagnose + propose. Never apply, commit, or push automatically.**
 
 ## When to use
 
-The user shares any of:
+User shares a GHA URL (`actions/runs/<id>`, `actions/runs/<id>/job/<id>`, or `pull/<n>/checks?check_run_id=<id>`) and asks why it failed.
 
-- A run URL: `https://github.com/camunda/camunda/actions/runs/<run-id>`
-- A job URL: `https://github.com/camunda/camunda/actions/runs/<run-id>/job/<job-id>`
-- A check URL on a PR: `https://github.com/camunda/camunda/pull/<n>/checks?check_run_id=<id>`
-
-…and asks why it failed, or to fix it.
-
-If no URL is given, ask for one — do not guess from recent history.
+- No URL → ask. Don't guess from recent context.
+- Non-`camunda/camunda` repo → tell user this skill assumes monorepo conventions; some fixes won't apply.
 
 ## Prerequisites
 
-- `gh` CLI authenticated against `camunda/camunda`. Verify with `gh auth status`.
-- Working directory should be the repo root so any proposed fix lands in the right tree.
+- `gh auth status` works against `camunda/camunda`.
+- CWD is the repo root.
+
+## Hard rules — read first
+
+1. **NEVER increase a job/step timeout.** Timeouts are contracts. Fix the slow work, the cache, the runner size, or (one-off `pull_request` only) rerun. Per `ci.md` §flaky tests: retry **within** the timeout.
+2. **NEVER propose workflow/cache/retry/sizing changes without reading and quoting [`ci.md`](../../../docs/monorepo-docs/ci.md).** Silent or contradicts → drop. Use the prescribed composite actions (`setup-maven-cache`, `setup-yarn-cache`); cache writes only from `main`/`stable*`.
 
 ## Procedure
 
-### Step 1 — Parse the URL
+### 1. Parse URL → `run_id` (required), `job_id` (optional), `attempt` (optional)
 
-Extract `run_id` (required) and `job_id` (optional). For check URLs, the `check_run_id` query
-param **is** the job id.
+For check URLs, `check_run_id` **is** the job id. `/attempts/<n>` → `attempt=<n>`.
 
-If the URL is for a different repo than `camunda/camunda`, inform the user that for some fixes
-this skill assumes the monorepo's conventions.
-
-### Step 2 — Pull run and job metadata
+### 2. Pull run and job metadata
 
 ```bash
-gh run view <run-id> --repo camunda/camunda --json \
-  status,conclusion,name,headBranch,headSha,event,workflowName,workflowDatabaseId,url,jobs,displayTitle,createdAt
+gh run view <run-id> --repo camunda/camunda [--attempt <n>] --json \
+  status,conclusion,name,headBranch,headSha,event,workflowName,jobs,url,attempt
 ```
 
-Note: `name` and `workflowName`, `headBranch`, `event` (push/pull_request/schedule/workflow_dispatch),
-`headSha`, and the list of jobs with their conclusions.
+Default returns the **latest** attempt — a successful rerun masks the original failure. Always pass `--attempt <n>` if the URL had one; thread it through Step 5's `--log-failed` too.
 
-If the run is still `in_progress`, tell the user and stop — wait for it to finish.
+- `in_progress` → tell user, stop.
+- `success` → tell user, ask what they actually want.
 
-If the run is `success`, tell the user the run passed and ask what they want to look at instead.
+### 3. Identify failing jobs and steps
 
-### Step 3 — Identify failing jobs and steps
+From `jobs[]` where `conclusion ∈ {failure, cancelled}`, find the failing step (`steps[].conclusion`). If `job_id` given, restrict to it.
 
-From the `jobs` array, list every job where `conclusion` is `failure` or `cancelled`. For each,
-find the failing **step** by name from `steps[].conclusion`.
+**Matrix / cascade**: find the upstream root cause first (usually `Java Checks`, `build-*`, `Unit - Back End`). Group identical step failures. Tell user the shortlist before pulling logs.
 
-If a `job_id` was given, restrict to that one job.
-
-For runs with many failing jobs (e.g. matrix builds), **find the upstream root cause first**.
-Most cascade failures share a single foundational job — usually `Java Checks`, a `build-*`
-composite action, or a `Unit - Back End` job. Diagnose that one first; the rest collapse to "we
-couldn't build / test because the foundation broke." Group identical step failures rather than
-treating each matrix shard as distinct.
-
-Tell the user the shortlist before pulling logs (titles + which step failed + the candidate
-upstream job).
-
-### Step 4 — Fetch annotations (mandatory)
-
-GHA annotations are where the most useful failure signal lives — timeout messages, the test that
-hung, the specific assertion. **Always pull annotations before pulling logs**:
+### 4. Fetch annotations (mandatory, before logs)
 
 ```bash
 gh api --paginate "/repos/camunda/camunda/check-runs/<job-id>/annotations?per_page=100" \
   --jq '.[] | {level: .annotation_level, message: .message, path: .path}'
 ```
 
-Look for `level: failure` entries. Common shapes:
+Watch `level: failure`:
 
-- `"The job has exceeded the maximum execution time of 30m0s"` → GHA per-job timeout. The job
-  was killed by GitHub. **This is a real failure, not transient** (see Step 5).
-- `"<TestClass.method> -- Time elapsed: 121.7 s <<< ERROR!"` → the specific test that errored or
-  hung (often appears alongside a timeout annotation, naming the cause).
-- `"The operation was canceled."` → noise from cascade; ignore on its own.
+- `"exceeded the maximum execution time of 30m0s"` → GHA per-job timeout. **Real failure, not transient.**
+- `"<TestClass.method> -- Time elapsed: …s <<< ERROR!"` → the specific test that hung/errored.
+- `"The operation was canceled."` → cascade noise; ignore alone.
 
-If annotations name a specific test or file, you often have enough to diagnose without pulling
-full logs.
+If annotations name a test/file, often enough to skip Step 5.
 
-### Step 5 — Pull logs for the failing step
+### 5. Pull logs for failing step
 
 ```bash
 gh run view <run-id> --repo camunda/camunda --log-failed --job <job-id>
 ```
 
-`--log-failed` only returns failing step output, which is what you want. For each failing job,
-extract:
+Extract: the error line, ±few lines of context, the step + action that ran it.
 
-- The actual error line(s) — exception, assertion message, exit code, missing file
-- A few lines of surrounding context
-- The step name and the action/script that ran it
+`headSha == HEAD` (`git rev-parse HEAD`) → `Read` source files locally; skip `gh api`.
 
-If the log is unhelpful (e.g. cancelled job, process killed with no stack), the annotations
-from Step 4 are your primary signal. For deeper context, grab the full step log via `--log`
-(without `--failed`) and look earlier.
+### 6. Classify
 
-When the run's `headSha` matches your local working tree's `HEAD` (check with
-`git rev-parse HEAD`), just `Read` source files directly — much faster than `gh api`.
+Pick **one** primary category per failing job.
 
-### Step 6 — Classify the failure
+- **A. Code/test** — diff broke something, or test errored/hung. Signals: compile errors, assertion failures, spotless/license, lint, **timeout naming a specific slow test**. → `references/code-test-failures.md`
+- **B. Flaky test** — nondeterministic test failed. Signals: passes on rerun, timing/race, network/container in stack. Repo has a [flaky-test gate](../../../docs/monorepo-docs/flaky-test-gate.md). → `references/flaky-tests.md`
+- **C. Workflow/CI config** — workflow itself is wrong. Signals: actionlint, missing secret, bad `permissions:`, invalid expression, conftest violation. → `references/workflow-config.md`. Also invoke `ci-validation` once fix is drafted.
+- **D. CI Infrastructure / transient** — runner, network, image, or GitHub misbehaved. Signals: `Error waiting for runner`, image pull failure, registry 5xx, OOMKilled with no test signal. → `references/infra-transient.md`
 
-Pick **one** primary category. If multiple jobs fail with different root causes, classify each in parallel subagents.
+**`cancelled` is NOT automatically D.** In this repo it's usually a per-job timeout triggered by a slow/hung test (Category A). For `push` / `merge_group`, every non-success is a real failure — no "transient" merge-queue or base-branch failures exist.
 
-**A. Code / test failure** — the change under test is broken, or a test errored/hung.
-Signals: Java compile errors, JUnit/AssertJ assertion failures, spotless/license violations,
-TypeScript/ESLint errors, Vitest/Playwright failures, **a GHA per-job timeout that names a
-specific slow/hung test in annotations**.
-Next: see `references/code-test-failures.md`.
+Decide by Step 4 annotations:
 
-**B. Flaky test** — a nondeterministic test failed.
-Signals: failure unrelated to the diff, passes on rerun, timing/awaitility/race-y assertion,
-network or container startup in the stack. The repo has a flaky-test gate
-([docs/monorepo-docs/flaky-test-gate.md](../../../docs/monorepo-docs/flaky-test-gate.md)).
-Next: see `references/flaky-tests.md`.
+- timeout + names a test/step → A
+- timeout + step is non-deterministic by history → B
+- runner/image/infra signal, no test in picture → D
+- nothing useful → default A/B over D on `push`/`merge_group`. Prefer A over B without evidence.
 
-**C. Workflow / CI config error** — the workflow itself is wrong.
-Signals: actionlint-style errors, missing secret, bad `permissions:`, invalid expression, action
-not found, conftest/policy violation, runner label typo.
-Next: see `references/workflow-config.md`. Also invoke the `ci-validation` skill once a fix is
-drafted.
+### 7. Find root cause
 
-**D. CI Infrastructure / transient** — runner, network, image, or GitHub itself misbehaved.
-Signals: `Error waiting for runner`, image pull failure, 5xx from a registry, OOMKilled with no
-test signal, GitHub status-page incident.
-Next: see `references/infra-transient.md`.
+Per category:
 
-**Important — handling `cancelled` jobs:**
+- **A**: read failing file at `headSha`. If in diff, read the diff; else `git log -p -- <path>`. Compile/format → message names the line.
+- **B**: search existing flake issue (`gh issue list --repo camunda/camunda --label kind/flake --search "<test>"`); check the flaky-test gate.
+- **C**: read workflow under `.github/workflows/`. Cross-check `ci-workflow-authoring`.
+- **D**: nothing to fix in code; confirm transient.
 
-A `cancelled` conclusion is **not** automatically Category D. In this repo, cancellation is
-usually a GHA per-job timeout, and the timeout was triggered by a slow or hung test or step.
-That's a real failure (Category A) and rerunning won't fix it.
+Drill until you can name the **smallest change** that makes the job pass (file, function, line, or workflow key).
 
-In particular, **for `push` and `merge_group` runs every non-success is a real failure** — there is no such
-thing as a "transient" merge-queue or base branch failure here. Every dequeue costs the engineer a re-queue and
-blocks downstream merges.
+### 8. Gate: read `ci.md` before any workflow/cache/retry/sizing change
 
-When a job is `cancelled`, the Step 4 annotations decide the category:
+This is a **gate**, not a suggestion (see Hard Rule 2). Before proposing any change to `.github/workflows/`, `.github/actions/`, caching, retries, runner sizing, or timeouts:
 
-- Annotation names a timeout AND names a specific test/step → **Category A** (the test/step is
-  the root cause).
-- Annotation names a timeout but the offending step is non-deterministic per its history →
-  **Category B**.
-- Annotation names a runner shutdown, image pull failure, or similar infra signal with no
-  test/step in the picture → **Category D**.
-- No useful annotations at all → fall back to logs and treat with skepticism; default toward
-  A/B over D for `push` and `merge_group` runs.
+1. Open [docs/monorepo-docs/ci.md](../../../docs/monorepo-docs/ci.md) and read the relevant section (Caching strategy §"GitHub Actions Cache"; flake/timeout handling §flaky tests; allowed third-party actions; runner labels).
+2. In the brief's **Proposed fix**, quote the specific `ci.md` rule that authorizes the change ("per `ci.md` §… `setup-yarn-cache` is the prescribed action for NPM caches").
+3. If `ci.md` is silent on the case, fall back to the `ci-workflow-authoring` skill conventions and say so. If `ci.md` contradicts your proposal, drop it.
 
-If you are uncertain between A and B, prefer A — never call something "flaky" without evidence.
+Common contradictions to watch for:
+- "increase timeout" — forbidden (Hard Rule 1).
+- "add `cache-from: type=gha` for Docker" — `ci.md` §caching forbids this.
+- Hand-rolled cache steps when a composite action (`setup-maven-cache`, `setup-yarn-cache`) already exists.
 
-### Step 7 — Find the root cause
+### 9. Apply branch sensitivity (Cat D only)
 
-Following the right reference file, dig in:
+| `event` / `headBranch`            | Bar          | Cat D disposition                                                            |
+|-----------------------------------|--------------|------------------------------------------------------------------------------|
+| `push` to `main`/`stable/*`       | **Strict**   | Hardening primary (retry, caching, mirror, sizing); rerun = unblock, not fix |
+| `merge_group`                     | **Strict**   | Same                                                                         |
+| `pull_request`                    | Looser       | Rerun fine for one-off; harden only if recurring                             |
+| `schedule` / `workflow_dispatch`  | Per-workflow | Harden if `# owner:` is set; otherwise rerun                                 |
 
-- For **A**: read the failing source/test file at `headSha`. If it's a test in the diff, read the
-  diff. If it's an unchanged test, blame the most recent change to it (`git log -p -- <path>`).
-  For compile/format errors, the error message names the line.
-- For **B**: search for an existing flake issue
-  (`gh issue list --repo camunda/camunda --label kind/flake --search "<test name>"`). Check the
-  flaky-test gate doc.
-- For **C**: read the workflow file under `.github/workflows/`. Cross-check with the
-  `ci-workflow-authoring` skill conventions.
-- For **D**: nothing to fix in code — confirm transient, recommend rerun.
+A/B/C: branch only changes the brief framing.
 
-Keep digging until you can name the **smallest change** that would make the job pass — a specific
-file, function, line, or workflow key.
+On strict-bar branches, **never close with "rerun" alone** — name the smallest hardening change in `.github/workflows/` or `.github/actions/` as primary fix.
 
-### Step 8 — Consult `ci.md` before proposing any improvement
-
-Before proposing **any** workflow change, caching change, retry, or sizing change — even a
-one-liner — read the relevant section of
-[docs/monorepo-docs/ci.md](../../../docs/monorepo-docs/ci.md). It is the source of truth for
-CI best-practices in this repo, including:
-
-- **GHA caching strategy** (§ "GitHub Actions Cache"): which dependency types cache (Maven, NPM,
-  Go, Docker), which branches may write to the cache, prescribed actions to use.
-- **Flake handling** (§ flaky tests): how retries-within-timeout and the CI health metrics flow
-  works.
-- **Allowed third-party actions** and pinning rules.
-
-If `ci.md` is silent on the specific case, fall back to `ci-workflow-authoring` for general
-conventions. Never invent a hardening pattern that contradicts `ci.md`.
-
-### Step 9 — Apply branch-sensitivity to the fix
-
-The same root cause has a different "right fix" depending on which branch the run is on. Use this
-table to shape the proposed fix:
-
-| `event` / `headBranch`             | Reliability bar | Right disposition for **transients** (Cat D) |
-|-----------------------------------|-----------------|----------------------------------------------|
-| `push` to `main` or `stable/*`    | **Strict — must always succeed** | Hardening is the primary fix (automated step retry, caching, mirror, sizing). Rerun is an immediate unblock only, not the fix. |
-| `merge_group`                     | **Strict** — every non-success blocks the queue and costs a re-queue | Same as above: hardening primary, rerun secondary. |
-| `pull_request` (feature branch)   | Looser — author can re-trigger | Rerun is acceptable for a one-off transient. Only propose hardening if the signal recurs. |
-| `schedule` / `workflow_dispatch`  | Workflow-specific — read the workflow's owner annotation | Default to hardening if the workflow is owned (`# owner:` in the YAML); otherwise rerun. |
-
-For Category A/B/C (real test, flake, workflow-config), branch doesn't change the diagnosis —
-only the framing of the brief. For Category D, branch flips the disposition.
-
-When the branch is `main`, `stable/*`, or the event is `push`, `schedule` or `merge_group`, never close out the brief
-with just "rerun." Propose the smallest concrete hardening change in `.github/workflows/` (or the
-relevant composite action under `.github/actions/`) as the **primary** fix.
-
-### Step 10 — Brief the user
-
-Reply in this exact shape:
+### 10. Brief
 
 ```
-**Run**: <workflow name> · <branch> · <event> · <run url>
-**Failed jobs**: <count> (<grouped summary if matrix>)
+**Run**: <workflow> · <branch> · <event> · <url>
+**Failed jobs**: <n> (<grouped if matrix>)
 **Category**: A | B | C | D
-**Reliability bar**: strict (main / stable/* / merge_group) | looser (pull_request)
+**Reliability bar**: strict (main/stable/*/merge_group) | looser (pull_request)
 
 **Root cause**
-<1–3 sentences naming the specific file/line/condition>
+<1–3 sentences, specific file/line/condition>
 
 **Proposed fix**
-<concrete edit, command, or action — file path + what to change>
-<for Category D on strict-bar branches: name the hardening (retry action, cache, mirror) as the
- primary fix; rerun is only the immediate unblock>
+<concrete edit + path; for D on strict bar, the hardening is the fix, rerun is the unblock>
 
 **Verification**
-<the exact local command to confirm the fix — usually a module-scoped `./mvnw` or a workflow
-re-run command>
+<exact local command — usually module-scoped `./mvnw`, or a workflow re-run>
 ```
 
-Do not cite the skill's own reference files in the brief (e.g. "per `infra-transient.md`…") —
-just give the answer. The reference files are working notes for you, not the user.
-
-Then **stop**. Do not edit files until the user confirms. If the user confirms, apply the fix,
-re-run the verification command, and report results.
+Don't cite reference files in the brief. **Stop.** Apply only after user confirms; re-run verification; report.
 
 ## Guardrails
 
-- **Diagnose-then-stop.** Apply fixes only after the user's explicit go-ahead.
-- **No silent reruns.** If you think it's a flake, say so and recommend `gh run rerun --failed
-  <run-id> --repo camunda/camunda` — don't trigger it yourself.
-- **Don't blame the diff blindly.** Verify the failing assertion/code is reachable from the
-  changeset before claiming "your PR broke this".
-- **Honor repo conventions.** Format/build via `./mvnw license:format spotless:apply -T1C` then
-  the module-scoped command from `AGENTS.md` — never recommend full-repo builds.
-- **Backports.** For bug fixes that need to land on `stable/*`, ask the user about backports per
-  `AGENTS.md` PR conventions — don't auto-tag.
-- **Flake handling.** Never disable, skip, or `@Disabled` a test. The repo policy is: file an
-  issue with `kind/flake` (via the `create-issue` skill), assign to the engineer, leave the test
-  enabled. If a flake gate auto-disabled it, that's the gate's job — not yours.
+- **Stop after brief.** No edits without user go-ahead.
+- **No silent reruns.** Recommend `gh run rerun --failed <run-id> --repo camunda/camunda`; don't trigger.
+- **Don't blame the diff blindly** — verify the failing code is reachable from the changeset.
+- **Format/build via repo conventions** (`./mvnw license:format spotless:apply -T1C` + module-scoped command from `AGENTS.md`). Never full-repo builds.
+- **Backports** — for bug fixes that may need `stable/*`, ask the user per `AGENTS.md`.
+- **Never disable/skip/@Disabled a flaky test.** File `kind/flake` issue via `create-issue`, assign engineer, leave test enabled.
 
-## Compose with other skills
+## Compose with
 
-- `ci-validation` — run after any workflow file edit before committing.
-- `ci-workflow-authoring` — consult when proposing non-trivial workflow changes.
-- `create-issue` — use to file a flaky-test issue.
-- `ci-incident` — escalate to this if the failure is part of a declared incident, not a single job.
+- `ci-validation` — after any workflow edit, pre-commit.
+- `ci-workflow-authoring` — for non-trivial workflow changes.
+- `create-issue` — to file a flake issue.
+- `ci-incident` — escalate if part of a declared incident, not a single job.
