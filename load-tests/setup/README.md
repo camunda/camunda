@@ -85,26 +85,14 @@ Shared baseline platform config lives in `camunda-platform-values-defaults.yaml`
 ### How to set up a load test namespace
 
 The root `newLoadTest.sh` is a **version dispatcher** — it forwards to a version-specific script
-under `setup/<version>/newLoadTest.sh`. Available versions:
+under `setup/<version>/newLoadTest.sh`, defaulting to `main`. Each stable version has its own
+subfolder (`stable-87`, `stable-88`, …) so all version setups live on `main` without backports.
 
-| Version     | Targets             |
-|-------------|---------------------|
-| `main`      | current dev (default) |
-| `stable-89` | stable/8.9          |
-| `stable-88` | stable/8.8          |
-| `stable-87` | stable/8.7          |
-
-Pass `--target-version <version>` (or `-t <version>`) to select a version; omit it to use `main`:
+Run `./newLoadTest.sh --help` to see currently available versions. To target a specific version:
 
 ```sh
-./newLoadTest.sh my-load-test                          # targets main (default)
-./newLoadTest.sh --target-version stable-89 my-test   # targets stable/8.9
-```
-
-To see all available options for a version, pass `-h` after `--target-version`:
-
-```sh
-./newLoadTest.sh --target-version stable-89 -h
+./newLoadTest.sh --target-version stable-89 my-test   # stable/8.9 setup
+./newLoadTest.sh --target-version stable-89 -h        # version-specific help
 ```
 
 The rest of this section documents the `main` setup.
