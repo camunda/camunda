@@ -17,11 +17,13 @@ package io.camunda.process.test.api;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.camunda.client.api.response.EvaluateExpressionResponse;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.filter.VariableFilter;
 import io.camunda.client.api.search.filter.builder.StringProperty;
@@ -1151,6 +1153,31 @@ public class VariableAssertTest {
     }
 
     @Test
+    void shouldHasVariableSatisfiesExpressionByVariableName() {
+      // given
+      final EvaluateExpressionResponse response = mock(EvaluateExpressionResponse.class);
+      when(response.getResult()).thenReturn(true);
+      when(response.getWarnings()).thenReturn(Collections.emptyList());
+      when(camundaDataSource.findVariables(any()))
+          .thenReturn(Collections.singletonList(newVariable("a", "\"approved\"")));
+      when(camundaDataSource.evaluateExpression(any(), any())).thenReturn(response);
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+          .hasVariableSatisfiesExpression("a", "a = \"approved\"");
+
+      verify(camundaDataSource).findVariables(variableFilterCaptor.capture());
+
+      variableFilterCaptor.getValue().accept(variableFilter);
+      verify(variableFilter).processInstanceKey(PROCESS_INSTANCE_KEY);
+      verify(variableFilter).scopeKey(PROCESS_INSTANCE_KEY);
+      verify(variableFilter).name("a");
+    }
+
+    @Test
     void shouldHasLocalVariableWithVariableSelector() {
       // given
       final String elementId = "element-id";
@@ -1170,6 +1197,40 @@ public class VariableAssertTest {
       // then
       CamundaAssert.assertThatProcessInstance(processInstanceEvent)
           .hasLocalVariable(ElementSelectors.byId(elementId), VariableSelectors.byName("a"), 1);
+
+      verify(camundaDataSource).findVariables(variableFilterCaptor.capture());
+
+      variableFilterCaptor.getValue().accept(variableFilter);
+      verify(variableFilter).processInstanceKey(PROCESS_INSTANCE_KEY);
+      verify(variableFilter).scopeKey(10L);
+      verify(variableFilter).name("a");
+    }
+
+    @Test
+    void shouldHasLocalVariableSatisfiesExpressionByVariableName() {
+      // given
+      final EvaluateExpressionResponse response = mock(EvaluateExpressionResponse.class);
+      final String elementId = "element-id";
+      final ElementInstance elementInstance =
+          ElementInstanceBuilder.newActiveElementInstance(elementId, PROCESS_INSTANCE_KEY)
+              .setElementInstanceKey(10L)
+              .build();
+
+      when(response.getResult()).thenReturn(true);
+      when(response.getWarnings()).thenReturn(Collections.emptyList());
+      when(camundaDataSource.findElementInstances(any()))
+          .thenReturn(Collections.singletonList(elementInstance));
+      when(camundaDataSource.findVariables(any()))
+          .thenReturn(Collections.singletonList(newVariable("a", "\"approved\"")));
+      when(camundaDataSource.evaluateExpression(any(), any())).thenReturn(response);
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+          .hasLocalVariableSatisfiesExpression(
+              ElementSelectors.byId(elementId), "a", "a = \"approved\"");
 
       verify(camundaDataSource).findVariables(variableFilterCaptor.capture());
 

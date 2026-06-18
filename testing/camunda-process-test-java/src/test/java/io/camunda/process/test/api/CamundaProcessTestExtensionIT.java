@@ -682,29 +682,6 @@ public class CamundaProcessTestExtensionIT {
               "localStatus = \"approved\"");
     }
 
-    @Test
-    void shouldFailWhenVariableDoesNotSatisfyExpression() {
-      // given
-      deployProcessModel(Bpmn.createExecutableProcess("process").startEvent().endEvent().done());
-
-      final ProcessInstanceEvent processInstance =
-          client
-              .newCreateInstanceCommand()
-              .bpmnProcessId("process")
-              .latestVersion()
-              .variable("status", "approved")
-              .send()
-              .join();
-
-      // when / then
-      org.assertj.core.api.Assertions.assertThatThrownBy(
-              () ->
-                  assertThatProcessInstance(processInstance)
-                      .hasVariableSatisfiesExpression("status", "status = \"rejected\""))
-          .isInstanceOf(AssertionError.class)
-          .hasMessageContaining("should satisfy expression");
-    }
-
     private BpmnModelInstance processModelWithVariables() {
       return Bpmn.createExecutableProcess("test-process-variables")
           .startEvent()

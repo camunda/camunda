@@ -63,10 +63,10 @@ public interface AssertVariableInstruction extends TestCaseInstruction {
   Optional<JudgeAssertion> getSatisfiesJudge();
 
   /**
-   * The FEEL expression or FEEL unary-test-like expression to evaluate against the variable value.
-   * Optional.
+   * The FEEL expression to evaluate with a context containing the variable value under its name.
+   * The expression should return {@code true}. Optional.
    *
-   * @return the expression or empty if no expression assertion is configured
+   * @return the expression or empty if no FEEL expression assertion is configured
    */
   Optional<String> getSatisfiesExpression();
 
