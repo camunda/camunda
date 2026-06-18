@@ -38,17 +38,24 @@ jobs:
         uses: ./.github/actions/paths-filter
 
   upgrade-tests:
-    name: "Database Upgrade"
+    name: "Database Upgrade [${{ matrix.branch }}]"
     runs-on: gcp-core-8-default
     timeout-minutes: 20
     strategy:
+      fail-fast: false
       matrix:
         database: [ elasticsearch, opensearch ]
+        branch: [ main, stable/8.8, stable/8.9 ]
     needs: detect-changes
     if: ${{ needs.detect-changes.outputs.backend-changes == 'true' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ matrix.branch }}
+
+      - name: Set branch slug
+        run: echo "BRANCH_SLUG=$(echo '${{ matrix.branch }}' | tr '/' '-')" >> "$GITHUB_ENV"
       - name: Setup Maven
         uses: ./.github/actions/setup-build
         with:
@@ -100,7 +107,7 @@ jobs:
         if: always()
         uses: ./.github/actions/collect-test-artifacts
         with:
-          name: upgrade-${{ matrix.database }}-junit
+          name: upgrade-${{ matrix.database }}-${{ env.BRANCH_SLUG }}-junit
           path: |
             **/failsafe-reports/**/*.xml
             **/*.log
@@ -109,13 +116,13 @@ jobs:
         uses: ./.github/actions/docker-logs
         if: always()
         with:
-          archive_name: upgrade-docker-${{ matrix.database }}
+          archive_name: upgrade-docker-${{ matrix.database }}-${{ env.BRANCH_SLUG }}
       - name: Observe build status
         if: always()
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
-          job_name: "upgrade-tests/${{ matrix.database }}"
+          job_name: "upgrade-tests/${{ matrix.database }}/${{ matrix.branch }}"
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
