@@ -217,7 +217,7 @@
           VAR_VALUE = #{operation.value}
         </if>
         <if test="operation.type.toString == 'LONG'">
-          LONG_VALUE = #{operation.value}
+          (LONG_VALUE = #{operation.value} OR DOUBLE_VALUE = #{operation.value})
         </if>
         <if test="operation.type.toString == 'DOUBLE'">
           DOUBLE_VALUE = #{operation.value}
@@ -228,7 +228,7 @@
           VAR_VALUE != #{operation.value}
         </if>
         <if test="operation.type.toString == 'LONG'">
-          LONG_VALUE != #{operation.value}
+          (LONG_VALUE != #{operation.value} OR DOUBLE_VALUE != #{operation.value})
         </if>
         <if test="operation.type.toString == 'DOUBLE'">
           DOUBLE_VALUE != #{operation.value}
@@ -267,18 +267,29 @@
         </if>
       </when>
       <when test="operation.operator.name().equals('IN')">
-        <if test="operation.type.toString == 'STRING'">
+        <if test="operation.type.toString == 'STRING' or operation.type.toString == 'BOOLEAN'">
           VAR_VALUE IN
+          <foreach collection="operation.values" item="value" open="(" separator=", " close=")">
+            #{value}
+          </foreach>
         </if>
         <if test="operation.type.toString == 'LONG'">
-          LONG_VALUE IN
+          (LONG_VALUE IN
+          <foreach collection="operation.values" item="value" open="(" separator=", " close=")">
+            #{value}
+          </foreach>
+          OR DOUBLE_VALUE IN
+          <foreach collection="operation.values" item="value" open="(" separator=", " close=")">
+            #{value}
+          </foreach>
+          )
         </if>
         <if test="operation.type.toString == 'DOUBLE'">
           DOUBLE_VALUE IN
+          <foreach collection="operation.values" item="value" open="(" separator=", " close=")">
+            #{value}
+          </foreach>
         </if>
-        <foreach collection="operation.values" item="value" open="(" separator=", " close=")">
-          #{value}
-        </foreach>
       </when>
       <when test="operation.operator.name().equals('LIKE')">
         VAR_VALUE LIKE #{operation.value, typeHandler=io.camunda.db.rdbms.sql.typehandler.WildcardTransformingStringTypeHandler}

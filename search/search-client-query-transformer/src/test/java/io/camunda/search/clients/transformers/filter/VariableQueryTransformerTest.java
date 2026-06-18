@@ -16,6 +16,7 @@ import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.search.clients.query.SearchTermsQuery;
 import io.camunda.search.clients.types.TypedValue;
 import io.camunda.search.filter.FilterBuilders;
+import io.camunda.search.filter.Operation;
 import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.security.core.authz.AuthorizationCheck;
 import io.camunda.security.core.authz.ResourceAccessChecks;
@@ -166,6 +167,103 @@ public class VariableQueryTransformerTest extends AbstractTransformerTest {
                         assertThat(term.field()).isEqualTo("value");
                         assertThat(term.value().stringValue()).isEqualTo("testValue");
                       });
+            });
+  }
+
+  @Test
+  public void shouldQueryByIntegerValueEqualsWithBothNumericRepresentations() {
+    // given
+    final var filter = FilterBuilders.variable((f) -> f.valueOperations(Operation.eq("356")));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            boolQuery -> {
+              assertThat(boolQuery.should()).hasSize(2);
+              final var terms =
+                  boolQuery.should().stream()
+                      .map(SearchQuery::queryOption)
+                      .map(SearchTermQuery.class::cast)
+                      .toList();
+              assertThat(terms).extracting(SearchTermQuery::field).containsOnly("value");
+              final var valueStrings =
+                  terms.stream()
+                      .map(
+                          t ->
+                              t.value().isString()
+                                  ? t.value().stringValue()
+                                  : String.valueOf(t.value().longValue()))
+                      .toList();
+              assertThat(valueStrings).containsExactlyInAnyOrder("356", "356.0");
+            });
+  }
+
+  @Test
+  public void shouldQueryByIntegerValueNotEqualsExcludesBothRepresentations() {
+    // given
+    final var filter = FilterBuilders.variable((f) -> f.valueOperations(Operation.neq("356")));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            boolQuery -> {
+              assertThat(boolQuery.mustNot()).hasSize(1);
+              final var inner = boolQuery.mustNot().getFirst().queryOption();
+              assertThat(inner)
+                  .isInstanceOfSatisfying(
+                      SearchBoolQuery.class,
+                      shouldBool -> {
+                        assertThat(shouldBool.should()).hasSize(2);
+                        final var terms =
+                            shouldBool.should().stream()
+                                .map(SearchQuery::queryOption)
+                                .map(SearchTermQuery.class::cast)
+                                .toList();
+                        assertThat(terms).extracting(SearchTermQuery::field).containsOnly("value");
+                        final var valueStrings =
+                            terms.stream()
+                                .map(
+                                    t ->
+                                        t.value().isString()
+                                            ? t.value().stringValue()
+                                            : String.valueOf(t.value().longValue()))
+                                .toList();
+                        assertThat(valueStrings).containsExactlyInAnyOrder("356", "356.0");
+                      });
+            });
+  }
+
+  @Test
+  public void shouldQueryByIntegerValueInWithBothNumericRepresentations() {
+    // given
+    final var filter =
+        FilterBuilders.variable((f) -> f.valueOperations(Operation.in("356", "400")));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchTermsQuery.class,
+            termsQuery -> {
+              assertThat(termsQuery.field()).isEqualTo("value");
+              final var valueStrings =
+                  termsQuery.values().stream()
+                      .map(v -> v.isString() ? v.stringValue() : String.valueOf(v.longValue()))
+                      .toList();
+              assertThat(valueStrings).containsExactlyInAnyOrder("356", "356.0", "400", "400.0");
             });
   }
 
