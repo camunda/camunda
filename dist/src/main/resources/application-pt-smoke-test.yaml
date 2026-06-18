@@ -81,6 +81,13 @@ camunda:
             # tenanta uses a distinct prefix to isolate its indices from default's.
             index-prefix: pttenanta
       security:
+        # Required: every non-default PT must declare its own initialization block so that
+        # the PhysicalTenantRequiredOverrideValidation passes. bob is the tenanta realm user.
+        initialization:
+          defaultRoles:
+            admin:
+              users:
+                - bob
         authentication:
           providers:
             # tenanta is ASSIGNED only its own named `tenanta` provider (#54730). Narrowing drops

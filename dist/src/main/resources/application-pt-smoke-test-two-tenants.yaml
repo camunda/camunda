@@ -29,6 +29,13 @@ camunda:
             # tenantb uses a distinct index prefix to isolate its indices.
             index-prefix: pttenantb
       security:
+        # Required: every non-default PT must declare its own initialization block.
+        # carol is the tenantb realm user.
+        initialization:
+          defaultRoles:
+            admin:
+              users:
+                - carol
         authentication:
           providers:
             # tenantb is assigned only its own provider; it does NOT get tenanta or the default slot.
