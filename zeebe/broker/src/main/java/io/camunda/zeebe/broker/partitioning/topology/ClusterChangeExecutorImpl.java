@@ -23,6 +23,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.stream.api.StreamClock;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,16 +35,19 @@ public final class ClusterChangeExecutorImpl implements ClusterChangeExecutor {
   private final ExporterRepository exporterRepository;
   private final NodeIdProvider nodeIdProvider;
   private final MeterRegistry meterRegistry;
+  private final Optional<String> zone;
 
   public ClusterChangeExecutorImpl(
       final ConcurrencyControl concurrencyControl,
       final ExporterRepository exporterRepository,
       final NodeIdProvider nodeIdProvider,
-      final MeterRegistry meterRegistry) {
+      final MeterRegistry meterRegistry,
+      final Optional<String> zone) {
     this.concurrencyControl = concurrencyControl;
     this.exporterRepository = exporterRepository;
     this.nodeIdProvider = Objects.requireNonNull(nodeIdProvider);
     this.meterRegistry = meterRegistry;
+    this.zone = zone;
   }
 
   @Override
@@ -67,7 +71,9 @@ public final class ClusterChangeExecutorImpl implements ClusterChangeExecutor {
       final int currentClusterSize, final Set<MemberId> clusterMembers) {
     final ActorFuture<Void> result = concurrencyControl.createFuture();
 
-    if (currentClusterSize >= clusterMembers.size()) {
+    // Cluster size in the same zone (if present)
+    final var newClusterSize = membersInZone(clusterMembers);
+    if (currentClusterSize >= newClusterSize) {
       // No scaling up, so no need to call the NodeIdProvider
       result.complete(null);
       return result;
@@ -77,7 +83,7 @@ public final class ClusterChangeExecutorImpl implements ClusterChangeExecutor {
         () -> {
           try {
             nodeIdProvider
-                .scale(clusterMembers.size())
+                .scale(newClusterSize)
                 .thenAcceptAsync(ignore -> result.complete(null), concurrencyControl)
                 .exceptionallyAsync(
                     e -> {
@@ -103,7 +109,7 @@ public final class ClusterChangeExecutorImpl implements ClusterChangeExecutor {
         () -> {
           try {
             nodeIdProvider
-                .scale(clusterMembers.size())
+                .scale(membersInZone(clusterMembers))
                 .thenAcceptAsync(ignore -> result.complete(null), concurrencyControl)
                 .exceptionallyAsync(
                     e -> {
@@ -117,6 +123,14 @@ public final class ClusterChangeExecutorImpl implements ClusterChangeExecutor {
         });
 
     return result;
+  }
+
+  /**
+   * @return the number of members in the same zone as this node
+   */
+  private int membersInZone(final Set<MemberId> clusterMembers) {
+    return (int)
+        clusterMembers.stream().filter(m -> Optional.ofNullable(m.zone()).equals(zone)).count();
   }
 
   private void purgeExporter(final String id, final ExporterDescriptor descriptor) {

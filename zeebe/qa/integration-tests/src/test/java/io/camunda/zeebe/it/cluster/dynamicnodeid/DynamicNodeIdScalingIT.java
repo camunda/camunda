@@ -12,7 +12,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.NodeIdProvider.S3;
 import io.camunda.configuration.NodeIdProvider.Type;
+import io.camunda.configuration.Partitioning;
+import io.camunda.configuration.Partitioning.Scheme;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.Zone;
+import io.camunda.configuration.ZoneAware;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository.S3ClientConfig;
 import io.camunda.zeebe.management.cluster.BrokerStateCode;
@@ -59,7 +63,6 @@ public class DynamicNodeIdScalingIT {
 
   @AutoClose private static S3Client s3Client;
   private static final Duration LEASE_DURATION = Duration.ofSeconds(10);
-  private static final int INITIAL_CLUSTER_SIZE = 1;
   private static final int PARTITIONS_COUNT = 3;
   private static final int TARGET_CLUSTER_SIZE = 3;
   private static final String CLUSTER_NAME = "dynamic-node-id-scaling-test";
@@ -93,10 +96,10 @@ public class DynamicNodeIdScalingIT {
     }
   }
 
-  private void configureBroker(final Camunda cfg) {
+  private void configureBroker(final Camunda cfg, final int clusterSize) {
     cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.none);
 
-    cfg.getCluster().setSize(INITIAL_CLUSTER_SIZE);
+    cfg.getCluster().setSize(clusterSize);
     configureS3NodeIdProvider(cfg);
   }
 
@@ -130,10 +133,10 @@ public class DynamicNodeIdScalingIT {
   @Nested
   class ScaleUp {
     @TestZeebe(autoStart = false)
-    private final TestCluster testCluster =
+    protected TestCluster testCluster =
         TestCluster.builder()
             .withName(CLUSTER_NAME)
-            .withBrokersCount(INITIAL_CLUSTER_SIZE)
+            .withBrokersCount(initialClusterSize())
             .withPartitionsCount(PARTITIONS_COUNT)
             .withReplicationFactor(1)
             .withoutNodeId()
@@ -141,8 +144,20 @@ public class DynamicNodeIdScalingIT {
                 app ->
                     app.withProperty(
                             "camunda.data.secondary-storage.type", SecondaryStorageType.none.name())
-                        .withUnifiedConfig(DynamicNodeIdScalingIT.this::configureBroker))
+                        .withUnifiedConfig(cfg -> configureBroker(cfg, initialClusterSize())))
             .build();
+
+    protected int initialClusterSize() {
+      return 1;
+    }
+
+    protected Partitioning partitioningConfig() {
+      return new Partitioning();
+    }
+
+    protected String zone() {
+      return null;
+    }
 
     @Test
     public void shouldScaleClusterWithDynamicNodeIdProvider() {
@@ -154,8 +169,10 @@ public class DynamicNodeIdScalingIT {
       final var initialContactPoint = firstBroker.address(TestZeebePort.CLUSTER);
 
       // when - start two new brokers with contact point to first broker
-      final var secondBroker = getAdditionalBroker(initialContactPoint);
-      final var thirdBroker = getAdditionalBroker(initialContactPoint);
+      final var secondBroker =
+          getAdditionalBroker(initialContactPoint, zone(), partitioningConfig());
+      final var thirdBroker =
+          getAdditionalBroker(initialContactPoint, zone(), partitioningConfig());
 
       // Start in a separate thread as start() is blocking because node-id-provider cannot acquire a
       // lease until scale api is called.
@@ -167,7 +184,8 @@ public class DynamicNodeIdScalingIT {
       final var clusterActuator = ClusterActuator.of(firstBroker);
       final var scaleRequest =
           new ClusterConfigPatchRequest()
-              .brokers(new ClusterConfigPatchRequestBrokers().count(TARGET_CLUSTER_SIZE));
+              .brokers(
+                  new ClusterConfigPatchRequestBrokers().count(TARGET_CLUSTER_SIZE).zone(zone()));
 
       clusterActuator.patchCluster(scaleRequest, false, false);
 
@@ -196,7 +214,8 @@ public class DynamicNodeIdScalingIT {
               });
     }
 
-    private TestStandaloneBroker getAdditionalBroker(final String initialContactPoint) {
+    private TestStandaloneBroker getAdditionalBroker(
+        final String initialContactPoint, final String zone, final Partitioning partitioning) {
       final var broker =
           new TestStandaloneBroker()
               .withProperty("camunda.data.secondary-storage.type", SecondaryStorageType.none.name())
@@ -204,7 +223,12 @@ public class DynamicNodeIdScalingIT {
                   cfg -> {
                     cfg.getCluster().setName(CLUSTER_NAME);
                     cfg.getCluster().setInitialContactPoints(List.of(initialContactPoint));
-                    configureBroker(cfg);
+                    cfg.getCluster().setZone(zone);
+                    if (zone != null) {
+                      cfg.getCluster().setPartitioning(partitioning);
+                    }
+
+                    configureBroker(cfg, initialClusterSize());
                   });
       resourcesToClose.add(broker);
       return broker;
@@ -212,8 +236,50 @@ public class DynamicNodeIdScalingIT {
   }
 
   @Nested
+  class ZonedScaleUp extends ScaleUp {
+
+    private final List<Zone> zones;
+
+    ZonedScaleUp() {
+      zones = List.of(new Zone("zoneA", 1, 1, 1000), new Zone("zoneB", 1, 1, 100));
+      testCluster =
+          TestCluster.builder()
+              .withName("zoned-" + CLUSTER_NAME)
+              .withBrokersCount(2)
+              .withPartitionsCount(PARTITIONS_COUNT)
+              .withReplicationFactor(2)
+              .withoutNodeId()
+              .multiZone(zones)
+              .withNodeConfig(
+                  app ->
+                      app.withProperty(
+                              "camunda.data.secondary-storage.type",
+                              SecondaryStorageType.none.name())
+                          .withUnifiedConfig(cfg -> configureBroker(cfg, initialClusterSize())))
+              .build();
+    }
+
+    @Override
+    protected int initialClusterSize() {
+      return 2;
+    }
+
+    @Override
+    protected Partitioning partitioningConfig() {
+      final var partitioning = new Partitioning();
+      partitioning.setScheme(Scheme.ZONE_AWARE);
+      partitioning.setZoneAware(new ZoneAware(zones));
+      return partitioning;
+    }
+
+    @Override
+    protected String zone() {
+      return "zoneA";
+    }
+  }
+
+  @Nested
   class ScaleDown {
-    private static final int SCALE_DOWN_INITIAL_CLUSTER_SIZE = 3;
     private static final int SCALE_DOWN_TARGET_CLUSTER_SIZE = 1;
 
     @TestZeebe(autoStart = false)
@@ -224,18 +290,30 @@ public class DynamicNodeIdScalingIT {
             .withEmbeddedGateway(false)
             .withGatewaysCount(1)
             .withGatewayConfig(g -> g.withCreateSchema(false).withUnauthenticatedAccess())
-            .withBrokersCount(SCALE_DOWN_INITIAL_CLUSTER_SIZE)
+            .withBrokersCount(initialClusterSize())
             .withPartitionsCount(PARTITIONS_COUNT)
-            .withReplicationFactor(1)
+            .withReplicationFactor(2)
             .withoutNodeId()
             .withNodeConfig(
                 app ->
                     app.withUnifiedConfig(
                         cfg -> {
-                          cfg.getCluster().setSize(SCALE_DOWN_INITIAL_CLUSTER_SIZE);
+                          cfg.getCluster().setSize(initialClusterSize());
                           configureS3NodeIdProvider(cfg);
                         }))
             .build();
+
+    protected int initialClusterSize() {
+      return 3;
+    }
+
+    protected Partitioning partitioningConfig() {
+      return new Partitioning();
+    }
+
+    protected String zone() {
+      return null;
+    }
 
     @Test
     public void shouldScaleDownClusterFromThreeToOneBroker() {
@@ -288,8 +366,7 @@ public class DynamicNodeIdScalingIT {
 
       final var scaleUpRequest =
           new ClusterConfigPatchRequest()
-              .brokers(
-                  new ClusterConfigPatchRequestBrokers().count(SCALE_DOWN_INITIAL_CLUSTER_SIZE));
+              .brokers(new ClusterConfigPatchRequestBrokers().count(initialClusterSize()));
 
       clusterActuator.patchCluster(scaleUpRequest, false, false);
 
@@ -297,11 +374,9 @@ public class DynamicNodeIdScalingIT {
       Awaitility.await()
           .atMost(Duration.ofMinutes(1))
           .untilAsserted(
-              () ->
-                  assertConfigurationChangeCompleted(
-                      clusterActuator, SCALE_DOWN_INITIAL_CLUSTER_SIZE));
+              () -> assertConfigurationChangeCompleted(clusterActuator, initialClusterSize()));
       testCluster.awaitCompleteTopology(
-          SCALE_DOWN_INITIAL_CLUSTER_SIZE, PARTITIONS_COUNT, 1, Duration.ofSeconds(10));
+          initialClusterSize(), PARTITIONS_COUNT, 1, Duration.ofSeconds(10));
     }
   }
 }

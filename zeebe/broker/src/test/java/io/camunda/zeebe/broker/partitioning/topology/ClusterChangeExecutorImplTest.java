@@ -26,6 +26,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -85,7 +86,8 @@ public class ClusterChangeExecutorImplTest {
               new TestConcurrencyControl(),
               repository,
               mock(NodeIdProvider.class),
-              new SimpleMeterRegistry());
+              new SimpleMeterRegistry(),
+              Optional.empty());
 
       // when
       final Future<Void> result = executor.deleteHistory();
@@ -110,7 +112,11 @@ public class ClusterChangeExecutorImplTest {
       when(nodeIdProvider.scale(anyInt())).thenReturn(CompletableFuture.completedFuture(null));
       final var executor =
           new ClusterChangeExecutorImpl(
-              new TestConcurrencyControl(), new ExporterRepository(), nodeIdProvider, null);
+              new TestConcurrencyControl(),
+              new ExporterRepository(),
+              nodeIdProvider,
+              null,
+              Optional.empty());
 
       // when
       final var result =
@@ -129,7 +135,11 @@ public class ClusterChangeExecutorImplTest {
       when(nodeIdProvider.scale(anyInt())).thenReturn(CompletableFuture.completedFuture(null));
       final var executor =
           new ClusterChangeExecutorImpl(
-              new TestConcurrencyControl(), new ExporterRepository(), nodeIdProvider, null);
+              new TestConcurrencyControl(),
+              new ExporterRepository(),
+              nodeIdProvider,
+              null,
+              Optional.empty());
 
       // when
       final var result = executor.preScaling(3, Set.of(MemberId.from("0"), MemberId.from("1")));
@@ -147,7 +157,11 @@ public class ClusterChangeExecutorImplTest {
           .thenReturn(CompletableFuture.failedFuture(new RuntimeException("scale failed")));
       final var executor =
           new ClusterChangeExecutorImpl(
-              new TestConcurrencyControl(), new ExporterRepository(), nodeIdProvider, null);
+              new TestConcurrencyControl(),
+              new ExporterRepository(),
+              nodeIdProvider,
+              null,
+              Optional.empty());
 
       // when
       final var result =
@@ -173,7 +187,11 @@ public class ClusterChangeExecutorImplTest {
       when(nodeIdProvider.scale(anyInt())).thenReturn(CompletableFuture.completedFuture(null));
       final var executor =
           new ClusterChangeExecutorImpl(
-              new TestConcurrencyControl(), new ExporterRepository(), nodeIdProvider, null);
+              new TestConcurrencyControl(),
+              new ExporterRepository(),
+              nodeIdProvider,
+              null,
+              Optional.empty());
 
       // when
       final var result =
@@ -192,7 +210,11 @@ public class ClusterChangeExecutorImplTest {
           .thenReturn(CompletableFuture.failedFuture(new RuntimeException("scale failed")));
       final var executor =
           new ClusterChangeExecutorImpl(
-              new TestConcurrencyControl(), new ExporterRepository(), nodeIdProvider, null);
+              new TestConcurrencyControl(),
+              new ExporterRepository(),
+              nodeIdProvider,
+              null,
+              Optional.empty());
 
       // when
       final var result =
