@@ -577,7 +577,7 @@ public class PojoCompatibilityTest {
                             .build())
                     .elementSelector(ImmutableElementSelector.builder().elementId("task_A").build())
                     .variableName("status")
-                    .satisfiesExpression("\"approved\"")
+                    .satisfiesExpression("status = \"approved\"")
                     .build())),
         // ===== ASSERT_VARIABLE with similarTo =====
         Arguments.of(
