@@ -8,7 +8,6 @@
 
 import {useEffect} from 'react';
 import {useTranslation} from 'react-i18next';
-import {observer} from 'mobx-react-lite';
 import {Link as RouterLink, matchPath, useLocation} from 'react-router-dom';
 import {
   C3LicenseTag,
@@ -20,9 +19,6 @@ import {pages} from 'modules/routing';
 import {tracking} from 'modules/tracking';
 import {useCurrentUser} from 'modules/api/useCurrentUser.query';
 import {useLicense} from 'modules/api/useLicense';
-import {getClientConfig} from 'modules/config/getClientConfig';
-import {LanguageSelector} from './LanguageSelector';
-import {ThemeSelector} from './ThemeSelector';
 import {useCustomFiltersDialog} from './use-custom-filters-dialog';
 import {useTaskFiltersSidebar} from './use-task-filters-sidebar';
 import {useSidebarChildren} from './use-sidebar-children';
@@ -30,17 +26,14 @@ import {useCamundaToolsConfig} from './use-camunda-tools-config';
 
 const SKIP_TO_CONTENT_TARGET_ID = 'main-content';
 
-const HeaderV2: React.FC = observer(() => {
+const HeaderV2: React.FC = () => {
   const {t} = useTranslation();
   const location = useLocation();
   const {data: currentUser} = useCurrentUser();
   const {data: license} = useLicense();
-  const isSaas = getClientConfig().organizationId !== null;
+
   const isProcessesPage =
     matchPath(pages.processes(), location.pathname) !== null;
-  const isPaidPlan = ['paid-cc', 'enterprise'].includes(
-    currentUser?.salesPlanType ?? '',
-  );
 
   useEffect(() => {
     if (currentUser) {
@@ -58,14 +51,6 @@ const HeaderV2: React.FC = observer(() => {
   const breadcrumbs = useClusterWebappBreadcrumbs({currentApp: 'tasklist'});
   const {tools, ToolsProvider} = useCamundaToolsConfig({
     currentUser,
-    isPaidPlan,
-    isSaas,
-    customSection: (
-      <div>
-        <ThemeSelector />
-        <LanguageSelector />
-      </div>
-    ),
   });
 
   const activeItemKey = isProcessesPage
@@ -120,6 +105,6 @@ const HeaderV2: React.FC = observer(() => {
       {dialog.modals}
     </ToolsProvider>
   );
-});
+};
 
 export {HeaderV2};
