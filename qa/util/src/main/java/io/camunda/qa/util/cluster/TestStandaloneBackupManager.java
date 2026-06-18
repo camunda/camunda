@@ -28,6 +28,7 @@ public class TestStandaloneBackupManager
     extends TestSpringApplication<TestStandaloneBackupManager> {
 
   private Long backupId;
+  private boolean skipSchemaCheck;
   private final Camunda unifiedConfig;
 
   public TestStandaloneBackupManager() {
@@ -76,7 +77,13 @@ public class TestStandaloneBackupManager
 
   @Override
   protected String[] commandLineArgs() {
-    return backupId == null ? super.commandLineArgs() : new String[] {String.valueOf(backupId)};
+    if (backupId == null) {
+      return super.commandLineArgs();
+    }
+
+    return skipSchemaCheck
+        ? new String[] {String.valueOf(backupId), "--skip-schema-check"}
+        : new String[] {String.valueOf(backupId)};
   }
 
   @Override
@@ -89,6 +96,11 @@ public class TestStandaloneBackupManager
 
   public TestStandaloneBackupManager withBackupId(final Long backupId) {
     this.backupId = backupId;
+    return this;
+  }
+
+  public TestStandaloneBackupManager withSkipSchemaCheck(final boolean skipSchemaCheck) {
+    this.skipSchemaCheck = skipSchemaCheck;
     return this;
   }
 

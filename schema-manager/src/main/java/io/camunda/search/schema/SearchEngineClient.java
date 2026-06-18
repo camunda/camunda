@@ -39,6 +39,14 @@ public interface SearchEngineClient extends CloseableSilently {
   Map<String, IndexMapping> getMappings(
       final String namePattern, final MappingSource mappingSource);
 
+  /**
+   * Retrieve all aliases for the given indexes
+   *
+   * @param indexNames the exact index names to look up aliases for
+   * @return a map of index name to the set of alias names pointing to it
+   */
+  Map<String, Set<String>> getAliases(Collection<String> indexNames);
+
   void putSettings(
       final List<IndexDescriptor> indexDescriptors, final Map<String, String> toAppendSettings);
 
