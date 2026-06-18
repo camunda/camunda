@@ -30,12 +30,43 @@ cross-partition lock is released by `P_K` polling `P_B`.
 `P_K`; the uniqueness check stays a local lookup on `P_B`. Neither concern is relocated or
 duplicated.
 
+The partition split — a single publish can land its message and its instance on different partitions:
+
+```mermaid
+flowchart LR
+    Client["publish(name, correlationKey, businessId)"]
+    PK["P_K = hash(correlationKey)<br/>owns message state:<br/>subscriptions, TTL, dedup, buffer, correlation-key lock"]
+    PB["P_B = hash(businessId)<br/>owns the instance + Business ID uniqueness"]
+    Client -->|"routes by correlationKey"| PK
+    PK -.->|"businessId-bearing start: cross-partition ask (D2)"| PB
+```
+
 **D2. Message-start events reconcile the two partitions with a cross-partition ask.** When a
 businessId-bearing start would create its instance on a different `P_B`, `P_K` sends a `REQUEST` to
 `P_B`, which creates the instance locally and replies `STARTED`, or declines with `REJECT_UNIQUENESS`
 (an active instance already holds the businessId) or `REJECT_NO_SUBSCRIPTION` (the start-event
 subscription has not yet been distributed to `P_B`). On a rejection the message stays buffered on
 `P_K`.
+
+The pull-based release (D3), continuing from the `STARTED` reply above:
+
+```mermaid
+sequenceDiagram
+    participant P_K as P_K = hash(correlationKey)
+    participant P_B as P_B = hash(businessId)
+
+    Note over P_K: STARTED applied:<br/>correlation-key lock records holder on P_B
+
+    loop poll with back-off and batching, until holder completes (D3)
+        P_K->>P_B: is holder instance still active?
+        alt holder still active
+            P_B-->>P_K: yes
+        else holder completed or terminated
+            P_B-->>P_K: no
+            Note over P_K: release correlation-key lock,<br/>pick up next buffered message
+        end
+    end
+```
 
 **D3. The cross-partition correlation-key lock is released by pull, not push.** For a remotely
 created start, `P_K` records the holder instance and polls `P_B` (with back-off and batching) for
