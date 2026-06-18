@@ -191,7 +191,6 @@ public class OptimizeTomcatConfig {
 
   private SSLHostConfig getSslHostConfig() {
     final SSLHostConfig sslHostConfig = new SSLHostConfig();
-    sslHostConfig.setHostName(configurationService.getContainerHost());
 
     final SSLHostConfigCertificate cert =
         new SSLHostConfigCertificate(sslHostConfig, Type.UNDEFINED);
@@ -232,6 +231,7 @@ public class OptimizeTomcatConfig {
     applyCommonConfiguration(connector);
     connector.setPort(getPort(EnvironmentPropertiesConstants.HTTPS_PORT_KEY));
     connector.setScheme("https");
+    connector.setProperty("SSLEnabled", "true");
     connector.setSecure(true);
 
     connector.setProperty("protocol", HTTP11_NIO_PROTOCOL);
