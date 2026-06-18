@@ -185,7 +185,7 @@ paths:
           $ref: 'components.yaml#/responses/TimeoutError'
 
   /partition-distribution:
-    patch:
+    put:
       summary:
         Update the partition distribution configuration for a zone-aware cluster. The
         new configuration is applied immediately by computing and executing the necessary

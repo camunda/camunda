@@ -62,6 +62,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
@@ -479,7 +480,7 @@ public class ClusterEndpoint {
     }
   }
 
-  @PatchMapping(path = "/partition-distribution", consumes = "application/json")
+  @PutMapping(path = "/partition-distribution", consumes = "application/json")
   public ResponseEntity<?> updatePartitionDistribution(
       @RequestBody final PartitionDistributionConfig partitionDistributionConfig,
       @RequestParam(defaultValue = "false") final boolean dryRun) {

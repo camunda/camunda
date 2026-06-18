@@ -354,7 +354,7 @@ public interface ClusterActuator {
   @Headers({"Content-Type: application/json", "accept: application/json"})
   void patchRoutingState(@Param boolean dryRun);
 
-  @RequestLine("PATCH /partition-distribution?dryRun={dryRun}")
+  @RequestLine("PUT /partition-distribution?dryRun={dryRun}")
   @Headers({"Content-Type: application/json", "accept: application/json"})
   PlannedOperationsResponse patchPartitionDistribution(
       @RequestBody final PartitionDistributionConfig config, @Param boolean dryRun);
