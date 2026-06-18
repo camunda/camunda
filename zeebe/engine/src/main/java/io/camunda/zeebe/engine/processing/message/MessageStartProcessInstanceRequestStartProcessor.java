@@ -111,6 +111,7 @@ public final class MessageStartProcessInstanceRequestStartProcessor
           .setCorrelationKey(reply.getCorrelationKeyBuffer())
           .setMessageKey(reply.getMessageKey())
           .setMessageName(reply.getMessageNameBuffer())
+          .setBusinessId(reply.getBusinessIdBuffer())
           .setVariables(reply.getVariablesBuffer())
           .setTenantId(reply.getTenantId());
       stateWriter.appendFollowUpEvent(
