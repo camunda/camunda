@@ -30,6 +30,35 @@ the mechanism differs.
 and `NO_SUBSCRIPTION_REJECTED` are treated as retriable, not terminal. The message remains buffered
 (its TTL is the bound); when the blocker clears, the retry starts it.
 
+The cross-partition arm (D2–D3) runs this ask/retry handshake for a remote Business ID; the
+same-partition arm (D5) instead re-drives a local start with no handshake:
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant P_K as P_K = hash(correlationKey)
+    participant P_B as P_B = hash(businessId)
+
+    Client->>P_K: publish(name, correlationKey, businessId, ttl)
+    Note over P_K: buffer message,<br/>register pending ask
+
+    loop retry with capped back-off, until STARTED or TTL (D1–D3)
+        P_K->>P_B: REQUEST(name, businessId, messageDeadline)
+        Note over P_B: re-evaluate live state
+        alt Business ID free and subscription present
+            Note over P_B: create instance once<br/>(dedup by processDefinitionKey, messageKey)
+            P_B-->>P_K: STARTED(processInstanceKey)
+            Note over P_K: clear ask, consume message,<br/>write correlation-key lock (released later per ADR 0001)
+        else Business ID already held
+            P_B-->>P_K: REJECT_UNIQUENESS
+            Note over P_K: keep buffered, back off, retry
+        else subscription not yet distributed
+            P_B-->>P_K: REJECT_NO_SUBSCRIPTION
+            Note over P_K: keep buffered, back off, retry
+        end
+    end
+```
+
 **D2. Retry reuses the existing cross-partition ask, not a new query.** On rejection the pending ask
 is kept rather than removed; the scheduler re-sends the `REQUEST`, `P_B` re-evaluates live state, and
 the attempt flips to `STARTED` once the blocker clears. The existing `(processDefinitionKey,
