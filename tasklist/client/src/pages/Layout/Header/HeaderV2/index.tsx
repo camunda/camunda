@@ -22,7 +22,7 @@ import {useLicense} from 'modules/api/useLicense';
 import {useCustomFiltersDialog} from './use-custom-filters-dialog';
 import {useTaskFiltersSidebar} from './use-task-filters-sidebar';
 import {useSidebarChildren} from './use-sidebar-children';
-import {useCamundaToolsConfig} from './use-camunda-tools-config';
+import {useCamundaToolsConfig} from './useCamundaToolsConfig';
 
 const SKIP_TO_CONTENT_TARGET_ID = 'main-content';
 
