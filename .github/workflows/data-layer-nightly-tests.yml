@@ -121,7 +121,7 @@ jobs:
           -pl qa/acceptance-tests \
           -D groups="dl-nightly" \
           -D failsafe.excludedGroups="" \
-          -P dl-nightly \
+          -P dl-nightly,parallel-tests \
           verify
 
       - name: Upload test artifacts on failure
