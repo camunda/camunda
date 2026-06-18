@@ -250,8 +250,13 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
 
     return applyPolicyToIndices(policyName, destinationIndexName)
         .thenApply(
-            ok -> {
-              lifeCyclePolicyApplied.put(destinationIndexName, policyName);
+            applied -> {
+              // Only cache when the policy was actually applied to a real index. If the dest
+              // didn't exist yet (applied=false), we deliberately skip the cache update so a
+              // later call (after the index is created by reindex) re-applies the policy.
+              if (Boolean.TRUE.equals(applied)) {
+                lifeCyclePolicyApplied.put(destinationIndexName, policyName);
+              }
               return null;
             });
   }
@@ -412,6 +417,11 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
                             config.getArchivingTimePoint(), partitionId)));
 
     return client.count(countRequest).thenApplyAsync(res -> Math.toIntExact(res.count()));
+  }
+
+  @VisibleForTesting
+  void invalidateLifeCycleCache(final String indexName) {
+    lifeCyclePolicyApplied.invalidate(indexName);
   }
 
   @VisibleForTesting
@@ -585,11 +595,39 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
         ListViewTemplate.END_DATE);
   }
 
-  private CompletableFuture<PutIndicesSettingsResponse> applyPolicyToIndices(
+  private CompletableFuture<Boolean> applyPolicyToIndices(
       final String policyName, final String indexNamePattern) {
 
-    logger.debug("Applying policy '{}' to indices: {}", policyName, indexNamePattern);
+    // Guard against `PUT _settings` with `allowNoIndices(true)` silently succeeding when no
+    // matching index exists. That silent success would otherwise let the caller mark its cache as
+    // "applied" for an index that hasn't been created yet, and a later real application against
+    // the freshly-created index would be skipped. We only do this check for single-index names —
+    // wildcard/multi-index patterns (used by setLifeCycleToAllIndexes) are not cached and exists
+    // semantics with negation / wildcards are not portable enough to gate on.
+    if (isPattern(indexNamePattern)) {
+      return doPutSettings(policyName, indexNamePattern).thenApply(r -> true);
+    }
 
+    return client
+        .indices()
+        .exists(b -> b.index(indexNamePattern))
+        .thenComposeAsync(
+            exists -> {
+              if (!exists.value()) {
+                logger.debug(
+                    "Skipping policy '{}' for '{}': index does not exist yet",
+                    policyName,
+                    indexNamePattern);
+                return CompletableFuture.completedFuture(false);
+              }
+              return doPutSettings(policyName, indexNamePattern).thenApply(r -> true);
+            },
+            executor);
+  }
+
+  private CompletableFuture<PutIndicesSettingsResponse> doPutSettings(
+      final String policyName, final String indexNamePattern) {
+    logger.debug("Applying policy '{}' to indices: {}", policyName, indexNamePattern);
     final var settingsRequest =
         new PutIndicesSettingsRequest.Builder()
             .settings(settings -> settings.lifecycle(lifecycle -> lifecycle.name(policyName)))
@@ -597,8 +635,11 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
             .allowNoIndices(true)
             .ignoreUnavailable(true)
             .build();
-
     return client.indices().putSettings(settingsRequest);
+  }
+
+  private static boolean isPattern(final String indexNameOrPattern) {
+    return indexNameOrPattern.indexOf('*') >= 0 || indexNameOrPattern.indexOf(',') >= 0;
   }
 
   private ArchiveBatch createArchiveBatch(final SearchResponse<?> response, final String field) {
