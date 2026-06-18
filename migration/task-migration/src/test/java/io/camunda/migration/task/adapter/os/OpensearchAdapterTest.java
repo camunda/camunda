@@ -479,6 +479,64 @@ class OpensearchAdapterTest {
     verify(client, never()).indices();
   }
 
+  @Test
+  void shouldResumePollWhenExistingTaskStillRunning() throws Exception {
+    // given - persisted step with in-progress task
+    final SearchResponse<ProcessorStep> runningStep =
+        mockRunningProcessorStepResponse("os-running-task");
+    when(client.search(any(SearchRequest.class), eq(ProcessorStep.class))).thenReturn(runningStep);
+
+    @SuppressWarnings("unchecked")
+    final UpdateResponse<ProcessorStep> updateResponse = mock(UpdateResponse.class);
+    when(updateResponse.result()).thenReturn(Result.Created);
+    when(client.update(any(UpdateRequest.class), eq(ProcessorStep.class)))
+        .thenReturn(updateResponse);
+
+    final GetTasksResponse runningTask = buildRunningGetTasksResponse();
+    final GetTasksResponse completedTask = buildCompletedGetTasksResponse(5L, 5L, 0L, 0L);
+    final OpenSearchTasksClient tasksClient = mock(OpenSearchTasksClient.class);
+    when(client.tasks()).thenReturn(tasksClient);
+    when(tasksClient.get(any(Function.class))).thenReturn(runningTask, completedTask);
+
+    // when
+    adapter.reindexLegacyMainIndex();
+
+    // then - no new reindex submitted; resumed polling existing task
+    verify(client, never()).reindex(any(ReindexRequest.class));
+    verify(tasksClient, atLeastOnce()).get(any(Function.class));
+  }
+
+  @Test
+  void shouldResubmitReindexWhenExistingTaskNotFound() throws Exception {
+    // given - persisted step with task that has disappeared from cluster
+    final SearchResponse<ProcessorStep> runningStep =
+        mockRunningProcessorStepResponse("os-gone-task");
+    when(client.search(any(SearchRequest.class), eq(ProcessorStep.class))).thenReturn(runningStep);
+
+    final ReindexResponse reindexResponse = mock(ReindexResponse.class);
+    when(reindexResponse.task()).thenReturn("os-new-task");
+    when(client.reindex(any(ReindexRequest.class))).thenReturn(reindexResponse);
+
+    @SuppressWarnings("unchecked")
+    final UpdateResponse<ProcessorStep> updateResponse = mock(UpdateResponse.class);
+    when(updateResponse.result()).thenReturn(Result.Created);
+    when(client.update(any(UpdateRequest.class), eq(ProcessorStep.class)))
+        .thenReturn(updateResponse);
+
+    final GetTasksResponse completedTask = buildCompletedGetTasksResponse(5L, 5L, 0L, 0L);
+    final OpenSearchTasksClient tasksClient = mock(OpenSearchTasksClient.class);
+    when(client.tasks()).thenReturn(tasksClient);
+    // pre-poll check returns null (notFound); poll loop returns completed
+    when(tasksClient.get(any(Function.class))).thenReturn(null, completedTask);
+
+    // when
+    adapter.reindexLegacyMainIndex();
+
+    // then - reindex resubmitted once; task polled to completion
+    verify(client).reindex(any(ReindexRequest.class));
+    verify(tasksClient, atLeastOnce()).get(any(Function.class));
+  }
+
   @SuppressWarnings("unchecked")
   private SearchResponse<ProcessorStep> mockEmptyProcessorStepResponse() {
     final SearchResponse<ProcessorStep> response = mock(SearchResponse.class);
@@ -538,6 +596,39 @@ class OpensearchAdapterTest {
     when(response.terminatedEarly()).thenReturn(false);
 
     return response;
+  }
+
+  @SuppressWarnings("unchecked")
+  private SearchResponse<ProcessorStep> mockRunningProcessorStepResponse(final String taskId) {
+    final SearchResponse<ProcessorStep> response = mock(SearchResponse.class);
+    final HitsMetadata<ProcessorStep> hitsMetadata = mock(HitsMetadata.class);
+    final Hit<ProcessorStep> hit = mock(Hit.class);
+    final ProcessorStep step = new ProcessorStep();
+    step.setApplied(false);
+    step.setContent(taskId);
+    when(hit.source()).thenReturn(step);
+    when(response.hits()).thenReturn(hitsMetadata);
+    when(hitsMetadata.hits()).thenReturn(List.of(hit));
+    when(response.timedOut()).thenReturn(false);
+    when(response.terminatedEarly()).thenReturn(false);
+    return response;
+  }
+
+  private GetTasksResponse buildRunningGetTasksResponse() {
+    final GetTasksResponse taskResponse = mock(GetTasksResponse.class);
+    when(taskResponse.completed()).thenReturn(false);
+    when(taskResponse.error()).thenReturn(null);
+    final Info taskInfo = mock(Info.class);
+    when(taskResponse.task()).thenReturn(taskInfo);
+    final Status status = mock(Status.class);
+    when(taskInfo.status()).thenReturn(status);
+    when(status.total()).thenReturn(5L);
+    when(status.created()).thenReturn(0L);
+    when(status.updated()).thenReturn(0L);
+    when(status.deleted()).thenReturn(0L);
+    when(status.versionConflicts()).thenReturn(0L);
+    when(status.failures()).thenReturn(null);
+    return taskResponse;
   }
 
   @SuppressWarnings("unchecked")

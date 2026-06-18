@@ -709,7 +709,12 @@ public class ElasticsearchAdapter implements TaskMigrationAdapter {
       }
       if (failures != null && !failures.isEmpty()) {
         throw new MigrationException(
-            "Reindex task " + taskId + " completed with " + failures.size() + " failures");
+            "Reindex task "
+                + taskId
+                + " completed with "
+                + failures.size()
+                + " failures; first: "
+                + failures.get(0));
       }
     }
     final boolean completed = res.completed() && (created + updated + deleted + conflicts) >= total;

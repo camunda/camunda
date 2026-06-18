@@ -747,7 +747,12 @@ public class OpensearchAdapter implements TaskMigrationAdapter {
       }
       if (status.failures() != null && !status.failures().isEmpty()) {
         throw new MigrationException(
-            "Reindex task " + taskId + " completed with " + status.failures().size() + " failures");
+            "Reindex task "
+                + taskId
+                + " completed with "
+                + status.failures().size()
+                + " failures; first: "
+                + status.failures().get(0));
       }
     }
     final boolean completed =
