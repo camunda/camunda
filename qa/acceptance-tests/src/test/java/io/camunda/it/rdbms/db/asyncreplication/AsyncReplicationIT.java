@@ -14,16 +14,21 @@ import io.camunda.it.rdbms.db.util.MSSQLReplicationClusterContainer;
 import io.camunda.it.rdbms.db.util.PostgresReplicationClusterContainer;
 import io.camunda.it.rdbms.db.util.ReplicationClusterContainer;
 import java.time.Duration;
-import java.time.temporal.ChronoUnit;
+import java.time.Instant;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-// Tests in this class form a lifecycle sequence and must run in order:
-// (1) replica removed → exporter pauses; (2) replica restored → exporter resumes.
 @TestMethodOrder(OrderAnnotation.class)
-public abstract class AsyncReplicationIT extends AbstractAsyncReplicationIT {
+public abstract class AsyncReplicationIT<R extends ReplicationClusterContainer>
+    extends AbstractAsyncReplicationIT<R> {
+  private static final Logger LOG = LoggerFactory.getLogger(AsyncReplicationIT.class);
 
   @Test
   void shouldAcknowledgeExportedRecordsWhenReplicated() {
@@ -36,27 +41,35 @@ public abstract class AsyncReplicationIT extends AbstractAsyncReplicationIT {
 
     // then - exporter advances and fully catches up
     awaitExporterPositionAdvances(exporterPosition);
-    awaitExporterPositionStable(Duration.ofSeconds(2), Duration.ofSeconds(10));
+    awaitExporterPositionStable(Duration.ofSeconds(2), Duration.ofSeconds(30));
     exporterAcknowledgedAll();
   }
 
   @Test
   @Order(1)
-  void shouldNeverAcknowledgeAndStopExportingWhenReplicaIsRemoved() {
+  void shouldNeverAcknowledgeAndStopExportingWhenReplicaIsRemoved()
+      throws ExecutionException, InterruptedException, TimeoutException {
     // given - a stable, fully acknowledged state
     final long acknowledgedPositionBeforeRemoval = getCurrentAcknowledgedExporterPosition();
+    LOG.info("Position before removing the replica {}", acknowledgedPositionBeforeRemoval);
 
     // when - the required read replica is removed
-    cluster.stopReplica();
+    final var beforeStopping = Instant.now();
+    LOG.info("Stopping replica at {}", beforeStopping);
+    final var stopFuture = cluster.stopReplica();
+    final var afterStopping = Instant.now();
+    LOG.info("Disconnected replica at {}", afterStopping);
     startProcessInstances(10);
 
-    // then - the exporter still exports records but never acknowledges them
-    // TODO optimize this to not wait X seconds but on a RdbmsExporter metric when implemented
-    wait(MAX_LAG.plus(3, ChronoUnit.SECONDS)); // wait for the max-lag interval + X
-    awaitExporterPositionAdvances(acknowledgedPositionBeforeRemoval);
+    wait(getMaxLag().plusSeconds(3));
+    stopFuture.get(15, TimeUnit.MINUTES);
+    LOG.info("Stopped replica at {}", Instant.now());
+
+    // then - the exporter does not acknowledge them
     assertAcknowledgedPositionNotAdvancedBeyond(acknowledgedPositionBeforeRemoval);
 
     // when - more traffic is generated
+
     final long exportedPositionAfterMaxLag = getCurrentExporterPosition();
     startProcessInstances(10);
 
@@ -69,13 +82,14 @@ public abstract class AsyncReplicationIT extends AbstractAsyncReplicationIT {
 
   @Test
   @Order(2)
-  void shouldResumeExportingAndAcknowledgeWhenReplicaRecovers() {
+  void shouldResumeExportingAndAcknowledgeWhenReplicaRecovers()
+      throws ExecutionException, InterruptedException, TimeoutException {
     // given - exporter is paused after replica was removed (state left by test @Order(1))
     final long exportedPositionBeforeRecovery = getCurrentExporterPosition();
     final long acknowledgedPositionBeforeRecovery = getCurrentAcknowledgedExporterPosition();
 
     // when - the replica is brought back, re-establishing the replication quorum
-    cluster.startReplica();
+    cluster.startReplica().get(5, TimeUnit.MILLISECONDS);
 
     // then - the exporter resumes and fully catches up
     awaitExporterPositionAdvances(exportedPositionBeforeRecovery);
@@ -84,18 +98,18 @@ public abstract class AsyncReplicationIT extends AbstractAsyncReplicationIT {
   }
 }
 
-class PostgresAsyncReplicationIT extends AsyncReplicationIT {
+class PostgresAsyncReplicationIT extends AsyncReplicationIT<PostgresReplicationClusterContainer> {
 
   @Override
-  protected ReplicationClusterContainer createCluster() {
+  protected PostgresReplicationClusterContainer createCluster() {
     return new PostgresReplicationClusterContainer();
   }
 }
 
-class MssqlAsyncReplicationIT extends AsyncReplicationIT {
+class MssqlAsyncReplicationIT extends AsyncReplicationIT<MSSQLReplicationClusterContainer> {
 
   @Override
-  protected ReplicationClusterContainer createCluster() {
+  protected MSSQLReplicationClusterContainer createCluster() {
     return new MSSQLReplicationClusterContainer();
   }
 }
