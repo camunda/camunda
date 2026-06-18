@@ -77,7 +77,7 @@ public class WaitStateConditionalIT {
               assertThat(item.getElementId()).isEqualTo(CATCH_EVENT_ID);
               assertThat(item.getElementType())
                   .isEqualTo(WaitStateElementType.INTERMEDIATE_CATCH_EVENT);
-              assertThat(item.getProcessInstanceKey()).isEqualTo(pik);
+              assertThat(item.getProcessInstanceKey()).isEqualTo(String.valueOf(pik));
               assertThat(item.getElementInstanceKey()).isNotNull();
 
               assertThat(item.getDetails()).isInstanceOf(ConditionWaitStateDetails.class);
