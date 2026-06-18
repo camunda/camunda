@@ -85,18 +85,31 @@ Shared baseline platform config lives in `camunda-platform-values-defaults.yaml`
 ### How to set up a load test namespace
 
 The root `newLoadTest.sh` is a **version dispatcher** — it forwards to a version-specific script
-under `setup/<version>/newLoadTest.sh`, defaulting to `main`. This lets each stable branch carry
-its own setup without path conflicts. To target a specific version explicitly, pass
-`--target-version <version>` (or `-t <version>`) before the namespace argument:
+under `setup/<version>/newLoadTest.sh`. Available versions:
+
+| Version     | Targets             |
+|-------------|---------------------|
+| `main`      | current dev (default) |
+| `stable-89` | stable/8.9          |
+| `stable-88` | stable/8.8          |
+| `stable-87` | stable/8.7          |
+
+Pass `--target-version <version>` (or `-t <version>`) to select a version; omit it to use `main`:
 
 ```sh
-./newLoadTest.sh --target-version main my-load-test
+./newLoadTest.sh my-load-test                          # targets main (default)
+./newLoadTest.sh --target-version stable-89 my-test   # targets stable/8.9
 ```
 
-Running without `--target-version` targets `main` by default. The rest of this section documents
-the `main` setup.
+To see all available options for a version, pass `-h` after `--target-version`:
 
-If you run `newLoadTest.sh` without arguments, it will display the following help message.
+```sh
+./newLoadTest.sh --target-version stable-89 -h
+```
+
+The rest of this section documents the `main` setup.
+
+Running `newLoadTest.sh` without arguments shows the `main` help:
 
 ```sh
 Usage: newLoadTest.sh <namespace> [secondaryStorage] [ttl_days] [enable_optimize] [enable_single_zone]
