@@ -113,8 +113,8 @@ public class CreateAgentHistoryItemCommandImpl
       }
       if (item instanceof TextContent) {
         final String text = ((TextContent) item).getText();
-        if (text == null) {
-          throw new IllegalArgumentException("text content value must not be null");
+        if (text == null || text.trim().isEmpty()) {
+          throw new IllegalArgumentException("text content value must not be null or blank");
         }
         protocolContent.add(new AgentInstanceTextContent().text(text));
       } else if (item instanceof ObjectContent) {
@@ -236,12 +236,6 @@ public class CreateAgentHistoryItemCommandImpl
   public CreateAgentHistoryItemFinalCommandStep metrics(final AgentHistoryMetrics metrics) {
     if (metrics == null) {
       return this;
-    }
-    if (metrics.getInputTokens() == null
-        || metrics.getOutputTokens() == null
-        || metrics.getDurationMs() == null) {
-      throw new IllegalArgumentException(
-          "metrics requires all fields: inputTokens, outputTokens, durationMs");
     }
     request.metrics(
         new AgentInstanceHistoryItemMetrics()

@@ -267,6 +267,21 @@ class CreateAgentHistoryItemCommandTest extends ClientRestTest {
         .hasMessageContaining("content must not be empty");
   }
 
+  @ParameterizedTest(name = "blank text [{0}] should be rejected")
+  @ValueSource(strings = {"", " ", "\t"})
+  void shouldRejectBlankTextContent(final String text) {
+    assertThatThrownBy(
+            () ->
+                client
+                    .newCreateAgentHistoryItemCommand(AGENT_INSTANCE_KEY)
+                    .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+                    .jobKey(JOB_KEY)
+                    .role(AgentHistoryRole.USER)
+                    .content(Collections.singletonList(AgentHistoryContent.text(text))))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("text content value must not be null or blank");
+  }
+
   // ── Argument validation: iteration ───────────────────────────────────────
 
   @ParameterizedTest(name = "iteration={0} should be rejected")
@@ -326,24 +341,6 @@ class CreateAgentHistoryItemCommandTest extends ClientRestTest {
                     .content(Collections.singletonList(AgentHistoryContent.document(doc))))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("documentId must not be null or blank");
-  }
-
-  // ── Argument validation: metrics (all fields required) ───────────────────
-
-  @Test
-  void shouldRejectPartialMetrics() {
-    assertThatThrownBy(
-            () ->
-                client
-                    .newCreateAgentHistoryItemCommand(AGENT_INSTANCE_KEY)
-                    .elementInstanceKey(ELEMENT_INSTANCE_KEY)
-                    .jobKey(JOB_KEY)
-                    .role(AgentHistoryRole.USER)
-                    .content(Collections.singletonList(AgentHistoryContent.text("hello")))
-                    .producedAt(PRODUCED_AT)
-                    .metrics(new AgentHistoryMetrics().inputTokens(100L).outputTokens(50L)))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("metrics requires all fields");
   }
 
   // ── Argument validation: toolCalls ───────────────────────────────────────
