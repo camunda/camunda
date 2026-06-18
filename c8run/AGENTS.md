@@ -91,13 +91,13 @@ go version
 
 ### Markdown Formatting (Spotless / Flexmark)
 
-All `*.md` files are checked by Spotless using the Flexmark formatter. CI will reject PRs with formatting violations. Key rules:
+Most `*.md` files in this repo are checked by Spotless using the Flexmark formatter, including all files under `c8run/`. (Excluded paths include `**/node_modules/**`, `.github/instructions/**`, `.claude/skills/**`, and others defined in the root `pom.xml`.) CI will reject PRs with formatting violations. Key rules:
 
 **Tables:**
 
-- Column width = `max(centered_header_width, widest_cell_content + 2)` — no extra padding beyond what the content requires.
-- Header text is **centered** within the column: `left_pad = floor((width - text_len) / 2)`, `right_pad = ceil((width - text_len) / 2)`.
-- Body cells are **left-aligned**: leading space + content + trailing spaces + trailing space.
+- Header cell width = `text_len + left_pad + right_pad`, where `left_pad = floor((col_width - text_len) / 2)` and `right_pad = ceil((col_width - text_len) / 2)` (centered).
+- Column width = `max(header_cell_width, widest_body_cell_content + 2)` — no extra padding beyond what content requires.
+- Body cells are **left-aligned**: one leading space, content, then trailing spaces to fill the column width, then one trailing space.
 - Separator uses full-width dashes matching the column width.
 - Copy column widths from an existing table in the same file if possible; do not add gratuitous padding.
 
@@ -131,7 +131,7 @@ Wrong (will fail CI):
 - Second item.
 ```
 
-**Verification:** Run `./mvnw spotless:apply -T1C` from the repo root (requires VPN/Nexus access). If unavailable locally, check the table formatting rules above manually before pushing.
+**Verification:** Run `./mvnw spotless:apply -T1C` from the repo root. This requires access to Camunda's internal Nexus (`repository.nexus.camunda.cloud`), configured via `NEXUS_USR`/`NEXUS_PSW` credentials — CI sets these automatically from Vault. If you don't have those credentials locally, verify formatting manually using the rules above before pushing.
 
 ### Package Design
 
