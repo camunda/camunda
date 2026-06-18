@@ -13,6 +13,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiveByIdTaskSupplier.ArchiveDocIdsBatch;
@@ -25,7 +26,13 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.opensearch.client.opensearch._types.ErrorCause;
+import org.opensearch.client.opensearch._types.ErrorResponse;
+import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,10 +43,26 @@ class ArchiveByIdTaskSupplierTest {
 
   private final CamundaExporterMetrics metrics = mock(CamundaExporterMetrics.class);
 
-  @Test
-  void shouldRetryOnRetryableErrorAndRecordMetric() {
+  static Stream<Throwable> retryableErrors() {
+    return Stream.of(
+        new SocketTimeoutException("timeout"),
+        new ElasticsearchException(
+            "endpoint1",
+            co.elastic.clients.elasticsearch._types.ErrorResponse.of(
+                e -> e.error(ec -> ec.type("test_exception").reason("test reason")).status(500))),
+        new OpenSearchException(
+            ErrorResponse.of(
+                e ->
+                    e.error(ErrorCause.of(ec -> ec.type("test_exception").reason("test reason")))
+                        .status(500))),
+        new ArchiveByIdTaskSupplier.BatchCountMismatchException("reindex", "count mismatch"));
+  }
+
+  @ParameterizedTest
+  @MethodSource("retryableErrors")
+  void shouldRetryOnRetryableErrorAndRecordMetric(final Throwable cause) {
     // given
-    final var retryableError = new CompletionException(new SocketTimeoutException("timeout"));
+    final var retryableError = new CompletionException(cause);
     final var reindexCallCount = new AtomicInteger(0);
 
     final var taskSupplier =
