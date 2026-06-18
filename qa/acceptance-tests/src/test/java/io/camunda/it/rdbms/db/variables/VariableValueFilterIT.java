@@ -103,6 +103,110 @@ public class VariableValueFilterIT {
   }
 
   @TestTemplate
+  public void shouldFindVariableWithNameAndEqWholeNumberStoredAsDouble(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final String varName = "var-name-" + nextStringId();
+    final var randomizedVariable =
+        prepareRandomVariablesAndReturnOne(testApplication, varName, "42000.0");
+
+    // and
+    final Operation<String> operation = Operation.eq("42000");
+
+    // when
+    searchAndAssertVariableValueFilter(rdbmsService, randomizedVariable, varName, operation);
+  }
+
+  @TestTemplate
+  public void shouldFindVariableWithNameAndNeqWholeNumberStoredAsDouble(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    prepareRandomVariables(testApplication);
+    final String varName = "var-name-" + nextStringId();
+    final VariableDbModel randomizedVariable =
+        VariableFixtures.createRandomized(b -> b.name(varName).value("42000.0"));
+    createAndSaveVariable(rdbmsService, randomizedVariable);
+
+    // and
+    final Operation<String> operation = Operation.neq("99999");
+
+    // when
+    searchAndAssertVariableValueFilter(rdbmsService, randomizedVariable, varName, operation);
+  }
+
+  @TestTemplate
+  public void shouldFindVariableWithNameAndInWholeNumberStoredAsDouble(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final String varName = "var-name-" + nextStringId();
+    final var randomizedVariable =
+        prepareRandomVariablesAndReturnOne(testApplication, varName, "42000.0");
+
+    // and
+    final Operation<String> operation = Operation.in("42000", "50000");
+
+    // when
+    searchAndAssertVariableValueFilter(rdbmsService, randomizedVariable, varName, operation);
+  }
+
+  @TestTemplate
+  public void shouldFindVariableWithNameAndInBooleanValue(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final String varName = "var-name-" + nextStringId();
+    final var randomizedVariable =
+        prepareRandomVariablesAndReturnOne(testApplication, varName, "true");
+
+    // and
+    final Operation<String> operation = Operation.in("true", "false");
+
+    // when
+    searchAndAssertVariableValueFilter(rdbmsService, randomizedVariable, varName, operation);
+  }
+
+  @TestTemplate
+  public void shouldFindVariableWithNameAndEqNullValue(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    prepareRandomVariables(testApplication);
+
+    // and
+    final String varName = "var-name-" + nextStringId();
+    final VariableDbModel randomizedVariable =
+        VariableFixtures.createRandomized(b -> b.name(varName).value("null"));
+    createAndSaveVariable(rdbmsService, randomizedVariable);
+
+    // and
+    final Operation<String> operation = Operation.eq("null");
+
+    // when
+    searchAndAssertVariableValueFilter(rdbmsService, randomizedVariable, varName, operation);
+  }
+
+  @TestTemplate
+  public void shouldFindVariableWithNameAndNeqNullValue(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    prepareRandomVariables(testApplication);
+    final String varName = "var-name-" + nextStringId();
+    final VariableDbModel randomizedVariable =
+        VariableFixtures.createRandomized(b -> b.name(varName).value("some-value"));
+    createAndSaveVariable(rdbmsService, randomizedVariable);
+
+    // and
+    final Operation<String> operation = Operation.neq("null");
+
+    // when
+    searchAndAssertVariableValueFilter(rdbmsService, randomizedVariable, varName, operation);
+  }
+
+  @TestTemplate
   public void shouldFindVariableWithNameAndEqBooleanValue(
       final CamundaRdbmsTestApplication testApplication) {
     // given 21 variables
