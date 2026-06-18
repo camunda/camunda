@@ -50,6 +50,7 @@ class ConditionBasedWaitStateTransformerTest {
             .withCondition("= x > 5")
             .withVariableEvents(List.of("create", "update"))
             .withElementType(BpmnElementType.INTERMEDIATE_CATCH_EVENT)
+            .withCatchEventId("catch-condition")
             .withElementInstanceKey(300L)
             .withProcessInstanceKey(200L)
             .withRootProcessInstanceKey(100L)
