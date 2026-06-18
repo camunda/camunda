@@ -1085,7 +1085,7 @@
           "$ref": "#/definitions/JudgeAssertion"
         },
         "satisfiesExpression": {
-          "description": "A FEEL expression or FEEL unary-test-like expression that must evaluate to true for the variable value. Optional.",
+          "description": "The FEEL expression assertion to evaluate on the variable. The expression is evaluated with a context containing the variable value under its name and must return true to be satisfied. Optional.",
           "type": "string"
         },
         "similarTo": {

@@ -24,6 +24,7 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.client.api.response.EvaluateExpressionResponse;
+import io.camunda.client.api.response.EvaluationWarning;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.filter.VariableFilter;
 import io.camunda.client.api.search.filter.builder.StringProperty;
@@ -53,7 +54,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.EmptySource;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.NullSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -1153,31 +1157,6 @@ public class VariableAssertTest {
     }
 
     @Test
-    void shouldHasVariableSatisfiesExpressionByVariableName() {
-      // given
-      final EvaluateExpressionResponse response = mock(EvaluateExpressionResponse.class);
-      when(response.getResult()).thenReturn(true);
-      when(response.getWarnings()).thenReturn(Collections.emptyList());
-      when(camundaDataSource.findVariables(any()))
-          .thenReturn(Collections.singletonList(newVariable("a", "\"approved\"")));
-      when(camundaDataSource.evaluateExpression(any(), any())).thenReturn(response);
-
-      // when
-      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
-
-      // then
-      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
-          .hasVariableSatisfiesExpression("a", "a = \"approved\"");
-
-      verify(camundaDataSource).findVariables(variableFilterCaptor.capture());
-
-      variableFilterCaptor.getValue().accept(variableFilter);
-      verify(variableFilter).processInstanceKey(PROCESS_INSTANCE_KEY);
-      verify(variableFilter).scopeKey(PROCESS_INSTANCE_KEY);
-      verify(variableFilter).name("a");
-    }
-
-    @Test
     void shouldHasLocalVariableWithVariableSelector() {
       // given
       final String elementId = "element-id";
@@ -1197,40 +1176,6 @@ public class VariableAssertTest {
       // then
       CamundaAssert.assertThatProcessInstance(processInstanceEvent)
           .hasLocalVariable(ElementSelectors.byId(elementId), VariableSelectors.byName("a"), 1);
-
-      verify(camundaDataSource).findVariables(variableFilterCaptor.capture());
-
-      variableFilterCaptor.getValue().accept(variableFilter);
-      verify(variableFilter).processInstanceKey(PROCESS_INSTANCE_KEY);
-      verify(variableFilter).scopeKey(10L);
-      verify(variableFilter).name("a");
-    }
-
-    @Test
-    void shouldHasLocalVariableSatisfiesExpressionByVariableName() {
-      // given
-      final EvaluateExpressionResponse response = mock(EvaluateExpressionResponse.class);
-      final String elementId = "element-id";
-      final ElementInstance elementInstance =
-          ElementInstanceBuilder.newActiveElementInstance(elementId, PROCESS_INSTANCE_KEY)
-              .setElementInstanceKey(10L)
-              .build();
-
-      when(response.getResult()).thenReturn(true);
-      when(response.getWarnings()).thenReturn(Collections.emptyList());
-      when(camundaDataSource.findElementInstances(any()))
-          .thenReturn(Collections.singletonList(elementInstance));
-      when(camundaDataSource.findVariables(any()))
-          .thenReturn(Collections.singletonList(newVariable("a", "\"approved\"")));
-      when(camundaDataSource.evaluateExpression(any(), any())).thenReturn(response);
-
-      // when
-      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
-
-      // then
-      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
-          .hasLocalVariableSatisfiesExpression(
-              ElementSelectors.byId(elementId), "a", "a = \"approved\"");
 
       verify(camundaDataSource).findVariables(variableFilterCaptor.capture());
 
@@ -1296,6 +1241,164 @@ public class VariableAssertTest {
               VariableSelectors.byName("a").and(VariableSelectors.byScopeKey(scopeKey)), 1);
 
       verify(camundaDataSource, times(2)).findVariables(any());
+    }
+  }
+
+  @Nested
+  class HasVariableSatisfiesExpression {
+
+    private static final String ELEMENT_ID = "element-id";
+    private static final long ELEMENT_INSTANCE_KEY = 10L;
+
+    @Mock(answer = Answers.RETURNS_SELF)
+    private VariableFilter variableFilter;
+
+    @Captor private ArgumentCaptor<Consumer<VariableFilter>> variableFilterCaptor;
+    @Captor private ArgumentCaptor<Map<String, Object>> variablesCaptor;
+    @Captor private ArgumentCaptor<String> expressionCaptor;
+
+    @BeforeEach
+    void configureMocks() {
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+    }
+
+    @Test
+    void shouldUseByNameSelector() {
+      // given
+      final EvaluateExpressionResponse response = mock(EvaluateExpressionResponse.class);
+      when(response.getResult()).thenReturn(true);
+      when(response.getWarnings()).thenReturn(Collections.emptyList());
+      when(camundaDataSource.findVariables(any()))
+          .thenReturn(Collections.singletonList(newVariable("a", "\"approved\"")));
+      when(camundaDataSource.evaluateExpression(any(), any())).thenReturn(response);
+
+      // when
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+          .hasVariableSatisfiesExpression("a", "a = \"approved\"");
+
+      // then
+      verify(camundaDataSource).findVariables(variableFilterCaptor.capture());
+      verify(camundaDataSource)
+          .evaluateExpression(expressionCaptor.capture(), variablesCaptor.capture());
+
+      variableFilterCaptor.getValue().accept(variableFilter);
+      verify(variableFilter).processInstanceKey(PROCESS_INSTANCE_KEY);
+      verify(variableFilter).scopeKey(PROCESS_INSTANCE_KEY);
+      verify(variableFilter).name("a");
+      Assertions.assertThat(expressionCaptor.getValue()).isEqualTo("=a = \"approved\"");
+      Assertions.assertThat(variablesCaptor.getValue())
+          .containsExactlyEntriesOf(Collections.singletonMap("a", "approved"));
+    }
+
+    @Test
+    void shouldUseLocalVariableByElementSelector() {
+      // given
+      final EvaluateExpressionResponse response = mock(EvaluateExpressionResponse.class);
+      final ElementInstance elementInstance =
+          ElementInstanceBuilder.newActiveElementInstance(ELEMENT_ID, PROCESS_INSTANCE_KEY)
+              .setElementInstanceKey(ELEMENT_INSTANCE_KEY)
+              .build();
+
+      when(response.getResult()).thenReturn(true);
+      when(response.getWarnings()).thenReturn(Collections.emptyList());
+      when(camundaDataSource.findElementInstances(any()))
+          .thenReturn(Collections.singletonList(elementInstance));
+      when(camundaDataSource.findVariables(any()))
+          .thenReturn(Collections.singletonList(newVariable("a", "\"approved\"")));
+      when(camundaDataSource.evaluateExpression(any(), any())).thenReturn(response);
+
+      // when
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+          .hasLocalVariableSatisfiesExpression(
+              ElementSelectors.byId(ELEMENT_ID), "a", "a = \"approved\"");
+
+      // then
+      verify(camundaDataSource).findVariables(variableFilterCaptor.capture());
+      verify(camundaDataSource)
+          .evaluateExpression(expressionCaptor.capture(), variablesCaptor.capture());
+
+      variableFilterCaptor.getValue().accept(variableFilter);
+      verify(variableFilter).processInstanceKey(PROCESS_INSTANCE_KEY);
+      verify(variableFilter).scopeKey(ELEMENT_INSTANCE_KEY);
+      verify(variableFilter).name("a");
+      Assertions.assertThat(expressionCaptor.getValue()).isEqualTo("=a = \"approved\"");
+      Assertions.assertThat(variablesCaptor.getValue())
+          .containsExactlyEntriesOf(Collections.singletonMap("a", "approved"));
+    }
+
+    @Test
+    @CamundaAssertExpectFailure
+    void shouldHaveSensibleErrorMessageWhenExpressionEvaluatesToFalse() {
+      // given
+      final EvaluateExpressionResponse response = mock(EvaluateExpressionResponse.class);
+      final EvaluationWarning warning = mock(EvaluationWarning.class);
+      when(warning.getMessage()).thenReturn("comparison used a coerced value");
+      when(response.getResult()).thenReturn(false);
+      when(response.getWarnings()).thenReturn(Collections.singletonList(warning));
+      when(camundaDataSource.findVariables(any()))
+          .thenReturn(Collections.singletonList(newVariable("a", "\"rejected\"")));
+      when(camundaDataSource.evaluateExpression(any(), any())).thenReturn(response);
+
+      // when / then
+      Assertions.assertThatThrownBy(
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasVariableSatisfiesExpression("a", "a = \"approved\""))
+          .hasMessage(
+              "Process instance [key: 1] variable 'a' should satisfy expression 'a = \"approved\"' but the evaluation result was 'false'. Warnings: comparison used a coerced value");
+    }
+
+    @Test
+    @CamundaAssertExpectFailure
+    void shouldHaveSensibleErrorMessageWhenJsonMappingFails() {
+      // given
+      when(camundaDataSource.findVariables(any()))
+          .thenReturn(Collections.singletonList(newVariable("a", "{\"status\":}")));
+
+      // when / then
+      Assertions.assertThatThrownBy(
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasVariableSatisfiesExpression("a", "a.status = \"approved\""))
+          .hasMessageContainingAll(
+              "Process instance [key: 1] should have a variable 'a' that satisfies expression 'a.status = \"approved\"', but the JSON mapping failed:\n",
+              "Error: Failed to read JSON: '{\"status\":}'\n",
+              "Reason: com.fasterxml.jackson.core.JsonParseException:");
+    }
+
+    @Test
+    @CamundaAssertExpectFailure
+    void shouldHaveSensibleErrorMessageWhenExpressionEvaluationFails() {
+      // given
+      when(camundaDataSource.findVariables(any()))
+          .thenReturn(Collections.singletonList(newVariable("a", "\"approved\"")));
+      when(camundaDataSource.evaluateExpression(any(), any()))
+          .thenThrow(new RuntimeException("feel engine unavailable"));
+
+      // when / then
+      Assertions.assertThatThrownBy(
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasVariableSatisfiesExpression("a", "a = \"approved\""))
+          .hasMessage(
+              "Process instance [key: 1] variable 'a' should satisfy expression 'a = \"approved\"' but the expression evaluation failed: feel engine unavailable.");
+    }
+
+    @ParameterizedTest
+    @NullSource
+    @EmptySource
+    @ValueSource(strings = {"   "})
+    void shouldRejectBlankExpressions(final String expression) {
+      // when / then
+      Assertions.assertThatThrownBy(
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasVariableSatisfiesExpression("a", expression))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessage("expression must not be null or empty");
+
+      verify(camundaDataSource, times(0)).findVariables(any());
+      verify(camundaDataSource, times(0)).evaluateExpression(any(), any());
     }
   }
 }
