@@ -42,12 +42,11 @@ export function useCustomFiltersDialog(): CustomFiltersDialog {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
-  const [bump, setBump] = useState(0);
+
   const [isNewFilterModalOpen, setIsNewFilterModalOpen] = useState(false);
   const [filterToEdit, setFilterToEdit] = useState<string>();
   const [filterToDelete, setFilterToDelete] = useState<string>();
 
-  void bump;
   const customFilters = getStateLocally('customFilters') ?? {};
   const customFilterEntries = Object.entries(customFilters).filter(
     ([key]) => !BUILTIN_FILTERS.has(key),
@@ -55,8 +54,6 @@ export function useCustomFiltersDialog(): CustomFiltersDialog {
 
   const rawFilterParam = new URLSearchParams(location.search).get('filter');
   const currentFilter = rawFilterParam ?? 'all-open';
-
-  const refreshLocalStorage = () => setBump((v) => v + 1);
 
   const navigateToFilter = (filter: string) => {
     const next = new URLSearchParams(searchParams);
@@ -77,12 +74,10 @@ export function useCustomFiltersDialog(): CustomFiltersDialog {
         onClose={dismissEdit}
         onSuccess={(filterId) => {
           dismissEdit();
-          refreshLocalStorage();
           navigateToFilter(filterId);
         }}
         onDelete={() => {
           dismissEdit();
-          refreshLocalStorage();
           navigateToFilter('all-open');
         }}
       />
@@ -91,7 +86,6 @@ export function useCustomFiltersDialog(): CustomFiltersDialog {
         isOpen={filterToDelete !== undefined}
         onClose={() => setFilterToDelete(undefined)}
         onDelete={() => {
-          refreshLocalStorage();
           if (currentFilter === filterToDelete) {
             navigateToFilter('all-open');
           }
