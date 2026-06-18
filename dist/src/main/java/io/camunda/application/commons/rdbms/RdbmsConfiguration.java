@@ -9,6 +9,7 @@ package io.camunda.application.commons.rdbms;
 
 import static io.camunda.configuration.api.physicaltenants.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 
+import io.camunda.application.commons.search.PhysicalTenantResourceAccessControllers;
 import io.camunda.application.commons.search.PhysicalTenantSearchClientReaders;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
@@ -27,15 +28,12 @@ import io.camunda.db.rdbms.write.RdbmsMapperBundle;
 import io.camunda.db.rdbms.write.RdbmsWriterFactory;
 import io.camunda.db.rdbms.write.service.PersistentWebSessionWriter;
 import io.camunda.search.clients.CamundaSearchClients;
-import io.camunda.search.clients.auth.ResourceAccessDelegatingController;
 import io.camunda.search.clients.reader.AuthorizationReader;
 import io.camunda.search.clients.reader.SearchClientReaders;
-import io.camunda.security.core.authz.ResourceAccessController;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import javax.sql.DataSource;
 import org.slf4j.Logger;
@@ -116,10 +114,10 @@ public class RdbmsConfiguration {
   @Bean
   public CamundaSearchClients camundaSearchClients(
       final PhysicalTenantSearchClientReaders physicalTenantSearchClientReaders,
-      final List<ResourceAccessController> resourceAccessControllers) {
+      final PhysicalTenantResourceAccessControllers physicalTenantResourceAccessControllers) {
     return new CamundaSearchClients(
         physicalTenantSearchClientReaders.readersByPhysicalTenant(),
-        new ResourceAccessDelegatingController(resourceAccessControllers));
+        physicalTenantResourceAccessControllers.controllersByPhysicalTenant());
   }
 
   @Bean

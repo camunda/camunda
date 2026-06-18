@@ -138,6 +138,7 @@ public class CamundaSearchClients implements SearchClientsProxy {
   private final Map<String, SearchClientReaders> tenantReaders;
   private final String currentPhysicalTenantId;
   private final ResourceAccessController resourceAccessController;
+  private final Map<String, ResourceAccessController> resourceAccessControllerByTenant;
   private final SecurityContext securityContext;
 
   public CamundaSearchClients(
@@ -145,15 +146,24 @@ public class CamundaSearchClients implements SearchClientsProxy {
       final ResourceAccessController resourceAccessController) {
     this(
         tenantReaders,
+        tenantReaders.keySet().stream()
+            .collect(Collectors.toUnmodifiableMap(k -> k, k -> resourceAccessController)));
+  }
+
+  public CamundaSearchClients(
+      final Map<String, SearchClientReaders> tenantReaders,
+      final Map<String, ResourceAccessController> resourceAccessControllerByTenant) {
+    this(
+        tenantReaders,
         PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
-        resourceAccessController,
+        resourceAccessControllerByTenant,
         null);
   }
 
   private CamundaSearchClients(
       final Map<String, SearchClientReaders> tenantReaders,
       final String currentPhysicalTenantId,
-      final ResourceAccessController resourceAccessController,
+      final Map<String, ResourceAccessController> resourceAccessControllerByTenant,
       final SecurityContext securityContext) {
     this.tenantReaders = Map.copyOf(tenantReaders);
     readers = this.tenantReaders.get(currentPhysicalTenantId);
@@ -163,7 +173,14 @@ public class CamundaSearchClients implements SearchClientsProxy {
               .formatted(currentPhysicalTenantId, this.tenantReaders.keySet()));
     }
     this.currentPhysicalTenantId = currentPhysicalTenantId;
-    this.resourceAccessController = resourceAccessController;
+    this.resourceAccessControllerByTenant = Map.copyOf(resourceAccessControllerByTenant);
+    this.resourceAccessController =
+        this.resourceAccessControllerByTenant.get(currentPhysicalTenantId);
+    if (this.resourceAccessController == null) {
+      throw new IllegalArgumentException(
+          ("Missing ResourceAccessController for physical tenant '%s'. Known physical tenants: %s")
+              .formatted(currentPhysicalTenantId, this.resourceAccessControllerByTenant.keySet()));
+    }
     this.securityContext = securityContext;
   }
 
@@ -271,13 +288,13 @@ public class CamundaSearchClients implements SearchClientsProxy {
               .formatted(physicalTenantId, tenantReaders.keySet()));
     }
     return new CamundaSearchClients(
-        tenantReaders, physicalTenantId, resourceAccessController, securityContext);
+        tenantReaders, physicalTenantId, resourceAccessControllerByTenant, securityContext);
   }
 
   @Override
   public CamundaSearchClients withSecurityContext(final SecurityContext securityContext) {
     return new CamundaSearchClients(
-        tenantReaders, currentPhysicalTenantId, resourceAccessController, securityContext);
+        tenantReaders, currentPhysicalTenantId, resourceAccessControllerByTenant, securityContext);
   }
 
   @Override

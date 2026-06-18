@@ -11,15 +11,12 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.search.clients.CamundaSearchClients;
-import io.camunda.search.clients.auth.ResourceAccessDelegatingController;
 import io.camunda.search.clients.impl.NoDBSearchClientsProxy;
 import io.camunda.search.clients.reader.AuthorizationReader;
 import io.camunda.search.clients.reader.impl.NoopAuthorizationReader;
 import io.camunda.search.es.clients.ElasticsearchSearchClient;
 import io.camunda.search.os.clients.OpensearchSearchClient;
-import io.camunda.security.core.authz.ResourceAccessController;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageDisabled;
-import java.util.List;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -59,9 +56,9 @@ public class SearchClientConfiguration {
   })
   public CamundaSearchClients camundaSearchClients(
       final PhysicalTenantSearchClientReaders physicalTenantSearchClientReaders,
-      final List<ResourceAccessController> resourceAccessControllers) {
+      final PhysicalTenantResourceAccessControllers physicalTenantResourceAccessControllers) {
     return new CamundaSearchClients(
         physicalTenantSearchClientReaders.readersByPhysicalTenant(),
-        new ResourceAccessDelegatingController(resourceAccessControllers));
+        physicalTenantResourceAccessControllers.controllersByPhysicalTenant());
   }
 }

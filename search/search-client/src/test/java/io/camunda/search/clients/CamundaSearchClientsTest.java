@@ -9,6 +9,7 @@ package io.camunda.search.clients;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -265,6 +266,63 @@ class CamundaSearchClientsTest {
       // then — switching the security context must not reset the physical tenant scoping
       verify(tenantAProcessInstanceReader).search(any(), any());
       verifyNoInteractions(processInstanceReader);
+    }
+  }
+
+  @Nested
+  class WithPhysicalTenantSelectsPerTenantRac {
+
+    private static final String PT_A = "pt-a";
+    private static final String PT_B = "pt-b";
+
+    @Test
+    void shouldRouteReadToCorrectRac() {
+      // given — two PTs with distinct RAC mocks (plus the required "default" entry)
+      final ResourceAccessController racDefault = mock(ResourceAccessController.class);
+      final ResourceAccessController racA = mock(ResourceAccessController.class);
+      final ResourceAccessController racB = mock(ResourceAccessController.class);
+      final SearchClientReaders readersDefault = mock(SearchClientReaders.class);
+      final SearchClientReaders readersA = mock(SearchClientReaders.class);
+      final SearchClientReaders readersB = mock(SearchClientReaders.class);
+      final ProcessInstanceReader processInstanceReaderA = mock(ProcessInstanceReader.class);
+      final ProcessInstanceReader processInstanceReaderB = mock(ProcessInstanceReader.class);
+
+      // make each RAC call through its applier
+      when(racA.doSearch(any(), any()))
+          .thenAnswer(
+              inv -> {
+                final Function<ResourceAccessChecks, Object> applier = inv.getArgument(1);
+                return applier.apply(ResourceAccessChecks.disabled());
+              });
+      when(racB.doSearch(any(), any()))
+          .thenAnswer(
+              inv -> {
+                final Function<ResourceAccessChecks, Object> applier = inv.getArgument(1);
+                return applier.apply(ResourceAccessChecks.disabled());
+              });
+
+      when(readersA.processInstanceReader()).thenReturn(processInstanceReaderA);
+      when(readersB.processInstanceReader()).thenReturn(processInstanceReaderB);
+
+      final CamundaSearchClients clients =
+          new CamundaSearchClients(
+              Map.of("default", readersDefault, PT_A, readersA, PT_B, readersB),
+              Map.of("default", racDefault, PT_A, racA, PT_B, racB));
+
+      // when scoped to PT_A
+      clients.withPhysicalTenant(PT_A).searchProcessInstances(ProcessInstanceQuery.of(b -> b));
+
+      // then only racA is called
+      verify(racA).doSearch(any(), any());
+      verifyNoInteractions(racB);
+
+      // when scoped to PT_B
+      clearInvocations(racA, racB);
+      clients.withPhysicalTenant(PT_B).searchProcessInstances(ProcessInstanceQuery.of(b -> b));
+
+      // then only racB is called
+      verify(racB).doSearch(any(), any());
+      verifyNoInteractions(racA);
     }
   }
 }
