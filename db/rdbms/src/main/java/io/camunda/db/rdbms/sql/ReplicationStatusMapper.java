@@ -15,4 +15,19 @@ public interface ReplicationStatusMapper {
   long getCurrentLogStatus();
 
   List<ReplicationLogStatus> getReplicationStatus();
+
+  /** Returns {@code true} when connected to AWS Aurora. */
+  boolean isAurora();
+
+  /**
+   * Returns {@code true} when the instance is part of an Aurora Global Database. Only meaningful
+   * after {@link #isAurora()} has returned {@code true}.
+   */
+  boolean isAuroraGlobalDatabase();
+
+  /** Returns the primary's current durable LSN for Aurora Global Database. */
+  long getAuroraCurrentLogStatus();
+
+  /** Returns per-replica replication status for Aurora Global Database. */
+  List<ReplicationLogStatus> getAuroraReplicationStatus();
 }
