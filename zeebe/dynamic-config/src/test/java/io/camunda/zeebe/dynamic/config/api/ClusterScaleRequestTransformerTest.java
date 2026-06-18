@@ -28,12 +28,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import net.jqwik.api.Arbitraries;
-import net.jqwik.api.Arbitrary;
 import net.jqwik.api.ForAll;
-import net.jqwik.api.From;
 import net.jqwik.api.Property;
-import net.jqwik.api.Provide;
 import net.jqwik.api.constraints.IntRange;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -48,17 +44,11 @@ final class ClusterScaleRequestTransformerTest {
   private static final int ZONE_B_PRIORITY = 500;
   private final DynamicPartitionConfig partitionConfig = DynamicPartitionConfig.init();
 
-  @Provide
-  Arbitrary<Optional<String>> zones() {
-    return Arbitraries.of(Optional.<String>empty(), Optional.of(ZONE_A));
-  }
-
   @Property(tries = 10)
   void shouldScaleBrokersWhenPartitionsUnchanged(
       @ForAll @IntRange(min = 1, max = 100) final int partitionCount,
       @ForAll @IntRange(min = 2, max = 100) final int oldClusterSize,
-      @ForAll @IntRange(min = 2, max = 100) final int newClusterSize,
-      @ForAll @From("zones") final Optional<String> zone) {
+      @ForAll @IntRange(min = 2, max = 100) final int newClusterSize) {
     shouldScaleBrokersAndPartitionsByCount(
         partitionCount,
         Optional.empty(),
@@ -66,15 +56,29 @@ final class ClusterScaleRequestTransformerTest {
         Optional.empty(),
         oldClusterSize,
         Optional.of(newClusterSize),
-        zone);
+        Optional.empty());
+  }
+
+  @Property(tries = 10)
+  void shouldScaleBrokersWhenPartitionsUnchangedWhenZoned(
+      @ForAll @IntRange(min = 1, max = 100) final int partitionCount,
+      @ForAll @IntRange(min = 2, max = 100) final int oldClusterSize,
+      @ForAll @IntRange(min = 2, max = 100) final int newClusterSize) {
+    shouldScaleBrokersAndPartitionsByCount(
+        partitionCount,
+        Optional.empty(),
+        2,
+        Optional.empty(),
+        oldClusterSize,
+        Optional.of(newClusterSize),
+        Optional.of(ZONE_A));
   }
 
   @Property(tries = 10)
   void shouldScalePartitionsWhenClusterSizeUnchanged(
       @ForAll @IntRange(min = 3, max = 100) final int clusterSize,
       @ForAll @IntRange(min = 1, max = 10) final int oldPartitionCount,
-      @ForAll @IntRange(min = 10, max = 20) final int newPartitionCount,
-      @ForAll @From("zones") final Optional<String> zone) {
+      @ForAll @IntRange(min = 10, max = 20) final int newPartitionCount) {
     shouldScaleBrokersAndPartitionsByCount(
         oldPartitionCount,
         Optional.of(newPartitionCount),
@@ -82,7 +86,22 @@ final class ClusterScaleRequestTransformerTest {
         Optional.empty(),
         clusterSize,
         Optional.empty(),
-        zone);
+        Optional.empty());
+  }
+
+  @Property(tries = 10)
+  void shouldScalePartitionsWhenClusterSizeUnchangedWhenZoned(
+      @ForAll @IntRange(min = 3, max = 100) final int clusterSize,
+      @ForAll @IntRange(min = 1, max = 10) final int oldPartitionCount,
+      @ForAll @IntRange(min = 10, max = 20) final int newPartitionCount) {
+    shouldScaleBrokersAndPartitionsByCount(
+        oldPartitionCount,
+        Optional.of(newPartitionCount),
+        3,
+        Optional.empty(),
+        clusterSize,
+        Optional.empty(),
+        Optional.of(ZONE_A));
   }
 
   @Property(tries = 10)
@@ -107,8 +126,7 @@ final class ClusterScaleRequestTransformerTest {
       @ForAll @IntRange(min = 3, max = 100) final int oldClusterSize,
       @ForAll @IntRange(min = 3, max = 100) final int newClusterSize,
       @ForAll @IntRange(min = 1, max = 10) final int oldPartitionCount,
-      @ForAll @IntRange(min = 10, max = 20) final int newPartitionCount,
-      @ForAll @From("zones") final Optional<String> zone) {
+      @ForAll @IntRange(min = 10, max = 20) final int newPartitionCount) {
     shouldScaleBrokersAndPartitionsByCount(
         oldPartitionCount,
         Optional.of(newPartitionCount),
@@ -116,7 +134,23 @@ final class ClusterScaleRequestTransformerTest {
         Optional.empty(),
         oldClusterSize,
         Optional.of(newClusterSize),
-        zone);
+        Optional.of(ZONE_A));
+  }
+
+  @Property(tries = 10)
+  void shouldScaleBrokersAndPartitionsWhenZoned(
+      @ForAll @IntRange(min = 3, max = 100) final int oldClusterSize,
+      @ForAll @IntRange(min = 3, max = 100) final int newClusterSize,
+      @ForAll @IntRange(min = 1, max = 10) final int oldPartitionCount,
+      @ForAll @IntRange(min = 10, max = 20) final int newPartitionCount) {
+    shouldScaleBrokersAndPartitionsByCount(
+        oldPartitionCount,
+        Optional.of(newPartitionCount),
+        3,
+        Optional.empty(),
+        oldClusterSize,
+        Optional.of(newClusterSize),
+        Optional.of(ZONE_A));
   }
 
   @Property(tries = 10)
