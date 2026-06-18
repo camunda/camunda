@@ -25,7 +25,6 @@ type Row = {
 type Props = {
 	headers: {key: string; header: string; width?: string}[];
 	rows: Row[];
-	className?: string;
 	expandedContents?: {
 		[key: string]: React.ReactElement<{tabIndex: number}>;
 	};

@@ -412,7 +412,8 @@
 				"instancesInMultipleVersions_one": "1 Instancia en 2+ Versiones",
 				"instancesInMultipleVersions_other": "{{count}} Instancias en 2+ Versiones",
 				"instancesInVersion_one": "1 Instancia en la Versión {{version}}",
-				"instancesInVersion_other": "{{count}} Instancias en la Versión {{version}}"
+				"instancesInVersion_other": "{{count}} Instancias en la Versión {{version}}",
+				"version": "Versión {{version}}"
 			},
 			"processes": {
 				"title": "Procesos"

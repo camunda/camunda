@@ -7,6 +7,7 @@
  */
 
 import {InlineLoading} from '@carbon/react';
+import {useTranslation} from 'react-i18next';
 import type {IncidentProcessInstanceStatisticsByDefinition} from '@camunda/camunda-api-zod-schemas/8.10';
 import {tracking} from '#/shared/tracking';
 import {InstancesBar} from '#/operate/components/InstancesBar/InstancesBar';
@@ -19,6 +20,7 @@ type Props = {
 };
 
 function IncidentsByErrorDefinitions({errorHashCode, tabIndex}: Props) {
+	const {t} = useTranslation();
 	const {data, isLoading} = useIncidentsByErrorDefinitions(errorHashCode);
 
 	if (isLoading) {
@@ -36,7 +38,7 @@ function IncidentsByErrorDefinitions({errorHashCode, tabIndex}: Props) {
 	return (
 		<ul>
 			{data.items.map((item: IncidentProcessInstanceStatisticsByDefinition) => {
-				const labelText = `${item.processDefinitionName ?? item.processDefinitionId} – Version ${item.processDefinitionVersion}`;
+				const labelText = `${item.processDefinitionName ?? item.processDefinitionId} – ${t('operate.dashboard.version', {version: item.processDefinitionVersion})}`;
 
 				return (
 					<Li key={`${item.processDefinitionKey}:${item.tenantId}`}>

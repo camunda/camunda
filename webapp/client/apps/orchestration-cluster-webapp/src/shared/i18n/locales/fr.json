@@ -415,7 +415,8 @@
 				"instancesInMultipleVersions_one": "1 Instance dans 2+ Versions",
 				"instancesInMultipleVersions_other": "{{count}} Instances dans 2+ Versions",
 				"instancesInVersion_one": "1 Instance dans la Version {{version}}",
-				"instancesInVersion_other": "{{count}} Instances dans la Version {{version}}"
+				"instancesInVersion_other": "{{count}} Instances dans la Version {{version}}",
+				"version": "Version {{version}}"
 			},
 			"processes": {
 				"title": "Processus"

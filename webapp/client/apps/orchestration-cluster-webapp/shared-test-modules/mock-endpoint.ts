@@ -92,6 +92,9 @@ function createSequentialEndpointMock<Method extends RequestMethod>({
 	validation?: SequentialMockValidation<Schema>,
 ) => RequestHandler {
 	return (responses, validation) => {
+		if (responses.length === 0) {
+			throw new Error('createSequentialEndpointMock requires at least one response');
+		}
 		let callIndex = 0;
 		const resolver = async ({request}: {request: Request}) => {
 			if (validation) {
