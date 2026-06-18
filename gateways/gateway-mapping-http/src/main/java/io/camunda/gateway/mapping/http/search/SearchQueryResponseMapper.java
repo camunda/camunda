@@ -694,6 +694,7 @@ public final class SearchQueryResponseMapper {
                       .jobKind(JobKindEnum.fromValue(jobKind.name()))
                       .listenerEventType(
                           listenerEventType == null
+                                  || listenerEventType == JobEntity.ListenerEventType.UNSPECIFIED
                               ? null
                               : JobListenerEventTypeEnum.fromValue(listenerEventType.name()))
                       .retries(retries)
