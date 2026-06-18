@@ -312,11 +312,12 @@ final class ClusterApiUtils {
 
   private static BrokerStateCode mapBrokerState(final MemberState.State state) {
     return switch (state) {
-      case ACTIVE, RECOVERING -> BrokerStateCode.ACTIVE;
+      case ACTIVE -> BrokerStateCode.ACTIVE;
       case JOINING -> BrokerStateCode.JOINING;
       case LEAVING -> BrokerStateCode.LEAVING;
       case LEFT -> BrokerStateCode.LEFT;
       case UNINITIALIZED -> BrokerStateCode.UNKNOWN;
+      case RECOVERING -> BrokerStateCode.RECOVERING;
     };
   }
 
