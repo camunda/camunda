@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.api.util;
 
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.gateway.RequestMapper;
 import io.camunda.zeebe.gateway.api.util.StubbedGateway.StubbedJobStreamer;
@@ -26,23 +27,31 @@ public final class StubbedGatewayRule extends ExternalResource {
   private final EngineSecurityConfig securityConfiguration;
   private final StubbedBrokerClient brokerClient;
   private final StubbedJobStreamer jobStreamer;
+  private final PhysicalTenantIds physicalTenantIds;
 
   public StubbedGatewayRule(
       final ActorSchedulerRule actorSchedulerRule,
       final GatewayCfg config,
-      final EngineSecurityConfig securityConfiguration) {
+      final EngineSecurityConfig securityConfiguration,
+      final PhysicalTenantIds physicalTenantIds) {
     this.actorSchedulerRule = actorSchedulerRule;
     brokerClient = new StubbedBrokerClient();
     jobStreamer = new StubbedJobStreamer();
     this.config = config;
     this.securityConfiguration = securityConfiguration;
+    this.physicalTenantIds = physicalTenantIds;
   }
 
   @Override
   protected void before() throws Throwable {
     gateway =
         new StubbedGateway(
-            actorSchedulerRule.get(), brokerClient, jobStreamer, config, securityConfiguration);
+            actorSchedulerRule.get(),
+            brokerClient,
+            jobStreamer,
+            config,
+            securityConfiguration,
+            physicalTenantIds);
     gateway.start();
     client = gateway.buildClient();
     asyncClient = gateway.buildAsyncClient();

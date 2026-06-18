@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.api.util;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.Claim;
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.configuration.EngineSecurityConfig;
@@ -27,6 +28,7 @@ import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler;
 import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler.Oidc;
 import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationMetrics;
+import io.camunda.zeebe.gateway.interceptors.impl.PhysicalTenantInterceptor;
 import io.camunda.zeebe.gateway.metrics.LongPollingMetrics;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayBlockingStub;
@@ -78,6 +80,7 @@ public final class StubbedGateway {
   private final ActorScheduler actorScheduler;
   private final GatewayCfg config;
   private final EngineSecurityConfig securityConfiguration;
+  private final PhysicalTenantIds physicalTenantIds;
   private Server server;
 
   public StubbedGateway(
@@ -85,12 +88,14 @@ public final class StubbedGateway {
       final StubbedBrokerClient brokerClient,
       final StubbedJobStreamer jobStreamer,
       final GatewayCfg config,
-      final EngineSecurityConfig securityConfiguration) {
+      final EngineSecurityConfig securityConfiguration,
+      final PhysicalTenantIds physicalTenantIds) {
     this.actorScheduler = actorScheduler;
     this.brokerClient = brokerClient;
     this.jobStreamer = jobStreamer;
     this.config = config;
     this.securityConfiguration = securityConfiguration;
+    this.physicalTenantIds = physicalTenantIds;
   }
 
   public void start() throws IOException {
@@ -108,6 +113,9 @@ public final class StubbedGateway {
             .addService(
                 ServerInterceptors.intercept(
                     gatewayGrpcService,
+                    // listed inner-to-outer: authentication runs first, then physical tenant
+                    // resolution, mirroring the real Gateway interceptor chain
+                    new PhysicalTenantInterceptor(physicalTenantIds),
                     new AuthenticationInterceptor(
                         new AuthenticationHandler.Oidc(
                             new FakeJwtDecoder(),

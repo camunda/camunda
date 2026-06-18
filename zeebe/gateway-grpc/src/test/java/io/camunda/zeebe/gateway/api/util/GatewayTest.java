@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.api.util;
 
+import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.security.configuration.EngineSecurityConfigurations;
 import io.camunda.zeebe.gateway.api.util.StubbedGateway.StubbedJobStreamer;
@@ -35,9 +36,18 @@ public abstract class GatewayTest {
   protected StubbedJobStreamer jobStreamer;
 
   public GatewayTest(final GatewayCfg config, final EngineSecurityConfig securityConfiguration) {
+    this(config, securityConfiguration, PhysicalTenantIds.DEFAULT);
+  }
+
+  public GatewayTest(
+      final GatewayCfg config,
+      final EngineSecurityConfig securityConfiguration,
+      final PhysicalTenantIds physicalTenantIds) {
     actorClock = new ControlledActorClock();
     actorSchedulerRule = new ActorSchedulerRule(actorClock);
-    gatewayRule = new StubbedGatewayRule(actorSchedulerRule, config, securityConfiguration);
+    gatewayRule =
+        new StubbedGatewayRule(
+            actorSchedulerRule, config, securityConfiguration, physicalTenantIds);
     ruleChain = RuleChain.outerRule(actorSchedulerRule).around(gatewayRule);
   }
 
