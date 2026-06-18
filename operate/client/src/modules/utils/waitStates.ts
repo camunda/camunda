@@ -6,7 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {ElementInstanceInspection} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {
+  ElementInstanceInspection,
+  ElementInstanceType,
+  JobKind,
+  WaitStateType,
+} from '@camunda/camunda-api-zod-schemas/8.10';
 import {formatDate} from 'modules/utils/date';
 
 function getWaitStateLabel(
@@ -135,4 +140,21 @@ function getEarliestTimerDueDate(
   return earliestDueDate;
 }
 
-export {getWaitStateLabel, getWaitStateStatusItems, getEarliestTimerDueDate};
+function isBeforeAllExecutionListenerWaitState(
+  item: ElementInstanceInspection,
+): boolean {
+  return (
+    (item.elementType as ElementInstanceType) === 'MULTI_INSTANCE_BODY' &&
+    (item.details['waitStateType'] as WaitStateType) === 'JOB' &&
+    (item.details['jobKind'] as JobKind) === 'EXECUTION_LISTENER' &&
+    item.details['listenerEventType'] === 'BEFORE_ALL'
+    // TODO use ListenerEventType from camunda-api-zod-schemas/8.10 when published
+  );
+}
+
+export {
+  getWaitStateLabel,
+  getWaitStateStatusItems,
+  getEarliestTimerDueDate,
+  isBeforeAllExecutionListenerWaitState,
+};
