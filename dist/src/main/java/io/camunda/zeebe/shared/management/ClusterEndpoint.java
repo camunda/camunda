@@ -19,6 +19,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdatePartitionDistributorConfigRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateRoutingStateRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
@@ -33,6 +34,7 @@ import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestBrokers;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestPartitions;
 import io.camunda.zeebe.management.cluster.Error;
 import io.camunda.zeebe.management.cluster.MessageCorrelationHashMod;
+import io.camunda.zeebe.management.cluster.PartitionDistributionConfig;
 import io.camunda.zeebe.management.cluster.RequestHandlingActivePartitions;
 import io.camunda.zeebe.management.cluster.RequestHandlingAllPartitions;
 import io.camunda.zeebe.management.cluster.RoutingState;
@@ -60,6 +62,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
@@ -474,6 +477,21 @@ public class ClusterEndpoint {
           requestSender.updateRoutingState(updateRequest).join());
     } catch (final Exception error) {
       return ClusterApiUtils.mapError(error);
+    }
+  }
+
+  @PutMapping(path = "/partition-distribution", consumes = "application/json")
+  public ResponseEntity<?> updatePartitionDistribution(
+      @RequestBody final PartitionDistributionConfig partitionDistributionConfig,
+      @RequestParam(defaultValue = "false") final boolean dryRun) {
+    try {
+      final var internalConfig =
+          ClusterApiUtils.toPartitionDistributorConfig(partitionDistributionConfig);
+      final var updateRequest = new UpdatePartitionDistributorConfigRequest(internalConfig, dryRun);
+      return ClusterApiUtils.mapOperationResponse(
+          requestSender.updatePartitionDistribution(updateRequest).join());
+    } catch (final Exception exception) {
+      return ClusterApiUtils.mapError(exception);
     }
   }
 

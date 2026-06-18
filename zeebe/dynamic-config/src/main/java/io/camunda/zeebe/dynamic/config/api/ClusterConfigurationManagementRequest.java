@@ -8,6 +8,7 @@
 package io.camunda.zeebe.dynamic.config.api;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import java.util.Optional;
 import java.util.Set;
@@ -62,6 +63,9 @@ public sealed interface ClusterConfigurationManagementRequest {
       implements ClusterConfigurationManagementRequest {}
 
   record UpdateRoutingStateRequest(Optional<RoutingState> routingState, boolean dryRun)
+      implements ClusterConfigurationManagementRequest {}
+
+  record UpdatePartitionDistributorConfigRequest(PartitionDistributorConfig config, boolean dryRun)
       implements ClusterConfigurationManagementRequest {}
 
   record ForceRemoveBrokersRequest(Set<MemberId> membersToRemove, boolean dryRun)

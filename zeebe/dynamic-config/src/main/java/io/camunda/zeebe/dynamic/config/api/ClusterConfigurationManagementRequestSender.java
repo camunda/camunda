@@ -21,6 +21,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdatePartitionDistributorConfigRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateRoutingStateRequest;
 import io.camunda.zeebe.dynamic.config.serializer.ClusterConfigurationRequestsSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
@@ -227,6 +228,17 @@ public final class ClusterConfigurationManagementRequestSender {
         ClusterConfigurationRequestTopics.UPDATE_ROUTING_STATE.topic(),
         updateRoutingStateRequest,
         serializer::encodeUpdateRoutingStateRequest,
+        serializer::decodeTopologyChangeResponse,
+        coordinatorSupplier.getDefaultCoordinator(),
+        TIMEOUT);
+  }
+
+  public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>>
+      updatePartitionDistribution(final UpdatePartitionDistributorConfigRequest request) {
+    return communicationService.send(
+        ClusterConfigurationRequestTopics.UPDATE_PARTITION_DISTRIBUTION.topic(),
+        request,
+        serializer::encodeUpdatePartitionDistributorConfigRequest,
         serializer::decodeTopologyChangeResponse,
         coordinatorSupplier.getDefaultCoordinator(),
         TIMEOUT);

@@ -58,6 +58,11 @@ message UpdateRoutingStateRequest{
   bool dryRun = 2;
 }
 
+message UpdatePartitionDistributorConfigRequest {
+  topology_protocol.PartitionDistributorConfig config = 1;
+  bool dryRun = 2;
+}
+
 message ForceRemoveBrokersRequest {
   repeated string membersToRemove = 1;
   bool dryRun = 2;

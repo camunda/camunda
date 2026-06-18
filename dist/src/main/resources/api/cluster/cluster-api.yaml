@@ -184,6 +184,39 @@ paths:
         '504':
           $ref: 'components.yaml#/responses/TimeoutError'
 
+  /partition-distribution:
+    put:
+      summary:
+        Update the partition distribution configuration for a zone-aware cluster. The
+        new configuration is applied immediately by computing and executing the necessary
+        partition join, leave, and priority-reconfiguration operations. Only ZONE_AWARE
+        clusters and ZONE_AWARE config bodies are accepted.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "components.yaml#/schemas/PartitionDistributionConfig"
+      parameters:
+        - $ref: '#/components/parameters/DryRunParameter'
+      responses:
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: "components.yaml#/schemas/PlannedOperationsResponse"
+        '400':
+          $ref: 'components.yaml#/responses/InvalidRequest'
+        '409':
+          $ref: 'components.yaml#/responses/ConcurrentChangeError'
+        '500':
+          $ref: 'components.yaml#/responses/InternalError'
+        '502':
+          $ref: 'components.yaml#/responses/GatewayError'
+        '504':
+          $ref: 'components.yaml#/responses/TimeoutError'
+
 components:
   parameters:
     BrokerId:

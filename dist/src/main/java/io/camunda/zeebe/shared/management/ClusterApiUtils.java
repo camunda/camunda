@@ -410,6 +410,18 @@ final class ClusterApiUtils {
     return result;
   }
 
+  static PartitionDistributorConfig toPartitionDistributorConfig(
+      final io.camunda.zeebe.management.cluster.PartitionDistributionConfig dto) {
+    final List<PartitionDistributorConfig.ZoneSpec> zones =
+        dto.getZones().stream()
+            .map(
+                z ->
+                    new PartitionDistributorConfig.ZoneSpec(
+                        z.getName(), z.getNumberOfReplicas(), z.getPriority()))
+            .toList();
+    return new ZoneAwareConfig(zones);
+  }
+
   private static io.camunda.zeebe.management.cluster.RoutingState mapRoutingState(
       final RoutingState routingState) {
     return new io.camunda.zeebe.management.cluster.RoutingState()
