@@ -38,7 +38,7 @@ jobs:
         uses: ./.github/actions/paths-filter
 
   upgrade-tests:
-    name: "Database Upgrade [${{ matrix.branch }}]"
+    name: "Database Upgrade [${{ matrix.database }}][${{ matrix.branch }}]"
     runs-on: gcp-core-8-default
     timeout-minutes: 20
     strategy:
