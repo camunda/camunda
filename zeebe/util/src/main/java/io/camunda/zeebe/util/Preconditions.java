@@ -9,7 +9,7 @@ package io.camunda.zeebe.util;
 
 import java.util.function.Consumer;
 
-public class Preconditions {
+public final class Preconditions {
   private Preconditions() {}
 
   public static void assertPositive(final long number, final String fieldName) {
