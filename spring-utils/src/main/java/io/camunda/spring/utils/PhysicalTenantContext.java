@@ -53,10 +53,12 @@ public final class PhysicalTenantContext {
   /**
    * Returns the resolved physical tenant id for the request being processed on the current thread.
    *
-   * <p>When the request carries the {@code /physical-tenants/{physicalTenantId}/...} prefix, the id
-   * stamped by {@code PhysicalTenantFilter} (gateway-rest) or the MCP {@code defaultTenantFilter}
-   * is returned. For non-prefixed requests (plain {@code /v2/...} or {@code /mcp/...}) the filter
-   * stamps {@link PhysicalTenantIds#DEFAULT_PHYSICAL_TENANT_ID} and that value is returned.
+   * <p>For prefixed {@code /physical-tenants/{physicalTenantId}/...} requests the id is stamped on
+   * the request by {@code PhysicalTenantFilter} (gateway-rest) or by the MCP gateway filter, and
+   * that value is returned. Non-prefixed requests resolve to {@link
+   * PhysicalTenantIds#DEFAULT_PHYSICAL_TENANT_ID} via different mechanisms: for REST {@code
+   * /v2/...} {@code PhysicalTenantFilter} stamps nothing and this method falls back to the default;
+   * for MCP {@code /mcp/...} the MCP autoconfiguration stamps the default explicitly.
    *
    * @return the physical tenant id for the current request; never {@code null}
    * @throws IllegalStateException if called outside a servlet-request scope (i.e. {@link
