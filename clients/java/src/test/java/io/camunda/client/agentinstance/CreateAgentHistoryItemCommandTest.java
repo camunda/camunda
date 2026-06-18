@@ -258,17 +258,25 @@ class CreateAgentHistoryItemCommandTest extends ClientRestTest {
   // ── Argument validation: content (empty list) ─────────────────────────────
 
   @Test
-  void shouldRejectEmptyContentList() {
-    assertThatThrownBy(
-            () ->
-                client
-                    .newCreateAgentHistoryItemCommand(AGENT_INSTANCE_KEY)
-                    .elementInstanceKey(ELEMENT_INSTANCE_KEY)
-                    .jobKey(JOB_KEY)
-                    .role(AgentHistoryRole.USER)
-                    .content(Collections.emptyList()))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("content must not be empty");
+  void shouldAllowEmptyContentList() {
+    // given
+    gatewayService.onCreateAgentHistoryItemRequest(
+        AGENT_INSTANCE_KEY, new AgentInstanceHistoryItemCreationResult().historyItemKey("5"));
+
+    // when
+    client
+        .newCreateAgentHistoryItemCommand(AGENT_INSTANCE_KEY)
+        .elementInstanceKey(ELEMENT_INSTANCE_KEY)
+        .jobKey(JOB_KEY)
+        .role(AgentHistoryRole.USER)
+        .content(Collections.emptyList())
+        .producedAt(PRODUCED_AT)
+        .execute();
+
+    // then — empty content is sent as an empty list, not null
+    final AgentInstanceHistoryItemRequest body =
+        gatewayService.getLastRequest(AgentInstanceHistoryItemRequest.class);
+    assertThat(body.getContent()).isNotNull().isEmpty();
   }
 
   @ParameterizedTest(name = "blank text [{0}] should be rejected")

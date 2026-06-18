@@ -103,9 +103,6 @@ public class CreateAgentHistoryItemCommandImpl
   @Override
   public CreateAgentHistoryItemCommandStep5 content(final List<AgentHistoryContent> content) {
     ArgumentUtil.ensureNotNull("content", content);
-    if (content.isEmpty()) {
-      throw new IllegalArgumentException("content must not be empty");
-    }
     final List<AgentInstanceMessageContent> protocolContent = new ArrayList<>(content.size());
     for (final AgentHistoryContent item : content) {
       if (item == null) {

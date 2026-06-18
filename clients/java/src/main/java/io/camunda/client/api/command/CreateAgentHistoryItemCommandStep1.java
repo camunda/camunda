@@ -75,7 +75,7 @@ public interface CreateAgentHistoryItemCommandStep1 {
     /**
      * Sets the content blocks of this history item.
      *
-     * @param content the list of content blocks. Must not be null.
+     * @param content the list of content blocks. Must not be null; may be empty.
      * @return this builder for method chaining
      */
     CreateAgentHistoryItemCommandStep5 content(List<AgentHistoryContent> content);
