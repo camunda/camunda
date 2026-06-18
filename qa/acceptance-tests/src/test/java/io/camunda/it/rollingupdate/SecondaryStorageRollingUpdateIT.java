@@ -212,7 +212,7 @@ final class SecondaryStorageRollingUpdateIT {
         testCluster(client);
       }
 
-      // === Phase 2: upgrade new broker, stop old — correlate message, user task becomes active ===
+      // === Phase 2: upgrade new broker, correlate message, user task becomes active ===
       LOGGER.info("Stopping one broker to for upgrade");
       newVersionBroker.stop();
       LOGGER.info("Upgrading broker to new version");
@@ -225,7 +225,7 @@ final class SecondaryStorageRollingUpdateIT {
         testCluster(client);
       }
 
-      // === Phase 3: old broker restarts on new schema — complete process, verify new writes ===
+      // === Phase 3: new broker restarts on old schema — complete process, verify new writes ===
       LOGGER.info("Stopping new broker to complete rollback");
       newVersionBroker.stop();
       updateBroker(newVersionBroker, newNodeId, from, storage);
