@@ -342,15 +342,28 @@ public record ClusterConfiguration(
    * @return true if All brokers are not zoned and the partition distribution config is not
    *     ZoneAware, false otherwise.
    */
-  public boolean isNotZoneAware() {
+  public boolean isUnzoned() {
     return members().keySet().stream().allMatch(m -> m.zone() == null)
         && !partitionDistributorConfig.map(ZoneAwareConfig.class::isInstance).orElse(false);
   }
 
   /**
+   * @return true if at least one broker is zoned, indicating that the cluster is transitioning from
+   *     an "unzoned" cluster to a zoned one.
+   */
+  public boolean isPartiallyZoneAware() {
+    final var membersCount = members.size();
+    final var zonedCount = members().keySet().stream().filter(m -> m.zone() != null).count();
+    final var distributionIsNotZoned =
+        partitionDistributorConfig.filter(ZoneAwareConfig.class::isInstance).isEmpty();
+    return (zonedCount > 0 && zonedCount < membersCount) // not all brokers are zoned
+        || (zonedCount == membersCount && distributionIsNotZoned); // are all zoned, config isn't
+  }
+
+  /**
    * @return true if all brokers are zone aware and the partition distribution config is ZoneAware
    */
-  public boolean isZoneAware() {
+  public boolean isFullyZoneAware() {
     return members().keySet().stream().allMatch(m -> m.zone() != null)
         && partitionDistributorConfig.map(ZoneAwareConfig.class::isInstance).orElse(false);
   }

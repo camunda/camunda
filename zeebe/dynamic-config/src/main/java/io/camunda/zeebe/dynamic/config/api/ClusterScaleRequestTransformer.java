@@ -14,7 +14,6 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
 import io.camunda.zeebe.util.Either;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -55,13 +54,13 @@ public final class ClusterScaleRequestTransformer implements ConfigurationChange
               "Change of replication factor is not allowed when zone is set. To change replication factor use `/partition-distribution` endpoint"));
     }
 
-    if (clusterConfiguration.isNotZoneAware() && zone.isPresent()) {
+    if (!clusterConfiguration.isFullyZoneAware() && zone.isPresent()) {
       return Either.left(
           new InvalidRequest(
               "Scaling operation with zone is only allowed when cluster is zone-aware"));
     }
 
-    if (clusterConfiguration.isZoneAware() && zone.isEmpty()) {
+    if (clusterConfiguration.isFullyZoneAware() && zone.isEmpty()) {
       return Either.left(
           new InvalidRequest(
               "Scaling operation without zone is not allowed when cluster is zone-aware"));
@@ -81,7 +80,7 @@ public final class ClusterScaleRequestTransformer implements ConfigurationChange
       if (!knownZone) {
         return Either.left(new InvalidRequest("Unknown zone '" + zoneName + "'"));
       }
-      final var otherZoneMembers =
+      newSetOfMembers =
           clusterConfiguration.members().keySet().stream()
               .filter(m -> !m.isInZone(zoneName))
               .collect(Collectors.toSet());
@@ -90,19 +89,18 @@ public final class ClusterScaleRequestTransformer implements ConfigurationChange
               clusterConfiguration.members().keySet().stream()
                   .filter(m -> m.isInZone(zoneName))
                   .count();
-      final var targetZoneMembers =
-          IntStream.range(0, brokerCount.orElse(currentZoneCount))
-              .mapToObj(i -> MemberId.from(zoneName, i))
-              .collect(Collectors.toSet());
-      newSetOfMembers = new HashSet<>(otherZoneMembers);
+      final var targetZoneMembers = membersInZone(currentZoneCount);
       newSetOfMembers.addAll(targetZoneMembers);
     } else {
-      newSetOfMembers =
-          IntStream.range(0, brokerCount.orElse(clusterConfiguration.members().size()))
-              .mapToObj(i -> MemberId.from(zone.orElse(null), i))
-              .collect(Collectors.toSet());
+      newSetOfMembers = membersInZone(clusterConfiguration.members().size());
     }
     return new ScaleRequestTransformer(newSetOfMembers, newReplicationFactor, newPartitionCount)
         .operations(clusterConfiguration);
+  }
+
+  private Set<MemberId> membersInZone(final int count) {
+    return IntStream.range(0, brokerCount.orElse(count))
+        .mapToObj(i -> MemberId.from(zone.orElse(null), i))
+        .collect(Collectors.toSet());
   }
 }
