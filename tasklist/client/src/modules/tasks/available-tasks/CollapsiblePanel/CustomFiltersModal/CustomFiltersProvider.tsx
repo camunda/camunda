@@ -52,7 +52,7 @@ type Props = {
 };
 
 const CustomFiltersProvider: React.FC<Props> = ({children}) => {
-  const [_, setSearchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [customFilters, setCustomFilters] = useState(
     getStateLocally('customFilters') ?? {},
   );
@@ -88,21 +88,24 @@ const CustomFiltersProvider: React.FC<Props> = ({children}) => {
     setStatus('initial');
   }, []);
 
-  const handleDelete = useCallback(
-    (filterName: string) => {
-      if (filterName === filterToDelete) {
-        setSearchParams(
-          getNavLinkSearchParam({
-            currentParams: new URLSearchParams(),
-            username,
-            filter: 'all-open',
-          }),
-        );
-      }
-      updateCustomFilters();
-    },
-    [filterToDelete, updateCustomFilters, setSearchParams, username],
-  );
+  const handleDelete = useCallback(() => {
+    if (searchParams.get('filter') === filterToDelete) {
+      setSearchParams(
+        getNavLinkSearchParam({
+          currentParams: new URLSearchParams(),
+          username,
+          filter: 'all-open',
+        }),
+      );
+    }
+    updateCustomFilters();
+  }, [
+    filterToDelete,
+    searchParams,
+    setSearchParams,
+    username,
+    updateCustomFilters,
+  ]);
 
   return (
     <CustomFiltersContext.Provider
