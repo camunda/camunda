@@ -26,6 +26,7 @@ import io.modelcontextprotocol.server.McpStatelessServerFeatures.SyncToolSpecifi
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -45,8 +46,23 @@ public class ProcessesToolRepository implements ToolRepository {
   protected static final String LABEL_RESULTS = "## Results";
   protected static final String LABEL_WHEN_NOT_TO_USE = "## When not to use";
   protected static final String LABEL_WHEN_TO_USE = "## When to use";
-
+  protected static final String BUSINESS_ID_ARGUMENT = "businessId";
   private static final char TOOL_NAME_DELIMITER = '_';
+  private static final Map<String, Object> TOOL_INPUT_SCHEMA =
+      Map.of(
+          "type",
+          "object",
+          "properties",
+          Map.of(
+              BUSINESS_ID_ARGUMENT,
+              Map.of(
+                  "type",
+                  "string",
+                  "description",
+                  "Optional business id that enforces uniqueness of the started process instance. "
+                      + "While another instance of this process started with the same business id is "
+                      + "active, starting another one is rejected. All other arguments are passed as "
+                      + "process variables.")));
   private static final Map<String, Object> TOOL_OUTPUT_SCHEMA =
       Map.of(
           "type",
@@ -164,6 +180,8 @@ public class ProcessesToolRepository implements ToolRepository {
     final String toolName = entity.toolName();
     return (ctx, req) -> {
       final Map<String, Object> arguments = req.arguments() != null ? req.arguments() : Map.of();
+      final String businessId = businessIdFrom(arguments);
+      final Map<String, Object> variables = processVariablesFrom(arguments);
       return CallToolResultMapper.from(
           serviceRegistry
               .messageServices(PhysicalTenantContext.current())
@@ -173,8 +191,9 @@ public class ProcessesToolRepository implements ToolRepository {
                       // UUID: distribute messages across partitions, support parallel process
                       // instances
                       UUID.randomUUID().toString(),
-                      arguments,
-                      entity.tenantId()),
+                      variables,
+                      entity.tenantId(),
+                      businessId),
                   authenticationProvider.getCamundaAuthentication(),
                   ChannelType.MCP,
                   toolName),
@@ -182,10 +201,27 @@ public class ProcessesToolRepository implements ToolRepository {
     };
   }
 
+  private static String businessIdFrom(final Map<String, Object> arguments) {
+    return arguments.get(BUSINESS_ID_ARGUMENT) instanceof final String businessId
+            && !businessId.isBlank()
+        ? businessId
+        : null;
+  }
+
+  private static Map<String, Object> processVariablesFrom(final Map<String, Object> arguments) {
+    if (!arguments.containsKey(BUSINESS_ID_ARGUMENT)) {
+      return arguments;
+    }
+    // businessId is a reserved tool argument, not a process variable
+    final Map<String, Object> variables = new HashMap<>(arguments);
+    variables.remove(BUSINESS_ID_ARGUMENT);
+    return variables;
+  }
+
   private static Tool buildTool(final MessageSubscriptionEntity entity) {
     final var name = buildToolName(entity);
     final var description = buildDescription(entity.toolProperties());
-    return Tool.builder(name, Map.of("type", "object"))
+    return Tool.builder(name, TOOL_INPUT_SCHEMA)
         .title(entity.toolName())
         .description(description)
         .outputSchema(TOOL_OUTPUT_SCHEMA)

@@ -213,7 +213,13 @@ class ProcessesToolRepositoryTest {
           "title": "orderProcess",
           "description": "Core purpose",
           "inputSchema": {
-            "type": "object"
+            "type": "object",
+            "properties": {
+              "businessId": {
+                "type": "string",
+                "description": "Optional business id that enforces uniqueness of the started process instance. While another instance of this process started with the same business id is active, starting another one is rejected. All other arguments are passed as process variables."
+              }
+            }
           },
           "outputSchema": {
             "type": "object",
@@ -347,8 +353,78 @@ class ProcessesToolRepositoryTest {
       assertThatCode(() -> UUID.fromString(reqCaptor.getValue().correlationKey()))
           .doesNotThrowAnyException();
       assertThat(reqCaptor.getValue().variables()).containsExactly(entry("foo", "bar"));
+      assertThat(reqCaptor.getValue().businessId()).isNull();
       assertThat(channelTypeCaptor.getValue()).isEqualTo(ChannelType.MCP);
       assertThat(toolNameCaptor.getValue()).isEqualTo("deploy");
+    }
+
+    @Test
+    void shouldForwardBusinessIdAndExcludeItFromVariables() {
+      // given
+      final var entity =
+          buildStartSubscriptionEntity(
+              77L,
+              "deploy",
+              Map.of(),
+              "deploy.start",
+              "tenant-a",
+              MessageSubscriptionState.CREATED);
+      when(messageSubscriptionServices.getByKey(eq(77L), any())).thenReturn(entity);
+      when(messageServices.correlateMessage(any(), any(), any(), any()))
+          .thenReturn(CompletableFuture.completedFuture(new MessageCorrelationRecord()));
+
+      final var result = repository.findTool(transportContext, "deploy_77");
+
+      // when
+      result
+          .get()
+          .callHandler()
+          .apply(
+              transportContext,
+              CallToolRequest.builder("deploy_77")
+                  .arguments(Map.of("businessId", "order-42", "foo", "bar"))
+                  .build());
+
+      // then
+      final var reqCaptor = ArgumentCaptor.forClass(CorrelateMessageRequest.class);
+      verify(messageServices).correlateMessage(reqCaptor.capture(), any(), any(), any());
+      assertThat(reqCaptor.getValue().businessId()).isEqualTo("order-42");
+      assertThat(reqCaptor.getValue().variables()).containsExactly(entry("foo", "bar"));
+    }
+
+    @Test
+    void shouldTreatBlankBusinessIdAsAbsent() {
+      // given
+      final var entity =
+          buildStartSubscriptionEntity(
+              77L,
+              "deploy",
+              Map.of(),
+              "deploy.start",
+              "tenant-a",
+              MessageSubscriptionState.CREATED);
+      when(messageSubscriptionServices.getByKey(eq(77L), any())).thenReturn(entity);
+      when(messageServices.correlateMessage(any(), any(), any(), any()))
+          .thenReturn(CompletableFuture.completedFuture(new MessageCorrelationRecord()));
+
+      final var result = repository.findTool(transportContext, "deploy_77");
+
+      // when
+      result
+          .get()
+          .callHandler()
+          .apply(
+              transportContext,
+              CallToolRequest.builder("deploy_77")
+                  .arguments(Map.of("businessId", "   ", "foo", "bar"))
+                  .build());
+
+      // then
+      final var reqCaptor = ArgumentCaptor.forClass(CorrelateMessageRequest.class);
+      verify(messageServices).correlateMessage(reqCaptor.capture(), any(), any(), any());
+      assertThat(reqCaptor.getValue().businessId()).isNull();
+      // a blank businessId is still a reserved argument and not forwarded as a variable
+      assertThat(reqCaptor.getValue().variables()).containsExactly(entry("foo", "bar"));
     }
 
     @Test
