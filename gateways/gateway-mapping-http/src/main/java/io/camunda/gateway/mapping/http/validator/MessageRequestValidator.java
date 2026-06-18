@@ -30,6 +30,7 @@ public final class MessageRequestValidator {
           }
           validateCorrelationKeyLength(
               correlationRequest.getCorrelationKey(), maxNameFieldLength, violations);
+          validateBusinessId(correlationRequest.getBusinessId(), violations);
         });
   }
 

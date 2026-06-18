@@ -90,7 +90,8 @@ public class MessageControllerTest extends RestControllerTest {
               "variables": {
                 "key": "value"
               },
-              "tenantId": "<default>"
+              "tenantId": "<default>",
+              "businessId": "order-12345"
             }""";
 
     // when then
@@ -111,6 +112,7 @@ public class MessageControllerTest extends RestControllerTest {
     assertThat(capturedRequest.correlationKey()).isEqualTo("correlationKey");
     assertThat(capturedRequest.variables()).containsExactly(Map.entry("key", "value"));
     assertThat(capturedRequest.tenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    assertThat(capturedRequest.businessId()).isEqualTo("order-12345");
 
     response
         .expectBody()

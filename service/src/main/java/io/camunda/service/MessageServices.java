@@ -71,7 +71,8 @@ public final class MessageServices extends PhysicalTenantScopedApiServices<Messa
         new BrokerCorrelateMessageRequest(
                 correlationRequest.name, correlationRequest.correlationKey, maxVariableNameLength)
             .setVariables(getDocumentOrEmpty(correlationRequest.variables))
-            .setTenantId(correlationRequest.tenantId);
+            .setTenantId(correlationRequest.tenantId)
+            .setBusinessId(correlationRequest.businessId);
     if (channelType != null) {
       brokerRequest.setChannelType(channelType);
     }
@@ -94,7 +95,19 @@ public final class MessageServices extends PhysicalTenantScopedApiServices<Messa
   }
 
   public record CorrelateMessageRequest(
-      String name, String correlationKey, Map<String, Object> variables, String tenantId) {}
+      String name,
+      String correlationKey,
+      Map<String, Object> variables,
+      String tenantId,
+      @Nullable String businessId) {
+    public CorrelateMessageRequest(
+        final String name,
+        final String correlationKey,
+        final Map<String, Object> variables,
+        final String tenantId) {
+      this(name, correlationKey, variables, tenantId, null);
+    }
+  }
 
   public record PublicationMessageRequest(
       String name,

@@ -190,6 +190,18 @@ components:
           description: the tenant for which the message is published
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+        businessId:
+          description: |
+            An optional business id used to enforce uniqueness of the process instance that a
+            message start event would create. If provided and uniqueness enforcement is enabled,
+            the engine rejects starting a new process instance when another root process instance
+            with the same business id is already active for the same process definition. It has no
+            effect when the message correlates to a catch, boundary, or intermediate event.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/BusinessId'
+      x-properties-added-in-version:
+        - propertyName: businessId
+          addedInVersion: "8.10"
 
     MessageCorrelationResult:
       description: |
