@@ -1410,6 +1410,34 @@ final class ElasticsearchArchiverRepositoryIT {
   }
 
   @Test
+  void shouldNotCountNotFoundResultsAsDeleted() throws IOException {
+    // given - an index with a single real doc; we will issue a bulk delete that mixes the
+    // real id with non-existent ids so ES returns result=not_found for the latter. The
+    // tightened getDeletedDocCount must exclude not_found items, otherwise the archiver
+    // loop would falsely report progress whenever a delete missed (wrong shard / wrong
+    // routing / already-deleted doc).
+    final var indexName = UUID.randomUUID().toString();
+    final var repository = createRepository();
+    index(indexName, new TestDocument("1"));
+    testClient.indices().refresh(r -> r.index(indexName));
+
+    // when - delete a mix of one existing id and two non-existent ids
+    final var result =
+        repository.deleteDocumentsById(
+            indexName,
+            List.of(
+                IdWithRouting.of("1"),
+                IdWithRouting.of("does-not-exist-a"),
+                IdWithRouting.of("does-not-exist-b")));
+
+    // then - only the existing doc counts as deleted
+    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
+    assertThat(result.join()).as("not_found items must not be counted as deleted").isEqualTo(1L);
+    testClient.indices().refresh(r -> r.index(indexName));
+    assertThat(testClient.count(c -> c.index(indexName)).count()).isEqualTo(0L);
+  }
+
+  @Test
   void shouldMoveDocumentsById() throws IOException {
     final var repository = createRepository();
     final List<TestProcessDocument> documents = new ArrayList<>();
