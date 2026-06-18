@@ -81,7 +81,8 @@ Use exactly one persistent issue for reporting:
 5. **Generate report body**. The body must fit under the 10 KB `update-issue` safe-output limit; the structural caps below keep it well under that budget without measuring bytes:
    - A summary section with the total number of CI changes and how many are cost-relevant
    - A table of cost-impacting changes with columns: File, Change Type, Impact Level, Description including link to commit or Pull Request. Include at most **15 rows**, ranked by Impact Level (High → Medium → Low). Keep each Description cell under **200 characters**. If more than 15 cost-impacting changes were detected, note the omitted count in the summary.
-   - Up to **5 recommendations** for cost optimization where applicable, one short paragraph each.
+   - Up to **5 recommendations** for cost optimization where applicable, one short paragraph each. Only include recommendations that would actually **save money** (e.g. shrink a paid runner, remove a redundant paid-runner job, tighten path filters on a paid-runner workflow, add concurrency cancellation). Do **not** include speculative future-watch items, "monitor X", "audit for potential future migration", or anything that does not reduce spend today. If there are no money-saving recommendations, omit the section entirely rather than padding it.
+   - Address the report to the CI DRI by mentioning `@camunda/monorepo-ci-dri` in the report body (e.g. in the summary or a short intro line) so they are notified.
    - Do NOT inline diff snippets, `<details>` blocks, or per-change breakdowns — link to the commit or PR instead.
 
 6. **Upsert persistent issue**:
