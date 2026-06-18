@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ClientStatusException;
 import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.container.ClusterHelper;
@@ -37,6 +38,7 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
@@ -287,11 +289,19 @@ final class SecondaryStorageRollingUpdateIT {
     // --- process instance ---
     LOGGER.info("Starting process instance");
     final long piKey =
-        startProcessInstance(
-                client,
-                PROCESS_ID,
-                Map.of(CORRELATION_KEY_VAR, correlationKey, "inputData", "hello"))
-            .getProcessInstanceKey();
+        await()
+            // sometimes we have to wait on cluster sync, otherwise get
+            // Command 'CREATE' rejected with code 'NOT_FOUND'
+            .ignoreException(ClientStatusException.class)
+            .until(
+                () ->
+                    startProcessInstance(
+                            client,
+                            PROCESS_ID,
+                            Map.of(CORRELATION_KEY_VAR, correlationKey, "inputData", "hello"))
+                        .getProcessInstanceKey(),
+                Objects::nonNull);
+
     LOGGER.info("Waiting for process instance");
     waitForProcessInstancesToStart(client, f -> f.processInstanceKey(piKey), 1);
     // initial variables set at instance creation
