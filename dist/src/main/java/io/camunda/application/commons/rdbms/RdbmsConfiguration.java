@@ -28,13 +28,17 @@ import io.camunda.db.rdbms.write.RdbmsMapperBundle;
 import io.camunda.db.rdbms.write.RdbmsWriterFactory;
 import io.camunda.db.rdbms.write.service.PersistentWebSessionWriter;
 import io.camunda.search.clients.CamundaSearchClients;
+import io.camunda.search.clients.auth.AnonymousResourceAccessController;
 import io.camunda.search.clients.reader.AuthorizationReader;
 import io.camunda.search.clients.reader.SearchClientReaders;
+import io.camunda.security.core.authz.ResourceAccessController;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import javax.sql.DataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -114,10 +118,21 @@ public class RdbmsConfiguration {
   @Bean
   public CamundaSearchClients camundaSearchClients(
       final PhysicalTenantSearchClientReaders physicalTenantSearchClientReaders,
-      final PhysicalTenantResourceAccessControllers physicalTenantResourceAccessControllers) {
+      final Optional<PhysicalTenantResourceAccessControllers>
+          physicalTenantResourceAccessControllers) {
     return new CamundaSearchClients(
         physicalTenantSearchClientReaders.readersByPhysicalTenant(),
-        physicalTenantResourceAccessControllers.controllersByPhysicalTenant());
+        physicalTenantResourceAccessControllers
+            .map(PhysicalTenantResourceAccessControllers::controllersByPhysicalTenant)
+            .orElseGet(() -> anonymousControllers(physicalTenantSearchClientReaders)));
+  }
+
+  private static Map<String, ResourceAccessController> anonymousControllers(
+      final PhysicalTenantSearchClientReaders readers) {
+    return readers.readersByPhysicalTenant().entrySet().stream()
+        .collect(
+            Collectors.toUnmodifiableMap(
+                Map.Entry::getKey, e -> new AnonymousResourceAccessController()));
   }
 
   @Bean

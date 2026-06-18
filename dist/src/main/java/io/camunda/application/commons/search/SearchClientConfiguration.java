@@ -11,12 +11,17 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.search.clients.CamundaSearchClients;
+import io.camunda.search.clients.auth.AnonymousResourceAccessController;
 import io.camunda.search.clients.impl.NoDBSearchClientsProxy;
 import io.camunda.search.clients.reader.AuthorizationReader;
 import io.camunda.search.clients.reader.impl.NoopAuthorizationReader;
 import io.camunda.search.es.clients.ElasticsearchSearchClient;
 import io.camunda.search.os.clients.OpensearchSearchClient;
+import io.camunda.security.core.authz.ResourceAccessController;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageDisabled;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -56,9 +61,20 @@ public class SearchClientConfiguration {
   })
   public CamundaSearchClients camundaSearchClients(
       final PhysicalTenantSearchClientReaders physicalTenantSearchClientReaders,
-      final PhysicalTenantResourceAccessControllers physicalTenantResourceAccessControllers) {
+      final Optional<PhysicalTenantResourceAccessControllers>
+          physicalTenantResourceAccessControllers) {
     return new CamundaSearchClients(
         physicalTenantSearchClientReaders.readersByPhysicalTenant(),
-        physicalTenantResourceAccessControllers.controllersByPhysicalTenant());
+        physicalTenantResourceAccessControllers
+            .map(PhysicalTenantResourceAccessControllers::controllersByPhysicalTenant)
+            .orElseGet(() -> anonymousControllers(physicalTenantSearchClientReaders)));
+  }
+
+  private static Map<String, ResourceAccessController> anonymousControllers(
+      final PhysicalTenantSearchClientReaders readers) {
+    return readers.readersByPhysicalTenant().entrySet().stream()
+        .collect(
+            Collectors.toUnmodifiableMap(
+                Map.Entry::getKey, e -> new AnonymousResourceAccessController()));
   }
 }
