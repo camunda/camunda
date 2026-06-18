@@ -362,5 +362,6 @@ public class CorrelatedMessageSubscriptionIT {
     assertThat(actual.rootProcessInstanceKey()).isEqualTo(expected.rootProcessInstanceKey());
     assertThat(actual.subscriptionKey()).isEqualTo(expected.subscriptionKey());
     assertThat(actual.tenantId()).isEqualTo(expected.tenantId());
+    assertThat(actual.businessId()).isEqualTo(expected.businessId());
   }
 }

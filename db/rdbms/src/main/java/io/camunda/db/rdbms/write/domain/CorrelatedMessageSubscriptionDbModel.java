@@ -26,7 +26,8 @@ public record CorrelatedMessageSubscriptionDbModel(
     Long rootProcessInstanceKey,
     Long subscriptionKey,
     MessageSubscriptionType subscriptionType,
-    String tenantId)
+    String tenantId,
+    String businessId)
     implements DbModel<CorrelatedMessageSubscriptionDbModel> {
 
   @Override
@@ -51,7 +52,8 @@ public record CorrelatedMessageSubscriptionDbModel(
                 .rootProcessInstanceKey(rootProcessInstanceKey)
                 .subscriptionKey(subscriptionKey)
                 .subscriptionType(subscriptionType)
-                .tenantId(tenantId))
+                .tenantId(tenantId)
+                .businessId(businessId))
         .build();
   }
 
@@ -70,6 +72,7 @@ public record CorrelatedMessageSubscriptionDbModel(
     private Long subscriptionKey;
     private MessageSubscriptionType subscriptionType;
     private String tenantId;
+    private String businessId;
 
     public Builder() {}
 
@@ -143,6 +146,11 @@ public record CorrelatedMessageSubscriptionDbModel(
       return this;
     }
 
+    public Builder businessId(final String businessId) {
+      this.businessId = businessId;
+      return this;
+    }
+
     @Override
     public CorrelatedMessageSubscriptionDbModel build() {
       return new CorrelatedMessageSubscriptionDbModel(
@@ -159,7 +167,8 @@ public record CorrelatedMessageSubscriptionDbModel(
           rootProcessInstanceKey,
           subscriptionKey,
           subscriptionType,
-          tenantId);
+          tenantId,
+          businessId);
     }
   }
 }
