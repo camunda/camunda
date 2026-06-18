@@ -46,6 +46,9 @@
             "messageKey": {
               "type": "long"
             },
+            "businessId": {
+              "type": "keyword"
+            },
             "variables": {
               "enabled": false
             },
