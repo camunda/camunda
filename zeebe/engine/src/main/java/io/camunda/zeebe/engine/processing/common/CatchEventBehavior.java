@@ -505,7 +505,10 @@ public final class CatchEventBehavior {
         .setBpmnProcessId(context.getBpmnProcessId())
         .setCatchEventInstanceKey(context.getElementInstanceKey())
         .setCatchEventId(event.getId())
-        .setTenantId(context.getTenantId());
+        .setTenantId(context.getTenantId())
+        .setProcessInstanceKey(context.getProcessInstanceKey())
+        .setRootProcessInstanceKey(context.getRootProcessInstanceKey())
+        .setBpmnElementType(event.getElementType());
 
     final var subscriptionKey = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(

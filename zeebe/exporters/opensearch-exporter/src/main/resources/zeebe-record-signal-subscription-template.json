@@ -42,6 +42,21 @@
             },
             "tenantId": {
               "type": "keyword"
+            },
+            "processInstanceKey": {
+              "type": "long"
+            },
+            "rootProcessInstanceKey": {
+              "type": "long"
+            },
+            "bpmnElementType": {
+              "type": "keyword"
+            },
+            "elementId": {
+              "type": "keyword"
+            },
+            "elementInstanceKey": {
+              "type": "long"
             }
           }
         }

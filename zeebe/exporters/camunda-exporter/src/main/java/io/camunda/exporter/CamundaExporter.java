@@ -37,6 +37,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_MODIFI
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_MESSAGE_SUBSCRIPTION;
 import static io.camunda.zeebe.protocol.record.ValueType.RESOURCE;
 import static io.camunda.zeebe.protocol.record.ValueType.ROLE;
+import static io.camunda.zeebe.protocol.record.ValueType.SIGNAL_SUBSCRIPTION;
 import static io.camunda.zeebe.protocol.record.ValueType.TENANT;
 import static io.camunda.zeebe.protocol.record.ValueType.TIMER;
 import static io.camunda.zeebe.protocol.record.ValueType.USAGE_METRIC;
@@ -425,7 +426,8 @@ public class CamundaExporter implements Exporter {
             GLOBAL_LISTENER,
             AGENT_INSTANCE,
             AGENT_HISTORY,
-            TIMER);
+            TIMER,
+            SIGNAL_SUBSCRIPTION);
 
     @Override
     public boolean acceptType(final RecordType recordType) {

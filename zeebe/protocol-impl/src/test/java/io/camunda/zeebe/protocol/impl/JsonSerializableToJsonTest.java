@@ -2559,15 +2559,19 @@ final class JsonSerializableToJsonTest {
                   .setProcessDefinitionKey(processDefinitionKey)
                   .setBpmnProcessId(wrapString(bpmnProcessId))
                   .setCatchEventInstanceKey(3L)
+                  .setBpmnElementType(BpmnElementType.INTERMEDIATE_CATCH_EVENT)
                   .setTenantId("acme");
             },
         """
                 {
-                  "processDefinitionKey":22334,
-                  "signalName": "name",
                   "catchEventId": "startEvent",
-                  "bpmnProcessId": "process",
+                  "signalName": "name",
                   "catchEventInstanceKey":3,
+                  "bpmnElementType":"INTERMEDIATE_CATCH_EVENT",
+                  "processInstanceKey":-1,
+                  "processDefinitionKey":22334,
+                  "rootProcessInstanceKey":-1,
+                  "bpmnProcessId": "process",
                   "tenantId": "acme"
                 }
                 """
@@ -2588,11 +2592,14 @@ final class JsonSerializableToJsonTest {
             },
         """
                 {
-                  "processDefinitionKey":22334,
-                  "signalName":"",
                   "catchEventId":"",
-                  "bpmnProcessId":"",
+                  "signalName":"",
                   "catchEventInstanceKey":-1,
+                  "bpmnElementType":"UNSPECIFIED",
+                  "processInstanceKey":-1,
+                  "processDefinitionKey":22334,
+                  "rootProcessInstanceKey":-1,
+                  "bpmnProcessId":"",
                   "tenantId": "<default>"
                 }
                 """

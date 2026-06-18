@@ -67,6 +67,9 @@ public class ElementInstanceWaitStateResultImpl implements ElementInstanceWaitSt
       case USER_TASK:
         return new UserTaskWaitStateDetailsImpl(
             (io.camunda.client.protocol.rest.UserTaskWaitStateDetails) item);
+      case SIGNAL:
+        return new SignalWaitStateDetailsImpl(
+            (io.camunda.client.protocol.rest.SignalWaitStateDetails) item);
       default:
         return null;
     }
@@ -74,7 +77,7 @@ public class ElementInstanceWaitStateResultImpl implements ElementInstanceWaitSt
 
   @Override
   public WaitStateType getWaitStateType() {
-    return details.getWaitStateType();
+    return details != null ? details.getWaitStateType() : WaitStateType.UNKNOWN_ENUM_VALUE;
   }
 
   @Override

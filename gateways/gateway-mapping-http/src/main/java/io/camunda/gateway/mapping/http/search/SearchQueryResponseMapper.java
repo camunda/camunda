@@ -137,6 +137,7 @@ import io.camunda.gateway.protocol.model.RoleSearchQueryResult;
 import io.camunda.gateway.protocol.model.RoleUserResult;
 import io.camunda.gateway.protocol.model.RoleUserSearchResult;
 import io.camunda.gateway.protocol.model.SearchQueryPageResponse;
+import io.camunda.gateway.protocol.model.SignalWaitStateDetails;
 import io.camunda.gateway.protocol.model.StatusMetric;
 import io.camunda.gateway.protocol.model.TenantClientResult;
 import io.camunda.gateway.protocol.model.TenantClientSearchResult;
@@ -216,6 +217,7 @@ import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.entities.WaitStateEntity;
 import io.camunda.search.entities.WaitStateJobDetails;
 import io.camunda.search.entities.WaitStateMessageDetails;
+import io.camunda.search.entities.WaitStateSignalDetails;
 import io.camunda.search.entities.WaitStateTimerDetails;
 import io.camunda.search.entities.WaitStateUserTaskDetails;
 import io.camunda.search.query.SearchQueryResult;
@@ -727,6 +729,13 @@ public final class SearchQueryResponseMapper {
                       .waitStateType(WaitStateTypeEnum.TIMER.name())
                       .dueDate(dueDate)
                       .repetitions(repetitions)
+                      .build())
+              .build();
+      case WaitStateSignalDetails(final var signalName) ->
+          base.details(
+                  SignalWaitStateDetails.Builder.create()
+                      .waitStateType(WaitStateTypeEnum.SIGNAL.name())
+                      .signalName(signalName)
                       .build())
               .build();
     };
