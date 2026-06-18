@@ -8,6 +8,7 @@
 package io.camunda.zeebe.snapshots.impl;
 
 import io.camunda.zeebe.snapshots.SnapshotChunk;
+import java.nio.ByteBuffer;
 import java.util.zip.CRC32C;
 import java.util.zip.Checksum;
 
@@ -16,8 +17,12 @@ final class SnapshotChunkUtil {
   private SnapshotChunkUtil() {}
 
   static long createChecksum(final byte[] content) {
+    return createChecksum(ByteBuffer.wrap(content));
+  }
+
+  static long createChecksum(final ByteBuffer content) {
     final Checksum checksum = newChecksum();
-    checksum.update(content);
+    checksum.update(content.asReadOnlyBuffer());
     return checksum.getValue();
   }
 
@@ -29,7 +34,7 @@ final class SnapshotChunkUtil {
       final String snapshotId,
       final int totalCount,
       final String fileName,
-      final byte[] fileData,
+      final ByteBuffer fileData,
       final long fileBlockPosition,
       final long totalFileSize) {
 
@@ -42,7 +47,7 @@ final class SnapshotChunkUtil {
     private final String snapshotId;
     private final int totalCount;
     private final String chunkName;
-    private final byte[] content;
+    private final ByteBuffer content;
     private final long checksum;
     private final long fileBlockPosition;
     private final long totalFileSize;
@@ -52,14 +57,14 @@ final class SnapshotChunkUtil {
         final int totalCount,
         final String chunkName,
         final long checksum,
-        final byte[] content,
+        final ByteBuffer content,
         final long fileBlockPosition,
         final long totalFileSize) {
       this.snapshotId = snapshotId;
       this.totalCount = totalCount;
       this.chunkName = chunkName;
       this.checksum = checksum;
-      this.content = content;
+      this.content = content.asReadOnlyBuffer().slice();
       this.fileBlockPosition = fileBlockPosition;
       this.totalFileSize = totalFileSize;
     }
@@ -86,7 +91,15 @@ final class SnapshotChunkUtil {
 
     @Override
     public byte[] getContent() {
-      return content;
+      final var contentBuffer = getContentBuffer();
+      final var bytes = new byte[contentBuffer.remaining()];
+      contentBuffer.get(bytes);
+      return bytes;
+    }
+
+    @Override
+    public ByteBuffer getContentBuffer() {
+      return content.asReadOnlyBuffer();
     }
 
     @Override

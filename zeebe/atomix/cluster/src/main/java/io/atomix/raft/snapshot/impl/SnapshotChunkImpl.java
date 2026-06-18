@@ -44,7 +44,7 @@ public final class SnapshotChunkImpl
     totalCount = chunk.getTotalCount();
     chunkName = chunk.getChunkName();
     checksum = chunk.getChecksum();
-    content.wrap(chunk.getContent());
+    content.wrap(chunk.getContentBuffer());
     fileBlockPosition = chunk.getFileBlockPosition();
     totalFileSize = chunk.getTotalFileSize();
   }
@@ -157,7 +157,7 @@ public final class SnapshotChunkImpl
   public long getTotalFileSize() {
     // backwards comptability
     if (totalFileSize == SnapshotChunkDecoder.totalFileSizeNullValue()) {
-      return getContent().length;
+      return content.capacity();
     }
 
     return totalFileSize;
