@@ -35,7 +35,7 @@ class PhysicalTenantRequestMappingHandlerMappingTest {
   // ---- shouldPrefix --------------------------------------------------------
 
   @Test
-  void shouldPrefixWhenAnnotatedWithCamundaRestController() {
+  void shouldPrefixWhenNotClusterScoped() {
     // when / then
     assertThat(mapping.shouldPrefix(TenantScopedController.class)).isTrue();
   }
