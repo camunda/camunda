@@ -489,8 +489,8 @@ public class ClusterEndpoint {
       final var updateRequest = new UpdatePartitionDistributorConfigRequest(internalConfig, dryRun);
       return ClusterApiUtils.mapOperationResponse(
           requestSender.updatePartitionDistribution(updateRequest).join());
-    } catch (final Exception error) {
-      return ClusterApiUtils.mapError(error);
+    } catch (final Exception exception) {
+      return ClusterApiUtils.mapError(exception);
     }
   }
 

@@ -19,6 +19,7 @@ import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestBrokers;
 import io.camunda.zeebe.management.cluster.Operation;
 import io.camunda.zeebe.management.cluster.Operation.OperationEnum;
 import io.camunda.zeebe.management.cluster.PartitionDistributionConfig;
+import io.camunda.zeebe.management.cluster.PartitionDistributionConfig.TypeEnum;
 import io.camunda.zeebe.management.cluster.ZoneSpec;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
@@ -229,6 +230,21 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
 
       final var topology = actuator.getTopology();
       assertThat(topology.getPartitionDistribution()).isEqualTo(config);
+    }
+  }
+
+  @Test
+  void shouldRejectPartitionDistributionWithoutZones() {
+    try (final var cluster = createCluster(minReplicationFactor())) {
+      // given
+      cluster.awaitCompleteTopology();
+      final var actuator = ClusterActuator.of(cluster.availableGateway());
+
+      // when - then
+      final var config =
+          new PartitionDistributionConfig().type(TypeEnum.ZONE_AWARE).zones(List.of());
+      assertThatCode(() -> actuator.patchPartitionDistribution(config, false))
+          .isInstanceOf(FeignException.BadRequest.class);
     }
   }
 

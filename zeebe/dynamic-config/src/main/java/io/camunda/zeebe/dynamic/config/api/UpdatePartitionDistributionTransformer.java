@@ -58,6 +58,12 @@ public class UpdatePartitionDistributionTransformer implements ConfigurationChan
                   + newConfig.getClass().getSimpleName()));
     }
 
+    if (zoneAwareConfig.zones().isEmpty()) {
+      return Either.left(
+          new InvalidRequest(
+              "Expected partition distribution config to be contain at least one zone, but was empty"));
+    }
+
     final var coordinator =
         ClusterConfigurationCoordinatorSupplier.of(() -> currentConfiguration)
             .getDefaultCoordinator();
