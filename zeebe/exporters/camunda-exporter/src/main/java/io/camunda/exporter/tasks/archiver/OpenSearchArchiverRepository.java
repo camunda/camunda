@@ -37,6 +37,7 @@ import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -483,7 +484,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
         .thenApplyAsync(
             response -> {
               validateReindexResponse(sourceIndexName, response);
-              return response.total();
+              return getReindexedDocumentsCount(response);
             },
             executor)
         .whenCompleteAsync(
@@ -501,6 +502,12 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
           "Reindex request from %s index completed with %d failures"
               .formatted(sourceIndex, failures.size()));
     }
+  }
+
+  private static long getReindexedDocumentsCount(final ReindexResponse response) {
+    return Math.addExact(
+        Objects.requireNonNullElse(response.created(), 0L),
+        Objects.requireNonNullElse(response.updated(), 0L));
   }
 
   @VisibleForTesting
