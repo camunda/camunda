@@ -24,6 +24,7 @@ import io.camunda.search.sort.CorrelatedMessageSubscriptionSort;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Comparator;
 import java.util.List;
 import org.assertj.core.data.TemporalUnitWithinOffset;
 import org.junit.jupiter.api.Tag;
@@ -282,6 +283,41 @@ public class CorrelatedMessageSubscriptionIT {
     assertThat(nextPage.total()).isEqualTo(20);
     assertThat(nextPage.items()).hasSize(5);
     assertThat(nextPage.items()).isEqualTo(searchResult.items().subList(15, 20));
+  }
+
+  @TestTemplate
+  public void shouldSortByBusinessId(final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final CorrelatedMessageSubscriptionDbReader reader =
+        rdbmsService.getCorrelatedMessageSubscriptionReader("default");
+
+    final var processDefinitionKey = nextKey();
+    createAndSaveRandomCorrelatedMessageSubscriptions(
+        rdbmsWriters, b -> b.processDefinitionKey(processDefinitionKey));
+
+    final var ascending =
+        reader.search(
+            CorrelatedMessageSubscriptionQuery.of(
+                b ->
+                    b.filter(f -> f.processDefinitionKeys(processDefinitionKey))
+                        .sort(s -> s.businessId().asc())
+                        .page(p -> p.from(0).size(20))));
+
+    final var descending =
+        reader.search(
+            CorrelatedMessageSubscriptionQuery.of(
+                b ->
+                    b.filter(f -> f.processDefinitionKeys(processDefinitionKey))
+                        .sort(s -> s.businessId().desc())
+                        .page(p -> p.from(0).size(20))));
+
+    assertThat(ascending.items())
+        .extracting(CorrelatedMessageSubscriptionEntity::businessId)
+        .isSortedAccordingTo(String::compareTo);
+    assertThat(descending.items())
+        .extracting(CorrelatedMessageSubscriptionEntity::businessId)
+        .isSortedAccordingTo(Comparator.reverseOrder());
   }
 
   @TestTemplate
