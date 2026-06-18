@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.handlers;
 
+import static io.camunda.exporter.utils.ExporterUtil.emptyToNull;
 import static io.camunda.exporter.utils.ExporterUtil.tenantOrDefault;
 
 import io.camunda.webapps.schema.entities.CorrelatedMessageSubscriptionEntity;
@@ -65,6 +66,7 @@ public class CorrelatedMessageSubscriptionFromMessageStartEventSubscriptionHandl
         .setMessageName(value.getMessageName())
         .setProcessDefinitionKey(value.getProcessDefinitionKey())
         .setProcessInstanceKey(value.getProcessInstanceKey())
+        .setBusinessId(emptyToNull(value.getBusinessId()))
         .setSubscriptionType("START_EVENT")
         .setTenantId(tenantOrDefault(value.getTenantId()));
   }
