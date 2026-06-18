@@ -36,6 +36,7 @@ import {ToolsCalledMetric} from './AgentMetrics/ToolsCalledMetric';
 import {SectionTitle} from './SectionTitle';
 import {ConversationMessage} from './ConversationMessage';
 import {ConversationHistory} from './ConversationHistory';
+import {LatestAgentMessage} from './ConversationHistory/LatestAgentMessage';
 import {IS_CONVERSATION_HISTORY_ENABLED} from 'modules/feature-flags';
 import {isAgentInstanceRunning} from 'modules/queries/agentInstances/useAgentInstance';
 
@@ -122,13 +123,21 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
       <Accordion align="start">
         <AccordionItem
           data-testid="agent-status-section"
-          disabled
+          open
+          disabled={!IS_CONVERSATION_HISTORY_ENABLED}
           title={
             <SectionTitle icon={<StatusIcon status={agentInstance.status} />}>
               Status: {statusLabel}
             </SectionTitle>
           }
-        ></AccordionItem>
+        >
+          {IS_CONVERSATION_HISTORY_ENABLED && (
+            <LatestAgentMessage
+              agentInstanceKey={agentInstance.agentInstanceKey}
+              enablePeriodicRefetch={isAgentInstanceRunning(agentInstance)}
+            />
+          )}
+        </AccordionItem>
         <AccordionItem
           data-testid="agent-usage-section"
           title={

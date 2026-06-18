@@ -46,6 +46,11 @@ const queryKeys = {
       agentInstanceKey: string,
       payload?: SearchAgentInstanceHistoryRequestBody,
     ) => ['agentInstanceHistorySearch', agentInstanceKey, payload],
+    latestAgentMessage: (agentInstanceKey: string) => [
+      'agentInstanceHistorySearch',
+      'latestAgentMessage',
+      agentInstanceKey,
+    ],
   },
   variables: {
     search: () => ['searchVariables'],
