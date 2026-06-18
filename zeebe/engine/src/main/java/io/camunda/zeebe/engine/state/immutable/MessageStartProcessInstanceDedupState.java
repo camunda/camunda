@@ -36,23 +36,25 @@ public interface MessageStartProcessInstanceDedupState {
   MessageStartProcessInstanceDedupEntry get(long processDefinitionKey, long messageKey);
 
   /**
-   * Visits entries whose {@code deletionDeadline} is at or before {@code now}. The visitor returns
-   * {@code true} to continue or {@code false} to stop early (e.g. on hitting a batch limit). Do not
-   * mutate the column family from within the visitor — iteration is performed directly over the
-   * underlying CF; deletions must be enqueued and applied after this call returns.
+   * Visits entries whose {@code deletionDeadline} is at or before {@code expiryThreshold}. Callers
+   * pass an effective threshold (typically {@code now - grace}) so the grace window is applied at
+   * the call site rather than baked into the stored deadline. The visitor returns {@code true} to
+   * continue or {@code false} to stop early (e.g. on hitting a batch limit). Do not mutate the
+   * column family from within the visitor — iteration is performed directly over the underlying CF;
+   * deletions must be enqueued and applied after this call returns.
    *
    * @return {@code true} iff iteration stopped early because the visitor returned {@code false}
-   *     (i.e. more past-deadline entries may exist beyond what was visited); {@code false} when the
-   *     visitor consumed every past-deadline entry.
+   *     (i.e. more past-threshold entries may exist beyond what was visited); {@code false} when
+   *     the visitor consumed every past-threshold entry.
    */
-  boolean visitExpiredEntries(long now, ExpiredEntryVisitor visitor);
+  boolean visitExpiredEntries(long expiryThreshold, ExpiredEntryVisitor visitor);
 
   /**
    * Returns {@code true} when at least one entry's {@code deletionDeadline} is at or before {@code
-   * now}. Intended as the scheduler's cheap leader-side probe before it writes a sweep trigger
-   * command.
+   * expiryThreshold}. Callers pass an effective threshold (typically {@code now - grace}). Intended
+   * as the scheduler's cheap leader-side probe before it writes a sweep trigger command.
    */
-  boolean hasExpiredEntry(long now);
+  boolean hasExpiredEntry(long expiryThreshold);
 
   @FunctionalInterface
   interface ExpiredEntryVisitor {

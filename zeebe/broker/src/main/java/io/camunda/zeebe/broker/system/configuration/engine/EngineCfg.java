@@ -224,6 +224,7 @@ public final class EngineCfg implements ConfigurationEntry {
         .setMessageStartDedupExpirationSweepBatchLimit(
             processInstanceCreation.getMessageStartDedupExpirationSweepBatchLimit())
         .setMessageStartAskRetryInterval(processInstanceCreation.getMessageStartAskRetryInterval())
+        .setMessageStartAskRetryGrace(processInstanceCreation.getMessageStartAskRetryGrace())
         .setMessageStartLockReleasePollInterval(
             processInstanceCreation.getMessageStartLockReleasePollInterval())
         .setMessageStartLockReleasePollMaxBackoff(

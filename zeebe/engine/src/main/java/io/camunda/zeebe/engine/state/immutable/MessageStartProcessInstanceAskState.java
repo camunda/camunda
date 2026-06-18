@@ -11,9 +11,10 @@ import io.camunda.zeebe.engine.state.message.MessageStartProcessInstanceAsk;
 
 /**
  * Read-only view of the pending cross-partition message-start ask state on {@code P_K}. An entry
- * exists for each outstanding ask (REQUEST sent, no reply yet). The entry is removed when any of
- * the three reply intents ({@code STARTED}, {@code UNIQUENESS_REJECTED}, {@code
- * NO_SUBSCRIPTION_REJECTED}) is applied locally.
+ * exists for each outstanding ask (REQUEST sent, no reply yet). The entry is removed when the ask
+ * succeeds ({@code STARTED} applied locally) or the buffered message expires; a rejection ({@code
+ * UNIQUENESS_REJECTED} / {@code NO_SUBSCRIPTION_REJECTED}) instead keeps the entry and increments
+ * its {@code rejectionCount} so it is retried under back-off.
  *
  * <p>Each entry is keyed by {@code (messageKey, processDefinitionKey)}; the pair uniquely
  * identifies an ask from this partition because a single message can only target one process
@@ -38,23 +39,14 @@ public interface MessageStartProcessInstanceAskState {
   void forEach(AskVisitor visitor);
 
   /**
-   * Returns {@code true} if there are pending asks whose last-sent timestamp suggests they are
-   * ready for retry (i.e., past the retry deadline).
+   * Visits every pending ask together with its transient last-sent timestamp, so the retry
+   * scheduler can decide per-ask eligibility from the ask's {@code rejectionCount} and the
+   * configured back-off it owns. The {@code ask} passed to the visitor is a freshly read instance
+   * that is safe to retain.
    *
-   * @param deadline epoch millis; returns true if any pending ask has {@code lastSentTime <
-   *     deadline}
-   * @return {@code true} if at least one ask is past its retry deadline
+   * @param visitor called once per pending ask with its last-sent time and the ask
    */
-  boolean hasPendingAsksPastDeadline(long deadline);
-
-  /**
-   * Returns all pending asks whose last-sent timestamp is before the given deadline; intended for
-   * the scheduled retry loop.
-   *
-   * @param deadline epoch millis
-   * @return an iterable of pending asks past their deadline
-   */
-  Iterable<MessageStartProcessInstanceAsk> getPendingAsksPastDeadline(long deadline);
+  void forEachPendingAsk(PendingAskVisitor visitor);
 
   /**
    * Updates the in-memory last-sent timestamp for a pending ask. The retry scheduler calls this
@@ -76,5 +68,10 @@ public interface MessageStartProcessInstanceAskState {
   @FunctionalInterface
   interface AskVisitor {
     void visit(long messageKey, long processDefinitionKey, MessageStartProcessInstanceAsk ask);
+  }
+
+  @FunctionalInterface
+  interface PendingAskVisitor {
+    void visit(long lastSentTime, MessageStartProcessInstanceAsk ask);
   }
 }

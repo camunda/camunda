@@ -311,16 +311,20 @@ public final class MessageCorrelateBehavior {
   }
 
   /**
-   * The cross-partition arm is engaged only when (i) the feature is enabled, (ii) the publish
-   * carries a non-empty {@code businessId}, and (iii) the businessId hashes to a partition other
-   * than the one that owns the message. The partition lookup is the same {@code hash-mod} used for
-   * correlation keys so {@code hash(businessId)} and {@code hash(correlationKey)} share a routing
-   * policy.
+   * The cross-partition arm is engaged whenever (i) the publish carries a non-empty {@code
+   * businessId} and (ii) that businessId hashes to a partition other than the one that owns the
+   * message. The partition lookup is the same {@code hash-mod} used for correlation keys so {@code
+   * hash(businessId)} and {@code hash(correlationKey)} share a routing policy.
+   *
+   * <p>This is deliberately <em>independent of {@code businessIdUniquenessEnabled}</em>: the
+   * structural invariant "every root PI carrying a businessId lives on {@code P_B =
+   * hash(businessId)}" must hold regardless of whether uniqueness <em>rejection</em> is switched
+   * on, otherwise enabling the feature later would find businessId-carrying instances stranded on
+   * the wrong partition. The flag instead gates only the rejection itself, on {@code P_B} (see
+   * {@link
+   * io.camunda.zeebe.engine.processing.message.MessageStartProcessInstanceRequestRequestProcessor}).
    */
   private boolean shouldDelegateToBusinessIdPartition(final MessageData messageData) {
-    if (!businessIdUniquenessEnabled) {
-      return false;
-    }
     final var businessId = messageData.businessId();
     if (businessId == null || businessId.capacity() == 0) {
       return false;

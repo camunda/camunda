@@ -13,11 +13,12 @@ import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartProcessIn
 import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
 
 /**
- * Removes the pending cross-partition ask entry on {@code P_K} when a {@link
- * MessageStartProcessInstanceRequestIntent#NO_SUBSCRIPTION_REJECTED} reply is applied. The message
- * stays buffered (preserving the same semantics as when a local start-event subscription is
- * missing), but the pending-ask bookkeeping is cleared so commit 7's scheduler does not retry-storm
- * after a final rejection.
+ * Records a {@link MessageStartProcessInstanceRequestIntent#NO_SUBSCRIPTION_REJECTED} reply on
+ * {@code P_K} by backing the pending cross-partition ask off rather than dropping it. The message
+ * stays buffered (the start-event subscription has not yet been distributed to {@code P_B}) and the
+ * ask is kept with an incremented rejection count, so the scheduler re-sends it under exponential
+ * back-off: once the deployment reaches {@code P_B}, a later retry flips to {@code STARTED}. The
+ * ask is finally cleared only by a success or by the buffered message expiring at its TTL.
  *
  * <p>This applier is V1-only because the {@code NO_SUBSCRIPTION_REJECTED} intent has no production
  * stream history (it is introduced together with this feature).
@@ -35,6 +36,6 @@ final class MessageStartProcessInstanceNoSubscriptionRejectedV1Applier
 
   @Override
   public void applyState(final long key, final MessageStartProcessInstanceRequestRecord value) {
-    askState.remove(value.getMessageKey(), value.getProcessDefinitionKey());
+    askState.backOff(value.getMessageKey(), value.getProcessDefinitionKey());
   }
 }

@@ -28,7 +28,7 @@ import org.junit.jupiter.api.Test;
  * Unit tests for the appliers that handle cross-partition message-start events. The STARTED applier
  * writes the dedup entry (using the deadline carried on the request record), removes the
  * pending-ask, and conditionally marks the lock entry as cross-partition; the rejection appliers
- * only remove the pending-ask.
+ * keep the pending-ask and back it off (increment its rejection count) so it is retried.
  */
 public final class MessageStartProcessInstanceReplyApplierTest {
 
@@ -148,7 +148,7 @@ public final class MessageStartProcessInstanceReplyApplierTest {
   class UniquenessRejectedApplier {
 
     @Test
-    void shouldRemovePendingAskOnUniquenessRejected() {
+    void shouldBackOffPendingAskOnUniquenessRejected() {
       // given
       final var applier = new MessageStartProcessInstanceUniquenessRejectedV1Applier(mockAskState);
       final var record = createRecord();
@@ -156,8 +156,10 @@ public final class MessageStartProcessInstanceReplyApplierTest {
       // when
       applier.applyState(1L, record);
 
-      // then
-      verify(mockAskState).remove(MESSAGE_KEY, PROCESS_DEFINITION_KEY);
+      // then the ask is kept and backed off (not removed), so the scheduler retries it under
+      // back-off and a later attempt can flip to STARTED once the holder completes
+      verify(mockAskState).backOff(MESSAGE_KEY, PROCESS_DEFINITION_KEY);
+      verify(mockAskState, never()).remove(anyLong(), anyLong());
     }
   }
 
@@ -165,7 +167,7 @@ public final class MessageStartProcessInstanceReplyApplierTest {
   class NoSubscriptionRejectedApplier {
 
     @Test
-    void shouldRemovePendingAskOnNoSubscriptionRejected() {
+    void shouldBackOffPendingAskOnNoSubscriptionRejected() {
       // given
       final var applier =
           new MessageStartProcessInstanceNoSubscriptionRejectedV1Applier(mockAskState);
@@ -174,8 +176,10 @@ public final class MessageStartProcessInstanceReplyApplierTest {
       // when
       applier.applyState(1L, record);
 
-      // then
-      verify(mockAskState).remove(MESSAGE_KEY, PROCESS_DEFINITION_KEY);
+      // then the ask is kept and backed off (not removed), so the scheduler retries it until the
+      // deployment reaches P_B and a later attempt flips to STARTED
+      verify(mockAskState).backOff(MESSAGE_KEY, PROCESS_DEFINITION_KEY);
+      verify(mockAskState, never()).remove(anyLong(), anyLong());
     }
   }
 }

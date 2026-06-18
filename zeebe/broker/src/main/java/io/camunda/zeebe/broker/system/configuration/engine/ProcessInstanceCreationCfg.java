@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.system.configuration.engine;
 
 import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_BUSINESS_ID_UNIQUENESS_ENABLED;
+import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_MESSAGE_START_ASK_RETRY_GRACE;
 import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_MESSAGE_START_ASK_RETRY_INTERVAL;
 import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_MESSAGE_START_DEDUP_EXPIRATION_SWEEP_BATCH_LIMIT;
 import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_MESSAGE_START_DEDUP_EXPIRATION_SWEEP_INTERVAL;
@@ -26,6 +27,7 @@ public class ProcessInstanceCreationCfg implements ConfigurationEntry {
   private int messageStartDedupExpirationSweepBatchLimit =
       DEFAULT_MESSAGE_START_DEDUP_EXPIRATION_SWEEP_BATCH_LIMIT;
   private Duration messageStartAskRetryInterval = DEFAULT_MESSAGE_START_ASK_RETRY_INTERVAL;
+  private Duration messageStartAskRetryGrace = DEFAULT_MESSAGE_START_ASK_RETRY_GRACE;
   private Duration messageStartLockReleasePollInterval =
       DEFAULT_MESSAGE_START_LOCK_RELEASE_POLL_INTERVAL;
   private Duration messageStartLockReleasePollMaxBackoff =
@@ -67,6 +69,14 @@ public class ProcessInstanceCreationCfg implements ConfigurationEntry {
     this.messageStartAskRetryInterval = messageStartAskRetryInterval;
   }
 
+  public Duration getMessageStartAskRetryGrace() {
+    return messageStartAskRetryGrace;
+  }
+
+  public void setMessageStartAskRetryGrace(final Duration messageStartAskRetryGrace) {
+    this.messageStartAskRetryGrace = messageStartAskRetryGrace;
+  }
+
   public Duration getMessageStartLockReleasePollInterval() {
     return messageStartLockReleasePollInterval;
   }
@@ -105,6 +115,8 @@ public class ProcessInstanceCreationCfg implements ConfigurationEntry {
         + messageStartDedupExpirationSweepBatchLimit
         + ", messageStartAskRetryInterval="
         + messageStartAskRetryInterval
+        + ", messageStartAskRetryGrace="
+        + messageStartAskRetryGrace
         + ", messageStartLockReleasePollInterval="
         + messageStartLockReleasePollInterval
         + ", messageStartLockReleasePollMaxBackoff="
