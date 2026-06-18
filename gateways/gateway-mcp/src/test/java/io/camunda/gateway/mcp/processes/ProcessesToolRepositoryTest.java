@@ -71,7 +71,9 @@ class ProcessesToolRepositoryTest {
         .when(serviceRegistry.messageSubscriptionServices(any()))
         .thenReturn(messageSubscriptionServices);
     lenient().when(serviceRegistry.messageServices(any())).thenReturn(messageServices);
-    // Bind a plain request with no PT attribute — models a non-prefixed /mcp/... cluster request
+    // Bind a request so current() resolves on the request thread; with no PT attribute it falls
+    // back to the default tenant. (A real /mcp/... request differs — the MCP filter stamps the
+    // default explicitly — but exercising current()'s fallback is sufficient for these tests.)
     RequestContextHolder.setRequestAttributes(
         new ServletRequestAttributes(new MockHttpServletRequest()));
   }
