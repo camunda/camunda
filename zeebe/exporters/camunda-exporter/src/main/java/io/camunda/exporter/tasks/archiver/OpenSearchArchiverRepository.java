@@ -366,12 +366,13 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
             taskSupplier::moveNextBatch, count -> taskSupplier.isComplete())
         .thenComposeAsync(
             ignored -> {
-              // don't set the lifecycle if nothing was moved
-              // as it also might mean the index does not exist anyway
-              if (taskSupplier.getTotalArchived() > 0L) {
-                return setIndexLifeCycle(destinationIndexName);
-              }
-              return CompletableFuture.completedFuture(null);
+              // always trigger set life cycle, which checks whether the policy was previously
+              // applied and, if so, skips it. If nothing moved and the destination index is
+              // not present, we already set .allowNoIndices(true), which prevents it from erroring.
+              // However, if nothing moved because we previously moved them, but the call errored
+              // at the put policy stage, this will reapply the policy and ensure no index is
+              // left without the ILM policy.
+              return setIndexLifeCycle(destinationIndexName);
             },
             executor)
         .thenApply(
