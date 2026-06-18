@@ -132,6 +132,40 @@ public enum RocksDbMetricsDoc implements RocksDbMeterDoc {
     }
   },
 
+  NUM_IMMUTABLE_MEM_TABLE {
+    @Override
+    public String getDescription() {
+      return MEMORY_METRICS_HELP;
+    }
+
+    @Override
+    public String namespace() {
+      return MEMORY_METRICS_PREFIX;
+    }
+
+    @Override
+    public String propertyName() {
+      return "rocksdb.num-immutable-mem-table";
+    }
+  },
+
+  NUM_IMMUTABLE_MEM_TABLE_FLUSHED {
+    @Override
+    public String getDescription() {
+      return MEMORY_METRICS_HELP;
+    }
+
+    @Override
+    public String namespace() {
+      return MEMORY_METRICS_PREFIX;
+    }
+
+    @Override
+    public String propertyName() {
+      return "rocksdb.num-immutable-mem-table-flushed";
+    }
+  },
+
   TOTAL_SST_FILES_SIZE {
     @Override
     public String getDescription() {
@@ -163,6 +197,57 @@ public enum RocksDbMetricsDoc implements RocksDbMeterDoc {
     @Override
     public String propertyName() {
       return "rocksdb.live-sst-files-size";
+    }
+  },
+
+  OBSOLETE_SST_FILES_SIZE {
+    @Override
+    public String getDescription() {
+      return SST_METRICS_HELP;
+    }
+
+    @Override
+    public String namespace() {
+      return SST_METRICS_PREFIX;
+    }
+
+    @Override
+    public String propertyName() {
+      return "rocksdb.obsolete-sst-files-size";
+    }
+  },
+
+  NUM_LIVE_VERSIONS {
+    @Override
+    public String getDescription() {
+      return SST_METRICS_HELP;
+    }
+
+    @Override
+    public String namespace() {
+      return SST_METRICS_PREFIX;
+    }
+
+    @Override
+    public String propertyName() {
+      return "rocksdb.num-live-versions";
+    }
+  },
+
+  NUM_SNAPSHOTS {
+    @Override
+    public String getDescription() {
+      return SST_METRICS_HELP;
+    }
+
+    @Override
+    public String namespace() {
+      return SST_METRICS_PREFIX;
+    }
+
+    @Override
+    public String propertyName() {
+      return "rocksdb.num-snapshots";
     }
   },
 
@@ -214,6 +299,57 @@ public enum RocksDbMetricsDoc implements RocksDbMeterDoc {
     @Override
     public String propertyName() {
       return "rocksdb.estimate-live-data-size";
+    }
+  },
+
+  NUM_ENTRIES_ACTIVE_MEM_TABLE {
+    @Override
+    public String getDescription() {
+      return LIVE_METRICS_HELP;
+    }
+
+    @Override
+    public String namespace() {
+      return LIVE_METRICS_PREFIX;
+    }
+
+    @Override
+    public String propertyName() {
+      return "rocksdb.num-entries-active-mem-table";
+    }
+  },
+
+  NUM_DELETES_ACTIVE_MEM_TABLE {
+    @Override
+    public String getDescription() {
+      return LIVE_METRICS_HELP;
+    }
+
+    @Override
+    public String namespace() {
+      return LIVE_METRICS_PREFIX;
+    }
+
+    @Override
+    public String propertyName() {
+      return "rocksdb.num-deletes-active-mem-table";
+    }
+  },
+
+  NUM_DELETES_IMM_MEM_TABLES {
+    @Override
+    public String getDescription() {
+      return LIVE_METRICS_HELP;
+    }
+
+    @Override
+    public String namespace() {
+      return LIVE_METRICS_PREFIX;
+    }
+
+    @Override
+    public String propertyName() {
+      return "rocksdb.num-deletes-imm-mem-tables";
     }
   },
 
@@ -299,6 +435,40 @@ public enum RocksDbMetricsDoc implements RocksDbMeterDoc {
     @Override
     public String propertyName() {
       return "rocksdb.num-running-compactions";
+    }
+  },
+
+  ESTIMATE_PENDING_COMPACTION_BYTES {
+    @Override
+    public String getDescription() {
+      return WRITE_METRICS_HELP;
+    }
+
+    @Override
+    public String namespace() {
+      return WRITE_METRICS_PREFIX;
+    }
+
+    @Override
+    public String propertyName() {
+      return "rocksdb.estimate-pending-compaction-bytes";
+    }
+  },
+
+  BACKGROUND_ERRORS {
+    @Override
+    public String getDescription() {
+      return WRITE_METRICS_HELP;
+    }
+
+    @Override
+    public String namespace() {
+      return WRITE_METRICS_PREFIX;
+    }
+
+    @Override
+    public String propertyName() {
+      return "rocksdb.background-errors";
     }
   };
 

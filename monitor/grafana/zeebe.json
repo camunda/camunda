@@ -18212,7 +18212,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "Return 1 if write has been stopped.\n\nhttps://github.com/facebook/rocksdb/blob/e66199d848cd484b816d07359f1dc0f0b99e5351/include/rocksdb/db.h#L908",
+          "description": "Returns 1 when RocksDB has halted writes. A sustained value of 1 means the engine cannot make progress on this partition.\n\nhttps://github.com/facebook/rocksdb/blob/e66199d848cd484b816d07359f1dc0f0b99e5351/include/rocksdb/db.h#L908",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -18269,7 +18269,7 @@
           },
           "gridPos": {
             "h": 6,
-            "w": 6,
+            "w": 8,
             "x": 0,
             "y": 3927
           },
@@ -18302,6 +18302,102 @@
             }
           ],
           "title": "Write stopped",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "Cumulative count of errors hit during background flush or compaction. A non-zero value indicates a serious problem and is often the cause of a write stop.\n\nhttps://github.com/facebook/rocksdb/blob/e66199d848cd484b816d07359f1dc0f0b99e5351/include/rocksdb/db.h#L908",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 8,
+            "x": 8,
+            "y": 3927
+          },
+          "id": 735,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "desc"
+            }
+          },
+          "pluginVersion": "12.1.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "expr": "sum(zeebe_rocksdb_writes_background_errors{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}) by (pod, partition)",
+              "interval": "",
+              "legendFormat": "{{pod}}  background errors {{partition}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Background errors",
           "type": "timeseries"
         },
         {
@@ -18368,8 +18464,8 @@
           },
           "gridPos": {
             "h": 6,
-            "w": 6,
-            "x": 6,
+            "w": 8,
+            "x": 16,
             "y": 3927
           },
           "id": 157,
@@ -18465,10 +18561,10 @@
             "overrides": []
           },
           "gridPos": {
-            "h": 6,
-            "w": 12,
-            "x": 12,
-            "y": 3927
+            "h": 7,
+            "w": 8,
+            "x": 8,
+            "y": 3948
           },
           "id": 146,
           "options": {
@@ -18564,9 +18660,9 @@
           },
           "gridPos": {
             "h": 7,
-            "w": 6,
-            "x": 0,
-            "y": 3933
+            "w": 8,
+            "x": 8,
+            "y": 3941
           },
           "id": 159,
           "options": {
@@ -18662,9 +18758,9 @@
           },
           "gridPos": {
             "h": 7,
-            "w": 6,
-            "x": 6,
-            "y": 3933
+            "w": 8,
+            "x": 16,
+            "y": 3941
           },
           "id": 160,
           "options": {
@@ -18761,9 +18857,9 @@
           },
           "gridPos": {
             "h": 7,
-            "w": 12,
-            "x": 12,
-            "y": 3933
+            "w": 8,
+            "x": 16,
+            "y": 3948
           },
           "id": 153,
           "options": {
@@ -18863,7 +18959,7 @@
             "h": 11,
             "w": 24,
             "x": 0,
-            "y": 3940
+            "y": 3955
           },
           "id": 603,
           "options": {
@@ -18899,6 +18995,448 @@
             }
           ],
           "title": "Column Family Access Latency 99th percentile",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "Rate of RocksDB write *stops* (writes fully halted) per second, broken down by cause. Any sustained non-zero value means ingestion is being blocked. Series are stacked to show total stop pressure.\n\nSourced from the rocksdb.cfstats map (always-on InternalStats).\n\nhttps://github.com/facebook/rocksdb/blob/e66199d848cd484b816d07359f1dc0f0b99e5351/include/rocksdb/db.h",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "normal"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "links": [],
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 3933
+          },
+          "id": 731,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "pluginVersion": "12.1.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "expr": "sum(rate(zeebe_rocksdb_writes_io_stalls_memtable_stop{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (pod, partition)",
+              "interval": "",
+              "legendFormat": "{{pod}}  memtable {{partition}}",
+              "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "expr": "sum(rate(zeebe_rocksdb_writes_io_stalls_l0_file_count_stop{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (pod, partition)",
+              "interval": "",
+              "legendFormat": "{{pod}}  L0 file count {{partition}}",
+              "refId": "B"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "expr": "sum(rate(zeebe_rocksdb_writes_io_stalls_pending_compaction_bytes_stop{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (pod, partition)",
+              "interval": "",
+              "legendFormat": "{{pod}}  pending compaction bytes {{partition}}",
+              "refId": "C"
+            }
+          ],
+          "title": "Write stalls - stops by cause",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "Rate of RocksDB write *slowdowns* (writes throttled, not halted) per second, broken down by cause. An early-warning signal that precedes write stops. Series are stacked to show total slowdown pressure.\n\nSourced from the rocksdb.cfstats map (always-on InternalStats).\n\nhttps://github.com/facebook/rocksdb/blob/e66199d848cd484b816d07359f1dc0f0b99e5351/include/rocksdb/db.h",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "normal"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "links": [],
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 3933
+          },
+          "id": 732,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "pluginVersion": "12.1.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "expr": "sum(rate(zeebe_rocksdb_writes_io_stalls_memtable_slowdown{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (pod, partition)",
+              "interval": "",
+              "legendFormat": "{{pod}}  memtable {{partition}}",
+              "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "expr": "sum(rate(zeebe_rocksdb_writes_io_stalls_l0_file_count_slowdown{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (pod, partition)",
+              "interval": "",
+              "legendFormat": "{{pod}}  L0 file count {{partition}}",
+              "refId": "B"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "expr": "sum(rate(zeebe_rocksdb_writes_io_stalls_pending_compaction_bytes_slowdown{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (pod, partition)",
+              "interval": "",
+              "legendFormat": "{{pod}}  pending compaction bytes {{partition}}",
+              "refId": "C"
+            }
+          ],
+          "title": "Write stalls - slowdowns by cause",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "Estimated bytes that compaction still needs to rewrite to reach the target LSM shape (compaction debt). Sustained growth means compaction cannot keep up and precedes pending-compaction-bytes write slowdowns and stops.\n\nhttps://github.com/facebook/rocksdb/blob/e66199d848cd484b816d07359f1dc0f0b99e5351/include/rocksdb/db.h",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "links": [],
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "bytes"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 8,
+            "x": 0,
+            "y": 3941
+          },
+          "id": 733,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "pluginVersion": "12.1.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "expr": "sum(zeebe_rocksdb_writes_estimate_pending_compaction_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}) by (pod, partition)",
+              "interval": "",
+              "legendFormat": "{{pod}}  {{partition}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Estimated pending compaction bytes",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "Number of immutable (read-only, awaiting flush) memtables, and the number that have already been flushed. A growing pending-flush count means flushes are not keeping up.\n\nhttps://github.com/facebook/rocksdb/blob/e66199d848cd484b816d07359f1dc0f0b99e5351/include/rocksdb/db.h",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "links": [],
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 8,
+            "x": 0,
+            "y": 3948
+          },
+          "id": 734,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "pluginVersion": "12.1.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "expr": "sum(zeebe_rocksdb_memory_num_immutable_mem_table{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}) by (pod, partition)",
+              "interval": "",
+              "legendFormat": "{{pod}}  pending flush {{partition}}",
+              "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "expr": "sum(zeebe_rocksdb_memory_num_immutable_mem_table_flushed{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}) by (pod, partition)",
+              "interval": "",
+              "legendFormat": "{{pod}}  flushed {{partition}}",
+              "refId": "B"
+            }
+          ],
+          "title": "Immutable memtables",
           "type": "timeseries"
         }
       ],

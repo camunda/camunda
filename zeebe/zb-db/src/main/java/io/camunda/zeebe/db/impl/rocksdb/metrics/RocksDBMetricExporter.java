@@ -20,9 +20,12 @@ import org.slf4j.LoggerFactory;
 public final class RocksDBMetricExporter {
 
   private static final Logger LOG = LoggerFactory.getLogger(RocksDBMetricExporter.class.getName());
+  private static final String CF_STATS_PROPERTY = "rocksdb.cfstats";
 
   private final Map<RocksDbMetricsDoc, StatefulGauge> metrics =
       new EnumMap<>(RocksDbMetricsDoc.class);
+  private final Map<RocksDbIoStallMetricsDoc, StatefulGauge> ioStallMetrics =
+      new EnumMap<>(RocksDbIoStallMetricsDoc.class);
   private final MeterRegistry registry;
 
   public RocksDBMetricExporter(final MeterRegistry registry) {
@@ -37,13 +40,15 @@ public final class RocksDBMetricExporter {
       exportMetric(database, metric.propertyName(), gauge);
     }
 
+    exportIoStallMetrics(database);
+
     final long elapsedTime = System.nanoTime() - startTime;
     LOG.trace(
         "Exporting RocksDBMetrics took + {} ms",
         TimeUnit.MILLISECONDS.convert(elapsedTime, TimeUnit.NANOSECONDS));
   }
 
-  private StatefulGauge registerMetric(final RocksDbMetricsDoc doc) {
+  private StatefulGauge registerMetric(final RocksDbMeterDoc doc) {
     return StatefulGauge.builder(doc.getName())
         .description(doc.getDescription())
         .register(registry);
@@ -58,6 +63,38 @@ public final class RocksDBMetricExporter {
       }
     } catch (final Exception exception) {
       LOG.debug("Error occurred on exporting metric {}", propertyName, exception);
+    }
+  }
+
+  private void exportIoStallMetrics(final RocksDB database) {
+    final Map<String, String> cfStats;
+    try {
+      cfStats = database.getMapProperty(CF_STATS_PROPERTY);
+    } catch (final Exception exception) {
+      LOG.debug("Error occurred on reading property {}", CF_STATS_PROPERTY, exception);
+      return;
+    }
+
+    if (cfStats == null) {
+      return;
+    }
+
+    for (final var metric : RocksDbIoStallMetricsDoc.values()) {
+      final var gauge = ioStallMetrics.computeIfAbsent(metric, this::registerMetric);
+      final var value = cfStats.get(metric.propertyName());
+      if (value == null) {
+        continue;
+      }
+
+      try {
+        gauge.set(Long.parseLong(value.trim()));
+      } catch (final NumberFormatException exception) {
+        LOG.debug(
+            "Could not parse io-stall metric {} with value {}",
+            metric.propertyName(),
+            value,
+            exception);
+      }
     }
   }
 }
