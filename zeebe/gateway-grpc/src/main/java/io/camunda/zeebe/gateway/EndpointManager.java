@@ -72,6 +72,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRespo
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobTimeoutRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobTimeoutResponse;
 import io.camunda.zeebe.gateway.validation.VariableNameLengthValidator;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.util.VersionUtil;
 import io.grpc.Context;
@@ -80,6 +81,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -534,9 +536,8 @@ public final class EndpointManager {
     final BrokerRequest<BrokerResponseT> brokerRequest = requestMapper.apply(grpcRequest);
     brokerRequest.setAuthorization(getClaims());
     final String physicalTenantId = getPhysicalTenantId();
-    if (physicalTenantId != null) {
-      brokerRequest.setPartitionGroup(physicalTenantId);
-    }
+    brokerRequest.setPartitionGroup(
+        Objects.requireNonNullElse(physicalTenantId, Protocol.DEFAULT_PARTITION_GROUP_NAME));
     return brokerRequest;
   }
 
