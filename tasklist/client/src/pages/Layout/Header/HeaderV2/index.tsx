@@ -96,14 +96,15 @@ const HeaderV2: React.FC = observer(() => {
         onClick: () => {
           tracking.track({eventName: 'navigation', link: 'header-logo'});
         },
-      } as never,
+      },
     },
     skipToContentTargetId: SKIP_TO_CONTENT_TARGET_ID,
     activeItemKey,
     sidebarChildren,
     breadcrumbs,
     tools,
-    linkComponent: RouterLink as never,
+    //@ts-expect-error - C3 needs to fix the types
+    linkComponent: RouterLink,
     headerTrailingContent: showLicenseTag ? (
       <C3LicenseTag
         isProductionLicense={license.validLicense ?? false}

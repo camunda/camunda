@@ -45,7 +45,7 @@ export function useTaskFiltersSidebar(
       key: 'tasks:all-open',
       label: t('taskFiltersAllOpenTasks'),
       icon: TaskView,
-      linkProps: {to: `${pages.initial}?filter=all-open`} as never,
+      linkProps: {to: `${pages.initial}?filter=all-open`},
       onClick: () => {
         tracking.track({
           eventName: 'navigation',
@@ -58,7 +58,7 @@ export function useTaskFiltersSidebar(
       key: 'tasks:assigned-to-me',
       label: t('taskFiltersAssignedToMe'),
       icon: UserFollow,
-      linkProps: {to: `${pages.initial}?filter=assigned-to-me`} as never,
+      linkProps: {to: `${pages.initial}?filter=assigned-to-me`},
       onClick: () => {
         tracking.track({
           eventName: 'navigation',
@@ -71,7 +71,7 @@ export function useTaskFiltersSidebar(
       key: 'tasks:unassigned',
       label: t('taskFiltersUnassigned'),
       icon: TaskRemove,
-      linkProps: {to: `${pages.initial}?filter=unassigned`} as never,
+      linkProps: {to: `${pages.initial}?filter=unassigned`},
       onClick: () => {
         tracking.track({
           eventName: 'navigation',
@@ -84,7 +84,7 @@ export function useTaskFiltersSidebar(
       key: 'tasks:completed',
       label: t('taskFiltersCompleted'),
       icon: TaskComplete,
-      linkProps: {to: `${pages.initial}?filter=completed`} as never,
+      linkProps: {to: `${pages.initial}?filter=completed`},
       onClick: () => {
         tracking.track({
           eventName: 'navigation',
@@ -97,7 +97,7 @@ export function useTaskFiltersSidebar(
       key: `tasks:${key}`,
       label: value?.name ?? key,
       icon: TaskAdd,
-      linkProps: {to: `${pages.initial}?filter=${key}`} as never,
+      linkProps: {to: `${pages.initial}?filter=${key}`},
       onClick: () => {
         tracking.track({
           eventName: 'navigation',

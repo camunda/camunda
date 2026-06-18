@@ -39,7 +39,7 @@ export function useSidebarChildren(params: {
       label: t('headerNavItemTasks'),
       icon: TaskView,
       defaultExpanded: !isProcessesPage,
-      linkProps: {to: pages.initial} as never,
+      linkProps: {to: pages.initial},
       onClick: () => {
         tracking.track({eventName: 'navigation', link: 'header-tasks'});
       },
@@ -55,7 +55,7 @@ export function useSidebarChildren(params: {
         to: pages.processes({
           tenantId: getStateLocally('tenantId') ?? undefined,
         }),
-      } as never,
+      },
       onClick: () => {
         tracking.track({eventName: 'navigation', link: 'header-processes'});
       },

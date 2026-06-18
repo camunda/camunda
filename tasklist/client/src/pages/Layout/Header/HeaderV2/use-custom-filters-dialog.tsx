@@ -48,8 +48,7 @@ export function useCustomFiltersDialog(): CustomFiltersDialog {
   const [filterToDelete, setFilterToDelete] = useState<string>();
 
   void bump;
-  const customFilters = (getStateLocally('customFilters') ??
-    {}) as CustomFilters;
+  const customFilters = getStateLocally('customFilters') ?? {};
   const customFilterEntries = Object.entries(customFilters).filter(
     ([key]) => !BUILTIN_FILTERS.has(key),
   );
