@@ -19,6 +19,7 @@
 	},
 	"dependencies": {
 		"@camunda/camunda-api-zod-schemas": "0.0.73",
+		"bpmn-js": "18.16.1",
 		"@camunda/camunda-composite-components": "0.24.0",
 		"@carbon/react": "1.109.0",
 		"@carbon/type": "11.61.0",
