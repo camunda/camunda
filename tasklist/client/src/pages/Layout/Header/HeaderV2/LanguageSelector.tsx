@@ -8,12 +8,11 @@
 
 import {useEffect, useState} from 'react';
 import {useTranslation} from 'react-i18next';
-import {observer} from 'mobx-react-lite';
 import {Dropdown, Layer, type OnChangeData} from '@carbon/react';
 import {languageItems, type SelectionOption} from 'modules/i18n';
 import styles from '../styles.module.scss';
 
-export const LanguageSelector: React.FC = observer(() => {
+export const LanguageSelector: React.FC = () => {
   const {i18n, t} = useTranslation();
 
   const [selectedLanguage, setSelectedLanguage] = useState(
@@ -48,4 +47,4 @@ export const LanguageSelector: React.FC = observer(() => {
       </div>
     </Layer>
   );
-});
+};
