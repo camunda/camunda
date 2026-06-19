@@ -105,9 +105,9 @@ public class AgentHistoryHandler
         .setRole(mapRole(value.getRole()))
         .setCommitStatus(mapCommitStatusFromIntent(intent))
         .setProducedAt(
-            value.getProducedAt() > 0
-                ? DateUtil.toOffsetDateTime(Instant.ofEpochMilli(value.getProducedAt()))
-                : null)
+            DateUtil.toOffsetDateTime(
+                Instant.ofEpochMilli(
+                    value.getProducedAt() > 0 ? value.getProducedAt() : record.getTimestamp())))
         .setInputTokens(value.getMetrics().getInputTokens())
         .setOutputTokens(value.getMetrics().getOutputTokens())
         .setDurationMs(value.getMetrics().getDurationMs())

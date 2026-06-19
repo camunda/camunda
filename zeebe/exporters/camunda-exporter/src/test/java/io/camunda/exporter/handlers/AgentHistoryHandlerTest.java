@@ -547,9 +547,9 @@ final class AgentHistoryHandlerTest {
   }
 
   @Test
-  void shouldConvertNonPositiveProducedAtToNull() {
-    // given — producedAt == -1 is the protocol default for "unset"; Instant.ofEpochMilli(-1)
-    // would produce a 1969 timestamp, which is invalid for this field
+  void shouldFallBackToRecordTimestampWhenProducedAtNonPositive() {
+    // given — producedAt == -1 is the protocol default for "unset"; fall back to the record
+    // timestamp so the non-nullable API contract is preserved
     final var recordValue =
         ImmutableAgentHistoryRecordValue.builder()
             .from(buildMinimalRecordValue(1L, 1))
@@ -565,7 +565,8 @@ final class AgentHistoryHandlerTest {
     underTest.updateEntity(record, entity);
 
     // then
-    assertThat(entity.getProducedAt()).isNull();
+    assertThat(entity.getProducedAt())
+        .isEqualTo(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
   }
 
   // --- helpers ---
