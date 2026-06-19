@@ -144,6 +144,12 @@ public final class DbJobState implements JobState, MutableJobState {
   @Override
   public void create(final long key, final JobRecord record) {
     final DirectBuffer type = record.getTypeBuffer();
+    createJobLegacy(key, record, type);
+  }
+
+  @Override
+  public void createWithPriorityActivation(final long key, final JobRecord record) {
+    final DirectBuffer type = record.getTypeBuffer();
     createJob(key, record, type);
   }
 
@@ -360,6 +366,27 @@ public final class DbJobState implements JobState, MutableJobState {
     createJobRecord(key, record);
     initializeJobState();
     makeJobActivatable(type, key, record.getTenantId(), record.getPriority());
+  }
+
+  /**
+   * Pre-prioritization create. Writes the job to {@code JOB_ACTIVATABLE} (legacy CF) and does not
+   * touch {@code JOB_ACTIVATABLE_BY_PRIORITY}. Used by the v=2 applier so a low-ECV cluster's state
+   * is identical to a pre-PR broker's.
+   */
+  private void createJobLegacy(final long key, final JobRecord record, final DirectBuffer type) {
+    createJobRecord(key, record);
+    initializeJobState();
+    makeJobActivatableLegacy(type, key, record.getTenantId());
+  }
+
+  private void makeJobActivatableLegacy(
+      final DirectBuffer type, final long key, final String tenantId) {
+    EnsureUtil.ensureNotNullOrEmpty("type", type);
+    EnsureUtil.ensureNotNullOrEmpty("tenantId", tenantId);
+    jobTypeKey.wrapBuffer(type);
+    jobKey.wrapLong(key);
+    tenantIdKey.wrapString(tenantId);
+    activatableColumnFamily.upsert(tenantAwareTypeJobKey, DbNil.INSTANCE);
   }
 
   private void updateJob(final long key, final JobRecord updatedValue, final State newState) {

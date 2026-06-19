@@ -547,6 +547,7 @@ public final class EventAppliers implements EventApplier {
     register(JobIntent.COMPLETED, 3, new JobCompletedV3Applier(state));
     register(JobIntent.CREATED, 1, new JobCreatedV1Applier(state));
     register(JobIntent.CREATED, 2, new JobCreatedV2Applier(state));
+    register(JobIntent.CREATED, 3, new JobCreatedV3Applier(state));
     register(JobIntent.ERROR_THROWN, 1, new JobErrorThrownV1Applier(state));
     register(JobIntent.ERROR_THROWN, 2, new JobErrorThrownV2Applier(state));
     register(JobIntent.FAILED, 1, new JobFailedV1Applier(state));

@@ -40,7 +40,7 @@ public class JobPriorityStreamingActivationTest {
 
   @ClassRule
   public static final EngineRule ENGINE =
-      EngineRule.singlePartition().withJobStreamer(JOB_STREAMER);
+      EngineRule.singlePartition().withJobStreamer(JOB_STREAMER).withInitialClusterVersionAtMax();
 
   @Rule public final RecordingExporterTestWatcher watcher = new RecordingExporterTestWatcher();
 

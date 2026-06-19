@@ -105,7 +105,10 @@ public final class JobEventProcessors {
         .onCommand(
             ValueType.JOB,
             JobIntent.UPDATE,
-            new JobUpdateProcessor(bpmnBehaviors.jobUpdateBehaviour(), writers))
+            new JobUpdateProcessor(
+                bpmnBehaviors.jobUpdateBehaviour(),
+                writers,
+                bpmnBehaviors.clusterVersionFeatures()))
         .onCommand(
             ValueType.JOB,
             JobIntent.CANCEL,

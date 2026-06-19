@@ -260,6 +260,10 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             config.isCandidateGroupNameResolution(),
             clock);
 
+    // Construct ClusterVersionFeatures here so BpmnJobBehavior below can wire the ECV gate for
+    // job priority. Stored on the field so the accessor returns the same instance.
+    clusterVersionFeatures = new ClusterVersionFeatures(processingState.getClusterVersionState());
+
     jobBehavior =
         new BpmnJobBehavior(
             processingState.getKeyGenerator(),
@@ -272,7 +276,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             incidentBehavior,
             jobActivationBehavior,
             jobMetrics,
-            userTaskBehavior);
+            userTaskBehavior,
+            clusterVersionFeatures);
 
     compensationSubscriptionBehaviour =
         new BpmnCompensationSubscriptionBehaviour(
@@ -287,8 +292,6 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             stateBehavior,
             variableBehavior,
             processingState);
-
-    clusterVersionFeatures = new ClusterVersionFeatures(processingState.getClusterVersionState());
   }
 
   @Override

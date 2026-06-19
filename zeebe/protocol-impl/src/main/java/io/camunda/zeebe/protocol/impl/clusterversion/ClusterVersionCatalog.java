@@ -10,6 +10,7 @@ package io.camunda.zeebe.protocol.impl.clusterversion;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ClusterVersionIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartCorrelationKeyLockReleaseIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -166,7 +167,37 @@ public final class ClusterVersionCatalog {
                 MessageStartCorrelationKeyLockReleaseIntent.QUERY),
             new GatedCommandId(
                 ValueType.MESSAGE_START_CORRELATION_KEY_LOCK_RELEASE,
-                MessageStartCorrelationKeyLockReleaseIntent.RELEASE)));
+                MessageStartCorrelationKeyLockReleaseIntent.RELEASE))),
+
+    /**
+     * Gates the job-prioritization feature (issue #50567). Three sub-features, all routed through
+     * applier-version selection so the gate composes naturally with the engine's existing
+     * versioned-applier mechanism:
+     *
+     * <ul>
+     *   <li><b>Job creation with priority-CF activation</b> — {@code JobCreatedV3Applier} is the
+     *       priority-aware path. It calls {@code MutableJobState.createWithPriorityActivation},
+     *       which writes the job into the {@code JOB_ACTIVATABLE_BY_PRIORITY} column family. Below
+     *       the gate the write side picks v=2 instead, which routes through {@code
+     *       MutableJobState.create} → legacy {@code JOB_ACTIVATABLE} column family. A low-ECV
+     *       cluster's state therefore matches a pre-PR broker exactly.
+     *   <li><b>Priority field on JobRecord at creation</b> — {@code BpmnJobBehavior} only evaluates
+     *       the BPMN priority expression when this capability is active; below the gate the field
+     *       is forced to 0 so the v=2 record stream is byte-identical to pre-PR.
+     *   <li><b>Priority update API</b> — {@code JobIntent.UPDATE} command (pre-existing intent)
+     *       carrying a PRIORITY changeset emits a new {@code PRIORITY_UPDATED} event. The processor
+     *       branch in {@code JobUpdateProcessor} consults this capability and rejects the command
+     *       when the gate is closed; the {@code PRIORITY_UPDATED} v=1 applier is listed here so the
+     *       event writer's {@code selectVersionFor} returns -1 below the gate as defense-in-depth.
+     * </ul>
+     */
+    JOB_PRIORITIZATION(
+        13,
+        "Job-level priority field, priority-ordered activation, and priority update API",
+        Set.of(
+            new ApplierVersionId(JobIntent.PRIORITY_UPDATED, 1),
+            new ApplierVersionId(JobIntent.CREATED, 3)),
+        Set.of());
 
     private final int at;
     private final String description;

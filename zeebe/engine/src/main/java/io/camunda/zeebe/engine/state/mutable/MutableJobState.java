@@ -12,7 +12,22 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 
 public interface MutableJobState extends JobState {
 
+  /**
+   * Pre-prioritization create path. Inserts the job into the legacy {@code JOB_ACTIVATABLE} column
+   * family, ignoring the {@code priority} field on the record. Used by {@code JobCreatedV2Applier}
+   * so that records stamped with {@code recordVersion=2} (selected by the write side when {@link
+   * io.camunda.zeebe.protocol.impl.clusterversion.ClusterVersionCatalog.Capability#JOB_PRIORITIZATION}
+   * is inactive) produce identical state to a pre-PR broker.
+   */
   void create(long key, JobRecord record);
+
+  /**
+   * Priority-aware create path. Inserts the job into {@code JOB_ACTIVATABLE_BY_PRIORITY} with the
+   * record's priority as the sort key. Used by {@code JobCreatedV3Applier}, which is selected only
+   * when ECV has activated {@link
+   * io.camunda.zeebe.protocol.impl.clusterversion.ClusterVersionCatalog.Capability#JOB_PRIORITIZATION}.
+   */
+  void createWithPriorityActivation(long key, JobRecord record);
 
   void activate(long key, JobRecord record);
 

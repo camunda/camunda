@@ -19,9 +19,8 @@ import org.junit.Rule;
 import org.junit.Test;
 
 /**
- * Verifies that {@link Capability#MESSAGE_BUSINESS_ID_CORRELATION} gates the
- * businessId-uniqueness feature (issue #51689) on top of the operator-set {@code
- * businessIdUniquenessEnabled} config.
+ * Verifies that {@link Capability#MESSAGE_BUSINESS_ID_CORRELATION} gates the businessId-uniqueness
+ * feature (issue #51689) on top of the operator-set {@code businessIdUniquenessEnabled} config.
  *
  * <p>The feature activates only when BOTH conditions hold:
  *
@@ -44,6 +43,7 @@ public final class MessageBusinessIdGateTest {
   public final EngineRule engine =
       EngineRule.singlePartition()
           .withEngineConfig(config -> config.setBusinessIdUniquenessEnabled(true));
+
   // intentionally NOT calling withInitialClusterVersionAtMax() — the ECV gate stays closed,
   // so the combined runtime flag in MessageEventProcessors resolves to false
 
@@ -57,8 +57,7 @@ public final class MessageBusinessIdGateTest {
     // Combined effective gate is OFF.
     engine
         .deployment()
-        .withXmlResource(
-            Bpmn.createExecutableProcess(PROCESS_ID).startEvent().endEvent().done())
+        .withXmlResource(Bpmn.createExecutableProcess(PROCESS_ID).startEvent().endEvent().done())
         .deploy();
 
     // when — two process instance creates carry the same businessId. With both gates open this

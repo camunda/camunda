@@ -16,6 +16,7 @@ import io.camunda.zeebe.el.ResultType;
 import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
+import io.camunda.zeebe.engine.processing.clusterversion.ClusterVersionFeatures;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
@@ -39,6 +40,7 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListenerEventTyp
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.clusterversion.ClusterVersionCatalog.Capability;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
@@ -119,6 +121,7 @@ public final class BpmnJobBehavior {
   private final JobProcessingMetrics jobMetrics;
   private final BpmnJobActivationBehavior jobActivationBehavior;
   private final BpmnUserTaskBehavior userTaskBehavior;
+  private final ClusterVersionFeatures clusterVersionFeatures;
 
   public BpmnJobBehavior(
       final KeyGenerator keyGenerator,
@@ -131,7 +134,8 @@ public final class BpmnJobBehavior {
       final BpmnIncidentBehavior incidentBehavior,
       final BpmnJobActivationBehavior jobActivationBehavior,
       final JobProcessingMetrics jobMetrics,
-      final BpmnUserTaskBehavior userTaskBehavior) {
+      final BpmnUserTaskBehavior userTaskBehavior,
+      final ClusterVersionFeatures clusterVersionFeatures) {
     this.keyGenerator = keyGenerator;
     this.jobState = jobState;
     this.expressionBehavior = expressionBehavior;
@@ -143,6 +147,7 @@ public final class BpmnJobBehavior {
     this.jobMetrics = jobMetrics;
     this.jobActivationBehavior = jobActivationBehavior;
     this.userTaskBehavior = userTaskBehavior;
+    this.clusterVersionFeatures = clusterVersionFeatures;
   }
 
   public Either<Failure, JobProperties> evaluateJobExpressions(
@@ -155,7 +160,12 @@ public final class BpmnJobBehavior {
             p -> evalRetriesExp(jobWorkerProps.getRetries(), scopeKey, tenantId).map(p::retries))
         .flatMap(
             p ->
-                evalPriorityExp(jobWorkerProps.getJobPriority(), scopeKey, tenantId)
+                // ECV gate: skip the BPMN priority expression entirely when JOB_PRIORITIZATION is
+                // inactive. The job record gets priority=0, which produces a v=2 write path
+                // (legacy JOB_ACTIVATABLE column family) byte-identical to a pre-PR broker.
+                (clusterVersionFeatures.isActive(Capability.JOB_PRIORITIZATION)
+                        ? evalPriorityExp(jobWorkerProps.getJobPriority(), scopeKey, tenantId)
+                        : Either.<Failure, Integer>right(0))
                     .map(p::priority))
         .flatMap(
             p -> evalLinkedResourceProps(jobWorkerProps, context, scopeKey).map(p::linkedResources))
