@@ -30,7 +30,7 @@ import {
   isSingleIncidentSelected,
 } from 'modules/utils/incidents';
 import type {EnhancedIncident} from 'modules/hooks/incidents';
-import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
+import {useProcessInstanceElementSelectActions} from 'modules/hooks/useProcessInstanceElementSelection';
 
 type DecisionInstanceLookup = Record<
   string,
@@ -128,7 +128,7 @@ const IncidentsTable: React.FC<IncidentsTableProps> = observer(
     };
 
     const {selectElementInstance, clearSelection} =
-      useProcessInstanceElementSelection();
+      useProcessInstanceElementSelectActions();
 
     const expandedContent = useMemo(
       () =>
