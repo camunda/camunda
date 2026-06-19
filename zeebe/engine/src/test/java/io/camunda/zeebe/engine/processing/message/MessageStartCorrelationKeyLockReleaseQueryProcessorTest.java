@@ -54,7 +54,8 @@ public final class MessageStartCorrelationKeyLockReleaseQueryProcessorTest {
           .endEvent()
           .done();
 
-  @Rule public final EngineRule engine = EngineRule.singlePartition();
+  @Rule
+  public final EngineRule engine = EngineRule.singlePartition().withInitialClusterVersionAtMax();
 
   @Test
   public void shouldReplyReleaseWhenHolderInstanceIsNotActive() {

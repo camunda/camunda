@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.common;
 
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
+import io.camunda.zeebe.engine.processing.clusterversion.ClusterVersionFeatures;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
@@ -17,6 +18,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.protocol.impl.clusterversion.ClusterVersionCatalog.Capability;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
@@ -49,6 +51,7 @@ public final class EventHandle {
   private final StateWriter stateWriter;
   private final EventTriggerBehavior eventTriggerBehavior;
   private final BpmnStateBehavior stateBehavior;
+  private final ClusterVersionFeatures clusterVersionFeatures;
 
   public EventHandle(
       final KeyGenerator keyGenerator,
@@ -56,7 +59,8 @@ public final class EventHandle {
       final Writers writers,
       final ProcessState processState,
       final EventTriggerBehavior eventTriggerBehavior,
-      final BpmnStateBehavior stateBehavior) {
+      final BpmnStateBehavior stateBehavior,
+      final ClusterVersionFeatures clusterVersionFeatures) {
     this.keyGenerator = keyGenerator;
     this.eventScopeInstanceState = eventScopeInstanceState;
     this.processState = processState;
@@ -64,6 +68,7 @@ public final class EventHandle {
     stateWriter = writers.state();
     this.eventTriggerBehavior = eventTriggerBehavior;
     this.stateBehavior = stateBehavior;
+    this.clusterVersionFeatures = clusterVersionFeatures;
   }
 
   public boolean canTriggerElement(
@@ -275,8 +280,16 @@ public final class EventHandle {
     commandWriter.appendFollowUpCommand(
         processInstanceKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, recordForPICreation);
 
-    // emit CREATED event to indicate instance creation by an event trigger
-    // picked up by appliers and exporters accordingly, e.g., for metrics and audit logs
+    // The PROCESS_INSTANCE_CREATION:CREATED follow-up event below is itself a new protocol record
+    // introduced together with v=3 of TRIGGERING (PR #52727). Emitting it on replicas that still
+    // select v=2 — which records the RPI metric inline — would cause the pre-existing
+    // ProcessInstanceCreationCreatedV2Applier to record the metric a second time. The gate keeps
+    // emission and applier-selection in lockstep: until the capability is active, this path
+    // behaves exactly like the pre-#52727 engine.
+    if (!clusterVersionFeatures.isActive(Capability.PI_CREATED_FOR_EVENT_STARTS)) {
+      return;
+    }
+
     recordForPICreationEvent
         .setBpmnProcessId(process.getBpmnProcessId())
         .setProcessDefinitionKey(process.getKey())

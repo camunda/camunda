@@ -16,8 +16,8 @@ import org.agrona.DirectBuffer;
 
 /**
  * Broker request for raising the cluster's Engine Capability Version. Routed to partition 1 (the
- * deployment partition) which acts as the activation coordinator; partition 1 then distributes
- * the {@code APPLIED} event to all partitions via the existing command distribution machinery.
+ * deployment partition) which acts as the activation coordinator; partition 1 then distributes the
+ * {@code APPLIED} event to all partitions via the existing command distribution machinery.
  */
 public class BrokerClusterVersionRaiseRequest extends BrokerExecuteCommand<ClusterVersionRecord> {
 

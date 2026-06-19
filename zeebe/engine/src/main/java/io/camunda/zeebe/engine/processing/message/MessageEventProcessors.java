@@ -100,7 +100,8 @@ public final class MessageEventProcessors {
                 routingInfo,
                 elementInstanceState,
                 bannedInstanceState,
-                businessIdUniquenessEnabled))
+                businessIdUniquenessEnabled,
+                clusterVersionFeatures))
         .onCommand(
             ValueType.MESSAGE_BATCH,
             MessageBatchIntent.EXPIRE,
@@ -190,7 +191,8 @@ public final class MessageEventProcessors {
                 clock,
                 businessIdUniquenessEnabled,
                 config.getMessageStartAskRetryGrace(),
-                writers))
+                writers,
+                clusterVersionFeatures))
         .onCommand(
             ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
             MessageStartProcessInstanceRequestIntent.SWEEP_EXPIRED_DEDUPS,

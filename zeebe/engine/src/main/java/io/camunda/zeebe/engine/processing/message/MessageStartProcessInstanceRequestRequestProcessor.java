@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.message;
 
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
+import io.camunda.zeebe.engine.processing.clusterversion.ClusterVersionFeatures;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
@@ -110,7 +111,8 @@ public final class MessageStartProcessInstanceRequestRequestProcessor
       final InstantSource clock,
       final boolean businessIdUniquenessEnabled,
       final Duration retryGrace,
-      final Writers writers) {
+      final Writers writers,
+      final ClusterVersionFeatures clusterVersionFeatures) {
     this.startEventSubscriptionState = startEventSubscriptionState;
     this.elementInstanceState = elementInstanceState;
     this.bannedInstanceState = bannedInstanceState;
@@ -128,7 +130,8 @@ public final class MessageStartProcessInstanceRequestRequestProcessor
             writers,
             processState,
             eventTriggerBehavior,
-            stateBehavior);
+            stateBehavior,
+            clusterVersionFeatures);
   }
 
   @Override

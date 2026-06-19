@@ -224,6 +224,36 @@ public final class ClusterVersionCatalog {
         14,
         "RPI metric tracking on event-driven process starts (retro-gate on PR #50012)",
         Set.of(new ApplierVersionId(ProcessEventIntent.TRIGGERING, 2)),
+        Set.of()),
+
+    /**
+     * The proper follow-up to {@link #EVENT_START_RPI_METRIC} from PR #52727: instead of having
+     * {@code ProcessEventTriggeringV2Applier} record the RPI metric inline, the engine now emits a
+     * {@code ProcessInstanceCreation.CREATED} event for every event-driven start, and the
+     * pre-existing {@code ProcessInstanceCreationCreatedV2Applier} records the metric from that.
+     * The two protocol-level changes that need coordinated activation:
+     *
+     * <ul>
+     *   <li>{@code ProcessEventTriggeringV3Applier} replaces v=2 — its body no longer touches the
+     *       usage-metric state, deliberately moving the responsibility to PI creation. Gating it
+     *       here under a higher ordinal than {@link #EVENT_START_RPI_METRIC} preserves the partial
+     *       ordering: an operator must raise through v=2 before reaching v=3.
+     *   <li>{@code EventHandle.activateProcessInstanceForStartEvent} now emits {@code
+     *       PROCESS_INSTANCE_CREATION:CREATED} as a follow-up event. This emission is behaviorally
+     *       paired with v=3 — emitting it while v=2 is still the selected applier would
+     *       double-count the RPI metric. The runtime check in {@code EventHandle} gates the
+     *       emission on this capability so it stays off until v=3 is selectable.
+     * </ul>
+     *
+     * <p>Combined, raising ECV to this ordinal flips both the applier-selection (v=2 → v=3) and the
+     * emission (off → on) atomically — no double-counting window in the middle, no single-side
+     * activation.
+     */
+    PI_CREATED_FOR_EVENT_STARTS(
+        15,
+        "Emit PROCESS_INSTANCE_CREATION:CREATED for event-driven starts + drop metric from "
+            + "TRIGGERING applier (PR #52727)",
+        Set.of(new ApplierVersionId(ProcessEventIntent.TRIGGERING, 3)),
         Set.of());
 
     private final int at;

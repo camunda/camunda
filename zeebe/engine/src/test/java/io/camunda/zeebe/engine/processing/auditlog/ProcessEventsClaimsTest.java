@@ -50,6 +50,7 @@ public class ProcessEventsClaimsTest {
   @Rule
   public final EngineRule engine =
       EngineRule.singlePartition()
+          .withInitialClusterVersionAtMax()
           .withIdentitySetup()
           .withAuthorizationsEnabled(true)
           .withSecurityConfig(

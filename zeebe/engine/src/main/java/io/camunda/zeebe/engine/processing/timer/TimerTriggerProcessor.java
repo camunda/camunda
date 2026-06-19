@@ -78,7 +78,8 @@ public final class TimerTriggerProcessor implements TypedRecordProcessor<TimerRe
             writers,
             processState,
             bpmnBehaviors.eventTriggerBehavior(),
-            bpmnBehaviors.stateBehavior());
+            bpmnBehaviors.stateBehavior(),
+            bpmnBehaviors.clusterVersionFeatures());
   }
 
   @Override

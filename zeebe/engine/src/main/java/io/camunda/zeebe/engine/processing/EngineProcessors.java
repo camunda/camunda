@@ -718,7 +718,8 @@ public final class EngineProcessors {
             bpmnBehaviors.stateBehavior(),
             bpmnBehaviors.eventTriggerBehavior(),
             commandDistributionBehavior,
-            authCheckBehavior);
+            authCheckBehavior,
+            bpmnBehaviors.clusterVersionFeatures());
     typedRecordProcessors.onCommand(
         ValueType.SIGNAL, SignalIntent.BROADCAST, signalBroadcastProcessor);
   }
@@ -737,7 +738,8 @@ public final class EngineProcessors {
             bpmnBehaviors.stateBehavior(),
             bpmnBehaviors.eventTriggerBehavior(),
             authCheckBehavior,
-            bpmnBehaviors.expressionProcessor());
+            bpmnBehaviors.expressionProcessor(),
+            bpmnBehaviors.clusterVersionFeatures());
     typedRecordProcessors.onCommand(
         ValueType.CONDITIONAL_EVALUATION,
         ConditionalEvaluationIntent.EVALUATE,

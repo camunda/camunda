@@ -14,8 +14,8 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * Cluster-wide service for raising the Engine Capability Version. ECV is a global setting — not
- * tenant-scoped — so this class deliberately does not extend {@link PhysicalTenantScopedApiServices}
- * and has no authentication/authorization plumbing in the PoC.
+ * tenant-scoped — so this class deliberately does not extend {@link
+ * PhysicalTenantScopedApiServices} and has no authentication/authorization plumbing in the PoC.
  */
 public final class ClusterVersionServices {
 

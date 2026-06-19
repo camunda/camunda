@@ -158,6 +158,10 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
 
     stateBehavior = new BpmnStateBehavior(processingState, variableBehavior);
 
+    // Initialize the ECV gate early so behaviors that wire EventHandle (event publication,
+    // buffered message start, etc.) and BpmnJobBehavior below can all share the same instance.
+    clusterVersionFeatures = new ClusterVersionFeatures(processingState.getClusterVersionState());
+
     eventTriggerBehavior =
         new EventTriggerBehavior(
             processingState.getKeyGenerator(),
@@ -197,7 +201,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             processingState.getKeyGenerator(),
             eventTriggerBehavior,
             stateBehavior,
-            writers);
+            writers,
+            clusterVersionFeatures);
 
     processResultSenderBehavior =
         new BpmnProcessResultSenderBehavior(processingState, writers.response());
@@ -212,7 +217,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             subscriptionCommandSender,
             routingInfo,
             clock,
-            config.isBusinessIdUniquenessEnabled());
+            config.isBusinessIdUniquenessEnabled(),
+            clusterVersionFeatures);
 
     jobActivationBehavior =
         new BpmnJobActivationBehavior(
@@ -259,10 +265,6 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             processingState.getGroupState(),
             config.isCandidateGroupNameResolution(),
             clock);
-
-    // Construct ClusterVersionFeatures here so BpmnJobBehavior below can wire the ECV gate for
-    // job priority. Stored on the field so the accessor returns the same instance.
-    clusterVersionFeatures = new ClusterVersionFeatures(processingState.getClusterVersionState());
 
     jobBehavior =
         new BpmnJobBehavior(
