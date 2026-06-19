@@ -47,8 +47,10 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -138,8 +140,8 @@ public class TaskController extends ApiErrorController {
           new TaskByCandidateUserOrGroup();
       taskByCandidateUserOrGroup.setUserName(userName);
 
-      final var setOfUserGroupNames = resolveGroupNames(userGroupService.getUserGroups());
-      taskByCandidateUserOrGroup.setUserGroups(setOfUserGroupNames.toArray(String[]::new));
+      final var userGroupIdentifiers = resolveGroupIdentifiers(userGroupService.getUserGroups());
+      taskByCandidateUserOrGroup.setUserGroups(userGroupIdentifiers.toArray(String[]::new));
 
       query.setTaskByCandidateUserOrGroup(taskByCandidateUserOrGroup);
     }
@@ -261,13 +263,18 @@ public class TaskController extends ApiErrorController {
       // this is backwards compatible with previous versions, but in the future this will change
       return true;
     }
-    final Set<String> setOfUserGroups = resolveGroupNames(userGroupService.getUserGroups());
     final var task = taskSupplier.get();
     final boolean allUsersTask =
         task.getCandidateUsers() == null && task.getCandidateGroups() == null;
-    final boolean candidateGroupTasks =
-        task.getCandidateGroups() != null
-            && !Collections.disjoint(Arrays.asList(task.getCandidateGroups()), setOfUserGroups);
+    final boolean candidateGroupTasks;
+    if (task.getCandidateGroups() != null) {
+      final Set<String> userGroupIdentifiers =
+          resolveGroupIdentifiers(userGroupService.getUserGroups());
+      candidateGroupTasks =
+          !Collections.disjoint(Arrays.asList(task.getCandidateGroups()), userGroupIdentifiers);
+    } else {
+      candidateGroupTasks = false;
+    }
     final boolean candidateUserTasks =
         task.getCandidateUsers() != null
             && Arrays.asList(task.getCandidateUsers()).contains(userName);
@@ -531,19 +538,19 @@ public class TaskController extends ApiErrorController {
     return ResponseEntity.ok(variables);
   }
 
-  private Set<String> resolveGroupNames(final List<String> userGroupIds) {
-    // candidate groups use group names instead of group ids
-    // so we need to resolve the group names from the group ids
-    if (userGroupIds.isEmpty()) {
-      return Collections.EMPTY_SET;
+  private Set<String> resolveGroupIdentifiers(final Collection<String> groupIds) {
+    // Groups can be stored as IDs or names; return the union so comparisons work either way.
+    if (groupIds.isEmpty()) {
+      return Collections.emptySet();
     }
-    final Set<String> setOfUserGroupIds = userGroupIds.stream().collect(Collectors.toSet());
+    final Set<String> ids = groupIds.stream().collect(Collectors.toSet());
     final var groups =
         groupServices.search(
-            GroupQuery.of(
-                groupQuery -> groupQuery.filter(filter -> filter.groupIds(setOfUserGroupIds))),
+            GroupQuery.of(groupQuery -> groupQuery.filter(filter -> filter.groupIds(ids))),
             CamundaAuthentication.anonymous());
-    return groups.items().stream().map(g -> g.name()).collect(Collectors.toSet());
+    final Set<String> identifiers = new HashSet<>(ids);
+    groups.items().forEach(g -> identifiers.add(g.name()));
+    return identifiers;
   }
 
   private LazySupplier<TaskDTO> getTaskSupplier(final String taskId) {
