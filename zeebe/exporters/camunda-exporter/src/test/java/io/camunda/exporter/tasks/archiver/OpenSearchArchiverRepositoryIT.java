@@ -1197,8 +1197,7 @@ final class OpenSearchArchiverRepositoryIT {
                 verify(
                         genericClientSpy,
                         times(
-                            46) // number of index templates * 2 (for change policy requests and add
-                        // policy requests)
+                            40) // 20 index templates * 2 (add policy + change_policy per template)
                         )
                     .executeAsync(captor.capture()));
 
