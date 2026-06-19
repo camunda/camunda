@@ -128,6 +128,8 @@ public class MigratedVariableHandlerTest {
     final VariableRecordValue variableRecordValue =
         ImmutableVariableRecordValue.builder()
             .from(factory.generateObject(VariableRecordValue.class))
+            .withProcessInstanceKey(1234L)
+            .withRootProcessInstanceKey(1233L)
             .withValue("doNotCareAboutThis")
             .withTenantId("tenantId")
             .build();
@@ -148,11 +150,14 @@ public class MigratedVariableHandlerTest {
     assertThat(variableEntity.getProcessDefinitionKey())
         .isEqualTo(variableRecordValue.getProcessDefinitionKey());
     assertThat(variableEntity.getPosition()).isEqualTo(variableRecord.getPosition());
+    assertThat(variableEntity.getProcessInstanceKey())
+        .isEqualTo(variableRecordValue.getProcessInstanceKey());
+    assertThat(variableEntity.getRootProcessInstanceKey())
+        .isEqualTo(variableRecordValue.getRootProcessInstanceKey());
 
     assertThat(variableEntity.getKey()).isEqualTo(0);
     assertThat(variableEntity.getName()).isNull();
     assertThat(variableEntity.getScopeKey()).isNull();
-    assertThat(variableEntity.getProcessInstanceKey()).isNull();
     assertThat(variableEntity.getValue()).isNull();
     assertThat(variableEntity.getIsPreview()).isFalse();
     assertThat(variableEntity.getFullValue()).isNull();
