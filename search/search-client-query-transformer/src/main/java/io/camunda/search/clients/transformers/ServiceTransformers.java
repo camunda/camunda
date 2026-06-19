@@ -111,6 +111,7 @@ import io.camunda.search.clients.transformers.entity.UserEntityTransformer;
 import io.camunda.search.clients.transformers.entity.UserTaskEntityTransformer;
 import io.camunda.search.clients.transformers.entity.VariableEntityTransformer;
 import io.camunda.search.clients.transformers.entity.WaitStateEntityTransformer;
+import io.camunda.search.clients.transformers.filter.AgentHistoryFilterTransformer;
 import io.camunda.search.clients.transformers.filter.AgentInstanceFilterTransformer;
 import io.camunda.search.clients.transformers.filter.AuditLogFilterTransformer;
 import io.camunda.search.clients.transformers.filter.AuthorizationFilterTransformer;
@@ -194,6 +195,7 @@ import io.camunda.search.clients.transformers.sort.UserTaskFieldSortingTransform
 import io.camunda.search.clients.transformers.sort.VariableFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.WaitStateFieldSortingTransformer;
 import io.camunda.search.filter.AgentInstanceFilter;
+import io.camunda.search.filter.AgentInstanceHistoryFilter;
 import io.camunda.search.filter.AuditLogFilter;
 import io.camunda.search.filter.AuthorizationFilter;
 import io.camunda.search.filter.BatchOperationFilter;
@@ -335,6 +337,7 @@ import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.index.RoleIndex;
 import io.camunda.webapps.schema.descriptors.index.TenantIndex;
 import io.camunda.webapps.schema.descriptors.index.UserIndex;
+import io.camunda.webapps.schema.descriptors.template.AgentHistoryTemplate;
 import io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.AuditLogTemplate;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
@@ -575,6 +578,9 @@ public final class ServiceTransformers {
     mappers.put(WaitStateSort.class, new WaitStateFieldSortingTransformer());
 
     // filters -> search query
+    mappers.put(
+        AgentInstanceHistoryFilter.class,
+        new AgentHistoryFilterTransformer(indexDescriptors.get(AgentHistoryTemplate.class)));
     mappers.put(
         AgentInstanceFilter.class,
         new AgentInstanceFilterTransformer(indexDescriptors.get(AgentInstanceTemplate.class)));
