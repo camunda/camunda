@@ -326,7 +326,7 @@ public class UpdateJobTest {
     final long jobKey = job.getKey();
 
     // then
-    final var expectedMessage = "At least one of [retries, timeout] is required";
+    final var expectedMessage = "At least one of [retries, timeout, priority] is required";
 
     assertThatThrownBy(() -> client.newUpdateJobCommand(jobKey).update(null, null).send().join())
         .hasMessageContaining(expectedMessage);
@@ -341,7 +341,7 @@ public class UpdateJobTest {
     final long jobKey = job.getKey();
 
     // then
-    final var expectedMessage = "At least one of [retries, timeout] is required";
+    final var expectedMessage = "At least one of [retries, timeout, priority] is required";
 
     assertThatThrownBy(() -> client.newUpdateJobCommand(jobKey).update(null).send().join())
         .hasMessageContaining(expectedMessage);
