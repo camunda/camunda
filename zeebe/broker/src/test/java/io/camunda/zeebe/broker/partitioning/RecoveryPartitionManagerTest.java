@@ -26,12 +26,17 @@ import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.protocol.record.PartitionRole;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -50,6 +55,7 @@ final class RecoveryPartitionManagerTest {
   private ClusterConfigurationService clusterConfigurationService;
   private ClusterServices clusterServices;
   private RecoveryPartitionManager partitionManager;
+  private TopologyManagerImpl topologyManager;
 
   @BeforeEach
   void setUp() {
@@ -68,7 +74,6 @@ final class RecoveryPartitionManagerTest {
     clusterServices = mock(ClusterServices.class);
     when(clusterServices.getMembershipService()).thenReturn(membershipService);
 
-    // two partitions where the local broker is a member
     final var metadata = localPartitionMetadata(PARTITION_ID);
     final var metadata2 = localPartitionMetadata(PARTITION_ID_2);
     clusterConfigurationService = mock(ClusterConfigurationService.class);
@@ -76,7 +81,7 @@ final class RecoveryPartitionManagerTest {
         .thenReturn(new PartitionDistribution(Set.of(metadata, metadata2)));
 
     final var brokerInfo = new BrokerInfo(0, null, "localhost:26501").setPartitionGroup(GROUP);
-    final var topologyManager = new TopologyManagerImpl(membershipService, brokerInfo);
+    topologyManager = new TopologyManagerImpl(membershipService, brokerInfo);
     actorScheduler.submitActor(topologyManager).join();
 
     partitionManager =
@@ -85,7 +90,7 @@ final class RecoveryPartitionManagerTest {
             dataDirectory.toString(),
             controlActor,
             clusterConfigurationService,
-            clusterServices,
+            clusterServices.getMembershipService(),
             actorScheduler,
             new SimpleMeterRegistry(),
             topologyManager);
@@ -116,7 +121,7 @@ final class RecoveryPartitionManagerTest {
     // when
     controlActor.run(() -> partitionManager.start());
 
-    // then — both local partitions are published as INACTIVE in the broker's topology
+    // then
     await()
         .untilAsserted(
             () -> {
@@ -135,9 +140,117 @@ final class RecoveryPartitionManagerTest {
     // when
     controlActor.run(() -> partitionManager.start());
 
-    // then — recovery mode never brings up Raft or Zeebe partitions
+    // then
     assertThat(partitionManager.getRaftPartitions()).isEmpty();
     assertThat(partitionManager.getZeebePartitions()).isEmpty();
     assertThat(partitionManager.getRaftPartition(PARTITION_ID)).isNull();
+  }
+
+  @Nested
+  class TransitionToRecovery {
+
+    private AtomicReference<ActorFuture<Void>> transitionFuture;
+
+    @BeforeEach
+    void setUp() {
+      transitionFuture = new AtomicReference<>();
+    }
+
+    @Test
+    void shouldCompleteTransitionFutureOnSuccess() {
+      // when
+      controlActor.run(() -> transitionFuture.set(partitionManager.transition()));
+
+      // then
+      awaitTransition();
+      assertThat(transitionFuture.get().isCompletedExceptionally()).isFalse();
+    }
+
+    @Test
+    void shouldDeactivateLocalPartitionsOnTransition() {
+      // when
+      controlActor.run(() -> transitionFuture.set(partitionManager.transition()));
+      awaitTransition();
+
+      // then
+      await()
+          .untilAsserted(
+              () -> {
+                final var publishedInfos = BrokerInfo.allFromProperties(localMember.properties());
+                assertThat(publishedInfos)
+                    .anySatisfy(
+                        info ->
+                            assertThat(info.getPartitionRoles())
+                                .containsEntry(PARTITION_ID, PartitionRole.INACTIVE)
+                                .containsEntry(PARTITION_ID_2, PartitionRole.INACTIVE));
+              });
+    }
+
+    @Test
+    void shouldCompleteImmediatelyWhenNoLocalPartitions() {
+      // given
+      when(clusterConfigurationService.getPartitionDistribution())
+          .thenReturn(new PartitionDistribution(Set.of()));
+      final var callbackInvoked = new AtomicBoolean(false);
+      partitionManager.postTransition(pm -> callbackInvoked.set(true));
+
+      // when
+      controlActor.run(() -> transitionFuture.set(partitionManager.transition()));
+
+      // then
+      await()
+          .atMost(Duration.ofSeconds(1))
+          .until(() -> transitionFuture.get() != null && transitionFuture.get().isDone());
+      assertThat(transitionFuture.get().isCompletedExceptionally()).isFalse();
+      assertThat(callbackInvoked).isFalse();
+    }
+
+    @Test
+    void shouldFailTransitionWhenDeactivationFails() {
+      // given
+      topologyManager.closeAsync().join();
+
+      // when
+      controlActor.run(() -> transitionFuture.set(partitionManager.transition()));
+
+      // then
+      awaitTransition();
+      assertThat(transitionFuture.get().isCompletedExceptionally()).isTrue();
+    }
+
+    @Test
+    void shouldNotInvokePostTransitionOnDeactivationFailure() {
+      // given
+      topologyManager.closeAsync().join();
+      final var callbackInvoked = new AtomicBoolean(false);
+      partitionManager.postTransition(pm -> callbackInvoked.set(true));
+
+      // when
+      controlActor.run(() -> transitionFuture.set(partitionManager.transition()));
+      awaitTransition();
+
+      // then
+      assertThat(callbackInvoked).isFalse();
+    }
+
+    @Test
+    void shouldStopCleanlyAfterDeactivationFailure() {
+      // given
+      topologyManager.closeAsync().join();
+
+      // when
+      controlActor.run(() -> transitionFuture.set(partitionManager.transition()));
+      awaitTransition();
+
+      // then
+      assertThat(transitionFuture.get().isCompletedExceptionally()).isTrue();
+      assertThat(partitionManager.stop()).succeedsWithin(Duration.ofSeconds(5));
+    }
+
+    private void awaitTransition() {
+      await()
+          .atMost(Duration.ofSeconds(10))
+          .until(() -> transitionFuture.get() != null && transitionFuture.get().isDone());
+    }
   }
 }

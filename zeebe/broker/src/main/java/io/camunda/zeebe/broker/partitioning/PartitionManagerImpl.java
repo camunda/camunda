@@ -33,6 +33,7 @@ import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.broker.transport.snapshotapi.SnapshotApiRequestHandler;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
+import io.camunda.zeebe.dynamic.config.changes.ModeChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
@@ -58,11 +59,15 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public final class PartitionManagerImpl
-    implements PartitionManager, PartitionChangeExecutor, PartitionScalingChangeExecutor {
+    implements PartitionManager,
+        PartitionChangeExecutor,
+        PartitionScalingChangeExecutor,
+        ModeChangeExecutor {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(PartitionManagerImpl.class);
 
@@ -74,6 +79,8 @@ public final class PartitionManagerImpl
   private final TopologyManagerImpl topologyManager;
   private final BrokerHealthCheckService healthCheckService;
   private final Map<Integer, Partition> partitions = new ConcurrentHashMap<>();
+  private PartitionManager.Factory transitionPartitionFactory;
+  private Consumer<PartitionManager> postTransition;
   private final DiskSpaceUsageMonitor diskSpaceUsageMonitor;
   private final BrokerClient brokerClient;
   private final DefaultPartitionManagementService managementService;
@@ -299,7 +306,7 @@ public final class PartitionManagerImpl
     // physical tenant participates in the broker health check for now; other tenants are invisible.
     if (DEFAULT_GROUP_NAME.equals(partitionGroup)) {
       healthCheckService.registerBootstrapPartitions(memberPartitions);
-      clusterConfigurationService.registerPartitionChangeExecutors(this, this);
+      clusterConfigurationService.registerPartitionChangeExecutors(this, this, this);
     }
     for (final var partitionMetadata : memberPartitions) {
       final var initialPartitionConfig =
@@ -311,6 +318,22 @@ public final class PartitionManagerImpl
               .config();
       bootstrapPartition(partitionMetadata, initialPartitionConfig, false);
     }
+  }
+
+  @Override
+  public ActorFuture<Void> transition() {
+    // TODO: To be called when a recovery partition transitions to active again
+    return null;
+  }
+
+  @Override
+  public void transitionFactory(final PartitionManager.Factory transitionPartitionFactory) {
+    this.transitionPartitionFactory = transitionPartitionFactory;
+  }
+
+  @Override
+  public void postTransition(final Consumer<PartitionManager> postTransition) {
+    this.postTransition = postTransition;
   }
 
   @Override
@@ -691,6 +714,50 @@ public final class PartitionManagerImpl
         .stream()
         .filter(p -> p.members().contains(localMemberId))
         .toList();
+  }
+
+  @Override
+  public ActorFuture<Void> enterRecovery() {
+    final var result = concurrencyControl.<Void>createFuture();
+    concurrencyControl.run(() -> enterRecoveryInternal(result));
+    return result;
+  }
+
+  @Override
+  public ActorFuture<Void> exitRecovery() {
+    return CompletableActorFuture.completedExceptionally(
+        new IllegalStateException(
+            "Cannot exit recovery from PartitionManagerImpl — already in processing mode"));
+  }
+
+  private void enterRecoveryInternal(final ActorFuture<Void> result) {
+    final var stopFutures =
+        partitions.values().stream()
+            .map(Partition::stop)
+            .collect(new ActorFutureCollector<>(concurrencyControl));
+
+    concurrencyControl.runOnCompletion(
+        stopFutures,
+        (ignored, stopError) -> {
+          if (stopError != null) {
+            result.completeExceptionally(stopError);
+            return;
+          }
+          partitions.clear();
+          final var recoveryPartitionManager =
+              transitionPartitionFactory.create(partitionGroup, topologyManager);
+          concurrencyControl.runOnCompletion(
+              recoveryPartitionManager.transition(),
+              (ignore, transitionError) -> {
+                if (transitionError != null) {
+                  result.completeExceptionally(transitionError);
+                  return;
+                }
+                clusterConfigurationService.removePartitionChangeExecutor();
+                postTransition.accept(recoveryPartitionManager);
+                result.complete(null);
+              });
+        });
   }
 
   public final class PartitionAlreadyExistsException extends RuntimeException {

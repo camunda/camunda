@@ -135,44 +135,52 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
 
   PartitionManager partitionManager(
       final BrokerStartupContext brokerStartupContext, final TopologyManagerImpl topologyManager) {
-
-    return new PartitionManagerImpl(
-        physicalTenantId,
-        brokerStartupContext.getConcurrencyControl(),
-        brokerStartupContext.getActorSchedulingService(),
-        brokerStartupContext.getBrokerConfiguration(),
-        brokerStartupContext.getBrokerInfo(),
-        brokerStartupContext.getClusterServices(),
-        brokerStartupContext.getHealthCheckService(),
-        brokerStartupContext.getDiskSpaceUsageMonitor(),
-        brokerStartupContext.getPartitionListeners(),
-        brokerStartupContext.getPartitionRaftListeners(),
-        brokerStartupContext.getSnapshotApiRequestHandler(),
-        brokerStartupContext.getExporterRepository(),
-        brokerStartupContext.getGatewayBrokerTransport(),
-        brokerStartupContext.getJobStreamService().jobStreamer(),
-        brokerStartupContext.getClusterConfigurationService(),
-        brokerStartupContext.getMeterRegistry(),
-        brokerStartupContext.getBrokerClient(),
-        brokerStartupContext.getRocksDbResources(),
-        brokerStartupContext.getSecurityConfiguration(physicalTenantId),
-        brokerStartupContext.getSearchClientsProxy(),
-        brokerStartupContext.getBrokerRequestAuthorizationConverter(physicalTenantId),
-        topologyManager);
+    final var partitionManager =
+        PartitionManager.createPartitionManager(
+            brokerStartupContext, physicalTenantId, topologyManager);
+    wireNormalPartitionManager(partitionManager, brokerStartupContext);
+    return partitionManager;
   }
 
   PartitionManager recoveryPartitionManager(
       final BrokerStartupContext brokerStartupContext, final TopologyManagerImpl topologyManager) {
+    final var rm =
+        PartitionManager.createRecoveryPartitionManager(
+            brokerStartupContext, physicalTenantId, topologyManager);
+    wireRecoveryPartitionManager(rm, brokerStartupContext);
+    return rm;
+  }
 
-    return new RecoveryPartitionManager(
-        physicalTenantId,
-        brokerStartupContext.getBrokerConfiguration().getData().getDirectory(),
-        brokerStartupContext.getConcurrencyControl(),
-        brokerStartupContext.getClusterConfigurationService(),
-        brokerStartupContext.getClusterServices(),
-        brokerStartupContext.getActorSchedulingService(),
-        brokerStartupContext.getMeterRegistry(),
-        topologyManager);
+  /**
+   * Factory provider for the transition from {@link PartitionManagerImpl} to {@link
+   * RecoveryPartitionManager}
+   */
+  private void wireNormalPartitionManager(
+      final PartitionManagerImpl partitionManager, final BrokerStartupContext ctx) {
+    partitionManager.transitionFactory(
+        (tenantId, topologyManager) -> {
+          final var recoveryPartitionManager =
+              PartitionManager.createRecoveryPartitionManager(ctx, tenantId, topologyManager);
+          wireRecoveryPartitionManager(recoveryPartitionManager, ctx);
+          return recoveryPartitionManager;
+        });
+    partitionManager.postTransition(manager -> ctx.addPartitionManager(physicalTenantId, manager));
+  }
+
+  /**
+   * Factory provider for the transition from {@link RecoveryPartitionManager} to {@link
+   * PartitionManagerImpl}
+   */
+  private void wireRecoveryPartitionManager(
+      final RecoveryPartitionManager partitionManager, final BrokerStartupContext ctx) {
+    partitionManager.transitionFactory(
+        (tenantId, tm) -> {
+          final var pm = PartitionManager.createPartitionManager(ctx, tenantId, tm);
+          wireNormalPartitionManager(pm, ctx);
+          return pm;
+        });
+    partitionManager.postTransition(
+        newManager -> ctx.addPartitionManager(physicalTenantId, newManager));
   }
 
   private void shutdownOnInconsistentTopology(

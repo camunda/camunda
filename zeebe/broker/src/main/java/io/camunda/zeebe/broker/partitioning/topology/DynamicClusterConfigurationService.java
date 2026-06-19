@@ -13,6 +13,7 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationManager.InconsistentConfigurationListener;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationManagerService;
 import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor;
+import io.camunda.zeebe.dynamic.config.changes.ModeChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
@@ -20,6 +21,8 @@ import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
 
 public class DynamicClusterConfigurationService implements ClusterConfigurationService {
 
@@ -27,6 +30,7 @@ public class DynamicClusterConfigurationService implements ClusterConfigurationS
 
   private volatile ClusterConfiguration initialClusterConfiguration;
   private volatile ClusterConfiguration currentClusterConfiguration;
+  private final Map<String, ModeChangeExecutor> recoveryModeChangeExecutors = new HashMap<>();
 
   private ClusterConfigurationManagerService clusterConfigurationManagerService;
   private final ClusterChangeExecutor clusterChangeExecutor;
@@ -43,10 +47,11 @@ public class DynamicClusterConfigurationService implements ClusterConfigurationS
   @Override
   public void registerPartitionChangeExecutors(
       final PartitionChangeExecutor partitionChangeExecutor,
-      final PartitionScalingChangeExecutor partitionScalingChangeExecutor) {
+      final PartitionScalingChangeExecutor partitionScalingChangeExecutor,
+      final ModeChangeExecutor recoveryModeChangeExecutor) {
     if (clusterConfigurationManagerService != null) {
       clusterConfigurationManagerService.registerPartitionChangeExecutors(
-          partitionChangeExecutor, partitionScalingChangeExecutor);
+          partitionChangeExecutor, partitionScalingChangeExecutor, recoveryModeChangeExecutor);
     } else {
       throw new IllegalStateException(
           "Cannot register change executor before the topology manager is started");

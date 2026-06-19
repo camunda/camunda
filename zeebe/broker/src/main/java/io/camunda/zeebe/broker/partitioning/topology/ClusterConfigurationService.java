@@ -12,6 +12,7 @@ import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupContext;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationManager.InconsistentConfigurationListener;
 import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor;
+import io.camunda.zeebe.dynamic.config.changes.ModeChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
@@ -25,7 +26,8 @@ public interface ClusterConfigurationService extends AsyncClosable {
 
   void registerPartitionChangeExecutors(
       PartitionChangeExecutor partitionChangeExecutor,
-      PartitionScalingChangeExecutor partitionScalingChangeExecutor);
+      PartitionScalingChangeExecutor partitionScalingChangeExecutor,
+      ModeChangeExecutor recoveryModeChangeExecutor);
 
   void removePartitionChangeExecutor();
 
