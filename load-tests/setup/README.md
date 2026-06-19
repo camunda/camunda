@@ -84,7 +84,20 @@ Shared baseline platform config lives in `camunda-platform-values-defaults.yaml`
 
 ### How to set up a load test namespace
 
-If you run `newLoadTest.sh` without arguments, it will display the following help message.
+The root `newLoadTest.sh` is a **version dispatcher** — it forwards to a version-specific script
+under `setup/<version>/newLoadTest.sh`, defaulting to `main`. Each stable version has its own
+subfolder (`stable-87`, `stable-88`, …) so all version setups live on `main` without backports.
+
+Run `./newLoadTest.sh --help` to see currently available versions. To target a specific version:
+
+```sh
+./newLoadTest.sh --target-version stable-89 my-test   # stable/8.9 setup
+./newLoadTest.sh --target-version stable-89 -h        # version-specific help
+```
+
+The rest of this section documents the `main` setup.
+
+Running `newLoadTest.sh` without arguments shows the `main` help:
 
 ```sh
 Usage: newLoadTest.sh <namespace> [secondaryStorage] [ttl_days] [enable_optimize] [enable_single_zone]
@@ -114,7 +127,7 @@ Example:
 
 This will source and run the `newLoadTest.sh` script. A new folder is created with the given name, containing a rendered Makefile, Helm values, and (under `resources/`) two Kubernetes manifests: `namespace.yaml` (labels, AZ pinning, TTL) and `camunda-credentials.yaml` (randomly generated passwords/tokens). The cluster itself is unchanged by this script — `make install` from inside the folder runs `kubectl apply -f resources/…` to create the namespace and secret. Reruns after a TTL deletion reapply the same manifests, so the orchestration secret stays in sync with `load-test-values.yaml` and you don't lose credentials.
 
-The template files live under `setup/default/`:
+The template files live under `setup/main/`:
 
 - `Makefile` — rendered into the namespace folder with placeholders substituted.
 - `values/` — Helm values files. All installs start from

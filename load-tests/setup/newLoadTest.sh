@@ -2,8 +2,15 @@
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+list_versions() {
+  find "$SCRIPT_DIR" -mindepth 2 -maxdepth 2 -name newLoadTest.sh 2>/dev/null \
+    | xargs -I{} dirname {} | xargs -I{} basename {} | sort | tr '\n' ' '
+}
+
 usage() {
-  cat <<'EOF'
+  local available
+  available=$(list_versions)
+  cat <<EOF
 Usage: newLoadTest.sh [--target-version|-t <version>] [options] <namespace>
 
 Options:
@@ -11,9 +18,9 @@ Options:
   -h                               Show this help message.
 
 All other options are forwarded to the target version's newLoadTest.sh.
-For version-specific help, run: ./newLoadTest.sh --target-version main -h
+For version-specific help, run: ./newLoadTest.sh --target-version <version> -h
 
-Available versions: main, stable-89, stable-88, stable-87
+Available versions: ${available:-main}
 EOF
 }
 
@@ -46,9 +53,7 @@ target_script="$SCRIPT_DIR/$target_version/newLoadTest.sh"
 
 if [[ ! -f "$target_script" ]]; then
   echo "Error: No setup found for version '$target_version'." >&2
-  available=$(find "$SCRIPT_DIR" -mindepth 2 -maxdepth 2 -name newLoadTest.sh 2>/dev/null \
-    | xargs -I{} dirname {} | xargs -I{} basename {} | tr '\n' ' ')
-  echo "Available versions: ${available:-none}" >&2
+  echo "Available versions: $(list_versions)" >&2
   exit 1
 fi
 

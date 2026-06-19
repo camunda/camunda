@@ -9,7 +9,7 @@ For the full operational reference (architecture, scenarios, scheduling, seconda
 Helm value typing pitfalls), see [`load-tests/README.md`](https://github.com/camunda/camunda/blob/main/load-tests/README.md). For metrics
 definitions, SLO targets, and Prometheus queries, see
 [`load-tests/docs/metrics.md`](https://github.com/camunda/camunda/blob/main/load-tests/docs/metrics.md). For the canonical schema of every
-available chart value (beyond what `load-tests/setup/default/values/camunda-platform-values-defaults.yaml` overrides), see
+available chart value (beyond what `load-tests/setup/main/values/camunda-platform-values-defaults.yaml` overrides), see
 the upstream chart at [`camunda/camunda-platform-helm`](https://github.com/camunda/camunda-platform-helm/tree/main/charts/camunda-platform).
 
 ## Prerequisites check
@@ -175,10 +175,10 @@ Configuration is driven by the values files at the setup folder which is created
 
 For example:
 
-- `load-tests/setup/default/values/camunda-platform-values-defaults.yaml` — platform chart overrides (image tag, resources,
+- `load-tests/setup/main/values/camunda-platform-values-defaults.yaml` — platform chart overrides (image tag, resources,
   exporters, secondary storage)
-- `load-tests/setup/default/values/camunda-platform-values-${storage}.yaml` — platform chart overrides for secondary storage-specific configuration (e.g. Elasticsearch JVM settings, OpenSearch auth)
-- `load-tests/setup/default/values/load-test-values.yaml` — load tester chart overrides (rate, scenario, worker)
+- `load-tests/setup/main/values/camunda-platform-values-${storage}.yaml` — platform chart overrides for secondary storage-specific configuration (e.g. Elasticsearch JVM settings, OpenSearch auth)
+- `load-tests/setup/main/values/load-test-values.yaml` — load tester chart overrides (rate, scenario, worker)
 
 Override individual keys by passing extra `--set` flags to the `make` calls (see Update / redeploy below). Full reference in
 `load-tests/setup/README.md`.
@@ -226,8 +226,8 @@ kubectl get namespaces -l camunda.io/purpose=load-test,camunda.io/created-by=$(g
 
 ```bash
 # Read default Helm values (know what keys to override)
-cat load-tests/setup/default/values/camunda-platform-values-defaults.yaml
-cat load-tests/setup/default/values/load-test-values.yaml
+cat load-tests/setup/main/values/camunda-platform-values-defaults.yaml
+cat load-tests/setup/main/values/load-test-values.yaml
 
 # What inputs were dispatched into a GHA run? The build/install jobs print
 # the resolved values and parameters into the GitHub Actions step summary.
@@ -269,7 +269,7 @@ gh workflow run camunda-load-test.yml --repo camunda/camunda \
 
 Faster than GHA for tweaking Helm values against an already-running deployments. See `load-tests/setup/README.md` for full manual setup documentation.
 
-**Always pin the image** — `load-tests/setup/default/values/camunda-platform-values-defaults.yaml` defaults to `tag: SNAPSHOT`,
+**Always pin the image** — `load-tests/setup/main/values/camunda-platform-values-defaults.yaml` defaults to `tag: SNAPSHOT`,
 which floats. For an iterative loop you usually want a specific tag (the one from the previous
 GHA build, or a released `orchestration-tag`):
 
