@@ -44,8 +44,11 @@ function useSidebarChildren(params: {
   const {customFilters, startEditing, startDeleting, startAdding, status} =
     useCustomFiltersContext();
   const [currentParams] = useSearchParams();
+  const isProcessesPage =
+    matchPath(pages.processes(), location.pathname) !== null;
 
   const tasksChildren = useMemo(() => {
+    const pathname = isProcessesPage ? pages.initial : undefined;
     return [
       {
         type: 'item' as const,
@@ -54,6 +57,7 @@ function useSidebarChildren(params: {
         icon: TaskView,
         linkProps: {
           to: {
+            pathname,
             search: getNavLinkSearchParam({
               currentParams,
               username: currentUser?.username ?? '',
@@ -75,6 +79,7 @@ function useSidebarChildren(params: {
         icon: UserFollow,
         linkProps: {
           to: {
+            pathname,
             search: getNavLinkSearchParam({
               currentParams,
               username: currentUser?.username ?? '',
@@ -96,6 +101,7 @@ function useSidebarChildren(params: {
         icon: TaskRemove,
         linkProps: {
           to: {
+            pathname,
             search: getNavLinkSearchParam({
               currentParams,
               username: currentUser?.username ?? '',
@@ -117,6 +123,7 @@ function useSidebarChildren(params: {
         icon: TaskComplete,
         linkProps: {
           to: {
+            pathname,
             search: getNavLinkSearchParam({
               currentParams,
               username: currentUser?.username ?? '',
@@ -138,6 +145,7 @@ function useSidebarChildren(params: {
         icon: TaskAdd,
         linkProps: {
           to: {
+            pathname,
             search: getNavLinkSearchParam({
               currentParams,
               username: currentUser?.username ?? '',
@@ -191,13 +199,14 @@ function useSidebarChildren(params: {
       },
     ];
   }, [
-    customFilters,
-    startAdding,
-    startDeleting,
-    startEditing,
-    status,
     currentUser,
     currentParams,
+    isProcessesPage,
+    customFilters,
+    startEditing,
+    startDeleting,
+    startAdding,
+    status,
   ]);
 
   // @ts-expect-error - we need to fix it from the C3 side
@@ -205,9 +214,6 @@ function useSidebarChildren(params: {
     if (isForbidden(currentUser)) {
       return [];
     }
-
-    const isProcessesPage =
-      matchPath(pages.processes(), location.pathname) !== null;
 
     return [
       {
@@ -238,7 +244,7 @@ function useSidebarChildren(params: {
         },
       },
     ];
-  }, [currentUser, location, tasksChildren]);
+  }, [currentUser, isProcessesPage, tasksChildren]);
 }
 
 export {useSidebarChildren};
