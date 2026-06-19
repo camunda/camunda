@@ -19,3 +19,20 @@
 .languageDropdownPadding {
   padding: var(--cds-spacing-03) var(--cds-spacing-05);
 }
+
+.hoverActions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cds-spacing-01);
+  margin: calc(-1 * (var(--cds-spacing-02) + var(--cds-spacing-01)))
+    calc(-1 * var(--cds-spacing-02))
+    calc(-1 * (var(--cds-spacing-02) + var(--cds-spacing-01))) 0;
+  opacity: 0;
+  transition: opacity 0.1s ease-out;
+
+  a:hover > &,
+  button:hover > &,
+  &:focus-within {
+    opacity: 1;
+  }
+}

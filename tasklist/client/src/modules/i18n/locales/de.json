@@ -386,6 +386,21 @@
     "relativeDateUnknown": "'Unbekannt'",
     "processesLoadMore": "Mehr laden",
     "processesLoadingMore": "Wird geladen...",
-    "deniedReason": "Die Aufgabe {{type}} wurde vom System abgelehnt."
+    "deniedReason": "Die Aufgabe {{type}} wurde vom System abgelehnt.",
+    "filter": "Filter",
+    "headerNotificationsLabel": "Benachrichtigungen",
+    "navSidebarCollapse": "Einklappen",
+    "navSidebarCollapseAria": "Seitenleiste einklappen",
+    "navSidebarExpand": "Ausklappen",
+    "navSidebarExpandAria": "Seitenleiste ausklappen",
+    "navSidebarGroupCollapseAria": "{{label}} einklappen",
+    "navSidebarGroupExpandAria": "{{label}} ausklappen",
+    "notificationsDismissAll": "Alle entfernen",
+    "notificationsEmptyTitle": "Keine Benachrichtigungen",
+    "notificationsEmptyDescription": "Neue Aktualisierungen zu Ihren Prozessen, Clustern und mehr werden hier angezeigt.",
+    "themeDark": "Dunkel",
+    "themeLight": "Hell",
+    "themeSelectorLegend": "Erscheinungsbild",
+    "themeSystem": "System"
   }
 }

@@ -12,3 +12,12 @@
   border-bottom: 1px solid var(--cds-border-subtle);
   border-top: 1px solid var(--cds-border-subtle);
 }
+
+.containerV2 {
+  height: calc(var(--cds-spacing-09) + 1px);
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  padding: 0 var(--cds-spacing-05);
+  border-bottom: none;
+}

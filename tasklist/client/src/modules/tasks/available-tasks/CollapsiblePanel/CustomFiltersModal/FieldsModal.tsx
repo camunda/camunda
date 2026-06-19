@@ -73,7 +73,7 @@ type Props = {
   onApply: (values: NamedCustomFilters) => void;
   onSave: (values: NamedCustomFilters) => void;
   onEdit: (values: NamedCustomFilters) => void;
-  onDelete: () => void;
+  onDelete: (filterName: string) => void;
   initialValues: NamedCustomFilters;
 };
 
@@ -575,7 +575,11 @@ const FieldsModal: React.FC<Props> = ({
                   </>
                 ) : (
                   <>
-                    <Button kind="secondary" onClick={onDelete} type="button">
+                    <Button
+                      kind="secondary"
+                      onClick={() => onDelete(values?.name ?? '')}
+                      type="button"
+                    >
                       {t('customFiltersModalDeleteButton')}
                     </Button>
                     <Button kind="secondary" onClick={onClose} type="button">
