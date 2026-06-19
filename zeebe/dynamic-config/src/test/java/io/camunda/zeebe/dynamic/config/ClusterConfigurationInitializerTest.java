@@ -386,7 +386,7 @@ final class ClusterConfigurationInitializerTest {
   @Nested
   class ChainedModifierTest {
     @Test
-    void shouldNotRunPartitionDistributorInitializerIfCoordinator() {
+    void shouldRunPartitionDistributorInitializerIfCoordinator() {
       // given
       final var staticConfiguration =
           getStaticConfiguration(
@@ -422,7 +422,7 @@ final class ClusterConfigurationInitializerTest {
       assertThat(initializeFuture.isDone()).isTrue();
 
       // then
-      // PartitionDistributionInitializer is run (even though it's not member 0)
+      // PartitionDistributorInitializer is skipped because member 1 is not the coordinator
       assertThat(initializeFuture.join().partitionDistributorConfig()).isEmpty();
     }
 
@@ -441,7 +441,7 @@ final class ClusterConfigurationInitializerTest {
       assertThat(initializeFuture.isDone()).isTrue();
 
       // then
-      // PartitionDistributionInitializer is run (even though it's not member 0)
+      // ClusterIdInitializer is skipped because member 1 is not the coordinator
       assertThat(initializeFuture.join().clusterId()).isEmpty();
     }
   }

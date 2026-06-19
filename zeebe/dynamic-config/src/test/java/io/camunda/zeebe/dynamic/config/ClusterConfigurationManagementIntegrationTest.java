@@ -255,7 +255,7 @@ class ClusterConfigurationManagementIntegrationTest {
                     .allSatisfy(
                         node ->
                             assertThat(node.service().getClusterTopology())
-                                .succeedsWithin(Duration.ofSeconds(30))
+                                .succeedsWithin(INITIALIZATION_TIMEOUT)
                                 .returns(false, ClusterConfiguration::isUninitialized)));
   }
 
