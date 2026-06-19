@@ -318,7 +318,7 @@ public class UpdateJobTest {
   }
 
   @Test
-  public void shouldRejectIfBothFieldsAreNull(final TestInfo testInfo) {
+  public void shouldRejectIfAllFieldsAreNull(final TestInfo testInfo) {
     // given
     final String jobType = "job-" + testInfo.getDisplayName();
     createProcessInstance(jobType);

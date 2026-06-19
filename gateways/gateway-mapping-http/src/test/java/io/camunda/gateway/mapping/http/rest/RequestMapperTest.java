@@ -622,7 +622,7 @@ class RequestMapperTest {
     @SuppressWarnings("NullAway")
     void shouldRejectWhenChangesetIsNull() {
       // given
-      final var request = JobUpdateRequest.Builder.create().changeset((JobChangeset) null).build();
+      final var request = JobUpdateRequest.Builder.create().changeset(null).build();
 
       // when
       final var result = RequestMapper.toJobUpdateRequest(request, 1L);

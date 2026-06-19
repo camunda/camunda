@@ -31,7 +31,7 @@ class JobRequestValidatorTest {
   @Test
   void shouldRejectNullChangeset() {
     // given
-    final var request = JobUpdateRequest.Builder.create().changeset((JobChangeset) null).build();
+    final var request = JobUpdateRequest.Builder.create().changeset(null).build();
 
     // when
     final var result = JobRequestValidator.validateJobUpdateRequest(request);
