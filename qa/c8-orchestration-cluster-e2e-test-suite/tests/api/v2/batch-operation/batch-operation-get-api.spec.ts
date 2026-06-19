@@ -62,7 +62,6 @@ test.describe('Get Batch Operation Tests', () => {
         expect(json['operationsFailedCount']).toBeGreaterThanOrEqual(0);
         expect(json['operationsCompletedCount']).toBeGreaterThanOrEqual(0);
         expect(json['errors']).toBeDefined();
-        //Skipped due to bug 42165: https://github.com/camunda/camunda/issues/42165
         // expect(json['startDate']).toBeDefined();
       }).toPass({
         intervals: [5_000, 10_000, 15_000, 25_000],

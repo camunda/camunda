@@ -19,7 +19,6 @@ import {createProcessInstanceAndRetrieveTimeStamp} from '@requestHelpers';
 // Clock endpoints are alpha — their behavior is not guaranteed across versions,
 // so we skip these tests when running in forward-compatibility mode.
 
-//Skipped due to bug 48562: https://github.com/camunda/camunda/issues/48562
 (isForwardCompat ? test.describe.skip : test.describe.skip)(
   'Reset Clock API Tests',
   () => {
