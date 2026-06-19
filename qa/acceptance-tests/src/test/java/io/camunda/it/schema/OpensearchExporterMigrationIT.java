@@ -12,6 +12,7 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
+import org.apache.hc.client5.http.impl.async.HttpAsyncClientBuilder;
 import org.apache.hc.core5.http.HttpHost;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -70,6 +71,7 @@ public class OpensearchExporterMigrationIT {
       transport =
           ApacheHttpClient5TransportBuilder.builder(
                   new HttpHost(uri.getScheme(), uri.getHost(), uri.getPort()))
+              .setHttpClientConfigCallback(HttpAsyncClientBuilder::disableContentCompression)
               .build();
 
       osClient = new OpenSearchClient(transport);
