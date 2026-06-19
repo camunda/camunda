@@ -213,13 +213,16 @@ class CompactionStyle:
 
 
 class OrdinalRollover:
-    def __init__(self, rollover_interval=1, rollover_size=1000, max_ordinals=30, circular_ordinals=False, circular_reverse=False, circular_ordinals_max=30):
+    def __init__(self, rollover_interval=1, rollover_size=1000, max_ordinals=30,
+                 circular_ordinals=False, circular_reverse=False, circular_ordinals_max=30,
+                 circular_by_least_used=False):
         self.rollover_interval = rollover_interval
         self.rollover_size = rollover_size
         self.max_ordinals = max_ordinals
         self.circular_ordinals = circular_ordinals
         self.circular_reverse = circular_reverse
         self.circular_ordinals_max = circular_ordinals_max
+        self.circular_by_least_used = circular_by_least_used
         self.time_since_last_rollover = 0
 
     def next_ordinal(self, ordinal_indexes, current_ordinal, compaction_callback=None):
@@ -236,6 +239,12 @@ class OrdinalRollover:
               return self._rollover(ordinal_indexes, current_ordinal, compaction_callback)
         return current_ordinal
 
+    def _reuse_sort(self, index):
+        ordinal_part = index.ordinal
+        if self.circular_reverse:
+          ordinal_part = -index.ordinal
+        return (index.ordinal_reuse_count, ordinal_part)
+
     def _rollover(self, ordinal_indexes, current_ordinal, compaction_callback):
         self.time_since_last_rollover = 0
         if self.max_ordinals is not None and len(ordinal_indexes) >= self.max_ordinals:
@@ -248,17 +257,26 @@ class OrdinalRollover:
               if self.circular_ordinals_max and len(open_ordinals) > self.circular_ordinals_max:
                 open_ordinals = open_ordinals[:self.circular_ordinals_max]
               if len(open_ordinals) > 1:
-                current_ordinal_index = -1
-                for i, index in enumerate(open_ordinals):
-                  if index.ordinal == current_ordinal:
-                    current_ordinal_index = i
-                    break
-                if current_ordinal_index != -1:
-                  next_ordinal_index = (current_ordinal_index + 1) % len(open_ordinals)
-                  self.time_since_last_rollover = 0
-                  index = open_ordinals[next_ordinal_index]
-                  index.ordinal_reuse_count += 1
-                  return index.ordinal
+                if self.circular_by_least_used:
+                  least_used_indexes = sorted([index for index in open_ordinals if index.ordinal != current_ordinal],
+                                              key=self._reuse_sort)
+                  if least_used_indexes:
+                    self.time_since_last_rollover = 0
+                    index = least_used_indexes[0]
+                    index.ordinal_reuse_count += 1
+                    return index.ordinal
+                else:
+                  current_ordinal_index = -1
+                  for i, index in enumerate(open_ordinals):
+                    if index.ordinal == current_ordinal:
+                      current_ordinal_index = i
+                      break
+                  if current_ordinal_index != -1:
+                    next_ordinal_index = (current_ordinal_index + 1) % len(open_ordinals)
+                    self.time_since_last_rollover = 0
+                    index = open_ordinals[next_ordinal_index]
+                    index.ordinal_reuse_count += 1
+                    return index.ordinal
             return current_ordinal
         highest_ordinal = current_ordinal
         for index in ordinal_indexes:
@@ -279,6 +297,8 @@ def build_run_name(args):
       parts.append("reverse")
     if args.circular_ordinals_max:
       parts.append(f"max-{args.circular_ordinals_max}")
+    if args.circular_by_least_used:
+      parts.append("least-used")
   if args.compaction:
     parts.append("compaction")
     compaction_style = args.compaction_source + " -> " + args.compaction_target
@@ -298,7 +318,8 @@ def main(args):
     max_ordinals=args.max_ordinals,
     circular_ordinals=args.circular_ordinals,
     circular_reverse=args.circular_reverse,
-    circular_ordinals_max=args.circular_ordinals_max
+    circular_ordinals_max=args.circular_ordinals_max,
+    circular_by_least_used=args.circular_by_least_used
   )
   sim = Simulation(rollover, compaction_callback=compaction_callback)
   if args.mode == "main":
@@ -348,6 +369,7 @@ def main(args):
     ("Circular Ordinals", args.circular_ordinals if args.mode == "ordinal" else "N/A"),
     ("Circular Reverse", args.circular_reverse if args.mode == "ordinal" else "N/A"),
     ("Circular Ordinals Max", args.circular_ordinals_max if args.mode == "ordinal" else "N/A"),
+    ("Circular By Least Used", args.circular_by_least_used if args.mode == "ordinal" else "N/A"),
     ("Compaction", args.compaction if args.mode == "ordinal" else "N/A"),
     ("Compaction Style", args.compaction_source + " -> " + args.compaction_target if args.mode == "ordinal" else "N/A"),
     ####
@@ -393,6 +415,7 @@ if __name__ == "__main__":
     parser.add_argument("--circular-ordinals", action="store_true", help="Whether to reuse ordinal indexes in a circular manner once the maximum number of ordinals is reached")
     parser.add_argument("--circular-reverse", action="store_true", help="Whether circular reuse proceeds in reverse order (starting with the highest ordinal index)")
     parser.add_argument("--circular-ordinals-max", type=int, help="Maximum number of ordinals considered for reuse")
+    parser.add_argument("--circular-by-least-used", action="store_true", help="Select next ordinal to reuse based on how many times it has already been used")
     parser.add_argument("--compaction", action="store_true", help="Whether to compact ordinals indexes when we hit max ordinals")
     compaction_choices = ["oldest", "oldest+1", "newest-1", "newest"]
     parser.add_argument("--compaction-source", choices=compaction_choices, default="oldest")
