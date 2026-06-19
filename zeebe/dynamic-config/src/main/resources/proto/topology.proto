@@ -110,11 +110,23 @@ message TopologyChangeOperation {
     PreScalingOperation preScaling = 19;
     PostScalingOperation postScaling = 20;
     UpdatePartitionDistributorConfigOperation updatePartitionDistributorConfig = 21;
+    ModeChangeOperation modeChange = 24;
   }
 }
 
 message UpdatePartitionDistributorConfigOperation {
   PartitionDistributorConfig config = 1;
+}
+
+enum Mode {
+  MODE_UNSPECIFIED = 0;
+  MODE_RECOVERING = 1;
+  MODE_PROCESSING = 2;
+}
+
+message ModeChangeOperation {
+  string physicalTenantId = 1;
+  Mode mode = 2;
 }
 
 message CompletedTopologyChangeOperation {

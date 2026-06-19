@@ -252,4 +252,7 @@ public sealed interface ClusterConfigurationChangeOperation {
       }
     }
   }
+
+  record ModeChangeOperation(MemberId memberId, String physicalTenantId, Mode mode)
+      implements ClusterConfigurationChangeOperation {}
 }
