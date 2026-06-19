@@ -6,6 +6,10 @@
 
 - Introduce `BEFORE_ALL` listener event type
 
+### ❤️ Contributors
+
+- Konstantinos Mylosis ([@konstantinos-mylosis](https://github.com/konstantinos-mylosis))
+
 ## v0.0.72
 
 ### 🚀 Enhancements
