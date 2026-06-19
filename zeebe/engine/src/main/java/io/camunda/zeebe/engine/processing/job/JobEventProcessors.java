@@ -61,7 +61,8 @@ public final class JobEventProcessors {
                 eventHandle,
                 authCheckBehavior,
                 bpmnBehaviors.variableBehavior(),
-                config.isIncludeVariablesInJobCompletedEvent()))
+                config.isIncludeVariablesInJobCompletedEvent(),
+                config.getMaxVariableNestingDepth()))
         .onCommand(
             ValueType.JOB,
             JobIntent.FAIL,

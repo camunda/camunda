@@ -113,7 +113,8 @@ public final class BpmnProcessors {
         writers,
         processingState.getUserTaskState(),
         asyncRequestBehavior,
-        authCheckBehavior);
+        authCheckBehavior,
+        config);
     addProcessInstanceCreationStreamProcessors(
         typedRecordProcessors,
         processingState,
@@ -244,7 +245,8 @@ public final class BpmnProcessors {
       final Writers writers,
       final MutableUserTaskState userTaskState,
       final AsyncRequestBehavior asyncRequestBehavior,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final EngineConfiguration config) {
     typedRecordProcessors.onCommand(
         ValueType.VARIABLE_DOCUMENT,
         VariableDocumentIntent.UPDATE,
@@ -255,7 +257,8 @@ public final class BpmnProcessors {
             writers,
             userTaskState,
             asyncRequestBehavior,
-            authCheckBehavior));
+            authCheckBehavior,
+            config.getMaxVariableNestingDepth()));
   }
 
   private static void addProcessInstanceCreationStreamProcessors(
@@ -277,7 +280,8 @@ public final class BpmnProcessors {
             processingState.getBannedInstanceState(),
             authCheckBehavior,
             bpmnBehaviors,
-            config.isBusinessIdUniquenessEnabled());
+            config.isBusinessIdUniquenessEnabled(),
+            config.getMaxVariableNestingDepth());
     final ProcessInstanceCreationCreateProcessor createProcessor =
         new ProcessInstanceCreationCreateProcessor(
             keyGenerator, writers, metrics, processInstanceCreationHelper);

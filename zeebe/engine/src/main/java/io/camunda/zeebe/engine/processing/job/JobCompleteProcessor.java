@@ -22,6 +22,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejection
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
+import io.camunda.zeebe.engine.processing.variable.VariableNestingDepthValidator;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
@@ -133,6 +134,7 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
   private final TypedRejectionWriter rejectionWriter;
 
   private final boolean includeVariablesInJobCompletedEvent;
+  private final int maxVariableNestingDepth;
 
   public JobCompleteProcessor(
       final ProcessingState state,
@@ -141,7 +143,8 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
       final EventHandle eventHandle,
       final AuthorizationCheckBehavior authCheckBehavior,
       final VariableBehavior variableBehavior,
-      final boolean includeVariablesInJobCompletedEvent) {
+      final boolean includeVariablesInJobCompletedEvent,
+      final int maxVariableNestingDepth) {
     processState = state;
     userTaskState = state.getUserTaskState();
     jobState = state.getJobState();
@@ -151,6 +154,7 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
     this.includeVariablesInJobCompletedEvent = includeVariablesInJobCompletedEvent;
+    this.maxVariableNestingDepth = maxVariableNestingDepth;
     preconditionChecker =
         new JobCommandPreconditionValidator(
             state.getJobState(),
@@ -178,6 +182,7 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
     preconditionChecker
         .check(record)
         .flatMap(job -> checkAuthorization(record, job))
+        .flatMap(job -> validateVariablesNestingDepth(record, job))
         .ifRightOrLeft(
             job -> completeJob(record, job, session),
             rejection -> {
@@ -530,6 +535,13 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
                 new IllegalStateException(
                     MISSING_OR_INVALID_USER_TASK_KEY_FROM_ELEMENT_INSTANCE_MESSAGE.formatted(
                         job.getElementInstanceKey(), job.getProcessInstanceKey())));
+  }
+
+  private Either<Rejection, JobRecord> validateVariablesNestingDepth(
+      final TypedRecord<JobRecord> command, final JobRecord job) {
+    return VariableNestingDepthValidator.validate(
+            command.getValue().getVariablesBuffer(), maxVariableNestingDepth)
+        .map(unused -> job);
   }
 
   private Either<Rejection, JobRecord> checkAuthorization(

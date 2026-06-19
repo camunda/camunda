@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
+import io.camunda.zeebe.engine.processing.variable.VariableNestingDepthValidator;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -22,6 +23,7 @@ import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.instance.EventTrigger;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
@@ -32,20 +34,22 @@ public final class BpmnVariableMappingBehavior {
   private final ElementInstanceState elementInstanceState;
   private final VariableBehavior variableBehavior;
   private final EventScopeInstanceState eventScopeInstanceState;
-
   private final EventTriggerBehavior eventTriggerBehavior;
+  private final int maxVariableNestingDepth;
 
   public BpmnVariableMappingBehavior(
       final ExpressionProcessor expressionProcessor,
       final ProcessingState processingState,
       final VariableBehavior variableBehavior,
-      final EventTriggerBehavior eventTriggerBehavior) {
+      final EventTriggerBehavior eventTriggerBehavior,
+      final int maxVariableNestingDepth) {
     this.expressionProcessor = expressionProcessor;
     elementInstanceState = processingState.getElementInstanceState();
     variablesState = processingState.getVariableState();
     this.variableBehavior = variableBehavior;
     eventScopeInstanceState = processingState.getEventScopeInstanceState();
     this.eventTriggerBehavior = eventTriggerBehavior;
+    this.maxVariableNestingDepth = maxVariableNestingDepth;
   }
 
   /**
@@ -68,8 +72,15 @@ public final class BpmnVariableMappingBehavior {
     if (inputMappingExpression.isPresent()) {
       return expressionProcessor
           .evaluateVariableMappingExpression(inputMappingExpression.get(), scopeKey, tenantId)
-          .map(
+          .flatMap(
               result -> {
+                final var nestingResult =
+                    VariableNestingDepthValidator.validate(result, maxVariableNestingDepth);
+                if (nestingResult.isLeft()) {
+                  return Either.left(
+                      new Failure(
+                          nestingResult.getLeft().reason(), ErrorType.IO_MAPPING_ERROR, scopeKey));
+                }
                 variableBehavior.mergeLocalDocument(
                     scopeKey,
                     processDefinitionKey,
@@ -78,7 +89,7 @@ public final class BpmnVariableMappingBehavior {
                     bpmnProcessId,
                     context.getTenantId(),
                     result);
-                return null;
+                return Either.right(null);
               });
     }
     return Either.right(null);
@@ -123,6 +134,12 @@ public final class BpmnVariableMappingBehavior {
     if (outputMappingExpression.isPresent()) {
       // set as local variables
       if (hasVariables) {
+        final var nestingResult =
+            VariableNestingDepthValidator.validate(variables, maxVariableNestingDepth);
+        if (nestingResult.isLeft()) {
+          return Either.left(
+              new Failure(nestingResult.getLeft().reason(), ErrorType.IO_MAPPING_ERROR, scopeKey));
+        }
         variableBehavior.mergeLocalDocument(
             elementInstanceKey,
             processDefinitionKey,
@@ -137,8 +154,15 @@ public final class BpmnVariableMappingBehavior {
       return expressionProcessor
           .evaluateVariableMappingExpression(
               outputMappingExpression.get(), elementInstanceKey, tenantId)
-          .map(
+          .flatMap(
               result -> {
+                final var nestingResult =
+                    VariableNestingDepthValidator.validate(result, maxVariableNestingDepth);
+                if (nestingResult.isLeft()) {
+                  return Either.left(
+                      new Failure(
+                          nestingResult.getLeft().reason(), ErrorType.IO_MAPPING_ERROR, scopeKey));
+                }
                 variableBehavior.mergeDocument(
                     scopeKey,
                     processDefinitionKey,
@@ -147,11 +171,17 @@ public final class BpmnVariableMappingBehavior {
                     bpmnProcessId,
                     context.getTenantId(),
                     result);
-                return null;
+                return Either.right(null);
               });
 
     } else if (hasVariables) {
       // merge/propagate the event variables by default
+      final var nestingResult =
+          VariableNestingDepthValidator.validate(variables, maxVariableNestingDepth);
+      if (nestingResult.isLeft()) {
+        return Either.left(
+            new Failure(nestingResult.getLeft().reason(), ErrorType.IO_MAPPING_ERROR, scopeKey));
+      }
       variableBehavior.mergeDocument(
           elementInstanceKey,
           processDefinitionKey,

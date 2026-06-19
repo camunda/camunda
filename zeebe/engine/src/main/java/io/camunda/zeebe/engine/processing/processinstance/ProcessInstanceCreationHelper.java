@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSeq
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
+import io.camunda.zeebe.engine.processing.variable.VariableNestingDepthValidator;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.BannedInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
@@ -71,6 +72,7 @@ public class ProcessInstanceCreationHelper {
   private final boolean businessIdUniquenessEnabled;
   private final ElementInstanceState elementInstanceState;
   private final BannedInstanceState bannedInstanceState;
+  private final int maxVariableNestingDepth;
 
   public ProcessInstanceCreationHelper(
       final ProcessState processState,
@@ -78,7 +80,8 @@ public class ProcessInstanceCreationHelper {
       final BannedInstanceState bannedInstanceState,
       final AuthorizationCheckBehavior authCheckBehavior,
       final BpmnBehaviors bpmnBehaviors,
-      final boolean businessIdUniquenessEnabled) {
+      final boolean businessIdUniquenessEnabled,
+      final int maxVariableNestingDepth) {
     this.processState = processState;
     this.elementInstanceState = elementInstanceState;
     this.bannedInstanceState = bannedInstanceState;
@@ -86,6 +89,7 @@ public class ProcessInstanceCreationHelper {
     variableBehavior = bpmnBehaviors.variableBehavior();
     elementActivationBehavior = bpmnBehaviors.elementActivationBehavior();
     this.businessIdUniquenessEnabled = businessIdUniquenessEnabled;
+    this.maxVariableNestingDepth = maxVariableNestingDepth;
   }
 
   public Either<Rejection, DeployedProcess> findRelevantProcess(
@@ -225,6 +229,10 @@ public class ProcessInstanceCreationHelper {
                     businessId,
                     bufferAsString(deployedProcess.getBpmnProcessId()),
                     command.getTenantId()))
+        .flatMap(
+            valid ->
+                VariableNestingDepthValidator.validate(
+                    command.getVariablesBuffer(), maxVariableNestingDepth))
         .map(valid -> deployedProcess);
   }
 

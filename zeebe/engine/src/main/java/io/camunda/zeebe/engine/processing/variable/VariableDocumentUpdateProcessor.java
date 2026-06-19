@@ -62,6 +62,7 @@ public final class VariableDocumentUpdateProcessor
   private final AsyncRequestBehavior asyncRequestBehavior;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final BannedInstanceCommandCheck bannedInstanceCheck;
+  private final int maxVariableNestingDepth;
 
   public VariableDocumentUpdateProcessor(
       final ProcessingState processingState,
@@ -70,7 +71,8 @@ public final class VariableDocumentUpdateProcessor
       final Writers writers,
       final MutableUserTaskState userTaskState,
       final AsyncRequestBehavior asyncRequestBehavior,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final int maxVariableNestingDepth) {
     elementInstanceState = processingState.getElementInstanceState();
     this.userTaskState = userTaskState;
     processState = processingState.getProcessState();
@@ -84,6 +86,7 @@ public final class VariableDocumentUpdateProcessor
     this.authCheckBehavior = authCheckBehavior;
     this.bannedInstanceCheck =
         new BannedInstanceCommandCheck(processingState.getBannedInstanceState());
+    this.maxVariableNestingDepth = maxVariableNestingDepth;
   }
 
   @Override
@@ -127,6 +130,15 @@ public final class VariableDocumentUpdateProcessor
               : rejection.reason();
       writers.rejection().appendRejection(record, rejection.type(), errorMessage);
       writers.response().writeRejectionOnCommand(record, rejection.type(), errorMessage);
+      return;
+    }
+
+    final var nestingValidation =
+        VariableNestingDepthValidator.validate(value.getVariablesBuffer(), maxVariableNestingDepth);
+    if (nestingValidation.isLeft()) {
+      final var rejection = nestingValidation.getLeft();
+      writers.rejection().appendRejection(record, rejection.type(), rejection.reason());
+      writers.response().writeRejectionOnCommand(record, rejection.type(), rejection.reason());
       return;
     }
 
