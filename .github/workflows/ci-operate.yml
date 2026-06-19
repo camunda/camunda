@@ -81,7 +81,7 @@ jobs:
       - uses: ./.github/actions/setup-build
         name: Build setup
         with:
-          java-distribution: adopt
+          java-distribution: temurin
           maven-cache-key-modifier: operate
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
