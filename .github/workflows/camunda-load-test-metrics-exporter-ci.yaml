@@ -28,7 +28,7 @@ defaults:
 
 jobs:
   test:
-    name: Unit tests
+    name: Tests
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -45,6 +45,9 @@ jobs:
 
       - name: Run tests
         run: make test
+
+      - name: Run IT
+        run: make integration-test
 
       - name: Observe build status
         if: always()
