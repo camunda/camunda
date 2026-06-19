@@ -12,6 +12,7 @@ class Index:
         self.ordinal = None
         self.latest_process_instance_end_date = None
         self.creation_time = creation_time
+        self.ordinal_reuse_count = 0
 
     @property
     def is_main(self):
@@ -136,6 +137,12 @@ class Simulation:
         biggest_size = max(biggest_size, len(index.process_instances))
       return biggest_size
 
+    def get_max_ordinal_reuse(self):
+      max_ordinal_reuse = 0
+      for index in self.indexes.values():
+        max_ordinal_reuse = max(max_ordinal_reuse, index.ordinal_reuse_count)
+      return max_ordinal_reuse
+
     def get_count_indexes_with_ilm_deadline(self):
       count = 0
       for index in self.indexes.values():
@@ -249,7 +256,9 @@ class OrdinalRollover:
                 if current_ordinal_index != -1:
                   next_ordinal_index = (current_ordinal_index + 1) % len(open_ordinals)
                   self.time_since_last_rollover = 0
-                  return open_ordinals[next_ordinal_index].ordinal
+                  index = open_ordinals[next_ordinal_index]
+                  index.ordinal_reuse_count += 1
+                  return index.ordinal
             return current_ordinal
         highest_ordinal = current_ordinal
         for index in ordinal_indexes:
@@ -302,6 +311,7 @@ def main(args):
   # Simulate some process instances and time passing
   max_num_processes = 0
   biggest_index_size = 0
+  max_ordinal_reuse = 0
   if run_sim:
     for _ in range(args.ticks):
       for _ in range(args.rate):
@@ -315,6 +325,7 @@ def main(args):
         sim.run_deleter(only_if_no_ilm_deadline=args.deleter_only_if_no_ilm)
       max_num_processes = max(max_num_processes, sim.get_num_process_instances())
       biggest_index_size = max(biggest_index_size, sim.get_biggest_index_size())
+      max_ordinal_reuse = max(max_ordinal_reuse, sim.get_max_ordinal_reuse())
 
     for index_name in sorted(sim.indexes.keys()):
       index = sim.indexes[index_name]
@@ -343,6 +354,7 @@ def main(args):
     ("Total indexes", len(sim.indexes)),
     ("Max process instances", max_num_processes),
     ("Oldest index age", sim.oldest_index_age),
+    ("Max ordinal reuse", max_ordinal_reuse),
     ("Indexes with ILM deadline", sim.get_count_indexes_with_ilm_deadline()),
     ("Indexes dropped by ILM", sim.indexes_dropped_by_ilm),
     ("Docs dropped by ILM", sim.docs_dropped_by_ilm),
