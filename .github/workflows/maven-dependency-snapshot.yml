@@ -68,9 +68,9 @@ jobs:
       - name: Detect Spring Boot starter module path
         run: |
           if [ -d "clients/camunda-spring-boot-starter" ]; then
-            echo "SPRING_STARTER_MODULE=clients/camunda-spring-boot-starter" >> $GITHUB_ENV
+            echo "SPRING_STARTER_MODULE=clients/camunda-spring-boot-starter" >> "$GITHUB_ENV"
           elif [ -d "clients/spring-boot-starter-camunda-sdk" ]; then
-            echo "SPRING_STARTER_MODULE=clients/spring-boot-starter-camunda-sdk" >> $GITHUB_ENV
+            echo "SPRING_STARTER_MODULE=clients/spring-boot-starter-camunda-sdk" >> "$GITHUB_ENV"
           else
             echo "ERROR: neither clients/camunda-spring-boot-starter nor clients/spring-boot-starter-camunda-sdk found" >&2
             exit 1
