@@ -7,3 +7,5 @@
  */
 
 export const featureFlags = [];
+
+export const IS_NAV_V2_ENABLED = false;

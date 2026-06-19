@@ -19,6 +19,7 @@ import operationsLog from "./operationsLog.json";
 import authentication from "./authentication.json";
 import globalTaskListeners from "./globalTaskListeners.json";
 import mcpProcesses from "./mcpProcesses.json";
+import navigation from "./navigation.json";
 
 export default {
   components,
@@ -34,4 +35,5 @@ export default {
   authentication,
   globalTaskListeners,
   mcpProcesses,
+  navigation,
 };
