@@ -239,7 +239,6 @@ const VariablesTable: React.FC<Props> = ({
       )}
       {!isFetching &&
       (showDocumentsOnly || debouncedSearchValue.trim() !== '') &&
-      variablesData !== undefined &&
       processedVariables.length === 0 ? (
         <EmptyMessageWrapper>
           <EmptyMessage
