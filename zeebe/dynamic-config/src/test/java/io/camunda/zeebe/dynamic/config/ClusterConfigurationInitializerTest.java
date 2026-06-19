@@ -40,6 +40,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -200,21 +201,29 @@ final class ClusterConfigurationInitializerTest {
   }
 
   private ClusterConfigurationInitializer getStaticInitializer() {
-    final MemberId member = MemberId.from("10");
+    final var member = MemberId.from("10");
+    return new StaticInitializer(getStaticConfiguration(member, Set.of(member)));
+  }
+
+  private StaticConfiguration getStaticConfiguration(
+      final MemberId member, final Set<MemberId> members) {
     final var partitionId = PartitionId.from("test", 1);
     final Set<PartitionMetadata> partitions =
         Set.of(
             new PartitionMetadata(
-                PartitionId.from("test", 1), Set.of(member), Map.of(member, 1), 1, member));
-    return new StaticInitializer(
-        new StaticConfiguration(
-            new ControllablePartitionDistributor().withPartitions(partitions),
-            Set.of(member),
-            member,
-            List.of(partitionId),
-            1,
-            DynamicPartitionConfig.init(),
-            "clusterId"));
+                PartitionId.from("test", 1),
+                members,
+                members.stream().collect(Collectors.toMap(Function.identity(), ignored -> 1)),
+                1,
+                member));
+    return new StaticConfiguration(
+        new ControllablePartitionDistributor().withPartitions(partitions),
+        members,
+        member,
+        List.of(partitionId),
+        1,
+        DynamicPartitionConfig.init(),
+        null);
   }
 
   private static final class TestClusterConfigurationNotifier
@@ -371,6 +380,69 @@ final class ClusterConfigurationInitializerTest {
 
       // then
       assertThatClusterTopology(initializeFuture.join()).isInitialized();
+    }
+  }
+
+  @Nested
+  class ChainedModifierTest {
+    @Test
+    void shouldNotRunPartitionDistributorInitializerIfCoordinator() {
+      // given
+      final var staticConfiguration =
+          getStaticConfiguration(
+              MemberId.from("1"), Set.of(MemberId.from("0"), MemberId.from("1")));
+      final var updatedConfiguration =
+          // member 0 was removed, member 1 last remaining in the cluster
+          getStaticConfiguration(MemberId.from("1"), Set.of(MemberId.from("1")));
+      final var initializer =
+          new StaticInitializer(updatedConfiguration)
+              .andThen(new PartitionDistributorInitializer(staticConfiguration));
+
+      // when
+      final var initializeFuture = initializer.initialize();
+      assertThat(initializeFuture.isDone()).isTrue();
+
+      // then
+      // PartitionDistributionInitializer is run (even though it's not member 0)
+      assertThat(initializeFuture.join().partitionDistributorConfig()).isPresent();
+    }
+
+    @Test
+    void shouldNotRunPartitionDistributorInitializerIfNotCoordinator() {
+      // given
+      final var staticConfiguration =
+          getStaticConfiguration(
+              MemberId.from("1"), Set.of(MemberId.from("0"), MemberId.from("1")));
+      final var initializer =
+          new StaticInitializer(staticConfiguration)
+              .andThen(new PartitionDistributorInitializer(staticConfiguration));
+
+      // when
+      final var initializeFuture = initializer.initialize();
+      assertThat(initializeFuture.isDone()).isTrue();
+
+      // then
+      // PartitionDistributionInitializer is run (even though it's not member 0)
+      assertThat(initializeFuture.join().partitionDistributorConfig()).isEmpty();
+    }
+
+    @Test
+    void shouldNotRunModifierIfNotCoordinator() {
+      // given
+      final var staticConfiguration =
+          getStaticConfiguration(
+              MemberId.from("1"), Set.of(MemberId.from("0"), MemberId.from("1")));
+      final var initializer =
+          new StaticInitializer(staticConfiguration)
+              .andThen(new ClusterIdInitializer("cluster-id-123", MemberId.from("1")));
+
+      // when
+      final var initializeFuture = initializer.initialize();
+      assertThat(initializeFuture.isDone()).isTrue();
+
+      // then
+      // PartitionDistributionInitializer is run (even though it's not member 0)
+      assertThat(initializeFuture.join().clusterId()).isEmpty();
     }
   }
 
