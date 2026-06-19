@@ -37,8 +37,7 @@ function getWaitStateStatusItems(
   return waitStates.flatMap((waitState) => {
     switch (waitState.waitStateType) {
       case 'MESSAGE': {
-        const messageName =
-          (waitState.details['messageName'] as string) ?? 'unknown';
+        const messageName = waitState.details['messageName'] ?? 'unknown';
         return {
           key: `${waitState.elementInstanceKey}-MESSAGE-${messageName}`,
           text: `Waiting for message: ${messageName}`,
@@ -63,8 +62,7 @@ function getWaitStateStatusItems(
         };
       }
       case 'SIGNAL': {
-        const signalName =
-          (waitState.details['signalName'] as string) ?? 'unknown';
+        const signalName = waitState.details['signalName'] ?? 'unknown';
         return {
           key: `${waitState.elementInstanceKey}-SIGNAL-${signalName}`,
           text: `Waiting for signal: ${signalName}`,
@@ -77,8 +75,8 @@ function getWaitStateStatusItems(
         };
       }
       case 'JOB': {
-        const jobType = (waitState.details['jobType'] as string) ?? 'unknown';
-        const jobKind = waitState.details['jobKind'] as string | undefined;
+        const jobType = waitState.details['jobType'] ?? 'unknown';
+        const jobKind = waitState.details['jobKind'];
         if (jobKind === 'EXECUTION_LISTENER' || jobKind === 'TASK_LISTENER') {
           return {
             key: `${waitState.elementInstanceKey}-JOB-${jobKind}-${jobType}`,
@@ -135,4 +133,20 @@ function getEarliestTimerDueDate(
   return earliestDueDate;
 }
 
-export {getWaitStateLabel, getWaitStateStatusItems, getEarliestTimerDueDate};
+function isBeforeAllExecutionListenerWaitState(
+  item: ElementInstanceInspection,
+): boolean {
+  return (
+    item.elementType === 'MULTI_INSTANCE_BODY' &&
+    item.details['waitStateType'] === 'JOB' &&
+    item.details['jobKind'] === 'EXECUTION_LISTENER' &&
+    item.details['listenerEventType'] === 'BEFORE_ALL'
+  );
+}
+
+export {
+  getWaitStateLabel,
+  getWaitStateStatusItems,
+  getEarliestTimerDueDate,
+  isBeforeAllExecutionListenerWaitState,
+};

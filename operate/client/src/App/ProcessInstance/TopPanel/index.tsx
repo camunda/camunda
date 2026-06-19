@@ -60,7 +60,10 @@ import {useProcessSequenceFlows} from 'modules/queries/sequenceFlows/useProcessS
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 import {useElementInstanceInspection} from 'modules/queries/elementInstanceInspection/useElementInstanceInspection';
 import {getSubprocessOverlayFromIncidentElements} from 'modules/utils/elements';
-import {getWaitStateLabel} from 'modules/utils/waitStates';
+import {
+  getWaitStateLabel,
+  isBeforeAllExecutionListenerWaitState,
+} from 'modules/utils/waitStates';
 import type {
   AgentShinePayload,
   AgentStatusPayload,
@@ -183,6 +186,23 @@ const TopPanel: React.FC = observer(() => {
       })) || []),
       ...subprocessOverlays,
     ];
+
+    if (inspectionData?.items?.length) {
+      const elementIdsInStats = new Set(statistics?.map(({id}) => id) ?? []);
+      for (const item of inspectionData.items) {
+        if (
+          isBeforeAllExecutionListenerWaitState(item) &&
+          !elementIdsInStats.has(item.elementId)
+        ) {
+          allElementStateOverlays.push({
+            payload: {elementState: 'active' as const},
+            type: OVERLAY_TYPE_STATE,
+            elementId: item.elementId,
+            position: overlayPositions.active,
+          });
+        }
+      }
+    }
 
     const notCompletedElementStateOverlays = allElementStateOverlays?.filter(
       (stateOverlay) => stateOverlay.payload.elementState !== 'completed',
