@@ -19,6 +19,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
@@ -29,8 +30,12 @@ import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeResult;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.dynamic.config.state.MemberState.State;
+import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.Either;
@@ -219,6 +224,14 @@ public final class ClusterConfigurationManagementRequestsHandler
   }
 
   @Override
+  public ActorFuture<ClusterConfigurationChangeResponse> enterRecovery(
+      final ModeChangeRequest recoveryModeRequest) {
+    return handleRequest(
+        recoveryModeRequest.dryRun(),
+        currentConfig -> buildRecoveryOps(currentConfig, recoveryModeRequest));
+  }
+
+  @Override
   public ActorFuture<ClusterConfiguration> cancelTopologyChange(
       final CancelChangeRequest changeRequest) {
     return coordinator.cancelChange(changeRequest.changeId());
@@ -227,6 +240,39 @@ public final class ClusterConfigurationManagementRequestsHandler
   @Override
   public ActorFuture<ClusterConfiguration> getTopology() {
     return coordinator.getClusterConfiguration();
+  }
+
+  private Either<Exception, List<ClusterConfigurationChangeOperation>> buildRecoveryOps(
+      final ClusterConfiguration currentConfig, final ModeChangeRequest request) {
+    final var tenantId = request.physicalTenantId();
+    if (request.mode() == Mode.RECOVERING) {
+      final var ops =
+          currentConfig.members().entrySet().stream()
+              .filter(e -> e.getValue().state() == State.ACTIVE)
+              .map(
+                  e ->
+                      (ClusterConfigurationChangeOperation)
+                          new ModeChangeOperation(e.getKey(), tenantId, Mode.RECOVERING))
+              .toList();
+      if (ops.isEmpty()) {
+        return Either.left(new InvalidRequest("No active members found to enter recovery mode"));
+      }
+      return Either.right(ops);
+    } else {
+      final var ops =
+          currentConfig.members().entrySet().stream()
+              .filter(e -> e.getValue().state() == State.RECOVERING)
+              .map(
+                  e ->
+                      (ClusterConfigurationChangeOperation)
+                          new ModeChangeOperation(e.getKey(), tenantId, Mode.PROCESSING))
+              .toList();
+      if (ops.isEmpty()) {
+        return Either.left(
+            new InvalidRequest("No recovering members found to transition to processing mode"));
+      }
+      return Either.right(ops);
+    }
   }
 
   private ActorFuture<ClusterConfigurationChangeResponse> handleRequest(

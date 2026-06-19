@@ -23,6 +23,7 @@ import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeAppliersImpl;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinatorImpl;
+import io.camunda.zeebe.dynamic.config.changes.ModeChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.NoopClusterMembershipChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
@@ -244,13 +245,15 @@ public final class ClusterConfigurationManagerService
 
   public void registerPartitionChangeExecutors(
       final PartitionChangeExecutor partitionChangeExecutor,
-      final PartitionScalingChangeExecutor partitionScalingChangeExecutor) {
+      final PartitionScalingChangeExecutor partitionScalingChangeExecutor,
+      final ModeChangeExecutor recoveryModeChangeExecutor) {
     clusterConfigurationManager.registerTopologyChangeAppliers(
         new ConfigurationChangeAppliersImpl(
             partitionChangeExecutor,
             new NoopClusterMembershipChangeExecutor(),
             partitionScalingChangeExecutor,
-            clusterChangeExecutor));
+            clusterChangeExecutor,
+            recoveryModeChangeExecutor));
   }
 
   public void removePartitionChangeExecutor() {

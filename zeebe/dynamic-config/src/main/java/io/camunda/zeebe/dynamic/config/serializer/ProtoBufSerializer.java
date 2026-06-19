@@ -22,6 +22,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
@@ -45,6 +46,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberRemoveOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionBootstrapOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDeleteExporterOperation;
@@ -65,6 +67,7 @@ import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExportingConfig;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
+import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
@@ -542,6 +545,12 @@ public class ProtoBufSerializer
               Topology.UpdatePartitionDistributorConfigOperation.newBuilder()
                   .setConfig(encodePartitionDistributorConfig(msg.config()))
                   .build());
+      case final ModeChangeOperation modeChangeOperation ->
+          builder.setModeChange(
+              Topology.ModeChangeOperation.newBuilder()
+                  .setPhysicalTenantId(modeChangeOperation.physicalTenantId())
+                  .setMode(toProtoTopologyMode(modeChangeOperation.mode()))
+                  .build());
     }
     return builder.build();
   }
@@ -864,6 +873,12 @@ public class ProtoBufSerializer
               () ->
                   new IllegalStateException(
                       "UpdatePartitionDistributorConfig operation has empty config"));
+    } else if (topologyChangeOperation.hasModeChange()) {
+      final var modeChangeProto = topologyChangeOperation.getModeChange();
+      return new ModeChangeOperation(
+          memberId,
+          modeChangeProto.getPhysicalTenantId(),
+          fromProtoTopologyMode(modeChangeProto.getMode()));
     } else {
       // If the node does not know of a type, the exception thrown will prevent
       // ClusterTopologyGossiper from processing the incoming topology. This helps to prevent any
@@ -1365,6 +1380,56 @@ public class ProtoBufSerializer
                         new IllegalArgumentException(
                             "UpdatePartitionDistributorConfigRequest has empty config")));
     return new UpdatePartitionDistributorConfigRequest(config, proto.getDryRun());
+  }
+
+  @Override
+  public byte[] encodeModeChangeRequest(final ModeChangeRequest recoveryModeRequest) {
+    return Requests.ModeChangeRequest.newBuilder()
+        .setPhysicalTenantId(recoveryModeRequest.physicalTenantId())
+        .setMode(toProtoRequestMode(recoveryModeRequest.mode()))
+        .setDryRun(recoveryModeRequest.dryRun())
+        .build()
+        .toByteArray();
+  }
+
+  @Override
+  public ModeChangeRequest decodeModeChangeRequest(final byte[] encodedRequest) {
+    try {
+      final var request = Requests.ModeChangeRequest.parseFrom(encodedRequest);
+      return new ModeChangeRequest(
+          request.getPhysicalTenantId(), toMode(request.getMode()), request.getDryRun());
+    } catch (final InvalidProtocolBufferException e) {
+      throw new DecodingFailed(e);
+    }
+  }
+
+  private static Mode toMode(final Requests.Mode mode) {
+    if (mode == Requests.Mode.RECOVERING) {
+      return Mode.RECOVERING;
+    }
+    return Mode.PROCESSING;
+  }
+
+  private static Requests.Mode toProtoRequestMode(final Mode mode) {
+    return switch (mode) {
+      case RECOVERING -> Requests.Mode.RECOVERING;
+      case PROCESSING -> Requests.Mode.PROCESSING;
+    };
+  }
+
+  private static Topology.Mode toProtoTopologyMode(final Mode mode) {
+    return switch (mode) {
+      case RECOVERING -> Topology.Mode.MODE_RECOVERING;
+      case PROCESSING -> Topology.Mode.MODE_PROCESSING;
+    };
+  }
+
+  private static Mode fromProtoTopologyMode(final Topology.Mode mode) {
+    return switch (mode) {
+      case MODE_RECOVERING -> Mode.RECOVERING;
+      case MODE_PROCESSING -> Mode.PROCESSING;
+      default -> Mode.RECOVERING;
+    };
   }
 
   public Builder encodeTopologyChangeResponse(

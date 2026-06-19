@@ -12,6 +12,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberRemoveOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionBootstrapOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDeleteExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDisableExporterOperation;
@@ -34,16 +35,19 @@ public class ConfigurationChangeAppliersImpl implements ConfigurationChangeAppli
   private final ClusterMembershipChangeExecutor clusterMembershipChangeExecutor;
   private final PartitionScalingChangeExecutor partitionScalingChangeExecutor;
   private final ClusterChangeExecutor clusterChangeExecutor;
+  private final ModeChangeExecutor recoveryModeChangeExecutor;
 
   public ConfigurationChangeAppliersImpl(
       final PartitionChangeExecutor partitionChangeExecutor,
       final ClusterMembershipChangeExecutor clusterMembershipChangeExecutor,
       final PartitionScalingChangeExecutor partitionScalingChangeExecutor,
-      final ClusterChangeExecutor clusterChangeExecutor) {
+      final ClusterChangeExecutor clusterChangeExecutor,
+      final ModeChangeExecutor recoveryModeChangeExecutor) {
     this.partitionChangeExecutor = partitionChangeExecutor;
     this.clusterMembershipChangeExecutor = clusterMembershipChangeExecutor;
     this.partitionScalingChangeExecutor = partitionScalingChangeExecutor;
     this.clusterChangeExecutor = clusterChangeExecutor;
+    this.recoveryModeChangeExecutor = recoveryModeChangeExecutor;
   }
 
   @Override
@@ -134,6 +138,14 @@ public class ConfigurationChangeAppliersImpl implements ConfigurationChangeAppli
               clusterChangeExecutor);
       case final UpdatePartitionDistributorConfigOperation updateDistributorConfig ->
           new UpdatePartitionDistributorConfigApplier(updateDistributorConfig);
+      case final ModeChangeOperation modeChangeOperation ->
+          switch (modeChangeOperation.mode()) {
+            case RECOVERING ->
+                new EnterRecoveryApplier(
+                    modeChangeOperation.memberId(), recoveryModeChangeExecutor);
+            case PROCESSING ->
+                new ExitRecoveryApplier(modeChangeOperation.memberId(), recoveryModeChangeExecutor);
+          };
     };
   }
 }

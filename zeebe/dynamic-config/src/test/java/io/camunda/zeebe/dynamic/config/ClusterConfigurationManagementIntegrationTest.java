@@ -22,9 +22,12 @@ import io.camunda.zeebe.dynamic.config.changes.NoopPartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor.NoopPartitionScalingChangeExecutor;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
+import io.camunda.zeebe.dynamic.config.state.MemberState.State;
+import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -214,6 +217,40 @@ class ClusterConfigurationManagementIntegrationTest {
   }
 
   @Test
+  void shouldTransitionMemberToRecoveringState() {
+    // given
+    final var startFutures = nodes.values().stream().map(this::startNode).toList();
+    startFutures.forEach(ActorFuture::join);
+
+    final ClusterConfigurationManagerService service = nodes.get(0).service();
+    final ConfigurationChangeCoordinator coordinator =
+        service.getTopologyChangeCoordinator().orElseThrow();
+
+    // when
+    coordinator
+        .applyOperations(
+            ignore ->
+                Either.right(
+                    List.of(
+                        new ModeChangeOperation(MemberId.from("0"), "default", Mode.RECOVERING),
+                        new ModeChangeOperation(MemberId.from("1"), "default", Mode.RECOVERING),
+                        new ModeChangeOperation(MemberId.from("2"), "default", Mode.RECOVERING))))
+        .join();
+
+    // then
+    Awaitility.await("The enter-recovery operation should complete.")
+        .untilAsserted(
+            () ->
+                ClusterConfigurationAssert.assertThatClusterTopology(
+                        service.getClusterTopology().join())
+                    .hasPendingOperationsWithSize(0));
+    ClusterConfigurationAssert.assertThatClusterTopology(service.getClusterTopology().join())
+        .hasMemberWithState(0, State.RECOVERING)
+        .hasMemberWithState(1, State.RECOVERING)
+        .hasMemberWithState(2, State.RECOVERING);
+  }
+
+  @Test
   void shouldApplyConsecutiveTopologyChangeOnSameMember() {
     // given - all members have partition 1
     nodes.values().forEach(this::startNode);
@@ -342,7 +379,8 @@ class ClusterConfigurationManagementIntegrationTest {
           (ignore, error) -> {
             if (error == null) {
               service.registerPartitionChangeExecutors(
-                  new NoopPartitionChangeExecutor(), new NoopPartitionScalingChangeExecutor());
+                  new NoopPartitionChangeExecutor(),
+                  new NoopPartitionScalingChangeExecutor());
             }
           },
           Runnable::run);
