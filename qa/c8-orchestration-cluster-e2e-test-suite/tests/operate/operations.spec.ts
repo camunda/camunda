@@ -97,9 +97,8 @@ test.describe('Operations', () => {
     });
   });
 
-  // Skipped due to bug 42375: https://github.com/camunda/camunda/issues/42375
   // !Note: assert the code after the bug is fixed as it was dicoverd during the test implementation
-  test.skip('Retry and cancel single instance', async ({
+  test('Retry and cancel single instance', async ({
     page,
     operateProcessesPage,
     operateFiltersPanelPage,
