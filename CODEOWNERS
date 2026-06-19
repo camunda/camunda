@@ -91,6 +91,12 @@
 /operate/common/src/test/java/io/camunda/operate/OperateDataLayerTestSuite.java    @camunda/data-layer
 /operate/webapp/src/test/java/io/camunda/operate/OperateDataLayerTestSuite.java    @camunda/data-layer
 
+# Secondary storage schema
+/webapps-schema/src/main/resources/schema/                                                                          @camunda/data-layer
+/webapps-schema/src/test/java/io/camunda/webapps/schema/SecondaryStorageSchemaConstraintsTest.java                 @camunda/data-layer
+/db/rdbms-schema/src/main/resources/db/changelog/                                                                  @camunda/data-layer
+/db/rdbms-schema/src/test/java/io/camunda/db/rdbms/schema/RdbmsSchemaConstraintsTest.java                          @camunda/data-layer
+
 ##########################
 ## Distributed Platform ##
 ##########################
