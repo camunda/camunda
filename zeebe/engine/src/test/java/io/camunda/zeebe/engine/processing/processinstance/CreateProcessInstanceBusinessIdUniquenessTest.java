@@ -35,7 +35,8 @@ public final class CreateProcessInstanceBusinessIdUniquenessTest {
   @ClassRule
   public static final EngineRule ENGINE =
       EngineRule.singlePartition()
-          .withEngineConfig(config -> config.setBusinessIdUniquenessEnabled(true));
+          .withEngineConfig(config -> config.setBusinessIdUniquenessEnabled(true))
+          .withInitialClusterVersionAtMax();
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -880,7 +881,9 @@ public final class CreateProcessInstanceBusinessIdUniquenessTest {
 
     // and - restart the engine with uniqueness re-enabled
     ENGINE.stop();
-    ENGINE.withEngineConfig(config -> config.setBusinessIdUniquenessEnabled(true));
+    ENGINE
+        .withEngineConfig(config -> config.setBusinessIdUniquenessEnabled(true))
+        .withInitialClusterVersionAtMax();
     ENGINE.start();
 
     // when - migrate the v1 instance to v2

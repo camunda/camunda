@@ -10,6 +10,8 @@ package io.camunda.zeebe.protocol.impl.clusterversion;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ClusterVersionIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.intent.MessageStartCorrelationKeyLockReleaseIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.util.SemanticVersion;
 import io.camunda.zeebe.util.VersionUtil;
@@ -117,7 +119,54 @@ public final class ClusterVersionCatalog {
         Set.of(),
         Set.of(
             new GatedCommandId(
-                ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.CONTINUE_TERMINATING_ELEMENT)));
+                ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.CONTINUE_TERMINATING_ELEMENT))),
+
+    /**
+     * Gates the businessId-as-message-correlation-constraint feature (issue #51689). The cluster
+     * may already be configured for businessId uniqueness via {@code
+     * EngineConfiguration.isBusinessIdUniquenessEnabled()}, but the feature only fully activates
+     * once the operator raises ECV to this ordinal. Below the gate, the engine takes the legacy
+     * path: no cross-partition uniqueness handshake, no lock-release queries, businessId is carried
+     * on records but never enforced. Above the gate, the cross-partition flow runs.
+     *
+     * <p>The gated commands are the entry points of the two new flows introduced by this feature:
+     *
+     * <ul>
+     *   <li><b>Cross-partition handshake</b> ({@code MESSAGE_START_PROCESS_INSTANCE_REQUEST}) —
+     *       {@code REQUEST} delegates message-start creation to {@code P_B = hash(businessId)}; the
+     *       {@code START} / {@code REJECT_*} replies and the {@code SWEEP_EXPIRED_DEDUPS} trigger
+     *       are all engine-internal follow-ups that must not slip past the gate either.
+     *   <li><b>Pull-based lock release</b> ({@code MESSAGE_START_CORRELATION_KEY_LOCK_RELEASE}) —
+     *       {@code QUERY} asks {@code P_B} whether a cross-partition holder is still alive; {@code
+     *       RELEASE} is the reply that triggers the lock-release on {@code P_K}.
+     * </ul>
+     */
+    MESSAGE_BUSINESS_ID_CORRELATION(
+        12,
+        "Business ID as additional message correlation constraint (cross-partition handshake)",
+        Set.of(),
+        Set.of(
+            new GatedCommandId(
+                ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
+                MessageStartProcessInstanceRequestIntent.REQUEST),
+            new GatedCommandId(
+                ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
+                MessageStartProcessInstanceRequestIntent.START),
+            new GatedCommandId(
+                ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
+                MessageStartProcessInstanceRequestIntent.REJECT_UNIQUENESS),
+            new GatedCommandId(
+                ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
+                MessageStartProcessInstanceRequestIntent.REJECT_NO_SUBSCRIPTION),
+            new GatedCommandId(
+                ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
+                MessageStartProcessInstanceRequestIntent.SWEEP_EXPIRED_DEDUPS),
+            new GatedCommandId(
+                ValueType.MESSAGE_START_CORRELATION_KEY_LOCK_RELEASE,
+                MessageStartCorrelationKeyLockReleaseIntent.QUERY),
+            new GatedCommandId(
+                ValueType.MESSAGE_START_CORRELATION_KEY_LOCK_RELEASE,
+                MessageStartCorrelationKeyLockReleaseIntent.RELEASE)));
 
     private final int at;
     private final String description;

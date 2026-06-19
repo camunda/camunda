@@ -114,7 +114,8 @@ public final class MessageStartEventBusinessIdUniquenessTest {
   @Rule
   public final EngineRule engine =
       EngineRule.singlePartition()
-          .withEngineConfig(config -> config.setBusinessIdUniquenessEnabled(true));
+          .withEngineConfig(config -> config.setBusinessIdUniquenessEnabled(true))
+          .withInitialClusterVersionAtMax();
 
   @Test
   public void shouldBlockSecondStartWhenBusinessIdIsAlreadyHeldByActivePI() {

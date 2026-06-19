@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.message;
 
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.clusterversion.ClusterVersionFeatures;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
@@ -22,6 +23,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableMessageState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
+import io.camunda.zeebe.protocol.impl.clusterversion.ClusterVersionCatalog.Capability;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.MessageBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
@@ -64,7 +66,19 @@ public final class MessageEventProcessors {
     final var processState = processingState.getProcessState();
     final var elementInstanceState = processingState.getElementInstanceState();
     final var bannedInstanceState = processingState.getBannedInstanceState();
-    final var businessIdUniquenessEnabled = config.isBusinessIdUniquenessEnabled();
+    // The feature gates on BOTH the operator-set config flag AND ECV activation. Config remains
+    // the operator's kill switch (can be disabled even after raising); ECV is the rolling-upgrade
+    // safety latch that keeps the new cross-partition handshake intents off the log until every
+    // replica supports them. Captured at engine init — a runtime RAISE without restart will not
+    // re-evaluate, but the catalog-level command-writer gate at
+    // ResultBuilderBackedTypedCommandWriter still refuses to emit the gated intents until ECV
+    // catches up, so the worst case under runtime raise is "feature stays off until restart"
+    // rather than divergence.
+    final var clusterVersionFeatures =
+        new ClusterVersionFeatures(processingState.getClusterVersionState());
+    final var businessIdUniquenessEnabled =
+        config.isBusinessIdUniquenessEnabled()
+            && clusterVersionFeatures.isActive(Capability.MESSAGE_BUSINESS_ID_CORRELATION);
 
     typedRecordProcessors
         .onCommand(

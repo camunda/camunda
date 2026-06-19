@@ -65,7 +65,9 @@ public final class CreateProcessInstanceBusinessIdUniquenessToggleTest {
 
     // when — toggle ON
     engine.stop();
-    engine.withEngineConfig(config -> config.setBusinessIdUniquenessEnabled(true));
+    engine
+        .withEngineConfig(config -> config.setBusinessIdUniquenessEnabled(true))
+        .withInitialClusterVersionAtMax();
     engine.start();
 
     engine
@@ -98,7 +100,9 @@ public final class CreateProcessInstanceBusinessIdUniquenessToggleTest {
     final String processId = "process";
     final String businessId = "biz-1";
     engine.stop();
-    engine.withEngineConfig(config -> config.setBusinessIdUniquenessEnabled(true));
+    engine
+        .withEngineConfig(config -> config.setBusinessIdUniquenessEnabled(true))
+        .withInitialClusterVersionAtMax();
     engine.start();
     engine
         .deployment()
@@ -156,7 +160,9 @@ public final class CreateProcessInstanceBusinessIdUniquenessToggleTest {
 
     // when — toggle ON, then complete both instances
     engine.stop();
-    engine.withEngineConfig(config -> config.setBusinessIdUniquenessEnabled(true));
+    engine
+        .withEngineConfig(config -> config.setBusinessIdUniquenessEnabled(true))
+        .withInitialClusterVersionAtMax();
     engine.start();
     engine.userTask().ofInstance(instanceKeyA).complete();
     RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
@@ -194,7 +200,9 @@ public final class CreateProcessInstanceBusinessIdUniquenessToggleTest {
     final String processId = "process";
     final String businessId = "biz-1";
     engine.stop();
-    engine.withEngineConfig(config -> config.setBusinessIdUniquenessEnabled(true));
+    engine
+        .withEngineConfig(config -> config.setBusinessIdUniquenessEnabled(true))
+        .withInitialClusterVersionAtMax();
     engine.start();
     engine
         .deployment()
@@ -218,7 +226,9 @@ public final class CreateProcessInstanceBusinessIdUniquenessToggleTest {
         .withElementType(BpmnElementType.PROCESS)
         .await();
     engine.stop();
-    engine.withEngineConfig(config -> config.setBusinessIdUniquenessEnabled(true));
+    engine
+        .withEngineConfig(config -> config.setBusinessIdUniquenessEnabled(true))
+        .withInitialClusterVersionAtMax();
     engine.start();
 
     // then — business ID is freed
