@@ -39,7 +39,7 @@ export function PrivateRoute({component: Component, ...rest}) {
           <>
             <Header />
             <main>
-              <div className="PrivateRoute">
+              <div className="PrivateRoute" id="main-content" tabIndex={-1}>
                 {rest.render ? rest.render(props) : <Component {...props} />}
               </div>
             </main>
