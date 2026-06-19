@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.0.74
+
+### 🚀 Enhancements
+
+- Add `priority` field to `jobChangesetSchema` for job update requests
+- Use `.int()` constraint on `retries` in `jobChangesetSchema` to match the OpenAPI `int32` schema
+
+### ❤️ Contributors
+
+- Eddie Tsedeke ([@etcd](https://github.com/etcd))
+
 ## v0.0.73
 
 ### 🚀 Enhancements
