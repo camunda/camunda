@@ -6,12 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {
-  ElementInstanceInspection,
-  ElementInstanceType,
-  JobKind,
-  WaitStateType,
-} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {ElementInstanceInspection} from '@camunda/camunda-api-zod-schemas/8.10';
 import {formatDate} from 'modules/utils/date';
 
 function getWaitStateLabel(
@@ -42,8 +37,7 @@ function getWaitStateStatusItems(
   return waitStates.flatMap((waitState) => {
     switch (waitState.waitStateType) {
       case 'MESSAGE': {
-        const messageName =
-          (waitState.details['messageName'] as string) ?? 'unknown';
+        const messageName = waitState.details['messageName'] ?? 'unknown';
         return {
           key: `${waitState.elementInstanceKey}-MESSAGE-${messageName}`,
           text: `Waiting for message: ${messageName}`,
@@ -68,8 +62,7 @@ function getWaitStateStatusItems(
         };
       }
       case 'SIGNAL': {
-        const signalName =
-          (waitState.details['signalName'] as string) ?? 'unknown';
+        const signalName = waitState.details['signalName'] ?? 'unknown';
         return {
           key: `${waitState.elementInstanceKey}-SIGNAL-${signalName}`,
           text: `Waiting for signal: ${signalName}`,
@@ -82,8 +75,8 @@ function getWaitStateStatusItems(
         };
       }
       case 'JOB': {
-        const jobType = (waitState.details['jobType'] as string) ?? 'unknown';
-        const jobKind = waitState.details['jobKind'] as string | undefined;
+        const jobType = waitState.details['jobType'] ?? 'unknown';
+        const jobKind = waitState.details['jobKind'];
         if (jobKind === 'EXECUTION_LISTENER' || jobKind === 'TASK_LISTENER') {
           return {
             key: `${waitState.elementInstanceKey}-JOB-${jobKind}-${jobType}`,
@@ -144,11 +137,10 @@ function isBeforeAllExecutionListenerWaitState(
   item: ElementInstanceInspection,
 ): boolean {
   return (
-    (item.elementType as ElementInstanceType) === 'MULTI_INSTANCE_BODY' &&
-    (item.details['waitStateType'] as WaitStateType) === 'JOB' &&
-    (item.details['jobKind'] as JobKind) === 'EXECUTION_LISTENER' &&
+    item.elementType === 'MULTI_INSTANCE_BODY' &&
+    item.details['waitStateType'] === 'JOB' &&
+    item.details['jobKind'] === 'EXECUTION_LISTENER' &&
     item.details['listenerEventType'] === 'BEFORE_ALL'
-    // TODO use ListenerEventType from camunda-api-zod-schemas/8.10 when published
   );
 }
 
