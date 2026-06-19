@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.MessageRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
@@ -312,6 +313,59 @@ public final class MessageCorrelationBusinessIdTest {
         .withBusinessId("biz-42")
         .publish();
     assertProcessCompleted(processInstanceKey);
+  }
+
+  // --- Pinning: the process instance's businessId (captured at OPEN) is carried onto the
+  // --- ProcessMessageSubscription:CORRELATED event, so the correlated-message read path can expose
+  // --- it for non-start correlations. The correlate command itself carries no businessId.
+
+  @Test
+  public void shouldRecordProcessInstanceBusinessIdOnCatchCorrelation() {
+    // given a PI with businessId "biz-42" waiting on an intermediate catch event
+    engine.deployment().withXmlResource(INTERMEDIATE_CATCH_PROCESS).deploy();
+    final long processInstanceKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withBusinessId("biz-42")
+            .withVariable("key", "order-10")
+            .create();
+    awaitSubscriptionCreated(processInstanceKey);
+
+    // when a message without a businessId correlates (asymmetric rule: it still correlates)
+    engine.message().withName("message").withCorrelationKey("order-10").publish();
+
+    // then the CORRELATED event carries the subscribing PI's businessId, not the message's (empty)
+    final var correlated =
+        RecordingExporter.processMessageSubscriptionRecords(
+                ProcessMessageSubscriptionIntent.CORRELATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    assertThat(correlated.getValue().getBusinessId()).isEqualTo("biz-42");
+  }
+
+  @Test
+  public void shouldRecordEmptyBusinessIdOnCatchCorrelationWhenProcessInstanceHasNone() {
+    // given a PI without a businessId waiting on an intermediate catch event
+    engine.deployment().withXmlResource(INTERMEDIATE_CATCH_PROCESS).deploy();
+    final long processInstanceKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("key", "order-11")
+            .create();
+    awaitSubscriptionCreated(processInstanceKey);
+
+    // when a message correlates
+    engine.message().withName("message").withCorrelationKey("order-11").publish();
+
+    // then the CORRELATED event carries an empty businessId (no regression for the none path)
+    final var correlated =
+        RecordingExporter.processMessageSubscriptionRecords(
+                ProcessMessageSubscriptionIntent.CORRELATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    assertThat(correlated.getValue().getBusinessId()).isEmpty();
   }
 
   private static BpmnModelInstance processWithIntermediateCatch(final String processId) {
