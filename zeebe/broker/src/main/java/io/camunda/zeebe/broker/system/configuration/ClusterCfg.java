@@ -148,24 +148,6 @@ public final class ClusterCfg implements ConfigurationEntry {
       throw new IllegalArgumentException(String.format(ZONE_NOT_FOUND_ERROR_MSG, zone, zoneNames));
     }
 
-    final var zoneCfg = zones.stream().filter(r -> r.name().equals(zone)).findFirst().orElseThrow();
-    if (nodeId < 0 || nodeId >= zoneCfg.numberOfBrokers()) {
-      throw new IllegalArgumentException(
-          String.format(NODE_ID_ZONE_ERROR_MSG, nodeId, zone, zoneCfg.numberOfBrokers()));
-    }
-
-    final int totalBrokers = zones.stream().mapToInt(ZoneCfg::numberOfBrokers).sum();
-    if (totalBrokers != clusterSize) {
-      throw new IllegalArgumentException(
-          String.format(BROKER_SUM_ERROR_MSG, totalBrokers, clusterSize));
-    }
-
-    final int totalReplicas = zones.stream().mapToInt(ZoneCfg::numberOfReplicas).sum();
-    if (totalReplicas != replicationFactor) {
-      throw new IllegalArgumentException(
-          String.format(REPLICA_SUM_ERROR_MSG, totalReplicas, replicationFactor));
-    }
-
     zones.forEach(
         cfg -> {
           if (cfg.numberOfReplicas() > cfg.numberOfBrokers()) {
