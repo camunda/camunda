@@ -13,12 +13,15 @@ import java.util.concurrent.CompletableFuture;
 
 public interface NodeIdProvider extends AutoCloseable {
 
+  /**
+   * @param clusterSize the number of nodes in this node's region.
+   */
   CompletableFuture<Void> initialize(int clusterSize);
 
   /**
-   * Scale the available node ids to the new cluster size.
+   * Scale the available node ids to the new cluster size
    *
-   * @param newClusterSize the new cluster size
+   * @param newClusterSize the new cluster size (number of nodes in this region)
    * @return a CompletableFuture that completes when the scaling operation is done
    */
   CompletableFuture<Void> scale(int newClusterSize);

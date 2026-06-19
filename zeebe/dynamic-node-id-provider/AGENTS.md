@@ -39,6 +39,18 @@ src/main/java/io/camunda/zeebe/dynamic/nodeid/
 - Leases must be continuously renewed; failure to renew triggers shutdown
 - Uses Compare-And-Swap (CAS) operations for consistency
 
+### Zone Awareness
+
+- Leases are always keyed by the **integer node ID**, never by a zone string. In a zone-aware
+  cluster a broker's `MemberId` is composed of its zone plus this integer (e.g. `zoneA-0`), but the
+  lease (and its S3 object key, `<nodeId>.json`) only carries the integer part.
+- Per-zone isolation is achieved by giving each zone its **own repository** (e.g. a dedicated S3
+  bucket per zone), not by encoding the zone into the lease. Within a single repository node IDs
+  `0..n` are unique and zone-unaware — so two brokers in different zones with the same node ID (e.g.
+  `zoneA-0` and `zoneB-0`) must use different buckets, otherwise they collide on the same lease.
+- Consequently the lease count tracked by the provider corresponds to the number of brokers in this
+  node's zone, not the total cluster size.
+
 ### Lease Reacquisition on Restart
 
 When a broker shuts down gracefully:
