@@ -100,6 +100,16 @@ public class UserTaskRestrictionsIT {
           .zeebeCandidateGroups(GROUP3_NAME)
           .done();
 
+  private static final String PROCESS_ID_3 = "processWithCandidateGroupById";
+  private static final BpmnModelInstance PROCESS_3 =
+      Bpmn.createExecutableProcess(PROCESS_ID_3)
+          .startEvent()
+          .userTask("group3TaskByGroupId")
+          .zeebeUserTask()
+          .zeebeCandidateGroups(GROUP3_ID)
+          .endEvent()
+          .done();
+
   @UserDefinition
   private static final TestUser ADMIN_USER =
       new TestUser(
@@ -159,18 +169,23 @@ public class UserTaskRestrictionsIT {
 
   private static long processInstanceKeyCandidateUsers;
   private static long processInstanceKeyCandidateGroups;
+  private static long processInstanceKeyCandidateGroupById;
 
   @BeforeAll
   static void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {
     deployResource(adminClient, PROCESS_1, PROCESS_ID_1 + ".bpmn");
     deployResource(adminClient, PROCESS_2, PROCESS_ID_2 + ".bpmn");
+    deployResource(adminClient, PROCESS_3, PROCESS_ID_3 + ".bpmn");
     final var startEvent1 = startProcessInstance(adminClient, PROCESS_ID_1);
     final var startEvent2 = startProcessInstance(adminClient, PROCESS_ID_2);
+    final var startEvent3 = startProcessInstance(adminClient, PROCESS_ID_3);
     processInstanceKeyCandidateUsers = startEvent1.getProcessInstanceKey();
     processInstanceKeyCandidateGroups = startEvent2.getProcessInstanceKey();
+    processInstanceKeyCandidateGroupById = startEvent3.getProcessInstanceKey();
 
     awaitUserTaskBeingAvailable(adminClient, processInstanceKeyCandidateUsers, 2);
     awaitUserTaskBeingAvailable(adminClient, processInstanceKeyCandidateGroups, 3);
+    awaitUserTaskBeingAvailable(adminClient, processInstanceKeyCandidateGroupById, 1);
   }
 
   @Test
@@ -229,7 +244,8 @@ public class UserTaskRestrictionsIT {
       // searching for tasks available to user1 and user2 (no process instance key provided)
       final HttpResponse<String> user3Response = tasklistUser3RestClient.searchTasks(null);
       final HttpResponse<String> user4Response = tasklistUser4RestClient.searchTasks(null);
-      final HttpResponse<String> user5Response = tasklistUser5RestClient.searchTasks(null);
+      final HttpResponse<String> user5Response =
+          tasklistUser5RestClient.searchTasks(processInstanceKeyCandidateGroups);
 
       // then
       assertThat(user3Response).isNotNull();
@@ -254,6 +270,32 @@ public class UserTaskRestrictionsIT {
               user5Response.body(), TaskSearchResponse[].class);
       assertThat(tasksUser5).hasSize(1);
       // The engine resolves the group name to its ID at task creation time
+      assertThat(tasksUser5[0].getCandidateGroups()).containsExactly(GROUP3_ID);
+    }
+  }
+
+  @Test
+  public void searchShouldReturnCandidateGroupTasksWhenCandidateGroupIsId()
+      throws JsonProcessingException {
+    // given
+    try (final var tasklistUser5RestClient =
+        STANDALONE_CAMUNDA
+            .newTasklistClient()
+            .withAuthentication(USER5_USER.username(), USER5_USER.password())) {
+
+      // when
+      // user5 is a member of group3 (ID: "group3", name: "Group 3")
+      // the task defines the candidate group by ID; the Tasklist V1 API must resolve both sides
+      // to names before comparing so the task is visible even when group name != group ID
+      final HttpResponse<String> user5Response =
+          tasklistUser5RestClient.searchTasks(processInstanceKeyCandidateGroupById);
+
+      // then
+      assertThat(user5Response.statusCode()).isEqualTo(200);
+      final TaskSearchResponse[] tasksUser5 =
+          TestRestTasklistClient.OBJECT_MAPPER.readValue(
+              user5Response.body(), TaskSearchResponse[].class);
+      assertThat(tasksUser5).hasSize(1);
       assertThat(tasksUser5[0].getCandidateGroups()).containsExactly(GROUP3_ID);
     }
   }
