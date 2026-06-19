@@ -21,10 +21,7 @@ public class BrokerUpdateJobRequest extends BrokerExecuteCommand<JobRecord> {
   private final JobRecord requestDto = new JobRecord();
 
   public BrokerUpdateJobRequest(
-      final long jobKey,
-      final Integer retries,
-      final Long timeout,
-      final Integer priority) {
+      final long jobKey, final Integer retries, final Long timeout, final Integer priority) {
     super(ValueType.JOB, JobIntent.UPDATE);
     request.setKey(jobKey);
     final Set<String> changedAttributes = new HashSet<>();
