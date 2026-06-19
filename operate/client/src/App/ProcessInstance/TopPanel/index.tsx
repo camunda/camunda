@@ -187,9 +187,6 @@ const TopPanel: React.FC = observer(() => {
       ...subprocessOverlays,
     ];
 
-    // Multi-instance bodies waiting for beforeAll execution listeners are
-    // excluded from the statistics query to avoid double-counting the body
-    // Add a synthetic active overlay for each such element so the diagram badge still appears.
     if (inspectionData?.items?.length) {
       const elementIdsInStats = new Set(statistics?.map(({id}) => id) ?? []);
       for (const item of inspectionData.items) {

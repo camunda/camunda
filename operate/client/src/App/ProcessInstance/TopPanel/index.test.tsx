@@ -481,8 +481,6 @@ describe('TopPanel', () => {
   });
 
   it('should add an active overlay for a multi-instance body waiting for a beforeAll execution listener', async () => {
-    // given: MULTI_INSTANCE_BODY element in inspection data only —
-    // excluded from statistics to avoid double-counting body + inner instances
     mockSearchElementInstanceInspection().withSuccess(
       searchResult([
         {
@@ -504,13 +502,10 @@ describe('TopPanel', () => {
 
     render(<TopPanel />, {wrapper: getWrapper()});
 
-    // when: diagram finishes loading
     await waitForElementToBeRemoved(() =>
       screen.queryByTestId('diagram-spinner'),
     );
 
-    // then: a synthetic active overlay was added without a count (instance
-    // count is unknown until the beforeAll listener completes and the body activates)
     await waitFor(() => {
       const activeOverlay = diagramOverlaysStore.state.overlays.find(
         (o) =>
