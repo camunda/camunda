@@ -10,10 +10,17 @@ import styled, {css} from 'styled-components';
 import {
 	TableCell as BaseTableCell,
 	Table as BaseTable,
+	TableContainer as BaseTableContainer,
 	TableExpandRow as BaseTableExpandRow,
 	TableExpandedRow as BaseTableExpandedRow,
 	TableHead as BaseTableHead,
 } from '@carbon/react';
+
+const TableContainer = styled(BaseTableContainer)`
+	&& {
+		padding-top: 0;
+	}
+`;
 
 const Table = styled(BaseTable)`
 	table-layout: fixed;
@@ -35,8 +42,13 @@ const TableExpandRow = styled(BaseTableExpandRow)<{$isExpandable: boolean}>`
 			}
 		`}
 
-	// the expand cell is narrow; stop its flex layout from squishing the chevron
-	button svg {
+	&& td:first-child {
+		width: var(--cds-spacing-08);
+	}
+
+	&& button {
+		width: var(--cds-spacing-07);
+		height: var(--cds-spacing-07);
 		flex-shrink: 0;
 	}
 `;
@@ -61,4 +73,4 @@ const TableExpandedRow = styled(BaseTableExpandedRow)`
 	}
 `;
 
-export {ExpandableTableCell, Table, TableExpandRow, TableExpandedRow, TableHead};
+export {ExpandableTableCell, Table, TableContainer, TableExpandRow, TableExpandedRow, TableHead};

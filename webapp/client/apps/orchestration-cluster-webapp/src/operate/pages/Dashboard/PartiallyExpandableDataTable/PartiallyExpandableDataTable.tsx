@@ -9,13 +9,12 @@
 import React from 'react';
 import {
 	DataTable,
-	TableContainer,
 	TableExpandHeader,
 	TableHeader,
 	TableRow,
 	type DataTableRenderProps,
 } from '@carbon/react';
-import {Table, TableExpandRow, ExpandableTableCell, TableExpandedRow, TableHead} from './styled';
+import {Table, TableContainer, TableExpandRow, ExpandableTableCell, TableExpandedRow, TableHead} from './styled';
 
 type Row = {
 	id: string;
