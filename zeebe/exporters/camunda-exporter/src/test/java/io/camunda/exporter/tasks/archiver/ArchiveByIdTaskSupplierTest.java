@@ -17,6 +17,11 @@ import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiveByIdTaskSupplier.ArchiveDocIdsBatch;
+<<<<<<< HEAD
+=======
+import io.camunda.exporter.tasks.archiver.ArchiveByIdTaskSupplier.BatchCountMismatchException;
+import io.camunda.exporter.tasks.archiver.ArchiveByIdTaskSupplier.IdWithRouting;
+>>>>>>> 5d2654bf (fix: apply review feedback)
 import java.net.SocketTimeoutException;
 import java.util.List;
 import java.util.Set;
@@ -29,8 +34,6 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.opensearch.client.opensearch._types.ErrorCause;
-import org.opensearch.client.opensearch._types.ErrorResponse;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,24 +47,20 @@ class ArchiveByIdTaskSupplierTest {
 
   static Stream<Throwable> retryableErrors() {
     return Stream.of(
-        new SocketTimeoutException("timeout"),
-        new ElasticsearchException(
-            "endpoint1",
-            co.elastic.clients.elasticsearch._types.ErrorResponse.of(
-                e -> e.error(ec -> ec.type("test_exception").reason("test reason")).status(500))),
-        new OpenSearchException(
-            ErrorResponse.of(
-                e ->
-                    e.error(ErrorCause.of(ec -> ec.type("test_exception").reason("test reason")))
-                        .status(500))),
-        new ArchiveByIdTaskSupplier.BatchCountMismatchException("reindex", "count mismatch"));
+        new CompletionException(mock(SocketTimeoutException.class)),
+        new CompletionException(mock(ElasticsearchException.class)),
+        new CompletionException(mock(OpenSearchException.class)),
+        new CompletionException(mock(BatchCountMismatchException.class)),
+        mock(SocketTimeoutException.class),
+        mock(ElasticsearchException.class),
+        mock(OpenSearchException.class),
+        mock(BatchCountMismatchException.class));
   }
 
   @ParameterizedTest
   @MethodSource("retryableErrors")
-  void shouldRetryOnRetryableErrorAndRecordMetric(final Throwable cause) {
+  void shouldRetryOnRetryableErrorAndRecordMetric(final Throwable retryableError) {
     // given
-    final var retryableError = new CompletionException(cause);
     final var reindexCallCount = new AtomicInteger(0);
 
     final var taskSupplier =
@@ -357,8 +356,7 @@ class ArchiveByIdTaskSupplierTest {
   void shouldNotReduceBatchSizeForNonSocketTimeoutRetryableError() {
     // given - retryable error that is NOT a SocketTimeoutException
     final var batchMismatchError =
-        new CompletionException(
-            new ArchiveByIdTaskSupplier.BatchCountMismatchException("reindex", "count mismatch"));
+        new CompletionException(new BatchCountMismatchException("reindex", "count mismatch"));
     final var reindexCallCount = new AtomicInteger(0);
     final var batchSize = new AtomicInteger(0);
 

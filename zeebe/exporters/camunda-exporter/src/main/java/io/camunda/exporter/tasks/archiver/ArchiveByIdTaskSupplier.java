@@ -29,6 +29,12 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
 
   private static final int MINIMUM_BATCH_SIZE = 50;
   private static final double BATCH_SIZE_REDUCTION_FACTOR = 0.5;
+  private static final List<Class<? extends Throwable>> RETRYABLE_EXCEPTIONS =
+      List.of(
+          SocketTimeoutException.class,
+          ElasticsearchException.class,
+          OpenSearchException.class,
+          BatchCountMismatchException.class);
 
   private final HistoryConfiguration config;
   private final String sourceIdx;
@@ -46,7 +52,7 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
       new AtomicReference<>(null);
   private final AtomicBoolean finished = new AtomicBoolean(false);
   private final AtomicInteger retryCount = new AtomicInteger(0);
-  private final AtomicInteger batchSize = new AtomicInteger(0);
+  private final AtomicInteger batchSize;
 
   private final AtomicLong totalArchived = new AtomicLong(0);
   private final AtomicLong totalTimeTakenMs = new AtomicLong(0);
@@ -72,7 +78,7 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
     this.executor = executor;
     this.metrics = metrics;
     this.logger = logger;
-    batchSize.set(config.getReindexBatchSize());
+    batchSize = new AtomicInteger(config.getReindexBatchSize());
   }
 
   public boolean isComplete() {
@@ -198,19 +204,17 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
   }
 
   private boolean shouldReduceBatchSize(final Throwable thr) {
-    return thr != null
-        && thr.getCause() != null
-        && thr.getCause() instanceof SocketTimeoutException;
+    return matchesThrowableOrCause(thr, SocketTimeoutException.class);
   }
 
   private boolean isRetryableError(final Throwable thr) {
-    if (thr != null && thr.getCause() != null) {
-      return thr.getCause() instanceof SocketTimeoutException
-          || thr.getCause() instanceof ElasticsearchException
-          || thr.getCause() instanceof OpenSearchException
-          || thr.getCause() instanceof BatchCountMismatchException;
-    }
-    return false;
+    return RETRYABLE_EXCEPTIONS.stream().anyMatch(clazz -> matchesThrowableOrCause(thr, clazz));
+  }
+
+  private boolean matchesThrowableOrCause(
+      final Throwable thr, final Class<? extends Throwable> throwableClass) {
+    return thr != null
+        && (throwableClass.isInstance(thr) || throwableClass.isInstance(thr.getCause()));
   }
 
   public record ArchiveDocIdsBatch<T>(List<String> ids, List<T> searchAfter) {
