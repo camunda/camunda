@@ -20,6 +20,7 @@ import io.camunda.zeebe.msgpack.value.ValueArray;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.ReservationOrigin;
 import io.camunda.zeebe.protocol.record.value.TenantFilter;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
@@ -41,6 +42,7 @@ public final class JobBatchRecord extends UnifiedRecordValue implements JobBatch
   private static final StringValue VARIABLES_KEY = new StringValue("variables");
   private static final StringValue TRUNCATED_KEY = new StringValue("truncated");
   private static final StringValue TENANT_FILTER_KEY = new StringValue("tenantFilter");
+  private static final StringValue RESERVATION_ORIGIN_KEY = new StringValue("reservationOrigin");
 
   private final StringProperty typeProp = new StringProperty(TYPE_KEY);
   private final StringProperty workerProp = new StringProperty(WORKER_KEY, "");
@@ -57,9 +59,18 @@ public final class JobBatchRecord extends UnifiedRecordValue implements JobBatch
   private final BooleanProperty truncatedProp = new BooleanProperty(TRUNCATED_KEY, false);
   private final EnumProperty<TenantFilter> tenantFilterProp =
       new EnumProperty<>(TENANT_FILTER_KEY, TenantFilter.class, TenantFilter.PROVIDED);
+  // Introduced at catalog ordinal 18 (Capability.JOB_BATCH_RESERVATION_ORIGIN). Default is
+  // ReservationOrigin.UNSPECIFIED so a pre-feature record (one written below the gate) that has
+  // no on-wire entry for this property deserializes into a JobBatchRecord whose accessor returns
+  // UNSPECIFIED — never a name unknown to the local enum, and never null. The producer must guard
+  // its setReservationOrigin call on Capability.JOB_BATCH_RESERVATION_ORIGIN; see ReservationOrigin
+  // for the rolling-upgrade rationale.
+  private final EnumProperty<ReservationOrigin> reservationOriginProp =
+      new EnumProperty<>(
+          RESERVATION_ORIGIN_KEY, ReservationOrigin.class, ReservationOrigin.UNSPECIFIED);
 
   public JobBatchRecord() {
-    super(10);
+    super(11);
     declareProperty(typeProp)
         .declareProperty(workerProp)
         .declareProperty(timeoutProp)
@@ -69,7 +80,8 @@ public final class JobBatchRecord extends UnifiedRecordValue implements JobBatch
         .declareProperty(variablesProp)
         .declareProperty(truncatedProp)
         .declareProperty(tenantIdsProp)
-        .declareProperty(tenantFilterProp);
+        .declareProperty(tenantFilterProp)
+        .declareProperty(reservationOriginProp);
   }
 
   public JobBatchRecord setType(final DirectBuffer buf, final int offset, final int length) {
@@ -162,6 +174,16 @@ public final class JobBatchRecord extends UnifiedRecordValue implements JobBatch
 
   public JobBatchRecord setTenantFilter(final TenantFilter tenantFilter) {
     tenantFilterProp.setValue(tenantFilter);
+    return this;
+  }
+
+  @Override
+  public ReservationOrigin getReservationOrigin() {
+    return reservationOriginProp.getValue();
+  }
+
+  public JobBatchRecord setReservationOrigin(final ReservationOrigin reservationOrigin) {
+    reservationOriginProp.setValue(reservationOrigin);
     return this;
   }
 

@@ -36,6 +36,7 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.JobKind;
+import io.camunda.zeebe.protocol.record.value.ReservationOrigin;
 import io.camunda.zeebe.protocol.record.value.TenantFilter;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -195,6 +196,16 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
       final JobBatchRecord value,
       final long jobBatchKey,
       final Map<JobKind, Integer> activatedJobsCountPerJobKind) {
+    // Above ordinal 18, stamp the reservationOrigin field on the JobBatchRecord. Below the gate
+    // the field is left at its default (UNSPECIFIED) and is omitted from the serialized record
+    // entirely — a pre-feature follower's MsgPack decode never sees an unknown property name,
+    // and downstream consumers that don't yet read the field are unaffected. The accompanying
+    // ReservationOrigin doc-comment explains how a future ordinal extending this enum would put
+    // the JobKind.MAINTENANCE-style Enum.valueOf hazard in play on this same field.
+    if (clusterVersionFeatures.isActive(Capability.JOB_BATCH_RESERVATION_ORIGIN)) {
+      value.setReservationOrigin(ReservationOrigin.WORKER_REQUEST);
+    }
+
     // The RESERVED event is itself a new protocol record introduced together with the
     // JobBatchReservedApplier (ordinal 16). Emitting it on a replica that still selects
     // pre-feature dispatch would crash there because JobBatchIntent.RESERVED is an enum value

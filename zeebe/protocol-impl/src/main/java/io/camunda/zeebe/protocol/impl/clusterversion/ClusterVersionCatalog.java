@@ -335,6 +335,35 @@ public final class ClusterVersionCatalog {
         17,
         "Write-discipline gate for JobKind.MAINTENANCE — emit only above this ordinal",
         Set.of(),
+        Set.of()),
+
+    /**
+     * Demonstrates the new-enum-field hazard under ECV, paired with {@link #JOB_KIND_MAINTENANCE}.
+     * Introduces a new enum-typed field {@code reservationOrigin: ReservationOrigin} on {@code
+     * JobBatchRecord}; the field is forward-compatible at the wire level (a pre-feature follower
+     * silently skips the unknown property name during MsgPack decode and the accessor returns the
+     * enum's default {@code UNSPECIFIED}), but its content is meaningful and downstream consumers
+     * may diverge if they depend on the field being populated.
+     *
+     * <p><b>What this gate enforces.</b> No appliers and no commands are listed — the extension
+     * introduces neither. The discipline lives at every producer that would write the field: the
+     * producer must guard its {@code record.setReservationOrigin(...)} call on {@code
+     * clusterVersionFeatures.isActive(Capability.JOB_BATCH_RESERVATION_ORIGIN)} and leave the field
+     * at its default {@code UNSPECIFIED} below the gate. Below the gate the field is absent from
+     * the on-wire record entirely (MsgPack omits enum-typed properties whose value equals the
+     * declared default); above the gate the producer can stamp any value the enum defines.
+     *
+     * <p><b>The next step is the harder one.</b> Extending {@code ReservationOrigin} with a third
+     * value (e.g. {@code ENGINE_INITIATED}) puts the {@link #JOB_KIND_MAINTENANCE}-style {@code
+     * Enum.valueOf} hazard in play on the new field: an old binary at ordinal 18 knows only {@code
+     * UNSPECIFIED} and {@code WORKER_REQUEST}, and would crash on {@code
+     * Enum.valueOf(ReservationOrigin.class, "ENGINE_INITIATED")} while replaying a record written
+     * by a new-binary leader. That extension would get its own catalog ordinal.
+     */
+    JOB_BATCH_RESERVATION_ORIGIN(
+        18,
+        "Write-discipline gate for the new reservationOrigin field on JobBatchRecord",
+        Set.of(),
         Set.of());
 
     private final int at;
