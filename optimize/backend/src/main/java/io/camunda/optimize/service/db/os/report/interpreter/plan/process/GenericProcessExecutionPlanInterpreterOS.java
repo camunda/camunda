@@ -14,7 +14,6 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepor
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import io.camunda.optimize.service.db.os.report.filter.ProcessQueryFilterEnhancerOS;
 import io.camunda.optimize.service.db.os.report.interpreter.groupby.process.ProcessGroupByInterpreterFacadeOS;
-import io.camunda.optimize.service.db.os.report.interpreter.groupby.process.ProcessGroupByInterpreterOS;
 import io.camunda.optimize.service.db.os.report.interpreter.view.process.ProcessViewInterpreterFacadeOS;
 import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import io.camunda.optimize.service.db.report.ExecutionContext;
@@ -92,12 +91,8 @@ public class GenericProcessExecutionPlanInterpreterOS
   protected Map<String, Long> retrievePerGroupBaselineCounts(
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context,
       final String[] indices) {
-    if (!(getGroupByInterpreter()
-        instanceof final ProcessGroupByInterpreterOS groupByInterpreter)) {
-      return Map.of();
-    }
     final Optional<String> baselineField =
-        groupByInterpreter.getBaselineCountAggregationField(context);
+        getGroupByInterpreter().getBaselineCountAggregationField(context);
     if (baselineField.isEmpty()) {
       return Map.of();
     }
