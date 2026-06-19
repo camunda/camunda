@@ -200,7 +200,10 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
 
   private ErrorType determineErrorType(final JobRecord jobRecord) {
     return switch (jobRecord.getJobKind()) {
-      case JobKind.BPMN_ELEMENT -> ErrorType.JOB_NO_RETRIES;
+      // MAINTENANCE jobs are engine-internal and shouldn't normally reach a FAIL precondition
+      // (the consumer filters them out of ActivateJobs). If one does, treat it as a regular
+      // job's no-retries failure rather than introducing a new ErrorType variant.
+      case JobKind.BPMN_ELEMENT, JobKind.MAINTENANCE -> ErrorType.JOB_NO_RETRIES;
       case JobKind.EXECUTION_LISTENER -> ErrorType.EXECUTION_LISTENER_NO_RETRIES;
       case JobKind.TASK_LISTENER -> ErrorType.TASK_LISTENER_NO_RETRIES;
       case JobKind.AD_HOC_SUB_PROCESS -> ErrorType.AD_HOC_SUB_PROCESS_NO_RETRIES;

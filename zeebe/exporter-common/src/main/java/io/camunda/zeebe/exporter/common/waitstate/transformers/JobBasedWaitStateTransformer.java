@@ -46,7 +46,9 @@ public class JobBasedWaitStateTransformer implements WaitStateTransformer<JobRec
   private static boolean isListenerJob(final JobKind jobKind) {
     return switch (jobKind) {
       case EXECUTION_LISTENER, TASK_LISTENER -> true;
-      case BPMN_ELEMENT, AD_HOC_SUB_PROCESS -> false;
+      // MAINTENANCE jobs are engine-internal (filtered out of ActivateJobs by JobBatchCollector);
+      // a worker never sees them as a wait-state, so they group with the non-listener bucket.
+      case BPMN_ELEMENT, AD_HOC_SUB_PROCESS, MAINTENANCE -> false;
     };
   }
 }

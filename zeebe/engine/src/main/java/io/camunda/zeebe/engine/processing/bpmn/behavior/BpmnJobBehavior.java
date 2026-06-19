@@ -103,6 +103,17 @@ public final class BpmnJobBehavior {
       To resolve this incident, migrate the process instance to a process definition \
       that is deployed together with the intended form to use.\
       """;
+
+  /**
+   * Task header key recognised by {@link #createNewJob(BpmnElementContext,
+   * ExecutableJobWorkerElement, JobProperties)} as the marker that promotes a service-task job from
+   * {@link JobKind#BPMN_ELEMENT} to {@link JobKind#MAINTENANCE} when {@link
+   * Capability#JOB_KIND_MAINTENANCE} is active. Demo-scope: in production this would be triggered
+   * by an engine-internal scheduler, not by a BPMN deployer; the header is a small surface that
+   * lets a gate test exercise the producer end-to-end without standing up the scheduler.
+   */
+  public static final String MAINTENANCE_TASK_HEADER = "__ecv_maintenance__";
+
   private static final Logger LOGGER =
       LoggerFactory.getLogger(BpmnJobBehavior.class.getPackageName());
   private static final Set<State> CANCELABLE_STATES =
@@ -383,16 +394,6 @@ public final class BpmnJobBehavior {
   private static String notBlankOrNull(final String input) {
     return StringUtils.isBlank(input) ? null : input;
   }
-
-  /**
-   * Task header key recognised by {@link #createNewJob(BpmnElementContext,
-   * ExecutableJobWorkerElement, JobProperties)} as the marker that promotes a service-task job from
-   * {@link JobKind#BPMN_ELEMENT} to {@link JobKind#MAINTENANCE} when {@link
-   * Capability#JOB_KIND_MAINTENANCE} is active. Demo-scope: in production this would be triggered
-   * by an engine-internal scheduler, not by a BPMN deployer; the header is a small surface that
-   * lets a gate test exercise the producer end-to-end without standing up the scheduler.
-   */
-  public static final String MAINTENANCE_TASK_HEADER = "__ecv_maintenance__";
 
   public void createNewJob(
       final BpmnElementContext context,

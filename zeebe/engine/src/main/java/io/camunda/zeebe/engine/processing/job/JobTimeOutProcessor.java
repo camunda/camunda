@@ -67,6 +67,13 @@ public final class JobTimeOutProcessor implements TypedRecordProcessor<JobRecord
             case FAILED -> "it is marked as failed and is not activated";
             case ERROR_THROWN -> "it has thrown an error and is not activated";
             case NOT_FOUND -> "no such job was found";
+            // RESERVED is a transient state observed only within a single processor invocation
+            // (the batch's reserve+confirm both run before the transaction commits); a timeout
+            // arriving for one means the activation deadline somehow outlived its own batch.
+            case RESERVED -> "it is in the transient RESERVED state and not yet activated";
+            // PAUSED: pause() clears the activation deadline, so this branch should be
+            // unreachable in practice. Surface it explicitly anyway.
+            case PAUSED -> "it has been paused by an operator";
           };
 
       final String errorMessage = String.format(NOT_ACTIVATED_JOB_MESSAGE, jobKey, reason);

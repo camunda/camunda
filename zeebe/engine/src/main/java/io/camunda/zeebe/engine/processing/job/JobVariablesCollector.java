@@ -47,7 +47,10 @@ public class JobVariablesCollector {
 
     final DirectBuffer jobVariables =
         switch (jobRecord.getJobKind()) {
-          case BPMN_ELEMENT, EXECUTION_LISTENER, AD_HOC_SUB_PROCESS -> processVariables;
+          // MAINTENANCE jobs are engine-internal; they share the same variable visibility as
+          // service-task jobs (process variables only, no special listener-style merge).
+          case BPMN_ELEMENT, EXECUTION_LISTENER, AD_HOC_SUB_PROCESS, MAINTENANCE ->
+              processVariables;
           case TASK_LISTENER -> {
             final var taskVariablesMap = getTaskVariables(requestedVariables, elementInstanceKey);
 
