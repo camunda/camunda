@@ -46,12 +46,8 @@ import java.util.Optional;
 public final class ClusterConfigurationManagerService
     implements ClusterConfigurationUpdateNotifier, AsyncClosable {
   public static final String TOPOLOGY_FILE_NAME = ".topology.meta";
-  // Use a node 0 as always the coordinator. Later we can make it configurable or allow changing it
-  // dynamically.
-  private static final int COORDINATOR_NODE_ID = 0;
   private final ClusterConfigurationManagerImpl clusterConfigurationManager;
   private final ClusterConfigurationGossiper clusterConfigurationGossiper;
-  private final boolean isCoordinator;
   private final PersistedClusterConfiguration persistedClusterConfiguration;
   private final Path configurationFile;
   private final ConfigurationChangeCoordinator configurationChangeCoordinator;
@@ -62,6 +58,7 @@ public final class ClusterConfigurationManagerService
   private final ClusterChangeExecutor clusterChangeExecutor;
   private final TopologyMetrics topologyMetrics;
   private final TopologyManagerMetrics topologyManagerMetrics;
+  private final MemberId localMemberId;
 
   public ClusterConfigurationManagerService(
       final Path dataRootDirectory,
@@ -80,7 +77,7 @@ public final class ClusterConfigurationManagerService
       throw new UncheckedIOException("Failed to create data directory", e);
     }
 
-    final MemberId localMemberId = memberShipService.getLocalMember().id();
+    localMemberId = memberShipService.getLocalMember().id();
     configurationFile = dataRootDirectory.resolve(TOPOLOGY_FILE_NAME);
     persistedClusterConfiguration =
         PersistedClusterConfiguration.ofFile(configurationFile, new ProtoBufSerializer());
@@ -98,7 +95,6 @@ public final class ClusterConfigurationManagerService
             config,
             clusterConfigurationManager::onGossipReceived,
             topologyMetrics);
-    isCoordinator = localMemberId.nodeIdx() == COORDINATOR_NODE_ID;
     configurationChangeCoordinator =
         new ConfigurationChangeCoordinatorImpl(
             clusterConfigurationManager, localMemberId, managerActor);
@@ -173,7 +169,7 @@ public final class ClusterConfigurationManagerService
         .andThen(new RoutingStateInitializer(staticConfiguration.partitionCount()))
         // Must be initialized by the coordinator only
         .andThen(new PartitionDistributorInitializer(staticConfiguration))
-        .andThen(new ClusterIdInitializer(staticConfiguration.clusterId()));
+        .andThen(new ClusterIdInitializer(staticConfiguration.clusterId(), localMemberId));
   }
 
   /** Starts ClusterConfigurationManager which initializes ClusterConfiguration */
@@ -196,6 +192,9 @@ public final class ClusterConfigurationManagerService
       final ActorSchedulingService actorSchedulingService,
       final StaticConfiguration staticConfiguration) {
     final var result = new CompletableActorFuture<Void>();
+    final var coordinatorMemberId =
+        staticConfiguration.clusterMembers().stream().sorted().toList().stream().findFirst();
+    final var isCoordinator = coordinatorMemberId.map(id -> id.equals(localMemberId)).orElse(false);
     final ClusterConfigurationInitializer clusterConfigurationInitializer =
         isCoordinator
             ? getCoordinatorInitializer(staticConfiguration)
@@ -204,9 +203,7 @@ public final class ClusterConfigurationManagerService
     configurationRequestServer.start();
 
     // Start gossiper first so that when ClusterConfigurationManager initializes the configuration,
-    // it
-    // can
-    // immediately gossip it.
+    // it can immediately gossip it.
     actorSchedulingService
         .submitActor(managerActor)
         .onComplete(

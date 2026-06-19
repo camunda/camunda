@@ -34,10 +34,10 @@ import org.slf4j.LoggerFactory;
  * <p>Both coordinator and other members first check the local persisted configuration to determine
  * the configuration. If one exists, that is used to initialize the configuration. See {@link
  * FileInitializer}. On bootstrap of the cluster, the local persisted configuration is empty.
- * <li>When the local configuration is empty, the coordinator queries cluster members in the static
+ * <li>When the local configuration is empty, all members query cluster members in the static
  *     configuration for the current configuration. See {@link SyncInitializer}. If any member
- *     replies with a valid configuration, coordinator uses that one. If any member replies with an
- *     uninitialized configuration, coordinator generates a new configuration from the provided
+ *     replies with a valid configuration, it uses that one. If all members reply with an
+ *     uninitialized configuration, the coordinator generates a new configuration from the provided
  *     static configuration. See {@link StaticInitializer}.
  * <li>When the local configuration is empty, a non-coordinating member waits until it receives a
  *     valid configuration from the coordinator via gossip. See {@link GossipInitializer}.
@@ -108,7 +108,11 @@ public interface ClusterConfigurationInitializer {
                   // fail anyway when it sees an uninitialized configuration.
                   chainedInitialize.complete(configuration);
                 } else {
-                  modifier.modify(configuration).onComplete(chainedInitialize);
+                  if (modifier.filter().canRunInitializer(configuration)) {
+                    modifier.modify(configuration).onComplete(chainedInitialize);
+                  } else {
+                    chainedInitialize.complete(configuration);
+                  }
                 }
               });
       return chainedInitialize;
