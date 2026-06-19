@@ -461,7 +461,8 @@ class IncidentToolsTest extends OperationalToolsTest {
 
       verify(incidentServices, times(2)).resolveIncident(eq(5L), isNull(), any());
       verify(incidentServices).getByKey(eq(5L), any());
-      verify(jobServices).updateJob(eq(4L), isNull(), eq(new UpdateJobChangeset(1, null, null)), any());
+      verify(jobServices)
+          .updateJob(eq(4L), isNull(), eq(new UpdateJobChangeset(1, null, null)), any());
     }
 
     @Test
@@ -500,7 +501,8 @@ class IncidentToolsTest extends OperationalToolsTest {
 
       verify(incidentServices).resolveIncident(eq(5L), isNull(), any());
       verify(incidentServices).getByKey(eq(5L), any());
-      verify(jobServices).updateJob(eq(4L), isNull(), eq(new UpdateJobChangeset(1, null, null)), any());
+      verify(jobServices)
+          .updateJob(eq(4L), isNull(), eq(new UpdateJobChangeset(1, null, null)), any());
 
       assertTextContentFallback(result);
     }
