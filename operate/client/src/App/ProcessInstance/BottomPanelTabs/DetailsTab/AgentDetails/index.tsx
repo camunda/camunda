@@ -106,7 +106,18 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
   const {metrics, limits, definition} = agentInstance;
 
   return (
-    <AgentDetailsContainer data-testid="agent-details">
+    <AgentDetailsContainer
+      data-testid="agent-details"
+      onKeyDown={(e) => {
+        // TODO: Workaround for https://github.com/carbon-design-system/carbon/issues/22483.
+        if (
+          e.key === 'Escape' &&
+          (e.target as HTMLElement).innerText === 'Conversation history'
+        ) {
+          setIsConversationHistoryOpen(false);
+        }
+      }}
+    >
       <AgentHeading>AI Agent</AgentHeading>
       <Accordion align="start">
         <AccordionItem
