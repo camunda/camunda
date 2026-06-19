@@ -505,19 +505,25 @@ describe('TopPanel', () => {
     await waitForElementToBeRemoved(() =>
       screen.queryByTestId('diagram-spinner'),
     );
-
     await waitFor(() => {
-      const activeOverlay = diagramOverlaysStore.state.overlays.find(
-        (o) =>
-          o.elementId === 'multi-instance-task' && o.type === 'elementState',
-      );
-      expect(activeOverlay).toBeDefined();
-      const payload = activeOverlay?.payload as {
-        elementState: string;
-        count?: number;
-      };
-      expect(payload?.elementState).toBe('active');
-      expect(payload?.count).toBeUndefined();
+      expect(
+        diagramOverlaysStore.state.overlays.find(
+          ({elementId, type}) =>
+            elementId === 'multi-instance-task' && type === 'elementState',
+        ),
+      ).toBeDefined();
     });
+
+    const activeOverlay = diagramOverlaysStore.state.overlays.find(
+      ({elementId, type}) =>
+        elementId === 'multi-instance-task' && type === 'elementState',
+    );
+
+    const payload = activeOverlay?.payload as {
+      elementState: string;
+      count?: number;
+    };
+    expect(payload?.elementState).toBe('active');
+    expect(payload?.count).toBeUndefined();
   });
 });
