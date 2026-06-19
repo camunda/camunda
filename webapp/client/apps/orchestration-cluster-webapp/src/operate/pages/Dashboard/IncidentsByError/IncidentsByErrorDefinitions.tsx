@@ -12,7 +12,7 @@ import type {IncidentProcessInstanceStatisticsByDefinition} from '@camunda/camun
 import {tracking} from '#/shared/tracking';
 import {InstancesBar} from '#/operate/components/InstancesBar/InstancesBar';
 import {useIncidentsByErrorDefinitions} from './useIncidentsByError';
-import {Li, LinkWrapper, LoadingRow} from './styled';
+import {Li, LinkWrapper} from './styled';
 
 type Props = {
 	errorHashCode: number;
@@ -21,19 +21,7 @@ type Props = {
 
 function IncidentsByErrorDefinitions({errorHashCode, tabIndex}: Props) {
 	const {t} = useTranslation();
-	const {data, isLoading} = useIncidentsByErrorDefinitions(errorHashCode);
-
-	if (isLoading) {
-		return (
-			<LoadingRow>
-				<InlineLoading />
-			</LoadingRow>
-		);
-	}
-
-	if (!data) {
-		return null;
-	}
+	const {data} = useIncidentsByErrorDefinitions(errorHashCode);
 
 	return (
 		<ul>

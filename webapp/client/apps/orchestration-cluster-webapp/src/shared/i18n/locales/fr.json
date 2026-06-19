@@ -416,7 +416,9 @@
 				"instancesInMultipleVersions_other": "{{count}} Instances dans 2+ Versions",
 				"instancesInVersion_one": "1 Instance dans la Version {{version}}",
 				"instancesInVersion_other": "{{count}} Instances dans la Version {{version}}",
-				"version": "Version {{version}}"
+				"version": "Version {{version}}",
+				"fetchErrorHeading": "Les données n'ont pas pu être récupérées",
+				"fetchErrorDescription": "Actualisez la page pour réessayer"
 			},
 			"processes": {
 				"title": "Processus"

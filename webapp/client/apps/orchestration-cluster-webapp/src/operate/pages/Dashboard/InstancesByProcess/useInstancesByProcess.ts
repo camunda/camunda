@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {infiniteQueryOptions, useSuspenseInfiniteQuery, useQuery} from '@tanstack/react-query';
+import {infiniteQueryOptions, useInfiniteQuery, useSuspenseQuery} from '@tanstack/react-query';
 import type {
 	GetProcessDefinitionInstanceStatisticsRequestBody,
 	GetProcessDefinitionInstanceStatisticsResponseBody,
@@ -53,14 +53,14 @@ const instancesByProcessInfiniteQuery = () =>
 	});
 
 function useInstancesByProcess() {
-	return useSuspenseInfiniteQuery({
+	return useInfiniteQuery({
 		...instancesByProcessInfiniteQuery(),
 		refetchInterval: 5000,
 	});
 }
 
 function useInstancesByProcessVersions(processDefinitionId: string, tenantId: string | null) {
-	return useQuery({
+	return useSuspenseQuery({
 		queryKey: ['instancesByProcessVersions', processDefinitionId, tenantId] as const,
 		queryFn: async (): Promise<GetProcessDefinitionInstanceVersionStatisticsResponseBody> => {
 			const {response, error} = await request(

@@ -413,7 +413,9 @@
 				"instancesInMultipleVersions_other": "{{count}} Instancias en 2+ Versiones",
 				"instancesInVersion_one": "1 Instancia en la Versión {{version}}",
 				"instancesInVersion_other": "{{count}} Instancias en la Versión {{version}}",
-				"version": "Versión {{version}}"
+				"version": "Versión {{version}}",
+				"fetchErrorHeading": "No se pudieron recuperar los datos",
+				"fetchErrorDescription": "Actualice la página para intentarlo de nuevo"
 			},
 			"processes": {
 				"title": "Procesos"

@@ -6,13 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {InlineLoading} from '@carbon/react';
 import {useTranslation} from 'react-i18next';
 import type {ProcessDefinitionInstanceVersionStatistics} from '@camunda/camunda-api-zod-schemas/8.10';
 import {tracking} from '#/shared/tracking';
 import {InstancesBar} from '#/operate/components/InstancesBar/InstancesBar';
 import {useInstancesByProcessVersions} from './useInstancesByProcess';
-import {Li, LinkWrapper, LoadingRow} from './styled';
+import {Li, LinkWrapper} from './styled';
 
 type Props = {
 	processDefinitionId: string;
@@ -22,19 +21,7 @@ type Props = {
 
 function InstancesByProcessVersions({processDefinitionId, tenantId, tabIndex}: Props) {
 	const {t} = useTranslation();
-	const {data, isLoading} = useInstancesByProcessVersions(processDefinitionId, tenantId);
-
-	if (isLoading) {
-		return (
-			<LoadingRow>
-				<InlineLoading />
-			</LoadingRow>
-		);
-	}
-
-	if (!data) {
-		return null;
-	}
+	const {data} = useInstancesByProcessVersions(processDefinitionId, tenantId);
 
 	return (
 		<ul>

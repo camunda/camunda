@@ -6,9 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React, {useCallback, useMemo} from 'react';
-import {InlineLoading} from '@carbon/react';
+import React, {Suspense, useCallback, useMemo} from 'react';
+import {DataTableSkeleton, InlineLoading} from '@carbon/react';
 import {useTranslation} from 'react-i18next';
+import SvgErrorRobot from '#/shared/svg/ErrorRobot';
+import {EmptyState} from '#/operate/components/EmptyState/EmptyState';
 import type {ProcessDefinitionInstanceStatistics} from '@camunda/camunda-api-zod-schemas/8.10';
 import {tracking} from '#/shared/tracking';
 import {InstancesBar} from '#/operate/components/InstancesBar/InstancesBar';
@@ -23,6 +25,8 @@ function InstancesByProcess() {
 	const {t} = useTranslation();
 	const {
 		data,
+		isPending,
+		isError,
 		fetchNextPage,
 		fetchPreviousPage,
 		hasNextPage,
@@ -31,7 +35,7 @@ function InstancesByProcess() {
 		isFetchingPreviousPage,
 	} = useInstancesByProcess();
 
-	const items = useMemo(() => data.pages.flatMap((page) => page.items), [data]);
+	const items = useMemo(() => data?.pages.flatMap((page) => page.items) ?? [], [data]);
 
 	const handleScroll = useCallback(
 		async (event: React.UIEvent<HTMLDivElement>) => {
@@ -89,13 +93,29 @@ function InstancesByProcess() {
 			items.reduce<Record<string, React.ReactElement<{tabIndex: number}>>>((accumulator, item) => {
 				if (item.hasMultipleVersions) {
 					accumulator[`${item.processDefinitionId}:${item.tenantId}`] = (
-						<InstancesByProcessVersions processDefinitionId={item.processDefinitionId} tenantId={item.tenantId} />
+						<Suspense fallback={<LoadingRow><InlineLoading /></LoadingRow>}>
+							<InstancesByProcessVersions processDefinitionId={item.processDefinitionId} tenantId={item.tenantId} />
+						</Suspense>
 					);
 				}
 				return accumulator;
 			}, {}),
 		[items],
 	);
+
+	if (isPending) {
+		return <DataTableSkeleton columnCount={1} rowCount={20} showHeader={false} showToolbar={false} />;
+	}
+
+	if (isError) {
+		return (
+			<EmptyState
+				icon={<SvgErrorRobot aria-hidden />}
+				heading={t('operate.dashboard.fetchErrorHeading')}
+				description={t('operate.dashboard.fetchErrorDescription')}
+			/>
+		);
+	}
 
 	return (
 		<ScrollableList onScroll={handleScroll} data-testid="instances-by-process-list">

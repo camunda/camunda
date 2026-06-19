@@ -413,7 +413,9 @@
 				"instancesInMultipleVersions_other": "{{count}} Instanzen in 2+ Versionen",
 				"instancesInVersion_one": "1 Instanz in Version {{version}}",
 				"instancesInVersion_other": "{{count}} Instanzen in Version {{version}}",
-				"version": "Version {{version}}"
+				"version": "Version {{version}}",
+				"fetchErrorHeading": "Daten konnten nicht abgerufen werden",
+				"fetchErrorDescription": "Laden Sie die Seite neu, um es erneut zu versuchen"
 			},
 			"processes": {
 				"title": "Prozesse"

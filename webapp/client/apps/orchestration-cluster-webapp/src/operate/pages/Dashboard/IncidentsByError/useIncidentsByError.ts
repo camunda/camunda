@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {infiniteQueryOptions, useSuspenseInfiniteQuery, useQuery} from '@tanstack/react-query';
+import {infiniteQueryOptions, useInfiniteQuery, useSuspenseQuery} from '@tanstack/react-query';
 import type {
 	GetIncidentProcessInstanceStatisticsByErrorResponseBody,
 	GetIncidentProcessInstanceStatisticsByDefinitionResponseBody,
@@ -44,14 +44,14 @@ const incidentsByErrorInfiniteQuery = () =>
 	});
 
 function useIncidentsByError() {
-	return useSuspenseInfiniteQuery({
+	return useInfiniteQuery({
 		...incidentsByErrorInfiniteQuery(),
 		refetchInterval: 5000,
 	});
 }
 
 function useIncidentsByErrorDefinitions(errorHashCode: number) {
-	return useQuery({
+	return useSuspenseQuery({
 		queryKey: ['incidentsByErrorDefinitions', errorHashCode] as const,
 		queryFn: async (): Promise<GetIncidentProcessInstanceStatisticsByDefinitionResponseBody> => {
 			const {response, error} = await request(

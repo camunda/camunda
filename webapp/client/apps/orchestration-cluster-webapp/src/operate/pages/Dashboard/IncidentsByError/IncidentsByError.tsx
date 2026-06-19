@@ -6,8 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React, {useCallback, useMemo} from 'react';
-import {InlineLoading} from '@carbon/react';
+import React, {Suspense, useCallback, useMemo} from 'react';
+import {DataTableSkeleton, InlineLoading} from '@carbon/react';
+import SvgErrorRobot from '#/shared/svg/ErrorRobot';
 import {useTranslation} from 'react-i18next';
 import type {IncidentProcessInstanceStatisticsByError} from '@camunda/camunda-api-zod-schemas/8.10';
 import {tracking} from '#/shared/tracking';
@@ -25,6 +26,8 @@ function IncidentsByError() {
 	const {t} = useTranslation();
 	const {
 		data,
+		isPending,
+		isError,
 		fetchNextPage,
 		fetchPreviousPage,
 		hasNextPage,
@@ -33,8 +36,8 @@ function IncidentsByError() {
 		isFetchingPreviousPage,
 	} = useIncidentsByError();
 
-	const items = useMemo(() => data.pages.flatMap((page) => page.items), [data]);
-	const totalItems = data.pages[0]?.page.totalItems ?? 0;
+	const items = useMemo(() => data?.pages.flatMap((page) => page.items) ?? [], [data]);
+	const totalItems = data?.pages[0]?.page.totalItems ?? 0;
 
 	const handleScroll = useCallback(
 		async (event: React.UIEvent<HTMLDivElement>) => {
@@ -81,11 +84,29 @@ function IncidentsByError() {
 	const expandedContents = useMemo(
 		() =>
 			items.reduce<Record<string, React.ReactElement<{tabIndex: number}>>>((accumulator, item) => {
-				accumulator[String(item.errorHashCode)] = <IncidentsByErrorDefinitions errorHashCode={item.errorHashCode} />;
+				accumulator[String(item.errorHashCode)] = (
+					<Suspense fallback={<LoadingRow><InlineLoading /></LoadingRow>}>
+						<IncidentsByErrorDefinitions errorHashCode={item.errorHashCode} />
+					</Suspense>
+				);
 				return accumulator;
 			}, {}),
 		[items],
 	);
+
+	if (isPending) {
+		return <DataTableSkeleton columnCount={1} rowCount={20} showHeader={false} showToolbar={false} />;
+	}
+
+	if (isError) {
+		return (
+			<EmptyState
+				icon={<SvgErrorRobot aria-hidden />}
+				heading={t('operate.dashboard.fetchErrorHeading')}
+				description={t('operate.dashboard.fetchErrorDescription')}
+			/>
+		);
+	}
 
 	if (totalItems === 0) {
 		return (
