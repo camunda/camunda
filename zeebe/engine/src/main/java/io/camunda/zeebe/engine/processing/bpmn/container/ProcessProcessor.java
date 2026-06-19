@@ -19,10 +19,12 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnProcessResultSenderBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
+import io.camunda.zeebe.engine.processing.clusterversion.ClusterVersionFeatures;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
 import io.camunda.zeebe.engine.state.immutable.AsyncRequestState;
 import io.camunda.zeebe.engine.state.immutable.AsyncRequestState.AsyncRequest;
+import io.camunda.zeebe.protocol.impl.clusterversion.ClusterVersionCatalog.Capability;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.util.Either;
@@ -43,6 +45,7 @@ public final class ProcessProcessor
   private final BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour;
   private final BpmnJobBehavior jobBehavior;
   private final AsyncRequestState asyncRequestState;
+  private final ClusterVersionFeatures clusterVersionFeatures;
 
   public ProcessProcessor(
       final BpmnBehaviors bpmnBehaviors,
@@ -57,6 +60,7 @@ public final class ProcessProcessor
     compensationSubscriptionBehaviour = bpmnBehaviors.compensationSubscriptionBehaviour();
     jobBehavior = bpmnBehaviors.jobBehavior();
     this.asyncRequestState = asyncRequestState;
+    clusterVersionFeatures = bpmnBehaviors.clusterVersionFeatures();
   }
 
   @Override
@@ -201,12 +205,14 @@ public final class ProcessProcessor
       }
     } else if (stateBehavior.canBeTerminated(childContext) && flowScopeInstance.isTerminating()) {
       // the process instance was canceled or interrupted by a parent process instance
-      if (!element.hasCancelExecutionListeners()) {
-        // Stay backwards compatible during a rolling upgrade: only emit the
-        // CONTINUE_TERMINATING_ELEMENT command when the process actually defines
-        // cancel listeners. Processes without cancel listeners must produce the
-        // same record stream as previous broker versions, so a leader change from
-        // a newer to an older broker mid-upgrade does terminate a process instance correctly.
+      if (!element.hasCancelExecutionListeners()
+          || !clusterVersionFeatures.isActive(Capability.CANCEL_EXECUTION_LISTENER)) {
+        // Two reasons to take the legacy path:
+        //   (1) the process declares no cancel listeners — record stream stays identical to
+        //       pre-PR brokers, safe under rolling upgrade.
+        //   (2) ECV has not activated CANCEL_EXECUTION_LISTENER yet — older replicas would not
+        //       recognize the CONTINUE_TERMINATING_ELEMENT command, so suppress emission entirely
+        //       until the operator raises the cluster.
         finalizeTermination(element, flowScopeContext);
       } else {
         stateTransitionBehavior.continueTerminating(flowScopeContext);

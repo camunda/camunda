@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceStateTransitionGuard;
 import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
+import io.camunda.zeebe.engine.processing.clusterversion.ClusterVersionFeatures;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.DecisionBehavior;
 import io.camunda.zeebe.engine.processing.common.ElementActivationBehavior;
@@ -66,6 +67,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   private final BpmnConditionalBehavior conditionalBehavior;
   private final ExpressionBehavior expressionBehavior;
   private final ExpressionLanguage expressionLanguage;
+  private final ClusterVersionFeatures clusterVersionFeatures;
 
   public BpmnBehaviorsImpl(
       final MutableProcessingState processingState,
@@ -285,6 +287,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             stateBehavior,
             variableBehavior,
             processingState);
+
+    clusterVersionFeatures = new ClusterVersionFeatures(processingState.getClusterVersionState());
   }
 
   @Override
@@ -400,6 +404,11 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   @Override
   public BpmnAdHocSubProcessBehavior adHocSubProcessBehavior() {
     return adHocSubProcessBehavior;
+  }
+
+  @Override
+  public ClusterVersionFeatures clusterVersionFeatures() {
+    return clusterVersionFeatures;
   }
 
   public ExpressionBehavior expressionBehavior() {

@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
+import io.camunda.zeebe.engine.processing.clusterversion.ClusterVersionFeatures;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
@@ -30,6 +31,7 @@ import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.protocol.impl.clusterversion.ClusterVersionCatalog.Capability;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -63,6 +65,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
   private final EventTriggerBehavior eventTriggerBehavior;
   private final VariableBehavior variableBehavior;
   private final EventScopeInstanceState eventScopeInstanceState;
+  private final ClusterVersionFeatures clusterVersionFeatures;
 
   public BpmnStreamProcessor(
       final BpmnBehaviors bpmnBehaviors,
@@ -94,6 +97,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
     eventTriggerBehavior = bpmnBehaviors.eventTriggerBehavior();
     variableBehavior = bpmnBehaviors.variableBehavior();
     eventScopeInstanceState = processingState.getEventScopeInstanceState();
+    clusterVersionFeatures = bpmnBehaviors.clusterVersionFeatures();
   }
 
   private BpmnElementContainerProcessor<ExecutableFlowElement> getContainerProcessor(
@@ -279,11 +283,17 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
       final ExecutableFlowElement element,
       final BpmnElementProcessor<ExecutableFlowElement> processor,
       final BpmnElementContext context) {
+    // ECV gate: when CANCEL_EXECUTION_LISTENER is inactive, treat the element as having no
+    // cancel listeners. processElementWithListeners then routes straight to doFinalizeTermination
+    // without emitting any execution-listener jobs — the record stream stays identical to a
+    // pre-PR broker, safe for replicas that don't know JobListenerEventType.CANCEL.
+    final var listenersGetter =
+        clusterVersionFeatures.isActive(Capability.CANCEL_EXECUTION_LISTENER)
+            ? (Function<ExecutableFlowNode, List<ExecutionListener>>)
+                ExecutableFlowNode::getCancelExecutionListeners
+            : (Function<ExecutableFlowNode, List<ExecutionListener>>) node -> List.of();
     return processElementWithListeners(
-        element,
-        context,
-        ExecutableFlowNode::getCancelExecutionListeners,
-        (e, c) -> doFinalizeTermination(processor, e, c));
+        element, context, listenersGetter, (e, c) -> doFinalizeTermination(processor, e, c));
   }
 
   private Either<Failure, ?> processElementWithListeners(

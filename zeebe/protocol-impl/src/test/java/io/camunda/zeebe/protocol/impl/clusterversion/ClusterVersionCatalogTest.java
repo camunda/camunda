@@ -38,7 +38,7 @@ final class ClusterVersionCatalogTest {
       final var resolved = ClusterVersionCatalog.resolveByVersion("8.10.5", build);
 
       // then
-      assertThat(resolved).contains(Capability.PING_ADMISSION);
+      assertThat(resolved).contains(ClusterVersionCatalog.maxCapability());
     }
 
     @Test
@@ -50,7 +50,7 @@ final class ClusterVersionCatalogTest {
       final var resolved = ClusterVersionCatalog.resolveByVersion("8.11.0", build);
 
       // then
-      assertThat(resolved).contains(Capability.PING_ADMISSION);
+      assertThat(resolved).contains(ClusterVersionCatalog.maxCapability());
     }
 
     @Test
@@ -86,7 +86,7 @@ final class ClusterVersionCatalogTest {
       final var resolved = ClusterVersionCatalog.resolveByVersion("8.10.0", build);
 
       // then — dev binaries accept any well-formed target
-      assertThat(resolved).contains(Capability.PING_ADMISSION);
+      assertThat(resolved).contains(ClusterVersionCatalog.maxCapability());
     }
 
     @Test
@@ -110,7 +110,7 @@ final class ClusterVersionCatalogTest {
       final var resolved = ClusterVersionCatalog.resolveByVersion("8.10.5", build);
 
       // then — 8.10.5 > 8.10.5-SNAPSHOT per semver, so this is allowed
-      assertThat(resolved).contains(Capability.PING_ADMISSION);
+      assertThat(resolved).contains(ClusterVersionCatalog.maxCapability());
     }
   }
 

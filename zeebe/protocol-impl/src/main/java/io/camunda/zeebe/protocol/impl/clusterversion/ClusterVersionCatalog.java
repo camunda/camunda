@@ -10,6 +10,7 @@ package io.camunda.zeebe.protocol.impl.clusterversion;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ClusterVersionIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.util.SemanticVersion;
 import io.camunda.zeebe.util.VersionUtil;
 import java.util.ArrayList;
@@ -99,7 +100,24 @@ public final class ClusterVersionCatalog {
         10,
         "PING command admission",
         Set.of(),
-        Set.of(new GatedCommandId(ValueType.CLUSTER_VERSION, ClusterVersionIntent.PING)));
+        Set.of(new GatedCommandId(ValueType.CLUSTER_VERSION, ClusterVersionIntent.PING))),
+
+    /**
+     * Gates the cancel-execution-listener path on process instance termination (PR #46880). When
+     * inactive, the engine takes the legacy path: child termination leads directly to
+     * finalizeTermination, no {@code CONTINUE_TERMINATING_ELEMENT} command is ever emitted, and no
+     * cancel listener jobs are created — so the record stream matches a pre-PR broker, safe for
+     * mid-rolling-upgrade leader changes. Activated → cancel listeners declared on the {@code
+     * <process>} element run as job-worker jobs between child termination and the final terminated
+     * state.
+     */
+    CANCEL_EXECUTION_LISTENER(
+        11,
+        "Cancel execution listeners on process instance termination",
+        Set.of(),
+        Set.of(
+            new GatedCommandId(
+                ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.CONTINUE_TERMINATING_ELEMENT)));
 
     private final int at;
     private final String description;

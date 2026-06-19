@@ -19,14 +19,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.EndEventBuilder;
+import io.camunda.zeebe.protocol.impl.clusterversion.ClusterVersionCatalog.Capability;
+import io.camunda.zeebe.protocol.impl.record.value.clusterversion.ClusterVersionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.ClusterVersionIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -41,6 +45,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
 import java.util.Map;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -54,6 +59,28 @@ public class ExecutionListenerCancelTest {
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
+
+  /**
+   * Cancel execution listeners are gated by {@link Capability#CANCEL_EXECUTION_LISTENER}. A fresh
+   * engine boots at the BASELINE ordinal so the gate is closed by default — raise once before any
+   * test in this class runs so the new termination path is exercised. {@code
+   * RecordingExporterTestWatcher} resets recordings per test, so the bootstrap RAISE/APPLIED
+   * records don't pollute individual test assertions.
+   */
+  @BeforeClass
+  public static void raiseClusterVersionForCancelListenerFeature() {
+    final int target = Capability.CANCEL_EXECUTION_LISTENER.at();
+    ENGINE.writeRecords(
+        RecordToWrite.command()
+            .clusterVersion(
+                ClusterVersionIntent.RAISE,
+                new ClusterVersionRecord().setLine(810).setOrdinal(target)));
+    RecordingExporter.records()
+        .filter(r -> r.getValueType() == ValueType.CLUSTER_VERSION)
+        .filter(r -> r.getIntent() == ClusterVersionIntent.APPLIED)
+        .filter(r -> ((ClusterVersionRecord) r.getValue()).getOrdinal() == target)
+        .getFirst();
+  }
 
   @Test
   public void shouldCreateCancelElJobWhenProcessInstanceIsCanceled() {
