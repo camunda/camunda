@@ -198,7 +198,7 @@ public class AssertVariableInstructionTest {
       verify(mockAssert).withJudgeConfig(judgeConfigCaptor.capture());
 
       final JudgeConfig updatedConfig =
-          judgeConfigCaptor.getValue().apply(new JudgeConfigImpl(s -> s, 0.0, null));
+          judgeConfigCaptor.getValue().apply(new JudgeConfigImpl(s -> s, 0.0, null, false));
       assertThat(updatedConfig.getThreshold()).isEqualTo(0.8);
 
       verify(mockAssert).hasVariableSatisfiesJudge(eq(VARIABLE_NAME), eq(EXPECTATION));
@@ -235,7 +235,7 @@ public class AssertVariableInstructionTest {
       verify(mockAssert).withJudgeConfig(judgeConfigCaptor.capture());
 
       final JudgeConfig updatedConfig =
-          judgeConfigCaptor.getValue().apply(new JudgeConfigImpl(s -> s, 0.0, null));
+          judgeConfigCaptor.getValue().apply(new JudgeConfigImpl(s -> s, 0.0, null, false));
       assertThat(updatedConfig.getCustomPrompt()).hasValue("You are a financial data judge");
 
       verify(mockAssert).hasVariableSatisfiesJudge(eq(VARIABLE_NAME), eq(EXPECTATION));
@@ -273,7 +273,7 @@ public class AssertVariableInstructionTest {
       verify(mockAssert).withJudgeConfig(judgeConfigCaptor.capture());
 
       final JudgeConfig updatedConfig =
-          judgeConfigCaptor.getValue().apply(new JudgeConfigImpl(s -> s, 0.0, null));
+          judgeConfigCaptor.getValue().apply(new JudgeConfigImpl(s -> s, 0.0, null, false));
       assertThat(updatedConfig.getThreshold()).isEqualTo(0.9);
       assertThat(updatedConfig.getCustomPrompt()).hasValue("Custom evaluation criteria");
 
@@ -313,7 +313,7 @@ public class AssertVariableInstructionTest {
       verify(mockAssert).withJudgeConfig(judgeConfigCaptor.capture());
 
       final JudgeConfig updatedConfig =
-          judgeConfigCaptor.getValue().apply(new JudgeConfigImpl(s -> s, 0.0, null));
+          judgeConfigCaptor.getValue().apply(new JudgeConfigImpl(s -> s, 0.0, null, false));
       assertThat(updatedConfig.getThreshold()).isEqualTo(0.7);
       assertThat(updatedConfig.getCustomPrompt()).hasValue("Local variable evaluation criteria");
 

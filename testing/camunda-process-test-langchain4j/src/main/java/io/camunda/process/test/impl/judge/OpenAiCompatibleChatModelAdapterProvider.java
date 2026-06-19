@@ -28,8 +28,7 @@ public class OpenAiCompatibleChatModelAdapterProvider implements ChatModelAdapte
 
   @Override
   public ChatModelAdapter create(final ProviderConfig config) {
-    return OpenAiCompatibleChatModelBuilder.build(
-            (BaseProviderConfig.OpenAiCompatibleConfig) config)
-        ::chat;
+    return new LangChain4jChatModelAdapter(
+        OpenAiCompatibleChatModelBuilder.build((BaseProviderConfig.OpenAiCompatibleConfig) config));
   }
 }

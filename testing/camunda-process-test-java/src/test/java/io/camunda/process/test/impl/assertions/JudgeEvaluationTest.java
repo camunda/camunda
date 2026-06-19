@@ -17,8 +17,19 @@ package io.camunda.process.test.impl.assertions;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
 
+import io.camunda.client.api.response.DocumentMetadata;
+import io.camunda.client.api.response.DocumentReferenceResponse;
+import io.camunda.process.test.api.judge.ChatModelAdapter;
+import io.camunda.process.test.api.judge.MultimodalChatModelAdapter;
+import io.camunda.process.test.api.judge.ResolvedDocument;
+import io.camunda.process.test.impl.judge.ResolvedDocumentImpl;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 
 class JudgeEvaluationTest {
@@ -159,5 +170,88 @@ class JudgeEvaluationTest {
 
     // then
     assertThat(result.passed(0.705)).isFalse();
+  }
+
+  @Test
+  void shouldRouteToMultimodalAdapterWhenDocumentsPresent() {
+    // given
+    final AtomicReference<String> capturedPrompt = new AtomicReference<>();
+    final AtomicReference<List<ResolvedDocument>> capturedDocs = new AtomicReference<>();
+
+    final MultimodalChatModelAdapter adapter =
+        new TestMultimodalAdapter(
+            (prompt, docs) -> {
+              capturedPrompt.set(prompt);
+              capturedDocs.set(docs);
+              return "{\"score\": 1.0, \"reasoning\": \"ok\"}";
+            });
+
+    final JudgeEvaluation evaluation =
+        new JudgeEvaluation(adapter, "expectation", Optional.empty());
+
+    final ResolvedDocument doc =
+        new ResolvedDocumentImpl(refOf("doc-1", "image.png", "image/png"), new byte[] {1, 2, 3});
+
+    // when
+    final JudgeEvaluation.Result result =
+        evaluation.evaluate("value", Collections.singletonList(doc));
+
+    // then
+    assertThat(result.getScore()).isEqualTo(1.0);
+    assertThat(capturedDocs.get()).containsExactly(doc);
+    assertThat(capturedPrompt.get()).contains("</resolved_documents>");
+    assertThat(capturedPrompt.get()).contains("documentId=\"doc-1\"");
+  }
+
+  @Test
+  void shouldNotAddDocumentsSectionWhenNoDocuments() {
+    // given
+    final AtomicReference<String> capturedPrompt = new AtomicReference<>();
+    final ChatModelAdapter adapter =
+        prompt -> {
+          capturedPrompt.set(prompt);
+          return "{\"score\": 1.0, \"reasoning\": \"ok\"}";
+        };
+
+    final JudgeEvaluation evaluation =
+        new JudgeEvaluation(adapter, "expectation", Optional.empty());
+
+    // when
+    evaluation.evaluate("value");
+
+    // then
+    assertThat(capturedPrompt.get()).doesNotContain("</resolved_documents>");
+  }
+
+  private static DocumentReferenceResponse refOf(
+      final String documentId, final String fileName, final String contentType) {
+    final DocumentMetadata metadata = mock(DocumentMetadata.class);
+    lenient().when(metadata.getFileName()).thenReturn(fileName);
+    lenient().when(metadata.getContentType()).thenReturn(contentType);
+    final DocumentReferenceResponse reference = mock(DocumentReferenceResponse.class);
+    lenient().when(reference.getDocumentId()).thenReturn(documentId);
+    lenient().when(reference.getMetadata()).thenReturn(metadata);
+    return reference;
+  }
+
+  /** Test double that implements MultimodalChatModelAdapter. */
+  private static final class TestMultimodalAdapter implements MultimodalChatModelAdapter {
+
+    private final java.util.function.BiFunction<String, List<ResolvedDocument>, String> handler;
+
+    TestMultimodalAdapter(
+        final java.util.function.BiFunction<String, List<ResolvedDocument>, String> handler) {
+      this.handler = handler;
+    }
+
+    @Override
+    public String generate(final String prompt) {
+      throw new AssertionError("string-only generate should not be called when documents present");
+    }
+
+    @Override
+    public String generate(final String prompt, final List<ResolvedDocument> documents) {
+      return handler.apply(prompt, documents);
+    }
   }
 }
