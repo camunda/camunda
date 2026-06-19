@@ -191,11 +191,11 @@ state — they gate new entries into `merge_new_flakes`, not existing ones.
 
 True positives are unaffected by design:
 
-| True positive | Why filter does not suppress |
-|---|---|
-| PR adds a new test class | Class file is in the diff → package matches + file matches |
-| PR modifies the test file | Test file is in the diff → blank-class check bypassed |
-| PR modifies the production code under test | Same package → Filter 1 passes, alert fires |
+|               True positive                |                Why filter does not suppress                |
+|--------------------------------------------|------------------------------------------------------------|
+| PR adds a new test class                   | Class file is in the diff → package matches + file matches |
+| PR modifies the test file                  | Test file is in the diff → blank-class check bypassed      |
+| PR modifies the production code under test | Same package → Filter 1 passes, alert fires                |
 
 ## Method modification detection
 
