@@ -52,8 +52,22 @@ public abstract class ApiServices<T extends ApiServices<T>> {
 
   protected final <R> CompletableFuture<BrokerResponse<R>> sendBrokerRequestWithFullResponse(
       final BrokerRequest<R> brokerRequest, final CamundaAuthentication authentication) {
-    brokerRequestMutators().forEach(mutator -> mutator.accept(brokerRequest, authentication));
+    applyBrokerRequestMutators(brokerRequest, authentication);
     return brokerClient.sendRequest(brokerRequest).handleAsync(handleBrokerResponse(), executor);
+  }
+
+  /**
+   * Applies every {@link #brokerRequestMutators() mutator} to the given request. Send paths that
+   * cannot use {@link #sendBrokerRequest} / {@link #sendBrokerRequestWithFullResponse} (e.g.
+   * because they dispatch via a partition-retry or job-activation handler and therefore bypass
+   * these helpers) must call this so they get the full mutator set (authorization <em>and</em>, for
+   * physical-tenant-scoped services, the partition group). Hand-applying a subset (e.g. only
+   * authorization) silently drops newer mutators and is the bug class this method exists to
+   * prevent.
+   */
+  protected final void applyBrokerRequestMutators(
+      final BrokerRequest<?> brokerRequest, final CamundaAuthentication authentication) {
+    brokerRequestMutators().forEach(mutator -> mutator.accept(brokerRequest, authentication));
   }
 
   protected List<BiConsumer<BrokerRequest, CamundaAuthentication>> brokerRequestMutators() {

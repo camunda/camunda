@@ -574,9 +574,10 @@ public final class ProcessInstanceServices
       final CamundaAuthentication authentication,
       final Duration requestTimeout,
       final RequestRetryHandler handler) {
-    final var brokerRequestAuthorization =
-        brokerRequestAuthorizationConverter.convert(authentication);
-    brokerRequest.setAuthorization(brokerRequestAuthorization);
+    // Apply the full mutator set (authorization AND, for physical-tenant-scoped services, the
+    // partition group) so the retry handler dispatches to the tenant's partition group. The handler
+    // reads brokerRequest.getPartitionGroup() when selecting partitions.
+    applyBrokerRequestMutators(brokerRequest, authentication);
     final CompletableFuture<R> responseFuture = new CompletableFuture<>();
     if (requestTimeout != null) {
       handler.sendRequest(
