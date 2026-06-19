@@ -33,7 +33,7 @@ public interface ClusterConfigurationCoordinatorSupplier {
           // if cluster configuration is not initialized, fall back to member 0
           return MemberId.from("0");
         }
-        return members.stream().min(MemberId::compareTo).orElseThrow();
+        return members.stream().min(MemberId.ID_COMPARATOR).orElseThrow();
       }
 
       @Override

@@ -193,7 +193,11 @@ public final class ClusterConfigurationManagerService
       final StaticConfiguration staticConfiguration) {
     final var result = new CompletableActorFuture<Void>();
     final var coordinatorMemberId =
-        staticConfiguration.clusterMembers().stream().sorted().toList().stream().findFirst();
+        staticConfiguration.clusterMembers().stream()
+            .sorted(MemberId.ID_COMPARATOR)
+            .toList()
+            .stream()
+            .findFirst();
     final var isCoordinator = coordinatorMemberId.map(id -> id.equals(localMemberId)).orElse(false);
     final ClusterConfigurationInitializer clusterConfigurationInitializer =
         isCoordinator
