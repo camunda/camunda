@@ -607,7 +607,8 @@ def is_in_baseline(normalized_key: str, baseline_keys: set[str]) -> bool:
 
 
 def get_pr_changed_paths(
-    base_ref: str, head_sha: str, repo_root: str
+    base_ref: str, head_sha: str, repo_root: str,
+    base_sha_input: str = "",
 ) -> tuple[set[str], set[str], bool]:
     """Return (changed_package_paths, changed_java_filenames, available).
 
@@ -620,15 +621,21 @@ def get_pr_changed_paths(
     Distinguishing these two empty-set cases is critical: a PR that changes only
     YAML/config files (no .java) is a legitimate no-Java-touch signal and should
     still trigger suppression; a failed diff gives no signal at all.
+
+    Uses get_merge_base() to resolve the diff base, which tries BASE_SHA first so
+    this works in PR merge-ref checkouts where origin/<base_ref> is not present.
     """
-    if not base_ref or not head_sha:
+    if not head_sha:
         return set(), set(), False
-    try:
-        out = subprocess.check_output(
-            ["git", "diff", "--name-only", f"origin/{base_ref}...{head_sha}"],
-            cwd=repo_root, text=True, stderr=subprocess.DEVNULL,
-        )
-    except subprocess.CalledProcessError:
+    merge_base = get_merge_base(head_sha, base_ref, repo_root, base_sha_input or None)
+    if not merge_base:
+        print(f"{PREFIX} WARN: could not resolve merge-base for touch-check — filter disabled.")
+        return set(), set(), False
+    rc, out, _ = _run_git(
+        ["diff", "--name-only", f"{merge_base}...{head_sha}"],
+        repo_root,
+    )
+    if rc != 0:
         print(f"{PREFIX} WARN: git diff for touch-check failed — filter disabled.")
         return set(), set(), False
 
@@ -672,15 +679,16 @@ def filter_by_touch_check(
 ) -> list[dict]:
     """Suppress false-positive alerts using a three-stage touch-check filter.
 
-    Stage 1 (Fix 5): PR does not touch the test's Java package (or any sub/parent
-      package) → suppress. A test flaking in a completely unrelated package cannot
-      be this PR's fault. Note: a YAML-only PR with no .java changes is a valid
-      no-touch signal (changed_pkg_paths is empty, touch_check_available is True).
+    Stage 1 — package-unrelated: PR does not touch the test's Java package (or any
+      sub/parent package) → suppress. A test flaking in a completely unrelated
+      package cannot be this PR's fault. Note: a YAML-only PR with no .java changes
+      is a valid no-touch signal (changed_pkg_paths is empty, touch_check_available
+      is True). Tests whose package cannot be parsed (empty pkg_path) are kept.
 
-    Stage 2 (Fix 1): Package is touched, but the class has blank test_name records
-      in the BQ baseline (class/container-level infra failures) AND the test file
-      itself was not modified → suppress. Infra outage on an untouched test is not
-      the PR author's responsibility.
+    Stage 2 — blank-class infra failure: package is touched, but the class has
+      blank test_name records in the BQ baseline (class/container-level infra
+      failures) AND the test file itself was not modified → suppress. Infra outage
+      on an untouched test is not the PR author's responsibility.
 
     Stage 3: keep — the PR owns the flake.
 
@@ -696,6 +704,10 @@ def filter_by_touch_check(
         class_fqn = f"{test.get('packageName', '')}.{test.get('className', '')}"
         # Use the outer class filename — inner classes (e.g. Outer$Inner) live in Outer.java
         class_file = f"{test.get('className', '').split('$')[0]}.java"
+
+        if not pkg_path:
+            kept.append(test)
+            continue
 
         if not _package_touched(pkg_path, changed_pkg_paths):
             print(f"{PREFIX} TOUCH-CHECK suppress: {get_test_key(test)}"
@@ -766,7 +778,7 @@ def main() -> None:
     # Fix 5 + Fix 1: suppress tests whose package is unrelated to this PR's changes,
     # and infra-failure classes whose test file was not directly modified.
     changed_pkg_paths, changed_java_files, touch_check_available = get_pr_changed_paths(
-        base_ref, head_sha, repo_root
+        base_ref, head_sha, repo_root, base_sha_input
     )
     new_flaky_tests = filter_by_touch_check(
         new_flaky_tests, changed_pkg_paths, changed_java_files,

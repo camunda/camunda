@@ -418,5 +418,124 @@ class TestMergeBase(unittest.TestCase):
         self.assertEqual(result, "fromOriginMain")
 
 
+# ---------------------------------------------------------------------------
+# Touch-check filter
+# ---------------------------------------------------------------------------
+
+def _make_test(package: str, class_name: str = "SomeIT",
+               method: str = "shouldWork") -> dict:
+    return {"packageName": package, "className": class_name,
+            "methodName": method, "testSuiteName": class_name}
+
+
+class TestGetPrChangedPaths(unittest.TestCase):
+    def _fake_merge_base(self, head_sha, base_ref, repo_root, base_sha=None):
+        return "mergeBase123"
+
+    def test_uses_merge_base_sha_not_origin_ref(self):
+        """Diff must be against the resolved merge-base SHA, not origin/<ref>."""
+        diff_calls = []
+
+        def fake_run_git(args, repo_root):
+            diff_calls.append(args)
+            return 0, "src/main/java/io/camunda/Foo.java\n", ""
+
+        with mock.patch.object(d, "get_merge_base", side_effect=self._fake_merge_base), \
+             mock.patch.object(d, "_run_git", side_effect=fake_run_git):
+            pkgs, files, avail = d.get_pr_changed_paths("main", "headSha", ".", "baseSha456")
+
+        self.assertTrue(avail)
+        self.assertIn("mergeBase123...headSha", diff_calls[0][2])
+        self.assertNotIn("origin/", diff_calls[0][2])
+
+    def test_disabled_when_merge_base_unresolvable(self):
+        with mock.patch.object(d, "get_merge_base", return_value=None):
+            pkgs, files, avail = d.get_pr_changed_paths("main", "headSha", ".")
+
+        self.assertFalse(avail)
+        self.assertEqual(pkgs, set())
+
+    def test_yaml_only_pr_returns_empty_pkgs_available_true(self):
+        def fake_run_git(args, repo_root):
+            return 0, ".github/workflows/ci.yml\naction.yml\n", ""
+
+        with mock.patch.object(d, "get_merge_base", side_effect=self._fake_merge_base), \
+             mock.patch.object(d, "_run_git", side_effect=fake_run_git):
+            pkgs, files, avail = d.get_pr_changed_paths("main", "headSha", ".")
+
+        self.assertTrue(avail)
+        self.assertEqual(pkgs, set())
+        self.assertEqual(files, set())
+
+    def test_git_diff_failure_returns_available_false(self):
+        def fake_run_git(args, repo_root):
+            return 1, "", "fatal: not a git repo"
+
+        with mock.patch.object(d, "get_merge_base", side_effect=self._fake_merge_base), \
+             mock.patch.object(d, "_run_git", side_effect=fake_run_git):
+            pkgs, files, avail = d.get_pr_changed_paths("main", "headSha", ".")
+
+        self.assertFalse(avail)
+
+
+class TestFilterByTouchCheck(unittest.TestCase):
+    def _run(self, tests, changed_pkgs, changed_files=None, blank_fqns=None,
+             available=True):
+        return d.filter_by_touch_check(
+            tests,
+            set(changed_pkgs),
+            set(changed_files or []),
+            set(blank_fqns or []),
+            available,
+        )
+
+    def test_skips_filter_when_unavailable(self):
+        tests = [_make_test("io.camunda.unrelated")]
+        result = self._run(tests, set(), available=False)
+        self.assertEqual(result, tests)
+
+    def test_yaml_only_pr_suppresses_unrelated_package(self):
+        """YAML-only PR: changed_pkgs empty + available=True → suppress."""
+        tests = [_make_test("io.camunda.zeebe.backup.gcs")]
+        result = self._run(tests, changed_pkgs=[], available=True)
+        self.assertEqual(result, [])
+
+    def test_unrelated_package_suppressed(self):
+        tests = [_make_test("io.camunda.zeebe.backup.gcs")]
+        result = self._run(tests, changed_pkgs=["io/camunda/zeebe/agent"])
+        self.assertEqual(result, [])
+
+    def test_related_package_kept(self):
+        tests = [_make_test("io.camunda.zeebe.backup.gcs")]
+        result = self._run(tests, changed_pkgs=["io/camunda/zeebe/backup/gcs"])
+        self.assertEqual(result, tests)
+
+    def test_blank_class_suppressed_when_file_not_in_diff(self):
+        test = _make_test("io.camunda.zeebe.backup.gcs", "GcsBackupIT")
+        result = self._run(
+            [test],
+            changed_pkgs=["io/camunda/zeebe/backup/gcs"],
+            changed_files=[],
+            blank_fqns=["io.camunda.zeebe.backup.gcs.GcsBackupIT"],
+        )
+        self.assertEqual(result, [])
+
+    def test_blank_class_kept_when_test_file_in_diff(self):
+        test = _make_test("io.camunda.zeebe.backup.gcs", "GcsBackupIT")
+        result = self._run(
+            [test],
+            changed_pkgs=["io/camunda/zeebe/backup/gcs"],
+            changed_files=["GcsBackupIT.java"],
+            blank_fqns=["io.camunda.zeebe.backup.gcs.GcsBackupIT"],
+        )
+        self.assertEqual(result, [test])
+
+    def test_unparseable_package_is_kept(self):
+        """Tests with empty packageName must not be suppressed — no signal."""
+        test = _make_test("")
+        result = self._run([test], changed_pkgs=[], available=True)
+        self.assertEqual(result, [test])
+
+
 if __name__ == "__main__":
     unittest.main()
