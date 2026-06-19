@@ -35,7 +35,7 @@ final class ProcessInstanceArchiverJobTest {
       LoggerFactory.getLogger(ProcessInstanceArchiverJobTest.class);
 
   private final Executor executor = Runnable::run;
-  private final HistoryConfiguration historyConfiguration = new HistoryConfiguration();
+  private final HistoryConfiguration historyConfiguration = nonReindexByIdHistoryConfig();
   private final TestRepository repository = spy(new TestRepository());
   private final ListViewTemplate processInstanceTemplate = new ListViewTemplate("", true);
   private final DecisionInstanceTemplate decisionInstanceTemplate =
@@ -317,6 +317,12 @@ final class ProcessInstanceArchiverJobTest {
     assertThat(archiverTimer.totalTime(TimeUnit.NANOSECONDS)).isGreaterThan(0);
 
     verify(repository, times(2)).getProcessInstancesNextBatch(1_000);
+  }
+
+  private static HistoryConfiguration nonReindexByIdHistoryConfig() {
+    final var config = new HistoryConfiguration();
+    config.setArchiveByIdEnabled(false);
+    return config;
   }
 
   private static final class WeirdlyNamedDependant implements ProcessInstanceDependant {
