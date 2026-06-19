@@ -154,7 +154,8 @@ class DocumentReferenceResolverTest {
     assertThatThrownBy(() -> resolver.resolve(json))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("doc-x")
-        .hasMessageContaining("boom");
+        .hasCauseInstanceOf(RuntimeException.class)
+        .hasRootCauseMessage("boom");
   }
 
   @Test

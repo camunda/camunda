@@ -60,11 +60,7 @@ public class CamundaDataSource {
       return readAllBytes(stream);
     } catch (final Exception e) {
       throw new IllegalStateException(
-          "Failed to download Camunda document '"
-              + reference.getDocumentId()
-              + "' for judge enrichment: "
-              + e.getMessage(),
-          e);
+          "Failed to download Camunda document '" + reference.getDocumentId() + "'", e);
     }
   }
 
