@@ -681,7 +681,7 @@ public class JobControllerTest extends RestControllerTest {
         .isNoContent();
 
     Mockito.verify(jobServices)
-        .updateJob(eq(1L), isNull(), eq(new UpdateJobChangeset(5, 1000L)), any());
+        .updateJob(eq(1L), isNull(), eq(new UpdateJobChangeset(5, 1000L, null)), any());
   }
 
   @Test
@@ -710,7 +710,7 @@ public class JobControllerTest extends RestControllerTest {
         .isNoContent();
 
     Mockito.verify(jobServices)
-        .updateJob(eq(1L), isNull(), eq(new UpdateJobChangeset(5, null)), any());
+        .updateJob(eq(1L), isNull(), eq(new UpdateJobChangeset(5, null, null)), any());
   }
 
   @Test
@@ -738,7 +738,7 @@ public class JobControllerTest extends RestControllerTest {
         .isNoContent();
 
     Mockito.verify(jobServices)
-        .updateJob(eq(1L), isNull(), eq(new UpdateJobChangeset(null, 1000L)), any());
+        .updateJob(eq(1L), isNull(), eq(new UpdateJobChangeset(null, 1000L, null)), any());
   }
 
   @Test
@@ -767,7 +767,35 @@ public class JobControllerTest extends RestControllerTest {
         .isNoContent();
 
     Mockito.verify(jobServices)
-        .updateJob(eq(1L), eq(12345678L), eq(new UpdateJobChangeset(null, 1000L)), any());
+        .updateJob(eq(1L), eq(12345678L), eq(new UpdateJobChangeset(null, 1000L, null)), any());
+  }
+
+  @Test
+  void shouldUpdateJobWithPriority() {
+    // given
+    when(jobServices.updateJob(anyLong(), any(), any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
+
+    final var request =
+        """
+            {
+              "changeset": {
+                "priority": 80
+              }
+            }""";
+    // when/then
+    webClient
+        .patch()
+        .uri(JOBS_BASE_URL + "/1")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    Mockito.verify(jobServices)
+        .updateJob(eq(1L), isNull(), eq(new UpdateJobChangeset(null, null, 80)), any());
   }
 
   @Test
@@ -786,7 +814,7 @@ public class JobControllerTest extends RestControllerTest {
               "type": "about:blank",
               "status": 400,
               "title": "INVALID_ARGUMENT",
-              "detail": "At least one of [retries, timeout] is required.",
+              "detail": "At least one of [retries, timeout, priority] is required.",
               "instance": "%s"
             }"""
             .formatted(JOBS_BASE_URL + "/1");

@@ -155,7 +155,8 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
       final UpdateJobChangeset changeset,
       final CamundaAuthentication authentication) {
     final var brokerRequest =
-        new BrokerUpdateJobRequest(jobKey, changeset.retries(), changeset.timeout());
+        new BrokerUpdateJobRequest(
+            jobKey, changeset.retries(), changeset.timeout(), changeset.priority());
     if (operationReference != null) {
       brokerRequest.setOperationReference(operationReference);
     }
@@ -239,5 +240,5 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
       List<String> fetchVariable,
       long requestTimeout) {}
 
-  public record UpdateJobChangeset(Integer retries, Long timeout) {}
+  public record UpdateJobChangeset(Integer retries, Long timeout, Integer priority) {}
 }

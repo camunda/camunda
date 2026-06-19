@@ -308,7 +308,8 @@ public class RequestMapper {
                 updateRequest.getOperationReference(),
                 new UpdateJobChangeset(
                     updateRequest.getChangeset().getRetries(),
-                    updateRequest.getChangeset().getTimeout())));
+                    updateRequest.getChangeset().getTimeout(),
+                    updateRequest.getChangeset().getPriority())));
   }
 
   public static Either<ProblemDetail, DocumentCreateRequest> toDocumentCreateRequest(
