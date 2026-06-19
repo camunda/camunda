@@ -63,6 +63,7 @@ import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.retry.RetryDecorator;
 import jakarta.json.JsonNumber;
 import jakarta.json.JsonObject;
+import jakarta.json.JsonValue;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -692,11 +693,12 @@ public class ElasticsearchAdapter implements TaskMigrationAdapter {
       LOG.warn("Status of reindex task {} is null", taskId);
       return ReindexTaskStatus.notFound();
     }
-    final JsonObject status = statusData.toJson().asJsonObject();
-    if (status == null) {
-      LOG.warn("Status of reindex task {} is null", taskId);
-      return ReindexTaskStatus.notFound();
+    final JsonValue statusValue = statusData.toJson();
+    if (!(statusValue instanceof JsonObject)) {
+      throw new MigrationException(
+          "Unexpected task status format for task " + taskId + ": " + statusValue.getValueType());
     }
+    final JsonObject status = (JsonObject) statusValue;
     final long created = getLongField(status, "created");
     final long updated = getLongField(status, "updated");
     final long deleted = getLongField(status, "deleted");

@@ -47,7 +47,6 @@ import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskJoinRelationship.TaskJoinRelationshipType;
 import jakarta.json.JsonNumber;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonValue;
 import java.io.IOException;
 import java.util.List;
 import java.util.function.Function;
@@ -579,11 +578,8 @@ class ElasticsearchAdapterTest {
     final JsonData jsonData = mock(JsonData.class);
     when(taskInfo.status()).thenReturn(jsonData);
 
-    final JsonValue jsonValue = mock(JsonValue.class);
-    when(jsonData.toJson()).thenReturn(jsonValue);
-
     final JsonObject jsonObject = mock(JsonObject.class);
-    when(jsonValue.asJsonObject()).thenReturn(jsonObject);
+    when(jsonData.toJson()).thenReturn(jsonObject);
     mockJsonNumber(jsonObject, "created", created);
     mockJsonNumber(jsonObject, "updated", updated);
     mockJsonNumber(jsonObject, "deleted", 0);
@@ -638,10 +634,8 @@ class ElasticsearchAdapterTest {
     when(taskResponse.task()).thenReturn(taskInfo);
     final JsonData jsonData = mock(JsonData.class);
     when(taskInfo.status()).thenReturn(jsonData);
-    final JsonValue jsonValue = mock(JsonValue.class);
-    when(jsonData.toJson()).thenReturn(jsonValue);
     final JsonObject jsonObject = mock(JsonObject.class);
-    when(jsonValue.asJsonObject()).thenReturn(jsonObject);
+    when(jsonData.toJson()).thenReturn(jsonObject);
     mockJsonNumber(jsonObject, "created", 0);
     mockJsonNumber(jsonObject, "updated", 0);
     mockJsonNumber(jsonObject, "deleted", 0);
