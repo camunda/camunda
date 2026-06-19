@@ -162,6 +162,7 @@ import io.camunda.search.clients.transformers.result.DecisionRequirementsResultC
 import io.camunda.search.clients.transformers.result.DeployedResourceResultConfigTransformer;
 import io.camunda.search.clients.transformers.result.ProcessDefinitionResultConfigTransformer;
 import io.camunda.search.clients.transformers.result.ProcessInstanceResultConfigTransformer;
+import io.camunda.search.clients.transformers.sort.AgentHistoryFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.AgentInstanceFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.AuditLogSortTransformer;
 import io.camunda.search.clients.transformers.sort.AuthorizationFieldSortingTransformer;
@@ -239,6 +240,7 @@ import io.camunda.search.filter.UserFilter;
 import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.filter.VariableFilter;
 import io.camunda.search.filter.VariableValueFilter;
+import io.camunda.search.query.AgentInstanceHistoryQuery;
 import io.camunda.search.query.AgentInstanceQuery;
 import io.camunda.search.query.AuditLogQuery;
 import io.camunda.search.query.AuthorizationQuery;
@@ -290,6 +292,7 @@ import io.camunda.search.result.DecisionRequirementsQueryResultConfig;
 import io.camunda.search.result.DeployedResourceQueryResultConfig;
 import io.camunda.search.result.ProcessDefinitionQueryResultConfig;
 import io.camunda.search.result.ProcessInstanceQueryResultConfig;
+import io.camunda.search.sort.AgentInstanceHistorySort;
 import io.camunda.search.sort.AgentInstanceSort;
 import io.camunda.search.sort.AuditLogSort;
 import io.camunda.search.sort.AuthorizationSort;
@@ -453,6 +456,7 @@ public final class ServiceTransformers {
         new TypedSearchQueryTransformer<>(mappers);
     // query -> request
     Stream.of(
+            AgentInstanceHistoryQuery.class,
             AgentInstanceQuery.class,
             AuthorizationQuery.class,
             BatchOperationQuery.class,
@@ -539,6 +543,7 @@ public final class ServiceTransformers {
     mappers.put(DeployedResourceEntity.class, new DeployedResourceEntityTransformer());
 
     // domain field sorting -> database field sorting
+    mappers.put(AgentInstanceHistorySort.class, new AgentHistoryFieldSortingTransformer());
     mappers.put(AgentInstanceSort.class, new AgentInstanceFieldSortingTransformer());
     mappers.put(AuthorizationSort.class, new AuthorizationFieldSortingTransformer());
     mappers.put(BatchOperationSort.class, new BatchOperationFieldSortingTransformer());
