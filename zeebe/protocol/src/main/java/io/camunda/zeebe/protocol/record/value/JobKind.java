@@ -42,5 +42,19 @@ public enum JobKind {
    * Represents jobs created for ad-hoc sub-processes. These jobs are associated with the execution
    * of ad-hoc sub-processes within a BPMN workflow.
    */
-  AD_HOC_SUB_PROCESS
+  AD_HOC_SUB_PROCESS,
+
+  /**
+   * Engine-internal maintenance jobs. Stamping a JobRecord with this kind requires the cluster's
+   * active ECV to be at or above {@code Capability.JOB_KIND_MAINTENANCE} (ordinal 17). Below the
+   * gate the engine must not write this value: a pre-feature follower's {@code EnumValue.read}
+   * decodes the field's name from MsgPack and calls {@code Enum.valueOf(JobKind.class,
+   * "MAINTENANCE")}, which throws {@code IllegalArgumentException} because the enum constant
+   * doesn't exist locally — the follower's processor crashes on the first record it can't
+   * deserialize. The gate is therefore a write-discipline contract enforced by every producer that
+   * would emit {@code MAINTENANCE}: {@code if (features.isActive(Capability .JOB_KIND_MAINTENANCE))
+   * record.setJobKind(JobKind.MAINTENANCE);} otherwise stamp the closest pre-feature value
+   * (typically {@code BPMN_ELEMENT}).
+   */
+  MAINTENANCE
 }

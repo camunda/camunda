@@ -302,6 +302,39 @@ public final class ClusterVersionCatalog {
         Set.of(
             new ApplierVersionId(JobBatchIntent.RESERVED, 1),
             new ApplierVersionId(JobBatchIntent.ACTIVATED, 2)),
+        Set.of()),
+
+    /**
+     * Demonstrates the record-property-enum extension hazard under ECV. Adds a new value {@code
+     * MAINTENANCE} to the {@link io.camunda.zeebe.protocol.record.value.JobKind} enum used on
+     * {@code JobRecord}. The new value would be stamped by future engine-internal maintenance job
+     * paths; this entry establishes the write-discipline contract so those paths can be landed
+     * safely.
+     *
+     * <p><b>The hazard.</b> {@code EnumValue.read} (see msgpack-value) decodes a record-property
+     * enum by reading the field's name from the MsgPack stream and calling {@code Enum.valueOf(
+     * klass, name)} on the local enum class. A pre-feature follower running a binary whose {@code
+     * JobKind} enum lacks {@code MAINTENANCE} would throw {@code IllegalArgumentException} the
+     * moment it tried to deserialize a record carrying that value — the processor crashes, the
+     * follower stops replaying, and the partition wedges.
+     *
+     * <p><b>What this gate enforces.</b> No appliers and no commands are listed because the
+     * extension introduces neither — only a new enum value usable on existing records. The gate's
+     * enforcement lives at every producer that would write the new value: the producer must guard
+     * its {@code record.setJobKind(JobKind.MAINTENANCE)} call on {@code
+     * clusterVersionFeatures.isActive(Capability.JOB_KIND_MAINTENANCE)}, and stamp a pre-feature
+     * value (typically {@code BPMN_ELEMENT}) below the gate. The catalog entry exists for code
+     * review and operator visibility — a reviewer who sees a new producer of {@code MAINTENANCE}
+     * expects to find this capability name at the gate.
+     *
+     * <p>This PoC does not yet ship a producer for {@code MAINTENANCE}. The first one to land will
+     * check the capability; the gate test in this commit verifies the round-trip works and pins the
+     * hazard documentation.
+     */
+    JOB_KIND_MAINTENANCE(
+        17,
+        "Write-discipline gate for JobKind.MAINTENANCE — emit only above this ordinal",
+        Set.of(),
         Set.of());
 
     private final int at;
