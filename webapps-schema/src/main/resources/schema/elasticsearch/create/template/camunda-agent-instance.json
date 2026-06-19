@@ -73,17 +73,21 @@
         "type": "integer"
       },
       "tools": {
-        "type": "nested",
+        "type": "object",
         "properties": {
           "name": {
-            "type": "keyword"
+            "type": "keyword",
+            "index": false,
+            "doc_values": false
           },
           "description": {
             "type": "text",
             "index": false
           },
           "elementId": {
-            "type": "keyword"
+            "type": "keyword",
+            "index": false,
+            "doc_values": false
           }
         }
       },
