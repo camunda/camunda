@@ -220,6 +220,10 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
     activatedJobsCountPerJobKind.forEach(
         (jobKind, count) ->
             jobMetrics.countJobEvent(JobAction.ACTIVATED, jobKind, value.getType(), count));
+    // Bucket the batch by reservationOrigin. Below Capability.JOB_BATCH_RESERVATION_ORIGIN the
+    // field is UNSPECIFIED (the producer leaves it at its default); above the gate it's
+    // WORKER_REQUEST. Reader-side use of the new field that makes the gate observable.
+    jobMetrics.countJobBatchActivationByOrigin(value.getReservationOrigin());
   }
 
   private void raiseIncidentJobTooLargeForMessageSize(

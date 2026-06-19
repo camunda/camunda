@@ -7,15 +7,19 @@
  */
 package io.camunda.zeebe.engine.metrics;
 
+import static io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JOB_BATCH_ACTIVATIONS_BY_ORIGIN;
 import static io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JOB_EVENTS;
 
 import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.EngineKeyNames;
 import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
 import io.camunda.zeebe.protocol.record.value.JobKind;
+import io.camunda.zeebe.protocol.record.value.ReservationOrigin;
 import io.camunda.zeebe.util.collection.Table;
 import io.camunda.zeebe.util.micrometer.BoundedMeterCache;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.util.EnumMap;
+import java.util.Map;
 import net.jcip.annotations.NotThreadSafe;
 
 /**
@@ -28,6 +32,8 @@ import net.jcip.annotations.NotThreadSafe;
 public final class JobProcessingMetrics {
 
   private final Table<JobAction, JobKind, BoundedMeterCache<Counter>> jobEvents = Table.simple();
+  private final Map<ReservationOrigin, Counter> activationsByOrigin =
+      new EnumMap<>(ReservationOrigin.class);
   private final MeterRegistry registry;
 
   public JobProcessingMetrics(final MeterRegistry registry) {
@@ -56,5 +62,25 @@ public final class JobProcessingMetrics {
             .withRegistry(registry);
 
     return BoundedMeterCache.of(registry, provider, EngineKeyNames.JOB_TYPE);
+  }
+
+  /**
+   * Increment the per-origin batch-activation counter. Producer side reads of the new {@code
+   * reservationOrigin} field on {@code JobBatchRecord} — below {@code
+   * Capability.JOB_BATCH_RESERVATION_ORIGIN} the field is absent and {@code origin} is the enum
+   * default {@code UNSPECIFIED}; above the gate {@code JobBatchActivateProcessor} stamps {@code
+   * WORKER_REQUEST} and increments under that bucket.
+   */
+  public void countJobBatchActivationByOrigin(final ReservationOrigin origin) {
+    activationsByOrigin
+        .computeIfAbsent(origin, this::registerActivationByOriginCounter)
+        .increment();
+  }
+
+  private Counter registerActivationByOriginCounter(final ReservationOrigin origin) {
+    return Counter.builder(JOB_BATCH_ACTIVATIONS_BY_ORIGIN.getName())
+        .description(JOB_BATCH_ACTIVATIONS_BY_ORIGIN.getDescription())
+        .tag(EngineKeyNames.RESERVATION_ORIGIN.asString(), origin.name())
+        .register(registry);
   }
 }

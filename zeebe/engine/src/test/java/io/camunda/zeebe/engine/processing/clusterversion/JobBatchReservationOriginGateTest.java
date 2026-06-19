@@ -83,6 +83,53 @@ public final class JobBatchReservationOriginGateTest {
         .isEqualTo(ReservationOrigin.WORKER_REQUEST);
   }
 
+  @Test
+  public void shouldRouteActivationMetricToTheReservationOriginBucket() {
+    // given — first activation below the gate; second above. The producer-side stamp differs
+    // and JobBatchActivateProcessor reads the field after emission to bucket the metric.
+    deployProcessAndCreateJob();
+    engine.jobs().withType(JOB_TYPE).activate();
+    RecordingExporter.jobBatchRecords(JobBatchIntent.ACTIVATED).withType(JOB_TYPE).getFirst();
+    final double unspecifiedBelow = readActivationByOriginCounter(ReservationOrigin.UNSPECIFIED);
+
+    raiseToReservationOriginOrdinal();
+    deployProcessAndCreateJob();
+    engine.jobs().withType(JOB_TYPE).activate();
+    RecordingExporter.jobBatchRecords(JobBatchIntent.ACTIVATED)
+        .withType(JOB_TYPE)
+        .limit(2)
+        .toList();
+
+    // when
+    final double unspecifiedAfter = readActivationByOriginCounter(ReservationOrigin.UNSPECIFIED);
+    final double workerRequestAfter =
+        readActivationByOriginCounter(ReservationOrigin.WORKER_REQUEST);
+
+    // then — the consumer of the new field routes each activation to the matching bucket. The
+    // UNSPECIFIED counter increased by 1 across the below-gate activation; the WORKER_REQUEST
+    // bucket increased by 1 across the above-gate activation; future ordinals that extend
+    // ReservationOrigin add new buckets without disturbing existing ones.
+    assertThat(unspecifiedBelow)
+        .as("UNSPECIFIED bucket records the below-gate batch")
+        .isEqualTo(1.0);
+    assertThat(unspecifiedAfter)
+        .as("UNSPECIFIED bucket isn't bumped by the above-gate batch")
+        .isEqualTo(unspecifiedBelow);
+    assertThat(workerRequestAfter)
+        .as("WORKER_REQUEST bucket records the above-gate batch")
+        .isEqualTo(1.0);
+  }
+
+  private double readActivationByOriginCounter(final ReservationOrigin origin) {
+    final var counter =
+        engine
+            .getMeterRegistry()
+            .find("zeebe.job.batch.activations_by_origin.total")
+            .tag("reservation_origin", origin.name())
+            .counter();
+    return counter == null ? 0.0 : counter.count();
+  }
+
   private void deployProcessAndCreateJob() {
     engine
         .deployment()
