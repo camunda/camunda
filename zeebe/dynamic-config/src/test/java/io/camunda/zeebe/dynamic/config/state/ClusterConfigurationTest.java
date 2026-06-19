@@ -427,29 +427,6 @@ class ClusterConfigurationTest {
     assertThat(initialConfig.incarnationNumber()).isZero();
   }
 
-  @Test
-  void shouldMergeRecoveryMode() {
-    // given
-    final var oldConfig = ClusterConfiguration.builder().recovery(false).build();
-
-    final var newConfig = ClusterConfiguration.builder().recovery(true).build();
-
-    // when
-    final var merged = oldConfig.merge(newConfig);
-
-    // then
-    assertThat(merged.recovery()).isTrue();
-  }
-
-  @Test
-  void initialRecoveryModeIsDisabled() {
-    // given
-    final var initialConfig = ClusterConfiguration.init();
-
-    // then
-    assertThat(initialConfig.recovery()).isFalse();
-  }
-
   private MemberId member(final int id) {
     return MemberId.from(Integer.toString(id));
   }

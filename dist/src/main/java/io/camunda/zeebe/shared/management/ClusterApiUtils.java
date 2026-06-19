@@ -317,6 +317,7 @@ final class ClusterApiUtils {
       case LEAVING -> BrokerStateCode.LEAVING;
       case LEFT -> BrokerStateCode.LEFT;
       case UNINITIALIZED -> BrokerStateCode.UNKNOWN;
+      case RECOVERING -> BrokerStateCode.RECOVERING;
     };
   }
 

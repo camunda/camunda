@@ -434,6 +434,7 @@ schemas:
       - JOINING
       - LEAVING
       - LEFT
+      - RECOVERING
 
   PartitionState:
     type: object

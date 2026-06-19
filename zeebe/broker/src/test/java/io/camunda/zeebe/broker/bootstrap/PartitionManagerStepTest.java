@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.bootstrap;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -27,6 +28,7 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -96,7 +98,7 @@ class PartitionManagerStepTest {
       mockClusterConfiguration = mock(ClusterConfiguration.class);
       when(clusterConfigurationService.getInitialClusterConfiguration())
           .thenReturn(mockClusterConfiguration);
-      when(mockClusterConfiguration.recovery()).thenReturn(false);
+      when(mockClusterConfiguration.getMember(any())).thenReturn(MemberState.uninitialized());
 
       testBrokerStartupContext.setClusterConfigurationService(clusterConfigurationService);
 
@@ -168,7 +170,8 @@ class PartitionManagerStepTest {
     @Test
     void shouldStartRecoveryPartitionManager() {
       // given
-      when(mockClusterConfiguration.recovery()).thenReturn(true);
+      final var memberState = MemberState.uninitialized().toRecovering();
+      when(mockClusterConfiguration.getMember(any())).thenReturn(memberState);
 
       // when
       sut.startupInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, startupFuture);

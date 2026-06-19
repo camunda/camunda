@@ -61,8 +61,6 @@ public final class ClusterTopologyDomain extends DomainContextBase {
     final var arbitraryRoutingState = routingStates().optional();
     final var arbitraryClusterId = Arbitraries.strings().ofMinLength(1).ofMaxLength(50).optional();
     final var arbitraryIncarnationNumber = Arbitraries.longs().greaterOrEqual(0);
-    final var arbitraryRecovery = Arbitraries.of(true, false);
-    // Combinators.combine supports up to 8 arbitraries; use flatMap for the 9th field.
     return Combinators.combine(
             arbitraryVersion,
             arbitraryMembers,
@@ -70,8 +68,7 @@ public final class ClusterTopologyDomain extends DomainContextBase {
             arbitraryChangePlan,
             arbitraryRoutingState,
             arbitraryClusterId,
-            arbitraryIncarnationNumber,
-            arbitraryRecovery)
+            arbitraryIncarnationNumber)
         .flatAs(
             (version,
                 members,
@@ -79,8 +76,7 @@ public final class ClusterTopologyDomain extends DomainContextBase {
                 pendingChanges,
                 routingState,
                 clusterId,
-                incarnationNumber,
-                recovery) ->
+                incarnationNumber) ->
                 partitionDistributorConfigs()
                     .map(
                         distributorConfig ->
@@ -92,7 +88,6 @@ public final class ClusterTopologyDomain extends DomainContextBase {
                                 routingState,
                                 clusterId,
                                 incarnationNumber,
-                                recovery,
                                 distributorConfig)));
   }
 
