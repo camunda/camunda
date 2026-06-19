@@ -95,7 +95,13 @@ function InstancesByProcess() {
 				if (item.hasMultipleVersions) {
 					accumulator[`${item.processDefinitionId}:${item.tenantId}`] = (
 						<ExpandedRowErrorBoundary>
-							<Suspense fallback={<LoadingRow><InlineLoading /></LoadingRow>}>
+							<Suspense
+								fallback={
+									<LoadingRow>
+										<InlineLoading />
+									</LoadingRow>
+								}
+							>
 								<InstancesByProcessVersions processDefinitionId={item.processDefinitionId} tenantId={item.tenantId} />
 							</Suspense>
 						</ExpandedRowErrorBoundary>

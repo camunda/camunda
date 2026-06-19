@@ -6,20 +6,19 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Component} from 'react';
-import type {ReactNode} from 'react';
+import {Component, type ReactNode} from 'react';
 
 type Props = {children: ReactNode};
 type State = {hasError: boolean};
 
 class ExpandedRowErrorBoundary extends Component<Props, State> {
-	state: State = {hasError: false};
+	override state: State = {hasError: false};
 
 	static getDerivedStateFromError(): State {
 		return {hasError: true};
 	}
 
-	render() {
+	override render() {
 		if (this.state.hasError) {
 			return null;
 		}

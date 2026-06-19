@@ -87,7 +87,13 @@ function IncidentsByError() {
 			items.reduce<Record<string, React.ReactElement<{tabIndex: number}>>>((accumulator, item) => {
 				accumulator[String(item.errorHashCode)] = (
 					<ExpandedRowErrorBoundary>
-						<Suspense fallback={<LoadingRow><InlineLoading /></LoadingRow>}>
+						<Suspense
+							fallback={
+								<LoadingRow>
+									<InlineLoading />
+								</LoadingRow>
+							}
+						>
 							<IncidentsByErrorDefinitions errorHashCode={item.errorHashCode} />
 						</Suspense>
 					</ExpandedRowErrorBoundary>

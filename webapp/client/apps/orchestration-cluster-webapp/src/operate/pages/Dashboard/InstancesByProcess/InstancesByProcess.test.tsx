@@ -12,9 +12,7 @@ import {describe, expect} from 'vitest';
 import {HttpResponse} from 'msw';
 import {z} from 'zod';
 import {userEvent} from 'vitest/browser';
-import {
-	mockGetProcessDefinitionInstanceStatisticsEndpoint,
-} from '#/shared-test-modules/mock-handlers';
+import {mockGetProcessDefinitionInstanceStatisticsEndpoint} from '#/shared-test-modules/mock-handlers';
 import {createProcessDefinitionInstanceStatistics} from '#/shared-test-modules/api-mocks/process-definition-statistics';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
 import {InstancesByProcess} from './InstancesByProcess';

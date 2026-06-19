@@ -7,13 +7,7 @@
  */
 
 import React from 'react';
-import {
-	DataTable,
-	TableExpandHeader,
-	TableHeader,
-	TableRow,
-	type DataTableRenderProps,
-} from '@carbon/react';
+import {DataTable, TableExpandHeader, TableHeader, TableRow, type DataTableRenderProps} from '@carbon/react';
 import {Table, TableContainer, TableExpandRow, ExpandableTableCell, TableExpandedRow, TableHead} from './styled';
 
 type Row = {
