@@ -221,6 +221,7 @@ function useSidebarChildren(params: {
         key: 'tasks',
         label: t('headerNavItemTasks'),
         icon: TaskView,
+        isActive: !isProcessesPage,
         defaultExpanded: !isProcessesPage,
         children: tasksChildren,
         linkProps: {to: pages.initial},

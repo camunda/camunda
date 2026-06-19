@@ -24,7 +24,7 @@ import {useCamundaToolsConfig} from './useCamundaToolsConfig';
 
 const SKIP_TO_CONTENT_TARGET_ID = 'main-content';
 
-function useActiveKey(): 'processes' | 'tasks' | `tasks:${string}` {
+function useActiveKey(): 'processes' | `tasks:${string}` {
   const location = useLocation();
   const isProcessesPage =
     matchPath(pages.processes(), location.pathname) !== null;
@@ -33,10 +33,8 @@ function useActiveKey(): 'processes' | 'tasks' | `tasks:${string}` {
     return 'processes';
   }
 
-  const rawFilterParam = new URLSearchParams(location.search).get('filter');
-  if (rawFilterParam === null || rawFilterParam === 'all-open') {
-    return 'tasks';
-  }
+  const rawFilterParam =
+    new URLSearchParams(location.search).get('filter') ?? 'all-open';
 
   return `tasks:${rawFilterParam}`;
 }
