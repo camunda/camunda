@@ -8,6 +8,7 @@
 
 import {SkeletonText} from '@carbon/react';
 import {useLatestAgentMessage} from 'modules/queries/agentInstances/useLatestAgentMessage';
+import {useProcessInstanceElementSelectActions} from 'modules/hooks/useProcessInstanceElementSelection';
 import {ConversationMessage} from '../ConversationMessage';
 import {StatusHint} from './styled';
 
@@ -20,6 +21,7 @@ const LatestAgentMessage: React.FC<LatestAgentMessageProps> = ({
   agentInstanceKey,
   enablePeriodicRefetch,
 }) => {
+  const {selectElement} = useProcessInstanceElementSelectActions();
   const {data, status} = useLatestAgentMessage(agentInstanceKey, {
     enablePeriodicRefetch,
   });
@@ -46,6 +48,11 @@ const LatestAgentMessage: React.FC<LatestAgentMessageProps> = ({
       content={data.content}
       toolCalls={data.toolCalls}
       historyItemKey={data.historyItemKey}
+      onToolCallClick={(toolCall) => {
+        if (toolCall.elementId !== null) {
+          selectElement({elementId: toolCall.elementId});
+        }
+      }}
     />
   );
 };
