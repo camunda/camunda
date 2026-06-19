@@ -63,4 +63,66 @@ public class VariableNullValueSearchIT {
               assertThat(searchResult.items().getFirst().getValue()).isEqualTo("null");
             });
   }
+
+  @Test
+  void shouldFindProcessVariableByNullValueEquals() {
+    // given
+    final var variableName = "nullVar_" + UUID.randomUUID().toString().replace("-", "");
+    final var processInstance =
+        startProcessInstance(
+            camundaClient, "bpmProcessVariable", "{\"%s\":null}".formatted(variableName));
+
+    // when / then
+    Awaitility.await("should find variable filtered by null value")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var searchResult =
+                  camundaClient
+                      .newVariableSearchRequest()
+                      .filter(
+                          f ->
+                              f.name(variableName)
+                                  .processInstanceKey(processInstance.getProcessInstanceKey())
+                                  .value(v -> v.eq("null")))
+                      .send()
+                      .join();
+              assertThat(searchResult.items()).hasSize(1);
+              assertThat(searchResult.items().getFirst().getValue()).isEqualTo("null");
+            });
+  }
+
+  @Test
+  void shouldExcludeNullValuedProcessVariableByNotEqualsNull() {
+    // given
+    final var suffix = UUID.randomUUID().toString().replace("-", "");
+    final var nullVarName = "nullVar_" + suffix;
+    final var realVarName = "realVar_" + suffix;
+    final var processInstance =
+        startProcessInstance(
+            camundaClient,
+            "bpmProcessVariable",
+            "{\"%s\":null,\"%s\":\"hello\"}".formatted(nullVarName, realVarName));
+
+    // when / then
+    Awaitility.await("should exclude null-valued variable when filtering by neq null")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var searchResult =
+                  camundaClient
+                      .newVariableSearchRequest()
+                      .filter(
+                          f ->
+                              f.name(b -> b.in(nullVarName, realVarName))
+                                  .processInstanceKey(processInstance.getProcessInstanceKey())
+                                  .value(v -> v.neq("null")))
+                      .send()
+                      .join();
+              assertThat(searchResult.items()).hasSize(1);
+              assertThat(searchResult.items().getFirst().getName()).isEqualTo(realVarName);
+            });
+  }
 }

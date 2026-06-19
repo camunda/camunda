@@ -213,6 +213,9 @@
   <sql id="variableOperationCondition">
     <choose>
       <when test="operation.operator.name().equals('EQUALS')">
+        <if test="operation.type.toString == 'NULL'">
+          VAR_VALUE = 'null'
+        </if>
         <if test="operation.type.toString == 'STRING' or operation.type.toString == 'BOOLEAN'">
           VAR_VALUE = #{operation.value}
         </if>
@@ -224,6 +227,9 @@
         </if>
       </when>
       <when test="operation.operator.name().equals('NOT_EQUALS')">
+        <if test="operation.type.toString == 'NULL'">
+          VAR_VALUE != 'null'
+        </if>
         <if test="operation.type.toString == 'STRING' or operation.type.toString == 'BOOLEAN'">
           VAR_VALUE != #{operation.value}
         </if>
@@ -267,6 +273,9 @@
         </if>
       </when>
       <when test="operation.operator.name().equals('IN')">
+        <if test="operation.type.toString == 'NULL'">
+          VAR_VALUE = 'null'
+        </if>
         <if test="operation.type.toString == 'STRING' or operation.type.toString == 'BOOLEAN'">
           VAR_VALUE IN
           <foreach collection="operation.values" item="value" open="(" separator=", " close=")">

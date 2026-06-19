@@ -207,6 +207,24 @@ public class VariableValueFilterIT {
   }
 
   @TestTemplate
+  public void shouldFindVariableWithNameAndInNullValue(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    prepareRandomVariables(testApplication);
+    final String varName = "var-name-" + nextStringId();
+    final VariableDbModel randomizedVariable =
+        VariableFixtures.createRandomized(b -> b.name(varName).value("null"));
+    createAndSaveVariable(rdbmsService, randomizedVariable);
+
+    // and
+    final Operation<String> operation = Operation.in("null");
+
+    // when
+    searchAndAssertVariableValueFilter(rdbmsService, randomizedVariable, varName, operation);
+  }
+
+  @TestTemplate
   public void shouldFindVariableWithNameAndEqBooleanValue(
       final CamundaRdbmsTestApplication testApplication) {
     // given 21 variables

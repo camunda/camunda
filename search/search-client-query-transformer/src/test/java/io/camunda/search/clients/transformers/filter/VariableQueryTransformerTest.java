@@ -171,6 +171,69 @@ public class VariableQueryTransformerTest extends AbstractTransformerTest {
   }
 
   @Test
+  public void shouldQueryByNullValueEqualsAsLiteralNullTerm() {
+    // given
+    final var filter = FilterBuilders.variable((f) -> f.valueOperations(Operation.eq("null")));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchTermQuery.class,
+            term -> {
+              assertThat(term.field()).isEqualTo("value");
+              assertThat(term.value().stringValue()).isEqualTo("null");
+            });
+  }
+
+  @Test
+  public void shouldQueryByNullValueNotEqualsAsNegatedLiteralNullTerm() {
+    // given
+    final var filter = FilterBuilders.variable((f) -> f.valueOperations(Operation.neq("null")));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            boolQuery -> {
+              assertThat(boolQuery.mustNot()).hasSize(1);
+              assertThat(boolQuery.mustNot().getFirst().queryOption())
+                  .isInstanceOfSatisfying(
+                      SearchTermQuery.class,
+                      term -> {
+                        assertThat(term.field()).isEqualTo("value");
+                        assertThat(term.value().stringValue()).isEqualTo("null");
+                      });
+            });
+  }
+
+  @Test
+  public void shouldQueryByNullValueInAsLiteralNullTerm() {
+    // given
+    final var filter = FilterBuilders.variable((f) -> f.valueOperations(Operation.in("null")));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchTermQuery.class,
+            term -> {
+              assertThat(term.field()).isEqualTo("value");
+              assertThat(term.value().stringValue()).isEqualTo("null");
+            });
+  }
+
+  @Test
   public void shouldQueryByIntegerValueEqualsWithBothNumericRepresentations() {
     // given
     final var filter = FilterBuilders.variable((f) -> f.valueOperations(Operation.eq("356")));
