@@ -17,6 +17,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberRemoveOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionBootstrapOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDeleteExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDisableExporterOperation;
@@ -39,6 +40,7 @@ import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
 import io.camunda.zeebe.dynamic.config.state.ExportingConfig;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
+import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.FixedConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.RoundRobinConfig;
@@ -473,7 +475,12 @@ final class ClusterApiUtilsTest {
         new PartitionBootstrapOperation(memberId1, 2, 1, true), // Alternative constructor
 
         // PartitionDistributorConfig
-        new UpdatePartitionDistributorConfigOperation(memberId1, new RoundRobinConfig()));
+        new UpdatePartitionDistributorConfigOperation(memberId1, new RoundRobinConfig()),
+        new PartitionBootstrapOperation(memberId1, 2, 1, true), // Alternative constructor
+
+        // Mode change operations
+        new ModeChangeOperation(memberId1, "default", Mode.RECOVERING),
+        new ModeChangeOperation(memberId1, "default", Mode.PROCESSING));
   }
 
   /** Provides all ClusterConfigurationChangeOperation implementations as test arguments. */

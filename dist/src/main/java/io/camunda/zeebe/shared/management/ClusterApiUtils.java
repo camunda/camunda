@@ -23,6 +23,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberRemoveOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionBootstrapOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDeleteExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDisableExporterOperation;
@@ -283,6 +284,19 @@ final class ClusterApiUtils {
               .operation(OperationEnum.UPDATE_PARTITION_DISTRIBUTOR_CONFIG)
               .partitionDistributionConfig(
                   toPartitionDistributionConfig(updatePartitionDistributorConfigOperation));
+      case final ModeChangeOperation modeChange ->
+          switch (modeChange.mode()) {
+            case RECOVERING ->
+                new Operation()
+                    .operation(OperationEnum.ENTER_RECOVERY)
+                    .brokerId(brokerIdValue(modeChange.memberId()))
+                    .physicalTenantId(modeChange.physicalTenantId());
+            case PROCESSING ->
+                new Operation()
+                    .operation(OperationEnum.EXIT_RECOVERY)
+                    .brokerId(brokerIdValue(modeChange.memberId()))
+                    .physicalTenantId(modeChange.physicalTenantId());
+          };
       default -> new Operation().operation(OperationEnum.UNKNOWN);
     };
   }
@@ -613,6 +627,19 @@ final class ClusterApiUtils {
                           .UPDATE_PARTITION_DISTRIBUTOR_CONFIG)
                   .partitionDistributionConfig(
                       toPartitionDistributionConfig(updatePartitionDistributorConfigOperation));
+          case final ModeChangeOperation modeChange ->
+              switch (modeChange.mode()) {
+                case RECOVERING ->
+                    new TopologyChangeCompletedInner()
+                        .operation(TopologyChangeCompletedInner.OperationEnum.ENTER_RECOVERY)
+                        .brokerId(brokerIdValue(modeChange.memberId()))
+                        .physicalTenantId(modeChange.physicalTenantId());
+                case PROCESSING ->
+                    new TopologyChangeCompletedInner()
+                        .operation(TopologyChangeCompletedInner.OperationEnum.EXIT_RECOVERY)
+                        .brokerId(brokerIdValue(modeChange.memberId()))
+                        .physicalTenantId(modeChange.physicalTenantId());
+              };
           default ->
               new TopologyChangeCompletedInner()
                   .operation(TopologyChangeCompletedInner.OperationEnum.UNKNOWN);
