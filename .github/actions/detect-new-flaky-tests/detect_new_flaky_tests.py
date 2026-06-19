@@ -608,16 +608,21 @@ def is_in_baseline(normalized_key: str, baseline_keys: set[str]) -> bool:
 
 def get_pr_changed_paths(
     base_ref: str, head_sha: str, repo_root: str
-) -> tuple[set[str], set[str]]:
-    """Return (changed_package_paths, changed_java_filenames) from the PR diff.
+) -> tuple[set[str], set[str], bool]:
+    """Return (changed_package_paths, changed_java_filenames, available).
 
     changed_package_paths: Java package paths like "io/camunda/zeebe/backup/gcs"
     changed_java_filenames: basenames like "GcsBackupStoreIT.java"
+    available: True when the git diff succeeded (even if no .java files changed);
+               False when the diff could not be computed — callers must skip the
+               filter in that case to avoid accidental suppression.
 
-    Returns empty sets when the diff cannot be computed (touch-check is skipped).
+    Distinguishing these two empty-set cases is critical: a PR that changes only
+    YAML/config files (no .java) is a legitimate no-Java-touch signal and should
+    still trigger suppression; a failed diff gives no signal at all.
     """
     if not base_ref or not head_sha:
-        return set(), set()
+        return set(), set(), False
     try:
         out = subprocess.check_output(
             ["git", "diff", "--name-only", f"origin/{base_ref}...{head_sha}"],
@@ -625,7 +630,7 @@ def get_pr_changed_paths(
         )
     except subprocess.CalledProcessError:
         print(f"{PREFIX} WARN: git diff for touch-check failed — filter disabled.")
-        return set(), set()
+        return set(), set(), False
 
     pkg_paths: set[str] = set()
     filenames: set[str] = set()
@@ -636,7 +641,26 @@ def get_pr_changed_paths(
         m = re.search(r"/java/(.+)/[^/]+\.java$", line)
         if m:
             pkg_paths.add(m.group(1))
-    return pkg_paths, filenames
+    return pkg_paths, filenames, True
+
+
+def _package_touched(pkg_path: str, changed_pkg_paths: set[str]) -> bool:
+    """Return True if pkg_path is the same as, a parent of, or a child of any changed package.
+
+    Examples (pkg_path → changed_pkg_paths → result):
+      "io/a/b"       {io/a/b}           → True  (exact match)
+      "io/a/b"       {io/a/b/internal}  → True  (changed child of test package)
+      "io/a/b/impl"  {io/a/b}           → True  (test is child of changed package)
+      "io/a/b"       {io/x/y}           → False (unrelated)
+    """
+    for cp in changed_pkg_paths:
+        if cp == pkg_path:
+            return True
+        if cp.startswith(pkg_path + "/"):
+            return True
+        if pkg_path.startswith(cp + "/"):
+            return True
+    return False
 
 
 def filter_by_touch_check(
@@ -644,23 +668,26 @@ def filter_by_touch_check(
     changed_pkg_paths: set[str],
     changed_java_files: set[str],
     blank_class_fqns: set[str],
+    touch_check_available: bool,
 ) -> list[dict]:
     """Suppress false-positive alerts using a three-stage touch-check filter.
 
-    Stage 1 (Fix 5): PR does not touch the test's Java package → suppress.
-      A test flaking in a completely different package cannot be this PR's fault.
+    Stage 1 (Fix 5): PR does not touch the test's Java package (or any sub/parent
+      package) → suppress. A test flaking in a completely unrelated package cannot
+      be this PR's fault. Note: a YAML-only PR with no .java changes is a valid
+      no-touch signal (changed_pkg_paths is empty, touch_check_available is True).
 
-    Stage 2 (Fix 1): Package matches, but the class has blank test_name records
+    Stage 2 (Fix 1): Package is touched, but the class has blank test_name records
       in the BQ baseline (class/container-level infra failures) AND the test file
       itself was not modified → suppress. Infra outage on an untouched test is not
       the PR author's responsibility.
 
     Stage 3: keep — the PR owns the flake.
 
-    When changed_pkg_paths is empty (git diff unavailable) the filter is skipped
+    When touch_check_available is False (git diff failed) the filter is skipped
     entirely to avoid silently suppressing genuine new flakes.
     """
-    if not changed_pkg_paths:
+    if not touch_check_available:
         return new_flaky_tests
 
     kept: list[dict] = []
@@ -670,7 +697,7 @@ def filter_by_touch_check(
         # Use the outer class filename — inner classes (e.g. Outer$Inner) live in Outer.java
         class_file = f"{test.get('className', '').split('$')[0]}.java"
 
-        if pkg_path not in changed_pkg_paths:
+        if not _package_touched(pkg_path, changed_pkg_paths):
             print(f"{PREFIX} TOUCH-CHECK suppress: {get_test_key(test)}"
                   f" (package '{pkg_path}' not in PR diff)")
             continue
@@ -738,11 +765,12 @@ def main() -> None:
 
     # Fix 5 + Fix 1: suppress tests whose package is unrelated to this PR's changes,
     # and infra-failure classes whose test file was not directly modified.
-    changed_pkg_paths, changed_java_files = get_pr_changed_paths(
+    changed_pkg_paths, changed_java_files, touch_check_available = get_pr_changed_paths(
         base_ref, head_sha, repo_root
     )
     new_flaky_tests = filter_by_touch_check(
-        new_flaky_tests, changed_pkg_paths, changed_java_files, blank_class_fqns
+        new_flaky_tests, changed_pkg_paths, changed_java_files,
+        blank_class_fqns, touch_check_available
     )
 
     # -- Nothing-to-do short-circuit --------------------------------------
