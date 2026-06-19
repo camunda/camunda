@@ -64,7 +64,7 @@ const VariablesTable: React.FC<Props> = ({
     data: variablesData,
     fetchNextPage,
     hasNextPage,
-    isFetching,
+    isLoading,
     isPlaceholderData,
     isFetchingNextPage,
   } = useVariables({
@@ -237,18 +237,20 @@ const VariablesTable: React.FC<Props> = ({
           </FilterSwitcher>
         </FilterSwitcherContainer>
       )}
-      {!isFetching &&
+      {!isLoading &&
       (showDocumentsOnly || debouncedSearchValue.trim() !== '') &&
       processedVariables.length === 0 ? (
-        <EmptyMessageWrapper>
-          <EmptyMessage
-            message={
-              debouncedSearchValue.trim() !== ''
-                ? 'No variables match your search'
-                : 'There are no document variables'
-            }
-          />
-        </EmptyMessageWrapper>
+        <DimmableResults $dimmed={isPlaceholderData}>
+          <EmptyMessageWrapper>
+            <EmptyMessage
+              message={
+                debouncedSearchValue.trim() !== ''
+                  ? 'No variables match your search'
+                  : 'There are no document variables'
+              }
+            />
+          </EmptyMessageWrapper>
+        </DimmableResults>
       ) : (
         <DimmableResults $dimmed={isPlaceholderData}>
           <StructuredList
