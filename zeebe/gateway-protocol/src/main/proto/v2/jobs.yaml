@@ -1083,6 +1083,9 @@ components:
           format: int32
           description: The new priority for the job. Higher values indicate higher priority.
           nullable: true
+      x-properties-added-in-version:
+        - propertyName: priority
+          addedInVersion: "8.10"
 
     ## Enums
 
