@@ -51,6 +51,7 @@ import io.camunda.zeebe.broker.system.partitions.impl.steps.SnapshotDirectorPart
 import io.camunda.zeebe.broker.system.partitions.impl.steps.StreamProcessorTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.ZeebeDbPartitionTransitionStep;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
+import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceImpl;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceTransitionStep;
 import io.camunda.zeebe.broker.transport.snapshotapi.SnapshotApiRequestHandler;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
@@ -60,6 +61,7 @@ import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
+import io.camunda.zeebe.engine.processing.clusterversion.ClusterVersionUpdateListener;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
@@ -157,7 +159,8 @@ public final class ZeebePartitionFactory {
 
     final var communicationService = clusterServices.getCommunicationService();
     final var membershipService = clusterServices.getMembershipService();
-    final var typedRecordProcessorsFactory = createFactory(localBroker, featureFlags);
+    final var typedRecordProcessorsFactory =
+        createFactory(localBroker, featureFlags, commandApiService);
 
     final var databaseCfg = brokerCfg.getExperimental().getRocksdb();
     final var consistencyChecks = brokerCfg.getExperimental().getConsistencyChecks();
@@ -262,13 +265,26 @@ public final class ZeebePartitionFactory {
   }
 
   private TypedRecordProcessorsFactory createFactory(
-      final BrokerInfo localBroker, final FeatureFlags featureFlags) {
+      final BrokerInfo localBroker,
+      final FeatureFlags featureFlags,
+      final CommandApiService commandApiService) {
     return recordProcessorContext -> {
       final InterPartitionCommandSender partitionCommandSender =
           recordProcessorContext.getPartitionCommandSender();
       final SubscriptionCommandSender subscriptionCommandSender =
           new SubscriptionCommandSender(
               recordProcessorContext.getPartitionId(), partitionCommandSender);
+
+      // ECV bridge from engine to broker's admission layer. Fired on stream-processor recovery
+      // (seed) and after every applied APPLIED event (push). Runs on the stream-processor actor;
+      // updateActiveClusterVersion hops onto the command-api actor internally.
+      final ClusterVersionUpdateListener clusterVersionUpdateListener =
+          (line, ordinal) -> {
+            final var service = commandApiService;
+            if (service instanceof CommandApiServiceImpl impl) {
+              impl.updateActiveClusterVersion(line, ordinal);
+            }
+          };
 
       return EngineProcessors.createEngineProcessors(
           recordProcessorContext,
@@ -278,7 +294,8 @@ public final class ZeebePartitionFactory {
           featureFlags,
           jobStreamer,
           searchClientsProxy,
-          brokerRequestAuthorizationConverter);
+          brokerRequestAuthorizationConverter,
+          clusterVersionUpdateListener);
     };
   }
 }

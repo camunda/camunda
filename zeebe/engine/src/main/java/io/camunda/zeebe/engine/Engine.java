@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.state.appliers.EventAppliers;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.processing.DbBannedInstanceState;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
+import io.camunda.zeebe.protocol.impl.clusterversion.ClusterVersionCatalog;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -129,7 +130,19 @@ public class Engine implements RecordProcessor {
     processingState = typedProcessorContext.getProcessingState();
     writers.setKeyValidator(processingState.getKeyGenerator());
 
-    ((EventAppliers) eventApplier).registerEventAppliers(processingState);
+    ((EventAppliers) eventApplier)
+        .registerEventAppliers(processingState)
+        .setActiveClusterVersionProvider(
+            processingState.getClusterVersionState()::getActiveOrdinal);
+    // Engine command writer also enforces the gate — a processor that emits a follow-up command
+    // gated above the active ECV will throw IllegalStateException.
+    writers.setActiveClusterVersionProvider(
+        processingState.getClusterVersionState()::getActiveOrdinal);
+    // Floor check: refuse to start on a cluster whose active ordinal is below this binary's
+    // minimum supported ordinal. A binary that retired branching code for a capability cannot
+    // correctly process a cluster still below it.
+    ClusterVersionCatalog.validateMinSupportedOrdinal(
+        processingState.getClusterVersionState().getActiveOrdinal());
     final TypedRecordProcessors typedRecordProcessors =
         typedRecordProcessorFactory.createProcessors(typedProcessorContext);
 

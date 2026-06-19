@@ -30,6 +30,8 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviorsImpl;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
 import io.camunda.zeebe.engine.processing.clock.ClockProcessors;
 import io.camunda.zeebe.engine.processing.clustervariable.ClusterVariableProcessors;
+import io.camunda.zeebe.engine.processing.clusterversion.ClusterVersionProcessors;
+import io.camunda.zeebe.engine.processing.clusterversion.ClusterVersionUpdateListener;
 import io.camunda.zeebe.engine.processing.common.DecisionBehavior;
 import io.camunda.zeebe.engine.processing.conditional.ConditionalEvaluationEvaluateProcessor;
 import io.camunda.zeebe.engine.processing.deployment.DeploymentCreateProcessor;
@@ -110,7 +112,8 @@ public final class EngineProcessors {
       final FeatureFlags featureFlags,
       final JobStreamer jobStreamer,
       final SearchClientsProxy searchClientsProxy,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
+      final ClusterVersionUpdateListener clusterVersionUpdateListener) {
 
     final var processingState = typedRecordProcessorContext.getProcessingState();
     final var keyGenerator = processingState.getKeyGenerator();
@@ -315,6 +318,13 @@ public final class EngineProcessors {
         clock,
         commandDistributionBehavior,
         authCheckBehavior);
+
+    ClusterVersionProcessors.addClusterVersionProcessors(
+        typedRecordProcessors,
+        processingState,
+        writers,
+        keyGenerator,
+        clusterVersionUpdateListener);
 
     AuthorizationProcessors.addAuthorizationProcessors(
         keyGenerator,

@@ -13,6 +13,9 @@ import io.camunda.zeebe.engine.state.EventApplier.NoSuchEventApplier.NoApplierFo
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.protocol.impl.clusterversion.ClusterVersionCatalog;
+import io.camunda.zeebe.protocol.impl.clusterversion.ClusterVersionCatalog.ApplierVersionId;
+import io.camunda.zeebe.protocol.impl.clusterversion.ClusterVersionCatalog.Capability;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
@@ -25,6 +28,7 @@ import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
+import io.camunda.zeebe.protocol.record.intent.ClusterVersionIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.CompensationSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ConditionalEvaluationIntent;
@@ -80,10 +84,12 @@ import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
-import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.function.IntSupplier;
 
 /**
  * Applies state changes from events to the {@link MutableProcessingState}.
@@ -95,7 +101,98 @@ public final class EventAppliers implements EventApplier {
   public static final TypedEventApplier<Intent, RecordValue> NOOP_EVENT_APPLIER =
       (key, value) -> {};
 
+  /**
+   * Allowlist of {@code (intent, version)} pairs with {@code version > 1} that are <em>not</em>
+   * ECV-gated. Two populations belong here:
+   *
+   * <ul>
+   *   <li><b>Pre-ECV legacy.</b> Multi-version appliers that predated the ECV mechanism. They use
+   *       record-version selection for on-disk compatibility but were never gated by an ECV
+   *       ordinal.
+   *   <li><b>Retired ECV-gated appliers.</b> Once the binary's minimum supported ordinal exceeds a
+   *       capability's ordinal, the gate is no longer interesting — every cluster running this
+   *       binary is past it. To remove the {@code features.isActive(Capability.X)} branching, the
+   *       catalog entry's {@code appliers()} set is emptied, the applier's {@code gatedBy()}
+   *       returns BASELINE, and the {@code (intent, version)} pair is added here. The ordinal
+   *       itself stays in the {@link Capability} enum — ordinals are never reused.
+   * </ul>
+   *
+   * <p>A {@code version > 1} applier that defaults to {@link Capability#BASELINE} but is not on
+   * this list fails registration loudly — the engine refuses to silently treat it as un-gated.
+   */
+  private static final Set<ApplierVersionId> BASELINE_APPLIERS =
+      Set.of(
+          new ApplierVersionId(BatchOperationChunkIntent.CREATED, 2),
+          new ApplierVersionId(BatchOperationIntent.CREATED, 2),
+          new ApplierVersionId(BatchOperationIntent.RESUMED, 2),
+          new ApplierVersionId(BatchOperationIntent.SUSPENDED, 2),
+          new ApplierVersionId(CommandDistributionIntent.DISTRIBUTING, 2),
+          new ApplierVersionId(DecisionEvaluationIntent.EVALUATED, 2),
+          new ApplierVersionId(DecisionIntent.CREATED, 2),
+          new ApplierVersionId(DeploymentIntent.CREATED, 2),
+          new ApplierVersionId(DeploymentIntent.CREATED, 3),
+          new ApplierVersionId(FormIntent.CREATED, 2),
+          new ApplierVersionId(IncidentIntent.RESOLVED, 2),
+          new ApplierVersionId(IncidentIntent.RESOLVED, 3),
+          new ApplierVersionId(JobIntent.CANCELED, 2),
+          new ApplierVersionId(JobIntent.CANCELED, 3),
+          new ApplierVersionId(JobIntent.COMPLETED, 2),
+          new ApplierVersionId(JobIntent.COMPLETED, 3),
+          new ApplierVersionId(JobIntent.CREATED, 2),
+          new ApplierVersionId(JobIntent.ERROR_THROWN, 2),
+          new ApplierVersionId(JobIntent.FAILED, 2),
+          new ApplierVersionId(JobIntent.TIMED_OUT, 2),
+          new ApplierVersionId(JobIntent.UPDATED, 2),
+          new ApplierVersionId(MessageIntent.EXPIRED, 2),
+          new ApplierVersionId(ProcessEventIntent.TRIGGERING, 2),
+          new ApplierVersionId(ProcessEventIntent.TRIGGERING, 3),
+          new ApplierVersionId(ProcessInstanceCreationIntent.CREATED, 2),
+          new ApplierVersionId(ProcessInstanceIntent.ELEMENT_ACTIVATING, 2),
+          new ApplierVersionId(ProcessInstanceIntent.ELEMENT_ACTIVATING, 3),
+          new ApplierVersionId(ProcessInstanceIntent.ELEMENT_COMPLETED, 2),
+          new ApplierVersionId(ProcessInstanceIntent.ELEMENT_MIGRATED, 2),
+          new ApplierVersionId(ProcessInstanceIntent.ELEMENT_MIGRATED, 3),
+          new ApplierVersionId(ProcessInstanceIntent.ELEMENT_MIGRATED, 4),
+          new ApplierVersionId(ProcessInstanceIntent.ELEMENT_MIGRATED, 5),
+          new ApplierVersionId(ProcessInstanceIntent.ELEMENT_TERMINATED, 2),
+          new ApplierVersionId(ProcessIntent.CREATED, 2),
+          new ApplierVersionId(TimerIntent.CREATED, 2),
+          new ApplierVersionId(UserTaskIntent.ASSIGNED, 2),
+          new ApplierVersionId(UserTaskIntent.ASSIGNED, 3),
+          new ApplierVersionId(UserTaskIntent.ASSIGNED, 4),
+          new ApplierVersionId(UserTaskIntent.ASSIGNING, 2),
+          new ApplierVersionId(UserTaskIntent.ASSIGNING, 3),
+          new ApplierVersionId(UserTaskIntent.CANCELED, 2),
+          new ApplierVersionId(UserTaskIntent.CANCELING, 2),
+          new ApplierVersionId(UserTaskIntent.CANCELING, 3),
+          new ApplierVersionId(UserTaskIntent.CANCELING, 4),
+          new ApplierVersionId(UserTaskIntent.CLAIMING, 2),
+          new ApplierVersionId(UserTaskIntent.COMPLETED, 2),
+          new ApplierVersionId(UserTaskIntent.COMPLETED, 3),
+          new ApplierVersionId(UserTaskIntent.COMPLETING, 2),
+          new ApplierVersionId(UserTaskIntent.COMPLETING, 3),
+          new ApplierVersionId(UserTaskIntent.CREATED, 2),
+          new ApplierVersionId(UserTaskIntent.CREATED, 3),
+          new ApplierVersionId(UserTaskIntent.CREATING, 2),
+          new ApplierVersionId(UserTaskIntent.CREATING, 3),
+          new ApplierVersionId(UserTaskIntent.UPDATED, 2),
+          new ApplierVersionId(UserTaskIntent.UPDATED, 3),
+          new ApplierVersionId(UserTaskIntent.UPDATING, 2),
+          new ApplierVersionId(UserTaskIntent.UPDATING, 3));
+
   private final Map<Intent, Map<Integer, TypedEventApplier>> mapping = new HashMap<>();
+  // Per-(intent, version) Engine Capability Version requirement, copied from
+  // ClusterVersionCatalog at registration. A version absent from this map is unconditionally
+  // eligible (always available). Used by selectVersionFor to pick the highest version safe to
+  // emit under the current active ECV. Value is the required ordinal.
+  private final Map<Intent, Map<Integer, Integer>> requirements = new HashMap<>();
+  // Cached highest registered version per intent. Maintained at register() time so the hot path
+  // (selectVersionFor on intents without gated versions) reduces to one HashMap lookup.
+  private final Map<Intent, Integer> latestVersionByIntent = new HashMap<>();
+  // Lookup of the cluster's currently active ECV ordinal — wired by the engine after registration.
+  // Defaults to Integer.MAX_VALUE so all requirements are trivially satisfied for tests that
+  // don't wire ECV.
+  private IntSupplier activeOrdinalSupplier = () -> Integer.MAX_VALUE;
 
   public EventAppliers registerEventAppliers(final MutableProcessingState state) {
     registerProcessInstanceEventAppliers(state);
@@ -148,6 +245,7 @@ public final class EventAppliers implements EventApplier {
     registerUserAppliers(state);
     registerAuthorizationAppliers(state);
     registerClockAppliers(state);
+    registerClusterVersionAppliers(state);
     registerRoleAppliers(state);
     registerGroupAppliers(state);
     registerScalingAppliers(state);
@@ -167,7 +265,21 @@ public final class EventAppliers implements EventApplier {
     registerJobMetricsBatchEventAppliers(state);
     registerAgentInstanceEventAppliers(state);
     registerAgentHistoryEventAppliers();
+    // Boot-time invariant: every applier the ClusterVersionCatalog declares must actually be
+    // wired above. Catches the "added a Capability entry but forgot to register the applier"
+    // mistake before any traffic. Cheap — O(catalog size).
+    ClusterVersionCatalog.validateApplierCoverage(snapshotRegisteredApplierIds());
     return this;
+  }
+
+  private Set<ApplierVersionId> snapshotRegisteredApplierIds() {
+    final var ids = new HashSet<ApplierVersionId>();
+    for (final var entry : mapping.entrySet()) {
+      for (final var version : entry.getValue().keySet()) {
+        ids.add(new ApplierVersionId(entry.getKey(), version));
+      }
+    }
+    return ids;
   }
 
   private void registerAgentHistoryEventAppliers() {
@@ -834,6 +946,37 @@ public final class EventAppliers implements EventApplier {
         new AdHocSubProcessInstructionCompletedApplier(state.getElementInstanceState()));
   }
 
+  private void registerClusterVersionAppliers(final MutableProcessingState state) {
+    // The gate lives on the applier class — each TypedEventApplier overrides gatedBy() to declare
+    // its ECV classification, and register(...) cross-checks against ClusterVersionCatalog at
+    // boot. To gate a new applier version, add the catalog entry and have the applier return the
+    // matching Capability from gatedBy().
+    register(
+        ClusterVersionIntent.APPLIED,
+        1,
+        new ClusterVersionAppliedV1Applier(state.getClusterVersionState()));
+    register(
+        ClusterVersionIntent.APPLIED,
+        2,
+        new ClusterVersionAppliedV2Applier(state.getClusterVersionState()));
+    register(
+        ClusterVersionIntent.APPLIED,
+        3,
+        new ClusterVersionAppliedV3Applier(state.getClusterVersionState()));
+    // PINGED and ECHOED do not mutate ECV state — the value of these events is their visible
+    // appearance on the log, not a state change.
+    register(ClusterVersionIntent.PINGED, NOOP_EVENT_APPLIER);
+    register(ClusterVersionIntent.ECHOED, NOOP_EVENT_APPLIER);
+    // Suppress/unsuppress mutate the per-cluster suppressed-flags set — the rollback-lite
+    // override on top of the ECV gate.
+    register(
+        ClusterVersionIntent.FLAG_SUPPRESSED,
+        new FlagSuppressedApplier(state.getClusterVersionState()));
+    register(
+        ClusterVersionIntent.FLAG_UNSUPPRESSED,
+        new FlagUnsuppressedApplier(state.getClusterVersionState()));
+  }
+
   private void registerClockAppliers(final MutableProcessingState state) {
     register(ClockIntent.PINNED, new ClockPinnedApplier(state.getClockState()));
     register(ClockIntent.RESETTED, new ClockResettedApplier(state.getClockState()));
@@ -955,6 +1098,22 @@ public final class EventAppliers implements EventApplier {
     register(intent, RecordMetadata.DEFAULT_RECORD_VERSION, applier);
   }
 
+  /**
+   * Register an applier version. The applier's {@link TypedEventApplier#gatedBy()} declares its ECV
+   * classification; the catalog and a transitional legacy allowlist cross-check it:
+   *
+   * <ul>
+   *   <li>{@code gatedBy() != BASELINE} → must be listed in {@link ClusterVersionCatalog} under
+   *       that capability, or registration throws. This catches "I added a gated applier but forgot
+   *       the catalog entry."
+   *   <li>{@code gatedBy() == BASELINE} with {@code version == 1} → always accepted (the implicit
+   *       pre-ECV case).
+   *   <li>{@code gatedBy() == BASELINE} with {@code version > 1} → must be in {@link
+   *       #LEGACY_BASELINE_APPLIERS}. New {@code v > 1} appliers cannot accept the BASELINE default
+   *       silently — the developer has to either override {@code gatedBy()} to name a capability or
+   *       add the pair to the allowlist (visible in PR review).
+   * </ul>
+   */
   <I extends Intent> void register(
       final I intent, final int version, final TypedEventApplier<I, ?> applier) {
     Objects.requireNonNull(intent, "Intent must not be null");
@@ -966,6 +1125,37 @@ public final class EventAppliers implements EventApplier {
       throw new IllegalArgumentException("Only event intents can be registered");
     }
 
+    // Coerce null → BASELINE. Real appliers inherit a non-null default from TypedEventApplier;
+    // null only happens for Mockito mocks that don't stub gatedBy(). The v > 1 baseline-allowlist
+    // check below still fires either way, so this is safe.
+    final Capability gatedByOrNull = applier.gatedBy();
+    final Capability gatedBy = gatedByOrNull == null ? Capability.BASELINE : gatedByOrNull;
+    final var id = new ApplierVersionId(intent, version);
+
+    if (gatedBy == Capability.BASELINE) {
+      // Only enforce on real (enum) intents — production Intent implementations are always enum
+      // constants, mock intents (test proxies) are not. Mock-driven unit tests register synthetic
+      // intents to exercise the selection mechanism; they cannot meaningfully appear in the
+      // allowlist, and the production-safety guarantee is unaffected because they cannot reach
+      // production.
+      if (version > 1 && intent.getClass().isEnum() && !BASELINE_APPLIERS.contains(id)) {
+        throw new IllegalStateException(
+            "Applier "
+                + applier.getClass().getSimpleName()
+                + " for "
+                + id
+                + " inherits the default Capability.BASELINE classification. Any version > 1"
+                + " must opt in explicitly: either override gatedBy() to return the gating"
+                + " Capability (and add a matching catalog entry), or add this (intent, version)"
+                + " to EventAppliers.BASELINE_APPLIERS with a justification. The same applies"
+                + " when retiring a previously ECV-gated applier — empty its catalog entry,"
+                + " switch gatedBy() back to BASELINE, and add it here.");
+      }
+    } else {
+      // ECV-gated: cross-check the catalog actually lists this pair under the named capability.
+      ClusterVersionCatalog.assertGatedBy(intent, version, gatedBy);
+    }
+
     final var previousApplier =
         mapping.computeIfAbsent(intent, unused -> new HashMap<>()).putIfAbsent(version, applier);
     if (previousApplier != null) {
@@ -973,13 +1163,54 @@ public final class EventAppliers implements EventApplier {
           String.format(
               "Applier for intent '%s' and version '%d' is already registered", intent, version));
     }
+    if (gatedBy != Capability.BASELINE) {
+      requirements.computeIfAbsent(intent, unused -> new HashMap<>()).put(version, gatedBy.at());
+    }
+    latestVersionByIntent.merge(intent, version, Math::max);
+  }
+
+  /**
+   * Wire the lookup of the cluster's currently active ECV ordinal. Called once by the engine after
+   * processing state is available; subsequent {@link #selectVersionFor(Intent)} calls read from
+   * this supplier.
+   */
+  public EventAppliers setActiveClusterVersionProvider(final IntSupplier activeOrdinalSupplier) {
+    this.activeOrdinalSupplier = Objects.requireNonNull(activeOrdinalSupplier);
+    return this;
   }
 
   @Override
   public int getLatestVersion(final Intent intent) {
-    return mapping.getOrDefault(intent, new HashMap<>()).keySet().stream()
-        .max(Comparator.naturalOrder())
-        .orElse(-1);
+    return latestVersionByIntent.getOrDefault(intent, -1);
+  }
+
+  @Override
+  public int selectVersionFor(final Intent intent) {
+    final var perVersion = requirements.get(intent);
+    // Fast path: no gated versions for this intent — the vast majority of intents take this
+    // branch. No ECV read, no loop, no allocation.
+    if (perVersion == null) {
+      return getLatestVersion(intent);
+    }
+    // Gated path: walk the small set of registered versions, picking the highest whose
+    // requirement is met by the current active ECV.
+    final var versions = mapping.get(intent);
+    if (versions == null) {
+      return -1;
+    }
+    final int activeOrdinal = activeOrdinalSupplier.getAsInt();
+    int selected = -1;
+    for (final Integer version : versions.keySet()) {
+      final Integer required = perVersion.get(version);
+      // Ordinal-only check — backports keep the same ordinal across lines, so the active line
+      // doesn't gate the requirement.
+      if (required == null || activeOrdinal >= required) {
+        if (version > selected) {
+          selected = version;
+        }
+      }
+    }
+    return selected;
   }
 
   @Override

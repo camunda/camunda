@@ -62,7 +62,8 @@ public final class ValueTypes {
           ValueType.EXPRESSION,
           ValueType.GLOBAL_LISTENER,
           ValueType.AGENT_INSTANCE,
-          ValueType.AGENT_HISTORY);
+          ValueType.AGENT_HISTORY,
+          ValueType.CLUSTER_VERSION);
 
   private ValueTypes() {}
 

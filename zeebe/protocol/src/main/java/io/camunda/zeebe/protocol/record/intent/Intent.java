@@ -48,6 +48,7 @@ public interface Intent {
     map.put(ValueType.CHECKPOINT, CheckpointIntent.class);
     map.put(ValueType.CLOCK, ClockIntent.class);
     map.put(ValueType.CLUSTER_VARIABLE, ClusterVariableIntent.class);
+    map.put(ValueType.CLUSTER_VERSION, ClusterVersionIntent.class);
     map.put(ValueType.COMMAND_DISTRIBUTION, CommandDistributionIntent.class);
     map.put(ValueType.COMPENSATION_SUBSCRIPTION, CompensationSubscriptionIntent.class);
     map.put(ValueType.CONDITIONAL_EVALUATION, ConditionalEvaluationIntent.class);

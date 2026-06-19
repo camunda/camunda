@@ -18,6 +18,7 @@ import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
+import io.camunda.zeebe.engine.processing.clusterversion.ClusterVersionUpdateListener;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
@@ -148,6 +149,8 @@ public final class EngineRule extends ExternalResource {
   private SearchClientsProxy searchClientsProxy;
   private BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
   private Optional<RoutingState> initialRoutingState = Optional.empty();
+  private ClusterVersionUpdateListener clusterVersionUpdateListener =
+      ClusterVersionUpdateListener.NOOP;
 
   private EngineRule(final int partitionCount) {
     this(partitionCount, null);
@@ -299,6 +302,11 @@ public final class EngineRule extends ExternalResource {
     return this;
   }
 
+  public EngineRule withClusterVersionUpdateListener(final ClusterVersionUpdateListener listener) {
+    clusterVersionUpdateListener = listener;
+    return this;
+  }
+
   public EngineRule withInitializeRoutingState(final boolean initializeRoutingState) {
     this.initializeRoutingState = initializeRoutingState;
     return this;
@@ -374,7 +382,8 @@ public final class EngineRule extends ExternalResource {
                         featureFlags,
                         jobStreamer,
                         searchClientsProxy,
-                        brokerRequestAuthorizationConverter)
+                        brokerRequestAuthorizationConverter,
+                        clusterVersionUpdateListener)
                     .withListener(
                         new ProcessingExporterTransistor(
                             environmentRule.getLogStream(partitionId)));

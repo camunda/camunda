@@ -10,12 +10,13 @@ package io.camunda.zeebe.engine.processing.streamprocessor.writers;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.stream.api.KeyValidator;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
+import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 
 /** Convenience class to aggregate all the writers */
 public final class Writers {
 
-  private final TypedCommandWriter commandWriter;
+  private final ResultBuilderBackedTypedCommandWriter commandWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final ResultBuilderBackedEventApplyingStateWriter stateWriter;
 
@@ -37,6 +38,14 @@ public final class Writers {
 
   public void setKeyValidator(final KeyValidator keyGenerator) {
     stateWriter.setKeyValidator(keyGenerator);
+  }
+
+  /**
+   * Wire the command writer's lookup of the cluster's active ECV ordinal. Attempts to emit a
+   * follow-up command that requires a higher ordinal will throw {@link IllegalStateException}.
+   */
+  public void setActiveClusterVersionProvider(final IntSupplier activeOrdinalSupplier) {
+    commandWriter.setActiveClusterVersionProvider(activeOrdinalSupplier);
   }
 
   /**

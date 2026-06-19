@@ -15,6 +15,7 @@ import io.camunda.service.AuthorizationServices;
 import io.camunda.service.BatchOperationServices;
 import io.camunda.service.ClockServices;
 import io.camunda.service.ClusterVariableServices;
+import io.camunda.service.ClusterVersionServices;
 import io.camunda.service.ConditionalServices;
 import io.camunda.service.DecisionDefinitionServices;
 import io.camunda.service.DecisionInstanceServices;
@@ -86,7 +87,8 @@ public record DefaultServiceRegistry(
     Map<String, UserServices> userByTenant,
     Map<String, UserTaskServices> userTaskByTenant,
     Map<String, VariableServices> variableByTenant,
-    ManagementServices managementServices)
+    ManagementServices managementServices,
+    ClusterVersionServices clusterVersionServices)
     implements ServiceRegistry {
 
   private static <S> S byTenant(final Map<String, S> byTenant, final String physicalTenantId) {
@@ -274,6 +276,11 @@ public record DefaultServiceRegistry(
     return managementServices;
   }
 
+  @Override
+  public ClusterVersionServices clusterVersionServices() {
+    return clusterVersionServices;
+  }
+
   /** Creates a {@link DefaultServiceRegistry} using the fluent {@link Builder} API. */
   public static DefaultServiceRegistry of(final Consumer<Builder> spec) {
     final var builder = new Builder();
@@ -348,6 +355,7 @@ public record DefaultServiceRegistry(
     private final Map<String, UserTaskServices> userTaskByTenant = new HashMap<>();
     private final Map<String, VariableServices> variableByTenant = new HashMap<>();
     private ManagementServices managementServices;
+    private ClusterVersionServices clusterVersionServices;
 
     public Builder adHocSubProcessActivityServices(
         final String tenantId, final AdHocSubProcessActivityServices service) {
@@ -537,6 +545,11 @@ public record DefaultServiceRegistry(
       return this;
     }
 
+    public Builder clusterVersionServices(final ClusterVersionServices service) {
+      clusterVersionServices = service;
+      return this;
+    }
+
     public DefaultServiceRegistry build() {
       return new DefaultServiceRegistry(
           Map.copyOf(adHocSubProcessActivityByTenant),
@@ -573,7 +586,8 @@ public record DefaultServiceRegistry(
           Map.copyOf(userByTenant),
           Map.copyOf(userTaskByTenant),
           Map.copyOf(variableByTenant),
-          managementServices);
+          managementServices,
+          clusterVersionServices);
     }
   }
 }

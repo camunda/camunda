@@ -13,6 +13,7 @@ import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessInstructionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.clusterversion.ClusterVersionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerBatchRecord;
@@ -37,6 +38,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
 import io.camunda.zeebe.protocol.record.intent.AgentHistoryIntent;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ClusterVersionIntent;
 import io.camunda.zeebe.protocol.record.intent.ConditionalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 import io.camunda.zeebe.protocol.record.intent.GlobalListenerBatchIntent;
@@ -259,6 +261,13 @@ public final class RecordToWrite implements LogAppendEntry {
       final ConditionalSubscriptionIntent intent, final ConditionalSubscriptionRecordValue value) {
     recordMetadata.valueType(ValueType.CONDITIONAL_SUBSCRIPTION).intent(intent);
     unifiedRecordValue = (ConditionalSubscriptionRecord) value;
+    return this;
+  }
+
+  public RecordToWrite clusterVersion(
+      final ClusterVersionIntent intent, final ClusterVersionRecord value) {
+    recordMetadata.valueType(ValueType.CLUSTER_VERSION).intent(intent);
+    unifiedRecordValue = value;
     return this;
   }
 

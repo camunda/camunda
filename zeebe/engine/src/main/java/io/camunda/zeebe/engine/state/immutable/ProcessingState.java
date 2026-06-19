@@ -84,6 +84,8 @@ public interface ProcessingState extends StreamProcessorLifecycleAware {
 
   ClockState getClockState();
 
+  ClusterVersionState getClusterVersionState();
+
   RoleState getRoleState();
 
   GroupState getGroupState();

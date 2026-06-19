@@ -25,6 +25,7 @@ import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
+import io.camunda.zeebe.protocol.record.intent.ClusterVersionIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.CompensationSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ConditionalEvaluationIntent;
@@ -95,6 +96,7 @@ import io.camunda.zeebe.protocol.record.value.BatchOperationLifecycleManagementR
 import io.camunda.zeebe.protocol.record.value.BatchOperationPartitionLifecycleRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue;
+import io.camunda.zeebe.protocol.record.value.ClusterVersionRecordValue;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.CompensationSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ConditionalEvaluationRecordValue;
@@ -362,6 +364,9 @@ public final class ValueTypeMapping {
     mapping.put(
         ValueType.CLUSTER_VARIABLE,
         new Mapping<>(ClusterVariableRecordValue.class, ClusterVariableIntent.class));
+    mapping.put(
+        ValueType.CLUSTER_VERSION,
+        new Mapping<>(ClusterVersionRecordValue.class, ClusterVersionIntent.class));
     mapping.put(
         ValueType.HISTORY_DELETION,
         new Mapping<>(HistoryDeletionRecordValue.class, HistoryDeletionIntent.class));

@@ -22,6 +22,22 @@ public interface EventApplier {
   int getLatestVersion(final Intent intent);
 
   /**
+   * Returns the highest registered version of the applier for the given intent whose registered
+   * Engine Capability Version requirement is satisfied by the cluster's currently active ECV. This
+   * is the version the state writer should stamp on a freshly appended event so the record is safe
+   * to apply on every replica.
+   *
+   * <p>The default implementation ignores ECV and returns {@link #getLatestVersion(Intent)} — which
+   * is the correct behavior for implementations that do not register version requirements.
+   *
+   * @param intent the Intent of the EventApplier
+   * @return the highest eligible version, or -1 if no EventApplier is found
+   */
+  default int selectVersionFor(final Intent intent) {
+    return getLatestVersion(intent);
+  }
+
+  /**
    * Apply the state changes of the given event. It will use the event applier that matches the
    * specified version.
    *

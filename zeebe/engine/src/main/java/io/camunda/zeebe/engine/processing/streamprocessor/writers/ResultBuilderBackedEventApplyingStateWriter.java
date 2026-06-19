@@ -49,8 +49,11 @@ final class ResultBuilderBackedEventApplyingStateWriter extends AbstractResultBu
   @Override
   public void appendFollowUpEvent(final long key, final Intent intent, final RecordValue value) {
     // key is validated in appendFollowUpEvent
-    final int latestVersion = eventApplier.getLatestVersion(intent);
-    appendFollowUpEvent(key, intent, value, latestVersion);
+    // Pick the highest applier version safe to emit under the cluster's currently active Engine
+    // Capability Version. Falls back to the latest registered version when no requirements are
+    // declared (the default), so existing intents see no change in behavior.
+    final int selectedVersion = eventApplier.selectVersionFor(intent);
+    appendFollowUpEvent(key, intent, value, selectedVersion);
   }
 
   @Override

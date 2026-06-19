@@ -28,6 +28,7 @@ import io.camunda.service.AuthorizationServices;
 import io.camunda.service.BatchOperationServices;
 import io.camunda.service.ClockServices;
 import io.camunda.service.ClusterVariableServices;
+import io.camunda.service.ClusterVersionServices;
 import io.camunda.service.ConditionalServices;
 import io.camunda.service.DecisionDefinitionServices;
 import io.camunda.service.DecisionInstanceServices;
@@ -130,6 +131,7 @@ public class CamundaServicesConfiguration {
 
     final var builder = new DefaultServiceRegistry.Builder();
     builder.managementServices(managementServices);
+    builder.clusterVersionServices(new ClusterVersionServices(brokerClient));
 
     physicalTenantResolver
         .getAll()
