@@ -51,7 +51,6 @@ import io.camunda.webapps.schema.entities.post.PostImporterQueueEntity;
 import io.camunda.webapps.schema.entities.usertask.SnapshotTaskVariableEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import io.camunda.webapps.schema.entities.waitstate.WaitStateEntity;
-import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -82,7 +81,7 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
           final var archived = job.execute();
 
           // then
-          assertThat(archived).succeedsWithin(Duration.ofSeconds(5L)).isEqualTo(1);
+          assertThat(archived).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(1);
 
           // check that the process is no longer in the main index
           verifyMoved(listViewTemplate, client, processInstance, "2020-01-01");
@@ -118,7 +117,7 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
           final var archived = job.execute();
 
           // then
-          assertThat(archived).succeedsWithin(Duration.ofSeconds(5L)).isEqualTo(5);
+          assertThat(archived).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(5);
 
           // check that the first batch of processes are no longer in the main index
           for (var i = 0; i < batchSize; i++) {
@@ -153,7 +152,7 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
           final var archived = job.execute();
 
           // then
-          assertThat(archived).succeedsWithin(Duration.ofSeconds(5L)).isEqualTo(1);
+          assertThat(archived).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(1);
 
           // check that the finished process is no longer in the main index
           verifyMoved(listViewTemplate, client, finishedInstance, "2020-01-01");
@@ -185,7 +184,7 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
           final var archived = job.execute();
 
           // then
-          assertThat(archived).succeedsWithin(Duration.ofSeconds(5L)).isEqualTo(1);
+          assertThat(archived).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(1);
 
           // check that the finished process is no longer in the main index
           verifyMoved(listViewTemplate, client, finishedInstance, "2020-01-01");
@@ -223,7 +222,7 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
           final var archived = job.execute();
 
           // then
-          assertThat(archived).succeedsWithin(Duration.ofSeconds(5L)).isEqualTo(1);
+          assertThat(archived).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(1);
 
           // check that the process is no longer in the main index
           verifyMoved(listViewTemplate, client, processInstance, "2020-01-01");
@@ -265,7 +264,7 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
           final var archived = job.execute();
 
           // then
-          assertThat(archived).succeedsWithin(Duration.ofSeconds(5L)).isEqualTo(1);
+          assertThat(archived).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(1);
 
           // check that the process is no longer in the main index
           verifyMoved(listViewTemplate, client, processInstance, "2020-01-01");
@@ -319,7 +318,7 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
           final var archived = job.execute();
 
           // then
-          assertThat(archived).succeedsWithin(Duration.ofSeconds(5L)).isEqualTo(1);
+          assertThat(archived).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(1);
 
           // check that the process is no longer in the main index
           verifyMoved(listViewTemplate, client, finishedInstance, "2020-01-01");
@@ -375,7 +374,7 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
           final var archived = job.execute();
 
           // then
-          assertThat(archived).succeedsWithin(Duration.ofSeconds(5L)).isEqualTo(1);
+          assertThat(archived).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(1);
 
           // check that the process is no longer in the main index
           verifyMoved(listViewTemplate, client, finishedInstance, "2020-01-01");
@@ -423,7 +422,7 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
           final var archived = job.execute();
 
           // then
-          assertThat(archived).succeedsWithin(Duration.ofSeconds(5L)).isEqualTo(1);
+          assertThat(archived).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(1);
 
           // check that the process is no longer in the main index
           verifyMoved(listViewTemplate, client, processInstance, "2020-01-01");
