@@ -129,7 +129,8 @@ public final class JobEventProcessors {
                 jobMetrics,
                 authCheckBehavior,
                 clock,
-                incidentMetrics))
+                incidentMetrics,
+                bpmnBehaviors.clusterVersionFeatures()))
         .withListener(
             new JobTimeoutCheckScheduler(
                 scheduledTaskStateFactory.get().getJobState(),

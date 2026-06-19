@@ -64,4 +64,25 @@ public interface MutableJobState extends JobState {
   void migrate(long key, JobRecord record);
 
   void restoreBackoff();
+
+  /**
+   * Above-gate counterpart of {@link #activate(long, JobRecord)} for the first half of the two-step
+   * activation flow: persists the worker-supplied record, transitions the job from {@code
+   * State.ACTIVATABLE} to {@code State.RESERVED}, removes it from the activatable column families
+   * so a subsequent activation batch can't re-claim it, and registers the activation deadline.
+   * Invoked by {@code JobBatchReservedApplier}, which is itself gated under {@code
+   * Capability.JOB_BATCH_RESERVATION_STATE}; below the gate this method is never called and the
+   * single-step {@link #activate(long, JobRecord)} path remains in effect.
+   */
+  void reserve(long key, JobRecord record);
+
+  /**
+   * Above-gate counterpart of {@link #activate(long, JobRecord)} for the second half of the
+   * two-step activation flow: flips the job's state from {@code State.RESERVED} to {@code
+   * State.ACTIVATED}. All other invariants (activatable-CF removal, deadline tracking) were already
+   * established by {@link #reserve(long, JobRecord)} in the same processor invocation, so this
+   * method only mutates the state column. Invoked by {@code JobBatchActivatedV2Applier}, which is
+   * gated under {@code Capability.JOB_BATCH_RESERVATION_STATE}.
+   */
+  void confirmReservation(long key);
 }

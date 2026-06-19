@@ -219,6 +219,8 @@ public final class EventAppliers implements EventApplier {
     registerJobIntentEventAppliers(state);
     registerVariableEventAppliers(state);
     register(JobBatchIntent.ACTIVATED, new JobBatchActivatedApplier(state));
+    register(JobBatchIntent.ACTIVATED, 2, new JobBatchActivatedV2Applier(state));
+    register(JobBatchIntent.RESERVED, 1, new JobBatchReservedApplier(state));
     registerIncidentEventAppliers(state);
     registerProcessMessageSubscriptionEventAppliers(state);
     registerTimeEventAppliers(state);

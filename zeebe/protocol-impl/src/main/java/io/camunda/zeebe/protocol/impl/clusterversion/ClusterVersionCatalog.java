@@ -10,6 +10,7 @@ package io.camunda.zeebe.protocol.impl.clusterversion;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ClusterVersionIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartCorrelationKeyLockReleaseIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
@@ -254,6 +255,53 @@ public final class ClusterVersionCatalog {
         "Emit PROCESS_INSTANCE_CREATION:CREATED for event-driven starts + drop metric from "
             + "TRIGGERING applier (PR #52727)",
         Set.of(new ApplierVersionId(ProcessEventIntent.TRIGGERING, 3)),
+        Set.of()),
+
+    /**
+     * Demonstrates the engine-state-machine evolution path under ECV: inserting a new intermediate
+     * state ({@code JobState.State.RESERVED}) between {@code ACTIVATABLE} and {@code ACTIVATED} in
+     * the job lifecycle. Above the gate the activation flow becomes two-step: {@code
+     * JobBatchActivateProcessor} emits {@code JobBatchIntent.RESERVED} (whose applier moves jobs
+     * {@code ACTIVATABLE → RESERVED}, removes them from the activatable column families, and
+     * registers their deadlines) followed by {@code JobBatchIntent.ACTIVATED} (whose v=2 applier
+     * flips them to {@code ACTIVATED}). Below the gate the original v=1 applier runs against just
+     * the {@code ACTIVATED} record and the record stream stays byte-identical to a pre-feature
+     * broker.
+     *
+     * <p><b>Rolling-upgrade hazard this guards.</b> Two coupled changes land at this ordinal and
+     * must activate together — neither is safe alone in a mixed-binary cluster:
+     *
+     * <ul>
+     *   <li>{@code JobBatchIntent.RESERVED} is a new enum value. A pre-feature follower's {@code
+     *       JobBatchIntent.from(short)} returns {@code Intent.UNKNOWN} for it, and even if dispatch
+     *       tolerated that, no applier is registered to handle it on the old binary — the state
+     *       mutation would silently no-op and the follower's job-state CF would diverge from the
+     *       leader's.
+     *   <li>{@code JobBatchActivatedV2Applier} consumes {@code State.RESERVED} as its predecessor
+     *       and intentionally skips the {@code makeJobNotActivatable} / {@code addJobDeadline}
+     *       steps that v=1 fuses into the same call. Running v=2 where the predecessor state is
+     *       still {@code ACTIVATABLE} (because the RESERVED applier never ran) would leave the job
+     *       in the activatable column families and without a registered deadline.
+     * </ul>
+     *
+     * The gate keeps both behaviors off — the leader emits only the original {@code ACTIVATED}
+     * event, and {@code selectVersionFor(JobBatchIntent.ACTIVATED)} returns {@code 1} so the legacy
+     * applier runs — until the operator raises ECV across the fleet. At that point both the new
+     * emission and the v=2 selection flip together.
+     *
+     * <p>Reclaim of stuck reservations (deadline-based push-back to {@code ACTIVATABLE}) is
+     * deliberately deferred. In this PoC scope both events fire in the same processor invocation,
+     * so externally a job's {@code RESERVED} state is transient within a single transaction. The
+     * value here is in modeling the state-machine evolution itself — adding a vertex, splitting the
+     * transition, gating both halves atomically — not in the standalone usefulness of the new
+     * state.
+     */
+    JOB_BATCH_RESERVATION_STATE(
+        16,
+        "Two-step job batch activation via a new RESERVED state",
+        Set.of(
+            new ApplierVersionId(JobBatchIntent.RESERVED, 1),
+            new ApplierVersionId(JobBatchIntent.ACTIVATED, 2)),
         Set.of());
 
     private final int at;

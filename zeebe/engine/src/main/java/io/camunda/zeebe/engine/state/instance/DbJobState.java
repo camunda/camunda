@@ -362,6 +362,30 @@ public final class DbJobState implements JobState, MutableJobState {
         });
   }
 
+  @Override
+  public void reserve(final long key, final JobRecord record) {
+    // First half of the two-step activation flow (above-gate). Mirrors activate() but stops at
+    // State.RESERVED instead of advancing to ACTIVATED — the second-half applier flips that.
+    final DirectBuffer type = record.getTypeBuffer();
+    final long deadline = record.getDeadline();
+
+    validateParameters(type);
+    EnsureUtil.ensureGreaterThan("deadline", deadline, 0);
+
+    updateJobRecord(key, record);
+    updateJobState(State.RESERVED);
+    makeJobNotActivatable(record);
+    addJobDeadline(key, deadline);
+  }
+
+  @Override
+  public void confirmReservation(final long key) {
+    // Second half: the record/CF/deadline work was already done by reserve(); only the state
+    // column flips. updateJobState reads from the per-call jobKey wrapping, so set it first.
+    jobKey.wrapLong(key);
+    updateJobState(State.ACTIVATED);
+  }
+
   private void createJob(final long key, final JobRecord record, final DirectBuffer type) {
     createJobRecord(key, record);
     initializeJobState();

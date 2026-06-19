@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.Rejection;
+import io.camunda.zeebe.engine.processing.clusterversion.ClusterVersionFeatures;
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
 import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
@@ -26,6 +27,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.protocol.impl.clusterversion.ClusterVersionCatalog.Capability;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -59,6 +61,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   private final ProcessState processState;
   private final AuthorizationCheckBehavior authorizationCheckBehavior;
   private final IncidentMetrics incidentMetrics;
+  private final ClusterVersionFeatures clusterVersionFeatures;
 
   public JobBatchActivateProcessor(
       final Writers writers,
@@ -67,7 +70,8 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
       final JobProcessingMetrics jobMetrics,
       final AuthorizationCheckBehavior authCheckBehavior,
       final InstantSource clock,
-      final IncidentMetrics incidentMetrics) {
+      final IncidentMetrics incidentMetrics,
+      final ClusterVersionFeatures clusterVersionFeatures) {
 
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
@@ -81,6 +85,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
     elementInstanceState = state.getElementInstanceState();
     processState = state.getProcessState();
     this.incidentMetrics = incidentMetrics;
+    this.clusterVersionFeatures = clusterVersionFeatures;
   }
 
   @Override
@@ -190,6 +195,15 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
       final JobBatchRecord value,
       final long jobBatchKey,
       final Map<JobKind, Integer> activatedJobsCountPerJobKind) {
+    // The RESERVED event is itself a new protocol record introduced together with the
+    // JobBatchReservedApplier (ordinal 16). Emitting it on a replica that still selects
+    // pre-feature dispatch would crash there because JobBatchIntent.RESERVED is an enum value
+    // that pre-feature binaries map to Intent.UNKNOWN. The gate keeps the emission off until
+    // every replica has been upgraded — at which point the operator raises ECV and the new
+    // event starts appearing in the log alongside the existing ACTIVATED follow-up.
+    if (clusterVersionFeatures.isActive(Capability.JOB_BATCH_RESERVATION_STATE)) {
+      stateWriter.appendFollowUpEvent(jobBatchKey, JobBatchIntent.RESERVED, value);
+    }
     stateWriter.appendFollowUpEvent(jobBatchKey, JobBatchIntent.ACTIVATED, value);
     responseWriter.writeEventOnCommand(jobBatchKey, JobBatchIntent.ACTIVATED, value, record);
     activatedJobsCountPerJobKind.forEach(
