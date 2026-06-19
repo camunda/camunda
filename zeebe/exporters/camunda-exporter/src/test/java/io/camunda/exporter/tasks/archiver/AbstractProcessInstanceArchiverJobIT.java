@@ -45,6 +45,10 @@ import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.post.PostImporterQueueEntity;
 import io.camunda.webapps.schema.entities.usertask.SnapshotTaskVariableEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
+<<<<<<< HEAD
+=======
+import io.camunda.webapps.schema.entities.waitstate.WaitStateEntity;
+>>>>>>> 6a6e1c45 (test: increase archiver IT assertion timeout to fix CI flakiness)
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
