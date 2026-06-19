@@ -437,6 +437,11 @@
       <artifactId>httpcore5</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents.client5</groupId>
+      <artifactId>httpclient5</artifactId>
+      <scope>test</scope>
+    </dependency>
 
     <dependency>
       <groupId>org.testcontainers</groupId>
@@ -785,6 +790,59 @@
               <includes>
                 <include>${identity-packages}</include>
               </includes>
+              <systemPropertyVariables>
+                <camunda.test.preferred.extension>multi-db</camunda.test.preferred.extension>
+              </systemPropertyVariables>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <!--
+    The following two profiles split the multi-db-test suite into smaller groups for
+    parallel execution. This is used by the AWS OpenSearch CI workflow to avoid exceeding
+    the job timeout. Tests are partitioned into client and non-client packages.
+    -->
+    <profile>
+      <id>multi-db-test-client</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <failIfNoTests>false</failIfNoTests>
+              <groups>multi-db-test</groups>
+              <excludedGroups>rdbms, history</excludedGroups>
+              <includes>
+                <include>io/camunda/it/client/*</include>
+              </includes>
+              <systemPropertyVariables>
+                <camunda.test.preferred.extension>multi-db</camunda.test.preferred.extension>
+              </systemPropertyVariables>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <profile>
+      <id>multi-db-test-non-client</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <failIfNoTests>false</failIfNoTests>
+              <groups>multi-db-test</groups>
+              <excludedGroups>rdbms, history</excludedGroups>
+              <excludes>
+                <exclude>${identity-packages}</exclude>
+                <exclude>io/camunda/it/client/*</exclude>
+                <exclude>**/*$*.java</exclude>
+              </excludes>
               <systemPropertyVariables>
                 <camunda.test.preferred.extension>multi-db</camunda.test.preferred.extension>
               </systemPropertyVariables>
