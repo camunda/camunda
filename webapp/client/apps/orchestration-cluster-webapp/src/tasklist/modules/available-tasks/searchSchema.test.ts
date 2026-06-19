@@ -29,12 +29,34 @@ describe('tasklistIndexSearchSchema', () => {
 		});
 	});
 
-	it('should reject an invalid filter value', () => {
-		expect(tasklistIndexSearchSchema.safeParse({filter: 'not-a-filter'}).success).toBe(false);
+	it('should accept an arbitrary filter id (custom filter)', () => {
+		expect(tasklistIndexSearchSchema.parse({filter: '1718791234567abc'}).filter).toBe('1718791234567abc');
+	});
+
+	it('should accept the literal custom filter id', () => {
+		expect(tasklistIndexSearchSchema.parse({filter: 'custom'}).filter).toBe('custom');
 	});
 
 	it('should reject an invalid sortBy value', () => {
 		expect(tasklistIndexSearchSchema.safeParse({sortBy: 'not-a-sort'}).success).toBe(false);
+	});
+
+	it('should parse custom filter criteria params', () => {
+		const result = tasklistIndexSearchSchema.parse({
+			filter: 'custom',
+			state: 'CREATED',
+			assignee: 'demo',
+			processDefinitionKey: 'process-1',
+			dueDateFrom: '2024-01-01T00:00:00.000Z',
+		});
+
+		expect(result).toMatchObject({
+			filter: 'custom',
+			state: 'CREATED',
+			assignee: 'demo',
+			processDefinitionKey: 'process-1',
+			dueDateFrom: '2024-01-01T00:00:00.000Z',
+		});
 	});
 });
 
@@ -53,10 +75,22 @@ describe('enforceSortInvariant', () => {
 		expect(result).toEqual({filter: 'unassigned', sortBy: 'creation'});
 	});
 
+	it('should reset completion sort to creation when the filter is a saved custom filter id', () => {
+		const result = enforceSortInvariant({search: {filter: '1718791234567abc', sortBy: 'completion'}, next});
+
+		expect(result).toEqual({filter: '1718791234567abc', sortBy: 'creation'});
+	});
+
 	it('should keep completion sort when the filter is completed', () => {
 		const result = enforceSortInvariant({search: {filter: 'completed', sortBy: 'completion'}, next});
 
 		expect(result).toEqual({filter: 'completed', sortBy: 'completion'});
+	});
+
+	it('should keep completion sort when the filter is the literal custom id', () => {
+		const result = enforceSortInvariant({search: {filter: 'custom', sortBy: 'completion'}, next});
+
+		expect(result).toEqual({filter: 'custom', sortBy: 'completion'});
 	});
 
 	it('should leave non-completion sort values untouched', () => {

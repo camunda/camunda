@@ -23,14 +23,15 @@ describe('getTasksRequestBody', () => {
 		});
 	});
 
-	it('should default to the all-open request body for an unknown filter', () => {
+	it('should build an empty custom filter request body for an unknown filter id', () => {
 		const result = getTasksRequestBody(
 			{filter: 'something-else' as TasklistIndexSearch['filter'], sortBy: 'creation'},
 			{currentUsername: 'demo'},
 		);
 
-		expect(result.filter).toEqual({
-			state: {$in: ['CREATED', 'ASSIGNING', 'UPDATING', 'COMPLETING', 'CANCELING']},
+		expect(result).toEqual({
+			filter: {},
+			sort: [{field: 'creationDate', order: 'desc'}],
 		});
 	});
 
@@ -59,6 +60,59 @@ describe('getTasksRequestBody', () => {
 			filter: {state: 'COMPLETED'},
 			sort: [{field: 'completionDate', order: 'desc'}],
 		});
+	});
+
+	it('should build the request body for a custom filter from URL criteria params', () => {
+		const result = getTasksRequestBody(
+			{
+				filter: 'custom',
+				sortBy: 'creation',
+				state: 'CREATED',
+				assigned: 'true',
+				assignee: 'demo',
+				candidateGroup: 'group-1',
+				processDefinitionKey: 'process-1',
+				tenantId: '<default>',
+				elementId: 'task-1',
+				dueDateFrom: '2024-01-01T00:00:00.000Z',
+				dueDateTo: '2024-01-31T00:00:00.000Z',
+				followUpDateFrom: '2024-02-01T00:00:00.000Z',
+				followUpDateTo: '2024-02-28T00:00:00.000Z',
+			},
+			{currentUsername: 'demo'},
+		);
+
+		expect(result).toEqual({
+			filter: {
+				state: 'CREATED',
+				assignee: 'demo',
+				candidateGroup: 'group-1',
+				processDefinitionKey: 'process-1',
+				tenantId: '<default>',
+				elementId: 'task-1',
+				dueDate: {$gte: '2024-01-01T00:00:00.000Z', $lte: '2024-01-31T00:00:00.000Z'},
+				followUpDate: {$gte: '2024-02-01T00:00:00.000Z', $lte: '2024-02-28T00:00:00.000Z'},
+			},
+			sort: [{field: 'creationDate', order: 'desc'}],
+		});
+	});
+
+	it('should set assignee to $exists:false when assigned is false', () => {
+		const result = getTasksRequestBody(
+			{filter: 'custom', sortBy: 'creation', assigned: 'false'},
+			{currentUsername: 'demo'},
+		);
+
+		expect(result.filter).toEqual({assignee: {$exists: false}});
+	});
+
+	it('should omit date range when only one of from/to is provided', () => {
+		const result = getTasksRequestBody(
+			{filter: 'custom', sortBy: 'creation', dueDateFrom: '2024-01-01T00:00:00.000Z'},
+			{currentUsername: 'demo'},
+		);
+
+		expect(result.filter).not.toHaveProperty('dueDate');
 	});
 
 	it.for([

@@ -19,6 +19,11 @@ const mockGetProcessDefinitionInstanceStatisticsEndpoint = createEndpointMock({
 	method: endpoints.getProcessDefinitionInstanceStatistics.method,
 });
 
+const mockQueryProcessDefinitionsEndpoint = createEndpointMock({
+	endpoint: endpoints.queryProcessDefinitions.getUrl(),
+	method: endpoints.queryProcessDefinitions.method as 'POST',
+});
+
 const mockGetIncidentProcessInstanceStatisticsByErrorEndpoint = createEndpointMock({
 	endpoint: endpoints.getIncidentProcessInstanceStatisticsByError.getUrl(),
 	method: endpoints.getIncidentProcessInstanceStatisticsByError.method,
@@ -62,6 +67,7 @@ export {
 	mockLicenseEndpoint,
 	mockSaasTokenEndpoint,
 	mockQueryUserTasksEndpoint,
+	mockQueryProcessDefinitionsEndpoint,
 	mockGetProcessDefinitionInstanceStatisticsEndpoint,
 	mockGetIncidentProcessInstanceStatisticsByErrorEndpoint,
 };

@@ -8,6 +8,7 @@
 
 import {z} from 'zod';
 import {createBrowserStorage} from './createBrowserStorage';
+import {namedCustomFiltersSchema} from '#/tasklist/modules/available-tasks/customFiltersSchema';
 
 const {
 	store: storeStateLocally,
@@ -16,7 +17,8 @@ const {
 } = createBrowserStorage(localStorage, {
 	theme: z.enum(['light', 'dark', 'system']),
 	wasReloaded: z.boolean(),
-	hasCompletedTask: z.boolean(),
+	'tasklist.hasCompletedTask': z.boolean(),
+	'tasklist.customFilters': z.record(z.string(), namedCustomFiltersSchema),
 });
 
 export {storeStateLocally, getStateLocally, clearStateLocally};

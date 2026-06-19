@@ -287,6 +287,7 @@
 			"customFiltersModalApplyFilters": "Filter anwenden",
 			"customFiltersModalAllProcesses": "Alle Prozesse",
 			"customFiltersModalAllTenants": "Alle Mandanten",
+			"customFiltersModalProcessDefinitionsLoadError": "Prozessdefinitionen konnten nicht geladen werden",
 			"taskFilterPanelControlsAria": "Filtersteuerungen",
 			"taskFilterPanelExpandButton": "Erweitern, um Filter anzuzeigen",
 			"taskFilterPanelFilterButton": "Aufgaben filtern",

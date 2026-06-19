@@ -291,6 +291,7 @@
 			"customFiltersModalApplyFilters": "Apply filters",
 			"customFiltersModalAllProcesses": "All processes",
 			"customFiltersModalAllTenants": "All tenants",
+			"customFiltersModalProcessDefinitionsLoadError": "Failed to load process definitions",
 			"taskFilterPanelControlsAria": "Filter controls",
 			"taskFilterPanelExpandButton": "Expand to show filters",
 			"taskFilterPanelFilterButton": "Filter tasks",

@@ -15,6 +15,7 @@ import {
 	tasklistIndexSearchDefaults,
 	tasklistIndexSearchSchema,
 	enforceSortInvariant,
+	stripCustomFilterParams,
 } from '#/tasklist/modules/available-tasks/searchSchema';
 import {getTasksRequestBody} from '#/tasklist/modules/available-tasks/getTasksRequestBody';
 
@@ -23,27 +24,28 @@ export const Route = createFileRoute('/_auth/tasklist/_tasks')({
 	search: {
 		middlewares: [
 			stripSearchParams(tasklistIndexSearchDefaults),
-			enforceSortInvariant,
 			retainSearchParams(['filter', 'sortBy']),
+			enforceSortInvariant,
+			stripCustomFilterParams,
 		],
 	},
-	loaderDeps: ({search: {filter, sortBy}}) => ({filter, sortBy}),
+	loaderDeps: ({search}) => ({...search}),
 	notFoundComponent: () => {
 		throw notFound({routeId: '/_auth/tasklist'});
 	},
-	loader: async ({context: {queryClient}, deps: {filter, sortBy}}) => {
+	loader: async ({context: {queryClient}, deps}) => {
 		const currentUser = await queryClient.ensureQueryData(queries.getCurrentUser());
 		return queryClient.ensureInfiniteQueryData(
-			queries.queryUserTasks(getTasksRequestBody({filter, sortBy}, {currentUsername: currentUser.username})),
+			queries.queryUserTasks(getTasksRequestBody(deps, {currentUsername: currentUser.username})),
 		);
 	},
 	component: function TasksLayoutRoute() {
-		const {filter, sortBy} = Route.useSearch();
+		const search = Route.useSearch();
 		const {data: currentUser} = useSuspenseQuery(queries.getCurrentUser());
 
 		const requestBody = useMemo(
-			() => getTasksRequestBody({filter, sortBy}, {currentUsername: currentUser.username}),
-			[filter, sortBy, currentUser.username],
+			() => getTasksRequestBody(search, {currentUsername: currentUser.username}),
+			[search, currentUser.username],
 		);
 
 		const {data, fetchNextPage, fetchPreviousPage, hasNextPage, hasPreviousPage} = useSuspenseInfiniteQuery({
