@@ -9,7 +9,6 @@ package io.camunda.webapps.schema.entities.agenthistory;
 
 /** Entity-layer enum for the commit status of a history entry. */
 public enum AgentHistoryCommitStatus {
-  UNKNOWN,
   PENDING,
   COMMITTED,
   DISCARDED

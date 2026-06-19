@@ -9,7 +9,6 @@ package io.camunda.webapps.schema.entities.agenthistory;
 
 /** Entity-layer enum for the role of a history entry author. */
 public enum AgentHistoryRole {
-  UNKNOWN,
   USER,
   ASSISTANT,
   TOOL_RESULT

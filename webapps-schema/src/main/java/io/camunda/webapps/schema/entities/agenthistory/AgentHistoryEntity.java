@@ -399,8 +399,7 @@ public final class AgentHistoryEntity
 
   /**
    * A single content block in a history entry message. {@code text}, {@code documentReference}, and
-   * {@code object} are mutually exclusive based on {@code contentType}; for {@code UNKNOWN} types
-   * all available fields are populated as-is.
+   * {@code object} are mutually exclusive based on {@code contentType}.
    */
   public record AgentHistoryContentValue(
       AgentHistoryContentType contentType,

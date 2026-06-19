@@ -12,7 +12,6 @@ import static io.camunda.webapps.schema.descriptors.template.AgentHistoryTemplat
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryCommitStatus;
-import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryContentType;
 import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryEntity;
 import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryEntity.AgentHistoryContentValue;
 import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryRole;
@@ -30,8 +29,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * CamundaExporter handler for {@code AGENT_HISTORY} records.
@@ -45,8 +42,6 @@ import org.slf4j.LoggerFactory;
  */
 public class AgentHistoryHandler
     implements ExportHandler<AgentHistoryEntity, AgentHistoryRecordValue> {
-
-  private static final Logger LOGGER = LoggerFactory.getLogger(AgentHistoryHandler.class);
 
   private static final Set<AgentHistoryIntent> HANDLED_INTENTS =
       Set.of(
@@ -134,25 +129,23 @@ public class AgentHistoryHandler
       case USER -> AgentHistoryRole.USER;
       case ASSISTANT -> AgentHistoryRole.ASSISTANT;
       case TOOL_RESULT -> AgentHistoryRole.TOOL_RESULT;
-      default -> {
-        LOGGER.warn(
-            "Received unexpected AgentHistoryRole: {}, will be mapped to UNKNOWN", protocolRole);
-        yield AgentHistoryRole.UNKNOWN;
-      }
+      // should never happen — protocol UNSPECIFIED is always overwritten before export
+      case UNSPECIFIED ->
+          throw new IllegalStateException(
+              "Unexpected UNSPECIFIED AgentHistoryRole on an exported record");
     };
   }
 
   private static AgentHistoryCommitStatus mapCommitStatusFromIntent(
       final AgentHistoryIntent intent) {
+    // should never happen — handlesRecord() gates updateEntity() to the three event intents
     return switch (intent) {
       case CREATED -> AgentHistoryCommitStatus.PENDING;
       case COMMITTED -> AgentHistoryCommitStatus.COMMITTED;
       case DISCARDED -> AgentHistoryCommitStatus.DISCARDED;
-      default -> {
-        LOGGER.warn(
-            "Received unexpected AgentHistoryIntent: {}, will be mapped to UNKNOWN", intent);
-        yield AgentHistoryCommitStatus.UNKNOWN;
-      }
+      default ->
+          throw new IllegalStateException(
+              "Unexpected AgentHistoryIntent on an exported record: " + intent);
     };
   }
 
@@ -167,16 +160,10 @@ public class AgentHistoryHandler
                       AgentHistoryContentValue.document(
                           mapDocumentReference(c.getDocumentReference()));
                   case OBJECT -> AgentHistoryContentValue.object(c.getObject());
-                  default -> {
-                    LOGGER.warn(
-                        "Received unexpected AgentHistoryContentType: {}, will be mapped to UNKNOWN",
-                        c.getContentType());
-                    yield new AgentHistoryContentValue(
-                        AgentHistoryContentType.UNKNOWN,
-                        ExporterUtil.emptyToNull(c.getText()),
-                        mapDocumentReference(c.getDocumentReference()),
-                        c.getObject().isEmpty() ? null : c.getObject());
-                  }
+                  // should never happen — protocol UNSPECIFIED is always overwritten before export
+                  case UNSPECIFIED ->
+                      throw new IllegalStateException(
+                          "Unexpected UNSPECIFIED AgentHistoryContentType on an exported record");
                 })
         .toList();
   }
