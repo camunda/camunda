@@ -129,6 +129,10 @@ public final class RequestMapper extends RequestUtil {
 
   public static BrokerPublishMessageRequest toPublishMessageRequest(
       final PublishMessageRequest grpcRequest) {
+    if (StringUtils.isBlank(grpcRequest.getName())) {
+      throw new IllegalArgumentException(
+          "Expected to publish message with a non-empty name, but no name was provided");
+    }
     final BrokerPublishMessageRequest brokerRequest =
         new BrokerPublishMessageRequest(grpcRequest.getName(), grpcRequest.getCorrelationKey());
 
@@ -136,7 +140,8 @@ public final class RequestMapper extends RequestUtil {
         .setMessageId(grpcRequest.getMessageId())
         .setTimeToLive(grpcRequest.getTimeToLive())
         .setVariables(ensureJsonSet(grpcRequest.getVariables()))
-        .setTenantId(ensureTenantIdSet("PublishMessage", grpcRequest.getTenantId()));
+        .setTenantId(ensureTenantIdSet("PublishMessage", grpcRequest.getTenantId()))
+        .setBusinessId(ensureBusinessIdValid(grpcRequest.getBusinessId()));
 
     return brokerRequest;
   }

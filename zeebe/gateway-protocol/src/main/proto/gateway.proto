@@ -652,6 +652,11 @@ message PublishMessageRequest {
   string variables = 5;
   // the tenant id of the message
   string tenantId = 6;
+  // an optional business id used to enforce uniqueness of the process instance that a message
+  // start event would create. If provided and uniqueness enforcement is enabled, the engine
+  // rejects starting a new process instance when another root process instance with the same
+  // business id is already active for the same process definition.
+  optional string businessId = 7;
 }
 
 message PublishMessageResponse {
