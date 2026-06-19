@@ -5,7 +5,7 @@ Welcome to the manual setup of a load test. :wave:
 There are two targets to run a load test against:
 
 * [Self-Managed Zeebe Cluster](#load-testing-self-managed-zeebe-cluster)
-* [Camunda Cloud Cluster](#load-testing-camunda-cloud-saas)
+* [Camunda SaaS Cluster](#load-testing-camunda-cloud-saas)
 
 All guides are targeted at a Linux system.
 
