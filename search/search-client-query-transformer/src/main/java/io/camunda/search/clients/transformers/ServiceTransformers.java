@@ -79,6 +79,7 @@ import io.camunda.search.clients.transformers.aggregation.result.ProcessDefiniti
 import io.camunda.search.clients.transformers.aggregation.result.ProcessInstanceFlowNodeStatisticsAggregationResultTransformer;
 import io.camunda.search.clients.transformers.aggregation.result.UsageMetricsAggregationResultTransformer;
 import io.camunda.search.clients.transformers.aggregation.result.UsageMetricsTUAggregationResultTransformer;
+import io.camunda.search.clients.transformers.entity.AgentHistoryEntityTransformer;
 import io.camunda.search.clients.transformers.entity.AgentInstanceEntityTransformer;
 import io.camunda.search.clients.transformers.entity.AuditLogEntityTransformer;
 import io.camunda.search.clients.transformers.entity.AuthorizationEntityTransformer;
@@ -357,6 +358,7 @@ import io.camunda.webapps.schema.entities.JobEntity;
 import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.webapps.schema.entities.SequenceFlowEntity;
 import io.camunda.webapps.schema.entities.VariableEntity;
+import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryEntity;
 import io.camunda.webapps.schema.entities.agentinstance.AgentInstanceEntity;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogEntity;
 import io.camunda.webapps.schema.entities.clustervariable.ClusterVariableEntity;
@@ -496,6 +498,7 @@ public final class ServiceTransformers {
         .forEach(cls -> mappers.put(cls, searchQueryTransformer));
 
     // document entity -> domain entity
+    mappers.put(AgentHistoryEntity.class, new AgentHistoryEntityTransformer());
     mappers.put(AgentInstanceEntity.class, new AgentInstanceEntityTransformer());
     mappers.put(AuthorizationEntity.class, new AuthorizationEntityTransformer());
     mappers.put(BatchOperationEntity.class, new BatchOperationEntityTransformer());
