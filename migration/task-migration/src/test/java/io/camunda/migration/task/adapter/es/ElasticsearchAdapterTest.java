@@ -482,6 +482,70 @@ class ElasticsearchAdapterTest {
   }
 
   @Test
+  void shouldThrowWhenTaskCompletesWithError() throws Exception {
+    // given
+    final SearchResponse<ProcessorStep> emptyStep = mockEmptyProcessorStepResponse();
+    when(client.search(any(SearchRequest.class), eq(ProcessorStep.class))).thenReturn(emptyStep);
+
+    final ReindexResponse reindexResponse = mock(ReindexResponse.class);
+    when(reindexResponse.task()).thenReturn("es-task-err");
+    when(client.reindex(any(ReindexRequest.class))).thenReturn(reindexResponse);
+
+    @SuppressWarnings("unchecked")
+    final UpdateResponse<ProcessorStep> updateResponse = mock(UpdateResponse.class);
+    when(updateResponse.result()).thenReturn(Result.Created);
+    when(client.update(any(UpdateRequest.class), eq(ProcessorStep.class)))
+        .thenReturn(updateResponse);
+
+    final GetTasksResponse errorTask = buildCompletedGetTasksResponse(5, 5, 0, 0);
+    when(errorTask.error())
+        .thenReturn(mock(co.elastic.clients.elasticsearch._types.ErrorCause.class));
+    final ElasticsearchTasksClient tasksClient = mock(ElasticsearchTasksClient.class);
+    when(client.tasks()).thenReturn(tasksClient);
+    when(tasksClient.get(any(Function.class))).thenReturn(errorTask);
+
+    // when/then
+    assertThatThrownBy(() -> adapter.reindexLegacyMainIndex())
+        .isInstanceOf(MigrationException.class)
+        .hasMessageContaining("failed with error");
+  }
+
+  @Test
+  void shouldThrowWhenTaskCompletesWithFailures() throws Exception {
+    // given
+    final SearchResponse<ProcessorStep> emptyStep = mockEmptyProcessorStepResponse();
+    when(client.search(any(SearchRequest.class), eq(ProcessorStep.class))).thenReturn(emptyStep);
+
+    final ReindexResponse reindexResponse = mock(ReindexResponse.class);
+    when(reindexResponse.task()).thenReturn("es-task-fail");
+    when(client.reindex(any(ReindexRequest.class))).thenReturn(reindexResponse);
+
+    @SuppressWarnings("unchecked")
+    final UpdateResponse<ProcessorStep> updateResponse = mock(UpdateResponse.class);
+    when(updateResponse.result()).thenReturn(Result.Created);
+    when(client.update(any(UpdateRequest.class), eq(ProcessorStep.class)))
+        .thenReturn(updateResponse);
+
+    final GetTasksResponse failTask = buildCompletedGetTasksResponse(5, 4, 0, 0);
+    final jakarta.json.JsonArray failures = mock(jakarta.json.JsonArray.class);
+    when(failures.isEmpty()).thenReturn(false);
+    when(failures.size()).thenReturn(1);
+    when(failures.get(0)).thenReturn(mock(jakarta.json.JsonValue.class));
+    // override the failures mock on the existing JsonObject
+    final ElasticsearchTasksClient tasksClient = mock(ElasticsearchTasksClient.class);
+    when(client.tasks()).thenReturn(tasksClient);
+    when(tasksClient.get(any(Function.class))).thenReturn(failTask);
+    // re-wire failures on the jsonObject used inside failTask
+    final JsonObject statusObj = (JsonObject) failTask.task().status().toJson();
+    when(statusObj.getJsonArray("failures")).thenReturn(failures);
+
+    // when/then
+    assertThatThrownBy(() -> adapter.reindexLegacyMainIndex())
+        .isInstanceOf(MigrationException.class)
+        .hasMessageContaining("completed with");
+  }
+
+  @Test
   void shouldResumePollWhenExistingTaskStillRunning() throws Exception {
     // given - persisted step with in-progress task
     final SearchResponse<ProcessorStep> runningStep =

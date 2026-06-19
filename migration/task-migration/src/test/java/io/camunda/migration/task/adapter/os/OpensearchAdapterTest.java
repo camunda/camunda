@@ -480,6 +480,64 @@ class OpensearchAdapterTest {
   }
 
   @Test
+  void shouldThrowWhenTaskCompletesWithError() throws Exception {
+    // given
+    final SearchResponse<ProcessorStep> emptyStep = mockEmptyProcessorStepResponse();
+    when(client.search(any(SearchRequest.class), eq(ProcessorStep.class))).thenReturn(emptyStep);
+
+    final ReindexResponse reindexResponse = mock(ReindexResponse.class);
+    when(reindexResponse.task()).thenReturn("os-task-err");
+    when(client.reindex(any(ReindexRequest.class))).thenReturn(reindexResponse);
+
+    @SuppressWarnings("unchecked")
+    final UpdateResponse<ProcessorStep> updateResponse = mock(UpdateResponse.class);
+    when(updateResponse.result()).thenReturn(Result.Created);
+    when(client.update(any(UpdateRequest.class), eq(ProcessorStep.class)))
+        .thenReturn(updateResponse);
+
+    final GetTasksResponse errorTask = buildCompletedGetTasksResponse(5L, 5L, 0L, 0L);
+    when(errorTask.error())
+        .thenReturn(mock(org.opensearch.client.opensearch._types.ErrorCause.class));
+    final OpenSearchTasksClient tasksClient = mock(OpenSearchTasksClient.class);
+    when(client.tasks()).thenReturn(tasksClient);
+    when(tasksClient.get(any(Function.class))).thenReturn(errorTask);
+
+    // when/then
+    assertThatThrownBy(() -> adapter.reindexLegacyMainIndex())
+        .isInstanceOf(MigrationException.class)
+        .hasMessageContaining("failed with error");
+  }
+
+  @Test
+  void shouldThrowWhenTaskCompletesWithFailures() throws Exception {
+    // given
+    final SearchResponse<ProcessorStep> emptyStep = mockEmptyProcessorStepResponse();
+    when(client.search(any(SearchRequest.class), eq(ProcessorStep.class))).thenReturn(emptyStep);
+
+    final ReindexResponse reindexResponse = mock(ReindexResponse.class);
+    when(reindexResponse.task()).thenReturn("os-task-fail");
+    when(client.reindex(any(ReindexRequest.class))).thenReturn(reindexResponse);
+
+    @SuppressWarnings("unchecked")
+    final UpdateResponse<ProcessorStep> updateResponse = mock(UpdateResponse.class);
+    when(updateResponse.result()).thenReturn(Result.Created);
+    when(client.update(any(UpdateRequest.class), eq(ProcessorStep.class)))
+        .thenReturn(updateResponse);
+
+    final GetTasksResponse failTask = buildCompletedGetTasksResponse(5L, 4L, 0L, 0L);
+    final Status statusMock = failTask.task().status();
+    when(statusMock.failures()).thenReturn(List.of("shard 0 failed: version conflict"));
+    final OpenSearchTasksClient tasksClient = mock(OpenSearchTasksClient.class);
+    when(client.tasks()).thenReturn(tasksClient);
+    when(tasksClient.get(any(Function.class))).thenReturn(failTask);
+
+    // when/then
+    assertThatThrownBy(() -> adapter.reindexLegacyMainIndex())
+        .isInstanceOf(MigrationException.class)
+        .hasMessageContaining("completed with");
+  }
+
+  @Test
   void shouldResumePollWhenExistingTaskStillRunning() throws Exception {
     // given - persisted step with in-progress task
     final SearchResponse<ProcessorStep> runningStep =
