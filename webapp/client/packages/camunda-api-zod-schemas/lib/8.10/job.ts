@@ -35,6 +35,7 @@ type JobKind = z.infer<typeof jobKindSchema>;
 
 const listenerEventTypeSchema = z.enum([
 	'UNSPECIFIED',
+	'BEFORE_ALL',
 	'START',
 	'END',
 	'CANCEL',
