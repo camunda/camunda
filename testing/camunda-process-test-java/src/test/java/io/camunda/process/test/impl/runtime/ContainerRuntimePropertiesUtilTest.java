@@ -70,7 +70,7 @@ public class ContainerRuntimePropertiesUtilTest {
         CamundaContainerRuntimeProperties.PROPERTY_NAME_CAMUNDA_VERSION, "${project.version}");
     properties.put(
         ContainerRuntimePropertiesUtil.PROPERTY_NAME_ELASTICSEARCH_VERSION,
-        "${version.elasticsearch}");
+        "${version.elasticsearch.container}");
     properties.put(
         CamundaContainerRuntimeProperties.PROPERTY_NAME_CAMUNDA_DOCKER_IMAGE_NAME,
         "${io.camunda.process.test.camundaDockerImageName}");
