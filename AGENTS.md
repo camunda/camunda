@@ -120,6 +120,10 @@ All builds use the Maven wrapper (`./mvnw`). Use `-T1C` (one thread per CPU core
 builds. Use `-T2` (two threads total) when running builds alongside other resource-intensive
 processes (e.g., an IDE, Docker containers, or other concurrent builds).
 
+Pass `-q` (quiet) on every Maven invocation — it suppresses progress and info lines while still
+surfacing errors, keeping build noise out of the agent's context window. Drop `-q` only when
+diagnosing unexpected build behavior or when plugin warnings are needed.
+
 #### Always-green policy
 
 Before every AI-assisted session, establish a green baseline in two steps:
@@ -137,7 +141,7 @@ introduced during the session.
 **Step 2 — Build the full repo locally right after branching** (blocking):
 
 ```bash
-./mvnw install -Dquickly -T1C
+./mvnw install -Dquickly -T1C -q
 ```
 
 This installs all module JARs and catches any cross-module compilation errors before work begins
@@ -147,7 +151,7 @@ green — a compilation error here will waste far more time if discovered mid-se
 **Step 3 — Once the target module is known, verify it passes locally:**
 
 ```bash
-./mvnw verify -pl <module> -Dquickly -DskipTests=false -T1C
+./mvnw verify -pl <module> -Dquickly -DskipTests=false -T1C -q
 ```
 
 If the module has sub-modules, target the specific sub-module where the code lives rather than the top-level directory, otherwise you may get a false green with no tests run.
@@ -158,10 +162,10 @@ Never suppress warnings or failures to force a build to pass.
 
 ```bash
 # Fast inner loop (single module / affected tests only) to iterate quickly
-./mvnw verify -pl <module> -Dtest=<TestClassName> -DskipTests=false -DskipITs -Dquickly
+./mvnw verify -pl <module> -Dtest=<TestClassName> -DskipTests=false -DskipITs -Dquickly -q
 
 # Full pipeline before committing the change
-./mvnw license:format spotless:apply -T1C && ./mvnw verify -pl <module> -DskipTests=false -Dquickly
+./mvnw license:format spotless:apply -T1C -q && ./mvnw verify -pl <module> -DskipTests=false -Dquickly -q
 ```
 
 Do not proceed without a green baseline.
@@ -181,16 +185,16 @@ If it is flaky (non-deterministic):
 
 ```bash
 # Build a module and its dependencies (recommended for monorepo work)
-./mvnw install -pl <module> -am -Dquickly -T1C
+./mvnw install -pl <module> -am -Dquickly -T1C -q
 
 # Build only a single module (requires dependencies to be already installed and unchanged)
-./mvnw install -pl <module> -Dquickly -T1C
+./mvnw install -pl <module> -Dquickly -T1C -q
 
 # Run a single test class in a module
-./mvnw verify -pl <module> -Dtest=<TestClassName> -DskipTests=false -DskipITs -Dquickly
+./mvnw verify -pl <module> -Dtest=<TestClassName> -DskipTests=false -DskipITs -Dquickly -q
 
 # Run a single integration test in a module
-./mvnw verify -pl <module> -Dit.test=<IntegrationTestClassName> -DskipTests=false -DskipUTs -Dquickly
+./mvnw verify -pl <module> -Dit.test=<IntegrationTestClassName> -DskipTests=false -DskipUTs -Dquickly -q
 ```
 
 Note: `-Dquickly` skips tests, formatting checks, and Optimize — use it for fast iteration only. Add `-DskipTests=false` to run tests while still skipping checks. Before committing, always run the full pipeline in the "Before submitting" section instead.
@@ -204,11 +208,11 @@ Never use `-am` with `verify` — it runs tests in all dependency modules. Use `
 Always run these steps before every commit — never skip them, even for "obvious" or single-line
 changes. Skipping formatting reliably breaks the `Java checks` CI job.
 
-1. Format code: `./mvnw license:format spotless:apply -T1C` — **mandatory** before every commit
+1. Format code: `./mvnw license:format spotless:apply -T1C -q` — **mandatory** before every commit
    that touches Java sources, markdown or `pom.xml` files. Run it again after any subsequent edit.
 2. Build the changed module (see "Module-scoped builds" above for commands)
 3. Run module tests and verify zero failures
-4. Verify the full repo still compiles: `./mvnw install -Dquickly -T1C`
+4. Verify the full repo still compiles: `./mvnw install -Dquickly -T1C -q`
 
 ### Scoped instructions
 
