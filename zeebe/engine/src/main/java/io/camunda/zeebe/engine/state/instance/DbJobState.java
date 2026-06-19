@@ -386,6 +386,26 @@ public final class DbJobState implements JobState, MutableJobState {
     updateJobState(State.ACTIVATED);
   }
 
+  @Override
+  public void pause(final long key, final JobRecord record) {
+    // Drop the activation deadline so JobTimeOutProcessor stops re-driving the job, then flip
+    // the state column. The record snapshot is updated as well so a downstream RESUME has a
+    // current view to read the original deadline from.
+    updateJobRecord(key, record);
+    updateJobState(State.PAUSED);
+    removeJobDeadline(key, record.getDeadline());
+  }
+
+  @Override
+  public void resume(final long key, final JobRecord record) {
+    // Mirror of pause(): flip back to ACTIVATED and re-register the activation deadline using
+    // whatever value the resume command carries (typically the original deadline; nothing
+    // prevents the operator from extending it).
+    updateJobRecord(key, record);
+    updateJobState(State.ACTIVATED);
+    addJobDeadline(key, record.getDeadline());
+  }
+
   private void createJob(final long key, final JobRecord record, final DirectBuffer type) {
     createJobRecord(key, record);
     initializeJobState();

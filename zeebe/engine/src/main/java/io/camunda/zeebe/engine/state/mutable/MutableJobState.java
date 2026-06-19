@@ -85,4 +85,22 @@ public interface MutableJobState extends JobState {
    * gated under {@code Capability.JOB_BATCH_RESERVATION_STATE}.
    */
   void confirmReservation(long key);
+
+  /**
+   * Operator-initiated pause: transitions the job from {@code State.ACTIVATED} to {@code
+   * State.PAUSED} and clears the timeout deadline so the {@code JobTimeOutProcessor} stops
+   * re-driving it. Invoked by {@code JobPausedApplier} (gated under {@code
+   * Capability.JOB_PAUSE_RESUME}); the corresponding {@code JobPauseProcessor} rejects the command
+   * when the job is in any other state, so this method is only ever called from a known-good
+   * predecessor state.
+   */
+  void pause(long key, JobRecord record);
+
+  /**
+   * Operator-initiated resume: transitions the job from {@code State.PAUSED} back to {@code
+   * State.ACTIVATED} and re-registers the activation deadline carried on {@code record}. Mirror of
+   * {@link #pause(long, JobRecord)}; invoked by {@code JobResumedApplier} (same gate) after {@code
+   * JobResumeProcessor} has validated the predecessor state.
+   */
+  void resume(long key, JobRecord record);
 }

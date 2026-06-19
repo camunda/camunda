@@ -68,7 +68,17 @@ public interface JobState {
      * (the leader emits only the original ACTIVATED follow-up event and v=1 of its applier moves
      * jobs ACTIVATABLE → ACTIVATED in one shot).
      */
-    RESERVED((byte) 5);
+    RESERVED((byte) 5),
+
+    /**
+     * Operator-initiated pause of an ACTIVATED job. Reached via the {@code JobIntent.PAUSE} command
+     * and the {@code JobPausedApplier}, both gated under {@code Capability.JOB_PAUSE_RESUME}. While
+     * in this state the job is no longer eligible for timeout reclaim, completion, or fail commands
+     * — the existing precondition validators on those processors only admit {@code ACTIVATED} (and
+     * sometimes {@code ACTIVATABLE}), so a paused job naturally rejects every transition except
+     * {@code RESUME}.
+     */
+    PAUSED((byte) 6);
 
     byte value;
 

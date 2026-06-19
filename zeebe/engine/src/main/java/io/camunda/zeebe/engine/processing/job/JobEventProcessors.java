@@ -81,6 +81,14 @@ public final class JobEventProcessors {
             new JobYieldProcessor(processingState, bpmnBehaviors, writers, authCheckBehavior))
         .onCommand(
             ValueType.JOB,
+            JobIntent.PAUSE,
+            new JobPauseProcessor(processingState, writers, authCheckBehavior))
+        .onCommand(
+            ValueType.JOB,
+            JobIntent.RESUME,
+            new JobResumeProcessor(processingState, writers, authCheckBehavior))
+        .onCommand(
+            ValueType.JOB,
             JobIntent.THROW_ERROR,
             new JobThrowErrorProcessor(
                 processingState,

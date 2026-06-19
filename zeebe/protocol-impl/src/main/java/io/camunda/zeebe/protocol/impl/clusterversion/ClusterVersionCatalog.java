@@ -364,7 +364,49 @@ public final class ClusterVersionCatalog {
         18,
         "Write-discipline gate for the new reservationOrigin field on JobBatchRecord",
         Set.of(),
-        Set.of());
+        Set.of()),
+
+    /**
+     * Adds an operator-initiated pause/resume cycle to the job lifecycle. Two new commands ({@link
+     * JobIntent#PAUSE}, {@link JobIntent#RESUME}) move a job between {@code State.ACTIVATED} and
+     * the new {@code State.PAUSED}, accompanied by two new events ({@link JobIntent#PAUSED}, {@link
+     * JobIntent#RESUMED}) and their appliers. This is the demo that exercises both ECV gating
+     * dimensions — admission of new commands and selection of new applier versions — in a single
+     * capability.
+     *
+     * <p><b>The hazards this guards.</b> The capability lands four new intent enum values ({@code
+     * PAUSE}, {@code PAUSED}, {@code RESUME}, {@code RESUMED}) and one new state enum value ({@code
+     * State.PAUSED}). A pre-feature broker dispatching a record with one of these intents maps it
+     * to {@code Intent.UNKNOWN}; the leader emitting the records crashes the follower mid-replay.
+     * The catalog enforces the gate on two fronts:
+     *
+     * <ul>
+     *   <li><b>Command admission.</b> {@code GatedCommandId(JOB, PAUSE)} and {@code
+     *       GatedCommandId(JOB, RESUME)} cause {@code ClusterVersionGate} to refuse the commands at
+     *       ingress below ordinal 19. A worker or operator who submits {@code PAUSE} on an unraised
+     *       cluster receives a clear rejection naming the capability, not a silent drop or a
+     *       half-executed transition.
+     *   <li><b>Applier selection.</b> {@code ApplierVersionId(PAUSED, 1)} and {@code
+     *       ApplierVersionId(RESUMED, 1)} mean a leader's {@code selectVersionFor} returns {@code
+     *       -1} below the gate — defense-in-depth against any code path that tried to emit one of
+     *       the new events without going through the command (e.g. an inter-partition trigger or
+     *       test harness).
+     * </ul>
+     *
+     * <p>The new {@code State.PAUSED} enum value is the only addition that isn't directly listed:
+     * it's not a record-property enum (it lives in the engine's internal {@code JOB_STATES} CF, not
+     * on the wire), so the same {@code Enum.valueOf} hazard documented by {@link
+     * #JOB_KIND_MAINTENANCE} doesn't apply. Pre-feature followers simply never see the PAUSED state
+     * in their CF because the gate keeps the {@code PAUSED} event from being emitted.
+     */
+    JOB_PAUSE_RESUME(
+        19,
+        "Operator-initiated pause/resume of activated jobs",
+        Set.of(
+            new ApplierVersionId(JobIntent.PAUSED, 1), new ApplierVersionId(JobIntent.RESUMED, 1)),
+        Set.of(
+            new GatedCommandId(ValueType.JOB, JobIntent.PAUSE),
+            new GatedCommandId(ValueType.JOB, JobIntent.RESUME)));
 
     private final int at;
     private final String description;
