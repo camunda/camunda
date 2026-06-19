@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.variable;
 
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnConditionalBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnConditionalBehavior.VariableEvent;
+import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.variable.DocumentEntry;
@@ -18,6 +19,7 @@ import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableSourceRecord;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -37,6 +39,7 @@ public final class VariableBehavior {
   private final StateWriter stateWriter;
   private final BpmnConditionalBehavior conditionalBehavior;
   private final KeyGenerator keyGenerator;
+  private final int maxVariableNestingDepth;
 
   private final IndexedDocument indexedDocument = new IndexedDocument();
   private final VariableRecord variableRecord = new VariableRecord();
@@ -46,11 +49,13 @@ public final class VariableBehavior {
       final VariableState variableState,
       final StateWriter stateWriter,
       final BpmnConditionalBehavior conditionalBehavior,
-      final KeyGenerator keyGenerator) {
+      final KeyGenerator keyGenerator,
+      final int maxVariableNestingDepth) {
     this.variableState = variableState;
     this.stateWriter = stateWriter;
     this.conditionalBehavior = conditionalBehavior;
     this.keyGenerator = keyGenerator;
+    this.maxVariableNestingDepth = maxVariableNestingDepth;
     variableSourceRecord = VariableSourceRecord.none();
   }
 
@@ -59,17 +64,24 @@ public final class VariableBehavior {
       final StateWriter stateWriter,
       final BpmnConditionalBehavior conditionalBehavior,
       final KeyGenerator keyGenerator,
+      final int maxVariableNestingDepth,
       final VariableSourceRecord variableSourceRecord) {
     this.variableState = variableState;
     this.stateWriter = stateWriter;
     this.conditionalBehavior = conditionalBehavior;
     this.keyGenerator = keyGenerator;
+    this.maxVariableNestingDepth = maxVariableNestingDepth;
     this.variableSourceRecord = variableSourceRecord;
   }
 
   public VariableBehavior withVariableSource(final VariableSourceRecord source) {
     return new VariableBehavior(
-        variableState, stateWriter, conditionalBehavior, keyGenerator, source);
+        variableState,
+        stateWriter,
+        conditionalBehavior,
+        keyGenerator,
+        maxVariableNestingDepth,
+        source);
   }
 
   /**
@@ -98,7 +110,6 @@ public final class VariableBehavior {
     if (indexedDocument.isEmpty()) {
       return;
     }
-
     variableRecord
         .setScopeKey(scopeKey)
         .setProcessDefinitionKey(processDefinitionKey)
@@ -151,7 +162,6 @@ public final class VariableBehavior {
     if (indexedDocument.isEmpty()) {
       return;
     }
-
     long currentScope = scopeKey;
     long parentScope;
     final List<VariableEvent> variableEvents = new ArrayList<>();
@@ -271,5 +281,17 @@ public final class VariableBehavior {
     variableRecordCopy.copyFrom(variableRecord);
 
     return variableRecordCopy;
+  }
+
+  /**
+   * Validates that the given document does not exceed the configured maximum nesting depth.
+   *
+   * @return {@link Either#right(Object)} with the given document if it is valid; otherwise, {@link
+   *     Either#left(Object)} with a {@link Failure} describing the error
+   */
+  public Either<Failure, DirectBuffer> validateDocument(
+      final long scopeKey, final DirectBuffer document) {
+    return VariableNestingDepthValidator.validate(scopeKey, document, maxVariableNestingDepth)
+        .map(unused -> document);
   }
 }
