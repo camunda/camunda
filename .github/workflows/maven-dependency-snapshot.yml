@@ -39,12 +39,23 @@ jobs:
           java-version: '21'
       # Scope to shipped modules only (mirrors JAVA_PROJECTS in zeebe-snyk.yml).
       # -am resolves the full transitive tree including BOM-pinned versions.
+      # The Spring Boot starter was renamed between main and stable branches, so detect dynamically.
+      - name: Detect Spring Boot starter module path
+        run: |
+          if [ -d "clients/camunda-spring-boot-starter" ]; then
+            echo "SPRING_STARTER_MODULE=clients/camunda-spring-boot-starter" >> "$GITHUB_ENV"
+          elif [ -d "clients/spring-boot-starter-camunda-sdk" ]; then
+            echo "SPRING_STARTER_MODULE=clients/spring-boot-starter-camunda-sdk" >> "$GITHUB_ENV"
+          else
+            echo "ERROR: neither clients/camunda-spring-boot-starter nor clients/spring-boot-starter-camunda-sdk found" >&2
+            exit 1
+          fi
       - name: Submit Maven dependency snapshot
         uses: advanced-security/maven-dependency-submission-action@b275d12641ac2d2108b2cbb7598b154ad2f2cee8 # v5.0.0
         with:
           token: ${{ github.token }}
           maven-args: >-
-            -pl bom,clients/java,clients/camunda-spring-boot-starter,zeebe/bpmn-model,zeebe/exporter-api,zeebe/gateway-protocol-impl,zeebe/protocol
+            -pl bom,clients/java,${{ env.SPRING_STARTER_MODULE }},zeebe/bpmn-model,zeebe/exporter-api,zeebe/gateway-protocol-impl,zeebe/protocol
             -am
             -Dquickly
           correlator: ${{ github.job }}-maven
