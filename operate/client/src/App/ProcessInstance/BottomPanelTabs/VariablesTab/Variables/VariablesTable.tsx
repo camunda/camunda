@@ -8,7 +8,7 @@
 
 import {useMemo, useRef, useState} from 'react';
 import {useForm, useFormState} from 'react-final-form';
-import {Button} from '@carbon/react';
+import {Button, Search} from '@carbon/react';
 import {Edit} from '@carbon/react/icons';
 import {
   StructuredList,
@@ -18,6 +18,7 @@ import {
   FilterSwitcherButton,
   EmptyMessageWrapper,
   DimmableResults,
+  VariablesSearch,
 } from './styled';
 import {StructuredRows} from 'modules/components/StructuredList';
 import {EmptyMessage} from 'modules/components/EmptyMessage';
@@ -33,6 +34,7 @@ import {Operation} from './NewVariableModification/Operation';
 import {ViewFullVariableButton} from './ViewFullVariableButton';
 import {useIsProcessInstanceRunning} from 'modules/queries/processInstance/useIsProcessInstanceRunning';
 import {useVariables} from 'modules/queries/variables/useVariables';
+import {useDebouncedValue} from 'modules/hooks/useDebouncedValue';
 import {VariableValueCell} from './VariableValueCell';
 import {parseDocumentVariable} from './DocumentValueCell/parseDocumentVariable';
 import {DownloadDocumentButton} from './DownloadDocumentButton';
@@ -55,17 +57,20 @@ const VariablesTable: React.FC<Props> = ({
   const form = useForm<VariableFormValues>();
   const variableNameRef = useRef<HTMLDivElement>(null);
   const [showDocumentsOnly, setShowDocumentsOnly] = useState(false);
+  const [searchValue, setSearchValue] = useState('');
+  const debouncedSearchValue = useDebouncedValue(searchValue);
 
   const {
     data: variablesData,
     fetchNextPage,
     hasNextPage,
-    isFetching,
+    isLoading,
     isPlaceholderData,
     isFetchingNextPage,
   } = useVariables({
     documentsOnly: showDocumentsOnly,
     keepPreviousResults: true,
+    searchTerm: debouncedSearchValue,
   });
 
   const processedVariables = useMemo(() => {
@@ -202,31 +207,50 @@ const VariablesTable: React.FC<Props> = ({
 
   return (
     <>
-      <FilterSwitcherContainer>
-        <FilterSwitcher role="group" aria-label="Variable filter">
-          <FilterSwitcherButton
-            type="button"
-            aria-pressed={!showDocumentsOnly}
-            onClick={() => setShowDocumentsOnly(false)}
-          >
-            All
-          </FilterSwitcherButton>
-          <FilterSwitcherButton
-            type="button"
-            aria-pressed={showDocumentsOnly}
-            onClick={() => setShowDocumentsOnly(true)}
-          >
-            Documents
-          </FilterSwitcherButton>
-        </FilterSwitcher>
-      </FilterSwitcherContainer>
-      {!isFetching &&
-      showDocumentsOnly &&
-      variablesData !== undefined &&
+      {!isModificationModeEnabled && (
+        <FilterSwitcherContainer>
+          <VariablesSearch>
+            <Search
+              size="sm"
+              labelText="Search variables by name"
+              placeholder="Search variables by name"
+              value={searchValue}
+              onChange={(event) => setSearchValue(event.target.value)}
+              onClear={() => setSearchValue('')}
+            />
+          </VariablesSearch>
+          <FilterSwitcher role="group" aria-label="Variable filter">
+            <FilterSwitcherButton
+              type="button"
+              aria-pressed={!showDocumentsOnly}
+              onClick={() => setShowDocumentsOnly(false)}
+            >
+              All
+            </FilterSwitcherButton>
+            <FilterSwitcherButton
+              type="button"
+              aria-pressed={showDocumentsOnly}
+              onClick={() => setShowDocumentsOnly(true)}
+            >
+              Documents
+            </FilterSwitcherButton>
+          </FilterSwitcher>
+        </FilterSwitcherContainer>
+      )}
+      {!isLoading &&
+      (showDocumentsOnly || debouncedSearchValue.trim() !== '') &&
       processedVariables.length === 0 ? (
-        <EmptyMessageWrapper>
-          <EmptyMessage message="There are no document variables" />
-        </EmptyMessageWrapper>
+        <DimmableResults $dimmed={isPlaceholderData}>
+          <EmptyMessageWrapper>
+            <EmptyMessage
+              message={
+                debouncedSearchValue.trim() !== ''
+                  ? 'No variables match your search'
+                  : 'There are no document variables'
+              }
+            />
+          </EmptyMessageWrapper>
+        </DimmableResults>
       ) : (
         <DimmableResults $dimmed={isPlaceholderData}>
           <StructuredList
