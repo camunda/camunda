@@ -8,7 +8,6 @@
 package io.camunda.zeebe.it.cluster.dynamicnodeid;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assume.assumeTrue;
 
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.NodeIdProvider.S3;
@@ -189,7 +188,6 @@ public class DynamicNodeIdScalingIT {
     @Test
     @Timeout(100)
     public void shouldScaleClusterWithDynamicNodeIdProvider() {
-      assumeTrue(zone() != null);
       // given - start cluster with one broker
       testCluster.start();
       LOG.info("Awaiting healthy topology");
@@ -343,7 +341,7 @@ public class DynamicNodeIdScalingIT {
             .withGatewayConfig(g -> g.withCreateSchema(false).withUnauthenticatedAccess())
             .withBrokersCount(initialClusterSize())
             .withPartitionsCount(PARTITIONS_COUNT)
-            .withReplicationFactor(2)
+            .withReplicationFactor(1)
             .withoutNodeId()
             .withNodeConfig(
                 app ->
@@ -368,7 +366,6 @@ public class DynamicNodeIdScalingIT {
 
     @Test
     public void shouldScaleDownClusterFromThreeToOneBroker() {
-      assumeTrue(false);
       // given - start cluster with three brokers
       testCluster.start();
       testCluster.awaitHealthyTopology();
@@ -405,7 +402,6 @@ public class DynamicNodeIdScalingIT {
 
     @Test
     void shouldScaleUpAgainAfterScaleDown() {
-      assumeTrue(false);
       // given
       shouldScaleDownClusterFromThreeToOneBroker();
       testCluster.awaitCompleteTopology(
