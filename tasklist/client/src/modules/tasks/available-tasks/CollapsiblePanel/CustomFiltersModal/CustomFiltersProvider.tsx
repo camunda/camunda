@@ -7,8 +7,11 @@
  */
 
 import {getStateLocally} from 'modules/local-storage';
-import type {NamedCustomFilters} from 'modules/tasks/filters/customFiltersSchema';
-import {createContext, useCallback, useContext, useState} from 'react';
+import {
+  CustomFiltersContext,
+  type CustomFiltersContextValue,
+} from './CustomFiltersContext';
+import {useCallback, useState} from 'react';
 import {CustomFiltersModal} from '.';
 import {DeleteFilterModal} from './DeleteFilterModal';
 import {useSearchParams} from 'react-router-dom';
@@ -17,35 +20,6 @@ import {useCurrentUser} from 'modules/api/useCurrentUser.query';
 
 const EDITING_PREFIX = 'editing_';
 const DELETING_PREFIX = 'deleting_';
-
-type CustomFiltersContextValue = {
-  customFilters: Record<string, NamedCustomFilters>;
-  status:
-    | 'initial'
-    | 'adding'
-    | `${typeof EDITING_PREFIX}${string}`
-    | `${typeof DELETING_PREFIX}${string}`;
-  startEditing: (key: string) => void;
-  startDeleting: (key: string) => void;
-  startAdding: () => void;
-  reset: () => void;
-};
-
-const CustomFiltersContext = createContext<CustomFiltersContextValue | null>(
-  null,
-);
-
-function useCustomFiltersContext() {
-  const context = useContext(CustomFiltersContext);
-
-  if (context === null) {
-    throw new Error(
-      'useCustomFiltersContext must be used within a CustomFiltersProvider',
-    );
-  }
-
-  return context;
-}
 
 type Props = {
   children: React.ReactNode;
@@ -159,5 +133,4 @@ const CustomFiltersProvider: React.FC<Props> = ({children}) => {
   );
 };
 
-// eslint-disable-next-line react-refresh/only-export-components
-export {CustomFiltersProvider, useCustomFiltersContext};
+export {CustomFiltersProvider};
