@@ -18,6 +18,7 @@ import io.camunda.exporter.ExporterResourceProvider;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiveByIdTaskSupplier.ArchiveDocIdsBatch;
+import io.camunda.exporter.tasks.archiver.ArchiveByIdTaskSupplier.IdWithRouting;
 import io.camunda.exporter.tasks.util.DateOfArchivedDocumentsUtil;
 import io.camunda.exporter.tasks.util.OpensearchRepository;
 import io.camunda.search.schema.config.RetentionConfiguration;
@@ -36,6 +37,7 @@ import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -252,8 +254,13 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
 
     return applyPolicyToIndices(policyName, destinationIndexName)
         .thenApply(
-            ignored -> {
-              lifeCyclePolicyApplied.put(destinationIndexName, policyName);
+            applied -> {
+              // Only cache when the policy was actually applied to a real index. If the dest
+              // didn't exist yet (applied=false), we deliberately skip the cache update so a
+              // later call (after the index is created by reindex) re-applies the policy.
+              if (Boolean.TRUE.equals(applied)) {
+                lifeCyclePolicyApplied.put(destinationIndexName, policyName);
+              }
               return null;
             });
   }
@@ -364,12 +371,13 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
             taskSupplier::moveNextBatch, count -> taskSupplier.isComplete())
         .thenComposeAsync(
             ignored -> {
-              // don't set the lifecycle if nothing was moved
-              // as it also might mean the index does not exist anyway
-              if (taskSupplier.getTotalArchived() > 0L) {
-                return setIndexLifeCycle(destinationIndexName);
-              }
-              return CompletableFuture.completedFuture(null);
+              // always trigger set life cycle, which checks whether the policy was previously
+              // applied and, if so, skips it. If nothing moved and the destination index is
+              // not present, we already set .allowNoIndices(true), which prevents it from erroring.
+              // However, if nothing moved because we previously moved them, but the call errored
+              // at the put policy stage, this will reapply the policy and ensure no index is
+              // left without the ILM policy.
+              return setIndexLifeCycle(destinationIndexName);
             },
             executor)
         .thenApply(
@@ -418,6 +426,11 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   }
 
   @VisibleForTesting
+  void invalidateLifeCycleCache(final String indexName) {
+    lifeCyclePolicyApplied.invalidate(indexName);
+  }
+
+  @VisibleForTesting
   CompletableFuture<ArchiveDocIdsBatch<FieldValue>> getArchiveDocIdsBatch(
       final String sourceIndexName,
       final String idFieldName,
@@ -452,17 +465,21 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
                 return ArchiveDocIdsBatch.empty();
               }
               return ArchiveDocIdsBatch.from(
-                  hits.stream().map(Hit::id).toList(), hits.getLast().sortVals());
+                  hits.stream().map(h -> new IdWithRouting(h.id(), h.routing())).toList(),
+                  hits.getLast().sortVals());
             });
   }
 
   @VisibleForTesting
   CompletableFuture<Long> reindexDocumentsById(
-      final String sourceIndexName, final String destinationIndexName, final List<String> docIds) {
-    if (docIds.isEmpty()) {
+      final String sourceIndexName,
+      final String destinationIndexName,
+      final List<IdWithRouting> docs) {
+    if (docs.isEmpty()) {
       return CompletableFuture.completedFuture(0L);
     }
 
+    final var docIds = docs.stream().map(IdWithRouting::id).toList();
     final var query = QueryBuilders.bool().filter(b -> b.ids(id -> id.values(docIds))).build();
     final var request =
         new ReindexRequest.Builder()
@@ -478,7 +495,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
         .thenApplyAsync(
             response -> {
               validateReindexResponse(sourceIndexName, response);
-              return response.total();
+              return getReindexedDocumentsCount(response);
             },
             executor)
         .whenCompleteAsync(
@@ -498,15 +515,23 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     }
   }
 
+  private static long getReindexedDocumentsCount(final ReindexResponse response) {
+    return Math.addExact(
+        Objects.requireNonNullElse(response.created(), 0L),
+        Objects.requireNonNullElse(response.updated(), 0L));
+  }
+
   @VisibleForTesting
   CompletableFuture<Long> deleteDocumentsById(
-      final String sourceIndexName, final List<String> docIds) {
-    if (docIds.isEmpty()) {
+      final String sourceIndexName, final List<IdWithRouting> docs) {
+    if (docs.isEmpty()) {
       return CompletableFuture.completedFuture(0L);
     }
 
     final var operations =
-        docIds.stream().map(docId -> BulkOperation.of(b -> b.delete(d -> d.id(docId)))).toList();
+        docs.stream()
+            .map(d -> BulkOperation.of(b -> b.delete(del -> del.id(d.id()).routing(d.routing()))))
+            .toList();
 
     final BulkRequest request =
         BulkRequest.of(b -> b.index(sourceIndexName).operations(operations));
@@ -526,7 +551,9 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
           "Deleting reindexed documents from %s index completed with %d failures"
               .formatted(sourceIndex, errorCount));
     }
-    return response.items().size();
+
+    // only count DELETE bulk operation where result was `deleted`
+    return response.items().stream().filter(i -> "deleted".equals(i.result())).count();
   }
 
   private SearchRequest createUsageMetricSearchRequest(
@@ -603,10 +630,37 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
         .toQuery();
   }
 
-  private CompletableFuture<Void> applyPolicyToIndices(
+  private CompletableFuture<Boolean> applyPolicyToIndices(
+      final String policyName, final String indexNamePattern) {
+
+    // Guard against OS ISM endpoints silently succeeding for non-existent indices. That silent
+    // success would otherwise let the caller mark its cache as "applied" for an index that
+    // hasn't been created yet, and a later real application against the freshly-created index
+    // would be skipped. We only do this check for single-index names — wildcard/multi-index
+    // patterns (used by setLifeCycleToAllIndexes) are not cached and exists semantics with
+    // negation / wildcards are not portable enough to gate on.
+    if (isPattern(indexNamePattern)) {
+      return doApplyIsmPolicy(policyName, indexNamePattern).thenApply(ignored -> true);
+    }
+
+    return sendRequestAsync(() -> client.indices().exists(b -> b.index(indexNamePattern)))
+        .thenComposeAsync(
+            exists -> {
+              if (!exists.value()) {
+                logger.debug(
+                    "Skipping policy '{}' for '{}': index does not exist yet",
+                    policyName,
+                    indexNamePattern);
+                return CompletableFuture.completedFuture(false);
+              }
+              return doApplyIsmPolicy(policyName, indexNamePattern).thenApply(ignored -> true);
+            },
+            executor);
+  }
+
+  private CompletableFuture<Void> doApplyIsmPolicy(
       final String policyName, final String indexNamePattern) {
     logger.debug("Applying policy '{}' to indices: {}", policyName, indexNamePattern);
-
     final var jsonpMapper = genericClient._transport().jsonpMapper();
 
     return sendRequestAsync(
@@ -637,6 +691,10 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
         .thenComposeAsync(
             resp -> checkIsmResponse(resp, "change_policy", policyName, indexNamePattern),
             executor);
+  }
+
+  private static boolean isPattern(final String indexNameOrPattern) {
+    return indexNameOrPattern.indexOf('*') >= 0 || indexNameOrPattern.indexOf(',') >= 0;
   }
 
   private CompletableFuture<Void> checkIsmResponse(

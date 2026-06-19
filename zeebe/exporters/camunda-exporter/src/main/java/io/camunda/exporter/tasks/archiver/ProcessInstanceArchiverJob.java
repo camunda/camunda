@@ -65,12 +65,7 @@ public class ProcessInstanceArchiverJob implements ArchiverJob {
         // the time it takes all in all, including searching, reindexing, deletion
         // There is some overhead with the scheduling at the executor, but this should be
         // negligible
-        .thenComposeAsync(
-            count -> {
-              metrics.measureArchivingDuration(timer);
-              return CompletableFuture.completedFuture(count);
-            },
-            executor);
+        .whenCompleteAsync((val, err) -> metrics.measureArchivingDuration(timer), executor);
   }
 
   @VisibleForTesting
