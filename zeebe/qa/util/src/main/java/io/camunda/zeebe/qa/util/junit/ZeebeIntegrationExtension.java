@@ -264,7 +264,8 @@ final class ZeebeIntegrationExtension
       }
     } else {
       // Use the shared directory directly for dynamic node IDs
-      workingDirectory = directory;
+      workingDirectory = id.zone() != null ? directory.resolve(id.zone()) : directory;
+      System.out.println("XXXXX working directory for " + id + " is " + workingDirectory);
     }
 
     broker.withWorkingDirectory(workingDirectory);

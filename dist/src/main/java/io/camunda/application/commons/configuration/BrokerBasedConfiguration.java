@@ -24,6 +24,8 @@ import jakarta.servlet.Filter;
 import java.time.Duration;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.context.LifecycleProperties;
 import org.springframework.context.annotation.Bean;
@@ -34,6 +36,7 @@ import org.springframework.web.filter.CompositeFilter;
 @Configuration(proxyBeanMethods = false)
 @Profile(value = {"broker", "restore"})
 public class BrokerBasedConfiguration {
+  private static final Logger LOG = LoggerFactory.getLogger(BrokerBasedConfiguration.class);
 
   private final WorkingDirectory workingDirectory;
   private final BrokerCfg properties;
@@ -51,6 +54,7 @@ public class BrokerBasedConfiguration {
 
     final var cluster = properties.getCluster();
     final var currentInstance = nodeIdProvider.currentNodeInstance();
+    LOG.info("Current node instance is {}", currentInstance);
     cluster.setNodeId(currentInstance.id());
     cluster.setNodeVersion(currentInstance.version().version());
     properties.init(workingDirectory.path().toAbsolutePath().toString());

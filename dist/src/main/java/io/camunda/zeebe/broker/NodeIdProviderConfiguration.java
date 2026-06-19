@@ -27,6 +27,9 @@ import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository;
 import java.nio.file.Path;
 import java.util.Optional;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -81,7 +84,8 @@ public class NodeIdProviderConfiguration {
   public DataDirectoryProvider dataDirectoryProvider(
       final NodeIdProvider nodeIdProvider,
       final NodeIdProviderReadinessAwaiter readinessAwaiter,
-      final BrokerBasedConfiguration brokerBasedConfiguration) {
+      final BrokerBasedConfiguration brokerBasedConfiguration)
+      throws ExecutionException, InterruptedException, TimeoutException {
 
     if (!readinessAwaiter.isReady()) {
       throw new IllegalStateException("NodeIdProvider is not ready");
@@ -93,8 +97,13 @@ public class NodeIdProviderConfiguration {
           case S3 -> {
             final var brokerCopier = new BrokerDataDirectoryCopier();
             final var nodeInstance = nodeIdProvider.currentNodeInstance();
-            final var previousNodeGracefullyShutdown =
-                nodeIdProvider.previousNodeGracefullyShutdown().join();
+            final Boolean previousNodeGracefullyShutdown;
+            previousNodeGracefullyShutdown =
+                nodeIdProvider.previousNodeGracefullyShutdown().get(10, TimeUnit.SECONDS);
+            LOG.info(
+                "Node instance is {}, previousNodeGracefullyShutdown is {}",
+                nodeInstance,
+                previousNodeGracefullyShutdown);
             yield disableVersionedDirectory
                 ? new NodeIdBasedDataDirectoryProvider(nodeInstance)
                 : new VersionedNodeIdBasedDataDirectoryProvider(

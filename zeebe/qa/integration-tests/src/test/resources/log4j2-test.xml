@@ -10,6 +10,8 @@
 
   <Loggers>
     <Logger name="io.camunda.zeebe" level="debug"/>
+    <Logger name="io.camunda.zeebe.dynamic" level="trace"/>
+    <Logger name="io.camunda.it" level="debug"/>
     <Logger name="io.atomix" level="debug"/>
     <Logger name="io.camunda.container.ZeebeTopologyWaitStrategy" level="trace"/>
 
