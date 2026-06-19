@@ -55,13 +55,17 @@ public interface CorrelatedMessageSubscription {
   String getTenantId();
 
   /**
-   * Returns the business id of the correlated message. The business id enforces uniqueness of the
-   * process instance created by a message start event.
+   * Returns the business id associated with this correlated message subscription.
    *
-   * <p><strong>Note:</strong> This field is {@code null} when the correlating message did not
-   * provide a business id, or for correlations to a catch, boundary, or intermediate event.
+   * <p>For a message start event correlation, this is the business id carried by the correlating
+   * message, which was stamped on the started process instance to enforce its uniqueness. For a
+   * catch, boundary, or intermediate event correlation, this is the business id of the subscribing
+   * process instance, captured when the subscription was opened.
    *
-   * @return the business id, or {@code null} if none was provided
+   * <p><strong>Note:</strong> This field is {@code null} when the relevant process instance has no
+   * business id.
+   *
+   * @return the business id, or {@code null} if none applies
    */
   String getBusinessId();
 }
