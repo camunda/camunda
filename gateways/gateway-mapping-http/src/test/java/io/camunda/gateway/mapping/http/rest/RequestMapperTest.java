@@ -593,8 +593,8 @@ class RequestMapperTest {
     @Test
     void shouldMapPriorityToChangeset() {
       // given
-      final var changeset = new JobChangeset().priority(80);
-      final var request = new JobUpdateRequest().changeset(changeset);
+      final var changeset = JobChangeset.Builder.create().priority(80).build();
+      final var request = JobUpdateRequest.Builder.create().changeset(changeset).build();
 
       // when
       final var result = RequestMapper.toJobUpdateRequest(request, 1L);
@@ -607,8 +607,8 @@ class RequestMapperTest {
     @Test
     void shouldMapNullPriorityWhenNotProvided() {
       // given
-      final var changeset = new JobChangeset().retries(3);
-      final var request = new JobUpdateRequest().changeset(changeset);
+      final var changeset = JobChangeset.Builder.create().retries(3).build();
+      final var request = JobUpdateRequest.Builder.create().changeset(changeset).build();
 
       // when
       final var result = RequestMapper.toJobUpdateRequest(request, 1L);
@@ -616,6 +616,35 @@ class RequestMapperTest {
       // then
       assertThat(result.isRight()).isTrue();
       assertThat(result.get().changeset()).isEqualTo(new UpdateJobChangeset(3, null, null));
+    }
+
+    @Test
+    @SuppressWarnings("NullAway")
+    void shouldRejectWhenChangesetIsNull() {
+      // given
+      final var request = JobUpdateRequest.Builder.create().changeset((JobChangeset) null).build();
+
+      // when
+      final var result = RequestMapper.toJobUpdateRequest(request, 1L);
+
+      // then
+      assertThat(result.isLeft()).isTrue();
+      assertThat(result.getLeft().getStatus()).isEqualTo(400);
+    }
+
+    @Test
+    void shouldRejectWhenAllChangesetFieldsAreNull() {
+      // given
+      final var changeset = JobChangeset.Builder.create().build();
+      final var request = JobUpdateRequest.Builder.create().changeset(changeset).build();
+
+      // when
+      final var result = RequestMapper.toJobUpdateRequest(request, 1L);
+
+      // then
+      assertThat(result.isLeft()).isTrue();
+      assertThat(result.getLeft().getStatus()).isEqualTo(400);
+      assertThat(result.getLeft().getDetail()).contains("retries", "timeout", "priority");
     }
   }
 }
