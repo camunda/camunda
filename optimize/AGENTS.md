@@ -38,6 +38,17 @@ C7 usage. Do **not** rename it to `processDefinitionId` or add
 For the complete field-by-field mapping between Optimize names and C8 Zeebe names, you can use the
 Zeebe import service code as reference.
 
+### Exporter Filter ↔ Optimize Importer Coupling
+
+The Zeebe Elasticsearch/OpenSearch **exporter filter** has an Optimize mode
+(`OptimizeModeFilter` in `zeebe/exporter-filter`) that exports only the records and intents
+Optimize needs. This list must stay in sync with the Optimize importer:
+
+- **When the Optimize importer starts consuming a new record type or intent**, verify and update
+  `OptimizeModeFilter` so those records are not silently dropped before reaching the indices.
+- **Any change to the Optimize importer regarding records or intents** must be evaluated from the
+  exporter filter perspective (and vice versa) to keep both sides consistent.
+
 ### Build
 
 Optimize is skipped by `-Dquickly` at the monorepo level. To build only Optimize:
