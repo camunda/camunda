@@ -384,17 +384,35 @@ public final class BpmnJobBehavior {
     return StringUtils.isBlank(input) ? null : input;
   }
 
+  /**
+   * Task header key recognised by {@link #createNewJob(BpmnElementContext,
+   * ExecutableJobWorkerElement, JobProperties)} as the marker that promotes a service-task job from
+   * {@link JobKind#BPMN_ELEMENT} to {@link JobKind#MAINTENANCE} when {@link
+   * Capability#JOB_KIND_MAINTENANCE} is active. Demo-scope: in production this would be triggered
+   * by an engine-internal scheduler, not by a BPMN deployer; the header is a small surface that
+   * lets a gate test exercise the producer end-to-end without standing up the scheduler.
+   */
+  public static final String MAINTENANCE_TASK_HEADER = "__ecv_maintenance__";
+
   public void createNewJob(
       final BpmnElementContext context,
       final ExecutableJobWorkerElement element,
       final JobProperties jobProperties) {
 
+    final var taskHeaders = element.getJobWorkerProperties().getTaskHeaders();
+    final JobKind jobKind;
+    if (taskHeaders.containsKey(MAINTENANCE_TASK_HEADER)
+        && clusterVersionFeatures.isActive(Capability.JOB_KIND_MAINTENANCE)) {
+      // The deployer asked for a MAINTENANCE-kind job AND the cluster has reached the ordinal
+      // that introduced the new enum value. Below the gate, stamp the pre-feature BPMN_ELEMENT
+      // value — a pre-feature follower's JobKind.valueOf cannot resolve "MAINTENANCE" so the
+      // gate guards the wire format from carrying it.
+      jobKind = JobKind.MAINTENANCE;
+    } else {
+      jobKind = JobKind.BPMN_ELEMENT;
+    }
     writeJobCreatedEvent(
-        context,
-        jobProperties,
-        JobKind.BPMN_ELEMENT,
-        JobListenerEventType.UNSPECIFIED,
-        element.getJobWorkerProperties().getTaskHeaders());
+        context, jobProperties, jobKind, JobListenerEventType.UNSPECIFIED, taskHeaders);
   }
 
   public void createNewExecutionListenerJob(
@@ -618,7 +636,10 @@ public final class BpmnJobBehavior {
   private BpmnElementType getBpmnElementTypeForLogging(
       final JobKind jobKind, final BpmnElementContext context) {
     return switch (jobKind) {
-      case BPMN_ELEMENT, EXECUTION_LISTENER -> context.getBpmnElementType();
+      // MAINTENANCE jobs are stamped on service tasks just like BPMN_ELEMENT jobs (the
+      // distinction is only that the consumer skips them in ActivateJobs); the element type for
+      // logging is therefore taken from the context, same as the BPMN_ELEMENT path.
+      case BPMN_ELEMENT, EXECUTION_LISTENER, MAINTENANCE -> context.getBpmnElementType();
       case TASK_LISTENER -> BpmnElementType.USER_TASK;
       case AD_HOC_SUB_PROCESS -> BpmnElementType.SUB_PROCESS;
     };
