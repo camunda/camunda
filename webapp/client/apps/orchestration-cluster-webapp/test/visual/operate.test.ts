@@ -18,8 +18,7 @@ import {
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
-import {createProcessDefinitionInstanceStatisticsResponse} from '#/shared-test-modules/api-mocks/process-definition-statistics';
-import {createIncidentProcessInstanceStatisticsByErrorResponse} from '#/shared-test-modules/api-mocks/incident-statistics';
+import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
 
 test.beforeEach(({network}) => {
 	network.use(
@@ -33,10 +32,10 @@ test.beforeEach(({network}) => {
 			successResponse: HttpResponse.json(createLicense()),
 		}),
 		mockGetProcessDefinitionInstanceStatisticsEndpoint({
-			successResponse: HttpResponse.json(createProcessDefinitionInstanceStatisticsResponse()),
+			successResponse: HttpResponse.json(createPaginatedResponse()),
 		}),
 		mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({
-			successResponse: HttpResponse.json(createIncidentProcessInstanceStatisticsByErrorResponse()),
+			successResponse: HttpResponse.json(createPaginatedResponse()),
 		}),
 	);
 });

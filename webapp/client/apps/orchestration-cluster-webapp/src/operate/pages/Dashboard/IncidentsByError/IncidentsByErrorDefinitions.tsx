@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {InlineLoading} from '@carbon/react';
 import {useTranslation} from 'react-i18next';
 import type {IncidentProcessInstanceStatisticsByDefinition} from '@camunda/camunda-api-zod-schemas/8.10';
 import {tracking} from '#/shared/tracking';

@@ -7,9 +7,7 @@
  */
 
 import type {
-	GetIncidentProcessInstanceStatisticsByErrorResponseBody,
 	IncidentProcessInstanceStatisticsByError,
-	GetIncidentProcessInstanceStatisticsByDefinitionResponseBody,
 	IncidentProcessInstanceStatisticsByDefinition,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 
@@ -20,16 +18,6 @@ function createIncidentProcessInstanceStatisticsByError(
 		errorHashCode: 1,
 		errorMessage: 'An error occurred',
 		activeInstancesWithErrorCount: 1,
-		...overrides,
-	};
-}
-
-function createIncidentProcessInstanceStatisticsByErrorResponse(
-	overrides?: Partial<GetIncidentProcessInstanceStatisticsByErrorResponseBody>,
-): GetIncidentProcessInstanceStatisticsByErrorResponseBody {
-	return {
-		items: [],
-		page: {totalItems: 0, startCursor: null, endCursor: null, hasMoreTotalItems: false},
 		...overrides,
 	};
 }
@@ -48,19 +36,4 @@ function createIncidentProcessInstanceStatisticsByDefinition(
 	};
 }
 
-function createIncidentProcessInstanceStatisticsByDefinitionResponse(
-	overrides?: Partial<GetIncidentProcessInstanceStatisticsByDefinitionResponseBody>,
-): GetIncidentProcessInstanceStatisticsByDefinitionResponseBody {
-	return {
-		items: [],
-		page: {totalItems: 0, startCursor: null, endCursor: null, hasMoreTotalItems: false},
-		...overrides,
-	};
-}
-
-export {
-	createIncidentProcessInstanceStatisticsByError,
-	createIncidentProcessInstanceStatisticsByErrorResponse,
-	createIncidentProcessInstanceStatisticsByDefinition,
-	createIncidentProcessInstanceStatisticsByDefinitionResponse,
-};
+export {createIncidentProcessInstanceStatisticsByError, createIncidentProcessInstanceStatisticsByDefinition};

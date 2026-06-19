@@ -20,8 +20,7 @@ import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createQueryUserTasksResponse} from '#/shared-test-modules/api-mocks/user-tasks';
-import {createProcessDefinitionInstanceStatisticsResponse} from '#/shared-test-modules/api-mocks/process-definition-statistics';
-import {createIncidentProcessInstanceStatisticsByErrorResponse} from '#/shared-test-modules/api-mocks/incident-statistics';
+import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
 
 test.describe('component routes', () => {
 	test('should render Operate when component is active', async ({network, page}) => {
@@ -36,10 +35,10 @@ test.describe('component routes', () => {
 				successResponse: HttpResponse.json(createLicense()),
 			}),
 			mockGetProcessDefinitionInstanceStatisticsEndpoint({
-				successResponse: HttpResponse.json(createProcessDefinitionInstanceStatisticsResponse()),
+				successResponse: HttpResponse.json(createPaginatedResponse()),
 			}),
 			mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({
-				successResponse: HttpResponse.json(createIncidentProcessInstanceStatisticsByErrorResponse()),
+				successResponse: HttpResponse.json(createPaginatedResponse()),
 			}),
 		);
 

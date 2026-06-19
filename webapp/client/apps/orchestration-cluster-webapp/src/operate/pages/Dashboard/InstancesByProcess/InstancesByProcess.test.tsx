@@ -15,10 +15,8 @@ import {userEvent} from 'vitest/browser';
 import {
 	mockGetProcessDefinitionInstanceStatisticsEndpoint,
 } from '#/shared-test-modules/mock-handlers';
-import {
-	createProcessDefinitionInstanceStatistics,
-	createProcessDefinitionInstanceStatisticsResponse,
-} from '#/shared-test-modules/api-mocks/process-definition-statistics';
+import {createProcessDefinitionInstanceStatistics} from '#/shared-test-modules/api-mocks/process-definition-statistics';
+import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
 import {InstancesByProcess} from './InstancesByProcess';
 
 const REQUEST_SCHEMA = z.object({
@@ -34,7 +32,7 @@ const FAILURE_RESPONSE = new HttpResponse(null, {status: 400});
 const ERROR_RESPONSE = new HttpResponse(null, {status: 500});
 
 const PAGE_1_RESPONSE = HttpResponse.json(
-	createProcessDefinitionInstanceStatisticsResponse({
+	createPaginatedResponse({
 		items: [
 			createProcessDefinitionInstanceStatistics({
 				processDefinitionId: 'p1',
@@ -59,7 +57,7 @@ const PAGE_1_RESPONSE = HttpResponse.json(
 );
 
 const PAGE_2_RESPONSE = HttpResponse.json(
-	createProcessDefinitionInstanceStatisticsResponse({
+	createPaginatedResponse({
 		items: [
 			createProcessDefinitionInstanceStatistics({
 				processDefinitionId: 'p51',

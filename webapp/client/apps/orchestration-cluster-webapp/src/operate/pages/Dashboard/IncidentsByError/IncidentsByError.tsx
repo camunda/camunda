@@ -15,6 +15,7 @@ import {tracking} from '#/shared/tracking';
 import {InstancesBar} from '#/operate/components/InstancesBar/InstancesBar';
 import {EmptyState} from '#/operate/components/EmptyState/EmptyState';
 import emptyStateIconUrl from '#/operate/assets/empty-state-process-instances-by-name.svg';
+import {ExpandedRowErrorBoundary} from '../ExpandedRowErrorBoundary';
 import {PartiallyExpandableDataTable} from '../PartiallyExpandableDataTable/PartiallyExpandableDataTable';
 import {useIncidentsByError, PAGE_SIZE} from './useIncidentsByError';
 import {IncidentsByErrorDefinitions} from './IncidentsByErrorDefinitions';
@@ -85,9 +86,11 @@ function IncidentsByError() {
 		() =>
 			items.reduce<Record<string, React.ReactElement<{tabIndex: number}>>>((accumulator, item) => {
 				accumulator[String(item.errorHashCode)] = (
-					<Suspense fallback={<LoadingRow><InlineLoading /></LoadingRow>}>
-						<IncidentsByErrorDefinitions errorHashCode={item.errorHashCode} />
-					</Suspense>
+					<ExpandedRowErrorBoundary>
+						<Suspense fallback={<LoadingRow><InlineLoading /></LoadingRow>}>
+							<IncidentsByErrorDefinitions errorHashCode={item.errorHashCode} />
+						</Suspense>
+					</ExpandedRowErrorBoundary>
 				);
 				return accumulator;
 			}, {}),

@@ -13,10 +13,8 @@ import {HttpResponse} from 'msw';
 import {z} from 'zod';
 import {userEvent} from 'vitest/browser';
 import {mockGetIncidentProcessInstanceStatisticsByErrorEndpoint} from '#/shared-test-modules/mock-handlers';
-import {
-	createIncidentProcessInstanceStatisticsByError,
-	createIncidentProcessInstanceStatisticsByErrorResponse,
-} from '#/shared-test-modules/api-mocks/incident-statistics';
+import {createIncidentProcessInstanceStatisticsByError} from '#/shared-test-modules/api-mocks/incident-statistics';
+import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
 import {IncidentsByError} from './IncidentsByError';
 
 const REQUEST_SCHEMA = z.object({
@@ -26,7 +24,7 @@ const FAILURE_RESPONSE = new HttpResponse(null, {status: 400});
 const ERROR_RESPONSE = new HttpResponse(null, {status: 500});
 
 const PAGE_1_RESPONSE = HttpResponse.json(
-	createIncidentProcessInstanceStatisticsByErrorResponse({
+	createPaginatedResponse({
 		items: [
 			createIncidentProcessInstanceStatisticsByError({
 				errorHashCode: 1,
@@ -49,7 +47,7 @@ const PAGE_1_RESPONSE = HttpResponse.json(
 );
 
 const PAGE_2_RESPONSE = HttpResponse.json(
-	createIncidentProcessInstanceStatisticsByErrorResponse({
+	createPaginatedResponse({
 		items: [
 			createIncidentProcessInstanceStatisticsByError({
 				errorHashCode: 51,

@@ -14,6 +14,7 @@ import {EmptyState} from '#/operate/components/EmptyState/EmptyState';
 import type {ProcessDefinitionInstanceStatistics} from '@camunda/camunda-api-zod-schemas/8.10';
 import {tracking} from '#/shared/tracking';
 import {InstancesBar} from '#/operate/components/InstancesBar/InstancesBar';
+import {ExpandedRowErrorBoundary} from '../ExpandedRowErrorBoundary';
 import {PartiallyExpandableDataTable} from '../PartiallyExpandableDataTable/PartiallyExpandableDataTable';
 import {useInstancesByProcess, PAGE_SIZE} from './useInstancesByProcess';
 import {InstancesByProcessVersions} from './InstancesByProcessVersions';
@@ -93,9 +94,11 @@ function InstancesByProcess() {
 			items.reduce<Record<string, React.ReactElement<{tabIndex: number}>>>((accumulator, item) => {
 				if (item.hasMultipleVersions) {
 					accumulator[`${item.processDefinitionId}:${item.tenantId}`] = (
-						<Suspense fallback={<LoadingRow><InlineLoading /></LoadingRow>}>
-							<InstancesByProcessVersions processDefinitionId={item.processDefinitionId} tenantId={item.tenantId} />
-						</Suspense>
+						<ExpandedRowErrorBoundary>
+							<Suspense fallback={<LoadingRow><InlineLoading /></LoadingRow>}>
+								<InstancesByProcessVersions processDefinitionId={item.processDefinitionId} tenantId={item.tenantId} />
+							</Suspense>
+						</ExpandedRowErrorBoundary>
 					);
 				}
 				return accumulator;

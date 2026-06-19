@@ -16,14 +16,9 @@ import {
 	mockGetIncidentProcessInstanceStatisticsByErrorEndpoint,
 	mockCurrentUserEndpoint,
 } from '#/shared-test-modules/mock-handlers';
-import {
-	createProcessDefinitionInstanceStatistics,
-	createProcessDefinitionInstanceStatisticsResponse,
-} from '#/shared-test-modules/api-mocks/process-definition-statistics';
-import {
-	createIncidentProcessInstanceStatisticsByError,
-	createIncidentProcessInstanceStatisticsByErrorResponse,
-} from '#/shared-test-modules/api-mocks/incident-statistics';
+import {createProcessDefinitionInstanceStatistics} from '#/shared-test-modules/api-mocks/process-definition-statistics';
+import {createIncidentProcessInstanceStatisticsByError} from '#/shared-test-modules/api-mocks/incident-statistics';
+import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
 import {Dashboard} from './Dashboard';
 
 const PROCESS_STATS_REQUEST_SCHEMA = z.object({
@@ -41,7 +36,7 @@ const INCIDENTS_REQUEST_SCHEMA = z.object({
 const FAILURE_RESPONSE = new HttpResponse(null, {status: 400});
 
 const STATS_RESPONSE_WITH_INSTANCES = HttpResponse.json(
-	createProcessDefinitionInstanceStatisticsResponse({
+	createPaginatedResponse({
 		items: [
 			createProcessDefinitionInstanceStatistics({
 				processDefinitionId: 'process-1',
@@ -61,10 +56,10 @@ const STATS_RESPONSE_WITH_INSTANCES = HttpResponse.json(
 	}),
 );
 
-const STATS_RESPONSE_EMPTY = HttpResponse.json(createProcessDefinitionInstanceStatisticsResponse());
+const STATS_RESPONSE_EMPTY = HttpResponse.json(createPaginatedResponse());
 
 const INCIDENTS_RESPONSE_WITH_ERRORS = HttpResponse.json(
-	createIncidentProcessInstanceStatisticsByErrorResponse({
+	createPaginatedResponse({
 		items: [
 			createIncidentProcessInstanceStatisticsByError({
 				errorHashCode: 1,
@@ -81,7 +76,7 @@ const INCIDENTS_RESPONSE_WITH_ERRORS = HttpResponse.json(
 	}),
 );
 
-const INCIDENTS_RESPONSE_EMPTY = HttpResponse.json(createIncidentProcessInstanceStatisticsByErrorResponse());
+const INCIDENTS_RESPONSE_EMPTY = HttpResponse.json(createPaginatedResponse());
 
 const CURRENT_USER_RESPONSE = HttpResponse.json({
 	userId: 'test-user',
