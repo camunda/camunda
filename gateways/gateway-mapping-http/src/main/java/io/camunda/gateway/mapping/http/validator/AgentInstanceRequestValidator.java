@@ -103,7 +103,7 @@ public class AgentInstanceRequestValidator {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("role"));
           }
 
-          if (request.getContent() == null || request.getContent().isEmpty()) {
+          if (request.getContent() == null) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("content"));
           } else {
             for (int i = 0; i < request.getContent().size(); i++) {

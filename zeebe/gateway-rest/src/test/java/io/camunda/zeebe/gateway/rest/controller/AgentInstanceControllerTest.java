@@ -1055,39 +1055,6 @@ class AgentInstanceControllerTest extends RestControllerTest {
             "No role provided."),
         Arguments.of(
             named(
-                "missing content",
-                new HistoryItemRequest(
-                    validKey,
-                    """
-                    {
-                      "elementInstanceKey": "%d",
-                      "jobKey": "%d",
-                      "jobLease": "lease-abc",
-                      "role": "ASSISTANT",
-                      "producedAt": "2025-06-01T12:00:00Z"
-                    }
-                    """
-                        .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY))),
-            "No content provided."),
-        Arguments.of(
-            named(
-                "empty content list",
-                new HistoryItemRequest(
-                    validKey,
-                    """
-                    {
-                      "elementInstanceKey": "%d",
-                      "jobKey": "%d",
-                      "jobLease": "lease-abc",
-                      "role": "ASSISTANT",
-                      "content": [],
-                      "producedAt": "2025-06-01T12:00:00Z"
-                    }
-                    """
-                        .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY))),
-            "No content provided."),
-        Arguments.of(
-            named(
                 "missing producedAt",
                 new HistoryItemRequest(
                     validKey,
