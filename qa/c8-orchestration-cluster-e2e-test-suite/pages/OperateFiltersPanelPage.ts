@@ -205,7 +205,9 @@ export class OperateFiltersPanelPage {
 
   async selectFlowNode(option: string) {
     await this.flowNodeFilter.click();
-    await this.getOptionByName(option, false).click();
+    const flowNodeOption = this.getOptionByName(option, false);
+    await flowNodeOption.waitFor({state: 'visible'});
+    await flowNodeOption.click();
   }
 
   async fillVariableNameFilter(name: string) {

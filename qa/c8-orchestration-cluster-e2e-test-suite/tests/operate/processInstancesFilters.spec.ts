@@ -581,9 +581,12 @@ test.describe('Process Instances Filters', () => {
       await operateFiltersPanelPage.selectVersion('1');
       await expect(operateFiltersPanelPage.flowNodeFilter).toHaveValue('');
 
-      await operateFiltersPanelPage.selectFlowNode('StartEvent_1');
+      // Selecting the version asynchronously resets the flow node filter, which
+      // can wipe a flow node selected too early. Re-apply the flow node on every
+      // retry so a reload settles the page before selecting it again.
       await waitForAssertion({
         assertion: async () => {
+          await operateFiltersPanelPage.selectFlowNode('StartEvent_1');
           await expect(
             operateProcessesPage.noMatchingInstancesMessage,
           ).toBeVisible({timeout: 60000});
