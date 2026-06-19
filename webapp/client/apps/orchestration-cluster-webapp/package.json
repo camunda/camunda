@@ -18,7 +18,7 @@
 		"lint:knip": "knip --tsConfig tsconfig.browser.json"
 	},
 	"dependencies": {
-		"@camunda/camunda-api-zod-schemas": "0.0.72",
+		"@camunda/camunda-api-zod-schemas": "0.0.73",
 		"@camunda/camunda-composite-components": "0.24.0",
 		"@carbon/react": "1.109.0",
 		"@carbon/type": "11.61.0",

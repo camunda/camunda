@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.0.73
+
+### 🚀 Enhancements
+
+- Introduce `BEFORE_ALL` listener event type
+
 ## v0.0.72
 
 ### 🚀 Enhancements
