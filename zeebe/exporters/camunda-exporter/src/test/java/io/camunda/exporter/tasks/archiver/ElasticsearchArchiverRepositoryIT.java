@@ -868,7 +868,7 @@ final class ElasticsearchArchiverRepositoryIT {
     // when - first setting policy for indexName1 and indexName2
     repository
         .setIndexLifeCycle(indexName1)
-        .thenApply(
+        .thenCompose(
             ignore -> {
               // wait for the cache of indexName1 to expire
               Awaitility.await().pollDelay(Duration.ofSeconds(minimumAgeSeconds)).until(() -> true);
