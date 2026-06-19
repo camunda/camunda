@@ -125,11 +125,13 @@ public final class ReschedulingTask implements RunnableTask {
   }
 
   private void logError(final Throwable error) {
+    final var cause = error.getCause();
+    final var msg = cause != null ? cause.getMessage() : error.getMessage();
     periodicLogger.logError(
         "Error occurred while performing a background task {}; error message {}; operation will be retried",
         error,
         task.getCaption(),
-        error.getCause().getMessage());
+        msg);
   }
 
   private void reschedule(final long delay) {

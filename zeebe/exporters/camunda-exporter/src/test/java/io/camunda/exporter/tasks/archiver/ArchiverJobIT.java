@@ -63,6 +63,7 @@ public abstract class ArchiverJobIT<T extends ArchiverJob<?>> {
   protected static final int PARTITION_ID = 1;
   protected static final AtomicLong ID_GENERATOR = new AtomicLong(1);
   protected static final Instant NOW = Instant.parse("2026-05-01T10:26:00Z");
+  protected static final Duration ARCHIVE_TIMEOUT = Duration.ofSeconds(30L);
 
   @RegisterExtension private static SearchDBExtension searchDB = SearchDBExtension.create();
 
@@ -116,13 +117,14 @@ public abstract class ArchiverJobIT<T extends ArchiverJob<?>> {
           final var archived = job.execute();
 
           // then
-          assertThat(archived).succeedsWithin(Duration.ofSeconds(5L)).isEqualTo(0);
+          assertThat(archived).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(0);
         });
   }
 
   void withArchiverJob(final ExporterConfiguration config, final ArchiveJobConsumer<T> jobConsumer)
       throws Exception {
     config.getHistory().getRetention().setEnabled(true);
+    config.getIndex().setNumberOfShards(3);
     createSchemas(config);
 
     final ExporterResourceProvider exporterResourceProvider = exporterResourceProvider(config);

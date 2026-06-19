@@ -16,6 +16,7 @@ import static org.mockito.Mockito.verify;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiveByIdTaskSupplier.ArchiveDocIdsBatch;
+import io.camunda.exporter.tasks.archiver.ArchiveByIdTaskSupplier.IdWithRouting;
 import java.net.SocketTimeoutException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -47,7 +48,9 @@ class ArchiveByIdTaskSupplierTest {
             "destination-idx",
             searchAfter ->
                 CompletableFuture.completedFuture(
-                    ArchiveDocIdsBatch.from(List.of("doc1", "doc2"), List.of("after1"))),
+                    ArchiveDocIdsBatch.from(
+                        List.of(IdWithRouting.of("doc1"), IdWithRouting.of("doc2")),
+                        List.of("after1"))),
             (source, dest, ids) -> {
               if (reindexCallCount.incrementAndGet() <= 2) {
                 return CompletableFuture.failedFuture(retryableError);
@@ -94,7 +97,7 @@ class ArchiveByIdTaskSupplierTest {
             "destination-idx",
             searchAfter ->
                 CompletableFuture.completedFuture(
-                    ArchiveDocIdsBatch.from(List.of("doc1"), List.of("after1"))),
+                    ArchiveDocIdsBatch.from(List.of(IdWithRouting.of("doc1")), List.of("after1"))),
             (source, dest, ids) -> CompletableFuture.failedFuture(retryableError),
             (source, ids) -> CompletableFuture.completedFuture((long) ids.size()),
             DIRECT_EXECUTOR,
@@ -127,7 +130,7 @@ class ArchiveByIdTaskSupplierTest {
             "destination-idx",
             searchAfter ->
                 CompletableFuture.completedFuture(
-                    ArchiveDocIdsBatch.from(List.of("doc1"), List.of("after1"))),
+                    ArchiveDocIdsBatch.from(List.of(IdWithRouting.of("doc1")), List.of("after1"))),
             (source, dest, ids) -> CompletableFuture.failedFuture(nonRetryableError),
             (source, ids) -> CompletableFuture.completedFuture((long) ids.size()),
             DIRECT_EXECUTOR,
@@ -179,7 +182,7 @@ class ArchiveByIdTaskSupplierTest {
             "destination-idx",
             searchAfter ->
                 CompletableFuture.completedFuture(
-                    ArchiveDocIdsBatch.from(List.of("doc1"), List.of("after1"))),
+                    ArchiveDocIdsBatch.from(List.of(IdWithRouting.of("doc1")), List.of("after1"))),
             (source, dest, ids) -> {
               final int call = reindexCallCount.incrementAndGet();
               if (call != 2 && call != 7) {
@@ -238,7 +241,7 @@ class ArchiveByIdTaskSupplierTest {
             "destination-idx",
             searchAfter ->
                 CompletableFuture.completedFuture(
-                    ArchiveDocIdsBatch.from(List.of("doc1"), List.of("after1"))),
+                    ArchiveDocIdsBatch.from(List.of(IdWithRouting.of("doc1")), List.of("after1"))),
             (source, dest, ids) -> {
               if (reindexCallCount.incrementAndGet() == 1) {
                 return CompletableFuture.failedFuture(retryableError);

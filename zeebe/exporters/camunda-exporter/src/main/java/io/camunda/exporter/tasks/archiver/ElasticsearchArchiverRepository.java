@@ -44,6 +44,7 @@ import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.BasicArchiveBatch;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.ProcessInstanceArchiveBatch;
 import io.camunda.exporter.tasks.archiver.ArchiveByIdTaskSupplier.ArchiveDocIdsBatch;
+import io.camunda.exporter.tasks.archiver.ArchiveByIdTaskSupplier.IdWithRouting;
 import io.camunda.exporter.tasks.util.DateOfArchivedDocumentsUtil;
 import io.camunda.exporter.tasks.util.ElasticsearchRepository;
 import io.camunda.search.schema.config.RetentionConfiguration;
@@ -62,6 +63,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import javax.annotation.WillCloseWhenClosed;
@@ -251,8 +253,13 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
 
     return applyPolicyToIndices(policyName, destinationIndexName)
         .thenApply(
-            ok -> {
-              lifeCyclePolicyApplied.put(destinationIndexName, policyName);
+            applied -> {
+              // Only cache when the policy was actually applied to a real index. If the dest
+              // didn't exist yet (applied=false), we deliberately skip the cache update so a
+              // later call (after the index is created by reindex) re-applies the policy.
+              if (Boolean.TRUE.equals(applied)) {
+                lifeCyclePolicyApplied.put(destinationIndexName, policyName);
+              }
               return null;
             });
   }
@@ -375,12 +382,13 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
             taskSupplier::moveNextBatch, count -> taskSupplier.isComplete())
         .thenComposeAsync(
             ignored -> {
-              // don't set the lifecycle if nothing was moved
-              // as it also might mean the index does not exist anyway
-              if (taskSupplier.getTotalArchived() > 0L) {
-                return setIndexLifeCycle(destinationIndexName);
-              }
-              return CompletableFuture.completedFuture(null);
+              // always trigger set life cycle, which checks whether the policy was previously
+              // applied and, if so, skips it. If nothing moved and the destination index is
+              // not present, we already set .allowNoIndices(true), which prevents it from erroring.
+              // However, if nothing moved because we previously moved them, but the call errored
+              // at the put policy stage, this will reapply the policy and ensure no index is
+              // left without the ILM policy.
+              return setIndexLifeCycle(destinationIndexName);
             },
             executor)
         .thenApply(
@@ -425,6 +433,11 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   }
 
   @VisibleForTesting
+  void invalidateLifeCycleCache(final String indexName) {
+    lifeCyclePolicyApplied.invalidate(indexName);
+  }
+
+  @VisibleForTesting
   CompletableFuture<ArchiveDocIdsBatch<FieldValue>> getArchiveDocIdsBatch(
       final String sourceIndexName,
       final Map<String, List<String>> keysByField,
@@ -459,17 +472,21 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
                 return ArchiveDocIdsBatch.empty();
               }
               return ArchiveDocIdsBatch.from(
-                  hits.stream().map(Hit::id).toList(), hits.getLast().sort());
+                  hits.stream().map(h -> new IdWithRouting(h.id(), h.routing())).toList(),
+                  hits.getLast().sort());
             });
   }
 
   @VisibleForTesting
   CompletableFuture<Long> reindexDocumentsById(
-      final String sourceIndexName, final String destinationIndexName, final List<String> docIds) {
-    if (docIds.isEmpty()) {
+      final String sourceIndexName,
+      final String destinationIndexName,
+      final List<IdWithRouting> docs) {
+    if (docs.isEmpty()) {
       return CompletableFuture.completedFuture(0L);
     }
 
+    final var docIds = docs.stream().map(IdWithRouting::id).toList();
     final var query = QueryBuilders.bool(q -> q.filter(b -> b.ids(id -> id.values(docIds))));
     final var request =
         new ReindexRequest.Builder()
@@ -486,7 +503,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
         .thenApplyAsync(
             response -> {
               validateReindexResponse(sourceIndexName, response);
-              return response.total();
+              return getReindexedDocumentsCount(response);
             },
             executor)
         .whenCompleteAsync(
@@ -499,23 +516,33 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
       throw new IllegalStateException("Reindex request from %s timed out".formatted(sourceIndex));
     }
     final var failures = response.failures();
-    if (failures != null && !failures.isEmpty()) {
+    if (!failures.isEmpty()) {
       throw new IllegalStateException(
           "Reindex request from %s index completed with %d failures"
               .formatted(sourceIndex, failures.size()));
     }
   }
 
+  private static long getReindexedDocumentsCount(final ReindexResponse response) {
+    return Math.addExact(
+        Objects.requireNonNullElse(response.created(), 0L),
+        Objects.requireNonNullElse(response.updated(), 0L));
+  }
+
   @VisibleForTesting
   CompletableFuture<Long> deleteDocumentsById(
-      final String sourceIndexName, final List<String> docIds) {
-    if (docIds.isEmpty()) {
+      final String sourceIndexName, final List<IdWithRouting> docs) {
+    if (docs.isEmpty()) {
       return CompletableFuture.completedFuture(0L);
     }
 
     final var operations =
-        docIds.stream()
-            .map(docId -> new BulkOperation.Builder().delete(d -> d.id(docId)).build())
+        docs.stream()
+            .map(
+                d ->
+                    new BulkOperation.Builder()
+                        .delete(del -> del.id(d.id()).routing(d.routing()))
+                        .build())
             .toList();
 
     final var request =
@@ -537,7 +564,9 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
           "Deleting reindexed documents from %s index completed with %d failures"
               .formatted(sourceIndex, errorCount));
     }
-    return response.items().size();
+
+    // only count DELETE bulk operation where result was `deleted`
+    return response.items().stream().filter(i -> "deleted".equals(i.result())).count();
   }
 
   private Query finishedProcessInstancesQuery(
@@ -599,11 +628,39 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
         ListViewTemplate.ROOT_PROCESS_INSTANCE_KEY);
   }
 
-  private CompletableFuture<PutIndicesSettingsResponse> applyPolicyToIndices(
+  private CompletableFuture<Boolean> applyPolicyToIndices(
       final String policyName, final String indexNamePattern) {
 
-    logger.debug("Applying policy '{}' to indices: {}", policyName, indexNamePattern);
+    // Guard against `PUT _settings` with `allowNoIndices(true)` silently succeeding when no
+    // matching index exists. That silent success would otherwise let the caller mark its cache as
+    // "applied" for an index that hasn't been created yet, and a later real application against
+    // the freshly-created index would be skipped. We only do this check for single-index names —
+    // wildcard/multi-index patterns (used by setLifeCycleToAllIndexes) are not cached and exists
+    // semantics with negation / wildcards are not portable enough to gate on.
+    if (isPattern(indexNamePattern)) {
+      return doPutSettings(policyName, indexNamePattern).thenApply(r -> true);
+    }
 
+    return client
+        .indices()
+        .exists(b -> b.index(indexNamePattern))
+        .thenComposeAsync(
+            exists -> {
+              if (!exists.value()) {
+                logger.debug(
+                    "Skipping policy '{}' for '{}': index does not exist yet",
+                    policyName,
+                    indexNamePattern);
+                return CompletableFuture.completedFuture(false);
+              }
+              return doPutSettings(policyName, indexNamePattern).thenApply(r -> true);
+            },
+            executor);
+  }
+
+  private CompletableFuture<PutIndicesSettingsResponse> doPutSettings(
+      final String policyName, final String indexNamePattern) {
+    logger.debug("Applying policy '{}' to indices: {}", policyName, indexNamePattern);
     final var settingsRequest =
         new PutIndicesSettingsRequest.Builder()
             .settings(settings -> settings.lifecycle(lifecycle -> lifecycle.name(policyName)))
@@ -611,8 +668,11 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
             .allowNoIndices(true)
             .ignoreUnavailable(true)
             .build();
-
     return client.indices().putSettings(settingsRequest);
+  }
+
+  private static boolean isPattern(final String indexNameOrPattern) {
+    return indexNameOrPattern.indexOf('*') >= 0 || indexNameOrPattern.indexOf(',') >= 0;
   }
 
   private ProcessInstanceArchiveBatch createProcessInstanceBatch(
