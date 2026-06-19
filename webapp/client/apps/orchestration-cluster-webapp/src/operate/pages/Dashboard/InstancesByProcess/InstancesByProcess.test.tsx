@@ -6,14 +6,15 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Suspense} from 'react';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {describe, expect} from 'vitest';
 import {HttpResponse} from 'msw';
 import {z} from 'zod';
 import {userEvent} from 'vitest/browser';
-import {mockGetProcessDefinitionInstanceStatisticsEndpointSequential} from '#/shared-test-modules/mock-handlers';
+import {
+	mockGetProcessDefinitionInstanceStatisticsEndpoint,
+} from '#/shared-test-modules/mock-handlers';
 import {
 	createProcessDefinitionInstanceStatistics,
 	createProcessDefinitionInstanceStatisticsResponse,
@@ -30,6 +31,7 @@ const REQUEST_SCHEMA = z.object({
 	page: z.object({from: z.number(), limit: z.literal(50)}),
 });
 const FAILURE_RESPONSE = new HttpResponse(null, {status: 400});
+const ERROR_RESPONSE = new HttpResponse(null, {status: 500});
 
 const PAGE_1_RESPONSE = HttpResponse.json(
 	createProcessDefinitionInstanceStatisticsResponse({
@@ -72,20 +74,14 @@ const PAGE_2_RESPONSE = HttpResponse.json(
 describe('<InstancesByProcess />', () => {
 	it('should render the list of instances by process', async ({worker}) => {
 		worker.use(
-			mockGetProcessDefinitionInstanceStatisticsEndpointSequential([PAGE_1_RESPONSE], {
+			mockGetProcessDefinitionInstanceStatisticsEndpoint({
 				schema: REQUEST_SCHEMA,
+				successResponse: PAGE_1_RESPONSE,
 				failureResponse: FAILURE_RESPONSE,
 			}),
 		);
 
-		const screen = await renderWithRouter(
-			() => (
-				<Suspense>
-					<InstancesByProcess />
-				</Suspense>
-			),
-			{path: '/operate'},
-		);
+		const screen = await renderWithRouter(() => <InstancesByProcess />, {path: '/operate'});
 
 		await expect.element(screen.getByText('Alpha Process')).toBeVisible();
 		await expect.element(screen.getByText('Beta Process')).toBeVisible();
@@ -94,8 +90,9 @@ describe('<InstancesByProcess />', () => {
 
 	it('should fetch the next page when scrolled to the bottom', async ({worker}) => {
 		worker.use(
-			mockGetProcessDefinitionInstanceStatisticsEndpointSequential([PAGE_1_RESPONSE, PAGE_2_RESPONSE], {
+			mockGetProcessDefinitionInstanceStatisticsEndpoint({
 				schema: REQUEST_SCHEMA,
+				successResponse: PAGE_1_RESPONSE,
 				failureResponse: FAILURE_RESPONSE,
 			}),
 		);
@@ -103,9 +100,7 @@ describe('<InstancesByProcess />', () => {
 		const screen = await renderWithRouter(
 			() => (
 				<div style={{height: '100px', display: 'flex', flexDirection: 'column'}}>
-					<Suspense>
-						<InstancesByProcess />
-					</Suspense>
+					<InstancesByProcess />
 				</div>
 			),
 			{path: '/operate'},
@@ -113,8 +108,28 @@ describe('<InstancesByProcess />', () => {
 
 		await expect.element(screen.getByText('Alpha Process')).toBeVisible();
 
+		worker.use(
+			mockGetProcessDefinitionInstanceStatisticsEndpoint({
+				schema: REQUEST_SCHEMA,
+				successResponse: PAGE_2_RESPONSE,
+				failureResponse: FAILURE_RESPONSE,
+			}),
+		);
+
 		await userEvent.wheel(screen.getByTestId('instances-by-process-list'), {delta: {y: 10000}});
 
 		await expect.element(screen.getByText('Page Two Process')).toBeVisible();
+	});
+
+	it('should show an error state when the request fails', async ({worker}) => {
+		worker.use(
+			mockGetProcessDefinitionInstanceStatisticsEndpoint({
+				successResponse: ERROR_RESPONSE,
+			}),
+		);
+
+		const screen = await renderWithRouter(() => <InstancesByProcess />, {path: '/operate'});
+
+		await expect.element(screen.getByText('Data could not be fetched')).toBeVisible();
 	});
 });
