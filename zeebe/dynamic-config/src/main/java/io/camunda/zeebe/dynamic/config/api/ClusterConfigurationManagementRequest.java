@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.dynamic.config.api;
 
+import static io.camunda.zeebe.util.Preconditions.assertNonEmpty;
+import static io.camunda.zeebe.util.Preconditions.assertPositive;
+
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
@@ -47,12 +50,35 @@ public sealed interface ClusterConfigurationManagementRequest {
     }
   }
 
+  /**
+   * Request to scale a cluster by target counts rather than by explicit broker ids.
+   *
+   * @param brokerCount the target number of brokers. On a plain (non-zone-aware) cluster this is
+   *     the total cluster size; when {@code zone} is set it is the target broker count <em>within
+   *     that zone</em>, leaving the other zones untouched. Empty leaves the broker count unchanged.
+   * @param newPartitionCount the target number of partitions, or empty to leave it unchanged.
+   *     Partitions can only be scaled up.
+   * @param newReplicationFactor the target replication factor, or empty to leave it unchanged. When
+   *     {@code zone} is set it must not be set. To change replication factor in zone aware clusters
+   *     use {@link UpdatePartitionDistributorConfigRequest}
+   * @param zone the zone to scale, or empty to scale a plain cluster. Required when scaling a
+   *     zone-aware cluster and rejected on a plain one.
+   * @param dryRun when true, the resulting plan is computed and returned without being applied.
+   */
   record ClusterScaleRequest(
-      Optional<Integer> newClusterSize,
+      Optional<Integer> brokerCount,
       Optional<Integer> newPartitionCount,
       Optional<Integer> newReplicationFactor,
+      Optional<String> zone,
       boolean dryRun)
-      implements ClusterConfigurationManagementRequest {}
+      implements ClusterConfigurationManagementRequest {
+    public ClusterScaleRequest {
+      zone.ifPresent(assertNonEmpty("zone"));
+      brokerCount.ifPresent(assertPositive("brokerCount"));
+      newPartitionCount.ifPresent(assertPositive("newPartitionCount"));
+      newReplicationFactor.ifPresent(assertPositive("newReplicationFactor"));
+    }
+  }
 
   record ClusterPatchRequest(
       Set<MemberId> membersToAdd,
@@ -60,7 +86,13 @@ public sealed interface ClusterConfigurationManagementRequest {
       Optional<Integer> newPartitionCount,
       Optional<Integer> newReplicationFactor,
       boolean dryRun)
-      implements ClusterConfigurationManagementRequest {}
+      implements ClusterConfigurationManagementRequest {
+
+    public ClusterPatchRequest {
+      newPartitionCount.ifPresent(assertPositive("newPartitionCount"));
+      newReplicationFactor.ifPresent(assertPositive("newReplicationFactor"));
+    }
+  }
 
   record UpdateRoutingStateRequest(Optional<RoutingState> routingState, boolean dryRun)
       implements ClusterConfigurationManagementRequest {}

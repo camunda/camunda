@@ -991,9 +991,10 @@ public class ProtoBufSerializer
     final var builder =
         Requests.ClusterScaleRequest.newBuilder().setDryRun(clusterScaleRequest.dryRun());
 
-    clusterScaleRequest.newClusterSize().ifPresent(builder::setNewClusterSize);
+    clusterScaleRequest.brokerCount().ifPresent(builder::setNewClusterSize);
     clusterScaleRequest.newReplicationFactor().ifPresent(builder::setNewReplicationFactor);
     clusterScaleRequest.newPartitionCount().ifPresent(builder::setNewPartitionCount);
+    clusterScaleRequest.zone().ifPresent(builder::setZone);
 
     return builder.build().toByteArray();
   }
@@ -1198,9 +1199,19 @@ public class ProtoBufSerializer
           clusterScaleRequest.hasNewPartitionCount()
               ? Optional.of(clusterScaleRequest.getNewPartitionCount())
               : Optional.empty();
+      final Optional<String> zone =
+          clusterScaleRequest.hasZone()
+              ? Optional.of(clusterScaleRequest.getZone())
+              : Optional.empty();
       return new ClusterScaleRequest(
-          newClusterSize, newPartitionCount, newReplicationFactor, clusterScaleRequest.getDryRun());
+          newClusterSize,
+          newPartitionCount,
+          newReplicationFactor,
+          zone,
+          clusterScaleRequest.getDryRun());
     } catch (final InvalidProtocolBufferException e) {
+      throw new DecodingFailed(e);
+    } catch (final IllegalArgumentException e) {
       throw new DecodingFailed(e);
     }
   }

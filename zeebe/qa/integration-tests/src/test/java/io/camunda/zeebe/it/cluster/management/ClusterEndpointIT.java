@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.util.ArrayList;
 import java.util.List;
@@ -117,7 +118,7 @@ abstract class ClusterEndpointIT {
     }
   }
 
-  private static java.net.http.HttpResponse<String> sendBrokerScaleRequest(
+  private static HttpResponse<String> sendBrokerScaleRequest(
       final TestCluster cluster, final URI pathAndQuery) throws IOException, InterruptedException {
     final var baseClusterEndpoint = cluster.availableGateway().actuatorUri("cluster");
     final var request =

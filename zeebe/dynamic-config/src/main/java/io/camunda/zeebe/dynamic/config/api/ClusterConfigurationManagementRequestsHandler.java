@@ -144,9 +144,10 @@ public final class ClusterConfigurationManagementRequestsHandler
     return handleRequest(
         clusterScaleRequest.dryRun(),
         new ClusterScaleRequestTransformer(
-            clusterScaleRequest.newClusterSize(),
+            clusterScaleRequest.brokerCount(),
             clusterScaleRequest.newPartitionCount(),
-            clusterScaleRequest.newReplicationFactor()));
+            clusterScaleRequest.newReplicationFactor(),
+            clusterScaleRequest.zone()));
   }
 
   @Override

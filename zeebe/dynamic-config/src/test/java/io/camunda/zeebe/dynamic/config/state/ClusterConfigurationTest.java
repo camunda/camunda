@@ -18,6 +18,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.MemberState.State;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation.HashMod;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.AllPartitions;
 import java.time.Instant;
@@ -451,6 +452,73 @@ class ClusterConfigurationTest {
 
   private MemberId member(final int id) {
     return MemberId.from(Integer.toString(id));
+  }
+
+  @Nested
+  class ZoneAware {
+    @Test
+    void shouldClassifyZoneAwarenessForUnzoned() {
+      // given
+      final var configs =
+          List.of(
+              ClusterConfiguration.init(),
+              ClusterConfiguration.init()
+                  .addMember(member(1), MemberState.initializeAsActive(Map.of())));
+
+      for (final var config : configs) {
+        assertThat(config)
+            .returns(true, ClusterConfiguration::isUnzoned)
+            .returns(false, ClusterConfiguration::isPartiallyZoneAware)
+            .returns(false, ClusterConfiguration::isFullyZoneAware);
+      }
+    }
+
+    @Test
+    void shouldClassifyZoneAwarenessForPartiallyZoned() {
+      // given
+      final var config =
+          ClusterConfiguration.init()
+              .addMember(member(1), MemberState.initializeAsActive(Map.of()))
+              .addMember(MemberId.from("zoneA", 1), MemberState.initializeAsActive(Map.of()));
+
+      // then
+      assertThat(config)
+          .returns(false, ClusterConfiguration::isUnzoned)
+          .returns(true, ClusterConfiguration::isPartiallyZoneAware)
+          .returns(false, ClusterConfiguration::isFullyZoneAware);
+    }
+
+    @Test
+    void shouldClassifyZoneAwarenessForPartiallyZonedWhenDistributionIsNotConfigured() {
+      // given
+      final var config =
+          ClusterConfiguration.init()
+              .addMember(MemberId.from("zoneB", 1), MemberState.initializeAsActive(Map.of()))
+              .addMember(MemberId.from("zoneA", 1), MemberState.initializeAsActive(Map.of()));
+
+      // then
+      assertThat(config)
+          .returns(false, ClusterConfiguration::isUnzoned)
+          .returns(true, ClusterConfiguration::isPartiallyZoneAware)
+          .returns(false, ClusterConfiguration::isFullyZoneAware);
+    }
+
+    @Test
+    void shouldClassifyZoneAwarenessForFullyZoned() {
+      // given
+      final var config =
+          ClusterConfiguration.init()
+              .addMember(MemberId.from("zoneB", 1), MemberState.initializeAsActive(Map.of()))
+              .addMember(MemberId.from("zoneA", 1), MemberState.initializeAsActive(Map.of()))
+              .setPartitionDistributorConfig(
+                  new PartitionDistributorConfig.ZoneAwareConfig(
+                      List.of(new ZoneSpec("zoneA", 1, 100), new ZoneSpec("zoneB", 1, 100))));
+
+      assertThat(config)
+          .returns(false, ClusterConfiguration::isUnzoned)
+          .returns(false, ClusterConfiguration::isPartiallyZoneAware)
+          .returns(true, ClusterConfiguration::isFullyZoneAware);
+    }
   }
 
   @Nested

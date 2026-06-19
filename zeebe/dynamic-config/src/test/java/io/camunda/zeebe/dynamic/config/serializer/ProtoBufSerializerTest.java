@@ -39,6 +39,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 final class ProtoBufSerializerTest {
 
@@ -157,11 +159,13 @@ final class ProtoBufSerializerTest {
     assertThat(decodedRequest).isEqualTo(exporterEnableRequest);
   }
 
-  @Test
-  void shouldEncodeAndDecodeClusterScaleRequest() {
+  @ParameterizedTest
+  @ValueSource(strings = {"", "zoneA"})
+  void shouldEncodeAndDecodeClusterScaleRequest(final String zone) {
     // given
+    final var zoneOpt = Optional.of(zone).filter(s -> !s.isEmpty());
     final var clusterScaleRequest =
-        new ClusterScaleRequest(Optional.of(3), Optional.of(15), Optional.of(4), true);
+        new ClusterScaleRequest(Optional.of(3), Optional.of(15), Optional.of(4), zoneOpt, true);
 
     // when
     final var encodedRequest = protoBufSerializer.encodeClusterScaleRequest(clusterScaleRequest);

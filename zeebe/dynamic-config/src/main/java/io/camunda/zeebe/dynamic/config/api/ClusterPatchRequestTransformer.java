@@ -41,7 +41,8 @@ public final class ClusterPatchRequestTransformer implements ConfigurationChange
       final ClusterConfiguration clusterConfiguration) {
     // Changing the replication factor on a zone-aware cluster requires adjusting zone specs,
     // which is not yet supported.
-    if (newReplicationFactor.isPresent() && clusterConfiguration.isZoneAware()) {
+    // !isNotZoneAware is required as not a single broker can be zoned.
+    if (newReplicationFactor.isPresent() && !clusterConfiguration.isUnzoned()) {
       return Either.left(
           new InvalidRequest(
               "Changing the replication factor is not supported on zone-aware clusters."));

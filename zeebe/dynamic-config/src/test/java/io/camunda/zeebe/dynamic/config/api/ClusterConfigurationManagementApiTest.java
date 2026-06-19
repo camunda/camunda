@@ -361,7 +361,8 @@ final class ClusterConfigurationManagementApiTest {
   void shouldScaleClusterByNewClusterSizeAndPartitionCount() {
     // given
     final var request =
-        new ClusterScaleRequest(Optional.of(2), Optional.of(3), Optional.empty(), false);
+        new ClusterScaleRequest(
+            Optional.of(2), Optional.of(3), Optional.empty(), Optional.empty(), false);
     final ClusterConfiguration currentTopology =
         initialTopology
             .updateMember(id0, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))

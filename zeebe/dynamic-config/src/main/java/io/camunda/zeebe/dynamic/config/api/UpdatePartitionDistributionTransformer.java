@@ -45,7 +45,7 @@ public class UpdatePartitionDistributionTransformer implements ConfigurationChan
   public Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
       final ClusterConfiguration currentConfiguration) {
 
-    if (!currentConfiguration.isZoneAware()) {
+    if (!currentConfiguration.isFullyZoneAware()) {
       return Either.left(
           new InvalidRequest(
               "Partition distribution changes are only supported on zone-aware clusters."));

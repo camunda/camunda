@@ -14,7 +14,9 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.Either;
 import java.util.function.UnaryOperator;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 public class UpdatePartitionDistributorConfigApplier implements ClusterOperationApplier {
 
   private final UpdatePartitionDistributorConfigOperation operation;
