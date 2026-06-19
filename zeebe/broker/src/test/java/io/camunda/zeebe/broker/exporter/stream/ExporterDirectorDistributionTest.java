@@ -299,6 +299,43 @@ public final class ExporterDirectorDistributionTest {
     };
   }
 
+  @Test
+  public void shouldNotConsumeStateForUnconfiguredExporter() {
+    // given - the active (leader) has both exporters configured, but the passive (follower) only
+    // has exporter-1, e.g. because exporter-2 was disabled/deleted on this node.
+    activeExporters.startExporterDirector(exporterDescriptors);
+    passiveExporters.startExporterDirector(List.of(exporterDescriptors.get(0)));
+
+    Awaitility.await("Active exporter has recovered and started exporting.")
+        .untilAsserted(
+            () ->
+                assertThat(activeExporters.getDirector().getPhase().join())
+                    .isEqualTo(ExporterPhase.EXPORTING));
+
+    // the still-configured exporter is ahead, the unconfigured one lags behind with a stale
+    // position, as a disabled exporter would.
+    final long configuredPosition = 20L;
+    final long stalePosition = 10L;
+    activeExporters.getExportersState().setPosition(EXPORTER_ID_1, configuredPosition);
+    activeExporters.getExportersState().setPosition(EXPORTER_ID_2, stalePosition);
+
+    // when - the active director distributes the state of both exporters
+    activeExporters.getClock().addTime(DISTRIBUTION_INTERVAL);
+
+    final var passiveExporterState = passiveExporters.getExportersState();
+    Awaitility.await("Active Director has distributed positions and passive has received it")
+        .conditionEvaluationListener(new ClockShifter(activeExporters.getClock()))
+        .untilAsserted(
+            () ->
+                assertThat(passiveExporterState.getPosition(EXPORTER_ID_1))
+                    .isEqualTo(configuredPosition));
+
+    // then - the unconfigured exporter is not re-introduced into the passive state, so its stale
+    // position cannot pin the lowest position (and therefore log compaction).
+    assertThat(passiveExporterState.getPosition(EXPORTER_ID_2)).isEqualTo(-1);
+    assertThat(passiveExporterState.getLowestPosition()).isEqualTo(configuredPosition);
+  }
+
   /**
    * Shifts the actor clock by the {@link this#DISTRIBUTION_INTERVAL} after an awaitility condition
    * was evaluated.
