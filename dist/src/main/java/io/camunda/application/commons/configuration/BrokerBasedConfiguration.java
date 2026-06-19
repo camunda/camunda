@@ -20,6 +20,7 @@ import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.gateway.RestApiCompositeFilter;
 import io.camunda.zeebe.gateway.impl.configuration.FilterCfg;
 import io.camunda.zeebe.gateway.rest.impl.filters.FilterRepository;
+import io.camunda.zeebe.util.MemberIdUtil;
 import jakarta.servlet.Filter;
 import java.time.Duration;
 import java.util.List;
@@ -79,7 +80,9 @@ public class BrokerBasedConfiguration {
     final var cpuThreads = threadCfg.getCpuThreadCount();
     final var ioThreads = threadCfg.getIoThreadCount();
     final var metricsEnabled = properties.getExperimental().getFeatures().isEnableActorMetrics();
-    final var nodeId = String.valueOf(properties.getCluster().getNodeId());
+    final var nodeId =
+        MemberIdUtil.memberIdString(
+            properties.getCluster().getZone(), properties.getCluster().getNodeId());
     return new SchedulerConfiguration(cpuThreads, ioThreads, metricsEnabled, "Broker", nodeId);
   }
 
