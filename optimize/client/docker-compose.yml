@@ -1,6 +1,6 @@
 services:
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION:-8.19.11}
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION:-8.19.16}
     container_name: elasticsearch
     profiles: ['cloud', 'self-managed', 'cloud:elasticsearch', 'self-managed:elasticsearch']
     environment:
@@ -31,7 +31,7 @@ services:
       timeout: 5s
       retries: 3
   opensearch:
-    image: opensearchproject/opensearch:${OS_VERSION:-2.19.4}
+    image: opensearchproject/opensearch:${OS_VERSION:-2.19.5}
     container_name: opensearch
     profiles: ['cloud:opensearch', 'self-managed:opensearch']
     environment:
