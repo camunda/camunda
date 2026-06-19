@@ -182,6 +182,10 @@ public class DynamicNodeIdScalingIT {
       return null;
     }
 
+    protected String clusterName() {
+      return CLUSTER_NAME;
+    }
+
     @Test
     @Timeout(100)
     public void shouldScaleClusterWithDynamicNodeIdProvider() {
@@ -253,7 +257,7 @@ public class DynamicNodeIdScalingIT {
               .withProperty("camunda.data.secondary-storage.type", SecondaryStorageType.none.name())
               .withUnifiedConfig(
                   cfg -> {
-                    cfg.getCluster().setName(CLUSTER_NAME);
+                    cfg.getCluster().setName(clusterName());
                     cfg.getCluster().setInitialContactPoints(List.of(initialContactPoint));
                     cfg.getCluster().setZone(zone);
                     if (zone != null) {
@@ -302,13 +306,8 @@ public class DynamicNodeIdScalingIT {
     }
 
     @Override
-    protected int targetClusterSizeInZone() {
-      return initialClusterSize() + 2;
-    }
-
-    @Override
     protected int targetClusterSize() {
-      return targetClusterSizeInZone() + 1;
+      return 4;
     }
 
     @Override
@@ -322,6 +321,11 @@ public class DynamicNodeIdScalingIT {
     @Override
     protected String zone() {
       return ZONES.stream().filter(Optional::isPresent).findFirst().get().get();
+    }
+
+    @Override
+    protected String clusterName() {
+      return "zoned-" + CLUSTER_NAME;
     }
   }
 
