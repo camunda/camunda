@@ -18,7 +18,7 @@ function getWaitStateLabel(
 
   // Timer wait states should not show a label on the diagram overlay
   const nonTimerWaitStates = waitStates.filter(
-    (ws) => ws.waitStateType !== 'TIMER',
+    (ws) => ws.details.waitStateType !== 'TIMER',
   );
 
   if (nonTimerWaitStates.length === 0) {
@@ -35,102 +35,96 @@ function getWaitStateStatusItems(
   let hasRenderedTimerStatus = false;
 
   return waitStates.flatMap((waitState) => {
-    switch (waitState.waitStateType) {
-      case 'MESSAGE': {
-        const messageName =
-          (waitState.details['messageName'] as string) ?? 'unknown';
-        return {
-          key: `${waitState.elementInstanceKey}-MESSAGE-${messageName}`,
-          text: `Waiting for message: ${messageName}`,
-        };
-      }
-      case 'TIMER': {
-        if (hasRenderedTimerStatus) {
-          return [];
-        }
-        hasRenderedTimerStatus = true;
+    const {details} = waitState;
 
-        if (earliestTimerDueDate) {
-          return {
-            key: `TIMER-${earliestTimerDueDate}`,
-            text: `Timer due: ${formatDate(earliestTimerDueDate)}`,
-          };
-        }
-
-        return {
-          key: 'TIMER-waiting',
-          text: 'Waiting for timer',
-        };
-      }
-      case 'SIGNAL': {
-        const signalName =
-          (waitState.details['signalName'] as string) ?? 'unknown';
-        return {
-          key: `${waitState.elementInstanceKey}-SIGNAL-${signalName}`,
-          text: `Waiting for signal: ${signalName}`,
-        };
-      }
-      case 'CONDITION': {
-        return {
-          key: `${waitState.elementInstanceKey}-CONDITION`,
-          text: 'Waiting for condition',
-        };
-      }
-      case 'JOB': {
-        const jobType = (waitState.details['jobType'] as string) ?? 'unknown';
-        const jobKind = waitState.details['jobKind'] as string | undefined;
-        if (jobKind === 'EXECUTION_LISTENER' || jobKind === 'TASK_LISTENER') {
-          return {
-            key: `${waitState.elementInstanceKey}-JOB-${jobKind}-${jobType}`,
-            text: `Waiting for ${jobKind === 'EXECUTION_LISTENER' ? 'execution listener' : 'task listener'}: ${jobType}`,
-          };
-        }
-        return {
-          key: `${waitState.elementInstanceKey}-JOB-${jobType}`,
-          text: `Waiting for job: ${jobType}`,
-        };
-      }
-      case 'CHILD_INSTANCE': {
-        return {
-          key: `${waitState.elementInstanceKey}-CHILD_INSTANCE`,
-          text: 'Waiting for child instance to complete',
-        };
-      }
-      default:
-        return {
-          key: `${waitState.elementInstanceKey}-WAITING`,
-          text: 'Waiting',
-        };
+    if (details.waitStateType === 'MESSAGE') {
+      const {messageName} = details;
+      return {
+        key: `${waitState.elementInstanceKey}-MESSAGE-${messageName}`,
+        text: `Waiting for message: ${messageName}`,
+      };
     }
+
+    if (details.waitStateType === 'TIMER') {
+      if (hasRenderedTimerStatus) {
+        return [];
+      }
+      hasRenderedTimerStatus = true;
+
+      if (earliestTimerDueDate !== null) {
+        return {
+          key: `TIMER-${earliestTimerDueDate}`,
+          text: `Timer due: ${formatDate(new Date(earliestTimerDueDate))}`,
+        };
+      }
+
+      return {
+        key: 'TIMER-waiting',
+        text: 'Waiting for timer',
+      };
+    }
+
+    if (details.waitStateType === 'SIGNAL') {
+      const {signalName} = details;
+      return {
+        key: `${waitState.elementInstanceKey}-SIGNAL-${signalName}`,
+        text: `Waiting for signal: ${signalName}`,
+      };
+    }
+
+    if (details.waitStateType === 'JOB') {
+      const {jobType, jobKind} = details;
+      if (jobKind === 'EXECUTION_LISTENER' || jobKind === 'TASK_LISTENER') {
+        return {
+          key: `${waitState.elementInstanceKey}-JOB-${jobKind}-${jobType}`,
+          text: `Waiting for ${jobKind === 'EXECUTION_LISTENER' ? 'execution listener' : 'task listener'}: ${jobType}`,
+        };
+      }
+      return {
+        key: `${waitState.elementInstanceKey}-JOB-${jobType}`,
+        text: `Waiting for job: ${jobType}`,
+      };
+    }
+
+    if (details.waitStateType === 'USER_TASK') {
+      const {taskKey} = details;
+      return {
+        key: `${waitState.elementInstanceKey}-USER_TASK-${taskKey}`,
+        text: 'Waiting for user task',
+      };
+    }
+
+    return {
+      key: `${waitState.elementInstanceKey}-WAITING`,
+      text: 'Waiting',
+    };
   });
 }
 
 function getEarliestTimerDueDate(
   waitStates: ElementInstanceInspection[],
-): string | null {
-  const timerWaitStates = waitStates.filter(
-    (ws) => ws.waitStateType === 'TIMER' && ws.details['dueDate'],
-  );
-
-  if (timerWaitStates.length === 0) {
-    return null;
-  }
-
-  let earliestDueDate: string | null = null;
+): number | null {
+  let earliestDueDate: number | null = null;
   let earliestDueDateInMillis = Number.POSITIVE_INFINITY;
 
-  timerWaitStates.forEach((waitState) => {
-    const dueDate = waitState.details['dueDate'] as string;
-    const dueDateInMillis = Date.parse(dueDate);
+  for (const waitState of waitStates) {
+    const {details} = waitState;
 
-    if (
-      !Number.isNaN(dueDateInMillis) &&
-      dueDateInMillis < earliestDueDateInMillis
-    ) {
-      earliestDueDateInMillis = dueDateInMillis;
+    if (details.waitStateType !== 'TIMER') {
+      continue;
+    }
+
+    const {dueDate} = details;
+
+    if (dueDate === null) {
+      continue;
+    }
+
+    if (dueDate < earliestDueDateInMillis) {
+      earliestDueDateInMillis = dueDate;
       earliestDueDate = dueDate;
     }
-  });
+  }
 
   return earliestDueDate;
 }
