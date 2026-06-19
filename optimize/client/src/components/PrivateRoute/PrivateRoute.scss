@@ -9,4 +9,12 @@
     height: 100%;
     width: 100%;
   }
+
+  &.nav-v2 {
+    .cds--popover,
+    .cds--popover-content,
+    .Popover .cds--popover {
+      z-index: 8500;
+    }
+  }
 }
