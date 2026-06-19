@@ -762,6 +762,7 @@ public class CamundaSearchClients implements SearchClientsProxy {
   }
 
   protected <T> Optional<T> doGet(final Function<ResourceAccessChecks, T> applier) {
+    requireScoped();
     try {
       return Optional.ofNullable(doGetWithResourceAccessController(applier));
     } catch (final TenantAccessDeniedException e) {
@@ -775,22 +776,31 @@ public class CamundaSearchClients implements SearchClientsProxy {
     }
   }
 
-  private SearchClientReaders requireScopedReaders() {
+  private void requireScoped() {
     if (currentPhysicalTenantId == null) {
       throw new IllegalStateException(
           "CamundaSearchClients must be scoped to a physical tenant via withPhysicalTenant() before performing reads");
     }
+  }
+
+  private SearchClientReaders requireScopedReaders() {
+    requireScoped();
     return readers;
+  }
+
+  private ResourceAccessController requireScopedResourceAccessController() {
+    requireScoped();
+    return resourceAccessController;
   }
 
   protected <T> T doReadWithResourceAccessController(
       final Function<ResourceAccessChecks, T> applier) {
-    return resourceAccessController.doSearch(securityContext, applier);
+    return requireScopedResourceAccessController().doSearch(securityContext, applier);
   }
 
   protected <T> T doGetWithResourceAccessController(
       final Function<ResourceAccessChecks, T> applier) {
-    return resourceAccessController.doGet(securityContext, applier);
+    return requireScopedResourceAccessController().doGet(securityContext, applier);
   }
 
   protected CamundaSearchException entityByKeyNotFoundException(

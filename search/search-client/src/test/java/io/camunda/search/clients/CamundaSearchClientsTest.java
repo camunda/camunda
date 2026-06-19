@@ -271,6 +271,33 @@ class CamundaSearchClientsTest {
     }
 
     @Test
+    void shouldThrowWhenStatisticsReadIsAttemptedWithoutScoping() {
+      // given — an unscoped base instance
+      final var unscopedClients =
+          new CamundaSearchClients(
+              Map.of(DEFAULT, readers), Map.of(DEFAULT, resourceAccessController));
+
+      // when / then — a ResourceAccessController-backed (non reader-first) path must also fail fast
+      assertThatThrownBy(() -> unscopedClients.processInstanceFlowNodeStatistics(1L))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessageContaining("withPhysicalTenant");
+    }
+
+    @Test
+    void shouldThrowWhenGetViaResourceAccessControllerIsAttemptedWithoutScoping() {
+      // given — an unscoped base instance
+      final var unscopedClients =
+          new CamundaSearchClients(
+              Map.of(DEFAULT, readers), Map.of(DEFAULT, resourceAccessController));
+
+      // when / then — a doGet(...)-backed path must fail fast with ISE, not a wrapped
+      // CamundaSearchException
+      assertThatThrownBy(() -> unscopedClients.getDeployedResource(1L))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessageContaining("withPhysicalTenant");
+    }
+
+    @Test
     void shouldPreserveSecurityContextAndResourceAccessControllerOnTheReturnedInstance() {
       // given
       when(tenantAReaders.processInstanceReader()).thenReturn(tenantAProcessInstanceReader);
