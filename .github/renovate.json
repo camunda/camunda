@@ -3,7 +3,8 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:recommended",
-    "github>camunda/infra-renovate-config:herodevs.json5"
+    "github>camunda/infra-renovate-config:herodevs.json5",
+    "github>camunda/infra-renovate-config:rebase.json5"
   ],
   "commitMessagePrefix": "deps:",
   "baseBranchPatterns": [

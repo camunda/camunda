@@ -80,8 +80,15 @@
   <build>
     <resources>
       <resource>
+        <filtering>false</filtering>
+        <directory>src/main/resources</directory>
+      </resource>
+      <resource>
         <filtering>true</filtering>
         <directory>src/main/resources</directory>
+        <includes>
+          <include>testcontainer-versions.properties</include>
+        </includes>
       </resource>
     </resources>
   </build>
