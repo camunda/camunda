@@ -49,7 +49,7 @@ public class ContainerRuntimePropertiesUtilTest {
         new ContainerRuntimePropertiesUtil(properties);
 
     // then
-    assertThat(propertiesUtil.getElasticsearchVersion()).isEqualTo("8.13.0");
+    assertThat(propertiesUtil.getElasticsearchVersion()).isEqualTo("8.19.16");
     assertThat(propertiesUtil.getCamundaDockerImageName()).isEqualTo("camunda/camunda");
     assertThat(propertiesUtil.getCamundaDockerImageVersion()).isEqualTo("SNAPSHOT");
     assertThat(propertiesUtil.getConnectorsDockerImageName())
@@ -89,7 +89,7 @@ public class ContainerRuntimePropertiesUtilTest {
         new ContainerRuntimePropertiesUtil(properties);
 
     // then
-    assertThat(propertiesUtil.getElasticsearchVersion()).isEqualTo("8.13.0");
+    assertThat(propertiesUtil.getElasticsearchVersion()).isEqualTo("8.19.16");
     assertThat(propertiesUtil.getCamundaDockerImageName()).isEqualTo("camunda/camunda");
     assertThat(propertiesUtil.getCamundaDockerImageVersion()).isEqualTo("SNAPSHOT");
     assertThat(propertiesUtil.getConnectorsDockerImageName())

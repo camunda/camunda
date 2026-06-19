@@ -7,7 +7,7 @@
  */
 package io.camunda.application;
 
-import static io.camunda.webapps.schema.SupportedVersions.SUPPORTED_ELASTICSEARCH_VERSION;
+import static io.camunda.webapps.schema.SupportedVersions.TEST_ELASTICSEARCH_VERSION;
 import static org.assertj.core.api.Assertions.fail;
 
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
@@ -46,7 +46,7 @@ public abstract class AbstractCamundaDockerIT {
   protected static final String ELASTICSEARCH_DOCKER_IMAGE =
       System.getProperty(
           "camunda.docker.test.elasticsearch.image",
-          "docker.elastic.co/elasticsearch/elasticsearch:" + SUPPORTED_ELASTICSEARCH_VERSION);
+          "docker.elastic.co/elasticsearch/elasticsearch:" + TEST_ELASTICSEARCH_VERSION);
   private static final Logger LOGGER = LoggerFactory.getLogger(AbstractCamundaDockerIT.class);
   protected Network network;
   private final List<GenericContainer<?>> createdContainers = new ArrayList<>();
